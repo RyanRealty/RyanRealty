@@ -45,12 +45,15 @@ import {
   type PricingFactsCatchUp,
 } from '@/lib/data/pricing/facts'
 import { estimateClosePrice, pricingSaleToCmaComp } from '@/lib/pricing/estimate'
+import { anchorPlacePhrase } from '@/lib/pricing/price-anchor'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CompSelection } from '@/lib/cma/comps'
-import { emptyExclusions } from '@/lib/cma/comp-trace'
+import { diagnoseStarvation, emptyExclusions, factsStopReason, type FactsPathHold } from '@/lib/cma/comp-trace'
 import {
+  CUSTOM_FACTS_POOL_MONTHS,
   FACTS_STANDALONE_MIN,
   factsPoolCloseAfter,
+  ORDINARY_FACTS_POOL_MONTHS,
   LOCAL_POOL_RADIUS_MILES,
   PRICING_MIN_COMPS,
   PRICING_TARGET_COMPS,
@@ -313,7 +316,11 @@ export async function selectPricingComps(
       if (z !== undefined) x.zoning = z
     }
   }
-  const walked = walkPricingLadder(pricingSubject, sales, { asOf, cells })
+  const walked = walkPricingLadder(pricingSubject, sales, {
+    asOf,
+    cells,
+    anchorWindowMonths: customOrNew ? CUSTOM_FACTS_POOL_MONTHS : ORDINARY_FACTS_POOL_MONTHS,
+  })
   return { ...walked, trace: [...catchUpTrace, ...walked.trace], factsReady: true }
 }
 
@@ -435,8 +442,13 @@ export function matchToCompSelection(
   // The floor and the target are one number (PRICING_MIN_COMPS equals
   // PRICING_TARGET_COMPS, Matt 2026-10-07), so a starved set is a short set.
   const underMin = match.comps.length < PRICING_MIN_COMPS
+  const factsPath = factsPathHold(match)
   const starvedReason = underMin
-    ? `facts path: only ${match.comps.length} price-setting sale(s) after the full pricing ladder (minimum ${PRICING_MIN_COMPS}). Comp shortage. Custom/new stays on facts; listings SQL tiers are not a fallback.`
+    ? `facts path: only ${match.comps.length} price-setting sale(s)${
+        factsPath.sales.length > 0 ? ` (${factsPath.sales.join(', ')})` : ''
+      } after the full pricing ladder (minimum ${PRICING_MIN_COMPS})${
+        factsPath.stop_reason ? `; it stopped because ${factsPath.stop_reason}` : ''
+      }. Comp shortage. Custom/new stays on facts; listings SQL tiers are not a fallback.`
     : null
   const bench = match.bench ?? []
   return {
@@ -476,7 +488,10 @@ export function matchToCompSelection(
       // story was written from the tier names alone. `excluded` stays at zero
       // here because the facts ladder rejects inside passesTier without
       // categorising the reason, the same convention `excluded_totals` above
-      // already carries on this path. It is "not counted", never "none".
+      // already carries on this path. It is "not counted", never "none". The
+      // one reason this ladder does count is the ADU wall (Matt 2026-10-08):
+      // sales the rung would have taken, skipped because their remarks state
+      // an ADU and the subject's do not.
       ladder: match.rungs.map((r) => ({
         tier: r.tier,
         ran: r.ran,
@@ -490,24 +505,37 @@ export function matchToCompSelection(
         rows_returned: r.scanned,
         comps_added: r.added,
         running_total: r.runningTotal,
-        excluded: emptyExclusions(),
+        excluded: { ...emptyExclusions(), adu_sale: r.aduSkipped ?? 0, price_tier: r.priceTier ?? 0 },
         not_setting: r.notSetting,
       })),
       price_anchor: match.priceAnchor
-        ? { ppsf: Math.round(match.priceAnchor.ppsf), n: match.priceAnchor.n }
+        ? {
+            ppsf: Math.round(match.priceAnchor.ppsf),
+            n: match.priceAnchor.n,
+            level: match.priceAnchor.source,
+            where: anchorPlacePhrase(match.priceAnchor),
+          }
         : null,
       tiers_used: match.tiersUsed,
       reached_target: match.reachedTarget,
       starved: match.starved,
       starved_at: match.starved ? match.tiersUsed[match.tiersUsed.length - 1] ?? null : null,
       starved_reason: starvedReason,
+      facts_path: factsPath,
       target_comps: PRICING_TARGET_COMPS,
       min_comps: PRICING_MIN_COMPS,
       candidates: match.comps.length,
       // The facts ladder rejects inside passesTier without a reason, so the
       // totals stay at zero — except the acreage splits, which the walk counts
-      // once over the rural pool for the reader's story (Delta 4).
-      excluded_totals: { ...emptyExclusions(), ...(match.ruralSplits ?? {}) },
+      // once over the rural pool for the reader's story (Delta 4), the ADU
+      // wall and the one 20% price line, each counted once per distinct sale
+      // however many rungs reached it (one sale is re-read on every rung).
+      excluded_totals: {
+        ...emptyExclusions(),
+        ...(match.ruralSplits ?? {}),
+        adu_sale: match.aduSkipped ?? 0,
+        price_tier: match.priceTierSkipped ?? 0,
+      },
       not_price_setting: match.rungs.reduce((n, r) => n + (r.notSetting ?? 0), 0),
       outliers_excluded: 0,
       final_count: match.comps.length,
@@ -517,6 +545,49 @@ export function matchToCompSelection(
       disclosures: match.trace.filter((t) => t.includes('Fannie') || t.includes('subdivision')),
     },
   }
+}
+
+/**
+ * What the facts walk held, in the shape the selection's diagnostics keep
+ * (diagnostics.facts_path): the price-setting sales it seated by address, the
+ * rungs that added them, the sales that passed a rung and did not set the
+ * price, and why it stopped short of five.
+ */
+export function factsPathHold(match: PricingMatchResult): FactsPathHold {
+  return {
+    held: match.comps.length,
+    sales: match.comps.map((c) => c.address),
+    tiers_used: [...match.tiersUsed],
+    not_setting: match.rungs.reduce((n, r) => n + (r.notSetting ?? 0), 0),
+    stop_reason: factsStopReason(match.rungs, match.comps.length >= PRICING_MIN_COMPS),
+  }
+}
+
+/**
+ * THE FACTS WALK IS KEPT ON A LISTINGS FALLBACK (2026-10-08). Under five
+ * price-setting sales the facts result used to be thrown away and only the
+ * listings selection returned, so the shortage message ("Only 0 qualifying
+ * closed comps found ... listings path ...") described the weaker search
+ * while the facts walk had held sales of its own. The listings selection now
+ * carries the facts walk on diagnostics.facts_path, and its starved reason is
+ * rewritten so the path that held more leads (diagnoseStarvation). Nothing
+ * else about the listings selection changes: its comps still price the home
+ * when it holds five.
+ */
+export function withFactsPath(
+  selection: CompSelection,
+  match: PricingMatchResult & { factsReady: boolean },
+): CompSelection {
+  if (!match.factsReady) return selection
+  const before = selection.diagnostics.starved_reason
+  selection.diagnostics.facts_path = factsPathHold(match)
+  const after = diagnoseStarvation(selection.diagnostics)
+  selection.diagnostics.starved_reason = after
+  if (before && after && before !== after) {
+    const at = selection.trace.indexOf(before)
+    if (at >= 0) selection.trace[at] = after
+  }
+  return selection
 }
 
 /**
@@ -580,5 +651,5 @@ export async function selectCompsPreferringFacts(
   if (pickCompSource({ ...match, customOrNew }) === 'facts') {
     return matchToCompSelection(subject, match, { customOrNew })
   }
-  return selectComps(subject, opts)
+  return withFactsPath(await selectComps(subject, opts), match)
 }

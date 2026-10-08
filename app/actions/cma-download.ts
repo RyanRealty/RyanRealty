@@ -196,8 +196,8 @@ export async function registerForCmaDocumentAction(input: CmaDownloadInput): Pro
   try {
     await fireLeadGenerated({
       lp_variant: 'published-cma',
-      lead_type: 'buyer',
-      value: 0,
+      lead_type: 'listing_inquiry',
+      form_id: 'listing_cma_download',
       fub_person_id: personId ?? undefined,
     })
   } catch {
@@ -322,8 +322,8 @@ export async function requestListingCmaAction(input: CmaDownloadInput): Promise<
   try {
     await fireLeadGenerated({
       lp_variant: 'listing-pricing-read',
-      lead_type: 'buyer',
-      value: 0,
+      lead_type: 'listing_inquiry',
+      form_id: 'listing_cma_request',
       fub_person_id: personId ?? undefined,
     })
   } catch {

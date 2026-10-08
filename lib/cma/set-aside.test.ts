@@ -133,8 +133,9 @@ describe('set aside', () => {
     expect(html).toContain('These 2 sales are shown above and did not set the number.')
     expect(html).toContain('100 Swalley')
     expect(html).toContain('700 Swalley')
-    expect(html).toContain('The highest of these sales once each is moved to today.')
-    expect(html).toContain('The lowest of these sales once each is moved to today.')
+    // No sale here moved for date, so the reason says adjusted to the home, not today (reader review 2026-10-08).
+    expect(html).toContain('The highest of these sales once each is adjusted to your home.')
+    expect(html).toContain('The lowest of these sales once each is adjusted to your home.')
   })
 
   it('never carries a set-aside sale in the weights row', () => {

@@ -203,8 +203,8 @@ export async function submitListingPaymentEmail(input: {
   try {
     await fireLeadGenerated({
       lp_variant: 'listing-payment-email',
-      lead_type: 'buyer',
-      value: 0,
+      lead_type: 'listing_inquiry',
+      form_id: 'listing_payment_email',
       fub_person_id: crmPersonId,
     })
   } catch {

@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { submitValuationRequest } from './actions'
-import { trackEvent } from '@/lib/tracking'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -43,7 +42,7 @@ export default function ValuationForm() {
           content_name: 'home_valuation',
         }, { eventID: result.eventId })
       }
-      trackEvent('generate_lead', { source: 'home_valuation', cma_sent: result.cmaSent ?? false })
+      // GA4 generate_lead is sent once, by the server action (lib/lead-tracking.ts).
     }
   }
 

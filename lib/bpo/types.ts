@@ -35,6 +35,14 @@ export interface BpoListingCycle {
   wasRelisted: boolean
   /** sold | canceled | expired | withdrawn | active | pending | other */
   outcome: string
+  /**
+   * Set by lib/cma/expired-audit.ts cycleOnTheMarket from the MLS status log:
+   * the status the listing left Active for, when it differs from `status`
+   * (withdrawn, then expired months later).
+   */
+  leftActiveAs?: string | null
+  /** The Pacific day `status` took effect, when that is after the day it left Active. */
+  statusDate?: string | null
 }
 
 export interface BpoHistorySignal {

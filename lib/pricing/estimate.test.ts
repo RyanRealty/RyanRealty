@@ -1367,9 +1367,10 @@ describe('the time-adjustment basis says exactly what is applied (R2d)', () => {
   })
 
   it('the month line measures single-family sale prices, and says so', () => {
-    // compute_and_cache_period_stats filters PropertyType='A' AND
-    // property_sub_type='Single Family Residence' (read from the live function
-    // body, 2026-09-08). The index above does not.
+    // The month line reads Market Truth segment detached, PropertyType='A' AND
+    // property_sub_type='Single Family Residence' (docs/plans/MARKET_TRUTH/
+    // REGISTRY.md §1; it read the cache, same filter, until 2026-10-08). The
+    // index above does not.
     expect(CMA_MARKET_TREND_MEASURE).toContain('single-family')
     expect(CMA_MARKET_TREND_MEASURE).toContain('median sale price')
     expect(CMA_MARKET_TREND_MEASURE).not.toContain('square foot')

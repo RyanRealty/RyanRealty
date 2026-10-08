@@ -230,9 +230,12 @@ export function cmaQueueWhy(r: {
     if (err.includes('outside the sales')) return 'price-outside'
     // Every comp-shortage sentence the build writes: brokerCompRefusal, the
     // review keep, the product wall, pricingFailureMessage, and the walk.
+    // brokerCompRefusal leads with the best path's count since 2026-10-08:
+    // "The search in River West found 3 price-setting sales (...); 5 are needed."
     if (
       err.includes('not enough comparable') ||
       err.includes('closed sales this home needs') ||
+      (err.includes('price-setting sale') && err.includes('are needed')) ||
       err.includes('set the price, and this home needs') ||
       err.includes('same product type') ||
       err.includes('comp shortage')

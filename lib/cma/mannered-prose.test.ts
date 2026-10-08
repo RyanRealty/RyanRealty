@@ -166,16 +166,6 @@ describe('CMA seller copy has no mannered prose', () => {
       expiredAudit: {
         findings: [{ lens: 'pricing', fact: 'Listed at $800,000.', meaning: 'The ask sat above the closed sales.' }],
         services: [],
-        netSheet: {
-          salePrice: 472000,
-          lines: [],
-          totalCosts: 0,
-          estimatedNet: 472000,
-          netConservative: 464000,
-          netHighEnd: 481000,
-          assumptions: [],
-        },
-        feeLine: '',
       },
     })
     assertPlain('print-html', html)
@@ -336,16 +326,6 @@ const expiredArgs = bannedWordArgs({
   expiredAudit: {
     findings: [{ lens: 'pricing', fact: 'Listed at $460,000.', meaning: '' }],
     services: [],
-    netSheet: {
-      salePrice: 472000,
-      lines: [],
-      totalCosts: 0,
-      estimatedNet: 472000,
-      netConservative: 464000,
-      netHighEnd: 481000,
-      assumptions: [],
-    },
-    feeLine: '',
   },
 })
 

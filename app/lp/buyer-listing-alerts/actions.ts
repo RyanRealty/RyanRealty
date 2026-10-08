@@ -445,10 +445,10 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
     // Server-side generate_lead so attribution survives ad-blockers.
     await fireLeadGenerated({
       lp_variant: 'buyer-listing-alerts',
-      lead_type: 'buyer',
+      lead_type: 'buyer_alerts',
+      form_id: 'buyer_alerts_lp',
       lead_classification: classification,
       broker_slug: assignment.broker,
-      value: 300,
       event_id: eventId,
       fub_person_id: fubPersonId,
       extra: {

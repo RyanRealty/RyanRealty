@@ -16,7 +16,7 @@
 
 import { collapseExpiredPeerCycles, peerMatchesSubject } from '@/lib/cma/market-status'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
-import type { CmaBandRival } from '@/lib/cma/band-rivals'
+import { competitionAreaSentence, type CmaBandRival } from '@/lib/cma/band-rivals'
 import type { CmaSubject } from '@/lib/cma/types'
 import { letterProductMatch } from '@/lib/cma/market-area'
 import { compAreaContains, salesAreaIsBounded, type CompArea } from '@/lib/pricing/comp-area'
@@ -90,18 +90,111 @@ export function dedupeRivalsByAddress(rivals: readonly CmaBandRival[]): CmaBandR
   return [...byAddr.values()]
 }
 
+/** What `peerMatchesSubject` reads off the subject. */
+type SubjectKeys = Pick<CmaSubject, 'listingKey' | 'mlsNumber' | 'streetAddress'>
+
+function hasSubjectKeys(subject: unknown): subject is SubjectKeys {
+  const s = subject as Partial<SubjectKeys> | null | undefined
+  return Boolean(s && (s.listingKey?.trim() || s.mlsNumber?.trim() || s.streetAddress?.trim()))
+}
+
+/**
+ * THE SUBJECT IS NEVER ITS OWN COMPETITION.
+ *
+ * 3062 NW Kelly Hill is Active, and the band read it was priced against
+ * returned its own listing: the status table counted "Active 1 home
+ * $699,999", the chapter said "1 home like yours is for sale", the map drew
+ * "A 3062 Kelly Hill" at 0.00 miles beside "Your home", and the owner's own
+ * $75,001 cut was printed as somebody else's (reader review 2026-10-08). The
+ * build now leaves it out of the read (lib/cma/assemble-competition.ts); a
+ * stored row still carries it, so the render takes it out by listing key,
+ * and any other record of the same house by address (`peerMatchesSubject`).
+ */
+export function isSubjectListing(
+  row: { listingKey?: string | null; address?: string | null },
+  subject: unknown,
+): boolean {
+  return hasSubjectKeys(subject) && peerMatchesSubject(row, subject)
+}
+
 export function activeRivalsFor(
   rivals?: readonly CmaBandRival[] | null,
-  subject?: { propertySubType?: string | null } | null,
+  subject?: ({ propertySubType?: string | null } & Partial<SubjectKeys>) | null,
   area?: CompArea | null,
 ): CmaBandRival[] {
-  const named = dedupeRivalsByAddress((rivals ?? []).filter((r) => r.address.trim() && r.listPrice > 0))
+  const named = dedupeRivalsByAddress(
+    (rivals ?? []).filter((r) => r.address.trim() && r.listPrice > 0 && !isSubjectListing(r, subject)),
+  )
   const kept = named.filter(
     (r) =>
       letterProductMatch(subject?.propertySubType, r.propertySubType) &&
       insideSalesBoundary(area, r),
   )
   return [...kept.filter((r) => r.status === 'Active'), ...kept.filter((r) => r.status === 'Pending')]
+}
+
+/**
+ * A stored competition set with the subject's own listing taken out, and the
+ * counts that included it taken down by the same homes.
+ *
+ * The stored sentence counted the home itself ("1 home like yours is for
+ * sale"), so when a home is taken out it is recounted over the same area,
+ * band and rules (`competitionAreaSentence`), never printed as stored. A
+ * city-band row with no area keeps no sentence; the chapter then writes its
+ * own over the counts it draws.
+ */
+export type CompetitionSet = {
+  lo: number
+  hi: number
+  activeCount: number
+  pendingCount: number
+  rivals: CmaBandRival[]
+  sentence: string | null
+}
+
+export function competitionSetWithoutSubject(
+  set:
+    | {
+        lo: number
+        hi: number
+        activeCount: number
+        pendingCount: number
+        rivals?: readonly CmaBandRival[] | null
+        sentence?: string | null
+        area?: CompArea | null
+        unlikeCount?: number
+        shortOfFive?: boolean
+      }
+    | null
+    | undefined,
+  subject: unknown,
+): CompetitionSet | null {
+  if (!set) return null
+  const all = [...(set.rivals ?? [])]
+  const sentence = set.sentence?.trim() || null
+  const own = all.filter((r) => isSubjectListing(r, subject))
+  if (own.length === 0) {
+    return { lo: set.lo, hi: set.hi, activeCount: set.activeCount, pendingCount: set.pendingCount, rivals: all, sentence }
+  }
+  const rivals = all.filter((r) => !own.includes(r))
+  const activeCount = Math.max(0, set.activeCount - own.filter((r) => r.status === 'Active').length)
+  const pendingCount = Math.max(0, set.pendingCount - own.filter((r) => r.status === 'Pending').length)
+  const recounted =
+    sentence && set.area
+      ? competitionAreaSentence({
+          area: set.area,
+          lo: set.lo,
+          hi: set.hi,
+          activeCount,
+          pendingCount,
+          shown: rivals.length,
+          likeYours: rivals.length > 0,
+          unlikeCount: set.unlikeCount,
+          shortOfFive: set.shortOfFive,
+          rivals,
+        })
+      : null
+  return { lo: set.lo, hi: set.hi, activeCount, pendingCount, rivals, sentence: recounted }
 }
 
 /**

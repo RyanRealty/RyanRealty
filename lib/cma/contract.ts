@@ -18,7 +18,12 @@
 
 import type { CmaAdjustedComp, CmaPricing } from '@/lib/cma/types'
 import { productTypeCompatible } from '@/lib/cma/market-area'
-import { carriedRoomDecision, type RoomCompared } from '@/lib/pricing/room-ground'
+import {
+  carriedRoomDecision,
+  roomGroundLocationOf,
+  type RoomCompared,
+  type RoomGroundLocation,
+} from '@/lib/pricing/room-ground'
 import { printedBaths } from '@/lib/pricing/bath-count'
 import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaAudit } from '@/lib/cma/audit'
@@ -92,6 +97,16 @@ export function evaluateAccuracyContract(args: {
   subjectBeds?: number | null
   /** Recorded plat. A phase-family sale is graded with this, not the MLS name. */
   subjectSubdivisionSlug?: string | null
+  /**
+   * Where the subject sits, as the picker read it for the one-room rule's own
+   * ground: its street, plat name and point (the mapped neighborhood is
+   * resolved from the point). lib/cma/build.ts passes the resolved subject. A
+   * sale the picker stamped is graded on the stamp; this is what an unstamped
+   * sale is graded on, so it is decided on the same ground the picker uses,
+   * not off own ground for want of a location (cma-20435-powder-mountain,
+   * 2026-10-08).
+   */
+  subjectGround?: RoomGroundLocation | null
   /**
    * The rungs the selection actually used. The disclosed widening
    * (`widened-disclosed-24mo`) only runs when the bounded ladder came up
@@ -256,8 +271,10 @@ export function evaluateAccuracyContract(args: {
   // on the counts the picker compared (lib/pricing/room-ground.ts
   // carriedRoomDecision), so this gate cannot refuse a sale the picker kept
   // because the MLS bath split reached one of them and not the other
-  // (cma-1117-milwaukee, 2026-10-08). A sale with no stamp is decided here.
+  // (cma-1117-milwaukee, 2026-10-08). A sale with no stamp is decided here,
+  // with the subject's location, so its own ground is the picker's own ground.
   const roomSubject = {
+    ...roomGroundLocationOf(args.subjectGround),
     beds: subjectBeds,
     baths: subjectBaths,
     bathsFull: args.subjectBathsFull ?? null,

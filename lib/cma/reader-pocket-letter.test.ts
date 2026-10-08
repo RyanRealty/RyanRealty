@@ -60,8 +60,11 @@ describe('2382 Jackson: the pocket note stays internal', () => {
     const text = out.join(' ')
     expect(text).not.toMatch(ENGINE_NOTE)
     expect(text).not.toContain('moved -8.1 percent')
+    // The sentence names the city-wide figure, its months and its size
+    // (reader review, 62475 Woodsman, 2026-10-08): the move is Bend's, not
+    // the subdivision's own trend.
     expect(out[0]).toBe(
-      "To bring each sale to today's market, we moved it down by how much Bend's median price per square foot fell between the month it sold and the last three full months.",
+      "To bring each sale to today's market, we moved it down by how much Bend's median price per square foot fell between the month it sold and the last three full months, July to September 2026. That figure is built from 2,606 home sales across all of Bend over the last 12 months, not only the sales in Holliday Park, and a rise in it never moves a sale up.",
     )
     // The sale-to-ask share still follows it.
     expect(text).toContain('Homes in Bend are selling for 95.8 percent of the price they first asked.')
@@ -83,7 +86,7 @@ describe('2382 Jackson: the pocket note stays internal', () => {
     )
     const two = comps.map((c, i) => (i < 2 ? c : { ...c, timeAdjustment: 0 }))
     expect(salesMethodSentences({ subject, comps: two, pricing })[0]).toBe(
-      "To bring the sales to today's market, we moved two of the five down by how much Bend's median price per square foot fell between the month each sold and the last three full months. The other three are not moved.",
+      "To bring the sales to today's market, we moved two of the five down by how much Bend's median price per square foot fell between the month each sold and the last three full months, July to September 2026. The other three are not moved. That figure is built from 2,606 home sales across all of Bend over the last 12 months, not only the sales in Holliday Park, and a rise in it never moves a sale up.",
     )
   })
 })

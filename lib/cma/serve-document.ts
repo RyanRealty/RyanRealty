@@ -127,6 +127,7 @@ export async function immersiveFromRow(
                   boundaryShown: map.boundaryShown,
                   parentShown: map.parentShown,
                   radiusShown: map.radiusShown,
+                  streetPlaceShown: map.streetPlaceShown,
                 } satisfies CompPinMapOverlay,
               }
             } catch {

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
-import { trackEvent, readRrSessionId } from '@/lib/tracking'
+import { readRrSessionId } from '@/lib/tracking'
 import { submitFsboLPForm, saveFsboPartialAddress } from './actions'
 import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
@@ -93,11 +93,7 @@ export default function FsboLPForm({ heroVariant = false, formId = 'fsbo-form' }
           // Pixel suppressed (consent gate). Server CAPI still fires.
         }
       }
-      try {
-        trackEvent('generate_lead', { source: 'fsbo_lp', classification: 'hot' })
-      } catch {
-        // tracking helper missing in some envs; ignore.
-      }
+      // GA4 generate_lead is sent once, by the server action (lib/lead-tracking.ts).
       setStep('success')
     })
   }

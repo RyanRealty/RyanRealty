@@ -18,6 +18,8 @@ import {
 } from '@/lib/cma/gap-hold'
 import type { CmaPricing } from '@/lib/cma/types'
 import type { ContractCheck } from '@/lib/cma/contract'
+import { pocketLocalReadOf, readListingMarketMove } from '@/lib/cma/listing-window-market'
+import { isPocketTimeBasis } from '@/lib/pricing/exclusive-pocket-date-adj'
 
 /**
  * The sales caption as a bare ring: "Within one mile of your home." That is
@@ -460,6 +462,52 @@ export function countedRowsInDocumentCheck(args: {
   }
 }
 
+/**
+ * DOWN ONLY IF LOCAL FELL (Matt 2026-10-08). A pocket letter priced with the
+ * local gate (`timeAdjustment.localGate`) moves a sale down for date only
+ * when its own local page prints a per-foot fall. A letter that moved a sale
+ * while that page prints held flat, rose or no trend, or whose page reads a
+ * different verdict from the one the price was gated on, fails the save.
+ * Rows priced before the gate carry no `localGate` and are not graded.
+ */
+export function pocketDateFollowsLocalReadCheck(args: {
+  timeAdjustment?: { basis?: unknown; localGate?: unknown } | null
+  comps?: readonly { timeAdjustment?: number | null }[] | null
+  listingMarket?: unknown
+}): ContractCheck {
+  const id = 'pocket-date-follows-local-read'
+  const ta = args.timeAdjustment
+  const gate = ta?.localGate && typeof ta.localGate === 'object' ? (ta.localGate as { verdict?: unknown }) : null
+  if (!ta || !isPocketTimeBasis(ta.basis) || !gate) {
+    return { id, severity: 'hard', pass: true, detail: 'Not a pocket priced with the local gate.' }
+  }
+  const page = pocketLocalReadOf(readListingMarketMove(args.listingMarket))
+  const gated = gate.verdict === 'fell' || gate.verdict === 'held flat' || gate.verdict === 'rose' ? gate.verdict : null
+  if (page.verdict !== gated) {
+    return {
+      id,
+      severity: 'hard',
+      pass: false,
+      detail: `The local page reads "${page.verdict ?? 'no trend'}" but the date move was gated on "${gated ?? 'no trend'}".`,
+    }
+  }
+  const movedDown = (args.comps ?? []).filter((c) => (c.timeAdjustment ?? 0) <= -1).length
+  if (movedDown > 0 && page.verdict !== 'fell') {
+    return {
+      id,
+      severity: 'hard',
+      pass: false,
+      detail: `${movedDown} sale(s) moved down for date while the local page reads "${page.verdict ?? 'no trend'}".`,
+    }
+  }
+  return {
+    id,
+    severity: 'hard',
+    pass: true,
+    detail: movedDown > 0 ? 'Sales moved down for date and the local page reads a fall.' : 'No sale moved down for date.',
+  }
+}
+
 export function evaluateLetterConsistencyContract(args: {
   html: string
   names: LetterNameSource | null | undefined
@@ -482,6 +530,8 @@ export function evaluateLetterConsistencyContract(args: {
   printedPlaces?: readonly (string | null | undefined)[] | null
   /** Where the sales sit, and the chart. Absent on older callers, which skip these checks. */
   place?: LetterPlaceSource | null
+  /** The pocket's date gate against the local page (Matt 2026-10-08). Absent on older callers. */
+  pocketDate?: Parameters<typeof pocketDateFollowsLocalReadCheck>[0] | null
 }): { pass: boolean; checks: ContractCheck[] } {
   const checks: ContractCheck[] = [
     letterOwnerNameCheck(args.html, args.names, {
@@ -501,6 +551,7 @@ export function evaluateLetterConsistencyContract(args: {
     }),
     letterAdjustmentClaimCheck(args.html),
     ...letterPlaceChecks(args.html, args.place),
+    ...(args.pocketDate ? [pocketDateFollowsLocalReadCheck(args.pocketDate)] : []),
   ]
   return { pass: checks.every((c) => c.pass), checks }
 }

@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
   applyDetachedOverlay,
+  assembleDetachedHeadlines,
   assembleSupplyFloor,
   cityDetachedSlug,
   overlayDetachedLayers,
@@ -244,5 +245,46 @@ describe('supply floor (a withheld months of supply, said with its count)', () =
     expect(read({ complete_through: '2026-09-20' })).toBeNull()
     expect(read({ sample_n: 30 })).toBeNull()
     expect(assembleSupplyFloor('neighborhood', 'tetherow', new Map())).toBeNull()
+  })
+})
+
+describe('headline assembly carries the closed count months of supply divides by (2026-10-08)', () => {
+  // city:bend detached, mt-v1, computed 2026-10-08T00:22:44Z: active 712,
+  // months_of_supply 3.49019607843137 with sample_n 1224 under method
+  // `active / (closed_180d / 6)`. The CMA letter printed "712" and "204 sold
+  // each month"; 1224 / 6 = 204 is the denominator a reviewer needs to see.
+  const cell = (stat_id: string, over: Record<string, unknown> = {}) => ({
+    stat_id,
+    geo_type: 'city',
+    geo_slug: 'bend',
+    value: null,
+    value_text: null,
+    is_publishable: true,
+    sample_n: 0,
+    withheld_reason: null,
+    complete_through: '2026-10-06',
+    period_end: '2026-10-07',
+    window_months: 6,
+    computed_at: '2026-10-08T00:22:44.125613+00:00',
+    ...over,
+  })
+  const bend = (mosOver: Record<string, unknown> = {}) =>
+    new Map<string, never>([
+      ['city:bend:active_count', cell('active_count', { value: 712, sample_n: 712, window_months: 0 }) as never],
+      ['city:bend:months_of_supply', cell('months_of_supply', { value: 3.49019607843137, sample_n: 1224, ...mosOver }) as never],
+      ['city:bend:market_verdict', cell('market_verdict', { value: 3.49019607843137, value_text: 'seller', sample_n: 1224 }) as never],
+    ])
+
+  it('712 active over 1224 six-month closes is the 3.49 the cell stores', () => {
+    const mt = assembleDetachedHeadlines('city', 'bend', bend())
+    expect(mt?.activeCount).toBe(712)
+    expect(mt?.closedSixMonths).toBe(1224)
+    expect(mt!.activeCount / (mt!.closedSixMonths! / 6)).toBeCloseTo(mt!.monthsOfSupply, 10)
+    expect(mt?.verdictKind).toBe('sellers')
+  })
+
+  it('a missing or nonsense sample_n is null, never a guessed count', () => {
+    expect(assembleDetachedHeadlines('city', 'bend', bend({ sample_n: null }))?.closedSixMonths).toBeNull()
+    expect(assembleDetachedHeadlines('city', 'bend', bend({ sample_n: 0 }))?.closedSixMonths).toBeNull()
   })
 })

@@ -18,6 +18,7 @@ import {
   buildExpiredPeerSet,
   keptCompMedianPpsf,
   marketAreaPriceBand,
+  peerMatchesSubject,
   type CmaExpiredPeerSet,
 } from '@/lib/cma/market-status'
 import {
@@ -55,18 +56,28 @@ function rowsInBand(rows: readonly CmaBandListingRow[], band: { lo: number; hi: 
   })
 }
 
-export async function assembleCompetition(args: {
+/** The fields of a priced sale the search story and the sales area read. */
+type SalesAreaComp = Pick<
+  CmaAdjustedComp,
+  'address' | 'subdivision' | 'subdivisionSlug' | 'selectionTier' | 'latitude' | 'longitude'
+>
+
+/**
+ * The search story and the one sales area, off the sales that price. Pure.
+ *
+ * assembleCompetition reads it for the letter, and the build reads it BEFORE
+ * any sale is adjusted for date, so the local listing-window read the
+ * exclusive-pocket date gate acts on (Matt 2026-10-08, "Down only if local
+ * fell") is measured over the same area as the local page that prints it.
+ * None of the fields it reads moves with an adjustment.
+ */
+export function salesSearchAndArea(args: {
   subject: CmaSubject
-  comps: readonly CmaAdjustedComp[]
-  verdicts: readonly { listingKey?: string; tier?: string; reason?: string }[]
+  comps: readonly SalesAreaComp[]
   diagnostics: CompSelectionDiagnostics
-  recommended: number
   subjectZone: string | null
-  generatedAtIso: string
 }) {
   const { subject } = args
-  const renderComps = attachCompConcessions(applyCompVerdicts(args.comps, args.verdicts))
-  const parcels = await resolveCmaParcels({ subject, comps: renderComps }).catch(() => null)
   const compSearch = buildCompSearch({
     subdivision: args.diagnostics.subject.subdivision ?? subject.subdivision,
     subjectStreet: subject.streetAddress,
@@ -76,7 +87,7 @@ export async function assembleCompetition(args: {
       monthsBack: t.months_back,
       compsAdded: t.comps_added,
     })),
-    keptComps: renderComps.map((c) => ({
+    keptComps: args.comps.map((c) => ({
       address: c.address,
       subdivision: c.subdivision,
       selectionTier: c.selectionTier,
@@ -96,13 +107,34 @@ export async function assembleCompetition(args: {
       city: subject.city,
     },
     rungs: (compSearch?.rungs ?? []).map((r) => ({ key: r.key, kept: r.kept, added: r.added })),
-    keptComps: renderComps.map((c) => ({
+    keptComps: args.comps.map((c) => ({
       subdivision: c.subdivision,
       subdivisionSlug: c.subdivisionSlug ?? null,
       selectionTier: c.selectionTier,
       latitude: c.latitude,
       longitude: c.longitude,
     })),
+  })
+  return { compSearch, compArea }
+}
+
+export async function assembleCompetition(args: {
+  subject: CmaSubject
+  comps: readonly CmaAdjustedComp[]
+  verdicts: readonly { listingKey?: string; tier?: string; reason?: string }[]
+  diagnostics: CompSelectionDiagnostics
+  recommended: number
+  subjectZone: string | null
+  generatedAtIso: string
+}) {
+  const { subject } = args
+  const renderComps = attachCompConcessions(applyCompVerdicts(args.comps, args.verdicts))
+  const parcels = await resolveCmaParcels({ subject, comps: renderComps }).catch(() => null)
+  const { compSearch, compArea } = salesSearchAndArea({
+    subject,
+    comps: renderComps,
+    diagnostics: args.diagnostics,
+    subjectZone: args.subjectZone,
   })
   const competitionRings = compArea
     ? resolveCompetitionArea({
@@ -131,7 +163,11 @@ export async function assembleCompetition(args: {
           propertySubType: subject.propertySubType,
           priceLo: peerBand.lo,
           priceHi: peerBand.hi,
-        }).catch(() => null)
+        })
+          // A read that threw is not evidence that nothing came off (§0):
+          // no set, and the citation says `source: none`.
+          .then((read) => (read?.failed ? null : read))
+          .catch(() => null)
       : Promise.resolve(null),
     widestCompetitionRing && firstBand
       ? getCmaAreaBandInventory({
@@ -164,18 +200,25 @@ export async function assembleCompetition(args: {
       longitude: r.longitude,
       beds: r.beds,
       baths: r.baths,
+      bathsFull: r.bathsFull ?? null,
+      bathsHalf: r.bathsHalf ?? null,
       sqft: r.sqft,
       yearBuilt: r.yearBuilt,
       propertySubType: r.propertySubType,
+      publicRemarks: r.publicRemarks ?? null,
     })
     fits.set(r.listingKey, fit)
     return fit
   }
+  // The subject's own listing is never its competition: a home on the market
+  // sits inside its own band and came back as "1 home like yours is for sale"
+  // (3062 NW Kelly Hill, reader review 2026-10-08). Out by listing key, and by
+  // address for any other record of the same house.
   const toRivals = (inv: CmaAreaBandInventory): CmaBandRival[] =>
     [
       ...inv.activeRows.map((r) => bandRowToRival(r, 'Active')),
       ...inv.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
-    ].filter((r): r is CmaBandRival => r != null)
+    ].filter((r): r is CmaBandRival => r != null && !peerMatchesSubject(r, subject))
   const stamp = (all: readonly CmaBandRival[]): CmaBandRival[] =>
     all.flatMap((r) => {
       const fit = fitOf(r)
@@ -408,6 +451,12 @@ export function assembleExpiredPeers(args: {
           closedSaleAddresses: competition.renderComps.map((c) => c.address),
           subjectCameOff: args.lastCycleFailed,
           liveAddresses: (competition.bandRivals?.rivals ?? []).map((rival) => rival.address),
+          // A house that came off, relisted and sold (or is listed again) did
+          // not come off unsold (cma-1648-pheasant, 2026-10-08).
+          laterCycles: competition.unsoldRead.laterCycles ?? [],
+          // The list-price window the unsold read counted, so the sentence
+          // that says its count names it (reader review 2026-10-08).
+          priceBand: competition.peerBand,
         })
       : null
   return { expiredPeers, compsLookbackMonths }

@@ -5,9 +5,10 @@
 
 import { realSubdivision } from '@/lib/cma/comp-tiers'
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
-import { communityForAddress, memberPlatMap, saleInsideSubjectCommunity, searchCommunitySlug } from '@/lib/cma/community-location'
+import { saleInsideSubjectCommunity, saleSearchCommunitySlug, searchCommunitySlug } from '@/lib/cma/community-location'
 import { isResortCommunity } from '@/lib/cma/resort-guard'
-import { resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
+import { anchorPlacePhrase, resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
+import { describePriceTierLine, insidePriceTier, priceTierLine } from '@/lib/pricing/price-tier'
 import { saleSetsThePrice } from '@/lib/pricing/price-set'
 import { locationMatchFromFacts, type LocationMatch } from '@/lib/pricing/closed-comp-weight'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
@@ -17,6 +18,7 @@ import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divi
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
 import {
+  aduSaleRefused,
   classifyAgeBand,
   customLotCompatible,
   hoaCompatible,
@@ -284,6 +286,21 @@ export type PricingLadderRung = {
    * toward the five, and the walk went on in order.
    */
   notSetting: number
+  /**
+   * Sales this rung would have taken whose remarks state an ADU, skipped
+   * because the subject's remarks state none (Matt 2026-10-08, "ADU sale
+   * skips", aduSaleRefused in lib/pricing/classes.ts). A skipped sale is like
+   * one that never qualified: not seated, not marked seen, and a later rung
+   * that reaches it skips it again. Absent on a rung that did not run.
+   */
+  aduSkipped?: number
+  /**
+   * Sales that passed every other wall this rung holds and sit outside the one
+   * 20% price line around the home's anchor (lib/pricing/price-tier.ts). They
+   * are skipped, and the walk goes on in the same order. Zero when the home has
+   * no anchor, and on the own-plat rungs, which the line does not grade.
+   */
+  priceTier?: number
 }
 
 export type PricingMatchResult = {
@@ -291,6 +308,8 @@ export type PricingMatchResult = {
   /** The $/sqft tier every comp was graded against, or null when none could be
    *  resolved — meaning nothing cut a comp on price on this build. */
   priceAnchor?: PriceAnchor | null
+  /** Distinct sales the one 20% price line skipped over the whole walk. */
+  priceTierSkipped?: number
   tiersUsed: string[]
   trace: string[]
   reachedTarget: boolean
@@ -307,6 +326,12 @@ export type PricingMatchResult = {
   inferredPocket?: InferredPocket | null
   /** The own-plat age-restricted share the walk graded against (PricingSubject). */
   ownPlatAgeRestrictedShare?: number | null
+  /**
+   * Distinct sales the ADU wall skipped over the whole walk (each counted once,
+   * however many rungs reached it). Zero when the subject's own remarks state
+   * an ADU, since then nothing is skipped (aduSaleRefused).
+   */
+  aduSkipped?: number
   /**
    * Closed sales held from own-street / own-plat / street-cluster rungs.
    * Geography widening is skipped when closed+pending is a tight set.
@@ -415,9 +440,11 @@ function applesOk(
     },
     asOfYear,
   )
-  // ONE ROOM RULE for beds and baths alike, custom/new included
-  // (Matt 2026-09-10, skill 0.1). Same function the comparability review uses.
-  if (!roomCountsDecision(subject, sale).ok) return false
+  // The ONE ROOM RULE is not decided here. Every door into the set (the
+  // walk's rungs and the size bracket) calls pickerRoomDecision itself, and
+  // the seated sale carries that same decision (toSelected). This test used to
+  // run its own copy without the own-plat test, so it refused a one-room sale
+  // on the subject's recorded plat that rule 4 keeps.
   if (customOrNew) {
     if (!customLotCompatible(subject.lotAcres, sale.lotAcres)) return false
   } else {
@@ -557,7 +584,7 @@ type ParentWallRung = Partial<
  */
 function parentWallAdmits(subject: PricingSubject, sale: PricingSale, rung: ParentWallRung, asOfYear: number): boolean {
   const subjectCommunity = searchCommunitySlug(subject)
-  const saleCommunity = searchCommunitySlug(sale, memberPlatMap(subjectCommunity, subject.communityMemberPlats))
+  const saleCommunity = saleSearchCommunitySlug(subject, sale)
   const confined = parentConfines(subject)
   const crossesCommunity = !confined && (Boolean(rung.crossBoundary) || Boolean(rung.whenStarved))
   if (rung.sameCommunity) {
@@ -621,9 +648,10 @@ function passesTier(
 ): {
   ok: boolean
   miles: number | null
-  roomDifference?: Array<'beds' | 'baths'> | null
   roomDecision?: RoomDecision | null
   sewerNote?: string | null
+  /** True when every other wall passed and the one 20% price line refused it. */
+  priceTier?: boolean
 } {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return { ok: false, miles: null }
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
@@ -676,9 +704,12 @@ function passesTier(
   if (!applesOk(subject, sale, tier.apples, asOfYear, allowFeatureCross)) {
     return { ok: false, miles: null }
   }
-  // ONE ROOM RULE (skill 0.1). Same function the review uses. Own-plat is own
-  // ground, so one room apart is noted; two or more is refused everywhere.
-  const rooms = roomCountsDecision(subject, { ...sale, ownPlat: ownPlat || inSubjectPlat(subject, sale) })
+  // ONE ROOM RULE (rule 4). The picker's one call (pickerRoomDecision), the
+  // same one the size bracket makes and the seated sale carries. Own plat and
+  // own street are own ground, so one room apart is noted; two or more is
+  // refused everywhere. (The own-street rung's sale is a sameStreetPeer, which
+  // roomCountsDecision reads as own ground itself.)
+  const rooms = pickerRoomDecision(subject, sale)
   if (!rooms.ok) return { ok: false, miles: null }
   if (!ownPlat && !ageOk(subject.yearBuilt, sale.yearBuilt, asOfYear, tier.ageYears)) {
     return { ok: false, miles: null }
@@ -740,6 +771,7 @@ function passesTier(
   // Same-subdivision sales are the same tier and the same polygon by definition.
   // Custom/new year-quality peers skip the $/sqft tier cut so a North Rim
   // custom sale is not tossed as "too luxury" against a custom subject.
+  let outsidePriceLine = false
   if (!tier.sameSubdivision) {
     // The neighborhood polygon was held above by parentWallAdmits.
     const subjectArea = areaOf(subject)
@@ -759,28 +791,44 @@ function passesTier(
     ) {
       return { ok: false, miles: null }
     }
-    // THE SUBJECT ALWAYS HAS A PRICE TIER. When its own plat has no cell — an
-    // MLS record carrying "N/A", or a plat with too few sales — the cut above
-    // compares null to null and passes everything. The anchor is the
-    // neighborhood around the home, or the mile around it, and every comp is
-    // graded on its own $/sqft against it.
-    const subjectPpsf = subj?.medianPpsf ?? anchor?.ppsf ?? null
-    const subjectN = subj?.n ?? anchor?.n ?? 0
     // The same plan on the same street is this home's tier, whatever a
     // neighborhood median says (lib/pricing/price-anchor.ts).
     const ownStreet = sameStreetPeer(
       { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft },
       { address: sale.address, city: sale.city, sqft: sale.sqft },
     )
-    const gradeOnOwnPpsf = !ownStreet && (!comp || !sale.subdivisionNorm || subj == null)
-    if (gradeOnOwnPpsf) {
-      // Custom and new subjects keep the FLOOR and lose the ceiling. A custom
-      // home selling far above its neighborhood's median is what custom means;
-      // being priced from a sale far below it is not. See customSalePriceFloorOk.
-      const ok = customPeer
-        ? customSalePriceFloorOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)
-        : untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)
-      if (!ok) return { ok: false, miles: null }
+    const line = priceTierLine(anchor?.ppsf)
+    if (line) {
+      // ONE 20% LINE (Matt 2026-10-08, lib/pricing/price-tier.ts). Every sale
+      // off the subject's own plat and off its own-street twin is graded on its
+      // OWN closed $/sqft (close_ppsf, before date adjustment) against the
+      // home's independent anchor, the same line the comparability review
+      // grounds a price-tier cut on. It replaces the 30% tier gap, which seated
+      // 2400 Jones at $381 against a $498 anchor and left the review to cut it.
+      // The sale is not refused here: every other wall below still runs first,
+      // so the rung counts only the sales the line alone kept out.
+      // Custom and new subjects keep the floor and lose the ceiling, as before.
+      if (!ownStreet && !insidePriceTier(sale.closePpsf, line, { floorOnly: customPeer })) {
+        outsidePriceLine = true
+      }
+    } else {
+      // NO ANCHOR: TODAY'S BEHAVIOR, UNCHANGED. With fewer than ANCHOR_MIN_N
+      // sales in the neighborhood and every ring there is no independent line
+      // to draw, so a cell-less sale is graded on its own $/sqft against the
+      // subject's own plat cell when it has one, at the old tier ratio, and
+      // passes when it has none (untieredSalePriceTierOk fails open).
+      const subjectPpsf = subj?.medianPpsf ?? null
+      const subjectN = subj?.n ?? 0
+      const gradeOnOwnPpsf = !ownStreet && (!comp || !sale.subdivisionNorm || subj == null)
+      if (gradeOnOwnPpsf) {
+        // Custom and new subjects keep the FLOOR and lose the ceiling. A custom
+        // home selling far above its neighborhood's median is what custom means;
+        // being priced from a sale far below it is not. See customSalePriceFloorOk.
+        const ok = customPeer
+          ? customSalePriceFloorOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)
+          : untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)
+        if (!ok) return { ok: false, miles: null }
+      }
     }
   }
 
@@ -791,13 +839,14 @@ function passesTier(
   if (tier.maxMiles != null) {
     if (miles == null || miles > tier.maxMiles) return { ok: false, miles }
   }
+  // Every wall passed. The price line is the only thing keeping it out.
+  if (outsidePriceLine) return { ok: false, miles, priceTier: true }
   const sewerNote = saleInsideSubjectCommunity(subject, sale)
     ? sewerPlatNote(subject.sewerClass, sale.sewerClass, sale.address)
     : null
   return {
     ok: true,
     miles,
-    roomDifference: rooms.notes.length > 0 ? rooms.notes : null,
     roomDecision: rooms,
     sewerNote,
   }
@@ -824,7 +873,7 @@ const BRACKET_OFF_PLAT_MAX_MILES = 1
 export function saleLocationMatch(subject: PricingSubject, sale: PricingSale): LocationMatch {
   const plat = sale.subdivisionSlug?.trim() || null
   const subjectCommunity = searchCommunitySlug(subject)
-  const saleCommunity = searchCommunitySlug(sale, memberPlatMap(subjectCommunity, subject.communityMemberPlats))
+  const saleCommunity = saleSearchCommunitySlug(subject, sale)
   const subjectArea = areaOf(subject)
   const saleStreet = streetKey(sale.address)
   const recordedPlat = subjectHasRecordedSubdivision(subject) && subject.inferredPocket?.inferred !== true
@@ -844,11 +893,43 @@ export function saleLocationMatch(subject: PricingSubject, sale: PricingSale): L
   })
 }
 
-function toSelected(subject: PricingSubject, sale: PricingSale, asOf: string, tierName: string): SelectedPricingComp {
+/**
+ * THE PICKER'S ONE-ROOM DECISION (rule 4), the one call every door into the
+ * set makes: each rung of the walk (passesTier), the size bracket
+ * (bracketEligible), and the stamp every seated sale carries (toSelected).
+ * Own ground is the subject's own plat by the same-subdivision rung's own test
+ * (inSubjectPlat: the recorded polygon or a phase of it, else the MLS name, or
+ * the street-cluster pocket), plus what roomCountsDecision reads itself (the
+ * MLS plat name, the mapped neighborhood, the own street, the phase family).
+ *
+ * The stamp is what every later check re-runs (carriedRoomDecision in
+ * lib/pricing/room-ground.ts). Before 2026-10-08 the size bracket seated a
+ * sale without it, and the accuracy contract, which reads only the subject's
+ * room counts, decided that sale off own ground and refused it:
+ * cma-20435-powder-mountain (60645 Taos, 3 full baths against 2, inside the
+ * subject's mapped neighborhood) and cma-63264-rossby (63127 Vista Meadow,
+ * 4 bed against 3, inside the subject's mapped neighborhood).
+ */
+function pickerRoomDecision(subject: PricingSubject, sale: PricingSale): RoomDecision {
+  return roomCountsDecision(subject, { ...sale, ownPlat: inSubjectPlat(subject, sale) })
+}
+
+function toSelected(
+  subject: PricingSubject,
+  sale: PricingSale,
+  asOf: string,
+  tierName: string,
+  /** The decision the door that admitted the sale already made; computed when absent. */
+  rooms: RoomDecision = pickerRoomDecision(subject, sale),
+): SelectedPricingComp {
   return {
     ...sale,
     selectionTier: tierName,
     setsPrice: true,
+    // Every seated sale carries the picker's room decision and, when it kept a
+    // one-room gap on own ground, the disclosure the letter prints beside it.
+    roomDecision: rooms,
+    roomDifference: rooms.notes.length > 0 ? rooms.notes : null,
     ownPlat: inSubjectPlat(subject, sale),
     locationMatch: saleLocationMatch(subject, sale),
     proximity: proximityLabel(
@@ -922,6 +1003,78 @@ function bracketWallRung(subject: PricingSubject, sale: PricingSale): ParentWall
   return {}
 }
 
+/**
+ * THE RUNGS A SIZE SWAP STANDS IN FOR, for their year band and story rule
+ * (2026-10-08). The bracket checked the walls, the price line, rule 4 and the
+ * ADU wall, but no year band and no story rule, so on 711 Georgia (built
+ * 2016) it seated 355 Delaware (built 1925) from a touching plat, a sale every
+ * touching-plat rung had refused on the year band, in place of the only
+ * own-street sale.
+ *
+ * Null for the subject's own ground (its plat, or its own street at its size):
+ * the own-plat and own-street rungs carry no year band or story rule there
+ * (passesTier's ownPlat), so neither does the swap. A touching plat stands in
+ * for the touching-plat rungs, the next row for the next-row rungs. Anything
+ * else stands in for every rung of the walk's ladder that could reach the
+ * sale where it sits (its distance, the pocket, the subject's community, a
+ * rural subject's rural rungs), never the boundary exit, the starved widening
+ * or a peer community, which a size swap never stands behind (bracketWallRung).
+ * The sale passes when one of those rungs' year band and story rule passes it.
+ */
+function bracketStandInRungs(
+  subject: PricingSubject,
+  sale: PricingSale,
+  tiers: readonly PricingTier[],
+): PricingTier[] | null {
+  if (inSubjectPlat(subject, sale)) return null
+  if (
+    sameStreetPeer(
+      { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft },
+      { address: sale.address, city: sale.city, sqft: sale.sqft },
+    )
+  ) {
+    return null
+  }
+  const plat = sale.subdivisionSlug?.trim()
+  if (plat && (subject.adjacentSubdivisionSlugs ?? []).includes(plat)) return tiers.filter((t) => t.adjacentSubdivision)
+  if (plat && (subject.closerSubdivisionSlugs ?? []).includes(plat)) return tiers.filter((t) => t.closerSubdivision)
+  const miles = distanceMiles(
+    { lat: subject.latitude, lng: subject.longitude },
+    { lat: sale.latitude, lng: sale.longitude },
+  )
+  const saleStreet = streetKey(sale.address)
+  const inPocket =
+    (Boolean(sale.subdivisionNorm) && (subject.pocketSubdivisionNorms ?? []).includes(sale.subdivisionNorm!)) ||
+    Boolean(saleStreet && (subject.pocketStreetKeys ?? []).includes(saleStreet))
+  const subjectCommunity = searchCommunitySlug(subject)
+  const inCommunity = subjectCommunity != null && saleSearchCommunitySlug(subject, sale) === subjectCommunity
+  return tiers.filter((t) => {
+    if (t.sameStreetOnly || t.sameSubdivision || t.adjacentSubdivision || t.closerSubdivision) return false
+    if (t.crossBoundary || t.whenStarved || t.likeCommunity) return false
+    if (t.sameCommunity && !inCommunity) return false
+    if (t.samePocket && !inPocket) return false
+    if (t.ruralOnly && !subject.ruralAcreage) return false
+    if (t.maxMiles != null && (miles == null || miles > t.maxMiles)) return false
+    return true
+  })
+}
+
+/** True when a rung the swap stands in for would pass the sale on its year band and story rule. */
+function bracketYearAndStoryOk(
+  subject: PricingSubject,
+  sale: PricingSale,
+  tiers: readonly PricingTier[],
+  asOfYear: number,
+): boolean {
+  const standIn = bracketStandInRungs(subject, sale, tiers)
+  if (standIn == null) return true
+  return standIn.some(
+    (t) =>
+      ageOk(subject.yearBuilt, sale.yearBuilt, asOfYear, t.ageYears) &&
+      storyOk(subject.storyClass, sale.storyClass, t.sameStory),
+  )
+}
+
 function bracketEligible(
   subject: PricingSubject,
   sale: PricingSale,
@@ -931,6 +1084,8 @@ function bracketEligible(
    *  reach into the whole city pool on size alone. */
   anchor: PriceAnchor | null = null,
   cells: Map<string, SubdivisionCell> = new Map(),
+  /** The walk's own ladder, for the year band and story rule of the rung the swap stands in for. */
+  tiers: readonly PricingTier[] = pricingTierLadder(),
 ): boolean {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return false
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) return false
@@ -948,6 +1103,15 @@ function bracketEligible(
   // Without them a plat-less subject's swap reached the whole pool.
   if (!parentWallAdmits(subject, sale, bracketWallRung(subject, sale), asOfYear)) return false
   if (!applesOk(subject, sale, 'product_lot', asOfYear)) return false
+  // The year band and story rule of the rung this swap stands in for
+  // (bracketStandInRungs): a sale that rung would refuse on age or stories
+  // is not a size fix (711 Georgia, 2026-10-08).
+  if (!bracketYearAndStoryOk(subject, sale, tiers, asOfYear)) return false
+  // Rule 4, the walk's own call. A swap never seats a sale the rule refuses,
+  // and a one-room sale it keeps goes in carrying that decision (toSelected).
+  if (!pickerRoomDecision(subject, sale).ok) return false
+  // The ADU wall (Matt 2026-10-08), the same one every rung applies at the door.
+  if (aduSaleRefused(subject.publicRemarks, sale.publicRemarks)) return false
   const customOrNew = isCustomOrNewSubject(
     {
       yearBuilt: subject.yearBuilt,
@@ -989,17 +1153,33 @@ function bracketEligible(
   // The bracket may not import a different price tier. A swap is a size fix,
   // not a licence to reach across town.
   {
-    const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
-    const subjectPpsf = subj?.medianPpsf ?? anchor?.ppsf ?? null
-    const subjectN = subj?.n ?? anchor?.n ?? 0
-    const ratio = subject.marketArea != null ? SAME_NEIGHBORHOOD_TIER_RATIO : undefined
     // Custom and new keep the FLOOR here too. Skipping the cut outright let the
     // bracket swap reach past the ladder and import the cheap sale the ladder
     // itself had just refused.
-    const ok = customOrNew
-      ? customSalePriceFloorOk(subjectPpsf, subjectN, sale.closePpsf, ratio)
-      : untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, ratio)
-    if (!ok) return false
+    const line = priceTierLine(anchor?.ppsf)
+    if (line) {
+      // The same one 20% line the walk admits on (lib/pricing/price-tier.ts),
+      // so a size swap never seats a sale the review would drop for price.
+      // The walk's two exemptions hold here too: the subject's own plat and
+      // its own-street twin are its price tier, and the review restores them.
+      const exempt =
+        inSubjectPlat(subject, sale) ||
+        sameStreetPeer(
+          { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft },
+          { address: sale.address, city: sale.city, sqft: sale.sqft },
+        )
+      if (!exempt && !insidePriceTier(sale.closePpsf, line, { floorOnly: customOrNew })) return false
+    } else {
+      // No anchor: today's behavior, graded on the subject's own plat cell.
+      const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
+      const subjectPpsf = subj?.medianPpsf ?? null
+      const subjectN = subj?.n ?? 0
+      const ratio = subject.marketArea != null ? SAME_NEIGHBORHOOD_TIER_RATIO : undefined
+      const ok = customOrNew
+        ? customSalePriceFloorOk(subjectPpsf, subjectN, sale.closePpsf, ratio)
+        : untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, ratio)
+      if (!ok) return false
+    }
   }
   if (wantLarger) return sale.sqft > subject.sqft
   return sale.sqft < subject.sqft
@@ -1024,6 +1204,8 @@ function bracketGla(
    * imports a sale that does not set the price.
    */
   setsPrice: (sale: SelectedPricingComp) => boolean = () => true,
+  /** The walk's ladder (bracketEligible reads the rung the swap stands in for). */
+  tiers: readonly PricingTier[] = pricingTierLadder({ customOrNew: customLadder }),
 ): { comps: SelectedPricingComp[]; note: string | null } {
   if (comps.length === 0) return { comps, note: null }
   const allLarger = comps.every((c) => c.sqft > subject.sqft)
@@ -1035,7 +1217,7 @@ function bracketGla(
   const candidates = pool.filter(
     (sale) =>
       !kept.has(sale.listingKey) &&
-      bracketEligible(subject, sale, asOf, wantLarger, anchor, cells) &&
+      bracketEligible(subject, sale, asOf, wantLarger, anchor, cells, tiers) &&
       setsPrice(toSelected(subject, sale, asOf, 'gla-bracket')),
   )
   if (candidates.length === 0) return { comps, note: null }
@@ -1417,9 +1599,13 @@ function capPricingSet(
   return { kept, bench, widening: !ownGround }
 }
 
-/** A neighborhood polygon or a community boundary confines the search. */
+/**
+ * A neighborhood polygon or a community that walls the search confines it.
+ * A community made up from a plat name, with no HOA, is an ordinary plat and
+ * confines nothing (searchCommunitySlug, Matt 2026-10-08).
+ */
 function parentConfines(subject: PricingSubject): boolean {
-  return Boolean(subject.marketArea) || Boolean(communityForAddress(subject))
+  return Boolean(subject.marketArea) || Boolean(searchCommunitySlug(subject))
 }
 
 /**
@@ -1487,6 +1673,12 @@ export function walkPricingLadder(
     tiers?: PricingTier[]
     /** Pending listings in the same pocket — hold exclusivity, never enter the closed set. */
     pendingPool?: PricingSale[]
+    /**
+     * How many months of closes the pool holds (selectPricingComps reads 24,
+     * or 30 for a custom or new home). Only the trace's anchor sentence reads
+     * it, so the window it states is the one the pool was read over.
+     */
+    anchorWindowMonths?: number
   },
 ): PricingMatchResult {
   const recordedPlat = subjectHasRecordedSubdivision(rawSubject)
@@ -1503,10 +1695,18 @@ export function walkPricingLadder(
   }
   const asOf = opts.asOf.slice(0, 10)
   const cells = opts.cells ?? new Map()
-  // The subject's price tier, resolved once. Only consulted where its own plat
-  // cell is missing or thin — a subject WITH a real cell is graded exactly as
-  // before (lib/pricing/price-anchor.ts).
-  const priceAnchor = resolvePriceAnchor(subject, pool)
+  // The subject's price tier, resolved once (lib/pricing/price-anchor.ts). With
+  // it, every sale off the own plat and the street twin is graded on the one
+  // 20% line around it, whether or not the plats have cells (Matt 2026-10-08).
+  // Without it, the plat cells grade as before. Read from the home as its MLS
+  // row and plat read left it, not the inferred pocket: the anchor's levels are
+  // its own recorded plat, that plat's family, and its own MLS subdivision name
+  // before any wider ground.
+  const priceAnchor = resolvePriceAnchor(rawSubject, pool)
+  // The one 20% line around it (lib/pricing/price-tier.ts), or null with no anchor.
+  const priceLine = priceTierLine(priceAnchor?.ppsf)
+  /** Distinct sales the price line skipped, across every rung. */
+  const priceTierKeys = new Set<string>()
   const asOfYearForLadder = Number(asOf.slice(0, 4))
   const customLadder = isCustomOrNewSubject(
     {
@@ -1526,8 +1726,16 @@ export function walkPricingLadder(
   let exclusiveCount = 0
   const exclusivePending = (opts.pendingPool ?? []).filter((p) => saleInExclusivePocket(subject, p)).length
   const trace: string[] = [
-    `As-of ${asOf}. Named subdivision and its street cluster first (own street, same plat, pocket names and streets), exclusive while that set holds a tight closed+pending group. Then the plats next to it inside the same neighborhood or community, then distance inside that boundary, then similar-performing subdivisions; the boundary is crossed only when it supplied fewer than ${BOUNDARY_EXIT_BELOW} sales. Year and quality outrank radius only when exclusive closed sales sit below ${BOUNDARY_EXIT_BELOW}. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, and on acreage the zoning class (farm or forest against rural residential), outbuildings, and usable land, zoning when both sides have a zone in town, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
+    `As-of ${asOf}. Named subdivision and its street cluster first (own street, same plat, pocket names and streets), exclusive while that set holds a tight closed+pending group. Then the plats next to it inside the same neighborhood or community, then distance inside that boundary, then similar-performing subdivisions; the boundary is crossed only when it supplied fewer than ${BOUNDARY_EXIT_BELOW} sales. Year and quality outrank radius only when exclusive closed sales sit below ${BOUNDARY_EXIT_BELOW}. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, and on acreage the zoning class (farm or forest against rural residential), outbuildings, and usable land, zoning when both sides have a zone in town, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs, a subdivision $/sqft tier gap between plats, and ${priceLine ? `off the subject's own plat and street twin, a sale's own $/sqft inside ${describePriceTierLine(priceLine)} (one 20% line around this home's price anchor, the same line the comparability review holds)` : 'no price line around the home itself, because no price anchor could be resolved'}.`,
   ]
+  if (priceAnchor && priceLine) {
+    // Where the line was read, by name (Matt 2026-10-08): the narrowest level
+    // that held a fair median, so a reader can see it is this home's own area.
+    const windowText = opts.anchorWindowMonths ? ` that closed in the last ${opts.anchorWindowMonths} months` : ''
+    trace.push(
+      `Price tier: homes of this size sell for about $${priceLine.anchor} a square foot ${anchorPlacePhrase(priceAnchor)} (median of ${priceAnchor.n} sales${windowText}). Off this home's own plat and street, sales outside ${describePriceTierLine(priceLine)} are a different market and are not used.`,
+    )
+  }
   if (subject.inferredPocket?.inferred && subject.inferredPocket.subdivision) {
     trace.push(
       `MLS SubdivisionName was blank, so the search inferred ${subject.inferredPocket.subdivision} (${subject.inferredPocket.source}) before any mile ring.`,
@@ -1590,15 +1798,16 @@ export function walkPricingLadder(
    * ground, that own-ground place) competes for the seats left.
    */
   let reachedOnTier: string | null = null
+  /** Distinct sales the ADU wall skipped, for the diagnostics (counted once each). */
+  const aduSkippedKeys = new Set<string>()
 
   // Rule 20, resolved once: a pure function of subject x sale, independent of
   // the rung. Every input is stamped before the walk (toSelected stamps
   // ownPlat; the selector stamps communityLocated and communitySlug on each
   // row; sqft and lotAcres are row fields).
   const subjectCommunity = searchCommunitySlug(subject)
-  const platMap = memberPlatMap(subjectCommunity, subject.communityMemberPlats)
   const setsPrice = (sale: SelectedPricingComp): boolean => {
-    const saleCommunity = searchCommunitySlug(sale, platMap)
+    const saleCommunity = saleSearchCommunitySlug(subject, sale)
     return saleSetsThePrice({
       ownPlat: sale.ownPlat,
       subjectSubdivision: subject.subdivision,
@@ -1677,9 +1886,9 @@ export function walkPricingLadder(
               clusterPocket: isClusterPocket(subject),
             })
           ? `the pocket already supplied a tight closed+pending set (${exclusiveCount} closed, ${exclusivePending} pending), so the search stayed exclusive`
-        : tier.sameCommunity && !communityForAddress(subject)
+        : tier.sameCommunity && !subjectCommunity
         ? 'the subject is not inside a planned or golf community'
-        : tier.likeCommunity && !isResortCommunity(communityForAddress(subject))
+        : tier.likeCommunity && !isResortCommunity(subjectCommunity)
         ? 'the subject is not inside a golf or resort community'
         : tier.likeCommunity && byKey.size >= PRICING_MIN_COMPS
         ? 'the community supplied the minimum, so no peer community was needed'
@@ -1746,6 +1955,8 @@ export function walkPricingLadder(
     }
     let added = 0
     let rungNotSetting = 0
+    let rungAduSkipped = 0
+    let rungPriceTier = 0
     const slugOrder = tier.adjacentSubdivision
       ? (subject.adjacentSubdivisionSlugs ?? [])
       : tier.closerSubdivision
@@ -1770,17 +1981,41 @@ export function walkPricingLadder(
       // agrees with itself on price even when it disagrees on square footage.
       const saleKey = `${sale.address.trim().toLowerCase()}|${(sale.city ?? '').trim().toLowerCase()}|${Math.round(sale.closePrice)}`
       if (bySale.has(saleKey)) continue
-      const { ok, roomDifference, roomDecision, sewerNote } = passesTier(subject, sale, tier, asOf, cells, priceAnchor)
+      const { ok, roomDecision, sewerNote, priceTier } = passesTier(
+        subject,
+        sale,
+        tier,
+        asOf,
+        cells,
+        priceAnchor,
+      )
+      if (priceTier) {
+        // Outside the one 20% line: skipped and counted, the walk goes on in
+        // the same order. Not added to bySale, so the line is re-read on each
+        // rung exactly as every other wall is.
+        rungPriceTier++
+        priceTierKeys.add(sale.listingKey)
+        continue
+      }
       if (!ok) continue
+      // A SALE WITH AN ADU NEVER PRICES A HOME WITHOUT ONE (Matt 2026-10-08,
+      // "ADU sale skips"; aduSaleRefused, the reader the review and the
+      // listings ladder apply too). The rung would have taken it; it is
+      // skipped like a sale that never qualified, so it is not marked seen,
+      // does not count toward the five, and the walk goes on in order.
+      if (aduSaleRefused(subject.publicRemarks, sale.publicRemarks)) {
+        rungAduSkipped++
+        aduSkippedKeys.add(sale.listingKey)
+        continue
+      }
       // The subdivision-median tier does not see this close. Once the plat has
       // a sale, a different plat has to land on that set's own prices.
       if (!customLadder && !inSubjectPlat(subject, sale) && !closeNearOwnPlat(subject, sale, byKey.values())) {
         continue
       }
       const selected: SelectedPricingComp = {
-        ...toSelected(subject, sale, asOf, tier.name),
-        roomDifference: roomDifference ?? null,
-        roomDecision: roomDecision ?? null,
+        // Stamped with the room decision this rung just made (toSelected).
+        ...toSelected(subject, sale, asOf, tier.name, roomDecision ?? undefined),
         sewerNote: sewerNote ?? null,
         setsPrice: true,
       }
@@ -1805,7 +2040,17 @@ export function walkPricingLadder(
       added,
       runningTotal: byKey.size,
       notSetting: rungNotSetting,
+      aduSkipped: rungAduSkipped,
+      priceTier: rungPriceTier,
     })
+    if (rungPriceTier > 0 && priceLine) {
+      // No rung name in the line: the comp-search sentence reads the trace for
+      // the widest month and mile figures, and a rung that only skipped sales
+      // did not supply one (lib/cma/render-comp-search.ts).
+      trace.push(
+        `${rungPriceTier} sale(s) passed this rung's other walls and sold outside ${describePriceTierLine(priceLine)}, this home's price tier, so they were skipped and the search went on.`,
+      )
+    }
     if (rungNotSetting > 0) {
       trace.push(
         `${rungNotSetting} sale(s) passed this rung but do not set the price (another community, or a clearly different size or product), so they do not count toward the five and the search went on.`,
@@ -1824,6 +2069,11 @@ export function walkPricingLadder(
     if (reachedOnTier == null && byKey.size >= PRICING_TARGET_COMPS) reachedOnTier = tier.name
   }
 
+  if (aduSkippedKeys.size > 0) {
+    trace.push(
+      `Skipped ${aduSkippedKeys.size} sale(s) whose remarks state an ADU, guest house or other second living unit: this home's remarks state none, so a sale carrying a second unit does not set its price (Matt 2026-10-08).`,
+    )
+  }
   const pocketStarved = pocketStarvedForYearQuality(exclusiveCount)
   const ranked = [...byKey.values()].sort(
     (a, b) => similarity(subject, b, asOf, pocketStarved) - similarity(subject, a, asOf, pocketStarved),
@@ -1835,7 +2085,7 @@ export function walkPricingLadder(
   const sitting = hadOwnPlat ? ranked : pocketSalesSitWithKept(ranked, customLadder)
   const seats = capPricingSet(subject, sitting, PRICING_WALK_CAP, reachedOnTier)
   const sliced = seats.kept
-  const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder, setsPrice)
+  const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder, setsPrice, tiers)
   if (bracketed.note) {
     if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')
     trace.push(bracketed.note)
@@ -1880,8 +2130,10 @@ export function walkPricingLadder(
     reachedOnWidening: seats.widening,
     bench,
     priceAnchor,
+    priceTierSkipped: priceTierKeys.size,
     inferredPocket: subject.inferredPocket ?? null,
     ownPlatAgeRestrictedShare: subject.ownPlatAgeRestrictedShare ?? null,
+    aduSkipped: aduSkippedKeys.size,
     exclusiveCount,
     pocketStarved,
     ...(ruralSplits ? { ruralSplits } : {}),

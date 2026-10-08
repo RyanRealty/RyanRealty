@@ -74,6 +74,7 @@ export async function resolveCmaPrintHtmlFromSource(
               boundaryShown: map.boundaryShown,
               parentShown: map.parentShown,
               radiusShown: map.radiusShown,
+              streetPlaceShown: map.streetPlaceShown,
             }
           : null
       } catch {
