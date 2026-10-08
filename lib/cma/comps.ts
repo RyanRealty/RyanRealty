@@ -103,6 +103,7 @@ import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divi
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
 import {
+  aduSaleRefused,
   customLotCompatible,
   dropsResaleVersusNewBuild,
   isCustomOrNewSubject,
@@ -1145,6 +1146,15 @@ export async function selectComps(
         rung.excluded.product_type++
         continue
       }
+      // A SALE WITH AN ADU NEVER PRICES A HOME WITHOUT ONE (Matt 2026-10-08,
+      // "ADU sale skips"). The same reader the facts walk, the review and the
+      // backstop apply (aduSaleRefused, lib/pricing/classes.ts). Not
+      // symmetric: a subject with an ADU may use sales with and without one.
+      // The sale is not held, so it is skipped like one that never qualified.
+      if (aduSaleRefused(subject.publicRemarks, comp.publicRemarks)) {
+        rung.excluded.adu_sale++
+        continue
+      }
 
       // ONE ROOM RULE for beds and baths alike, custom/new included
       // (Matt 2026-09-10, skill 0.1). Same function the comparability review uses.
@@ -1297,6 +1307,11 @@ export async function selectComps(
   if (x.product_type > 0) {
     trace.push(
       `Excluded ${x.product_type} comp(s) on product type. A townhome, condo, or manufactured home is not comparable to a detached house at any distance, per Fannie Mae B4-1.3-08.`,
+    )
+  }
+  if (x.adu_sale > 0) {
+    trace.push(
+      `Skipped ${x.adu_sale} sale(s) whose remarks state an ADU, guest house or other second living unit: this home's remarks state none, so a sale carrying a second unit does not set its price (Matt 2026-10-08).`,
     )
   }
   if (x.year_quality > 0) {
@@ -1674,6 +1689,7 @@ const REFUSAL_CUT_LABELS: Partial<Record<keyof CompExclusionCounts, string>> = {
   outbuildings: 'different outbuildings',
   terrain: 'different land',
   not_price_setting: 'sitting in a different community, or a clearly different size or product, so they do not set the price',
+  adu_sale: 'carrying an ADU or other second living unit your home does not have',
 }
 
 export function brokerCompRefusal(args: {

@@ -130,6 +130,34 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, propertySubType: null }).ok).toBe(true)
   })
 
+  it('applies the ADU wall the sales walk applies (Matt 2026-10-08, "ADU sale skips"), one way', () => {
+    const adu = { ...ALDRICH, publicRemarks: 'Craftsman with a permitted detached ADU over the garage, both units rented.' }
+    // A subject whose remarks state no ADU (or carry none) never shows an ADU home as like yours.
+    expect(sameAreaFit(AREA, { ...COHO, publicRemarks: 'Space to build an ADU on the big lot.' }, adu)).toEqual({
+      ok: false,
+      reason: 'adu',
+    })
+    expect(sameAreaFit(AREA, COHO, adu)).toEqual({ ok: false, reason: 'adu' })
+    // A subject with its own ADU keeps both kinds.
+    const aduSubject = { ...COHO, publicRemarks: 'Home with a guest house out back.' }
+    expect(sameAreaFit(AREA, aduSubject, adu).ok).toBe(true)
+    expect(sameAreaFit(AREA, aduSubject, { ...ALDRICH, publicRemarks: 'Single level home.' }).ok).toBe(true)
+    // A home whose remarks were not read states nothing, so it stays.
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, publicRemarks: null }).ok).toBe(true)
+  })
+
+  it('applies rule 23 off the remarks too: a duplex is another product, both ways, and unread remarks stay', () => {
+    const duplex = { ...ALDRICH, publicRemarks: 'Updated duplex with an upper unit and a lower unit.' }
+    expect(sameAreaFit(AREA, COHO, duplex)).toEqual({ ok: false, reason: 'product' })
+    const duplexSubject = { ...COHO, publicRemarks: 'Duplex, both units rented.' }
+    expect(sameAreaFit(AREA, duplexSubject, duplex).ok).toBe(true)
+    expect(sameAreaFit(AREA, duplexSubject, { ...ALDRICH, publicRemarks: 'Single level home.' })).toEqual({
+      ok: false,
+      reason: 'product',
+    })
+    expect(sameAreaFit(AREA, duplexSubject, { ...ALDRICH, publicRemarks: null }).ok).toBe(true)
+  })
+
   it('tests a neighborhood area by its polygon, with no year test, as the neighborhood rung has none', () => {
     const inside = { ...ALDRICH, subdivision: null, latitude: 44.0554, longitude: -121.3153 }
     expect(sameAreaFit(OLD_BEND, COHO, inside).ok).toBe(true)

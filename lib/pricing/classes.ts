@@ -147,7 +147,9 @@ export function classifyProduct(subType: string | null | undefined): ProductKey 
  * Saginaw's price. Only wording about the home as it stands counts: "potential
  * for a duplex", "possible redevelopment into ... fourplex" and "zoned for"
  * are hedges and do not. A house with an ADU, guest house or casita is still a
- * detached home, so "both units" beside an ADU does not count either.
+ * detached home, so "both units" beside an ADU does not count either. Whether
+ * a home HAS an ADU is aduFromRemarks below, and its sales are walled from a
+ * home without one by aduSaleRefused (Matt 2026-10-08), not by this reader.
  */
 const MULTI_UNIT_RE =
   /\b(duplex|tri-?plex|four-?plex|quad-?plex|multi-?family|two units|both units|upper unit|lower unit|second unit)\b/gi
@@ -168,6 +170,123 @@ export function multiUnitFromRemarks(remarks: string | null | undefined): boolea
     return true
   }
   return false
+}
+
+/**
+ * THE REMARKS STATE A SECOND LIVING UNIT ON THE LOT (Matt 2026-10-08, "ADU
+ * sale skips"). A sale with an ADU never sets the price of a home without one:
+ * its price carries a second unit the subject lacks, and the subject's own ADU
+ * already counts at zero dollars (rule 2). 644 Norton ("multi-unit property
+ * featuring a permitted ADU and both units") seated on both ladders for 1648
+ * Pheasant, whose remarks only say "space to build an ADU", and the review
+ * dropped it in 3 of 3 passes.
+ *
+ * multiUnitFromRemarks above is a different question and stays as it is: an
+ * ADU home is still a detached home for rule 23's product test. This reader
+ * answers whether the home HAS a second unit; aduSaleRefused below is the one
+ * wall every place applies (both search ladders, the review grounding, the
+ * backstop after the review, and the competition and came-off homes).
+ *
+ * WHAT COUNTS. ADU(s), accessory dwelling (unit), guest house, guesthouse,
+ * guest cottage, casita, guest quarters, granny flat, stated about the home
+ * as it stands.
+ *
+ * MOTHER-IN-LAW (the ruling this reader makes, pinned in classes.test.ts). A
+ * mother-in-law or in-law UNIT, apartment, cottage, house, home, dwelling,
+ * cabin or casita is a second dwelling and counts, and so does a DETACHED
+ * in-law anything. A mother-in-law SUITE, quarters, wing or room does not:
+ * it is usually a bedroom suite inside the house, already in its living area,
+ * and the words cannot tell the two apart. A "separate in-law suite" with a
+ * fireplace and an en suite bath is a bedroom, not a unit. Guest quarters
+ * follow the brief and count, except quarters the same clause puts inside the
+ * house (upstairs, downstairs, lower level, basement, main floor).
+ *
+ * WHAT NEVER COUNTS. Hedged or prospective wording: "potential ADU", "room for
+ * an ADU", "space to build an ADU", "ADU-ready", "ADU potential", "zoned for",
+ * "could add", "possible", "plans for", "approved plans", "eyeing ADU rental
+ * income", a use pitch ("ideal for ... guest quarters"), a negation ("no
+ * ADUs"), and "ADU?". A hedge governs the unit word only when nothing between
+ * them states a feature ("Perfect for multigenerational living, this home
+ * features a detached ADU" counts). Ambiguous wording does not count, so a
+ * comp is kept rather than dropped on a guess.
+ */
+const SECOND_UNIT_RE =
+  /\b(?:adus?|accessory dwelling(?: units?)?|guest ?houses?|guest cottages?|casitas?|guest quarters|granny flats?|(?:mother[- ]in[- ]law|in[- ]law)(?:'?s)?\s+(?:units?|apartments?|apts?|cottages?|house|home|dwelling|cabin|casita|adu)|detached\s+(?:mother[- ])?in[- ]law)\b/gi
+/** A clause ends here; a hedge in an earlier sentence does not govern the unit word. */
+const SECOND_UNIT_CLAUSE_END = /[.!?;:\n\r]|--|\u2014/g
+const SECOND_UNIT_BEFORE_WINDOW = 60
+const SECOND_UNIT_HEDGE_BEFORE =
+  /\b(?:potential(?:ly)?|possib(?:le|ly|ility|ilities)|could|would|might|may|can\s+(?:be|add|build|accommodate|easily|also)|options?\s+(?:for|to|of)|optional|room\s+(?:for|to)|space\s+(?:for|to)|build|building\s+(?:an?|your|out)|add|adding|construct\w*|creat(?:e|ing)|convert\w*|future|plans?\s+(?:for|to)|planned|approved\s+plans?|permits?\s+(?:for|to)|zoned|zoning|allows?|eligib\w*|ready\s+(?:for|to)|dream\w*|eyeing|envision\w*|imagin\w*|consider\w*|explor\w*|bring\s+your|if\s+you|want(?:ed)?\s+to|(?:ideal|perfect|great|suited|suitable|use|used|serve|serves|function|works?)\s+(?:for|as)|think)\b/gi
+/** A stated feature between the hedge and the unit word: the hedge is about something else. */
+const SECOND_UNIT_STATEMENT_BREAK =
+  /\b(?:features?|featuring|includes?|including|has|have|having|offers?|offering|boasts?|plus|comes with|complete with|from)\b/i
+const SECOND_UNIT_NEGATED_BEFORE =
+  /\b(?:no|not|without|never|non)\s+(?:(?:an?|the|any|permitted|legal|separate|detached)\s+)?$/i
+const SECOND_UNIT_HEDGE_AFTER =
+  /^(?:'s)?\s*(?:[-/]\s*)?(?:potential|ready|possib\w*|opportunit\w*|options?|plans?|site|zon(?:ed|ing)|allowed|eligib\w*|friendly|capable|buildable|feasib\w*|(?:is|are|would be|may be|could be|might be|not)\s+(?:allowed|permitted|possible|feasible|an option|buildable)|not\b|prohibited)\b|^\s*\?/i
+const SECOND_UNIT_INSIDE_HOUSE =
+  /\b(?:upstairs|downstairs|lower[- ]level|main[- ]level|main[- ]floor|second[- ]floor|basement|in[- ]home)\s+(?:[\w'-]+\s+)?$/i
+
+function secondUnitClauseBefore(text: string, at: number): string {
+  const slice = text.slice(Math.max(0, at - SECOND_UNIT_BEFORE_WINDOW), at)
+  let cut = 0
+  for (const m of slice.matchAll(SECOND_UNIT_CLAUSE_END)) cut = (m.index ?? 0) + m[0].length
+  return slice.slice(cut)
+}
+
+function secondUnitHedgedBefore(before: string): boolean {
+  let last: RegExpMatchArray | null = null
+  for (const m of before.matchAll(SECOND_UNIT_HEDGE_BEFORE)) last = m
+  if (!last) return false
+  return !SECOND_UNIT_STATEMENT_BREAK.test(before.slice((last.index ?? 0) + last[0].length))
+}
+
+function readSecondUnit(remarks: string): boolean {
+  const text = remarks.replace(/\s+/g, ' ').trim()
+  if (!text) return false
+  for (const m of text.matchAll(SECOND_UNIT_RE)) {
+    const at = m.index ?? 0
+    const before = secondUnitClauseBefore(text, at)
+    if (secondUnitHedgedBefore(before)) continue
+    if (SECOND_UNIT_NEGATED_BEFORE.test(before)) continue
+    if (SECOND_UNIT_HEDGE_AFTER.test(text.slice(at + m[0].length, at + m[0].length + 40))) continue
+    if (/quarters/i.test(m[0]) && SECOND_UNIT_INSIDE_HOUSE.test(before)) continue
+    return true
+  }
+  return false
+}
+
+/**
+ * One read per remarks text. The facts walk grades every pool sale on every
+ * rung, so the same remarks come back pool x rungs times; the answer is a pure
+ * function of the text. Bounded like the age-restriction memo.
+ */
+const SECOND_UNIT_MEMO = new Map<string, boolean>()
+const SECOND_UNIT_MEMO_MAX = 20_000
+
+/** True when the public remarks state this home HAS a second living unit on its lot (an ADU or its like). */
+export function aduFromRemarks(remarks: string | null | undefined): boolean {
+  if (!remarks?.trim()) return false
+  const hit = SECOND_UNIT_MEMO.get(remarks)
+  if (hit !== undefined) return hit
+  const value = readSecondUnit(remarks)
+  if (SECOND_UNIT_MEMO.size >= SECOND_UNIT_MEMO_MAX) SECOND_UNIT_MEMO.clear()
+  SECOND_UNIT_MEMO.set(remarks, value)
+  return value
+}
+
+/**
+ * THE ADU WALL. True when the sale's remarks state an ADU and the subject's do
+ * not, so the sale never sets the subject's price. Not symmetric: a subject
+ * with an ADU may use sales with and without one (its ADU is a letter note,
+ * not dollars, rule 2). Blank remarks on a sale state nothing, so the sale
+ * stays; blank remarks on the subject state no ADU, so ADU sales are refused.
+ */
+export function aduSaleRefused(
+  subjectRemarks: string | null | undefined,
+  saleRemarks: string | null | undefined,
+): boolean {
+  return aduFromRemarks(saleRemarks) && !aduFromRemarks(subjectRemarks)
 }
 
 export function realSubdivisionName(value: string | null | undefined): string | null {

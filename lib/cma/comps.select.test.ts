@@ -868,3 +868,47 @@ describe('selectComps — a sale more than 25% off the subject never sets the pr
     expect(sel.diagnostics.reached_target).toBe(true)
   })
 })
+
+describe('selectComps — a sale with an ADU never prices a home without one (Matt 2026-10-08, "ADU sale skips")', () => {
+  // The listings ladder applies the same reader as the facts walk
+  // (aduSaleRefused, lib/pricing/classes.ts), at the door, counted as
+  // adu_sale, and the sale is skipped like one that never qualified.
+  const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10)
+  const RECENT = daysAgo(45)
+  const NORTON =
+    'Excellent Midtown Bend multi-unit property featuring a permitted ADU, offering flexibility for a variety of living or investment possibilities. Both units feature attractive finishes and functional living spaces.'
+  const PHEASANT =
+    "Single level house in Midtown Bend on a huge lot with room to dream. Outside, you've got space to build an ADU, a 2 car garage, RV parking. Whether you're buying your first home, downsizing, or eyeing ADU rental income, this is a lot of house and land."
+  const plat = (key: string, i: number, over: Record<string, unknown> = {}) =>
+    closedRow({ ListingKey: key, StreetNumber: String(100 + i), ClosePrice: 500_000, CloseDate: RECENT, ...over })
+  const norton = plat('NORTON', 9, { StreetNumber: '644', StreetName: 'Norton', public_remarks: NORTON })
+  const keys = (sel: Awaited<ReturnType<typeof selectComps>>) => sel.comps.map((c) => c.listingKey).sort()
+
+  beforeEach(() => {
+    selectCmaCompsPool.mockReset()
+    selectCmaCompsByKeys.mockReset()
+    selectCmaCompsByKeys.mockResolvedValue([])
+    selectCmaCompsPool.mockImplementation(async (opts: Record<string, unknown>) =>
+      opts.subdivisionIlike === 'Kenwood'
+        ? [plat('A', 0), plat('B', 1), plat('C', 2), plat('D', 3), plat('E', 4), norton]
+        : [],
+    )
+  })
+
+  it('skips the ADU sale for a subject whose remarks only hope for one, and counts it', async () => {
+    const sel = await selectComps(subject({ subdivision: 'Kenwood', publicRemarks: PHEASANT }))
+    expect(keys(sel)).toEqual(['A', 'B', 'C', 'D', 'E'])
+    expect(sel.diagnostics.excluded_totals.adu_sale).toBeGreaterThan(0)
+    expect(sel.diagnostics.excluded_totals.product_type).toBe(0)
+    expect(sel.diagnostics.excluded_totals.not_price_setting).toBe(0)
+    expect(sel.trace.some((t) => t.includes('whose remarks state an ADU'))).toBe(true)
+  })
+
+  it('keeps it for a subject whose remarks state its own ADU (not symmetric)', async () => {
+    const sel = await selectComps(
+      subject({ subdivision: 'Kenwood', publicRemarks: 'Craftsman with a permitted detached ADU over the garage.' }),
+    )
+    expect(keys(sel)).toContain('NORTON')
+    expect(sel.diagnostics.excluded_totals.adu_sale).toBe(0)
+  })
+})

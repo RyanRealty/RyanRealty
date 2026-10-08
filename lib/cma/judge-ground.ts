@@ -33,9 +33,13 @@
  *     it widens closed-sale age and date when the first location search is
  *     short of 3. A 15-year wall here dropped sales the picker kept, so a
  *     vintage exclusion is kept.
- *  8. Structure type: a different MLS sub-type, or remarks that name a
- *     different product (duplex, condo, townhouse, manufactured). "Split-level"
- *     is a story, not a different product.
+ *  8. Structure type: a different MLS sub-type; a multi-unit on one side and
+ *     not the other, read by the search's own reader (multiUnitFromRemarks,
+ *     rule 23); an ADU sale against a subject whose remarks state none
+ *     (aduSaleRefused, Matt 2026-10-08); or remarks that name an attached,
+ *     condo or manufactured product the subject is not. "Split-level" is a
+ *     story, not a different product. A structure claim those readers do not
+ *     back is ignored, whatever basis the model gave it.
  *  9. Location: a place word in the reason (fairway, golf, resort, highway)
  *     must be in the comp remarks or view and not in the subject's.
  * 10. Condition: a condition word in the reason must appear in the comp remarks.
@@ -62,6 +66,7 @@ import {
   type ExclusionBasis,
 } from '@/lib/cma/judge-consistency'
 import { PRICE_SET_SQFT_BAND } from '@/lib/pricing/price-set'
+import { aduSaleRefused, multiUnitFromRemarks } from '@/lib/pricing/classes'
 import { carriedRoomDecision } from '@/lib/pricing/room-ground'
 import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
 
@@ -104,10 +109,27 @@ export type GroundResult = {
   rule: GroundRule
 }
 
-// The three readers agree on the multi-unit words (lib/pricing/classes.ts
-// multiUnitFromRemarks, lib/cma/judgment-prune.ts PRODUCT_REASON, this).
+// ONE READER FOR THE MULTI-UNIT AND ADU WORDS. The search refuses a sale on
+// lib/pricing/classes.ts multiUnitFromRemarks (rule 23, symmetric) and
+// aduSaleRefused (an ADU sale against a home without one, Matt 2026-10-08),
+// and the review grounds a structure exclusion on those same two readers,
+// so a sale the search seats as a plain detached home is never dropped here
+// as a duplex, and an ADU sale the search would skip is. 644 Norton ("multi-
+// unit property featuring a permitted ADU and both units") was seated by both
+// ladders for 1648 Pheasant while a separate word list here backed the
+// review's drop in 3 of 3 passes. The words below are only the attached,
+// condo and manufactured products this grounding still reads on its own.
 const OTHER_PRODUCT =
-  /\b(duplex|tri-?plex|four-?plex|quad-?plex|quadruplex|multi-?unit|both units|townhomes?|townhouses?|condominiums?|condos?|manufactured|mobile home|multi-?family|shared wall|common wall)\b/i
+  /\b(townhomes?|townhouses?|condominiums?|condos?|manufactured|mobile home|shared wall|common wall)\b/i
+
+/**
+ * A reason that claims the sale is a different structure or carries a second
+ * unit. When the readers above do not back it, it is ignored on any basis,
+ * not only "structure-type", so a basis "other" claim with no number cannot
+ * slip through as qualitative.
+ */
+const PRODUCT_CLAIM =
+  /\b(structure[- ]type|product type|different product|duplex(?:es)?|tri-?plex|four-?plex|quad-?plex|quadruplex|multi-?unit|multi-?family|both units|two units|second unit|adus?|accessory dwelling|guest ?house|casitas?|guest quarters|in-law|townhomes?|townhouses?|condominiums?|condos?|manufactured|mobile home|shared wall|common wall)\b/i
 
 const LOCATION_TOKENS = ['fairway', 'golf', 'resort', 'highway', 'parkway', 'lakefront', 'riverfront', 'commercial']
 
@@ -308,7 +330,7 @@ function textOf(subject: CmaSubject, comp: CmaComp): { comp: string; subject: st
   }
 }
 
-function structureSupported(reason: string, subject: CmaSubject, comp: CmaComp): boolean {
+function structureSupported(subject: CmaSubject, comp: CmaComp): boolean {
   if (
     subject.propertySubType &&
     comp.propertySubType &&
@@ -316,11 +338,13 @@ function structureSupported(reason: string, subject: CmaSubject, comp: CmaComp):
   ) {
     return true
   }
+  // Rule 23, read exactly as both ladders read it: symmetric, null remarks fail open.
+  if (multiUnitFromRemarks(comp.publicRemarks) !== multiUnitFromRemarks(subject.publicRemarks)) return true
+  // The ADU wall, read exactly as both ladders read it: not symmetric.
+  if (aduSaleRefused(subject.publicRemarks, comp.publicRemarks)) return true
   const texts = textOf(subject, comp)
-  const inComp = OTHER_PRODUCT.test(texts.comp) || OTHER_PRODUCT.test(reason) && OTHER_PRODUCT.test(texts.comp)
   if (!OTHER_PRODUCT.test(texts.comp)) return false
-  if (OTHER_PRODUCT.test(texts.subject)) return false
-  return inComp
+  return !OTHER_PRODUCT.test(texts.subject)
 }
 
 function tokenSupported(reason: string, tokens: readonly string[], subject: CmaSubject, comp: CmaComp): boolean {
@@ -453,7 +477,7 @@ export function groundVerdict(
     return weakKeep(verdict, 'vintage')
   }
   if (basis === 'structure-type') {
-    if (!structureSupported(reason, subject, comp)) return weakKeep(verdict, 'structure')
+    if (!structureSupported(subject, comp)) return weakKeep(verdict, 'structure')
     return { verdict: { ...verdict }, grounded: true, modelTier: 'exclude', rule: 'structure' }
   }
   if (basis === 'location') {
@@ -478,7 +502,7 @@ export function groundVerdict(
   if (tokenSupported(reason, LOCATION_TOKENS, subject, comp)) {
     return { verdict: { ...verdict }, grounded: true, modelTier: 'exclude', rule: 'location' }
   }
-  if (structureSupported(reason, subject, comp)) {
+  if (structureSupported(subject, comp)) {
     return { verdict: { ...verdict }, grounded: true, modelTier: 'exclude', rule: 'structure' }
   }
   if (lotSupported(reason, subject, comp) && /\b(lot|acre)/i.test(reason)) {
@@ -487,6 +511,8 @@ export function groundVerdict(
   if (/\b(built|vintage|year built)\b/i.test(reason) && /\b(19|20)\d{2}\b/.test(reason)) {
     return weakKeep(verdict, 'vintage')
   }
+  // A structure or second-unit claim the readers do not back (checked above).
+  if (PRODUCT_CLAIM.test(reason)) return weakKeep(verdict, 'structure')
   const hasNumber = /\d/.test(reason)
   if (!hasNumber) {
     return { verdict: { ...verdict }, grounded: true, modelTier: 'exclude', rule: 'qualitative' }

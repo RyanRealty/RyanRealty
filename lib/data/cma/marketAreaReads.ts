@@ -40,6 +40,8 @@ export type CmaMarketAreaRow = {
   property_sub_type?: string | null
   year_built?: number | null
   lot_size_acres?: number | null
+  /** Selected only by the area-scoped unsold read: the came-off fit reads it for the multi-unit and ADU walls (rule 24). */
+  public_remarks?: string | null
 }
 
 const COLS =

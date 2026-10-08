@@ -17,6 +17,7 @@ import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divi
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
 import {
+  aduSaleRefused,
   classifyAgeBand,
   customLotCompatible,
   hoaCompatible,
@@ -284,6 +285,14 @@ export type PricingLadderRung = {
    * toward the five, and the walk went on in order.
    */
   notSetting: number
+  /**
+   * Sales this rung would have taken whose remarks state an ADU, skipped
+   * because the subject's remarks state none (Matt 2026-10-08, "ADU sale
+   * skips", aduSaleRefused in lib/pricing/classes.ts). A skipped sale is like
+   * one that never qualified: not seated, not marked seen, and a later rung
+   * that reaches it skips it again. Absent on a rung that did not run.
+   */
+  aduSkipped?: number
 }
 
 export type PricingMatchResult = {
@@ -307,6 +316,12 @@ export type PricingMatchResult = {
   inferredPocket?: InferredPocket | null
   /** The own-plat age-restricted share the walk graded against (PricingSubject). */
   ownPlatAgeRestrictedShare?: number | null
+  /**
+   * Distinct sales the ADU wall skipped over the whole walk (each counted once,
+   * however many rungs reached it). Zero when the subject's own remarks state
+   * an ADU, since then nothing is skipped (aduSaleRefused).
+   */
+  aduSkipped?: number
   /**
    * Closed sales held from own-street / own-plat / street-cluster rungs.
    * Geography widening is skipped when closed+pending is a tight set.
@@ -948,6 +963,8 @@ function bracketEligible(
   // Without them a plat-less subject's swap reached the whole pool.
   if (!parentWallAdmits(subject, sale, bracketWallRung(subject, sale), asOfYear)) return false
   if (!applesOk(subject, sale, 'product_lot', asOfYear)) return false
+  // The ADU wall (Matt 2026-10-08), the same one every rung applies at the door.
+  if (aduSaleRefused(subject.publicRemarks, sale.publicRemarks)) return false
   const customOrNew = isCustomOrNewSubject(
     {
       yearBuilt: subject.yearBuilt,
@@ -1590,6 +1607,8 @@ export function walkPricingLadder(
    * ground, that own-ground place) competes for the seats left.
    */
   let reachedOnTier: string | null = null
+  /** Distinct sales the ADU wall skipped, for the diagnostics (counted once each). */
+  const aduSkippedKeys = new Set<string>()
 
   // Rule 20, resolved once: a pure function of subject x sale, independent of
   // the rung. Every input is stamped before the walk (toSelected stamps
@@ -1746,6 +1765,7 @@ export function walkPricingLadder(
     }
     let added = 0
     let rungNotSetting = 0
+    let rungAduSkipped = 0
     const slugOrder = tier.adjacentSubdivision
       ? (subject.adjacentSubdivisionSlugs ?? [])
       : tier.closerSubdivision
@@ -1772,6 +1792,16 @@ export function walkPricingLadder(
       if (bySale.has(saleKey)) continue
       const { ok, roomDifference, roomDecision, sewerNote } = passesTier(subject, sale, tier, asOf, cells, priceAnchor)
       if (!ok) continue
+      // A SALE WITH AN ADU NEVER PRICES A HOME WITHOUT ONE (Matt 2026-10-08,
+      // "ADU sale skips"; aduSaleRefused, the reader the review and the
+      // listings ladder apply too). The rung would have taken it; it is
+      // skipped like a sale that never qualified, so it is not marked seen,
+      // does not count toward the five, and the walk goes on in order.
+      if (aduSaleRefused(subject.publicRemarks, sale.publicRemarks)) {
+        rungAduSkipped++
+        aduSkippedKeys.add(sale.listingKey)
+        continue
+      }
       // The subdivision-median tier does not see this close. Once the plat has
       // a sale, a different plat has to land on that set's own prices.
       if (!customLadder && !inSubjectPlat(subject, sale) && !closeNearOwnPlat(subject, sale, byKey.values())) {
@@ -1805,6 +1835,7 @@ export function walkPricingLadder(
       added,
       runningTotal: byKey.size,
       notSetting: rungNotSetting,
+      aduSkipped: rungAduSkipped,
     })
     if (rungNotSetting > 0) {
       trace.push(
@@ -1824,6 +1855,11 @@ export function walkPricingLadder(
     if (reachedOnTier == null && byKey.size >= PRICING_TARGET_COMPS) reachedOnTier = tier.name
   }
 
+  if (aduSkippedKeys.size > 0) {
+    trace.push(
+      `Skipped ${aduSkippedKeys.size} sale(s) whose remarks state an ADU, guest house or other second living unit: this home's remarks state none, so a sale carrying a second unit does not set its price (Matt 2026-10-08).`,
+    )
+  }
   const pocketStarved = pocketStarvedForYearQuality(exclusiveCount)
   const ranked = [...byKey.values()].sort(
     (a, b) => similarity(subject, b, asOf, pocketStarved) - similarity(subject, a, asOf, pocketStarved),
@@ -1882,6 +1918,7 @@ export function walkPricingLadder(
     priceAnchor,
     inferredPocket: subject.inferredPocket ?? null,
     ownPlatAgeRestrictedShare: subject.ownPlatAgeRestrictedShare ?? null,
+    aduSkipped: aduSkippedKeys.size,
     exclusiveCount,
     pocketStarved,
     ...(ruralSplits ? { ruralSplits } : {}),

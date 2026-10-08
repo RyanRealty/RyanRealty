@@ -364,6 +364,36 @@ describe('pickExpiredPeers', () => {
     expect(peers.every((p) => p.listingKey !== 'FALCON-15991')).toBe(true)
   })
 
+  it('a home that came off with an ADU is not like a subject whose remarks state none (Matt 2026-10-08, rule 24)', () => {
+    const offMarket = (key: string, number: string, remarks: string | null) =>
+      row({
+        ListingKey: key,
+        StreetNumber: number,
+        StreetName: 'Wren',
+        StandardStatus: 'Expired',
+        ListPrice: 519_000,
+        ClosePrice: null,
+        CloseDate: null,
+        DaysOnMarket: 97,
+        CumulativeDaysOnMarket: 97,
+        BedroomsTotal: 3,
+        TotalLivingAreaSqFt: 1420,
+        public_remarks: remarks,
+      })
+    const rows = [
+      offMarket('ADU', '88', 'Single level home plus a permitted ADU with its own entrance.'),
+      offMarket('PLAIN', '90', 'Single level home with a fenced yard.'),
+      offMarket('UNREAD', '92', null),
+    ]
+    expect(pickExpiredPeers(rows, { ...subj, publicRemarks: 'Room for an ADU on the big lot.' }).map((p) => p.address).sort()).toEqual([
+      '90 Wren',
+      '92 Wren',
+    ])
+    expect(
+      pickExpiredPeers(rows, { ...subj, publicRemarks: 'Home with a detached guest house.' }).map((p) => p.address).sort(),
+    ).toEqual(['88 Wren', '90 Wren', '92 Wren'])
+  })
+
   it('collapses same-address cycles into one peer with both histories (U2)', () => {
     const peers = pickExpiredPeers(
       [

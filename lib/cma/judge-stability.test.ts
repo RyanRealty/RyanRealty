@@ -371,6 +371,88 @@ describe('exclusion grounding', () => {
   })
 })
 
+describe('structure grounding reads the search readers (Matt 2026-10-08, "ADU sale skips")', () => {
+  // 644 Norton against 1648 Pheasant: both ladders seated Norton while the
+  // review's own word list backed a structure-type drop 3 of 3 passes. The
+  // grounding now asks the same readers the search asks, so the two agree.
+  const NORTON =
+    'Excellent Midtown Bend multi-unit property featuring a permitted ADU, offering flexibility for a variety of living or investment possibilities. Both units feature attractive finishes and functional living spaces.'
+  const PHEASANT =
+    "Single level house in Midtown Bend on a huge lot with room to dream. Outside, you've got space to build an ADU, a 2 car garage, RV parking. Whether you're buying your first home, downsizing, or eyeing ADU rental income, this is a lot of house and land."
+  const norton = comp({ listingKey: 'norton', publicRemarks: NORTON })
+  const structure = verdict({
+    listingKey: 'norton',
+    tier: 'exclude',
+    basis: 'structure-type',
+    reason: 'Multi-unit property with a permitted ADU, not a single-family home like the subject.',
+  })
+
+  it('backs a structure exclusion of an ADU sale for a subject whose remarks state none', () => {
+    const result = groundVerdict(subject({ publicRemarks: PHEASANT }), norton, structure, [norton])
+    expect(result.grounded).toBe(true)
+    expect(result.rule).toBe('structure')
+    expect(result.verdict.tier).toBe('exclude')
+  })
+
+  it('overrides the same exclusion for a subject with its own ADU: the readers call the sale a plain detached home', () => {
+    const result = groundVerdict(
+      subject({ publicRemarks: 'Craftsman with a permitted detached ADU over the garage.' }),
+      norton,
+      structure,
+      [norton],
+    )
+    expect(result.grounded).toBe(false)
+    expect(result.rule).toBe('structure')
+    expect(result.verdict.tier).toBe('weak')
+    expect(result.verdict.reason).toBe(UNGROUNDED_KEEP_REASON)
+  })
+
+  it('backs an ADU exclusion given on basis other, as the search would skip the sale', () => {
+    const result = groundVerdict(
+      subject({ publicRemarks: PHEASANT }),
+      norton,
+      verdict({ listingKey: 'norton', tier: 'exclude', basis: 'other', reason: 'Carries a permitted ADU the subject lacks.' }),
+      [norton],
+    )
+    expect(result.grounded).toBe(true)
+    expect(result.verdict.tier).toBe('exclude')
+  })
+
+  it('a product claim on basis other that the readers do not back is not kept as a qualitative exclusion', () => {
+    const plain = comp({ listingKey: 'plain', publicRemarks: 'Single level home with a fenced yard.' })
+    const result = groundVerdict(
+      subject({ publicRemarks: PHEASANT }),
+      plain,
+      verdict({ listingKey: 'plain', tier: 'exclude', basis: 'other', reason: 'This is a duplex, a different product.' }),
+      [plain],
+    )
+    expect(result.grounded).toBe(false)
+    expect(result.rule).toBe('structure')
+    expect(result.verdict.tier).toBe('weak')
+  })
+
+  it('still backs a duplex by its remarks, and leaves a casita home detached for a subject with a casita', () => {
+    const duplex = comp({ listingKey: 'dup', publicRemarks: 'Updated duplex with an upper unit and a lower unit.' })
+    expect(
+      groundVerdict(
+        subject(),
+        duplex,
+        verdict({ listingKey: 'dup', tier: 'exclude', basis: 'structure-type', reason: 'A duplex.' }),
+        [duplex],
+      ).verdict.tier,
+    ).toBe('exclude')
+    const casita = comp({ listingKey: 'casita', publicRemarks: 'Main home with a detached casita; both units freshly painted.' })
+    expect(
+      groundVerdict(
+        subject({ publicRemarks: 'Adobe home with a guest casita.' }),
+        casita,
+        verdict({ listingKey: 'casita', tier: 'exclude', basis: 'structure-type', reason: 'Both units: a multi-unit.' }),
+        [casita],
+      ).verdict.tier,
+    ).toBe('weak')
+  })
+})
+
 describe('judgeComps stability', () => {
   const sub = subject()
   const comps = [
