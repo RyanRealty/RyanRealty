@@ -476,7 +476,7 @@ describe('the subject is never its own competition', () => {
       subject,
     )!
     expect(band.activeCount).toBe(1)
-    expect(band.rivals.map((r) => r.address)).toEqual(['3001 Bordeaux'])
+    expect((band.rivals ?? []).map((r) => r.address)).toEqual(['3001 Bordeaux'])
     expect(band.source).toContain("this home's own listing left out")
   })
 })
