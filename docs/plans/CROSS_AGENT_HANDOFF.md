@@ -48,6 +48,8 @@ Surface: Claude Code. Branch `claude/beautiful-lamport-2x4fjs`. Main was fast-fo
 
 **Baseline fleet score on the live engine** (scratch run, 141 open Bend expired CMAs): 112 build, 29 fail. Of the 112 builds, 89 sit on five sales and 23 on three or four. Those 23 fail the new floor unless the walk finds more in their own area.
 
+**CMA work: read [`docs/plans/CMA_HANDOFF.md`](CMA_HANDOFF.md) first** (on branch `claude/beautiful-lamport-2x4fjs` until it lands on main). It holds the live state, the in-flight branches, the fleet baseline, the ten drafts, the briefs and the next steps.
+
 **Evening 2026-10-08 (branch at `011530cbc`, pushed; main at `95af9d7bd`, deploy `dpl_33tipxiwy9fhkoDr9UgkMZ2KQSSP` verified).** Main took anchor-family, listing-days, wording-2, rival-fit, trim-over-anchor and street-key (whole street name), and all ten drafts were rebuilt on it. A final reader pass on all ten found defects, fixed on branches and merged here (not yet on main, not rebuilt):
 - One decision for "on the subject's ground" by plat polygon, any MLS spelling: `fix/plat-identity` `fceb282b5` (`lib/pricing/plat-ground.ts`; listings ladder own-plat rungs, place block, came-off and band reads). 1355 Jacksonville now finds 1367 Milwaukee ("Northwest Townsite Co 2nd Addt"); 915 Saginaw's competition now sees 733 Saginaw and 1340 Trenton.
 - Wording round 3: `fix/letter-wording-3` `0ea6cb430` (clamped held covers read "set the range"; pin note; whole elapsed months; tied top weights; held net title; lot-size disclosure under rule 20; "Your last ask was").
