@@ -8,7 +8,8 @@ import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { formatDate } from '@/lib/format/date'
 import { priceHistoryLineCompactHtml, pricePathFromListing } from '@/lib/cma/price-path'
 import { listingHistoryLine as buildListingHistoryLine, liveListingDays } from '@/lib/cma/listing-history-line'
-import { offerRun } from '@/lib/cma/listing-status'
+import { listingStretch, offerRun, type AskChange, type ListingStretch } from '@/lib/cma/listing-status'
+import { AFTER_LAST_ON_MARKET, listingStretchRead } from '@/lib/cma/last-stretch'
 import { compAreaContains, compAreaIn, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { countWord } from '@/lib/pricing/estimate'
 import { publishStreetNumber, publishStreetPart } from '@/lib/listing/publish-street-line'
@@ -60,6 +61,15 @@ export type CmaBandRival = {
   platSlug?: string | null
   originalListPrice?: number | null
   onMarketDate?: string | null
+  /**
+   * Its last stretch on the market (Matt 2026-10-08, "Last stretch, labeled"):
+   * its days count from OnMarketDate, the day it last came on the market, and
+   * its first ask is the price in effect then. 2260 Indigo went Active Jan 29
+   * at $670,000, was withdrawn Jun 8 and came back Jun 15 at $645,000; its 115
+   * days and its cut run from $645,000. Print through last-stretch.ts
+   * listingStretchRead. Absent on rows built before.
+   */
+  stretch?: ListingStretch | null
   listingHistoryLine?: string | null
   /** Miles from the subject. Blank on a stored row until print fills it from coordinates. */
   proximity?: string | null
@@ -264,6 +274,17 @@ export function rivalDays(r: Pick<CmaBandRival, 'status' | 'daysOnMarket' | 'pen
   return { days: r.pendingDate ? n : null, measure: 'offer' }
 }
 
+/**
+ * "115 days on market", "18 days to an offer"; on a stretch that is not the
+ * listing's first, "115 days since it last came on the market" and "18 days to
+ * an offer after it last came on the market" (Matt 2026-10-08).
+ */
+export function rivalDaysFact(days: number, measure: 'offer' | 'on-market', restarted: boolean): string {
+  const count = `${int(days)} ${days === 1 ? 'day' : 'days'}`
+  if (measure === 'offer') return `${count} to an offer${restarted ? ` ${AFTER_LAST_ON_MARKET}` : ''}`
+  return restarted ? `${count} since it last came on the market` : `${count} on market`
+}
+
 function rivalCard(
   r: CmaBandRival,
   subject: CmaBandSubject | null | undefined,
@@ -285,13 +306,12 @@ function rivalCard(
     ctx ?? UNADDRESSED_DOC_LINKS,
   )
   const told = rivalDays(r)
+  const stretch = listingStretchRead(r)
   const facts = joinFacts([
     r.sqft != null && r.sqft > 0 ? `${int(r.sqft)} sqft` : null,
     r.beds != null ? `${int(r.beds)} bd` : null,
     bathsFact(r),
-    told.days != null
-      ? `${int(told.days)} ${told.days === 1 ? 'day' : 'days'} ${told.measure === 'offer' ? 'to an offer' : 'on market'}`
-      : null,
+    told.days != null ? rivalDaysFact(told.days, told.measure, stretch.restarted) : null,
   ])
   const vs = rivalVsSubjectLine(r, subject)
   // Delta 1: "Every active and pending row carries its price history line and
@@ -302,7 +322,7 @@ function rivalCard(
     pricePathFromListing({
       address: r.address,
       listPrice: r.listPrice,
-      originalListPrice: r.originalListPrice ?? null,
+      originalListPrice: stretch.firstAsk,
       onMarketDate: r.onMarketDate ?? null,
       daysOnMarket: told.days,
       status: r.status,
@@ -413,36 +433,54 @@ function median(values: readonly number[]): number {
   return sorted.length % 2 === 1 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2
 }
 
+/**
+ * How far the homes for sale have already come down, from the first ask of
+ * each one's last stretch on the market (Matt 2026-10-08): 2260 Indigo came
+ * back Jun 15 at $645,000 and is asking $550,000, a $95,000 cut over the 115
+ * days its card counts, not $120,000 from its January ask of $670,000. When a
+ * counted home came back on the market, the sentence says the cut is counted
+ * from then.
+ */
 export function competitorCutLine(rivals: readonly CmaBandRival[]): string | null {
-  const known = rivals.filter(
-    (r) =>
-      r.listPrice > 0 &&
-      r.originalListPrice != null &&
-      Number.isFinite(r.originalListPrice) &&
-      r.originalListPrice > 0,
-  )
+  const known = rivals
+    .map((r) => ({ r, stretch: listingStretchRead(r) }))
+    .filter(({ r, stretch }) => r.listPrice > 0 && stretch.firstAsk != null && stretch.firstAsk > 0)
   if (known.length === 0) return null
   const cuts = known
-    .filter((r) => r.originalListPrice! > r.listPrice)
-    .map((r) => ({
-      dollars: r.originalListPrice! - r.listPrice,
-      pct: ((r.originalListPrice! - r.listPrice) / r.originalListPrice!) * 100,
+    .filter(({ r, stretch }) => stretch.firstAsk! > r.listPrice)
+    .map(({ r, stretch }) => ({
+      dollars: stretch.firstAsk! - r.listPrice,
+      pct: ((stretch.firstAsk! - r.listPrice) / stretch.firstAsk!) * 100,
+      restarted: stretch.restarted,
     }))
   const shown = known.length
   if (cuts.length === 0) {
+    const since = known.some(({ stretch }) => stretch.restarted)
+      ? shown === 1
+        ? ' since it last came on the market'
+        : ', each counted from when it last came on the market'
+      : ''
     return shown === 1
-      ? 'The one home below has not come down from its opening price.'
-      : `None of the ${int(shown)} homes below has come down from its opening price.`
+      ? `The one home below has not come down from its opening price${since}.`
+      : `None of the ${int(shown)} homes below has come down from its opening price${since}.`
   }
   // One home has a cut, not a median cut. A median needs two or more
   // (reader review 2026-10-07: "a median cut of $120,000" for one home).
   const cut = `${cuts.length === 1 ? 'a cut of' : 'a median cut of'} ${usd(
     Math.round(median(cuts.map((c) => c.dollars))),
   )}, or ${median(cuts.map((c) => c.pct)).toFixed(1)} percent`
-  if (shown === 1) return `The one home below has already come down, ${cut}.`
+  const anyRestarted = cuts.some((c) => c.restarted)
+  if (shown === 1) {
+    return anyRestarted
+      ? `The one home below has come down since it last came on the market, ${cut}.`
+      : `The one home below has already come down, ${cut}.`
+  }
+  if (cuts.length === 1 && anyRestarted) {
+    return `${int(cuts.length)} of the ${int(shown)} homes below has come down since it last came on the market, ${cut}.`
+  }
   return `${int(cuts.length)} of the ${int(shown)} homes below ${
     cuts.length === 1 ? 'has' : 'have'
-  } already come down, ${cut}.`
+  } already come down, ${cut}${anyRestarted ? ', each counted from when it last came on the market' : ''}.`
 }
 
 export type BandRivalsInput = {
@@ -1028,6 +1066,8 @@ export type BandInventoryRow = BandStreetRow & {
   days_to_pending?: number | null
   /** The recorded plat polygon the area read put the row in (lib/data/cma/bandInventory.ts). */
   plat_slug?: string | null
+  /** The first day it was ever on the market (Active, never Coming Soon): earlier than OnMarketDate when it came back. */
+  original_on_market_timestamp?: string | null
 }
 
 /** A blank MLS field is unknown, never zero: Number(null) is 0, and a null bed count read as 0 beds. */
@@ -1048,6 +1088,41 @@ function finiteOrNull(v: unknown): number | null {
 export function daysSinceOnMarket(onMarketDate: string | null | undefined): number | null {
   if (!onMarketDate) return null
   return liveListingDays(onMarketDate)
+}
+
+/**
+ * A competitor's last stretch on the market (Matt 2026-10-08): it began at
+ * OnMarketDate, the day its days count from, and its first ask is the ask in
+ * effect at that moment. Without the ask history a home that came back has an
+ * unknown first ask unless its ask never moved.
+ */
+export function bandRowStretch(
+  row: Pick<BandInventoryRow, 'OnMarketDate' | 'OriginalListPrice' | 'ListPrice' | 'original_on_market_timestamp'>,
+  askChanges: readonly AskChange[] = [],
+): ListingStretch | null {
+  return listingStretch({
+    startAt: row.OnMarketDate,
+    firstOnMarketAt: row.original_on_market_timestamp ?? null,
+    askChanges,
+    openingAsk: finiteOrNull(row.OriginalListPrice),
+    currentAsk: finiteOrNull(row.ListPrice),
+  })
+}
+
+/** The rival with its stretch, and the history line read off that stretch. */
+export function withRivalStretch(rival: CmaBandRival, stretch: ListingStretch | null): CmaBandRival {
+  if (!stretch) return rival
+  return {
+    ...rival,
+    stretch,
+    listingHistoryLine: buildListingHistoryLine({
+      listPrice: rival.listPrice,
+      originalListPrice: stretch.firstAsk,
+      status: rival.status,
+      onMarketDate: rival.onMarketDate ?? null,
+      daysOnMarket: rival.daysOnMarket,
+    }),
+  }
 }
 
 /** One MLS row as a named competitor. Null when it has no address or no ask. */
@@ -1074,7 +1149,7 @@ export function bandRowToRival(row: BandInventoryRow, status: 'Active' | 'Pendin
     status === 'Pending'
       ? (offer?.days ?? null)
       : (daysSinceOnMarket(row.OnMarketDate) ?? finiteOrNull(row.DaysOnMarket))
-  return {
+  const rival: CmaBandRival = {
     listingKey: row.ListingKey,
     address,
     listPrice,
@@ -1108,4 +1183,7 @@ export function bandRowToRival(row: BandInventoryRow, status: 'Active' | 'Pendin
     // fit, the ring pick, the render) reads the polygon, not the MLS spelling.
     ...(row.plat_slug !== undefined ? { platSlug: row.plat_slug } : {}),
   }
+  // The last stretch off the row alone; the competition read adds the ask
+  // history for the homes it prints (assemble-competition.ts).
+  return withRivalStretch(rival, bandRowStretch(row))
 }

@@ -67,7 +67,7 @@ Each was started by a cloud agent with `docs/plans/cma-handoff/fix-brief.md`.
 | Branch | Ruling (Matt 2026-10-08) | Engine? |
 |---|---|---|
 | `fix/on-market-value` **MERGED** (`199bf68a6`) | On-market subject: the opinion of value is the likely sale the weighted sales point to, not the list figure. Kelly Hill becomes $716,000, not $733,000. Rule 27. | yes (on-market only) |
-| `fix/relist-clock` | Relisted or back-on-market homes use one clock, their last stretch. First ask comes from that stretch, and the row is labeled "after it last came on the market". The subject's first ask is the price in effect when it went Active. | wording/data |
+| `fix/relist-clock` **MERGED** (`32077999a`, SKILL rule 28) | Relisted or back-on-market homes use one clock, their last stretch. First ask comes from that stretch, and the row is labeled "after it last came on the market". The subject's first ask is the price in effect when it went Active. | wording/data |
 | `fix/plat-ground-facts` | A recorded addition or phase in the same neighborhood is the home's own subdivision everywhere, including the facts ladder, weights, room rule, pockets, anchor, date gate and review. Rule 24. | yes |
 
 ## Fleet (rule 25)
@@ -145,6 +145,14 @@ NODE_USE_ENV_PROXY=1 npm run cma:fleet -- --concurrency 4 \
    - **Opinion above the current ask.** Rule 3 never holds on-market origins. Examples: Kelly Hill $716,000 vs $699,999; cma-17171-chaparral $1,525,000 vs $1,225,000; cma-1617-nw-8th $799,000 vs $599,000. Recommended: no new hold, since rule 9 keeps every send with Matt.
    - **Fallback.** When the grid cannot reproduce the weighted sale, the cover keeps the list figure under "Our opinion of value". This is 9 of 12 stored on-market rows, mostly old builds. Recommended: flag those for review.
    - **Our own listings.** The on-market decision treats our own listings as on market too.
+
+7. Relist clock (from `fix/relist-clock`):
+   - **Pricing still reads MLS OriginalListPrice.** This affects two things:
+     - the list-price engine's sale-to-original-ask ratios over relisted comps;
+     - rule 16's cut test in the failed-ask pull. Wild Rose counts as "cut from $625K", but on its last stretch the ask never moved, which allows a larger pull.
+   - Recommendation: move both to the last stretch, scored with `cma:fleet` first. This moves prices, so it is Matt's call.
+   - **"95.7 percent of the price they first asked"** is a city statistic measured from each listing's first ask. Bend's median days use the last stretch. This is a methodology call.
+   - **MLS correction blips** (Pending to Closed to Active to Pending within minutes) can make the last stretch 0 days and print "offer 0 days". This predates the fix and needs its own rule.
 
 ## Backlog (after the drafts ship)
 

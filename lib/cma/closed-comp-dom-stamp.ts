@@ -10,10 +10,12 @@ import {
   listingHistoryLine as buildListingHistoryLine,
 } from '@/lib/cma/listing-history-line'
 import {
+  listingStretch,
   mergeStatusChanges,
-  offerRun,
+  offerRunTimed,
   pacificDay,
   statusKind,
+  type AskChange,
   type ListingStatusChange,
 } from '@/lib/cma/listing-status'
 import type { CmaComp } from '@/lib/cma/types'
@@ -34,6 +36,11 @@ export type ClosedCompListStartExtras = {
   daysToPending?: number | null
   /** The listing row's own DaysOnMarket, before any first-list correction. */
   mlsDaysOnMarket?: number | null
+  /** Every recorded ask change on the listing, with its timestamp. */
+  askChanges?: readonly AskChange[]
+  /** MLS OriginalListPrice / ListPrice off the listing row, when read. */
+  originalListPrice?: number | null
+  listPrice?: number | null
 }
 
 /** The day the listing left Coming Soon, when the status log shows it did. */
@@ -68,7 +75,7 @@ export function stampClosedCompDom(comp: CmaComp, extras: ClosedCompListStartExt
   // (reader review 2026-10-08): Active to Pending, from the status log, else
   // the row's on-market day to its pending timestamp, else days_to_pending.
   // Never from the first list and never from a Coming Soon entry.
-  const offer = offerRun({
+  const offer = offerRunTimed({
     changes,
     onMarketDate: extras.onMarketDate ?? null,
     firstOnMarketAt: extras.originalOnMarketTimestamp ?? null,
@@ -84,6 +91,22 @@ export function stampClosedCompDom(comp: CmaComp, extras: ClosedCompListStartExt
     closeDate,
   })
   const offerFrom = daysToOffer == null ? null : offer ? offer.from : (comp.offerFrom ?? null)
+  // ONE CLOCK: THE LAST STRETCH (Matt 2026-10-08). The first ask printed for
+  // the sale is the ask in effect the moment its offer clock started, and the
+  // row says when that stretch was not the listing's first. 61197 Cottonwood
+  // came back Nov 13 at $774,900; its April listing opened at $849,900.
+  const stretch =
+    offer && offer.fromAt
+      ? listingStretch({
+          startAt: offer.fromAt,
+          changes,
+          firstOnMarketAt: extras.originalOnMarketTimestamp ?? null,
+          listedAt: extras.onMarketDate ?? null,
+          askChanges: extras.askChanges ?? [],
+          openingAsk: extras.originalListPrice ?? comp.originalListPrice ?? null,
+          currentAsk: extras.listPrice ?? comp.listPrice ?? null,
+        })
+      : null
   if (start == null && domTotal == null && !offer) return comp
   const listingHistoryLine = buildListingHistoryLine({
     listPrice: comp.listPrice,
@@ -100,6 +123,7 @@ export function stampClosedCompDom(comp: CmaComp, extras: ClosedCompListStartExt
     domTotal,
     daysToOffer,
     offerFrom,
+    ...(stretch ? { stretch } : {}),
     listingHistoryLine: listingHistoryLine ?? comp.listingHistoryLine,
   }
 }

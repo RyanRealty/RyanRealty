@@ -18,7 +18,14 @@ import {
 import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
 import { areaPlatOutline, rowPlatSlugs, rowStreetAddress } from '@/lib/data/cma/areaUnsoldReads'
 import { subdivisionScopeTrace, subjectPlatGround } from '@/lib/pricing/plat-ground'
-import { bandAroundList, pickBandRivals, rivalAddress, type CmaBandRival } from '@/lib/cma/band-rivals'
+import {
+  bandAroundList,
+  bandRowStretch,
+  pickBandRivals,
+  rivalAddress,
+  withRivalStretch,
+  type CmaBandRival,
+} from '@/lib/cma/band-rivals'
 import { compAreaContains, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import { bathCountCompatible, keepSameProductType } from '@/lib/cma/market-area'
@@ -242,7 +249,7 @@ function rowToRival(row: CmaBandListingRow, status: 'Active' | 'Pending'): CmaBa
   const daysOnMarket =
     daysOnMarketOf(row.OnMarketDate) ??
     (Number.isFinite(Number(row.DaysOnMarket)) ? Number(row.DaysOnMarket) : null)
-  return {
+  const rival: CmaBandRival = {
     listingKey: row.ListingKey,
     address,
     listPrice,
@@ -270,6 +277,9 @@ function rowToRival(row: CmaBandListingRow, status: 'Active' | 'Pending'): CmaBa
       daysOnMarket,
     }),
   }
+  // Its last stretch on the market (Matt 2026-10-08): a home that came back
+  // never prints an earlier stretch's ask.
+  return withRivalStretch(rival, bandRowStretch(row))
 }
 
 export function computeBandPosition(

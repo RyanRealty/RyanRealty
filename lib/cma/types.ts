@@ -8,6 +8,7 @@
  */
 
 import type { CmaMartYearFigure } from '@/lib/cma/market-board-mart'
+import type { ListingStretch } from '@/lib/cma/listing-status'
 import type { LocationMatch } from '@/lib/pricing/closed-comp-weight'
 import type { RoomDecision } from '@/lib/pricing/room-ground'
 import type { SizeAdjustmentBasis } from '@/lib/pricing/size-adjustment'
@@ -46,8 +47,23 @@ export interface CmaSubject {
   taxAnnual: number | null
   standardStatus: string | null
   lastListPrice: number | null
-  /** MLS OriginalListPrice. The ask story starts here when the exposure opens later. */
+  /**
+   * MLS OriginalListPrice: the ask the listing opened at, Coming Soon included.
+   * The price engine reads it. The letter prints the first ask of the home's
+   * last stretch on the market (`stretch`, lib/cma/last-stretch.ts).
+   */
   originalListPrice?: number | null
+  /**
+   * The listing's last stretch on the market (Matt 2026-10-08, "Last stretch,
+   * labeled"): the day it began, the ask in effect at that moment, and whether
+   * it came back. Stamped at build; absent on rows built before.
+   */
+  stretch?: ListingStretch | null
+  /**
+   * The first day this listing was ever on the market (original_on_market_timestamp:
+   * Active, never Coming Soon). Earlier than `lastListDate` when it came back.
+   */
+  firstOnMarketAt?: string | null
   lastListDate: string | null
   listingHistoryLine: string | null
   /**
@@ -159,6 +175,14 @@ export interface CmaComp {
    * came back. Absent on rows built before the status log was read.
    */
   offerFrom?: string | null
+  /**
+   * The listing period that produced the sale, as one clock (Matt 2026-10-08,
+   * "Last stretch, labeled"): the day it began (the day `daysToOffer` counts
+   * from), the ask in effect at that moment, and whether the home had been on
+   * the market before it. Print through lib/cma/last-stretch.ts saleStretch.
+   * Absent on rows built before 2026-10-08.
+   */
+  stretch?: ListingStretch | null
   selectionTier: string
   /** "1.75 miles NW" — Fannie Mae B4-1.3-08 requires distance + direction be reported. */
   proximity?: string | null

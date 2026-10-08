@@ -22,8 +22,11 @@ import {
 } from '@/lib/data/cma/areaUnsoldReads'
 import type { LatLngBounds } from '@/lib/cma/market-area'
 
+// original_on_market_timestamp: the first day a competitor was on the market,
+// so a home that came back is measured and labeled on its last stretch (Matt
+// 2026-10-08, lib/cma/band-rivals.ts bandRowStretch).
 const BAND_SELECT =
-  'ListingKey, StreetNumber, StreetName, ListPrice, OriginalListPrice, StandardStatus, DaysOnMarket, OnMarketDate, PhotoURL, Latitude, Longitude, property_sub_type, BedroomsTotal, BathroomsTotal, baths_full, baths_half, TotalLivingAreaSqFt, year_built, lot_size_acres'
+  'ListingKey, StreetNumber, StreetName, ListPrice, OriginalListPrice, StandardStatus, DaysOnMarket, OnMarketDate, original_on_market_timestamp, PhotoURL, Latitude, Longitude, property_sub_type, BedroomsTotal, BathroomsTotal, baths_full, baths_half, TotalLivingAreaSqFt, year_built, lot_size_acres'
 
 // The band is one city, one property type, one status, inside a +/- price
 // window, so it is bounded in practice. Page it rather than truncating: the
@@ -42,6 +45,8 @@ export type CmaBandListingRow = {
   StandardStatus: string | null
   DaysOnMarket: number | null
   OnMarketDate: string | null
+  /** The first day it was on the market (Active, never Coming Soon). Earlier than OnMarketDate when it came back. */
+  original_on_market_timestamp?: string | null
   PhotoURL: string | null
   Latitude: number | null
   Longitude: number | null

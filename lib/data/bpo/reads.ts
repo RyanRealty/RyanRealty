@@ -44,6 +44,7 @@ const BPO_CYCLE_COLUMNS = [
   'CloseDate',
   'ListDate',
   'OnMarketDate',
+  'original_on_market_timestamp',
   'off_market_date',
   'DaysOnMarket',
   'CumulativeDaysOnMarket',
