@@ -1358,7 +1358,7 @@ describe('tasteReview 3 — the phone document, and the close', () => {
     expect(first).toContain('Your home · 2465 7th')
     // The subject's outcome line, which is where the ask that failed lives in
     // Delta 3's shared column set.
-    expect(first).toMatch(/Came off after \d+ days|Listed \$460,000/)
+    expect(first).toMatch(/came off after \d+ days|listed \$460,000/)
   })
 
   it('kills every how-the-price-moved spark in the letter', () => {

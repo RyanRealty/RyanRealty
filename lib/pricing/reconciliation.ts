@@ -165,20 +165,47 @@ function sizePhrase(sale: ReconcilableSale, subjectSqft: number): string {
   return `${n} square ${Math.abs(delta) === 1 ? 'foot' : 'feet'} ${delta > 0 ? 'larger' : 'smaller'} than yours`
 }
 
-/** Calendar year and month from a date string. Local Date would shift the day. */
-function yearMonth(iso: string | null | undefined): { y: number; m: number } | null {
+/**
+ * Calendar year, month and (when the string carries one) day from a date
+ * string. Read off the text: a local Date would shift the day.
+ */
+function yearMonthDay(iso: string | null | undefined): { y: number; m: number; d: number | null } | null {
   if (!iso) return null
-  const match = /^(\d{4})-(\d{2})/.exec(iso.trim())
+  const match = /^(\d{4})-(\d{2})(?:-(\d{2}))?/.exec(iso.trim())
   if (!match) return null
   const y = Number(match[1])
   const m = Number(match[2])
   if (!Number.isInteger(y) || m < 1 || m > 12) return null
-  return { y, m }
+  const d = match[3] != null ? Number(match[3]) : null
+  return { y, m, d: d != null && d >= 1 && d <= 31 ? d : null }
 }
 
-/** "sold this month" · "sold a month ago" · "sold 7 months ago". */
+function daysInMonth(y: number, m: number): number {
+  return new Date(Date.UTC(y, m, 0)).getUTCDate()
+}
+
+/**
+ * Whole months from the close to the letter, counted by the day: May 29 to
+ * October 8 is 4 months and 9 days, so 4. A close on the 31st is a month old
+ * on the last day of a shorter month. Null when either date has no day.
+ */
+export function wholeMonthsBetween(closeIso: string | null | undefined, asOfIso: string | null | undefined): number | null {
+  const close = yearMonthDay(closeIso)
+  const letter = yearMonthDay(asOfIso)
+  if (!close || !letter || close.d == null || letter.d == null) return null
+  let months = (letter.y - close.y) * 12 + (letter.m - close.m)
+  const closeDay = Math.min(close.d, daysInMonth(letter.y, letter.m))
+  if (letter.d < closeDay) months -= 1
+  return months
+}
+
+/**
+ * "sold this month" · "sold a month ago" · "sold 7 months ago", off the
+ * stored monthsSinceClose when there is no letter date. Whole months
+ * elapsed, so 4.6 is 4, never 5.
+ */
 function monthsSincePhrase(monthsRaw: number): string {
-  const months = Math.round(monthsRaw)
+  const months = Math.floor(Number.isFinite(monthsRaw) ? monthsRaw : 0)
   if (months <= 0) return 'sold this month'
   if (months === 1) return 'sold a month ago'
   return `sold ${months} months ago`
@@ -186,18 +213,27 @@ function monthsSincePhrase(monthsRaw: number): string {
 
 /**
  * Recency from the letter date when both dates are present.
- * Same calendar month is "sold this month". The previous calendar month is
- * "sold last month". Any older close uses that month count. Without asOf,
- * the stored monthsSinceClose phrase stays, so older callers do not move.
+ *
+ * WHOLE MONTHS ELAPSED, COUNTED BY THE DAY (reader review 2026-10-08, 3062 NW
+ * Kelly Hill). 2955 Bordeaux closed May 29, 2026 and the letter of Oct 8 said
+ * "it sold 5 months ago": October less May, a calendar count. It was 4 months
+ * and 9 days. A close less than a month old is "sold this month" in the same
+ * calendar month and "sold last month" in the one before. A close one whole
+ * month old is "sold last month" when it was the previous calendar month and
+ * "sold a month ago" otherwise. Older closes print the whole months. Without
+ * a day on either date the calendar count stands; without asOf, the stored
+ * monthsSinceClose phrase stays.
  */
 function recencyPhrase(sale: ReconcilableSale, asOf?: string | null): string {
-  const close = yearMonth(sale.closeDate)
-  const letter = yearMonth(asOf)
+  const close = yearMonthDay(sale.closeDate)
+  const letter = yearMonthDay(asOf)
   if (!close || !letter) return monthsSincePhrase(sale.monthsSinceClose)
-  const diff = (letter.y - close.y) * 12 + (letter.m - close.m)
-  if (diff <= 0) return 'sold this month'
-  if (diff === 1) return 'sold last month'
-  return `sold ${diff} months ago`
+  const calendar = (letter.y - close.y) * 12 + (letter.m - close.m)
+  const whole = wholeMonthsBetween(sale.closeDate, asOf) ?? calendar
+  if (calendar <= 0 || whole < 0) return 'sold this month'
+  if (whole === 0) return calendar === 1 ? 'sold last month' : 'sold this month'
+  if (whole === 1) return calendar === 1 ? 'sold last month' : 'sold a month ago'
+  return `sold ${whole} months ago`
 }
 
 /** Names only the lines that moved by at least a dollar. */
@@ -330,6 +366,26 @@ export function reconcileAdjustedSales(args: {
     const sentence = same
       ? `${who}, at ${figures[0]} percent each.`
       : `${who}. Rounded to add up to 100, the table shows ${joinAnd(figures)} percent.`
+    return { weights, mostWeighted: leader.listingKey, weightedPrice, sentence }
+  }
+  // A TIE AT THE PRECISION THE TABLE PRINTS (reader review 2026-10-08, 1355
+  // Jacksonville). 1340 Cumberland's share was 33.45 percent and 1613
+  // Ithaca's 33.40; both print 33.4, and "1340 Cumberland carries the most
+  // weight ... at 33.4 percent" named one of two equal figures on the page.
+  // When the leader's printed figure is another sale's too, every sale that
+  // prints it is named.
+  const printedTop = leader.weight
+  const printedTied = weights
+    .map((w, i) => ({ w, i }))
+    .filter(({ w }) => w.weight.toFixed(1) === printedTop.toFixed(1))
+  if (printedTied.length > 1) {
+    const figure = printedTop.toFixed(1)
+    const sentence =
+      printedTied.length === usable.length
+        ? `The ${countWord(usable.length)} sales behind this price carry equal weight, at ${figure} percent each.`
+        : `${joinAnd(printedTied.map(({ i }) => usable[i]!.address))} carry the most weight of the ${countWord(
+            usable.length,
+          )} sales behind this price, at ${figure} percent each.`
     return { weights, mostWeighted: leader.listingKey, weightedPrice, sentence }
   }
   const leaderSale = usable.find((s) => s.listingKey === leader.listingKey)!

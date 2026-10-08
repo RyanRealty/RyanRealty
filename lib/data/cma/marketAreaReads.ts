@@ -60,6 +60,14 @@ export type CmaMarketAreaRow = {
    * left Active (lib/cma/listing-status.ts), not the day it expired.
    */
   statusChanges?: ListingStatusChange[]
+  /**
+   * Attached only by the area-scoped reads of a plat area: the recorded plat
+   * polygon the row's point sits in (a slug; null when the point was tested
+   * and no polygon holds it). Every later area test reads it, so a row is
+   * placed by its polygon, not by how its MLS name is spelled (reader review
+   * 2026-10-08). Undefined when nobody tested the row.
+   */
+  plat_slug?: string | null
 }
 
 const COLS =

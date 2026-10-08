@@ -89,18 +89,25 @@ export interface CompExclusionCounts {
    * market_area until 2026-10-08. Absent on a row stored before then.
    */
   not_in_pocket: number
+  /**
+   * Listings ladder, own-plat rung: a row the MLS-name read returned whose
+   * recorded plat polygon is another subdivision's, not the subject's plat or
+   * its family (reader review 2026-10-08, lib/pricing/plat-ground.ts). The
+   * polygon decides, as on the facts walk. Absent on a row stored before then.
+   */
+  not_own_plat?: number
 }
 
 export function emptyExclusions(): CompExclusionCounts {
-  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, crossed_divide: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0, year_quality: 0, acreage_infrastructure: 0, zoning_class: 0, outbuildings: 0, terrain: 0, price_tier: 0, not_price_setting: 0, adu_sale: 0, not_touching_plat: 0, not_in_pocket: 0 }
+  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, crossed_divide: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0, year_quality: 0, acreage_infrastructure: 0, zoning_class: 0, outbuildings: 0, terrain: 0, price_tier: 0, not_price_setting: 0, adu_sale: 0, not_touching_plat: 0, not_in_pocket: 0, not_own_plat: 0 }
 }
 
 export function addExclusions(into: CompExclusionCounts, from: CompExclusionCounts): void {
-  for (const k of Object.keys(into) as Array<keyof CompExclusionCounts>) into[k] += from[k] ?? 0
+  for (const k of Object.keys(into) as Array<keyof CompExclusionCounts>) into[k] = (into[k] ?? 0) + (from[k] ?? 0)
 }
 
 export function totalExclusions(x: CompExclusionCounts): number {
-  return x.product_type + x.bath_count + x.lot_character + x.resort_premium + x.market_area + x.crossed_divide + x.distance + x.duplicate + x.self + x.unusable_row + x.year_quality + x.acreage_infrastructure + x.zoning_class + x.outbuildings + x.terrain + x.price_tier + x.not_price_setting + (x.adu_sale ?? 0) + (x.not_touching_plat ?? 0) + (x.not_in_pocket ?? 0)
+  return x.product_type + x.bath_count + x.lot_character + x.resort_premium + x.market_area + x.crossed_divide + x.distance + x.duplicate + x.self + x.unusable_row + x.year_quality + x.acreage_infrastructure + x.zoning_class + x.outbuildings + x.terrain + x.price_tier + x.not_price_setting + (x.adu_sale ?? 0) + (x.not_touching_plat ?? 0) + (x.not_in_pocket ?? 0) + (x.not_own_plat ?? 0)
 }
 
 /** One rung of the ladder, whether it ran or was skipped. */
@@ -263,6 +270,8 @@ const EXCLUSION_LABELS: Record<keyof CompExclusionCounts, string> = {
   not_touching_plat:
     "the touching-plat step read them and their recorded plat does not touch this home's plat (they may still sit inside the neighborhood)",
   not_in_pocket: "the quarter-mile pocket step read them and they sit on no pocket street and in no pocket subdivision",
+  not_own_plat:
+    "the own-subdivision step read them by their MLS name and their recorded plat is another subdivision's, not this home's plat",
 }
 
 function band(d: CompSelectionDiagnostics): string {

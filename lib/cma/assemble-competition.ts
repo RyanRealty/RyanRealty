@@ -36,7 +36,8 @@ import {
   type CmaBandRivalSet,
   type CompetitionRingPick,
 } from '@/lib/cma/band-rivals'
-import { sameAreaFit, sameAreaSubject, type SameAreaFit } from '@/lib/cma/same-area-fit'
+import { sameAreaFit, sameAreaSubject, type SameAreaCandidate, type SameAreaFit } from '@/lib/cma/same-area-fit'
+import { describeUnlikeHome } from '@/lib/cma/unlike-reason'
 import { attachCompConcessions } from '@/lib/pricing/seller-net'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
@@ -59,7 +60,7 @@ function rowsInBand(rows: readonly CmaBandListingRow[], band: { lo: number; hi: 
 /** The fields of a priced sale the search story and the sales area read. */
 type SalesAreaComp = Pick<
   CmaAdjustedComp,
-  'address' | 'subdivision' | 'subdivisionSlug' | 'selectionTier' | 'latitude' | 'longitude'
+  'address' | 'subdivision' | 'subdivisionSlug' | 'selectionTier' | 'latitude' | 'longitude' | 'ownPlat'
 >
 
 /**
@@ -91,6 +92,9 @@ export function salesSearchAndArea(args: {
       address: c.address,
       subdivision: c.subdivision,
       selectionTier: c.selectionTier,
+      // The selector's own-plat call: a sale on the subject's plat under
+      // another MLS spelling is inside the subdivision (reader review 2026-10-08).
+      ownPlat: c.ownPlat ?? null,
     })),
     rural:
       args.diagnostics.rural_acreage || (subject.lotAcres ?? 0) >= 1
@@ -113,6 +117,7 @@ export function salesSearchAndArea(args: {
       selectionTier: c.selectionTier,
       latitude: c.latitude,
       longitude: c.longitude,
+      ownPlat: c.ownPlat ?? null,
     })),
   })
   return { compSearch, compArea }
@@ -190,23 +195,26 @@ export async function assembleCompetition(args: {
   const fitSubject = sameAreaSubject(subject)
   // One fit per listing, however many band steps hold it.
   const fits = new Map<string, SameAreaFit>()
+  const candidateOf = (r: CmaBandRival): SameAreaCandidate => ({
+    address: r.address,
+    subdivision: r.subdivision,
+    // The polygon the band read placed it in (reader review 2026-10-08).
+    subdivisionSlug: r.platSlug,
+    latitude: r.latitude,
+    longitude: r.longitude,
+    beds: r.beds,
+    baths: r.baths,
+    bathsFull: r.bathsFull ?? null,
+    bathsHalf: r.bathsHalf ?? null,
+    sqft: r.sqft,
+    yearBuilt: r.yearBuilt,
+    propertySubType: r.propertySubType,
+    publicRemarks: r.publicRemarks ?? null,
+  })
   const fitOf = (r: CmaBandRival): SameAreaFit => {
     const known = fits.get(r.listingKey)
     if (known) return known
-    const fit = sameAreaFit(widestCompetitionRing, fitSubject, {
-      address: r.address,
-      subdivision: r.subdivision,
-      latitude: r.latitude,
-      longitude: r.longitude,
-      beds: r.beds,
-      baths: r.baths,
-      bathsFull: r.bathsFull ?? null,
-      bathsHalf: r.bathsHalf ?? null,
-      sqft: r.sqft,
-      yearBuilt: r.yearBuilt,
-      propertySubType: r.propertySubType,
-      publicRemarks: r.publicRemarks ?? null,
-    })
+    const fit = sameAreaFit(widestCompetitionRing, fitSubject, candidateOf(r))
     fits.set(r.listingKey, fit)
     return fit
   }
@@ -350,6 +358,13 @@ export async function assembleCompetition(args: {
         activeCount: fittingActive.length,
         pendingCount: fittingPending.length,
         unlikeCount: chosen.all.length - chosen.fitting.length,
+        // Each unlike home with the refusal the fit returned, so the sentence
+        // names only the reason that is true of it (reader review 2026-10-08).
+        unlike: chosen.all.flatMap((r) => {
+          if (fitOf(r).ok) return []
+          const home = describeUnlikeHome(widestCompetitionRing, fitSubject, candidateOf(r), r.listPrice)
+          return home ? [home] : []
+        }),
         // True when the band ladder was walked and still holds fewer than
         // five, whichever step printed (a tie keeps the tighter band). The
         // citation above records every step tried.

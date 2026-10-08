@@ -144,16 +144,35 @@ describe('a held letter reads the cover number as the price under review, everyw
   }
 
   it('ask-in-band: the sales are behind the number, and no list instruction prints', () => {
-    const text = visible(renderCmaHtml(held('ask-in-band')).html)
+    // No clamp moved this cover, so the sales are behind it.
+    const a = held('ask-in-band')
+    a.pricing = { ...(a.pricing as CmaPricing), clamp: null } as CmaPricing
+    const text = visible(renderCmaHtml(a).html)
     expect(text).toContain('The sales behind this price.')
     expect(text).toMatch(/closed sales below are behind this number/)
     expect(text).not.toContain('List in that range.')
   })
 
+  it('ask-in-band with the failed-ask ceiling on the cover (62475 Woodsman): the sales set the range', () => {
+    // The ceiling moved the cover off the $397,702 the weights blend to, and
+    // a held letter prints no clamp sentence, so nothing joins the weights to
+    // the cover (reader review 2026-10-08).
+    const text = visible(renderCmaHtml(held('ask-in-band')).html)
+    expect(text).toContain('The sales that set the range.')
+    expect(text).toContain('Weight among these sales')
+    expect(text).not.toContain('Weight in this price')
+    expect(text).toContain('It does not set the price on the cover.')
+    expect(text).not.toMatch(/moved the number|sales behind this price/)
+    expect(text).toMatch(/closed sales below set the range/)
+    expect(text).not.toContain('List in that range.')
+    // Rule 26: no clamp sentence on a held letter, so none is added to explain it.
+    expect(text).not.toMatch(/already failed to sell|support a value of/)
+  })
+
   it('ask-in-band: the lead is the two facts, and nothing says why the ask failed', () => {
     const text = visible(renderCmaHtml(held('ask-in-band')).html)
     // The fixture's last ask sits above its printed band, so "inside that range" is not said.
-    expect(text).toMatch(/The five sales that set the price support \$[\d,]+ to \$[\d,]+\. The last ask of \$429,000 /)
+    expect(text).toMatch(/The five sales that set the range support \$[\d,]+ to \$[\d,]+\. The last ask of \$429,000 /)
     expect(text).not.toContain('The last ask of $429,000 sat 79 days inside that range')
     expect(text).not.toMatch(/\bcapped\b|too high|already failed to sell|clamp/i)
     expect(text).not.toMatch(/expect it to sell near/)
@@ -161,7 +180,7 @@ describe('a held letter reads the cover number as the price under review, everyw
 
   it('ask-below-band (915 Saginaw shape): the rule 26 lead names the sales that set the range, not the price', () => {
     const text = visible(renderCmaHtml(held('ask-below-band')).html)
-    expect(text).toMatch(/The five sales that set the range support \$[\d,]+ to \$[\d,]+\. Buyers passed at the last ask of \$429,000\. The listing /)
+    expect(text).toMatch(/The five sales that set the range support \$[\d,]+ to \$[\d,]+\. Your home did not sell at its last ask of \$429,000\. The listing /)
     expect(text).not.toMatch(/\bcapped\b|too high|already failed to sell/i)
   })
 })

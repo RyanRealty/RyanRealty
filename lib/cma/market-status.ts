@@ -10,6 +10,7 @@ import { countWord } from '@/lib/pricing/estimate'
 import { keepSameProductType, letterProductMatch } from '@/lib/cma/market-area'
 import { realSubdivision } from '@/lib/cma/comp-tiers'
 import { roomNotedSentence, sameAreaFit, sameAreaSubject, type SameAreaCandidate } from '@/lib/cma/same-area-fit'
+import { describeUnlikeHome, unlikeAsksPhrase, unlikeReasonSentence, type CmaUnlikeHome } from '@/lib/cma/unlike-reason'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
 import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import { cameOffStatus, lastActiveRun, pacificDay, sameStatus, type ActiveRun } from '@/lib/cma/listing-status'
@@ -97,6 +98,13 @@ export type CmaExpiredPeer = {
   propertySubType: string | null
   /** MLS subdivision, so a plat boundary can be re-tested at render. */
   subdivision?: string | null
+  /**
+   * The recorded plat polygon the area read put the home in (null when tested
+   * and none holds it), so the render re-tests the polygon, not the MLS
+   * spelling (rule 24; reader review 2026-10-08). Absent on rows stored
+   * before then, which keep the name test.
+   */
+  platSlug?: string | null
   latitude: number | null
   longitude: number | null
   /** Rule 4: one room apart on the subject's own ground, kept and disclosed, zero dollars. */
@@ -436,6 +444,8 @@ function rowToCandidate(row: CmaMarketAreaRow): SameAreaCandidate {
     address: peerAddress(row) || null,
     city: row.City ?? null,
     subdivision: row.SubdivisionName ?? null,
+    // The polygon the area read placed it in, when it read one.
+    subdivisionSlug: row.plat_slug,
     latitude: row.Latitude ?? null,
     longitude: row.Longitude ?? null,
     beds: countOrNull(row.BedroomsTotal),
@@ -597,6 +607,7 @@ export function pickExpiredPeers(
         lotAcres: row.lot_size_acres ?? null,
         propertySubType: row.property_sub_type ?? null,
         subdivision: row.SubdivisionName ?? null,
+        ...(row.plat_slug !== undefined ? { platSlug: row.plat_slug } : {}),
         latitude: row.Latitude ?? null,
         longitude: row.Longitude ?? null,
       }
@@ -860,6 +871,13 @@ export type CmaExpiredPeerSet = {
    * built before 2026-10-08.
    */
   priceBand?: { lo: number; hi: number } | null
+  /**
+   * The homes `areaTotal` counts that are not peers, one per address: each
+   * one's last ask and the refusal the fit returned (lib/cma/unlike-reason.ts),
+   * so the sentence says the reason that is true of them. Absent on rows built
+   * before 2026-10-08.
+   */
+  unlike?: CmaUnlikeHome[]
 }
 
 function usd(n: number): string {
@@ -1059,9 +1077,13 @@ export function buildExpiredPeerSet(input: {
       longitude: r.Longitude ?? null,
       subdivision: r.SubdivisionName ?? null,
       city: r.City ?? null,
+      // The polygon the area read placed it in, when it read one.
+      platSlug: r.plat_slug,
       // A plat held to the subject's street holds only that street.
       address: r.StreetName?.trim() ? `${(r.StreetNumber ?? '').trim()} ${r.StreetName.trim()}`.trim() : null,
     })
+  const key = (r: CmaMarketAreaRow) => normalizePeerAddress(peerAddress(r)) || String(r.ListingKey ?? '')
+  let lastEligible: CmaMarketAreaRow[] = []
   for (const w of windows) {
     tried.push(w)
     const inWindow = dated.filter((x) => x.months <= w).map((x) => x.row)
@@ -1071,8 +1093,6 @@ export function buildExpiredPeerSet(input: {
     // sentence would otherwise silently claim to be counting.
     // What the sentence counts is the set the table shows. `found` is that
     // set: homes that fit this one. Unlike homes stay in areaTotal only.
-    const key = (r: CmaMarketAreaRow) =>
-      normalizePeerAddress(peerAddress(r)) || String(r.ListingKey ?? '')
     const eligible = inWindow.filter(
       (r) =>
         inArea(r) &&
@@ -1081,6 +1101,7 @@ export function buildExpiredPeerSet(input: {
         Number(r.ListPrice) > 0,
     )
     areaTotal = new Set(eligible.map(key).filter((k) => k.length > 0)).size
+    lastEligible = eligible
     // Pins are only homes that fit. Unlike homes stay in areaTotal. They do
     // not fill the three-home quota, so this window keeps opening.
     likeYours = peers.length > 0
@@ -1088,6 +1109,17 @@ export function buildExpiredPeerSet(input: {
     windowMonths = w
     if (peers.length >= EXPIRED_PEER_MIN) break
   }
+  // The homes the sentence counts that are not peers, each with its own last
+  // ask and the refusal the fit returned for it (lib/cma/unlike-reason.ts), so
+  // the sentence says only the reason that is true of them.
+  const unlike = unlikeUnsoldHomes({
+    eligible: lastEligible,
+    months: new Map(dated.map((x) => [x.row, x.months])),
+    peers,
+    subject: input.subject,
+    area: input.area,
+    key,
+  })
 
   const withWhy = peers.map((p) => ({ ...p, whyItSat: whyItSat(p, input.keptCompMedianPpsf) }))
   const count = withWhy.length
@@ -1119,10 +1151,49 @@ export function buildExpiredPeerSet(input: {
         likeYours,
         subjectCameOff: input.subjectCameOff === true,
         priceBand: input.priceBand ?? null,
+        unlike,
       }) + roomNote,
     peers: withWhy,
+    unlike,
     ...(input.priceBand ? { priceBand: { lo: input.priceBand.lo, hi: input.priceBand.hi } } : {}),
   }
+}
+
+/**
+ * One entry per counted address that is not a peer: its most recent cycle in
+ * the window, that cycle's last ask, and why the fit refused it. The same
+ * product test `pickExpiredPeers` applies first, then `sameAreaFit`, so the
+ * reason is the one that actually kept it out.
+ */
+function unlikeUnsoldHomes(input: {
+  eligible: readonly CmaMarketAreaRow[]
+  months: ReadonlyMap<CmaMarketAreaRow, number>
+  peers: readonly CmaExpiredPeer[]
+  subject: ExpiredPeerSubject
+  area: CompArea
+  key: (r: CmaMarketAreaRow) => string
+}): CmaUnlikeHome[] {
+  const peerKeys = new Set(input.peers.map((p) => normalizePeerAddress(p.address)).filter((k) => k.length > 0))
+  const latest = new Map<string, CmaMarketAreaRow>()
+  for (const row of input.eligible) {
+    const k = input.key(row)
+    if (!k || peerKeys.has(k)) continue
+    const held = latest.get(k)
+    const m = input.months.get(row) ?? Number.POSITIVE_INFINITY
+    if (!held || m < (input.months.get(held) ?? Number.POSITIVE_INFINITY)) latest.set(k, row)
+  }
+  const out: CmaUnlikeHome[] = []
+  for (const row of latest.values()) {
+    const ask = Number(row.ListPrice)
+    const lastAsk = Number.isFinite(ask) && ask > 0 ? ask : null
+    if (!letterProductMatch(input.subject.propertySubType ?? null, row.property_sub_type ?? null)) {
+      out.push({ lastAsk, reason: 'product' })
+      continue
+    }
+    const home = describeUnlikeHome(input.area, input.subject, rowToCandidate(row), lastAsk)
+    if (home) out.push(home)
+  }
+  return out.sort((a, b) => (a.lastAsk ?? 0) - (b.lastAsk ?? 0))
 }
 
 /**
@@ -1136,23 +1207,44 @@ export function buildExpiredPeerSet(input: {
  * around); four more homes in Jacksonville's area came off unsold outside it,
  * so "Two homes in ... came off the market" was false as written. With no
  * window on the row there is no count it can truthfully say, so it says that
- * homes came off near this price and none were close, without a number.
+ * homes came off near this price, without a number.
+ *
+ * THE WINDOW IS SAID AS THE SEARCH, THE PRICES ARE THE HOMES' OWN, AND THE
+ * REASON IS THE TRUE ONE (reader review, 3062 NW Kelly Hill, 2026-10-08).
+ * "Two homes in Westside Meadows and Skyline West listed between $405,000 and
+ * $1,362,000 came off ... None were close to this home in bedrooms,
+ * bathrooms, size or age" read the search window as the homes' prices (they
+ * asked $895,000 and $999,000) and named four reasons when the fit refused
+ * both for size alone; both were 3 bed 2 bath like the subject. Now:
+ * "We searched listings in Westside Meadows and Skyline West between $405,000
+ * and $1,362,000. Two homes came off the market without selling in the last
+ * 18 months, last listed at $895,000 and $999,000. Both are more than 25
+ * percent larger than this home, so they are not compared here." A row stored
+ * before the homes were described keeps the count and the window and says
+ * only that they are not enough like this home (`unlikeReasonSentence`).
+ * `other` says "other" when the seller's own listing is the one above it.
  */
 export function unsoldAreaTotalSentence(input: {
   area: CompArea
   areaTotal: number
   windowMonths: number
   priceBand: { lo: number; hi: number } | null
+  unlike?: readonly CmaUnlikeHome[] | null
+  other?: boolean
 }): string {
   const where = compAreaIn(input.area)
   const w = monthsWord(input.windowMonths)
+  const total = input.areaTotal
+  const described = input.unlike && input.unlike.length === total ? input.unlike : null
+  const other = input.other ? 'other ' : ''
   if (!input.priceBand) {
-    return `Homes ${where} came off the market without selling in the last ${w} months. None of those near this price were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.`
+    return `${input.other ? 'Other homes' : 'Homes'} ${where} came off the market without selling in the last ${w} months. None of those near this price is enough like this home to compare here.`
   }
-  const cameOff = input.areaTotal
-  const came = cameOff === 1 ? 'One home' : `${countWord(cameOff, true)} homes`
-  const listed = `listed between ${usd(input.priceBand.lo)} and ${usd(input.priceBand.hi)}`
-  return `${came} ${where} ${listed} came off the market without selling in the last ${w} months. None were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.`
+  const searched = `We searched listings ${where} between ${usd(input.priceBand.lo)} and ${usd(input.priceBand.hi)}.`
+  const came = `${countWord(total, true)} ${other}${total === 1 ? 'home' : 'homes'}`
+  const asks = described ? unlikeAsksPhrase(described) : ''
+  const cameOff = `${came} came off the market without selling in the last ${w} months${asks ? `, last listed ${asks}` : ''}.`
+  return `${searched} ${cameOff} ${unlikeReasonSentence(described, total)}`
 }
 
 function peerSetSentence(input: {
@@ -1167,6 +1259,8 @@ function peerSetSentence(input: {
   likeYours: boolean
   subjectCameOff?: boolean
   priceBand?: { lo: number; hi: number } | null
+  /** The counted homes that are not peers, each with its last ask and the reason it is not one. */
+  unlike?: readonly CmaUnlikeHome[] | null
 }): string {
   const where = compAreaIn(input.area)
   const whereOr = compAreaIn(input.area, { negative: true })
@@ -1188,6 +1282,8 @@ function peerSetSentence(input: {
         areaTotal: cameOff,
         windowMonths: input.windowMonths,
         priceBand: input.priceBand ?? null,
+        unlike: input.unlike ?? null,
+        other: input.subjectCameOff === true,
       })
     }
     // The subject is the home that came off, so the sentence says no OTHER

@@ -41,6 +41,17 @@ vi.mock('@/lib/data/subdivisions/getPlatFamilyFootprint', () => ({
   getPlatFamilyFootprint: footprintMock.getPlatFamilyFootprint,
 }))
 
+// The box around the subject's own recorded plat and its family
+// (lib/data/cma/platGroundBounds.ts, 2026-10-08). Null by default: the
+// own-plat rung reads by name, and the ground decision places each row by
+// the plat assignSubdivisionSlugs gives its point.
+const groundBoundsMock = vi.hoisted(() => ({
+  getPlatGroundBounds: vi.fn(async (_ground: unknown, _opts?: unknown): Promise<unknown> => null),
+}))
+vi.mock('@/lib/data/cma/platGroundBounds', () => ({
+  getPlatGroundBounds: groundBoundsMock.getPlatGroundBounds,
+}))
+
 vi.mock('@/lib/cma/hydrate-closed-comp-dom', () => ({
   hydrateClosedCompDaysOnMarket: async <T,>(comps: T) => comps,
 }))
@@ -607,9 +618,17 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
       StreetNumber: String(500 + i),
       StreetName: 'Aubrey',
       SubdivisionName: 'Aubrey',
+      Latitude: 44.0525,
       ClosePrice: closePrice,
       CloseDate: closeDate,
     })
+  // The recorded plat each point sits in: the plat rows in Kenwood, the
+  // touching rows in Aubrey, and a third point in a plat that touches neither
+  // (2026-10-08: the own-plat rung keeps a row by its polygon, as the facts
+  // walk does, so the mock has to place rows the way the county does).
+  const PLAT_AT: Record<string, string> = { '44.051': 'kenwood', '44.0525': 'aubrey', '44.0535': 'not-touching-plat' }
+  const platAt = async (pts: ReadonlyArray<unknown>) =>
+    pts.map((p) => PLAT_AT[String((p as { lat: number | null }).lat)] ?? null)
   const kenwood = subject({ subdivision: 'Kenwood' })
   const PLAT_TIERS = ['subdivision-6mo', 'subdivision-12mo', 'subdivision-18mo', 'subdivision-24mo']
 
@@ -642,7 +661,7 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
       neighborhoodSlug: null,
       ring: [{ slug: 'aubrey', label: 'Aubrey', pointM: 10, rank: 1 }],
     }))
-    ringMocks.assignSubdivisionSlugs.mockImplementation(async (pts: ReadonlyArray<unknown>) => pts.map(() => 'aubrey'))
+    ringMocks.assignSubdivisionSlugs.mockImplementation(platAt)
     footprintMock.getPlatFamilyFootprint.mockImplementation(async () => ({ geometry: TOUCHING_OUTLINE }))
   })
   afterEach(() => {
@@ -657,10 +676,10 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
     // Two of its rows sit in a plat that does not touch Kenwood.
     poolOf(
       [0, 1, 2].map((i) => plat(`O${i}`, i, 500_000, SIX_MO)),
-      [0, 1, 2, 3].map((i) => touching(`E${i}`, i, 500_000 + i * 1_000, SIX_MO)),
-    )
-    ringMocks.assignSubdivisionSlugs.mockImplementation(async (pts: ReadonlyArray<unknown>) =>
-      pts.map((_p, i) => (i < 2 ? 'aubrey' : 'not-touching-plat')),
+      [0, 1, 2, 3].map((i) => ({
+        ...touching(`E${i}`, i, 500_000 + i * 1_000, SIX_MO),
+        ...(i < 2 ? {} : { Latitude: 44.0535 }),
+      })),
     )
     const sel = await selectComps(kenwood)
     expect(footprintMock.getPlatFamilyFootprint).toHaveBeenCalledWith({ familySlug: 'touching-kenwood', memberSlugs: ['aubrey'] })
@@ -880,6 +899,63 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
     // is in this home's own plat, and the touching plat reached five. The
     // touching plat adds three, the ones nearest the middle price.
     expect(keys(sel)).toEqual(['E500', 'E545', 'T490', 'T500', 'T510'])
+  })
+
+  it('the own-plat rung reads the subject plat under every MLS spelling, and the polygon decides (1355 Jacksonville, reader review 2026-10-08)', async () => {
+    // The box around the subject's recorded plat and its family.
+    const GROUND_BOX = { latMin: 44.049, latMax: 44.053, lngMin: -121.303, lngMax: -121.299 }
+    groundBoundsMock.getPlatGroundBounds.mockImplementation(async () => GROUND_BOX)
+    // Four "Kenwood" closes on the plat; one "Kenwood" close the MLS name read
+    // returns from another subdivision's polygon; one close on the plat the
+    // MLS spells "Kenwood Addn", which only the box read returns.
+    const platRows = [0, 1, 2, 3].map((i) => plat(`O${i}`, i, 500_000, SIX_MO))
+    const strayName = closedRow({ ListingKey: 'STRAY', StreetNumber: '900', ClosePrice: 500_000, CloseDate: SIX_MO, Latitude: 44.0535 })
+    const otherSpelling = closedRow({
+      ListingKey: 'SPELL',
+      StreetNumber: '777',
+      SubdivisionName: 'Kenwood Addn',
+      ClosePrice: 501_000,
+      CloseDate: SIX_MO,
+    })
+    selectCmaCompsPool.mockImplementation(async (opts: Record<string, unknown>) => {
+      const since = String(opts.closeDateGte ?? '')
+      if (opts.subdivisionIlike === 'Kenwood') return [...platRows, strayName].filter((r) => String(r.CloseDate) >= since)
+      if (JSON.stringify(opts.bounds) === JSON.stringify(GROUND_BOX)) {
+        return [...platRows, otherSpelling].filter((r) => String(r.CloseDate) >= since)
+      }
+      return []
+    })
+    try {
+      const sel = await selectComps(kenwood)
+      expect(groundBoundsMock.getPlatGroundBounds).toHaveBeenCalled()
+      const groundReads = selectCmaCompsPool.mock.calls
+        .map(([opts]) => opts)
+        .filter((opts) => JSON.stringify(opts.bounds) === JSON.stringify(GROUND_BOX))
+      expect(groundReads.length).toBeGreaterThan(0)
+      expect(groundReads.every((opts) => opts.subdivisionIlike == null && opts.limit === 500)).toBe(true)
+      // Own ground reached five on its own rung: the four plat closes and the
+      // differently spelled one, all own plat. The stray name is not.
+      expect(keys(sel)).toEqual(['O0', 'O1', 'O2', 'O3', 'SPELL'])
+      expect(ran(sel)).toEqual(PLAT_TIERS)
+      const spelled = sel.comps.find((c) => c.listingKey === 'SPELL')!
+      expect(spelled.ownPlat).toBe(true)
+      expect(spelled.selectionTier).toBe('subdivision-6mo')
+      expect(spelled.subdivisionSlug).toBe('kenwood')
+      const rung = sel.diagnostics.ladder.find((t) => t.tier === 'subdivision-6mo')!
+      expect(rung.excluded.not_own_plat).toBe(1)
+      expect(rung.geography).toContain("SubdivisionName ILIKE 'Kenwood' or inside its recorded plat")
+    } finally {
+      groundBoundsMock.getPlatGroundBounds.mockImplementation(async () => null)
+    }
+  })
+
+  it('a home in no recorded plat keeps the MLS-name read alone', async () => {
+    ringMocks.getSubdivisionRing.mockImplementation(async () => null)
+    groundBoundsMock.getPlatGroundBounds.mockClear()
+    poolOf([0, 1, 2, 3, 4].map((i) => plat(`O${i}`, i, 500_000, SIX_MO)))
+    const sel = await selectComps(kenwood)
+    expect(groundBoundsMock.getPlatGroundBounds).not.toHaveBeenCalled()
+    expect(keys(sel)).toEqual(['O0', 'O1', 'O2', 'O3', 'O4'])
   })
 })
 

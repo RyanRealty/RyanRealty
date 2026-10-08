@@ -37,6 +37,7 @@
  */
 
 import { formatPriceExact } from '@/lib/format/money'
+import { compactUsd, compactUsdLabels } from '@/lib/cma/compact-usd'
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
 import { resolveAskPosition, type AskExposureLike } from '@/lib/cma/ask-position'
 import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
@@ -136,13 +137,13 @@ function today(): string {
   return pacificDay(new Date()) ?? new Date().toISOString().slice(0, 10)
 }
 
-/** $465K. Thousands, because a price path is read at a glance, not audited. */
+/**
+ * $465K, $1.05M. Thousands, because a price path is read at a glance, not
+ * audited. One formatter for every CMA chart (lib/cma/compact-usd.ts): exact
+ * half-up rounding on whole dollars, never a float artifact.
+ */
 export function shortUsd(n: number): string {
-  if (n >= 1_000_000) {
-    const m = n / 1_000_000
-    return `$${m >= 10 || n % 1_000_000 === 0 ? m.toFixed(0) : m.toFixed(2)}M`
-  }
-  return `$${Math.round(n / 1000)}K`
+  return compactUsd(n)
 }
 
 /**
@@ -152,8 +153,25 @@ export function shortUsd(n: number): string {
  */
 export function shortOrExactUsd(n: number): string {
   if (!Number.isFinite(n)) return shortUsd(n)
-  if (Math.round(n) % 1000 !== 0) return formatPriceExact(Math.round(n))
-  return shortUsd(n)
+  const d = Math.round(n)
+  // Short only when the short label IS the price: whole thousands under a
+  // million, whole ten-thousands from a million ($1,050,000 is $1.05M, but
+  // $1,785,000 would read $1.79M and prints exact).
+  if (d % (Math.abs(d) >= 999_500 ? 10_000 : 1000) !== 0) return formatPriceExact(d)
+  return shortUsd(d)
+}
+
+/**
+ * The labels one price path prints (the opening ask, the cuts, the end), as
+ * one set: two different prices on one small drawing never share a label.
+ */
+export function pricePathMoney(path: PricePath): (n: number) => string {
+  return compactUsdLabels([
+    path.startPrice,
+    ...path.cuts.map((c) => c.price),
+    path.undatedCutTo,
+    path.closePrice ?? finalAskOf(path),
+  ])
 }
 
 function monthDay(iso: string): string {
@@ -558,6 +576,7 @@ export function priceHistoryLineSvg(
   if (!g) return ''
   const { width: W, height: H, fontSize: fs } = layout
   const minimal = layout.minimal === true
+  const money = pricePathMoney(path)
   // The opening-ask label sits above the first vertex, so the top of the band
   // has to leave a line of type above it in EVERY layout — a minimal drawing
   // that pulled the band up to 13 put "$435K" a pixel outside its own viewBox.
@@ -615,10 +634,10 @@ export function priceHistoryLineSvg(
       // around it, because a 6px dot is not a tap (tasteReview item 3).
       const attrs = `class="pp-cut" data-price="${c.price}" data-date="${esc(c.date)}"${
         id ? ` data-path="${esc(id)}"` : ''
-      } tabindex="0" role="button" aria-label="${esc(`cut to ${shortUsd(c.price)} on ${monthDay(c.date)}`)}"`
+      } tabindex="0" role="button" aria-label="${esc(`cut to ${money(c.price)} on ${monthDay(c.date)}`)}"`
       const label =
         labelCuts && c.price !== endValueForLabels
-          ? `<text x="${(cx + 5).toFixed(1)}" y="${(cy + 13).toFixed(1)}" font-size="${fs}" fill="${MUTED}">${esc(shortUsd(c.price))}</text>`
+          ? `<text x="${(cx + 5).toFixed(1)}" y="${(cy + 13).toFixed(1)}" font-size="${fs}" fill="${MUTED}">${esc(money(c.price))}</text>`
           : ''
       return `<g ${attrs}><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="24" fill="transparent"/><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.2" fill="${INK}"/></g>${label}`
     })
@@ -641,7 +660,7 @@ export function priceHistoryLineSvg(
       : ''
 
   const bare = layout.bare === true
-  const openLabel = shortUsd(path.startPrice)
+  const openLabel = money(path.startPrice)
   const startY = y(path.startPrice)
   // THE WORTH RANGE, SHADED ON EVERY PATH (Delta 3). Matt: "Look, once they
   // dropped it down into this range, it sold, but these people never got down
@@ -705,14 +724,27 @@ export function priceHistoryLinePhoneSvg(
   return priceHistoryLineSvg(path, PRICE_PATH_PHONE, id, range)
 }
 
-/** "sold $457K · offer in 25 days" — the mark at the end names its own measure. */
+/** A close on a path's labels: exact when the short label would round it, else the path's own label. */
+function closeLabel(close: number, money: (n: number) => string): string {
+  const said = shortOrExactUsd(close)
+  return /[KM]$/.test(said) ? money(close) : said
+}
+
+/**
+ * "sold $457K · offer in 25 days": the mark at the end names its own measure.
+ *
+ * A home under contract carries its LIST price on the MLS; the contract price
+ * is not published until it closes. "under contract $799K" read as the price
+ * it went under contract at (1355 Jacksonville, reader review 2026-10-08), so
+ * the label says the price is the list: "listed $799K, under contract".
+ */
 export function priceHistoryEndLabel(path: PricePath): string {
+  const money = pricePathMoney(path)
+  const days = priceHistoryDaysClause(path, ' · ')
+  if (path.outcome === 'sold' && path.closePrice != null) return `sold ${closeLabel(path.closePrice, money)}${days}`
   const value = path.closePrice ?? finalAskOf(path)
-  const word = OUTCOME_WORD[path.outcome]
-  const money = path.outcome === 'sold' && path.closePrice != null
-    ? shortOrExactUsd(path.closePrice)
-    : shortUsd(value)
-  return `${word} ${money}${priceHistoryDaysClause(path, ' · ')}`
+  if (path.outcome === 'under-contract') return `listed ${money(value)}, under contract${days}`
+  return `${OUTCOME_WORD[path.outcome]} ${money(value)}${days}`
 }
 
 /**
@@ -735,13 +767,14 @@ export function priceHistoryDaysClause(path: PricePath, lead = ''): string {
  * the path in prose. Every figure in it is drawn above it.
  */
 export function priceHistoryReading(path: PricePath, range?: PricePathRange | null): string {
-  const bits: string[] = [`${path.label}: asked ${shortUsd(path.startPrice)} on ${monthDay(path.startDate)}`]
-  for (const c of path.cuts) bits.push(`cut to ${shortUsd(c.price)} on ${monthDay(c.date)}`)
-  if (path.undatedCutTo != null) bits.push(`later asked ${shortUsd(path.undatedCutTo)}, date not recorded`)
+  const money = pricePathMoney(path)
+  const bits: string[] = [`${path.label}: asked ${money(path.startPrice)} on ${monthDay(path.startDate)}`]
+  for (const c of path.cuts) bits.push(`cut to ${money(c.price)} on ${monthDay(c.date)}`)
+  if (path.undatedCutTo != null) bits.push(`later asked ${money(path.undatedCutTo)}, date not recorded`)
   const value = path.closePrice ?? finalAskOf(path)
   const end =
     path.outcome === 'sold'
-      ? `sold ${path.closePrice != null ? shortOrExactUsd(path.closePrice) : shortUsd(value)} on ${monthDay(path.endDate)}`
+      ? `sold ${path.closePrice != null ? closeLabel(path.closePrice, money) : money(value)} on ${monthDay(path.endDate)}`
       : path.outcome === 'off-market'
         ? `came off ${monthDay(path.endDate)}`
         : path.outcome === 'under-contract'
@@ -756,8 +789,9 @@ export function priceHistoryReading(path: PricePath, range?: PricePathRange | nu
     const lo = Math.min(range.low, range.high)
     const hi = Math.max(range.low, range.high)
     const last = path.closePrice ?? finalAskOf(path)
+    const rangeLabel = compactUsdLabels([lo, hi])
     bits.push(
-      `shaded range ${shortUsd(lo)} to ${shortUsd(hi)}, ${
+      `shaded range ${rangeLabel(lo)} to ${rangeLabel(hi)}, ${
         last >= lo && last <= hi ? 'which it came into' : last > hi ? 'which it never came down to' : 'which it sat below'
       }`,
     )

@@ -23,6 +23,10 @@ vi.mock('@/lib/data/cma/marketAreaReads', () => ({
   getCmaMarketAreaRows: (...args: unknown[]) => (getCmaMarketAreaRows as AnyFn)(...args),
 }))
 
+// No outline around the area's plats: the box prefilter is not what this file
+// tests, and unmocked it would reach for the live database.
+vi.mock('@/lib/data/cma/platGroundBounds', () => ({ getPlatGroundBounds: async () => null }))
+
 import { buildCmaExtras } from '@/lib/cma/extras'
 
 function subject(over: Partial<CmaSubject> = {}): CmaSubject {

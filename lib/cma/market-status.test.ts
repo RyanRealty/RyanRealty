@@ -1411,10 +1411,17 @@ describe('the peer sentence counts the rows it shows', () => {
     expect(set.count).toBe(0)
     expect(set.peers).toHaveLength(0)
     // The seven are the homes listed inside the read's price window, and the
-    // sentence says so (reader review, 1355 Jacksonville, 2026-10-08).
+    // sentence says so as the search (reader review, 1355 Jacksonville,
+    // 2026-10-08). Their own last asks print, and the one reason the fit
+    // refused them for: all seven are 2,400 square feet against 1,200 (3062
+    // NW Kelly Hill, reader review 2026-10-08). Bedrooms are not named: size
+    // is the refusal the fit returned.
     expect(set.sentence).toBe(
-      'Seven homes in River West listed between $660,000 and $2,220,000 came off the market without selling in the last 24 months. None were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.',
+      'We searched listings in River West between $660,000 and $2,220,000. Seven homes came off the market without selling in the last 24 months, last listed between $900,000 and $906,000. All seven are more than 25 percent larger than this home, so they are not compared here.',
     )
+    expect(set.unlike).toHaveLength(7)
+    expect(set.unlike?.every((h) => h.reason === 'size' && h.direction === 'larger' && h.limit === 25)).toBe(true)
+    expect(set.sentence).not.toMatch(/bedrooms|bathrooms|age/)
     expect(set.priceBand).toEqual({ lo: 660_000, hi: 2_220_000 })
     expect(set.sentence).not.toMatch(/No home /)
     expect(set.sentence).not.toContain('—')
