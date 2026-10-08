@@ -709,6 +709,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     subjectBathsHalf: subject.bathsHalf ?? null,
     subjectBeds: subject.beds,
     subjectSubdivisionSlug: subject.subdivisionSlug ?? null,
+    subjectGround: subject,
     subjectIsCustomOrNew: customOrNew,
     failedAsk: pricing.failedAsk ?? null,
   })

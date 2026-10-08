@@ -15,6 +15,15 @@
  * (2026-10-08): the picker compared 1 full bath against 852 Columbia's 2 and
  * kept the sale on its own plat; the dry run's contract, handed the totals
  * only, compared 1 against 3 and refused it.
+ *
+ * Every door into the facts set stamps (lib/pricing/match.ts
+ * pickerRoomDecision, through toSelected), the size bracket included. A check
+ * that still meets an unstamped sale decides it with the subject's location
+ * (RoomGroundLocation), never with its room counts alone: without a location
+ * a sale in the subject's own neighborhood reads as off ground.
+ * cma-20435-powder-mountain and cma-63264-rossby (2026-10-08) failed the
+ * contract on a bracket-seated sale one room apart inside the subject's
+ * mapped neighborhood for both reasons at once.
  */
 import { sameOrdinaryPhaseFamily } from '@/lib/cma/community-location'
 import { resolveMarketArea } from '@/lib/cma/market-area'
@@ -38,6 +47,32 @@ export type RoomGroundSubject = {
   bathsFull?: number | null
   bathsHalf?: number | null
   subdivisionSlug?: string | null
+}
+
+/**
+ * Where the subject sits, which is all own ground reads from it: its street,
+ * its plat name, its point (the mapped neighborhood resolves from it). A check
+ * that grades a sale with the subject's room counts alone has no ground and
+ * calls a sale in the subject's own neighborhood "off ground".
+ */
+export type RoomGroundLocation = Pick<
+  RoomGroundSubject,
+  'streetAddress' | 'city' | 'subdivision' | 'subdivisionNorm' | 'latitude' | 'longitude' | 'sqft' | 'marketArea'
+>
+
+/** Only the location fields of a subject (a CmaSubject or a PricingSubject passes as is). */
+export function roomGroundLocationOf(x: RoomGroundLocation | null | undefined): RoomGroundLocation {
+  if (!x) return {}
+  return {
+    streetAddress: x.streetAddress ?? null,
+    city: x.city ?? null,
+    subdivision: x.subdivision ?? null,
+    subdivisionNorm: x.subdivisionNorm ?? null,
+    latitude: x.latitude ?? null,
+    longitude: x.longitude ?? null,
+    sqft: x.sqft ?? null,
+    marketArea: x.marketArea ?? null,
+  }
 }
 
 /** The counts the one-room rule compared for one pair, and on what ground. */

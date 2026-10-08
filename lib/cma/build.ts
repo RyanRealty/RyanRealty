@@ -1182,6 +1182,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       subjectBathsHalf: subject.bathsHalf ?? null,
       subjectBeds: subject.beds,
       subjectSubdivisionSlug: subject.subdivisionSlug ?? null,
+      // Where the home sits, so a sale is graded on the picker's own ground.
+      subjectGround: subject,
       subjectIsCustomOrNew,
       failedAsk: pricing.failedAsk ?? null,
       // Null when nothing graded a comp on price on this build.

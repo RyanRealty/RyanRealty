@@ -415,9 +415,11 @@ function applesOk(
     },
     asOfYear,
   )
-  // ONE ROOM RULE for beds and baths alike, custom/new included
-  // (Matt 2026-09-10, skill 0.1). Same function the comparability review uses.
-  if (!roomCountsDecision(subject, sale).ok) return false
+  // The ONE ROOM RULE is not decided here. Every door into the set (the
+  // walk's rungs and the size bracket) calls pickerRoomDecision itself, and
+  // the seated sale carries that same decision (toSelected). This test used to
+  // run its own copy without the own-plat test, so it refused a one-room sale
+  // on the subject's recorded plat that rule 4 keeps.
   if (customOrNew) {
     if (!customLotCompatible(subject.lotAcres, sale.lotAcres)) return false
   } else {
@@ -621,7 +623,6 @@ function passesTier(
 ): {
   ok: boolean
   miles: number | null
-  roomDifference?: Array<'beds' | 'baths'> | null
   roomDecision?: RoomDecision | null
   sewerNote?: string | null
 } {
@@ -676,9 +677,12 @@ function passesTier(
   if (!applesOk(subject, sale, tier.apples, asOfYear, allowFeatureCross)) {
     return { ok: false, miles: null }
   }
-  // ONE ROOM RULE (skill 0.1). Same function the review uses. Own-plat is own
-  // ground, so one room apart is noted; two or more is refused everywhere.
-  const rooms = roomCountsDecision(subject, { ...sale, ownPlat: ownPlat || inSubjectPlat(subject, sale) })
+  // ONE ROOM RULE (rule 4). The picker's one call (pickerRoomDecision), the
+  // same one the size bracket makes and the seated sale carries. Own plat and
+  // own street are own ground, so one room apart is noted; two or more is
+  // refused everywhere. (The own-street rung's sale is a sameStreetPeer, which
+  // roomCountsDecision reads as own ground itself.)
+  const rooms = pickerRoomDecision(subject, sale)
   if (!rooms.ok) return { ok: false, miles: null }
   if (!ownPlat && !ageOk(subject.yearBuilt, sale.yearBuilt, asOfYear, tier.ageYears)) {
     return { ok: false, miles: null }
@@ -797,7 +801,6 @@ function passesTier(
   return {
     ok: true,
     miles,
-    roomDifference: rooms.notes.length > 0 ? rooms.notes : null,
     roomDecision: rooms,
     sewerNote,
   }
@@ -844,11 +847,43 @@ export function saleLocationMatch(subject: PricingSubject, sale: PricingSale): L
   })
 }
 
-function toSelected(subject: PricingSubject, sale: PricingSale, asOf: string, tierName: string): SelectedPricingComp {
+/**
+ * THE PICKER'S ONE-ROOM DECISION (rule 4), the one call every door into the
+ * set makes: each rung of the walk (passesTier), the size bracket
+ * (bracketEligible), and the stamp every seated sale carries (toSelected).
+ * Own ground is the subject's own plat by the same-subdivision rung's own test
+ * (inSubjectPlat: the recorded polygon or a phase of it, else the MLS name, or
+ * the street-cluster pocket), plus what roomCountsDecision reads itself (the
+ * MLS plat name, the mapped neighborhood, the own street, the phase family).
+ *
+ * The stamp is what every later check re-runs (carriedRoomDecision in
+ * lib/pricing/room-ground.ts). Before 2026-10-08 the size bracket seated a
+ * sale without it, and the accuracy contract, which reads only the subject's
+ * room counts, decided that sale off own ground and refused it:
+ * cma-20435-powder-mountain (60645 Taos, 3 full baths against 2, inside the
+ * subject's mapped neighborhood) and cma-63264-rossby (63127 Vista Meadow,
+ * 4 bed against 3, inside the subject's mapped neighborhood).
+ */
+function pickerRoomDecision(subject: PricingSubject, sale: PricingSale): RoomDecision {
+  return roomCountsDecision(subject, { ...sale, ownPlat: inSubjectPlat(subject, sale) })
+}
+
+function toSelected(
+  subject: PricingSubject,
+  sale: PricingSale,
+  asOf: string,
+  tierName: string,
+  /** The decision the door that admitted the sale already made; computed when absent. */
+  rooms: RoomDecision = pickerRoomDecision(subject, sale),
+): SelectedPricingComp {
   return {
     ...sale,
     selectionTier: tierName,
     setsPrice: true,
+    // Every seated sale carries the picker's room decision and, when it kept a
+    // one-room gap on own ground, the disclosure the letter prints beside it.
+    roomDecision: rooms,
+    roomDifference: rooms.notes.length > 0 ? rooms.notes : null,
     ownPlat: inSubjectPlat(subject, sale),
     locationMatch: saleLocationMatch(subject, sale),
     proximity: proximityLabel(
@@ -948,6 +983,9 @@ function bracketEligible(
   // Without them a plat-less subject's swap reached the whole pool.
   if (!parentWallAdmits(subject, sale, bracketWallRung(subject, sale), asOfYear)) return false
   if (!applesOk(subject, sale, 'product_lot', asOfYear)) return false
+  // Rule 4, the walk's own call. A swap never seats a sale the rule refuses,
+  // and a one-room sale it keeps goes in carrying that decision (toSelected).
+  if (!pickerRoomDecision(subject, sale).ok) return false
   const customOrNew = isCustomOrNewSubject(
     {
       yearBuilt: subject.yearBuilt,
@@ -1770,7 +1808,7 @@ export function walkPricingLadder(
       // agrees with itself on price even when it disagrees on square footage.
       const saleKey = `${sale.address.trim().toLowerCase()}|${(sale.city ?? '').trim().toLowerCase()}|${Math.round(sale.closePrice)}`
       if (bySale.has(saleKey)) continue
-      const { ok, roomDifference, roomDecision, sewerNote } = passesTier(subject, sale, tier, asOf, cells, priceAnchor)
+      const { ok, roomDecision, sewerNote } = passesTier(subject, sale, tier, asOf, cells, priceAnchor)
       if (!ok) continue
       // The subdivision-median tier does not see this close. Once the plat has
       // a sale, a different plat has to land on that set's own prices.
@@ -1778,9 +1816,8 @@ export function walkPricingLadder(
         continue
       }
       const selected: SelectedPricingComp = {
-        ...toSelected(subject, sale, asOf, tier.name),
-        roomDifference: roomDifference ?? null,
-        roomDecision: roomDecision ?? null,
+        // Stamped with the room decision this rung just made (toSelected).
+        ...toSelected(subject, sale, asOf, tier.name, roomDecision ?? undefined),
         sewerNote: sewerNote ?? null,
         setsPrice: true,
       }
