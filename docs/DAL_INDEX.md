@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-10-08T03:38:00.465Z
+**Generated:** 2026-10-08T15:10:43.929Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -4682,7 +4682,7 @@ Companion files:
 
 ### `lib/data/studio/subjects.ts`
 
-**Exports:** `figuresFromPulse`, `studioListingAgent`, `studioTrend`, `studioOutline`, `resolveStudioSubject`, `studioPlaceOptions`
+**Exports:** `studioPlaceLink`, `figuresFromPulse`, `studioListingAgent`, `studioTrend`, `studioOutline`, `resolveStudioSubject`, `studioPlaceOptions`
 
 ---
 

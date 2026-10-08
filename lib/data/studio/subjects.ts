@@ -41,10 +41,27 @@ import resortCommunities from '@/data/resort-communities.json'
 import { communityPath } from '@/lib/communities/community-public-pair'
 import { getBoundaryGeoJSON, type BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
 import { getCommunityOutlineGeoJSON } from '@/lib/data/geo/getCommunityOutline'
+import { getNeighborhoodPublicInventory } from '@/lib/data/geo/neighborhood-public-inventory'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 import type { MotionOutline, MotionSeries } from '@/lib/studio/motion/cues'
 import { getStudioPriceSeries, type StudioSeriesMonth } from './series'
 
 const SITE = 'https://ryan-realty.com'
+
+/**
+ * Where a caption's "Details at" sends someone, built only from the site's own
+ * path helpers. A typed path went dead: market and trend captions linked
+ * /market, which never existed (404, found live 2026-10-08).
+ *   - a registry community: its community page;
+ *   - a Bend district: the page the public inventory read names for it
+ *     (/cities/bend/old-bend), the page that shows the same homes for sale;
+ *   - anything else, and the region: Bend's market page.
+ */
+export function studioPlaceLink(community: { slug: string } | null, districtHref?: string | null): string {
+  if (community) return `${SITE}${communityPath(community.slug)}`
+  if (districtHref?.startsWith('/')) return `${SITE}${districtHref}`
+  return `${SITE}${cityMarketPath('bend')}`
+}
 
 /** The cache stamp every served figure actually carries. Never claim v4. */
 const METHODOLOGY = 'v3-2026-05-07'
@@ -471,13 +488,16 @@ export async function resolveStudioSubject(
     // The cache carries the human label. Deriving one from the slug produced
     // "Bend Old Bend" for bend-old-bend, which is not a place anyone says.
     const community = findCommunity(slug)
-    const row = community
-      ? null
-      : await getMarketPulseRowForGeo({
-          geoType: 'neighborhood',
-          geoSlug: slug,
-          columns: 'geo_slug, geo_label',
-        })
+    const [row, district] = community
+      ? [null, null]
+      : await Promise.all([
+          getMarketPulseRowForGeo({
+            geoType: 'neighborhood',
+            geoSlug: slug,
+            columns: 'geo_slug, geo_label',
+          }),
+          getNeighborhoodPublicInventory(slug),
+        ])
     const cacheLabel = typeof row?.geo_label === 'string' ? row.geo_label.trim() : ''
     const label = community
       ? `${community.label}, ${community.city}`
@@ -512,7 +532,7 @@ export async function resolveStudioSubject(
               `${placeName}, its recorded outline drawing on and filling, then its live homes for sale and median list price.`,
           }
         : {}),
-      ctaUrl: community ? `${SITE}${communityPath(community.slug)}` : `${SITE}/housing-market`,
+      ctaUrl: studioPlaceLink(community, district?.href),
     }
   }
 
@@ -533,7 +553,7 @@ export async function resolveStudioSubject(
       describes: trend.describes,
       // The caption keeps to what the film shows: the two labelled months and the meter.
       captionKeys: [trend.series.firstKey, trend.series.lastKey, ...(shaped.figures['months of supply'] ? ['months of supply'] : [])],
-      ctaUrl: `${SITE}/market`,
+      ctaUrl: studioPlaceLink(null),
     }
   }
   return {
@@ -541,7 +561,7 @@ export async function resolveStudioSubject(
     place: 'Bend',
     figures: shaped.figures,
     citations: shaped.citations,
-    ctaUrl: `${SITE}/market`,
+    ctaUrl: studioPlaceLink(null),
   }
 }
 
