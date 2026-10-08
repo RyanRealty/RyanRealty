@@ -9,6 +9,7 @@ import { lastThingFromHouse, lastThingFromSearch, writeLastThing } from '@/lib/s
 import { listingMlsFromPath, visitorPageCategoryFromPath } from '@/lib/analytics/page-type'
 import { resolveClientVisitBroker } from '@/lib/analytics/visit-broker'
 import { gpcFromNavigator, trackingLevelFromConsent, type TrackingConsentLevel } from '@/lib/identity/consent'
+import { consentRegionRestrictedFromCookieHeader } from '@/lib/analytics/consent-regions'
 import type { VisitContext } from '@/lib/analytics/ga4-visit'
 import {
   advanceSession,
@@ -62,10 +63,12 @@ function categorizePage(pathname: string): string {
  * value this one does: V3SectionTracker sent none and the server dropped all of
  * its events (found 2026-09-29).
  *
- * No banner answer yet -> 'essential': the track endpoint stores a functional
- * record — session_id, page URL, REFERRER and CAMPAIGN PARAMS. Geo, user agent
- * and listing meta are stripped server-side; an explicit decline is still
- * declined, and the server honors GPC opt-outs before any write.
+ * No banner answer in a restricted region (or with no region signal) ->
+ * 'essential': the track endpoint stores a functional record — session_id, page
+ * URL, REFERRER and CAMPAIGN PARAMS. Geo, user agent and listing meta are
+ * stripped server-side. No banner answer in an unrestricted region with no GPC
+ * is 'analytics' (Matt 2026-10-08). An explicit decline is still declined, and
+ * the server honors GPC opt-outs before any write.
  *
  * Referrer was never stripped, despite what this comment claimed until
  * 2026-08-26. Verified against the data: 11,197 of the last 90 days' sessions
@@ -87,7 +90,10 @@ function categorizePage(pathname: string): string {
  */
 export function currentConsentLevel(): TrackingConsentLevel {
   if (typeof window === 'undefined') return 'declined'
-  return trackingLevelFromConsent(getStoredConsent())
+  return trackingLevelFromConsent(getStoredConsent(), {
+    restrictedRegion: consentRegionRestrictedFromCookieHeader(document.cookie),
+    gpc: gpcFromNavigator(typeof navigator !== 'undefined' ? navigator : undefined),
+  })
 }
 
 /**

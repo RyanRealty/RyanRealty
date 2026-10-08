@@ -47,25 +47,33 @@ function check(label, ok, why) {
   if (!ok) failures.push({ label, why })
 }
 
-// ── 1. Consent Mode v2 — all FOUR params, denied by default ──────────────────
+// ── 1. Consent Mode v2 — all FOUR params, region-specific defaults ───────────
 // research: Consent Mode v2 requires analytics_storage + ad_storage +
 // ad_user_data + ad_personalization (3-0). Effective 2026-06-15 the CMP's
 // Consent Mode signal governs Google Ads data (2-1). Missing ad_user_data /
 // ad_personalization silently kills Ads data after that date.
+// Matt 2026-10-08: the ONE default lives in lib/analytics/consent-defaults.ts
+// (region-denied + global analytics granted, ad_* denied). GoogleAnalytics.tsx
+// still owns the update, and interpolates the shared default for the no-GTM
+// fallback so PR #432 can wrap that block.
 const ga = read('components/GoogleAnalytics.tsx')
+const consentDefaults = read('lib/analytics/consent-defaults.ts')
 const CM_PARAMS = ['analytics_storage', 'ad_storage', 'ad_user_data', 'ad_personalization']
-const hasDefaultBlock = /gtag\(\s*['"]consent['"]\s*,\s*['"]default['"]/.test(ga)
+const hasDefaultBlock = /gtag\(\s*['"]consent['"]\s*,\s*['"]default['"]/.test(consentDefaults)
+  && /consentModeDefaultJs\(/.test(ga)
 const hasUpdateBlock = /gtag\(\s*['"]consent['"]\s*,\s*['"]update['"]/.test(ga)
 check('Consent Mode v2 default block present', hasDefaultBlock,
-  "GoogleAnalytics.tsx must call gtag('consent','default',{...}) before gtag.js loads.")
+  "lib/analytics/consent-defaults.ts must emit gtag('consent','default',{...}) and GoogleAnalytics.tsx must call consentModeDefaultJs().")
 check('Consent Mode v2 update block present', hasUpdateBlock,
   "GoogleAnalytics.tsx must re-apply stored consent via gtag('consent','update',{...}).")
 for (const p of CM_PARAMS) {
-  check(`Consent Mode param "${p}" wired`, ga.includes(p),
-    `GoogleAnalytics.tsx is missing the "${p}" Consent Mode v2 parameter. Dropping it breaks Google Ads/Analytics consent signalling (hard deadline 2026-06-15).`)
+  check(`Consent Mode param "${p}" wired`, consentDefaults.includes(p) && ga.includes(p),
+    `Consent Mode v2 parameter "${p}" must appear in consent-defaults.ts and in GoogleAnalytics.tsx (the update).`)
 }
-check('Consent Mode "wait_for_update" present', /wait_for_update/.test(ga),
-  'GoogleAnalytics.tsx must keep wait_for_update so stored consent applies before the first ping.')
+check('Consent Mode "wait_for_update" present', /wait_for_update/.test(consentDefaults),
+  'consent-defaults.ts must keep wait_for_update so stored consent applies before the first ping.')
+check('Consent Mode region-scoped default present', /region:/.test(consentDefaults),
+  'consent-defaults.ts must send a region-scoped default for the shared restricted list.')
 
 // ── 2. Consent helpers exist + gate the analytics/marketing tags ─────────────
 // research: consent must gate event firing on both channels (3-0).
@@ -88,13 +96,15 @@ for (const rel of ['components/GTMHead.tsx']) {
   check(`${rel} builds the GTM bootstrap from the parsed module`, /gtmBootstrapScript\(/.test(src) && !/gtm\.start/.test(src),
     `${rel} must render gtmBootstrapScript() from lib/analytics/gtm-bootstrap.ts, not an inline template (the module is parse-tested).`)
 }
-// The Meta pixel fires on all traffic by directive (2026-06-02), so CCPA/CPRA opt-out
-// is honored via Limited Data Use rather than suppression (research-verified pattern
-// for a US opt-out site). LDU must stay wired so opted-out visitors are excluded from
-// ad targeting/personalization while still being measured.
+// The Meta Pixel follows the analytics_storage default (Matt 2026-10-08). CCPA/CPRA
+// opt-out without a full decline still uses Limited Data Use when the pixel loads.
+// Restricted regions, GPC, and a stored decline do not load it.
 const pixel = read('components/MetaPixel.tsx')
-check('Meta pixel wires Limited Data Use (LDU)', /dataProcessingOptions/.test(pixel),
-  'MetaPixel.tsx must call fbq("dataProcessingOptions", ...) so opted-out (essential-only / Do Not Sell) visitors are sent in LDU mode (CCPA/CPRA).')
+const pixelConsent = read('lib/analytics/meta-pixel-consent.ts')
+check('Meta pixel wires Limited Data Use (LDU)', /dataProcessingOptions/.test(pixelConsent),
+  'lib/analytics/meta-pixel-consent.ts must call fbq("dataProcessingOptions", ...) so opted-out (essential-only / Do Not Sell) visitors are sent in LDU mode (CCPA/CPRA).')
+check('Meta pixel bootstrap is the shared helper', /metaPixelBootstrapScript\(/.test(pixel),
+  'MetaPixel.tsx must render metaPixelBootstrapScript() so the pixel is not inited where it is denied.')
 
 // ── 3. No unhashed PII to ad platforms (Meta CAPI) ───────────────────────────
 // research: PII MUST be SHA-256 hashed before transmission (3-0).

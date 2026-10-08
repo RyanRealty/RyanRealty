@@ -16,6 +16,7 @@ import CookieConsentBanner, {
   COOKIE_NOTICE_SCROLL_PX,
   autoGrantConsentForAdTraffic,
   getStoredConsent,
+  hasAnalyticsConsent,
   nextCookieNoticeSurface,
 } from './CookieConsentBanner'
 import { arrivalConsent } from '@/lib/identity/consent'
@@ -240,13 +241,20 @@ describe('autoGrantConsentForAdTraffic', () => {
     vi.mocked(arrivalConsent).mockClear()
   })
 
-  it('decides through the one rule, arrivalConsent, with the cookie, the arrival and the browser\'s GPC signal', () => {
+  it('decides through the one rule, arrivalConsent, with the cookie, the arrival, the browser\'s GPC signal and the region cookie', () => {
+    document.cookie = 'rr_cr=0; path=/'
     vi.stubGlobal('location', new URL('https://ryan-realty.com/?utm_source=facebook'))
     expect(autoGrantConsentForAdTraffic()).toBe(true)
-    expect(arrivalConsent).toHaveBeenCalledWith({ cookieValue: undefined, search: '?utm_source=facebook', gpc: false })
+    expect(arrivalConsent).toHaveBeenCalledWith({
+      cookieValue: undefined,
+      search: '?utm_source=facebook',
+      gpc: false,
+      restrictedRegion: false,
+    })
   })
 
   it('is judged on the address the page LOADED at: a tap before the tracker mounts keeps the grant (review of 2026-09-30)', () => {
+    document.cookie = 'rr_cr=0; path=/'
     vi.stubGlobal('location', new URL('https://ryan-realty.com/?utm_source=facebook&fbclid=TEST'))
     pageArrival() // recorded as the page loads (the module is evaluated at hydration)
     // the visitor taps a link before VisitTracker, loaded lazily, has mounted
@@ -268,10 +276,22 @@ describe('autoGrantConsentForAdTraffic', () => {
     vi.unstubAllGlobals()
   })
 
-  it('grants analytics and marketing on utm traffic with no prior choice', () => {
+  it('grants analytics and marketing on utm traffic with no prior choice in a known unrestricted region', () => {
+    document.cookie = 'rr_cr=0; path=/'
     vi.stubGlobal('location', new URL('https://ryan-realty.com/?utm_source=facebook'))
     expect(autoGrantConsentForAdTraffic()).toBe(true)
     expect(getStoredConsent()).toEqual({ analytics: true, marketing: true })
+  })
+
+  it('does not auto-grant on a utm/fbclid link in a restricted or unknown region', () => {
+    document.cookie = 'rr_cr=1; path=/'
+    vi.stubGlobal('location', new URL('https://ryan-realty.com/?utm_source=facebook&fbclid=TEST'))
+    expect(autoGrantConsentForAdTraffic()).toBe(false)
+    expect(getStoredConsent()).toBeNull()
+    cookies.clear()
+    vi.stubGlobal('location', new URL('https://ryan-realty.com/?fbclid=TEST'))
+    expect(autoGrantConsentForAdTraffic()).toBe(false)
+    expect(getStoredConsent()).toBeNull()
   })
 
   it('does not override an explicit essential-only choice', () => {
@@ -279,6 +299,21 @@ describe('autoGrantConsentForAdTraffic', () => {
     vi.stubGlobal('location', new URL('https://ryan-realty.com/?fbclid=TEST'))
     expect(autoGrantConsentForAdTraffic()).toBe(false)
     expect(getStoredConsent()).toEqual({ analytics: false, marketing: false })
+  })
+
+  it('hasAnalyticsConsent follows the region default when there is no stored answer', () => {
+    document.cookie = 'rr_cr=0; path=/'
+    expect(hasAnalyticsConsent()).toBe(true)
+    document.cookie = 'rr_cr=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
+    document.cookie = 'rr_cr=1; path=/'
+    expect(hasAnalyticsConsent()).toBe(false)
+  })
+
+  it('hasAnalyticsConsent is false under GPC even with rr_cr=0', () => {
+    Object.defineProperty(navigator, 'globalPrivacyControl', { configurable: true, value: true })
+    document.cookie = 'rr_cr=0; path=/'
+    expect(hasAnalyticsConsent()).toBe(false)
+    Object.defineProperty(navigator, 'globalPrivacyControl', { configurable: true, value: undefined })
   })
 
   it('never grants anything to a browser sending Global Privacy Control: no cookie, no consent event', () => {

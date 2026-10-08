@@ -33,6 +33,7 @@ vi.mock('@/app/actions/track-user-event', () => ({ trackUserEvent: vi.fn(async (
 import { autoGrantConsentForAdTraffic } from '@/components/CookieConsentBanner'
 import { currentConsentLevel, fireFirstPartyEvent, firstPartyEventContext } from '@/components/VisitTracker'
 import { CONSENT_COOKIE, arrivalConsent } from '@/lib/identity/consent'
+import { CONSENT_REGION_COOKIE } from '@/lib/analytics/consent-regions'
 import {
   SESSION_BINDING_KEY,
   SESSION_ID_KEY,
@@ -754,6 +755,7 @@ describe('the literals the mirror must share', () => {
     expect(capture(/var CONSENT_COOKIE = '([^']+)'/)).toBe(CONSENT_COOKIE)
     expect(/const COOKIE_CONSENT_KEY = '([^']+)'/.exec(banner)![1]).toBe(CONSENT_COOKIE)
     expect(capture(/var CONSENT_EXPIRY_YEARS = (\d+)/)).toBe(/const CONSENT_EXPIRY_YEARS = (\d+)/.exec(banner)![1])
+    expect(capture(/var REGION_COOKIE = '([^']+)'/)).toBe(CONSENT_REGION_COOKIE)
   })
 
   it('the idle timeout and the session id shape', () => {

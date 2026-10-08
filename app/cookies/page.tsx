@@ -72,6 +72,14 @@ const COOKIES: CookieRow[] = [
     purpose: 'Remembers your cookie choices so we apply them on return visits.',
   },
   {
+    name: 'rr_cr',
+    provider: 'Ryan Realty (first-party)',
+    type: 'Essential',
+    duration: '1 day',
+    purpose:
+      'A one-bit flag for whether this visit is from a region that requires opt-in for analytics. It is not an identifier.',
+  },
+  {
     name: 'rr_pid',
     provider: 'Ryan Realty (first-party)',
     type: 'Marketing',
@@ -105,7 +113,8 @@ const COOKIES: CookieRow[] = [
     provider: 'Google Analytics 4 (Google)',
     type: 'Analytics',
     duration: 'Up to 2 years',
-    purpose: 'Measures site usage and distinguishes visitors. Set only with your analytics consent.',
+    purpose:
+      'Measures site usage and distinguishes visitors. Set when analytics is allowed: by default outside the European Economic Area, the UK, and Switzerland, or after you accept. Not set if you decline, send a Global Privacy Control signal, or visit from a region that requires opt-in.',
   },
   {
     name: '_fbp',
@@ -113,7 +122,7 @@ const COOKIES: CookieRow[] = [
     type: 'Marketing',
     duration: '90 days',
     purpose:
-      'Used by the Meta Pixel for advertising measurement and audience matching. Set only with your marketing consent.',
+      'Used by the Meta Pixel for advertising measurement. Set when analytics is allowed in your region, unless you decline or send Global Privacy Control. Limited Data Use applies until you accept marketing cookies.',
   },
   {
     name: '_fbc',
@@ -150,6 +159,7 @@ const ITEMS: V3QuietItem[] = [
     kind: 'prose',
     term: 'How to control cookies',
     body: [
+      'Outside the European Economic Area, the UK, and Switzerland, analytics is on until you decline. In those regions, analytics stays off until you accept. Marketing is off until you accept, everywhere.',
       'Use our cookie banner to accept all, choose essential only, or set analytics and marketing separately.',
       'Change or withdraw consent any time by clearing the consent cookie or returning to the banner.',
       'Use your browser settings to block or delete cookies. Blocking essential cookies may break sign-in.',
@@ -170,7 +180,7 @@ export default function CookiePolicyPage() {
 
         <V3Quiet
           id="cookies"
-          eyebrow="Updated June 1, 2026"
+          eyebrow="Updated October 8, 2026"
           heading="Cookie policy"
           headingLevel={1}
           items={ITEMS}

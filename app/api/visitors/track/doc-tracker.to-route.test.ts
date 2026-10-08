@@ -96,6 +96,7 @@ afterEach(() => {
 
 describe('a report opened first', () => {
   it('creates the session with the campaign, referrer and landing page on the link, and identifies the recipient', async () => {
+    document.cookie = 'rr_cr=0; path=/'
     h.load({ url: EMAIL_LINK, referrer: 'https://mail.google.com/' })
     await h.flush()
 

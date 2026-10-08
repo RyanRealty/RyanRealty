@@ -29,6 +29,13 @@ Control both trackers write no identifier and send only a notice, the search eve
 `trackUserEvent` refuse a decline and GPC, and the campaign-link grant goes through
 `arrivalConsent` (the tier table).
 
+**Updated 2026-10-08 (Matt, Consent Mode v2 region defaults):** analytics_storage is
+granted by default outside the EEA, UK, and Switzerland; denied in those regions until
+the visitor accepts. ad_* stay denied everywhere until marketing is granted. GPC and a
+stored decline deny analytics everywhere. The Meta Pixel follows the analytics default
+(flip `META_PIXEL_DEFAULT_FOLLOWS_ANALYTICS_STORAGE` to follow ad_* instead). One
+restricted-region list: `lib/analytics/consent-regions.ts`. Counsel confirms before merge.
+
 ## The architecture (what we do, end to end)
 
 ```
@@ -53,8 +60,8 @@ anonymous visit ──► first-party visitor_id (cookie/localStorage, PII-free)
 |---|---|---|---|
 | 1 | Durable **first-party, PII-free visitor_id**; stitch anonymous→known via a **deterministic shared id (hashed email)**, never fingerprinting | ✅ live (`visitor_sessions`, `rr_session_id`, identity bridge) | gate item 4/5 + DAL |
 | 2 | **First-party, server-side** event collection preferred over client-only pixels | ✅ live (`/api/visitors/track`, `/api/meta-capi`, same-origin) | `ci:csp` host allowlist |
-| 3 | Consent gates event firing; **Consent Mode v2 = 4 params** (`analytics_storage`, `ad_storage`, `ad_user_data`, `ad_personalization`) denied-by-default | ✅ live (`GoogleAnalytics.tsx`) | **G48 item 1** |
-| 4 | Analytics/marketing tags **gated on a consent helper** | ✅ live — Consent Mode v2: tags always load with `denied` defaults, `hasAnalyticsConsent`/`hasMarketingConsent` drive `consent update` (2026-09-01: GTM moved from load-suppression to this pattern after suppression made all non-consenting traffic invisible to GA4 since 2026-08-18) | **G48 item 2** |
+| 3 | Consent gates event firing; **Consent Mode v2 = 4 params** (`analytics_storage`, `ad_storage`, `ad_user_data`, `ad_personalization`); region-specific defaults (analytics granted outside EEA/UK/CH, ad_* denied everywhere); GPC and a stored decline deny analytics | ✅ live (`lib/analytics/consent-defaults.ts`, GTM bootstrap before gtm.js) | **G48 item 1** |
+| 4 | Analytics/marketing tags **gated on a consent helper** | ✅ live — Consent Mode v2: tags always load with region defaults, `hasAnalyticsConsent`/`hasMarketingConsent` drive `consent update` when a stored answer exists (2026-09-01: GTM moved from load-suppression to this pattern after suppression made all non-consenting traffic invisible to GA4 since 2026-08-18) | **G48 item 2** |
 | 5 | **PII SHA-256 hashed before transmission** to ad platforms (email lowercased+trimmed; phone digits-only) | ✅ live (`meta-capi` `em`/`ph` only) | **G48 item 3** |
 | 6 | Pixel↔CAPI **dedup via one server-generated `event_id`** (same id + same event_name; Meta 48h merge) | ✅ live (seller LP `generateEventId`) | **G48 item 4** |
 | 7 | **Persist click IDs (fbclid/gclid) + UTMs on the lead path** so offline conversions can be uploaded | ✅ live (seller LP captures utm + fbclid) | **G48 item 5** |
@@ -78,10 +85,12 @@ The reasoning: a UTM tag or an `fbclid` describes the LINK THAT WAS CLICKED, not
 person who clicked it. The referrer has always been treated that way; campaign params
 now match it.
 
-What forced the change. 99.5% of visitors never answer the cookie banner, so almost
-every arrival lands at `essential`. While campaign params were stripped there, **357 of
-79,220 sessions in 90 days carried one** — every paid click landed with its attribution
-already destroyed, which made tagging links pointless.
+What forced the change. Most visitors never answer the cookie banner. While campaign
+params were stripped at `essential`, **357 of 79,220 sessions in 90 days carried one** —
+every paid click landed with its attribution already destroyed, which made tagging links
+pointless. Since 2026-10-08 a visitor outside the EEA/UK/CH with no banner answer and no
+GPC lands at `analytics` (geo may be stored); restricted-region, GPC, and declined
+visitors stay `essential` or are dropped.
 
 The limits, which are not negotiable:
 
@@ -140,8 +149,9 @@ like anyone else (Matt clicking a link we sent him is how an owner-path send is
 proven). A page on a non-production host records nothing at all: the track route
 refuses it before any write, with the mirror's own host rule (`isNonProductionPageLocation`).
 
-**Unchanged.** Consent Mode defaults, the banner, and what a real visitor is asked.
-No new personal data is sent anywhere. Held by `ci:analytics-suppression`.
+**Unchanged by the suppression work.** The banner, and what a real visitor is asked.
+Consent Mode region defaults shipped separately (2026-10-08). No new personal data is
+sent anywhere. Held by `ci:analytics-suppression`.
 
 ## What we collect at each consent tier (updated 2026-09-29)
 
@@ -161,8 +171,8 @@ declined was still recorded and identified on a CMA or BPO document).
 |---|---|---|---|
 | **Declined** | banner answered with analytics AND marketing off, or an unreadable consent cookie | nothing: no session, no event, no identification, no GA4 mirror. On client documents (`/cma`, `/bpo`) as on every page: the script posts nothing and stores no session id | everything |
 | **GPC** | `Sec-GPC: 1` or `navigator.globalPrivacyControl` | nothing; if the browser was already identified, a durable `channel='all'` suppression on that contact. Both trackers, the site's and the client document's, write no identifier (no session id, no lifecycle record, no first-touch capture, no consent cookie: the campaign-link grant never applies) and post no event: once per page load they send a notice that carries the signal and nothing else (`{ gpc: true }`), and no identify ping. The route checks GPC before anything else, drops the request, and finds the contact from what the browser already carries on every request here: the signed `rr_pid` cookie, else its `rr_vid` in `visitor_identity_map` (a tracker from before 2026-09-30 still names its session). Until 2026-09-30 the site tracker minted a session id and posted every event with its address and campaign, while the document tracker sent nothing, so a known contact reading a report under GPC was never suppressed | everything |
-| **Essential** | no banner answer (99.5% of visitors), or marketing-only | browser session id, `rr_vid`, page URL (identity params stripped), page title and category, event type and time, referrer, landing page, campaign params (`utm_*`, `fbclid`, `gclid`), the automation class label (below), and **identification of a person who clicked a link we sent them, signed in, or submitted a form** (the session's `crm_person_id` and the signed `rr_pid` cookie); page views mirrored to GA4 under an anonymous client id | the user-agent string, IP geo, listing meta columns, scroll depth, dwell, the event metadata blob; no looking-at broker text |
-| **Analytics / all** | analytics granted | everything above, plus user agent, IP geo, listing meta, scroll, dwell, metadata; the looking-at broker text on a listing view | — |
+| **Essential** | no banner answer in a restricted region (EEA, UK, CH) or with unknown country, or marketing-only | browser session id, `rr_vid`, page URL (identity params stripped), page title and category, event type and time, referrer, landing page, campaign params (`utm_*`, `fbclid`, `gclid`), the automation class label (below), and **identification of a person who clicked a link we sent them, signed in, or submitted a form** (the session's `crm_person_id` and the signed `rr_pid` cookie); page views mirrored to GA4 under an anonymous client id | the user-agent string, IP geo, listing meta columns, scroll depth, dwell, the event metadata blob; no looking-at broker text |
+| **Analytics / all** | analytics granted (explicit accept, or no banner answer outside restricted regions with no GPC) | everything above, plus user agent, IP geo, listing meta, scroll, dwell, metadata; the looking-at broker text on a listing view | — |
 
 Identification at essential is disclosed in `app/privacy/page.tsx` ("Once you sign in,
 contact us, or follow a link we send, we may recognize you on later visits using a
@@ -171,12 +181,13 @@ record"). The code and that page must not drift apart.
 
 **The campaign-link grant (Matt 2026-06-02, `autoGrantConsentForAdTraffic`).** A visitor
 with NO banner answer who arrives on an ad or campaign link (any `utm_*`, `fbclid`,
-`gclid`, `msclkid`, `ttclid`) is treated as `all` for that visit and the grant is stored
-in the consent cookie, so their first page view scores and the campaign is attributed. An
-explicit answer, a decline included, is never overridden, and a browser sending Global
-Privacy Control is never granted anything: an opt-out of sale and sharing is not consent
-to marketing (`arrivalConsent`, `gpcFromNavigator`; until 2026-09-30 the grant wrote the
-`all` cookie for such a browser on every campaign link, report pages included). Every link we send a known
+`gclid`, `msclkid`, `ttclid`) in a **known unrestricted region** is treated as `all` for
+that visit and the grant is stored in the consent cookie. Restricted regions (EEA, UK, CH)
+and unknown region are never auto-granted: they stay at the region default until the
+visitor accepts. An explicit answer, a decline included, is never overridden, and a
+browser sending Global Privacy Control is never granted anything (`arrivalConsent`,
+`gpcFromNavigator`; until 2026-09-30 the grant wrote the `all` cookie for such a browser
+on every campaign link, report pages included). Every link we send a known
 contact carries `utm_*`, so an email arrival lands here on whichever page it opens,
 public page or client document: the client-document tracker follows the same rule
 (`isAdTrafficSearch`, and it writes the same cookie the banner does). The link judged is
@@ -536,8 +547,9 @@ screens them out.
 
 ## GA4 Measurement Protocol mirror (TRACK-1, 2026-09-23)
 
-The track route mirrors essential-tier page views into GA4 (commit 416911b31, Matt's
-decision; kept). Since 2026-09-23 each mirrored hit carries a **per-visit numeric
+The track route mirrors page views the browser is not counting into GA4 (commit 416911b31, Matt's
+decision; kept). Restricted-region and other essential-tier views still go through the mirror.
+Since 2026-09-23 each mirrored hit carries a **per-visit numeric
 `session_id`** (the Unix second the visit began; a new visit after 30 minutes idle, and,
 since 2026-09-29, on a different campaign: a visit is a session, see "Sessions") and
 `session_number`, and the first hit of a visit is preceded by a **`campaign_details`**
@@ -546,11 +558,12 @@ untagged arrival is sent as `(direct) / (none)`). UA-flagged sessions are not mi
 nor is the first view of a provisional `contact-deep-link` session. `visitor_sessions` / `visitor_events` remain the record of who visited; GA4 is
 a secondary view.
 
-The mirror skips a view only when the browser's own gtag is counting it: the analytics or
-all tier plus a `_ga` cookie. A raw-HTML client document (`/cma`, `/bpo`, page category
-`client-document`) runs no gtag, so its views are always mirrored, whatever the tier
-(`ga4-mirror.client-document.test.ts`). Before 2026-09-29 the document tracker always posted at
-essential and this held by accident; it now posts the visitor's real tier.
+The mirror skips a site page_view/listing_view at the analytics or all tier (the browser
+Google tag counts those views; gating on `_ga` double-counted the first hit because the
+cookie is often not set yet). Essential-tier views are still mirrored. A raw-HTML client
+document (`/cma`, `/bpo`, page category `client-document`) runs no gtag, so its views are
+always mirrored, whatever the tier (`ga4-mirror.client-document.test.ts`). An ad-blocked
+visitor at the analytics tier is no longer mirrored; first-party Supabase still has them.
 
 ## Backlog — outward changes, ship only on Matt's go
 

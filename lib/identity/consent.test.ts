@@ -81,11 +81,25 @@ describe('parseConsentCookie + trackingLevelFromConsent', () => {
     expect(trackingLevelFromConsent(parseConsentCookie(raw))).toBe(legacyVisitTrackerLevel(legacyBannerParse(raw)))
   })
 
-  it('no answer is essential, never declined (the 99.5% who ignore the banner stay visible)', () => {
+  it('no answer without region context is essential, never declined', () => {
     expect(parseConsentCookie(undefined)).toBeNull()
     expect(parseConsentCookie('')).toBeNull()
     expect(parseConsentCookie(null)).toBeNull()
     expect(trackingLevelFromConsent(null)).toBe('essential')
+  })
+
+  it('no answer in an unrestricted region is analytics; DE and GB stay essential', () => {
+    expect(trackingLevelFromConsent(null, { country: 'US' })).toBe('analytics')
+    expect(trackingLevelFromConsent(null, { country: 'CA' })).toBe('analytics')
+    expect(trackingLevelFromConsent(null, { country: 'DE' })).toBe('essential')
+    expect(trackingLevelFromConsent(null, { country: 'GB' })).toBe('essential')
+    expect(trackingLevelFromConsent(null, { country: 'CH' })).toBe('essential')
+    expect(trackingLevelFromConsent(null, { restrictedRegion: false })).toBe('analytics')
+    expect(trackingLevelFromConsent(null, { restrictedRegion: true })).toBe('essential')
+  })
+
+  it('GPC keeps a no-answer visitor at essential even in the US', () => {
+    expect(trackingLevelFromConsent(null, { country: 'US', gpc: true })).toBe('essential')
   })
 
   it('marketing alone widens nothing we store', () => {
@@ -134,9 +148,38 @@ describe('isAdTrafficSearch', () => {
 describe('arrivalConsent (the campaign-link grant)', () => {
   const ad = '?utm_source=cma&utm_campaign=1-main-st'
 
-  it('grants analytics + marketing when there is no answer and the link is a campaign', () => {
-    expect(arrivalConsent({ cookieValue: undefined, search: ad, gpc: false })).toEqual({ level: 'all', grant: true })
-    expect(arrivalConsent({ cookieValue: '', search: '?gclid=1', gpc: false })).toEqual({ level: 'all', grant: true })
+  it('grants analytics + marketing when there is no answer, the link is a campaign, and the region is known unrestricted', () => {
+    expect(arrivalConsent({ cookieValue: undefined, search: ad, gpc: false, country: 'US' })).toEqual({
+      level: 'all',
+      grant: true,
+    })
+    expect(arrivalConsent({ cookieValue: '', search: '?gclid=1', gpc: false, restrictedRegion: false })).toEqual({
+      level: 'all',
+      grant: true,
+    })
+  })
+
+  it('does not auto-grant in a restricted or unknown region, even on a utm/fbclid link', () => {
+    expect(arrivalConsent({ cookieValue: undefined, search: ad, gpc: false, country: 'DE' })).toEqual({
+      level: 'essential',
+      grant: false,
+    })
+    expect(arrivalConsent({ cookieValue: undefined, search: '?fbclid=1', gpc: false, country: 'GB' })).toEqual({
+      level: 'essential',
+      grant: false,
+    })
+    expect(arrivalConsent({ cookieValue: undefined, search: ad, gpc: false, country: 'CH' })).toEqual({
+      level: 'essential',
+      grant: false,
+    })
+    expect(arrivalConsent({ cookieValue: undefined, search: ad, gpc: false })).toEqual({
+      level: 'essential',
+      grant: false,
+    })
+    expect(arrivalConsent({ cookieValue: undefined, search: '?fbclid=1', gpc: false, restrictedRegion: true })).toEqual({
+      level: 'essential',
+      grant: false,
+    })
   })
 
   it('never overrides an answer, a decline included', () => {
@@ -157,12 +200,19 @@ describe('arrivalConsent (the campaign-link grant)', () => {
     })
   })
 
+  it('an ordinary US arrival with no answer is analytics and grants nothing (no cookie write)', () => {
+    expect(arrivalConsent({ cookieValue: undefined, search: '', gpc: false, country: 'US' })).toEqual({
+      level: 'analytics',
+      grant: false,
+    })
+  })
+
   it('gpc is a required argument: no caller can leave the opt-out out (review of 2026-09-30)', () => {
     // The banner restated this rule by hand and could drift from it; it now calls
     // arrivalConsent, and tsc refuses a call that does not say whether the browser
     // sends Global Privacy Control.
     // @ts-expect-error gpc is required
-    expect(arrivalConsent({ cookieValue: undefined, search: ad }).grant).toBe(true)
+    expect(arrivalConsent({ cookieValue: undefined, search: ad, country: 'US' }).grant).toBe(true)
   })
 
   it('never grants anything to a browser sending Global Privacy Control (review of 2026-09-30)', () => {
@@ -175,8 +225,11 @@ describe('arrivalConsent (the campaign-link grant)', () => {
       level: 'all',
       grant: false,
     })
-    // and with the signal off, nothing changes
-    expect(arrivalConsent({ cookieValue: undefined, search: ad, gpc: false })).toEqual({ level: 'all', grant: true })
+    // and with the signal off in a known unrestricted region, the grant still applies
+    expect(arrivalConsent({ cookieValue: undefined, search: ad, gpc: false, country: 'US' })).toEqual({
+      level: 'all',
+      grant: true,
+    })
   })
 })
 

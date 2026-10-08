@@ -187,11 +187,27 @@ describe('a visitor who declined (break 2)', () => {
     expect(readConsentCookieRaw()).toBeUndefined()
   })
 
-  it('no banner answer on a campaign link: analytics and marketing are granted for the visit and remembered, as on any other page', async () => {
+  it('no banner answer on a campaign link in a known unrestricted region: analytics and marketing are granted', async () => {
+    document.cookie = 'rr_cr=0; path=/'
     h.load({ url: EMAIL_LINK })
     await h.flush()
     expect(h.posts[0].body!.consent).toBe('all')
     expect(readConsentCookieRaw()).toBe(encodeConsent({ analytics: true, marketing: true }))
+  })
+
+  it('no banner answer on a campaign link in a restricted or unknown region is not auto-granted', async () => {
+    document.cookie = 'rr_cr=1; path=/'
+    h.load({ url: EMAIL_LINK })
+    await h.flush()
+    expect(h.posts[0].body!.consent).toBe('essential')
+    expect(readConsentCookieRaw()).toBeUndefined()
+
+    window.localStorage.clear()
+    document.cookie = 'rr_cr=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
+    h.load({ url: EMAIL_LINK })
+    await h.flush()
+    expect(h.posts[1].body!.consent).toBe('essential')
+    expect(readConsentCookieRaw()).toBeUndefined()
   })
 
   it('a decline that arrives after the page loaded stops the taps too', async () => {

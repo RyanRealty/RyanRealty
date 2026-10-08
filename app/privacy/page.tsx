@@ -115,8 +115,8 @@ const ITEMS: V3QuietItem[] = [
     term: 'Cookies',
     body: [
       'Essential: sign-in session, cookie-consent choice. Required for the site to work.',
-      'Analytics: with your consent, to understand how the site is used.',
-      'Marketing: with your consent, for advertising and retargeting.',
+      'Analytics: on by default outside the European Economic Area, the UK, and Switzerland, unless you decline or your browser sends a Global Privacy Control signal. In those regions, analytics stays off until you accept.',
+      'Marketing: off until you accept, for advertising and retargeting. The Meta Pixel follows the same regional analytics default unless you decline or send Global Privacy Control.',
       'Whatever you choose, we record how each visit reached us: the page you came from and any campaign tag on the link you clicked. That tells us which of our ads, emails and posts are working. It describes the link, not you. If you decline cookies, or your browser sends a Global Privacy Control signal, we record nothing at all.',
       'You can change your cookie preferences via the cookie banner or your browser settings.',
     ],

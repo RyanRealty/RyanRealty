@@ -107,6 +107,7 @@ afterEach(() => {
   vi.useRealTimers()
   vi.unstubAllGlobals()
   setConsent(undefined)
+  document.cookie = 'rr_cr=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
   setSignal('webdriver', false)
   setSignal('globalPrivacyControl', undefined)
 })
@@ -119,7 +120,7 @@ describe('fireFirstPartyEvent applies the session rule', () => {
     const p = posts[0]
     expect(p.sessionId).toMatch(UUID)
     expect(p.eventType).toBe('page_view')
-    expect(p.consent).toBe('essential') // no answer, and nothing granted it
+    expect(p.consent).toBe('essential') // no answer, no region signal, fail closed
     expect(p.campaign).toMatchObject({ source: 'crm', medium: 'email', campaign: 'spring' })
     expect(p.fbclid).toBe('F1')
     expect(p.landingPage).toContain('utm_campaign=spring')
@@ -308,11 +309,20 @@ describe('the mounted tracker', () => {
     expect(posts[0]).toMatchObject({ eventType: 'page_view', consent: 'analytics' })
   })
 
-  it('a campaign link with no banner answer is granted the campaign-link tier before the first post, as before', async () => {
+  it('a campaign link with no banner answer is granted the campaign-link tier before the first post in a known unrestricted region', async () => {
+    document.cookie = 'rr_cr=0; path=/'
     goto('/homes-for-sale/bend?utm_source=crm&utm_medium=email')
     await mount()
     expect(posts[0].consent).toBe('all')
     expect(document.cookie).toContain('ryan_realty_cookie_consent=')
+  })
+
+  it('a DE visitor on a utm/fbclid link with no answer is not auto-granted', async () => {
+    document.cookie = 'rr_cr=1; path=/'
+    goto('/homes-for-sale/bend?utm_source=crm&utm_medium=email&fbclid=TEST')
+    await mount()
+    expect(posts[0].consent).toBe('essential')
+    expect(document.cookie).not.toContain('ryan_realty_cookie_consent=')
   })
 
   it('never grants the campaign-link tier to a browser sending Global Privacy Control, and posts only the notice', async () => {
@@ -322,6 +332,25 @@ describe('the mounted tracker', () => {
     expect(document.cookie).not.toContain('ryan_realty_cookie_consent=')
     expect(posts).toEqual([{ gpc: true }])
     expect(window.localStorage.getItem('rr_session_id')).toBeNull()
+  })
+
+  it('a US region signal with no banner answer posts analytics, not essential', () => {
+    document.cookie = 'rr_cr=0; path=/'
+    fireFirstPartyEvent('page_view')
+    expect(posts[0].consent).toBe('analytics')
+  })
+
+  it('a restricted region signal with no banner answer stays essential', () => {
+    document.cookie = 'rr_cr=1; path=/'
+    fireFirstPartyEvent('page_view')
+    expect(posts[0].consent).toBe('essential')
+  })
+
+  it('GPC with a US region signal still posts only the notice', () => {
+    document.cookie = 'rr_cr=0; path=/'
+    setSignal('globalPrivacyControl', true)
+    fireFirstPartyEvent('page_view')
+    expect(posts).toEqual([{ gpc: true }])
   })
 
   it('posts nothing for a visitor who declined', async () => {

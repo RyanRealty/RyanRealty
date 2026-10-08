@@ -59,6 +59,7 @@
   try {
     // ── consent: mirror of lib/identity/consent.ts ────────────────────────────
     var CONSENT_COOKIE = 'ryan_realty_cookie_consent'
+    var REGION_COOKIE = 'rr_cr'
     var CONSENT_EXPIRY_YEARS = 1
 
     // parseConsentCookie
@@ -73,9 +74,18 @@
         return { analytics: false, marketing: false }
       }
     }
+    // consentRegionRestrictedFromCookieHeader (lib/analytics/consent-regions.ts):
+    // missing or not "0" is restricted. Mirror of trackingLevelFromConsent context.
+    var regionRestricted = function () {
+      var rows = document.cookie.split('; ')
+      for (var r = 0; r < rows.length; r++) {
+        if (rows[r].indexOf(REGION_COOKIE + '=') === 0) return rows[r].split('=')[1] !== '0'
+      }
+      return true
+    }
     // trackingLevelFromConsent
     var trackingLevelFromConsent = function (stored) {
-      if (stored === null) return 'essential'
+      if (stored === null) return regionRestricted() ? 'essential' : 'analytics'
       if (stored.analytics && stored.marketing) return 'all'
       if (stored.analytics) return 'analytics'
       if (stored.marketing) return 'essential'
@@ -117,11 +127,12 @@
     }
     // The tier for THIS page load (VisitTracker's mount effect: autoGrantConsentForAdTraffic,
     // then currentConsentLevel; the rule is arrivalConsent, on the link the page arrived by).
-    // A visitor who never answered the banner and arrived on a campaign or ad link is granted
-    // analytics + marketing; an explicit answer, a decline included, is never overridden, and
-    // Global Privacy Control is never read as a grant.
+    // A visitor who never answered the banner, arrived on a campaign or ad link, AND is in a
+    // known unrestricted region (rr_cr=0) is granted analytics + marketing. Restricted or
+    // unknown region is never auto-granted. An explicit answer, a decline included, is never
+    // overridden, and Global Privacy Control is never read as a grant.
     var consentAtArrival = function () {
-      if (parseConsentCookie(readConsentCookie()) === null && !gpcOn() && isAdTrafficSearch(loaded.search)) {
+      if (parseConsentCookie(readConsentCookie()) === null && !gpcOn() && isAdTrafficSearch(loaded.search) && !regionRestricted()) {
         try { writeConsentGrant() } catch (e) { /* the grant still applies to this view */ }
         return 'all'
       }
