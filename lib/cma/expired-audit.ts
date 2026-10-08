@@ -1113,6 +1113,63 @@ function failedAskP75(ask: number): number {
   return Math.round((FAILED_ASK_BACKTEST.closeP75Ratio * ask) / 1000) * 1000
 }
 
+/** "How closely it matches your home": the letter's one phrase for the weights. */
+const WEIGHTED_CLAUSE = 'once each is weighted by how closely it matches your home'
+
+/**
+ * Every first sentence the clamp sentence has been written with, so a
+ * renderer can take the stored one off and say what the printed grid
+ * supports instead (`splitFailedAskClampHead`).
+ */
+const FAILED_ASK_CLAMP_HEAD =
+  /^The sales support (?:a value of \$[\d,]+\.|a value near \$[\d,]+ once each is weighted by how closely it matches your home\.|the price on the cover once each is weighted by how closely it matches your home\.)\s*/
+
+/**
+ * NAME THE WEIGHTED FIGURE (Matt 2026-10-08). The clamp sentence's first
+ * sentence says what the sales support, and that is what their weights blend
+ * to: `reconciliation.weightedPrice`, to the thousand, the same rounding the
+ * letter prints as "near $X" (`expectedSaleNear`). 615 Reed Market said "The
+ * sales support a value of $533,000" (the list tier before the ceiling, with
+ * the list steps on it) while its weights blend to $510,945: a figure no
+ * weight on the page produces. When the weighted figure is the cover's own
+ * thousand the sentence names the cover, never its dollars twice. A row with
+ * no weighted price keeps the figure the evidence step recorded.
+ */
+export function failedAskClampHead(args: {
+  /** The list tier before the ceiling (`clamp.before`). Named only when no weighted price exists. */
+  supported: number
+  /** `reconciliation.weightedPrice`, whole dollars, or null when the row has none. */
+  weighted?: number | null
+  /** The list the letter prints. */
+  rec: number
+}): string {
+  const weighted = args.weighted
+  if (weighted == null || !Number.isFinite(weighted) || !(weighted > 0)) {
+    return `The sales support a value of ${clampUsd(args.supported)}.`
+  }
+  const near = Math.round(weighted / 1000) * 1000
+  if (sameMark(near, args.rec)) return `The sales support the price on the cover ${WEIGHTED_CLAUSE}.`
+  return `The sales support a value near ${clampUsd(near)} ${WEIGHTED_CLAUSE}.`
+}
+
+/**
+ * The stored clamp sentence split into its first sentence (what the sales
+ * support) and the rest (the ask, and why the cover sits where it does).
+ * Null when the sentence does not open with a head this module writes.
+ */
+export function splitFailedAskClampHead(sentence: string): { head: string; tail: string } | null {
+  const m = FAILED_ASK_CLAMP_HEAD.exec(sentence)
+  if (!m) return null
+  const tail = sentence.slice(m[0].length).trim()
+  return tail ? { head: m[0].trim(), tail } : null
+}
+
+/** `pricing.reconciliation.weightedPrice` when the row carries one. */
+function weightedPriceOf(pricing: { reconciliation?: { weightedPrice?: number | null } | null }): number | null {
+  const w = pricing.reconciliation?.weightedPrice
+  return typeof w === 'number' && Number.isFinite(w) && w > 0 ? w : null
+}
+
 /**
  * The sentence the document prints where the clamp binds.
  *
@@ -1130,8 +1187,10 @@ export function failedAskClampProse(args: {
   rec: number
   /** True when the ceiling was the recent-failure percentile, not the ask itself. */
   percentile: boolean
+  /** What the weights blend to (`reconciliation.weightedPrice`); the head names it when given. */
+  weighted?: number | null
 }): string {
-  const head = `The sales support a value of ${clampUsd(args.supported)}.`
+  const head = failedAskClampHead({ supported: args.supported, weighted: args.weighted, rec: args.rec })
   const because = `Because ${clampUsd(args.ask)} already failed to sell`
   const pairs = FAILED_ASK_BACKTEST.pairs.toLocaleString('en-US')
   const p75 = failedAskP75(args.ask)
@@ -1150,6 +1209,7 @@ function clampSentence(args: {
   ask: number
   printed: number
   phrase: string | null
+  weighted: number | null
 }): string {
   const percentile = args.phrase != null && /75th percentile/.test(args.phrase)
   return failedAskClampProse({
@@ -1158,6 +1218,7 @@ function clampSentence(args: {
     ceiling: args.printed,
     rec: args.printed,
     percentile,
+    weighted: args.weighted,
   })
 }
 
@@ -1192,6 +1253,8 @@ export function applyFailedAskCap(
     priceOverride?: number | null
     failedAskBelowRange?: boolean
     rangeRule?: { saleLow?: number; evidenceLow?: number } | null
+    /** What the printed weights blend to; the clamp sentence names it. */
+    reconciliation?: { weightedPrice?: number | null } | null
   },
   args: {
     lastFailedListPrice: number | null
@@ -1383,6 +1446,7 @@ export function applyFailedAskCap(
           ask,
           printed: pricing.recommended,
           phrase: ceilings[headline.tier].phrase,
+          weighted: weightedPriceOf(pricing),
         }),
       }
     : null
@@ -1420,7 +1484,11 @@ export function applyFailedAskCap(
  * the letter does not print two recommend prices.
  */
 export function rewriteFailedAskClampAfterRec<
-  T extends { recommended: number; clamp?: CmaPricingClamp | null },
+  T extends {
+    recommended: number
+    clamp?: CmaPricingClamp | null
+    reconciliation?: { weightedPrice?: number | null } | null
+  },
 >(pricing: T): T {
   const clamp = pricing.clamp
   if (!clamp || clamp.kind !== 'failed-ask') return pricing
@@ -1437,6 +1505,7 @@ export function rewriteFailedAskClampAfterRec<
           ceiling: clamp.after,
           rec,
           percentile,
+          weighted: weightedPriceOf(pricing),
         })
       : clamp.sentence
   const after = clamp.appliedTo === 'recommended' ? rec : clamp.after
