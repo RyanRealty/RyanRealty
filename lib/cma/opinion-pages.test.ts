@@ -8,6 +8,7 @@ import {
   sellerNetBodyHtml,
   sellerNetKick,
   storyClassFor,
+  unsoldMatrixLead,
   whatHappenedHeading,
   type OpinionPageArgs,
 } from '@/lib/cma/opinion-pages'
@@ -620,5 +621,28 @@ describe('the closing does not solicit somebody else\'s listing', () => {
 
   it('says nothing extra on a plain expired row', () => {
     expect(closingComplianceSentence(args())).toBe('')
+  })
+})
+
+describe('unsoldMatrixLead counts its rows (2745 Aldrich, reader review 2026-10-08)', () => {
+  const range = { low: 473_949, high: 479_161 }
+  const row = (address: string, lastAsk: number | null) =>
+    ({ address, lastAsk, status: 'Expired' }) as unknown as Parameters<typeof unsoldMatrixLead>[0][number]
+
+  it('says "This one" over a single listing that never came down', () => {
+    expect(unsoldMatrixLead([row('2812 Aldrich', 495_000)], range)).toContain('This one asked and never came down to the range.')
+    expect(unsoldMatrixLead([row('2812 Aldrich', 495_000)], range)).not.toContain('These')
+  })
+
+  it('keeps "These" over two or more', () => {
+    expect(unsoldMatrixLead([row('2812 Aldrich', 495_000), row('3223 Spring Creek', 499_000)], range)).toContain(
+      'These asked and never came down to the range.',
+    )
+  })
+
+  it('counts the ones that never came down when some did', () => {
+    expect(unsoldMatrixLead([row('2812 Aldrich', 495_000), row('3223 Spring Creek', 475_000)], range)).toContain(
+      '1 of these 2 listings never came down to the range.',
+    )
   })
 })

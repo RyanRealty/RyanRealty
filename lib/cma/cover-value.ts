@@ -18,10 +18,11 @@ const esc = escapeHtml
 /** Locked cover / hero headline (Matt 2026-09-12 Tip Ready craft). */
 export const COVER_LIST_PRICE_HEADLINE = 'Our Recommended List Price for your home'
 /**
- * The label over the number on a letter the build holds because the failed
- * ask pulled the price under every sale that set it (SKILL.md rule 26, Matt
- * 2026-10-07). That number is the failed-ask result, not a recommendation
- * anyone has approved; Matt approves it or sets his own.
+ * The label over the number on a letter the build holds for Matt: because the
+ * failed ask pulled the price under every sale that set it (SKILL.md rule 26,
+ * Matt 2026-10-07), or because the last failed ask sits inside the sales range
+ * (rule 22, 2382 Jackson, reader review 2026-10-08). That number is not a
+ * recommendation anyone has approved; Matt approves it or sets his own.
  */
 export const HELD_PRICE_HEADLINE = 'The price Matt is reviewing'
 
@@ -30,9 +31,19 @@ export function heldUnderBand(p: Pick<CmaPricing, 'hold'> | null | undefined): b
   return p?.hold?.kind === 'ask-below-band'
 }
 
+/**
+ * True on any letter the build holds for Matt (rule 22 'ask-in-band' or rule
+ * 26 'ask-below-band'). A held letter gives no list instruction and prints no
+ * clamp sentence: its cover price is the one Matt is reviewing.
+ */
+export function heldForMatt(p: Pick<CmaPricing, 'hold'> | null | undefined): boolean {
+  const kind = p?.hold?.kind
+  return kind === 'ask-in-band' || kind === 'ask-below-band'
+}
+
 /** The label over the cover number: the recommendation, or on a held letter the price under review. */
 export function coverPriceHeadline(p: Pick<CmaPricing, 'hold'> | null | undefined): string {
-  return heldUnderBand(p) ? HELD_PRICE_HEADLINE : COVER_LIST_PRICE_HEADLINE
+  return heldForMatt(p) ? HELD_PRICE_HEADLINE : COVER_LIST_PRICE_HEADLINE
 }
 
 type CoverArgs = {
@@ -215,7 +226,7 @@ export function coverValueBlockHtml(a: CoverArgs): string {
         <p class="vb-price">${usd(p.recommended)}</p>
       </div>
     </div>
-    ${heldUnderBand(p) ? '' : `<div class="vb-range">${esc((() => {
+    ${heldForMatt(p) ? '' : `<div class="vb-range">${esc((() => {
       // Matt 2026-09-18: same closed-comp band as hero trio — never a second
       // list-tier range beside Low/High (Canter dual-tier refuse).
       const band = closedCompBand(p)

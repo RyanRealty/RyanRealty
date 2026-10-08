@@ -16,6 +16,7 @@ import {
   type ListingMarketMove,
 } from '@/lib/cma/listing-window-market'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { zonedDateKey } from '@/lib/format/date'
 
 const LIVE_STATUS = new Set(['draft', 'needs_review'])
 
@@ -106,7 +107,10 @@ async function measureDocument(doc: MarketDoc, readBudgetMs?: number): Promise<L
     longitude: doc.subject?.longitude,
     listDate: cycle?.listDate ?? doc.subject?.lastListDate,
     offDate: cycle?.offMarketDate,
-    asOf: new Date().toISOString().slice(0, 10),
+    // The letter's calendar day (Pacific), not the UTC slice: an evening build
+    // is still today's letter (reader review 2026-10-08, "Measured 2026-10-08"
+    // on a letter dated October 7).
+    asOf: zonedDateKey(new Date()),
     areaKind: doc.compArea?.kind ?? null,
     areaName: doc.compArea?.names?.[0] ?? null,
     propertySubType: doc.subject?.propertySubType ?? null,

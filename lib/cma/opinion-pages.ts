@@ -386,7 +386,13 @@ export function unsoldMatrixLead(
   if (!range) return ''
   const above = entries.filter((e) => e.lastAsk != null && e.lastAsk > range.high)
   if (above.length === entries.length) {
-    return `<p class="chart-read">${esc('These asked and never came down to the range.')}</p>`
+    // One row is one home: "These" over a single listing (2745 Aldrich,
+    // reader review 2026-10-08) reads as a count the table does not show.
+    return `<p class="chart-read">${esc(
+      entries.length === 1
+        ? 'This one asked and never came down to the range.'
+        : 'These asked and never came down to the range.',
+    )}</p>`
   }
   if (above.length === 0) return ''
   return `<p class="chart-read">${esc(
@@ -1910,7 +1916,12 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
     nonSoliciting: closingIsNonSoliciting(a),
   })
   // What the range is centered on, and whether it opened past ±10% (reader review 2026-10-07).
-  const basis = competitionBandBasisSentence(a.bandRivals?.bandBasis, a.pricing.recommended)
+  // The sales range is passed so a center above its top is named as a starting
+  // point, never as a price the sales supported (reader review 2026-10-08).
+  const basis = competitionBandBasisSentence(a.bandRivals?.bandBasis, a.pricing.recommended, {
+    low: a.pricing.valueLow,
+    high: a.pricing.valueHigh,
+  })
   return `<p>${esc(sentence)}${basis ? ` ${esc(basis)}` : ''}</p>
   ${cut ? `<p>${esc(cut)}</p>` : ''}
   ${edge ? `<p class="compete-edge">${esc(edge.sentence)}</p>` : ''}

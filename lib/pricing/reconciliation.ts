@@ -23,7 +23,7 @@
  * A superlative is written only when it is true of the printed sales.
  */
 
-import { capClosedCompShares } from '@/lib/pricing/closed-comp-weight'
+import { LOCATION_MATCH_WEIGHT, capClosedCompShares, type LocationMatch } from '@/lib/pricing/closed-comp-weight'
 
 /** The two fields the weighted value itself needs. Every adjusted sale has them. */
 export interface WeightedSale {
@@ -64,6 +64,13 @@ export interface ReconcilableSale {
   adjustedPrice: number
   /** size proximity × recency, from adjustCompAlongMarket. Judge-weak sales come in halved. */
   weight: number
+  /**
+   * Rule 15's location step the weight was built on (same subdivision 3,
+   * adjacent 2, neighborhood or community 1), as the ladder stamped it on the
+   * sale. Absent on older rows and broker-picked comps; the sentence then
+   * gives size, date and movement only.
+   */
+  locationMatch?: LocationMatch | null
 }
 
 export interface ReconciliationWeight {
@@ -213,6 +220,40 @@ function movementPhrase(sale: ReconcilableSale, pct: number): string {
   return `its price moved ${pct} percent when adjusted for ${claim}`
 }
 
+/** The location step the sale's weight stands on, or null when the row never classed it. */
+function locationStep(sale: ReconcilableSale): number | null {
+  const match = sale.locationMatch
+  if (!match || !(match in LOCATION_MATCH_WEIGHT)) return null
+  return LOCATION_MATCH_WEIGHT[match]
+}
+
+/** "in your subdivision" · "in the subdivision next to yours" · "in your neighborhood". */
+function locationPhrase(match: LocationMatch): string | null {
+  if (match === 'same-subdivision') return 'in your subdivision'
+  if (match === 'adjacent-subdivision') return 'in the subdivision next to yours'
+  if (match === 'neighborhood-or-community') return 'in your neighborhood'
+  return null
+}
+
+/**
+ * LOCATION IS THE HEAVIEST FACTOR WHEN IT SEPARATES THE LEADER (rule 15,
+ * reader review 2026-10-08). The weight is a location step plus a similarity
+ * fraction under one (lib/pricing/closed-comp-weight.ts), so a same-subdivision
+ * sale outweighs every adjacent or neighborhood sale whatever their size and
+ * date. The sentence used to give size, date and movement as the reasons even
+ * then. When the leader's step is above another priced sale's, the step is
+ * why it leads, and the sentence says so first. When every sale shares the
+ * step, location explains nothing about the order and the sentence stays on
+ * size, date and movement.
+ */
+function leadingLocation(leader: ReconcilableSale, usable: readonly ReconcilableSale[]): string | null {
+  const step = locationStep(leader)
+  if (step == null || !(step > 0) || !leader.locationMatch) return null
+  const others = usable.filter((s) => s.listingKey !== leader.listingKey).map(locationStep)
+  if (!others.some((o) => o != null && o < step)) return null
+  return locationPhrase(leader.locationMatch)
+}
+
 /**
  * The weights, the leader, the weighted value, and the sentence.
  *
@@ -292,20 +333,23 @@ export function reconcileAdjustedSales(args: {
     return { weights, mostWeighted: leader.listingKey, weightedPrice, sentence }
   }
   const leaderSale = usable.find((s) => s.listingKey === leader.listingKey)!
+  const where = leadingLocation(leaderSale, usable)
   const why = [
-    sizePhrase(leaderSale, args.subjectSqft),
-    recencyPhrase(leaderSale, args.asOf),
-    ...(leader.grossAdjustmentPct === smallestGross && usable.length > 1
-      ? ['it needed the smallest adjustment of any of them']
-      : [movementPhrase(leaderSale, leader.grossAdjustmentPct)]),
+    `it is ${sizePhrase(leaderSale, args.subjectSqft)}`,
+    `it ${recencyPhrase(leaderSale, args.asOf)}`,
+    leader.grossAdjustmentPct === smallestGross && usable.length > 1
+      ? 'it needed the smallest adjustment of any of them'
+      : movementPhrase(leaderSale, leader.grossAdjustmentPct),
   ]
+  // Location first when the step is what put it on top (leadingLocation).
+  if (where) why.unshift(`it is ${where}`)
   // ONE COUNT (tasteReview round three, §2 item 1). The sentence states how
   // many sales are behind the price, and it is the same number as the weights
   // below it — because the sales set aside by the range rule never reach this
   // function at all.
   const sentence = `${leader.address} carries the most weight of the ${countWord(
     usable.length,
-  )} sales behind this price, at ${leader.weight} percent: it is ${why[0]}, it ${why[1]}, and ${why[2]}.`
+  )} sales behind this price, at ${leader.weight} percent: ${why.slice(0, -1).join(', ')}, and ${why[why.length - 1]}.`
 
   return { weights, mostWeighted: leader.listingKey, weightedPrice, sentence }
 }
