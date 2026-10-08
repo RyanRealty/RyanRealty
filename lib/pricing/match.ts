@@ -1214,21 +1214,47 @@ function pickClosestMatches(
     .slice(0, slots)
 }
 
+/** Own street and plat (group 0) and the pocket (group 3): the subject's own ground. */
+function ownGroundGroup(group: number): boolean {
+  return group === 0 || group === 3
+}
+
 /**
- * Up to PRICING_WALK_CAP sales (walk to 7, Matt 2026-10-07). An earlier place
- * keeps its seats: own ground, then the touching plats, the next row, the
- * pocket, the rest. A place with more qualifiers than open seats keeps its
- * closest homes (distance, then beds, baths, size and year), in the plat that
- * resembles this one on a touching row. Own ground walks its whole window, so
- * an 18- or 24-month own-plat sale competes for a seat on distance. A median
- * close does not remove a home.
+ * NEWEST FIRST, THEN NEAREST (Matt 2026-10-07). When the subject's own ground
+ * holds more qualifying sales than seats, the most recent closes take the
+ * seats, and distance breaks a tie on the close date. Beds, baths, size and
+ * year, then the listing key, settle anything still tied.
  */
-function capPricingSet(
+function pickNewestThenNearest(
+  subject: PricingSubject,
+  sales: readonly SelectedPricingComp[],
+  slots: number,
+): SelectedPricingComp[] {
+  return [...sales]
+    .sort((a, b) => {
+      const date = b.closeDate.slice(0, 10).localeCompare(a.closeDate.slice(0, 10))
+      if (date !== 0) return date
+      const miles = saleMiles(subject, a) - saleMiles(subject, b)
+      if (Math.abs(miles) > MILES_TIE) return miles
+      const features = featureGap(subject, a) - featureGap(subject, b)
+      if (features !== 0) return features
+      return a.listingKey.localeCompare(b.listingKey)
+    })
+    .slice(0, slots)
+}
+
+/**
+ * Fills up to `max` seats place by place: own ground, then the touching
+ * plats, the next row, the pocket, the rest. An own-ground place with more
+ * sales than open seats keeps its newest closes, nearest first on a tie; any
+ * other place keeps its closest homes (distance, then beds, baths, size and
+ * year), in the plat that resembles this one on a touching row.
+ */
+function seatByPlace(
   subject: PricingSubject,
   comps: readonly SelectedPricingComp[],
   max: number,
 ): SelectedPricingComp[] {
-  if (comps.length <= max) return [...comps]
   const groups = new Map<number, SelectedPricingComp[]>()
   for (const comp of comps) {
     const group = pricingLocationGroup(comp.selectionTier)
@@ -1243,7 +1269,63 @@ function capPricingSet(
     if (!rows?.length) continue
     const slots = max - kept.length
     if (rows.length <= slots) kept.push(...rows)
+    else if (ownGroundGroup(group)) kept.push(...pickNewestThenNearest(subject, rows, slots))
     else kept.push(...pickClosestMatches(subject, rows, slots, group === 1 || group === 2))
+  }
+  return kept
+}
+
+/**
+ * The seats (Matt 2026-10-07: walk to 7, price on 5+; only what's needed;
+ * newest first, then nearest).
+ *
+ * AN EARLIER PLACE KEEPS ITS SEATS. Every sale admitted before the rung that
+ * brought the set to five is seated: together they held fewer than five, so
+ * they always fit.
+ *
+ * SEATS SIX AND SEVEN COME ONLY FROM OWN GROUND. When the rung that reached
+ * five was own ground, the own-ground place it belongs to (own street and plat
+ * together, or the pocket), whose later windows also walked, fills the seats
+ * up to PRICING_WALK_CAP, newest closes first, nearest on a tie. When a rung
+ * that widens the area reached five (touching plats, the next row, a ring, the
+ * neighborhood, the community, the boundary exit, the widening), that rung
+ * adds only the shortfall to five, its closest homes first (distance, then
+ * beds, baths, size and year, in the plat that resembles this one on a
+ * touching row), and the set is five.
+ *
+ * Before this rule the last place group lumped the community, every ring,
+ * similar plats, the city, the boundary exit and the widening together, so a
+ * one-month sale a ring admitted before five could lose its seat to a closer
+ * fifteen-month sale on the city rung that reached five (review 2026-10-07).
+ * The listings ladder (lib/cma/comps.ts selectComps) follows the same rule.
+ */
+function capPricingSet(
+  subject: PricingSubject,
+  comps: readonly SelectedPricingComp[],
+  max: number,
+  reachedOnTier: string | null,
+): SelectedPricingComp[] {
+  if (reachedOnTier == null) return comps.length <= max ? [...comps] : seatByPlace(subject, comps, max)
+  const reachGroup = pricingLocationGroup(reachedOnTier)
+  const ownGround = ownGroundGroup(reachGroup)
+  const competes = (comp: SelectedPricingComp) =>
+    ownGround ? pricingLocationGroup(comp.selectionTier) === reachGroup : comp.selectionTier === reachedOnTier
+  const kept = seatByPlace(
+    subject,
+    comps.filter((comp) => !competes(comp)),
+    max,
+  )
+  const open = comps.filter(competes)
+  const limit = ownGround ? max : Math.min(max, PRICING_TARGET_COMPS)
+  const slots = Math.max(0, limit - kept.length)
+  if (slots > 0 && open.length > 0) {
+    kept.push(
+      ...(open.length <= slots
+        ? open
+        : ownGround
+          ? pickNewestThenNearest(subject, open, slots)
+          : pickClosestMatches(subject, open, slots, reachGroup === 1 || reachGroup === 2)),
+    )
   }
   return kept
 }
@@ -1303,9 +1385,11 @@ function tierOutsideRecordedPlatRows(tier: PricingTier): boolean {
  * WALK TO 7, PRICE ON 5+ (Matt 2026-10-07). The subject's own ground (own
  * street, own plat, its pocket) walks its whole window. Once byKey holds
  * PRICING_TARGET_COMPS, no rung that widens the area runs. Every rung scans
- * its whole row, and capPricingSet keeps up to PRICING_WALK_CAP, own ground
- * first, closest homes inside an over-full place. So the review can drop one
- * or two and the set still prices on five.
+ * its whole row, and capPricingSet seats the set: every sale admitted before
+ * the rung that reached five keeps its seat. Own ground that reached five
+ * fills up to PRICING_WALK_CAP, newest closes first, so the review can drop one
+ * or two and the set still prices on five. A rung that widens the area adds
+ * only the sales needed to reach five (only what's needed, Matt 2026-10-07).
  */
 export function walkPricingLadder(
   rawSubject: PricingSubject,
@@ -1402,9 +1486,10 @@ export function walkPricingLadder(
   // other subdivisions. A price cut then kept the cheap cluster and dropped
   // every Redtail Ridge sale, including 3499 SW 44th at $790,000. The Sep 7
   // build, before that cut, still had the plat sale. A pocket rung is wider
-  // than a plat that has already filled. It must not be mixed in. When a
-  // place still has more qualifiers than the seven seats (walk to 7, Matt
-  // 2026-10-07), its closest homes stay. A median close does not choose them.
+  // than a plat that has already filled. It must not be mixed in. When own
+  // ground still has more qualifiers than the seven seats (walk to 7, Matt
+  // 2026-10-07), its newest closes stay, nearest on a tie. A median close
+  // does not choose them.
   let countBeforePocket: number | null = null
   // How many sales the plat rows (street, own plat, touching plats, the plats
   // that touch those) held when the walk first reached a rung outside them.
@@ -1412,6 +1497,12 @@ export function walkPricingLadder(
   // that total stopped a short plat at the first three sales it met, which a
   // later pocket drop then cut to two (review, 2026-10-07).
   let platRowCount: number | null = null
+  /**
+   * The rung that first brought the set to PRICING_TARGET_COMPS. The cap
+   * seats every sale admitted before it; only this rung (or, when it was own
+   * ground, that own-ground place) competes for the seats left.
+   */
+  let reachedOnTier: string | null = null
 
   // Rule 20, resolved once: a pure function of subject x sale, independent of
   // the rung. Every input is stamped before the walk (toSelected stamps
@@ -1470,12 +1561,15 @@ export function walkPricingLadder(
     // window, so those rungs keep walking past five. Every rung that widens
     // the area (touching plats, the next row, rings, neighborhood, community,
     // boundary exit, starved) is skipped once the set holds five. The cap
-    // below keeps up to PRICING_WALK_CAP.
+    // below seats the set: own ground up to PRICING_WALK_CAP, a widening rung
+    // only up to five.
     if (byKey.size >= PRICING_TARGET_COMPS && !isPocketExclusiveTier(tier)) {
       rungs.push({
         tier: tier.name,
         ran: false,
-        skippedReason: `the search already has ${byKey.size} price-setting sales from this home's own ground, so it stopped`,
+        // Truthful whichever place reached five: own ground, a touching plat,
+        // a ring or the city (review 2026-10-07).
+        skippedReason: `the search already has ${byKey.size} price-setting sales (it reached ${PRICING_TARGET_COMPS} on ${reachedOnTier ?? 'an earlier rung'}), so it does not widen the area`,
         monthsBack: tier.monthsBack,
         scanned: 0,
         added: 0,
@@ -1639,6 +1733,7 @@ export function walkPricingLadder(
       if (tier.disclosure) trace.push(tier.disclosure)
     }
     if (isPocketExclusiveTier(tier)) exclusiveCount = byKey.size
+    if (reachedOnTier == null && byKey.size >= PRICING_TARGET_COMPS) reachedOnTier = tier.name
   }
 
   const pocketStarved = pocketStarvedForYearQuality(exclusiveCount)
@@ -1650,7 +1745,7 @@ export function walkPricingLadder(
   // pass runs only when that median was never there.
   const hadOwnPlat = ranked.some((c) => c.ownPlat)
   const sitting = hadOwnPlat ? ranked : pocketSalesSitWithKept(ranked, customLadder)
-  const sliced = capPricingSet(subject, sitting, PRICING_WALK_CAP)
+  const sliced = capPricingSet(subject, sitting, PRICING_WALK_CAP, reachedOnTier)
   const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder, setsPrice)
   if (bracketed.note) {
     if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')

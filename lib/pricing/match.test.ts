@@ -2865,10 +2865,11 @@ describe('overflow — closest homes, then the plat that resembles this one (Mat
     ]
     const out = walkPricingLadder(subj, pool, { asOf })
     const keys = out.comps.map((c) => c.listingKey)
-    // Seven seats (walk to 7, Matt 2026-10-07): the three near sales and four far ones.
-    expect(keys).toHaveLength(7)
+    // The touching plat widens the area, so it adds only what reaches five
+    // (only what's needed, Matt 2026-10-07): the three near sales and two far ones.
+    expect(keys).toHaveLength(5)
     expect(keys).toEqual(expect.arrayContaining(['N1', 'N2', 'N3']))
-    expect(keys.filter((key) => key.startsWith('F'))).toHaveLength(4)
+    expect(keys.filter((key) => key.startsWith('F'))).toHaveLength(2)
   })
 
   it('fills an adjacent row from the plat whose homes match this subdivision before a newer closer plat', () => {
@@ -2905,10 +2906,11 @@ describe('overflow — closest homes, then the plat that resembles this one (Mat
     ]
     const out = walkPricingLadder(subj, pool, { asOf })
     const keys = out.comps.map((c) => c.listingKey)
-    // Seven seats: the four like-plat homes first, then the nearest three of the newer plat.
-    expect(keys).toHaveLength(7)
+    // Five seats (a touching row adds only what reaches five): the four
+    // like-plat homes first, then the nearest one of the newer plat.
+    expect(keys).toHaveLength(5)
     expect(keys).toEqual(expect.arrayContaining(['L1', 'L2', 'L3', 'L4', 'NEWCLOSE']))
-    expect(keys.filter((key) => key.startsWith('NEW'))).toHaveLength(3)
+    expect(keys.filter((key) => key.startsWith('NEW'))).toHaveLength(1)
   })
 
   it('keeps the seven closest own-plat sales when a farther cluster sits on the middle price', () => {
@@ -2995,9 +2997,11 @@ describe('overflow — closest homes, then the plat that resembles this one (Mat
     )
     const out = walkPricingLadder(subj, [...adjacent, ...own], { asOf })
     const keys = out.comps.map((c) => c.listingKey)
-    expect(keys).toHaveLength(7)
+    // Both own-plat sales keep their seats; the touching plat adds the three
+    // that reach five and no more.
+    expect(keys).toHaveLength(5)
     expect(keys).toEqual(expect.arrayContaining(['OWN1', 'OWN2']))
-    expect(keys.filter((key) => key.startsWith('A'))).toHaveLength(5)
+    expect(keys.filter((key) => key.startsWith('A'))).toHaveLength(3)
   })
 
   it('fills from the same-size adjacent plat before a closer plat of smaller homes', () => {
@@ -3032,9 +3036,10 @@ describe('overflow — closest homes, then the plat that resembles this one (Mat
     ]
     const out = walkPricingLadder(subj, pool, { asOf })
     const keys = out.comps.map((c) => c.listingKey)
-    expect(keys).toHaveLength(7)
+    // Five seats: the four same-size homes, then one of the closer small homes.
+    expect(keys).toHaveLength(5)
     expect(keys.filter((key) => key.startsWith('M'))).toHaveLength(4)
-    expect(keys.filter((key) => key.startsWith('S'))).toHaveLength(3)
+    expect(keys.filter((key) => key.startsWith('S'))).toHaveLength(1)
   })
 })
 
@@ -3185,8 +3190,11 @@ describe('five price-setting sales is the floor, and a sale that does not set th
   })
 
   it('the cap hands its seats to setters only', () => {
-    // Six setters, and a community sale met on the way: six seats (under the
-    // walk cap of seven), every one a setter.
+    // Eight setters, and a community sale met on the way. The widened rung
+    // reaches five holding four, so the cap runs: the four sales before it
+    // keep their seats, the widened rung adds only its closest one (a rung
+    // that widens the area adds only what reaches five, Matt 2026-10-07), and
+    // the community sale is never a candidate.
     const pool = [
       own('A', 0),
       own('B', 1),
@@ -3195,10 +3203,14 @@ describe('five price-setting sales is the floor, and a sale that does not set th
       inCommunity('COMMUNITY', 0),
       far('E', 1),
       far('F', 2),
+      far('G', 3),
+      far('H', 4),
     ]
     const out = walkPricingLadder(plain(), pool, { asOf })
-    expect(out.comps).toHaveLength(6)
+    expect(out.rungs.find((r) => r.tier === 'widened-disclosed-24mo')?.runningTotal).toBe(8)
+    expect(out.comps).toHaveLength(5)
     expect(out.comps.every((c) => c.setsPrice === true)).toBe(true)
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D', 'E'])
     expect(out.comps.map((c) => c.listingKey)).not.toContain('COMMUNITY')
   })
 
@@ -3332,7 +3344,10 @@ describe('walk to 7, price on 5+ (Matt 2026-10-07)', () => {
   // two and still leave five. Nothing widens the area to get them. The
   // subject's own ground (own street, own plat, its pocket) is the same area
   // across its whole window; every rung that widens the area stops at five.
-  // The cap seats own ground first, then the closest homes of an over-full place.
+  // The cap seats every sale admitted before five. Seats six and seven come
+  // only from own ground, newest closes first (Matt 2026-10-07: only what's
+  // needed; newest first, then nearest); a widening rung adds only the
+  // shortfall to five.
   const asOf = '2026-08-01'
   const here = { latitude: 44.06, longitude: -121.3, communityLocated: true as const, communitySlug: null }
   const at = (miles: number) => ({ latitude: here.latitude + miles / 69, longitude: here.longitude })
@@ -3385,7 +3400,7 @@ describe('walk to 7, price on 5+ (Matt 2026-10-07)', () => {
   const keysOf = (out: ReturnType<typeof walkPricingLadder>) => out.comps.map((c) => c.listingKey).sort()
   const rung = (out: ReturnType<typeof walkPricingLadder>, tier: string) => out.rungs.find((r) => r.tier === tier)
 
-  it('a wider rung holding seven or more after reaching five yields seven: own ground first, then that rung\'s closest homes', () => {
+  it('a wider rung holding seven or more after reaching five yields five: own ground keeps its seats, that rung adds only its closest homes', () => {
     const pool = [
       plat('O1', 0.3, THREE_MO),
       plat('O2', 0.3, THREE_MO),
@@ -3395,12 +3410,19 @@ describe('walk to 7, price on 5+ (Matt 2026-10-07)', () => {
       adj('A6MO', 0.01, SIX_MO),
     ]
     const out = walkPricingLadder(subj(), pool, { asOf })
-    expect(out.comps).toHaveLength(7)
-    // A1 to A5 sit at 0.05 to 0.25 miles: the five closest of the rung that reached five.
-    expect(keysOf(out)).toEqual(['A1', 'A2', 'A3', 'A4', 'A5', 'O1', 'O2'])
+    // Only what's needed (Matt 2026-10-07): the touching plat widens the area,
+    // so it adds the three that reach five, its closest (A1 to A3, 0.05 to
+    // 0.15 miles), and never seats six and seven.
+    expect(out.comps).toHaveLength(5)
+    expect(keysOf(out)).toEqual(['A1', 'A2', 'A3', 'O1', 'O2'])
     expect(rung(out, 'adjacent-sub-3mo')?.added).toBe(8)
     expect(rung(out, 'adjacent-sub-6mo')?.ran).toBe(false)
-    expect(rung(out, 'adjacent-sub-6mo')?.skippedReason).toMatch(/already has 10 price-setting sales/)
+    // The five came from the touching plat, so the reason names that rung
+    // and does not claim own ground supplied them.
+    expect(rung(out, 'adjacent-sub-6mo')?.skippedReason).toBe(
+      'the search already has 10 price-setting sales (it reached 5 on adjacent-sub-3mo), so it does not widen the area',
+    )
+    expect(rung(out, 'adjacent-sub-6mo')?.skippedReason).not.toMatch(/own ground/)
     expect(out.reachedTarget).toBe(true)
   })
 
@@ -3422,7 +3444,7 @@ describe('walk to 7, price on 5+ (Matt 2026-10-07)', () => {
     expect(rung(out, 'subdivision-24mo-wide')?.ran).toBe(true)
   })
 
-  it('own-plat sales from the 18- and 24-month windows still compete for seats after five is reached', () => {
+  it('own-plat sales from the 18- and 24-month windows still compete for seats after five is reached, newest first', () => {
     const pool = [
       ...['F1', 'F2', 'F3', 'F4', 'F5'].map((key) => plat(key, 0.3, THREE_MO)),
       plat('L18A', 0.02, EIGHTEEN_MO),
@@ -3435,14 +3457,15 @@ describe('walk to 7, price on 5+ (Matt 2026-10-07)', () => {
     expect(rung(out, 'subdivision-3mo')?.runningTotal).toBe(5)
     expect(rung(out, 'subdivision-18mo')?.added).toBe(2)
     expect(rung(out, 'subdivision-24mo')?.added).toBe(2)
-    // Nine own-plat sales, seven seats, closest first: the four older ones sit
-    // nearer than the five recent ones, so they take seats.
+    // Nine own-plat sales, seven seats, newest first, then nearest (Matt
+    // 2026-10-07): the five three-month sales take seats though the four older
+    // ones sit nearer, and the two 18-month sales beat the 24-month ones.
     expect(out.comps).toHaveLength(7)
-    expect(keysOf(out)).toEqual(['F1', 'F2', 'F3', 'L18A', 'L18B', 'L24A', 'L24B'])
+    expect(keysOf(out)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'L18A', 'L18B'])
     expect(rung(out, 'adjacent-sub-3mo')?.ran).toBe(false)
   })
 
-  it('a wider rung that reaches five holding six gives six, and nothing past it fills the seventh seat', () => {
+  it('a wider rung that reaches five holding six gives five: it adds only what reaches five', () => {
     const pool = [
       plat('O1', 0.3, THREE_MO),
       plat('O2', 0.3, EIGHTEEN_MO),
@@ -3451,9 +3474,43 @@ describe('walk to 7, price on 5+ (Matt 2026-10-07)', () => {
       ring('RING', 0.1, THREE_MO),
     ]
     const out = walkPricingLadder(subj(), pool, { asOf })
-    expect(keysOf(out)).toEqual(['B1', 'B2', 'B3', 'B4', 'O1', 'O2'])
+    expect(rung(out, 'adjacent-sub-3mo')?.added).toBe(4)
+    // The four touching-plat sales tie on distance and features; the listing
+    // key settles which three seat.
+    expect(keysOf(out)).toEqual(['B1', 'B2', 'B3', 'O1', 'O2'])
     expect(rung(out, 'adjacent-sub-6mo')?.ran).toBe(false)
     expect(out.trace.some((t) => t.includes('Comp shortage'))).toBe(false)
+  })
+
+  it('a sale a rung admitted before five keeps its seat; the rung that reached five adds only the shortfall (review 2026-10-07)', () => {
+    // Own plat 2; the one-mile ring at three months adds two one-month sales
+    // 0.9 mi out (4 held); the city rung at eighteen months reaches five
+    // with six fifteen-month sales 0.3 to 0.4 mi out. The old cap lumped the
+    // ring and the city rung into one place and kept the five closest, which
+    // cut both one-month sales for the city rung.
+    const pool = [
+      plat('O1', 0.05, THREE_MO),
+      plat('O2', 0.06, THREE_MO),
+      ring('R1', 0.9, THREE_MO),
+      ring('R2', 0.95, THREE_MO),
+      ...[0.3, 0.32, 0.34, 0.36, 0.38, 0.4].map((miles, i) => ring(`L${i}`, miles, '2025-05-01')),
+    ]
+    const out = walkPricingLadder(
+      subject({ ...here, subdivisionSlug: 'kenwood', adjacentSubdivisionSlugs: [], closerSubdivisionSlugs: [] }),
+      pool,
+      { asOf },
+    )
+    expect(rung(out, 'nearby-1mi-3mo')?.added).toBe(2)
+    expect(rung(out, 'nearby-1mi-3mo')?.runningTotal).toBe(4)
+    expect(rung(out, 'city-5mi-18mo')?.added).toBe(6)
+    expect(rung(out, 'city-5mi-18mo')?.runningTotal).toBe(10)
+    expect(out.comps).toHaveLength(5)
+    // O1, O2, R1 and R2 came in before five and keep their seats; the city
+    // rung adds only its closest sale, the one that reaches five.
+    expect(keysOf(out)).toEqual(['L0', 'O1', 'O2', 'R1', 'R2'])
+    expect(rung(out, 'city-5mi-24mo')?.skippedReason).toBe(
+      'the search already has 10 price-setting sales (it reached 5 on city-5mi-18mo), so it does not widen the area',
+    )
   })
 
   it('a walk that reaches five exactly at the last sale of a wider rung stays five and does not widen', () => {
