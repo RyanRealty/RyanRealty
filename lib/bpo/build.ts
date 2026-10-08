@@ -343,6 +343,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       subjectBathsHalf: subject.bathsHalf ?? null,
       subjectBeds: subject.beds,
       subjectSubdivisionSlug: subject.subdivisionSlug ?? null,
+      subjectGround: subject,
       minComps: MIN_COMPS,
       marketContextPresent: market != null,
     })

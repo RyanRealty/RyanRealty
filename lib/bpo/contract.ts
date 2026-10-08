@@ -19,6 +19,7 @@ import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaAudit } from '@/lib/cma/audit'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { BpoListingHistory, BpoOpinion } from '@/lib/bpo/types'
+import type { RoomGroundLocation } from '@/lib/pricing/room-ground'
 
 export function evaluateBpoAccuracyContract(args: {
   comps: CmaAdjustedComp[]
@@ -40,6 +41,8 @@ export function evaluateBpoAccuracyContract(args: {
   subjectBathsHalf?: number | null
   subjectBeds?: number | null
   subjectSubdivisionSlug?: string | null
+  /** Where the subject sits, so an unstamped sale is graded on the picker's own ground. */
+  subjectGround?: RoomGroundLocation | null
   minComps: number
   marketContextPresent: boolean
 }): AccuracyContract {
