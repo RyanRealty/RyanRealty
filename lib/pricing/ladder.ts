@@ -460,8 +460,8 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
  * widens the area runs on either ladder: no touching plats, no next plat
  * ring, no distance ring, no neighborhood or community step, no boundary
  * exit, no starved rung. The subject's own ground (own street, own plat, its
- * pocket) is the same area across its whole window and keeps walking. The set
- * keeps up to PRICING_WALK_CAP (Matt 2026-10-07, below). The listings ladder
+ * pocket) is the same area across its whole window and keeps walking. Own
+ * ground keeps up to PRICING_WALK_CAP (Matt 2026-10-07, below). The listings ladder
  * stops at the same five (`lib/cma/comps.ts` TARGET_COMPS).
  */
 export const PRICING_TARGET_COMPS = 5
@@ -486,10 +486,14 @@ export const PRICING_MIN_COMPS = 5
  *
  * Mechanically, on both ladders: the subject's own ground (own street, own
  * plat, its pocket) walks its whole window, and no rung that widens the area
- * runs once the set holds PRICING_TARGET_COMPS. The set keeps this many, own
- * ground first, then the closest homes of the place that overflowed (the
- * tightest prices on the listings ladder). An area that holds fewer leaves
- * the set at five or six. Every wall (community, neighborhood polygon,
+ * runs once the set holds PRICING_TARGET_COMPS. Every sale admitted before
+ * the rung that reached five keeps its seat. Seats six and seven come only
+ * from own ground (only what's needed, Matt 2026-10-07): when own ground
+ * reached five it fills up to this many, newest closes first and nearest on a
+ * tie (Matt 2026-10-07); when a rung that widens the area reached five, that
+ * rung adds only the shortfall and the set is five (its closest homes on the
+ * facts ladder, the tightest prices on the listings ladder). Own ground that
+ * holds fewer leaves the set at five or six. Every wall (community, neighborhood polygon,
  * recorded plat, 24 months, the room rule, rule 20, the same product type) is
  * unchanged. The floor stays PRICING_MIN_COMPS.
  */

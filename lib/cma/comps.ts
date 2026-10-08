@@ -136,10 +136,11 @@ export const TARGET_COMPS = PRICING_TARGET_COMPS
 /**
  * Same cap as the facts ladder: walk to 7, price on 5+ (Matt 2026-10-07).
  * The subject's own plat and pocket walk their whole window; once the set
- * holds five, no rung that widens the area runs. The set keeps up to seven,
- * the tightest prices first, so the comparability review can drop one or two
- * and the set still prices on the five-sale floor. Own ground keeps its seats
- * ahead of a wider place.
+ * holds five, no rung that widens the area runs. Own ground that reached
+ * five keeps up to seven, newest closes first, so the comparability review
+ * can drop one or two and the set still prices on the five-sale floor. A
+ * widening rung that reached five adds only the shortfall: the set is five
+ * (only what's needed, Matt 2026-10-07). An earlier place keeps its seats.
  */
 export const MAX_COMPS = PRICING_WALK_CAP
 
@@ -395,11 +396,15 @@ export async function selectComps(
     subjectIrrigation?: IrrigationClass | null
     subjectZoning?: string | null
     /** The CMA's own as-of date (lib/pricing/select.ts threads this through
-     *  from selectCompsPreferringFacts). Undefined keeps keepTightestByClosePrice's
-     *  no-asOf behavior (no staleness penalty) rather than assuming today. */
+     *  from selectCompsPreferringFacts; lib/cma/build.ts passes the build
+     *  date). Omitted means today, so the dry run, the BPO engine, place comps
+     *  and the sell page cull exactly as a build made today would: the
+     *  staleness penalty in keepTightestByClosePrice applies on every path
+     *  (review 2026-10-07). */
     asOf?: string
   } = {},
 ): Promise<CompSelection> {
+  const asOf = (opts.asOf ?? new Date().toISOString()).slice(0, 10)
   const sqft = subject.sqft ?? 0
   // Land is priced per ACRE, not per square foot, so a land subject legitimately
   // has no living area and must not fall into the bail below. Selection used to
@@ -706,11 +711,19 @@ export async function selectComps(
   let ownPlatAgeShare: number | null | undefined = undefined
   /**
    * The rung that brought the set to TARGET_COMPS, and whether it was own
-   * ground. The cap may cut only that place: all of own ground when own
-   * ground reached five, otherwise only the wider rung that did.
+   * ground. The seats may cut only that place: all of own ground (up to
+   * seven, newest first) when own ground reached five, otherwise only the
+   * wider rung that did (down to five).
    */
   let reachedOnTier: string | null = null
   let reachedOnOwnGround = false
+  /**
+   * How many price-setting sales the walk held when it first read a window
+   * older than six months. Under five, an older sale in the printed set is
+   * there because the six-month set fell short; at five or more it is there
+   * because own ground walks its whole window.
+   */
+  let heldWhenOlderOpened: number | null = null
   for (const tier of tiers) {
     // THE AREA STOPS WIDENING AT FIVE (walk to 7, Matt 2026-10-07: "while the
     // same area still holds qualifying sales"). The subject's own plat and
@@ -789,6 +802,7 @@ export async function selectComps(
       ladder.push(rung)
       continue
     }
+    if (heldWhenOlderOpened == null && tier.monthsBack > 6) heldWhenOlderOpened = byKey.size
     // THE PRICE BAND WIDENS WITH THE REST, ON THE LAST RUNG ONLY (Matt
     // 2026-09-09: widen with a disclosure instead of failing). The starved
     // widening rung already trades away age, size band and geography to reach
@@ -1145,7 +1159,7 @@ export async function selectComps(
       // does, and a listings fallback must not price the new build the facts
       // path dropped. An exclusive pocket still keeps the mix it was given.
       if (!(isListingsPocketExclusiveTier(tier) && clusterPocket)) {
-        const asOfYear = Number((opts.asOf ?? new Date().toISOString().slice(0, 10)).slice(0, 4))
+        const asOfYear = Number(asOf.slice(0, 4))
         if (
           dropsResaleVersusNewBuild(
             {
@@ -1259,7 +1273,8 @@ export async function selectComps(
     )
     if (added > 0) tiersUsed.push(tier.name)
     if (isListingsPocketExclusiveTier(tier)) exclusiveCount = byKey.size
-    // This rung added every qualifier it returned; the cap below keeps up to MAX_COMPS.
+    // This rung added every qualifier it returned; the seats below keep own
+    // ground up to MAX_COMPS and a widening rung only up to TARGET_COMPS.
     if (reachedOnTier == null && byKey.size >= TARGET_COMPS) {
       reachedOnTier = tier.name
       reachedOnOwnGround = isListingsPocketExclusiveTier(tier)
@@ -1304,32 +1319,6 @@ export async function selectComps(
       `The subject's SubdivisionName is "${subject.subdivision}", an MLS placeholder rather than a named subdivision, so the subdivision tiers were skipped and the ladder started at the neighborhood. Selecting on that placeholder would have matched unrelated sales across the whole city and labeled them same-subdivision comps.`,
     )
   }
-  if (tiersUsed.some((t) => t.includes('12mo') || t.includes('24mo'))) {
-    const older =
-      'Comps older than 6 months were used because the 6-month set did not reach the minimum. Fannie Mae B4-1.3-08 requires this be stated.'
-    trace.push(older)
-    disclosures.push(older)
-  }
-  for (const t of tiers) {
-    if (t.disclosure && tiersUsed.includes(t.name)) {
-      trace.push(t.disclosure)
-      disclosures.push(t.disclosure)
-    }
-  }
-  for (const d of disclosedWidening) if (!disclosures.includes(d)) disclosures.push(d)
-  const roomNotedCount = [...byKey.values()].filter((c) => (c.roomDifference ?? []).length > 0).length
-  if (roomNotedCount > 0) {
-    const d = `${roomNotedCount} sale(s) are one bedroom or bathroom different from your home. They are used because they sit on your home's own ground — its plat, its neighborhood or its street — and each is marked on the report. No dollar value is applied to the room: paired sales in this market do not support one.`
-    trace.push(d)
-    disclosures.push(d)
-  }
-  const competingCount = [...byKey.values()].filter((c) => c.competingArea).length
-  if (competingCount > 0) {
-    const d = `${competingCount} comp(s) come from a COMPETING market area and are labeled as such on the report, per Fannie Mae B4-1.3-08.`
-    trace.push(d)
-    disclosures.push(d)
-  }
-
   let comps = Array.from(byKey.values())
   const candidateCount = comps.length
 
@@ -1341,6 +1330,19 @@ export async function selectComps(
   // range (lib/pricing/estimate.ts partitionByRangeRule), never a drop.
   const excludedOutliers: CompSelection['excludedOutliers'] = []
   const OUTLIER_MEDIAN_BAND = 0.35
+  // AN EARLIER PLACE KEEPS ITS SEATS, on this ladder as on the facts ladder
+  // (lib/pricing/match.ts capPricingSet). Every sale admitted before the rung
+  // that reached five is seated; only that rung, or own ground when own ground
+  // reached five, competes. The outlier drop and the cap read the same test,
+  // so a wider rung reaching five never costs an own-plat sale its seat here
+  // while the facts ladder keeps it (review 2026-10-07).
+  const ownGroundTiers = new Set(tiers.filter(isListingsPocketExclusiveTier).map((t) => t.name))
+  const competesForSeat: ((c: CmaComp) => boolean) | undefined =
+    reachedOnTier == null
+      ? undefined
+      : reachedOnOwnGround
+        ? (c) => ownGroundTiers.has(c.selectionTier)
+        : (c) => c.selectionTier === reachedOnTier
   if (comps.length >= TARGET_COMPS) {
     const ppsfs = comps.map((c) => unitRate(c, Boolean(land)))
     const mean = ppsfs.reduce((a, b) => a + b, 0) / ppsfs.length
@@ -1356,7 +1358,11 @@ export async function selectComps(
       const farMedian =
         median > 0 &&
         (ppsf < median * (1 - OUTLIER_MEDIAN_BAND) || ppsf > median * (1 + OUTLIER_MEDIAN_BAND))
-      if ((farSd || farMedian) && comps.length - excludedOutliers.length > MIN_COMPS) {
+      if (
+        (farSd || farMedian) &&
+        (competesForSeat == null || competesForSeat(c)) &&
+        comps.length - excludedOutliers.length > MIN_COMPS
+      ) {
         excludedOutliers.push({
           address: c.address,
           closePrice: c.closePrice,
@@ -1379,27 +1385,85 @@ export async function selectComps(
     }
   }
 
-  // Rank by similarity (size proximity x recency), then keep up to seven
-  // whose close prices sit together. A rung that dumped a high outlier
-  // does not get to set the range. Own ground keeps its seats ahead of a
-  // wider place (walk to 7, Matt 2026-10-07): when own ground reached five,
-  // the cut runs across own ground; when a wider rung did, only that rung
-  // gives up a seat, since everything before it held fewer than five.
+  // THE SEATS (Matt 2026-10-07: walk to 7, price on 5+; only what's needed;
+  // newest first, then nearest). The same rule as the facts ladder
+  // (lib/pricing/match.ts capPricingSet). Every sale admitted before the rung
+  // that reached five keeps its seat: together they held fewer than five.
+  // Seats six and seven come only from own ground. When own ground reached
+  // five, it fills up to seven, newest closes first, nearest on a tie, then
+  // the close nearest the set's middle price. When a rung that widens the
+  // area reached five, that rung adds only the shortfall to five, its
+  // tightest prices first (a rung that dumped a high outlier does not get to
+  // set the range), and the set is five.
   const rankBy = land ? (subject.lotAcres ?? 0) : sqft
-  const ownGroundTiers = new Set(tiers.filter(isListingsPocketExclusiveTier).map((t) => t.name))
   comps.sort((a, b) => similarityScore(rankBy, b, Boolean(land)) - similarityScore(rankBy, a, Boolean(land)))
-  comps = keepTightestByClosePrice(
-    comps,
-    MAX_COMPS,
-    opts.asOf,
-    reachedOnTier == null
-      ? undefined
-      : reachedOnOwnGround
-        ? (c) => ownGroundTiers.has(c.selectionTier)
-        : (c) => c.selectionTier === reachedOnTier,
-  )
+  if (competesForSeat != null && reachedOnOwnGround) {
+    const seated = comps.filter((c) => !competesForSeat(c))
+    const open = comps.filter(competesForSeat)
+    const slots = Math.max(0, MAX_COMPS - seated.length)
+    if (open.length > slots) {
+      const prices = comps.map((c) => c.closePrice).filter((n) => Number.isFinite(n) && n > 0).sort((a, b) => a - b)
+      const half = Math.floor(prices.length / 2)
+      const middle = prices.length === 0 ? 0 : prices.length % 2 === 1 ? prices[half]! : (prices[half - 1]! + prices[half]!) / 2
+      const milesOf = (c: CmaComp) => distanceMiles(subjectPoint, { lat: c.latitude, lng: c.longitude }) ?? Number.POSITIVE_INFINITY
+      open.sort((a, b) => {
+        const date = b.closeDate.slice(0, 10).localeCompare(a.closeDate.slice(0, 10))
+        if (date !== 0) return date
+        const miles = milesOf(a) - milesOf(b)
+        if (Math.abs(miles) > 0.01) return miles
+        const price = Math.abs(a.closePrice - middle) - Math.abs(b.closePrice - middle)
+        if (price !== 0) return price
+        return a.listingKey.localeCompare(b.listingKey)
+      })
+      comps = [...seated, ...open.slice(0, slots)]
+    }
+  } else {
+    comps = keepTightestByClosePrice(
+      comps,
+      competesForSeat != null ? Math.min(MAX_COMPS, TARGET_COMPS) : MAX_COMPS,
+      asOf,
+      competesForSeat,
+    )
+  }
   // Present most recent first (matches the exemplar ordering).
   comps.sort((a, b) => b.closeDate.localeCompare(a.closeDate))
+
+  // THE DISCLOSURES COUNT THE PRINTED SET (review 2026-10-07). They land in
+  // selection.trace, the citations' comp_selection.trace, render_args.compTrace
+  // and the build summary, so §0 holds them to the sales the reader sees: a
+  // candidate the outlier drop or the cap removed is not described here.
+  const sixMonthsBeforeAsOf = (() => {
+    const d = new Date(`${asOf}T00:00:00Z`)
+    d.setUTCMonth(d.getUTCMonth() - 6)
+    return d.toISOString().slice(0, 10)
+  })()
+  if (comps.some((c) => c.closeDate.slice(0, 10) < sixMonthsBeforeAsOf)) {
+    const older =
+      heldWhenOlderOpened == null || heldWhenOlderOpened < MIN_COMPS
+        ? 'Comps older than 6 months were used because the 6-month set did not reach the minimum. Fannie Mae B4-1.3-08 requires this be stated.'
+        : `Comps older than 6 months were used. The 6-month set held ${heldWhenOlderOpened} sales; the search reads this home's own ground across its whole window, out to 24 months, and keeps up to ${MAX_COMPS}, newest first, so an older sale there kept a seat. Fannie Mae B4-1.3-08 requires this be stated.`
+    trace.push(older)
+    disclosures.push(older)
+  }
+  for (const t of tiers) {
+    if (t.disclosure && tiersUsed.includes(t.name)) {
+      trace.push(t.disclosure)
+      disclosures.push(t.disclosure)
+    }
+  }
+  for (const d of disclosedWidening) if (!disclosures.includes(d)) disclosures.push(d)
+  const roomNotedCount = comps.filter((c) => (c.roomDifference ?? []).length > 0).length
+  if (roomNotedCount > 0) {
+    const d = `${roomNotedCount} sale(s) are one bedroom or bathroom different from your home. They are used because they sit on your home's own ground — its plat, its neighborhood or its street — and each is marked on the report. No dollar value is applied to the room: paired sales in this market do not support one.`
+    trace.push(d)
+    disclosures.push(d)
+  }
+  const competingCount = comps.filter((c) => c.competingArea).length
+  if (competingCount > 0) {
+    const d = `${competingCount} comp(s) come from a COMPETING market area and are labeled as such on the report, per Fannie Mae B4-1.3-08.`
+    trace.push(d)
+    disclosures.push(d)
+  }
 
   trace.push(`Final comp set: ${comps.length} closed sales (tiers: ${tiersUsed.join(', ') || 'none'}).`)
 

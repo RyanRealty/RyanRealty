@@ -184,11 +184,14 @@ describe('selectComps — CMA as-of date reaches the final cull (WP5 item d)', (
     expect(lastArgs[2]).toBe('2024-01-15')
   })
 
-  it('leaves asOf undefined (today-shaped, current behavior) when the caller supplies none', async () => {
+  it('defaults asOf to today when the caller supplies none, so the staleness penalty runs on every path (review 2026-10-07)', async () => {
+    // The dry run, the BPO engine, place comps and the sell page call
+    // selectCompsPreferringFacts with no asOf; they must cull as a build made
+    // today does (lib/cma/build.ts passes the build date).
     await selectComps(subject())
     expect(keepTightestSpy).toHaveBeenCalled()
     const lastArgs = keepTightestSpy.mock.calls.at(-1)!
-    expect(lastArgs[2]).toBeUndefined()
+    expect(lastArgs[2]).toBe(new Date().toISOString().slice(0, 10))
   })
 })
 
@@ -573,8 +576,10 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
   // The listings ladder for a named plat walks subdivision-6mo, -12mo, -18mo,
   // -24mo (own ground, the same area across its whole window), then the
   // touching plats at 6, 12, 18 and 24 months (a wider area). Once the set
-  // holds five, no rung that widens the area runs. The set keeps up to seven,
-  // the tightest prices first, own ground ahead of a wider place.
+  // holds five, no rung that widens the area runs. Every sale admitted before
+  // five keeps its seat. Seats six and seven come only from own ground,
+  // newest closes first, then nearest (Matt 2026-10-07); a widening rung adds
+  // only the shortfall to five, its tightest prices first.
   const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10)
   const SIX_MO = daysAgo(60)
   const TWELVE_MO = daysAgo(240)
@@ -625,7 +630,9 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
     ringMocks.assignSubdivisionSlugs.mockImplementation(async (pts: ReadonlyArray<unknown>) => pts.map(() => null))
   })
 
-  it('an over-full plat yields seven, the tightest prices first', async () => {
+  it('an over-full plat yields seven: newest first, then nearest, then the tightest price', async () => {
+    // Every sale here closed the same day at the same spot, so the tie falls
+    // to the close nearest the middle price.
     const central = [500_000, 502_000, 504_000, 506_000, 508_000, 510_000, 512_000]
     poolOf([
       ...central.map((price, i) => plat(`C${i}`, i, price, SIX_MO)),
@@ -668,7 +675,7 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
     expect(sel.diagnostics.reached_target).toBe(true)
   })
 
-  it('a wider rung that reaches five holding six gives six, and nothing past it fills the seventh seat', async () => {
+  it('a wider rung that reaches five holding six gives five: it adds only what reaches five', async () => {
     poolOf(
       [0, 1].map((i) => plat(`O${i}`, i, 500_000, SIX_MO)),
       [
@@ -677,11 +684,130 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
       ],
     )
     const sel = await selectComps(kenwood)
-    expect(keys(sel)).toEqual(['E0', 'E1', 'E2', 'E3', 'O0', 'O1'])
+    // Only what's needed (Matt 2026-10-07): the touching plat adds three, its
+    // tightest prices, and never fills seats six and seven.
+    expect(keys(sel)).toEqual(['E0', 'E1', 'E2', 'O0', 'O1'])
     expect(ran(sel)).toEqual([...PLAT_TIERS, 'adjacent-subdivision-6mo'])
   })
 
-  it('own ground keeps its seats: only the wider rung that reached five gives up a seat', async () => {
+  // The review of 2026-10-07: the disclosures land in selection.trace, the
+  // citations' comp_selection.trace, render_args.compTrace and the build
+  // summary, so they must describe the printed set, not the candidates.
+  const OLDER = 'Comps older than 6 months were used'
+  const SHORT = 'Comps older than 6 months were used because the 6-month set did not reach the minimum'
+
+  it('says nothing about older comps when every printed sale is inside six months, though a 12-month rung added two', async () => {
+    poolOf([
+      ...[0, 1, 2, 3, 4, 5, 6].map((i) => plat(`F${i}`, i, 500_000 + i * 1_000, SIX_MO)),
+      ...[0, 1].map((i) => plat(`W${i}`, 20 + i, 560_000, TWELVE_MO)),
+    ])
+    const sel = await selectComps(kenwood)
+    expect(sel.diagnostics.ladder.find((t) => t.tier === 'subdivision-12mo')?.comps_added).toBe(2)
+    expect(keys(sel)).toEqual(['F0', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6'])
+    expect(sel.trace.some((t) => t.startsWith(OLDER))).toBe(false)
+    expect(sel.diagnostics.disclosures.some((d) => d.startsWith(OLDER))).toBe(false)
+  })
+
+  it('an older own-plat sale that kept a seat after five is disclosed without claiming the 6-month set fell short', async () => {
+    poolOf([
+      ...[0, 1, 2, 3, 4].map((i) => plat(`F${i}`, i, 500_000 + i * 1_000, SIX_MO)),
+      ...[0, 1].map((i) => plat(`W${i}`, 10 + i, 502_000, TWELVE_MO)),
+    ])
+    const sel = await selectComps(kenwood)
+    expect(keys(sel)).toEqual(['F0', 'F1', 'F2', 'F3', 'F4', 'W0', 'W1'])
+    const line = sel.diagnostics.disclosures.find((d) => d.startsWith(OLDER))
+    expect(line).toBe(
+      "Comps older than 6 months were used. The 6-month set held 5 sales; the search reads this home's own ground across its whole window, out to 24 months, and keeps up to 7, newest first, so an older sale there kept a seat. Fannie Mae B4-1.3-08 requires this be stated.",
+    )
+    expect(sel.trace).toContain(line)
+  })
+
+  it('an older sale used because the 6-month set held fewer than five says so', async () => {
+    poolOf([
+      ...[0, 1, 2].map((i) => plat(`F${i}`, i, 500_000 + i * 1_000, SIX_MO)),
+      ...[0, 1].map((i) => plat(`W${i}`, 10 + i, 502_000, TWELVE_MO)),
+    ])
+    const sel = await selectComps(kenwood)
+    expect(keys(sel)).toEqual(['F0', 'F1', 'F2', 'W0', 'W1'])
+    expect(sel.diagnostics.disclosures.filter((d) => d.startsWith(SHORT))).toHaveLength(1)
+  })
+
+  it('own ground over seven keeps its newest closes, even when older sales sit nearer the middle price (Matt 2026-10-07)', async () => {
+    poolOf([
+      ...[470_000, 485_000, 500_000, 515_000, 530_000].map((price, i) => plat(`NEW${i}`, i, price, SIX_MO)),
+      ...[0, 1, 2].map((i) => plat(`OLD${i}`, 20 + i, 500_000, TWELVE_MO)),
+    ])
+    const sel = await selectComps(kenwood)
+    expect(sel.excludedOutliers).toHaveLength(0)
+    // Five six-month sales and two of the three 12-month ones. The price-tight
+    // cut would have dropped $470,000 or $530,000 and kept all three older sales.
+    expect(sel.comps).toHaveLength(7)
+    for (const key of ['NEW0', 'NEW1', 'NEW2', 'NEW3', 'NEW4']) expect(keys(sel)).toContain(key)
+    expect(keys(sel).filter((k) => k.startsWith('OLD'))).toHaveLength(2)
+  })
+
+  it('the room line counts the printed set, not candidates the cap cut', async () => {
+    const bath = (key: string, i: number, closePrice: number, closeDate: string) =>
+      closedRow({ ListingKey: key, StreetNumber: String(300 + i), BathroomsTotal: 3, ClosePrice: closePrice, CloseDate: closeDate })
+    poolOf([
+      ...[0, 1, 2, 3, 4, 5, 6].map((i) => plat(`F${i}`, i, 500_000 + i * 1_000, SIX_MO)),
+      // One bath more, inside the plat: admitted, then cut by the cap.
+      ...[0, 1, 2, 3].map((i) => bath(`BATH${i}`, i, 600_000, TWELVE_MO)),
+    ])
+    const cut = await selectComps(kenwood)
+    expect(cut.diagnostics.candidates).toBe(11)
+    expect(keys(cut)).toEqual(['F0', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6'])
+    expect(cut.trace.some((t) => t.includes('one bedroom or bathroom different'))).toBe(false)
+
+    poolOf([
+      ...[0, 1, 2, 3, 4].map((i) => plat(`F${i}`, i, 500_000 + i * 1_000, SIX_MO)),
+      bath('BATH0', 0, 503_000, SIX_MO),
+    ])
+    const kept = await selectComps(kenwood)
+    expect(keys(kept)).toContain('BATH0')
+    expect(kept.diagnostics.disclosures.some((d) => d.startsWith('1 sale(s) are one bedroom or bathroom different'))).toBe(true)
+  })
+
+  it('a wider rung reaching five never costs an own-plat sale its seat to the outlier drop (both ladders seat own ground)', async () => {
+    poolOf(
+      [
+        plat('O1', 0, 500_000, SIX_MO),
+        plat('O2', 1, 505_000, SIX_MO),
+        plat('O3', 2, 495_000, SIX_MO),
+        plat('OHI', 3, 700_000, SIX_MO),
+      ],
+      [0, 1, 2, 3].map((i) => touching(`T${i}`, i, 500_000 + i * 1_000, SIX_MO)),
+    )
+    const sel = await selectComps(kenwood)
+    expect(ran(sel)).toEqual([...PLAT_TIERS, 'adjacent-subdivision-6mo'])
+    expect(sel.excludedOutliers).toHaveLength(0)
+    // Own ground keeps all four seats; the touching plat adds the one sale
+    // that reaches five.
+    expect(keys(sel)).toEqual(['O1', 'O2', 'O3', 'OHI', 'T0'])
+  })
+
+  it('with no asOf the cull matches a build made today: a stale touching-plat sale pays the staleness penalty', async () => {
+    // Three own-plat sales, then the 18-month touching rung reaches five
+    // holding four and adds only two. At the middle price sit two sales from
+    // about 16 months ago; $30,000 off it, two from just past a year. With
+    // today's date the older pair pays the staleness penalty and gives up its
+    // seats; with no date at all it did not, so the dry run and the fleet
+    // scorer used to seat a different set than a build made today.
+    const platRows = [0, 1, 2].map((i) => plat(`O${i}`, i, 500_000, daysAgo(40)))
+    const touchingRows = [
+      ...[0, 1].map((i) => touching(`STALE${i}`, i, 500_000, daysAgo(500))),
+      ...[0, 1].map((i) => touching(`YEAR${i}`, 10 + i, 530_000, daysAgo(380))),
+    ]
+    poolOf(platRows, touchingRows)
+    const today = await selectComps(kenwood, { asOf: new Date().toISOString().slice(0, 10) })
+    poolOf(platRows, touchingRows)
+    const omitted = await selectComps(kenwood)
+    expect(ran(omitted)).toEqual([...PLAT_TIERS, 'adjacent-subdivision-6mo', 'adjacent-subdivision-12mo', 'adjacent-subdivision-18mo'])
+    expect(keys(today)).toEqual(['O0', 'O1', 'O2', 'YEAR0', 'YEAR1'])
+    expect(keys(omitted)).toEqual(keys(today))
+  })
+
+  it('own ground keeps its seats: the wider rung that reached five adds only the shortfall, its tightest prices', async () => {
     poolOf(
       [plat('E500', 0, 500_000, SIX_MO), plat('E545', 1, 545_000, SIX_MO)],
       [470_000, 480_000, 490_000, 500_000, 510_000, 520_000, 530_000, 540_000].map((price, i) =>
@@ -691,9 +817,10 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
     const sel = await selectComps(kenwood)
     expect(ran(sel)).toEqual([...PLAT_TIERS, 'adjacent-subdivision-6mo'])
     expect(sel.excludedOutliers).toHaveLength(0)
-    expect(sel.comps).toHaveLength(7)
+    expect(sel.comps).toHaveLength(5)
     // $545,000 is the farthest close from the middle price, and it stays: it
-    // is in this home's own plat, and the touching plat reached five.
-    expect(keys(sel)).toEqual(['E500', 'E545', 'T480', 'T490', 'T500', 'T510', 'T520'])
+    // is in this home's own plat, and the touching plat reached five. The
+    // touching plat adds three, the ones nearest the middle price.
+    expect(keys(sel)).toEqual(['E500', 'E545', 'T490', 'T500', 'T510'])
   })
 })
