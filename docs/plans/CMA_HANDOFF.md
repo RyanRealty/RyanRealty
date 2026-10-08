@@ -85,6 +85,15 @@ NODE_USE_ENV_PROXY=1 npm run cma:fleet -- --concurrency 4 \
   - every home whose price moved more than 1%, with why;
   - new failures with their reasons.
 - Matt accepted the last three results with "Yes, land and rebuild".
+- **Interim score, `994e3722a` (plat-identity only), 2026-10-08 21:40 UTC:**
+  - 108 of 140 build (baseline 109).
+  - Newly failing: cma-19717-mount-bachelor (1 price-setting sale in Century West; built at $602,000 before).
+  - Newly holding: cma-62665-big-sage (under-ask-15, $2,294,000 vs $2,750,000).
+  - 12 prices moved, median 2.8%:
+    - cma-1355-jacksonville $732,000 to $705,000 (1367 Milwaukee found).
+    - cma-429-irving -7.4%.
+    - About seven homes down 2 to 3% with unchanged comps. The competition read now sees actives in additions (e.g. Providence Phase 4 for cma-3153-cromwell), and the actives nudge pulls the list down.
+  - The final score must be run on the branch head after `fix/plat-ground-facts` lands.
 
 ## Landing steps after the fleet yes
 
