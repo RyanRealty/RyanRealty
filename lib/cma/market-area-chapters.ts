@@ -276,10 +276,15 @@ export function renderInventoryBoardHtml(
       }`
     : ''
 
+  // IT NAMES WHAT IT COUNTS (2026-10-08). "712 homes are for sale in Bend"
+  // was the single-family count (Market Truth segment detached); every
+  // residential listing in Bend that night was 896, and two reviewers could
+  // not tell which one the letter meant. The count, the pace and the verdict
+  // are one population, and the sentence says which.
   const sentences: string[] = []
   if (mos != null && active != null && perMonth != null && verdict) {
     sentences.push(
-      `${int(active)} homes are for sale in ${place} right now. Over the last ${monthsWord(
+      `${int(active)} single-family ${active === 1 ? 'home is' : 'homes are'} for sale in ${place} right now. Over the last ${monthsWord(
         windowMonths,
       )} months, an average of ${int(Math.round(perMonth))} sold each month. At that pace it would take ${formatMonthsOfSupply(
         mos,
@@ -290,7 +295,7 @@ export function renderInventoryBoardHtml(
     // still may not print the trade term: "months of supply" as a bare label
     // is the jargon the taste review named.
     sentences.push(
-      `At the pace homes are selling in ${place} it would take ${formatMonthsOfSupply(
+      `At the pace single-family homes are selling in ${place} it would take ${formatMonthsOfSupply(
         mos,
       )} months to sell what is listed, which is ${verdict.label.toLowerCase()} territory.`,
     )

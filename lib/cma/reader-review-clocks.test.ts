@@ -277,7 +277,7 @@ describe('wording a person would use', () => {
       mosFormula: 'getMetric months_of_supply mt-v1 detached MLS-city (same path as /sell)',
     } as unknown as CmaMarketContext)
     // 707 / 3.477 = 203.3 a month, the six-month close pace the figure divides by.
-    expect(html).toContain('707 homes are for sale in Bend right now. Over the last six months, an average of 203 sold each month.')
+    expect(html).toContain('707 single-family homes are for sale in Bend right now. Over the last six months, an average of 203 sold each month.')
     expect(html).not.toContain('typical month')
   })
 })

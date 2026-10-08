@@ -9,7 +9,14 @@ import {
   similarBedRange,
   type CmaExpiredPeer,
 } from './market-status'
-import { askOutcomeBarsSvg, daysToOfferSvg, labelWidth, medianCloseLineSvg } from './market-charts'
+import {
+  activeBarLabel,
+  askOutcomeBarsSvg,
+  daysToOfferSvg,
+  labelWidth,
+  medianCloseCaption,
+  medianCloseLineSvg,
+} from './market-charts'
 import { immersiveWiderMarketChapters, renderStatusGridHtml } from './market-area-chapters'
 import { renderImmersiveCmaHtml } from './immersive'
 import type { RenderCmaArgs } from './render'
@@ -492,6 +499,53 @@ describe('market charts', () => {
     // No BAR. The only rects are the transparent 44-unit-tall tap bands behind
     // each month's dot (tasteReview round two, item 3) — they carry no fill.
     expect(svg).not.toMatch(/<rect(?![^>]*fill="transparent")/)
+  })
+
+  it('keeps the calendar: a withheld month keeps its width, the line breaks there, and the caption says why', () => {
+    // Sunriver, Market Truth neighborhood detached one-month medians read
+    // 2026-10-08: Dec, Jan, Apr and May withheld under ten sales. Joined
+    // up, February drew one step after November.
+    const months: Array<[string, number | null]> = [
+      ['2025-10-01', 829500],
+      ['2025-11-01', 723000],
+      ['2025-12-01', null],
+      ['2026-01-01', null],
+      ['2026-02-01', 860000],
+      ['2026-03-01', 757500],
+      ['2026-04-01', null],
+      ['2026-05-01', null],
+      ['2026-06-01', 1100000],
+      ['2026-07-01', 885000],
+      ['2026-08-01', 972500],
+      ['2026-09-01', 860000],
+    ]
+    const points = months.map(([periodStart, medianSalePrice]) => ({ periodStart, medianSalePrice, soldCount: 10 }))
+    const svg = medianCloseLineSvg(points)
+    const cx = [...svg.matchAll(/<circle cx="([\d.]+)"/g)].map((m) => Number(m[1]))
+    expect(cx).toHaveLength(8)
+    const step = (cx[1]! - cx[0]!)
+    // February sits three months after November, not one.
+    expect(cx[2]! - cx[1]!).toBeCloseTo(step * 3, 5)
+    // Three runs (Oct-Nov, Feb-Mar, Jun-Sep): the path lifts its pen twice.
+    const d = /<path d="([^"]+)"/.exec(svg)?.[1] ?? ''
+    expect(d.match(/M/g)).toHaveLength(3)
+    // The axis still names a month the line skips.
+    expect(svg).toContain('>Dec<')
+    expect(medianCloseCaption(points)).toContain('A month with too few sales for a middle price is left blank.')
+    // A full year draws one unbroken line and says nothing about blanks.
+    const full = points.map((p) => ({ ...p, medianSalePrice: p.medianSalePrice ?? 800000 }))
+    expect((/<path d="([^"]+)"/.exec(medianCloseLineSvg(full))?.[1] ?? '').match(/M/g)).toHaveLength(1)
+    expect(medianCloseCaption(full)).not.toContain('left blank')
+  })
+
+  it('the count bar says single-family, and a long place drops "right now" on a phone before it overruns', () => {
+    expect(activeBarLabel('Bend', 360, 12)).toBe('Single-family homes for sale in Bend right now')
+    expect(activeBarLabel('Crooked River Ranch', 720, 13.5)).toBe(
+      'Single-family homes for sale in Crooked River Ranch right now',
+    )
+    const phone = activeBarLabel('Crooked River Ranch', 360, 12)
+    expect(phone).toBe('Single-family homes for sale in Crooked River Ranch')
+    expect(phone.length * 12 * 0.58).toBeLessThanOrEqual(356)
   })
 
   // The new-listing month ledger was deleted 2026-09-07 (P4, Matt): one to

@@ -788,7 +788,7 @@ describe('F7 / tasteReview 2 — this market is sentences and two bars, not a KP
     // sentence saying what it means".
     expect(block).not.toMatch(/<div class="stat-strip is-4">/)
     expect(block).not.toContain('class="stat3"')
-    expect(block).toContain('40 homes are for sale in Redmond right now')
+    expect(block).toContain('40 single-family homes are for sale in Redmond right now')
     // A monthly average over the window months of supply divides by.
     expect(block).toMatch(/Over the last six months, an average of 13 sold each month/)
     expect(block).toMatch(/3\.2 months to sell what is listed/)
@@ -812,7 +812,7 @@ describe('F7 / tasteReview 2 — this market is sentences and two bars, not a KP
   it('draws months of supply as two bars, whose ratio IS the published figure', () => {
     const block = marketBlock(letter())
     expect(block).toContain('class="szn mos-wide"')
-    expect(block).toContain('Homes for sale in Redmond right now')
+    expect(block).toContain('Single-family homes for sale in Redmond right now')
     expect(block).toContain('Sold each month, average of the last six months')
   })
 
