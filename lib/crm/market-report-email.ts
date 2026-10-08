@@ -60,6 +60,7 @@ import {
   verdictLabel,
 } from './market-report-format'
 import { cityMarketPath } from '@/lib/market/canonical-market-path'
+import { buildTrackedUrl, marketReportCampaign } from '@/lib/analytics/utm'
 
 // Public surface preserved after the 2026-07-29 formatter extraction —
 // app/actions/generate-market-report.ts and the test suite import these from
@@ -305,9 +306,17 @@ type AreaRender = { html: string; text: string; traces: EmailFigureTrace[] }
  * are stamped by attributeOutbound at send time (fragment-aware since today).
  * Exported for tests.
  */
-export function reportCtaUrl(area: Pick<MarketReportAreaBlock, 'slug' | 'geoType' | 'href'>): string {
+export function reportCtaUrl(
+  area: Pick<MarketReportAreaBlock, 'slug' | 'geoType' | 'href' | 'trend'>,
+): string {
   const path = area.geoType === 'city' ? cityMarketPath(area.slug) : area.href
-  return `${SITE_URL}${path}?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report`
+  const period = area.trend?.points?.at(-1)?.periodStart ?? null
+  const url = buildTrackedUrl(`${SITE_URL}${path}`, {
+    source: 'crm',
+    medium: 'email',
+    campaign: marketReportCampaign(period),
+  })
+  return `${url}#market-report`
 }
 
 function renderAreaBlock(area: MarketReportAreaBlock): AreaRender {
