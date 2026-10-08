@@ -49,27 +49,23 @@ describe('metaPixelMayLoad', () => {
     ).toBe(false)
   })
 
-  it('grants US (unrestricted) with no answer when the analytics-follow flag is on', () => {
-    expect(META_PIXEL_DEFAULT_FOLLOWS_ANALYTICS_STORAGE).toBe(true)
-    expect(metaPixelMayLoad({ stored: null, gpc: false, restrictedRegion: false })).toBe(true)
+  it('stays off in the US with no answer (follows ad_* denied, not analytics_storage)', () => {
+    expect(META_PIXEL_DEFAULT_FOLLOWS_ANALYTICS_STORAGE).toBe(false)
+    expect(metaPixelMayLoad({ stored: null, gpc: false, restrictedRegion: false })).toBe(false)
   })
 
-  it('does not load for a campaign-link arrival in a restricted or unknown region', () => {
-    expect(
-      metaPixelMayLoad({ stored: null, gpc: false, restrictedRegion: true, search: '?fbclid=1' }),
-    ).toBe(false)
-    expect(
-      metaPixelMayLoad({ stored: null, gpc: false, restrictedRegion: true, search: '?utm_source=cma' }),
-    ).toBe(false)
+  it('does not load for a campaign-link arrival in any region', () => {
+    expect(metaPixelMayLoad({ stored: null, gpc: false, restrictedRegion: true })).toBe(false)
+    expect(metaPixelMayLoad({ stored: null, gpc: false, restrictedRegion: false })).toBe(false)
   })
 
-  it('still loads for a US campaign-link arrival with no answer (the existing auto-grant)', () => {
+  it('loads only after an explicit marketing grant, and GPC still wins', () => {
     expect(
-      metaPixelMayLoad({ stored: null, gpc: false, restrictedRegion: false, search: '?fbclid=1' }),
+      metaPixelMayLoad({ stored: { analytics: true, marketing: true }, gpc: false, restrictedRegion: false }),
     ).toBe(true)
     expect(
-      metaPixelMayLoad({ stored: null, gpc: false, restrictedRegion: false, search: '?utm_source=cma' }),
-    ).toBe(true)
+      metaPixelMayLoad({ stored: { analytics: true, marketing: true }, gpc: true, restrictedRegion: false }),
+    ).toBe(false)
   })
 })
 
@@ -93,11 +89,8 @@ describe('metaPixelBootstrapScript', () => {
     expect(runPixel({})).toEqual({ loaded: false, inited: false, ldu: false })
   })
 
-  it('loads and inits for a granted US visitor, with LDU when marketing is not granted', () => {
-    const us = runPixel({ cookie: 'rr_cr=0' })
-    expect(us.loaded).toBe(true)
-    expect(us.inited).toBe(true)
-    expect(us.ldu).toBe(true)
+  it('does not load for a US visitor with no banner answer', () => {
+    expect(runPixel({ cookie: 'rr_cr=0' })).toEqual({ loaded: false, inited: false, ldu: false })
   })
 
   it('does not load on a DE or unknown-region ad click with no answer', () => {
@@ -114,10 +107,35 @@ describe('metaPixelBootstrapScript', () => {
     expect(runPixel({ search: '?fbclid=abc' })).toEqual({ loaded: false, inited: false, ldu: false })
   })
 
-  it('still loads on a US ad click with no answer', () => {
-    const us = runPixel({ cookie: 'rr_cr=0', search: '?fbclid=abc' })
+  it('does not load on a US ad click with no answer (gclid, fbclid, utm)', () => {
+    expect(runPixel({ cookie: 'rr_cr=0', search: '?fbclid=abc' })).toEqual({
+      loaded: false,
+      inited: false,
+      ldu: false,
+    })
+    expect(runPixel({ cookie: 'rr_cr=0', search: '?gclid=1&utm_source=google' })).toEqual({
+      loaded: false,
+      inited: false,
+      ldu: false,
+    })
+  })
+
+  it('GPC wins over a stored marketing accept: no init, no _fbp', () => {
+    expect(
+      runPixel({
+        globalPrivacyControl: true,
+        cookie: `rr_cr=0; ryan_realty_cookie_consent=${encodeConsent({ analytics: true, marketing: true })}`,
+      }),
+    ).toEqual({ loaded: false, inited: false, ldu: false })
+  })
+
+  it('loads after an explicit marketing grant in the US, with LDU off', () => {
+    const us = runPixel({
+      cookie: `rr_cr=0; ryan_realty_cookie_consent=${encodeConsent({ analytics: true, marketing: true })}`,
+    })
     expect(us.loaded).toBe(true)
     expect(us.inited).toBe(true)
+    expect(us.ldu).toBe(false)
   })
 
   it('does not run _fbp-setting init after a US decline', () => {

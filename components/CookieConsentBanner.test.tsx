@@ -3,7 +3,7 @@
  *
  * Cookie notice occupancy — first-screen 390 must show the page's thing.
  * Accept all is never a first-viewport filled primary. The legal contract
- * (Accept all / Essential only / Preferences, privacy links, ad auto-grant,
+ * (Accept all / Essential only / Preferences, privacy links,
  * ryan_realty_cookie_consent) stays intact after the visitor has seen the thing.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -14,20 +14,11 @@ import { createRoot, type Root } from 'react-dom/client'
 import CookieConsentBanner, {
   COOKIE_NOTICE_FOLD_DELAY_MS,
   COOKIE_NOTICE_SCROLL_PX,
-  autoGrantConsentForAdTraffic,
   getStoredConsent,
   hasAnalyticsConsent,
   nextCookieNoticeSurface,
 } from './CookieConsentBanner'
-import { arrivalConsent } from '@/lib/identity/consent'
-import { pageArrival, resetSessionMemory } from '@/lib/analytics/visitor-session'
-
-// The one rule for the campaign-link grant (lib/identity/consent.ts), spied on so the
-// banner is seen to decide through it rather than restate it.
-vi.mock('@/lib/identity/consent', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/identity/consent')>()
-  return { ...actual, arrivalConsent: vi.fn(actual.arrivalConsent) }
-})
+import { resetSessionMemory } from '@/lib/analytics/visitor-session'
 
 const SRC = join(process.cwd(), 'components/CookieConsentBanner.tsx')
 
@@ -98,7 +89,7 @@ describe('nextCookieNoticeSurface', () => {
     expect(nextCookieNoticeSurface('chip', 'open-bar', false)).toBe('bar')
   })
 
-  it('a choice or an auto-grant hides every surface', () => {
+  it('a choice or a recorded consent hides every surface', () => {
     expect(nextCookieNoticeSurface('bar', 'chosen', false)).toBe('hidden')
     expect(nextCookieNoticeSurface('chip', 'consent-recorded', false)).toBe('hidden')
   })
@@ -233,42 +224,10 @@ describe('CookieConsentBanner occupancy', () => {
   })
 })
 
-describe('autoGrantConsentForAdTraffic', () => {
+describe('ad click is not consent', () => {
   beforeEach(() => {
     cookies.clear()
-    // a new page: its arrival is read from the address it loads at
     resetSessionMemory()
-    vi.mocked(arrivalConsent).mockClear()
-  })
-
-  it('decides through the one rule, arrivalConsent, with the cookie, the arrival, the browser\'s GPC signal and the region cookie', () => {
-    document.cookie = 'rr_cr=0; path=/'
-    vi.stubGlobal('location', new URL('https://ryan-realty.com/?utm_source=facebook'))
-    expect(autoGrantConsentForAdTraffic()).toBe(true)
-    expect(arrivalConsent).toHaveBeenCalledWith({
-      cookieValue: undefined,
-      search: '?utm_source=facebook',
-      gpc: false,
-      restrictedRegion: false,
-    })
-  })
-
-  it('is judged on the address the page LOADED at: a tap before the tracker mounts keeps the grant (review of 2026-09-30)', () => {
-    document.cookie = 'rr_cr=0; path=/'
-    vi.stubGlobal('location', new URL('https://ryan-realty.com/?utm_source=facebook&fbclid=TEST'))
-    pageArrival() // recorded as the page loads (the module is evaluated at hydration)
-    // the visitor taps a link before VisitTracker, loaded lazily, has mounted
-    vi.stubGlobal('location', new URL('https://ryan-realty.com/homes-for-sale'))
-    expect(autoGrantConsentForAdTraffic()).toBe(true)
-    expect(getStoredConsent()).toEqual({ analytics: true, marketing: true })
-  })
-
-  it('and an untagged landing is not granted by a tagged address reached from it', () => {
-    vi.stubGlobal('location', new URL('https://ryan-realty.com/'))
-    pageArrival()
-    vi.stubGlobal('location', new URL('https://ryan-realty.com/sell?utm_source=site&utm_campaign=banner'))
-    expect(autoGrantConsentForAdTraffic()).toBe(false)
-    expect(getStoredConsent()).toBeNull()
   })
 
   afterEach(() => {
@@ -276,29 +235,13 @@ describe('autoGrantConsentForAdTraffic', () => {
     vi.unstubAllGlobals()
   })
 
-  it('grants analytics and marketing on utm traffic with no prior choice in a known unrestricted region', () => {
+  it('does not write the consent cookie on a US gclid or fbclid arrival', () => {
     document.cookie = 'rr_cr=0; path=/'
-    vi.stubGlobal('location', new URL('https://ryan-realty.com/?utm_source=facebook'))
-    expect(autoGrantConsentForAdTraffic()).toBe(true)
-    expect(getStoredConsent()).toEqual({ analytics: true, marketing: true })
-  })
-
-  it('does not auto-grant on a utm/fbclid link in a restricted or unknown region', () => {
-    document.cookie = 'rr_cr=1; path=/'
-    vi.stubGlobal('location', new URL('https://ryan-realty.com/?utm_source=facebook&fbclid=TEST'))
-    expect(autoGrantConsentForAdTraffic()).toBe(false)
+    vi.stubGlobal('location', new URL('https://ryan-realty.com/?gclid=1&utm_source=google'))
     expect(getStoredConsent()).toBeNull()
-    cookies.clear()
+    expect(document.cookie).not.toContain('ryan_realty_cookie_consent=')
     vi.stubGlobal('location', new URL('https://ryan-realty.com/?fbclid=TEST'))
-    expect(autoGrantConsentForAdTraffic()).toBe(false)
     expect(getStoredConsent()).toBeNull()
-  })
-
-  it('does not override an explicit essential-only choice', () => {
-    document.cookie = `ryan_realty_cookie_consent=${encodeURIComponent(JSON.stringify({ analytics: false, marketing: false }))}`
-    vi.stubGlobal('location', new URL('https://ryan-realty.com/?fbclid=TEST'))
-    expect(autoGrantConsentForAdTraffic()).toBe(false)
-    expect(getStoredConsent()).toEqual({ analytics: false, marketing: false })
   })
 
   it('hasAnalyticsConsent follows the region default when there is no stored answer', () => {
@@ -316,13 +259,12 @@ describe('autoGrantConsentForAdTraffic', () => {
     Object.defineProperty(navigator, 'globalPrivacyControl', { configurable: true, value: undefined })
   })
 
-  it('never grants anything to a browser sending Global Privacy Control: no cookie, no consent event', () => {
+  it('never writes a consent cookie for a browser sending Global Privacy Control on an ad click', () => {
     Object.defineProperty(navigator, 'globalPrivacyControl', { configurable: true, value: true })
     const heard = vi.fn()
     window.addEventListener('cookie-consent', heard)
     try {
       vi.stubGlobal('location', new URL('https://ryan-realty.com/?utm_source=facebook&fbclid=TEST'))
-      expect(autoGrantConsentForAdTraffic()).toBe(false)
       expect(getStoredConsent()).toBeNull()
       expect(heard).not.toHaveBeenCalled()
     } finally {
@@ -342,7 +284,7 @@ describe('CookieConsentBanner source contract', () => {
     expect(src).toContain('Preferences')
     expect(src).toContain('href="/privacy"')
     expect(src).toContain('href="/privacy#donotsell"')
-    expect(src).toContain('export function autoGrantConsentForAdTraffic')
+    expect(src).not.toContain('autoGrantConsentForAdTraffic')
   })
 
   it('does not paint the bar on mount and delays the chip past the first screen', () => {

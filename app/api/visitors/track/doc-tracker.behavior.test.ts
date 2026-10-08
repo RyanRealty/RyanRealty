@@ -187,12 +187,12 @@ describe('a visitor who declined (break 2)', () => {
     expect(readConsentCookieRaw()).toBeUndefined()
   })
 
-  it('no banner answer on a campaign link in a known unrestricted region: analytics and marketing are granted', async () => {
+  it('no banner answer on a campaign link in a known unrestricted region: analytics, no consent cookie', async () => {
     document.cookie = 'rr_cr=0; path=/'
     h.load({ url: EMAIL_LINK })
     await h.flush()
-    expect(h.posts[0].body!.consent).toBe('all')
-    expect(readConsentCookieRaw()).toBe(encodeConsent({ analytics: true, marketing: true }))
+    expect(h.posts[0].body!.consent).toBe('analytics')
+    expect(readConsentCookieRaw()).toBeUndefined()
   })
 
   it('no banner answer on a campaign link in a restricted or unknown region is not auto-granted', async () => {

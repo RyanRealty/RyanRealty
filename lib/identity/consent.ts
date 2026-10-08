@@ -15,21 +15,19 @@ import {
  *   - marketing only           -> essential  (marketing alone widens nothing we store)
  *   - both off, or an unreadable cookie -> declined: NOTHING recorded, nobody identified
  *   - Global Privacy Control   -> NOTHING recorded, and it is never read as a grant
- *   - a visitor with no answer who arrives on an ad or campaign link (utm_*,
- *     fbclid, gclid, msclkid, ttclid) is treated as `all` for that page view
- *     (Matt 2026-06-02, the "aggressive ad-traffic consent" call), unless their
- *     browser sends Global Privacy Control
+ *   - an ad or campaign click (utm_*, fbclid, gclid, msclkid, ttclid) is not
+ *     consent: it does not grant ad_*, write the consent cookie, or load the
+ *     Meta Pixel (Matt 2026-10-08)
  *
  * WHO USES IT. components/VisitTracker.tsx (currentConsentLevel, and through it
  * every tracker that posts to /api/visitors/track, V3SectionTracker included),
- * components/CookieConsentBanner.tsx (getStoredConsent, and autoGrantConsentForAdTraffic
- * through arrivalConsent), components/PersonIdentityBridge.tsx,
+ * components/CookieConsentBanner.tsx (getStoredConsent), components/PersonIdentityBridge.tsx,
  * components/search/search-events.client.ts, and the server-side identify and
  * event paths below (app/actions/track-user-event.ts included).
  *
  * public/rr-doc-tracker.js is a plain script served as a static file, so it cannot
  * import this module. It MIRRORS parseConsentCookie / trackingLevelFromConsent /
- * isAdTrafficSearch / arrivalConsent / gpcFromNavigator line for line, and
+ * arrivalConsent / gpcFromNavigator line for line, and
  * app/api/visitors/track/doc-tracker.pin.test.ts runs that script against these
  * functions over every cookie shape and campaign URL, with and without Global
  * Privacy Control, so the two cannot drift apart unnoticed. (They did: until 2026-09-29 the
@@ -83,14 +81,6 @@ function regionIsRestricted(context?: ConsentContext): boolean {
   return !isKnownUnrestrictedConsentCountry(context.country)
 }
 
-/** Auto-grant only when the region is known unrestricted. Restricted and unknown are not. */
-function regionIsKnownUnrestricted(context?: ConsentContext): boolean {
-  if (!context) return false
-  if (context.restrictedRegion === true) return false
-  if (context.restrictedRegion === false) return true
-  return isKnownUnrestrictedConsentCountry(context.country)
-}
-
 /**
  * The tier a stored answer records at. No answer without region context is
  * `essential` (fail closed, the previous default). No answer in a known
@@ -130,24 +120,23 @@ export function isAdTrafficSearch(search: string | null | undefined): boolean {
  * Global Privacy Control as the page sees it: `navigator.globalPrivacyControl`
  * (the request carries the same signal as `Sec-GPC: 1`, gpcHeaderOptsOut). A
  * legally binding opt-out of sale and sharing (CA/CO/CT). It is never read as
- * consent, so the campaign-link grant does not apply to it; /api/visitors/track
- * drops every event that carries it (and records a durable suppression for a
- * contact it already knows); the client-document tracker records nothing at all.
+ * consent. /api/visitors/track drops every event that carries it (and records a
+ * durable suppression for a contact it already knows); the client-document
+ * tracker records nothing at all. GPC wins over every default, including the
+ * US analytics grant. Tags and recording also stay off when GPC is on even if
+ * a stored banner answer says marketing:true.
  */
 export function gpcFromNavigator(nav: unknown): boolean {
   return !!nav && typeof nav === 'object' && (nav as { globalPrivacyControl?: unknown }).globalPrivacyControl === true
 }
 
 /**
- * The tier ONE page load records at, folding in the ad-traffic grant: a visitor
- * with no banner answer who arrived on a campaign link in a KNOWN unrestricted
- * region is granted analytics and marketing (`grant: true` tells the caller to
- * write the cookie). Restricted regions (EEA/UK/CH) and unknown region are never
- * auto-granted: they stay at the region default until the visitor accepts. An
- * explicit answer, including a decline, is never overridden, and a browser sending
- * Global Privacy Control (`gpc`, required so no caller can leave it out) is never
- * granted anything. `search` is the query string the page ARRIVED with
- * (lib/analytics/visitor-session.ts pageArrival).
+ * The tier ONE page load records at. An ad or campaign click is not consent:
+ * `grant` is always false (Matt 2026-10-08). `search` stays on the signature so
+ * callers and the document-tracker pin keep passing the arrival query; it is
+ * not read. GPC (`gpc`, required so no caller can leave it out) keeps a
+ * no-answer visitor at essential even in the US. An explicit stored answer is
+ * still returned as its tier; recording and tags separately honor GPC.
  */
 export function arrivalConsent(args: {
   cookieValue: string | null | undefined
@@ -156,20 +145,26 @@ export function arrivalConsent(args: {
   country?: string | null
   restrictedRegion?: boolean
 }): { level: TrackingConsentLevel; grant: boolean } {
+  void args.search
   const stored = parseConsentCookie(args.cookieValue)
   const region = { country: args.country, restrictedRegion: args.restrictedRegion, gpc: args.gpc }
-  if (
-    stored === null &&
-    !args.gpc &&
-    isAdTrafficSearch(args.search) &&
-    regionIsKnownUnrestricted(region)
-  ) {
-    return { level: 'all', grant: true }
-  }
   return {
     level: trackingLevelFromConsent(stored, region),
     grant: false,
   }
+}
+
+/**
+ * May this request share with Meta or Google Ads? Only an explicit marketing
+ * grant, and never under GPC. Fail closed when there is no banner answer.
+ */
+export function marketingSharingAllowed(args: {
+  consentCookie?: string | null
+  secGpc?: string | null
+  gpc?: boolean
+}): boolean {
+  if (gpcHeaderOptsOut(args.secGpc) || args.gpc === true) return false
+  return parseConsentCookie(args.consentCookie)?.marketing === true
 }
 
 const CONSENT_RANK: Record<TrackingConsentLevel, number> = {

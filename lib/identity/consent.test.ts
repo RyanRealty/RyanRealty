@@ -7,6 +7,7 @@ import {
   gpcFromNavigator,
   identificationAllowed,
   isAdTrafficSearch,
+  marketingSharingAllowed,
   recordingAllowed,
   parseConsentCookie,
   trackingLevelFromConsent,
@@ -41,7 +42,7 @@ function legacyVisitTrackerLevel(stored: ConsentState | null): TrackingConsentLe
   return 'declined'
 }
 
-// components/CookieConsentBanner.tsx autoGrantConsentForAdTraffic() ad test, before it delegated.
+// components/CookieConsentBanner.tsx ad-traffic test, before it delegated.
 function legacyIsAd(search: string): boolean {
   const qs = new URLSearchParams(search || '')
   return (
@@ -145,17 +146,21 @@ describe('isAdTrafficSearch', () => {
   })
 })
 
-describe('arrivalConsent (the campaign-link grant)', () => {
+describe('arrivalConsent (an ad click is not consent)', () => {
   const ad = '?utm_source=cma&utm_campaign=1-main-st'
 
-  it('grants analytics + marketing when there is no answer, the link is a campaign, and the region is known unrestricted', () => {
+  it('never grants marketing from a US gclid, fbclid, or utm arrival', () => {
     expect(arrivalConsent({ cookieValue: undefined, search: ad, gpc: false, country: 'US' })).toEqual({
-      level: 'all',
-      grant: true,
+      level: 'analytics',
+      grant: false,
     })
-    expect(arrivalConsent({ cookieValue: '', search: '?gclid=1', gpc: false, restrictedRegion: false })).toEqual({
-      level: 'all',
-      grant: true,
+    expect(arrivalConsent({ cookieValue: '', search: '?gclid=1&utm_source=google', gpc: false, restrictedRegion: false })).toEqual({
+      level: 'analytics',
+      grant: false,
+    })
+    expect(arrivalConsent({ cookieValue: undefined, search: '?fbclid=abc', gpc: false, country: 'US' })).toEqual({
+      level: 'analytics',
+      grant: false,
     })
   })
 
@@ -212,12 +217,10 @@ describe('arrivalConsent (the campaign-link grant)', () => {
     // arrivalConsent, and tsc refuses a call that does not say whether the browser
     // sends Global Privacy Control.
     // @ts-expect-error gpc is required
-    expect(arrivalConsent({ cookieValue: undefined, search: ad, country: 'US' }).grant).toBe(true)
+    expect(arrivalConsent({ cookieValue: undefined, search: ad, country: 'US' }).grant).toBe(false)
   })
 
   it('never grants anything to a browser sending Global Privacy Control (review of 2026-09-30)', () => {
-    // An opt-out of sale and sharing is not consent to marketing. The grant wrote the
-    // `all` cookie for it on every campaign link, report pages included.
     expect(arrivalConsent({ cookieValue: undefined, search: ad, gpc: true })).toEqual({ level: 'essential', grant: false })
     expect(arrivalConsent({ cookieValue: '', search: '?fbclid=1', gpc: true })).toEqual({ level: 'essential', grant: false })
     // an answer already given is still read as it was (the route drops the events for GPC itself)
@@ -225,11 +228,20 @@ describe('arrivalConsent (the campaign-link grant)', () => {
       level: 'all',
       grant: false,
     })
-    // and with the signal off in a known unrestricted region, the grant still applies
     expect(arrivalConsent({ cookieValue: undefined, search: ad, gpc: false, country: 'US' })).toEqual({
-      level: 'all',
-      grant: true,
+      level: 'analytics',
+      grant: false,
     })
+  })
+})
+
+describe('marketingSharingAllowed', () => {
+  it('is only true for an explicit marketing grant without GPC', () => {
+    expect(marketingSharingAllowed({ consentCookie: enc({ analytics: true, marketing: true }) })).toBe(true)
+    expect(marketingSharingAllowed({ consentCookie: enc({ analytics: true, marketing: false }) })).toBe(false)
+    expect(marketingSharingAllowed({ consentCookie: undefined })).toBe(false)
+    expect(marketingSharingAllowed({ consentCookie: enc({ analytics: true, marketing: true }), secGpc: '1' })).toBe(false)
+    expect(marketingSharingAllowed({ consentCookie: enc({ analytics: true, marketing: true }), gpc: true })).toBe(false)
   })
 })
 

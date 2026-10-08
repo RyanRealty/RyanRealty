@@ -114,7 +114,7 @@ describe('a report opened first', () => {
     })
     // landing page is the real address, with the person token taken out
     expect(String(row.landing_page)).toBe(`https://ryan-realty.com/cma/${SLUG}?utm_source=cma&utm_campaign=${SLUG}&agent=matt&utm_medium=email&utm_content=agent-matt`)
-    // a campaign link with no banner answer is granted the campaign-link tier, so the user agent is kept too
+    // US / unrestricted, no banner answer is analytics: user agent is kept (not essential)
     expect(row.user_agent).toBe(HUMAN_UA)
     expect(store.db.visitor_events).toHaveLength(1)
     expect(store.db.visitor_events[0]).toMatchObject({ event_type: 'page_view', page_category: 'client-document' })

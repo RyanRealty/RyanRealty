@@ -120,6 +120,19 @@ describe('gtmBootstrapScript', () => {
     expect(defaults[0]?.region).toBeUndefined()
   })
 
+  it('GPC beats a stored marketing accept and the US analytics default', () => {
+    const raw = encodeURIComponent(JSON.stringify({ analytics: true, marketing: true }))
+    const defaults = consentDefaultsFromRun({
+      cookie: `ryan_realty_cookie_consent=${raw}`,
+      globalPrivacyControl: true,
+    })
+    expect(defaults).toHaveLength(1)
+    expect(defaults[0]?.analytics_storage).toBe('denied')
+    expect(defaults[0]?.ad_storage).toBe('denied')
+    expect(defaults[0]?.ad_user_data).toBe('denied')
+    expect(defaults[0]?.ad_personalization).toBe('denied')
+  })
+
   it('a stored decline sets a single all-denied default even without GPC', () => {
     const raw = encodeURIComponent(JSON.stringify({ analytics: false, marketing: false }))
     const defaults = consentDefaultsFromRun({ cookie: `ryan_realty_cookie_consent=${raw}` })

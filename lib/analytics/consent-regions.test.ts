@@ -39,7 +39,7 @@ describe('RESTRICTED_CONSENT_REGIONS', () => {
     expect(metaPixelBootstrapScript('123')).toContain(CONSENT_REGION_COOKIE)
     expect(trackingLevelFromConsent(null, { country: 'DE' })).toBe('essential')
     expect(trackingLevelFromConsent(null, { country: 'US' })).toBe('analytics')
-    expect(META_PIXEL_DEFAULT_FOLLOWS_ANALYTICS_STORAGE).toBe(true)
+    expect(META_PIXEL_DEFAULT_FOLLOWS_ANALYTICS_STORAGE).toBe(false)
   })
 })
 

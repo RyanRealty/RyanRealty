@@ -96,9 +96,9 @@ for (const rel of ['components/GTMHead.tsx']) {
   check(`${rel} builds the GTM bootstrap from the parsed module`, /gtmBootstrapScript\(/.test(src) && !/gtm\.start/.test(src),
     `${rel} must render gtmBootstrapScript() from lib/analytics/gtm-bootstrap.ts, not an inline template (the module is parse-tested).`)
 }
-// The Meta Pixel follows the analytics_storage default (Matt 2026-10-08). CCPA/CPRA
-// opt-out without a full decline still uses Limited Data Use when the pixel loads.
-// Restricted regions, GPC, and a stored decline do not load it.
+// The Meta Pixel stays off until marketing is accepted (Matt 2026-10-08). CCPA/CPRA
+// opt-out without a full decline still uses Limited Data Use if the pixel loads.
+// Restricted regions, GPC, a stored decline, and an ad click with no answer do not load it.
 const pixel = read('components/MetaPixel.tsx')
 const pixelConsent = read('lib/analytics/meta-pixel-consent.ts')
 check('Meta pixel wires Limited Data Use (LDU)', /dataProcessingOptions/.test(pixelConsent),

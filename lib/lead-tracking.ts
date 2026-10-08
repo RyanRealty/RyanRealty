@@ -73,20 +73,58 @@ export type FireLeadParams = {
   extra?: Record<string, string | number | boolean | undefined | null>
 }
 
+/** First-party campaign params on generate_lead. Allowlisted, no PII. Independent of ad cookies. */
+export const LEAD_ATTRIBUTION_QUERY_KEYS = [
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_content',
+  'utm_term',
+  'gclid',
+  'fbclid',
+] as const
+
+export type LeadAttributionParams = {
+  lp_source?: string
+  lp_medium?: string
+  lp_campaign?: string
+  lp_content?: string
+  lp_term?: string
+  gclid?: string
+  fbclid?: string
+}
+
 /** Campaign params from the referer, the same way every lead path read them. */
+export function attributionParamsFromSearch(search: string | URLSearchParams): LeadAttributionParams {
+  const qs = typeof search === 'string' ? new URLSearchParams(search.startsWith('?') ? search.slice(1) : search) : search
+  const out: LeadAttributionParams = {}
+  const source = qs.get('utm_source')
+  const medium = qs.get('utm_medium')
+  const campaign = qs.get('utm_campaign')
+  const content = qs.get('utm_content')
+  const term = qs.get('utm_term')
+  const gclid = qs.get('gclid')
+  const fbclid = qs.get('fbclid')
+  if (source) out.lp_source = source
+  if (medium) out.lp_medium = medium
+  if (campaign) out.lp_campaign = campaign
+  if (content) out.lp_content = content
+  if (term) out.lp_term = term
+  if (gclid) out.gclid = gclid
+  if (fbclid) out.fbclid = fbclid
+  return out
+}
+
 async function requestContext(): Promise<{
   clientId: string | undefined
-  utm: { lp_source?: string; lp_medium?: string; lp_campaign?: string; lp_content?: string }
+  utm: LeadAttributionParams
 }> {
   const [cookieStore, headersList] = await Promise.all([cookies(), headers()])
   const referer = headersList.get('referer') ?? ''
-  const utm: { lp_source?: string; lp_medium?: string; lp_campaign?: string; lp_content?: string } = {}
+  let utm: LeadAttributionParams = {}
   try {
     const refUrl = new URL(referer)
-    utm.lp_source = refUrl.searchParams.get('utm_source') ?? undefined
-    utm.lp_medium = refUrl.searchParams.get('utm_medium') ?? undefined
-    utm.lp_campaign = refUrl.searchParams.get('utm_campaign') ?? undefined
-    utm.lp_content = refUrl.searchParams.get('utm_content') ?? undefined
+    utm = attributionParamsFromSearch(refUrl.searchParams)
   } catch {
     // Referer not parseable. No UTMs to capture.
   }
@@ -100,7 +138,7 @@ async function requestContext(): Promise<{
  */
 export function leadEventParams(
   params: FireLeadParams,
-  utm: { lp_source?: string; lp_medium?: string; lp_campaign?: string; lp_content?: string } = {},
+  utm: LeadAttributionParams = {},
 ): Record<string, string | number | boolean | undefined | null> | null {
   if (!isLeadType(params.lead_type) || !isLeadFormId(params.form_id)) return null
   const extra = { ...(params.extra ?? {}) }
@@ -108,14 +146,21 @@ export function leadEventParams(
   delete extra.form_id
   delete extra.value
   delete extra.currency
+  delete extra.gclid
+  delete extra.fbclid
+  delete extra.lp_source
+  delete extra.lp_medium
+  delete extra.lp_campaign
+  delete extra.lp_content
+  delete extra.lp_term
   return {
     lp_variant: params.lp_variant,
-    ...utm,
     broker_slug: params.broker_slug,
     lead_classification: params.lead_classification,
     event_id: params.event_id,
     crm_person_id: params.crm_person_id ?? params.fub_person_id ?? undefined,
     ...extra,
+    ...utm,
     // Last, so `extra` can never change what the lead is.
     lead_type: params.lead_type,
     form_id: params.form_id,

@@ -122,7 +122,7 @@ const COOKIES: CookieRow[] = [
     type: 'Marketing',
     duration: '90 days',
     purpose:
-      'Used by the Meta Pixel for advertising measurement. Set when analytics is allowed in your region, unless you decline or send Global Privacy Control. Limited Data Use applies until you accept marketing cookies.',
+      'Used by the Meta Pixel for advertising measurement. Set only after you accept marketing cookies, and never if you send Global Privacy Control.',
   },
   {
     name: '_fbc',

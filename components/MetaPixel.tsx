@@ -12,11 +12,11 @@ const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()
  * Loads the Meta Pixel when NEXT_PUBLIC_META_PIXEL_ID is set, and fires PageView.
  * Other events (ViewContent, Lead, etc.) are sent from lib/tracking.ts and the LP forms.
  *
- * Matt 2026-10-08: same default as analytics_storage. Restricted regions (EEA/UK/CH),
- * unknown region, GPC, and a stored decline do not load the pixel (no `_fbp`).
- * Elsewhere with no answer and no GPC it loads, with Limited Data Use until the
- * visitor grants marketing. Flip META_PIXEL_DEFAULT_FOLLOWS_ANALYTICS_STORAGE
- * in lib/analytics/meta-pixel-consent.ts to follow the ad_* denied default.
+ * Matt 2026-10-08: off until marketing cookies are accepted (US included).
+ * Restricted regions (EEA/UK/CH), unknown region, GPC, a stored decline, and an
+ * ad click with no answer do not load the pixel (no `_fbp`). Flip
+ * META_PIXEL_DEFAULT_FOLLOWS_ANALYTICS_STORAGE in lib/analytics/meta-pixel-consent.ts
+ * to follow analytics_storage instead.
  *
  * The noscript img fallback is omitted: it cannot read region, GPC, or the
  * consent cookie, so it would fire where the pixel is denied.

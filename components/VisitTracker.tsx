@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import { isPrivatePath } from '@/lib/analytics/private-paths'
 import { usePathname } from 'next/navigation'
 import { trackUserEvent } from '@/app/actions/track-user-event'
-import { hasAnalyticsConsent, getStoredConsent, autoGrantConsentForAdTraffic } from './CookieConsentBanner'
+import { hasAnalyticsConsent, getStoredConsent } from './CookieConsentBanner'
 import { lastThingFromHouse, lastThingFromSearch, writeLastThing } from '@/lib/site/arrival-intent'
 import { listingMlsFromPath, visitorPageCategoryFromPath } from '@/lib/analytics/page-type'
 import { resolveClientVisitBroker } from '@/lib/analytics/visit-broker'
@@ -358,11 +358,6 @@ export default function VisitTracker({ userId }: Props) {
   const firedUserViewPath = useRef<string | null>(null)
 
   useEffect(() => {
-    // Aggressive ad-traffic consent (Matt 2026-06-02): a visitor arriving from a
-    // paid/marketing click with no prior consent choice gets analytics+marketing
-    // auto-granted so THIS first page view + all on-site intent scoring fires.
-    // Respects an explicit prior decision (essential/declined not overridden).
-    autoGrantConsentForAdTraffic()
     try {
       const vid = document.cookie.match(/(?:^|; )rr_vid=([^;]+)/)?.[1]
       if (vid) sessionStorage.setItem('rr_vid', vid)

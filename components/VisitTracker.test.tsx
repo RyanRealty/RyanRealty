@@ -309,12 +309,12 @@ describe('the mounted tracker', () => {
     expect(posts[0]).toMatchObject({ eventType: 'page_view', consent: 'analytics' })
   })
 
-  it('a campaign link with no banner answer is granted the campaign-link tier before the first post in a known unrestricted region', async () => {
+  it('a US campaign link with no banner answer stays analytics and does not write the consent cookie', async () => {
     document.cookie = 'rr_cr=0; path=/'
-    goto('/homes-for-sale/bend?utm_source=crm&utm_medium=email')
+    goto('/homes-for-sale/bend?utm_source=crm&utm_medium=email&gclid=G1')
     await mount()
-    expect(posts[0].consent).toBe('all')
-    expect(document.cookie).toContain('ryan_realty_cookie_consent=')
+    expect(posts[0].consent).toBe('analytics')
+    expect(document.cookie).not.toContain('ryan_realty_cookie_consent=')
   })
 
   it('a DE visitor on a utm/fbclid link with no answer is not auto-granted', async () => {

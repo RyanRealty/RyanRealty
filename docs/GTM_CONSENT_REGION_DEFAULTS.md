@@ -24,7 +24,14 @@ Overrides, still before `gtm.js`:
 - Stored decline in `ryan_realty_cookie_consent` → all-denied.
 - Stored accept → analytics granted (and `ad_*` granted only if marketing was accepted).
 
-The Meta Pixel is separate (`lib/analytics/meta-pixel-consent.ts`). It does not go through GTM.
+The Meta Pixel is separate (`lib/analytics/meta-pixel-consent.ts`). It does not go
+through GTM. It stays off until marketing cookies are accepted (US included). An ad
+click is not consent and does not load the pixel.
+
+**GA4 Admin:** keep **Google signals** and **ads personalization** off for this
+property. Region defaults on the page already deny `ad_*` until marketing is
+granted. Turning signals or ads personalization on in GA4 Admin would collect
+that data outside the consent default.
 
 ## Does the container need a setting change?
 
