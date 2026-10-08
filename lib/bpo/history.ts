@@ -66,6 +66,7 @@ function rowToCycle(row: BpoListingRow): BpoListingCycle {
     totalPriceChangeAmt: num(row['total_price_change_amt']),
     wasRelisted: row['was_relisted'] === true,
     outcome: classifyOutcome(status, closePrice),
+    ...(str(row['original_on_market_timestamp']) ? { firstOnMarketAt: str(row['original_on_market_timestamp']) } : {}),
   }
 }
 

@@ -77,7 +77,8 @@ import { getExpiredOwnershipSince } from '@/lib/data/prospecting/get'
 import { getCmaListingPriceEvents } from '@/lib/data/cma/localOutcomeReads'
 import { buildCmaLocalOutcomes } from '@/lib/pricing/local-outcomes-read'
 import { analyzeListingHistory } from '@/lib/bpo/history'
-import { readFailedListingCycle, withFailedCycle } from '@/lib/cma/failed-cycle-read'
+import { readFailedListingCycle, readSubjectStretch, withFailedCycle } from '@/lib/cma/failed-cycle-read'
+import { statusIsOnMarket } from '@/lib/cma/subject-on-market'
 import {
   applyFailedAskCap,
   failedAskBelowRangeNote,
@@ -104,7 +105,9 @@ import { readPlacePricingStory } from '@/lib/data/cma/placePricingRead'
 import { loadListingWindowCloses } from '@/lib/cma/listing-window-load'
 import { pocketClosedSupportPrice } from '@/lib/pricing/active-dom-nudge'
 import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
-import { assembleCompetition, assembleExpiredPeers } from '@/lib/cma/assemble-competition'
+import { assembleCompetition, assembleExpiredPeers, printedCompGrid } from '@/lib/cma/assemble-competition'
+import { applyOnMarketOpinion, onMarketOpinionTrace } from '@/lib/cma/on-market-opinion'
+import { subjectOnMarket } from '@/lib/cma/subject-on-market'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 import { zonedDateKey } from '@/lib/format/date'
 
@@ -372,6 +375,16 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         subject.lastListDate = null
         subject.listingHistoryLine = null
       }
+    }
+
+    // THE SUBJECT'S LAST STRETCH (Matt 2026-10-08, "Last stretch, labeled").
+    // A home on the market counts its days from the day it last came on the
+    // market, so the first ask the letter prints is the ask in effect then,
+    // not its Coming Soon price or an earlier stretch's. A failed listing's
+    // stretch is stamped from its final cycle below, where the same rule
+    // resolves its opening ask off its price events.
+    if (!lastCycleFailed && subject.lastListDate && statusIsOnMarket(subject.standardStatus)) {
+      subject.stretch = await readSubjectStretch(subject).catch(() => null)
     }
 
     // WHEN THE LISTING AND THE HOUSE'S OWN RECORD DISAGREE (Matt 2026-09-10:
@@ -683,6 +696,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           return { resolved }
         })()
       : null
+    // The failed listing's last stretch, as its final cycle resolved it (Matt
+    // 2026-10-08): the day it began, the ask in effect then, and whether it
+    // came back.
+    const resolvedCycle = finalCycleRead?.resolved.cycle ?? null
+    if (resolvedCycle?.listDate) {
+      subject.stretch = {
+        from: resolvedCycle.listDate,
+        firstAsk: resolvedCycle.initialAsk,
+        restarted: resolvedCycle.restarted === true,
+      }
+    }
     const listingWindow = {
       city: subject.city,
       listDate: finalCycleRead?.resolved.cycle?.listDate ?? subject.lastListDate,
@@ -930,31 +954,56 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // because the comp set changed. That re-audit is the stored grade. There
     // is no second call whose only job is to rewrite a dollar, and no regex
     // rewrite of the summary.
+    //
+    // RULE 27 (Matt 2026-10-08, "$716,000, the likely sale"): on a home that
+    // is on the market the cover is an opinion of value, and that opinion is
+    // the sale the weighted sales point to, read off the grid the letter
+    // prints. It is decided here, before the competition is read, so the band
+    // of homes for sale is centered on the figure the cover prints; sitting
+    // actives do not pull it (that pull moves a list price, and there is none).
+    //
+    // The one on-market decision every page asks (lib/cma/subject-on-market.ts),
+    // on the status the renderer reads: the subject's own, after the failed
+    // cycle was stamped onto it above.
+    const subjectIsOnMarket = subjectOnMarket({ subject })
+    const verdictsForGrid = judgment?.verdicts ?? []
     const settleRecommended = async (
       comps: typeof adjusted,
       current: NonNullable<typeof pricing>,
     ) => {
+      const opinion = subjectIsOnMarket
+        ? applyOnMarketOpinion(current, printedCompGrid(comps, verdictsForGrid), { onMarket: true })
+        : null
       const competition = await assembleCompetition({
         subject,
         comps,
-        verdicts: judgment?.verdicts ?? [],
+        verdicts: verdictsForGrid,
         diagnostics: selection.diagnostics,
-        recommended: current.recommended,
+        recommended: opinion?.opinion ? opinion.pricing.recommended : current.recommended,
         subjectZone: site.zone,
         generatedAtIso,
       })
       const finished = syncRangeRuleToHeroBand(
         finishRecommendedAfterActives(current, {
-          actives: (competition.bandRivals?.rivals ?? []).map((r) => ({
-            status: r.status,
-            listPrice: r.listPrice,
-            daysOnMarket: r.daysOnMarket,
-          })),
+          actives: opinion?.opinion
+            ? []
+            : (competition.bandRivals?.rivals ?? []).map((r) => ({
+                status: r.status,
+                listPrice: r.listPrice,
+                daysOnMarket: r.daysOnMarket,
+              })),
           pocketClosedSupport: pocketClosedSupportPrice(comps, subject.subdivision),
           ask: current.failedAsk ?? (lastCycleFailed ? subject.lastListPrice : null),
         }),
       )
-      return { competition, pricing: finished }
+      if (!subjectIsOnMarket) return { competition, pricing: finished }
+      // The same grid, after the band clamp and the round: the figure the
+      // competition was centered on (the weighted price and the set-aside
+      // sales do not move in between).
+      const onCover = applyOnMarketOpinion(finished, competition.renderComps, { onMarket: true })
+      const trace = onMarketOpinionTrace(onCover)
+      if (trace && !selection.trace.includes(trace)) selection.trace.push(trace)
+      return { competition, pricing: onCover.pricing }
     }
     let settled = await settleRecommended(adjusted, pricing)
     let competition = settled.competition
@@ -1533,6 +1582,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
 
     const recommendedBeforePin = pricing.recommended
     pricing = pinPrintedBandToSettingSales(pricing, renderComps)
+    // Rule 27: the pin moves a list figure that sits over the exact band
+    // high. The opinion of value on an on-market letter is read again off
+    // the printed grid and the pinned band, so the pin cannot leave a
+    // different number on the cover than the price chapter states.
+    if (subjectIsOnMarket) pricing = applyOnMarketOpinion(pricing, renderComps, { onMarket: true }).pricing
     if (pricing.recommended !== recommendedBeforePin) reanchorSellerNet(pricing)
     // The ask exposure measured the pre-pin band above; the band it prints is
     // the pinned one. resolvedCycle is block-scoped there, so the cycle is
@@ -1922,6 +1976,19 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         method3: pricing.method3,
         convergence_spread_pct: pricing.convergenceSpreadPct,
         recommended: pricing.recommended,
+        // Rule 27: on an on-market letter `recommended` is the opinion of
+        // value, the weighted sale read off the printed grid. Where it came
+        // from, and the list figure it replaced.
+        on_market_opinion: pricing.onMarketOpinion
+          ? {
+              source: 'render_args.comps weighted by pricing.reconciliation (lib/cma/on-market-opinion.ts)',
+              value: pricing.onMarketOpinion.value,
+              weighted_price: pricing.onMarketOpinion.weightedPrice,
+              field: pricing.onMarketOpinion.field,
+              sales: pricing.onMarketOpinion.sales,
+              list_recommended_replaced: pricing.onMarketOpinion.listRecommended,
+            }
+          : null,
         conservative: pricing.conservative,
         high_end: pricing.highEnd,
         confidence: pricing.confidence,

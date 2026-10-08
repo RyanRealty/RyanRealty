@@ -29,9 +29,12 @@ import {
 } from '@/lib/cma/pricing-method'
 import {
   adjustedRangeLine,
+  coverIsOnMarketOpinion,
   expectedSaleFor,
   expectedSaleSentence,
   headingWithPriceSet,
+  onMarketOpinionFor,
+  onMarketOpinionSentence,
   priceSettingComps,
 } from '@/lib/cma/expected-sale'
 import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
@@ -301,15 +304,26 @@ export function whatItsWorthLead(
   // at $639,000 while its five sales weighed out to $622,128, and no sentence
   // joined the two. The expected sale is the first thing under the heading,
   // and the list stays "that price" (the cover owns those dollars).
-  const expected = expectedSaleFor({ pricing, comps })
   const liveAsk = subjectPrintableAsk(subject, askCtx)
   // ONE on-market decision for the document (lib/cma/subject-on-market.ts).
   const onMarket = subjectOnMarket({ subject })
+  // THE OPINION OF VALUE IS THE LIKELY SALE (Matt 2026-10-08, rule 27). On an
+  // on-market letter the build puts the weighted sale on the cover, so the
+  // sentence says that figure once, plainly, with no "near" beside the same
+  // number. A row whose cover still carries a list figure (built before the
+  // ruling) keeps the "near" sentence: there the two are different numbers.
+  const opinion = onMarket ? onMarketOpinionFor({ pricing, comps }) : null
+  const opinionOnCover = coverIsOnMarketOpinion(pricing, opinion) ? opinion : null
+  const expected = opinionOnCover ?? expectedSaleFor({ pricing, comps })
   // Name the sales behind the expected sale when the grid prints more than
   // set it, so "the three sales" points at three addresses on the page.
   const setters = priceSettingComps(pricing, comps)
   const named = setters.length > 1 && setters.length < (comps?.length ?? 0) ? setters.map((c) => c.address) : null
-  const expectedLine = expected ? expectedSaleSentence(expected, { onMarket, setters: named }) : ''
+  const expectedLine = opinionOnCover
+    ? onMarketOpinionSentence(opinionOnCover, { setters: named })
+    : expected
+      ? expectedSaleSentence(expected, { onMarket, setters: named })
+      : ''
   // THE VALUE RANGE, ONCE, HERE. tasteReview round two, §1 Words: chapter 3
   // stated it three times inside ten lines. With the grid in hand it is the
   // grid's own adjusted pair (the hero's pair), counted over the same sales

@@ -121,6 +121,7 @@ import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { askStepped, resolveAskPosition } from '@/lib/cma/ask-position'
+import { subjectFirstAsk } from '@/lib/cma/last-stretch'
 import { competitionBandBasisSentence } from '@/lib/cma/competition-band-basis'
 import { subjectOnMarket } from '@/lib/cma/subject-on-market'
 import {
@@ -983,11 +984,28 @@ export function askExposureFor(a: OpinionPageArgs): AskExposure | null {
  * title says where it stands and nothing more (class D).
  */
 export function whatHappenedHeading(a: OpinionPageArgs): string {
+  const line = whatHappenedAskLine(a)
+  // A listing that came back is told on its last stretch, and the letter says
+  // so (Matt 2026-10-08, "Last stretch, labeled").
+  const cycle = a.expiredAudit?.finalCycle ?? null
+  if (!cycle?.restarted || readSubjectStatus(a)?.isActiveWithOtherBrokerage) return line
+  const from = cycle.listDate ? dateLong(cycle.listDate, { month: 'short', day: 'numeric', year: undefined }) : null
+  return from && from !== '—' ? `${line} Counted from ${from}, when your home last came on the market.` : line
+}
+
+function whatHappenedAskLine(a: OpinionPageArgs): string {
   const status = readSubjectStatus(a)
   const exposure = askExposureFor(a)
+  // The first ask of the home's last stretch on the market, never an ask from
+  // before it (Matt 2026-10-08): 20676 Wild Rose printed "You first asked
+  // $625,000", its Coming Soon price, when it was Active only at $599,900.
   const position = resolveAskPosition({
     lastListPrice: a.subject.lastListPrice,
-    originalListPrice: a.subject.originalListPrice,
+    originalListPrice: subjectFirstAsk({
+      subject: a.subject,
+      exposure,
+      finalCycle: a.expiredAudit?.finalCycle ?? null,
+    }),
     exposure,
   })
   if (status?.isActiveWithOtherBrokerage) {
@@ -1490,7 +1508,8 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
       : ''
   // On a letter held for Matt the cover number is under his review, not yet
   // the owner's price (reader review 2026-10-08).
-  const whose = heldForMatt(a.pricing) ? COVER_PRICE_PHRASE : 'your price'
+  // A home on the market gets an opinion of value, never "your price" (rule 27).
+  const whose = subjectOnMarket(a) ? 'this value' : heldForMatt(a.pricing) ? COVER_PRICE_PHRASE : 'your price'
   // On a cover the weights did not make (a rule 26 hold, a cover held to the
   // sale on the subject's street, or a held cover the failed-ask ceiling set)
   // the sales set the range, not the cover (lib/cma/sales-role.ts; reader
