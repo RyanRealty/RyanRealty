@@ -13,11 +13,13 @@ import { aboutFaqItems } from './about-constants'
 import {
   aboutDirectAnswer,
   aboutFaqWithRecord,
-  aboutFit,
   aboutFreshnessLine,
   aboutMetaDescription,
   aboutRichTextPlain,
   aboutTrackRecord,
+  aboutWhoWeHelp,
+  ABOUT_HELP_HEADING,
+  ABOUT_HELP_INTRO,
   type AboutLiveFigures,
 } from './about-record'
 
@@ -162,16 +164,25 @@ describe('direct answer (accept test 2)', () => {
   })
 })
 
-describe('fit and track record sections (accept tests 4, 11, 12)', () => {
-  it('prints five good-fit and four not-a-fit bullets from the live record', () => {
-    const fit = aboutFit(liveLike())
-    expect(fit.good).toHaveLength(5)
-    expect(fit.notFit).toHaveLength(4)
-    expect(fit.good.join(' ')).toContain('from $92,034 in La Pine to $3,025,000 in Vandevert Ranch')
-    expect(fit.good.join(' ')).toContain('Four of our recorded closings are manufactured homes.')
-    expect(fit.notFit.join(' ')).toContain('Ryan Realty is three brokers')
-    expect(fit.notFit.join(' ')).toContain('26 recorded closings since 2015 and 8 in the last 12 months')
-    expect(fit.notFit.join(' ')).toContain('inside Sisters or Sunriver')
+describe('who we help and track record sections (accept tests 4, 11, 12)', () => {
+  it('prints five lines of who we serve from the live record, and nothing that turns anyone away', () => {
+    const lines = aboutWhoWeHelp(liveLike())
+    expect(ABOUT_HELP_HEADING).toBe('Who we help')
+    expect(lines).toHaveLength(5)
+    expect(lines[0]).toBe(
+      'Sellers and buyers anywhere in Central Oregon. The broker you start with prices your home, negotiates every offer, and sits with you at closing.',
+    )
+    expect(lines.join(' ')).toContain('from $92,034 in La Pine to $3,025,000 in Vandevert Ranch')
+    expect(lines.join(' ')).toContain('Four of our recorded closings are manufactured homes.')
+    // Matt 2026-10-08: never who Ryan Realty is not a fit for.
+    const copy = [ABOUT_HELP_HEADING, ABOUT_HELP_INTRO, ...lines].join('\n')
+    expect(copy).not.toMatch(/\bfit\b|isn't|\bnot for\b|large team|commercial|Sales volume|You want/i)
+  })
+
+  it('drops a line whose figure did not load instead of guessing it', () => {
+    const lines = aboutWhoWeHelp({ ...liveLike(), record: null })
+    expect(lines).toHaveLength(3)
+    expect(lines.join(' ')).not.toMatch(/recorded closings/)
   })
 
   it('states the headline count and names 25 only as the Central Oregon rail', () => {
@@ -187,11 +198,9 @@ describe('fit and track record sections (accept tests 4, 11, 12)', () => {
 
   it('names no competitor or portal, makes no self-ranking, and uses no em dash', () => {
     const live = liveLike()
-    const fit = aboutFit(live)
     const copy = [
       aboutDirectAnswer(live),
-      ...fit.good,
-      ...fit.notFit,
+      ...aboutWhoWeHelp(live),
       ...aboutTrackRecord(live).map((i) => aboutRichTextPlain(i.body)),
     ].join('\n')
     expect(copy).not.toMatch(/Zillow|Redfin|Compass|Yelp|Realtor\.com|Homes\.com/)
@@ -242,6 +251,14 @@ describe('FAQ: 13 questions, one array (accept test 8)', () => {
     )
     expect(byQ.get('Does Ryan Realty work in Redmond, Sisters, and Sunriver?')).toContain(
       "We don't have a recorded closing in Sisters or Sunriver yet",
+    )
+  })
+
+  it('frames no answer as fit versus no fit (Matt 2026-10-08)', () => {
+    const text = faq.map((q) => `${q.question} ${q.answer}`).join('\n')
+    expect(text).not.toMatch(/\bfit\b/i)
+    expect(faq.find((q) => q.question === 'Who is the best realtor in Bend for selling a home?')?.answer).toMatch(
+      /^An agent calling themselves the best is not evidence, so compare agents on the record\./,
     )
   })
 

@@ -1,6 +1,6 @@
 /* ===========================================================================
-   /about: the direct answer's source and freshness lines, "Who Ryan Realty is
-   a good fit for, and who it isn't", and "Track record, sourced" (2026-10-08).
+   /about: the direct answer's source and freshness lines, "Who we help", and
+   "Track record, sourced" (2026-10-08).
    Every value resolves from components/site/v3/tokens.css. Navy and cream
    only, the same section frame as the playbook sections below the fold.
    =========================================================================== */
@@ -18,12 +18,16 @@
   line-height: var(--v3-leading-note);
 }
 
-.about-firm__source a,
-.about-record__facts a,
-.about-record__links a {
-  color: var(--v3-ink);
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
+/* Element color rules sit in @layer base so Tailwind color utilities still
+   win (ci:css-layers). */
+@layer base {
+  .about-firm__source a,
+  .about-record__facts a,
+  .about-record__links a {
+    color: var(--v3-ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
 }
 
 .v3.about-record {
@@ -69,20 +73,6 @@
   display: grid;
   gap: var(--v3-space-lg);
   min-width: 0;
-}
-
-.about-record__group {
-  display: grid;
-  gap: var(--v3-space-xs);
-}
-
-.about-record__subhead {
-  margin: 0;
-  color: var(--v3-ink);
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body-lg);
-  font-weight: var(--v3-weight-strong);
-  line-height: var(--v3-leading-heading);
 }
 
 .about-record__list {

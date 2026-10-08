@@ -51,7 +51,7 @@ export const ABOUT_LOCK_FILES = Object.freeze([
   // 2026-10-08 (SEO & AEO Desk /about brief): the direct answer, the fit
   // bullets, the sourced track record and the record FAQ live here.
   'app/about/_v3/about-record.ts',
-  'app/about/_v3/AboutFit.tsx',
+  'app/about/_v3/AboutWhoWeHelp.tsx',
   'app/about/_v3/AboutTrackRecord.tsx',
   'app/about/_v3/about-record.css',
   'app/team/_v3/firm-record.ts',
@@ -67,7 +67,16 @@ export const ABOUT_COPY_FILES = Object.freeze([
   'app/about/_v3/about-constants.ts',
   'app/about/_v3/about-playbook.ts',
   'app/about/_v3/about-record.ts',
+  'app/about/_v3/AboutWhoWeHelp.tsx',
 ])
+
+/**
+ * Matt 2026-10-08: "we're the right fit for every single person." About copy
+ * never says who Ryan Realty is not a fit for, and never frames a section as
+ * fit versus no fit.
+ */
+export const ABOUT_NOT_A_FIT_RE =
+  /\b(?:not (?:a|the right|a good) fit|who it isn'?t|who we(?:'re| are) not for|not for everyone)\b/i
 
 /** Brokerages and portals the About copy may not name (Matt 2026-09-23). */
 export const ABOUT_COMPETITOR_RE =
@@ -218,6 +227,7 @@ export const ABOUT_LOCK_BEATS = Object.freeze([
     copyForbid: [
       ABOUT_COMPETITOR_RE,
       /\b(families|retirees|young professionals|empty nesters)\b/i,
+      ABOUT_NOT_A_FIT_RE,
     ],
   },
 ])

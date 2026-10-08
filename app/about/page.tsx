@@ -26,8 +26,8 @@
  *   source line and a freshness line;
  * - AboutTrackRecord #track-record "Track record, sourced" right after the
  *   closings rail;
- * - AboutFit #fit "Who Ryan Realty is a good fit for, and who it isn't" right
- *   after "Who Ryan Realty works with";
+ * - AboutWhoWeHelp #who-we-help "Who we help" right after "Who Ryan Realty
+ *   works with": who we serve, never who we turn away (Matt 2026-10-08);
  * - one closings number site-wide: the firm's all-area record (proof.firm,
  *   once per sale), the rail's count only as "in Central Oregon";
  * - the FAQ is 13 questions (aboutFaqWithRecord), FAQPage from the same array.
@@ -79,22 +79,22 @@ import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { ABOUT_FIRM_STORY, aboutFaqItems, FIRM_LICENSE } from './_v3/about-constants'
 import {
-  ABOUT_FIT_HEADING,
-  ABOUT_FIT_INTRO,
+  ABOUT_HELP_HEADING,
+  ABOUT_HELP_INTRO,
   ABOUT_TRACK_RECORD_HEADING,
   ABOUT_TRACK_RECORD_LINKS,
   aboutDirectAnswer,
   aboutDirectAnswerSource,
   aboutFaqAction,
   aboutFaqWithRecord,
-  aboutFit,
   aboutFreshnessLine,
   aboutMetaDescription,
   aboutTrackRecord,
   aboutTrackRecordLede,
+  aboutWhoWeHelp,
   type AboutLiveFigures,
 } from './_v3/about-record'
-import { AboutFit } from './_v3/AboutFit'
+import { AboutWhoWeHelp } from './_v3/AboutWhoWeHelp'
 import { AboutTrackRecord } from './_v3/AboutTrackRecord'
 import { zonedDateKey } from '@/lib/format/date'
 import {
@@ -233,7 +233,7 @@ async function renderAboutPage() {
     reviews: reviewsFigure,
   })
 
-  // The sourced facts block: the direct answer, the fit lists, the track
+  // The sourced facts block: the direct answer, who we help, the track
   // record, and the record questions of the FAQ, from one set of live figures.
   const live: AboutLiveFigures = {
     record: firmRecord,
@@ -243,7 +243,7 @@ async function renderAboutPage() {
     asOf: zonedDateKey(new Date()),
   }
   const directAnswer = aboutDirectAnswer(live)
-  const fit = aboutFit(live)
+  const whoWeHelp = aboutWhoWeHelp(live)
   const trackRecord = aboutTrackRecord(live)
 
   // The team behind Ryan Realty: the origin, the team from the live roster
@@ -441,7 +441,7 @@ async function renderAboutPage() {
           items={ABOUT_CLIENTS}
         />
 
-        <AboutFit id="fit" heading={ABOUT_FIT_HEADING} intro={ABOUT_FIT_INTRO} good={fit.good} notFit={fit.notFit} />
+        <AboutWhoWeHelp id="who-we-help" heading={ABOUT_HELP_HEADING} intro={ABOUT_HELP_INTRO} lines={whoWeHelp} />
 
         <V3Atlas
           id="service-area"

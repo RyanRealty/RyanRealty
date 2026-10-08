@@ -1,7 +1,7 @@
 /**
  * /about: the sourced facts block (about upgrade, SEO & AEO Desk brief of
- * 2026-10-08). The direct answer under the H1, the freshness line, "Who Ryan
- * Realty is a good fit for, and who it isn't", "Track record, sourced", the
+ * 2026-10-08). The direct answer under the H1, the freshness line, "Who we
+ * help" (Matt 2026-10-08), "Track record, sourced", the
  * record-bound FAQ answers, and the meta description, all worded here from:
  *
  *   - the firm's all-area closing record (app/team/_v3/firm-record.ts: every
@@ -194,7 +194,6 @@ function missingAskedCities(record: FirmAllAreaRecord): string[] {
   return ASKED_CITIES.filter((city) => !record.cities.some((c) => c.name.toLowerCase() === city.toLowerCase()))
 }
 
-const RESIDENTIAL_TYPES: ReadonlySet<string> = new Set(['house', 'condo', 'townhouse', 'manufactured', 'multi'])
 
 /* -------------------------------------------------------------------------- */
 /* The direct answer, under the H1                                             */
@@ -252,61 +251,42 @@ export function aboutMetaDescription(live: Pick<AboutLiveFigures, 'record' | 're
 }
 
 /* -------------------------------------------------------------------------- */
-/* Who Ryan Realty is a good fit for, and who it isn't                         */
+/* Who we help                                                                 */
 /* -------------------------------------------------------------------------- */
 
-export const ABOUT_FIT_HEADING = "Who Ryan Realty is a good fit for, and who it isn't"
-export const ABOUT_FIT_INTRO = 'A small brokerage suits some clients better than others. Here is the honest version.'
+/**
+ * Matt 2026-10-08: "we're the right fit for every single person." Public copy
+ * names who Ryan Realty serves and never anyone it would turn away. Every line
+ * states who we serve, with its figure from the live record.
+ */
+export const ABOUT_HELP_HEADING = 'Who we help'
+export const ABOUT_HELP_INTRO = 'Anyone buying or selling a home in Central Oregon.'
 
 function reviewThemeClause(): string {
   return `${countWordUpper(ABOUT_REVIEW_THEMES.awayDuringSale)} of our ${ABOUT_REVIEW_THEMES.reviewTotal} Google reviews, as of ${longDay(ABOUT_REVIEW_THEMES.countedOn)}`
 }
 
-export function aboutFit(live: AboutLiveFigures): { good: string[]; notFit: string[] } {
+export function aboutWhoWeHelp(live: AboutLiveFigures): string[] {
   const { record } = live
-  const good = [
-    'You want the broker you hire to be the one who prices your home, negotiates every offer, and sits with you at closing.',
-    `You're selling from out of state or out of the country. ${reviewThemeClause()}, come from clients who were away during their sale or purchase.`,
-    `You want the fee in writing before you call: ${LISTING_FEE_PERCENT} of the sale price, with no add-on fees.`,
+  const lines = [
+    'Sellers and buyers anywhere in Central Oregon. The broker you start with prices your home, negotiates every offer, and sits with you at closing.',
+    `Clients selling or buying from out of state or out of the country. ${reviewThemeClause()}, come from clients who were away during their sale or purchase.`,
+    `Every seller sees the fee before the first call: ${LISTING_FEE_PERCENT} of the sale price, with no add-on fees.`,
   ]
-  const notFit: string[] = []
-  if (live.brokerCount > 0) {
-    notFit.push(
-      `You want a large team with a separate buyer's agent, listing coordinator, and showing assistants. Ryan Realty is ${countWord(live.brokerCount)} ${live.brokerCount === 1 ? 'broker' : 'brokers'}, and one of them handles your file.`,
-    )
-  }
   if (hasRecord(record)) {
     if (record.lowest && record.highest && record.lowest.key !== record.highest.key) {
-      good.push(
-        `Your home is at any price point. Our recorded closings run from ${formatPriceExact(record.lowest.price)} in ${salePlace(record.lowest)} to ${formatPriceExact(record.highest.price)} in ${salePlace(record.highest)}.`,
+      lines.push(
+        `Homes at every price point. Our recorded closings run from ${formatPriceExact(record.lowest.price)} in ${salePlace(record.lowest)} to ${formatPriceExact(record.highest.price)} in ${salePlace(record.highest)}.`,
       )
     }
     const manufactured = record.types.find((t) => t.name === 'manufactured')?.n ?? 0
     if (manufactured > 0) {
-      good.push(
-        `You're selling a manufactured home or rural property. ${countWordUpper(manufactured)} of our recorded closings ${manufactured === 1 ? 'is a manufactured home' : 'are manufactured homes'}.`,
-      )
-    }
-    notFit.push(
-      `Sales volume is your main test. Our brokers have ${record.count} recorded closings since ${firstYear(record)} and ${record.recent.count} in the last 12 months, so ask every agent you interview for the same numbers and compare.`,
-    )
-    if (record.types.every((t) => RESIDENTIAL_TYPES.has(t.name))) {
-      notFit.push(
-        "You're buying, selling, or leasing commercial property. Every one of our recorded closings is residential.",
-      )
-    }
-    const missing = missingAskedCities(record)
-    if (missing.length === 2) {
-      notFit.push(
-        `You want an agent with a long sales record inside ${missing[0]} or ${missing[1]}. We work there, but we don't have a recorded closing in either yet.`,
-      )
-    } else if (missing.length === 1) {
-      notFit.push(
-        `You want an agent with a long sales record inside ${missing[0]}. We work there, but we don't have a recorded closing there yet.`,
+      lines.push(
+        `Manufactured homes and rural property. ${countWordUpper(manufactured)} of our recorded closings ${manufactured === 1 ? 'is a manufactured home' : 'are manufactured homes'}.`,
       )
     }
   }
-  return { good, notFit }
+  return lines
 }
 
 /* -------------------------------------------------------------------------- */
@@ -439,7 +419,7 @@ function faqChoose(live: AboutLiveFigures): FaqItem {
   )
   return {
     question: ABOUT_FAQ_CHOOSE,
-    answer: `No single agent is the best fit for every seller, and an agent calling themselves the best is not evidence. Interview two or three agents and ask each one the same five things: how many homes they closed in the last 12 months, their listing fee in writing, who handles your file day to day, how they would price your home from recent closed sales, and what the marketing includes. Our answers: ${ours.join('; ')}.`,
+    answer: `An agent calling themselves the best is not evidence, so compare agents on the record. Interview two or three agents and ask each one the same five things: how many homes they closed in the last 12 months, their listing fee in writing, who handles your file day to day, how they would price your home from recent closed sales, and what the marketing includes. Our answers: ${ours.join('; ')}.`,
   }
 }
 

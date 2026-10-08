@@ -293,6 +293,8 @@ All rules in `.cursor/rules/` are mandatory. Key rules:
   date they were counted, and re-count when the underlying total moves.
 - **Counts bind live.** Never hard-code a closings or review count in copy; read it from the
   record on render, and re-check it against live data on the day a change ships.
+- **Public copy never says who Ryan Realty is not a fit for** (Matt 2026-10-08: "we're the right
+  fit for every single person"). Say who we help; no "not the right fit" lists or fit/no-fit framing.
 
 ### Design System (Zero Exceptions)
 
