@@ -47,7 +47,7 @@ const ACTIVES = [
 ]
 
 describe('Remarkable shape before and after the two fixes', () => {
-  it('a gla-bracket tier is not an exclusive pocket, so size adjustment applies', () => {
+  it('a gla-bracket tier is not an exclusive pocket, and size adjustment applies either way', () => {
     const tiers = ['own-street-24mo', 'subdivision-3mo', 'subdivision-6mo', 'pocket-12mo', 'gla-bracket']
     expect(selectionIsExclusivePocket(tiers)).toBe(false)
     expect(selectionIsExclusivePocket(tiers.filter((t) => t !== 'gla-bracket'))).toBe(true)
@@ -80,7 +80,10 @@ describe('Remarkable shape before and after the two fixes', () => {
       asOf: '2026-09-27',
       exclusivePocket: true,
     })
-    expect(on.adjusted.sizeAdjustment).toBe(0)
+    // Matt 2026-10-08 ("Yes, adjust pocket sales"): the exclusive pocket is
+    // adjusted for size the same way as a wider set. Was $0 on the pocket.
+    expect(on.adjusted.sizeAdjustment).toBe(83_333)
+    expect(on.adjusted.sizeAdjustment).toBe(off.adjusted.sizeAdjustment)
     expect(off.adjusted.sizeAdjustment).not.toBe(0)
     expect(off.adjusted.adjustedPrice).toBe(off.adjusted.timeAdjustedPrice + off.adjusted.sizeAdjustment)
   })

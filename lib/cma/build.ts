@@ -1654,6 +1654,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         dom_total: c.domTotal,
         time_adjustment: c.timeAdjustment,
         size_adjustment: c.sizeAdjustment,
+        // Why the size move is what it is: adjusted, or no living area on
+        // record for the sale or the subject (Matt 2026-10-08).
+        size_adjustment_basis: c.sizeAdjustmentBasis ?? null,
         adjusted_price: c.adjustedPrice,
         weight: c.weight,
         selection_tier: c.selectionTier,

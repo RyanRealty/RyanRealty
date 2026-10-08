@@ -597,6 +597,21 @@ function dateCell(iso: string | null | undefined): string {
 }
 
 /**
+ * The size move, in dollars, or why there is none. A sale with no living area
+ * on record is not adjusted for size (Matt 2026-10-08), and its cell says that
+ * rather than printing a $0 a reader would take for a measured match. Short,
+ * because figure cells do not wrap.
+ */
+export const NO_LIVING_AREA_CELL = 'No living area'
+
+export function sizeAdjustmentCell(
+  comp: Pick<CmaAdjustedComp, 'sizeAdjustment' | 'sizeAdjustmentBasis'>,
+): string {
+  if (comp.sizeAdjustmentBasis === 'no-sale-living-area') return NO_LIVING_AREA_CELL
+  return signedCell(comp.sizeAdjustment)
+}
+
+/**
  * What the room difference cost: nothing, and the cell says so out loud.
  * A dash when the sale matches the subject's room counts, so the row folds
  * away on a set where every sale matches.
@@ -618,7 +633,7 @@ function adjustmentCells(
     dateCell(comp.closeDate),
     concessionCell(comp),
     signedCell(comp.timeAdjustment),
-    signedCell(comp.sizeAdjustment),
+    sizeAdjustmentCell(comp),
     signedCell(comp.storyAdjustment),
     roomAdjustmentCell(comp),
     adj.net != null ? usdSigned(adj.net) : '-',
