@@ -5,6 +5,7 @@ import { sendEvent, type LeadEventPerson } from '@/lib/crm/send-event'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { cookies } from 'next/headers'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
+import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated, fireNonLeadEvent } from '@/lib/lead-tracking'
 
@@ -22,6 +23,8 @@ async function fireCapiLead(args: {
 }): Promise<string | null> {
   const eventId = generateEventId()
   try {
+    const sharing = await visitorCapiConsent()
+    if (!sharing.allowed) return eventId
     await fetch(`${SITE_URL}/api/meta-capi`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -33,6 +36,8 @@ async function fireCapiLead(args: {
         lastName: args.lastName ?? undefined,
         eventId,
         eventSourceUrl: args.eventSourceUrl,
+        consentCookie: sharing.consentCookie,
+        secGpc: sharing.secGpc,
         customData: {
           content_name: args.contentName,
           value: args.value,

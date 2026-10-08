@@ -77,6 +77,7 @@ import {
   hasInternalUserCookie,
 } from '@/lib/analytics/ga-suppression'
 import { isNonProductionPageLocation, isNonProductionRequestHost } from '@/lib/analytics/non-production-host'
+import { CONSENT_COOKIE, effectiveTrackingConsent } from '@/lib/identity/consent'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -398,12 +399,18 @@ export async function POST(request: NextRequest) {
   }
 
   // ─── Consent gate (server-side enforcement) ─────────────────────────────
-  // Snippet MUST send a consent level. We refuse 'declined' and untyped
-  // events entirely so even a buggy or compromised client cannot store
-  // visitor data when the user has not opted in.
-  const consent: ConsentLevel = (body.consent === 'all' || body.consent === 'analytics' || body.consent === 'essential' || body.consent === 'declined')
-    ? body.consent
-    : 'declined'
+  // The client names a tier; the server clamps it to the stored banner answer
+  // and the region default (lib/identity/consent.ts effectiveTrackingConsent).
+  // A client cannot widen past a decline or a restricted-region default.
+  // Untyped events are declined. US / unrestricted, no answer, no GPC is
+  // analytics (geo may be stored). Restricted, GPC (already dropped above),
+  // and declined stay essential or dropped.
+  const country = request.headers.get('x-vercel-ip-country') || request.headers.get('cf-ipcountry')
+  const consent: ConsentLevel = effectiveTrackingConsent({
+    posted: body.consent,
+    cookieValue: request.cookies.get(CONSENT_COOKIE)?.value,
+    country,
+  })
   if (consent === 'declined') {
     return NextResponse.json(
       { ok: true, dropped: true, reason: 'consent_declined_or_missing' },
@@ -645,15 +652,22 @@ export async function POST(request: NextRequest) {
   }
 
   // ─── GA4 Measurement Protocol page_view mirror (2026-08-10) ─────────────
-  // Client gtag is consent-denied by default + often ad-blocked → GA4 shows
-  // ~1–2 users while first-party sees ~3.7k sessions. Mirror view events from
-  // this server path so GA4 volume tracks product truth WITHOUT changing the
-  // locked Consent Mode defaults.
+  // Mirror view events when the browser is not counting them.
   //
-  // Double-count guard: if consent is analytics/all AND the browser already
-  // has a `_ga` cookie, client gtag is live — skip MP. If essential-only or
-  // no `_ga` (denied / blocked / never loaded), server-fill the gap.
-  // Never blocks the visitor response. No-op without GA4_API_SECRET.
+  // At analytics/all on a site page, skip page_view/listing_view regardless of
+  // `_ga`. US visitors are analytics-granted by default, so the Google tag
+  // counts the first view; `_ga` is often not set yet when this POST lands, and
+  // gating on the cookie double-counted that first view (browser client_id plus
+  // an rr_session_id-derived client_id). Trade-off: an ad-blocked visitor at
+  // the analytics tier is no longer mirrored; first-party Supabase still has
+  // them.
+  //
+  // Essential-tier views are still mirrored (browser gtag is consent-denied).
+  // Client documents (`pageCategory: 'client-document'`) load no gtag, so they
+  // are always mirrored, whatever the tier. Non-view mirrored events
+  // (intent_declared, welcome_back, email_opt, sms_opt) are unchanged.
+  // A decline never reaches here. Never blocks the visitor response.
+  // No-op without GA4_API_SECRET.
   const mirrorGa4 =
     eventType === 'page_view' ||
     eventType === 'listing_view' ||
@@ -694,7 +708,7 @@ export async function POST(request: NextRequest) {
       // 'essential' and every report open was mirrored; it now posts the visitor's
       // real tier, and a consented reader with a _ga cookie would have dropped out
       // of GA4 entirely (the most engaged recipients).
-      const clientHasGtag = isView && !minimalOnly && !!fromCookie && body.pageCategory !== 'client-document'
+      const clientHasGtag = isView && !minimalOnly && body.pageCategory !== 'client-document'
       if (!clientHasGtag) {
         const pagePath = (() => {
           try {

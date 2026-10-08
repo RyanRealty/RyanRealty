@@ -9,6 +9,7 @@ import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { cookies, headers } from 'next/headers'
@@ -197,31 +198,36 @@ export async function submitHeathCmaForm(
     // blocked; shares `eventId` with the client fbq('Lead') for dedup, and
     // forwards the visitor's _fbp/_fbc for advanced matching.
     const capiCookies = await cookies()
-    void fetch(`${siteUrl}/api/meta-capi`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        eventName: 'Lead',
-        email: input.email,
-        phone: input.phone || undefined,
-        firstName,
-        lastName,
-        eventId,
-        eventSourceUrl: `${siteUrl}/lp/tetherow/heath`,
-        fbp: capiCookies.get('_fbp')?.value,
-        fbc: capiCookies.get('_fbc')?.value,
-        customData: {
-          content_name: 'tetherow_heath_cma',
-          lead_type: 'seller_valuation',
-          property_address: input.address,
-          timeline: input.timeline,
-          classification,
-          assigned_broker: attribution?.broker ?? 'matt',
-          value: 500,
-          currency: 'USD',
-        },
-      }),
-    }).catch((err) => console.warn('[heath-cma] CAPI call failed:', err))
+    const sharing = await visitorCapiConsent()
+    if (sharing.allowed) {
+      void fetch(`${siteUrl}/api/meta-capi`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventName: 'Lead',
+          email: input.email,
+          phone: input.phone || undefined,
+          firstName,
+          lastName,
+          eventId,
+          eventSourceUrl: `${siteUrl}/lp/tetherow/heath`,
+          fbp: capiCookies.get('_fbp')?.value,
+          fbc: capiCookies.get('_fbc')?.value,
+          consentCookie: sharing.consentCookie,
+          secGpc: sharing.secGpc,
+          customData: {
+            content_name: 'tetherow_heath_cma',
+            lead_type: 'seller_valuation',
+            property_address: input.address,
+            timeline: input.timeline,
+            classification,
+            assigned_broker: attribution?.broker ?? 'matt',
+            value: 500,
+            currency: 'USD',
+          },
+        }),
+      }).catch((err) => console.warn('[heath-cma] CAPI call failed:', err))
+    }
   } catch (err) {
     console.error('[heath-cma] CRM submit failed', err)
     return { success: false, error: `Could not submit. Try again shortly or call ${CONTACT.phoneDirect}.` }

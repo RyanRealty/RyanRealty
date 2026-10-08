@@ -2,6 +2,12 @@
 
 This file absorbed `GTM_GA4_SETUP.md` and `GTM_TRIGGERS.md` (2026-04-24 governance merge).
 
+> **Consent Mode v2 region defaults (2026-10-08).** The page sets them before `gtm.js`
+> (`lib/analytics/consent-defaults.ts`). Analytics granted outside EEA/UK/CH; denied in
+> those regions until accept; ad_* denied everywhere; GPC and a stored decline deny
+> analytics. GTM click-path and Tag Assistant checks:
+> [`docs/GTM_CONSENT_REGION_DEFAULTS.md`](GTM_CONSENT_REGION_DEFAULTS.md).
+
 ---
 
 ## Setup (env vars, no UI required)
