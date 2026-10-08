@@ -146,7 +146,7 @@ const ITEMS: V3QuietItem[] = [
     kind: 'prose',
     term: 'Global Privacy Control and Do Not Track',
     body: [
-      'If your browser sends a Global Privacy Control (GPC) signal, we turn off analytics and marketing for that visit. Tags do not load, we do not write a marketing or analytics consent cookie from that signal, and the server records nothing except a notice so we can stop sharing for a contact we already know. GPC wins over the United States analytics-on-by-default setting. If you have previously accepted marketing cookies, GPC still keeps analytics and marketing off in the browser and on the server until the signal is gone.',
+      'If your browser sends a Global Privacy Control (GPC) signal, we turn off analytics and marketing for that visit. Tags do not load, we do not write a marketing or analytics consent cookie from that signal, our server sends nothing about the visit to Google Analytics or to Meta’s Conversions API, and it records no browsing activity, only a notice so we can stop sharing for a contact we already know. If you send us a form, we still keep what you send so we can reply. GPC wins over the United States analytics-on-by-default setting. If you have previously accepted marketing cookies, GPC still keeps analytics and marketing off in the browser and on the server until the signal is gone.',
       'This site does not respond to Do Not Track (DNT) signals. GPC is the signal we honor.',
     ],
   },

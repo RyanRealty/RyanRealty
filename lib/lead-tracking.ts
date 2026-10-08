@@ -35,6 +35,7 @@
 
 import { cookies, headers } from 'next/headers'
 import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-protocol'
+import { CONSENT_COOKIE, recordingAllowed } from '@/lib/identity/consent'
 import {
   isLeadFormId,
   isLeadType,
@@ -118,8 +119,18 @@ export function attributionParamsFromSearch(search: string | URLSearchParams): L
 async function requestContext(): Promise<{
   clientId: string | undefined
   utm: LeadAttributionParams
+  /**
+   * False under Global Privacy Control (Sec-GPC: 1) or a stored banner decline:
+   * then nothing goes to GA4 (Matt 2026-10-08: GPC or a decline turns analytics
+   * off). The lead record in our own CRM is written by the caller either way.
+   */
+  analyticsAllowed: boolean
 }> {
   const [cookieStore, headersList] = await Promise.all([cookies(), headers()])
+  const analyticsAllowed = recordingAllowed({
+    consentCookie: cookieStore.get(CONSENT_COOKIE)?.value,
+    secGpc: headersList.get('sec-gpc'),
+  })
   const referer = headersList.get('referer') ?? ''
   let utm: LeadAttributionParams = {}
   try {
@@ -128,7 +139,7 @@ async function requestContext(): Promise<{
   } catch {
     // Referer not parseable. No UTMs to capture.
   }
-  return { clientId: readGa4ClientIdFromCookies(cookieStore) ?? undefined, utm }
+  return { clientId: readGa4ClientIdFromCookies(cookieStore) ?? undefined, utm, analyticsAllowed }
 }
 
 /**
@@ -181,7 +192,11 @@ export async function fireLeadGenerated(params: FireLeadParams): Promise<void> {
       )
       return
     }
-    const { clientId, utm } = await requestContext()
+    const { clientId, utm, analyticsAllowed } = await requestContext()
+    if (!analyticsAllowed) {
+      console.info(`[lead-tracking] ${eventName} not sent to GA4 for ${params.lp_variant}: GPC or a cookie decline`)
+      return
+    }
     const eventParams = leadEventParams(params, utm)
     if (!eventParams) return
     await fireGa4Event({
@@ -208,7 +223,8 @@ export async function fireNonLeadEvent(params: {
   extra?: Record<string, string | number | boolean | undefined | null>
 }): Promise<void> {
   try {
-    const { clientId, utm } = await requestContext()
+    const { clientId, utm, analyticsAllowed } = await requestContext()
+    if (!analyticsAllowed) return
     await fireGa4Event({
       eventName: params.event_name,
       clientId,
