@@ -180,6 +180,15 @@ const CHECKS = [
       '  and appreciation-calculator siblings.',
   },
   {
+    file: 'app/tools/seller-net-sheet/page.tsx',
+    label: 'seller net sheet: SoftwareApplication + FAQPage JSON-LD',
+    all: ['SoftwareApplication', "type: 'faqPage'"],
+    why:
+      'The seller net sheet MUST emit a page-level SoftwareApplication node (like\n' +
+      '  the mortgage calculator) and a FAQPage built from the same copy.faqs the\n' +
+      '  page prints, so the visible FAQ and the JSON-LD match word for word.',
+  },
+  {
     file: 'app/cities/[slug]/page.tsx',
     label: 'city: MetadataBlock schemas (Dataset + breadcrumb live in city-schemas)',
     all: ['MetadataBlock', 'citySchemas'],

@@ -181,13 +181,14 @@ describe('cost to sell: FAQ (accept test 8)', () => {
 })
 
 describe('cost to sell: links, names, regressions (accept tests 10, 11, 12)', () => {
-  it('never links the seller net sheet tool (404) and links only the brief list internally', () => {
-    expect(COST_TO_SELL_CONTENT).not.toContain('/tools/seller-net-sheet')
+  it('links the seller net sheet once (it ships in the same stack) and links only the brief list internally', () => {
+    expect(COST_TO_SELL_CONTENT.match(/href="\/tools\/seller-net-sheet"/g)).toHaveLength(1)
+    expect(COST_TO_SELL_CONTENT).not.toMatch(/href="\/tools"/)
     const allowed = new Set([
       '/housing-market/bend', '/blog/property-taxes-deschutes-county', '/blog/hoa-guide-central-oregon',
       '/blog/oregon-withholding-firpta-home-sellers', '/blog/preparing-home-for-sale-checklist',
       '/blog/buyers-agent-bend-buyer-broker-agreement', '/blog/closing-costs-buyers-bend-oregon', '/sell',
-      '/sell/valuation', '/team/matthew-ryan',
+      '/sell/valuation', '/team/matthew-ryan', '/tools/seller-net-sheet',
     ])
     for (const [, href] of COST_TO_SELL_CONTENT.matchAll(/href="(\/[^"]*)"/g)) expect(allowed, href).toContain(href)
   })

@@ -126,6 +126,7 @@ export async function GET() {
   ])
   const toolLines = lines([
     `- Mortgage calculator: ${SITE_URL}/tools/mortgage-calculator`,
+    `- Seller net sheet (what a Bend seller nets, with a worked example at the median): ${SITE_URL}/tools/seller-net-sheet`,
     `- Rental property calculator: ${SITE_URL}/tools/rental-property-calculator`,
     `- Home appreciation tool: ${SITE_URL}/tools/appreciation`,
     ...pillars('tools'),

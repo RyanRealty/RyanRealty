@@ -95,6 +95,16 @@ app/admin/(protected)/crm/deals/page.tsx
 components/tools/RentalCalculator.tsx
 components/tools/RentalLeadForm.tsx
 components/tools/EquityProjectionChart.client.tsx
+# Seller net sheet (SEO & AEO Desk brief 2026-10-08): same class as the rental
+# calculator above. A public v3 page, so its calculator fields are native
+# <label> + <input>/<select> wearing V3Input.css (the barrel's V3Input is
+# uncontrolled and has no number field), and the worked example is a semantic
+# <table> with <caption> because answer engines read the table as a table
+# (brief section 5). Every color and size is a var(--v3-*) token in
+# app/tools/seller-net-sheet/_v3/net-sheet.css. Retire with the rental entries
+# when a V3Field atom exists.
+app/tools/seller-net-sheet/page.tsx
+app/tools/seller-net-sheet/_v3/NetSheetCalculator.client.tsx
 app/actions/generate-market-report.ts
 app/admin/(protected)/audit-log/page.tsx
 app/admin/(protected)/crm/page.tsx
