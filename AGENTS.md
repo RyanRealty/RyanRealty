@@ -283,6 +283,10 @@ All rules in `.cursor/rules/` are mandatory. Key rules:
 - **Utilities**: Use `cn()` from `@/lib/utils` for conditional classes.
 - **Fonts**: Geist Sans (`font-sans`) and Geist Mono (`font-mono`) only.
 
+### Browser analytics events (locked, Matt 2026-10-08)
+
+- Browser events reach GA4 only through GTM's GA4 Event tag: push them with `trackEvent()` / `pushDataLayerEvent()` (`lib/analytics/ga4-browser-events.ts`), never `gtag('event', …)` for GA4, and add a new event name to `GA4_BROWSER_EVENTS` plus the GTM steps in `docs/GTM_GA4_BROWSER_EVENTS.md` (Matt publishes GTM). Held by `lib/analytics/ga4-browser-events.test.ts`.
+
 ### Server Actions
 
 ```ts

@@ -97,13 +97,20 @@ export default function GoogleAnalytics() {
       {/* 1. Consent Mode v2 DEFAULTS — must inject before gtag.js so the
               first tracking ping carries the correct consent state. Uses
               `beforeInteractive` so it runs synchronously before any other
-              tracking script gets to fire its initial event. */}
+              tracking script gets to fire its initial event.
+              With GTM (production), the ONE default is the GTM bootstrap's
+              (lib/analytics/gtm-bootstrap.ts), pushed before gtm.js. This
+              block's own default ran after gtm.js had loaded, a second, late
+              default Google ignores at best (GA4 audit 2026-10-08, plan B6),
+              so it only renders on a build with no GTM container, where it
+              is the only default. Its values are unchanged: consent defaults
+              are locked while counsel reviews them. */}
       <Script id="gtag-consent-defaults" strategy="beforeInteractive">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date()); // hydration-safe — injected gtag bootstrap, not React render clock
-          // Default every advertising + analytics category to DENIED. The
+          ${hasGTM ? `// Consent defaults: the GTM bootstrap (lib/analytics/gtm-bootstrap.ts) sets them before gtm.js loads.` : `// Default every advertising + analytics category to DENIED. The
           // useEffect above re-applies the stored cookie consent via
           // gtag('consent', 'update', ...) as soon as gtag is ready.
           // wait_for_update tells Google to hold any tracking pings for up
@@ -117,7 +124,7 @@ export default function GoogleAnalytics() {
             functionality_storage: 'granted',
             security_storage: 'granted',
             wait_for_update: 500
-          });
+          });`}
           // URL-passthrough: when consent is denied, GA4 still propagates
           // gclid/dclid/utm_* across navigation via the URL instead of a
           // cookie. Keeps attribution intact for cookieless visitors.
