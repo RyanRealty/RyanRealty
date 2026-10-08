@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PLAT_WIDE_SQFT_BAND } from '@/lib/pricing/ladder'
+import { PRICE_SET_SQFT_BAND } from '@/lib/pricing/price-set'
 import {
   roomNotedSentence,
   sameAreaAgeYears,
@@ -105,7 +105,10 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
     // 2,100 against 1,458 is 44 percent.
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: 2100 })).toEqual({ ok: false, reason: 'size' })
     // 1,960 is 34.4 percent, inside the band.
-    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: 1960 }).ok).toBe(true)
+    // 25% is the band for every home in the letter (Matt 2026-10-08): 1,960 sqft
+    // is 34% over the 1,458 sqft subject and is no longer like yours; 1,800 (23%) is.
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: 1960 })).toEqual({ ok: false, reason: 'size' })
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: 1800 }).ok).toBe(true)
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: null }).ok).toBe(true)
   })
 
@@ -158,7 +161,8 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
   it('reads its bands off the sales ladder, by the kind of area the sales sit in', () => {
     expect(SAME_AREA_AGE_YEARS).toBe(25)
     expect(SAME_AREA_RADIUS_AGE_YEARS).toBe(30)
-    expect(SAME_AREA_SQFT_BAND).toBe(PLAT_WIDE_SQFT_BAND)
+    expect(SAME_AREA_SQFT_BAND).toBe(PRICE_SET_SQFT_BAND)
+    expect(SAME_AREA_SQFT_BAND).toBe(0.25)
     expect(sameAreaAgeYears(AREA)).toBe(25)
     expect(sameAreaAgeYears(OLD_BEND)).toBeNull()
     expect(sameAreaAgeYears({ ...OLD_BEND, kind: 'community' })).toBeNull()

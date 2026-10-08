@@ -2123,14 +2123,17 @@ describe('a comp from the wrong house', () => {
     // bracket wants one larger house inside ±25% GLA. 2834 Indian is the
     // farthest of those. 4570 Yew is Forked Horn Butte, 1.89 mi, on the same
     // side of the river and the highway, and its $/sqft sits inside the tier.
+    // 2834 Indian sits at 2,000 sqft here (20.8% smaller, the same $298/sqft):
+    // its real 1,668 is 34% smaller, which the old 35% band admitted and the
+    // one 25% price-setting band refuses (Matt 2026-10-08).
     const smallPlat = sale({
       listingKey: 'INDIAN-2834',
       address: '2834 Indian',
       subdivision: 'Juniper Glen',
       subdivisionNorm: 'juniper glen',
-      sqft: 1668,
-      closePrice: 497_000,
-      closePpsf: 497_000 / 1668,
+      sqft: 2000,
+      closePrice: 596_000,
+      closePpsf: 596_000 / 2000,
       closeDate: '2026-06-01',
       ...at(0.04),
     })
@@ -2255,9 +2258,11 @@ describe('a comp from the wrong house', () => {
     expect(high.comps.find((c) => c.listingKey === 'POCKET-NEAR')?.selectionTier.startsWith('pocket-')).toBe(true)
 
     // Five plat sales (Matt 2026-10-07), so the plat rows hold the floor
-    // and the pocket is never opened for a close far from them.
-    const glen = [497_000, 740_000, 780_000, 750_000, 765_000].map((closePrice, i) => {
-      const sqft = i === 0 ? 1668 : 2200
+    // and the pocket is never opened for a close far from them. The small
+    // plat close is 2,000 sqft (20.8% smaller) at the same $298/sqft: its
+    // real 1,668 is 34% smaller and never sets the price (Matt 2026-10-08).
+    const glen = [596_000, 740_000, 780_000, 750_000, 765_000].map((closePrice, i) => {
+      const sqft = i === 0 ? 2000 : 2200
       return sale({
         listingKey: `GLEN${i}`,
         address: `${2830 + i} Glen`,
@@ -3030,8 +3035,11 @@ describe('overflow — closest homes, then the plat that resembles this one (Mat
         closeDate: '2026-06-01',
         closePrice: 700_000,
       })
+    // The smaller homes are 1,600 sqft, 20% under, inside the one 25%
+    // price-setting band. At the old 1,400 (30% under) they would now be
+    // refused at the door and could never take a seat (Matt 2026-10-08).
     const pool = [
-      ...['S1', 'S2', 'S3', 'S4', 'S5'].map((key) => row(key, 'small-homes', 'Small Homes', 1400, 0.08)),
+      ...['S1', 'S2', 'S3', 'S4', 'S5'].map((key) => row(key, 'small-homes', 'Small Homes', 1600, 0.08)),
       ...['M1', 'M2', 'M3', 'M4'].map((key) => row(key, 'same-size', 'Same Size', 2000, 0.28)),
     ]
     const out = walkPricingLadder(subj, pool, { asOf })
@@ -3245,6 +3253,46 @@ describe('five price-setting sales is the floor, and a sale that does not set th
     const widened = out.rungs.find((r) => r.tier === 'widened-disclosed-24mo')
     expect(widened?.notSetting).toBe(2)
     expect(widened?.added).toBe(0)
+  })
+
+  it('a sale more than 25% smaller on a wider plat rung does not set the price and does not reach five (Matt 2026-10-08, 2382 Jackson against 2225 Indigo)', () => {
+    // 2382 Jackson is 2,016 sqft. 2225 Indigo, 2 bed, 1,393 sqft, is 30.9%
+    // smaller: the 25% plat rung refuses it at the wall, the 35% -wide rung
+    // reads it, and rule 20 refuses it at the door. It is never admitted, it
+    // never counts toward the five, and four own-plat setters are a shortage.
+    const jackson = plain({ sqft: 2016 })
+    const indigo = {
+      ...own('INDIGO', 4),
+      address: '2225 Indigo',
+      beds: 2,
+      sqft: 1393,
+      closePrice: 492_000,
+      originalAsk: 505_000,
+      lastAsk: 499_000,
+      closePpsf: 492_000 / 1393,
+    }
+    const pool = [own('A', 0), own('B', 1), own('C', 2), own('D', 3), indigo]
+    const out = walkPricingLadder(jackson, pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D'])
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('INDIGO')
+    expect(out.comps.every((c) => c.setsPrice === true)).toBe(true)
+    const wide = out.rungs.find((r) => r.tier === 'subdivision-3mo-wide')
+    expect(wide?.ran).toBe(true)
+    expect(wide?.notSetting).toBe(1)
+    expect(wide?.added).toBe(0)
+    expect(out.rungs.find((r) => r.tier === 'subdivision-3mo')?.notSetting ?? 0).toBe(0)
+    expect(out.starved).toBe(true)
+    expect(out.reachedTarget).toBe(false)
+    expect(out.trace.some((t) => t.includes('Comp shortage: only 4 price-setting sale(s)'))).toBe(true)
+    expect(out.trace.some((t) => t.includes('do not set the price'))).toBe(true)
+
+    // A fifth own-plat sale 17.9% smaller (1,655 sqft) still sets the price and reaches five.
+    const fifth = { ...own('FIFTH', 5), sqft: 1655, closePrice: 585_000, closePpsf: 585_000 / 1655 }
+    const reached = walkPricingLadder(jackson, [...pool, fifth], { asOf })
+    expect(reached.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D', 'FIFTH'])
+    expect(reached.comps.map((c) => c.listingKey)).not.toContain('INDIGO')
+    expect(reached.reachedTarget).toBe(true)
+    expect(reached.starved).toBe(false)
   })
 
   it('a duplex by its remarks never prices a single-family home (rule 23, 1531 10th against 915 Saginaw)', () => {

@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { closedCompWeight } from '@/lib/pricing/closed-comp-weight'
 import { listPriceFromEngine } from '@/lib/pricing/estimate'
-import { pricingFailureMessage, recommendationOutsideSaleSet, saleSetsThePrice } from '@/lib/pricing/price-set'
+import { PLAT_SQFT_BAND, PLAT_WIDE_SQFT_BAND } from '@/lib/pricing/ladder'
+import {
+  clearlyDifferentSize,
+  PRICE_SET_SQFT_BAND,
+  pricingFailureMessage,
+  recommendationOutsideSaleSet,
+  saleSetsThePrice,
+} from '@/lib/pricing/price-set'
 import { weightedAdjustedPrice } from '@/lib/pricing/reconciliation'
 
 const subject = {
@@ -317,5 +324,53 @@ describe('a shared subdivision name is the same plat only when it is a real name
       saleCommunityLocated: true,
       ...sizes,
     })).toBe(true)
+  })
+})
+
+describe('one size limit for any sale that sets the price: 25% everywhere (Matt 2026-10-08)', () => {
+  // 2382 Jackson, 2,016 sqft, was priced with 2225 Indigo, 2 bed, 1,393 sqft,
+  // 30.9% smaller, admitted on a wider rung at full weight.
+  const jackson = { subjectSqft: 2016, ownPlat: true, subjectSubdivision: 'Home Plat', saleSubdivision: 'Home Plat' }
+
+  it('is the plat band, defined once, and not the wide search band', () => {
+    expect(PRICE_SET_SQFT_BAND).toBe(0.25)
+    expect(PRICE_SET_SQFT_BAND).toBe(PLAT_SQFT_BAND)
+    expect(PRICE_SET_SQFT_BAND).not.toBe(PLAT_WIDE_SQFT_BAND)
+  })
+
+  it('2225 Indigo, 30.9% smaller, never sets the price, on the own plat or on any wider rung', () => {
+    expect(clearlyDifferentSize(2016, 1393)).toBe(true)
+    expect(saleSetsThePrice({ ...jackson, saleSqft: 1393 })).toBe(false)
+    expect(saleSetsThePrice({ ...jackson, ownPlat: false, saleSubdivision: 'Touching Plat', saleSqft: 1393 })).toBe(false)
+    expect(closedCompWeight({ ...jackson, saleSqft: 1393, monthsSinceClose: 1, selectionTier: 'subdivision-3mo-wide' })).toBe(0)
+    expect(closedCompWeight({ ...jackson, saleSqft: 1393, monthsSinceClose: 1, ownPlat: false, selectionTier: 'adjacent-sub-6mo' })).toBe(0)
+  })
+
+  it('a sale 17.9% smaller still sets it', () => {
+    expect(clearlyDifferentSize(2016, 1655)).toBe(false)
+    expect(saleSetsThePrice({ ...jackson, saleSqft: 1655 })).toBe(true)
+    expect(closedCompWeight({ ...jackson, saleSqft: 1655, monthsSinceClose: 1 })).toBeGreaterThan(0)
+  })
+
+  it('exactly 25% sets the price; 25.1% does not, smaller or larger', () => {
+    // 2,016 x 0.75 = 1,512 and 2,016 x 1.25 = 2,520, on the line.
+    expect(clearlyDifferentSize(2016, 1512)).toBe(false)
+    expect(clearlyDifferentSize(2016, 2520)).toBe(false)
+    expect(saleSetsThePrice({ ...jackson, saleSqft: 1512 })).toBe(true)
+    expect(saleSetsThePrice({ ...jackson, saleSqft: 2520 })).toBe(true)
+    // 25.1% either way: 1,510 is 25.10% under, 2,522 is 25.10% over.
+    expect(Math.abs(2016 - 1510) / 2016).toBeGreaterThan(0.25)
+    expect(clearlyDifferentSize(2016, 1510)).toBe(true)
+    expect(clearlyDifferentSize(2016, 2522)).toBe(true)
+    expect(saleSetsThePrice({ ...jackson, saleSqft: 1510 })).toBe(false)
+    expect(saleSetsThePrice({ ...jackson, saleSqft: 2522 })).toBe(false)
+  })
+
+  it('the old 35% band no longer admits a sale between 25% and 35%', () => {
+    // 2,016 x 0.70 = 1,411: 30% smaller, inside the wide search band, outside the price-setting band.
+    expect(clearlyDifferentSize(2016, 1411)).toBe(true)
+    expect(saleSetsThePrice({ ...jackson, saleSqft: 1411 })).toBe(false)
+    expect(clearlyDifferentSize(2016, 2620)).toBe(true)
+    expect(saleSetsThePrice({ ...jackson, saleSqft: 2620 })).toBe(false)
   })
 })

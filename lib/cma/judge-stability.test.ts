@@ -216,22 +216,32 @@ describe('exclusion grounding', () => {
     expect(result.rule).toBe('price-outlier')
   })
 
-  it('does not drop a sale inside the picker living-area band', () => {
-    // 30% living-area gap: inside the picker's about-35% band, past the old 20% wall.
-    const sale = comp({ listingKey: 'band', sqft: Math.round(1840 * 1.3), closePrice: 500000 })
-    const result = groundVerdict(
-      sub,
-      sale,
-      verdict({
-        listingKey: 'band',
-        tier: 'exclude',
-        basis: 'size',
-        reason: `${sale.sqft} sqft versus the subject's 1840 sqft.`,
-      }),
-      [sale],
-    )
-    expect(result.verdict.tier).not.toBe('exclude')
-    expect(result.grounded).toBe(false)
+  it('does not drop a sale inside the picker living-area band, and the band is 25% on the line (Matt 2026-10-08)', () => {
+    const sizeExclusion = (sale: CmaComp) =>
+      groundVerdict(
+        sub,
+        sale,
+        verdict({
+          listingKey: sale.listingKey,
+          tier: 'exclude',
+          basis: 'size',
+          reason: `${sale.sqft} sqft versus the subject's 1840 sqft.`,
+        }),
+        [sale],
+      )
+    // 20% living-area gap: inside the picker's 25% band, past the old 20% wall.
+    const inside = sizeExclusion(comp({ listingKey: 'band', sqft: Math.round(1840 * 1.2), closePrice: 500000 }))
+    expect(inside.verdict.tier).not.toBe('exclude')
+    expect(inside.grounded).toBe(false)
+    // Exactly 25% (1,840 x 1.25 = 2,300) set the price, so the review may not drop it.
+    const onLine = sizeExclusion(comp({ listingKey: 'line', sqft: 2300, closePrice: 500000 }))
+    expect(onLine.verdict.tier).not.toBe('exclude')
+    expect(onLine.grounded).toBe(false)
+    // 30%: past the one size cutoff, the picker's, so a size exclusion is real.
+    const past = sizeExclusion(comp({ listingKey: 'past', sqft: Math.round(1840 * 1.3), closePrice: 500000 }))
+    expect(past.grounded).toBe(true)
+    expect(past.rule).toBe('size-gap')
+    expect(past.verdict.tier).toBe('exclude')
   })
 
   it('does not drop a picker-kept sale on a 15-year vintage wall', () => {
@@ -442,7 +452,8 @@ describe('judgeComps stability', () => {
   })
 
   it('ignores an invented 1600 sqft floor across every pass', async () => {
-    const small = [1447, 1328, 1304, 1356].map((sqft, i) =>
+    // Every gap inside the 25% band (1,840 x 0.75 = 1,380), so the 1600 floor is invented.
+    const small = [1447, 1428, 1404, 1456].map((sqft, i) =>
       comp({ listingKey: `S${i}`, sqft, closePrice: sqft * 390 }),
     )
     const call: JudgeModelCall = async () => ({

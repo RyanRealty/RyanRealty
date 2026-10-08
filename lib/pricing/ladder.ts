@@ -713,6 +713,12 @@ export function pocketStopsLaterRungs(args: {
  * it, so the plat rungs carry 25% and the wider same-street rungs 35%. Inside
  * the plat this band is the ONLY dimensional test: beds, baths, vintage and
  * story count are all disclosed rather than refused (lib/pricing/match.ts).
+ *
+ * PLAT_WIDE_SQFT_BAND is a SEARCH band only (Matt 2026-10-08, "25%
+ * everywhere"). A sale a wide rung reads past 25% passes the rung's walls and
+ * is refused at the door by rule 20 (PRICE_SET_SQFT_BAND in
+ * lib/pricing/price-set.ts, equal to PLAT_SQFT_BAND): it never sets the
+ * price and never counts toward the five.
  */
 export const PLAT_SQFT_BAND = 0.25
 export const PLAT_WIDE_SQFT_BAND = 0.35

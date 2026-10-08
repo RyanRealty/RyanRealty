@@ -290,7 +290,7 @@ const SYSTEM =
   'reason for the ones above, or you keep them too. And do not strand a kept comp: if one retained sale sits far ' +
   'above the rest of the retained cluster and near the sales you threw out, it belongs with the ones you threw ' +
   'out. Apply the same discipline to every non-numeric criterion. Do not exclude a sale for living area inside ' +
-  'about 35 percent of the subject, and do not exclude one for year built. The picker already made those cuts, ' +
+  '25 percent of the subject, and do not exclude one for year built. The picker already made those cuts, ' +
   'and it widens closed-sale age and date when the first location search is short of 3. A looser match stays. ' +
   'Weigh it less. Do not drop it. ' +
   'WHAT REVIEWERS CATCH MOST OFTEN, in order: a kept comp in an amenity-bearing planned community or resort when the subject is not, or the reverse; ' +

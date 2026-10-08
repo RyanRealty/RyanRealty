@@ -46,9 +46,11 @@ describe('closed-comp Recommended weighting', () => {
   })
 
   it('contract: weighted-point-pulls-toward-recent-similar-then-in-band', () => {
+    // 2,300 sqft is 22% over the 1,883 subject, inside the one 25%
+    // price-setting band; 2,400 (27.5%) would weigh 0 (Matt 2026-10-08).
     const cheapOld = {
       adjustedPrice: 650_000,
-      weight: closedCompWeight({ subjectSqft: 1883, saleSqft: 2400, monthsSinceClose: 18 }),
+      weight: closedCompWeight({ subjectSqft: 1883, saleSqft: 2300, monthsSinceClose: 18 }),
     }
     const recentSimilar = {
       adjustedPrice: 690_000,
@@ -285,9 +287,11 @@ describe('closed-comp Recommended weighting', () => {
       monthsSinceClose: 0,
       locationMatch: 'neighborhood-or-community',
     })
+    // 500 sqft over is 22%, inside the one 25% price-setting band; 700 over
+    // (30.8%) never sets the price and weighs 0 (Matt 2026-10-08).
     const looseSameSubdivision = closedCompWeight({
       subjectSqft: 2275,
-      saleSqft: 2275 + 700,
+      saleSqft: 2275 + 500,
       subjectBeds: 3,
       saleBeds: 4,
       subjectBaths: 3,

@@ -5,10 +5,11 @@
  * the subject's community. Community membership is the location of the address
  * (lib/cma/community-location.ts), not the MLS subdivision string and not a
  * remark. A sale from another community never sets the price, however short
- * the set is (Matt 2026-10-07). Neither does a clearly different size (past
- * the one living-area cutoff) or a clearly different product (a cottage
- * versus acreage). A different plat that is not the subject's community is
- * that different community, not a neighbor that still prices the home.
+ * the set is (Matt 2026-10-07). Neither does a clearly different size (more
+ * than PRICE_SET_SQFT_BAND, 25%, larger or smaller, wherever the search found
+ * it: Matt 2026-10-08) or a clearly different product (a cottage versus
+ * acreage). A different plat that is not the subject's community is that
+ * different community, not a neighbor that still prices the home.
  *
  * Both walks (lib/pricing/match.ts, lib/cma/comps.ts) apply this test at
  * admission: a sale that fails it is not admitted, does not count toward the
@@ -24,7 +25,7 @@
  */
 import { communityForAddress } from '@/lib/cma/community-location'
 import { lotCompatible, normSubdivision } from '@/lib/pricing/classes'
-import { PLAT_WIDE_SQFT_BAND, PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { PLAT_SQFT_BAND, PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 
 export type PriceSetSale = {
   ownPlat?: boolean | null
@@ -40,7 +41,27 @@ export type PriceSetSale = {
   saleLotAcres?: number | null
 }
 
-/** Living area past the picker's wide cutoff. Unknown size is not "clearly different". */
+/**
+ * THE ONE SIZE LIMIT FOR ANY SALE THAT SETS THE PRICE (Matt 2026-10-08, "25%
+ * everywhere"): a sale more than 25% larger or smaller than the subject never
+ * sets the price, wherever the search found it. 2382 Jackson (2,016 sqft) was
+ * priced with 2225 Indigo (2 bed, 1,393 sqft, 30.9% smaller), admitted on a
+ * wider rung at full weight because this test read the 35% search band; under
+ * the ruling it never sets the price.
+ *
+ * The same number as the plat rungs' band (PLAT_SQFT_BAND), defined once. The
+ * wider rungs (PLAT_WIDE_SQFT_BAND, the touching-plat, next-row and community
+ * rungs, the listings ladder's LOCATION_SQFT_BAND) still SEARCH past it; a
+ * sale they read between 25% and their band passes the rung's walls and is
+ * refused here at the door, counted as not setting, never weighed.
+ */
+export const PRICE_SET_SQFT_BAND = PLAT_SQFT_BAND
+
+/**
+ * Living area more than PRICE_SET_SQFT_BAND off the subject's, measured on the
+ * subject. Exactly 25% still sets the price; 25.1% does not. Unknown size is
+ * not "clearly different".
+ */
 export function clearlyDifferentSize(
   subjectSqft: number | null | undefined,
   saleSqft: number | null | undefined,
@@ -48,7 +69,7 @@ export function clearlyDifferentSize(
   const subject = Number(subjectSqft)
   const sale = Number(saleSqft)
   if (!(subject > 0) || !(sale > 0)) return false
-  return Math.abs(subject - sale) / subject > PLAT_WIDE_SQFT_BAND
+  return Math.abs(subject - sale) / subject > PRICE_SET_SQFT_BAND
 }
 
 /** Cottage versus acreage, when both lot sizes are known. Unknown fails open. */

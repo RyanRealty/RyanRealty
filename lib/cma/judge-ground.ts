@@ -11,13 +11,15 @@
  *     the subject or the comp. A number that matches neither is a contradiction.
  *  2. A size floor (a cutoff that is not the subject's living area) is supported
  *     only when the comp is on the failing side of that cutoff AND the living
- *     area gap is at least SIZE_FLOOR_GAP (35%, past the selector's widest
- *     band). A smaller gap is the invented 1600 sqft floor: the sale is a bit
+ *     area gap is past SIZE_FLOOR_GAP (25%, the one price-setting band, rule
+ *     20). A smaller gap is the invented 1600 sqft floor: the sale is a bit
  *     smaller, not a different size class.
  *  3. A direct size comparison that names the real sqft, with no floor, needs
- *     the same gap as a floor: SIZE_FLOOR_GAP (35%, the picker's living-area
- *     band). A tighter cut dropped sales the picker kept. There is one size
- *     cutoff, and it is the picker's.
+ *     the same gap as a floor: past SIZE_FLOOR_GAP (25%, the picker's
+ *     living-area band). A tighter cut dropped sales the picker kept. There is
+ *     one size cutoff, and it is the picker's: a sale at exactly 25% sets the
+ *     price (lib/pricing/price-set.ts clearlyDifferentSize), so the review
+ *     may not drop it either.
  *  4. A $/sqft floor, ceiling, or band is supported only when the comp's actual
  *     $/sqft is outside it. "Below $419" when the sale is at $430 is ignored.
  *  5. A price-tier cut that does clear the cited number is still ignored when
@@ -46,7 +48,7 @@
  *     disprove is not thrown out. An exclusion we can disprove is.
  *
  * Legitimate exclusions stay: a real duplex in the remarks, a living area gap
- * of 35% or more, a $/sqft outlier of 20% or more, a doubled lot, a room gap
+ * past 25%, a $/sqft outlier of 20% or more, a doubled lot, a room gap
  * the one-room rule refuses, a fairway the remarks actually name. Year built
  * does not drop a sale the picker kept.
  */
@@ -59,11 +61,16 @@ import {
   type CompVerdict,
   type ExclusionBasis,
 } from '@/lib/cma/judge-consistency'
+import { PRICE_SET_SQFT_BAND } from '@/lib/pricing/price-set'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
 import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
 
-/** Past the selector's widest living-area band. The only size cutoff. */
-export const SIZE_FLOOR_GAP = 0.35
+/**
+ * The one size cutoff, the picker's (Matt 2026-10-08, "25% everywhere"): the
+ * same band rule 20 refuses a sale on. A gap PAST it supports an exclusion; a
+ * gap on it does not, because that sale set the price.
+ */
+export const SIZE_FLOOR_GAP = PRICE_SET_SQFT_BAND
 /** Share off the other candidates' median $/sqft before a price tier is real. */
 export const PRICE_TIER_OUTLIER = 0.2
 export const LOT_RATIO = 2
@@ -249,11 +256,11 @@ function sizeSupported(reason: string, subject: CmaSubject, comp: CmaComp): Grou
     const below = /below|under/i.test(reason)
     const above = /above|over/i.test(reason)
     const onSide = (below && comp.sqft < floor) || (above && comp.sqft > floor) || (!below && !above)
-    const onBand = gap != null && gap >= SIZE_FLOOR_GAP
+    const onBand = gap != null && gap > SIZE_FLOOR_GAP
     if (!onSide || !onBand) return null
     return 'size-floor'
   }
-  if (gap != null && gap >= SIZE_FLOOR_GAP) return 'size-gap'
+  if (gap != null && gap > SIZE_FLOOR_GAP) return 'size-gap'
   return null
 }
 

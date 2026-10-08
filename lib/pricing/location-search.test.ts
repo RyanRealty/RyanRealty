@@ -80,13 +80,15 @@ describe('location search', () => {
   it('stays in the subdivision, then adjacent, then the neighborhood, and widens dates when short of 5 price-setting sales (Matt 2026-10-07), and does not jump to same-zip while a closer place still has sales', () => {
     const asOf = '2026-08-01'
     const pool = [
-      // Twenty months old and 30% larger. The tight 25% band misses it.
-      // Widening the plat's dates and the 35% cutoff has to take it before any zip sale.
+      // Twenty months old and 20% larger, inside the one 25% price-setting
+      // band (Matt 2026-10-08: a sale past 25% never sets the price, so the
+      // old 30%-larger fixture would now be refused at the door). Widening
+      // the plat's dates has to take it before any zip sale.
       sale({
         listingKey: 'OLD_WIDE',
         address: '20 Kenwood',
         closeDate: '2024-12-01',
-        sqft: 2600,
+        sqft: 2400,
         closePrice: 700_000,
       }),
       sale({
