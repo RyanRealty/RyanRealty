@@ -123,9 +123,15 @@
   text-align: right;
 }
 
+/* Row labels read as plain text; the totals are the line a reader came for. */
+.v3 .v3-blog-prose tbody th {
+  font-weight: var(--v3-weight-body);
+}
+
 .v3 .v3-blog-prose tfoot th,
 .v3 .v3-blog-prose tfoot td {
-  font-weight: var(--v3-weight-medium);
+  font-weight: var(--v3-weight-strong);
+  color: var(--v3-ink);
 }
 
 /* ---------------------------------------------------------------------------
