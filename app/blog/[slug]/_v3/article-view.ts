@@ -42,12 +42,27 @@ const ANCHOR_RE = /<a\s([^>]*?)href="(https?:\/\/[^"]+)"([^>]*?)>([\s\S]*?)<\/a>
  * number, or a bare integer inside prose is not a figure, and promoting one into
  * a display would put a number on screen with no meaning under it.
  */
+const MONTHS_OF_SUPPLY_RE = /\bmonths of supply (?:sits at|stands at|stood at|is at|is|was|of|at)\s+\d+(?:\.\d+)?(?![\d.]*\s*(?:months|%))/gi
+
+/** "Months of supply sits at 3.5" reads as the figure "3.5 months". */
+function monthsOfSupplyValue(match: string): string | null {
+  if (!/^months of supply/i.test(match)) return null
+  const n = match.match(/\d+(?:\.\d+)?$/)?.[0]
+  return n ? `${n} months` : null
+}
+
 const FIGURE_PATTERNS = [
   // $1,349,000 · $265 a month · $3,180 a year. A price is the figure a reader
   // came for, so it wins its paragraph over the sample size beside it.
   /\$\d[\d,]*(?:\.\d+)?(?:\s(?:a month|a year|per month|per year|million))?/gi,
   // 4.3% · 12 %
   /\d[\d,]*(?:\.\d+)?\s?%/gi,
+  // "Months of supply sits at 3.5". The figure is the bare number after the
+  // measure's name, and the chip reads it as "3.5 months". Without this the
+  // duration pattern below took "4 months" out of the threshold clause that
+  // follows it ("4 months or less favors sellers"), and the Bend reports' rail
+  // printed the threshold in place of the figure (brief 2026-10-08 §6).
+  MONTHS_OF_SUPPLY_RE,
   // 63 days · 29.5 days. A duration is a figure only when it is the pace of the
   // market; "over the last 12 months" is the WINDOW a figure was measured in,
   // and promoting a window into a chip puts a number on screen that answers
@@ -55,6 +70,11 @@ const FIGURE_PATTERNS = [
   /\d[\d,]*(?:\.\d+)?\s(?:days|months)\b/gi,
   /\d[\d,]*(?:\.\d+)?\s(?:detached\s)?(?:homes?|condominiums?|units?|homesites?|lots?|sales|closings|acres|residents|rooms)\b/gi,
 ]
+
+/** A threshold, not a reading: "4 months or less", "$1 million or more". */
+const THRESHOLD_TAIL_RE = /^\s*or (?:less|more|fewer|longer|shorter|lower|higher|below|above)\b/i
+/** A boundary named in a scale: "above 4 and under 6", "between 4 and 6 months". */
+const THRESHOLD_LEAD_RE = /\b(?:above|below|between)\s+$/i
 
 const SENTENCE_BOUNDARY_RE = /(?<=[.!?])\s+(?=[A-Z$"“'\d])/g
 
@@ -258,8 +278,13 @@ function collectFigures(segments: Segment[]): BlogFigure[] {
           // "$1,349,000,".
           const lead = text.slice(Math.max(0, hit.index - 16), hit.index)
           if (WINDOW_LEAD_RE.test(lead) || RANGE_LEAD_RE.test(lead)) continue
+          // A threshold in a scale is not this paragraph's reading.
+          const tail = text.slice(hit.index + hit[0].length, hit.index + hit[0].length + 24)
+          if (THRESHOLD_TAIL_RE.test(tail) || THRESHOLD_LEAD_RE.test(lead)) continue
           const qualifier = lead.match(QUALIFIER_LEAD_RE)?.[1]
-          const bare = hit[0].replace(/\s+/g, ' ').replace(/[.,;:]+$/, '').trim()
+          const bare =
+            monthsOfSupplyValue(hit[0]) ??
+            hit[0].replace(/\s+/g, ' ').replace(/[.,;:]+$/, '').trim()
           const value = qualifier ? `${qualifier.toLowerCase()} ${bare}` : bare
           // One reading, one chip: "$620" and "$620 a month" are the same dues,
           // and "239 units" and "239 condominiums" are the same building count.

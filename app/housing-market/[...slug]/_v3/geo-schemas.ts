@@ -78,7 +78,8 @@ export function buildGeoMarketSchemas(input: {
         `Includes ${metricList}. ` +
         `Sourced from Oregon Data Share via Ryan Realty.`,
       url: canonicalPath,
-      dateModified: asOfIso ?? undefined,
+      // The full refresh instant, not just its day (brief 2026-10-08 §4d).
+      dateModified: refreshedAt ?? asOfIso ?? undefined,
       spatialCoverageName: `${geoName}, OR`,
       variableMeasured: publishedVariables,
     })
