@@ -726,6 +726,27 @@ export interface CmaPricing {
    * figure that could exceed the price it was printed beside.
    */
   sellerNet?: CmaSellerNet | null
+  /**
+   * RULE 27 (Matt 2026-10-08, "$716,000, the likely sale"). Present when the
+   * subject is on the market and `recommended` carries the opinion of value:
+   * the sale the weighted sales point to, read off the printed grid
+   * (lib/cma/on-market-opinion.ts). The §0 trace for the cover figure, and the
+   * list figure it replaced, for the admin view.
+   */
+  onMarketOpinion?: CmaOnMarketOpinion | null
+}
+
+export interface CmaOnMarketOpinion {
+  /** The cover figure: the weighted sale to the nearest thousand, inside the printed band. */
+  value: number
+  /** The stored weighted sale it was rounded from, whole dollars. */
+  weightedPrice: number
+  /** The render_args field `weightedPrice` was read from. */
+  field: 'pricing.predictedClose' | 'pricing.reconciliation.weightedPrice'
+  /** How many sales carry weight in it. */
+  sales: number | null
+  /** The list recommendation the opinion replaced. Admin trace; never printed. */
+  listRecommended: number
 }
 
 export interface CmaBroker {

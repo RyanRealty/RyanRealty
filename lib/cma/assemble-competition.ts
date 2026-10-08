@@ -123,6 +123,19 @@ export function salesSearchAndArea(args: {
   return { compSearch, compArea }
 }
 
+/**
+ * The grid the letter prints (render_args.comps): the priced sales with the
+ * review's verdicts applied and each sale's recorded concession attached. One
+ * function, so the build can read the on-market opinion of value off the same
+ * grid before it assembles the competition around it (rule 27).
+ */
+export function printedCompGrid(
+  comps: readonly CmaAdjustedComp[],
+  verdicts: readonly { listingKey?: string; tier?: string; reason?: string }[],
+) {
+  return attachCompConcessions(applyCompVerdicts(comps, verdicts))
+}
+
 export async function assembleCompetition(args: {
   subject: CmaSubject
   comps: readonly CmaAdjustedComp[]
@@ -133,7 +146,7 @@ export async function assembleCompetition(args: {
   generatedAtIso: string
 }) {
   const { subject } = args
-  const renderComps = attachCompConcessions(applyCompVerdicts(args.comps, args.verdicts))
+  const renderComps = printedCompGrid(args.comps, args.verdicts)
   const parcels = await resolveCmaParcels({ subject, comps: renderComps }).catch(() => null)
   const { compSearch, compArea } = salesSearchAndArea({
     subject,

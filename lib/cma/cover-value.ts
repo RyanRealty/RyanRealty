@@ -48,8 +48,10 @@ export function heldForMatt(p: Pick<CmaPricing, 'hold'> | null | undefined): boo
  * The label over the number on a home that is on the market today
  * (lib/cma/subject-on-market.ts). 3062 NW Kelly Hill, listed with another
  * brokerage, opened on "Our Recommended List Price for your home": a list
- * price we recommend to an owner who already has a listing agreement. The
- * figure is the same; it is stated as what it is, an opinion of value.
+ * price we recommend to an owner who already has a listing agreement. It is
+ * stated as what it is, an opinion of value, and since Matt's 2026-10-08
+ * ruling ("$716,000, the likely sale") the figure under it is the likely sale
+ * the weighted sales point to, not the list figure (lib/cma/on-market-opinion.ts).
  */
 export const COVER_ON_MARKET_HEADLINE = 'Our opinion of value'
 
@@ -245,7 +247,17 @@ export function rangeSpreadCauseSentence(
   if (light === 1) parts.push('one sale that carried too little weight to set an end')
   else if (light > 1) parts.push(`${countWord(light)} sales that carried too little weight to set an end`)
   if (trim === 1 && keptStreet) parts.push(`one sale at the ${keptStreet.asideEnd} end of the prices`)
-  else if (trim === 1) parts.push('one sale at the end of the prices so a single sale cannot set the range')
+  // One sale trimmed, no street sale kept: name the end it came off, the way
+  // the two-sale trim does. "One sale at the end of the prices so a single
+  // sale cannot set the range" read as a puzzle (reader review 2026-10-08).
+  else if (trim === 1) {
+    const end = oneTrimmedEnd(pricing)
+    parts.push(
+      end
+        ? `the ${end === 'high' ? 'highest' : 'lowest'} sale, so no single sale sets the range`
+        : 'one sale at one end of the prices, so no single sale sets the range',
+    )
+  }
   // The range rule sets aside one sale at each end ('trimmed-one-each-end').
   // "The sales at each end of the prices so one sale cannot set the range"
   // read as a puzzle (reader review 2026-10-08); it is the highest and the
@@ -273,6 +285,20 @@ export function rangeSpreadCauseSentence(
       : ''
   const street = keptStreet ? ` ${keptStreet.sentence}` : ''
   return `${spread}, and that is after setting aside ${joined}.${street}${stillCarries}`
+}
+
+/**
+ * The end a one-sale trim took its sale from, or null when the row cannot
+ * say. Read off `pricing.setAside`: the trim's own entries carry the pricer's
+ * "highest of" / "lowest of the adjusted sales" reason (lib/pricing/estimate.ts),
+ * and a row whose only set-aside sale is the trimmed one names its end.
+ */
+function oneTrimmedEnd(pricing: CmaPricing): 'high' | 'low' | null {
+  const aside = (pricing.setAside ?? []).filter((s) => s && (s.end === 'high' || s.end === 'low'))
+  const trimmed = aside.filter((s) => /^(highest|lowest) of the adjusted sales/i.test(s.reason ?? ''))
+  if (trimmed.length === 1) return trimmed[0]!.end
+  if (trimmed.length === 0 && aside.length === 1) return aside[0]!.end
+  return null
 }
 
 /**

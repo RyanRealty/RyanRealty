@@ -66,7 +66,7 @@ Each was started by a cloud agent with `docs/plans/cma-handoff/fix-brief.md`.
 
 | Branch | Ruling (Matt 2026-10-08) | Engine? |
 |---|---|---|
-| `fix/on-market-value` | On-market subject: the opinion of value is the likely sale the weighted sales point to, not the list figure. Kelly Hill becomes $716,000, not $733,000. Rule 27. | yes (on-market only) |
+| `fix/on-market-value` **MERGED** (`199bf68a6`) | On-market subject: the opinion of value is the likely sale the weighted sales point to, not the list figure. Kelly Hill becomes $716,000, not $733,000. Rule 27. | yes (on-market only) |
 | `fix/relist-clock` | Relisted or back-on-market homes use one clock, their last stretch. First ask comes from that stretch, and the row is labeled "after it last came on the market". The subject's first ask is the price in effect when it went Active. | wording/data |
 | `fix/plat-ground-facts` | A recorded addition or phase in the same neighborhood is the home's own subdivision everywhere, including the facts ladder, weights, room rule, pockets, anchor, date gate and review. Rule 24. | yes |
 
@@ -140,6 +140,11 @@ NODE_USE_ENV_PROXY=1 npm run cma:fleet -- --concurrency 4 \
    - The last ask was up only 6 days. The rec ($732,000) is $2,999 under it, and the failed-ask ceiling did not apply.
    - The subject is marketed "ready for a builder", but every comp is finished, and condition is not adjusted.
    - Matt should eyeball this one.
+
+6. On-market letters (from `fix/on-market-value`):
+   - **Opinion above the current ask.** Rule 3 never holds on-market origins. Examples: Kelly Hill $716,000 vs $699,999; cma-17171-chaparral $1,525,000 vs $1,225,000; cma-1617-nw-8th $799,000 vs $599,000. Recommended: no new hold, since rule 9 keeps every send with Matt.
+   - **Fallback.** When the grid cannot reproduce the weighted sale, the cover keeps the list figure under "Our opinion of value". This is 9 of 12 stored on-market rows, mostly old builds. Recommended: flag those for review.
+   - **Our own listings.** The on-market decision treats our own listings as on market too.
 
 ## Backlog (after the drafts ship)
 

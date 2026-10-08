@@ -1490,7 +1490,8 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
       : ''
   // On a letter held for Matt the cover number is under his review, not yet
   // the owner's price (reader review 2026-10-08).
-  const whose = heldForMatt(a.pricing) ? COVER_PRICE_PHRASE : 'your price'
+  // A home on the market gets an opinion of value, never "your price" (rule 27).
+  const whose = subjectOnMarket(a) ? 'this value' : heldForMatt(a.pricing) ? COVER_PRICE_PHRASE : 'your price'
   // On a cover the weights did not make (a rule 26 hold, a cover held to the
   // sale on the subject's street, or a held cover the failed-ask ceiling set)
   // the sales set the range, not the cover (lib/cma/sales-role.ts; reader
