@@ -118,7 +118,16 @@ type DryRun = {
    * the review grounds a price-tier cut on. `skipped` is the distinct sales the
    * line kept out (excluded_totals.price_tier). Null when there is no anchor.
    */
-  priceAnchor?: { ppsf: number; n: number; floor: number; ceiling: number; skipped: number } | null
+  priceAnchor?: {
+    ppsf: number
+    n: number
+    /** The level that held the median (lib/pricing/price-anchor.ts) and where, as the trace says it. */
+    level: string | null
+    where: string | null
+    floor: number
+    ceiling: number
+    skipped: number
+  } | null
   concessionSentence: string | null
   /** Same sentence over a MIN_COMPS-sized kept set (judge-trim simulation). */
   concessionSentenceTrimmed: string | null
@@ -472,6 +481,8 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
         ? {
             ppsf: anchorLine.anchor,
             n: selection.diagnostics.price_anchor.n,
+            level: selection.diagnostics.price_anchor.level ?? null,
+            where: selection.diagnostics.price_anchor.where ?? null,
             floor: anchorLine.floor,
             ceiling: anchorLine.ceiling,
             skipped: selection.diagnostics.excluded_totals?.price_tier ?? 0,
@@ -992,7 +1003,7 @@ async function main() {
     }
     if (r.priceAnchor) {
       console.log(
-        `   price anchor $${r.priceAnchor.ppsf}/sqft (n=${r.priceAnchor.n}) · line $${r.priceAnchor.floor} to $${r.priceAnchor.ceiling} · ${r.priceAnchor.skipped} sale(s) skipped on the line`,
+        `   price anchor $${r.priceAnchor.ppsf}/sqft (n=${r.priceAnchor.n}${r.priceAnchor.level ? `, ${r.priceAnchor.level} ${r.priceAnchor.where ?? ''}`.trimEnd() : ''}) · line $${r.priceAnchor.floor} to $${r.priceAnchor.ceiling} · ${r.priceAnchor.skipped} sale(s) skipped on the line`,
       )
     }
     if (r.comps.length) {

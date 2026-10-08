@@ -45,12 +45,15 @@ import {
   type PricingFactsCatchUp,
 } from '@/lib/data/pricing/facts'
 import { estimateClosePrice, pricingSaleToCmaComp } from '@/lib/pricing/estimate'
+import { anchorPlacePhrase } from '@/lib/pricing/price-anchor'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CompSelection } from '@/lib/cma/comps'
 import { diagnoseStarvation, emptyExclusions, factsStopReason, type FactsPathHold } from '@/lib/cma/comp-trace'
 import {
+  CUSTOM_FACTS_POOL_MONTHS,
   FACTS_STANDALONE_MIN,
   factsPoolCloseAfter,
+  ORDINARY_FACTS_POOL_MONTHS,
   LOCAL_POOL_RADIUS_MILES,
   PRICING_MIN_COMPS,
   PRICING_TARGET_COMPS,
@@ -313,7 +316,11 @@ export async function selectPricingComps(
       if (z !== undefined) x.zoning = z
     }
   }
-  const walked = walkPricingLadder(pricingSubject, sales, { asOf, cells })
+  const walked = walkPricingLadder(pricingSubject, sales, {
+    asOf,
+    cells,
+    anchorWindowMonths: customOrNew ? CUSTOM_FACTS_POOL_MONTHS : ORDINARY_FACTS_POOL_MONTHS,
+  })
   return { ...walked, trace: [...catchUpTrace, ...walked.trace], factsReady: true }
 }
 
@@ -502,7 +509,12 @@ export function matchToCompSelection(
         not_setting: r.notSetting,
       })),
       price_anchor: match.priceAnchor
-        ? { ppsf: Math.round(match.priceAnchor.ppsf), n: match.priceAnchor.n }
+        ? {
+            ppsf: Math.round(match.priceAnchor.ppsf),
+            n: match.priceAnchor.n,
+            level: match.priceAnchor.source,
+            where: anchorPlacePhrase(match.priceAnchor),
+          }
         : null,
       tiers_used: match.tiersUsed,
       reached_target: match.reachedTarget,
