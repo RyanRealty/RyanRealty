@@ -183,7 +183,13 @@ prices BPOs. Do not add a cap without asking Matt again. The five-sale floor (ru
 One table, FlexMLS style (`lib/cma/status-price-summary.ts`): List, Sold and
 $/sqft across the top, Low, Avg, Median and High down each status (Closed,
 Pending, Active, Expired), from the homes already on the letter. $/sqft is the
-sold price over living area once closed and the list price before. It replaced
+sold price less any recorded seller concession over living area once closed,
+and the list price before; the sales table's row reads "Sold $/sqft after
+concessions" whenever a sale on it carried a credit, and the caption over it
+says "net of seller concessions". The adjustment grid prints that credit as its
+own signed line, "Adjusted for seller concessions", straight under Sold for, so
+each column adds from Sold for to Sale price today and the net is the sum of
+the printed lines (`lib/cma/adjustment-grid-foots.test.ts`). It replaced
 two boards, one where list and sold shared a single set of columns and a
 separate "Dollars a square foot" board. A column that covers fewer homes than
 its status holds says so under the table. The locked contract is

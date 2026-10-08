@@ -14,6 +14,8 @@ import { currentAskLine, heldForMatt, heldUnderBand } from '@/lib/cma/cover-valu
 import { oneOutlierMakesTheSpan, tableAdjustedBand } from '@/lib/cma/cover-value'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import {
+  CONCESSION_ADJUSTMENT_ROW_LABEL,
+  CONCESSION_NOT_RECORDED_CELL,
   renderCompMatrixHtml,
   subjectDomDays,
   subjectListingFailed,
@@ -39,7 +41,7 @@ import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-o
 import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
 import { listCeiling } from '@/lib/cma/render-contract'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
-import { printedAdjustedPrice } from '@/lib/pricing/seller-net'
+import { concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
 import { newHomeRateParagraph } from '@/lib/cma/new-home-rate'
 import { resaleNeverOwnedParagraph } from '@/lib/cma/resale-never-owned'
@@ -536,15 +538,29 @@ function tableLead(input: { comps: CmaAdjustedComp[]; pricing: CmaPricing }): st
 }
 
 /**
- * What the concessions row is.
+ * What the concessions lines are.
  *
  * A recorded credit comes off that sale before date and size, the same number
- * the pricing walk uses. A sale that reported none still prints the line.
+ * the pricing walk uses, and the grid prints it as that move, signed, straight
+ * under Sold for. The caption says where to find it, so a reader adding the
+ * column up meets it (reader review, cma-2382-jackson: the footnote said the
+ * credit came off "in the adjustments" and no adjustment line showed it). A
+ * sale that reported none still prints the line. A sale with nothing on
+ * record says so, the convention the status table states, and is named only
+ * when the grid holds one.
  */
 function concessionsCaption(comps: readonly CmaAdjustedComp[]): string {
   if (comps.length === 0) return ''
+  const unrecorded = comps.some((c) => concessionOnSale(c) == null)
   return `<p class="small">${esc(
-    'Seller concessions are the amount the MLS recorded on each sale. A recorded credit comes off that sale in the adjustments. A sale that reported none shows none.',
+    [
+      'Seller concessions are the amount the MLS recorded on each sale.',
+      `In the adjustments, a recorded credit comes off the sale price first, on the ${CONCESSION_ADJUSTMENT_ROW_LABEL} line, before date and size.`,
+      'A sale that reported none shows none.',
+      unrecorded ? `A sale with nothing on record shows ${CONCESSION_NOT_RECORDED_CELL}, and nothing comes off it.` : '',
+    ]
+      .filter(Boolean)
+      .join(' '),
   )}</p>`
 }
 
