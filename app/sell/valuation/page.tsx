@@ -138,6 +138,7 @@ export default function SellValuationPage() {
               body: 'The listing fee is 3% of the sale price. Photos in 48 hours, on the MLS in 5 to 7 business days, and a written report every week.',
             },
             { label: 'See the listing plan', href: `${ROUTE_PATH}#listing-plan` },
+            { label: "See what you'd net", href: '/tools/seller-net-sheet' },
             { label: 'Value my home', href: VALUATION_FORM_ANCHOR },
             { label: 'Talk to a broker', href: '/contact?inquiry=Selling' },
             { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
