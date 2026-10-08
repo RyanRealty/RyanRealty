@@ -74,7 +74,7 @@ import { getCmaSubdivisionHistory } from '@/lib/data/cma/builderReads'
 import { auditCma } from '@/lib/cma/audit'
 import { evaluateAccuracyContract } from '@/lib/cma/contract'
 import { evaluateLetterConsistencyContract } from '@/lib/cma/letter-consistency'
-import { printedAddressesOf } from '@/lib/cma/street-context'
+import { printedAddressesOf, printedPlacesOf } from '@/lib/cma/street-context'
 import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
 import { getListingPhotosCount } from '@/lib/data/cma/builderReads'
 import { getExpiredOwnershipSince } from '@/lib/data/prospecting/get'
@@ -1567,6 +1567,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       expiredAddresses: (expiredPeers?.peers ?? []).map((peer) => peer.address),
       // A name word inside an address the letter prints is the street, not the owner.
       printedAddresses: printedAddressesOf(renderArgs),
+      // A name word inside a place the letter printed from its data (a subdivision, the comp area) is the place.
+      printedPlaces: printedPlacesOf(renderArgs),
       place: {
         compArea,
         propertySubType: subject.propertySubType,

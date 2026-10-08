@@ -232,6 +232,68 @@ export function printedAddressesOf(renderArgs: unknown): string[] {
   return [...found]
 }
 
+/**
+ * The place-name keys the render args use: the subdivision and plat of every
+ * home (subject, comps, rivals, unsold peers), and the neighborhood, community
+ * and city names. An allowlist, like ADDRESS_KEY: a key added later is not
+ * trusted until it is named here.
+ */
+const PLACE_KEY =
+  /^(?:subdivision|subdivisionName|subdivisions|platName|neighborhood|neighborhoodName|community|communityName|placeName|areaName|geoLabel|city|cityName)$/i
+/** The comp area's own names: `compArea.names`, `namesWithoutPlat`, and the street rung's `street.names`. */
+const AREA_NAME_KEY = /^(?:names|namesWithoutPlat)$/
+const MAX_PLACES = 500
+
+/**
+ * Every place name the document can print, read off its render args: the
+ * subdivision and plat name of each printed home, the comp area's names, the
+ * neighborhood, community and city names, and the street part of each printed
+ * address ("Albany Ave" from "1665 NW Albany Ave, Bend"). The owner-name check
+ * reads these to tell a place ("Miller Heights") from a name ("the Miller
+ * family"). A party's subtree (the client, an owner) is never read.
+ *
+ * Over-collecting clears little: a place clears a name word only inside that
+ * exact phrase where the document prints it, and only a phrase that carries a
+ * word that is not the owner's (letter-privacy.ts decides that).
+ */
+export function printedPlacesOf(renderArgs: unknown): string[] {
+  const found = new Set<string>()
+  const seen = new WeakSet<object>()
+  const take = (value: unknown) => {
+    if (typeof value === 'string') {
+      const place = value.trim()
+      if (place && found.size < MAX_PLACES) found.add(place)
+    } else if (Array.isArray(value)) {
+      for (const item of value) take(item)
+    }
+  }
+  const takeStreet = (value: unknown) => {
+    if (typeof value === 'string') {
+      const street = /^\d{1,6}[A-Za-z]?\s+(.+)$/.exec(value.split(',')[0]?.trim() ?? '')?.[1]
+      if (street) take(street)
+    } else if (Array.isArray(value)) {
+      for (const item of value) takeStreet(item)
+    }
+  }
+  const walk = (node: unknown, depth: number, inArea: boolean) => {
+    if (depth > MAX_DEPTH || node === null || typeof node !== 'object' || seen.has(node)) return
+    seen.add(node)
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item, depth + 1, inArea)
+      return
+    }
+    for (const [key, value] of Object.entries(node)) {
+      if (PARTY_KEY.test(key)) continue
+      if (PLACE_KEY.test(key)) take(value)
+      if (ADDRESS_KEY.test(key)) takeStreet(value)
+      if (inArea && AREA_NAME_KEY.test(key)) take(value)
+      walk(value, depth + 1, inArea || /^compArea$/i.test(key))
+    }
+  }
+  walk(renderArgs, 0, false)
+  return [...found]
+}
+
 /** Matchers for every address the document prints. Duplicates and unreadable entries drop out. */
 export function printedAddressMatchers(addresses: readonly (string | null | undefined)[] | null | undefined): RegExp[] {
   const seen = new Set<string>()
