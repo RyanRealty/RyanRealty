@@ -68,7 +68,7 @@ Each was started by a cloud agent with `docs/plans/cma-handoff/fix-brief.md`.
 |---|---|---|
 | `fix/on-market-value` **MERGED** (`199bf68a6`) | On-market subject: the opinion of value is the likely sale the weighted sales point to, not the list figure. Kelly Hill becomes $716,000, not $733,000. Rule 27. | yes (on-market only) |
 | `fix/relist-clock` **MERGED** (`32077999a`, SKILL rule 28) | Relisted or back-on-market homes use one clock, their last stretch. First ask comes from that stretch, and the row is labeled "after it last came on the market". The subject's first ask is the price in effect when it went Active. | wording/data |
-| `fix/plat-ground-facts` | A recorded addition or phase in the same neighborhood is the home's own subdivision everywhere, including the facts ladder, weights, room rule, pockets, anchor, date gate and review. Rule 24. | yes |
+| `fix/plat-ground-facts` (pushed `a9493135c`; seat-order follow-up in progress) | A recorded addition or phase in the same neighborhood is the home's own subdivision everywhere, including the facts ladder, weights, room rule, pockets, anchor, date gate and review. Rule 24. | yes |
 
 ## Fleet (rule 25)
 
@@ -128,6 +128,8 @@ NODE_USE_ENV_PROXY=1 npm run cma:fleet -- --concurrency 4 \
 - **Rule 26:** the held letter says the home "did not sell at its last ask", never "buyers passed".
 - **Listing days:** relists use the last stretch, labeled.
 - **Rule 24:** additions in the same neighborhood are own plat everywhere.
+  - Whole communities in the MLS alias map (NorthWest Crossing, Tetherow, Caldera Springs phases) count as own plat too: "Yes, whole community".
+  - Inside own ground, own-street and exact-plat sales seat first, then additions/family/alias plats, newest first within each group: "Own street and exact plat first". 20617 Foxborough keeps 20624 Foxborough Ln.
 
 ## Open questions for Matt (not yet asked or answered)
 
