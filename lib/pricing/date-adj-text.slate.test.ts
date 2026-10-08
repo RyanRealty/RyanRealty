@@ -12,7 +12,7 @@ describe('date-adjustment text vs math: Slate and Oakside', () => {
       { address: '61234 Slate Rolen', closePrice: 621_000, timeAdjustment: -27_000, timeAdjustedPrice: 594_000 },
       { address: '100 Other', closePrice: 620_000, timeAdjustment: 0, timeAdjustedPrice: 620_000 },
     ])
-    expect(rolen).toMatch(/61234 Slate Rolen moved -4\.3 percent, from \$621,000 to \$594,000/)
+    expect(rolen).toMatch(/61234 Slate Rolen moved -4\.3 percent for date, from \$621,000 to \$594,000/)
     expect(rolen).not.toMatch(/not applied|stays on its own|no date adjustment/i)
     expect(rolen).not.toMatch(/[—–]/)
 
@@ -49,6 +49,42 @@ describe('date-adjustment text vs math: Slate and Oakside', () => {
     })
     expect(basis.sentence).toMatch(/61234 Slate Rolen moved -4\.3 percent/)
     expect(basis.sentence).not.toMatch(/Each sale stays on its own/)
+  })
+
+  it('2382 Jackson: every "moved X percent, from A to B" is true of A and B', () => {
+    // The stored pairs from cma-2382-jackson (2026-10-07): the date move runs
+    // from the price after a recorded seller concession, and timeAdjustedPrice
+    // is that start plus the move. The old line printed the move over the
+    // close and ran it from the close: "2266 Jackson moved -8.1 percent, from
+    // $690,000 to $619,448" ($690,000 to $619,448 is -10.2 percent) and
+    // "2224 Indigo moved -1.4 percent, from $503,000 to $484,866" (-3.6).
+    const moves = [
+      { address: '2224 Indigo', closePrice: 503_000, timeAdjustment: -6_884, timeAdjustedPrice: 484_866 },
+      { address: '2254 Indigo', closePrice: 670_000, timeAdjustment: -9_380, timeAdjustedPrice: 660_620 },
+      { address: '2266 Jackson', closePrice: 690_000, timeAdjustment: -55_552, timeAdjustedPrice: 619_448 },
+      { address: '2225 Indigo', closePrice: 545_000, timeAdjustment: -6_431, timeAdjustedPrice: 538_569 },
+      { address: '2591 Purcell', closePrice: 575_000, timeAdjustment: -35_247, timeAdjustedPrice: 539_753 },
+    ]
+    const line = describeAppliedDateAdjustments(moves)!
+    expect(line).toContain(
+      '2266 Jackson moved -8.2 percent for date, from $675,000 to $619,448, after $15,000 in seller concessions came off its $690,000 sale',
+    )
+    expect(line).toContain(
+      '2224 Indigo moved -1.4 percent for date, from $491,750 to $484,866, after $11,250 in seller concessions came off its $503,000 sale',
+    )
+    expect(line).toContain('2254 Indigo moved -1.4 percent for date, from $670,000 to $660,620')
+    expect(line).not.toContain('from $690,000 to $619,448')
+    expect(line).not.toContain('from $503,000 to $484,866')
+    expect(line).not.toContain('-8.1 percent')
+
+    // Every printed pair recomputes to its printed percent.
+    const pairs = [...line.matchAll(/moved (-?[\d.]+) percent for date, from \$([\d,]+) to \$([\d,]+)/g)]
+    expect(pairs).toHaveLength(5)
+    for (const [, pct, from, to] of pairs) {
+      const a = Number(from!.replaceAll(',', ''))
+      const b = Number(to!.replaceAll(',', ''))
+      expect((((b - a) / a) * 100).toFixed(1)).toBe(pct)
+    }
   })
 
   it('Slate shape: the floor does not lift above a meaningful same-subdivision adjusted sale', () => {

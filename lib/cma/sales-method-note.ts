@@ -27,14 +27,25 @@
  *    what it is for.
  *
  * Every number prints exactly as stored, formatted the way the pricing unit
- * formatted it. A basis this does not know (the exclusive pocket, the
- * year-over-year fallback) prints its stored sentence as written.
+ * formatted it. A basis this does not know (the year-over-year fallback)
+ * prints its stored sentence as written.
+ *
+ * THE EXCLUSIVE POCKET IS COMPOSED, NEVER PRINTED AS STORED (reader review,
+ * 2382 Jackson, 2026-10-07). Its stored sentence is an engine note: "These
+ * sales are the exclusive pocket ... The Bend city index is not used to pump
+ * prices. Size and story class do not adjust.", and the measure line after it
+ * ("That index is sold and last-ask prices in this exclusive pocket") was not
+ * even true of the move. The homeowner gets one plain sentence on how the
+ * dates were moved, counted off the grid; the note stays in build_summary and
+ * citations.
  */
 
 import { cleanText, countWord, int } from '@/lib/cma/render-blocks'
 import { sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
 import { FLAT_LOCAL_DATE_SENTENCE } from '@/lib/cma/flat-date-story'
 import { realSubdivisionName } from '@/lib/pricing/classes'
+import { TIME_ADJUSTMENT_BASIS_POCKET } from '@/lib/pricing/exclusive-pocket-date-adj'
+import { concessionOffClose } from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const INDEX_BASIS = 'city-monthly-index-trailing-3'
@@ -198,6 +209,35 @@ function indexShapeSentence(ta: Record<string, unknown>): string {
   return `${over} it ${move > 0 ? 'rose' : 'fell'} ${Math.abs(move).toFixed(1)} percent.`
 }
 
+/** The pocket's own engine note, on rows stored before the basis was stamped. */
+const POCKET_NOTE = /^these sales are the exclusive pocket\b/i
+
+/**
+ * The exclusive pocket's date sentence, one sentence, off the grid.
+ *
+ * The pocket walks the same city figure the index basis walks, sale by sale,
+ * but only down: a sale whose month sits under today's level keeps its own
+ * price (lib/pricing/exclusive-pocket-date-adj.ts applyExclusivePocketDateAdj).
+ * A grid that moved a sale up is not that path, so it gets the plain counted
+ * sentence instead of a claim about falling prices.
+ */
+function pocketDateSentence(subject: Pick<CmaSubject, 'city'>, comps: readonly CmaAdjustedComp[]): string {
+  const total = comps.length
+  const down = comps.filter((c) => (c.timeAdjustment ?? 0) <= -1).length
+  const up = comps.filter((c) => (c.timeAdjustment ?? 0) >= 1).length
+  if (total === 0 || (down === 0 && up === 0)) return 'None of these sales is moved for the month it sold.'
+  const city = cleanText(subject.city ?? null)
+  const whose = city ? `${city}'s` : "this city's"
+  if (up > 0) {
+    return `Each sale is moved by how much ${whose} median price per square foot changed between the month it sold and the last three full months. ${dateMovesSentence(comps, {})}`.trim()
+  }
+  if (down === total) {
+    return `To bring each sale to today's market, we moved it down by how much ${whose} median price per square foot fell between the month it sold and the last three full months.`
+  }
+  const rest = total - down
+  return `To bring the sales to today's market, we moved ${countWord(down)} of the ${countWord(total)} down by how much ${whose} median price per square foot fell between the month each sold and the last three full months. The other ${countWord(rest)} ${rest === 1 ? 'is' : 'are'} not moved.`
+}
+
 /** The date paragraph, or the stored sentence when the basis is not the city index. */
 function dateNote(
   subject: Pick<CmaSubject, 'city'>,
@@ -208,6 +248,9 @@ function dateNote(
   if (!ta) return []
   const stored = str(ta.sentence)
   if (ta.sentence === FLAT_LOCAL_DATE_SENTENCE) return [FLAT_LOCAL_DATE_SENTENCE]
+  if (ta.basis === TIME_ADJUSTMENT_BASIS_POCKET || (stored != null && POCKET_NOTE.test(stored))) {
+    return [pocketDateSentence(subject, comps)]
+  }
   const n = num(ta.n)
   const anyMoved = comps.some((c) => Math.abs(c.timeAdjustment ?? 0) >= 1)
   if (ta.basis === INDEX_BASIS && n != null && n > 0 && comps.length > 0) {
@@ -228,6 +271,27 @@ function dateNote(
   return measure && !stored.toLowerCase().includes(measure.toLowerCase())
     ? [stored, `That index is ${measure}.`]
     : [stored]
+}
+
+// ── what the printed adjustments were ───────────────────────────────────────
+
+/**
+ * "date and seller concessions": the adjustment lines that moved at least one
+ * of these sales by a dollar, in the order the weight sentence names them
+ * (lib/pricing/reconciliation.ts adjustmentClaim). Null when none moved.
+ *
+ * A pocket letter priced with no size line printed "before adjusting for date
+ * and size" beside an engine note that said size does not adjust (reader
+ * review, 2382 Jackson, 2026-10-07). The phrase is read off the sales, so it
+ * names what the letter was actually priced on.
+ */
+export function adjustedForPhrase(comps: readonly CmaAdjustedComp[]): string | null {
+  const parts: string[] = []
+  if (comps.some((c) => Math.abs(c.timeAdjustment ?? 0) >= 1)) parts.push('date')
+  if (comps.some((c) => Math.abs(c.sizeAdjustment ?? 0) >= 1)) parts.push('size')
+  if (comps.some((c) => Math.abs(c.storyAdjustment ?? 0) >= 1)) parts.push('story')
+  if (comps.some((c) => concessionOffClose(c) >= 1)) parts.push('seller concessions')
+  return parts.length > 0 ? joinAnd(parts) : null
 }
 
 // ── the sale-to-ask share ───────────────────────────────────────────────────

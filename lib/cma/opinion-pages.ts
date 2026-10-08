@@ -95,7 +95,7 @@ import type { LikeHomeCredit } from '@/lib/cma/like-home-credits'
 import { sellerCostLines } from '@/lib/pricing/seller-net'
 import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import { netAtExpectedSale, netCreditsSentence, type NetTwoColumns } from '@/lib/cma/expected-sale'
-import { SALES_METHOD_LABEL, salesMethodSentences } from '@/lib/cma/sales-method-note'
+import { SALES_METHOD_LABEL, adjustedForPhrase, salesMethodSentences } from '@/lib/cma/sales-method-note'
 import type { CmaBroker, CmaClient, CmaSellerNetLine } from '@/lib/cma/types'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { CmaExtras } from '@/lib/cma/extras'
@@ -1261,16 +1261,21 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
   // pair is the one the chapter of the answer states, rounded the same way, so
   // a reader meets both halves of "homes like yours" in one line.
   const worth = worthRangeRounded(a.pricing, a.comps)
+  // THE ADJUSTMENTS THE LETTER WAS PRICED ON, NAMED OFF THE SALES (reader
+  // review, 2382 Jackson, 2026-10-07): a pocket letter with no size line
+  // printed "before adjusting for date and size".
+  const adjustedFor = adjustedForPhrase(kept)
+  const supported = adjustedFor ? '; adjusted, they support' : '; they support'
   const adjusted =
     worth.low > 0 && worth.high > 0
       ? worth.low === worth.high
-        ? `; adjusted, they support ${usd(worth.low)}`
-        : `; adjusted, they support ${usd(worth.low)} to ${usd(worth.high)}`
+        ? `${supported} ${usd(worth.low)}`
+        : `${supported} ${usd(worth.low)} to ${usd(worth.high)}`
       : ''
   return `<p class="chart-read">${esc(
     `The ${countWord(keptSaleCount(a.pricing, a.comps))} sales behind your price sold for ${usd(
       Math.min(...closes),
-    )} to ${usd(Math.max(...closes))} before adjusting for date and size${adjusted}.`,
+    )} to ${usd(Math.max(...closes))}${adjustedFor ? ` before adjusting for ${adjustedFor}` : ''}${adjusted}.`,
   )}</p>`
 }
 
