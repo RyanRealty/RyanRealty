@@ -96,6 +96,7 @@ import {
 } from './_v3/city-insight'
 import { cityHomesRows } from './_v3/city-homes'
 import { geoTitle } from './_v3/geo-title'
+import { SALE_LED_META_PATHS, saleLedGeoDescription } from './_v3/geo-description'
 import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string[] }>> {
@@ -388,14 +389,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!data.publishes) notFound()
 
   const { geoName, citySlug } = data.geo
+  // /housing-market/bend leads its snippet with what homes sold for (GSC brief
+  // 2026-10-08 §6.1); every other geo keeps the list-led description.
+  const saleLedDescription = SALE_LED_META_PATHS.has(data.canonicalPath)
+    ? saleLedGeoDescription({
+        geoName,
+        datasetVariables: data.datasetVariables,
+        yoyMedianPrice: data.publicPace.yoyMedian,
+      })
+    : null
   return pageMetadata({
     title: geoTitle({ geoName, datasetVariables: data.datasetVariables }),
-    description: geoDescription({
-      geoName,
-      datasetVariables: data.datasetVariables,
-      verdictLabel: data.verdict.label,
-      insightClause: data.insightClause,
-    }),
+    description:
+      saleLedDescription ??
+      geoDescription({
+        geoName,
+        datasetVariables: data.datasetVariables,
+        verdictLabel: data.verdict.label,
+        insightClause: data.insightClause,
+      }),
     path: data.canonicalPath,
     keywords: [
       `${geoName} housing market`,

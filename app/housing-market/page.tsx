@@ -158,13 +158,15 @@ export async function generateMetadata(): Promise<Metadata> {
   const verdictMeta = marketVerdict(mosRawMeta)
   const supplyClause =
     mosRawMeta != null && verdictMeta.kind !== 'unknown'
-      ? `${formatMonthsOfSupply(mosRawMeta)} months of supply — ${verdictMeta.label}. `
+      ? `${formatMonthsOfSupply(mosRawMeta)} months of supply, a ${verdictMeta.label}. `
       : ''
   // SITE-178: this URL is the one indexable regional housing-market page.
   // /housing-market/central-oregon is the report twin (noindex, follow).
-  // Title literal is locked by ci:seo-shell.
+  // Title literal is locked by ci:seo-shell and data/seo/decisions.json
+  // "market-hub-title" (Matt 2026-10-08: adds "prices by city" for the
+  // price and city queries; 46 characters, the TITLE_BUDGET).
   return pageMetadata({
-    title: 'Central Oregon Housing Market',
+    title: 'Central Oregon Housing Market & Prices by City',
     description:
       `${supplyClause}${
         median ? `Median list ${median}. ` : ''
