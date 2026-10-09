@@ -55,7 +55,7 @@ Nothing has been sent to any owner. Do not rebuild the ten drafts until Matt app
 
 ## Where things are (2026-10-08 ~23:30 UTC)
 
-- **All four ruling fixes are merged** on the branch at `3b1c7b036`: plat-identity, wording 3 and 4, on-market-value, relist-clock and plat-ground-facts with seat order. The final fleet score on `3b1c7b036` was started 23:2x UTC in the cloud against `docs/plans/cma-handoff/fleet-baseline-2026-10-08.json`. If no result is recorded below, rerun it (see Fleet), show Matt the result, and land on his yes.
+- **All four ruling fixes are merged** on the branch at `3b1c7b036`: plat-identity, wording 3 and 4, on-market-value, relist-clock and plat-ground-facts with seat order. The final fleet score on `3b1c7b036` was started 23:2x UTC in the cloud against `docs/plans/cma-handoff/fleet-baseline-2026-10-08.json`. If no result is recorded below, rerun it (see Fleet), show Matt the result, and on his yes open a PR to `main`; Matt merges.
 
 ### Earlier state
 

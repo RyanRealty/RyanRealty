@@ -813,7 +813,7 @@ their market figures.
 
 - The main checkout often carries another session's uncommitted work. If a pre-commit hook fails on
   files you did not touch, create a clean worktree off `origin/main`, do the work there, commit
-  (hooks run clean), `npm run push`, then `git push origin HEAD:main` and remove the worktree.
+  (hooks run clean), `npm run push` the branch, then open a PR to `main`; Matt merges. After he merges, remove the worktree.
 - `npm run push` runs gates + lint + stamps a marker before the SSH push. If it fails on
   `ci:process-canon`, someone landed unregistered plan docs — register them in
   `docs/DEVELOPMENT_PROCESS.md` "Registered plan documents" rather than bypassing.

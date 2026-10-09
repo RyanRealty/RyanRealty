@@ -126,6 +126,7 @@
     "ci:handoff-current",
     "ci:process-canon",
     "ci:claude-canon",
+    "ci:core-rules-prefix",
     "ci:loop-skills-canon"
   ],
   "path": {
