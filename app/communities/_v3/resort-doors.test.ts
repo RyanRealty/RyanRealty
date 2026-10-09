@@ -29,16 +29,17 @@ describe('resortQuietItems', () => {
 describe('place follows from a master-plan', () => {
   // SITE-183 / SITE-182: the area twin (/homes-for-sale/bend/tetherow) 301s
   // onto the community page, so the browse door is the registry city's
-  // search. Tetherow has no leftover-HUD market report, so Market is the city.
+  // search. /housing-market/bend/tetherow 301s to the community page (no
+  // report), so Market is the city report.
   it('Tetherow browses its city and Market links the city report', () => {
     const links = getPlaceLinks({ type: 'community', slug: 'tetherow', citySlug: 'bend' })
     expect(links.browseUrl).toBe('/homes-for-sale/bend')
     expect(links.marketUrl).toBe('/housing-market/bend')
   })
 
-  it('Caldera Springs browses its city and Market links the city report', () => {
+  it('Caldera Springs browses its city and Market keeps the Caldera report (it publishes)', () => {
     const links = getPlaceLinks({ type: 'community', slug: 'caldera-springs', citySlug: 'sunriver' })
     expect(links.browseUrl).toBe('/homes-for-sale/sunriver')
-    expect(links.marketUrl).toBe('/housing-market/sunriver')
+    expect(links.marketUrl).toBe('/housing-market/sunriver/caldera-springs')
   })
 })
