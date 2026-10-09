@@ -105,14 +105,6 @@ const ITEMS: V3QuietItem[] = [
   },
   {
     kind: 'prose',
-    term: 'Google Signals (demographics and cross-device measurement)',
-    body: [
-      'We use Google Signals as part of Google Analytics 4. When you are signed in to your Google account and have turned on Ads Personalization in your Google settings, Google may associate aggregate demographic data (age range, gender, general interest categories) and cross-device activity with the visit data we collect. We never see your individual Google account information. We only see aggregate reports such as the age and interest breakdown of our site visitors.',
-      'You can control whether Google Signals applies to your visit at adssettings.google.com by turning off Ads Personalization. You can also opt out of Google Analytics entirely by installing the Google Analytics Opt-out Browser Add-on.',
-    ],
-  },
-  {
-    kind: 'prose',
     term: 'Cookies',
     body: [
       'Essential: sign-in session, cookie-consent choice. Required for the site to work.',
