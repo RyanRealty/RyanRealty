@@ -7,6 +7,7 @@ import {
   GA4_EVENT_PARAMS,
   GA4_PARAMS_KEY,
   ga4BrowserEventTriggerRegex,
+  ga4ListingKey,
   ga4ParamsFrom,
   pushDataLayerEvent,
 } from './ga4-browser-events'
@@ -64,6 +65,32 @@ describe('ga4ParamsFrom', () => {
     expect(ga4ParamsFrom({ section_id: 'a', section: 'b' })).toEqual({ section: 'b' })
     expect(ga4ParamsFrom({ section: 'b', section_id: 'a' })).toEqual({ section: 'b' })
     expect(ga4ParamsFrom({ cta_label: 'Call', cta_context: 'hero' })).toEqual({ cta: 'Call', cta_location: 'hero' })
+  })
+
+  it('keeps a numeric listing key as text for GA4 with the lk_ prefix (no GTM change)', () => {
+    const key = '20251020154621696143598238'
+    expect(ga4ParamsFrom({ listing_key: key })).toEqual({ listing_key: `lk_${key}` })
+    expect(ga4ParamsFrom({ listing_id: ` ${key} ` })).toEqual({ listing_key: `lk_${key}` })
+    expect(ga4ParamsFrom({ listing_key: 220215761 })).toEqual({ listing_key: 'lk_220215761' })
+    // Already text to GA4: left alone.
+    expect(ga4ParamsFrom({ listing_key: 'L1' })).toEqual({ listing_key: 'L1' })
+    expect(ga4ParamsFrom({ listing_key: '  ' })).toEqual({})
+    expect(ga4ListingKey('1e5')).toBe('lk_1e5')
+    expect(ga4ListingKey('mls-123')).toBe('mls-123')
+  })
+
+  it('prefixes only the GA4 copy: the flat dataLayer key keeps the bare listing key', () => {
+    const g = globalThis as unknown as { window?: { dataLayer?: unknown[] } }
+    const prev = g.window
+    g.window = { dataLayer: [] }
+    try {
+      pushDataLayerEvent('view_listing', { listing_key: '20260331173119587000000000' })
+      const pushed = g.window.dataLayer?.[1] as Record<string, unknown>
+      expect(pushed.listing_key).toBe('20260331173119587000000000')
+      expect((pushed.ga4_params as Record<string, unknown>).listing_key).toBe('lk_20260331173119587000000000')
+    } finally {
+      g.window = prev
+    }
   })
 
   it('drops empty, non-finite and object values and caps strings at 100 characters', () => {
