@@ -7,7 +7,10 @@
  * Pure: static sets and committed JSON only, no DB.
  */
 import { CENTRAL_OREGON_CITY_SLUGS } from '@/lib/central-oregon'
-import { CORE_COMMUNITY_MARKET_PATHS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
+import {
+  UNPUBLISHED_RESORT_MARKET_SLUGS,
+  communityMarketPublishes,
+} from '@/app/housing-market/[...slug]/_v3/geo-constants'
 import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/bend-neighborhood-districts'
 
 /** Real /housing-market/<segment> routes that are not a place. */
@@ -40,9 +43,11 @@ function decodeSegment(raw: string): string {
  * null when this is not a geo market path (hub, reports, history, ...).
  *
  * Valid in-market city: pass. Out-of-market town: 308 /oregon/<town> (same
- * as /cities). Two-segment: pass only when CORE_COMMUNITY_MARKET_PATHS
- * names that exact URL (the committed leftover-HUD published set). Unknown
- * plats 404: leftoverGeo is never subdivision, so those pages never publish.
+ * as /cities). Two-segment: pass when communityMarketPublishes (a resort
+ * slug whose report publishes); a resort with no report 308s to its
+ * /communities page; anything else 404s, because a non-resort slug resolves
+ * at subdivision grain and never publishes. Non-canonical city/resort pairs
+ * are hopped earlier by resolvePreRenderHop.
  */
 export function resolveHousingMarketPath(pathname: string): GeoPathDecision | null {
   const deep = pathname.match(/^\/housing-market\/([^/]+)\/([^/]+)\/(.+)$/)
@@ -63,8 +68,10 @@ export function resolveHousingMarketPath(pathname: string): GeoPathDecision | nu
   if (!CENTRAL_OREGON_CITY_SLUGS.has(first)) {
     return { kind: 'redirect', destination: `/oregon/${encodeURIComponent(first)}`, status: 308 }
   }
-  const published = CORE_COMMUNITY_MARKET_PATHS[second]
-  if (published === `/housing-market/${first}/${second}`) return { kind: 'pass' }
+  if (communityMarketPublishes(second)) return { kind: 'pass' }
+  if (UNPUBLISHED_RESORT_MARKET_SLUGS.has(second)) {
+    return { kind: 'redirect', destination: `/communities/${encodeURIComponent(second)}`, status: 308 }
+  }
   return { kind: 'not-found' }
 }
 

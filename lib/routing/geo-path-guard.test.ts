@@ -11,6 +11,17 @@ describe('resolveHousingMarketPath', () => {
   it('passes a published community-grain report', () => {
     expect(resolveHousingMarketPath('/housing-market/sisters/black-butte-ranch')).toEqual({ kind: 'pass' })
     expect(resolveHousingMarketPath('/housing-market/redmond/eagle-crest')).toEqual({ kind: 'pass' })
+    expect(resolveHousingMarketPath('/housing-market/bend/broken-top')).toEqual({ kind: 'pass' })
+    expect(resolveHousingMarketPath('/housing-market/bend/northwest-crossing')).toEqual({ kind: 'pass' })
+    expect(resolveHousingMarketPath('/housing-market/sunriver/crosswater')).toEqual({ kind: 'pass' })
+  })
+
+  it('308s a resort with no published report to its community page', () => {
+    expect(resolveHousingMarketPath('/housing-market/bend/vandevert-ranch')).toEqual({
+      kind: 'redirect',
+      destination: '/communities/vandevert-ranch',
+      status: 308,
+    })
   })
 
   it('404s an unknown plat under an in-market city', () => {
