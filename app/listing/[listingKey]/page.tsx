@@ -69,7 +69,7 @@ import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
 import { DescriptionBlock } from '@/components/site/listing-detail/DescriptionBlock'
 import { GoverningDocumentsBlock } from '@/components/site/listing-detail/GoverningDocumentsBlock'
 import { getPlaceDocumentsForListing } from '@/lib/data/places/getPlaceDocumentsForListing'
-import { MortgageCalculator } from '@/components/site/listing-detail/MortgageCalculator'
+import dynamic from 'next/dynamic'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { buildListingAtlas } from './_v3/listing-atlas'
 import { listingAtlasHeadline } from '@/lib/listing/listing-place-market'
@@ -83,6 +83,7 @@ import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-trut
 import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
 import { ListingSimilarStrip } from '@/components/site/listing-detail/ListingSimilarStrip'
 import {
+  listingSimilarActive,
   listingSimilarDedupe,
   listingSimilarInPlace,
   listingSimilarRail,
@@ -125,7 +126,15 @@ import {
   V3PlaceIndex,
   v3Text,
 } from '@/components/site/v3'
-import { basemapForRegions } from '@/lib/geo/basemap-source'
+import { basemapFrameForRegions } from '@/lib/geo/basemap-source'
+import { deferredAtlasProps } from '@/lib/atlas/atlas-deferred'
+import {
+  pickPriceCtaListing,
+  slimListingHistory,
+  slimListingMedia,
+  slimListingReviews,
+  slimPublicBroker,
+} from './_v3/listing-client-payload'
 
 void _PhotoGalleryLightboxImport
 void _ListingSaveButtonImport
@@ -134,6 +143,11 @@ void _TextMattCTAImport
 void _V3WorkWithUsImport
 void ListingVideoEmbed
 void V3ListingRow
+
+const MortgageCalculator = dynamic(
+  () =>
+    import('@/components/site/listing-detail/MortgageCalculator').then((m) => m.MortgageCalculator),
+)
 
 /**
  * One house. PAGE_INVENTORY listing (house URL), 13 rows, Zillow Showcase to beat.
@@ -441,7 +455,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           )
         : Promise.resolve([]),
       withTimeoutFallback(getListingDetailOpenHouses(listingKey), [], 3000, 'listing:open-houses'),
-      withTimeoutFallback(getReviews(50), null, 3000, 'listing:reviews'),
+      withTimeoutFallback(getReviews(8), null, 3000, 'listing:reviews'),
       withTimeoutFallback(getCalculatorDefaults(), null, 3000, 'listing:calcDefaults'),
       // SITE-06: how a price cut behaves in THIS listing's city, re-pulled per
       // city, pinned to a 12-month window. Null when nothing publishes honestly
@@ -517,11 +531,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
         ...p,
         url: listingRowPhotoSrc(p.url, LISTING_FIELD_LEAD_PHOTO_SIZE),
       }))
-  const listingWithPhotos = {
-    ...listing,
-    photos: flightPhotos,
-    photoUrl: flightPhotos[0]?.url ?? listing.photoUrl,
-  }
+  const listingWithPhotos = pickPriceCtaListing(listing)
 
   // SITE-21. relatedHomes.nearby is the only ACTIVE-only pool: fetchNearbyTiles
   // queries status 'active', while relatedHomes.similar hydrates the similar MV
@@ -536,16 +546,19 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     placeContext.neighborhood?.label,
     listing.subdivisionName,
   ].filter((n): n is string => !!n && n !== 'N/A')
-  const similarBase = offMarket
-    ? relatedHomes.nearby
-    : relatedHomes.nearby.length > 0
+  const similarBase = listingSimilarActive(
+    offMarket
       ? relatedHomes.nearby
-      : [...relatedHomes.similar, ...relatedHomes.primary]
+      : relatedHomes.nearby.length > 0
+        ? relatedHomes.nearby
+        : [...relatedHomes.similar, ...relatedHomes.primary],
+  )
   const similarInPlace = listingSimilarDedupe(listingSimilarInPlace(similarBase, placeNames))
-  const similarPool =
+  const similarPool = listingSimilarActive(
     offMarket && similarInPlace.length < OFF_MARKET_SIMILAR_MIN
       ? listingSimilarDedupe(similarBase)
-      : similarInPlace
+      : similarInPlace,
+  )
   const similarRows = listingSimilarRail(similarPool).map((row) =>
     row.photoUrl
       ? { ...row, photoUrl: listingRowPhotoSrc(row.photoUrl) }
@@ -595,6 +608,8 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     brokers[0] ??
     null
   const ctaBroker = listingAgent ?? matt
+  const slimBrokers = brokers.map(slimPublicBroker)
+  const slimCtaBroker = ctaBroker ? slimPublicBroker(ctaBroker) : null
 
   const brokerNameTokens = new Set<string>(['matt'])
   for (const b of brokers) {
@@ -603,14 +618,16 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
       if (t.length >= 4 && t !== 'ryan') brokerNameTokens.add(t)
     }
   }
-  const genericReviews = reviews
-    ? {
-        ...reviews,
-        reviews: reviews.reviews.filter(
-          (r) => ![...brokerNameTokens].some((tok) => new RegExp(`\\b${tok}\\b`).test(r.text.toLowerCase())),
-        ),
-      }
-    : reviews
+  const genericReviews = slimListingReviews(
+    reviews
+      ? {
+          ...reviews,
+          reviews: reviews.reviews.filter(
+            (r) => ![...brokerNameTokens].some((tok) => new RegExp(`\\b${tok}\\b`).test(r.text.toLowerCase())),
+          ),
+        }
+      : reviews,
+  )
 
   const street = listingMlsStreetLine(listing)
   const listingHref = listingCanonicalHref(listing)
@@ -706,8 +723,8 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
 
   const hero = (
     <ListingHero
-      photos={flightPhotos}
-      floorPlans={flightFloorPlans}
+      photos={slimListingMedia(flightPhotos)}
+      floorPlans={slimListingMedia(flightFloorPlans)}
       videos={videos}
       addressLine={street}
       cityLine={listing.city}
@@ -722,17 +739,34 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     />
   )
 
-  const atlasBlock = listingAtlas ? (
+  const atlasProps = listingAtlas
+    ? deferredAtlasProps({
+        population: listingAtlas.atlas,
+        scope: {
+          cities: listingAtlas.cities,
+          boundaryRef: listingAtlas.boundaryRef,
+          boundary: listingAtlas.boundary,
+        },
+        regions: listingAtlas.regions,
+        types: listingAtlas.atlas.types,
+        fit: listingAtlas.dotsFrame ? 'dots' : 'regions',
+        basemapFrame: basemapFrameForRegions(listingAtlas.regions, {
+          dots: listingAtlas.atlas.dots,
+          fit: listingAtlas.dotsFrame ? 'dots' : 'regions',
+        }),
+      })
+    : null
+
+  const atlasBlock = listingAtlas && atlasProps ? (
     <V3Atlas
       id="location"
       headingLevel={2}
       headline={v3Text(listingAtlasHeadline(listingAtlas.frameName))}
-      dots={listingAtlas.atlas.dots}
-      regions={listingAtlas.regions}
-      basemap={basemapForRegions(listingAtlas.regions, {
-        dots: listingAtlas.atlas.dots,
-        fit: listingAtlas.dotsFrame ? 'dots' : 'regions',
-      })}
+      dots={atlasProps.dots}
+      dotsSrc={atlasProps.dotsSrc}
+      dotsSummary={atlasProps.dotsSummary}
+      regions={atlasProps.regions}
+      basemapSrc={atlasProps.basemapSrc}
       types={listingAtlas.atlas.types}
       events={listingAtlas.atlas.events}
       source={listingAtlas.atlas.source}
@@ -804,13 +838,14 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
       <PriceCtaStrip
         listing={listingWithPhotos}
         leaseRateOption={leaseRateOption}
-        history={history}
+        history={slimListingHistory(history)}
         onSave={saveListingFromStrip}
         initialSaved={initialSaved}
         signedIn={Boolean(session)}
         ratePct={calcDefaults?.mortgageRate ?? null}
         showEstPayment={false}
         showAlerts={false}
+        bookHref={`/book?agent=${encodeURIComponent(ctaBrokerSlug)}&listing=${encodeURIComponent(listing.listingKey)}`}
         similarHref={similarHref}
         alertsHref={alertsHref}
         dropMark={dropMark}
@@ -857,7 +892,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           showCoach={false}
         />
       ) : null}
-      <PropertySpecs listing={listingWithPhotos} />
+      <PropertySpecs listing={listing} />
       {/* The listing agent's own words, as written (CLAUDE.md §2; Matt
           2026-09-09: "mls descriptions must come back"). The 12-section rebuild
           dropped this import while getListingDetail kept reading public_remarks,
@@ -882,7 +917,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
       ) : null}
       {atlasBlock}
       <div id="schools">
-        <SchoolsBlock listing={listingWithPhotos} />
+        <SchoolsBlock listing={listing} />
       </div>
       <ListingAroundHere lat={listing.lat} lng={listing.lng} />
       {!offMarket && askClaim ? <ListingAskInstrument claim={askClaim} /> : null}
@@ -946,11 +981,11 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           view={cutFacts && !isLease ? buildCloseView(cutFacts, closeSubject) : null}
         />
       ) : null}
-      {ctaBroker ? (
+      {slimCtaBroker ? (
         <div id="listed" className="listing-who listing-who--flow">
           <ListingBrokerCTA
-            defaultBroker={ctaBroker}
-            brokers={brokers}
+            defaultBroker={slimCtaBroker}
+            brokers={slimBrokers}
             listingKey={contactKey}
             reviews={genericReviews}
             lockToDefault={listingAgent != null}
@@ -967,10 +1002,10 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
 
   const floating = null
 
-  const sidebar = ctaBroker ? (
+  const sidebar = slimCtaBroker ? (
     <ListingBrokerCTA
-      defaultBroker={ctaBroker}
-      brokers={brokers}
+      defaultBroker={slimCtaBroker}
+      brokers={slimBrokers}
       listingKey={contactKey}
       reviews={genericReviews}
       lockToDefault={listingAgent != null}
@@ -984,7 +1019,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     wholePropertyPrice,
     trail: breadcrumbs,
     listing,
-    photoUrls: (lcpPriority ? galleryPhotos : flightPhotos).map((p) => p.url),
+    photoUrls: (lcpPriority ? galleryPhotos : flightPhotos).slice(0, 5).map((p) => p.url),
     agent: listingAgent
       ? { fullName: listingAgent.fullName, email: listingAgent.email, phoneDirect: listingAgent.phoneDirect }
       : null,

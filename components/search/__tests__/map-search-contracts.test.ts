@@ -474,6 +474,14 @@ describe('the city map/split view (MapSearchView via MapSplitView) subtracts hid
     expect(mapSplit).not.toMatch(/UnifiedMapListingsView/)
   })
 
+  it('city split seeds one card page of slim tiles, then reads the rest after paint', () => {
+    expect(mapSplit).toMatch(/from '@\/lib\/search\/search-opening'/)
+    expect(mapSplit).toMatch(/from '@\/lib\/search\/slim-viewport-listing'/)
+    expect(mapSplit).toMatch(/slimViewportListings\(viewport\.listings\.slice\(0, SPLIT_CARD_PAGE\)\)/)
+    expect(mapSplit).toMatch(/seedRowCap=\{SPLIT_CARD_PAGE\}/)
+    expect(mapSplit).not.toMatch(/initialListings=\{viewport\.listings\}/)
+  })
+
   it('loads the user hidden set + subtracts on both keys', () => {
     expect(src).toMatch(/import \{ getHiddenListingKeys \} from '@\/app\/actions\/hidden-listings'/)
     expect(src).toMatch(/import \{ buildHiddenKeySet, excludeHiddenListings \} from '@\/components\/search\/hidden-exclusion'/)
