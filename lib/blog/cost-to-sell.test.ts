@@ -188,7 +188,7 @@ describe('cost to sell: links, names, regressions (accept tests 10, 11, 12)', ()
       '/housing-market/bend', '/blog/property-taxes-deschutes-county', '/blog/hoa-guide-central-oregon',
       '/blog/oregon-withholding-firpta-home-sellers', '/blog/preparing-home-for-sale-checklist',
       '/blog/buyers-agent-bend-buyer-broker-agreement', '/blog/closing-costs-buyers-bend-oregon', '/sell',
-      '/sell/valuation', '/team/matthew-ryan', '/tools/seller-net-sheet',
+      '/sell/valuation', '/team/matthew-ryan', '/tools/seller-net-sheet', '/blog/real-estate-commission-bend-oregon',
     ])
     for (const [, href] of COST_TO_SELL_CONTENT.matchAll(/href="(\/[^"]*)"/g)) expect(allowed, href).toContain(href)
   })

@@ -10,6 +10,8 @@ export const FSBO_ROUTE = '/sell/for-sale-by-owner'
 export const EXPIRED_ROUTE = '/sell/expired-listings'
 export const INHERITED_ROUTE = '/sell/inherited-home'
 export const FORM_ANCHOR = '#get-value'
+/** The commission guide, linked from the 3% plan section (AIV c2, 2026-10-09). */
+export const COMMISSION_GUIDE_ROUTE = '/blog/real-estate-commission-bend-oregon'
 export const VALUATION_FORM_ANCHOR = '#valuation-form'
 export const SELL_POSTER = '/images/homepage/tetherow-golf-aerial.jpg'
 /** Stage context line. One phrase, not a sentence. */
