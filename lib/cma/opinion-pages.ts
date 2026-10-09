@@ -84,7 +84,7 @@ import {
   type PricingPageInput,
 } from '@/lib/cma/render-pricing-page'
 import { lotDifferenceSentence } from '@/lib/cma/lot-disclosure'
-import { activeRivalsFor, competitionSetWithoutSubject, unsoldPeersFor } from '@/lib/cma/matrix-sets'
+import { activeRivalsFor, competitionSetWithoutSubject, letterIsFrozen, unsoldPeersFor } from '@/lib/cma/matrix-sets'
 import { letterProductMatch, productClass } from '@/lib/cma/market-area'
 import { realSubdivisionName } from '@/lib/pricing/classes'
 import { namedSalesPlace, salesAreaIsBounded } from '@/lib/pricing/comp-area'
@@ -299,6 +299,8 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
         subject: a.subject,
         peers: a.expiredPeers?.peers ?? a.extras?.marketArea?.expiredPeers,
         area: a.compArea,
+        buildArea: a.expiredPeers?.area ?? null,
+        frozen: letterIsFrozen(a.documentStatus),
       }),
       a.docLinks ?? null,
       a.subject.city,
@@ -309,6 +311,7 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
         a.bandRivals?.rivals ?? a.extras?.band?.rivals,
         a.subject,
         a.compArea ?? a.bandRivals?.area,
+        { buildArea: a.bandRivals?.area ?? null, frozen: letterIsFrozen(a.documentStatus) },
       ),
       a.docLinks ?? null,
       a.subject.city,
@@ -394,7 +397,8 @@ export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
     rivals: activeRivalsFor(
       a.bandRivals?.rivals ?? a.extras?.band?.rivals,
       a.subject,
-      a.bandRivals?.area ?? a.compArea,
+      a.compArea ?? a.bandRivals?.area,
+      { buildArea: a.bandRivals?.area ?? null, frozen: letterIsFrozen(a.documentStatus) },
     ).map((r) => ({
       address: r.address,
       yearBuilt: r.yearBuilt ?? null,
@@ -2260,7 +2264,11 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
         (drawnActive >= COMPETITION_SHOWN_CAP &&
           b.activeCount > drawnActive &&
           stored.startsWith(`${nearestOpening(drawnActive)} `))
-  const useStored = stored.length > 0 && sameRows && forSaleAgrees
+  // A signed letter keeps the sentence it was built with when the rows drawn
+  // are the rows it stored. The area total can sit above the capped table
+  // ("13 homes... The nearest four") without the render restating it as the
+  // drawn count alone (1195 Remarkable, delivered, Matt 2026-10-09).
+  const useStored = stored.length > 0 && sameRows && (forSaleAgrees || letterIsFrozen(a.documentStatus))
   const sentence = useStored
     ? storedCompetitionSentenceToday(stored)
     : competitionSentence({
@@ -2428,7 +2436,10 @@ export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
     hi: b.hi,
     activeCount: b.activeCount,
     pendingCount: b.pendingCount,
-    rivals: activeRivalsFor(b.rivals, a.subject, a.compArea ?? a.bandRivals?.area),
+    rivals: activeRivalsFor(b.rivals, a.subject, a.compArea ?? a.bandRivals?.area, {
+      buildArea: a.bandRivals?.area ?? null,
+      frozen: letterIsFrozen(a.documentStatus),
+    }),
     docLinks: a.docLinks ?? null,
     recommendedList: a.pricing.recommended,
     asOfIso: a.generatedAtIso,

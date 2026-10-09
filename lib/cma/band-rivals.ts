@@ -1181,7 +1181,9 @@ export function bandRowToRival(row: BandInventoryRow, status: 'Active' | 'Pendin
     ...(row.public_remarks != null ? { publicRemarks: row.public_remarks } : {}),
     // The polygon the area read placed it in, so every later area test (the
     // fit, the ring pick, the render) reads the polygon, not the MLS spelling.
-    ...(row.plat_slug !== undefined ? { platSlug: row.plat_slug } : {}),
+    // Always stored, null when the read found none, so a later render can
+    // tell "no plat" from "the field was never written" (Matt 2026-10-09).
+    platSlug: row.plat_slug ?? null,
   }
   // The last stretch off the row alone; the competition read adds the ask
   // history for the homes it prints (assemble-competition.ts).
