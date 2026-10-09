@@ -89,24 +89,20 @@ export async function immersiveFromRow(
 ): Promise<string | null> {
   if (!row.render_args || typeof row.render_args !== 'object') return null
   try {
-    const brokerRow = await withTimeoutFallback(
-      getCmaBrokerBySlugOrEmail({ slug: row.broker_slug ?? 'matthew-ryan' }),
+    const stored = row.render_args as unknown as RenderCmaArgs
+    const comps = applyCompVerdicts(stored.comps ?? [], verdictsFromBuildSummary(row.build_summary))
+    const brokerLookupSlug = row.broker_slug ?? 'matthew-ryan'
+    // Broker feeds the signature block and docLinks.slug only. Map / market /
+    // credits do not wait on it. docLinks uses the same slug the broker object
+    // would: brokerRow.slug, else the row slug. Chain that lookup after the
+    // broker read inside its own promise so a different brokers.slug still
+    // matches, without serializing map/market/credits behind the broker.
+    const brokerPromise = withTimeoutFallback(
+      getCmaBrokerBySlugOrEmail({ slug: brokerLookupSlug }),
       null,
       CMA_READ_MS,
       'cma.broker',
     )
-    const broker: CmaBroker = {
-      id: (brokerRow?.id as string) ?? null,
-      slug: (brokerRow?.slug as string) ?? (row.broker_slug ?? 'matthew-ryan'),
-      displayName: (brokerRow?.display_name as string) || 'Matt Ryan',
-      title: (brokerRow?.title as string) || 'Owner & Principal Broker',
-      licenseNumber: (brokerRow?.license_number as string | null) ?? null,
-      email: (brokerRow?.email as string | null) ?? null,
-      phone: (brokerRow?.twilio_number as string | null) ?? null,
-      photoUrl: (brokerRow?.photo_url as string | null) ?? null,
-    }
-    const stored = row.render_args as unknown as RenderCmaArgs
-    const comps = applyCompVerdicts(stored.comps ?? [], verdictsFromBuildSummary(row.build_summary))
     // C9: render_args omits mapDataUri (~300KB). Rebuild the Google comps pin map
     // here so Open report / immersive shows subject + numbered sales once.
     // The overlay travels with the tile: it is the centre, zoom and pin
@@ -147,16 +143,35 @@ export async function immersiveFromRow(
           CMA_READ_MS,
           'cma.map',
         )
+    const docLinksPromise = slug
+      ? brokerPromise.then((brokerRow) =>
+          withTimeoutFallback(
+            resolveDocLinkCtx(slug, (brokerRow?.slug as string) ?? brokerLookupSlug),
+            null,
+            CMA_READ_MS,
+            'cma.docLinks',
+          ),
+        )
+      : Promise.resolve(null)
     // Budget is this serve path only. Print / PDF call the same loaders with
     // no budget, so a slow read still lands in the letter instead of being dropped.
-    const [mapBits, listingMarket, likeHomeCredits, docLinks] = await Promise.all([
+    const [brokerRow, mapBits, listingMarket, likeHomeCredits, docLinks] = await Promise.all([
+      brokerPromise,
       mapPromise,
       listingMarketForDocument(stored, row.status, CMA_READ_MS),
       likeHomeCreditsForDocument({ ...stored, comps }, row.status, CMA_READ_MS),
-      slug
-        ? withTimeoutFallback(resolveDocLinkCtx(slug, broker.slug), null, CMA_READ_MS, 'cma.docLinks')
-        : Promise.resolve(null),
+      docLinksPromise,
     ])
+    const broker: CmaBroker = {
+      id: (brokerRow?.id as string) ?? null,
+      slug: (brokerRow?.slug as string) ?? brokerLookupSlug,
+      displayName: (brokerRow?.display_name as string) || 'Matt Ryan',
+      title: (brokerRow?.title as string) || 'Owner & Principal Broker',
+      licenseNumber: (brokerRow?.license_number as string | null) ?? null,
+      email: (brokerRow?.email as string | null) ?? null,
+      phone: (brokerRow?.twilio_number as string | null) ?? null,
+      photoUrl: (brokerRow?.photo_url as string | null) ?? null,
+    }
     const base = {
       ...stored,
       comps,
@@ -213,20 +228,38 @@ export type CmaServeOpts = {
   adminReview?: boolean
 }
 
+type ServeCmaInner = {
+  result: CmaServeResult
+  /** True when this path already loaded (or attempted) the render-args row. */
+  renderSourceHeld: boolean
+  renderSource: CmaRenderSource | null
+}
+
+function served(result: CmaServeResult): ServeCmaInner {
+  return { result, renderSourceHeld: false, renderSource: null }
+}
+
+function servedWithSource(result: CmaServeResult, renderSource: CmaRenderSource | null): ServeCmaInner {
+  return { result, renderSourceHeld: true, renderSource }
+}
+
 export async function serveCmaDocument(opts: CmaServeOpts): Promise<CmaServeResult> {
-  const result = await serveCmaDocumentResult(opts)
-  if (!opts.adminReview || result.kind !== 'html') return result
-  // The review gate reads pricing off render_args. Cap it: this is a second
-  // fetch after the letter is already in hand, and it must not blank the tab.
-  const source = await withTimeoutFallback(
-    getCmaRenderSourceBySlug(opts.slug.trim().toLowerCase()),
-    null,
-    CMA_READ_MS,
-    'cma.reviewBanner',
-  )
+  const inner = await serveCmaDocumentResult(opts)
+  if (!opts.adminReview || inner.result.kind !== 'html') return inner.result
+  // Review gate reads pricing off render_args. Reuse the row the immersive
+  // path already loaded. Print (and stored when that read never ran) fall
+  // back to a capped extra read. A timeout must not blank the tab.
+  const source = inner.renderSourceHeld
+    ? inner.renderSource
+    : await withTimeoutFallback(
+        getCmaRenderSourceBySlug(opts.slug.trim().toLowerCase()),
+        null,
+        CMA_READ_MS,
+        'cma.reviewBanner',
+      )
   const pricing = (source?.render_args as { pricing?: unknown } | null)?.pricing ?? null
   const banner = adminReviewBannerHtml(pricing)
-  return banner ? { ...result, html: injectAdminReviewBanner(result.html, banner) } : result
+  return banner ? { ...inner.result, html: injectAdminReviewBanner(inner.result.html, banner) } : inner.result
 }
 
 /** Stored letter, else a legacy file, else a visible error. Never "CMA not found" — the head row exists. */
@@ -244,17 +277,31 @@ async function storedOrUnavailable(
   return { kind: 'html', status: 200, html: CMA_RENDER_UNAVAILABLE_HTML, headers: CMA_DOC_HEADERS }
 }
 
-async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResult> {
+async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<ServeCmaInner> {
   const safeSlug = opts.slug.trim().toLowerCase()
   if (!/^[a-z0-9-]{3,80}$/.test(safeSlug)) {
-    return { kind: 'json', status: 400, body: { error: 'Invalid slug' } }
+    return served({ kind: 'json', status: 400, body: { error: 'Invalid slug' } })
   }
 
-  const head = await getCmaServeHead(safeSlug)
-  if (!head) return { kind: 'json', status: 404, body: { error: 'CMA not found' } }
+  const headRead = await withTimeoutFallbackResult(
+    getCmaServeHead(safeSlug),
+    null,
+    CMA_READ_MS,
+    'cma.serveHead',
+  )
+  // Timeout or throw is not "missing": the slug may be real. Never 404 "CMA
+  // not found" and never hang. A real null head is still 404.
+  if (!headRead.ok) {
+    return servedWithSource(
+      { kind: 'html', status: 200, html: CMA_RENDER_UNAVAILABLE_HTML, headers: CMA_DOC_HEADERS },
+      null,
+    )
+  }
+  const head = headRead.value
+  if (!head) return served({ kind: 'json', status: 404, body: { error: 'CMA not found' } })
 
   if (!canBrokerReviewCma({ isAdmin: opts.isAdmin, status: head.status })) {
-    return { kind: 'json', status: 404, body: { error: 'CMA not found' } }
+    return served({ kind: 'json', status: 404, body: { error: 'CMA not found' } })
   }
 
   const origin = new URL(opts.requestUrl).origin
@@ -297,18 +344,19 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
   if (wantsPrint) {
     const letter = await resolveCmaPrintHtml(safeSlug)
     if (letter?.html) {
-      return {
+      return served({
         kind: 'html',
         status: 200,
         html: withTracker(letter.html, '<script src="/rr-cma-doc.js" defer></script>'),
         headers: CMA_DOC_HEADERS,
-      }
+      })
     }
   }
 
   // Live immersive from render_args first (admin Open report + public /cma).
   // Tip Ready letter fixes (C1/C4/C9) land without a Falcon html_content rebuild.
   // Market hydrate stays false (D27 freeze). Map rebuild is fail-open + local.
+  let heldSource: CmaRenderSource | null | undefined
   if (!wantsPrint) {
     const sourceRead = await withTimeoutFallbackResult(
       getCmaRenderSourceBySlug(safeSlug),
@@ -317,8 +365,9 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
       'cma.renderSource',
     )
     if (!sourceRead.ok) {
-      return storedOrUnavailable(safeSlug, origin, consentBar, head.html_path)
+      return servedWithSource(await storedOrUnavailable(safeSlug, origin, consentBar, head.html_path), null)
     }
+    heldSource = sourceRead.value
     if (sourceRead.value) {
       const rendered = await withTimeoutFallbackResult(
         immersiveFromRow(sourceRead.value, origin, false, safeSlug),
@@ -327,11 +376,17 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
         'cma.immersive',
       )
       if (rendered.ok && rendered.value) {
-        return { kind: 'html', status: 200, html: withTracker(rendered.value, consentBar), headers: CMA_DOC_HEADERS }
+        return servedWithSource(
+          { kind: 'html', status: 200, html: withTracker(rendered.value, consentBar), headers: CMA_DOC_HEADERS },
+          sourceRead.value,
+        )
       }
       // A hang is not "no document" and not "CMA not found" — the row was found above.
       if (!rendered.ok) {
-        return storedOrUnavailable(safeSlug, origin, consentBar, head.html_path)
+        return servedWithSource(
+          await storedOrUnavailable(safeSlug, origin, consentBar, head.html_path),
+          sourceRead.value,
+        )
       }
     }
   }
@@ -343,22 +398,24 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
     CMA_READ_MS,
     'cma.storedHtml',
   )
+  const wrapStored = (result: CmaServeResult): ServeCmaInner =>
+    heldSource !== undefined ? servedWithSource(result, heldSource) : served(result)
   if (!storedRead.ok) {
     if (head.html_path?.startsWith('public/cmas/')) {
-      return { kind: 'redirect', url: head.html_path.replace(/^public/, ''), status: 302 }
+      return wrapStored({ kind: 'redirect', url: head.html_path.replace(/^public/, ''), status: 302 })
     }
-    return { kind: 'html', status: 200, html: CMA_RENDER_UNAVAILABLE_HTML, headers: CMA_DOC_HEADERS }
+    return wrapStored({ kind: 'html', status: 200, html: CMA_RENDER_UNAVAILABLE_HTML, headers: CMA_DOC_HEADERS })
   }
   const stored = storedRead.value
-  if (stored) return storedHtmlResult(stored, origin, consentBar)
+  if (stored) return wrapStored(storedHtmlResult(stored, origin, consentBar))
 
   if (head.html_path?.startsWith('public/cmas/')) {
-    return { kind: 'redirect', url: head.html_path.replace(/^public/, ''), status: 302 }
+    return wrapStored({ kind: 'redirect', url: head.html_path.replace(/^public/, ''), status: 302 })
   }
 
-  return {
+  return wrapStored({
     kind: 'json',
     status: 404,
     body: { error: 'This CMA has no stored document yet. Build it from /admin/cmas.' },
-  }
+  })
 }

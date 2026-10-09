@@ -281,6 +281,8 @@ export async function resolveComplianceBatch(
       nums.length > 0
         ? sb.from('listings').select(EXPIRED_OUTREACH_LISTING_SELECT).in('StreetNumber', nums).or(EXPIRED_OUTREACH_STATUS_OR)
         : Promise.resolve({ data: [] as ExpiredOutreachListing[], error: null })
+    // Unindexed in prod: seq scan ~4s mean / 22s max. btree:
+    // supabase/migrations/20261009030000_listings_parcel_number_index.sql
     const parcelQ =
       parcels.length > 0
         ? sb.from('listings').select(EXPIRED_OUTREACH_LISTING_SELECT).in('parcel_number', parcels).or(EXPIRED_OUTREACH_STATUS_OR)
@@ -579,6 +581,7 @@ export async function verifyNotRelisted(
       .select(EXPIRED_OUTREACH_LISTING_SELECT)
       .eq('StreetNumber', numKey)
       .or(EXPIRED_OUTREACH_STATUS_OR)
+    // Same parcel probe as resolveComplianceBatch — idx_listings_parcel_number.
     const parcelQ = subjectParcel
       ? sb.from('listings').select(EXPIRED_OUTREACH_LISTING_SELECT).eq('parcel_number', subjectParcel).or(EXPIRED_OUTREACH_STATUS_OR)
       : Promise.resolve({ data: [] as ExpiredOutreachListing[], error: null })

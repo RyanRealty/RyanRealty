@@ -9,6 +9,19 @@ const getCmaAccessIdentity = vi.fn()
 const renderImmersiveCmaHtml = vi.fn(() => '<html><body>DRAFT CMA FROM RENDER_ARGS</body></html>')
 const getCmaCityClosedDuring = vi.fn(async () => [] as unknown[])
 const getLikeHomeSales = vi.fn(async () => [] as unknown[])
+const BROKER_ROW = {
+  id: 'broker-1',
+  slug: 'matthew-ryan',
+  display_name: 'Matt Ryan',
+  title: 'Owner & Principal Broker',
+  license_number: '201212345',
+  email: 'matt@ryan-realty.com',
+  twilio_number: '5415550100',
+  photo_url: null,
+}
+const getCmaBrokerBySlugOrEmail = vi.fn(async () => BROKER_ROW)
+const buildCmaMapDataUri = vi.fn(async () => ({ dataUri: 'data:image/png;base64,MAP' }))
+const cmaMapOptionsFromArgs = vi.fn(() => ({}))
 
 vi.mock('@/lib/data', () => ({
   getCmaServeHead: (...args: unknown[]) => getCmaServeHead(...args),
@@ -20,16 +33,7 @@ vi.mock('@/lib/data', () => ({
 vi.mock('@/lib/data/cma/builderReads', () => ({
   getCmaCityClosedDuring: () => getCmaCityClosedDuring(),
   getLikeHomeSales: () => getLikeHomeSales(),
-  getCmaBrokerBySlugOrEmail: vi.fn(async () => ({
-    id: 'broker-1',
-    slug: 'matthew-ryan',
-    display_name: 'Matt Ryan',
-    title: 'Owner & Principal Broker',
-    license_number: '201212345',
-    email: 'matt@ryan-realty.com',
-    twilio_number: '5415550100',
-    photo_url: null,
-  })),
+  getCmaBrokerBySlugOrEmail: (...args: unknown[]) => getCmaBrokerBySlugOrEmail(...args),
 }))
 
 vi.mock('@/lib/cma/immersive', () => ({
@@ -38,7 +42,8 @@ vi.mock('@/lib/cma/immersive', () => ({
 }))
 
 vi.mock('@/lib/cma/map', () => ({
-  buildCmaMapDataUri: vi.fn(async () => ({ dataUri: 'data:image/png;base64,MAP' })),
+  buildCmaMapDataUri: (...args: unknown[]) => buildCmaMapDataUri(...args),
+  cmaMapOptionsFromArgs: (...args: unknown[]) => cmaMapOptionsFromArgs(...args),
 }))
 
 vi.mock('@/lib/cma/market-area-hydrate', () => ({
@@ -74,6 +79,15 @@ describe('serveCmaDocument', () => {
     getCmaRenderSourceBySlug.mockReset()
     getCmaAccessIdentity.mockReset()
     renderImmersiveCmaHtml.mockClear()
+    renderImmersiveCmaHtml.mockImplementation(() => '<html><body>DRAFT CMA FROM RENDER_ARGS</body></html>')
+    getCmaBrokerBySlugOrEmail.mockReset()
+    getCmaBrokerBySlugOrEmail.mockImplementation(async () => BROKER_ROW)
+    buildCmaMapDataUri.mockReset()
+    buildCmaMapDataUri.mockImplementation(async () => ({ dataUri: 'data:image/png;base64,MAP' }))
+    getCmaCityClosedDuring.mockReset()
+    getCmaCityClosedDuring.mockResolvedValue([])
+    getLikeHomeSales.mockReset()
+    getLikeHomeSales.mockResolvedValue([])
   })
 
   // Matt 2026-10-07: "Don't require a sign in to view the report."
@@ -231,6 +245,93 @@ describe('serveCmaDocument', () => {
     expect(getCmaRenderSourceBySlug).not.toHaveBeenCalled()
   })
 
+  it('serves the unavailable page when the head read times out, not CMA not found', async () => {
+    vi.useFakeTimers()
+    try {
+      getCmaServeHead.mockImplementation(() => new Promise(() => {}))
+      const pending = serveCmaDocument({
+        slug: 'cma-3859-oakside',
+        requestUrl: 'https://ryan-realty.com/admin/cmas/cma-3859-oakside/view',
+        isAdmin: true,
+        viewerEmail: 'matt@ryan-realty.com',
+        skipRegisterGate: true,
+        adminReview: true,
+      })
+      await vi.advanceTimersByTimeAsync(4_000)
+      const result = await pending
+      expect(result.kind).toBe('html')
+      if (result.kind !== 'html') return
+      expect(result.status).toBe(200)
+      expect(result.html).toContain('This report exists, but it did not finish rendering')
+      expect(result.html).not.toContain('CMA not found')
+      expect(getCmaRenderSourceBySlug).not.toHaveBeenCalled()
+      expect(getCmaStoredHtmlBySlug).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('serves the unavailable page when the head read throws, not CMA not found', async () => {
+    getCmaServeHead.mockRejectedValue(new Error('getCmaServeHead failed: statement timeout'))
+    const result = await serveCmaDocument({
+      slug: 'cma-3859-oakside',
+      requestUrl: 'https://ryan-realty.com/admin/cmas/cma-3859-oakside/view',
+      isAdmin: true,
+      viewerEmail: 'matt@ryan-realty.com',
+      skipRegisterGate: true,
+      adminReview: true,
+    })
+    expect(result.kind).toBe('html')
+    if (result.kind !== 'html') return
+    expect(result.status).toBe(200)
+    expect(result.html).toContain('This report exists, but it did not finish rendering')
+    expect(result.html).not.toContain('CMA not found')
+    expect(getCmaRenderSourceBySlug).not.toHaveBeenCalled()
+  })
+
+  it('runs the broker read in parallel with the map rebuild', async () => {
+    vi.useFakeTimers()
+    try {
+      getCmaBrokerBySlugOrEmail.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(() => resolve(BROKER_ROW), 2_000)
+          }),
+      )
+      buildCmaMapDataUri.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(() => resolve({ dataUri: 'data:image/png;base64,MAP' }), 2_000)
+          }),
+      )
+      getCmaServeHead.mockResolvedValue(draftHead)
+      getCmaRenderSourceBySlug.mockResolvedValue(draftFromRenderArgs)
+      let settled: Awaited<ReturnType<typeof serveCmaDocument>> | undefined
+      void serveCmaDocument({
+        slug: DRAFT_SLUG,
+        requestUrl: `https://ryan-realty.com/admin/cmas/${DRAFT_SLUG}/view`,
+        isAdmin: true,
+        viewerEmail: 'matt@ryan-realty.com',
+        skipRegisterGate: true,
+        adminReview: true,
+      }).then((result) => {
+        settled = result
+        return result
+      })
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(settled).toBeUndefined()
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(settled).toBeDefined()
+      expect(settled?.kind).toBe('html')
+      if (settled?.kind !== 'html') return
+      expect(settled.html).toContain('DRAFT CMA FROM RENDER_ARGS')
+      expect(getCmaBrokerBySlugOrEmail).toHaveBeenCalled()
+      expect(buildCmaMapDataUri).toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('keeps anonymous /cma/{draft} as 404', async () => {
     getCmaServeHead.mockResolvedValue(draftHead)
     const result = await serveCmaDocument({
@@ -346,9 +447,18 @@ describe('needs review — the broker gate', () => {
   }
 
   beforeEach(() => {
+    getCmaServeHead.mockReset()
+    getCmaStoredHtmlBySlug.mockReset()
+    getCmaRenderSourceBySlug.mockReset()
     getCmaServeHead.mockResolvedValue(readyHead)
     getCmaStoredHtmlBySlug.mockResolvedValue(null)
     getCmaRenderSourceBySlug.mockResolvedValue(flagged)
+    renderImmersiveCmaHtml.mockReset()
+    renderImmersiveCmaHtml.mockImplementation(() => '<html><body>DRAFT CMA FROM RENDER_ARGS</body></html>')
+    getCmaBrokerBySlugOrEmail.mockReset()
+    getCmaBrokerBySlugOrEmail.mockImplementation(async () => BROKER_ROW)
+    buildCmaMapDataUri.mockReset()
+    buildCmaMapDataUri.mockImplementation(async () => ({ dataUri: 'data:image/png;base64,MAP' }))
   })
 
   it('banners the admin view, at the top of the document', async () => {
@@ -367,6 +477,25 @@ describe('needs review — the broker gate', () => {
     expect(result.html.indexOf('cma-review-gate')).toBeLessThan(
       result.html.indexOf('DRAFT CMA FROM RENDER_ARGS'),
     )
+    expect(getCmaRenderSourceBySlug).toHaveBeenCalledTimes(1)
+  })
+
+  it('banners stored HTML from the render source already in hand', async () => {
+    renderImmersiveCmaHtml.mockImplementation(() => null as unknown as string)
+    getCmaStoredHtmlBySlug.mockResolvedValue('<html><body>stored review letter</body></html>')
+    const result = await serveCmaDocument({
+      slug: readySlug,
+      requestUrl: `https://ryan-realty.com/admin/cmas/${readySlug}/view`,
+      isAdmin: true,
+      viewerEmail: 'matt@ryan-realty.com',
+      skipRegisterGate: true,
+      adminReview: true,
+    })
+    expect(result.kind).toBe('html')
+    if (result.kind !== 'html') return
+    expect(result.html).toContain('stored review letter')
+    expect(result.html).toContain('Needs review before it goes out:')
+    expect(getCmaRenderSourceBySlug).toHaveBeenCalledTimes(1)
   })
 
   it('never banners the public path, even with an admin session', async () => {
