@@ -25,8 +25,8 @@ Other sessions own the rest. This session did not do their work.
 - `fix/price-clock` at `d2ae3129c`. Its unit file was 14/14 when last reviewed. Its own pull request.
 - `fix/reader-5-engine`. Kelly Hill on-market date window. Matt's direction is closer to $716,000. Do not hardcode that dollar amount.
 - `fix/reader-5-render`. Chart and wording fixes from the fifth read.
-- Six read-only letter reviews. They land in `~/grok-build/reviews/<slug>.md`. Checked while writing this section: that directory exists and is empty, so the reviews are in progress. Slugs: `cma-62475-woodsman`, `cma-2382-jackson`, `cma-3037-purcell`, `cma-1648-pheasant`, `cma-3177-coho`, `cma-2745-aldrich`.
-- The fleet score. It lands in `~/grok-build/fleet/`. Checked while writing this section: that directory exists and is empty, so the score is in progress.
+- Six read-only letter reviews. They land in `~/grok-build/reviews/<slug>.md`. Checked at this commit: that directory exists and is empty, so the reviews are in progress. Slugs: `cma-62475-woodsman`, `cma-2382-jackson`, `cma-3037-purcell`, `cma-1648-pheasant`, `cma-3177-coho`, `cma-2745-aldrich`.
+- The fleet score lands in `~/grok-build/fleet/`. A price-clock run is in progress at `~/grok-build/fleet/price-clock/`, git SHA `d2ae3129c`, run `2026-10-09T03-18-36.729Z`. It is not finished (`complete` is false, `finishedAt` is empty). At this check it had scored 11 homes: 6 built, 5 failed on the minimum-comp floor, 0 harness errors. That partial is not the fleet result.
 
 Nothing has been sent to any owner. Do not rebuild the ten drafts until Matt approves the pull requests and names the letters.
 
@@ -92,7 +92,7 @@ Each was started by a cloud agent with `docs/plans/cma-handoff/fix-brief.md`.
 | `fix/relist-clock` **MERGED** (`32077999a`, SKILL rule 28) | Relisted or back-on-market homes use one clock, their last stretch. First ask comes from that stretch, and the row is labeled "after it last came on the market". The subject's first ask is the price in effect when it went Active. | wording/data |
 | `fix/plat-ground-facts` **MERGED** (`537a0b10f`, seat order included) | A recorded addition or phase in the same neighborhood is the home's own subdivision everywhere, including the facts ladder, weights, room rule, pockets, anchor, date gate and review. Rule 24. | yes |
 
-## STOPPING POINT, 2026-10-09 (cloud session ended here; start from this section)
+## Cloud session record, 2026-10-09
 
 - **Landed on main:** `632b64564` with Matt's yes on the final fleet score: 108 of 140 build; 22 moves, median 2.5%; holds +2/-2; Mount Bachelor newly failing. It carries all of the 10-08 rulings plus clamp-line.
   - First job: run `npm run deploy:verify` and confirm it is READY. Retry once on "fetch failed".
@@ -114,7 +114,7 @@ Each was started by a cloud agent with `docs/plans/cma-handoff/fix-brief.md`.
      - Saginaw small wording.
 
   If a reader-5 branch is missing on origin, redo it from these bullets with `docs/plans/cma-handoff/fix-brief.md`.
-- **Then:** fleet score, Matt's yes, fast-forward main, `deploy:verify`, rebuild the ten (`npx tsx scripts/_rebuild-cma.ts <slug>`), and run reader agents with `docs/plans/cma-handoff/reader-brief.md`. Re-read all ten, including the six not re-read on 10-09 (Woodsman, Jackson, Purcell, Pheasant, Coho, Aldrich). Then send Matt the links table.
+- **Then:** each of those branches is its own pull request. Matt merges. Do not push, fast-forward, or merge into main. After a merge is on main, `deploy:verify`. Rebuild the ten only when Matt names the letters. Reader notes land in `~/grok-build/reviews/<slug>.md`. Re-read all ten, including the six not re-read on 10-09 (Woodsman, Jackson, Purcell, Pheasant, Coho, Aldrich). Then send Matt the links table only after he approves each letter.
 - **Matt 2026-10-09: "Trust the MLS fields"** for room counts. 1340 Cumberland stays 3 bed even though its remarks say 2, and Jacksonville is unchanged.
 - **Open for Matt:** see "Open questions" below. Item 9 is new: main's "One rule set" doc paragraph contradicts rule 20's 25% line and the 5-sale floor.
 
