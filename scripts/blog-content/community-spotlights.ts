@@ -228,15 +228,15 @@ export const posts: BlogPostSeed[] = [
       'https://images.unsplash.com/photo-1619626484761-e0ac2b597aad?w=1920&q=80',
     published_at: '2025-12-10T09:00:00Z',
     status: 'published',
-    seo_title: 'Sunriver Oregon Full Time Living vs Vacation Home Guide',
+    seo_title: 'Sunriver HOA Fees and Year-Round Living Costs',
     seo_description:
-      'Sunriver, Oregon: should you live there full time or buy a vacation home? Covers SHARC, SROA fees, rental income, winter access, schools, and price ranges.',
+      'Sunriver\'s SROA fee is $172.94 a month in 2026, or $2,075 a year, on every property. What full-time and vacation owners pay, from a Bend brokerage.',
     excerpt:
-      'Sunriver works as both a full-time home and a vacation property, but those two lifestyles look very different in practice. Here is an honest comparison of costs, trade-offs, and daily life.',
+      'Sunriver works as both a full-time home and a vacation property, with about 1,700 year-round residents and thousands of short-term rental properties.',
     content: `
-<p>Sunriver has a dual identity that confuses a lot of buyers. It is simultaneously a full-time residential community with about 1,700 year-round residents and a vacation destination with thousands of short-term rental properties cycling through guests every week. Whether you are considering Sunriver as your primary home or a vacation investment, the decision hinges on understanding how these two worlds coexist, and where they occasionally collide. This guide gives you the full picture so you can decide which version of Sunriver, if either, fits your situation.</p>
+<p>Sunriver is both a full-time residential community, with about 1,700 year-round residents, and a vacation destination with thousands of short-term rental properties.</p>
 
-<h2>Understanding Sunriver's Layout</h2>
+<h2>Sunriver's layout</h2>
 
 <p>Sunriver is a 3,300-acre planned community located about 15 miles south of Bend along Highway 97. It is organized around the Deschutes River, with neighborhoods radiating outward from the Village (the commercial center), the two golf courses, and the SHARC aquatic center.</p>
 
@@ -249,49 +249,49 @@ export const posts: BlogPostSeed[] = [
 <li><strong>SHARC:</strong> The Sunriver Homeowners Aquatic and Recreation Center, with indoor and outdoor pools, waterslides, a hot tub, and seasonal ice skating.</li>
 <li><strong>Woodlands Golf Course:</strong> The original 18-hole Robert Trent Jones Jr. course. A newer course, Meadows, is also available.</li>
 <li><strong>The Great Hall:</strong> Community event space along the river.</li>
-<li><strong>Nature Center and Observatory:</strong> Educational facilities that are genuine assets, not just marketing props.</li>
-<li><strong>Bike paths:</strong> Over 30 miles of paved paths that connect every corner of the community. This is the primary way residents and guests get around in summer, and the system is well-maintained and genuinely functional for transportation, not just recreation.</li>
+<li><strong>Nature Center and Observatory:</strong> Educational facilities open to residents and visitors.</li>
+<li><strong>Bike paths:</strong> Over 30 miles of paved paths that connect every corner of the community. This is the primary way residents and guests get around in summer.</li>
 </ul>
 
-<h2>Full-Time Living in Sunriver</h2>
+<h2>Full-time living in Sunriver</h2>
 
-<h3>The Daily Reality</h3>
+<h3>The daily reality</h3>
 
-<p>Living in Sunriver full time feels very different from visiting for a long weekend. In the off-season (roughly late October through mid-May), the community is quiet, sometimes strikingly so. Many homes sit empty, and the Village operates on reduced hours. If you thrive on solitude and the sound of nothing but wind in the ponderosa pines, this is a feature. If you need neighborhood energy year-round, it can feel isolating.</p>
+<p>Living in Sunriver full time feels different from visiting for a long weekend. In the off-season (roughly late October through mid-May), the community is quiet. Many homes sit empty, and the Village operates on reduced hours. If you thrive on solitude and the sound of wind in the ponderosa pines, this is a feature. If you need neighborhood energy year-round, it can feel isolating.</p>
 
-<p>Summer is the opposite. The population swells dramatically as vacation renters pour in, and the bike paths, pools, and restaurants fill up. Full-time residents have mixed feelings about this cycle. The activity is nice; the occasional disregard for community norms by short-term guests is not. Some year-round residents report that certain weeks (Fourth of July, Labor Day) feel more like a theme park than a neighborhood. Others find the energy invigorating after quiet winter months. Your tolerance for this rhythm is worth examining honestly before committing.</p>
+<p>Summer is the opposite. The population increases as vacation renters arrive, and the bike paths, pools, and restaurants fill up. Full-time residents have mixed feelings about this cycle. The activity is nice. The occasional disregard for community norms by short-term guests is not. Some year-round residents report that certain weeks (Fourth of July, Labor Day) feel more like a theme park than a neighborhood. Others find the energy invigorating after quiet winter months. Your tolerance for this rhythm is worth examining before committing.</p>
 
-<h3>Schools and Families</h3>
+<h3>Schools and families</h3>
 
 <p>Sunriver is in the Bend-La Pine School District. The local option for elementary students is Three Rivers School, a small K-5 school in the La Pine area. Middle and high school students typically attend schools in La Pine or, with an inter-district transfer, in Bend. The school bus does service Sunriver, but the commute can be long.</p>
 
-<p>Several full-time families with children live happily in Sunriver, but the school logistics require more planning than living in Bend proper. If school quality and commute time are top priorities, research the specific schools and bus routes before committing.</p>
+<p>Several full-time families with children live in Sunriver, but the school logistics require more planning than living in Bend proper. If school quality and commute time are top priorities, research the specific schools and bus routes before committing.</p>
 
-<h3>Groceries, Healthcare, and Services</h3>
+<h3>Groceries, healthcare, and services</h3>
 
 <p>The Village has a small general store that covers basics, but you will drive to Bend for a proper grocery run. Medical care means a trip to St. Charles in Bend (about 25 minutes) for anything beyond basic urgent care. There is a fire station in Sunriver, and emergency response times are reasonable.</p>
 
 <p>Restaurants and services within Sunriver are limited compared to Bend. You will find enough for casual dining, but most full-time residents consider Bend their "town" for shopping, dining, and services. La Pine, about ten minutes south, has a few additional options including a larger grocery store and some basic retail.</p>
 
-<h2>Vacation Home Ownership</h2>
+<h2>Vacation home ownership</h2>
 
-<h3>Rental Income Potential</h3>
+<h3>Rental income potential</h3>
 
-<p>Sunriver is one of Central Oregon's strongest vacation rental markets. Many owners generate $30,000 to $60,000 or more in annual gross rental income depending on the home's size, location, and condition. Peak season (June through September and holiday weeks) can command $300 to $800 per night for a three to four bedroom home.</p>
+<p>Sunriver is a strong vacation rental market in Central Oregon. Many owners generate $30,000 to $60,000 or more in annual gross rental income depending on the home's size, location, and condition. Peak season (June through September and holiday weeks) can command $300 to $800 per night for a three to four bedroom home.</p>
 
-<p>However, gross income is not net income. After you subtract management fees (typically 20% to 30% of revenue), cleaning costs, maintenance, SROA fees, insurance, and property taxes, the net return is significantly lower. Many vacation rental owners break even or earn a modest return while building equity. The homes that generate real cash flow tend to be well-maintained, well-furnished properties in desirable locations (river frontage, near SHARC, or on the golf course).</p>
+<p>However, gross income is not net income. After you subtract management fees (typically 20% to 30% of revenue), cleaning costs, maintenance, SROA fees, insurance, and property taxes, the net return is lower. Many vacation rental owners break even or earn a modest return while building equity. The homes that generate cash flow tend to be well-maintained, well-furnished properties in locations like river frontage, near SHARC, or on the golf course.</p>
 
-<h3>Management and Rental Rules</h3>
+<h3>Management and rental rules</h3>
 
-<p>Sunriver allows short-term rentals, which is a significant advantage over some resort communities that restrict them. Most owners use a property management company (Sunriver Resort, Vacasa, and several local companies operate here) to handle bookings, cleaning, and maintenance.</p>
+<p>Sunriver allows short-term rentals. Some resort communities restrict them. Most owners use a property management company (Sunriver Resort, Vacasa, and several local companies operate here) to handle bookings, cleaning, and maintenance.</p>
 
 <p>SROA has rules about noise, parking, and occupancy that apply to renters, and violations can result in fines to the homeowner. Managing a rental property from a distance requires either a good management company or a local contact who can handle issues quickly.</p>
 
-<p>One thing that separates successful Sunriver rental owners from frustrated ones is reinvestment. Properties that are kept current with updated kitchens, comfortable furnishings, and modern amenities consistently outperform dated homes in both nightly rate and occupancy. Guests have plenty of choices, and the properties that photograph well and deliver on their promise earn repeat bookings and five-star reviews that compound over time.</p>
+<p>Properties that are kept current with updated kitchens, comfortable furnishings, and modern amenities tend to perform better in nightly rate and occupancy than dated homes.</p>
 
-<h2>Price Ranges</h2>
+<h2>Price ranges</h2>
 
-<p>Sunriver's real estate spans a wider range than many people expect:</p>
+<p>Sunriver's real estate spans a wide range:</p>
 
 <ul>
 <li><strong>Condos and small cabins:</strong> $300,000 to $500,000. These are the entry-level options, typically one to two bedrooms, older construction, and the most straightforward vacation rental investments.</li>
@@ -302,19 +302,23 @@ export const posts: BlogPostSeed[] = [
 
 <p>Browse current <a href="/homes-for-sale">listings in Central Oregon</a> to see what is on the market.</p>
 
-<h2>SROA Fees and Costs</h2>
+<h2 id="sroa-fees-and-costs">Sunriver HOA fees (SROA) in 2026</h2>
 
-<p>Every property owner pays annual SROA assessments, which cover road maintenance, bike path upkeep, common area landscaping, and community programs. These currently run approximately $1,200 to $2,500 per year depending on the property type and size. Some sub-neighborhoods have additional HOA fees on top of SROA dues.</p>
+<p>Every Sunriver property pays the same SROA maintenance fee: $172.94 a month in 2026, or $2,075.28 a year, whether the home is lived in full time or rented. The fee pays for roads, pathways, snowplowing, parks, and the association's operations, and $30 of each month's fee goes to the reserve fund for long-lived repairs. SROA's board sets the fee each November and can raise it up to 6% a year without an owner vote.</p>
 
-<p>SHARC access requires a separate pass. Homeowners can purchase annual passes at a discounted rate (around $500 to $700 per household), or pay per visit. Vacation rental guests typically purchase passes through their management company.</p>
+<p>Some condos and townhomes also belong to a sub-association with its own dues, and some SROA invoices still carry a SHARC assessment or the bulk fiber internet charge. Ask for the property's SROA statement and any sub-association budget before you write an offer.</p>
 
-<h2>Winter Access</h2>
+<p>Recreation is separate. An SROA membership card, which opens SHARC's pools and fitness center plus the tennis and pickleball courts, is $90 per card for 2026. Owners who rent their home short-term use the Recreation Plus Program instead, priced by bedroom count: $2,760 a year for a three-bedroom home in 2026.</p>
+
+<p><small>Sources: Sunriver Owners Association, <a href="https://www.sunriverowners.org/departments/accounting">Accounting</a> (2026 maintenance fee), <a href="https://www.sunriverowners.org/owners/owner-benefits/member-preference-program">Member Preference Program</a> (2026 card), and <a href="https://www.sunriverowners.org/owners/owner-benefits/recreation-plus-program-for-rentals">Recreation Plus Program</a> (2026 fees), accessed Oct 8, 2026.</small></p>
+
+<h2>Winter access</h2>
 
 <p>This is a practical consideration that catches some buyers off guard. Sunriver gets meaningful snow in winter, and while the SROA plows main roads, some neighborhood streets and driveways can be slow to clear. Highway 97 between Sunriver and Bend is generally well-maintained, but winter storms can make the commute tense.</p>
 
-<p>If you are a full-time resident commuting to Bend for work, plan for occasional difficult driving days between November and March. A reliable all-wheel-drive vehicle is a requirement, not a suggestion. If you are a vacation homeowner, winter access can affect rental bookings; guests sometimes cancel or shorten stays during severe weather.</p>
+<p>If you are a full-time resident commuting to Bend for work, plan for occasional difficult driving days between November and March. A reliable all-wheel-drive vehicle is recommended. If you are a vacation homeowner, winter access can affect rental bookings. Guests sometimes cancel or shorten stays during severe weather.</p>
 
-<h2>Full-Time vs Vacation Home Comparison</h2>
+<h2>Full-time vs. vacation home comparison</h2>
 
 <p>Here is a practical side-by-side:</p>
 
@@ -323,18 +327,26 @@ export const posts: BlogPostSeed[] = [
 <li><strong>Financial model:</strong> Full-time living means absorbing all costs with no rental income offset. Vacation ownership means managing rental income against carrying costs.</li>
 <li><strong>Maintenance burden:</strong> Similar for both, but vacation owners need a management solution for when they are not there.</li>
 <li><strong>School access:</strong> A real consideration for full-time families. Not relevant for vacation ownership.</li>
-<li><strong>Appreciation:</strong> Both benefit from Sunriver's strong brand and limited supply of resort real estate in Central Oregon.</li>
+<li><strong>Appreciation:</strong> Both benefit from Sunriver's name recognition and limited supply of resort real estate in Central Oregon.</li>
 </ul>
 
-<h2>Who Should Buy in Sunriver</h2>
+<h2>Who should buy in Sunriver</h2>
 
-<p>Sunriver as a primary home works best for retirees, remote workers, and families who prioritize outdoor recreation and quiet living over urban convenience. You need to be comfortable with a 25-minute drive to Bend for most services and a seasonal population swing.</p>
+<p>Sunriver as a primary home fits people who want outdoor recreation and quiet over urban convenience, and who are set up to work or live without a daily drive to Bend. You need to be comfortable with a 25-minute drive to Bend for most services and a seasonal population swing.</p>
 
 <p>Sunriver as a vacation home works best for buyers who will use the property several weeks per year and want rental income to offset costs. The strongest returns come from well-located, well-maintained homes with enough bedrooms to attract families.</p>
 
-<p>Either way, Sunriver offers something that most of Central Oregon does not: a self-contained community with its own infrastructure, recreation facilities, and identity. That is worth something, as long as you go in with realistic expectations about costs, seasonal rhythms, and the distance from town.</p>
+<p>Sunriver is a self-contained community with its own infrastructure, recreation facilities, and identity, distinct from most of Central Oregon. It works best when you go in with realistic expectations about costs, seasonal rhythms, and the distance from town.</p>
 
 <p>Explore <a href="/communities">Central Oregon communities</a> to compare Sunriver with other options, or contact our <a href="/team">team</a> for guidance on which Sunriver neighborhoods match your goals.</p>
+
+<h2>Questions</h2>
+
+<h3>How much are Sunriver HOA fees?</h3>
+<p>Every Sunriver property pays the Sunriver Owners Association a maintenance fee of $172.94 a month in 2026, or $2,075.28 a year. Some condos and townhomes owe sub-association dues on top of that.</p>
+
+<h3>Do Sunriver owners pay extra for SHARC?</h3>
+<p>SROA membership cards, which include SHARC access, are $90 per card for 2026. Some owners still pay a SHARC assessment on their SROA invoice, so check the property's statement.</p>
 `,
   },
 
@@ -814,35 +826,34 @@ export const posts: BlogPostSeed[] = [
       'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c0?w=1920&q=80',
     published_at: '2026-02-05T09:00:00Z',
     status: 'published',
-    seo_title: 'Eagle Crest Resort Redmond Oregon Affordable Homes',
+    seo_title: 'Eagle Crest Redmond: Condos, Homes, HOA Fees',
     seo_description:
-      'Eagle Crest in Redmond, Oregon: Central Oregon resort living from $200K to $600K with three golf courses, sports center, and rental income. Buyer guide.',
+      'Eagle Crest\'s 2026 master dues are $96 a month per lot or unit, plus $90 water and sewer on a built lot. Condos, townhomes, and homes in Redmond.',
     excerpt:
-      'Eagle Crest is Central Oregon resort living at a fraction of the cost of Sunriver, Brasada Ranch, or Tetherow. Here is what you get, what you give up, and whether the math works.',
-    content: `
-<p>Every discussion of Central Oregon resort communities eventually arrives at the same question: does anything exist below the million-dollar mark? The answer is Eagle Crest, and it is not a compromise property. Located just north of Redmond, Eagle Crest offers three golf courses, a sports center, and a resort infrastructure that is genuinely functional, all at price points that would get you a condo in most other resort communities. If budget is a factor in your Central Oregon property search, and for most people it is, Eagle Crest warrants a close look.</p>
+      'Eagle Crest is Central Oregon resort living at a fraction of the cost of Sunriver, Brasada Ranch, or Tetherow.',
+    content: `<p>Many Central Oregon resort communities sell well above a million dollars. Eagle Crest, just north of Redmond, is one of the exceptions. It offers three golf courses, a sports center, and resort infrastructure at lower price points than most of the region's resorts.</p>
 
 <h2>Location</h2>
 
 <p>Eagle Crest sits about five miles northwest of downtown Redmond, along Cline Falls Highway. Redmond's shops, restaurants, and services are a quick drive. The Roberts Field airport (Redmond Municipal) is about 15 minutes away, offering direct flights to major West Coast cities and seasonal service to other destinations.</p>
 
-<p>Bend is about 20 to 25 minutes south on Highway 97. This means you have reasonable access to Bend's dining, shopping, and outdoor recreation without paying Bend prices. For some buyers, particularly retirees and vacation homeowners who do not need to be in Bend daily, this distance is an advantage.</p>
+<p>Bend is about 20 to 25 minutes south on Highway 97, with access to Bend's dining, shopping, and outdoor recreation without Bend prices.</p>
 
-<p>The Deschutes River runs through the western portion of the resort, and the surrounding terrain is high desert canyon land with rimrock formations, juniper, and sage. It is a different landscape than the pine forests of Sunriver or the meadows of Black Butte Ranch, but it has its own appeal, particularly for people who enjoy warm, dry summers and dramatic terrain.</p>
+<p>The Deschutes River runs through the western portion of the resort, and the surrounding terrain is high desert canyon land with rimrock formations, juniper, and sage. It is a different landscape than the pine forests of Sunriver or the meadows of Black Butte Ranch.</p>
 
-<p>The Redmond location has a practical advantage that is easy to overlook: the airport. Roberts Field has expanded service significantly in recent years, with direct flights to major West Coast cities and seasonal connections to other hubs. For vacation homeowners who fly in, being 15 minutes from the terminal is a real convenience compared to the drive from the airport to Sunriver (45 minutes) or Black Butte Ranch (50 minutes).</p>
+<p>Roberts Field is about 15 minutes from Eagle Crest, compared with 45 minutes from the airport to Sunriver or 50 minutes to Black Butte Ranch.</p>
 
 <h2>Three Golf Courses</h2>
 
-<p>Eagle Crest's three courses are a significant part of its appeal:</p>
+<p>Eagle Crest has three golf courses:</p>
 
 <ul>
 <li><strong>Resort Course:</strong> The original 18-hole course, a traditional layout with views of the Cascades. Well-maintained and accessible for golfers of all skill levels.</li>
-<li><strong>Ridge Course:</strong> A more challenging 18-hole layout along the canyon rim, with dramatic elevation changes and canyon views. This course has real character.</li>
-<li><strong>Challenge Course:</strong> A par-3 course that is perfect for beginners, families, and quick rounds. Do not overlook it; short courses are genuinely fun.</li>
+<li><strong>Ridge Course:</strong> A more challenging 18-hole layout along the canyon rim, with dramatic elevation changes and canyon views.</li>
+<li><strong>Challenge Course:</strong> A par-3 course for beginners, families, and quick rounds.</li>
 </ul>
 
-<p>All three courses are open to the public, so this is not a private club experience. Green fees are very reasonable compared to Tetherow or Pronghorn, typically $40 to $80 per round depending on season and tee time. Homeowners receive discounted rates and can purchase annual passes.</p>
+<p>All three courses are open to the public, so this is not a private club experience. Homeowners receive discounted rates and can purchase annual passes.</p>
 
 <h2>Sports Center and Amenities</h2>
 
@@ -857,65 +868,57 @@ export const posts: BlogPostSeed[] = [
 <li>Seasonal kids programs</li>
 </ul>
 
-<p>The facilities are functional and well-maintained, though they do not have the luxury finish of Brasada Ranch or Caldera Springs. Think well-run community recreation center rather than boutique resort spa. For families and active retirees, the facilities are more than adequate. The indoor pool is particularly valuable during Central Oregon's colder months, providing year-round exercise options.</p>
+<p>The facilities are closer to a well-run community recreation center than a boutique resort spa, without the luxury finish of Brasada Ranch or Caldera Springs. For families and active retirees, the facilities are more than adequate. The indoor pool is particularly valuable during Central Oregon's colder months, providing year-round exercise options.</p>
 
 <p>Eagle Crest also has several restaurants and a small market/general store on-site. Like most resort communities, you will still drive to town for full grocery shopping and most services. Redmond's commercial infrastructure has grown significantly in recent years, with major retailers, grocery stores, and restaurants all within a short drive of the resort.</p>
 
 <h2>Property Types and Price Ranges</h2>
 
-<p>This is where Eagle Crest really differentiates itself. The price ranges here are genuinely accessible:</p>
+<p>Eagle Crest has three kinds of homes:</p>
 
 <ul>
-<li><strong>Condos (1-2 bed):</strong> $200,000 to $350,000. These are the entry-level investment and vacation properties. Many are in buildings with shared amenities and work well as rentals.</li>
-<li><strong>Townhomes (2-3 bed):</strong> $300,000 to $450,000. More space and privacy than condos, with attached garages and small patios or decks.</li>
-<li><strong>Single-family homes (3-4 bed):</strong> $400,000 to $600,000. Detached homes with private yards, garages, and more separation from neighbors. Some have golf course or canyon views. These are the most versatile option, working equally well as primary residences, vacation homes, or rental properties.</li>
+<li><strong>Single-family homes:</strong> Detached homes with private yards, garages, and more separation from neighbors. Some have golf course or canyon views. Over the last 12 months they sold for a median $835,000, across 99 sales.</li>
+<li><strong>Condos:</strong> The entry-level investment and vacation properties. Many are in buildings with shared amenities and work well as rentals.</li>
+<li><strong>Townhomes:</strong> More space and privacy than condos, with attached garages and small patios or decks.</li>
 </ul>
 
-<p>Compare these to Caldera Springs ($600K to $1.5M+), Brasada Ranch ($700K to $3M+), or Broken Top ($800K to $3M+), and the value proposition is clear. Eagle Crest is not competing on luxury; it is competing on access and affordability. For many buyers, particularly those buying their first resort property, this accessibility opens a door that would otherwise remain closed.</p>
+<p><small>Single-family homes, Oregon Data Share MLS, as of Oct 8, 2026, from our <a href="/communities/eagle-crest">Eagle Crest community page</a>. We don't publish a condo or townhome median.</small></p>
+
+<p>Eagle Crest is not competing on luxury. It is competing on access and price.</p>
 
 <p>Browse <a href="/homes-for-sale">current listings</a> to see what is available in Eagle Crest and across Central Oregon.</p>
 
 <h2>Rental Income Potential</h2>
 
-<p>Eagle Crest is a solid vacation rental market, particularly for budget-conscious travelers who want resort amenities without paying Sunriver or Bend prices. The property management infrastructure is well-established, with multiple management companies operating within the community.</p>
+<p>Eagle Crest has an active vacation rental market, particularly among budget-conscious travelers who want resort amenities without Sunriver or Bend prices. The property management infrastructure is well-established, with multiple management companies operating within the community.</p>
 
-<p>Typical gross rental income by property type:</p>
-
-<ul>
-<li><strong>Condos:</strong> $12,000 to $22,000 per year</li>
-<li><strong>Townhomes:</strong> $18,000 to $30,000 per year</li>
-<li><strong>Single-family homes:</strong> $25,000 to $40,000 per year</li>
-</ul>
-
-<p>With lower purchase prices and lower HOA fees, the rental math at Eagle Crest often pencils out better as a percentage return on investment than at higher-end resort communities. A $300,000 condo generating $20,000 in gross rental income is a more compelling ratio than a $1.2 million cabin generating $50,000.</p>
-
-<p>Management fees typically run 20% to 30% of gross revenue, and you will need to account for cleaning, maintenance, and supplies. Run the real numbers before making assumptions about cash flow. One advantage of Eagle Crest's rental market is consistency: the lower price point attracts a broader range of vacationers, including families on a budget and groups looking for golf trips without the premium resort price tag. This diversified demand base can smooth out seasonal fluctuations compared to luxury-only markets.</p>
+<p>Rental income depends on the specific home, its location, and how it is managed. Before you buy for rental income, get the property's booking history, the management fee, and every layer of dues, and account for cleaning, maintenance, and supplies. Run the real numbers before making assumptions about cash flow. The lower price point attracts a broader range of vacationers, including families on a budget and groups looking for golf trips without the premium resort price tag. This diversified demand base can smooth out seasonal fluctuations compared to luxury-only markets.</p>
 
 <h2>HOA Fees</h2>
 
-<p>Eagle Crest HOA fees are structured differently depending on the sub-community and property type. Expect to pay $200 to $450 per month, which is significantly less than Brasada Ranch, Caldera Springs, or Tetherow. These fees cover common area maintenance, road upkeep, and access to resort facilities.</p>
+<p>Eagle Crest dues come in layers. Every lot or unit pays the Eagle Crest Master Association. For 2026 that's $96 a month for the common areas ($108.85 if the owner didn't prepay the pro shop loan), $90 a month for water and sewer on a built lot, and a Resort Sports Center fee of $460.52 a year per unit plus $32 per owner, billed quarterly. Most homes and condos also belong to a sub-association that bills its own dues, so ask for both budgets. In our MLS data, detached Eagle Crest listings that reported dues since October 2023 show a median of $138 a month across 425 listings. Condo and townhome dues aren't in that figure.</p>
 
-<p>Some sub-communities within Eagle Crest have additional HOA layers with their own fees. Before purchasing, confirm the total monthly assessment for the specific property you are considering, not just the resort-level fee. The layered HOA structure can be confusing, and the total cost is what matters for your monthly budget.</p>
+<p><small>Sources: Eagle Crest Master Association, <a href="https://eaglecrestowners.com/hoas/ecma/">2026 Dues and Budget Letter</a> (December 2025); Ryan Realty, <a href="/communities/eagle-crest">Eagle Crest community page</a>, Oregon Data Share MLS, as of Oct 8, 2026.</small></p>
 
 <h2>Full-Time Living at Eagle Crest</h2>
 
 <p>A significant portion of Eagle Crest's population lives there year-round, particularly retirees who have chosen the resort for its combination of affordable housing, recreation amenities, and community. The full-time community has its own rhythm, with social groups, organized activities, and a neighborhood feel that persists even during the quiet winter months.</p>
 
-<p>For retirees, the proximity to St. Charles Redmond for healthcare, the on-site recreation facilities for staying active, and the relatively low cost of living compared to Bend make Eagle Crest a practical choice. Several residents describe it as getting 80% of the Central Oregon resort lifestyle at 40% of the cost, a ratio that has obvious appeal for people on fixed incomes.</p>
+<p>For retirees, the proximity to St. Charles Redmond for healthcare, the on-site recreation facilities for staying active, and the relatively low cost of living compared to Bend make Eagle Crest a practical choice for people on fixed incomes.</p>
 
 <h2>Comparison to Higher-End Resorts</h2>
 
-<p>It is worth being direct about what Eagle Crest is and is not compared to Central Oregon's premium resort communities:</p>
+<p>Compared with Central Oregon's premium resort communities:</p>
 
 <ul>
-<li><strong>What you get:</strong> Golf, pools, recreation, a resort community identity, vacation rental potential, and a Cascade mountain backdrop, all at 30% to 50% of the cost of competitors.</li>
+<li><strong>What you get:</strong> Golf, pools, recreation, a resort community identity, vacation rental potential, and a Cascade mountain backdrop, at a lower price point.</li>
 <li><strong>What you give up:</strong> Luxury finishes, modern architecture, private club exclusivity, high-end dining, spa services, and the cachet associated with a Sunriver or Tetherow address.</li>
-<li><strong>Location trade-off:</strong> Redmond is a practical, growing city, but it lacks Bend's walkable downtown, brewery culture, and immediate trail access. For some buyers this is irrelevant; for others it matters.</li>
+<li><strong>Location trade-off:</strong> Redmond is a practical, growing city, but it lacks Bend's walkable downtown, brewery culture, and immediate trail access. For some buyers this is irrelevant. For others it matters.</li>
 </ul>
 
 <p>For a broader comparison, visit our <a href="/communities">Central Oregon communities page</a>.</p>
 
-<h2>Who Eagle Crest Is Great For</h2>
+<h2>Who Eagle Crest Works For</h2>
 
 <p>Eagle Crest attracts several buyer profiles:</p>
 
@@ -923,13 +926,12 @@ export const posts: BlogPostSeed[] = [
 <li><strong>Retirees on a budget:</strong> Resort amenities, mild activity, and community infrastructure at a price point that works on a fixed income. The proximity to St. Charles Redmond for healthcare is a practical bonus.</li>
 <li><strong>First-time vacation home buyers:</strong> If you have been priced out of Sunriver or Bend, Eagle Crest lets you get into the Central Oregon vacation home market without overextending.</li>
 <li><strong>Rental investors:</strong> The lower entry cost and established rental market create favorable return ratios compared to higher-end communities.</li>
-<li><strong>Golfers who want to play, not posture:</strong> Three courses, reasonable green fees, no initiation fees required. Just golf.</li>
+<li><strong>Golfers:</strong> Three public courses, reasonable green fees, and no initiation fees required.</li>
 </ul>
 
-<p>Eagle Crest is less suited for buyers who prioritize modern architecture, luxury amenities, proximity to downtown Bend, or private club exclusivity. It does not pretend to be something it is not, and that honesty is part of its appeal. You know exactly what you are getting, and for many buyers that clarity, combined with the financial accessibility, is exactly what they want.</p>
+<p>Eagle Crest is less suited for buyers who prioritize modern architecture, luxury amenities, proximity to downtown Bend, or private club exclusivity.</p>
 
-<p>Explore <a href="/homes-for-sale">homes for sale</a> in Eagle Crest and beyond, or talk with our <a href="/team">team</a> about finding the right property at the right price point in Central Oregon.</p>
-`,
+<p>Explore <a href="/homes-for-sale">homes for sale</a> in Eagle Crest and beyond, or talk with our <a href="/team">team</a> about finding the right property at the right price point in Central Oregon.</p>`,
   },
 
   // ─── 9. Best Neighborhoods in Bend for Families ───
