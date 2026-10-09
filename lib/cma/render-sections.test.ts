@@ -23,6 +23,7 @@ import {
   zoningExplainerBlock,
 } from './render-blocks'
 import { renderCmaHtml, type RenderCmaArgs } from './render'
+import { renderImmersiveCmaHtml } from './immersive'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
 
 const subject: CmaSubject = {
@@ -256,7 +257,7 @@ describe('render helpers', () => {
 
 describe('use-of-property and pricing pages in the assembled document', () => {
   it('prints the zone board and the pricing explanation when development data is present', () => {
-    const { html } = renderCmaHtml({
+    const withDevelopment: RenderCmaArgs = {
       ...bareArgs,
       development: {
         jurisdiction: 'City of Redmond',
@@ -288,9 +289,18 @@ describe('use-of-property and pricing pages in the assembled document', () => {
         disclaimer: 'This is a preliminary read of published code, not a land-use decision.',
         resources: [],
       },
-    })
+    }
+    const { html } = renderCmaHtml(withDevelopment)
     expect(html).not.toContain('What this property can do')
-    expect(html).not.toContain('class="zm-code">R-2')
+    expect(html).not.toContain('verification dates shown beside them')
+    expect(html).not.toContain('Land use, rental, and code statements')
+    expect(html).toContain('Basis and limits')
+    expect(html).toContain('Not an appraisal')
+    const immersive = renderImmersiveCmaHtml(withDevelopment, 'https://ryan-realty.com')
+    expect(immersive).not.toContain('What this property can do')
+    expect(immersive).not.toContain('verification dates shown beside them')
+    expect(immersive).not.toContain('Land use, rental, and code statements')
+    expect(immersive).toContain('Basis and limits')
     expect(html).toContain('$715,000')
     // P5: the search story is prose now, not a "What we searched" bullet list.
     expect(html).toContain('The sales that set this price')

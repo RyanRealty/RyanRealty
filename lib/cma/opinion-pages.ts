@@ -1793,7 +1793,34 @@ function purposeClause(a: OpinionPageArgs): string {
     : `to assist the owner of ${home} in evaluating a potential listing price`
 }
 
-export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
+/**
+ * The use-of-property page prints zoning, buildability, rental, and covenant
+ * statements with a verification date beside them (`verified YYYY-MM-DD` on
+ * the zone line and in the sources line). A market-stat "verified" line is
+ * not that chapter. 1648 Pheasant, 3177 Coho, and 2382 Jackson stored the
+ * development read and still had no such page (reader review 2026-10-09).
+ */
+export function landUseStatementsRendered(html: string | null | undefined): boolean {
+  if (!html) return false
+  if (!html.includes('What this property can do')) return false
+  return /verified \d{4}-\d{2}-\d{2}/.test(html)
+}
+
+const LAND_USE_LIMITS_PARAGRAPH =
+  '<p><strong>Land use, rental, and code statements.</strong> Zoning, buildability, rental, and covenant statements in this report are preliminary reads of published code and recorded documents as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions, and they should be confirmed with the city or county planning office before anyone relies on them.</p>'
+
+/** The Basis sentence that points at those dates. Empty unless they are rendered. */
+export function landUseLimitsHtml(besideHtml: string | null | undefined): string {
+  return landUseStatementsRendered(besideHtml) ? LAND_USE_LIMITS_PARAGRAPH : ''
+}
+
+/**
+ * Basis and limits. `landUsePageHtml` is the use-of-property chapter when this
+ * document renders it. The seller letter and the immersive walk
+ * OPINION_CHAPTER_ORDER, which does not include that chapter, so both callers
+ * omit it. Stored `development` is not a substitute for the page.
+ */
+export function cmaDisclosureProseHtml(a: OpinionPageArgs, landUsePageHtml?: string | null): string {
   const b = a.broker
   const name = b?.displayName ?? 'the preparing broker'
   // Named only where it was actually read. A recorded lot or an assessor
@@ -1826,7 +1853,7 @@ export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
       ? ` View: ${esc(formatClientMlsField(a.subject.viewDescription)!)}.`
       : ''
   }</p>
-  ${a.development ? '<p><strong>Land use, rental, and code statements.</strong> Zoning, buildability, rental, and covenant statements in this report are preliminary reads of published code and recorded documents as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions, and they should be confirmed with the city or county planning office before anyone relies on them.</p>' : ''}
+  ${landUseLimitsHtml(landUsePageHtml)}
   <p><strong>Licensee interest.</strong> Neither ${esc(name)} nor Ryan Realty holds any existing or contemplated interest in this property. Any such interest, should one arise, will be disclosed in writing.</p>
   <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>
   </div>`
