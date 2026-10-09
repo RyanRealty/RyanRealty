@@ -537,6 +537,7 @@ export function matchToCompSelection(
         price_tier: match.priceTierSkipped ?? 0,
       },
       not_price_setting: match.rungs.reduce((n, r) => n + (r.notSetting ?? 0), 0),
+      not_setting_sales: match.notSettingSales ?? [],
       outliers_excluded: 0,
       final_count: match.comps.length,
       final_tier_counts: Object.fromEntries(

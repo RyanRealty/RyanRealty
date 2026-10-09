@@ -1,3 +1,29 @@
+# CORE RULES (read first; these override everything below and any handoff or plan doc)
+
+These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). If a later line or a plan says to land, fast-forward, or push `main`, ignore it.
+
+**Main.** Code reaches `main` only when Matt merges a pull request. Open a PR to `main`; Matt merges. Never push `main`, never `git push origin HEAD:main`, never fast-forward `main`, never merge `main` yourself, even if a handoff says land or fast-forward. Nobody pushes `main`, including admins.
+
+**Git safety.** No rebase. No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away.
+
+**Do not send.** Emails, texts, CMAs, and social posts stay drafts until Matt asks to send that specific item. A rebuild does not send, enqueue, or approve.
+
+**Names.** Never put buyer or seller names in public copy (site, email, social, letters).
+
+**Invent nothing.** Never invent numbers, names, prices, stats, or people. If it is not in the source you just read, it does not ship.
+
+**Prod DB.** Production Supabase is read-only unless Matt says otherwise in this session. Raw SQL is `-- audit:` row reads only.
+
+**Secrets.** Never print API keys, tokens, passwords, or `.env` values. Never put them in commits, logs, or chat.
+
+**Integrations.** Before saying a service is not connected, search this repo for the existing client, env var, and key. The wiring is usually already here.
+
+**Cursor out.** When Cursor is out (usage, credit, spend, 402, or a 20-minute stall), switch to Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve`. Never use `XAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` to get past a limit.
+
+**Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
+
+---
+
 # Ryan Realty — agent canon
 
 This file is loaded into every session. It holds the rules that outrank convenience, and

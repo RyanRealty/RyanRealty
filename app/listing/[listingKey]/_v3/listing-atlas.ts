@@ -11,6 +11,8 @@
  */
 import type { AtlasRegion } from '@/components/site/v3'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS, type AtlasPopulation } from '@/lib/atlas/build-place-atlas'
+import type { AtlasBoundaryRef } from '@/lib/atlas/atlas-dots-scope'
+import { compactAtlasGeometry } from '@/lib/atlas/compact-geometry'
 import { atlasRegionNames } from '@/lib/atlas/place-names'
 import {
   getBoundaryGeoJSON,
@@ -66,9 +68,41 @@ export type ListingAtlas = {
   /** Same-community sibling plats. Empty on a city frame (no dump). */
   otherSubdivs: { name: string; href: string }[]
   otherSubdivsHeading: string
+  /** MLS cities the population was read for (UXLIVE-3 dots URL). */
+  cities: string[]
+  /** Where the frame boundary came from, or null when the map is dots-only. */
+  boundaryRef: AtlasBoundaryRef | null
+  /** The frame polygon the Atlas was built with. */
+  boundary: GeoJSON.Polygon | GeoJSON.MultiPolygon | null
 }
 
 const READ_MS = 4500
+const NEIGHBOR_LOT_CAP = 6
+/** ~10 m: enough for a lot outline, not survey vertices. */
+const LOT_TOLERANCE_DEG = 1e-4
+
+function listingAtlasBoundaryRef(
+  grain: 'city' | 'neighborhood' | 'community',
+  frameSlug: string | null,
+  citySlug: string | null,
+  cityName: string,
+): AtlasBoundaryRef | null {
+  if (grain === 'community' && frameSlug) return { kind: 'community', slug: frameSlug }
+  if (grain === 'neighborhood' && frameSlug) {
+    return { kind: 'geo', geoType: 'neighborhood', geoSlug: frameSlug }
+  }
+  if (citySlug) return { kind: 'geo', geoType: 'city', geoSlug: citySlug }
+  return { kind: 'city-row', cityName }
+}
+
+function compactListingParcels(parcels: Taxlot[]): Taxlot[] {
+  const subject = parcels.filter((lot) => lot.isSubject)
+  const neighbors = parcels.filter((lot) => !lot.isSubject).slice(0, NEIGHBOR_LOT_CAP)
+  return [...subject, ...neighbors].map((lot) => ({
+    ...lot,
+    geometry: compactAtlasGeometry(lot.geometry, LOT_TOLERANCE_DEG),
+  }))
+}
 
 async function readPlaceBoundary(
   slug: string,
@@ -226,7 +260,7 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
   return {
     atlas: atlasRead ?? EMPTY_PLACE_ATLAS,
     regions,
-    parcels,
+    parcels: compactListingParcels(parcels),
     subjectParcel: parcels.find((p) => p.isSubject) ?? null,
     frameName,
     frameHref,
@@ -234,5 +268,10 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
     dotsFrame: !boundary,
     otherSubdivs,
     otherSubdivsHeading: hasLocalFrame ? frameName : '',
+    cities: [scope.city],
+    boundaryRef: boundary
+      ? listingAtlasBoundaryRef(grain, frameSlug, scope.citySlug, scope.city)
+      : null,
+    boundary,
   }
 }

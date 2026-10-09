@@ -136,6 +136,12 @@ export interface RenderCmaArgs {
    * Null when that place has no matching rows. Absent on older letters.
    */
   placePricing?: PlacePricingStory | null
+  /**
+   * Sales rule 20 refused, with the sentence the walk recorded. The street
+   * list prints it beside a sale that does not set the price (SKILL §0.3
+   * rule 29). Absent on letters built before the field landed.
+   */
+  excludedSaleNotes?: import('@/lib/pricing/price-set').NotSettingSale[] | null
 }
 
 interface PageDef {

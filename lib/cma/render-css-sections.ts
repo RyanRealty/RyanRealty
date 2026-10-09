@@ -603,6 +603,8 @@ export function cmaSectionStyles(): string {
   /* The price-path primitive (blueprint, Delta 1). Two layouts of one line,
      exactly one visible, same mechanism as every other chart here. */
   .street-sales { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+  .street-sale-wrap { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; max-width: 36em; }
+  .street-sale-why { color: var(--muted); font-size: 11px; line-height: 1.35; max-width: 36em; }
   a.street-sale { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--navy-line); border-radius: 8px; color: inherit; text-decoration: none; font-size: 11px; }
   a.street-sale .n { font-variant-numeric: tabular-nums; font-weight: 600; }
   a.street-sale .d { color: var(--muted); font-variant-numeric: tabular-nums; }

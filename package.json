@@ -223,6 +223,7 @@
     "ci:program-complete": "node scripts/check-program-complete.mjs",
     "ci:claude-canon": "node scripts/check-claude-canon.mjs",
     "ci:claude-canon:baseline": "node scripts/check-claude-canon.mjs --write-baseline",
+    "ci:core-rules-prefix": "node scripts/check-core-rules-prefix.mjs",
     "ci:web-push-durable": "node scripts/check-web-push-durable.mjs",
     "ci:shadcn-burndown": "node scripts/check-shadcn-burndown.mjs",
     "ci:tracking-policy": "node scripts/check-tracking-policy.mjs",

@@ -1690,6 +1690,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       thisHomePlan,
       tiersUsed: selection.tiersUsed,
       listingMarket,
+      excludedSaleNotes: selection.diagnostics.not_setting_sales ?? [],
     }
 
     // Spread, never a second hand-written list: a field added to one list and

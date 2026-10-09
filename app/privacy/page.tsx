@@ -89,7 +89,7 @@ const ITEMS: V3QuietItem[] = [
     term: 'Third-party sharing',
     body: [
       'Resend, transactional and marketing email.',
-      'Google Analytics (GA4), site analytics.',
+      'Google Analytics (GA4), site analytics, including Google Signals.',
       'Meta, advertising and analytics when you interact with our ads or use Meta products.',
       'Once you accept marketing cookies, Meta and Google may collect information about your online activities over time and across different websites and online services.',
       'Each has its own privacy policy. We do not sell your personal information.',
@@ -101,6 +101,14 @@ const ITEMS: V3QuietItem[] = [
     body: [
       `If you provide your phone number on one of our forms, or text our business number first, you consent to receive calls and text messages from Ryan Realty about your request. Message frequency varies. Message and data rates may apply. Reply STOP at any time to opt out, or HELP for help. You can also reach us at ${CONTACT.phoneDirect}.`,
       'No mobile information will be shared with third parties or affiliates for marketing or promotional purposes. Text messaging originator opt-in data and consent are not shared with any third parties.',
+    ],
+  },
+  {
+    kind: 'prose',
+    term: 'Google Signals (demographics and cross-device measurement)',
+    body: [
+      'We use Google Signals as part of Google Analytics 4. When you are signed in to your Google account and have turned on Ads Personalization in your Google settings, Google may associate aggregate demographic data (age range, gender, general interest categories) and cross-device activity with the visit data we collect. We never see your individual Google account information. We only see aggregate reports such as the age and interest breakdown of our site visitors.',
+      'You can control whether Google Signals applies to your visit at adssettings.google.com by turning off Ads Personalization. You can also opt out of Google Analytics entirely by installing the Google Analytics Opt-out Browser Add-on.',
     ],
   },
   {

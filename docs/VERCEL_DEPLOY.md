@@ -21,11 +21,11 @@ So: if your latest work isn’t committed and pushed, Vercel will keep serving t
    git commit -m "Your message, e.g. Auth, profile, email sign-in"
    ```
 
-2. **Push to the remote**
+2. **Push the branch and open a PR**
    ```bash
-   git push origin main
+   git push -u origin HEAD
    ```
-   (Use your branch name if different, e.g. `master`.)
+   Open a PR to `main`; Matt merges. Never push `main` yourself.
 
 3. **Vercel**
    - Vercel will detect the push and start a new deployment.
@@ -95,6 +95,6 @@ In Vercel: **Project → Settings → Cron Jobs** (or `vercel.json`), add each U
 ## Quick checklist
 
 - [ ] Code committed (`git status` clean or only intended changes).
-- [ ] Code pushed (`git push origin main` or your branch).
+- [ ] Branch pushed and a PR opened to `main`; Matt merges.
 - [ ] Vercel env vars set (especially `NEXT_PUBLIC_SITE_URL` = your Vercel URL).
 - [ ] Supabase Redirect URLs include your Vercel URL (Supabase → Authentication → URL Configuration).

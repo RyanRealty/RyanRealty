@@ -79,7 +79,7 @@
 | R-044 | Video hard rules: 1080×1920, hook by frame 12, single-word Amboqia captions, Victoria VO, no unapproved MP4 ships | CLAUDE.md §4 (locked 2026-04-27…05-20) | LOCKED | — |
 | R-045 | Video producers stay out of the brain REGISTRY; local worker only | CLAUDE.md §4 (Matt 2026-06-14) | LOCKED | — |
 | R-046 | Outbound content must "blow them away"; Tumalo kit is the named exemplar | BROKER-OS (2026-08-12) | LOCKED | — |
-| R-047 | Two tracks never mix files; parallel in worktrees, serial land on main; anti-stranding contract | BROKER-OS v0.12/v0.13; AGENTIC_GRAPH rule 11 | LOCKED | — |
+| R-047 | Two tracks never mix files; parallel in worktrees, serial PRs to main (Matt merges); anti-stranding contract | BROKER-OS v0.12/v0.13; AGENTIC_GRAPH rule 11 | LOCKED | — |
 | R-048 | Canon consolidation: one rule once; no conflicting plan docs; plans register in the canon | DECISIONS-RECORDED §7 | VERIFIED | G44 |
 | R-049 | Expired/FSBO first message proves this-home marketing; never blame prior agent; never invent numbers | BROKER-OS | LOCKED | — |
 | R-050 | Graph engineering adopted as substance: contracts, edges-as-code, verifier edges, budgets, stop conditions | AGENTIC_GRAPH (GO 2026-08-15) | VERIFIED | workflows + canon v1.4.0 |

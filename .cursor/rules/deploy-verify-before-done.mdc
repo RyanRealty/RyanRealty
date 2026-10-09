@@ -9,9 +9,9 @@ Never report a task as done until all steps below are complete in order.
 
 1. Implement and validate locally (`npm run build` and any task-specific checks).
 2. Commit only the intended changes.
-3. Push to `main` and confirm remote contains the commit (`origin/main` includes SHA).
+3. Push the branch, open a PR to `main`; Matt merges. Confirm remote `origin/main` includes the SHA after he merges.
 4. **Hosted Supabase:** If the shipped code needs new schema, apply migrations to the **production** database the app uses (same release as this push). See `.cursor/rules/production-parity.mdc` and `.cursor/rules/supabase-migrations-auto.mdc`. If the task did not touch schema, skip.
-5. **Run `npm run deploy:verify`** — this is mandatory after every push. It polls Vercel for the deployment of the just-pushed SHA, waits for `READY`, and on `ERROR` prints the build-log tail. Exit 0 means production caught up; non-zero means production is BROKEN and the work is not shipped.
+5. **Run `npm run deploy:verify`** — this is mandatory after Matt merges the PR. It polls Vercel for the deployment of that SHA, waits for `READY`, and on `ERROR` prints the build-log tail. Exit 0 means production caught up; non-zero means production is BROKEN and the work is not shipped.
 6. (Step 5 replaces the old "wait until READY" manual check. If the script reports `ERROR`, fix it before reporting anything as done — do not push more on top.)
 7. Verify production behavior for the changed path/feature (not just local), including DB-dependent behavior when relevant.
 8. Only then report completion to the user.
@@ -23,7 +23,7 @@ Between 2026-04-15 and 2026-04-21, every production deploy errored because of a 
 ## Required status language
 
 - If local is fixed but not deployed: explicitly say "fixed locally, not deployed yet."
-- If pushed but not live: explicitly say "pushed to main, deployment pending."
+- If the PR is open but not merged, or merged but not live: explicitly say "PR opened / merged, deployment pending."
 - If code is live but migrations were not applied: explicitly say "production app deployed, database schema not yet migrated."
 - If live but not verified: explicitly say "live status unknown until production check is complete."
 
