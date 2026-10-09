@@ -429,18 +429,12 @@ describe('equal button sizing', () => {
     }
   })
 
-  it('US Accept all is the brand navy fill named in globals.css', () => {
+  it('US Accept all uses the primary token, which is the brand navy', () => {
     const css = readFileSync(GLOBALS, 'utf8')
-    expect(css).toContain('#102742')
     const primary = /--primary:\s*oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/.exec(css)
     expect(primary).toBeTruthy()
     const [r, g, b] = oklchToSrgb(+primary![1], +primary![2], +primary![3]).map((c) => Math.round(c * 255))
-    expect(r).toBeGreaterThanOrEqual(14)
-    expect(r).toBeLessThanOrEqual(20)
-    expect(g).toBeGreaterThanOrEqual(35)
-    expect(g).toBeLessThanOrEqual(45)
-    expect(b).toBeGreaterThanOrEqual(60)
-    expect(b).toBeLessThanOrEqual(72)
+    expect([r, g, b]).toEqual([16, 39, 66])
   })
 
   it('US Decline secondary tokens meet WCAG 4.5:1', () => {
