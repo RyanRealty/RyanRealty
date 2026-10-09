@@ -166,7 +166,7 @@ export function commissionSeed() {
     // No dedicated hero yet; the selling guide's image stands in (no new binary in this PR).
     hero_image_url: '/images/blog/how-to-sell-your-home-bend.jpg',
     author_broker_id: '2fda6811-2edf-49e3-b3ca-33e1052f82e6',
-    published_at: '2026-10-09T16:00:00Z',
+    published_at: '2026-10-09T14:00:00Z',
     status: 'published' as const,
     seo_title: COMMISSION_SEO_TITLE,
     seo_description: COMMISSION_SEO_DESCRIPTION,
