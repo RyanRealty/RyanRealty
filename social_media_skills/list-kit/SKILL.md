@@ -246,7 +246,7 @@ TRIGGER ──► PARSE INPUT ──► FUZZY MATCH ──► DISAMBIGUATE if ne
                         ASSET LIBRARY REGISTRATION (§9)
                                 │
                                 ▼
-                        git commit + push to main
+                        git commit + push the branch; open a PR to main; Matt merges
 ```
 
 Failure of one stream does not block others. Surface each failure in the review package with a
@@ -585,7 +585,7 @@ When Matt says "ship it" / "go" / "approved" / "publish":
 
 5. **Commit** with message referencing MLS# and deliverable count.
 
-6. **Push to origin/main immediately**.  no "saved locally" commits.
+6. **Push the branch immediately and open a PR to `main`; Matt merges.** No "saved locally" commits. Never push `main` yourself.
 
 7. **Optional: queue to publisher**.  only if Matt explicitly says "and publish to social" or
    "schedule it." Routes through `automation_skills/automation/publish/`. Each platform post gets
