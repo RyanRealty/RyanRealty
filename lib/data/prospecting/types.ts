@@ -15,6 +15,8 @@
  * - Photo/lat/lng: FSBO rows carry them natively; expired rows join `listings`.
  */
 
+import { formatDate } from '@/lib/format/date'
+
 export type ProspectKind = 'expired' | 'fsbo'
 
 /** Structured skip-trace flags. Email hard stop: 'litigator' | 'deceased' | 'hard-stop'. Phone only: 'dnc' | 'dnc:tcpa'. */
@@ -458,13 +460,7 @@ export function acceptedDocTypesFor(kind: ProspectKind): ReadonlyArray<string> {
 export function fsboOffMarketReason(lastSeenAt: string | null | undefined): string {
   const t = lastSeenAt ? Date.parse(lastSeenAt) : NaN
   if (!Number.isFinite(t)) return 'Off market (FSBO ad no longer seen)'
-  const day = new Date(t).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'America/Los_Angeles',
-  })
-  return `Off market (FSBO ad not seen since ${day})`
+  return `Off market (FSBO ad not seen since ${formatDate(t)})`
 }
 
 /**
