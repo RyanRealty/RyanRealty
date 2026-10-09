@@ -231,7 +231,8 @@ export function buildExploreEdges(input: {
       : [{ label: `Search ${input.communityName} homes`, href: input.browseHref, group: input.communityName }]),
     // SITE-171: /housing-market/bend/tetherow 301s onto this community page.
     // A "market report" door that bounces back is not a door.
-    ...(redirectsAwayFromSearch(input.communityMarketHref)
+    ...(redirectsAwayFromSearch(input.communityMarketHref) ||
+    input.communityMarketHref === input.cityReportHref
       ? []
       : [
           {

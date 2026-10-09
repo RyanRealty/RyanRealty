@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { ListingTile } from '@/lib/data/types/listing'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import {
+  listingSimilarActive,
   listingSimilarDedupe,
   listingSimilarInPlace,
   listingSimilarRail,
@@ -59,6 +62,7 @@ describe('listingTileToRow', () => {
     expect(row.cityLine).toBe('Bend · Stonegate')
     expect(row.propertySubType).toBe('Single Family Residence')
     expect(row.href).toMatch(/220221963/)
+    expect(row.href.startsWith('/')).toBe(true)
   })
 })
 
@@ -91,5 +95,31 @@ describe('listingSimilarDedupe', () => {
       tile({ listingKey: '2', listNumber: '2', listPrice: 439_500 }),
     ])
     expect(kept).toHaveLength(1)
+  })
+})
+
+describe('listingSimilarActive', () => {
+  it('keeps Active and Active Under Contract, drops Closed', () => {
+    const kept = listingSimilarActive([
+      tile({ listingKey: 'a', status: 'Active' }),
+      tile({ listingKey: 'b', status: 'Active Under Contract' }),
+      tile({ listingKey: 'c', status: 'Closed' }),
+      tile({ listingKey: 'd', status: 'Expired' }),
+    ])
+    expect(kept.map((t) => t.listingKey)).toEqual(['a', 'b'])
+  })
+})
+
+describe('ListingSimilarStrip', () => {
+  const src = readFileSync(resolve('components/site/listing-detail/ListingSimilarStrip.tsx'), 'utf8')
+  const row = readFileSync(resolve('components/site/v3/V3ListingRow.tsx'), 'utf8')
+
+  it('is a server strip with crawlable rows, no LCP priority on below-fold thumbs', () => {
+    expect(src).not.toMatch(/'use client'/)
+    expect(src).toContain('<V3ListingRow')
+    expect(src).not.toMatch(/priority=\{/)
+    expect(row).toContain('listingPhotoAlt')
+    expect(row).toMatch(/loading=\{priority \? 'eager' : 'lazy'\}/)
+    expect(row).toContain('<Link href={listing.href}')
   })
 })

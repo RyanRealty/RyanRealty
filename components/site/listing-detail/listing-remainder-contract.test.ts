@@ -50,6 +50,8 @@ describe('listing remainder composition', () => {
     expect(PAGE).not.toMatch(/<ListingBrokerBar/)
     expect(PAGE).not.toMatch(/<ListingMobileContactBar/)
     expect(PAGE).not.toMatch(/<V3PhoneDock[\s/>]/)
+    expect(STRIP).toContain('<ListingFoldActions')
+    expect(STRIP).toContain('listing-face--has-fold')
     const LAYOUT = readFileSync(resolve('app/layout.tsx'), 'utf8')
     expect(LAYOUT).not.toMatch(/V3PhoneDock/)
     const CHROME = readFileSync(resolve('components/site/v3/V3Chrome.tsx'), 'utf8')
@@ -202,6 +204,9 @@ describe('listing remainder composition', () => {
     expect(positions.every((p) => p >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
     expect(PAGE).toMatch(/showEstPayment=\{false\}/)
+    expect(PAGE).toMatch(/listingSimilarActive/)
+    expect(PAGE).toMatch(/deferredAtlasProps/)
+    expect(PAGE).toMatch(/pickPriceCtaListing/)
   })
 
   it('composes the OFF-MARKET order: price, sold facts, homes for sale, saved search', () => {

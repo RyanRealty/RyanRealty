@@ -52,4 +52,36 @@ describe('buildSaleJourney', () => {
     expect(j.steps).toHaveLength(0)
     expect(j.pendingDate).toBe('2026-02-01')
   })
+
+  it('omits a 0-day offer when the on-market day is after the close', () => {
+    const meadow = buildSaleJourney({
+      events: [],
+      originalListPrice: 544000,
+      lastListPrice: 544000,
+      closePrice: 544000,
+      onMarketDate: '2025-06-06',
+      pendingTimestamp: '2025-06-06T21:18:25+00:00',
+      closeDate: '2025-05-30',
+    })
+    expect(meadow.daysToOffer).toBeNull()
+    const sameDay = buildSaleJourney({
+      events: [],
+      originalListPrice: 544000,
+      lastListPrice: 544000,
+      closePrice: 544000,
+      onMarketDate: '2025-05-30',
+      pendingTimestamp: '2025-05-30',
+      closeDate: '2025-05-30',
+    })
+    expect(sameDay.daysToOffer).toBe(0)
+    const withoutClose = buildSaleJourney({
+      events: [],
+      originalListPrice: 544000,
+      lastListPrice: 544000,
+      closePrice: 544000,
+      onMarketDate: '2025-06-06',
+      pendingTimestamp: '2025-06-06',
+    })
+    expect(withoutClose.daysToOffer).toBe(0)
+  })
 })

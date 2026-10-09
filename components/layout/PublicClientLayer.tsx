@@ -47,6 +47,7 @@ export default function PublicClientLayer({
   // Admin never loads any of these chunks. (Return BEFORE touching the dynamic
   // components so their imports are never triggered on an admin route.)
   if (pathname === '/admin' || pathname?.startsWith('/admin/')) return null
+  const onSell = pathname === '/sell' || pathname?.startsWith('/sell/')
   return (
     <>
       <HideOnLP>
@@ -66,9 +67,11 @@ export default function PublicClientLayer({
           <SignUpTracker />
         </HideOnLP>
       </Suspense>
-      <HideOnLP>
-        <ComparisonTray />
-      </HideOnLP>
+      {onSell ? null : (
+        <HideOnLP>
+          <ComparisonTray />
+        </HideOnLP>
+      )}
       <HideOnLP>
         <GuestWatchingBanner />
       </HideOnLP>

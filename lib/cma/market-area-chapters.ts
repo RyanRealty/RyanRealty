@@ -25,7 +25,7 @@ import {
   type OfferTiming,
 } from '@/lib/cma/market-charts'
 import { subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
-import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
+import { closedSaleDaysToOffer, onMarketAfterClose } from '@/lib/cma/listing-history-line'
 import { OF_LAST_ON_MARKET, restartedSalesLine, saleStretch } from '@/lib/cma/last-stretch'
 import { cameOffStatus } from '@/lib/cma/listing-status'
 import { readTrendMeasure } from '@/lib/cma/render-contract'
@@ -471,7 +471,14 @@ export function renderDaysToOfferHtml(
     })
     if (toOffer == null) {
       const raw = c.daysToOffer
-      missing.push({ n: i + 1, address: c.address, recorded: raw != null && Number.isFinite(raw) && raw >= 0 })
+      // On the market after the close is a recorded date that does not fit
+      // (1654 Meadow), even when the stamped count was already dropped.
+      const inverted = onMarketAfterClose(c.offerFrom ?? c.onMarketDate, c.closeDate)
+      missing.push({
+        n: i + 1,
+        address: c.address,
+        recorded: inverted || (raw != null && Number.isFinite(raw) && raw >= 0),
+      })
       return
     }
     rows.push({
