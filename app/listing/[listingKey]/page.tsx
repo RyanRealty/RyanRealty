@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { MortgageCalculator } from '@/components/site/listing-detail/MortgageCalculator.lazy'
 import {
   getListingLookup,
   getListingPhotos,
@@ -69,7 +70,6 @@ import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
 import { DescriptionBlock } from '@/components/site/listing-detail/DescriptionBlock'
 import { GoverningDocumentsBlock } from '@/components/site/listing-detail/GoverningDocumentsBlock'
 import { getPlaceDocumentsForListing } from '@/lib/data/places/getPlaceDocumentsForListing'
-import dynamic from 'next/dynamic'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { buildListingAtlas } from './_v3/listing-atlas'
 import { listingAtlasHeadline } from '@/lib/listing/listing-place-market'
@@ -144,10 +144,6 @@ void _V3WorkWithUsImport
 void ListingVideoEmbed
 void V3ListingRow
 
-const MortgageCalculator = dynamic(
-  () =>
-    import('@/components/site/listing-detail/MortgageCalculator').then((m) => m.MortgageCalculator),
-)
 
 /**
  * One house. PAGE_INVENTORY listing (house URL), 13 rows, Zillow Showcase to beat.
