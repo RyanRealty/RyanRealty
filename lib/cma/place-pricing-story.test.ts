@@ -39,7 +39,11 @@ describe('placePricingStoryHtml', () => {
     // With no home to place, the line names the place for what it is and says
     // nothing about where the home sits.
     expect(html).toContain('Here&#39;s what happened in the Old Farm neighborhood over the last 12 months.')
-    expect(html).toContain('48 homes were listed. 11 of them came off the market without selling.')
+    // The words say what the count holds (reader review 2026-10-09, 1355
+    // Jacksonville); this was "48 homes were listed." over the same count.
+    expect(html).toContain(
+      '48 homes were listed, sold or taken off the market. 11 of them came off the market without selling.',
+    )
     expect(html).toContain('9 dropped the price. The typical cut was 3.5% of the first ask.')
     expect(html).toContain('6 gave the buyer a concession at closing. The typical concession was 2% of the list price.')
     expect(html).toContain(

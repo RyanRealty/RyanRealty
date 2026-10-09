@@ -23,6 +23,7 @@ import {
 
   nextStepButtonsHtml,
   nextStepEyebrow,
+  competitionChapterName,
   competitionHeadingFor,
   nextStepHeading,
   nextStepNoteHtml,
@@ -120,6 +121,7 @@ function salesThatSetItScene(a: OpinionSceneArgs): string {
     comps: args.comps,
     pricing: args.pricing,
     docLinks: args.docLinks ?? null,
+    onMarket: args.onMarket,
   })
   const heading = /<h2 class="section[^"]*">[\s\S]*?<\/h2>/.exec(page.body)?.[0] ?? ''
   const rest = heading ? page.body.replace(heading, '') : page.body
@@ -138,7 +140,7 @@ function competitionScene(a: OpinionSceneArgs): string {
   return `
   <section class="sc sc-cream pack" id="competition">
     <div class="in wide">
-      <div class="kick r">At this price</div>
+      <div class="kick r">${esc(competitionChapterName(a))}</div>
       <h2 class="h r">${esc(competitionHeadingFor(a))}</h2>
       <div class="r">${body}</div>
     </div>

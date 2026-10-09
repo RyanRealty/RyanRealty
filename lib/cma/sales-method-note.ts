@@ -150,19 +150,53 @@ export function outsideSubdivisionSentence(
 }
 
 /**
+ * "Four more were added: 1345 Milwaukee in Grandview, ..." made whole on its
+ * own, from the heading sentence it followed.
+ *
+ * The search story's first sentence is the price chapter's heading ("One of
+ * the five sales is in Northwest Townsite."), and the rest prints in Basis and
+ * limits, a chapter and several pages away. There "Four more were added"
+ * opened the method paragraph with nothing it was more than (reader review
+ * 2026-10-09, 1355 Jacksonville). When the grid cannot name the sales outside
+ * the subdivision itself (`outsideSubdivisionSentence`), the sentence is
+ * restated from the two stored ones, saying only what they said: "Four of
+ * the five sales are outside Northwest Townsite: 1345 Milwaukee in Grandview,
+ * ...", or, when the story named places rather than sales, "Four of the five
+ * sales come from Grandview and Highland." Null when the heading is not the
+ * "N of the M sales are in X" sentence the added one follows.
+ */
+export function addedSentenceOnItsOwn(heading: string | null | undefined, added: string): string | null {
+  const head = /^(\w+) of the (\w+) sales (?:is|are) in (.+?)\.$/i.exec((heading ?? '').trim())
+  const more = /^(\w+) more (?:was|were) added(?:: (.+)| from (.+))\.$/i.exec(added.trim())
+  if (!head || !more) return null
+  const total = head[2]!.toLowerCase()
+  const place = head[3]!
+  const rest = more[1]!.toLowerCase()
+  const one = rest === 'one'
+  const lead = `${capitalise(rest)} of the ${total} sales`
+  if (more[2]) return `${lead} ${one ? 'is' : 'are'} outside ${place}: ${more[2]}.`
+  return `${lead} ${one ? 'comes' : 'come'} from ${more[3]}.`
+}
+
+/**
  * The rest of the search story, after the sentence the chapter uses as its
- * heading. The "added" sentence is rewritten from the grid; anything else in
- * the story prints as the pricing side wrote it.
+ * heading. The "added" sentence is rewritten from the grid, or, when the grid
+ * cannot say it, made whole from the heading it followed; anything else in the
+ * story prints as the pricing side wrote it.
  */
 function searchNote(
   subject: Pick<CmaSubject, 'subdivision'>,
   comps: readonly CmaAdjustedComp[],
   tail: string | null | undefined,
+  heading?: string | null,
 ): string[] {
   const said = str(tail)
   if (!said) return []
   const outside = outsideSubdivisionSentence(subject, comps)
-  return sentencesOf(said).map((s) => (outside && ADDED_SENTENCE.test(s) ? outside : s))
+  return sentencesOf(said).map((s) => {
+    if (!ADDED_SENTENCE.test(s)) return s
+    return outside ?? addedSentenceOnItsOwn(heading, s) ?? s
+  })
 }
 
 // ── the date move ───────────────────────────────────────────────────────────
@@ -602,11 +636,13 @@ export function salesMethodSentences(input: {
   pricing: CmaPricing
   /** The search story after its first sentence (the price chapter's heading). */
   searchTail?: string | null
+  /** That first sentence, which the tail's "N more were added" follows. */
+  searchHead?: string | null
   /** The subject is on the market today (lib/cma/subject-on-market.ts). */
   onMarket?: boolean
 }): string[] {
   return [
-    ...searchNote(input.subject, input.comps, input.searchTail),
+    ...searchNote(input.subject, input.comps, input.searchTail, input.searchHead),
     ...dateNote(input.subject, input.comps, input.pricing),
     ...askShareNote(input.subject, input.pricing, input.onMarket === true),
   ].map((s) => sanitizeLetterEmDash(s))

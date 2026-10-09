@@ -394,8 +394,11 @@ describe('land columns', () => {
       confidence: 'High',
       notes: [],
     } as unknown as CmaPricing
+    // A home off the market: the sales set its price. (The fixture's own
+    // status is Active, and a home on the market is told the sales that set
+    // its value, rule 27; reader review 2026-10-09, 3062 NW Kelly Hill.)
     const page = salesThatSetItPage({
-      subject,
+      subject: { ...subject, standardStatus: 'Expired' },
       comps: padSales(comp),
       market: { geoLabel: 'Bend' } as CmaMarketContext,
       pricing,
@@ -406,6 +409,14 @@ describe('land columns', () => {
     expect(body).not.toContain('<h3 class="subhead">The sales that set this price</h3>')
     // Visible chapter title once; aria-label may still carry the matrix heading string.
     expect((body.match(/<h[23][^>]*>[^<]*The sales that set this price/g) ?? []).length).toBe(1)
+    const onMarket = salesThatSetItPage({
+      subject,
+      comps: padSales(comp),
+      market: { geoLabel: 'Bend' } as CmaMarketContext,
+      pricing,
+    })!.body
+    expect(onMarket).toContain('<h2 class="section">The sales that set this value.</h2>')
+    expect(onMarket).not.toContain('set this price')
   })
 
   it('still prints living area for an improved comp', () => {

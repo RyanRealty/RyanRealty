@@ -953,7 +953,9 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     expect(set.likeYours).toBe(true)
     expect(set.shortfall).toBe(true)
     expect(set.sentence).toContain('two homes like yours in Diamond Bar Ranch')
-    expect(set.sentence).toContain('nothing from outside Diamond Bar Ranch was added')
+    // The count names the whole search area, so what was not added is what
+    // lies further out (reader review 2026-10-09, 915 Saginaw).
+    expect(set.sentence).toContain('nothing from further out was added')
   })
 
   it('says plainly when nothing in the area failed', () => {
@@ -1193,7 +1195,7 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     expect(set.peers[0]!.roomDifference).toEqual(['beds'])
     expect(set.likeYours).toBe(true)
     expect(set.sentence).toBe(
-      'Only one home like yours in Hampton Park came off the market without selling in the last six months, and nothing from outside Hampton Park was added to make up the number. 2515 Keats is one bedroom different from yours. No dollar value is applied to the room.',
+      'Only one home like yours in Hampton Park came off the market without selling in the last six months, and nothing from further out was added to make up the number. 2515 Keats is one bedroom different from yours. No dollar value is applied to the room.',
     )
     expect(set.sentence).not.toContain('within 35 percent')
     expect(set.sentence).not.toContain('None were close')
@@ -1229,8 +1231,11 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     })
     expect(set.peers.map((p) => p.address)).toEqual(['2515 Keats'])
     expect(set.shortfall).toBe(true)
+    // "Only one home like yours in Hampton Park" read as if only Hampton Park
+    // was searched; the count names the whole search area (reader review
+    // 2026-10-09, 915 Saginaw: "in Kenwood" over five subdivisions searched).
     expect(set.sentence).toBe(
-      'Only one home like yours in Hampton Park came off the market without selling in the last six months, and nothing from outside Hampton Park and Deer Pointe Village was added to make up the number. 2515 Keats is one bedroom different from yours. No dollar value is applied to the room.',
+      'Only one home like yours in Hampton Park and Deer Pointe Village came off the market without selling in the last six months, and nothing from further out was added to make up the number. 2515 Keats is one bedroom different from yours. No dollar value is applied to the room.',
     )
     expect(set.sentence).not.toContain('Quiet Canyon')
     expect(set.sentence).not.toMatch(/[—–]/)

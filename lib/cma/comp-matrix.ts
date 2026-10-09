@@ -620,6 +620,23 @@ export function domCell(
   return count
 }
 
+/**
+ * THE ORIGINAL LIST, SAID FOR WHAT IT IS (reader review 2026-10-09).
+ *
+ * A home that was withdrawn, expired, canceled or fell out of contract and
+ * came back prints the ask it came back at (rule 28), not the MLS
+ * OriginalListPrice: 628 Portland opened at $1,475,000 and came back at
+ * $1,395,000, and its cell read "Original list $1,395,000". The cell names
+ * that ask: "$1,395,000 when it came back". Every other home's cell is its
+ * original list, as before.
+ */
+export const CAME_BACK_SUFFIX = 'when it came back'
+
+export function originalListCell(entry: Pick<MatrixEntry, 'firstAsk' | 'firstAskRestarted'>): string {
+  const cell = moneyCell(entry.firstAsk)
+  return cell !== '-' && entry.firstAskRestarted === true ? `${cell} ${CAME_BACK_SUFFIX}` : cell
+}
+
 function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string[] {
   // Matt ADD 2026-09-12: kill "how the price moved" spark entirely.
   void _range
@@ -630,7 +647,7 @@ function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string
     statusCell(entry),
     statusDateCell(entry),
     moneyCell(entry.listPrice ?? entry.lastAsk),
-    moneyCell(entry.firstAsk),
+    originalListCell(entry),
     moneyCell(entry.closePrice),
     sharedConcessionCell(entry),
     soldAfterConcessionsCell(entry),
@@ -855,8 +872,13 @@ export const SOLD_PPSF_NET_ROW_LABEL = 'Sold $/sqft after concessions'
 function sharedRowWords(
   family: 'closed' | 'unsold' | 'active',
   entries: readonly MatrixEntry[],
-  rows: ReadonlyArray<MatrixRow>,
+  rows0: ReadonlyArray<MatrixRow>,
 ): ReadonlyArray<MatrixRow> {
+  // A cell that says "when it came back" carries words, so its row wraps like
+  // the other worded rows: a nowrap figure cell would run into the next
+  // home's column.
+  const cameBack = entries.some((e) => e.firstAskRestarted === true)
+  const rows = cameBack ? rows0.map((row) => (row.label === 'Original list' ? { ...row, figure: false } : row)) : rows0
   if (family !== 'closed') return rows
   const credit = entries.some(saleCarriesConcession)
   return rows.map((row) => {

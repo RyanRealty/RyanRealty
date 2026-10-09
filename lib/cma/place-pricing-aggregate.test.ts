@@ -190,8 +190,12 @@ describe('rowsToPlacePricingStory', () => {
     expect(story([home()], 'Townhouse')).toBeNull()
     const result = story([home({ listDate: '2025-10-06' })])
     expect(result!.listedHomes).toBe(1)
+    // The note says what the count holds: listed, sold or taken off the
+    // market in the window, one per address (reader review 2026-10-09, 1355
+    // Jacksonville; it said "listed ... through ..." over homes that only
+    // sold or came off inside the window).
     expect(result!.sourceNote).toBe(
-      'River West single-family homes listed October 6, 2025 through October 6, 2026, 1 home.',
+      'River West single-family homes listed, sold or taken off the market between October 6, 2025 and October 6, 2026: 1 home, each address counted once.',
     )
     expect(result!.sourceNote).not.toContain('—')
     // The letter's noun, never the raw MLS value (reader review 2026-10-07).

@@ -664,6 +664,14 @@ export function cmaSectionStyles(): string {
   .addr-row { display: flex; align-items: center; justify-content: flex-end; flex-wrap: nowrap; gap: 4px; }
   .addr-row .pin-badge { margin-right: 0; }
   .addr-row .matrix-addr { min-width: 0; overflow-wrap: break-word; text-align: right; }
+  /* A column head breaks an address only between words (reader review
+     2026-10-09, 20676 Wild Rose: "20582 GOLDENRO/D" and "61197 COTTONWO/OD"
+     at 900 to 1440px). The address is as narrow as its longest word; when
+     that word does not fit beside the pin, the address takes the line under
+     the pin and the whole column. A word wider than the whole column still
+     breaks (break-word, above) rather than run past the margin on paper. */
+  table.comp-matrix thead .addr-row { flex-wrap: wrap; row-gap: 2px; }
+  table.comp-matrix thead .addr-row .matrix-addr { flex: 1 1 auto; width: min-content; }
   .addr-row.is-card { justify-content: flex-start; gap: 5px; margin: 0 0 6px; }
   .addr-row.is-card .pin-badge { margin-right: 0; }
   .addr-row.is-card .comp-stack-addr { margin: 0; flex: 1 1 auto; min-width: 0; }

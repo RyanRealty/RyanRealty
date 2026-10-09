@@ -112,13 +112,15 @@ export function pricingMethodSentences(input: {
 export function renderReconciliationHtml(
   pricing: CmaPricing | null | undefined,
   comps?: readonly CmaAdjustedComp[] | null,
+  opts?: { onMarket?: boolean },
 ): string {
   const sentence = readReconciliation(pricing)?.sentence ?? null
   if (!sentence) return ''
   // On a letter whose cover the weights did not make (a rule 26 hold, or a
   // cover held to the sale on the subject's street), the sales set the range
   // and the weights do not move the number (lib/cma/sales-role.ts).
-  return `<p class="small">${esc(reconciliationSentenceFor(sentence, pricing, comps))} ${esc(
+  // On a home on the market they are the sales behind this value (rule 27).
+  return `<p class="small">${esc(reconciliationSentenceFor(sentence, pricing, comps, opts))} ${esc(
     weightMeaningSentence(pricing, comps),
   )}</p>`
 }

@@ -466,6 +466,13 @@ table.comp-matrix .matrix-addr{display:block}
 .addr-row{display:flex;align-items:center;justify-content:flex-end;flex-wrap:nowrap;gap:6px}
 .addr-row .pin-badge{margin-right:0}
 .addr-row .matrix-addr{min-width:0;overflow-wrap:break-word;text-align:right}
+/* A column head breaks an address only between words (reader review
+   2026-10-09, 20676 Wild Rose: "20582 GOLDENRO/D" at 900px). The address is
+   as narrow as its longest word; when that word does not fit beside the pin,
+   the address takes the line under it and the whole column width. A word
+   wider than the whole column still breaks rather than run past it. */
+table.comp-matrix thead .addr-row{flex-wrap:wrap;row-gap:2px}
+table.comp-matrix thead .addr-row .matrix-addr{flex:1 1 auto;width:min-content}
 .addr-row.is-card{justify-content:flex-start;gap:8px;margin:0 0 6px}
 .addr-row.is-card .pin-badge{margin-right:0}
 .addr-row.is-card .comp-stack-addr{margin:0;flex:1 1 auto;min-width:0}
