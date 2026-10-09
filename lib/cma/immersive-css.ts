@@ -115,7 +115,7 @@ img{max-width:100%;display:block}
 .comp-stack{display:none;margin:18px 0 8px;max-width:100%;min-width:0}
 @media screen and (max-width:700px){.comp-matrix-wrap,.matrix-group-h{display:none}.comp-stack{display:block}}
 .comp-stack-card{border:1px solid var(--ink12);padding:14px;margin:0 0 14px;background:#fff;max-width:100%;min-width:0;overflow-wrap:anywhere;overflow:clip;box-sizing:border-box}
-.comp-stack-addr{font-weight:600;margin:0 0 6px;font-size:17px;line-height:1.25}
+.comp-stack-addr{font-weight:600;margin:0 0 6px;font-size:17px;line-height:1.25;overflow-wrap:normal;word-break:normal}
 .comp-stack-sold{font-size:15px;margin:0 0 10px;font-variant-numeric:tabular-nums}
 .comp-stack-nums{display:flex;flex-wrap:wrap;gap:12px 18px;margin:0 0 8px;font-variant-numeric:tabular-nums}
 .comp-stack-n{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -463,12 +463,12 @@ table.comp-matrix .matrix-addr{display:block}
 .pin-badge.is-subject{background:transparent;color:var(--navy)}
 .subhead.adjustments-h,h4.adjustments-h{margin-top:22px}
 .pin-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--navy);color:var(--cream);font-size:11px;font-weight:700;line-height:1;margin-right:7px;flex:0 0 auto;vertical-align:middle}
-.addr-row{display:flex;align-items:center;justify-content:flex-end;flex-wrap:nowrap;gap:6px}
+.addr-row{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px}
 .addr-row .pin-badge{margin-right:0}
-.addr-row .matrix-addr{min-width:0;overflow-wrap:break-word;text-align:right}
+.addr-row .matrix-addr{min-width:0;overflow-wrap:normal;word-break:normal;text-align:right}
 .addr-row.is-card{justify-content:flex-start;gap:8px;margin:0 0 6px}
 .addr-row.is-card .pin-badge{margin-right:0}
-.addr-row.is-card .comp-stack-addr{margin:0;flex:1 1 auto;min-width:0}
+.addr-row.is-card .comp-stack-addr{margin:0;flex:1 1 auto;min-width:min-content;overflow-wrap:normal;word-break:normal}
 .small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
 .chart-read{font-size:16px;line-height:1.5;margin-top:18px;max-width:720px}
 .status-price{margin:8px 0 28px;overflow-x:auto}
@@ -513,7 +513,7 @@ table.comp-matrix a.matrix-addr,.comp-stack-card a.comp-stack-addr{display:block
 .dns-card.is-yours{border-top:2px solid var(--navy)}
 .dns-photo{width:100%;aspect-ratio:4 / 3;object-fit:cover;display:block}
 .dns-photo.is-empty{background:rgba(16,39,66,.06)}
-.dns-addr{display:block;font-size:18px;font-weight:600;color:var(--navy);text-decoration:none;border-bottom:1px solid var(--ink12)}
+.dns-addr{display:block;font-size:18px;font-weight:600;color:var(--navy);text-decoration:none;border-bottom:1px solid var(--ink12);overflow-wrap:normal;word-break:normal}
 a.dns-addr:hover{border-bottom-color:var(--navy)}
 .dns-ask{font-family:'Amboqia Boriango',Georgia,serif;font-size:24px;font-variant-numeric:tabular-nums;margin-top:6px}
 .dns-facts{font-size:13px;opacity:.65;margin-top:4px}

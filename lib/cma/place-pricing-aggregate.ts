@@ -231,6 +231,6 @@ export function rowsToPlacePricingStory(input: {
     // The plain noun the letter uses, never the MLS value ("Single Family
     // Residence" printed raw in the Mountain View note, reader review
     // 2026-10-07).
-    sourceNote: `${placeName} ${productPlural(subtype)} listed ${longDate(start)} through ${longDate(end)}, ${homes}.`,
+    sourceNote: `${placeName} ${productPlural(subtype)} on the market ${longDate(start)} through ${longDate(end)}, ${homes}.`,
   }
 }

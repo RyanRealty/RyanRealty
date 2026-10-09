@@ -856,11 +856,6 @@ export function listingTimelinePhoneSvg(input: ListingTimelineInput): string {
   return timelineBody({ input, g, W, H, plotL, plotR, top, bottom, x, y, fs: 10.5, endFs: 11 })
 }
 
-/**
- * Where the zone caption sits. Prefer the inner edge farthest from every
- * asking-price label, so the sentence does not run through a dollar figure.
- * A short zone has no room inside; the caption goes just above it.
- */
 /** Geist's measured width a character at these sizes, in em (see timelineBody). */
 const ZONE_CHAR_EM = 0.62
 /** The smallest the zone label is drawn. */
@@ -882,21 +877,68 @@ export function zoneLabelLines(label: string, available: number, fs: number): { 
   return { lines, fs: Math.max(ZONE_MIN_FS, fit(Math.max(...lines.map((l) => l.length)))) }
 }
 
+/**
+ * The end-of-line label, kept off the last ask's own label.
+ *
+ * A last ask under the zone sits near the floor, so the end label and the
+ * ask label both land just above the line and collide ($925K over "canceled
+ * after 138 days", reader review, 915 Saginaw, 2026-10-08).
+ */
+function endLabelYFor(
+  endY: number,
+  fs: number,
+  endFs: number,
+  top: number,
+  H: number,
+  bottom: number,
+): number {
+  const askY = endY - 9
+  const gap = Math.max(fs, endFs) + 8
+  const preferBelow = endY < bottom - 34
+  const first = preferBelow ? endY + 20 : endY - 12
+  const inside = (y: number) => y >= top + 2 && y <= H - 2
+  const clearOfAsk = (y: number) => Math.abs(y - askY) >= gap
+  if (inside(first) && clearOfAsk(first)) return first
+  const above = askY - gap
+  const below = endY + gap
+  for (const y of preferBelow ? [below, above, first] : [above, below, first]) {
+    if (inside(y) && clearOfAsk(y)) return y
+  }
+  const clamped = [above, below, first].map((y) => Math.min(H - 2, Math.max(top + 2, y)))
+  return clamped.sort((a, b) => Math.abs(b - askY) - Math.abs(a - askY))[0]!
+}
+
 function zoneCaptionY(
   zoneTop: number,
   zoneBottom: number,
   askLabelYs: number[],
-  fs: number,
+  block: number,
   frameTop: number,
+  frameBottom: number,
 ): number {
-  const gap = fs + 8
-  if (zoneBottom - zoneTop < gap) return Math.max(zoneTop - 6, frameTop - 12)
-  const innerTop = zoneTop + fs + 2
+  const gap = Math.max(block, 8) + 8
+  const innerTop = zoneTop + block + 2
   const innerBottom = zoneBottom - 4
+  const above = Math.max(zoneTop - 6, frameTop + 2)
+  const below = zoneBottom + block + 4
+  const inside = (y: number) => y >= frameTop + 2 && y <= frameBottom - 2
   const clear = (y: number) => askLabelYs.every((ay) => Math.abs(ay - y) >= gap)
-  if (clear(innerBottom)) return innerBottom
-  if (clear(innerTop)) return innerTop
-  return innerBottom
+  // Inside the zone first, then just outside it. A short zone has no inner
+  // room; the caption still has to miss every ask (915 Saginaw's $995K).
+  for (const y of [innerBottom, innerTop, above, below]) {
+    if (inside(y) && clear(y)) return y
+  }
+  let best = Math.min(Math.max(innerBottom, frameTop + 2), frameBottom - 2)
+  let bestOverlap = Infinity
+  for (const y of [innerBottom, innerTop, above, below]) {
+    if (!inside(y)) continue
+    const overlap = askLabelYs.reduce((sum, ay) => sum + Math.max(0, gap - Math.abs(ay - y)), 0)
+    if (overlap < bestOverlap) {
+      bestOverlap = overlap
+      best = y
+    }
+  }
+  return best
 }
 
 function timelineBody(o: {
@@ -961,9 +1003,8 @@ function timelineBody(o: {
   const endFit = fitText(endX, endText, endFs, W)
   // The label belongs to the mark it names, so it sits with the end of the
   // line, not parked at the foot of the frame where the eye has to hunt for
-  // what it refers to. Above the line when the line runs near the floor.
-  const endBelow = endY < bottom - 34
-  const endLabelY = endBelow ? endY + 20 : endY - 12
+  // what it refers to. It stays clear of that ask's own label.
+  const endLabelY = endLabelYFor(endY, fs, endFs, top, H, bottom)
   const startDay = monthDay(input.listDate)
   const endDay = input.offMarketDate ? monthDay(input.offMarketDate) : ''
   // Inside the shaded zone, on the edge farthest from the asking-price
@@ -985,7 +1026,7 @@ function timelineBody(o: {
   const zone = zoneLabelLines(input.rangeLabel, W - plotL - 8, fs)
   const zoneLineH = zone.fs * 1.2
   const zoneBlock = zone.fs + zoneLineH * (zone.lines.length - 1)
-  const zoneLabelY = zoneCaptionY(zoneTop, zoneBottom, askLabelYs, zoneBlock, top)
+  const zoneLabelY = zoneCaptionY(zoneTop, zoneBottom, askLabelYs, zoneBlock, top, H)
   const zoneLabelFs = zone.fs.toFixed(1)
   const zoneTspans = zone.lines
     .map((line, i) => {

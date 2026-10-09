@@ -32,6 +32,7 @@ import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
 import { assembleOpinionPages } from '@/lib/cma/opinion-pages'
+import { applyRecordedPlaceNames } from '@/lib/cma/letter-place-name'
 import { scrubSellerLetterHtml } from '@/lib/cma/seller-letter-copy'
 import { letterCoverPayoffHtml } from '@/lib/cma/cover-value'
 import { subjectOnMarket } from '@/lib/cma/subject-on-market'
@@ -497,11 +498,12 @@ ${body}
 </body>
 </html>`
   const rendered = expandNameMonthDatesInHtml(html, { clientName: a.client?.name ?? null })
+  const scrubbed = scrubSellerLetterHtml(rendered, {
+    recommended: a.pricing?.recommended ?? null,
+    failedAsk: a.subject?.lastListPrice ?? null,
+  })
   return {
-    html: scrubSellerLetterHtml(rendered, {
-      recommended: a.pricing?.recommended ?? null,
-      failedAsk: a.subject?.lastListPrice ?? null,
-    }),
+    html: applyRecordedPlaceNames(scrubbed, a.comps),
     pageCount: pages.length,
   }
 }

@@ -4,6 +4,7 @@
  * wider-market charts.
  */
 
+import { applyRecordedPlaceNames } from '@/lib/cma/letter-place-name'
 import { scrubLetterSources, type RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
 import { immersiveHeroNumberHtml } from '@/lib/cma/cover-value'
@@ -101,5 +102,5 @@ ${renderCompPinMapScript()}
 </script>
 </body>
 </html>`
-  return expandNameMonthDatesInHtml(html, { clientName: a.client?.name ?? null })
+  return applyRecordedPlaceNames(expandNameMonthDatesInHtml(html, { clientName: a.client?.name ?? null }), a.comps)
 }

@@ -201,8 +201,23 @@ function capitalise(s: string): string {
  * splits that set sales aside (Delta 4, Matt 2026-09-09: "the story names
  * which set the price").
  */
+/**
+ * A stored sentence that said no sale "matched your home" when the subdivision
+ * rungs found nothing. The search did not test a match. It found no sale.
+ * (reader review, 915 Saginaw and 20676 Wild Rose, 2026-10-08). New sentences
+ * already say "No home sold in". This rewrites a letter that stored the old one.
+ */
+function rewriteZeroSaleMatch(sentence: string): string {
+  return sentence
+    .replace(
+      /No sale inside (.+?)\s+matched your home, so the search opened to /g,
+      'No home sold in $1, so the search opened to ',
+    )
+    .replace(/No sale inside (.+?)\s+matched your home\./g, 'No home sold in $1.')
+}
+
 export function compSearchSentence(input: Parameters<typeof baseCompSearchSentence>[0]): string {
-  const base = baseCompSearchSentence(input)
+  const base = rewriteZeroSaleMatch(baseCompSearchSentence(input))
   const rural = cleanText(readCompSearch(input.args)?.ruralSentence ?? null)
   return rural ? `${base} ${rural}` : base
 }

@@ -465,8 +465,7 @@ describe('net from the sale: the list, and the expected sale (Keats arithmetic)'
 describe('the method moves to Basis and limits, in plain English (Keats)', () => {
   const KEATS_METHOD = [
     'One of the five sales, 530 Majesty, is outside Hampton Park, in Deer Pointe Village.',
-    "To bring each sale to today's market, we move it by how much Bend's median price per square foot changed between the month it sold and the last three full months.",
-    'That figure is built from 2,606 home sales across Bend.',
+    "Bend's median price per square foot, the figure under the sales grid, is built from 2,606 home sales across Bend.",
     'Over the last 12 months it peaked in May 2026 and has come down 7.0 percent since.',
     "That moves four of the five sales down. The other one sold when that figure was already at today's level, so it does not move.",
     'Homes in Bend are selling for 95.8 percent of the price they first asked.',
@@ -504,6 +503,30 @@ describe('the method moves to Basis and limits, in plain English (Keats)', () =>
       'Two of the five sales are outside Hampton Park: 530 Majesty in Deer Pointe Village and 700 Shelley in Awbrey Glen.',
     )
     expect(outsideSubdivisionSentence({ subdivision: null }, COMPS)).toBeNull()
+  })
+
+  it('counts an own-plat sale as inside when the MLS name differs (1355 Jacksonville)', () => {
+    const sales = [
+      { address: '1367 Milwaukee', subdivision: 'Northwest Townsite Co 2nd Addt', ownPlat: true },
+      { address: '1345 Milwaukee', subdivision: 'Grandview' },
+      { address: '1340 Cumberland', subdivision: 'Highland' },
+      { address: '1613 Ithaca', subdivision: 'Bonne Home' },
+      { address: '1685 Fresno', subdivision: 'Bonne Home' },
+    ] as never
+    expect(outsideSubdivisionSentence({ subdivision: 'Northwest Townsite' }, sales)).toBe(
+      'Four of the five sales are outside Northwest Townsite: 1345 Milwaukee in Grandview, 1340 Cumberland in Highland, 1613 Ithaca in Bonne Home and 1685 Fresno in Bonne Home.',
+    )
+  })
+
+  it('prints a bare MLS code as the recorded plat (61197 Cottonwood, CLAB)', () => {
+    const sales = [
+      { address: '1 Lark', subdivision: 'Larkspur' },
+      { address: '20825 Chloe', subdivision: 'Chloe Estates' },
+      { address: '61197 Cottonwood', subdivision: 'CLAB', subdivisionSlug: 'tara-view-estates' },
+    ] as never
+    expect(outsideSubdivisionSentence({ subdivision: 'Larkspur' }, sales)).toBe(
+      'Two of the three sales are outside Larkspur: 20825 Chloe in Chloe Estates and 61197 Cottonwood in Tara View Estates.',
+    )
   })
 
   it('says a sale did not move only for the reason the index gives', () => {

@@ -1494,18 +1494,12 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
   // quotable pair in the document (tasteReview round three, §3). The adjusted
   // pair is the one the chapter of the answer states, rounded the same way, so
   // a reader meets both halves of "homes like yours" in one line.
-  const worth = worthRangeRounded(a.pricing, a.comps)
   // THE ADJUSTMENTS THE LETTER WAS PRICED ON, NAMED OFF THE SALES (reader
   // review, 2382 Jackson, 2026-10-07): a pocket letter with no size line
   // printed "before adjusting for date and size".
+  // The adjusted dollar span is the price chapter's sentence. Restating it
+  // here is the repeated sentence (reader review, 915 Saginaw, 2026-10-08).
   const adjustedFor = adjustedForPhrase(kept)
-  const supported = adjustedFor ? '; adjusted, they support' : '; they support'
-  const adjusted =
-    worth.low > 0 && worth.high > 0
-      ? worth.low === worth.high
-        ? `${supported} ${usd(worth.low)}`
-        : `${supported} ${usd(worth.low)} to ${usd(worth.high)}`
-      : ''
   // On a letter held for Matt the cover number is under his review, not yet
   // the owner's price (reader review 2026-10-08).
   // A home on the market gets an opinion of value, never "your price" (rule 27).
@@ -1519,7 +1513,7 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
   return `<p class="chart-read">${esc(
     `The ${countWord(keptSaleCount(a.pricing, a.comps))} sales ${which} sold for ${usd(
       Math.min(...closes),
-    )} to ${usd(Math.max(...closes))}${adjustedFor ? ` before adjusting for ${adjustedFor}` : ''}${adjusted}.`,
+    )} to ${usd(Math.max(...closes))}${adjustedFor ? ` before adjusting for ${adjustedFor}` : ''}.`,
   )}</p>`
 }
 

@@ -102,7 +102,7 @@ export function placePricingStoryHtml(
   if (!story || !(story.listedHomes > 0)) return ''
   const lines: string[] = [
     placeStoryLead(story, home),
-    `${count(story.listedHomes)} homes were listed. ${count(story.didNotSell)} of them came off the market without selling.`,
+    `${count(story.listedHomes)} homes were on the market. ${count(story.didNotSell)} of them came off the market without selling.`,
   ]
   if (story.droppedPrice > 0) {
     let line = `${count(story.droppedPrice)} dropped the price.`
@@ -133,7 +133,15 @@ export function placePricingStoryHtml(
       : 'The homes that did not sell are the ones this report is measured against.',
   )
   const small = doc === 'letter' ? 'small' : 'small r'
-  const note = story.sourceNote.trim()
+  // A stored note said "homes listed October …" for homes that were on the
+  // market in the window, sold or not (reader review, 1355 Jacksonville,
+  // River West, 2026-10-08). New notes already say "on the market".
+  const note = story.sourceNote
+    .trim()
+    .replace(
+      / homes listed (?=(?:January|February|March|April|May|June|July|August|September|October|November|December|\d))/,
+      ' homes on the market ',
+    )
   return `<div class="keep-note">
   ${lines.map(paragraph).join('\n  ')}
   ${note ? `<p class="${small}">${esc(note)}</p>` : ''}

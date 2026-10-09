@@ -1159,7 +1159,7 @@ describe('tasteReview 1 — nothing in the document argues with itself', () => {
     // tasteReview round three, §3: the raw top of that sentence IS the ask
     // chapter 1 says failed, so the adjusted pair rides in the same breath.
     expect(html).toMatch(
-      /sales behind your price sold for \$[\d,]+ to \$[\d,]+ before adjusting for date and size; adjusted, they support \$[\d,]+ to \$[\d,]+\./,
+      /sales behind your price sold for \$[\d,]+ to \$[\d,]+ before adjusting for date and size\./,
     )
     expect(html).not.toContain('is every Redmond home, all sizes')
     expect(html).not.toContain('532,311')
@@ -1600,7 +1600,7 @@ describe('chapter 1 — the story the numbers carry', () => {
   it('reconciles chapter 5 raw closes to the adjusted pair in one breath', () => {
     const html = letter(withRange(420000, 445000))
     expect(html).toMatch(
-      /sold for \$410,000 to \$460,000 before adjusting for date and size; adjusted, they support \$372,324 to \$398,788\./,
+      /sold for \$410,000 to \$460,000 before adjusting for date and size\./,
     )
   })
 })
