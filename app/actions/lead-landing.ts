@@ -80,6 +80,7 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
     // became a redirect. Empty when the visit carried no utm_source.
     const paidTags = resolvePaidAttributionTags({
       utmSource: input.lpContext?.lp_source,
+      utmMedium: input.lpContext?.lp_medium,
       utmCampaign: input.lpContext?.lp_campaign,
       utmContent: input.lpContext?.lp_content,
     })
