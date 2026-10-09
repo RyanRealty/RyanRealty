@@ -412,6 +412,51 @@ describe('4. competition: 2260 Indigo on its last stretch', () => {
   })
 })
 
+describe('3431 Jackwood: the ask in effect when it came back, not a copy of the current list', () => {
+  // Active key 20260709212744882417000000. OriginalListPrice $1,630,000,
+  // ListPrice $1,679,000, first Active Aug 7, back on the market Aug 13.
+  // listing_history (the line price_history does not have): ListPrice
+  // 1639000.00 → 1679000.00 at 2026-08-13T17:01:22Z, while withdrawn, 33
+  // minutes before BackOnMarket at 17:34:40Z. The stretch opens at that ask.
+  const JACKWOOD_3431: BandInventoryRow = {
+    ListingKey: '20260709212744882417000000',
+    StreetNumber: '3431',
+    StreetName: 'Jackwood',
+    ListPrice: 1_679_000,
+    OriginalListPrice: 1_630_000,
+    DaysOnMarket: 56,
+    OnMarketDate: '2026-08-13T17:34:40+00:00',
+    original_on_market_timestamp: '2026-08-07T22:01:02+00:00',
+    PhotoURL: null,
+    Latitude: null,
+    Longitude: null,
+  }
+  const comingSoon = ask('2026-08-03T22:17:36+00:00', 1_630_000, 1_639_000)
+  const beforeActive = ask('2026-08-13T17:01:22+00:00', 1_639_000, 1_679_000)
+
+  it('opens the Aug 13 stretch at $1,679,000, with no change after it came back', () => {
+    const stretch = bandRowStretch(JACKWOOD_3431, [comingSoon, beforeActive])
+    expect(stretch).toEqual({ from: '2026-08-13', firstAsk: 1_679_000, restarted: true })
+    const rival = withRivalStretch({ ...bandRowToRival(JACKWOOD_3431, 'Active')!, daysOnMarket: 56 }, stretch)
+    const [entry] = activeEntries([rival])
+    expect(entry!.firstAsk).toBe(1_679_000)
+    expect(entry!.priceChanges).toBe(0)
+    expect(entry!.outcome).toBe('asking $1.68M · 56 days since it last came on the market')
+    expect(competitorCutLine([rival])).toBe(
+      'The one home below has not come down from its opening price since it last came on the market.',
+    )
+  })
+
+  it('does not copy ListPrice when the recorded ask at the stretch is $1,639,000', () => {
+    const stretch = bandRowStretch(JACKWOOD_3431, [comingSoon])
+    expect(stretch).toEqual({ from: '2026-08-13', firstAsk: 1_639_000, restarted: true })
+    const rival = withRivalStretch({ ...bandRowToRival(JACKWOOD_3431, 'Active')!, daysOnMarket: 56 }, stretch)
+    const [entry] = activeEntries([rival])
+    expect(entry!.firstAsk).toBe(1_639_000)
+    expect(entry!.priceChanges).toBe(1)
+  })
+})
+
 describe('came-off homes are labeled the same way', () => {
   it('a peer that came back says its days run from then', () => {
     const peer = {
