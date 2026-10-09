@@ -183,9 +183,11 @@ export function CityMarketView({
     { label: 'How we get our numbers', href: '/how-we-get-our-numbers' },
     ...(answerReport ? [answerReport] : []),
   ]
+  // id="takeaways" rides the answer wherever it renders (here, or the fallback
+  // section below when there is no instrument), never both at once.
   const lede =
     takeaways.length >= 2 ? (
-      <V3TakeawaysLead items={takeaways} source={answerSource} links={answerLinks} />
+      <V3TakeawaysLead id="takeaways" items={takeaways} source={answerSource} links={answerLinks} />
     ) : null
 
   const trace =

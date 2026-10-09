@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { V3Takeaways } from '@/components/site/v3'
+import { V3Takeaways, V3TakeawaysLead } from '@/components/site/v3'
 
 const ITEMS = [
   "Bend has 3.6 months of supply, a seller's market, so sellers have the edge.",
@@ -35,5 +35,17 @@ describe('V3Takeaways', () => {
 
   it('renders nothing for fewer than two sentences', () => {
     expect(renderToStaticMarkup(createElement(V3Takeaways, { id: 't', heading: 'h', items: [ITEMS[0]] }))).toBe('')
+  })
+})
+
+describe('V3TakeawaysLead', () => {
+  it('carries the anchor it is given: the market page keeps #takeaways (decision aeo-market-lead-and-tables)', () => {
+    const html = renderToStaticMarkup(createElement(V3TakeawaysLead, { id: 'takeaways', items: ITEMS }))
+    expect(html).toMatch(/^<div id="takeaways" class="v3-takeaways v3-takeaways--lede">/)
+    expect(html.match(/<p class="v3-takeaways__lead"/g)).toHaveLength(1)
+  })
+
+  it('has no id when none is passed', () => {
+    expect(renderToStaticMarkup(createElement(V3TakeawaysLead, { items: ITEMS }))).not.toContain(' id=')
   })
 })

@@ -62,6 +62,12 @@ function withFigures(sentence: string) {
 }
 
 export type V3TakeawaysLeadProps = {
+  /**
+   * Anchor for the answer. The market page passes "takeaways": the section this
+   * replaced carried it, and the pinned decision aeo-market-lead-and-tables
+   * (data/seo/decisions.json, checked live by deploy:verify) requires it.
+   */
+  id?: string
   /** Plain sentences, each naming the place. */
   items: readonly string[]
   /** One quiet line under the paragraph: the source and its date. */
@@ -76,12 +82,12 @@ export type V3TakeawaysLeadProps = {
  * V3Instrument's `lede` slot (SEO & AEO Desk brief 2026-10-08), so the first
  * text after the H1 is the answer. Plain server-rendered <p>, no island.
  */
-export function V3TakeawaysLead({ items, source, links = [] }: V3TakeawaysLeadProps) {
+export function V3TakeawaysLead({ id, items, source, links = [] }: V3TakeawaysLeadProps) {
   const rows = items.map((s) => s.trim()).filter(Boolean)
   if (rows.length < 2) return null
   const shown = links.filter((l) => l.label.trim() && l.href.trim())
   return (
-    <div className="v3-takeaways v3-takeaways--lede">
+    <div id={id} className="v3-takeaways v3-takeaways--lede">
       <p className="v3-takeaways__lead">
         {rows.map((s, i) => (
           <span key={s}>
