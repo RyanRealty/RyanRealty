@@ -89,7 +89,7 @@ const ITEMS: V3QuietItem[] = [
     term: 'Third-party sharing',
     body: [
       'Resend, transactional and marketing email.',
-      'Google Analytics (GA4), site analytics, including Google Signals.',
+      'Google Analytics (GA4), site analytics.',
       'Meta, advertising and analytics when you interact with our ads or use Meta products.',
       'Once you accept marketing cookies, Meta and Google may collect information about your online activities over time and across different websites and online services.',
       'Each has its own privacy policy. We do not sell your personal information.',
