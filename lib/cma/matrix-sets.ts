@@ -19,7 +19,53 @@ import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import { competitionAreaSentence, type CmaBandRival } from '@/lib/cma/band-rivals'
 import type { CmaSubject } from '@/lib/cma/types'
 import { letterProductMatch } from '@/lib/cma/market-area'
+import { usableSubdivision } from '@/lib/pricing/comp-search'
 import { compAreaContains, salesAreaIsBounded, type CompArea } from '@/lib/pricing/comp-area'
+
+/**
+ * A delivered or finalized letter is the document the broker signed
+ * (serve-document.ts D27). The render prints the competition and unsold rows
+ * stored on it. It does not re-test them against the sales plats and then
+ * rewrite the counts (2902 Pinnacle printed "0 homes"; 1195 Remarkable,
+ * already delivered, lost every rival the same way). Matt 2026-10-09.
+ */
+export function letterIsFrozen(status: unknown): boolean {
+  const s = typeof status === 'string' ? status.trim().toLowerCase() : ''
+  return s === 'delivered' || s === 'finalized'
+}
+
+/** What the render needs to tell a blank place from a home outside the plats. */
+export type RenderAreaOpts = {
+  /** Delivered or finalized: keep the stored rows. Do not re-test the area. */
+  frozen?: boolean
+  /** The area the build drew this set on (`bandRivals.area` or `expiredPeers.area`). */
+  buildArea?: CompArea | null
+}
+
+function rowLacksPlace(row: { subdivision?: string | null; platSlug?: string | null }): boolean {
+  const plat = typeof row.platSlug === 'string' ? row.platSlug.trim() : ''
+  return usableSubdivision(row.subdivision) == null && plat.length === 0
+}
+
+function areaNamesKey(area: CompArea): string {
+  return [...(area.names ?? [])]
+    .map((n) => n.trim().toLowerCase())
+    .filter(Boolean)
+    .sort()
+    .join('\n')
+}
+
+/**
+ * The filter area is the area the build drew the set on: same kind, same
+ * place names. A radius with no names is not "the same" by this test; those
+ * rows are still decided by coordinates.
+ */
+export function sameDrawnArea(a: CompArea | null | undefined, b: CompArea | null | undefined): boolean {
+  if (!a || !b) return false
+  if ((a.kind ?? '') !== (b.kind ?? '')) return false
+  const left = areaNamesKey(a)
+  return left.length > 0 && left === areaNamesKey(b)
+}
 
 /**
  * The listings that came off the same area unsold, in matrix-2 order.
@@ -37,13 +83,20 @@ function insideSalesBoundary(
     /** The recorded plat polygon the build's area read placed the home in, when it read one. */
     platSlug?: string | null
   },
+  buildArea?: CompArea | null,
 ): boolean {
   if (!area || !salesAreaIsBounded(area)) return true
-  // A blank place is not inside the sales boundary. Keeping it would be a
-  // second path around the plat, the polygon, or the radius. A home the
-  // build placed in a recorded polygon is re-tested on that polygon, so an
-  // area plat under another MLS spelling stays drawn (reader review
-  // 2026-10-08).
+  // A blank MLS place is not a second path around the plats. When this
+  // filter is the area the build already drew the set on, the blank is that
+  // decision: 2902 Pinnacle stored five rivals and three unsold homes in
+  // Eaglenest, Mtn Peaks, Madison Park, Oakview and Obsidian Ridge, every
+  // one with a null subdivision, and the letter said none of them existed.
+  // A blank against a different area is still outside (2566 Keats, no build
+  // area passed). A named subdivision outside the sales plats is still
+  // outside on a draft (rule 24, 3177 Coho). A home the build placed in a
+  // recorded polygon is re-tested on that polygon, so an area plat under
+  // another MLS spelling stays drawn (reader review 2026-10-08).
+  if (rowLacksPlace(row) && buildArea && sameDrawnArea(area, buildArea)) return true
   const tested = {
     latitude: row.latitude,
     longitude: row.longitude,
@@ -58,10 +111,29 @@ function insideSalesBoundary(
   return compAreaContains(area, tested)
 }
 
+function passesSalesArea(
+  area: CompArea | null | undefined,
+  row: {
+    latitude?: number | null
+    longitude?: number | null
+    subdivision?: string | null
+    city?: string | null
+    platSlug?: string | null
+  },
+  opts?: RenderAreaOpts,
+): boolean {
+  if (opts?.frozen) return true
+  return insideSalesBoundary(area, row, opts?.buildArea)
+}
+
 export function unsoldPeersFor(input: {
   subject: Pick<CmaSubject, 'listingKey' | 'mlsNumber' | 'streetAddress'> & { propertySubType?: string | null }
   peers?: readonly CmaExpiredPeer[] | null
   area?: CompArea | null
+  /** The area the build drew these peers on. A blank place is admitted only when `area` is this one. */
+  buildArea?: CompArea | null
+  /** Delivered or finalized: do not re-test the area. */
+  frozen?: boolean
 }): CmaExpiredPeer[] {
   const named = (input.peers ?? []).filter(
     (p) =>
@@ -70,8 +142,9 @@ export function unsoldPeersFor(input: {
       !peerMatchesSubject(p, input.subject) &&
       letterProductMatch(input.subject.propertySubType, p.propertySubType) &&
       // A peer outside the sales area is never drawn, whatever its stored
-      // name (Matt 2026-10-07).
-      insideSalesBoundary(input.area, p),
+      // name (Matt 2026-10-07). A blank place on the area the build drew,
+      // and every row on a signed letter, stay (Matt 2026-10-09).
+      passesSalesArea(input.area, p, { frozen: input.frozen, buildArea: input.buildArea }),
   )
   return collapseExpiredPeerCycles(named)
 }
@@ -133,14 +206,13 @@ export function activeRivalsFor(
   rivals?: readonly CmaBandRival[] | null,
   subject?: ({ propertySubType?: string | null } & Partial<SubjectKeys>) | null,
   area?: CompArea | null,
+  opts?: RenderAreaOpts,
 ): CmaBandRival[] {
   const named = dedupeRivalsByAddress(
     (rivals ?? []).filter((r) => r.address.trim() && r.listPrice > 0 && !isSubjectListing(r, subject)),
   )
   const kept = named.filter(
-    (r) =>
-      letterProductMatch(subject?.propertySubType, r.propertySubType) &&
-      insideSalesBoundary(area, r),
+    (r) => letterProductMatch(subject?.propertySubType, r.propertySubType) && passesSalesArea(area, r, opts),
   )
   return [...kept.filter((r) => r.status === 'Active'), ...kept.filter((r) => r.status === 'Pending')]
 }
@@ -284,6 +356,7 @@ export function matrixSetsFromArgs(args: unknown): {
   const a = args as
     | {
         subject?: CmaSubject | null
+        documentStatus?: string | null
         extras?: {
           marketArea?: { expiredPeers?: readonly CmaExpiredPeer[] | null } | null
           band?: { rivals?: readonly CmaBandRival[] | null } | null
@@ -294,15 +367,32 @@ export function matrixSetsFromArgs(args: unknown): {
   const subject = a?.subject
   const doc = a as {
     compArea?: CompArea | null
-    expiredPeers?: { peers?: readonly CmaExpiredPeer[] | null } | null
+    documentStatus?: string | null
+    expiredPeers?: { peers?: readonly CmaExpiredPeer[] | null; area?: CompArea | null } | null
     bandRivals?: { rivals?: readonly CmaBandRival[] | null; area?: CompArea | null } | null
   } | null
   const peers = doc?.expiredPeers?.peers ?? a?.extras?.marketArea?.expiredPeers ?? []
   const rivals = doc?.bandRivals?.rivals ?? a?.extras?.band?.rivals ?? []
+  const frozen = letterIsFrozen(doc?.documentStatus)
+  const peerArea = doc?.expiredPeers?.area ?? null
+  const bandArea = doc?.bandRivals?.area ?? null
   return {
-    unsold: subject ? unsoldPeersFor({ subject, peers, area: doc?.compArea ?? null }) : [],
+    unsold: subject
+      ? unsoldPeersFor({
+          subject,
+          peers,
+          area: doc?.compArea ?? null,
+          buildArea: peerArea,
+          frozen,
+        })
+      : [],
     // The sales area first. An old row's widened `bandRivals.area` no longer
     // admits a pin outside the plats the sales sit in (Matt 2026-10-07).
-    active: activeRivalsFor(rivals, subject, doc?.compArea ?? doc?.bandRivals?.area ?? null),
+    // A blank place is admitted when that sales area is the area the build
+    // drew, and a signed letter keeps the rows it stored (Matt 2026-10-09).
+    active: activeRivalsFor(rivals, subject, doc?.compArea ?? bandArea ?? null, {
+      frozen,
+      buildArea: bandArea,
+    }),
   }
 }
