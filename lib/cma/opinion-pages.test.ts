@@ -209,10 +209,9 @@ describe('assembleOpinionPages format', () => {
     expect(
       chapterIsLeadOnly('<h2 class="section is-answer">X.</h2><p class="worth-lead">One.</p><p class="worth-lead-note">Two.</p>'),
     ).toBe(false)
-    // No map, nothing to fold.
-    expect(mapSharesPricePage({ ...args(), mapDataUri: null })).toBe(
-      Boolean(mapSubsectionHtml(mapArgs({ ...args(), mapDataUri: null }))),
-    )
+    // No tile: nothing to fold, and no caption about a map that is not there (rule 30).
+    expect(mapSubsectionHtml(mapArgs({ ...args(), mapDataUri: null }))).toBe('')
+    expect(mapSharesPricePage({ ...args(), mapDataUri: null })).toBe(false)
   })
 
   it('runs the number, the map, then the three matrices in Delta 3 order', () => {
@@ -746,14 +745,65 @@ describe('the map and the pages around it (reader review 2026-10-08)', () => {
       .map((p) => p.body)
       .join('')
     expect(all).toContain('These 2 sales are shown above and did not set the number.')
-    const map = mapSubsectionHtml(mapArgs(a))
+    // A missing tile prints nothing. The set-aside glyph is on the tile's pins.
+    expect(mapSubsectionHtml(mapArgs(a))).toBe('')
+    expect(mapSubsectionHtml(mapArgs(a))).not.toContain('Every pin above')
+    const sales = fiveSales()
+    const map = mapSubsectionHtml(
+      mapArgs({
+        ...a,
+        mapDataUri: 'data:image/png;base64,TILE',
+        mapOverlay: {
+          view: { centerLat: 44.272, centerLng: -121.17, zoom: 15, width: 640, height: 480 },
+          pins: [
+            { key: null, family: 'subject', lat: 44.27, lng: -121.17 },
+            ...sales.map((c, i) => ({
+              key: String(i + 1),
+              family: 'closed' as const,
+              lat: c.latitude as number,
+              lng: c.longitude as number,
+            })),
+          ],
+          boundaryShown: false,
+          parentShown: false,
+          radiusShown: false,
+          streetPlaceShown: null,
+        },
+      }),
+    )
+    expect(map).toContain('<img class="pin-map"')
     expect(map).toContain('Closed sales: these set the price')
     expect(map).toContain('Closed sales shown but set aside')
-    expect((map.match(/class="pin-sale is-closed is-aside"/g) ?? []).length).toBe(2)
+    expect((map.match(/class="pin-hit is-closed is-aside"/g) ?? []).length).toBe(2)
   })
 
   it('keeps one closed legend line when nothing is set aside', () => {
-    const map = mapSubsectionHtml(mapArgs({ ...args(), comps: fiveSales(), mapDataUri: null }))
+    const sales = fiveSales()
+    const bare = mapSubsectionHtml(mapArgs({ ...args(), comps: sales, mapDataUri: null }))
+    expect(bare).toBe('')
+    const map = mapSubsectionHtml(
+      mapArgs({
+        ...args(),
+        comps: sales,
+        mapDataUri: 'data:image/png;base64,TILE',
+        mapOverlay: {
+          view: { centerLat: 44.272, centerLng: -121.17, zoom: 15, width: 640, height: 480 },
+          pins: [
+            { key: null, family: 'subject', lat: 44.27, lng: -121.17 },
+            ...sales.map((c, i) => ({
+              key: String(i + 1),
+              family: 'closed' as const,
+              lat: c.latitude as number,
+              lng: c.longitude as number,
+            })),
+          ],
+          boundaryShown: false,
+          parentShown: false,
+          radiusShown: false,
+          streetPlaceShown: null,
+        },
+      }),
+    )
     expect(map).toContain('Closed sales: these set the price')
     expect(map).not.toContain('set aside')
   })

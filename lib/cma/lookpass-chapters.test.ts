@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extractChapters } from '@/lib/cma/lookpass-chapters'
+import { extractChapters, mapImageGap } from '@/lib/cma/lookpass-chapters'
 
 describe('extractChapters', () => {
   it('reads the letter cover, a content page, and a flyer page in order', () => {
@@ -69,5 +69,19 @@ describe('extractChapters', () => {
 
   it('returns an empty list for a document with no top-level sections', () => {
     expect(extractChapters('<html><body><p>hi</p></body></html>')).toEqual([])
+  })
+})
+
+describe('mapImageGap (rule 30, 2745 Aldrich)', () => {
+  it('accepts an img.pin-map and rejects the cream scatter', () => {
+    expect(mapImageGap('<img class="pin-map" src="data:image/png;base64,AAAA" alt="Map" />')).toBeNull()
+    expect(
+      mapImageGap('<div class="pin-map-wrap"><svg class="pin-map" viewBox="0 0 640 480"></svg><p>Every pin above is a row.</p></div>'),
+    ).toMatch(/no map image/)
+    expect(mapImageGap('<section id="the-map"><h2>Comparable homes near you</h2></section>')).toMatch(/no map image/)
+  })
+
+  it('fails a document that never drew the map', () => {
+    expect(mapImageGap('<section id="what-its-worth"><p>The sales.</p></section>')).toMatch(/no map image/)
   })
 })

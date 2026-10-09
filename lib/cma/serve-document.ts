@@ -14,8 +14,7 @@ import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
 import { resolveCmaPrintHtml, resolveDocLinkCtx } from '@/lib/cma/print-html'
 import { applyPreparedLinesToStoredHtml } from '@/lib/cma/letter-privacy'
-import { buildCmaMapDataUri, cmaMapOptionsFromArgs } from '@/lib/cma/map'
-import type { CompPinMapOverlay } from '@/lib/cma/comp-pin-map'
+import { loadCmaMapTile } from '@/lib/cma/map-tile-cache'
 import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
 import { canBrokerReviewCma, isCmaClientReady } from '@/lib/cma/draft-access'
 import { hydrateCmaMarketArea } from '@/lib/cma/market-area-hydrate'
@@ -43,10 +42,20 @@ function recipientFromParam(v: string | null | undefined): number | null {
   return verifyPersonLinkToken(v)?.personId ?? null
 }
 
-/** Optional live reads (market, credits, map, broker). Past this, render what is already stored. */
+/** Optional live reads (market, credits, broker, links). Past this, render what is already stored. */
 const CMA_READ_MS = 4_000
-/** Backstop around the whole immersive render, longer than one optional read so it does not race them. */
-const CMA_IMMERSIVE_MS = 12_000
+/**
+ * The comps map is not one of those optional reads (rule 30, 2745 Aldrich).
+ * A cold boundary walk plus the tile can take longer than 4 seconds. The
+ * clock starts with the broker read, not after it.
+ */
+export const CMA_MAP_MS = 12_000
+/**
+ * Backstop around the whole immersive render. The map budget overlaps the
+ * broker read, so this only has to outlast the slower of the two, plus the
+ * render. It must not fire while the map is still drawing.
+ */
+export const CMA_IMMERSIVE_MS = 20_000
 
 const CMA_RENDER_UNAVAILABLE_HTML =
   '<!doctype html><html><head><meta charset="utf-8"><title>Report</title></head><body><p>This report exists, but it did not finish rendering. Refresh to try again.</p></body></html>'
@@ -89,6 +98,27 @@ export async function immersiveFromRow(
 ): Promise<string | null> {
   if (!row.render_args || typeof row.render_args !== 'object') return null
   try {
+    const stored = row.render_args as unknown as RenderCmaArgs
+    const comps = applyCompVerdicts(stored.comps ?? [], verdictsFromBuildSummary(row.build_summary))
+    // C9: render_args omits mapDataUri (~300KB). Rebuild the comps pin map
+    // here so Open report / immersive shows subject + numbered sales once.
+    // The overlay travels with the tile: it is the centre, zoom and pin
+    // coordinates the tile was actually drawn at, and without it chapter 3's
+    // map is a bitmap that cannot answer a tap (tasteReview item 2).
+    // Rule 30: this clock starts now, beside the broker read, on its own budget.
+    const mapPromise = stored.mapDataUri
+      ? Promise.resolve({ dataUri: stored.mapDataUri as string, overlay: null })
+      : withTimeoutFallback(
+          loadCmaMapTile({
+            slug: slug ?? 'cma',
+            subject: stored.subject,
+            comps,
+            args: stored,
+          }),
+          { dataUri: null, overlay: null },
+          CMA_MAP_MS,
+          'cma.map',
+        )
     const brokerRow = await withTimeoutFallback(
       getCmaBrokerBySlugOrEmail({ slug: row.broker_slug ?? 'matthew-ryan' }),
       null,
@@ -105,39 +135,6 @@ export async function immersiveFromRow(
       phone: (brokerRow?.twilio_number as string | null) ?? null,
       photoUrl: (brokerRow?.photo_url as string | null) ?? null,
     }
-    const stored = row.render_args as unknown as RenderCmaArgs
-    const comps = applyCompVerdicts(stored.comps ?? [], verdictsFromBuildSummary(row.build_summary))
-    // C9: render_args omits mapDataUri (~300KB). Rebuild the Google comps pin map
-    // here so Open report / immersive shows subject + numbered sales once.
-    // The overlay travels with the tile: it is the centre, zoom and pin
-    // coordinates the tile was actually drawn at, and without it chapter 3's
-    // map is a bitmap that cannot answer a tap (tasteReview item 2).
-    const mapPromise = stored.mapDataUri
-      ? Promise.resolve({ dataUri: stored.mapDataUri as string, overlay: null as CompPinMapOverlay | null })
-      : withTimeoutFallback(
-          (async () => {
-            try {
-              const map = await buildCmaMapDataUri(stored.subject, comps, cmaMapOptionsFromArgs(stored))
-              if (!map?.dataUri) return { dataUri: null as string | null, overlay: null as CompPinMapOverlay | null }
-              return {
-                dataUri: map.dataUri,
-                overlay: {
-                  view: map.view,
-                  pins: map.pins,
-                  boundaryShown: map.boundaryShown,
-                  parentShown: map.parentShown,
-                  radiusShown: map.radiusShown,
-                  streetPlaceShown: map.streetPlaceShown,
-                } satisfies CompPinMapOverlay,
-              }
-            } catch {
-              return { dataUri: null as string | null, overlay: null as CompPinMapOverlay | null }
-            }
-          })(),
-          { dataUri: null, overlay: null },
-          CMA_READ_MS,
-          'cma.map',
-        )
     // Budget is this serve path only. Print / PDF call the same loaders with
     // no budget, so a slow read still lands in the letter instead of being dropped.
     const [mapBits, listingMarket, likeHomeCredits, docLinks] = await Promise.all([

@@ -49,7 +49,7 @@ vi.mock('next/headers', () => ({
   cookies: vi.fn(async () => ({ get: () => undefined })),
 }))
 
-import { serveCmaDocument } from './serve-document'
+import { CMA_IMMERSIVE_MS, serveCmaDocument } from './serve-document'
 
 const DRAFT_SLUG = 'cma-850-quince-redmond-97756'
 
@@ -308,7 +308,7 @@ describe('serveCmaDocument', () => {
         viewerEmail: 'matt@ryan-realty.com',
         skipRegisterGate: true,
       })
-      await vi.advanceTimersByTimeAsync(12_000)
+      await vi.advanceTimersByTimeAsync(CMA_IMMERSIVE_MS)
       const result = await pending
       expect(result.kind).toBe('html')
       if (result.kind !== 'html') return

@@ -197,6 +197,41 @@ async function boundaryRings(name: string | null | undefined): Promise<MapLatLng
 const DRAWN_PLAT_POINTS = 2000
 const DRAWN_PARENT_POINTS = 600
 
+/**
+ * The parent neighborhood, started on its own so it overlaps the plat
+ * assignment. The drawn rings and the label stay the same decision as the
+ * sequential read: a polygon is kept only when it holds this home or a mark.
+ */
+async function parentOutline(
+  subject: CmaSubject,
+  marks: readonly MapLatLng[],
+  parentName: string | null | undefined,
+): Promise<{ parent: MapLatLng[][]; parentLabel: string | null }> {
+  let parentLabel = parentName?.trim() || null
+  let parent: MapLatLng[][] = []
+  const subjectLat = finite(subject.latitude)
+  const subjectLng = finite(subject.longitude)
+  if (subjectLat != null && subjectLng != null) {
+    try {
+      const ring = await getSubdivisionRing(subjectLat, subjectLng)
+      const parentRings = await ringsFor('neighborhood', ring?.neighborhoodSlug)
+      const subjectPoint = [{ lat: subjectLat, lng: subjectLng }]
+      if (polygonHoldsAnyPoint(parentRings, subjectPoint) || polygonHoldsAnyPoint(parentRings, marks)) {
+        parent = parentRings.map((r) => simplifyRing(r, DRAWN_PARENT_POINTS))
+      }
+      if (!parentLabel && ring?.neighborhoodSlug) {
+        parentLabel = await readBoundaryLabel('neighborhood', ring.neighborhoodSlug)
+      }
+    } catch (e) {
+      console.warn('[buildCmaMapDataUri] parent', e instanceof Error ? e.message : String(e))
+    }
+  }
+  if (!parentLabel && subject.communitySlug) {
+    parentLabel = getResortCommunityBySlug(subject.communitySlug)?.label?.trim() || null
+  }
+  return { parent, parentLabel }
+}
+
 type DrawnOutlines = {
   plats: MapLatLng[][]
   parent: MapLatLng[][]
@@ -250,6 +285,9 @@ async function outlinesFor(
     }),
     ...(platArea ? (opts.others ?? []).map((p) => ({ lat: p.lat as number | null, lng: p.lng as number | null })) : []),
   ]
+  // Rule 30. The parent read does not need the plat assignment, so it starts
+  // now. The plat polygons are then read together, and kept in slug order.
+  const parentWork = parentOutline(subject, marks, opts.parentName)
   let assigned: Array<string | null> = []
   try {
     assigned = await assignSubdivisionSlugs(located)
@@ -257,41 +295,27 @@ async function outlinesFor(
     console.warn('[buildCmaMapDataUri] plats', e instanceof Error ? e.message : String(e))
     assigned = []
   }
-  const street = await streetPlaceLabel(located, assigned, opts.heldToStreet, opts.streetNames)
+  const slugs = platSlugsToDraw(assigned, { heldToStreet: opts.heldToStreet })
+  const [street, recordedPlats, parentBits] = await Promise.all([
+    streetPlaceLabel(located, assigned, opts.heldToStreet, opts.streetNames),
+    Promise.all(slugs.map(async (slug) => ({ slug, recorded: await ringsFor('subdivision', slug) }))),
+    parentWork,
+  ])
   const plats: MapLatLng[][] = []
   const drawnPlats: Array<{ slug: string; rings: MapLatLng[][] }> = []
-  for (const slug of platSlugsToDraw(assigned, { heldToStreet: opts.heldToStreet })) {
-    const recorded = await ringsFor('subdivision', slug)
+  for (const { slug, recorded } of recordedPlats) {
     if (!polygonHoldsAnyPoint(recorded, marks)) continue
     const rings = recorded.map((r) => simplifyRing(r, DRAWN_PLAT_POINTS))
     plats.push(...rings)
     drawnPlats.push({ slug, rings })
   }
-  let parent: MapLatLng[][] = []
-  let parentLabel = opts.parentName?.trim() || null
-  const subjectLat = finite(subject.latitude)
-  const subjectLng = finite(subject.longitude)
-  if (subjectLat != null && subjectLng != null) {
-    try {
-      const ring = await getSubdivisionRing(subjectLat, subjectLng)
-      const parentRings = await ringsFor('neighborhood', ring?.neighborhoodSlug)
-      const subjectPoint = [{ lat: subjectLat, lng: subjectLng }]
-      if (polygonHoldsAnyPoint(parentRings, subjectPoint) || polygonHoldsAnyPoint(parentRings, marks)) {
-        parent = parentRings.map((r) => simplifyRing(r, DRAWN_PARENT_POINTS))
-      }
-      if (!parentLabel && ring?.neighborhoodSlug) {
-        parentLabel = await readBoundaryLabel('neighborhood', ring.neighborhoodSlug)
-      }
-    } catch (e) {
-      console.warn('[buildCmaMapDataUri] parent', e instanceof Error ? e.message : String(e))
-    }
-  }
-  if (!parentLabel && subject.communitySlug) {
-    parentLabel = getResortCommunityBySlug(subject.communitySlug)?.label?.trim() || null
-  }
+  const parent = parentBits.parent
+  const parentLabel = parentBits.parentLabel
   if (plats.length === 0 && parent.length === 0) {
-    for (const name of areaNames(area, subject)) {
-      const recorded = await boundaryRings(name)
+    const named = await Promise.all(
+      areaNames(area, subject).map(async (name) => ({ recorded: await boundaryRings(name) })),
+    )
+    for (const { recorded } of named) {
       if (!polygonHoldsAnyPoint(recorded, marks)) continue
       const rings = recorded.map((r) => simplifyRing(r, DRAWN_PLAT_POINTS))
       plats.push(...rings)
@@ -306,7 +330,9 @@ async function outlinesFor(
       return { label, rings: plat.rings }
     }),
   )
-  const parentAnchor = parent.length > 0 ? parent : subjectLat != null && subjectLng != null ? [[{ lat: subjectLat, lng: subjectLng }]] : []
+  const anchorLat = finite(subject.latitude)
+  const anchorLng = finite(subject.longitude)
+  const parentAnchor = parent.length > 0 ? parent : anchorLat != null && anchorLng != null ? [[{ lat: anchorLat, lng: anchorLng }]] : []
   return {
     plats,
     parent,
