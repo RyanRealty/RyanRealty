@@ -801,3 +801,15 @@
     order: 3;
   }
 }
+
+/* The answer lede under the H1 (AIV a5, 2026-10-09): one plain paragraph, the
+   median sale price first, before the fold's figure and map. */
+.v3 .nbh-answer-lede {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-space-md) var(--v3-gutter) 0;
+}
+.v3 .nbh-answer-lede p {
+  margin: 0;
+  color: var(--v3-ink);
+}
