@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
+  CONDO_FACTS_OR,
   factsProductClauses,
   productClassFromFactsRow,
   productCompatible,
@@ -88,9 +89,18 @@ describe('townhouse facts pool — stored product_class is attached', () => {
     expect(town.or).toContain('and(product_class.eq.attached,property_sub_type.ilike.%town%)')
   })
 
-  it('leaves single-family and condo queries on their own product_class', () => {
+  it('asks for attached condo rows, and does not open the whole attached bucket', () => {
+    const condo = factsProductClauses('condo')
+    expect(condo.or).toBe(CONDO_FACTS_OR)
+    expect(condo.or).toContain('product_class.eq.attached')
+    expect(condo.or).toContain('property_sub_type.ilike.%condo%')
+    expect(condo.or).not.toContain('%town%')
+    expect(condo.eq).toBeUndefined()
+    expect(condo.or).toContain('and(product_class.eq.attached,property_sub_type.ilike.%condo%)')
+  })
+
+  it('leaves single-family on its own product_class', () => {
     expect(factsProductClauses('detached')).toEqual({ eq: ['product_class', 'detached'] })
-    expect(factsProductClauses('condo')).toEqual({ eq: ['product_class', 'condo'] })
     expect(factsProductClauses('unknown')).toEqual({})
     expect(factsProductClauses(null)).toEqual({})
   })
@@ -129,5 +139,59 @@ describe('townhouse facts pool — stored product_class is attached', () => {
     const out = walkPricingLadder(subject(), [town, condo], { asOf })
     expect(out.comps.map((c) => c.listingKey)).toEqual(['TOWN'])
     expect(out.comps.map((c) => c.listingKey)).not.toContain('CONDO')
+  })
+
+  it('keeps another unit in the same condo building, stored as attached', () => {
+    const otherUnit = sale({
+      listingKey: 'UNIT207',
+      address: '2745 Ordway',
+      unitNumber: '207',
+      subdivision: 'NorthWest Crossing',
+      subdivisionNorm: 'northwest crossing',
+      subdivisionSlug: 'arete',
+      beds: 1,
+      baths: 1,
+      sqft: 578,
+      yearBuilt: 2023,
+      productClass: productClassFromFactsRow('attached', 'Condominium'),
+      closePrice: 485_000,
+      lastAsk: 499_000,
+      closePpsf: 839,
+    })
+    const sameUnit = sale({
+      ...otherUnit,
+      listingKey: 'UNIT104',
+      unitNumber: '104',
+      closePrice: 480_000,
+    })
+    const town = sale({
+      listingKey: 'TOWN',
+      address: '11 Industrial',
+      productClass: productClassFromFactsRow('attached', 'Townhouse'),
+      beds: 1,
+      baths: 1,
+      sqft: 578,
+      yearBuilt: 2023,
+    })
+    const out = walkPricingLadder(
+      subject({
+        streetAddress: '2745 Ordway',
+        unitNumber: '104',
+        subdivision: 'NorthWest Crossing',
+        subdivisionNorm: 'northwest crossing',
+        subdivisionSlug: 'arete',
+        beds: 1,
+        baths: 1,
+        sqft: 578,
+        yearBuilt: 2023,
+        productClass: 'condo',
+        propertySubType: 'Condominium',
+      }),
+      [otherUnit, sameUnit, town],
+      { asOf: '2026-10-09' },
+    )
+    expect(out.comps.map((c) => c.listingKey)).toContain('UNIT207')
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('UNIT104')
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('TOWN')
   })
 })

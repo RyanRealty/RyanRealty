@@ -499,12 +499,12 @@ export const PRICING_MIN_COMPS = 5
  */
 export const PRICING_WALK_CAP = 7
 /**
- * The floor is the trim threshold: every priced set sets its highest and
- * lowest aside (Matt 2026-10-07, the band is always the trimmed range). A
- * future floor change moves the trim with it on purpose.
+ * The floor is where the range rule starts. At five or more, every seated
+ * sale sets the price and the band is their full adjusted spread (Matt
+ * 2026-10-09). Under five the build already failed, and the rule stays off.
  */
 export const RANGE_TRIM_MIN_N = PRICING_MIN_COMPS
-/** Never peel the range below three kept sales. A five-sale set keeps three. */
+/** Kept so older rows and tests can name the retired three-sale peel. */
 export const RANGE_MIN_KEPT = 3
 /**
  * The search may cross the subject's neighborhood/community boundary only

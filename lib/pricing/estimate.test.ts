@@ -809,19 +809,19 @@ describe('D10 — the range and the point come off the printed adjusted prices',
 
   const range = (prices: number[]) => rangeFromPartition(partitionByRangeRule(prices.map((p) => sale(p))))
 
-  it('trims one sale at each end once six are priced', () => {
+  it('uses every seated sale, so the range is the low and the high (Matt 2026-10-09)', () => {
     expect(range([100, 200, 300, 400, 500, 600])).toEqual({
-      low: 200,
-      high: 500,
-      rule: 'trimmed-one-each-end',
+      low: 100,
+      high: 600,
+      rule: 'min-max',
       n: 6,
-      kept: 4,
+      kept: 6,
     })
   })
 
-  it('does not let a sale that barely moves the price set the end of the range', () => {
-    // 20506 Murphy, 21 Sep 2026. One-each-end dropped $669k and $875k, then
-    // the next two — about 1% and 2% of the price — still drew $689k–$800k.
+  it('keeps a light end: it was seated, so it sets the range', () => {
+    // 20506 Murphy. These used to be peeled because the end carried little
+    // weight. A sale that was brought in is adjusted and then used.
     const part = partitionByRangeRule([
       sale(668_733, 0.3479),
       sale(689_594, 0.0158),
@@ -834,17 +834,12 @@ describe('D10 — the range and the point come off the printed adjusted prices',
       sale(800_000, 0.0375),
       sale(875_000, 0.146),
     ])
-    const spread = rangeFromPartition(part)
-    expect(part.kept).toHaveLength(6)
-    expect(spread).toMatchObject({ low: 693_608, high: 749_900, kept: 6, n: 10 })
-    expect(part.setAside.map((s) => s.adjustedPrice).sort((a, b) => a - b)).toEqual([
-      668_733, 689_594, 800_000, 875_000,
-    ])
+    expect(part.setAside).toEqual([])
+    expect(part.kept).toHaveLength(10)
+    expect(rangeFromPartition(part)).toMatchObject({ low: 668_733, high: 875_000, kept: 10, n: 10, rule: 'min-max' })
   })
 
-  it('drops the light $800k end on the six-sale Murphy set', () => {
-    // The 22 Sep rebuild kept six. One-each-end removed $690k and $875k and
-    // left 20542 Aberdeen at $800k, a fraction of the median weight, as the top.
+  it('keeps the light $800k sale on the six-sale Murphy set', () => {
     const part = partitionByRangeRule([
       sale(689_594, 0.0157),
       sale(696_334, 0.4332),
@@ -853,23 +848,21 @@ describe('D10 — the range and the point come off the printed adjusted prices',
       sale(800_000, 0.0372),
       sale(875_000, 0.0724),
     ])
-    expect(rangeFromPartition(part)).toMatchObject({ low: 696_334, high: 749_900, kept: 3, n: 6 })
-    expect(part.setAside.map((s) => s.adjustedPrice).sort((a, b) => a - b)).toEqual([
-      689_594, 800_000, 875_000,
-    ])
+    expect(part.setAside).toEqual([])
+    expect(rangeFromPartition(part)).toMatchObject({ low: 689_594, high: 875_000, kept: 6, n: 6, rule: 'min-max' })
   })
 
-  it('trims one sale at each end once five are priced (trimmed band always, Matt 2026-10-07)', () => {
+  it('uses all five seated sales, high and low included (Matt 2026-10-09)', () => {
     expect(range([100, 300, 200, 500, 400])).toEqual({
-      low: 200,
-      high: 400,
-      rule: 'trimmed-one-each-end',
+      low: 100,
+      high: 500,
+      rule: 'min-max',
       n: 5,
-      kept: 3,
+      kept: 5,
     })
     const part = partitionByRangeRule([100, 300, 200, 500, 400].map((p) => sale(p)))
-    expect(part.setAside.map((s) => s.adjustedPrice).sort((a, b) => a - b)).toEqual([100, 500])
-    expect(part.kept).toHaveLength(3)
+    expect(part.setAside).toEqual([])
+    expect(part.kept).toHaveLength(5)
   })
 
   it('will not draw a range from fewer than the comp floor: four sales is null, never min to max', () => {
@@ -895,24 +888,25 @@ describe('D10 — the range and the point come off the printed adjusted prices',
       asOfSaleToOriginal: 1,
       qualitySet: false,
     })
-    // Trimmed spread is 420,000-480,000; the weighted point of all six is
-    // 450,000; sale-to-ask of 1.00 leaves each figure where it is.
-    expect(engine.rangeRule?.rule).toBe('trimmed-one-each-end')
-    expect(engine.rangeRule?.adjustedLow).toBe(420_000)
-    expect(engine.rangeRule?.adjustedHigh).toBe(480_000)
+    // Equal weights. The range is the low and the high. The point is the
+    // middle. Sale-to-ask of 1.00 leaves each figure where it is.
+    expect(engine.rangeRule?.rule).toBe('min-max')
+    expect(engine.rangeRule?.adjustedLow).toBe(400_000)
+    expect(engine.rangeRule?.adjustedHigh).toBe(500_000)
+    expect(engine.rangeRule?.n).toBe(6)
+    expect(engine.rangeRule?.kept).toBe(6)
     expect(engine.reconciledValue).toBe(450_000)
-    expect(engine.conservativeList).toBe(420_000)
+    expect(engine.conservativeList).toBe(400_000)
     expect(engine.recommendedList).toBe(450_000)
-    expect(engine.highEndList).toBe(480_000)
+    expect(engine.highEndList).toBe(500_000)
     expect(engine.rangeRule?.saleToAskSource).toBe('city-index')
   })
 
-  it('a sale the range rule set aside cannot move the point, whatever its weight', () => {
-    // tasteReview round three, §2 item 1. The $400,000 sale is the lowest of
-    // the six and carries nine times the weight of any other. Before this rule
-    // it pulled the printed price to $421,429 while the document told the
-    // reader it had been set aside. It now carries nothing: the point is the
-    // weighted value of the four that remain.
+  it('a heavy low sale moves the point, because it was seated and it is used', () => {
+    // The $400,000 sale is the low end and carries most of the weight. It
+    // sets the bottom of the range and it pulls the point under the equal
+    // blend of the six. The 40% weight cap still applies, so it does not
+    // become the whole price.
     const engine = listPriceFromEngine({
       subjectSqft: 2000,
       lastAsk: null,
@@ -928,15 +922,16 @@ describe('D10 — the range and the point come off the printed adjusted prices',
       asOfSaleToOriginal: 1,
       qualitySet: false,
     })
-    expect(engine.rangeRule?.adjustedLow).toBe(420_000)
-    expect(engine.rangeRule?.adjustedHigh).toBe(480_000)
+    expect(engine.rangeRule?.adjustedLow).toBe(400_000)
+    expect(engine.rangeRule?.adjustedHigh).toBe(500_000)
     expect(engine.rangeRule?.n).toBe(6)
-    expect(engine.rangeRule?.kept).toBe(4)
-    expect(engine.reconciledValue).toBe(450_000)
-    expect(engine.recommendedList).toBe(450_000)
+    expect(engine.rangeRule?.kept).toBe(6)
+    expect(engine.reconciledValue).toBeLessThan(450_000)
+    expect(engine.reconciledValue).toBeGreaterThan(400_000)
+    expect(engine.recommendedList).toBe(engine.reconciledValue)
   })
 
-  it('the range sentence names the sales behind the price and the ones set aside', () => {
+  it('the range sentence names every sale behind the price', () => {
     const engine = listPriceFromEngine({
       subjectSqft: 2000,
       lastAsk: null,
@@ -953,25 +948,17 @@ describe('D10 — the range and the point come off the printed adjusted prices',
       qualitySet: false,
     })
     const sentence = engine.rangeRule!.sentence
-    expect(sentence).toContain('the four sale prices behind this price')
-    // BOTH counts by name, in one arithmetic a reader can check (round four,
-    // class E): cma-19968's market chapter said six sales support a range the
-    // price chapter drew from four.
-    expect(sentence).toContain('Two of the six sales sat outside every one of them and were set aside')
-    // The old sentence opened on six and then described a spread of four.
-    expect(sentence).not.toContain('the 6 sale prices')
+    expect(sentence).toContain('all six sale prices')
+    expect(sentence).toContain('$400,000 to $500,000')
+    expect(sentence).not.toContain('set aside')
   })
 
   /**
-   * THE WORTH RANGE COMES FROM THE KEPT SET ONLY (round four, class E).
-   *
-   * cma-19968 printed a worth range topping at $479,000 with a $479,614 sale
-   * in `setAside` — $614 apart on a document that told the reader that sale
-   * had been removed. The ends are the kept extremes, and the outward rounding
-   * that puts them on the pricing grid may never reach the neighbour it was
-   * drawn to exclude.
+   * The range is the lowest adjusted sale to the highest. Outward rounding
+   * puts those ends on the thousand-dollar grid. Nothing in the set is
+   * removed first.
    */
-  describe('the range ends never reach a sale the document set aside', () => {
+  describe('the range is the low and the high of every seated sale', () => {
     const ends = (prices: number[]) => {
       const engine = listPriceFromEngine({
         subjectSqft: 2000,
@@ -990,39 +977,20 @@ describe('D10 — the range and the point come off the printed adjusted prices',
       }
     }
 
-    it('both ends are the min and max of the KEPT sales', () => {
+    it('both ends are the min and max of every seated sale', () => {
       const r = ends([331_304, 370_698, 458_723, 469_558, 478_079, 479_614])
-      expect(Math.min(...r.kept)).toBe(370_698)
-      expect(Math.max(...r.kept)).toBe(478_079)
-      expect(r.low).toBeLessThanOrEqual(370_698)
-      expect(r.high).toBeGreaterThanOrEqual(478_079)
-      // Nothing outside the kept spread by more than one rounding step.
-      expect(370_698 - r.low).toBeLessThan(1000)
-      expect(r.high - 478_079).toBeLessThan(1000)
+      expect(r.setAside).toEqual([])
+      expect(Math.min(...r.kept)).toBe(331_304)
+      expect(Math.max(...r.kept)).toBe(479_614)
+      expect(r.low).toBe(331_000)
+      expect(r.high).toBe(480_000)
     })
 
-    it('cma-19968: no set-aside sale equals either end', () => {
-      const r = ends([331_304, 370_698, 458_723, 469_558, 478_079, 479_614])
-      for (const aside of r.setAside) {
-        expect(aside).not.toBe(r.low)
-        expect(aside).not.toBe(r.high)
-      }
-      expect(r.high).toBeLessThan(479_614)
-      expect(r.low).toBeGreaterThan(331_304)
-    })
-
-    it('rounds inward rather than onto a set-aside sale $200 away', () => {
-      // Outward rounding would take the high to $480,000, PAST the $479,200
-      // sale the rule just removed, and the low to $370,000, past $370,400.
+    it('a tight pair rounds outward onto the thousand-dollar grid', () => {
       const r = ends([370_400, 370_600, 458_723, 469_558, 479_100, 479_200])
-      expect(r.high).toBe(479_000)
-      expect(r.low).toBe(371_000)
-      expect(r.high).toBeLessThan(479_200)
-      expect(r.low).toBeGreaterThan(370_400)
-      for (const aside of r.setAside) {
-        expect(aside).not.toBe(r.low)
-        expect(aside).not.toBe(r.high)
-      }
+      expect(r.setAside).toEqual([])
+      expect(r.low).toBe(370_000)
+      expect(r.high).toBe(480_000)
     })
 
     it('the sentence names rangeRule.n and rangeRule.kept, both by name', () => {
@@ -1030,7 +998,7 @@ describe('D10 — the range and the point come off the printed adjusted prices',
       for (const prices of [
         [400_000, 420_000, 440_000, 460_000, 480_000, 500_000],
         [400_000, 415_000, 430_000, 445_000, 460_000, 480_000, 500_000],
-        // Five sales: three of the five set the range (Matt 2026-10-07).
+        // Five sales: all five set the range.
         [400_000, 425_000, 450_000, 475_000, 500_000],
       ]) {
         const engine = listPriceFromEngine({
@@ -1047,15 +1015,16 @@ describe('D10 — the range and the point come off the printed adjusted prices',
       }
     })
 
-    it('holds the order when both kept extremes sit inside one rounding step', () => {
+    it('keeps the low under the high when the sales sit inside one rounding step', () => {
       const r = ends([420_100, 420_300, 420_400, 420_500, 420_600, 420_800])
+      expect(r.setAside).toEqual([])
+      expect(r.low).toBeLessThanOrEqual(420_100)
+      expect(r.high).toBeGreaterThanOrEqual(420_800)
       expect(r.low).toBeLessThanOrEqual(r.high)
-      expect(r.low).toBeGreaterThan(420_100)
-      expect(r.high).toBeLessThan(420_800)
     })
   })
 
-  it('carries the value to an ask at the local share of the original ask (five sales, trimmed band, Matt 2026-10-07)', () => {
+  it('carries the value to an ask at the local share of the original ask (five sales, full spread)', () => {
     const engine = listPriceFromEngine({
       subjectSqft: 2000,
       lastAsk: null,
@@ -1064,20 +1033,20 @@ describe('D10 — the range and the point come off the printed adjusted prices',
       asOfSaleToOriginal: 0.95,
       qualitySet: false,
     })
-    // The $400,000 and $500,000 ends are set aside; the kept spread is
-    // $425,000 to $475,000, the point is the weighted $450,000, and the list
-    // tiers sit on the band and the point carried at 0.95.
-    expect(engine.rangeRule?.rule).toBe('trimmed-one-each-end')
+    // All five set the price. The spread is $400,000 to $500,000. The point
+    // is the weighted $450,000. The list tiers are that point and those ends
+    // carried at 0.95, to the thousand.
+    expect(engine.rangeRule?.rule).toBe('min-max')
     expect(engine.rangeRule?.n).toBe(5)
-    expect(engine.rangeRule?.kept).toBe(3)
-    expect(engine.rangeRule?.adjustedLow).toBe(425_000)
-    expect(engine.rangeRule?.adjustedHigh).toBe(475_000)
+    expect(engine.rangeRule?.kept).toBe(5)
+    expect(engine.rangeRule?.adjustedLow).toBe(400_000)
+    expect(engine.rangeRule?.adjustedHigh).toBe(500_000)
     expect(engine.reconciledValue).toBe(450_000)
     expect(engine.recommendedList).toBe(474_000)
-    expect(engine.conservativeList).toBe(447_000)
-    expect(engine.highEndList).toBe(500_000)
+    expect(engine.conservativeList).toBe(421_000)
+    expect(engine.highEndList).toBe(526_000)
     expect(engine.rangeRule?.sentence).toContain('95.0 percent')
-    expect(engine.rangeRule?.sentence).toContain('Two of the five sales')
+    expect(engine.rangeRule?.sentence).toContain('all five sale prices')
   })
 
   it('drops a sale-to-ask ratio more than 50 percent from the ask', () => {
@@ -1151,11 +1120,11 @@ describe('D10 — what the cover calls the value is the printed evidence', () =>
       reviewReason: null, compPpsfCv: 0, priceOverride: null, improvementsValueAdd: null, notes: [],
     }
     const priced = applyEngineRecommendedList(base, engine)
-    expect(priced.valueLow).toBe(420_000)
-    expect(priced.valueHigh).toBe(480_000)
-    expect(priced.conservative).toBe(442_000)
+    expect(priced.valueLow).toBe(400_000)
+    expect(priced.valueHigh).toBe(500_000)
+    expect(priced.conservative).toBe(421_000)
     expect(priced.recommended).toBe(474_000)
-    expect(priced.highEnd).toBe(480_000)
+    expect(priced.highEnd).toBe(500_000)
     expect(priced.highEnd).toBeLessThanOrEqual(priced.valueHigh)
     expect(priced.rangeRule?.saleToAskRatio).toBe(0.95)
   })
@@ -1200,9 +1169,9 @@ describe('the range is rounded once, at the pricing unit', () => {
       asOfSaleToOriginal: 1,
       qualitySet: false,
     })
-    expect(engine.rangeRule?.adjustedLow).toBe(1_260_000)
-    expect(engine.rangeRule?.adjustedHigh).toBe(1_750_000)
-    expect(engine.rangeRule?.sentence).toContain('$1,260,000 to $1,750,000')
+    expect(engine.rangeRule?.adjustedLow).toBe(1_100_000)
+    expect(engine.rangeRule?.adjustedHigh).toBe(1_900_000)
+    expect(engine.rangeRule?.sentence).toContain('$1,100,000 to $1,900,000')
     expect(engine.rangeRule?.sentence).not.toContain('1,264,174')
     expect(engine.rangeRule?.sentence).not.toContain('1,748,776')
   })
@@ -1217,8 +1186,8 @@ describe('the range is rounded once, at the pricing unit', () => {
       qualitySet: false,
     })
     const out = applyEngineRecommendedList(base, engine)
-    expect(out.valueLow).toBe(1_260_000)
-    expect(out.valueHigh).toBe(1_750_000)
+    expect(out.valueLow).toBe(1_100_000)
+    expect(out.valueHigh).toBe(1_900_000)
     expect(out.conservative).toBeLessThanOrEqual(out.recommended)
     expect(out.recommended).toBeLessThanOrEqual(out.highEnd)
   })

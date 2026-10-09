@@ -37,6 +37,7 @@ import { getPlatFamilyFootprint } from '@/lib/data/subdivisions/getPlatFamilyFoo
 import { getPlatGroundBounds } from '@/lib/data/cma/platGroundBounds'
 import { ownGroundSeatRank, platGround, platGroundReach, platGroundTrace } from '@/lib/pricing/plat-ground'
 import { keepTightestByClosePrice, PRICING_MIN_COMPS, PRICING_TARGET_COMPS, PRICING_WALK_CAP } from '@/lib/pricing/ladder'
+import { addressIsThisHome } from '@/lib/pricing/same-address'
 import type { CompRefillBench } from '@/lib/cma/review-refill'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
@@ -134,8 +135,9 @@ export { realSubdivision }
  * for want of comparable sales. On 2026-10-07 he reversed that: a three-sale
  * letter printed a raw min-to-max band and one stray sale put the failed ask
  * inside it, which contradicts the letter. The floor is five price-setting
- * sales, the band is always the trimmed range, and a sale that does not set
- * the price (lib/pricing/price-set.ts) never counts toward the five.
+ * sales. A sale that does not set the price (lib/pricing/price-set.ts) never
+ * counts toward the five. On 2026-10-09 the band became the full spread of
+ * the sales that cleared that floor. The high and the low stay in the price.
  */
 export const MIN_COMPS = PRICING_MIN_COMPS
 /**
@@ -1168,16 +1170,17 @@ export async function selectComps(
       // ATTACHED subject are ambiguous and admit (the subject's true self is
       // already caught by ListingKey above), while on a detached subject the
       // bare address match stays self, which is what it always meant there.
-      if (subject.streetAddress && comp.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
-        const su = (subject.unitNumber ?? '').trim().toLowerCase()
-        const cu = (comp.unitNumber ?? '').trim().toLowerCase()
-        const attached = !keepSameProductType('Single Family Residence', subject.propertySubType)
-        const unitsDiffer = su !== cu
-        const bothAbsentOnAttached = !su && !cu && attached
-        if (!unitsDiffer && !bothAbsentOnAttached) {
-          rung.excluded.self++
-          continue
-        }
+      if (
+        addressIsThisHome({
+          subjectAddress: subject.streetAddress,
+          saleAddress: comp.address,
+          subjectUnit: subject.unitNumber,
+          saleUnit: comp.unitNumber,
+          sharedBuilding: !keepSameProductType('Single Family Residence', subject.propertySubType),
+        })
+      ) {
+        rung.excluded.self++
+        continue
       }
       if (byKey.has(comp.listingKey)) {
         rung.excluded.duplicate++

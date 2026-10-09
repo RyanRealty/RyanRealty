@@ -52,6 +52,40 @@ export function normalizeAddress(address: string): string {
   return address.trim().toLowerCase().replace(/\s+/g, ' ').replace(/[.,]+$/, '')
 }
 
+/**
+ * A shared-address building. A different unit is a different home. Two blank
+ * units on one of these are ambiguous: the listing key already caught the
+ * subject's own row, so the address alone does not.
+ */
+const SHARED_BUILDING_PRODUCTS = new Set(['condo', 'townhouse', 'attached', 'coop', 'multi-unit'])
+
+/**
+ * True when this sale is the subject's own home, so the walk leaves it out.
+ * A detached house at the same street address is that home. In a condo or
+ * other shared building, the same unit is that home and a different unit is
+ * not. 2745 Ordway (Arete): nine 578 sqft closes at one address, each a
+ * different unit, were read as the subject and never priced.
+ */
+export function addressIsThisHome(args: {
+  subjectAddress: string
+  saleAddress: string
+  subjectUnit?: string | null
+  saleUnit?: string | null
+  /** Facts product class. Ignored when sharedBuilding is passed. */
+  productClass?: string | null
+  /** Listings path: the subject is not a single-family residence. */
+  sharedBuilding?: boolean
+}): boolean {
+  if (!args.subjectAddress.trim()) return false
+  if (normalizeAddress(args.subjectAddress) !== normalizeAddress(args.saleAddress)) return false
+  const shared = args.sharedBuilding ?? SHARED_BUILDING_PRODUCTS.has(args.productClass ?? '')
+  const subjectUnit = (args.subjectUnit ?? '').trim().toLowerCase()
+  const saleUnit = (args.saleUnit ?? '').trim().toLowerCase()
+  if (subjectUnit !== saleUnit) return false
+  if (!subjectUnit && !saleUnit && shared) return false
+  return true
+}
+
 /** Living areas this far apart are different homes, not one home remeasured. */
 const SQFT_TOLERANCE = 0.02
 

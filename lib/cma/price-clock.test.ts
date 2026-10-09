@@ -466,14 +466,15 @@ describe('priceCmaSet: the share over the sales that price reads each sale on it
     const after = build(true)
     expect(after.rangeRule?.saleToAskSource).toBe('these-sales')
     expect(after.rangeRule?.saleToAskRatio).toBeCloseTo(520_000 / 525_000, 10)
-    // The share carries the list from the weighted sales toward the band top:
-    // read off the first listings it ran to the top; on the last stretches it
-    // sits just over the weighted sales.
-    expect([before.conservative, before.recommended, before.highEnd]).toEqual([520_000, 520_000, 520_000])
-    expect([after.conservative, after.recommended, after.highEnd]).toEqual([485_000, 505_000, 520_000])
-    // The worth range is the adjusted sales, and does not move.
-    expect([before.valueLow, before.valueHigh]).toEqual([480_000, 520_000])
-    expect([after.valueLow, after.valueHigh]).toEqual([480_000, 520_000])
+    // The share carries the list from the weighted sales toward the band top.
+    // Read off the first listings, the low ratios run the list to the top of
+    // the sales. On the last stretches it sits just over the weighted sales.
+    // The band is every seated sale, $450,000 to $560,000.
+    expect([before.conservative, before.recommended, before.highEnd]).toEqual([558_000, 560_000, 560_000])
+    expect([after.conservative, after.recommended, after.highEnd]).toEqual([454_000, 507_000, 560_000])
+    // The worth range is the adjusted sales, and does not move when the share does.
+    expect([before.valueLow, before.valueHigh]).toEqual([450_000, 560_000])
+    expect([after.valueLow, after.valueHigh]).toEqual([450_000, 560_000])
   })
 
   it('the city index share wins when it has one, and does not move', () => {

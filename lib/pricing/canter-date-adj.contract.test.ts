@@ -406,10 +406,11 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
       true,
     )
     // Matt 2026-10-08 ("Yes, adjust pocket sales"): with the pocket adjusted
-    // for size this fixture recommends $676,000 (was $677,000 with size held
-    // at $0), still inside the $680,000 gold bar's tolerance.
-    expect(cover.recommended).toBe(676_000)
-    expect(built?.recommended).toBe(676_000)
+    // for size this fixture recommends $674,000 (was $676,000 when the high
+    // and the low were set aside, and $677,000 with size held at $0). It is
+    // still inside the $680,000 gold bar's tolerance.
+    expect(cover.recommended).toBe(674_000)
+    expect(built?.recommended).toBe(674_000)
     expect(canterRecommendNearGold(cover.recommended!)).toBe(true)
     expect(canterRecommendNearGold(built!.recommended!)).toBe(true)
     expect(Math.abs(cover.recommended! - CANTER_GOLD_RECOMMEND)).toBeLessThanOrEqual(

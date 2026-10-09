@@ -22,8 +22,7 @@ describe('five price-setting sales is the floor and where widening stops (Matt 2
   it('pins the floor, the target, the trim threshold and the kept floor to one rule', () => {
     expect(PRICING_MIN_COMPS).toBe(5)
     expect(PRICING_MIN_COMPS).toBe(PRICING_TARGET_COMPS)
-    // The band is always the trimmed range: the floor is the trim threshold,
-    // and a five-sale set keeps three.
+    // The floor is where the range starts. At five or more, every sale is used.
     expect(RANGE_TRIM_MIN_N).toBe(PRICING_MIN_COMPS)
     expect(RANGE_MIN_KEPT).toBe(3)
   })

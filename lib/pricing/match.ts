@@ -63,6 +63,7 @@ import {
   pocketStopsLaterRungs,
   pocketStarvedForYearQuality,
 } from '@/lib/pricing/ladder'
+import { addressIsThisHome } from '@/lib/pricing/same-address'
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible, type RuralSplitCounts } from '@/lib/pricing/rural'
 import {
   applyInferredPocket,
@@ -74,6 +75,8 @@ import {
 export type PricingSubject = {
   listingKey: string | null
   streetAddress: string
+  /** MLS unit. A shared building uses it so another unit is not this home. */
+  unitNumber?: string | null
   city: string
   citySlug: string
   subdivision: string | null
@@ -161,6 +164,8 @@ export type PricingSale = {
   listingKey: string
   listNumber: string | null
   address: string
+  /** MLS unit. Absent on sale_pricing_facts; stamped from listings before the walk. */
+  unitNumber?: string | null
   city: string
   citySlug: string
   subdivision: string | null
@@ -661,7 +666,17 @@ function passesTier(
   priceTier?: boolean
 } {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return { ok: false, miles: null }
-  if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
+  // A different unit at this address is a different home. The listing key
+  // above already removed the subject's own row.
+  if (
+    addressIsThisHome({
+      subjectAddress: subject.streetAddress,
+      saleAddress: sale.address,
+      subjectUnit: subject.unitNumber,
+      saleUnit: sale.unitNumber,
+      productClass: subject.productClass,
+    })
+  ) {
     return { ok: false, miles: null }
   }
   if (sale.closeDate >= asOf) return { ok: false, miles: null }
@@ -1104,7 +1119,17 @@ function bracketEligible(
   tiers: readonly PricingTier[] = pricingTierLadder(),
 ): boolean {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return false
-  if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) return false
+  if (
+    addressIsThisHome({
+      subjectAddress: subject.streetAddress,
+      saleAddress: sale.address,
+      subjectUnit: subject.unitNumber,
+      saleUnit: sale.unitNumber,
+      productClass: subject.productClass,
+    })
+  ) {
+    return false
+  }
   if (!bracketStaysOnSubdivisionRows(subject, sale)) return false
   if (sale.closeDate >= asOf) return false
   // THE BRACKET SWAP OBEYS THE SAME 24-MONTH WALL AS EVERY RUNG. It checked

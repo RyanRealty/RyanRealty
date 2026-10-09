@@ -21,7 +21,7 @@ A seller asking "what's my home worth" gets a broker-reviewed, accuracy-gated va
 
 ## 3. Actors
 - Human: signing broker (review + approve + send) — accountable. Broker resolution defect: `resolveBrokerSlug()` (`lib/cma-request.ts:90-114`) always falls to `CMA_DEFAULT_BROKER_SLUG` (Matt) — TODO at `:98-100`, per-lead assignment unresolved.
-- Automated: cma-build-worker cron (14,44 * * * *), `buildCma()` engine, judge/audit/accuracy gates, ready-notify SMS. The engine's floor is five price-setting sales (`PRICING_MIN_COMPS`, Matt 2026-10-07) and the printed band is always the trimmed range; an expired home whose last ask sits inside that band builds as a hold for Matt (`pricing.hold`, queue chip "Ask inside the range") and never sends.
+- Automated: cma-build-worker cron (14,44 * * * *), `buildCma()` engine, judge/audit/accuracy gates, ready-notify SMS. The engine's floor is five price-setting sales (`PRICING_MIN_COMPS`, Matt 2026-10-07). The printed band is the full adjusted spread of those sales, low to high (Matt 2026-10-09). An expired home whose last ask sits inside that band builds as a hold for Matt (`pricing.hold`, queue chip "Ask inside the range") and never sends.
 - Client: receives the doc; their page views tracked.
 
 ## 4. Systems of record
