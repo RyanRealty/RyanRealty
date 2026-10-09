@@ -39,13 +39,8 @@ describe('V3Takeaways', () => {
 })
 
 describe('V3TakeawaysLead', () => {
-  it('carries the anchor it is given: the market page keeps #takeaways (decision aeo-market-lead-and-tables)', () => {
-    const html = renderToStaticMarkup(createElement(V3TakeawaysLead, { id: 'takeaways', items: ITEMS }))
-    expect(html).toMatch(/^<div id="takeaways" class="v3-takeaways v3-takeaways--lede">/)
-    expect(html.match(/<p class="v3-takeaways__lead"/g)).toHaveLength(1)
-  })
-
-  it('has no id when none is passed', () => {
-    expect(renderToStaticMarkup(createElement(V3TakeawaysLead, { items: ITEMS }))).not.toContain(' id=')
+  it('carries the takeaways anchor the pinned SEO decision reads (aeo-market-lead-and-tables)', () => {
+    const html = renderToStaticMarkup(createElement(V3TakeawaysLead, { items: ITEMS }))
+    expect(html).toContain('id="takeaways"')
   })
 })

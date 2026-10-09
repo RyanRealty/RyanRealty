@@ -22,8 +22,8 @@
  */
 
 import { PRICE_SET_SQFT_BAND } from '@/lib/pricing/price-set'
-import { aduSaleRefused, classifyAgeBand, multiUnitFromRemarks, normSubdivision } from '@/lib/pricing/classes'
-import { samePlat } from '@/lib/pricing/price-anchor'
+import { aduSaleRefused, classifyAgeBand, multiUnitFromRemarks } from '@/lib/pricing/classes'
+import { onOwnPlat } from '@/lib/pricing/plat-ground'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
 import { letterProductMatch, resolveMarketArea } from '@/lib/cma/market-area'
 import { compAreaContains, salesAreaIsBounded, type CompArea } from '@/lib/pricing/comp-area'
@@ -90,7 +90,13 @@ export type SameAreaCandidate = {
   address: string | null
   city?: string | null
   subdivision?: string | null
-  /** Recorded plat slug. Candidates carry none today; the field waits for a slug-first read. */
+  /**
+   * The recorded plat polygon the home sits in, as the area read placed it (a
+   * slug; null when tested and none holds it; undefined when nobody tested
+   * it). The area test and the own-plat test read it before the MLS name, so
+   * a home on an area plat under another MLS spelling stays in (rule 24;
+   * reader review 2026-10-08).
+   */
   subdivisionSlug?: string | null
   latitude?: number | null
   longitude?: number | null
@@ -110,7 +116,16 @@ export type SameAreaReason = 'area' | 'product' | 'adu' | 'size' | 'rooms' | 'ag
 
 export type SameAreaFit =
   | { ok: true; ownPlat: boolean; roomDifference: Array<'beds' | 'baths'> }
-  | { ok: false; reason: SameAreaReason }
+  | {
+      ok: false
+      reason: SameAreaReason
+      /**
+       * On a rooms refusal, the counts that differ, compared the way rule 4
+       * compares them (whole baths when both homes carry the split), so a
+       * sentence can name the room that is actually different.
+       */
+      rooms?: Array<'beds' | 'baths'>
+    }
 
 /**
  * The subject fields this fit reads, picked off the build's subject. The
@@ -141,7 +156,8 @@ export function sameAreaSubject(s: CmaSubject): SameAreaSubject {
  * In this order; the first refusal is the reason.
  *
  * 1. AREA. A bounded sales area is tested exactly (`compAreaContains`): the
- *    plat names for a subdivision area, the polygon for a neighborhood or
+ *    recorded plat polygon the read placed the home in for a subdivision
+ *    area (the plat names only where no polygon holds it), the polygon for a neighborhood or
  *    community, the circle for a radius. A null or city area skips this test;
  *    the reads bind City.
  * 2. PRODUCT. `letterProductMatch`: a known other product has to be the same
@@ -156,8 +172,12 @@ export function sameAreaSubject(s: CmaSubject): SameAreaSubject {
  *    2026-10-08, "ADU sale skips", aduSaleRefused). A subject with an ADU
  *    keeps homes with and without one. Absent remarks state nothing.
  * 3. SIZE. Living area within the plat-wide band. Unknown size passes.
- * 4. OWN PLAT. `samePlat` on the slug when both carry one, else the MLS name,
- *    the same fallback the walk takes.
+ * 4. OWN PLAT. `onOwnPlat` (lib/pricing/plat-ground.ts), the one decision
+ *    both sales walks seat own-plat sales on: the recorded polygon first (the
+ *    plat, a phase, an alias sibling, or a recorded addition or phase of its
+ *    family inside the subject's neighborhood or community polygon, Matt
+ *    2026-10-08 "Yes, everywhere"), the MLS name only where no polygon holds
+ *    the home.
  * 5. ROOMS. Rule 4 verbatim through `roomCountsDecision`: same whole count
  *    anywhere; one bedroom OR one bathroom apart only on the subject's own
  *    ground (own plat, the same mapped polygon, the same street), kept and
@@ -180,6 +200,8 @@ export function sameAreaFit(
       longitude: c.longitude ?? null,
       subdivision: c.subdivision ?? null,
       city: c.city ?? null,
+      // The polygon the read put it in, when it read one.
+      platSlug: c.subdivisionSlug,
       // A plat only the own-street rung reached holds only the subject's street.
       address: c.address ?? undefined,
     })
@@ -201,10 +223,17 @@ export function sameAreaFit(
       return { ok: false, reason: 'size' }
     }
   }
-  const ownPlat = samePlat(
-    { subdivisionSlug: subject.subdivisionSlug ?? null, subdivisionNorm: normSubdivision(subject.subdivision ?? null) },
-    { subdivisionSlug: c.subdivisionSlug ?? null, subdivisionNorm: normSubdivision(c.subdivision ?? null) },
-  )
+  // The subject's own subdivision by the one decision the sales walks seat
+  // own-plat sales on (Matt 2026-10-08, "Yes, everywhere"): a home in a
+  // recorded addition or phase of the subject's subdivision inside its own
+  // neighborhood is on its own plat here too.
+  const ownPlat = onOwnPlat(subject, {
+    subdivisionSlug: c.subdivisionSlug,
+    subdivision: c.subdivision ?? null,
+    city: c.city ?? null,
+    latitude: c.latitude ?? null,
+    longitude: c.longitude ?? null,
+  })
   const rooms = roomCountsDecision(
     {
       streetAddress: subject.streetAddress ?? null,
@@ -235,7 +264,14 @@ export function sameAreaFit(
       ownPlat,
     },
   )
-  if (!rooms.ok) return { ok: false, reason: 'rooms' }
+  if (!rooms.ok) {
+    const c = rooms.compared
+    const differs = (a: number | null | undefined, b: number | null | undefined) => a != null && b != null && a !== b
+    const which: Array<'beds' | 'baths'> = []
+    if (differs(c.subjectBeds, c.saleBeds)) which.push('beds')
+    if (differs(c.subjectBaths, c.saleBaths)) which.push('baths')
+    return { ok: false, reason: 'rooms', rooms: which }
+  }
   if (
     !ownPlat &&
     !ageOk(subject.yearBuilt ?? null, c.yearBuilt ?? null, new Date().getUTCFullYear(), sameAreaAgeYears(area))

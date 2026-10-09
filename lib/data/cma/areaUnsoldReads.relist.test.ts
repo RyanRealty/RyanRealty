@@ -40,6 +40,8 @@ function chain(): unknown {
 }
 
 vi.mock('@/lib/supabase/service', () => ({ createServiceClient: () => ({ from: () => chain() }) }))
+// No outline: the area's box read (lib/data/cma/platGroundBounds.ts) is not what this file tests.
+vi.mock('@/lib/data/cma/platGroundBounds', () => ({ getPlatGroundBounds: async () => null }))
 vi.mock('@/lib/data/geo/subdivision-ring', () => ({ assignSubdivisionSlugs: async () => [] }))
 
 import { getCmaAreaUnsoldCycles } from '@/lib/data/cma/areaUnsoldReads'

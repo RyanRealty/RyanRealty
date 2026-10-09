@@ -8,11 +8,13 @@ import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { formatDate } from '@/lib/format/date'
 import { priceHistoryLineCompactHtml, pricePathFromListing } from '@/lib/cma/price-path'
 import { listingHistoryLine as buildListingHistoryLine, liveListingDays } from '@/lib/cma/listing-history-line'
-import { offerRun } from '@/lib/cma/listing-status'
+import { listingStretch, offerRun, type AskChange, type ListingStretch } from '@/lib/cma/listing-status'
+import { AFTER_LAST_ON_MARKET, listingStretchRead } from '@/lib/cma/last-stretch'
 import { compAreaContains, compAreaIn, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { countWord } from '@/lib/pricing/estimate'
 import { publishStreetNumber, publishStreetPart } from '@/lib/listing/publish-street-line'
 import { roomNotedSentence, sameAreaFit, type SameAreaSubject } from '@/lib/cma/same-area-fit'
+import { unlikeReasonSentence, type CmaUnlikeHome } from '@/lib/cma/unlike-reason'
 import { printedBaths } from '@/lib/pricing/bath-count'
 
 const esc = escapeHtml
@@ -50,8 +52,24 @@ export type CmaBandRival = {
   propertySubType?: string | null
   /** MLS subdivision. Lets the letter drop a rival outside the sales plat. */
   subdivision?: string | null
+  /**
+   * The recorded plat polygon the home sits in, from the area read (null when
+   * tested and none holds it). The area test reads it before the MLS name
+   * (rule 24; reader review 2026-10-08, 915 Saginaw). Absent on rows stored
+   * before then, which keep the name test.
+   */
+  platSlug?: string | null
   originalListPrice?: number | null
   onMarketDate?: string | null
+  /**
+   * Its last stretch on the market (Matt 2026-10-08, "Last stretch, labeled"):
+   * its days count from OnMarketDate, the day it last came on the market, and
+   * its first ask is the price in effect then. 2260 Indigo went Active Jan 29
+   * at $670,000, was withdrawn Jun 8 and came back Jun 15 at $645,000; its 115
+   * days and its cut run from $645,000. Print through last-stretch.ts
+   * listingStretchRead. Absent on rows built before.
+   */
+  stretch?: ListingStretch | null
   listingHistoryLine?: string | null
   /** Miles from the subject. Blank on a stored row until print fills it from coordinates. */
   proximity?: string | null
@@ -110,6 +128,7 @@ export function rivalFitsSubject(
   return sameAreaFit(area ?? null, subject ?? {}, {
     address: r.address,
     subdivision: r.subdivision,
+    subdivisionSlug: r.platSlug,
     latitude: r.latitude,
     longitude: r.longitude,
     beds: r.beds,
@@ -255,6 +274,17 @@ export function rivalDays(r: Pick<CmaBandRival, 'status' | 'daysOnMarket' | 'pen
   return { days: r.pendingDate ? n : null, measure: 'offer' }
 }
 
+/**
+ * "115 days on market", "18 days to an offer"; on a stretch that is not the
+ * listing's first, "115 days since it last came on the market" and "18 days to
+ * an offer after it last came on the market" (Matt 2026-10-08).
+ */
+export function rivalDaysFact(days: number, measure: 'offer' | 'on-market', restarted: boolean): string {
+  const count = `${int(days)} ${days === 1 ? 'day' : 'days'}`
+  if (measure === 'offer') return `${count} to an offer${restarted ? ` ${AFTER_LAST_ON_MARKET}` : ''}`
+  return restarted ? `${count} since it last came on the market` : `${count} on market`
+}
+
 function rivalCard(
   r: CmaBandRival,
   subject: CmaBandSubject | null | undefined,
@@ -276,13 +306,12 @@ function rivalCard(
     ctx ?? UNADDRESSED_DOC_LINKS,
   )
   const told = rivalDays(r)
+  const stretch = listingStretchRead(r)
   const facts = joinFacts([
     r.sqft != null && r.sqft > 0 ? `${int(r.sqft)} sqft` : null,
     r.beds != null ? `${int(r.beds)} bd` : null,
     bathsFact(r),
-    told.days != null
-      ? `${int(told.days)} ${told.days === 1 ? 'day' : 'days'} ${told.measure === 'offer' ? 'to an offer' : 'on market'}`
-      : null,
+    told.days != null ? rivalDaysFact(told.days, told.measure, stretch.restarted) : null,
   ])
   const vs = rivalVsSubjectLine(r, subject)
   // Delta 1: "Every active and pending row carries its price history line and
@@ -293,7 +322,7 @@ function rivalCard(
     pricePathFromListing({
       address: r.address,
       listPrice: r.listPrice,
-      originalListPrice: r.originalListPrice ?? null,
+      originalListPrice: stretch.firstAsk,
       onMarketDate: r.onMarketDate ?? null,
       daysOnMarket: told.days,
       status: r.status,
@@ -315,7 +344,61 @@ function rivalCard(
   </article>`
 }
 
-/** "27 homes are for sale between $350,000 and $428,000. 14 are under contract." */
+/**
+ * The under-contract clause that follows a for-sale count. When homes were
+ * just counted for sale it says "other", so the two counts read as different
+ * homes: "1 home like yours is for sale ... 1 is under contract." read as one
+ * home (1355 Jacksonville, reader review 2026-10-08).
+ */
+export function underContractClause(pending: number, opts: { afterForSale: boolean; like?: string }): string {
+  if (!(pending > 0)) return 'None are under contract right now.'
+  const verb = pending === 1 ? 'is' : 'are'
+  if (!opts.afterForSale) return `${int(pending)} ${verb} under contract.`
+  return `${int(pending)} other ${pending === 1 ? 'home' : 'homes'}${opts.like ?? ''} ${verb} under contract.`
+}
+
+const COUNT_WORD_VALUES: Record<string, number> = {
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+}
+
+/**
+ * The stored competition sentence as it prints today. Rows built before the
+ * under-contract clause said "other" carry "1 home like yours is for sale ...
+ * 1 is under contract."; the render rewrites that clause from the numbers the
+ * sentence already states, and changes nothing else.
+ */
+export function storedCompetitionSentenceToday(sentence: string): string {
+  // Rows built before the unlike homes were described said four reasons
+  // ("not close to this home in bedrooms, bathrooms, size or age") that were
+  // not all true of them (reader review 2026-10-08). The count stays; the
+  // reason becomes the one thing true of every one of them.
+  const s = withoutMapPointer(sentence).replace(
+    /\b(One other home is|([A-Z][a-z]+|\d[\d,]*) other homes are) listed there in that range, but (?:it is not|none is) close to this home in bedrooms, bathrooms, size or age, so (?:it is|they are) not compared here\./,
+    (_all, phrase: string, word: string | undefined) => {
+      const n = word ? (/^\d/.test(word) ? Number(word.replace(/,/g, '')) : COUNT_WORD_VALUES[word.toLowerCase()] ?? 3) : 1
+      return `${phrase} listed there in that range. ${unlikeReasonSentence(null, n)}`
+    },
+  )
+  const m = /^(.*?\bfor sale\b[^.]*\.)(\s+)(\d[\d,]*) (is|are) under contract\./.exec(s)
+  if (!m) return s
+  const forSale = m[1]!
+  // A for-sale count of nothing ("No home ...", "0 homes ...") is not followed by "other".
+  if (/^(?:No home|0 homes)\b/.test(forSale)) return s
+  const pending = Number(m[3]!.replace(/,/g, ''))
+  if (!(pending > 0)) return s
+  const like = /\blike yours\b/.test(forSale) ? ' like yours' : ''
+  return `${forSale}${m[2]}${underContractClause(pending, { afterForSale: true, like })}${s.slice(m[0].length)}`
+}
+
+/** "27 homes are for sale between $350,000 and $428,000. 14 other homes are under contract." */
 export function competitionSentence(input: {
   lo: number
   hi: number
@@ -327,9 +410,7 @@ export function competitionSentence(input: {
 }): string {
   const bits = [
     `${int(input.activeCount)} home${input.activeCount === 1 ? ' is' : 's are'} for sale between ${usd(input.lo)} and ${usd(input.hi)}.`,
-    input.pendingCount > 0
-      ? `${int(input.pendingCount)} ${input.pendingCount === 1 ? 'is' : 'are'} under contract.`
-      : 'None are under contract right now.',
+    underContractClause(input.pendingCount, { afterForSale: input.activeCount > 0 }),
   ]
   if (input.shown > 0 && input.shown < input.activeCount + input.pendingCount) {
     bits.push(`The nearest ${int(input.shown)} are below.`)
@@ -352,36 +433,54 @@ function median(values: readonly number[]): number {
   return sorted.length % 2 === 1 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2
 }
 
+/**
+ * How far the homes for sale have already come down, from the first ask of
+ * each one's last stretch on the market (Matt 2026-10-08): 2260 Indigo came
+ * back Jun 15 at $645,000 and is asking $550,000, a $95,000 cut over the 115
+ * days its card counts, not $120,000 from its January ask of $670,000. When a
+ * counted home came back on the market, the sentence says the cut is counted
+ * from then.
+ */
 export function competitorCutLine(rivals: readonly CmaBandRival[]): string | null {
-  const known = rivals.filter(
-    (r) =>
-      r.listPrice > 0 &&
-      r.originalListPrice != null &&
-      Number.isFinite(r.originalListPrice) &&
-      r.originalListPrice > 0,
-  )
+  const known = rivals
+    .map((r) => ({ r, stretch: listingStretchRead(r) }))
+    .filter(({ r, stretch }) => r.listPrice > 0 && stretch.firstAsk != null && stretch.firstAsk > 0)
   if (known.length === 0) return null
   const cuts = known
-    .filter((r) => r.originalListPrice! > r.listPrice)
-    .map((r) => ({
-      dollars: r.originalListPrice! - r.listPrice,
-      pct: ((r.originalListPrice! - r.listPrice) / r.originalListPrice!) * 100,
+    .filter(({ r, stretch }) => stretch.firstAsk! > r.listPrice)
+    .map(({ r, stretch }) => ({
+      dollars: stretch.firstAsk! - r.listPrice,
+      pct: ((stretch.firstAsk! - r.listPrice) / stretch.firstAsk!) * 100,
+      restarted: stretch.restarted,
     }))
   const shown = known.length
   if (cuts.length === 0) {
+    const since = known.some(({ stretch }) => stretch.restarted)
+      ? shown === 1
+        ? ' since it last came on the market'
+        : ', each counted from when it last came on the market'
+      : ''
     return shown === 1
-      ? 'The one home below has not come down from its opening price.'
-      : `None of the ${int(shown)} homes below has come down from its opening price.`
+      ? `The one home below has not come down from its opening price${since}.`
+      : `None of the ${int(shown)} homes below has come down from its opening price${since}.`
   }
   // One home has a cut, not a median cut. A median needs two or more
   // (reader review 2026-10-07: "a median cut of $120,000" for one home).
   const cut = `${cuts.length === 1 ? 'a cut of' : 'a median cut of'} ${usd(
     Math.round(median(cuts.map((c) => c.dollars))),
   )}, or ${median(cuts.map((c) => c.pct)).toFixed(1)} percent`
-  if (shown === 1) return `The one home below has already come down, ${cut}.`
+  const anyRestarted = cuts.some((c) => c.restarted)
+  if (shown === 1) {
+    return anyRestarted
+      ? `The one home below has come down since it last came on the market, ${cut}.`
+      : `The one home below has already come down, ${cut}.`
+  }
+  if (cuts.length === 1 && anyRestarted) {
+    return `${int(cuts.length)} of the ${int(shown)} homes below has come down since it last came on the market, ${cut}.`
+  }
   return `${int(cuts.length)} of the ${int(shown)} homes below ${
     cuts.length === 1 ? 'has' : 'have'
-  } already come down, ${cut}.`
+  } already come down, ${cut}${anyRestarted ? ', each counted from when it last came on the market' : ''}.`
 }
 
 export type BandRivalsInput = {
@@ -405,9 +504,22 @@ export type BandRivalsInput = {
  * A home on the market (lib/cma/subject-on-market.ts) is not deciding where to
  * list: "Who you would compete with at this price" read as listing it at ours.
  * Its chapter is the other homes for sale near the value, said as that.
+ *
+ * The heading covers what is listed under it (reader review 2026-10-08):
+ * 3062 NW Kelly Hill printed "Other homes for sale near this value" over one
+ * home that was under contract and none for sale. With the drawn counts the
+ * on-market heading names the homes it heads; without them it stays as it was.
  */
-export function competitionHeading(_recommendedList?: number | null, opts?: { onMarket?: boolean }): string {
-  return opts?.onMarket ? 'Other homes for sale near this value' : 'Who you would compete with at this price'
+export function competitionHeading(
+  _recommendedList?: number | null,
+  opts?: { onMarket?: boolean; active?: number | null; pending?: number | null },
+): string {
+  if (!opts?.onMarket) return 'Who you would compete with at this price'
+  const active = opts.active ?? null
+  const pending = opts.pending ?? 0
+  if (pending > 0 && active === 0) return 'Other homes under contract near this value'
+  if (pending > 0 && active != null && active > 0) return 'Other homes for sale or under contract near this value'
+  return 'Other homes for sale near this value'
 }
 
 function competitionBody(input: BandRivalsInput): string {
@@ -580,6 +692,12 @@ export type CmaBandRivalSet = {
   ringsTried: number[]
   /** Homes in the band and the area that did not pass the sales rules. They are counted, never drawn. */
   unlikeCount?: number
+  /**
+   * Those homes, each with its ask and the refusal the fit returned
+   * (lib/cma/unlike-reason.ts), so the sentence names the reason that is true
+   * of them. Absent on rows built before 2026-10-08.
+   */
+  unlike?: CmaUnlikeHome[]
   /** True when the band opened to its last step and still holds fewer than five fitting homes. */
   shortOfFive?: boolean
   /** What lo..hi is centered on and how wide it opened; the letter states it (lib/cma/competition-band-basis.ts). */
@@ -617,6 +735,8 @@ export function competitionAreaSentence(input: {
   widenedFrom?: number | null
   /** Homes in the band and the area that did not pass the rules. */
   unlikeCount?: number
+  /** Those homes with the refusal the fit returned for each (lib/cma/unlike-reason.ts). */
+  unlike?: readonly CmaUnlikeHome[] | null
   /** True when the band opened to its last step and still holds fewer than five. */
   shortOfFive?: boolean
   /** The homes drawn: the one-room disclosure, and how many of them are for sale. */
@@ -629,10 +749,6 @@ export function competitionAreaSentence(input: {
   const where = compAreaIn(input.area)
   const whereOr = compAreaIn(input.area, { negative: true })
   const band = `between ${usd(input.lo)} and ${usd(input.hi)}`
-  const pend =
-    input.pendingCount > 0
-      ? `${int(input.pendingCount)} ${input.pendingCount === 1 ? 'is' : 'are'} under contract.`
-      : 'None are under contract right now.'
   const tail = input.shortOfFive
     ? ` Nothing from outside ${compAreaPhrase(input.area)} was added to make up the number.`
     : ''
@@ -643,12 +759,19 @@ export function competitionAreaSentence(input: {
     if (unlike === 0) {
       return `No home ${whereOr} is for sale ${band}, and none is under contract.${tail}`
     }
-    // One unlike home is "it", never "none" (Matt 2026-10-07 review).
-    const notClose =
+    // One unlike home is "it", never "none" (Matt 2026-10-07 review). The
+    // reason is the one the fit returned for each home, never a list of four
+    // ("bedrooms, bathrooms, size or age") a reader takes as all true (reader
+    // review 2026-10-08).
+    const listed =
       unlike === 1
-        ? 'One other home is listed there in that range, but it is not close to this home in bedrooms, bathrooms, size or age, so it is not compared here.'
-        : `${countWord(unlike, true)} other homes are listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so they are not compared here.`
-    return `No home like yours ${whereOr} is for sale or under contract ${band}. ${notClose}${tail}`
+        ? 'One other home is listed there in that range.'
+        : `${countWord(unlike, true)} other homes are listed there in that range.`
+    const described = input.unlike && input.unlike.length === unlike ? input.unlike : null
+    return `No home like yours ${whereOr} is for sale or under contract ${band}. ${listed} ${unlikeReasonSentence(
+      described,
+      unlike,
+    )}${tail}`
   }
   if (input.activeCount === 0) {
     return `No home like yours ${whereOr} is for sale ${band}, but ${countWord(input.pendingCount)} ${
@@ -670,11 +793,14 @@ export function competitionAreaSentence(input: {
     const n = drawnActive ?? input.shown
     const like = input.likeYours ? ' like yours' : ''
     const verb = n === 1 ? 'is' : 'are'
-    return `${nearestOpening(n)}${like} ${verb} for sale ${where} ${band}. ${pend}${tail}${rooms}`
+    return `${nearestOpening(n)}${like} ${verb} for sale ${where} ${band}. ${underContractClause(input.pendingCount, {
+      afterForSale: true,
+      like,
+    })}${tail}${rooms}`
   }
   return `${int(input.activeCount)} home${
     input.activeCount === 1 ? ' like yours is' : 's like yours are'
-  } for sale ${where} ${band}. ${pend}${tail}${rooms}`
+  } for sale ${where} ${band}. ${underContractClause(input.pendingCount, { afterForSale: true, like: ' like yours' })}${tail}${rooms}`
 }
 
 /** The §0 trace for the two counts: the area, the band, the source and the day. */
@@ -715,6 +841,8 @@ export function buildBandRivalSet(input: {
   ringsTried?: number[]
   /** Homes in the band and the area that did not pass the sales rules. */
   unlikeCount?: number
+  /** Those homes with the refusal the fit returned for each (lib/cma/unlike-reason.ts). */
+  unlike?: CmaUnlikeHome[]
   /** True when the band opened to its last step and still holds fewer than five. */
   shortOfFive?: boolean
 }): CmaBandRivalSet {
@@ -747,6 +875,7 @@ export function buildBandRivalSet(input: {
       likeYours,
       widenedFrom,
       unlikeCount: input.unlikeCount,
+      unlike: input.unlike ?? null,
       shortOfFive: input.shortOfFive,
       rivals,
     }),
@@ -759,6 +888,7 @@ export function buildBandRivalSet(input: {
     widenedFrom,
     ringsTried: input.ringsTried ?? [],
     unlikeCount: input.unlikeCount,
+    ...(input.unlike ? { unlike: input.unlike } : {}),
     shortOfFive: input.shortOfFive,
   }
 }
@@ -844,6 +974,7 @@ export function pickCompetitionRing<
     Longitude?: number | null
     SubdivisionName?: string | null
     City?: string | null
+    plat_slug?: string | null
   },
 >(
   input: {
@@ -862,6 +993,7 @@ export function pickCompetitionRing<
     longitude: r.Longitude ?? null,
     subdivision: r.SubdivisionName ?? null,
     city: r.City ?? null,
+    platSlug: r.plat_slug,
   })
   for (let i = 0; i < rings.length; i++) {
     const ring = rings[i]!
@@ -932,6 +1064,10 @@ export type BandInventoryRow = BandStreetRow & {
   pending_timestamp?: string | null
   /** MLS days from its OnMarketDate to Pending, on a Pending row. */
   days_to_pending?: number | null
+  /** The recorded plat polygon the area read put the row in (lib/data/cma/bandInventory.ts). */
+  plat_slug?: string | null
+  /** The first day it was ever on the market (Active, never Coming Soon): earlier than OnMarketDate when it came back. */
+  original_on_market_timestamp?: string | null
 }
 
 /** A blank MLS field is unknown, never zero: Number(null) is 0, and a null bed count read as 0 beds. */
@@ -952,6 +1088,41 @@ function finiteOrNull(v: unknown): number | null {
 export function daysSinceOnMarket(onMarketDate: string | null | undefined): number | null {
   if (!onMarketDate) return null
   return liveListingDays(onMarketDate)
+}
+
+/**
+ * A competitor's last stretch on the market (Matt 2026-10-08): it began at
+ * OnMarketDate, the day its days count from, and its first ask is the ask in
+ * effect at that moment. Without the ask history a home that came back has an
+ * unknown first ask unless its ask never moved.
+ */
+export function bandRowStretch(
+  row: Pick<BandInventoryRow, 'OnMarketDate' | 'OriginalListPrice' | 'ListPrice' | 'original_on_market_timestamp'>,
+  askChanges: readonly AskChange[] = [],
+): ListingStretch | null {
+  return listingStretch({
+    startAt: row.OnMarketDate,
+    firstOnMarketAt: row.original_on_market_timestamp ?? null,
+    askChanges,
+    openingAsk: finiteOrNull(row.OriginalListPrice),
+    currentAsk: finiteOrNull(row.ListPrice),
+  })
+}
+
+/** The rival with its stretch, and the history line read off that stretch. */
+export function withRivalStretch(rival: CmaBandRival, stretch: ListingStretch | null): CmaBandRival {
+  if (!stretch) return rival
+  return {
+    ...rival,
+    stretch,
+    listingHistoryLine: buildListingHistoryLine({
+      listPrice: rival.listPrice,
+      originalListPrice: stretch.firstAsk,
+      status: rival.status,
+      onMarketDate: rival.onMarketDate ?? null,
+      daysOnMarket: rival.daysOnMarket,
+    }),
+  }
 }
 
 /** One MLS row as a named competitor. Null when it has no address or no ask. */
@@ -978,7 +1149,7 @@ export function bandRowToRival(row: BandInventoryRow, status: 'Active' | 'Pendin
     status === 'Pending'
       ? (offer?.days ?? null)
       : (daysSinceOnMarket(row.OnMarketDate) ?? finiteOrNull(row.DaysOnMarket))
-  return {
+  const rival: CmaBandRival = {
     listingKey: row.ListingKey,
     address,
     listPrice,
@@ -1008,5 +1179,11 @@ export function bandRowToRival(row: BandInventoryRow, status: 'Active' | 'Pendin
     }),
     // Only while the build fits the home (rule 24's multi-unit and ADU walls).
     ...(row.public_remarks != null ? { publicRemarks: row.public_remarks } : {}),
+    // The polygon the area read placed it in, so every later area test (the
+    // fit, the ring pick, the render) reads the polygon, not the MLS spelling.
+    ...(row.plat_slug !== undefined ? { platSlug: row.plat_slug } : {}),
   }
+  // The last stretch off the row alone; the competition read adds the ask
+  // history for the homes it prints (assemble-competition.ts).
+  return withRivalStretch(rival, bandRowStretch(row))
 }

@@ -39,7 +39,8 @@ import {
 import { usableSubdivision } from '@/lib/pricing/comp-search'
 import { countWord } from '@/lib/pricing/estimate'
 import { POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
-import { samePlat, streetKey } from '@/lib/pricing/price-anchor'
+import { ownPlatGround, parentOf, platGround, platReach, type PlatGround } from '@/lib/pricing/plat-ground'
+import { streetKey } from '@/lib/pricing/price-anchor'
 
 export type CompAreaKind =
   | 'subdivision'
@@ -65,8 +66,9 @@ export type CompArea = {
    * The recorded plat polygons a plat area holds whole: the subject's own
    * plat and every plat a printed sale sits in, except a plat only the
    * subject's own street reached (Matt 2026-10-07, rule 24). A row with a
-   * recorded polygon is a member when its plat is one of these, or a phase of
-   * the same ordinary subdivision (`samePlat`, the walk's own test). Absent
+   * recorded polygon is a member when its plat is one of these, a phase of
+   * the same ordinary subdivision, or a family plat inside the subject's
+   * neighborhood polygon (platReach, the walks' own ground decision). Absent
    * on an area stored before this landed; the names then decide alone.
    */
   platSlugs?: string[]
@@ -91,6 +93,49 @@ export type CompAreaKeptComp = {
   selectionTier?: string | null
   latitude?: number | null
   longitude?: number | null
+  /** The selector's own-plat stamp (CmaComp.ownPlat). Absent on rows stored before 2026-10-08. */
+  ownPlat?: boolean | null
+}
+
+/**
+ * A printed sale on the subject's own ground: the selector stamped it own
+ * plat, or its recorded plat is the subject's own subdivision by the one
+ * ground decision (onOwnPlat in lib/pricing/plat-ground.ts: the plat, a phase
+ * of it, an alias sibling, or a recorded addition or phase of its family
+ * inside the subject's neighborhood or community polygon, Matt 2026-10-08
+ * "Yes, everywhere"). Its MLS spelling does not decide it, and neither does
+ * the rung's name alone.
+ */
+export function keptOnOwnGround(
+  subject: OwnPlatAreaSubject,
+  c: Pick<CompAreaKeptComp, 'ownPlat' | 'subdivisionSlug'> & Partial<Pick<CompAreaKeptComp, 'latitude' | 'longitude'>>,
+): boolean {
+  if (c.ownPlat === true) return true
+  const subjectSlug = (subject.subdivisionSlug ?? '').trim()
+  const saleSlug = (c.subdivisionSlug ?? '').trim()
+  return Boolean(subjectSlug && saleSlug && ownPlatOf(subject)(saleSlug, c))
+}
+
+type OwnPlatAreaSubject = Pick<CompAreaSubject, 'subdivisionSlug'> &
+  Partial<Pick<CompAreaSubject, 'subdivision' | 'latitude' | 'longitude' | 'city'>>
+
+/**
+ * The subject's own-subdivision test on a recorded plat (the polygon only,
+ * never the MLS name): onOwnPlat's 'plat' or 'family' reach.
+ */
+function ownPlatOf(
+  subject: OwnPlatAreaSubject,
+): (slug: string, at?: { latitude?: number | null; longitude?: number | null }) => boolean {
+  const subjectSlug = clean(subject.subdivisionSlug)
+  if (!subjectSlug) return () => false
+  const ground = ownPlatGround({
+    subdivisionSlug: subjectSlug,
+    subdivision: subject.subdivision ?? null,
+    city: subject.city ?? null,
+    latitude: subject.latitude ?? null,
+    longitude: subject.longitude ?? null,
+  })
+  return (slug, at) => platReach(ground, slug, { latitude: at?.latitude ?? null, longitude: at?.longitude ?? null }) != null
 }
 
 export type CompAreaSubject = {
@@ -367,7 +412,10 @@ function platKeys(input: {
   relations: ReadonlyMap<string, PlacedPlat>
 }): Pick<CompArea, 'platSlugs' | 'namesWithoutPlat' | 'street'> {
   const subjectSlug = clean(input.subject.subdivisionSlug)
-  const ownPlat = (slug: string) => subjectSlug != null && samePlat({ subdivisionSlug: subjectSlug }, { subdivisionSlug: slug })
+  // The subject's own subdivision is never a street-only plat: its plat, a
+  // phase, an alias sibling, or a recorded addition or phase of its family
+  // inside its neighborhood (onOwnPlat, Matt 2026-10-08 "Yes, everywhere").
+  const ownPlat = ownPlatOf(input.subject)
   const isStreetName = (n: string) => n !== input.subjectSubdivision && input.relations.get(n)?.relation === 'street'
   const whole: string[] = subjectSlug ? [subjectSlug] : []
   const streetSlugs: string[] = []
@@ -380,7 +428,7 @@ function platKeys(input: {
     if (n && !input.names.includes(n)) continue
     if (n) slugged.add(n)
     const streetOnly = n ? isStreetName(n) : rungRelation(c.selectionTier).relation === 'street'
-    const bucket = streetOnly && !ownPlat(slug) ? streetSlugs : whole
+    const bucket = streetOnly && !ownPlat(slug, c) ? streetSlugs : whole
     if (!bucket.includes(slug)) bucket.push(slug)
   }
   const key = streetKey(input.subject.streetAddress)
@@ -411,10 +459,16 @@ export function buildCompArea(input: {
   rungs: readonly CompAreaRung[]
   keptComps: readonly CompAreaKeptComp[]
 }): CompArea | null {
-  const kept = input.keptComps
-  if (kept.length === 0) return null
+  if (input.keptComps.length === 0) return null
   const centre = centreOf(input.subject)
   const subjectSubdivision = usableSubdivision(input.subject.subdivision)
+  // A sale on the subject's own ground is named by the subject's subdivision,
+  // whatever MLS spelling its row carries (reader review 2026-10-08, 1355
+  // Jacksonville: "Northwest Townsite Co 2nd Addt" is the subject's own plat,
+  // not a second place beside "Northwest Townsite").
+  const kept = input.keptComps.map((c) =>
+    subjectSubdivision && keptOnOwnGround(input.subject, c) ? { ...c, subdivision: subjectSubdivision } : c,
+  )
   const relations = placeRelations(kept, subjectSubdivision)
 
   // The rungs THAT KEPT A SALE. A rung that ran and contributed nothing to the
@@ -717,18 +771,38 @@ export type CompAreaRow = {
   address?: string | null
 }
 
-/** Same recorded plat, or a phase of the same ordinary subdivision: the walk's own test. */
-function samePlatSlug(a: string, b: string): boolean {
-  return samePlat({ subdivisionSlug: a }, { subdivisionSlug: b })
+/**
+ * The area's recorded plats as a ground (lib/pricing/plat-ground.ts): its
+ * whole plats, or the plats only the own-street rung reached, with the
+ * neighborhood or community polygon the subject sits in as the family wall.
+ */
+const areaGrounds = new WeakMap<CompArea, { whole: PlatGround; street: PlatGround }>()
+
+export function areaGround(area: CompArea, which: 'whole' | 'street'): PlatGround {
+  let grounds = areaGrounds.get(area)
+  if (!grounds) {
+    const parent = area.centre ? parentOf(area.centre.lat, area.centre.lng) : null
+    grounds = {
+      whole: platGround({ platSlugs: area.platSlugs ?? [], parent }),
+      street: platGround({ platSlugs: area.street?.platSlugs ?? [], parent }),
+    }
+    areaGrounds.set(area, grounds)
+  }
+  return grounds[which]
 }
 
 /**
  * A plat area's membership (Matt 2026-10-07, rule 24). The recorded polygon
  * first, when the row has one and the area recorded its plats: the row's plat
- * is the subject's or a sale's plat. The MLS name only as the fallback: for a
- * row no polygon holds, for a row nobody tested, and for an area plat with no
- * recorded polygon. A plat the own-street rung alone reached holds only the
- * subject's street.
+ * is the subject's or a sale's plat, a phase of it, or (reader review
+ * 2026-10-08, 915 Saginaw) another plat of the same subdivision family inside
+ * the subject's neighborhood polygon, whatever MLS spelling the row carries
+ * (platReach in lib/pricing/plat-ground.ts, the one ground decision). A plat
+ * the own-street rung alone reached holds only the subject's street, and the
+ * same plat test runs for it before any family test, so a street-only plat
+ * never becomes the whole plat through its family. The MLS name only as the
+ * fallback: for a row no polygon holds, for a row nobody tested, and for an
+ * area plat with no recorded polygon.
  */
 function plattedContains(area: CompArea, row: CompAreaRow): boolean {
   const name = usableSubdivision(row.subdivision)
@@ -745,8 +819,13 @@ function plattedContains(area: CompArea, row: CompAreaRow): boolean {
   const plat = typeof row.platSlug === 'string' && row.platSlug.trim() ? row.platSlug.trim() : null
   const recorded = area.platSlugs ?? []
   if (plat && (recorded.length > 0 || (street?.platSlugs.length ?? 0) > 0)) {
-    if (recorded.some((s) => samePlatSlug(s, plat))) return true
-    if (street && street.platSlugs.some((s) => samePlatSlug(s, plat))) return onStreet()
+    const at = { latitude: row.latitude ?? null, longitude: row.longitude ?? null }
+    const whole = recorded.length > 0 ? platReach(areaGround(area, 'whole'), plat, at) : null
+    const held = street && street.platSlugs.length > 0 ? platReach(areaGround(area, 'street'), plat, at) : null
+    if (whole === 'plat') return true
+    if (held === 'plat') return onStreet()
+    if (whole === 'family') return true
+    if (held === 'family') return onStreet()
     // The row sits in a recorded plat that is not the area's. Only an area
     // plat with no polygon of its own is still read by its name.
     if (name == null || !(area.namesWithoutPlat ?? []).includes(name)) return false

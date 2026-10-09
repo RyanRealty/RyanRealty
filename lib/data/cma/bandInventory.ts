@@ -14,13 +14,19 @@ import {
 } from '@/lib/pricing/comp-area'
 import {
   areaFilterTrace,
+  areaPlatOutline,
+  mergeRowsByKey,
   rowPlatSlugs,
   rowStreetAddress,
   type CmaAreaReadCitation,
 } from '@/lib/data/cma/areaUnsoldReads'
+import type { LatLngBounds } from '@/lib/cma/market-area'
 
+// original_on_market_timestamp: the first day a competitor was on the market,
+// so a home that came back is measured and labeled on its last stretch (Matt
+// 2026-10-08, lib/cma/band-rivals.ts bandRowStretch).
 const BAND_SELECT =
-  'ListingKey, StreetNumber, StreetName, ListPrice, OriginalListPrice, StandardStatus, DaysOnMarket, OnMarketDate, PhotoURL, Latitude, Longitude, property_sub_type, BedroomsTotal, BathroomsTotal, baths_full, baths_half, TotalLivingAreaSqFt, year_built, lot_size_acres'
+  'ListingKey, StreetNumber, StreetName, ListPrice, OriginalListPrice, StandardStatus, DaysOnMarket, OnMarketDate, original_on_market_timestamp, PhotoURL, Latitude, Longitude, property_sub_type, BedroomsTotal, BathroomsTotal, baths_full, baths_half, TotalLivingAreaSqFt, year_built, lot_size_acres'
 
 // The band is one city, one property type, one status, inside a +/- price
 // window, so it is bounded in practice. Page it rather than truncating: the
@@ -39,6 +45,8 @@ export type CmaBandListingRow = {
   StandardStatus: string | null
   DaysOnMarket: number | null
   OnMarketDate: string | null
+  /** The first day it was on the market (Active, never Coming Soon). Earlier than OnMarketDate when it came back. */
+  original_on_market_timestamp?: string | null
   PhotoURL: string | null
   Latitude: number | null
   Longitude: number | null
@@ -56,6 +64,12 @@ export type CmaBandListingRow = {
   lot_size_acres?: number | null
   /** Selected only by the area-scoped read: the competition fit reads it for the multi-unit and ADU walls (rule 24). */
   public_remarks?: string | null
+  /**
+   * Attached only by the area-scoped read of a plat area: the recorded plat
+   * polygon the row's point sits in (null when tested and none holds it), so
+   * the competition fit places the row by polygon, not MLS spelling.
+   */
+  plat_slug?: string | null
 }
 
 export type CmaBandInventory = {
@@ -214,8 +228,12 @@ export async function getCmaAreaBandInventory(input: {
   const area = input.area
   const subType = input.propertySubType?.trim() || null
   const bounds = compAreaBounds(area)
+  // A plat area also reads the rows inside the box around its recorded plats,
+  // whatever their MLS spelling (areaPlatOutline, reader review 2026-10-08:
+  // 733 Saginaw is "Kenwood" on the MLS and sits in Kenwood First Addition).
+  const outline = await areaPlatOutline(area, input.city)
 
-  const scoped = (status: 'Active' | 'Pending') => {
+  const scoped = (status: 'Active' | 'Pending', box: LatLngBounds | null) => {
     let q = sb
       .from('listings')
       .select(AREA_SELECT)
@@ -225,25 +243,26 @@ export async function getCmaAreaBandInventory(input: {
       .lte('ListPrice', input.hi)
     if (subType) q = q.eq('property_sub_type', subType)
     if (area.kind === 'subdivision' || area.kind === 'subdivisions') {
-      q = q.in('SubdivisionName', area.names)
+      if (!box) q = q.in('SubdivisionName', area.names)
       if (input.city.trim()) q = q.eq('City', input.city.trim())
     } else if (area.kind === 'city') {
       q = q.eq('City', area.names[0] ?? input.city.trim())
     }
-    if (bounds) {
+    const geo = box ?? bounds
+    if (geo) {
       q = q
-        .gte('Latitude', bounds.latMin)
-        .lte('Latitude', bounds.latMax)
-        .gte('Longitude', bounds.lngMin)
-        .lte('Longitude', bounds.lngMax)
+        .gte('Latitude', geo.latMin)
+        .lte('Latitude', geo.latMax)
+        .gte('Longitude', geo.lngMin)
+        .lte('Longitude', geo.lngMax)
     }
     return q
   }
 
-  const readAll = async (status: 'Active' | 'Pending') => {
+  const readPages = async (status: 'Active' | 'Pending', box: LatLngBounds | null) => {
     const rows: CmaBandListingRow[] = []
     for (let offset = 0; offset < CEILING; offset += PAGE_SIZE) {
-      const { data, error } = await scoped(status)
+      const { data, error } = await scoped(status, box)
         .order('ListPrice', { ascending: true })
         .order('ListingKey', { ascending: true })
         .range(offset, offset + PAGE_SIZE - 1)
@@ -255,12 +274,21 @@ export async function getCmaAreaBandInventory(input: {
     return { rows, truncated: true }
   }
 
+  const readAll = async (status: 'Active' | 'Pending') => {
+    const [named, boxed] = await Promise.all([
+      readPages(status, null),
+      outline ? readPages(status, outline) : Promise.resolve({ rows: [] as CmaBandListingRow[], truncated: false }),
+    ])
+    return { rows: mergeRowsByKey(named.rows, boxed.rows), truncated: named.truncated || boxed.truncated }
+  }
+
   // A plat area tests each row's recorded polygon, and a plat held to the
   // subject's street tests the street (rule 24), the same test the unsold
-  // read applies.
+  // read applies. The polygon rides on the row (plat_slug), so the
+  // competition fit tests the same polygon, not the MLS spelling.
   const inside = async (rows: CmaBandListingRow[]) => {
     const plats = await rowPlatSlugs(area, rows)
-    return rows.filter((r, i) =>
+    return rows.flatMap((r, i) =>
       compAreaContains(area, {
         latitude: r.Latitude,
         longitude: r.Longitude,
@@ -268,7 +296,9 @@ export async function getCmaAreaBandInventory(input: {
         city: r.City ?? null,
         platSlug: plats[i],
         address: rowStreetAddress(r),
-      }),
+      })
+        ? [plats[i] === undefined ? r : { ...r, plat_slug: plats[i] }]
+        : [],
     )
   }
 
@@ -277,7 +307,7 @@ export async function getCmaAreaBandInventory(input: {
     `StandardStatus IN (Active, Pending)`,
     `ListPrice ${input.lo}..${input.hi}`,
     subType ? `property_sub_type='${subType}'` : 'any residential sub type',
-    areaFilterTrace(area),
+    areaFilterTrace(area, outline),
   ].join(' AND ')
 
   try {

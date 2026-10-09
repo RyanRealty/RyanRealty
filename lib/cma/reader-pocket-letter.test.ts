@@ -102,6 +102,13 @@ describe('2382 Jackson: the raw-range sentence names the adjustments it was pric
     expect(html).not.toContain('date and size')
   })
 
+  it('says "behind this value" on a home that is on the market (rule 27)', () => {
+    const onMarket = { ...subject, standardStatus: 'Active' }
+    const html = cityMedianReconciliationHtml({ pricing, comps, subject: onMarket } as unknown as OpinionPageArgs)
+    expect(html).toContain('The three sales behind this value sold for')
+    expect(html).not.toContain('your price')
+  })
+
   it('names size where a size line moved a sale, and nothing where no line moved', () => {
     expect(adjustedForPhrase([comp({ timeAdjustment: -1000, sizeAdjustment: 4000, closePrice: 1 })])).toBe('date and size')
     expect(adjustedForPhrase([comp({ timeAdjustment: 0, sizeAdjustment: 0, closePrice: 1 })])).toBeNull()

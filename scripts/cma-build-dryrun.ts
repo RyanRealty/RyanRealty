@@ -677,13 +677,22 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   // skipped here, so the kept set is the full ladder result and the counts are
   // the widest the document could print. Both reads are scoped to the sales
   // area and to nothing wider (Matt 2026-10-07, rule 24).
-  const { assembleCompetition, assembleExpiredPeers } = await import('@/lib/cma/assemble-competition')
+  const { assembleCompetition, assembleExpiredPeers, printedCompGrid } = await import('@/lib/cma/assemble-competition')
+  // EXACTLY build.ts settleRecommended, rule 27 (Matt 2026-10-08): on a home
+  // that is on the market the cover is the likely sale the weighted sales
+  // point to, read off the printed grid, and the competition is centered on it.
+  const { applyOnMarketOpinion, onMarketOpinionTrace } = await import('@/lib/cma/on-market-opinion')
+  const { subjectOnMarket } = await import('@/lib/cma/subject-on-market')
+  const subjectIsOnMarket = subjectOnMarket({ subject })
+  const preOpinion = subjectIsOnMarket
+    ? applyOnMarketOpinion(pricing, printedCompGrid(adjusted, []), { onMarket: true })
+    : null
   const competition = await assembleCompetition({
     subject,
     comps: adjusted,
     verdicts: [],
     diagnostics: selection.diagnostics,
-    recommended: pricing.recommended,
+    recommended: preOpinion?.opinion ? preOpinion.pricing.recommended : pricing.recommended,
     subjectZone: null,
     generatedAtIso: new Date().toISOString(),
   })
@@ -713,15 +722,23 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
     const beforeActives = pricing.recommended
     pricing = syncRangeRuleToHeroBand(
       finishRecommendedAfterActives(pricing, {
-        actives: (bandRivals?.rivals ?? []).map((r) => ({
-          status: r.status,
-          listPrice: r.listPrice,
-          daysOnMarket: r.daysOnMarket,
-        })),
+        actives: preOpinion?.opinion
+          ? []
+          : (bandRivals?.rivals ?? []).map((r) => ({
+              status: r.status,
+              listPrice: r.listPrice,
+              daysOnMarket: r.daysOnMarket,
+            })),
         pocketClosedSupport: pocketClosedSupportPrice(adjusted, subject.subdivision),
         ask: pricing.failedAsk ?? (lastCycleFailed ? subject.lastListPrice : null),
       }),
     )
+    if (subjectIsOnMarket) {
+      const onCover = applyOnMarketOpinion(pricing, competition.renderComps, { onMarket: true })
+      pricing = onCover.pricing
+      const trace = onMarketOpinionTrace(onCover)
+      if (trace) console.log(`   ${trace}`)
+    }
     if (pricing.recommended !== beforeActives) {
       console.log(
         `   actives settle · recommended $${beforeActives.toLocaleString('en-US')} → $${pricing.recommended.toLocaleString('en-US')}`,
@@ -810,6 +827,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
     const { reclassifyFailedAskOnPrintedBand } = await import('@/lib/cma/expired-audit')
     const recommendedBeforePin = pricing.recommended
     pricing = pinPrintedBandToSettingSales(pricing, attachCompConcessions(adjusted))
+    if (subjectIsOnMarket) pricing = applyOnMarketOpinion(pricing, attachCompConcessions(adjusted), { onMarket: true }).pricing
     if (pricing.recommended !== recommendedBeforePin) reanchorSellerNet(pricing)
     reclassifyFailedAskOnPrintedBand(
       pricing,

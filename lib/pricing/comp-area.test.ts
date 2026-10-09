@@ -738,16 +738,31 @@ describe('rule 24: the area is the subject plat and the plats the sales sit in, 
     ],
   })!
 
-  it("2382 Jackson: a same-name listing in another recorded plat is outside; the subject's own street sale is not a street-only plat", () => {
+  it("2382 Jackson: the subject's own street sale is not a street-only plat, and Holliday Park's plats are the area", () => {
     expect(jackson.kind).toBe('subdivision')
     expect(jackson.sentence).toBe('Holliday Park, your own subdivision.')
     expect(jackson.street).toBeNull()
-    // 2020 Hall (built 1995) sits in the older Holliday Park plat: an MLS-name match only.
-    expect(compAreaContains(jackson, { subdivision: 'Holliday Park', platSlug: 'holliday-park', address: '2020 Hall' })).toBe(false)
     // 2574 Robinson sits in Phase I of the same Third Addition: one ordinary subdivision.
     expect(
       compAreaContains(jackson, { subdivision: 'Holliday Park', platSlug: 'holliday-park-third-addition-phase-i', address: '2574 Robinson' }),
     ).toBe(true)
+    // 2020 Hall sits in the Holliday Park base plat, of which the Third
+    // Addition is an addition: one subdivision family, inside the subject's
+    // own neighborhood (Mountain View). Reader review 2026-10-08 (the letter
+    // names the area "Holliday Park"; the MLS files 2020 Hall as Holliday
+    // Park). It was outside before the family counted.
+    expect(
+      compAreaContains(jackson, {
+        subdivision: 'Holliday Park',
+        platSlug: 'holliday-park',
+        address: '2020 Hall',
+        latitude: 44.0764,
+        longitude: -121.273521,
+      }),
+    ).toBe(true)
+    // A family member is admitted only where its point sits inside the
+    // subject's neighborhood polygon; a row with no point is not.
+    expect(compAreaContains(jackson, { subdivision: 'Holliday Park', platSlug: 'holliday-park', address: '2020 Hall' })).toBe(false)
   })
 
   it('an area stored before plat keys existed still tests by name', () => {
@@ -767,5 +782,122 @@ describe('rule 24: the area is the subject plat and the plats the sales sit in, 
     expect(area.namesWithoutPlat).toEqual(['Unplatted Acres'])
     expect(compAreaContains(area, { subdivision: 'Unplatted Acres', platSlug: 'some-other-plat' })).toBe(true)
     expect(compAreaContains(area, { subdivision: 'Holliday Park', platSlug: 'some-other-plat' })).toBe(false)
+  })
+})
+
+describe('the area is the plats and their family, by polygon, whatever the MLS spelling (reader review 2026-10-08)', () => {
+  // cma-915-saginaw's stored area: the subject's plat and the plats the five
+  // printed sales sit in.
+  const SAGINAW = { latitude: 44.06569, longitude: -121.32545 }
+  const saginaw = buildCompArea({
+    subject: { ...SAGINAW, subdivision: 'Park Place', subdivisionSlug: 'park-place', streetAddress: '915 Saginaw', city: 'Bend' },
+    rungs: [rung('own-street-24mo', 1), rung('closer-sub-9mo', 1), rung('nearby-1.25mi-3mo', 3)],
+    keptComps: [
+      { subdivision: 'Miller Heights', subdivisionSlug: 'miller-heights-phase-ii', selectionTier: 'nearby-1.25mi-3mo' },
+      { subdivision: 'Kenwood', subdivisionSlug: 'kenwood', selectionTier: 'closer-sub-9mo' },
+      { subdivision: 'West Hills', subdivisionSlug: 'west-hills-fifth-addition', selectionTier: 'nearby-1.25mi-3mo' },
+      { subdivision: 'Bend View', subdivisionSlug: 'bend-view-addition', selectionTier: 'nearby-1.25mi-3mo' },
+      { subdivision: 'Bend View', subdivisionSlug: 'bend-view-addition', selectionTier: 'own-street-24mo' },
+    ],
+  })!
+
+  it('733 Saginaw (MLS "Kenwood", recorded Kenwood First Addition, Pending $995,000) is in the area', () => {
+    expect(saginaw.platSlugs).toContain('kenwood')
+    expect(
+      compAreaContains(saginaw, {
+        subdivision: 'Kenwood',
+        platSlug: 'kenwood-first-addition',
+        latitude: 44.065697,
+        longitude: -121.322645,
+        address: '733 Saginaw',
+      }),
+    ).toBe(true)
+  })
+
+  it('1340 Trenton (MLS "West Hills", recorded West Hills, Pending $989,900) is in the area', () => {
+    expect(saginaw.platSlugs).toContain('west-hills-fifth-addition')
+    expect(
+      compAreaContains(saginaw, {
+        subdivision: 'West Hills',
+        platSlug: 'west-hills',
+        latitude: 44.06695,
+        longitude: -121.331249,
+        address: '1340 Trenton',
+      }),
+    ).toBe(true)
+  })
+
+  it('a namesake plat across town is not: Park Place Phase I sits in Southwest Bend', () => {
+    expect(
+      compAreaContains(saginaw, { subdivision: 'Park Place', platSlug: 'park-place-phase-i', latitude: 44.02324, longitude: -121.32792 }),
+    ).toBe(false)
+  })
+
+  it('a plat no family ties to the area is still outside (Kenwood Gardens is not Kenwood)', () => {
+    expect(
+      compAreaContains(saginaw, { subdivision: 'Kenwood Gardens', platSlug: 'kenwood-gardens', latitude: 44.06411, longitude: -121.33142 }),
+    ).toBe(false)
+  })
+
+  it('a street-only plat stays held to the street even through its family (3037 Purcell)', () => {
+    const purcell = buildCompArea({
+      subject: {
+        latitude: 44.080952,
+        longitude: -121.272517,
+        subdivision: 'Silver Sage',
+        subdivisionSlug: 'silver-sage-phase-i',
+        streetAddress: '3037 Purcell',
+        city: 'Bend',
+      },
+      rungs: [rung('own-street-24mo', 1), rung('subdivision-3mo', 1)],
+      keptComps: [
+        { subdivision: 'Silver Sage', subdivisionSlug: 'silver-sage-phase-2', selectionTier: 'subdivision-3mo' },
+        { subdivision: 'Holliday Park', subdivisionSlug: 'holliday-park-third-addition-phase-iii', selectionTier: 'own-street-24mo' },
+      ],
+    })!
+    // 2020 Hall: Holliday Park family, off Purcell.
+    expect(
+      compAreaContains(purcell, { subdivision: 'Holliday Park', platSlug: 'holliday-park', latitude: 44.0764, longitude: -121.273521, address: '2020 Hall' }),
+    ).toBe(false)
+  })
+})
+
+describe('a printed sale on the subject\'s own plat is named by the subject\'s subdivision (1355 Jacksonville)', () => {
+  const JACKSONVILLE = { latitude: 44.058868, longitude: -121.331289 }
+  it('"Northwest Townsite Co 2nd Addt" on the own plat is not a second place beside "Northwest Townsite"', () => {
+    const area = buildCompArea({
+      subject: { ...JACKSONVILLE, subdivision: 'Northwest Townsite', subdivisionSlug: 'northwest-townsite-second-addition', city: 'Bend' },
+      rungs: [rung('subdivision-24mo', 1), rung('adjacent-subdivision-24mo', 1)],
+      keptComps: [
+        {
+          subdivision: 'Northwest Townsite Co 2nd Addt',
+          subdivisionSlug: 'northwest-townsite-second-addition',
+          selectionTier: 'subdivision-24mo',
+          ownPlat: true,
+        },
+        { subdivision: 'Grandview', subdivisionSlug: 'grandview', selectionTier: 'adjacent-subdivision-24mo' },
+      ],
+    })!
+    expect(area.names).toEqual(['Northwest Townsite', 'Grandview'])
+    expect(area.sentence).toBe('Northwest Townsite, your own subdivision, with Grandview next to it.')
+    // And a listing on the own plat under either spelling is inside.
+    expect(
+      compAreaContains(area, {
+        subdivision: 'Northwest Townsite Co 2nd Addt',
+        platSlug: 'northwest-townsite-second-addition',
+        latitude: 44.055588,
+        longitude: -121.332439,
+        address: '1425 Fresno',
+      }),
+    ).toBe(true)
+  })
+
+  it('a differently named sale off the own plat keeps its own name', () => {
+    const area = buildCompArea({
+      subject: { ...JACKSONVILLE, subdivision: 'Northwest Townsite', subdivisionSlug: 'northwest-townsite-second-addition', city: 'Bend' },
+      rungs: [rung('adjacent-subdivision-24mo', 1)],
+      keptComps: [{ subdivision: 'Highland', subdivisionSlug: 'highland', selectionTier: 'adjacent-subdivision-24mo', ownPlat: false }],
+    })!
+    expect(area.names).toEqual(['Northwest Townsite', 'Highland'])
   })
 })

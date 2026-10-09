@@ -35,7 +35,8 @@
  *     (20%) of the median $/sqft of the other candidates.
  *  6. Lot (Matt 2026-10-08, "review uses search's rule"). Under one acre on
  *     both sides, a lot difference is disclosed (the Lot size row beside every
- *     sale in the comp matrix) and is never grounds to drop a sale: the comp
+ *     sale in the comp matrix, and the sentence Basis and limits states,
+ *     lib/cma/lot-disclosure.ts) and is never grounds to drop a sale: the comp
  *     search only separates lots at one acre (lotCompatible in
  *     lib/pricing/classes.ts). The exclusion is overridden and the sale kept at
  *     half weight with the difference stated. At one acre and above on either
@@ -104,6 +105,18 @@ export const LOT_ACRES = 0.15
  * is disclosed, never a reason to drop a sale.
  */
 export const LOT_WALL_ACRES = 1
+
+/**
+ * Two lots that actually differ: one at least LOT_RATIO times the other, or
+ * LOT_ACRES apart. At an acre and above it is half of a supported lot cut
+ * (lotSupported). Under an acre on both sides it is the difference rule 20
+ * has the letter state instead of dropping the sale (lib/cma/lot-disclosure.ts).
+ */
+export function lotsDiffer(a: number, b: number): boolean {
+  if (!(a > 0) || !(b > 0) || !Number.isFinite(a) || !Number.isFinite(b)) return false
+  const ratio = Math.max(a, b) / Math.min(a, b)
+  return ratio >= LOT_RATIO || Math.abs(a - b) >= LOT_ACRES
+}
 
 export const UNGROUNDED_KEEP_REASON =
   'Kept at half weight. The exclusion cited a threshold or fact these fields do not support.'
@@ -350,9 +363,7 @@ function lotSupported(reason: string, subject: CmaSubject, comp: CmaComp): boole
   // Under an acre on both sides the search does not separate lots, so the
   // review may not either (Matt 2026-10-08).
   if (bothUnderAnAcre(subject, comp)) return false
-  const ratio = Math.max(subject.lotAcres, comp.lotAcres) / Math.min(subject.lotAcres, comp.lotAcres)
-  const abs = Math.abs(subject.lotAcres - comp.lotAcres)
-  if (ratio < LOT_RATIO && abs < LOT_ACRES) return false
+  if (!lotsDiffer(subject.lotAcres, comp.lotAcres)) return false
   const cited = nums(/(\d+(?:\.\d+)?)\s*(?:acres?|ac)\b/gi, reason)
   if (cited.length === 0) return true
   return cited.every(

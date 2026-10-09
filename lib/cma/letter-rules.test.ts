@@ -486,9 +486,13 @@ describe('a stored sentence prints only over the rows it counted (rule 17, rule 
         '2 homes like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 1 is under contract.',
       source: 'stored trace',
     })
+    // A row stored before the under-contract clause said "other" prints it
+    // today with "other", so the two counts read as different homes (1355
+    // Jacksonville, reader review 2026-10-08). Nothing else in it changes.
     expect(full).toContain(
-      '<p>2 homes like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 1 is under contract.</p>',
+      '<p>2 homes like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 1 other home like yours is under contract.</p>',
     )
+    expect(full).not.toContain('. 1 is under contract.')
   })
 
   it('keeps "the nearest eight" only when the cap drew eight of a larger count, and N is the number drawn for sale', () => {
@@ -527,7 +531,7 @@ describe('a stored sentence prints only over the rows it counted (rule 17, rule 
       source: 'stored trace',
     })
     expect(counted).not.toContain('The nearest ten')
-    expect(counted).toContain('<p>8 homes are for sale between $494,000 and $604,000. 2 are under contract.</p>')
+    expect(counted).toContain('<p>8 homes are for sale between $494,000 and $604,000. 2 other homes are under contract.</p>')
   })
 
   // Did-not-sell: the reviewer's probe. The stored row counted three peers in
