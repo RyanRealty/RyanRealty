@@ -81,7 +81,13 @@ export function isUsableSha(sha) {
 }
 
 /**
- * @param {{ prev?: string, head?: string }} [opts]
+ * The files `head` changed. With a usable `prev`, the range prev...head; without
+ * one, the commit itself, a merge commit against its FIRST parent (what it brought
+ * into the branch). Plain `git diff-tree -r` prints nothing for a merge, so a
+ * merged PR read as an empty diff: vercel-ignore-build skipped the production
+ * build and deploy:verify gave the deploy only the 45-second SKIP window.
+ *
+ * @param {{ prev?: string, head?: string, cwd?: string }} [opts]
  * @returns {string[] | null}  null = git failed / unknown (caller should build/release)
  */
 export function listChangedFiles(opts = {}) {
@@ -90,10 +96,11 @@ export function listChangedFiles(opts = {}) {
   try {
     const cmd = isUsableSha(prev)
       ? `git diff --name-only ${prev}...${head}`
-      : `git diff-tree --no-commit-id --name-only -r ${head}`
+      : `git diff-tree --no-commit-id --name-only -r --diff-merges=first-parent ${head}`
     const out = execSync(cmd, {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      ...(opts.cwd ? { cwd: opts.cwd } : {}),
     })
     return out.split('\n').map((s) => s.trim()).filter(Boolean)
   } catch {
