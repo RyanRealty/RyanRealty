@@ -616,7 +616,13 @@ export function pickExpiredPeers(
       const status = row.StandardStatus
       const leftAs = run?.source === 'status-history' ? run.leftAs : null
       const cameOffAs = leftAs && !sameStatus(leftAs, status) ? leftAs : null
-      const statusDay = pacificDay(row.status_change_timestamp ?? row.off_market_date ?? null)
+      // The date beside the status of record. When that status is the one it
+      // left Active for, the MLS off-market date wins over the activity log
+      // (1355 Jacksonville: WithdrawDate Sep 28, log Sep 29). A later status
+      // (withdrawn, then expired) keeps the log's status-of-record day.
+      const mlsOff = pacificDay(row.off_market_date)
+      const logStatusDay = pacificDay(row.status_change_timestamp ?? null)
+      const statusDay = cameOffAs ? (logStatusDay ?? mlsOff) : (mlsOff ?? logStatusDay)
       const stretch = peerStretch(row, run, originalListPrice, listPrice)
       const peer: CmaExpiredPeer = {
         listingKey: key,

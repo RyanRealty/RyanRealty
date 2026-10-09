@@ -230,13 +230,38 @@ function timedActivePeriods(
 }
 
 /**
+ * The day the home left the market when that day is the status of record.
+ *
+ * The activity log can land a day after the MLS date. 1355 Jacksonville was
+ * withdrawn Sep 28 (WithdrawDate, stored as off_market_date) and the MlsStatus
+ * log says Sep 29. Matt 2026-10-09: trust the MLS date. A later status of
+ * record keeps the log: 3177 Coho left Active as Withdrawn on Feb 10 and the
+ * listing expired Sep 30, so the days still end Feb 10.
+ */
+function mlsRecordEnd(
+  input: ActiveRunInput,
+  from: string | null,
+  leftAs: string | null,
+  logTo: string | null,
+): string | null {
+  if (!logTo || !leftAs) return logTo
+  const record = input.status?.trim() || null
+  if (!record || !sameStatus(leftAs, record)) return logTo
+  const mls = pacificDay(input.offMarketDate)
+  if (!mls || (from && mls < from)) return logTo
+  return mls
+}
+
+/**
  * The listing's last stretch on the market: the day it went Active, the day it
  * left Active, what it left Active for, and the whole calendar days between.
  *
  * From the status log when it holds a period. Otherwise from the listing row:
  * its on-market day to its off-market day, which is right for a listing that
  * went straight from Active to its status of record and wrong for one that was
- * withdrawn first, so the log is always read first.
+ * withdrawn first, so the log is always read first. When the status of record
+ * is the status it left Active for, the MLS off-market date replaces a later
+ * log day (`mlsRecordEnd`).
  */
 export type ActiveRun = {
   from: string | null
@@ -277,12 +302,13 @@ export function lastActiveRunTimed(input: ActiveRunInput): (ActiveRun & { fromAt
   })
   const last = periods[periods.length - 1]
   if (last) {
+    const to = mlsRecordEnd(input, last.from, last.endedAs, last.to)
     return {
       from: last.from,
       fromAt: last.fromAt,
-      to: last.to,
+      to,
       leftAs: last.endedAs,
-      days: last.to ? pacificDaysBetween(last.from, last.to) : null,
+      days: to ? pacificDaysBetween(last.from, to) : null,
       source: 'status-history',
     }
   }
