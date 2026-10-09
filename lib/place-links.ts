@@ -11,7 +11,8 @@ import {
   resolveDurableCommunitySlug,
   resolvePublicCommunitySlug,
 } from '@/lib/communities/community-public-pair'
-import { cityMarketPath, communityMarketPath } from '@/lib/market/canonical-market-path'
+import { CORE_COMMUNITY_MARKET_PATHS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 export type PlaceType = 'city' | 'neighborhood' | 'community'
 
@@ -86,7 +87,11 @@ export function getPlaceLinks(input: {
       // Eagle Crest) has its own /communities page; the two-segment path 308s.
       placeUrl: cityNeighborhoodHref(citySlug, slug) ?? `/cities/${citySlug}/${slug}`,
       browseUrl: `/homes-for-sale/${citySlug}/${slug}`,
-      marketUrl: `/housing-market/${citySlug}/${slug}`,
+      // Two-segment market URLs only when leftover HUD publishes (the same
+      // notFound check as /housing-market/[city]/[slug]). Bend districts are
+      // subdivision grain there, so leftoverGeo is null and they never
+      // publish; a resort in CORE_COMMUNITY_MARKET_PATHS does.
+      marketUrl: CORE_COMMUNITY_MARKET_PATHS[slug] ?? cityMarketPath(citySlug),
       label: titleFromSlug(slug),
     }
   }
@@ -121,9 +126,13 @@ export function getPlaceLinks(input: {
   return {
     placeUrl: pair?.href ?? `/communities/${publicSlug}`,
     browseUrl,
-    // One market URL per place (lib/market/canonical-market-path): Sunriver
-    // is its own registry city, so /housing-market/sunriver, not sunriver/sunriver.
-    marketUrl: communityMarketPath(durable, { followLegacy: false }) ?? `/housing-market/${citySlug}/${durable}`,
+    // One market URL per place. CORE_COMMUNITY_MARKET_PATHS is the committed
+    // leftover-HUD published set the market page's generateStaticParams uses
+    // (same notFound check: leftoverHudPublishes || leftover monthly). A
+    // community that does not publish links the city report instead of a
+    // hollow /housing-market/<city>/<slug> shell. Self-city (Sunriver) is
+    // cityMarketPath, which is /housing-market/sunriver.
+    marketUrl: CORE_COMMUNITY_MARKET_PATHS[durable] ?? cityMarketPath(citySlug),
     label: pair?.displayName ?? titleFromSlug(publicSlug),
   }
 }

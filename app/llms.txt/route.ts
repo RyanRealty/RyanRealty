@@ -9,6 +9,7 @@ import { PRIMARY_CITIES } from '@/lib/cities'
 import { GOLF_COURSES } from '@/data/golf/courses'
 import aiQueryMap from '@/lib/seo/ai-query-map.json' assert { type: 'json' }
 import { CORE_MARKET_PATHS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 import { cityTypeLlmsLines, dedupeLlmsLines, marketCityLlmsLines, zipLlmsLines, LLMS_SUBDIVISIONS_PATH } from '@/lib/site/llms-geo'
 import { BRAND, CONTACT } from '@/lib/brand/contact'
 
@@ -117,7 +118,13 @@ export async function GET() {
   const guideLines = lines([
     `- All guides: ${SITE_URL}/blog`,
     ...pillars('guides'),
-    ...guides.map((g) => `- ${g.title}: ${SITE_URL}/blog/${g.slug}`),
+    ...guides.map((g) => {
+      const town = g.slug.replace(/-housing-market-guide$/, '')
+      if (town !== g.slug) {
+        return `- ${g.title}: ${SITE_URL}${cityMarketPath(town)}`
+      }
+      return `- ${g.title}: ${SITE_URL}/blog/${g.slug}`
+    }),
   ])
   // "All posts" shares /blog with "All guides" above, so the dedupe drops it.
   const blogLines = lines([

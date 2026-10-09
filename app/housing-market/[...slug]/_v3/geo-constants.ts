@@ -25,7 +25,6 @@ export const CORE_CITY_SLUGS = [
   'sisters',
   'sunriver',
   'la-pine',
-  'tumalo',
   'prineville',
   'terrebonne',
 ] as const

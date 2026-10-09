@@ -69,9 +69,32 @@ export function isAdminPath(pathname: string | null | undefined): boolean {
   return pathname === '/admin' || pathname.startsWith('/admin/')
 }
 
+/** Hostname only: strip a trailing dot, [IPv6] brackets, and :port on names that are not IPv6. */
+function hostnameOnly(host: string): string {
+  let h = host.trim().toLowerCase().replace(/\.$/, '')
+  const bracket = /^\[([^\]]+)\](?::\d+)?$/.exec(h)
+  if (bracket) return bracket[1]
+  if (/^[a-z0-9.-]+:\d+$/.test(h)) return h.replace(/:\d+$/, '')
+  return h
+}
+
+/**
+ * Loopback and local-dev hosts. 7 localhost views reached the production GA4
+ * property; these names must never count, even when a production build is
+ * served on them (`next start` sets NODE_ENV=production).
+ */
+export function isLocalhostHost(host: string | null | undefined): boolean {
+  if (typeof host !== 'string') return false
+  const h = hostnameOnly(host)
+  if (h === 'localhost' || h === '127.0.0.1' || h === '::1' || h === '0.0.0.0') return true
+  if (h.endsWith('.localhost')) return true
+  return false
+}
+
 export function isProductionHost(host: string | null | undefined): boolean {
   if (typeof host !== 'string') return false
-  const h = host.trim().toLowerCase().replace(/:\d+$/, '').replace(/\.$/, '')
+  if (isLocalhostHost(host)) return false
+  const h = hostnameOnly(host)
   return h === PRODUCTION_HOST || h.endsWith(`.${PRODUCTION_HOST}`)
 }
 
@@ -137,8 +160,9 @@ export function decideGaSuppressionForPage(args: {
  */
 export const GA_SUPPRESS_JS =
   `(function(){try{` +
-  `var l=location,n=navigator,c=document.cookie||'',p=l.pathname||'/',h=String(l.hostname||'').toLowerCase().replace(/\\.$/,''),u=String(n.userAgent||'').trim();` +
+  `var l=location,n=navigator,c=document.cookie||'',p=l.pathname||'/',h=String(l.hostname||'').toLowerCase().replace(/\\.$/,'').replace(/^\\[|\\]$/g,''),u=String(n.userAgent||'').trim();` +
   `if(p==='/admin'||p.indexOf('/admin/')===0)return true;` +
+  `if(h==='localhost'||h==='127.0.0.1'||h==='::1'||h==='0.0.0.0'||h.slice(-10)==='.localhost')return true;` +
   `if(!(h===${JSON.stringify(PRODUCTION_HOST)}||h.slice(-${PRODUCTION_HOST.length + 1})===${JSON.stringify('.' + PRODUCTION_HOST)}))return true;` +
   `if(${MARKER_COOKIE_RE.toString()}.test(c)||${MARKER_QUERY_RE.toString()}.test(l.search||''))return true;` +
   `if(!u||${TOOL_RE.toString()}.test(u)||${HEADLESS_RE.toString()}.test(u)||${DECLARED_CRAWLER_RE.toString()}.test(u.replace(/cubot/gi,'')))return true;` +

@@ -28,13 +28,13 @@ describe('plat place follows', () => {
       lifestyleItems: [],
       peerPlats: [],
       browseHref,
-      marketHref: '/housing-market/bend/sunrise-village',
+      marketHref: '/housing-market/bend',
       pagePath: '/subdivisions/sunrise-village',
     })
     const byLabel = new Map(items.flatMap((item) => ('href' in item ? [[item.label, item.href]] : [])))
     expect(browseHref).toBe('/homes-for-sale/bend/sunrise-village')
     expect(byLabel.get('Sunrise Village homes for sale')).toBe('/homes-for-sale/bend/sunrise-village')
-    expect(byLabel.get('Sunrise Village market report')).toBe('/housing-market/bend/sunrise-village')
+    expect(byLabel.get('Sunrise Village market report')).toBe('/housing-market/bend')
     expect(byLabel.get('Sunrise Village homes for sale')).not.toBe('/search')
   })
 
@@ -49,7 +49,7 @@ describe('plat place follows', () => {
       lifestyleItems: [],
       peerPlats: [],
       browseHref: '/homes-for-sale/bend/sunrise-village',
-      marketHref: '/housing-market/bend/sunrise-village',
+      marketHref: '/housing-market/bend',
       pagePath: '/subdivisions/sunrise-village',
     })
     const hrefs = items.flatMap((item) => ('href' in item ? [item.href] : []))
@@ -102,7 +102,7 @@ function quietEdges(lifestyleItems: readonly LifestyleNearItem[]) {
     lifestyleItems,
     peerPlats: [],
     browseHref: '/homes-for-sale/bend/deschutes-river-woods',
-    marketHref: '/housing-market/bend/deschutes-river-woods',
+    marketHref: '/housing-market/bend',
     pagePath: '/subdivisions/deschutes-river-woods',
   }
   return buildSubdivisionEdges(input)
