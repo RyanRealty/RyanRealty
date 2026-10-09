@@ -82,6 +82,7 @@ import { statusIsOnMarket } from '@/lib/cma/subject-on-market'
 import {
   applyFailedAskCap,
   failedAskBelowRangeNote,
+  failedAskCutOriginal,
   reclassifyFailedAskOnPrintedBand,
   buildFailureFindings,
   buildServicesList,
@@ -693,8 +694,20 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             priceEvents,
             listingKey: cycle?.listingKey ?? subject.listingKey,
           })
-          return { resolved }
+          return { resolved, priceEvents }
         })()
+      : null
+    // RULE 16 READS THE SAME CLOCK (Matt 2026-10-08, "Yes, after this
+    // landing"): whether the failed listing's ask was cut, and from what, is
+    // measured on its last stretch, from the ask in effect when it went
+    // Active, never the MLS OriginalListPrice of a Coming Soon price or an
+    // earlier stretch (20676 Wild Rose: $599,900 the whole stretch, no cut).
+    const failedAskOriginal = lastCycleFailed
+      ? failedAskCutOriginal({
+          cycle: failedCycle,
+          priceEvents: finalCycleRead?.priceEvents ?? [],
+          mlsOriginalListPrice: Number(cycleRows[0]?.['OriginalListPrice']) || null,
+        })
       : null
     // The failed listing's last stretch, as its final cycle resolved it (Matt
     // 2026-10-08): the day it began, the ask in effect then, and whether it
@@ -944,7 +957,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         lastFailedListPrice: subject.lastListPrice,
         offMarketDate: offDate,
         daysOnMarket: subjectDomDays(subject),
-        originalListPrice: Number(row0['OriginalListPrice']) || null,
+        originalListPrice: failedAskOriginal,
       })
     }
 
@@ -1079,7 +1092,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
               lastFailedListPrice: subject.lastListPrice,
               offMarketDate: String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null,
               daysOnMarket: subjectDomDays(subject),
-              originalListPrice: Number(row0['OriginalListPrice']) || null,
+              originalListPrice: failedAskOriginal,
             })
           }
           selection.trace.push(
@@ -1161,7 +1174,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
                   lastFailedListPrice: subject.lastListPrice,
                   offMarketDate: String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null,
                   daysOnMarket: subjectDomDays(subject),
-                  originalListPrice: Number(row0['OriginalListPrice']) || null,
+                  originalListPrice: failedAskOriginal,
                 })
               }
               selection.trace.push(

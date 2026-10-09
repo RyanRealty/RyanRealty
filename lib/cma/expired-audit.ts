@@ -374,6 +374,70 @@ function dayString(value: string | null | undefined): string | null {
   return pacificDay(value ?? null)
 }
 
+/** A recorded ask change as the price-event read carries it. */
+type CyclePriceEvent = { date?: string; ask: number; at?: string | null; previousAsk?: number | null }
+
+/**
+ * The ask in effect the moment the failed listing's last stretch on the market
+ * began, and whether a recorded change or a restart placed it (`placed`).
+ *
+ * Placed: the last recorded ask change at or before that moment, else the ask
+ * the first later change moved off of, else the opening ask, and on a stretch
+ * that came back with no change on record only when the ask never moved
+ * (`askInEffectAt`). Not placed: the MLS OriginalListPrice, which is the
+ * listing's opening ask, Coming Soon included. Null when the record cannot
+ * say; never the final ask.
+ */
+function stretchOpeningAsk(
+  cycle: BpoListingCycle,
+  priceEvents: ReadonlyArray<CyclePriceEvent> | null | undefined,
+): { ask: number | null; placed: boolean } {
+  const startAt = cycle.listedAt ?? cycle.listDate ?? null
+  const timed: AskChange[] = (priceEvents ?? []).flatMap((e) => {
+    const to = positiveAsk(e.ask)
+    return e.at && to != null ? [{ at: e.at, from: positiveAsk(e.previousAsk), to }] : []
+  })
+  if (Number.isFinite(mlsEventMillis(startAt)) && (timed.length > 0 || cycle.restarted === true)) {
+    return {
+      ask: askInEffectAt(timed, startAt, {
+        openingAsk: cycle.originalListPrice,
+        currentAsk: cycle.finalListPrice,
+        restarted: cycle.restarted === true,
+      }),
+      placed: true,
+    }
+  }
+  return { ask: positiveAsk(cycle.originalListPrice), placed: false }
+}
+
+/**
+ * THE PRICE READS THE LETTER'S CLOCK (Matt 2026-10-08, "Yes, after this
+ * landing"). Rule 16's failed-ask pull asks whether the subject's ask was cut,
+ * and from what. That is measured on its last stretch on the market, from the
+ * ask in effect when it went Active: the same first ask the letter prints
+ * (rule 28). 20676 Wild Rose's MLS OriginalListPrice is $625,000, a Coming
+ * Soon price changed to $599,900 fourteen seconds before it went Active; on
+ * its last stretch it asked $599,900 the whole time and was never cut, so the
+ * pull reads it as a known ask that did not come down.
+ *
+ * `cycle` is the failed cycle after `cycleOnTheMarket` (its last Active
+ * stretch), and `priceEvents` the dated ask changes the build reads for it. A
+ * stretch whose first ask the record cannot say has no original ask to judge
+ * a cut by (null, rule 16's smaller extra), never an earlier stretch's ask
+ * and never the final ask. With no cycle the MLS OriginalListPrice stands, as
+ * every build read it before. Read for a stale cycle too: the story is
+ * suppressed past FAILED_ASK_RECENCY_MONTHS, the pull is not.
+ */
+export function failedAskCutOriginal(args: {
+  cycle: BpoListingCycle | null | undefined
+  priceEvents?: ReadonlyArray<CyclePriceEvent> | null
+  /** OriginalListPrice off the failed listing's MLS row, for a subject with no cycle. */
+  mlsOriginalListPrice?: number | null
+}): number | null {
+  if (!args.cycle) return positiveAsk(args.mlsOriginalListPrice)
+  return stretchOpeningAsk(args.cycle, args.priceEvents).ask
+}
+
 /**
  * Build the timeline from the final cycle plus whatever dated price events the
  * record holds. Pure — the caller does the reading (lib/pricing/local-outcomes
@@ -401,23 +465,14 @@ export function buildFinalCycle(args: {
   // "You first asked $625,000" and "Asked $625K on Sep 2". OriginalListPrice
   // is the opening ask of the listing, Coming Soon included, so it stands only
   // when no recorded change places the ask at that moment.
-  const opening = positiveAsk(cycle.originalListPrice) ?? positiveAsk(cycle.finalListPrice)
   const startAt = cycle.listedAt ?? cycle.listDate ?? null
   const startMs = mlsEventMillis(startAt)
-  const timed: AskChange[] = (args.priceEvents ?? []).flatMap((e) => {
-    const to = positiveAsk(e.ask)
-    return e.at && to != null ? [{ at: e.at, from: positiveAsk(e.previousAsk), to }] : []
-  })
   // A stretch that came back with no recorded change to place its ask has no
   // known opening ask unless the ask never moved: never the earlier stretch's.
-  const initialAsk =
-    Number.isFinite(startMs) && (timed.length > 0 || cycle.restarted === true)
-      ? askInEffectAt(timed, startAt, {
-          openingAsk: cycle.originalListPrice,
-          currentAsk: cycle.finalListPrice,
-          restarted: cycle.restarted === true,
-        })
-      : opening
+  // Unplaced, a row with no OriginalListPrice draws its final ask flat; the
+  // failed-ask pull does not take that as an original (failedAskCutOriginal).
+  const opening = stretchOpeningAsk(cycle, args.priceEvents)
+  const initialAsk = opening.placed ? opening.ask : (opening.ask ?? positiveAsk(cycle.finalListPrice))
   const finalAsk = positiveAsk(cycle.finalListPrice)
   const days = finalCycleDaysOnMarket(cycle)
 

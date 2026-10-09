@@ -49,6 +49,7 @@ import {
 } from '@/lib/pricing/reconciliation'
 import { applyFailedAskCap as applyExpiredFailedAskCap } from '@/lib/cma/expired-audit'
 import { setAsideMatcher } from '@/lib/cma/set-aside'
+import { saleOriginalAsk } from '@/lib/cma/last-stretch'
 import {
   applyExclusivePocketDateAdj,
   describeAppliedDateAdjustments,
@@ -2119,10 +2120,23 @@ export function priceCmaSet(args: {
   // sales at 80 percent of their ask over three priced ones at 100 percent
   // moved a $490,000 / $500,000 / $510,000 list to $510,000 on all three
   // tiers (lib/pricing/estimate.test.ts). The ratios are held to `adjusted`.
-  const pricedKeys = new Set(adjusted.map((c) => c.listingKey))
-  const pricedSales = (args.selection.pricingSales ?? []).filter(
-    (s) => s.listingKey != null && pricedKeys.has(s.listingKey),
-  )
+  //
+  // ONE CLOCK FOR THE SHARE (Matt 2026-10-08, "Yes, after this landing"). A
+  // sale's original ask is the first ask of the listing period that produced
+  // it, the figure the grid prints (saleOriginalAsk, lib/cma/last-stretch.ts):
+  // 61197 Cottonwood closed at $715,000 on a stretch that began at $774,900,
+  // 92.3 percent, not 84.1 percent of April's $849,900. The city index's
+  // share (asOfSaleToOriginal) is a city statistic and is not touched here.
+  const pricedByKey = new Map(adjusted.map((c) => [c.listingKey, c]))
+  const pricedSales = (args.selection.pricingSales ?? [])
+    .filter((s) => s.listingKey != null && pricedByKey.has(s.listingKey))
+    .map((s) => {
+      const comp = pricedByKey.get(s.listingKey!)!
+      return {
+        ...s,
+        originalAsk: saleOriginalAsk({ ...comp, originalListPrice: comp.originalListPrice ?? s.originalAsk }),
+      }
+    })
   const covered = applyEngineCoverToCmaPricing(pricing, {
     subjectSqft: args.subject.sqft ?? 0,
     lastAsk: currentListAsk(args.subject),
