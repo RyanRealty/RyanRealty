@@ -149,6 +149,11 @@ import {
 } from '@/lib/site/place-recreation'
 import './_v3/neighborhood-fold.css'
 import {
+  answerLedeEnabled,
+  neighborhoodAnswerLede,
+  neighborhoodAnswerMeta,
+} from './_v3/neighborhood-answer-lede'
+import {
   neighborhoodAboutItems,
   neighborhoodExploreItems,
   neighborhoodFaceFigures,
@@ -234,10 +239,41 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     neighborhood.seoDescription && !bannedDescRe.test(neighborhood.seoDescription)
       ? neighborhood.seoDescription
       : null
+  // AIV a5 (brief 2026-10-09, 2B): an opted-in place leads its SERP line with
+  // the 12-month median SALE price, bound to the same pace read the page's
+  // "What is the median home price" answer prints. A miss keeps the line above.
+  const answerMeta = answerLedeEnabled(citySlug, neighborhoodSlug)
+    ? await withTimeoutFallback(
+        (async () => {
+          const metricSlug = await resolveNeighborhoodMetricSlug({ citySlug, neighborhoodSlug })
+          const [pace, overlays] = await Promise.all([
+            getPublicDetachedPace({ geoType: 'neighborhood', geoSlug: metricSlug }),
+            getDetachedOverlays([{ geoType: 'neighborhood', geoSlug: metricSlug }]),
+          ])
+          const mt = overlays.get(`neighborhood:${cityDetachedSlug(metricSlug)}`)
+          const stamp = mt?.headlines?.computedAt ?? mt?.inventory?.computedAt ?? null
+          return neighborhoodAnswerMeta({
+            placeName: neighborhood.name,
+            cityName: neighborhood.cityName,
+            medianClose: pace.medianClose,
+            closedCount: pace.closedCount,
+            cityMedianClose: null,
+            activeCount: inventory != null && inventory.activeCount > 0 ? inventory.activeCount : null,
+            medianListPrice: inventory?.medianListPrice ?? null,
+            saleToOriginal: pace.saleToOriginal,
+            asOf: stamp ? formatDate(stamp) : null,
+          })
+        })(),
+        null,
+        4500,
+        'nbh:meta-answer',
+      )
+    : null
   const description =
-    inventory != null && inventory.activeCount > 0
+    answerMeta ??
+    (inventory != null && inventory.activeCount > 0
       ? generatedDescription
-      : curated ?? generatedDescription
+      : curated ?? generatedDescription)
 
   return pageMetadata({
     title:
@@ -538,6 +574,22 @@ async function renderNeighborhoodDetail({ params }: Props) {
   // boundary inventory the face and the Q&A print, for the Dataset too. The
   // overlay (hud.active) stays the supply ratio's own numerator only.
   const published = neighborhoodPublishedFigures(inventoryOk ? inventory : null)
+  // AIV a5 (brief 2026-10-09, 2B): the answer lede under the H1. Every figure
+  // is a read this page already prints: the pace row behind the "median home
+  // price" answer, the city pace row, and the boundary inventory.
+  const answerLede = answerLedeEnabled(citySlug, neighborhoodSlug)
+    ? neighborhoodAnswerLede({
+        placeName: neighborhood.name,
+        cityName,
+        medianClose: publicPace.medianClose,
+        closedCount: publicPace.closedCount,
+        cityMedianClose: cityPace.medianClose,
+        activeCount: published.activeCount,
+        medianListPrice: published.medianListPrice,
+        saleToOriginal: publicPace.saleToOriginal,
+        asOf: mosAsOf,
+      })
+    : null
   const marketFaqInput = neighborhoodMarketFaqInput({
     published,
     monthsOfSupply: null,
@@ -953,6 +1005,12 @@ async function renderNeighborhoodDetail({ params }: Props) {
             </p>
           </div>
         </div>
+
+        {answerLede ? (
+          <section className="nbh-answer-lede" aria-label={`${neighborhood.name} median sale price`}>
+            <p>{answerLede}</p>
+          </section>
+        ) : null}
 
         {/* The market figure and the alerts sentence open the page, under the
             photograph (2026-09-29, the taste lock: "a place page opens with a
