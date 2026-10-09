@@ -130,6 +130,24 @@ const LISTING_URL =
 // Shared across every tier — none of these showed the kind of route-by-route
 // spread that justifies per-tier numbers (see header comment for the
 // measurement each one is grounded in).
+// CI SHARDING (2026-10-09, "45 minutes per PR is too long"). The 8 URLs x 3
+// runs took 9.5 minutes on one runner, the longest single step of PR CI.
+// LHCI_SHARD=i/n keeps URL k (0-based) when k % n == i - 1, so n parallel
+// jobs together run every URL with the same 3 runs and the same assertions
+// (assertMatrix is evaluated per URL, so an entry with no URL in a shard
+// asserts nothing there). Unset = all 8 URLs, the local and nightly default.
+function shardUrls(urls) {
+  const spec = process.env.LHCI_SHARD
+  if (!spec) return urls
+  const m = /^(\d+)\/(\d+)$/.exec(spec.trim())
+  if (!m || Number(m[1]) < 1 || Number(m[1]) > Number(m[2])) {
+    throw new Error(`LHCI_SHARD must look like "2/4" (got "${spec}")`)
+  }
+  const index = Number(m[1]) - 1
+  const total = Number(m[2])
+  return urls.filter((_, k) => k % total === index)
+}
+
 const SHARED_ASSERTIONS = {
   "categories:accessibility": ["error", { minScore: 0.95 }],
   "categories:best-practices": ["error", { minScore: 0.7 }],
@@ -140,7 +158,7 @@ const SHARED_ASSERTIONS = {
 module.exports = {
   ci: {
     collect: {
-      url: [
+      url: shardUrls([
         "http://127.0.0.1:3000/",
         "http://127.0.0.1:3000/cities/bend",
         "http://127.0.0.1:3000/cities/bend/awbrey-butte",
@@ -149,7 +167,7 @@ module.exports = {
         LISTING_URL,
         "http://127.0.0.1:3000/team",
         "http://127.0.0.1:3000/about",
-      ],
+      ]),
       numberOfRuns: 3,
       settings: {
         preset: "desktop",
