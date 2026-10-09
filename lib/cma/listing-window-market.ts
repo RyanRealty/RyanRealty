@@ -18,6 +18,20 @@ import type { PocketLocalMissing, PocketLocalRead } from '@/lib/pricing/exclusiv
 export const LISTING_MARKET_MIN_HALF = 8
 const FLAT = 0.03
 
+/**
+ * Median living area moved this far between the two halves: the homes are
+ * not one size, so the median sale price is not the market move.
+ *
+ * 5 percent is the line this file already used to say the later homes were
+ * larger or smaller (2026-10-09, 2902 Pinnacle). Under it, "a home about
+ * this size" still holds and the sale-price word stands. The 3 percent flat
+ * band above is the price word, not a size line.
+ */
+export const LISTING_MARKET_SIZE_MIX = 0.05
+
+/** Printed on the sale-price slope in place of rose, fell, or held flat. */
+export const SIZE_MIX_SLOPE_LABEL = 'different sizes'
+
 export type ListingMarketMoveWord = 'rose' | 'fell' | 'held flat'
 
 export type ListingMarketHalf = {
@@ -290,25 +304,42 @@ function moveClause(word: ListingMarketMoveWord, from: number, to: number): stri
 }
 
 /**
- * When the check and the rate per foot move in opposite directions, say so
- * only if the houses themselves changed size. A larger later median explains
- * a higher sale price beside a lower rate. Without that, the two facts stand
- * and no cause is invented.
+ * How far the later half's median living area moved from the earlier half.
+ * Null when either half has no size. Positive means the later homes are larger.
  */
-function mixSentence(move: ListingMarketMove): string {
+export function listingMarketSizeShift(move: Pick<ListingMarketMove, 'early' | 'late'>): number | null {
   const early = move.early.sqftMedian
   const late = move.late.sqftMedian
-  if (early == null || late == null || !(early > 0) || !(late > 0)) return ''
-  const grew = (late - early) / early
-  if (Math.abs(grew) < 0.05) return ''
-  const larger = grew > 0
-  const explains =
-    (larger && move.priceMove === 'rose' && move.ppsfMove === 'fell') ||
-    (!larger && move.priceMove === 'fell' && move.ppsfMove === 'rose')
-  if (!explains) return ''
+  if (early == null || late == null || !(early > 0) || !(late > 0)) return null
+  return (late - early) / early
+}
+
+/**
+ * The two halves are a trend, and they are not the same size of home.
+ * One sale a half is not a trend (listingMarketOneSaleAHalf owns that print).
+ */
+export function listingMarketSizeMix(move: ListingMarketMove): boolean {
+  if (listingMarketOneSaleAHalf(move)) return false
+  const shift = listingMarketSizeShift(move)
+  return shift != null && Math.abs(shift) >= LISTING_MARKET_SIZE_MIX
+}
+
+/**
+ * The like-for-like sentence. The market word is the per-foot move. The two
+ * median sale prices print as what those homes sold for, with no rise, fall,
+ * or flat on them (2026-10-09, 2902 Pinnacle).
+ */
+function sizeMixSentence(move: ListingMarketMove, size: string): string {
+  const early = move.early.sqftMedian!
+  const late = move.late.sqftMedian!
   const fmt = (n: number) => Math.round(n).toLocaleString('en-US')
-  const word = larger ? 'larger' : 'smaller'
-  return `The later homes were ${word}. The median one was ${fmt(late)} square feet, and the earlier median was ${fmt(early)}.`
+  const sizeLine = `The later homes were ${late > early ? 'larger' : 'smaller'}. The median one was ${fmt(late)} square feet, and the earlier median was ${fmt(early)}.`
+  const dollars = `The median sale was ${usd(move.early.median)}, then ${usd(move.late.median)}.`
+  const hasFoot = move.ppsfMove != null && move.early.ppsf != null && move.late.ppsf != null
+  if (!hasFoot) return `While your home was listed, ${sizeLine} ${dollars}`
+  const where = move.productNoun ? `for a ${move.productNoun} in ${move.place}` : `in ${move.place}`
+  const foot = `the price per square foot ${where}${size} ${moveClause(move.ppsfMove!, move.early.ppsf!, move.late.ppsf!)}`
+  return `While your home was listed, ${foot}. ${sizeLine} ${dollars}`
 }
 
 /**
@@ -394,12 +425,41 @@ export function listingMarketSentence(move: ListingMarketMove): string {
   const size = move.sized ? ' for a home about this size' : ''
   const product = move.productNoun ? `${move.productNoun} ` : ''
   if (listingMarketOneSaleAHalf(move)) return singleSaleSentence(move, product, size)
+  // A size gap is not a market move. Lead with the per-foot word, the same
+  // word the date gate reads, and do not call the dollar median a rise or a fall.
+  if (listingMarketSizeMix(move)) return sizeMixSentence(move, size)
   const price = moveClause(move.priceMove, move.early.median, move.late.median)
   const head = `While your home was listed, the median ${product}sale in ${move.place}${size} ${price}.`
   if (move.ppsfMove == null || move.early.ppsf == null || move.late.ppsf == null) return head
   const foot = `The price per square foot ${moveClause(move.ppsfMove, move.early.ppsf, move.late.ppsf)}.`
-  const mix = mixSentence(move)
-  return mix ? `${head} ${mix} ${foot}` : `${head} ${foot}`
+  return `${head} ${foot}`
+}
+
+/**
+ * Why a rendered trend is still a price-led size mix, or null when the print
+ * is like for like. Lookpass `--check` fails a letter on a non-null result.
+ * The stored `priceMove` stays the dollar fact. This reads what the page prints.
+ */
+export function listingMarketPriceLedMixShift(move: ListingMarketMove | null): string | null {
+  if (!move || !listingMarketSizeMix(move)) return null
+  const price = listingMarketSlopes(move).panels.find((p) => p.title === 'Sale price')
+  const word = price?.label ?? price?.move
+  if (word === 'rose' || word === 'fell' || word === 'held flat') {
+    const pct = Math.round(Math.abs(listingMarketSizeShift(move)!) * 100)
+    return `sale price prints "${word}" while the median living area moved ${pct}%`
+  }
+  const sentence = listingMarketSentence(move)
+  if (/median (?:\w+ )?sale\b[^.]{0,120}\b(rose|fell|held flat)\b/.test(sentence)) {
+    return 'the sentence calls the median sale a rise, a fall, or flat across different sizes'
+  }
+  if (move.ppsfMove != null && move.early.ppsf != null && move.late.ppsf != null) {
+    const footAt = sentence.toLowerCase().indexOf('price per square foot')
+    const saleAt = sentence.toLowerCase().indexOf('the median sale')
+    if (footAt < 0 || (saleAt >= 0 && saleAt < footAt)) {
+      return 'the sentence leads with the median sale instead of the price per square foot'
+    }
+  }
+  return null
 }
 
 /** Same dollars, same counts. Size can be attached without replacing the signed medians. */
@@ -499,34 +559,46 @@ export function listingMarketSlopes(move: ListingMarketMove): {
   const toN = halfMeta(move.late)
   // One sale a half is one home's price: the chart does not print "rose" or
   // "fell" over it, the same as the sentence under it (3037 Purcell, 2026-10-07).
-  const label = listingMarketOneSaleAHalf(move) ? ONE_SALE_SLOPE_LABEL : undefined
-  const panels: ListingMarketSlopePanel[] = [
-    {
-      title: 'Sale price',
-      fromText: usd(move.early.median),
-      toText: usd(move.late.median),
-      fromWhen,
-      toWhen,
-      fromN,
-      toN,
-      move: move.priceMove,
-      deltaPct: move.early.median > 0 ? (move.late.median - move.early.median) / move.early.median : 0,
-      ...(label ? { label } : {}),
-    },
-  ]
-  if (move.ppsfMove && move.early.ppsf != null && move.late.ppsf != null) {
-    panels.push({
-      title: 'Price per square foot',
-      fromText: usd(move.early.ppsf),
-      toText: usd(move.late.ppsf),
-      fromWhen,
-      toWhen,
-      fromN,
-      toN,
-      move: move.ppsfMove,
-      deltaPct: move.early.ppsf > 0 ? (move.late.ppsf - move.early.ppsf) / move.early.ppsf : 0,
-      ...(label ? { label } : {}),
-    })
+  // A size mix keeps the dollar slope (the medians did move) but the word is
+  // "different sizes", never a market verb, and the per-foot slope leads
+  // (2026-10-09, 2902 Pinnacle).
+  const oneSale = listingMarketOneSaleAHalf(move)
+  const mix = listingMarketSizeMix(move)
+  const label = oneSale ? ONE_SALE_SLOPE_LABEL : mix ? SIZE_MIX_SLOPE_LABEL : undefined
+  const sale: ListingMarketSlopePanel = {
+    title: 'Sale price',
+    fromText: usd(move.early.median),
+    toText: usd(move.late.median),
+    fromWhen,
+    toWhen,
+    fromN,
+    toN,
+    move: move.priceMove,
+    deltaPct: move.early.median > 0 ? (move.late.median - move.early.median) / move.early.median : 0,
+    ...(label ? { label } : {}),
+  }
+  const panels: ListingMarketSlopePanel[] = []
+  const foot: ListingMarketSlopePanel | null =
+    move.ppsfMove && move.early.ppsf != null && move.late.ppsf != null
+      ? {
+          title: 'Price per square foot',
+          fromText: usd(move.early.ppsf),
+          toText: usd(move.late.ppsf),
+          fromWhen,
+          toWhen,
+          fromN,
+          toN,
+          move: move.ppsfMove,
+          deltaPct: move.early.ppsf > 0 ? (move.late.ppsf - move.early.ppsf) / move.early.ppsf : 0,
+          ...(oneSale ? { label: ONE_SALE_SLOPE_LABEL } : {}),
+        }
+      : null
+  // Like for like leads. The dollar panel stays, under the per-foot move,
+  // when the homes in the two windows are not one size.
+  if (mix && foot) panels.push(foot, sale)
+  else {
+    panels.push(sale)
+    if (foot) panels.push(foot)
   }
   return { kicker: `${move.place}${size}`, panels }
 }

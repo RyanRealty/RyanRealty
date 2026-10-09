@@ -6,9 +6,9 @@
  *
  * 1. DOWN ONLY IF LOCAL FELL (Matt 2026-10-08). Before any sale is adjusted,
  *    the letter's local read is measured: the same listing-window read the
- *    local page prints ("While your home was listed, the median sale in
- *    Shevlin West for a home about this size ... The price per square foot
- *    held flat, $581 then $572"), over the same closes and the same sales
+ *    local page prints ("While your home was listed, the price per square foot
+ *    in Shevlin West for a home about this size held flat, $581 then $572"),
+ *    over the same closes and the same sales
  *    area. Its per-foot verdict gates the pocket's date move: only "fell"
  *    lets a sale move down with the city index. The build hands this one
  *    move to the local page, so the two pages print one read.
