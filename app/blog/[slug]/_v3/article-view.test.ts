@@ -36,6 +36,15 @@ describe('buildBlogArticleView', () => {
     expect(view.sections[0].id).toBe('what-does-a-home-cost-right-now')
   })
 
+  it('keeps a heading\'s own id so a renamed section holds its old anchor', () => {
+    const renamed = buildBlogArticleView(
+      '<h2 id="sroa-fees-and-costs">Sunriver HOA fees (SROA) in 2026</h2><p>The fee is $172.94 a month.</p>',
+    )
+    expect(renamed.sections[0].id).toBe('sroa-fees-and-costs')
+    expect(renamed.html).toContain('id="sroa-fees-and-costs"')
+    expect(renamed.html).not.toContain('id="sunriver-hoa-fees-sroa-in-2026"')
+  })
+
   it('keeps the lede that sits before the first heading', () => {
     expect(view.html).toContain('The lede paragraph')
   })

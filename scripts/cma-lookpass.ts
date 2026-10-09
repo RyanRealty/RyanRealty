@@ -24,16 +24,18 @@
  * there, or a tap that changes nothing on the page, fails the run: an
  * interaction nobody drove is an interaction nobody knows works.
  *
- * `--check` adds four MECHANICAL failures on top of the shots, so the defects
+ * `--check` adds five MECHANICAL failures on top of the shots, so the defects
  * Matt found cannot come back without the tool saying so
- * (docs/plans/CMA_REIMAGINED_2026-09-07.md, Done means, plus the 2026-10-09
- * size-mix trend):
+ * (docs/plans/CMA_REIMAGINED_2026-09-07.md, Done means, rule 31, and the
+ * 2026-10-09 size-mix trend):
  *
  *   1. a banned word in the seller text of either document
  *   2. a property address that is not inside a tracked ryan-realty.com link
  *   3. a chart label outside its own viewBox at 375, measured in the browser
  *      with getBBox() rather than estimated from a character count
- *   4. a size-mix trend that still leads with a sale-price rise or fall
+ *   4. chapter 3's comps map has no `<img class="pin-map">`. An SVG scatter
+ *      is not that image (2745 Aldrich, 2026-10-09).
+ *   5. a size-mix trend that still leads with a sale-price rise or fall
  *
  * It exits non-zero on any of them.
  *
@@ -238,16 +240,16 @@ async function screenshotDocument(opts: {
 
 /**
  * ── --check ────────────────────────────────────────────────────────────────
- * Four mechanical failures. Each one is a defect Matt found by opening the
- * document, so each one now fails the tool instead of waiting for him.
- * The fourth is a size mix still printed as a sale-price rise or fall
+ * Five mechanical failures. Each one is a defect found by opening the
+ * document, so each one now fails the tool instead of waiting for a person.
+ * The fifth is a size mix still printed as a sale-price rise or fall
  * (2026-10-09, 2902 Pinnacle).
  */
 
 type CheckFailure = { doc: DocKind; rule: string; detail: string }
 
 /**
- * 4. A size mix is not a sale-price rise or fall (2026-10-09, 2902 Pinnacle).
+ * 5. A size mix is not a sale-price rise or fall (2026-10-09, 2902 Pinnacle).
  *
  * The stored `listingMarket` is what the page re-renders. listingMarketPriceLedMixShift
  * reads the slope word and the sentence the current renderer prints. A letter
@@ -963,6 +965,7 @@ async function processSlug(
     ) => Promise<string | null>
     extractChapters: (html: string) => Array<{ id: string; heading: string; svgCount: number; imgCount: number; tableCount: number }>
     findSellerBannedWords: (html: string) => Array<{ label: string; excerpt: string }>
+    mapImageGap: (html: string) => string | null
   },
   overlay?: { name: string; patch: Record<string, unknown> } | null,
 ): Promise<{ slug: string; ok: boolean; contactSheet?: string; failures: CheckFailure[] }> {
@@ -1112,6 +1115,8 @@ async function processSlug(
       if (!html) continue
       failures.push(...checkBannedWords(doc, html, deps.findSellerBannedWords))
       failures.push(...checkTrackedAddresses(doc, html, addresses))
+      const mapGap = deps.mapImageGap(html)
+      if (mapGap) failures.push({ doc, rule: 'map image', detail: mapGap })
     }
     failures.push(
       ...(await checkSizeMixTrend(
@@ -1124,7 +1129,7 @@ async function processSlug(
     )
     if (failures.length === 0) {
       console.log(
-        `  ✓ check: no banned word, ${addresses.length} address(es) tracked, every chart label inside its frame at 375, no price-led size mix`,
+        `  ✓ check: no banned word, ${addresses.length} address(es) tracked, every chart label inside its frame at 375, map image present, no price-led size mix`,
       )
     } else {
       console.error(`  ✗ check: ${failures.length} failure(s)${subjectAddress ? ` on ${subjectAddress}` : ''}`)
@@ -1175,7 +1180,7 @@ async function main(): Promise<void> {
   const { getCmaAdminRowBySlug, getCmaRenderSourceBySlug, getCmaStoredHtmlBySlug } = await import('@/lib/data')
   const { resolveCmaPrintHtml, resolveCmaPrintHtmlFromSource } = await import('@/lib/cma/print-html')
   const { immersiveFromRow } = await import('@/lib/cma/serve-document')
-  const { extractChapters } = await import('@/lib/cma/lookpass-chapters')
+  const { extractChapters, mapImageGap } = await import('@/lib/cma/lookpass-chapters')
   const { findSellerBannedWords } = await import('@/lib/cma/seller-text')
   const puppeteerModule = await import('./lib/marked-puppeteer.mjs')
   const puppeteer = puppeteerModule.default
@@ -1208,6 +1213,7 @@ async function main(): Promise<void> {
         immersiveFromRow,
         extractChapters,
         findSellerBannedWords,
+        mapImageGap,
       }, overlay)
       results.push(result)
     }

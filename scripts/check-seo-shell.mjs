@@ -132,7 +132,7 @@ const REQUIRED = [
         re: /titleBottom\s*=\s*["']Housing Market["']|headline\s*=\s*\{?\s*(?:v3Text\(\s*)?[`'"]Central Oregon housing market\b/,
         msg: 'market hub H1 must carry the head term: KB titleBottom="Housing Market", or a v3 headline literal opening "Central Oregon housing market"',
       },
-      { re: /title:\s*['"]Central Oregon Housing Market['"]/i, msg: 'market hub title must be "Central Oregon Housing Market"' },
+      { re: /title:\s*['"]Central Oregon Housing Market & Prices by City['"]/i, msg: 'market hub title must be "Central Oregon Housing Market & Prices by City" (Matt 2026-10-08)' },
     ],
   },
   {

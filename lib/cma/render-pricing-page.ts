@@ -1223,15 +1223,18 @@ export function mapBodyHtml(input: {
   /** The legend's closed-sales line when the sales set the range and not the cover (lib/cma/sales-role.ts). */
   closedLabel?: string | null
 }): string {
-  // The alt text, the legend and the caption all read the pins the map drew.
+  // Rule 31 (2745 Aldrich, 2026-10-09). No tile, no map. The cream scatter
+  // compPinMap can still draw is not this map, and a caption, a legend, or
+  // "Every pin above" must not refer to a map that is not on the page.
+  if (!input.mapDataUri) return ''
   const map = compPinMap({
     subject: input.subject,
     facts: input.facts,
-    mapDataUri: input.mapDataUri ?? null,
+    mapDataUri: input.mapDataUri,
     overlay: input.mapOverlay ?? null,
     closedLabel: input.closedLabel ?? null,
   })
-  if (!map.html.trim()) return ''
+  if (!map.html.includes('<img')) return ''
   const area = cleanText(input.areaSentence ?? null)
   return `<div class="pin-map-wrap">${map.html}</div>
   <p class="small">${esc(

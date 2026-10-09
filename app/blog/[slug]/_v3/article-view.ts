@@ -196,9 +196,13 @@ function segment(html: string): Segment[] {
   HEADING_RE.lastIndex = 0
   while ((match = HEADING_RE.exec(html)) !== null) {
     const label = stripTags(match[2])
-    let id = slugifyHeading(label)
+    // A heading that carries its own id keeps it: a renamed section holds its
+    // old anchor (Sunriver "#sroa-fees-and-costs", 2026-10-08) and the rail
+    // and contents links must point at the id the page actually renders.
+    const ownId = / id="([^"]+)"/.exec(match[1])?.[1]
+    let id = ownId ?? slugifyHeading(label)
     let n = 2
-    while (used.has(id)) id = `${slugifyHeading(label)}-${n++}`
+    while (used.has(id)) id = `${ownId ?? slugifyHeading(label)}-${n++}`
     used.add(id)
     if (segments.length === 0 && match.index > 0) {
       segments.push({ heading: null, headingHtml: '', id: 'lede', body: html.slice(0, match.index) })

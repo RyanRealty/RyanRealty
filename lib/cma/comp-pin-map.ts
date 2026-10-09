@@ -25,8 +25,10 @@
  * price changed, and the outcome line. The legend names the three families in
  * the words the three matrices use.
  *
- * The SVG fallback below is what a document with no map key gets: the same
- * pins, the same attributes, on a cream field with no basemap under them.
+ * The SVG below is the drawing unit's own fallback when a caller has
+ * coordinates and no tile. The letter does not print it. mapBodyHtml omits
+ * the map, the legend, and the "Every pin above" sentence when there is no
+ * tile image (rule 31, 2745 Aldrich, 2026-10-09).
  */
 
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
