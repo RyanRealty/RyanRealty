@@ -1,4 +1,4 @@
-# CMA handoff (START HERE). Updated 2026-10-09 9:05 AM PT
+# CMA handoff (START HERE). Updated 2026-10-09 9:20 AM PT
 
 Any agent: read this section first, then continue. Everything below it is older history.
 
@@ -6,9 +6,9 @@ Any agent: read this section first, then continue. Everything below it is older 
 Every unsent expired-listing CMA draft is rebuilt and saved on current main. Each one either passes every check (ready for Matt to send) or carries a clear hold or fail reason. Fleet bar: no new fails or holds against the baseline without Matt's yes (rule 25).
 
 ## Where things stand
-- **All code fixes are merged to main** (head `d095a9d10`): #447 price clock plus #456 failed-ask pricing, #449, #452, #453, #454, #455, #457, #466 size-mix trend (rule 30), #467 live map (rule 31), #468 stored competition/unsold rows (rule 32). Delivered letters stay frozen.
+- **Code fixes merged to main** (tip `1ca218db3`, code through `d095a9d10` plus docs #477): #447 price clock plus #456 failed-ask pricing, #449, #453, #454, #455, #457, #466 size-mix trend (rule 30), #467 live map (rule 31), #468 stored competition/unsold rows (rule 32). Delivered letters stay frozen. **Do not list #452 as merged** — it is still open.
 - **Not done yet: the saved rebuild of the unsent drafts.** About 437 drafts. A first attempt on 10/9 at 7:03 AM was STOPPED by Matt because it ran before the fixes were live. 4 drafts were saved in that run (Wild Rose, Fern Dell, Purcell, Saginaw). They lacked #447, so rebuild them again.
-- **Open PR:** #476 CI speedup (checks about 45 min down to about 10). Merge it once green.
+- **Open PRs:** #476 CI speedup (https://github.com/RyanRealty/RyanRealty/pull/476 — checks about 45 min down to about 10; merge once green). #452 ignore a same-ask pending reversal inside an hour (https://github.com/RyanRealty/RyanRealty/pull/452 — still open; needs a rule-25 fleet score before merge). Optional, not blocking rebuild: #471 admin CMA view perf / parcel index.
 - **Latest fleet scores (dry run):** price-clock 108/140 built, 23 prices moved (median 2.3%). failed-ask 109/143 (new fail cma-1235-hartford, new hold cma-140-4th; the session recommends accepting both). disclose 110/143. All runs predate #466, #467 and #468.
 
 ## Next steps, in order
@@ -42,6 +42,7 @@ Every unsent expired-listing CMA draft is rebuilt and saved on current main. Eac
 
 ## Mac mini tooling (`~/grok-build`)
 `run-session.sh` (headless grok-4.7 at xhigh), `prompts/_rules.md` (rules every session gets), `fleet-start.sh`, `jobs/*.json` manifests, and the LaunchAgent `com.ryanrealty.grok-build` (resumes unfinished jobs after a reboot). All rebuild jobs are currently marked done/stopped.
+
 
 ---
 
