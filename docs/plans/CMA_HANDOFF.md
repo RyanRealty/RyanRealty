@@ -74,6 +74,32 @@ Each was started by a cloud agent with `docs/plans/cma-handoff/fix-brief.md`.
 | `fix/relist-clock` **MERGED** (`32077999a`, SKILL rule 28) | Relisted or back-on-market homes use one clock, their last stretch. First ask comes from that stretch, and the row is labeled "after it last came on the market". The subject's first ask is the price in effect when it went Active. | wording/data |
 | `fix/plat-ground-facts` **MERGED** (`537a0b10f`, seat order included) | A recorded addition or phase in the same neighborhood is the home's own subdivision everywhere, including the facts ladder, weights, room rule, pockets, anchor, date gate and review. Rule 24. | yes |
 
+## STOPPING POINT, 2026-10-09 (cloud session ended here; start from this section)
+
+- **Landed on main:** `632b64564` with Matt's yes on the final fleet score: 108 of 140 build; 22 moves, median 2.5%; holds +2/-2; Mount Bachelor newly failing. It carries all of the 10-08 rulings plus clamp-line.
+  - First job: run `npm run deploy:verify` and confirm it is READY. Retry once on "fetch failed".
+- **Drafts:** all ten were rebuilt on 10-09 from `ecf1a1e62`, i.e. the landed code minus main's own commits. They are drafts and nothing was sent. They will be rebuilt again after step 2 below.
+- **Branches pushed, NOT merged** (merge into `claude/beautiful-lamport-2x4fjs` in this order, run the unit tests, then run a fleet score):
+  1. **`fix/price-clock` `d2ae3129c`.** Rule 16's cut test and the comp sale-to-original ratios move to the last stretch (Matt: "Yes, after this landing"). Wild Rose goes from $593,000 to $591,000.
+  2. **`fix/reader-5-engine`** (if on origin).
+     - An on-market subject's rule-15 window runs from its on-market date to the letter date.
+     - **Matt 2026-10-09 on Kelly Hill: "it's definitely going to be closer to 716. It's listed at 699 currently, and it hasn't sold."** When the window has too few local sales, a home that sat unsold through its asks counts as the local market not rising. Its own-ground sales then move down with Bend's index, which brings Kelly Hill back to about $716,000. The note under the grid must say so truthfully.
+     - Also: MLS dated fields (WithdrawDate etc.) set the day a stretch ended; "No home sold in X" replaces "matched" when zero sales; one subdivision name in text and map (never a bare MLS code like "CLAB").
+  3. **`fix/reader-5-render`** (if on origin):
+     - "What happened" chart labels must never collide;
+     - each sentence prints once per letter;
+     - the "Original list" cell says when it is the ask on the home's return;
+     - complete Jacksonville Basis sentence;
+     - River West caption matches its count;
+     - "value", not "price", on on-market letters;
+     - no mid-word address breaks;
+     - Saginaw small wording.
+
+  If a reader-5 branch is missing on origin, redo it from these bullets with `docs/plans/cma-handoff/fix-brief.md`.
+- **Then:** fleet score, Matt's yes, fast-forward main, `deploy:verify`, rebuild the ten (`npx tsx scripts/_rebuild-cma.ts <slug>`), and run reader agents with `docs/plans/cma-handoff/reader-brief.md`. Re-read all ten, including the six not re-read on 10-09 (Woodsman, Jackson, Purcell, Pheasant, Coho, Aldrich). Then send Matt the links table.
+- **Matt 2026-10-09: "Trust the MLS fields"** for room counts. 1340 Cumberland stays 3 bed even though its remarks say 2, and Jacksonville is unchanged.
+- **Open for Matt:** see "Open questions" below. Item 9 is new: main's "One rule set" doc paragraph contradicts rule 20's 25% line and the 5-sale floor.
+
 ## Late 2026-10-08 / early 10-09 status (read this before "Fleet")
 
 **Final fleet score on `3b1c7b036`** (all ruling fixes; clamp-line is wording only), against the baseline:
