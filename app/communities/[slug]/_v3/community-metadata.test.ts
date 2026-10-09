@@ -231,7 +231,8 @@ describe('SITE-177 community SERP copy', () => {
       city: 'Bend',
       stock: { listedCount: 24, types: ['homes', 'attached', 'lots'] },
     })
-    expect(input.title).toBe('Tetherow real estate | Homes for Sale')
+    expect(input.title).toBe('Tetherow real estate | Bend Homes for Sale')
+    expect(input.title.length).toBeLessThanOrEqual(46)
     expect(input.description).toMatch(/^Tetherow real estate in Bend, Oregon\./)
     expect(input.description).not.toMatch(/Active single-family homes/)
     expect(input.description).toMatch(/lots/i)
@@ -246,7 +247,8 @@ describe('SITE-177 community SERP copy', () => {
       city: 'Bend',
       stock: { listedCount: 12, types: ['homes'] },
     })
-    expect(input.title).toBe('Broken Top real estate | Homes for Sale')
+    expect(input.title).toBe('Broken Top real estate | Bend Homes for Sale')
+    expect(input.title.length).toBeLessThanOrEqual(46)
     // Sweep the registry: "real estate" everywhere. The two self-city
     // communities joined 2026-10-04, when their /cities/<slug> twins became 301s.
     const registry = (resortRegistry as { communities: Array<{ slug: string; label: string; city: string }> })
@@ -272,5 +274,98 @@ describe('SITE-177 community SERP copy', () => {
     expect(
       communitySerpTitle({ slug: 'bend-parks-at-broken-top', name: 'Parks at Broken Top', city: 'Bend' }),
     ).toBe('Parks at Broken Top Homes for Sale | Bend, OR')
+  })
+
+  it('Brasada / Tetherow / Broken Top titles keep Matt prefixes and fit 46+14', () => {
+    expect(communitySerpTitle({ slug: 'brasada-ranch', name: 'Brasada Ranch', city: 'Powell Butte' })).toBe(
+      'Brasada Ranch real estate | Homes, Lots, Agent',
+    )
+    expect(communitySerpTitle({ slug: 'tetherow', name: 'Tetherow', city: 'Bend' })).toBe(
+      'Tetherow real estate | Bend Homes for Sale',
+    )
+    expect(communitySerpTitle({ slug: 'broken-top', name: 'Broken Top', city: 'Bend' })).toBe(
+      'Broken Top real estate | Bend Homes for Sale',
+    )
+    expect(communitySerpTitle({ slug: 'black-butte-ranch', name: 'Black Butte Ranch', city: 'Sisters' })).toBe(
+      'Black Butte Ranch real estate | Homes for Sale',
+    )
+    for (const t of [
+      'Brasada Ranch real estate | Homes, Lots, Agent',
+      'Tetherow real estate | Bend Homes for Sale',
+      'Broken Top real estate | Bend Homes for Sale',
+      'Black Butte Ranch real estate | Homes for Sale',
+    ]) {
+      expect(t.startsWith(t.split(' | ')[0]!)).toBe(true)
+      expect(t.length + ' | Ryan Realty'.length).toBeLessThanOrEqual(60)
+    }
+  })
+
+  it('price-led metas bind the 12-month median and fall back when it is missing', () => {
+    const brasada = communitySerpDescription({
+      slug: 'brasada-ranch',
+      name: 'Brasada Ranch',
+      city: 'Powell Butte',
+      types: ['homes', 'lots'],
+      medianSale12: 1_412_500,
+    })
+    expect(brasada).toBe(
+      'Brasada Ranch homes sold for a median $1,412,500 over the last 12 months. Homes and lots for sale in Powell Butte, OR, with a local broker. Live MLS.',
+    )
+    expect(brasada.length).toBeLessThanOrEqual(155)
+    expect(shareDescription(brasada)).toBe(brasada)
+
+    const bbr = communitySerpDescription({
+      slug: 'black-butte-ranch',
+      name: 'Black Butte Ranch',
+      city: 'Sisters',
+      types: ['homes', 'attached', 'lots'],
+      medianSale12: 1_060_000,
+      yoyMedian: 0.047,
+    })
+    expect(bbr).toBe(
+      'Black Butte Ranch, Oregon homes sold for a median $1,060,000 over the last 12 months, up 4.7%. Homes and lots for sale near Sisters. Live MLS inventory.',
+    )
+    expect(bbr.length).toBeLessThanOrEqual(155)
+    expect(bbr).toMatch(/^Black Butte Ranch, Oregon homes/)
+
+    const tetherow = communitySerpDescription({
+      slug: 'tetherow',
+      name: 'Tetherow',
+      city: 'Bend',
+      types: ['homes', 'attached', 'lots'],
+      medianSale12: 2_257_500,
+    })
+    expect(tetherow).toBe(
+      'Tetherow homes in west Bend sold for a median $2,257,500 over the last 12 months. Homes, townhomes, and lots on a David McLay Kidd course. Live MLS.',
+    )
+
+    const broken = communitySerpDescription({
+      slug: 'broken-top',
+      name: 'Broken Top',
+      city: 'Bend',
+      types: ['homes', 'attached', 'lots'],
+      medianSale12: 1_725_000,
+    })
+    expect(broken).toBe(
+      'Broken Top homes in west Bend sold for a median $1,725,000 over the last 12 months. Gated golf community; homes, townhomes, lots for sale. Live MLS.',
+    )
+
+    const fallback = communitySerpDescription({
+      slug: 'brasada-ranch',
+      name: 'Brasada Ranch',
+      city: 'Powell Butte',
+      types: ['homes', 'lots'],
+    })
+    expect(fallback).toMatch(/^Brasada Ranch homes for sale in Powell Butte, Oregon\./)
+    expect(fallback).not.toMatch(/median/)
+
+    const noLots = communitySerpDescription({
+      slug: 'brasada-ranch',
+      name: 'Brasada Ranch',
+      city: 'Powell Butte',
+      types: ['homes'],
+      medianSale12: 1_412_500,
+    })
+    expect(noLots).not.toMatch(/\blots\b/i)
   })
 })

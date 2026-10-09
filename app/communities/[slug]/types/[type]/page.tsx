@@ -334,6 +334,9 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
                 <V3Heading level={1} size="field">
                   {headline}
                 </V3Heading>
+                <p className="place-type-claim place-type-claim--up">
+                  <a href={placeHref}>All {publicName} real estate</a>
+                </p>
                 {placeLine ? <p className="place-type-claim place-type-claim--place">{placeLine}</p> : null}
                 {claim ? (
                   <>
@@ -415,7 +418,7 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
         <V3Quiet
           ariaLabel={`${publicName} homes`}
           items={[
-            { label: `${publicName} homes for sale`, href: placeHref },
+            { label: `All ${publicName} real estate`, href: placeHref },
             { label: `Browse ${spec.nounMany} on the map`, href: '#atlas' },
             { label: 'Homes for sale', href: '#homes' },
           ]}

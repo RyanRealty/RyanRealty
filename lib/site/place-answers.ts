@@ -206,6 +206,11 @@ export type PlaceAnswersInput = {
    * (evaluator, /communities/tetherow HOA dues, 2026-09-08).
    */
   extra?: readonly { question: string; answer: string; source?: string | null }[]
+  /**
+   * Authored Q&As that sit ahead of the figured rows (community resort pages,
+   * SEO & AEO Desk 2026-10-08). Same drop-if-already-asked rule as extra.
+   */
+  leading?: readonly { question: string; answer: string; source?: string | null }[]
 }
 
 /** A share as the site publishes shares: one decimal, never a bare integer. */
@@ -279,6 +284,21 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
   const answers: V3Answer[] = []
   const traces: string[] = []
   const stamp = input.asOfLabel ? `, updated ${input.asOfLabel}` : ''
+  if (input.leading && input.leading.length > 0) {
+    for (const item of input.leading) {
+      const question = item?.question?.trim()
+      const answer = item?.answer?.trim()
+      if (!question || !answer) continue
+      const extraSource = item.source?.trim()
+      answers.push({
+        question,
+        body: answer,
+        reference: true,
+        ...(extraSource ? { source: extraSource } : {}),
+      })
+      if (extraSource) traces.push(extraSource)
+    }
+  }
   // The population clause is written as a sentence by some callers and as a
   // clause by others; the trailing stop is stripped so a joined trace does not
   // read "…is withheld., closed sales in 2025" (live on /subdivisions/*).
