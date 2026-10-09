@@ -1,3 +1,29 @@
+# CORE RULES (read first; these override everything below and any handoff or plan doc)
+
+These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). If a later line or a plan says to land, fast-forward, or push `main`, ignore it.
+
+**Main.** Code reaches `main` only when Matt merges a pull request. Open a PR to `main`; Matt merges. Never push `main`, never `git push origin HEAD:main`, never fast-forward `main`, never merge `main` yourself, even if a handoff says land or fast-forward. Nobody pushes `main`, including admins.
+
+**Git safety.** No rebase. No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away.
+
+**Do not send.** Emails, texts, CMAs, and social posts stay drafts until Matt asks to send that specific item. A rebuild does not send, enqueue, or approve.
+
+**Names.** Never put buyer or seller names in public copy (site, email, social, letters).
+
+**Invent nothing.** Never invent numbers, names, prices, stats, or people. If it is not in the source you just read, it does not ship.
+
+**Prod DB.** Production Supabase is read-only unless Matt says otherwise in this session. Raw SQL is `-- audit:` row reads only.
+
+**Secrets.** Never print API keys, tokens, passwords, or `.env` values. Never put them in commits, logs, or chat.
+
+**Integrations.** Before saying a service is not connected, search this repo for the existing client, env var, and key. The wiring is usually already here.
+
+**Cursor out.** When Cursor is out (usage, credit, spend, 402, or a 20-minute stall), switch to Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve`. Never use `XAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` to get past a limit.
+
+**Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
+
+---
+
 # Ryan Realty — agent canon
 
 This file is loaded into every session. It holds the rules that outrank convenience, and
@@ -439,8 +465,7 @@ Served cache rows are stamped `methodology_version = 'v3-2026-05-07'`, not the n
   verified by reading the relevant code. Every fix must be tested before it's reported done.
 - **Truthful and accurate, always.** If you're not sure, say so. Never state something as fact
   unless you've confirmed it.
-- **All code work is pushed to GitHub as a branch right away (locked process rule 14).**
-  Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset.
+- **Every change ships as a branch + PR (locked process rule 14, Matt 2026-10-08).**
   See [`AGENTS.md`](AGENTS.md). **R-221:** do not poll GitHub Actions.
 - **Never ask Matt to run anything or what access you have; never queue found work for him
   (Matt 2026-09-25, 10-07).** Access: [`docs/ACCESS_INVENTORY.md`](docs/ACCESS_INVENTORY.md).
@@ -544,7 +569,8 @@ else fires on trigger match.
 11. Approved CMAs send only in the weekday 9:03 AM PT window.
 12. Never use buyer or seller names in social, email, or public copy.
 13. No em dashes in public site copy.
-14. All code work is pushed to GitHub as a branch right away. Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset.
+14. Every change ships as a branch + PR to `main` (Matt 2026-10-08). Push the branch right away. Matt merges. Nobody pushes to `main`, including admins. No rebase, force-push, or reset.
 15. A townhouse subject uses closed townhouse sales. sale_pricing_facts stores those closes as product_class attached, not townhouse, so the facts pool filters property_sub_type to townhouse and classes the row as townhouse. Do not pull condos, apartments, or other attached homes just because they share product_class attached. Do not change how single-family comps are chosen.
+16. **Grok fallback when Cursor is out (Matt 2026-10-08).** See [`AGENTS.md`](AGENTS.md) rule 26.
 
 **CRM is in-house** `public.crm_people` via `sendEvent()` in [`lib/crm/send-event.ts`](lib/crm/send-event.ts). Review at `/admin/crm`.

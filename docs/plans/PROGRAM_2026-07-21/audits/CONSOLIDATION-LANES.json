@@ -369,7 +369,7 @@
    },
    {
     "topic": "deploy",
-    "rule": "npm run deploy:verify is mandatory immediately after every push to main, polling Vercel for the pushed SHA and exiting non-zero on error. Skipping straight to pushed equals done is banned.",
+    "rule": "npm run deploy:verify is mandatory immediately after Matt merges a PR to main, polling Vercel for the SHA and exiting non-zero on error. Skipping straight to pushed equals done is banned.",
     "source_path": ".cursor/rules/deploy-verify-before-done.mdc",
     "verification": "code-confirmed",
     "evidence": "deploy:verify script exists in package.json."

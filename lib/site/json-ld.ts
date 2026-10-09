@@ -3,6 +3,7 @@ import { isComingSoonStatus } from '@/lib/listing-status-public'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishListingSchemaAvailability } from '@/lib/listing/publish-listing-published-price'
+import { mergePlaceSameAs } from '@/lib/site/place-entity-same-as'
 
 /**
  * Typed schema.org JSON-LD builders for the site v2 MetadataBlock.
@@ -179,6 +180,12 @@ export type PlaceInput = {
   hasMap?: string
   /** Verified live stats (active count, median list price, etc.) surfaced as PropertyValue. */
   additionalProperty?: ReadonlyArray<StatValue>
+  /**
+   * Wikipedia / Wikidata / official-site URLs. Merged with the verified map in
+   * place-entity-same-as.ts keyed by `url`, so city and community Place nodes
+   * cite the entity even when the route forgets to pass this field.
+   */
+  sameAs?: ReadonlyArray<string>
 }
 
 /**
@@ -521,13 +528,16 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
         })),
       }
 
-    case 'place':
+    case 'place': {
+      const url = absoluteUrl(input.url)
       return prune({
         '@context': 'https://schema.org',
         '@type': input.placeType ?? 'Place',
+        '@id': url ? `${url}#place` : undefined,
         name: input.name,
         description: input.description,
-        url: absoluteUrl(input.url),
+        url,
+        sameAs: mergePlaceSameAs(input.url, input.sameAs),
         hasMap: absoluteUrl(input.hasMap),
         geo: input.geo ? {
           '@type': 'GeoCoordinates',
@@ -555,6 +565,7 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
             }))
           : undefined,
       })
+    }
 
     case 'dataset':
       return prune({

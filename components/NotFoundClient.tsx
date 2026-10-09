@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ArrowRightHugeIcon } from '@/components/icons/HugeIcons'
 import { REGIONAL_SEARCH_HREF } from '@/lib/search/publish-regional-search-href'
+import { pushDataLayerEvent } from '@/lib/analytics/ga4-browser-events'
 
 /**
  * Smart 404 body.
@@ -92,17 +93,14 @@ export function NotFoundClient() {
     } catch {
       // ignore
     }
-    const w = window as typeof window & { gtag?: (...args: unknown[]) => void }
-    if (typeof w.gtag === 'function') {
-      try {
-        w.gtag('event', 'page_not_found', {
-          page_path: window.location.pathname + window.location.search,
-          page_location: window.location.href,
-          page_referrer: document.referrer || undefined,
-        })
-      } catch {
-        // ignore
-      }
+    // GA4 through GTM's GA4 Event tag (lib/analytics/ga4-browser-events.ts);
+    // GA4 adds page_location and page_referrer itself.
+    try {
+      pushDataLayerEvent('page_not_found', {
+        page_path: window.location.pathname + window.location.search,
+      })
+    } catch {
+      // ignore
     }
     return () => {
       delete document.documentElement.dataset.notFound

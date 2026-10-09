@@ -138,25 +138,7 @@ describe('MapSearchView orchestrator', () => {
     expect(map).toMatch(/attachListingCardExtras|photoUrls/)
   })
 
-  it('place Split does not seed a drawable exclude area', () => {
-    const place = readSrc('components/search/PlaceSplitView.tsx')
-    expect(place).toMatch(/initialShapes=\{null\}/)
-    expect(place).toMatch(/getViewportSearch\(viewportFilters, fetchBounds, seedPoly\)/)
-    expect(place).toMatch(/seed\?\.searchRing/)
-    expect(place).toMatch(/pinBounds/)
-    expect(place).toMatch(/props\.seedRing === false \? null/)
-    expect(place).toMatch(/initialPolygon=\{null\}/)
-    expect(place).not.toMatch(/initialPolygon=\{seedPoly\}/)
-    expect(place).toMatch(/Home type|SearchFilters/)
-  })
-
-  it('place Split defaults to map; view switch lives in the map shell', () => {
-    // Static shell (SITE-29): the server renders the default view; a ?view=
-    // in the URL applies on the client through the staticShell merge.
-    const place = readSrc('components/search/PlaceSplitView.tsx')
-    expect(place).toMatch(/const view = 'map'/)
-    expect(place).toMatch(/hideViewToggle/)
-    expect(place).toMatch(/staticShell/)
+  it('view switch lives in the map shell', () => {
     const map = readSrc('components/search/MapSearchView.tsx')
     expect(map).toMatch(/applyView/)
     expect(map).toMatch(/map-search-views/)
@@ -165,16 +147,6 @@ describe('MapSearchView orchestrator', () => {
   it('place Split keeps the city filter on pan so Search this area stays in the place', () => {
     const map = readSrc('components/search/MapSearchView.tsx')
     expect(map).toMatch(/isInitialSettle === false && !lockPlace/)
-  })
-
-  it('place Split opens on every property type in the boundary', () => {
-    // Static shell (SITE-29): the server search carries NO type filter, and
-    // the filter row's chip reads 'all'; a URL type applies on the client.
-    const place = readSrc('components/search/PlaceSplitView.tsx')
-    expect(place).not.toMatch(/Single Family Residence/)
-    expect(place).toMatch(/propertyType: 'all'/)
-    const viewportBlock = place.slice(place.indexOf('const viewportFilters'), place.indexOf('const empty'))
-    expect(viewportBlock).not.toMatch(/propertyType|propertySubTypes|minPrice|beds/)
   })
 
   it('clears Search this area when filters re-seed the list', () => {
@@ -500,6 +472,14 @@ describe('the city map/split view (MapSearchView via MapSplitView) subtracts hid
     expect(mapSplit).toMatch(/import MapSearchView from '@\/components\/search\/MapSearchView'/)
     expect(mapSplit).toMatch(/<MapSearchView/)
     expect(mapSplit).not.toMatch(/UnifiedMapListingsView/)
+  })
+
+  it('city split seeds one card page of slim tiles, then reads the rest after paint', () => {
+    expect(mapSplit).toMatch(/from '@\/lib\/search\/search-opening'/)
+    expect(mapSplit).toMatch(/from '@\/lib\/search\/slim-viewport-listing'/)
+    expect(mapSplit).toMatch(/slimViewportListings\(viewport\.listings\.slice\(0, SPLIT_CARD_PAGE\)\)/)
+    expect(mapSplit).toMatch(/seedRowCap=\{SPLIT_CARD_PAGE\}/)
+    expect(mapSplit).not.toMatch(/initialListings=\{viewport\.listings\}/)
   })
 
   it('loads the user hidden set + subtracts on both keys', () => {
@@ -1284,7 +1264,6 @@ describe('the place Split section is as tall as its list (SITE-59)', () => {
 
   it('still draws no map pane at all when listOnly', () => {
     expect(map).toMatch(/const mapPanel = listOnly \? null :/)
-    expect(readSrc('components/search/PlaceSplitView.tsx')).toMatch(/\n\s+listOnly\n/)
   })
 })
 

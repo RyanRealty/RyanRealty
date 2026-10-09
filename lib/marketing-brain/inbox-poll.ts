@@ -37,7 +37,7 @@ import {
 import { isSenderAllowed } from './inbox-allowlist'
 import { parseInboxEmail } from './inbox-parser'
 import { dispatchParsedEmail, type InboxEvent } from './inbox-dispatcher'
-import { sendInboxReply, type ReplyContext } from './inbox-reply'
+import { sendInboxReply, MARKETING_INBOX_REQUEST_TIMEOUT_MS, type ReplyContext } from './inbox-reply'
 
 let _supabase: SupabaseClient | null = null
 
@@ -64,6 +64,7 @@ export interface PollProcessedEvent {
     | 'rejected_sender'
     | 'failed'
     | 'reply_failed'
+    | 'reply_unconfirmed'
     | 'duplicate'
   action_row_id?: string
   action_type?: string
@@ -201,6 +202,7 @@ export async function pollMarketingInbox(opts: PollOptions = {}): Promise<PollRe
   // is required for the reply layer. We try a combined client first; if
   // gmail.modify is not yet in the DWD allowlist, fall back to send-only
   // so the reply layer still works (it does not need read).
+  // inbox-auth.ts bounds the token exchange itself (GOOGLE_AUTH_TIMEOUT_MS).
   const readAuth = await getReadAuth()
   if (!readAuth.ok || !readAuth.client) {
     return {
@@ -219,7 +221,9 @@ export async function pollMarketingInbox(opts: PollOptions = {}): Promise<PollRe
     errors.push(`Send auth failed (replies will be skipped): ${sendAuth.error ?? 'unknown'}`)
   }
 
-  const gmail = google.gmail({ version: 'v1', auth: readAuth.client as JWT })
+  // The loop below handles up to `maxMessages` inside a 60 s route, so a stalled
+  // list/get/modify call fails its own message (each has a try/catch), not the tick.
+  const gmail = google.gmail({ version: 'v1', auth: readAuth.client as JWT, timeout: MARKETING_INBOX_REQUEST_TIMEOUT_MS })
   const supabase = getSupabase()
 
   let unreadList: { id: string; threadId: string }[] = []
@@ -389,7 +393,7 @@ export async function pollMarketingInbox(opts: PollOptions = {}): Promise<PollRe
         .eq('id', inboxEventId)
 
       // Reply
-      let replyOutcome: 'replied' | 'dispatched' | 'reply_failed' = 'dispatched'
+      let replyOutcome: 'replied' | 'dispatched' | 'reply_failed' | 'reply_unconfirmed' = 'dispatched'
       if (sendAuth.ok && sendAuth.client && !opts.skipReply) {
         const replyCtx: ReplyContext = {
           to_email: senderEmail,
@@ -413,7 +417,7 @@ export async function pollMarketingInbox(opts: PollOptions = {}): Promise<PollRe
                 },
         }
         const out = await sendInboxReply(sendAuth.client as JWT, replyCtx)
-        replyOutcome = out.status === 'sent' ? 'replied' : 'reply_failed'
+        replyOutcome = out.status === 'sent' ? 'replied' : out.status === 'unconfirmed' ? 'reply_unconfirmed' : 'reply_failed'
       }
 
       if (!opts.skipMarkAsRead) await safeMarkAsRead(gmail, item.id, errors)

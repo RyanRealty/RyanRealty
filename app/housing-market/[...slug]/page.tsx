@@ -55,12 +55,14 @@ import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-trut
 import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly } from '@/lib/data/market-truth/public-monthly'
 import { buildMarketFaq } from '@/lib/site/market-faq'
-import { latestSaleMedian } from '@/lib/market/latest-sale-median'
+import { latestSaleMedian, sameMonthYearBefore } from '@/lib/market/latest-sale-median'
+import { getBlogPostsBySlugs } from '@/lib/data/blog/getBlogPostsBySlugs'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { buildGeoMarketSchemas } from './_v3/geo-schemas'
 import { marketVerdict } from '@/lib/market/classify'
-import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { geoMarketLeftoverGrain, geoMarketPublishes } from '@/lib/market/geo-market-publishes'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
@@ -148,7 +150,7 @@ const loadGeoMarket = cache(async (slugKey: string) => {
   // fallback, so a `.catch(() => null)` here would only hide a real outage
   // behind a confident empty page.
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const leftoverGeo = geoType === 'neighborhood' || geoType === 'city' ? geoType : null
+  const leftoverGeo = geoMarketLeftoverGrain(geoType)
   const insightYear = Number(currentMonthKey.slice(0, 4))
   const [priceHistory, citySnapshots, timeframes, lastCompleteMonthly, blogPosts, publicSegments, publicPace, publicMix, leftoverMonthly, mtOverlays, closedSeries, cityTiles] =
     await Promise.all([
@@ -204,7 +206,7 @@ const loadGeoMarket = cache(async (slugKey: string) => {
   // Unknown-geo guard: leftover HUD miss and no leftover/cache monthly series
   // is not a place we cover. dynamicParams is true, so without this the route
   // is an infinite thin-page space.
-  const publishes = leftoverHudPublishes(hud) || chartMonths.months.length > 0
+  const publishes = geoMarketPublishes(hud, leftoverMonthly, completePriceMonths)
 
   const mosRaw = hud.monthsSupply
   const mosText = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
@@ -214,6 +216,8 @@ const loadGeoMarket = cache(async (slugKey: string) => {
   // The FAQ's sale price is the chart's latest complete month, so the two
   // cannot disagree on the same page.
   const saleMedian = latestSaleMedian(chartMonths.months, currentMonthKey)
+  // The same month a year earlier, off the same series (answer block T1, FAQ Q2).
+  const priorYearMonth = saleMedian ? sameMonthYearBefore(chartMonths.months, saleMedian.monthKey) : null
   const faq = buildMarketFaq(
     geoName,
     {
@@ -229,13 +233,38 @@ const loadGeoMarket = cache(async (slugKey: string) => {
       yoyMedianPrice: publicPace.yoyMedian,
       medianDaysToPending: hud.daysToPending,
       refreshedAt,
+      // The market page's answer set (SEO & AEO Desk brief 2026-10-08 §4b).
+      // City grain only: the same pace row the tiles print.
+      ...(isCity
+        ? {
+            priorYearMonthSalePrice: priorYearMonth?.value ?? null,
+            priorYearMonthLabel: priorYearMonth?.monthLabel ?? null,
+            medianSalePrice12mo: publicPace.medianClose,
+            medianDaysToContract12mo: publicPace.daysToContract,
+            medianDaysToClose12mo: publicPace.daysToClose,
+          }
+        : {}),
     },
   )
 
   // The short answer under the H1 (AEO, Matt 2026-10-04): this read's own
   // figures in plain sentences (lib/site/place-takeaways), the same values the
   // FAQ and the Dataset print, so the lead cannot disagree with them.
+  //
+  // City market pages get the 'market' set (brief 2026-10-08): sale price
+  // first, then the 12-month change, pace, and supply, rendered directly under
+  // the H1. Community market pages keep the place set.
   const takeaways = placeTakeaways({
+    ...(isCity
+      ? {
+          variant: 'market' as const,
+          priorYearMonthMedian: priorYearMonth ? { value: priorYearMonth.value, label: priorYearMonth.monthLabel } : null,
+          medianClose12: publicPace.medianClose,
+          closedCount12: publicPace.closedCount,
+          daysToPending90: hud.daysToPending,
+          daysToClose12: publicPace.daysToClose,
+        }
+      : {}),
     place: geoName,
     addressScope: isCity,
     asOfLabel: refreshedAt ? formatDate(refreshedAt) : null,
@@ -253,6 +282,16 @@ const loadGeoMarket = cache(async (slugKey: string) => {
   // labels was the defect that pulled it off /cities/bend the day it shipped).
   // Here it gets its own section with the population NAMED in the heading.
   const financingMix = publishes && isCity ? await getFinancingMix({ city: cityName, days: 365 }) : null
+  // The answer block's source line links that month's report only when it is
+  // published, so the link can never 404 (brief 2026-10-08 §4a, §7). One
+  // cached existence read by slug; the post itself is not loaded.
+  const reportSlug =
+    isCity && saleMedian ? `${geoSlug}-oregon-market-report-${saleMedian.monthLabel.toLowerCase().replace(/\s+/g, '-')}` : null
+  const reportPosts = reportSlug ? await getBlogPostsBySlugs([reportSlug]).catch(() => ({})) : {}
+  const answerReport =
+    reportSlug && saleMedian && reportSlug in reportPosts
+      ? { label: `${saleMedian.monthLabel} report`, href: `/blog/${reportSlug}` }
+      : null
   const insightBoard = isCity
     ? buildCityInsightBoard({
         cityName,
@@ -292,6 +331,7 @@ const loadGeoMarket = cache(async (slugKey: string) => {
     insightClause,
     insightVariables,
     takeaways,
+    answerReport,
   }
 })
 
@@ -480,6 +520,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             insightBoard={insightBoard}
             homes={homes}
             takeaways={data.takeaways}
+            answerReport={data.answerReport}
           />
         ) : (
           <CommunityMarketView
@@ -540,7 +581,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
                 })) as unknown as readonly [V3InstrumentFigure, ...V3InstrumentFigure[]]
             }
             source={v3Text(
-              `closed MLS sales through Oregon Data Share, every property type, ${cityName}, rolling 365 days, ${financingMix.totalSales.toLocaleString('en-US')} sales with a recorded financing method, normalised (a dual-format feed field; VA is word-boundary matched)`,
+              `closed MLS sales through Oregon Data Share, every property type, ${cityName}, rolling 365 days, ${financingMix.totalSales.toLocaleString('en-US')} sales with a recorded financing method. Each sale's financing type as recorded in the MLS.`,
             )}
           />
         ) : null}

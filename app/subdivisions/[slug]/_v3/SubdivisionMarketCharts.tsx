@@ -1,8 +1,8 @@
 /**
  * SubdivisionMarketCharts — the approved chart-room forms on a plat page,
  * rendered INSIDE the existing sales-history section so the page still carries
- * one market section (same rule the city page follows in
- * app/cities/[slug]/_v3/city-market-charts.tsx). Additive: the year table it
+ * one market section (the rule the city page followed while it mounted its
+ * own chart cards). Additive: the year table it
  * sits above is unchanged.
  *
  * Two cards, all drawn by the V3Chart series atom through V3ChartCard. No

@@ -29,6 +29,7 @@ import {
 import { getThreadsAccessToken, publishThreadsVideo } from '@/lib/threads'
 import { publishNextdoorPost } from '@/lib/nextdoor'
 import { assertNoDashes, DashViolationError } from '@/lib/punctuation-guard'
+import { buildTrackedUrl, isUtmCampaign, platformUtmMedium, platformUtmSource } from '@/lib/analytics/utm'
 
 /** Fan-out can exceed 60s when Meta poll finishes slowly or FB reel upload is large. */
 export const maxDuration = 300
@@ -149,43 +150,24 @@ function getSupabase() {
   return createClient(supabaseUrl, serviceRoleKey)
 }
 
-/** Per-platform utm_source values per docs/UTM_TRACKING_CONVENTION.md. */
-const PLATFORM_UTM_SOURCE: Record<Platform, string> = {
-  instagram: 'instagram',
-  facebook: 'facebook',
-  tiktok: 'tiktok',
-  youtube: 'youtube',
-  linkedin: 'linkedin',
-  google_business_profile: 'gbp',
-  x: 'x',
-  pinterest: 'pinterest',
-  threads: 'threads',
-  nextdoor: 'nextdoor',
-}
-
 /**
  * Upgrade ryan-realty.com links in a caption to platform-resolved UTM
- * attribution. publisher-sweep stamps the action identity (utm_content +
- * utm_campaign) plus a generic utm_source='social' before the payload
- * reaches this route; this fan-out point is the only place that knows which
- * platform a caption is going to, so it upgrades 'social' to the platform
- * name. A deliberate producer-set source is left alone. utm_medium becomes
- * 'social' so GA4's default channel grouping buckets the click as Organic
- * Social ('organic_post' lands in Unassigned).
+ * attribution. publisher-sweep stamps campaign + content; this fan-out
+ * point is the only place that knows which platform a caption is going to,
+ * so it always sets source/medium from the platform. A producer-set campaign
+ * that is already a stable program slug is kept.
  */
 function stampPlatformUtm(caption: string, platform: Platform): string {
   return caption.replace(/https?:\/\/(?:www\.)?ryan-realty\.com(?:\/[^\s"')]*)?/gi, (urlStr) => {
     try {
       const u = new URL(urlStr)
-      const source = u.searchParams.get('utm_source')
-      if (source === null || source === 'social') {
-        u.searchParams.set('utm_source', PLATFORM_UTM_SOURCE[platform])
-      }
-      const medium = u.searchParams.get('utm_medium')
-      if (medium === null || medium === 'organic_post') {
-        u.searchParams.set('utm_medium', 'social')
-      }
-      return u.toString()
+      const campaign = u.searchParams.get('utm_campaign')
+      return buildTrackedUrl(urlStr, {
+        source: platformUtmSource(platform),
+        medium: platformUtmMedium(platform),
+        campaign: campaign && isUtmCampaign(campaign) ? campaign : 'social-post',
+        content: u.searchParams.get('utm_content') ?? undefined,
+      })
     } catch {
       return urlStr
     }

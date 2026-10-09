@@ -35,7 +35,17 @@ const h = vi.hoisted(() => ({
 }))
 
 vi.mock('@/lib/crm/suppressions', () => ({ isSuppressed: h.isSuppressed }))
-vi.mock('@/lib/crm/quiet-hours', () => ({ inSmsQuietHours: h.inSmsQuietHours }))
+vi.mock('@/lib/crm/quiet-hours', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/crm/quiet-hours')>()),
+  inSmsQuietHours: h.inSmsQuietHours,
+}))
+// The guard's clock is smsQuietZoneFor (Pacific and the number's own zone,
+// Matt 2026-10-04). h.inSmsQuietHours still drives it: quiet means the market
+// zone holds the text. The zone rule itself is tested in recipient-timezones.test.
+vi.mock('@/lib/crm/recipient-timezones', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/crm/recipient-timezones')>()),
+  smsQuietZoneFor: (...args: unknown[]) => (h.inSmsQuietHours(...args) ? 'America/Los_Angeles' : null),
+}))
 vi.mock('@/lib/crm/idempotency', () => ({ withSendIdempotency: h.withSendIdempotency }))
 vi.mock('@/lib/data/crm/getSendTarget', () => ({ getSendTarget: h.getSendTarget }))
 vi.mock('@/lib/crm/merge', () => ({
@@ -203,25 +213,44 @@ describe('sendGovernedSms — guard order', () => {
     const res = await sendGovernedSms({ ...baseReq, overrideQuietHours: true })
     expect(res).toEqual({ ok: true, sid: 'SM123', to: '+15415551234' })
     expect(h.sendSms).toHaveBeenCalledTimes(1)
+    // The broker chose to send in quiet hours, so no 8pm expiry rides along.
+    expect(h.sendSms).toHaveBeenCalledWith(expect.objectContaining({ validUntil: undefined }))
   })
 
   it('asks quiet hours again at the POST: a 7:59pm guard pass that reaches the send after 8pm refuses', async () => {
     h.isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
-    // The guard reads the clock before the target, merge and link reads; 8pm
-    // arrives while they run.
-    h.inSmsQuietHours.mockReturnValueOnce(false).mockReturnValue(true)
+    // The guards read the clock before the merge and link reads (once with no
+    // number, once with it); 8pm arrives while those run.
+    h.inSmsQuietHours.mockReturnValueOnce(false).mockReturnValueOnce(false).mockReturnValue(true)
     wireHappySmsPath()
     const res = await sendGovernedSms(baseReq)
     expect(res).toEqual({ ok: false, stage: 'quiet-hours', error: QUIET_HOURS_ERROR })
+    expect(h.instrumentSmsLinks).toHaveBeenCalled()
     expect(h.sendSms).not.toHaveBeenCalled()
     expect(h.sendSmsViaMessagingService).not.toHaveBeenCalled()
     expect(h.inserts.filter((i) => i.table === 'crm_timeline')).toHaveLength(0)
   })
 
+  it('holds a text by the number’s own zone before any link is minted', async () => {
+    h.isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    // Open with no number (Pacific), held once the number is read.
+    h.inSmsQuietHours.mockReturnValueOnce(false).mockReturnValue(true)
+    wireHappySmsPath()
+    const res = await sendGovernedSms(baseReq)
+    expect(res).toEqual({ ok: false, stage: 'quiet-hours', error: QUIET_HOURS_ERROR })
+    expect(h.getSendTarget).toHaveBeenCalled()
+    expect(h.instrumentSmsLinks).not.toHaveBeenCalled()
+    expect(h.buildMergeContext).not.toHaveBeenCalled()
+    expect(h.sendSms).not.toHaveBeenCalled()
+  })
+
   it('happy path: merge → tracked body to Twilio, readable body + exact row shape to the timeline', async () => {
     passAllGuards()
     wireHappySmsPath()
-    const res = await sendGovernedSms(baseReq)
+    // Noon PDT, so the 8pm close below is the same local day on every run.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-06-24T19:00:00Z'))
+    const res = await sendGovernedSms(baseReq).finally(() => vi.useRealTimers())
     expect(res).toEqual({ ok: true, sid: 'SM123', to: '+15415551234' })
     // initiator.broker null → falls back to the person's assigned broker
     expect(h.brokerTwilioNumber).toHaveBeenCalledWith('rebecca')
@@ -230,7 +259,12 @@ describe('sendGovernedSms — guard order', () => {
       to: '+15415551234',
       body: 'tracked:attr:merged:hello',
       mediaUrls: undefined,
+      validUntil: expect.any(Date),
     })
+    // Under quiet hours the text carries the 8pm close, so Twilio drops it if
+    // it is still queued then (lib/crm/quiet-hours smsWindowCloseAt).
+    const { validUntil } = h.sendSms.mock.calls[0]![0] as { validUntil: Date }
+    expect(validUntil.toISOString()).toBe('2026-06-25T03:00:00.000Z') // 8:00pm PDT
     expect(h.inserts).toHaveLength(1)
     expect(h.inserts[0].table).toBe('crm_timeline')
     expect(h.inserts[0].rows).toEqual({

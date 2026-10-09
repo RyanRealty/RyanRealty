@@ -1,3 +1,29 @@
+# CORE RULES (read first; these override everything below and any handoff or plan doc)
+
+These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). If a later line or a plan says to land, fast-forward, or push `main`, ignore it.
+
+**Main.** Code reaches `main` only when Matt merges a pull request. Open a PR to `main`; Matt merges. Never push `main`, never `git push origin HEAD:main`, never fast-forward `main`, never merge `main` yourself, even if a handoff says land or fast-forward. Nobody pushes `main`, including admins.
+
+**Git safety.** No rebase. No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away.
+
+**Do not send.** Emails, texts, CMAs, and social posts stay drafts until Matt asks to send that specific item. A rebuild does not send, enqueue, or approve.
+
+**Names.** Never put buyer or seller names in public copy (site, email, social, letters).
+
+**Invent nothing.** Never invent numbers, names, prices, stats, or people. If it is not in the source you just read, it does not ship.
+
+**Prod DB.** Production Supabase is read-only unless Matt says otherwise in this session. Raw SQL is `-- audit:` row reads only.
+
+**Secrets.** Never print API keys, tokens, passwords, or `.env` values. Never put them in commits, logs, or chat.
+
+**Integrations.** Before saying a service is not connected, search this repo for the existing client, env var, and key. The wiring is usually already here.
+
+**Cursor out.** When Cursor is out (usage, credit, spend, 402, or a 20-minute stall), switch to Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve`. Never use `XAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` to get past a limit.
+
+**Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
+
+---
+
 # Agent Protocol — Ryan Realty
 
 This document tells AI coding agents (Cursor, Copilot, Windsurf, etc.) how to autonomously pick up, execute, validate, and complete development tasks on this project.
@@ -30,8 +56,9 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 11. Approved CMAs send only in the weekday 9:03 AM PT window.
 12. Never use buyer or seller names in social, email, or public copy.
 13. No em dashes in public site copy.
-14. All code work is pushed to GitHub as a branch right away. Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset.
+14. Every change ships as a branch + PR (Matt 2026-10-08). Push the branch to GitHub right away and open a PR to `main`. Matt merges. Nobody pushes to `main`, including admins. No rebase, force-push, or reset.
 15. Recommended price is the weighted price of the sales the picker kept. A closer match weighs more. A looser match stays. Location order, heaviest first, is the long-standing search order: same subdivision (weight 3), adjacent subdivisions (weight 2), the neighborhood or community (weight 1). Size and bedrooms come after that and cannot reorder it. A same-subdivision sale outweighs a similar-size neighborhood sale. An adjacent-subdivision sale sits between those two. One size cutoff, the picker's, about 35% living area. The review does not drop a picker-kept sale for a tighter size gap or a 15-year vintage wall. When the first location search is short of 3 comps, widen the closed-sale age and date range. Do not return a short set. The pull walks same subdivision, then adjacent subdivisions, then the neighborhood community, and widens the closed-sale age and date inside each before the next. After that community, distance rings start at 0.25 miles and step up by 0.25 miles. Do not open with a 1-mile ring. Do not fall back to same-zip while a closer place still has sales.
+**One rule set (Matt 2026-10-08).** There is no second review. The picker rules are the process. "One rule set. The picker's size cutoff, sales kept out to about a 35% living-area gap, is the only size cutoff. Nothing re-judges a sale the picker kept. If the first search returns fewer than 3 comps that pass, widen the closed-sale age and date range and search again. Do not return a short set with no recovery, and do not run a token-burning review that uses different cuts."
 16. An expired, canceled, or withdrawn home that did not sell was overpriced. The recommended price must come out under the last ask. A number that matches the ask, or sits over it, is wrong. The comps still set the price. Location weights stay same subdivision 3, adjacent 2, neighborhood 1, and size and bedrooms cannot reorder that. If the weighted comp price is already under the last ask, leave it. Do not add a second discount. If it is at the last ask or above it, pull it under. With no days on market and no original ask, the pull is $1,000, not a percent. When days on market or an original ask is already on the subject, start at 1% under and deepen with days on market toward 120 days. No price cut, when the original ask is known and did not come down, adds up to 2% more, so 3% at 120 days. A known price cut, or no original ask to judge a cut by, adds at most 0.5% more, so 1.5% at 120 days. The pull floors to the thousand and stays inside 3%. This is only for a home that failed to sell. Do not apply it to a normal comp sale. The hold is separate and unchanged: a rec more than 15% under last ask, or any amount over last ask, is a hold. Exactly 15% under is not a hold. Recommended price is still the house from comps only. ADU, second lot, and rental stay notes, not dollars. The under-the-ask test reads the weighted price of the sales that set the price (reconciliation.weightedPrice), not the list tier above it (Matt 2026-10-08, delegated): 3037 Purcell's sales blend to $561,188, already under the $565,000 ask, so the cover is $561,000 before the actives pull and the $576,000 list tier is not used; 62475 Woodsman's sales blend to $1,577,841, already under the $1,600,000 ask, so the cover is $1,578,000 before the actives pull and the $1,620,000 list tier is not used. When that weighted price is at or above the last ask, this pull is unchanged. The high-DOM sitting-actives pull still applies after. Held by lib/cma/failed-ask-weighted.test.ts.
 17. A seller CMA letter must not print internal search labels (including own-street-24mo and any similar slug), unfinished sentences, "the N of the M", review tokens such as pass, a list date labeled as the off-market date, or a recommendation the letter says the comps do not support. Each count says what it counts. The new-home sentence matches the table beside it. A local price per square foot that held flat and a large date cut do not both ship. A negligible-weight sale stays in the table when the price counted it, and the letter says the weight is under one percent so it barely moves the price. It is not described as the sale that set the number. A zero room adjustment is explained in plain language or omitted. No buyer or seller names. The generator refuses these shapes in lib/cma/seller-letter-copy.ts. Do not put them back. Each home on the screen cards shows one listing photo when the MLS has one. Do not strip those photos. Each sold comp field prints once on those cards. A card must not paint another card's weight column, and the room-adjustment sentence is not clipped.
 18. Sold information on a CMA includes seller concessions (or seller-paid closing costs) when the MLS already stored an amount. Comparison matrices factor that amount into the sale they adjust. A sale price that ignores a recorded concession is wrong. When the sale reported none, print none or zero; do not hide the line. Do not invent a concession amount. Adjusted matrix figures, the prices that set the recommendation, and any sold summary must use the same concession-adjusted sale.
@@ -41,6 +68,18 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 22. Community membership is the location of the address, for every community. It is not the MLS SubdivisionName and not a one-community exception. A sale belongs to the subject's community when its latitude and longitude sit inside that community boundary, or inside a plat that sits in that community, even when the MLS subdivision name is a different plat. A sale does not belong because the remarks mention the community. The search order is own subdivision, then adjacent subdivisions, then the neighborhood community, then distance. A point inside a recorded plat is a member of that community even when the MLS subdivision name differs. A remarks mention of the community or the golf course is not membership. Distance rings start at 0.25 miles and step up by 0.25 miles. Do not open with a 1-mile ring. Do not replace that order with a radius search.
 23. A recommended price under every sale that set it, or above every one of them, is not a price. The set is wrong, or the result is a hold. Do not print a number outside that set. A sale does not set the price when it is a different community than the subject, or a clearly different size or product: a house much larger or much smaller than the one living-area cutoff, a cottage versus acreage, or a different plat that is not the subject's community. A different MLS name inside the subject's community still sets the price. Community membership stays the location of the address. The search order is unchanged.
 24. Expired and FSBO intake (Matt 2026-10-05). A CMA is built when we hold a sendable owner email, or a cell number we can text. Before `createCmaRequest` and before the CRM person is created, in this order: live status, then compliance, then email, then a cell. Live status skips Active, Pending, Coming Soon, and Closed after the expiry, matched on the same address or the same parcel or taxlot. Compliance skips a litigator and a deceased owner. The litigator tag is applied only when the skip-trace says the person is a litigator. TCPA-only and a DNC phone block calls and texts. They do not block email and they do not set `compliance:hard-stop`. A sendable, non-suppressed email still builds the CMA and the send stays email. With no sendable email, a non-DNC cell whose line type is mobile, wireless, or cell builds the CMA and the send is SMS. A landline, a VOIP number, or a phone with no line type does not. An untyped listing-page phone is not a cell. A suppressed email is not used. A clean cell still builds, and that send is SMS. Nothing texts the owner from intake. The existing prospect SMS intro sends after the letter is approved. Do not put this gate in `sendCmaToLead` or `createCmaRequest`. Those also serve inbound seller and lead-form CMAs. The source of truth is `expired_listings.compliance_hard_stop` and `compliance_flags`, and the same columns on `fsbo_listings`. Every expired and FSBO send path reads them. A litigator or deceased owner sets the column so the send stays blocked. See `.cursor/rules/expired-fsbo-intake.mdc`.
+25. **UTM convention (Analytics fix 8, 2026-10-08).** Every outbound ryan-realty.com link is built with `buildTrackedUrl` in `lib/analytics/utm.ts`. One UTM set per URL (existing `utm_*` are replaced, never appended). No street addresses, person names, or per-property slugs in any `utm_*` value. Test/preview sends use `test: true` so `utm_campaign=test-<campaign>`. CMA document identity rides in first-party `rr_doc=<cmas.slug>`, not in `utm_campaign`. Details: `.cursor/rules/utm-convention.mdc`.
+
+| Param | Allowed values |
+|---|---|
+| utm_source | `crm`, `cma`, `gbp`, `facebook`, `instagram`, `x`, `youtube`, `newsletter`, `zillow`, `realtor`, `referral-<domain>` |
+| utm_medium | `email`, `sms`, `organic`, `social`, `paid_social`, `cpc`, `document`, `referral`, `qr` |
+| utm_campaign | stable program slug: `cma-letter`, `expired-outreach`, `fsbo-outreach`, `market-report-YYYY-MM`, `open-house-weekly`, `listing-launch`, plus `listing-alerts`, `gbp-profile`, `newsletter`, `social-post`, `crm-outbound` |
+| utm_content | variant: `v2`, `cta-top`, `listing-<listing_key>`, `agent-<slug>` (never an address) |
+| utm_term | paid keyword only (medium `cpc` or `paid_social`) |
+26. **Grok fallback when Cursor is out (Matt 2026-10-08).** Bots never stop because Cursor is out. When a Cursor cloud agent or CLI hits a usage, credit, spend or on-demand limit (or a 402), or stalls for 20 minutes, switch at once to the Grok CLI on Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve -p ...`, run in a fresh worktree branched from origin/main (skill: grok-fallback-when-cursor-is-out; helper: `/home/box/agent-data/tools/grok-code-pr.sh`). Never use XAI_API_KEY, ANTHROPIC_API_KEY or OPENAI_API_KEY to get past a limit. Every other rule still holds: land per rule 14, DB read-only unless Matt says otherwise, no secrets printed, no sends. Tell Matt you switched, with the exact Cursor error, and the PR link. If Grok's login is also out, stop and ask Matt to re-login. Don't wait silently.
+29. A sale the letter prints outside the price chapter says why it does not set the price (Matt 2026-10-08, delegated; 2745 Aldrich). Any closed sale printed outside the price chapter (the plat or neighborhood history list, a map, a caption) that is not one of the sales that set the price says so once, beside it, in the words the engine recorded. 2745 Aldrich's plat list led with 2764 Spring Water, $525,000, Nov 2025, 1,574 sq ft against this home's 1,201 (31% larger). Rule 20 keeps that sale out of the price, and the letter says so beside it: "1,574 sq ft, 31% larger than this home; sales more than 25% larger or smaller do not set the price." The renderer prints that recorded sentence and does not recompute the gap, the community, or the product. The walk records the sale and the reason when rule 20 refuses it (notSettingSales on the facts walk, not_setting_sales on the selection). A printed sale the walk did not record is asked of the same price-set decision, or of the set-aside record when that is why it carries no weight, and that sentence is what prints. A sale that sets the price gets no such line. The price set does not change, and PRICE_SET_SQFT_BAND does not change. Map pins that already carry a set-aside sentence are not labeled a second time. Held by lib/pricing/price-set.test.ts, lib/pricing/match.test.ts, and lib/cma/excluded-sale-note.test.ts.
+32. A stored competition or unsold row with no subdivision and no plat prints when the build drew that set on the area the letter is filtering, and a delivered or finalized letter prints the competition and unsold rows it was signed with (Matt 2026-10-09, 2902 Pinnacle and 1195 Remarkable). The render dropped every blank place and then rewrote the sentence to "0 homes" and "No other listing like yours" over five stored rivals and three unsold homes in those same plats. A blank place is the build's own area decision when the filter area is that drawn area. Otherwise the row is tested on its coordinates when the area kind can test them, and a blank with neither is still outside (2566 Keats). A delivered or finalized letter does not re-test those rows and does not restate the counts (serve-document.ts D27). A draft still drops a named subdivision outside the sales plats (rule 24, 3177 Coho). The count sentence matches the rows drawn. A new build stores subdivision, platSlug, and coordinates on every rival and unsold peer. Held by lib/cma/render-area-filter.test.ts and scripts/cma-render-audit.ts.
 
 
 `docs/EXECUTION_PLAN.md` and `docs/SITE_SPEC.md` are 2026-05-22 fossils (SITE_SPEC still describes an AgentFire WordPress cutover that already shipped). Do not execute them.
@@ -74,8 +113,8 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 
 ### Ship discipline (non-negotiable)
 
-1. **Production truth is `origin/main`.** All code work is pushed to GitHub as a branch right away. Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset. Unfinished work still gets a line in `docs/plans/CROSS_AGENT_HANDOFF.md`. Network failure is the only excuse for the branch not being on origin yet. Say that explicitly.
-2. **Production follows Git.** Pushing `main` triggers Vercel production when the diff affects the Next app; “shipped” means remote `main` is updated and, when app code changed, the production deploy is **READY** (see `.cursor/rules/deploy-verify-before-done.mdc`). Docs/skills/changelog-only pushes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
+1. **Production truth is `origin/main`.** All code work is pushed to GitHub as a branch right away. Every change ships as a branch + PR to `main`; Matt merges. Nobody pushes to `main`, including admins (Matt 2026-10-08). No rebase, force-push, or reset. Unfinished work still gets a line in `docs/plans/CROSS_AGENT_HANDOFF.md`. Network failure is the only excuse for the branch not being on origin yet. Say that explicitly.
+2. **Production follows Git.** Pushing `main` triggers Vercel production when the diff affects the Next app; “shipped” means Matt merged the PR and remote `main` is updated and, when app code changed, the production deploy is **READY** (see `.cursor/rules/deploy-verify-before-done.mdc`). Docs/skills/changelog-only pushes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
 3. **No hanging migrations.** New files under `supabase/migrations/` are not real until they run on **hosted** Supabase. Apply them in the **same delivery effort** as the code that needs them — never “commit now, migrate later” (`.cursor/rules/supabase-migrations-auto.mdc`, `.cursor/rules/production-parity.mdc`).
 4. **Branch, then push.** Day-to-day edits go on a branch from current `origin/main` and that branch is pushed to GitHub right away. Use linked worktrees for parallel agents, not as a silent parking lot. See **Worktrees** below.
 
@@ -83,13 +122,13 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 
 July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change *when* and *what* you push:
 
-1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit on the branch**, `NODE_OPTIONS=--max-old-space-size=8192 npm run push` (pushes that branch, not `main`), then `npm run deploy:verify` when the user-facing app changed and `main` has the fast-forward.
+1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit on the branch**, `NODE_OPTIONS=--max-old-space-size=8192 npm run push` (pushes that branch, not `main`), then `npm run deploy:verify` when the user-facing app changed and Matt has merged the PR.
 2. **Docs / skills / rules / plans / handoffs only** → **batch into one commit**, then push once. Local `npm run push` already skips `next build` for non-buildable diffs; Vercel skips the remote build via `ignoreCommand`. Do not drip many docs commits that each burn local `ci:gates`.
 3. **Do not push mid-thought.** Commit locally while iterating if you need a restore point; push when the unit of work is coherent.
 4. **Ship class (fleet / loop):** same-category bot findings share one isolated verify + one production deploy. `loop-brief` prints the class. Do not run `npm run push` after each finding.
 5. **R-221 — do not poll GitHub Actions.** One `ci:gates` per ship. After a green local stamp + push, stop. Do not `gh run view` in a loop. Do not rematch `origin/main` unless GitHub says CONFLICTING. Live-DB int tests are nightly (`test:int`), not a reason to sit idle.
 6. **Release / changelog:** GitHub Releases carry the notes. Do not recreate a `chore: update changelog` commit on `main` — that path burned hundreds of full production builds.
-7. **Worktree branches:** push them to GitHub right away. Do not keep the only copy local. Do not merge them to `main` yourself. Land main with a fast-forward when the work is ready. Any machine may do it.
+7. **Worktree branches:** push them to GitHub right away. Do not keep the only copy local. Do not merge them to `main` yourself. Open a PR to `main`; Matt merges.
 
 ### Worktrees (allowed — design against stranded work)
 
@@ -227,6 +266,8 @@ Required details:
 | CRM | In-house (`public.crm_people`). |
 | Data Feed | Spark/MLS API |
 
+**GA4 / automation browsers.** Any script that opens our site (ryan-realty.com, localhost, 127.0.0.1, `*.vercel.app`) in a browser sets `rr_automation=1` and `rr_internal=1` before the first page load and never grants analytics consent; use `scripts/lib/marked-playwright.mjs`.
+
 ### Running Locally
 
 ```bash
@@ -276,12 +317,36 @@ All rules in `.cursor/rules/` are mandatory. Key rules:
 | `sliders-no-scrollbars.mdc` | Arrow navigation, no visible scrollbars on carousels |
 | `master-plan-protocol.mdc` | File ownership matrix enforcement |
 
+### Firm facts (one number per fact, Matt 2026-10-08)
+
+- **Founded 2014, everywhere.** JSON-LD `foundingDate` is `BRAND.llcSince` ("2014"). Prose says
+  "Matt Ryan founded Ryan Realty in 2014" (Matt confirmed the wording 2026-10-08; never tie 2014
+  to the LLC filing) and "opened the Bend office in June 2023". June 2023
+  (`BRAND.bendOfficeOpened`, the OREA affiliation date) is the Bend office, never the founding.
+- **Firm closings: one headline count.** Every closed MLS sale where a Ryan Realty broker was the
+  listing or buyer's broker, once per ListingKey, any area (`app/team/_v3/firm-record.ts`). A
+  977-zip subset is printed only as "N in Central Oregon". Never sum per-broker counts; never
+  label closings as "clients served".
+- **License 201253677 is a "registered business name" license** (OREA License Lookup), not a
+  "firm license" (`BRAND.firmLicense`). No new "licensed since" year or year count: the issue
+  date is not on the lookup.
+- **Hand-counted facts carry their count date** (review themes, neighborhood names): print the
+  date they were counted, and re-count when the underlying total moves.
+- **Counts bind live.** Never hard-code a closings or review count in copy; read it from the
+  record on render, and re-check it against live data on the day a change ships.
+- **Public copy never says who Ryan Realty is not a fit for** (Matt 2026-10-08: "we're the right
+  fit for every single person"). Say who we help; no "not the right fit" lists or fit/no-fit framing.
+
 ### Design System (Zero Exceptions)
 
 - **Components**: Only use shadcn/ui from `@/components/ui/`. See `CLAUDE.md` for the full mapping.
 - **Colors**: Only semantic tokens (`bg-primary`, `text-foreground`, `border-border`). No hex, no `bg-white`, no `bg-gray-*`.
 - **Utilities**: Use `cn()` from `@/lib/utils` for conditional classes.
 - **Fonts**: Geist Sans (`font-sans`) and Geist Mono (`font-mono`) only.
+
+### Browser analytics events (locked, Matt 2026-10-08)
+
+- Browser events reach GA4 only through GTM's GA4 Event tag: push them with `trackEvent()` / `pushDataLayerEvent()` (`lib/analytics/ga4-browser-events.ts`), never `gtag('event', …)` for GA4, and add a new event name to `GA4_BROWSER_EVENTS` plus the GTM steps in `docs/GTM_GA4_BROWSER_EVENTS.md` (Matt publishes GTM). Held by `lib/analytics/ga4-browser-events.test.ts`.
 
 ### Server Actions
 
@@ -396,9 +461,9 @@ NODE_OPTIONS=--max-old-space-size=8192 npm run push   # the branch, not main
 
 `orchestrate.ts complete` is retired. The work graph updates from loop/sentinel, not from that CLI.
 
-## CRITICAL: Push the branch, then fast-forward `main` when the work is ready.
+## CRITICAL: Push the branch and open a PR. Matt merges. Nobody pushes `main`.
 
-**Production deploys from `main` only. Land `main` with a fast-forward when the work is ready. Any machine may do it.** Routine work: commit on a branch from current `origin/main` and `npm run push` that branch. Do not merge, rebase, force-push, or reset. Do not leave the only copy of valued work unpushed. Unfinished work gets a line in `CROSS_AGENT_HANDOFF.md`.
+**Production deploys from `main` only. Every change reaches `main` only through a PR that Matt merges. Nobody pushes to `main`, including admins (Matt 2026-10-08).** Routine work: commit on a branch from current `origin/main` and `npm run push` that branch, then open a PR to `main`. Do not merge, rebase, force-push, or reset. Do not leave the only copy of valued work unpushed. Unfinished work gets a line in `CROSS_AGENT_HANDOFF.md`.
 
 ```bash
 # DEFAULT: push the branch, not main

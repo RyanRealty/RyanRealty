@@ -117,10 +117,14 @@ if (lp) {
     /leadSourceUrl/.test(lp) && /utm_content/.test(lp))
 }
 
-// 6. Buyer attribution mirrors the seller round-trip: the buyer LP forwards utm
-//    into the FUB sourceUrl, and buyer-lead-attribution recovers it + increments
-//    north_star_attributed_buyer_leads. Without the LP passthrough the buyer
-//    north-star can never move off zero (the buyer LP used to send a bare URL).
+// 6. Buyer attribution mirrors the seller round-trip: the buyer LP turns the
+//    visitor's utm into channel:/campaign:/ad-content: tags, and
+//    buyer-lead-attribution matches them + increments
+//    north_star_attributed_buyer_leads. Without the LP's tags the buyer
+//    north-star can never move off zero. The live buyer LP is /buy/[intent]
+//    (app/actions/lead-landing.ts). This check read /lp/buyer-listing-alerts'
+//    action until 2026-10-04, a file with no caller since that page became a
+//    redirect, while the live form stamped no tag.
 const battr = read('app/api/cron/buyer-lead-attribution/route.ts')
 check('buyer-lead-attribution/route.ts is missing', battr !== null)
 if (battr) {
@@ -129,11 +133,11 @@ if (battr) {
   check('buyer-lead-attribution must increment north_star_attributed_buyer_leads',
     /north_star_attributed_buyer_leads/.test(battr))
 }
-const blp = read('app/lp/buyer-listing-alerts/actions.ts')
-check('buyer LP actions.ts is missing', blp !== null)
+const blp = read('app/actions/lead-landing.ts')
+check('buyer LP action app/actions/lead-landing.ts is missing', blp !== null)
 if (blp) {
-  check('buyer LP must forward inbound utm into the FUB sourceUrl (leadSourceUrl)',
-    /leadSourceUrl/.test(blp) && /utm_content/.test(blp))
+  check('buyer LP must stamp paid-attribution tags from the visitor utm (resolvePaidAttributionTags with lp_content, passed as extraTags)',
+    /resolvePaidAttributionTags\(\{[\s\S]{0,300}?lp_content/.test(blp) && /extraTags:\s*paidTags/.test(blp))
 }
 const vercelBuyer = read('vercel.json')
 if (vercelBuyer) {
@@ -150,7 +154,7 @@ if (failures.length === 0) {
   console.log('  performance-pull-48h/7d/30d -> read published_to, normalize platform, upsert (action_id,platform)')
   console.log('  3 pulls scheduled in vercel.json')
   console.log('  fetchMetaPostMetrics implemented')
-  console.log('  attribution parses utm from sourceUrl; LP forwards it')
+  console.log('  attribution matches the LPs\' ad-content:/campaign: tags; both LPs stamp them')
   process.exit(0)
 }
 console.log(`BROKEN — ${failures.length} measurement-loop invariant(s) violated:\n`)

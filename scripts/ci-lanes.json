@@ -17,6 +17,7 @@
     "ci:close-date-window",
     "ci:dal-internal-discipline",
     "ci:db-timeout-guard",
+    "ci:google-deadline",
     "ci:deliverable-send-chokepoint",
     "ci:email-link-tracking",
     "ci:email-send-gated",
@@ -125,6 +126,7 @@
     "ci:handoff-current",
     "ci:process-canon",
     "ci:claude-canon",
+    "ci:core-rules-prefix",
     "ci:loop-skills-canon"
   ],
   "path": {

@@ -26,6 +26,7 @@
  */
 
 import { google } from 'googleapis'
+import { answeredStatus, GOOGLE_AUTH_TIMEOUT_MS, withAuthDeadline, withDeadline } from '@/lib/google-deadline'
 
 /** drafts.create requires gmail.modify | gmail.compose | full mail. gmail.modify is the one
  *  that's actually allowlisted for our service account (verified 2026-05-29). */
@@ -39,8 +40,8 @@ export const GMAIL_SEND_SCOPE = 'https://www.googleapis.com/auth/gmail.send'
 export const DEFAULT_DRAFT_USER =
   process.env.GOOGLE_SERVICE_ACCOUNT_SUBJECT?.trim() || 'matt@ryan-realty.com'
 
-/** Deadline for the service-account token exchange, which normally takes well under a second. */
-export const GMAIL_AUTH_TIMEOUT_MS = 10_000
+/** Deadline for the service-account token exchange (lib/google-deadline.ts, shared by every Google client). */
+export const GMAIL_AUTH_TIMEOUT_MS = GOOGLE_AUTH_TIMEOUT_MS
 
 /**
  * Per-request deadline for drafts.create and messages.send. Generous, because a
@@ -90,33 +91,10 @@ function buildJwt(subject: string, scopes: string[] = [GMAIL_DRAFT_SCOPE]) {
       'GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY missing',
     )
   }
-  return new google.auth.JWT({
-    email: clientEmail,
-    key: privateKey.replace(/\\n/g, '\n'),
-    scopes,
-    subject,
-    // google-auth-library gives the token request no timeout of its own, so a
-    // stalled token endpoint would hold it open forever. Gmail calls set their own.
-    transporterOptions: { timeout: GMAIL_AUTH_TIMEOUT_MS },
-  })
-}
-
-/**
- * Reject when `work` has not settled within `ms`. The timer is always cleared,
- * so a fast call leaves nothing ticking.
- */
-function withDeadline<T>(work: Promise<T>, ms: number, what: string): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const deadline = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`${what} timed out after ${ms / 1000}s`)), ms)
-  })
-  return Promise.race([work, deadline]).finally(() => clearTimeout(timer))
-}
-
-/** The HTTP status Gmail answered with, or null when no answer came back (timeout, dropped connection). */
-function answeredStatus(e: unknown): number | null {
-  const status = (e as { response?: { status?: unknown } } | null)?.response?.status
-  return typeof status === 'number' ? status : null
+  // The JWT carries the auth deadline; Gmail calls set their own.
+  return new google.auth.JWT(
+    withAuthDeadline({ email: clientEmail, key: privateKey.replace(/\\n/g, '\n'), scopes, subject }),
+  )
 }
 
 /** RFC 2047 encode a header value only if it contains non-ASCII. */

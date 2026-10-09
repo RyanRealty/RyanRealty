@@ -150,6 +150,7 @@ import {
   getPlatFamilyFootprint,
 } from '@/lib/data/subdivisions/getPlatFamilyFootprint'
 import { platFamilyDisplayName, platFamilyRole } from '@/lib/market/plat-family'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 import {
   familyClosedTrace,
   familyCrumb,
@@ -1378,7 +1379,10 @@ async function renderSubdivisionPage({ params }: Props) {
     lifestyleItems: lifestyleForCentroid(platCentroid),
     peerPlats: peerPlatsForResort(resortSlug, slug),
     browseHref,
-    marketHref: citySlug ? `/housing-market/${citySlug}/${slug}` : '/housing-market',
+    // leftoverGeo is never subdivision on /housing-market/[city]/[slug]
+    // (lib/market/geo-market-publishes), so a plat report never publishes.
+    // Link the city report instead of a hollow two-segment shell.
+    marketHref: citySlug ? cityMarketPath(citySlug) : '/housing-market',
     pagePath: `/subdivisions/${slug}`,
   })
 

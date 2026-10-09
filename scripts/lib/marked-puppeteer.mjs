@@ -5,17 +5,24 @@
  *
  *   import puppeteer from './lib/marked-puppeteer.mjs'
  *
- * `launch` and `connect` return the real Browser with the marker cookie set on
+ * `launch` and `connect` return the real Browser with the marker cookies set on
  * its default context; `createBrowserContext` marks each new context too.
  */
 import puppeteerCore from 'puppeteer-core'
-import { markerCookies } from './automation-marker.mjs'
+import { markerCookies, plantFlagsScript } from './automation-marker.mjs'
 
 async function mark(target) {
   try {
     await target.setCookie(...markerCookies())
   } catch (err) {
     console.warn('[marked-puppeteer] could not set the automation marker:', err?.message ?? err)
+  }
+  try {
+    if (typeof target.evaluateOnNewDocument === 'function') {
+      await target.evaluateOnNewDocument(plantFlagsScript())
+    }
+  } catch (err) {
+    console.warn('[marked-puppeteer] could not plant page flags:', err?.message ?? err)
   }
   return target
 }

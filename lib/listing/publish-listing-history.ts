@@ -192,10 +192,17 @@ export function publishListingLastDrop(
     const key = normalizeEvent(row.event)
     if (key !== 'pricechange' && key !== 'pricedrop') continue
     const change = row.price_change
-    if (change != null && change < 0 && Number.isFinite(change)) {
-      const amount = Math.round(Math.abs(change))
-      return { amount, label: `Price drop ${formatPriceCompact(amount)}` }
-    }
+    if (change == null || !Number.isFinite(change)) continue
+    // A RISE NEWER THAN THE CUT ENDS THE SEARCH (2026-09-11) — the same rule
+    // publishListingDropMark applies, for the same reason and on the same
+    // rows. These two must agree: the mark draws the cut and this labels it,
+    // so if one reaches past a price increase and the other does not, the page
+    // shows a badge naming a cut the mark refuses to draw. Newest-first, the
+    // first real price action decides; a rise means no cut is current.
+    if (change > 0) return null
+    if (change === 0) continue
+    const amount = Math.round(Math.abs(change))
+    return { amount, label: `Price drop ${formatPriceCompact(amount)}` }
   }
   return null
 }

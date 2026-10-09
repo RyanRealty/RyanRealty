@@ -84,7 +84,7 @@ import {
   type PricingPageInput,
 } from '@/lib/cma/render-pricing-page'
 import { lotDifferenceSentence } from '@/lib/cma/lot-disclosure'
-import { activeRivalsFor, competitionSetWithoutSubject, unsoldPeersFor } from '@/lib/cma/matrix-sets'
+import { activeRivalsFor, competitionSetWithoutSubject, letterIsFrozen, unsoldPeersFor } from '@/lib/cma/matrix-sets'
 import { letterProductMatch, productClass } from '@/lib/cma/market-area'
 import { realSubdivisionName } from '@/lib/pricing/classes'
 import { namedSalesPlace, salesAreaIsBounded } from '@/lib/pricing/comp-area'
@@ -98,7 +98,8 @@ import {
 } from '@/lib/cma/matrix-entry'
 import { renderMatrixHtml, subjectListingFailed, subjectPrintableAsk } from '@/lib/cma/comp-matrix'
 import { compAreaSentence } from '@/lib/cma/matrix-sets'
-import { setAsideCompIndexes, setAsideSalePredicate } from '@/lib/cma/set-aside'
+import { readSetAsideSales, setAsideCompIndexes, setAsideSalePredicate } from '@/lib/cma/set-aside'
+import { excludedSaleReason } from '@/lib/cma/excluded-sale-note'
 import { statusPriceBoardHtml, statusPriceSummaries, splitActivePending } from '@/lib/cma/status-price-summary'
 import type { LikeHomeCredit } from '@/lib/cma/like-home-credits'
 import { sellerCostLines } from '@/lib/pricing/seller-net'
@@ -217,6 +218,13 @@ export type OpinionPageArgs = {
   documentStatus?: string | null
   /** Credits homes like this one actually gave. Drafts only. */
   likeHomeCredits?: Pick<LikeHomeCredit, 'sentence' | 'source'> | null
+  /**
+   * Sales rule 20 refused, with the sentence the walk recorded (SKILL §0.3
+   * rule 29). The street list prints that sentence beside a sale that is not
+   * in the price set. Absent on letters built before the field landed; the
+   * note then asks the same price-set decision.
+   */
+  excludedSaleNotes?: import('@/lib/pricing/price-set').NotSettingSale[] | null
 }
 
 
@@ -291,6 +299,8 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
         subject: a.subject,
         peers: a.expiredPeers?.peers ?? a.extras?.marketArea?.expiredPeers,
         area: a.compArea,
+        buildArea: a.expiredPeers?.area ?? null,
+        frozen: letterIsFrozen(a.documentStatus),
       }),
       a.docLinks ?? null,
       a.subject.city,
@@ -301,6 +311,7 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
         a.bandRivals?.rivals ?? a.extras?.band?.rivals,
         a.subject,
         a.compArea ?? a.bandRivals?.area,
+        { buildArea: a.bandRivals?.area ?? null, frozen: letterIsFrozen(a.documentStatus) },
       ),
       a.docLinks ?? null,
       a.subject.city,
@@ -386,7 +397,8 @@ export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
     rivals: activeRivalsFor(
       a.bandRivals?.rivals ?? a.extras?.band?.rivals,
       a.subject,
-      a.bandRivals?.area ?? a.compArea,
+      a.compArea ?? a.bandRivals?.area,
+      { buildArea: a.bandRivals?.area ?? null, frozen: letterIsFrozen(a.documentStatus) },
     ).map((r) => ({
       address: r.address,
       yearBuilt: r.yearBuilt ?? null,
@@ -1560,6 +1572,13 @@ function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): stri
   const recent = [...(a.subdivisionStory?.notableSales ?? [])]
     .filter((n) => n.address.trim())
     .slice(0, 4)
+  // The price chapter's setters. A history sale that is one of them gets no
+  // extra line. A sale printed here that did not set the price says so once,
+  // beside the chip, in the words the engine recorded (rule 29).
+  const weighed = gridSales(a)
+  const asideIndexes = setAsideCompIndexes(weighed.pricing, weighed.comps)
+  const setters = weighed.comps.filter((_, i) => !asideIndexes.has(i))
+  const setAside = readSetAsideSales(weighed.pricing)
   const links = recent
     .map((n) => {
       // THE SALE'S OWN LISTING PAGE. `trackedDocLink('listing', …)` falls back
@@ -1585,9 +1604,18 @@ function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): stri
       // month it closed: 2745 Aldrich's "2757 Aldrich $550,000" was a March
       // 2022 sale printed beside current numbers (reader review 2026-10-08).
       const when = streetSaleMonth(n.closeDate)
-      return `<a class="street-sale" href="${esc(href)}" data-rr-track="cma-street-sale">${esc(
+      const chip = `<a class="street-sale" href="${esc(href)}" data-rr-track="cma-street-sale">${esc(
         n.address,
       )} <span class="n">${usd(n.closePrice)}</span>${when ? ` <span class="d">${esc(when)}</span>` : ''}</a>`
+      const why = excludedSaleReason({
+        sale: n,
+        subject: a.subject,
+        setters,
+        setAside,
+        notes: a.excludedSaleNotes,
+      })
+      if (!why) return chip
+      return `<span class="street-sale-wrap">${chip}<span class="street-sale-why">${esc(why)}</span></span>`
     })
     .join('')
   const sub = (text: string) =>
@@ -2236,7 +2264,11 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
         (drawnActive >= COMPETITION_SHOWN_CAP &&
           b.activeCount > drawnActive &&
           stored.startsWith(`${nearestOpening(drawnActive)} `))
-  const useStored = stored.length > 0 && sameRows && forSaleAgrees
+  // A signed letter keeps the sentence it was built with when the rows drawn
+  // are the rows it stored. The area total can sit above the capped table
+  // ("13 homes... The nearest four") without the render restating it as the
+  // drawn count alone (1195 Remarkable, delivered, Matt 2026-10-09).
+  const useStored = stored.length > 0 && sameRows && (forSaleAgrees || letterIsFrozen(a.documentStatus))
   const sentence = useStored
     ? storedCompetitionSentenceToday(stored)
     : competitionSentence({
@@ -2404,7 +2436,10 @@ export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
     hi: b.hi,
     activeCount: b.activeCount,
     pendingCount: b.pendingCount,
-    rivals: activeRivalsFor(b.rivals, a.subject, a.compArea ?? a.bandRivals?.area),
+    rivals: activeRivalsFor(b.rivals, a.subject, a.compArea ?? a.bandRivals?.area, {
+      buildArea: a.bandRivals?.area ?? null,
+      frozen: letterIsFrozen(a.documentStatus),
+    }),
     docLinks: a.docLinks ?? null,
     recommendedList: a.pricing.recommended,
     asOfIso: a.generatedAtIso,

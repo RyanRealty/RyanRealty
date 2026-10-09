@@ -186,23 +186,3 @@ export async function getSubdivisionCounts(geoSlug: string): Promise<Subdivision
   const results = await getMetrics(subdivisionCountInputs(slug))
   return parseSubdivisionCounts(results)
 }
-
-/**
- * Counts for MANY plats in ONE metric read — the parent-ledger path
- * ("Subdivision 1 has 5 townhomes" needs every child's counts). Returns a map
- * keyed by the normalized slug; a slug with no rows maps to empty counts.
- */
-export async function getSubdivisionCountsForSlugs(
-  geoSlugs: readonly string[],
-): Promise<Map<string, SubdivisionCounts>> {
-  const slugs = [...new Set(geoSlugs.map((s) => s.trim().toLowerCase()).filter(Boolean))]
-  const out = new Map<string, SubdivisionCounts>()
-  if (slugs.length === 0) return out
-  const perSlug = subdivisionCountInputs(slugs[0]!).length
-  const inputs = slugs.flatMap((slug) => subdivisionCountInputs(slug))
-  const results = await getMetrics(inputs)
-  slugs.forEach((slug, i) => {
-    out.set(slug, parseSubdivisionCounts(results.slice(i * perSlug, (i + 1) * perSlug)))
-  })
-  return out
-}

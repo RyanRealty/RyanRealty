@@ -47,6 +47,7 @@ import { sendGmailMessage } from '@/lib/gmail-draft'
 import { composeCmaFirstContact, streetOnly, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { acquireCmaProspectLease, type CmaProspectLease } from '@/lib/cma/prospect-send-claim'
+import { isInternalRecipientEmail } from '@/lib/email/internal-recipient'
 import { cmaFirstContactFactsForSend, cmaSendBrokerSlug } from '@/lib/cma/first-contact-for-send'
 import { paragraphsForLetterBody, paragraphsToPlain, renderCmaLetterBlock } from '@/lib/cma/first-contact-render'
 import { screenAddressForSolicitation } from '@/lib/cma/solicit-screen'
@@ -616,6 +617,7 @@ async function deliverCmaToLead(
     // open and click landed unattributed in email_events and crm_timeline, and
     // per-broker engagement could not see them.
     broker: crmBrokerSlug,
+    test: isInternalRecipientEmail(ctx.clientEmail),
   })
 
   // Primary rail: the signing broker's real mailbox (same DWD transport the

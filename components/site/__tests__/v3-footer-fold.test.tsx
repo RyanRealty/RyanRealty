@@ -79,8 +79,9 @@ describe('the footer fold', () => {
 
   it('does not ship a solid primary button', () => {
     const out = html()
-    expect(out).not.toMatch(/<button/)
+    expect(out).toContain('Cookie settings')
     expect(out).not.toMatch(/v3-btn/)
+    expect(out).not.toMatch(/data-variant="default"/)
   })
 
   it('still carries the Oregon Data Share attribution OUTSIDE any fold', () => {

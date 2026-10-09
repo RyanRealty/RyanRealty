@@ -19,9 +19,18 @@
  *     is a "call" under the TCPA). The suppression mapping for
  *     `contact:do-not-call` must include the 'sms' channel.
  *
+ *  4. Every sendSms / sendSmsViaMessagingService call passes `validUntil`
+ *     (2026-09-25). Under quiet hours that is smsWindowCloseAt(), 8:00pm local,
+ *     which Twilio enforces as the message's ValidityPeriod: a text still in
+ *     Twilio's queue at 8pm is dropped, not delivered after Oregon's cutoff
+ *     (ORS 646.563). Only texts to a broker's own phone are exempt, each named
+ *     below with why. Group threads go through the Conversations API, which has
+ *     no ValidityPeriod, so they rely on the send-time quiet-hours check alone.
+ *
  * Usage: node scripts/check-crm-sms-channel-safety.mjs
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 
 const ENGINE = 'app/api/cron/crm-sequence-engine/route.ts'
 const RELAY = 'scripts/crm-alert-relay.mjs'
@@ -123,9 +132,69 @@ if (suppress && (!dncLine || !/'sms'/.test(dncLine[1]))) {
   )
 }
 
+// ── 4. every Twilio text carries the 8pm bound (validUntil) ─────────────────
+const BROKER_ONLY_SENDS = new Map([
+  ['app/api/twilio/inbound-sms/route.ts', "forwards an inbound text to the broker's own cell"],
+  ['lib/agent/send.ts', 'the SMS agent answers a whitelisted broker cell only'],
+])
+
+function sourceFiles(dir, acc = []) {
+  let entries
+  try {
+    entries = readdirSync(dir, { withFileTypes: true })
+  } catch {
+    return acc
+  }
+  for (const e of entries) {
+    const p = join(dir, e.name)
+    if (e.isDirectory()) {
+      if (e.name === 'node_modules' || e.name.startsWith('.')) continue
+      sourceFiles(p, acc)
+    } else if (/\.tsx?$/.test(e.name) && !/\.(test|spec)\.tsx?$/.test(e.name) && !e.name.endsWith('.d.ts')) {
+      acc.push(p.split('\\').join('/'))
+    }
+  }
+  return acc
+}
+
+/** The `{ ... }` argument of the call whose `(` sits at `open`, by brace depth. */
+function callObject(src, open) {
+  const start = src.indexOf('{', open)
+  if (start !== open + 1) return null
+  let depth = 0
+  for (let i = start; i < src.length; i++) {
+    if (src[i] === '{') depth++
+    else if (src[i] === '}' && --depth === 0) return src.slice(start, i + 1)
+  }
+  return null
+}
+
+let boundedSends = 0
+for (const file of [...sourceFiles('app'), ...sourceFiles('lib')]) {
+  const src = read(file)
+  const calls = [...src.matchAll(/\b(sendSms|sendSmsViaMessagingService)\(/g)]
+  for (const m of calls) {
+    const open = m.index + m[0].length - 1
+    const arg = callObject(src, open)
+    if (arg == null) continue // a definition, a reference, or a non-literal argument
+    const line = src.slice(0, m.index).split('\n').length
+    if (BROKER_ONLY_SENDS.has(file)) continue
+    if (!/\bvalidUntil\b/.test(arg)) {
+      fails.push(
+        `${file}:${line}: ${m[1]}(...) passes no validUntil. A text under quiet hours must hand ` +
+          `Twilio smsWindowCloseAt() (ValidityPeriod) so it cannot reach a phone after 8pm. ` +
+          `If this text only ever goes to a broker's own phone, name it in BROKER_ONLY_SENDS with why.`,
+      )
+    } else boundedSends++
+  }
+}
+if (boundedSends === 0) {
+  fails.push('No sendSms / sendSmsViaMessagingService call carries validUntil: rule 4 found nothing to check, so its scan is broken.')
+}
+
 if (fails.length) {
   console.error('✗ crm-sms-channel-safety FAILED:\n')
   for (const f of fails) console.error('  • ' + f + '\n')
   process.exit(1)
 }
-console.log('✓ crm-sms-channel-safety: lead SMS never routes through iMessage; relay whitelisted; do-not-call suppresses SMS.')
+console.log(`✓ crm-sms-channel-safety: lead SMS never routes through iMessage; relay whitelisted; do-not-call suppresses SMS; ${boundedSends} Twilio sends carry the 8pm bound.`)

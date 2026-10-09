@@ -797,35 +797,30 @@
 }
 
 .listing-face__keep[data-slot='button-group'],
-.listing-face__ask[data-slot='button-group'],
-.listing-detail .listing-mobile-cta [data-slot='button-group'] {
+.listing-face__ask[data-slot='button-group'] {
   gap: 0 !important;
 }
 
 .listing-face__keep > [data-slot='button'],
-.listing-face__ask > [data-slot='button'],
-.listing-detail .listing-mobile-cta [data-slot='button-group'] > [data-slot='button'] {
+.listing-face__ask > [data-slot='button'] {
   margin: 0 !important;
   border-radius: 0 !important;
 }
 
 .listing-face__keep > [data-slot='button']:first-child,
-.listing-face__ask > [data-slot='button']:first-child,
-.listing-detail .listing-mobile-cta [data-slot='button-group'] > [data-slot='button']:first-child {
+.listing-face__ask > [data-slot='button']:first-child {
   border-top-left-radius: var(--radius-lg, 0.5rem) !important;
   border-bottom-left-radius: var(--radius-lg, 0.5rem) !important;
 }
 
 .listing-face__keep > [data-slot='button']:last-child,
-.listing-face__ask > [data-slot='button']:last-child,
-.listing-detail .listing-mobile-cta [data-slot='button-group'] > [data-slot='button']:last-child {
+.listing-face__ask > [data-slot='button']:last-child {
   border-top-right-radius: var(--radius-lg, 0.5rem) !important;
   border-bottom-right-radius: var(--radius-lg, 0.5rem) !important;
 }
 
 .listing-face__keep > [data-slot='button'] + [data-slot='button'],
-.listing-face__ask > [data-slot='button'] + [data-slot='button'],
-.listing-detail .listing-mobile-cta [data-slot='button-group'] > [data-slot='button'] + [data-slot='button'] {
+.listing-face__ask > [data-slot='button'] + [data-slot='button'] {
   margin-left: -1px !important;
   border-left-width: 0 !important;
 }
@@ -835,6 +830,44 @@
 
 .listing-face__keep .v3-btn {
   width: 100%;
+}
+
+/* Mobile fold actions sit in flow under the price. Never sticky/fixed. */
+.listing-face__fold {
+  display: none;
+  grid-column: 1 / -1;
+}
+
+.listing-face__fold-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: 2px solid var(--v3-navy);
+  background: transparent;
+  color: var(--v3-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  text-align: center;
+  text-decoration: none;
+}
+
+.listing-face__fold-action--primary {
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+}
+
+@media (max-width: 63.99rem) {
+  .listing-face--has-fold .listing-ask-row {
+    display: none;
+  }
+  .listing-face__fold {
+    display: grid;
+    gap: var(--v3-space-2xs);
+    margin-top: var(--v3-space-2xs);
+  }
 }
 
 .listing-who--flow {
@@ -1996,88 +2029,13 @@ h1.listing-ask {
   }
 }
 
-/* Retired sticky listing bar (Matt / Critiquito 2026-09-19). The class
-   stays so leftover CSS cannot resurrect a fixed frame; the desktop hide
-   remains so an accidental remount is still off at 64rem. */
-@media (min-width: 64rem) {
-  .listing-detail .listing-mobile-cta {
-    display: none;
-  }
-}
-
-/* Catalog Sheet / Dialog sit at z-50. House chrome (z-100) and the sticky
-   ask (z-80) must drop while they are open so the judge sees a full-height
-   side Sheet and a centered Dialog, not a clipped cream drawer under leftover
-   Tour rects. */
+/* Catalog Sheet / Dialog sit at z-50. House chrome (z-100) must drop while
+   they are open so the judge sees a full-height side Sheet and a centered
+   Dialog, not a clipped cream drawer. */
 body:has([data-slot='sheet-content'][data-state='open']) .v3.v3-chrome,
 body:has([data-slot='dialog-content'][data-state='open']) .v3.v3-chrome {
   z-index: 40;
 }
-body:has([data-slot='sheet-content'][data-state='open']) .listing-detail .listing-mobile-cta,
-body:has([data-slot='dialog-content'][data-state='open']) .listing-detail .listing-mobile-cta {
-  display: none;
-}
-.listing-detail .listing-mobile-cta-name {
-  display: flex;
-  flex-direction: column;
-  min-width: 3.4em;
-  flex: 1 1 auto;
-  line-height: 1.1;
-  margin-right: 2px;
-}
-.listing-detail .listing-mobile-cta-name .lmc-eyebrow {
-  font-size: 0.54rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--navy-70);
-}
-.listing-detail .listing-mobile-cta-name .lmc-name {
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--navy);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.listing-detail .listing-mobile-cta-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--v3-space-xs);
-  flex: 1 1 auto;
-}
-.listing-detail .listing-mobile-cta-actions .lmc-icon,
-.listing-detail .listing-mobile-cta-actions .lmc-tour {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--v3-tap);
-  min-width: var(--v3-tap);
-  padding: 0 var(--v3-space-sm);
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-label);
-  font-weight: var(--v3-weight-medium);
-  letter-spacing: var(--v3-track-label);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.listing-detail .listing-mobile-cta-actions .lmc-icon {
-  border: var(--v3-chrome-rule);
-  color: var(--navy);
-  background: transparent;
-}
-.listing-detail .listing-mobile-cta-actions .lmc-icon:active {
-  background: var(--navy-12);
-}
-.listing-detail .listing-mobile-cta-actions .lmc-tour {
-  background: var(--navy);
-  color: var(--cream);
-  flex: 1 1 auto;
-}
-.listing-detail .listing-mobile-cta-actions .lmc-tour:active {
-  opacity: 0.9;
-}
-
 /* The form/calculator skin moved to components/site/tool-skin.css and is
    scoped to the class alone. It was scoped to .listing-detail here, so the
    five other surfaces that render it got no skin at all. */

@@ -10,6 +10,7 @@ import { canonicallyTagLead, type LeadAudience } from '@/lib/canonical-lead-tagg
 import { classifyPropertyGeo, referralIntakeTags } from '@/lib/referral-geo'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { fireLeadGenerated, fireNonLeadEvent } from '@/lib/lead-tracking'
+import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { contactLeadType } from '@/lib/analytics/lead-event'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { isJoinInquiry, recordJoinConversion, tagRecruitJoin } from '@/lib/data/loop/join-conversion'
@@ -42,6 +43,9 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   const isTour = formData.get('intent')?.toString()?.trim() === 'tour'
   // A2P/TCPA fail-closed: SMS only when the consent box was actively checked.
   const smsConsent = formData.get('smsConsent') === 'yes'
+  // Counsel memo 002 §5.4. The EU/UK hashed-match box. Absent means the
+  // visitor did not check it, including every US submit, which never shows it.
+  const adMatchConsent = formData.get('adMatchConsent') === 'yes'
   // Honeypot (FUNNEL-1). Filled = one signal to the intake screen, not a drop:
   // the row is kept and tagged so a false positive can be read and undone.
   const honeypot = (formData.get(CONTACT_TRAP.name)?.toString() ?? '').trim() !== ''
@@ -195,6 +199,18 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
       // Enrichment gates on the native person id sendEvent returned (the old
       // CRM findPersonByEmail re-lookup was a dead no-op post-decommission).
       if (capturedPersonId) {
+        if (adMatchConsent) {
+          try {
+            const { enrichNativeLead } = await import('@/lib/data/crm/ensureNativeLead')
+            const { adMatchConsentCustom } = await import('@/lib/identity/form-ad-consent')
+            await enrichNativeLead({
+              personId: capturedPersonId,
+              custom: adMatchConsentCustom(true, new Date().toISOString()),
+            })
+          } catch (e) {
+            console.warn('[contact-form] ad-match consent write failed:', e)
+          }
+        }
         const recruit = isJoinInquiry(inquiryType)
         if (recruit) {
           await tagRecruitJoin(capturedPersonId)
@@ -271,26 +287,33 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
     : inquiryLower.includes('seller') || inquiryLower.includes('valuation')
       ? 500
       : 200
-  if (!recruit) await fetch(`${siteOrigin()}/api/meta-capi`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      eventName: 'Lead',
-      email,
-      phone,
-      firstName: name.split(/\s+/)[0] ?? undefined,
-      lastName: name.split(/\s+/).slice(1).join(' ') || undefined,
-      eventId,
-      customData: {
-        inquiry_type: inquiryType,
-        value: leadValue,
-        currency: 'USD',
-      },
-      eventSourceUrl: `${siteOrigin()}/contact`,
-    }),
-  }).catch((err) => {
-    console.warn('[Contact Form] CAPI call failed:', err)
-  })
+  if (!recruit) {
+    const sharing = await visitorCapiConsent()
+    if (sharing.allowed) {
+      await fetch(`${siteOrigin()}/api/meta-capi`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventName: 'Lead',
+          email,
+          phone,
+          firstName: name.split(/\s+/)[0] ?? undefined,
+          lastName: name.split(/\s+/).slice(1).join(' ') || undefined,
+          eventId,
+          consentCookie: sharing.consentCookie,
+          secGpc: sharing.secGpc,
+          customData: {
+            inquiry_type: inquiryType,
+            value: leadValue,
+            currency: 'USD',
+          },
+          eventSourceUrl: `${siteOrigin()}/contact`,
+        }),
+      }).catch((err) => {
+        console.warn('[Contact Form] CAPI call failed:', err)
+      })
+    }
+  }
 
   // GA4: the one server-side generate_lead (lib/analytics/lead-event.ts). A
   // recruit inquiry is not a lead: its own recruit_inquiry event. "general" is

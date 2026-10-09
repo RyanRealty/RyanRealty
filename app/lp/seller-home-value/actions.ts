@@ -18,10 +18,13 @@ import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { sendSellerLeadAlertEmail } from '@/lib/seller-lead-alert'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
+import { leadOriginPath } from '@/lib/crm/lead-origin-path'
 import { cookies, headers } from 'next/headers'
 import { findCrmPersonIdByEmail } from '@/lib/data/cma/crm'
 import { resolveSubmittedIdentity } from '@/lib/crm/submitted-identity'
+import { adMatchConsentCustom } from '@/lib/identity/form-ad-consent'
 
 const siteUrl = siteOrigin()
 
@@ -38,6 +41,11 @@ export type SellerLPTimeline = 'ready-now' | 'next-3-6' | 'next-6-12' | 'explori
 export type SellerLPSubmission = {
   /** A2P/TCPA: true only when the lead actively checked the SMS consent box. */
   smsConsent?: boolean
+  /**
+   * Counsel memo 002 §5.4. True only when the EU/UK hashed-match box was
+   * checked. It is not a cookie grant and it does not gate the valuation.
+   */
+  adMatchConsent?: boolean
   address: string
   name?: string
   email?: string
@@ -97,19 +105,6 @@ export type SellerHomeDetails = {
 export type SellerLPResult =
   | { success: true; eventId: string; classification: 'hot' | 'warm' | 'nurture' | 'unknown'; alreadyKnown: boolean; assignedBroker: BrokerSlug | null }
   | { success: false; error: string }
-
-/**
- * Locked off 2026-08-14: no save until contact exists. Address-only
- * advances the form. Contact submit is the first write.
- */
-export async function saveSellerPartialLead(_params: {
-  address: string
-  sessionId: string | undefined
-  source: 'seller-lp' | 'list-now-lp'
-  pagePath?: string
-}): Promise<void> {
-  return
-}
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -247,6 +242,10 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // content_performance.north_star_attributed_seller_leads. Without this the
     // north-star metric can never move off zero.
     const leadPagePath = sanitizePagePath(submission.pagePath)
+    // source_url names the page that PRODUCED the lead: a content page's
+    // valuation link carries ?from=<its path> (lib/crm/lead-origin-path.ts).
+    // The broker's origin note keeps the page the form was on (landingPage).
+    let leadOriginPathname = leadPagePath
     let leadSourceUrl = `${siteUrl}${leadPagePath}`
     // Hoisted so the lead-origin note (below) can reuse the same parsed UTMs
     // without re-reading the referer.
@@ -255,20 +254,23 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     let originUtmCampaign: string | undefined
     let originUtmContent: string | undefined
     try {
-      const referer = (await headers()).get('referer') ?? ''
+      const requestHeaders = await headers()
+      const referer = requestHeaders.get('referer') ?? ''
       if (referer) {
         const refUrl = new URL(referer)
+        leadOriginPathname = leadOriginPath(referer, [new URL(siteUrl).host, requestHeaders.get('host')], leadPagePath)
+        leadSourceUrl = `${siteUrl}${leadOriginPathname}`
         originUtmSource = refUrl.searchParams.get('utm_source') ?? undefined
         originUtmMedium = refUrl.searchParams.get('utm_medium') ?? undefined
         originUtmCampaign = refUrl.searchParams.get('utm_campaign') ?? undefined
         originUtmContent = refUrl.searchParams.get('utm_content') ?? undefined
         const passthrough = new URLSearchParams()
-        for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']) {
+        for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid']) {
           const v = refUrl.searchParams.get(k)
           if (v) passthrough.set(k, v)
         }
         const qs = passthrough.toString()
-        if (qs) leadSourceUrl = `${siteUrl}${leadPagePath}?${qs}`
+        if (qs) leadSourceUrl = `${siteUrl}${leadOriginPathname}?${qs}`
       }
     } catch {
       // malformed referer — fall back to the bare LP url
@@ -488,6 +490,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         sellerPropertyAddress: parsed.full,
         ...(reasonLabel ? { sellerReason: reasonLabel } : {}),
         ...(askSource ? { askSource } : {}),
+        ...adMatchConsentCustom(submission.adMatchConsent === true, new Date().toISOString()),
       }
 
       // 3. Lead-origin note → crm_timeline. Tells the broker WHY this lead came
@@ -671,37 +674,42 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       ? `${siteUrl}/lp/sell-your-home`
       : `${siteUrl}/lp/seller-home-value`
     const capiContentName = isListNowLp ? 'seller_lp_list_now' : 'seller_lp_home_value'
-    void fetch(`${siteUrl}/api/meta-capi`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        eventName: 'Lead',
-        email: email || undefined,
-        phone: phone || undefined,
-        firstName,
-        lastName,
-        eventId,
-        eventSourceUrl: capiSourceUrl,
-        fbp: capiCookies.get('_fbp')?.value,
-        // Fall back to the middleware-captured rr_fbc (derived from ?fbclid) when
-        // the Meta pixel never set _fbc, so paid clicks attribute. See middleware.
-        fbc: capiCookies.get('_fbc')?.value ?? capiCookies.get('rr_fbc')?.value,
-        clientIp: capiClientIp,
-        clientUserAgent: capiClientUa,
-        customData: {
-          content_name: capiContentName,
-          lead_type: isListNowLp ? 'seller_listing_intent' : 'seller_valuation',
-          property_address: parsed.full,
-          timeline: timeline ?? 'unspecified',
-          classification,
-          assigned_broker: assignment.broker,
-          value: 500,
-          currency: 'USD',
-        },
-      }),
-    }).catch((err) => {
-      console.warn('[seller-lp] CAPI call failed:', err)
-    })
+    const sharing = await visitorCapiConsent()
+    if (sharing.allowed) {
+      void fetch(`${siteUrl}/api/meta-capi`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventName: 'Lead',
+          email: email || undefined,
+          phone: phone || undefined,
+          firstName,
+          lastName,
+          eventId,
+          eventSourceUrl: capiSourceUrl,
+          fbp: capiCookies.get('_fbp')?.value,
+          // Fall back to the middleware-captured rr_fbc (derived from ?fbclid) when
+          // the Meta pixel never set _fbc, so paid clicks attribute. See middleware.
+          fbc: capiCookies.get('_fbc')?.value ?? capiCookies.get('rr_fbc')?.value,
+          clientIp: capiClientIp,
+          clientUserAgent: capiClientUa,
+          consentCookie: sharing.consentCookie,
+          secGpc: sharing.secGpc,
+          customData: {
+            content_name: capiContentName,
+            lead_type: isListNowLp ? 'seller_listing_intent' : 'seller_valuation',
+            property_address: parsed.full,
+            timeline: timeline ?? 'unspecified',
+            classification,
+            assigned_broker: assignment.broker,
+            value: 500,
+            currency: 'USD',
+          },
+        }),
+      }).catch((err) => {
+        console.warn('[seller-lp] CAPI call failed:', err)
+      })
+    }
 
     // ─── GA4: the one server-side generate_lead (lib/lead-tracking.ts) ────
     // The browser no longer sends its own copy (lead-event.test.ts); this is

@@ -30,13 +30,12 @@ const SPLIT_VIEW_CLIENT_FILES = [
   'components/SaveSearchButton.tsx',
 ]
 
-/** The four place routes plus the shell they share. */
+/** The four place routes. */
 const STATIC_SHELL_SERVER_FILES = [
   'app/cities/[slug]/page.tsx',
   'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
   'app/communities/[slug]/page.tsx',
   'app/subdivisions/[slug]/page.tsx',
-  'components/search/PlaceSplitView.tsx',
 ]
 
 describe('static shell: the split view client tree reads the URL through the store', () => {
@@ -73,13 +72,7 @@ describe('static shell: the place pages read no request state', () => {
     })
   }
 
-  it('PlaceSplitView hands both client halves the staticShell flag, and the map its footprint', () => {
-    const src = read('components/search/PlaceSplitView.tsx')
-    expect(src).toMatch(/<SearchFilters[\s\S]*?staticShell[\s\S]*?\/>/)
-    expect(src).toMatch(/<MapSearchView[\s\S]*?staticShell[\s\S]*?\/>/)
-    // The refetch searches inside the same seed ring the server list came
-    // from, so a filtered count describes the population the page opened on.
-    expect(src).toMatch(/<MapSearchView[\s\S]*?scopePolygon=\{seedPoly\}[\s\S]*?\/>/)
+  it('the map reads its footprint from the seeded scope polygon when no shapes are drawn', () => {
     const map = read('components/search/MapSearchView.tsx')
     expect(map).toMatch(/shapes\.length === 0 && scopePolygonRef\.current != null/)
   })

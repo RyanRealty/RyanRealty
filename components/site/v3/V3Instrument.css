@@ -69,6 +69,23 @@
   margin-bottom: var(--v3-space-md);
 }
 
+.v3.v3-instrument .v3-instrument__headline:has(+ .v3-instrument__lede) {
+  margin-bottom: var(--v3-space-md);
+}
+
+/* The short answer (lede): the first text after the H1, at the text measure,
+   before the drawing. Its own type comes from V3Takeaways.css. */
+.v3.v3-instrument .v3-instrument__lede {
+  margin: 0 0 var(--v3-space-xl);
+  max-width: var(--v3-measure-text);
+}
+
+.v3.v3-instrument .v3-instrument__lede + .v3-instrument__chart,
+.v3.v3-instrument .v3-instrument__lede + .v3-instrument__stage {
+  margin-top: var(--v3-space-lg);
+  padding-top: 0;
+}
+
 .v3.v3-instrument .v3-instrument__note {
   margin: 0 0 var(--v3-space-xl);
   max-width: var(--v3-measure-text);

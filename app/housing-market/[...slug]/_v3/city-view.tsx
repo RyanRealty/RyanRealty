@@ -25,6 +25,7 @@ import {
   V3MosBars,
   V3Quiet,
   V3Takeaways,
+  V3TakeawaysLead,
   type V3ChartProps,
   type V3InstrumentFigure,
   type V3ListingRowData,
@@ -63,8 +64,10 @@ type Props = {
   publicMix?: PublicMixRow | null
   insightBoard?: RegionInsightBoard | null
   homes?: readonly V3ListingRowData[]
-  /** The short answer after the opening (lib/site/place-takeaways, AEO 2026-10-04). */
+  /** The short answer under the H1 (lib/site/place-takeaways, variant 'market'). */
   takeaways?: readonly string[]
+  /** That month's published report, linked from the answer's source line. */
+  answerReport?: { label: string; href: string } | null
 }
 
 export function CityMarketView({
@@ -87,6 +90,7 @@ export function CityMarketView({
   insightBoard = null,
   homes = [],
   takeaways = [],
+  answerReport = null,
   // publicMix is not destructured: SITE-41 round two drops mix cells from this
   // view's fold (see the comment below). The Props field stays for callers and for
   // a future dedicated mix section; unread here on purpose.
@@ -168,6 +172,22 @@ export function CityMarketView({
 
   // SITE-81: face is name + stamp; disclosure is one plain sentence. MOS math
   // lives on #market-mos's own source, not duplicated here.
+  // THE ANSWER FIRST (SEO & AEO Desk brief 2026-10-08). The four quotable
+  // sentences sit directly under the H1, before the supply bars, the insight
+  // cards, the chart and the tiles, as plain server-rendered text. They used to
+  // be a "{city} at a glance" section below the whole instrument.
+  const answerSource = refreshedAt
+    ? `Single-family homes in ${cityName}, Oregon Data Share MLS, as of ${formatDate(refreshedAt)}.`
+    : `Single-family homes in ${cityName}, Oregon Data Share MLS.`
+  const answerLinks = [
+    { label: 'How we get our numbers', href: '/how-we-get-our-numbers' },
+    ...(answerReport ? [answerReport] : []),
+  ]
+  const lede =
+    takeaways.length >= 2 ? (
+      <V3TakeawaysLead items={takeaways} source={answerSource} links={answerLinks} />
+    ) : null
+
   const trace =
     live.figures.length > 0
       ? `Active single-family houses in ${cityName} from Oregon Data Share MLS.`
@@ -184,6 +204,7 @@ export function CityMarketView({
           className="hm-tremor"
           eyebrow={v3Text(`${cityName}, Oregon`)}
           headline={v3Text(headline)}
+          lede={lede}
           figures={[firstFigure, ...restFigures] as readonly [V3InstrumentFigure, ...V3InstrumentFigure[]]}
           /* THE OPENING IS A CLAIM AND A DRAWING (SITE-41 / SITE-102). The
              catalog control leads, MOS proves the verdict, the year overlay
@@ -243,14 +264,16 @@ export function CityMarketView({
         />
       )}
 
-      {/* The short answer right after the opening (AEO, Matt 2026-10-04): the
-          same primitive and builder the city and community pages use. */}
-      <V3Takeaways
-        id="takeaways"
-        heading={`${cityName} at a glance`}
-        items={takeaways}
-        source={refreshedAt ? `Single-family homes, Oregon Data Share MLS, as of ${formatDate(refreshedAt)}.` : null}
-      />
+      {/* Only when there is no instrument to carry the answer under its H1:
+          then the short answer keeps its own section, as before. */}
+      {firstFigure ? null : (
+        <V3Takeaways
+          id="takeaways"
+          heading={`${cityName} at a glance`}
+          items={takeaways}
+          source={answerSource}
+        />
+      )}
 
       {homes.length > 0 ? (
         <section id="city-homes" className="city-homes" aria-labelledby="city-homes-heading">

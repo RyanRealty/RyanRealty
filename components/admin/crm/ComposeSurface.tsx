@@ -25,6 +25,7 @@ import { TextDraftTools } from '@/components/admin/crm/TextDraftTools'
 import {
   composeRecipientPayload,
   emailsForCompose,
+  PHONE_GROUP_QUIET_NOTE,
   type ComposePersonChip,
 } from '@/lib/crm/compose-group'
 import {
@@ -34,6 +35,7 @@ import {
   sendComposeAction,
 } from '@/app/admin/(protected)/messages/actions'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { useSmsQuiet } from '@/components/admin/crm/use-sms-quiet'
 
 const EMAIL_ACCEPT =
   'application/pdf,image/jpeg,image/png,image/gif,image/webp,text/vcard,text/x-vcard,.vcf,.doc,.docx,.xls,.xlsx'
@@ -71,9 +73,7 @@ export function ComposeSurface({
   const [overrideQuiet, setOverrideQuiet] = useState(false)
   const isMobile = useIsMobile()
   // Mobile messages/group compose: kill quiet-hours chip + paperclip clutter.
-  // Manual compose on phone counts as intentional send during quiet hours.
   const mobileTextClean = isMobile && channel === 'text'
-  const effectiveOverrideQuiet = mobileTextClean ? true : overrideQuiet
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const idempotencyKey = useMemo(() => crypto.randomUUID(), [])
 
@@ -119,11 +119,27 @@ export function ComposeSurface({
 
   const packed = composeRecipientPayload(people)
   const group = packed.isGroup
+  // Quiet hours in Pacific and every recipient's own zone, read live (Matt
+  // 2026-10-04, "Both zones"). `quiet` is the server's answer for the page's
+  // first render.
+  const zones = useMemo(() => (brokerSelf ? [] : people.flatMap((p) => p.timeZones ?? [])), [brokerSelf, people])
+  // The server checks every send. When it refused one for quiet hours this
+  // page did not see coming (a clock tick, a number it could not read), the
+  // quiet-hours control shows from then on, so the broker is never stuck.
+  const [serverSaidQuiet, setServerSaidQuiet] = useState(false)
+  const quietNow = useSmsQuiet(zones, quiet) || serverSaidQuiet
+  // A text typed on a phone to ONE person is a deliberate manual send and goes
+  // at any hour, so it always carries the override. A phone GROUP text in quiet
+  // hours waits until 8am, or a computer's "send anyway" (Matt 2026-10-04,
+  // "1:1 only").
+  const phoneOneToOne = mobileTextClean && !group
+  const effectiveOverrideQuiet = phoneOneToOne ? true : overrideQuiet
+  const phoneGroupHeld = mobileTextClean && group && quietNow
   const toEmails = emailsForCompose(people)
   const ccEmails = emailsForCompose(ccPeople)
   const textReady = brokerSelf
-    ? Boolean(body.trim() && (!quiet || effectiveOverrideQuiet))
-    : Boolean(packed.personId && body.trim() && people.every((p) => p.phone) && (!quiet || effectiveOverrideQuiet))
+    ? Boolean(body.trim() && (!quietNow || effectiveOverrideQuiet))
+    : Boolean(packed.personId && body.trim() && people.every((p) => p.phone) && (!quietNow || effectiveOverrideQuiet))
   const emailReady = Boolean(packed.personId && subject.trim() && body.trim() && toEmails.length)
   const canSend = channel === 'email' ? emailReady : textReady
 
@@ -140,7 +156,7 @@ export function ComposeSurface({
     } else {
       fd.set('personId', String(packed.personId))
     }
-    if (quiet && channel === 'text' && effectiveOverrideQuiet) fd.set('overrideQuietHours', '1')
+    if (channel === 'text' && (phoneOneToOne || (quietNow && overrideQuiet))) fd.set('overrideQuietHours', '1')
     if (attachments.ready.length) fd.set('attachments', JSON.stringify(attachments.ready))
     if (channel === 'text') {
       if (packed.extraIds) fd.set('recipientIds', packed.extraIds)
@@ -153,8 +169,10 @@ export function ComposeSurface({
     }
     startTransition(async () => {
       const res = await sendComposeAction(fd)
-      if (!res.ok) toast.error(res.error)
-      else {
+      if (!res.ok) {
+        toast.error(res.error)
+        if (res.error.startsWith('Quiet hours')) setServerSaidQuiet(true)
+      } else {
         if (res.notice) toast.message(res.notice)
         else toast.success(channel === 'email' ? 'Email sent.' : group ? 'Group text sent.' : 'Text sent.')
         setBody('')
@@ -309,10 +327,16 @@ export function ComposeSurface({
         </div>
       ) : null}
 
-      {quiet && channel === 'text' && !mobileTextClean ? (
+      {quietNow && channel === 'text' && !mobileTextClean ? (
         <FilterChip pressed={overrideQuiet} onClick={() => setOverrideQuiet((v) => !v)}>
           Send anyway. Quiet hours.
         </FilterChip>
+      ) : null}
+
+      {phoneGroupHeld ? (
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          {PHONE_GROUP_QUIET_NOTE}
+        </p>
       ) : null}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8 }}>
@@ -331,7 +355,7 @@ export function ComposeSurface({
       {mobileTextClean ? null : (
       <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
         {channel === 'text'
-          ? quiet
+          ? quietNow
             ? 'Quiet hours. This tap is a manual send from the business line. STOP still applies.'
             : 'Sends from the business line. STOP and quiet hours still apply to leads.'
           : 'Sends one email to everyone on To. Nothing goes out until you hit Send.'}

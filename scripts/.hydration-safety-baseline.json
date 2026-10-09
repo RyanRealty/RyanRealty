@@ -1,26 +1,18 @@
 {
-  "generatedAt": "2026-08-19T17:17:25.555Z",
+  "generatedAt": "2026-09-29T21:24:29.420Z",
   "format": "file:line:ruleId — each entry is one violation; both the set (no new entries) and total (count ceiling) must not grow.",
-  "total": 19,
+  "total": 11,
   "violations": [
     "app/admin/(protected)/crm/reporting/agent-goals/AgentGoalsYearSelect.tsx:24:clock-new-date",
-    "app/components/admin/AdminUsersList.tsx:131:locale-date",
-    "app/components/admin/AdminUsersList.tsx:85:locale-date",
-    "app/lp/expired-listing/ExpiredLPForm.tsx:42:impure-helper",
-    "app/lp/expired-listing/ExpiredLPForm.tsx:55:impure-helper",
     "components/AnalyticsIdentityBridge.tsx:48:clock-now",
     "components/AnalyticsIdentityBridge.tsx:49:clock-now",
     "components/ExportMyDataButton.tsx:26:clock-new-date",
-    "components/ListingTile.tsx:297:impure-helper",
-    "components/ListingTile.tsx:43:clock-now",
     "components/admin/crm/GlobalActivityFeed.client.tsx:253:clock-now",
     "components/landing/LeadLandingForm.tsx:60:impure-helper",
     "components/landing/LeadLandingForm.tsx:61:impure-helper",
     "components/landing/LeadLandingForm.tsx:63:impure-helper",
     "components/landing/LeadLandingForm.tsx:64:impure-helper",
     "components/reports/SalesReportCard.tsx:22:locale-date",
-    "components/reports/SalesReportCard.tsx:22:locale-date",
-    "components/tc/pdf-sign/SignFlow.tsx:140:clock-new-date",
-    "components/tc/pdf-sign/SignFlow.tsx:140:locale-date"
+    "components/reports/SalesReportCard.tsx:22:locale-date"
   ]
 }

@@ -53,7 +53,6 @@ const SCAN_DIRS = [
   'app/admin/(protected)/people/[id]/PersonWorkspace.tsx',
   'app/admin/(protected)/people/[id]/FieldEditors.tsx',
   'app/admin/(protected)/people/[id]/TasksSection.tsx',
-  'app/admin/(protected)/people/[id]/NotesSection.tsx',
   'app/admin/(protected)/people/[id]/HomesSection.tsx',
   // P7 identity loop (2026-09-23): "On the site" + the personal-link copy control.
   'app/admin/(protected)/people/[id]/SiteActivitySection.tsx',
@@ -167,10 +166,12 @@ const SCAN_DIRS = [
   'app/admin/(protected)/newsletters/_components/SubscriberFilters.tsx',
   'app/admin/(protected)/newsletters/_components/SubscriberRowActions.tsx',
   'app/admin/(protected)/crm/deals/pipelines/page.tsx',
-  // 11F (2026-08-08) — the valuations family (bpo + cmas). FILE-FORM: the two
-  // Send dialogs mount EmailBodyEditor, the G50 compose chokepoint
+  // 11F (2026-08-08) — the valuations family (bpo + cmas). FILE-FORM: the Send
+  // dialogs mount EmailBodyEditor, the G50 compose chokepoint
   // ci:composer-discipline requires. Everything else in both families is listed,
   // so a new file under either is a deliberate decision rather than a silent gap.
+  // The cmas worklist/ folder (CmaBoard and its Send dialog) was deleted as an
+  // orphan once the queue/ folder replaced it; its entries went with it.
   'app/admin/(protected)/bpo/_components/BpoReviewActions.tsx',
   'app/admin/(protected)/bpo/_components/BuildBpoForm.tsx',
   'app/admin/(protected)/bpo/_components/worklist/BpoBoard.client.tsx',
@@ -183,13 +184,6 @@ const SCAN_DIRS = [
   'app/admin/(protected)/cmas/_components/BuildCmaForm.tsx',
   'app/admin/(protected)/cmas/_components/CmaPublishControl.tsx',
   'app/admin/(protected)/cmas/_components/CmaReviewActions.tsx',
-  'app/admin/(protected)/cmas/_components/worklist/CmaBoard.client.tsx',
-  'app/admin/(protected)/cmas/_components/worklist/CmaCard.client.tsx',
-  'app/admin/(protected)/cmas/_components/worklist/CmaDetailPanel.client.tsx',
-  'app/admin/(protected)/cmas/_components/worklist/CmaFilters.client.tsx',
-  'app/admin/(protected)/cmas/_components/worklist/CmaStatusPill.client.tsx',
-  'app/admin/(protected)/cmas/_components/worklist/format.ts',
-  'app/admin/(protected)/cmas/_components/worklist/types.ts',
   'app/admin/(protected)/bpo/page.tsx',
   'app/admin/(protected)/bpo/new/page.tsx',
   'app/admin/(protected)/bpo/[slug]/page.tsx',
@@ -523,6 +517,8 @@ const SCAN_DIRS = [
   'components/admin/crm/ReportSubscriptionsPanel.tsx',
   'components/admin/crm/SaveAsTemplateDialog.tsx',
   'components/admin/crm/SmsComposer.tsx',
+  // Live SMS quiet hours for the composers (Matt 2026-10-04, "Both zones"); no colour.
+  'components/admin/crm/use-sms-quiet.ts',
   'components/admin/crm/StoredAttachments.tsx',
   'components/admin/crm/TemplatePicker.tsx',
   'components/admin/crm/TemplatePickerNav.tsx',
@@ -627,7 +623,6 @@ const SCAN_DIRS = [
   'app/admin/(protected)/approval-queue/_components/BulkSelection.tsx',
   'app/admin/(protected)/approval-queue/_components/FilterSidebar.tsx',
   'app/admin/(protected)/bpo/_components/worklist/BpoSendDialog.client.tsx',
-  'app/admin/(protected)/cmas/_components/worklist/CmaSendDialog.client.tsx',
   'app/admin/(protected)/crm/settings/_components/templates/EmailTemplateModal.tsx',
   'app/admin/(protected)/crm/settings/_components/templates/TextTemplateModal.tsx',
   'app/admin/(protected)/crm/settings/appointments/AppointmentSettingsClient.tsx',
@@ -646,7 +641,6 @@ const SCAN_DIRS = [
   'app/admin/(protected)/deals/[key]/DealPropertyFacts.tsx',
   'app/admin/(protected)/deals/[key]/DealContingencyDays.tsx',
   'app/admin/(protected)/deals/[key]/DealPrices.tsx',
-  'app/admin/(protected)/deals/[key]/DocumentName.tsx',
   'app/admin/(protected)/deals/[key]/DocumentRowActions.tsx',
   'app/admin/(protected)/deals/[key]/DocumentUpload.tsx',
   'app/admin/(protected)/deals/[key]/FillOrefPacket.tsx',

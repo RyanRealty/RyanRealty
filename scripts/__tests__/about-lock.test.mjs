@@ -224,3 +224,19 @@ describe('CLI --about-lock and --ship', () => {
     expect(r.status).toBe(0)
   })
 })
+
+describe('About copy never says who Ryan Realty is not a fit for (Matt 2026-10-08)', () => {
+  it('fails a "Probably not the right fit" list and a "who it isn\'t" heading', () => {
+    for (const copy of [
+      '<h3>Probably not the right fit if:</h3>',
+      'export const HEADING = "Who Ryan Realty is a good fit for, and who it isn\'t"',
+    ]) {
+      const problems = aboutLockSourceProblems({ sourceText: copy })
+      expect(problems.some((p) => /About lock beat 9 copy names/.test(p)), copy).toBe(true)
+    }
+  })
+
+  it('passes the shipped "Who we help" copy', () => {
+    expect(aboutLockSourceProblems().filter((p) => /copy names/.test(p))).toEqual([])
+  })
+})

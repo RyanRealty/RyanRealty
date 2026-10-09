@@ -267,11 +267,35 @@ function cleanNumber(n: number | string | null | undefined): number | null {
   return null
 }
 
+/**
+ * A YEAR THE FEED CANNOT MEAN IS NOT A YEAR (§0, 2026-09-11).
+ *
+ * 2448 NW Violet Ave (ListNumber 220223541) published "Built 3672" on the page
+ * AND `"yearBuilt":3672` in its RealEstateListing JSON-LD, because the MLS row
+ * carries `year_built = 3672` — the identical value as its
+ * `TotalLivingAreaSqFt`, i.e. someone typed the square footage into the Year
+ * Built box. The old floor here was `> 1800`, which 3672 clears, so the bad
+ * value also produced `propertyAge = -1646`.
+ *
+ * The floor alone was never the test: a year needs a CEILING too. Anything
+ * outside the range is withheld rather than repaired — we do not know what the
+ * agent meant, and §0 forbids guessing. Withheld here means every surface
+ * loses it at once (the Facts line, the JSON-LD, the age), because they all
+ * read this one mapping.
+ *
+ * The fix belongs at the read, not the sync: the bad row is already in the
+ * table and re-syncing it would write the same value back.
+ */
+export function publishableYearBuilt(raw: number | null | undefined): number | null {
+  if (raw == null || !Number.isFinite(raw)) return null
+  // +1 because a new-construction listing legitimately names next year.
+  if (raw <= 1800 || raw > new Date().getFullYear() + 1) return null
+  return raw
+}
+
 function rowToDetail(row: ListingRow): ListingDetail {
-  const propertyAge =
-    row.year_built && row.year_built > 1800
-      ? new Date().getFullYear() - row.year_built
-      : null
+  const yearBuilt = publishableYearBuilt(row.year_built)
+  const propertyAge = yearBuilt != null ? new Date().getFullYear() - yearBuilt : null
   const closePricePerSqft =
     row.ClosePrice != null && row.TotalLivingAreaSqFt && row.TotalLivingAreaSqFt > 0
       ? Math.round(row.ClosePrice / row.TotalLivingAreaSqFt)
@@ -309,7 +333,7 @@ function rowToDetail(row: ListingRow): ListingDetail {
     modifiedAt: row.ModificationTimestamp,
     pricePerSqft: row.price_per_sqft,
     lotSizeAcres: row.lot_size_acres,
-    yearBuilt: row.year_built,
+    yearBuilt,
     garageSpaces: row.garage_spaces,
     poolYn: row.pool_yn,
     hasVirtualTour: row.has_virtual_tour,

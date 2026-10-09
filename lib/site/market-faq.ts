@@ -3,6 +3,7 @@ import type { StatValue } from '@/lib/site/json-ld'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { marketVerdict, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPriceExact } from '@/lib/format/money'
+import { formatDate } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { publishSoldCount, type MarketGrain } from '@/lib/market/geo-grain-trust'
@@ -60,6 +61,23 @@ export type MarketFaqInput = {
    * (AEO review 2026-10-04). Null emits nothing.
    */
   yoyMedianPrice?: number | null
+  /**
+   * The /housing-market/<city> answer set (SEO & AEO Desk brief 2026-10-08).
+   * All optional. With the sale month, its year-earlier month and the 12-month
+   * median present, the prices answer carries both changes; with days to an
+   * accepted offer and days to closing present, the time-to-sell question
+   * becomes "How long does it take to sell a house in {geo}?". Missing any of
+   * them, each answer falls back to the wording every other page prints.
+   */
+  priorYearMonthSalePrice?: number | null
+  /** "September 2025". Required with priorYearMonthSalePrice. */
+  priorYearMonthLabel?: string | null
+  /** Median sale price, last 12 months (publicPace.medianClose). */
+  medianSalePrice12mo?: number | null
+  /** Median days from listing to an accepted offer, last 12 months (publicPace.daysToContract). */
+  medianDaysToContract12mo?: number | null
+  /** Median days from listing to closing, last 12 months (publicPace.daysToClose). */
+  medianDaysToClose12mo?: number | null
   monthsOfSupply?: number | null
   /** Pulse row active_count when it differs from the page's displayed count. */
   pulseActiveCount?: number | null
@@ -176,6 +194,8 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
   const datasetVariables: StatValue[] = []
   const { iso, label } = resolveAsOf(pulse?.refreshedAt)
   const asOf = label ? ` as of ${label}` : ''
+  // The day, in PT, for the answers that cite their source in the sentence.
+  const asOfDay = pulse?.refreshedAt && iso ? formatDate(pulse.refreshedAt) : null
 
   if (!pulse) return { faqs, datasetVariables, asOfIso: iso, asOfLabel: label }
 
@@ -217,12 +237,36 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
     // The pace tiles' rounding (formatPaceDelta), so the answer and the tile agree.
     const pct = Math.round(pulse.yoyMedianPrice * 1000) / 10
     const shown = Math.abs(pct).toFixed(1)
+    const prior =
+      pulse.priorYearMonthSalePrice != null && pulse.priorYearMonthSalePrice > 0 && pulse.priorYearMonthLabel
+        ? pulse.priorYearMonthSalePrice
+        : null
+    const median12 =
+      pulse.medianSalePrice12mo != null && pulse.medianSalePrice12mo > 0 ? pulse.medianSalePrice12mo : null
+    // The quotable form (brief 2026-10-08 §4b): the month's change and the
+    // 12-month change in one answer, the way answer engines state a market.
+    const quotable =
+      salePrice != null && prior != null && median12 != null
+        ? (() => {
+            const monthPct = Math.round((salePrice / prior - 1) * 1000) / 10
+            const monthChange =
+              monthPct === 0
+                ? `about even with ${pulse.priorYearMonthLabel}`
+                : `${monthPct > 0 ? 'up' : 'down'} ${Math.abs(monthPct).toFixed(1)}% from ${pulse.priorYearMonthLabel}`
+            const yearChange =
+              pct === 0 ? 'is level with the 12 months before' : `is ${pct > 0 ? 'up' : 'down'} ${shown}% from the 12 months before`
+            const opener = pct === 0 ? 'Holding level.' : pulse.yoyMedianPrice! > 0 ? 'Yes.' : 'No.'
+            const cite = asOfDay ? ` (Oregon Data Share MLS, as of ${asOfDay})` : ' (Oregon Data Share MLS)'
+            return `${opener} ${geoName}'s median single-family sale price was ${formatPriceExact(salePrice)} in ${pulse.medianSaleMonthLabel}, ${monthChange}, and the 12-month median of ${formatPriceExact(median12)} ${yearChange}${cite}.`
+          })()
+        : null
     const lead =
-      pct === 0
+      quotable ??
+      (pct === 0
         ? `They are holding level. The median sale price of single-family homes in ${geoName} over the last 12 months matches the 12 months before.`
         : pulse.yoyMedianPrice > 0
           ? `Yes. The median sale price of single-family homes in ${geoName} over the last 12 months is up ${shown}% from the 12 months before.`
-          : `No. The median sale price of single-family homes in ${geoName} over the last 12 months is down ${shown}% from the 12 months before.`
+          : `No. The median sale price of single-family homes in ${geoName} over the last 12 months is down ${shown}% from the 12 months before.`)
     faqs.push({ question: `Are home prices going up in ${geoName}?`, answer: lead })
   }
 
@@ -303,7 +347,24 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
   // does not show two nearly-identical time-to-sell questions. (§0)
   const daysToPending = publishDaysFigure(pulse.medianDaysToPending)
   const daysOnMarket = publishDaysFigure(pulse.medianDaysOnMarket)
-  if (daysToPending) {
+  const daysToContract12 = publishDaysFigure(pulse.medianDaysToContract12mo)
+  const daysToClose12 = publishDaysFigure(pulse.medianDaysToClose12mo)
+  if (daysToContract12 && daysToClose12) {
+    // The question people ask (brief 2026-10-08 §4b), answered start to finish.
+    const recent = daysToPending
+      ? `, and homes that closed in the last 90 days went under contract in a median ${daysToPending} days`
+      : ''
+    const cite = asOfDay
+      ? ` Those figures are from Oregon Data Share MLS data as of ${asOfDay}.`
+      : ' Those figures are from Oregon Data Share MLS data.'
+    faqs.push({
+      question: `How long does it take to sell a house in ${geoName}?`,
+      answer: `A median of ${daysToClose12} days from listing to closing. Over the last 12 months, single-family homes in ${geoName} took a median ${daysToContract12} days to get an accepted offer and a median ${daysToClose12} days from listing to closing${recent}.${cite}`,
+    })
+    if (daysToPending) {
+      datasetVariables.push({ name: 'Median Days to Pending', value: Number(daysToPending), unitText: 'days' })
+    }
+  } else if (daysToPending) {
     faqs.push({
       question: `How long do homes take to sell in ${geoName}?`,
       answer: `Single-family homes in ${geoName} took a median of ${daysToPending} days to go pending${asOf}.`,
@@ -315,6 +376,19 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
       answer: `Single-family homes in ${geoName} had a median of ${daysOnMarket} days on market over the past 12 months${asOf}.`,
     })
     datasetVariables.push({ name: 'Median Days on Market', value: Number(daysOnMarket), unitText: 'days' })
+  }
+
+  // The 12-month figures the market answer block and the answers above print,
+  // published as the same values (brief 2026-10-08 §4d). Only the market page
+  // passes them, so no other page's Dataset changes.
+  if (pulse.medianSalePrice12mo != null && pulse.medianSalePrice12mo > 0) {
+    datasetVariables.push({ name: 'Median sale price, last 12 months', value: Math.round(pulse.medianSalePrice12mo), unitText: 'USD' })
+  }
+  if (daysToContract12) {
+    datasetVariables.push({ name: 'Median days from listing to accepted offer, last 12 months', value: Number(daysToContract12), unitText: 'days' })
+  }
+  if (daysToClose12) {
+    datasetVariables.push({ name: 'Median days from listing to closing, last 12 months', value: Number(daysToClose12), unitText: 'days' })
   }
 
   // ── Extended community-specific questions (§0: only when data exists) ───────

@@ -15,6 +15,7 @@ import {
   yoyCanCarryHeadline,
   HEADLINE_MIN_SOLD_COUNT,
 } from './market-report-email'
+import { marketReportCampaign } from '@/lib/analytics/utm'
 import type {
   MarketReportAreaBlock,
   MarketTrendSummary,
@@ -341,13 +342,13 @@ describe('reportCtaUrl (conversion-audit #2/#8 — seller-framed destination + U
   it('sends a city area to /housing-market/<city>, not the buyer storefront', () => {
     const url = reportCtaUrl({ slug: 'bend', geoType: 'city', href: '/cities/bend' })
     expect(url).toBe(
-      'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report',
+      `https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=${marketReportCampaign()}#market-report`,
     )
   })
   it('sends a neighborhood/community area to its geo page AT the market section', () => {
     const url = reportCtaUrl({ slug: 'tetherow', geoType: 'neighborhood', href: '/communities/tetherow' })
     expect(url).toBe(
-      'https://ryan-realty.com/communities/tetherow?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report',
+      `https://ryan-realty.com/communities/tetherow?utm_source=crm&utm_medium=email&utm_campaign=${marketReportCampaign()}#market-report`,
     )
   })
 })
@@ -372,9 +373,7 @@ describe('renderMarketReportEmail', () => {
     // The CTA lands on the seller-framed report page, never the buyer
     // storefront at /cities/bend (conversion-audit 2026-07-15 #2), and
     // carries GA4 UTMs (#8) plus the market-section anchor.
-    expect(out.html).toContain(
-      'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report',
-    )
+    expect(out.html).toContain(reportCtaUrl(block()))
     expect(out.html).not.toContain('https://ryan-realty.com/cities/bend')
     expect(out.html).toContain(UNSUB)
     // The one branded frame (lib/email/shell.ts): masthead + navy + 640px sheet.

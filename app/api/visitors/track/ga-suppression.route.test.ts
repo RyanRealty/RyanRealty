@@ -104,10 +104,36 @@ describe('the GA4 mirror skips what the browser loader skips (Matt 2026-10-05)',
   })
 
   it('a page on a local or preview host records nothing at all', async () => {
-    for (const pageUrl of ['http://127.0.0.1:3000/', 'http://localhost:3199/cities/bend', 'https://ryanrealty-git-x.vercel.app/']) { // staging-host-ok: an incoming page address the route must refuse
+    for (const pageUrl of ['http://127.0.0.1:3000/', 'http://localhost:3199/cities/bend', 'http://app.localhost:3000/', 'https://ryanrealty-git-x.vercel.app/', 'http://192.168.1.20:3000/', 'http://[::1]:3000/']) { // staging-host-ok: an incoming page address the route must refuse
       const res = await track({ pageUrl })
       expect(await res.json()).toMatchObject({ ok: true, dropped: true, reason: 'non_production_host' })
     }
+    expect(store.session(SESSION)).toBeUndefined()
+    expect(ga4.fire).not.toHaveBeenCalled()
+  })
+
+  it('a local request Host drops even when pageUrl is spoofed as production', async () => {
+    // NextRequest rewrites 127.0.0.1 → localhost on the request URL; Origin must
+    // match that same-origin, or CORS 403s before the host check.
+    const res = await POST(
+      new NextRequest('http://127.0.0.1:8777/api/visitors/track', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          origin: 'http://localhost:8777',
+          'user-agent': HUMAN_UA,
+        },
+        body: JSON.stringify({
+          sessionId: SESSION,
+          sourceDomain: 'ryan-realty.com',
+          eventType: 'page_view',
+          consent: 'essential',
+          pageUrl: PAGE,
+          pageCategory: 'search',
+        }),
+      }),
+    )
+    expect(await res.json()).toMatchObject({ ok: true, dropped: true, reason: 'non_production_host' })
     expect(store.session(SESSION)).toBeUndefined()
     expect(ga4.fire).not.toHaveBeenCalled()
   })

@@ -40,6 +40,7 @@ export const SITE_PAGES: SitePageEntry[] = [
   { label: 'Events', href: '/central-oregon/events', keywords: ['event', 'calendar', 'weekend'] },
   { label: 'Live music and shows', href: '/central-oregon/venues', keywords: ['music', 'venue', 'show', 'concert'] },
   { label: 'Mortgage calculator', href: '/tools/mortgage-calculator', keywords: ['mortgage', 'calculator', 'payment', 'loan'] },
+  { label: 'Seller net sheet', href: '/tools/seller-net-sheet', keywords: ['net sheet', 'proceeds', 'seller', 'closing costs', 'net'] },
   { label: 'Reviews', href: '/reviews', keywords: ['review', 'testimonial'] },
   { label: 'About', href: '/about', keywords: ['about', 'brokerage', 'company'] },
   { label: 'Our team', href: '/team', keywords: ['team', 'broker', 'agent'] },

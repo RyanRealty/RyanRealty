@@ -109,7 +109,7 @@ import { isClusterPocket, LOCAL_POOL_RADIUS_MILES, pocketStopsLaterRungs } from 
 import { locationMatchFromFacts } from '@/lib/pricing/closed-comp-weight'
 import { subjectHasRecordedSubdivision } from '@/lib/pricing/match'
 import { printedBaths } from '@/lib/pricing/bath-count'
-import { saleSetsThePrice } from '@/lib/pricing/price-set'
+import { notSettingSaleFrom, priceSetRefusal, type NotSettingSale } from '@/lib/pricing/price-set'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -462,6 +462,7 @@ export async function selectComps(
   const tiersUsed: string[] = []
   const ladder: CompTierTrace[] = []
   const excludedTotals = emptyExclusions()
+  const notSettingSales: NotSettingSale[] = []
   const byKey = new Map<string, CmaComp>()
   /** Sales already held, so one closed sale cannot enter a comp set twice. */
   const bySale = new Set<string>()
@@ -1494,21 +1495,27 @@ export async function selectComps(
       // FACTS_STANDALONE_MIN) reads searchCommunitySlug with the member-plat
       // map. Missing data fails open on both: saleSetsThePrice treats an
       // unknown community on both sides as a match.
-      if (
-        !saleSetsThePrice({
-          ownPlat: comp.ownPlat,
-          subjectSubdivision: subject.subdivision,
-          saleSubdivision: comp.subdivision,
-          subjectCommunity,
-          saleCommunity: compCommunity,
-          subjectCommunityLocated: subject.communityLocated === true || subjectCommunity != null,
-          saleCommunityLocated: comp.communityLocated === true || compCommunity != null,
-          subjectSqft: subject.sqft,
-          saleSqft: comp.sqft,
-          subjectLotAcres: subject.lotAcres,
-          saleLotAcres: comp.lotAcres,
-        })
-      ) {
+      const priceInput = {
+        ownPlat: comp.ownPlat,
+        subjectSubdivision: subject.subdivision,
+        saleSubdivision: comp.subdivision,
+        subjectCommunity,
+        saleCommunity: compCommunity,
+        subjectCommunityLocated: subject.communityLocated === true || subjectCommunity != null,
+        saleCommunityLocated: comp.communityLocated === true || compCommunity != null,
+        subjectSqft: subject.sqft,
+        saleSqft: comp.sqft,
+        subjectLotAcres: subject.lotAcres,
+        saleLotAcres: comp.lotAcres,
+      }
+      const refusal = priceSetRefusal(priceInput)
+      if (refusal) {
+        notSettingSales.push(
+          notSettingSaleFrom(
+            { listingKey: comp.listingKey, listNumber: comp.mlsNumber, address: comp.address },
+            refusal,
+          ),
+        )
         rung.excluded.not_price_setting++
         bySale.add(saleKey(comp))
         continue
@@ -1827,6 +1834,7 @@ export async function selectComps(
     candidates: candidateCount,
     excluded_totals: excludedTotals,
     not_price_setting: excludedTotals.not_price_setting,
+    not_setting_sales: notSettingSales,
     outliers_excluded: excludedOutliers.length,
     final_count: comps.length,
     final_tier_counts: countByTier(comps),

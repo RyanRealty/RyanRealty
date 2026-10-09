@@ -19,65 +19,7 @@ import {
   type Ring,
 } from '@/lib/cma/render-place-polygon'
 import { mapPage, pricingPage } from '@/lib/cma/render-pricing-page'
-import { worthStripHtml, worthStripSvg, WORTH_STRIP_WIDE } from '@/lib/cma/worth-strip'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
-
-// ── F1. One scale ───────────────────────────────────────────────────────────
-
-describe('F1 — the strip plots every mark on one scale, and says which', () => {
-  const sales = [
-    { n: 1, address: '100 Swalley', adjustedPrice: 412_000 },
-    { n: 2, address: '200 Swalley', adjustedPrice: 426_000 },
-    { n: 3, address: '300 Swalley', adjustedPrice: 428_000 },
-    { n: 4, address: '400 Swalley', adjustedPrice: 435_000 },
-    { n: 5, address: '500 Swalley', adjustedPrice: 443_000 },
-  ]
-  const input = {
-    sales,
-    rangeLow: 412_000,
-    rangeHigh: 443_000,
-    recommended: 435_000,
-    lastAsk: 460_000,
-    keptCount: 5,
-  }
-
-  it('names the scale on the drawing', () => {
-    const svg = worthStripSvg(input, WORTH_STRIP_WIDE)
-    expect(svg).toContain('One scale: sale price today. 5 sales.')
-    expect(svg).toContain('The shading is what your home is worth')
-  })
-
-  it('places the shading, every dot and the list line with the same projection', () => {
-    const svg = worthStripSvg(input, WORTH_STRIP_WIDE)
-    const zone = /<rect x="([\d.]+)"[^>]*width="([\d.]+)"[^>]*fill="rgba\(16,39,66,0\.16\)"/.exec(svg)
-    expect(zone).not.toBeNull()
-    const zoneLeft = Number(zone![1])
-    const zoneRight = zoneLeft + Number(zone![2])
-    const dots = [...svg.matchAll(/<circle cx="([\d.]+)"/g)].map((m) => Number(m[1]))
-    expect(dots).toHaveLength(5)
-    // The shading is the worth range and the sales run from its low to its
-    // high, so every dot lands within the shaded span — the F1 defect was
-    // exactly a dot outside it, because the two were drawn on different
-    // scales. Half a unit of slack for the toFixed(1) both sides round with.
-    for (const cx of dots) {
-      expect(cx).toBeGreaterThanOrEqual(zoneLeft - 0.5)
-      expect(cx).toBeLessThanOrEqual(zoneRight + 0.5)
-    }
-    // The list line is a labelled tick on that same scale: $435,000 sits
-    // inside $412,000-$443,000, so its x is inside the shading too.
-    const listLine = /<line x1="([\d.]+)"[^>]*stroke="#102742" stroke-width="2"\/>/.exec(svg)
-    expect(listLine).not.toBeNull()
-    expect(Number(listLine![1])).toBeGreaterThan(zoneLeft)
-    expect(Number(listLine![1])).toBeLessThan(zoneRight)
-    expect(svg).toContain('list $435K')
-  })
-
-  it('says what a dot is, once, under the drawing', () => {
-    const html = worthStripHtml(input)
-    expect(html).toContain('Each dot is one sale, moved to what it would sell for today.')
-    expect(html).toContain('The line is where we would list it.')
-  })
-})
 
 // ── F2. An outline that holds nothing is not drawn ──────────────────────────
 

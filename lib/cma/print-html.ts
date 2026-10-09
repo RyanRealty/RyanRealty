@@ -65,7 +65,11 @@ export async function resolveCmaPrintHtmlFromSource(
     let mapOverlay: CompPinMapOverlay | null = null
     if (!mapDataUri) {
       try {
-        const map = await buildCmaMapDataUri(stored.subject, comps, cmaMapOptionsFromArgs(stored))
+        const map = await buildCmaMapDataUri(
+          stored.subject,
+          comps,
+          cmaMapOptionsFromArgs({ ...stored, documentStatus: source.status }),
+        )
         mapDataUri = map?.dataUri ?? null
         mapOverlay = map
           ? {

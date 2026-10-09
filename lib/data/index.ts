@@ -883,9 +883,6 @@ export type { NewsletterBrokerBreakdownRow } from '@/lib/data/newsletter/queue'
 export { getBrokerNewsletterAnalytics, getBrokerWarmList } from '@/lib/data/newsletter/brokerAnalytics'
 export type { BrokerNewsletterAnalytics, BrokerWarmListRow } from '@/lib/data/newsletter/brokerAnalytics'
 
-// Anonymous partial-address capture — LP step-1 advance without cookie identity.
-export { saveAnonymousPartialAddress } from '@/lib/data/leads/saveAnonymousPartialAddress'
-export type { AnonymousPartialAddressInput } from '@/lib/data/leads/saveAnonymousPartialAddress'
 export { pauseSavedSearchByToken } from '@/lib/data/savedSearches'
 
 // Calculator defaults from app_config (mortgage rate, tax rate, insurance rate)

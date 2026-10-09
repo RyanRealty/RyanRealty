@@ -33,7 +33,7 @@ import {
   usdSigned,
 } from '@/lib/cma/render-blocks'
 import { type PricePathRange } from '@/lib/cma/price-path'
-import { compactUsdLabels } from '@/lib/cma/compact-usd'
+import { compactOrExactLabels } from '@/lib/cma/compact-usd'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom, liveListingDays } from '@/lib/cma/listing-history-line'
 import { pacificDay } from '@/lib/cma/listing-status'
@@ -496,7 +496,9 @@ function arcLines(text: string): string[] {
 export function askArcCell(entry: MatrixEntry): string {
   const asks: string[] = []
   // Two different asks never print the same label ("$1.62M → $1.62M").
-  const money = compactUsdLabels([entry.firstAsk, entry.lastAsk])
+  // A short label is kept only when it names that ask ($525,000 stays
+  // "$525K"; $524,900 prints "$524,900", not "$525K").
+  const money = compactOrExactLabels([entry.firstAsk, entry.lastAsk])
   if (entry.firstAsk != null && entry.firstAsk > 0) asks.push(money(entry.firstAsk))
   if (entry.lastAsk != null && entry.lastAsk > 0 && entry.lastAsk !== entry.firstAsk) {
     asks.push(money(entry.lastAsk))
@@ -531,8 +533,10 @@ function ppsfCell(price: number | null | undefined, sqft: number | null | undefi
  * A sale that reported no concession, and a sale with none on record.
  *
  * They are different facts and the status table under this chapter says so:
- * "A blank means nothing was recorded, and zero means the sale reported
- * none." Both printed "none" here, which told a reader a sale with no record
+ * a blank means nothing was recorded. One home prints $0 when that sale
+ * reported none. A status with more than one home prints none for a recorded
+ * zero in the concessions column, because that zero is not one home's row.
+ * Both used to print "none" here, which told a reader a sale with no record
  * had reported none. A sale with nothing recorded now says that in words, and
  * the grid takes nothing off it (`concessionOffClose`).
  */

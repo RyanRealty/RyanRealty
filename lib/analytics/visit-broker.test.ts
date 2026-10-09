@@ -30,28 +30,31 @@ describe('CRM outbound UTMs (attributeSiteLinks / attributeOutbound)', () => {
     const u = new URL(out)
     expect(u.searchParams.get('utm_source')).toBe('crm')
     expect(u.searchParams.get('utm_medium')).toBe('email')
-    expect(u.searchParams.get('utm_campaign')).toBe('market-report')
+    expect(u.searchParams.get('utm_campaign')).toMatch(/^market-report-\d{4}-(0[1-9]|1[0-2])$/)
     expect(u.searchParams.get('utm_content')).toBe('agent-rebecca')
   })
 
-  it('does not overwrite a CMA document utm_source / utm_medium / utm_campaign', () => {
+  it('does not overwrite a CMA document utm_source / utm_medium; moves the slug to rr_doc', () => {
     const existing =
       'https://ryan-realty.com/homes-for-sale/bend/x-220000001?utm_source=cma&utm_medium=document&utm_campaign=cma-101-main'
     const out = stampCrmOutboundUtms(existing, 'matt')
     const u = new URL(out)
     expect(u.searchParams.get('utm_source')).toBe('cma')
     expect(u.searchParams.get('utm_medium')).toBe('document')
-    expect(u.searchParams.get('utm_campaign')).toBe('cma-101-main')
+    expect(u.searchParams.get('utm_campaign')).toBe('cma-letter')
+    expect(u.searchParams.get('rr_doc')).toBe('cma-101-main')
     expect(u.searchParams.get('utm_content')).toBe('agent-matt')
   })
 
-  it('puts the broker in utm_term when utm_content already names a creative', () => {
+  it('leaves a creative in utm_content and does not put the broker in utm_term (paid-only)', () => {
     const existing =
       'https://ryan-realty.com/?utm_source=email&utm_medium=newsletter&utm_content=hero-video-30s'
     const out = stampCrmOutboundUtms(existing, 'paul-stevenson')
     const u = new URL(out)
+    expect(u.searchParams.get('utm_source')).toBe('newsletter')
+    expect(u.searchParams.get('utm_medium')).toBe('email')
     expect(u.searchParams.get('utm_content')).toBe('hero-video-30s')
-    expect(u.searchParams.get('utm_term')).toBe('agent-paul-stevenson')
+    expect(u.searchParams.get('utm_term')).toBeNull()
   })
 
   it('does not invent a broker UTM when there is no slug (channel defaults still apply)', () => {
