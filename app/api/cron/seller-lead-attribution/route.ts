@@ -2,7 +2,9 @@
  * Seller-lead attribution cron.
  *
  * Daily. Reads crm_people for seller-intent leads created in the lookback
- * window and tagged channel:*-ads (a paid-social/search touch). For each,
+ * window and tagged channel:* (the link that brought them: an ad, channel:fb-ads,
+ * or an organic post, channel:facebook; since 2026-10-09 only a paid utm_medium
+ * says -ads). For each,
  * attempts to match back to a content_performance row via the campaign:* /
  * ad-content:* tags. Increments north_star_attributed_seller_leads on matches.
  *

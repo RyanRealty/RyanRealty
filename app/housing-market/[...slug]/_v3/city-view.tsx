@@ -183,6 +183,9 @@ export function CityMarketView({
     { label: 'How we get our numbers', href: '/how-we-get-our-numbers' },
     ...(answerReport ? [answerReport] : []),
   ]
+  // id="takeaways" rides the answer wherever it renders (V3TakeawaysLead
+  // carries it here; the fallback section below carries it when there is no
+  // instrument), never both at once (city-view-anchor.test.tsx).
   const lede =
     takeaways.length >= 2 ? (
       <V3TakeawaysLead items={takeaways} source={answerSource} links={answerLinks} />

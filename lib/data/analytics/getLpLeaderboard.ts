@@ -4,7 +4,8 @@
  *
  * Per-LP-variant aggregate: visits, identified, hot leads, conversion rate,
  * top traffic source, top city. Sourced from visitor_sessions, classified by
- * `landing_page` mapped back to its /lp/<variant> slug.
+ * `landing_page` through lpVariantFromPath (lib/analytics/lp-variant.ts: the
+ * live /sell and /buy pages, and /lp/<slug> history).
  *
  * DAL boundary (G1): raw .from() lives here. Fails soft — callers get an
  * `unreadable` flag instead of a thrown error, per §0 (an honest empty state,
@@ -13,6 +14,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/data/client'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
+import { lpVariantFromPath } from '@/lib/analytics/lp-variant'
 
 export type LpLeaderboardRow = {
   variant: string
@@ -42,22 +44,6 @@ type LpRow = {
   topCityCounts: Map<string, number>
 }
 
-// Pull the LP slug out of a URL path like /lp/seller-home-value/, /lp/buyer-listing-alerts, /lp/expired-listing
-// Treats /home-valuation as the seller LP also (legacy alias).
-function lpVariantFromPath(pathOrUrl: string | null | undefined): string | null {
-  if (!pathOrUrl) return null
-  let p = pathOrUrl
-  try {
-    p = new URL(pathOrUrl).pathname
-  } catch {
-    /* already a path */
-  }
-  p = p.toLowerCase().replace(/\/+$/, '')
-  if (p === '/home-valuation') return 'seller-home-value'
-  const m = p.match(/^\/lp\/([a-z0-9-]+)/)
-  if (m) return m[1]
-  return null
-}
 
 function topOf(m: Map<string, number>): string {
   let best = '—'

@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
+import { lpVariantFromPath } from '@/lib/analytics/lp-variant'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
@@ -47,15 +48,6 @@ function fmtPct(num: number, den: number): string {
   return `${((num / den) * 100).toFixed(1)}%`
 }
 
-function lpVariantFromPath(pathOrUrl: string | null | undefined): string | null {
-  if (!pathOrUrl) return null
-  let p = pathOrUrl
-  try { p = new URL(pathOrUrl).pathname } catch {}
-  p = p.toLowerCase().replace(/\/+$/, '')
-  if (p === '/home-valuation') return 'seller-home-value'
-  const m = p.match(/^\/lp\/([a-z0-9-]+)/)
-  return m ? m[1] : null
-}
 
 export async function GET(request: NextRequest) {
   const denied = requireCronAuth(request)

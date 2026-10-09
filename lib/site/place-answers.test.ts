@@ -406,6 +406,17 @@ describe('the reader\'s sentence and the machine handle are separate fields', ()
     expect(school?.source).toBeUndefined()
     expect(out.traces).toContain('regional MLS, the median of the 135 current listings that report dues')
   })
+
+  it('puts leading authored questions ahead of figured rows and extra', () => {
+    const out = buildPlaceAnswers({
+      ...awbrey,
+      leading: [{ question: 'How do I find a real estate agent for Awbrey Butte?', answer: 'Call Ryan Realty.' }],
+      extra: [{ question: 'What school district serves Awbrey Butte?', answer: 'Bend-La Pine Schools.' }],
+    })
+    expect(out.answers[0]?.question).toBe('How do I find a real estate agent for Awbrey Butte?')
+    expect(out.answers.at(-1)?.question).toMatch(/worth/)
+    expect(answersFaqItems(out.answers)[0]?.question).toBe('How do I find a real estate agent for Awbrey Butte?')
+  })
 })
 
 /**
