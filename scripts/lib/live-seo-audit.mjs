@@ -42,6 +42,7 @@
 // serves it in <head> to crawlers it recognises; reading as Googlebot is the view
 // that ranks. The tail names the probe in access logs.
 import { readFileSync } from 'node:fs'
+import { TRANSPORT_RETRIES } from './transport-retry.mjs'
 
 /**
  * The title-length ratchet: a sample with more than MAX_OVER_SOFT_SHARE of its
@@ -206,15 +207,38 @@ export function auditPage(url, page, { isHome, isListing }) {
   return { fails, warns }
 }
 
-async function fetchText(url, ua, { accept = 'text/html,application/xhtml+xml,*/*;q=0.8', redirect = 'manual', timeoutMs = 60_000 } = {}) {
-  const ctl = new AbortController()
-  const timer = setTimeout(() => ctl.abort(), timeoutMs)
-  try {
-    const res = await fetch(url, { headers: { 'user-agent': ua, accept }, redirect, signal: ctl.signal })
-    return { status: res.status, headers: res.headers, text: res.status === 200 ? await res.text() : '' }
-  } finally {
-    clearTimeout(timer)
+/**
+ * One read, with ONE retry on a transport error: the fetch or the body read
+ * threw (a dropped tunnel, a reset, the timeout), each attempt on its own
+ * timeout. An HTTP status is the site's answer and is never retried. Same
+ * contract as the sitemap smoke and scripts/lib/transport-retry.mjs: the cloud
+ * container's egress relay drops about one of six concurrent tunnels to a host,
+ * and before this one drop failed deploy:verify on a READY deploy (robots or a
+ * sitemap: "unexpected error: fetch failed", exit 2; a page: a false SEO fail).
+ */
+export async function fetchText(
+  url,
+  ua,
+  {
+    accept = 'text/html,application/xhtml+xml,*/*;q=0.8',
+    redirect = 'manual',
+    timeoutMs = 60_000,
+    retries = TRANSPORT_RETRIES,
+    retryDelayMs = 1_000,
+    fetchImpl = fetch,
+  } = {},
+) {
+  let lastError
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, retryDelayMs))
+    try {
+      const res = await fetchImpl(url, { headers: { 'user-agent': ua, accept }, redirect, signal: AbortSignal.timeout(timeoutMs) })
+      return { status: res.status, headers: res.headers, text: res.status === 200 ? await res.text() : '' }
+    } catch (e) {
+      lastError = e
+    }
   }
+  throw lastError
 }
 
 function sample(arr, n) {
