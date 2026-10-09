@@ -49,9 +49,13 @@ describe('one entity, one page', () => {
     }
   })
 
-  it('Sunriver: the town entity sits on the city page, and the community page names no resort business', () => {
-    expect(placeEntitySameAs('/cities/sunriver')).toContain('https://www.wikidata.org/wiki/Q3459533')
-    expect(placeEntitySameAs('/communities/sunriver')).toEqual(['https://www.sunriverowners.org'])
+  it('Sunriver: the community page (the town\'s one page) carries the town entity and names no resort business', () => {
+    const sameAs = placeEntitySameAs('/communities/sunriver')
+    expect(sameAs).toContain('https://www.wikidata.org/wiki/Q3459533')
+    expect(sameAs).toContain('https://www.sunriverowners.org')
+    expect(sameAs).not.toContain('https://www.wikidata.org/wiki/Q7641161')
+    expect(sameAs).not.toContain('https://en.wikipedia.org/wiki/Sunriver_Resort')
+    expect(placeEntitySameAs('/cities/sunriver')).toEqual([])
   })
 })
 

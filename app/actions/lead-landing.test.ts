@@ -30,6 +30,8 @@ vi.mock('@/lib/lead-tracking', () => ({ fireLeadGenerated: vi.fn(async () => und
 vi.mock('@/lib/meta-pixel-helpers', () => ({ generateEventId: () => 'evt-1' }))
 vi.mock('next/headers', () => ({
   cookies: async () => ({ get: () => undefined }),
+  // visitorCapiConsent (main, PR #437) reads Sec-GPC; no consent cookie, so it fails closed.
+  headers: async () => new Headers(),
 }))
 
 import { submitLeadLandingForm } from './lead-landing'

@@ -132,12 +132,17 @@ export const PLACE_ENTITY_SAME_AS: readonly PlaceEntitySameAs[] = [
     sameAs: ['https://www.northwestcrossing.com'],
   },
   {
-    // The town entity (Q3459533) belongs to /cities/sunriver alone: two pages
-    // claiming one entity invite an engine to merge them. Sunriver Resort
-    // (Q7641161) is the lodge business, not the community. The Owners
-    // Association runs the community and is the source its page cites.
+    // /cities/sunriver 301s here (80ff1e099, Matt 2026-10-04), so this is the
+    // town's one page and it carries the town entity (Q3459533). Sunriver
+    // Resort (Q7641161) is the lodge business, not the community, so the page
+    // does not claim it. The Owners Association runs the community and is the
+    // source its page cites.
     path: '/communities/sunriver',
-    sameAs: ['https://www.sunriverowners.org'],
+    sameAs: [
+      'https://en.wikipedia.org/wiki/Sunriver,_Oregon',
+      'https://www.wikidata.org/wiki/Q3459533',
+      'https://www.sunriverowners.org',
+    ],
   },
   {
     path: '/communities/crosswater',
