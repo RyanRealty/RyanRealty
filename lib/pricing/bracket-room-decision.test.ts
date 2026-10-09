@@ -356,9 +356,9 @@ describe('the size bracket seats a sale with the picker’s one-room decision (r
     )
   })
 
-  it('never seats a sale the rule refuses: two full baths apart, and the bracket takes the next eligible home', () => {
+  it('never seats a sale the rule refuses: three full baths apart, and the bracket takes the next eligible home', () => {
     const subject = subjectOf({})
-    const twoApart = taos({ bathsFull: 4, bathsHalf: 0, baths: 4 })
+    const twoApart = taos({ bathsFull: 5, bathsHalf: 0, baths: 5 })
     // Farther in size than Taos, so it is the bracket's second choice.
     const sameRooms = taos({
       listingKey: 'NEXT_LARGER',

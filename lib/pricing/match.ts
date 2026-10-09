@@ -726,10 +726,10 @@ function passesTier(
   if (!applesOk(subject, sale, tier.apples, asOfYear, allowFeatureCross)) {
     return { ok: false, miles: null }
   }
-  // ONE ROOM RULE (rule 4, Matt 2026-10-09). One bedroom apart, one bathroom
-  // apart, or both, stays and is weighed less. Two or more on either count
-  // is refused everywhere. The picker's one call (pickerRoomDecision) is the
-  // same one the size bracket makes and the seated sale carries.
+  // ONE ROOM RULE (rule 4, Matt 2026-10-09). Up to two bedrooms off, up to two
+  // bathrooms off, or both, stays and is weighed less. Three or more on either
+  // count is refused everywhere. The picker's one call (pickerRoomDecision) is
+  // the same one the size bracket makes and the seated sale carries.
   const rooms = pickerRoomDecision(subject, sale)
   if (!rooms.ok) return { ok: false, miles: null }
   if (!ownPlat && !ageOk(subject.yearBuilt, sale.yearBuilt, asOfYear, tier.ageYears)) {

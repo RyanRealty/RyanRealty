@@ -56,11 +56,11 @@
  *  9. Location: a place word in the reason (fairway, golf, resort, highway)
  *     must be in the comp remarks or view and not in the subject's.
  * 10. Condition: a condition word in the reason must appear in the comp remarks.
- * 11. Beds or baths: the one-room rule (lib/pricing/room-counts.ts, skill 0.1)
+ * 11. Beds or baths: the room rule (lib/pricing/room-counts.ts, skill 0.1)
  *     is the only room wall. Cited counts must match the fields. An exclusion
- *     for a gap that rule allows (same whole count, or one apart on own ground)
- *     is ignored. An exclusion for a gap that rule refuses (one apart off
- *     ground, or two or more anywhere) stays.
+ *     for a gap that rule allows (up to two whole bedrooms off, up to two
+ *     whole bathrooms off, or both) is ignored. An exclusion for three or
+ *     more whole rooms apart on one count stays.
  * 12. Basis `other` with no checkable claim is kept. An exclusion we cannot
  *     disprove is not thrown out. An exclusion we can disprove is.
  *
@@ -440,13 +440,17 @@ function roomsSupported(reason: string, subject: CmaSubject, comp: CmaComp): boo
   return bedOk || bathOk || isRoomishReason(reason)
 }
 
-function keepForAllowedRoomGap(verdict: CompVerdict, notes: Array<'beds' | 'baths'>): GroundResult {
+function keepForAllowedRoomGap(
+  verdict: CompVerdict,
+  notes: Array<'beds' | 'baths'>,
+  gap?: { beds: number; baths: number } | null,
+): GroundResult {
   return {
     verdict: {
       listingKey: verdict.listingKey,
       tier: 'strong',
       reason:
-        roomDifferenceSentence(notes) ??
+        roomDifferenceSentence(notes, gap) ??
         'Room counts follow the one-room rule. This sale stays.',
     },
     grounded: false,
@@ -525,7 +529,7 @@ export function groundVerdict(
 
   const rooms = carriedRoomDecision(subject, comp)
   if (rooms.ok && isRoomishReason(reason) && (basis == null || basis === 'other')) {
-    return keepForAllowedRoomGap(verdict, rooms.notes)
+    return keepForAllowedRoomGap(verdict, rooms.notes, rooms.gap)
   }
 
   const priceRead = readPriceClaims(reason)

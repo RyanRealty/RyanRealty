@@ -133,8 +133,16 @@ describe('pickBandRivals', () => {
     expect(pickBandRivals([rival({ address: '  ' })])).toEqual([])
   })
 
-  it('keeps a home one bedroom off wherever the search reached, and drops one two bedrooms off (rule 4, Matt 2026-10-09)', () => {
+  it('keeps a home two bedrooms off wherever the search reached, and drops one three bedrooms off (rule 4, Matt 2026-10-09)', () => {
     const rivals = (duffyPlat: string) => [
+      rival({
+        listingKey: 'THREE',
+        address: '6 Craftsman',
+        beds: 6,
+        sqft: 3600,
+        latitude: 44.27005,
+        longitude: -121.17,
+      }),
       rival({
         listingKey: 'TWO',
         address: '5 Craftsman',
@@ -162,13 +170,18 @@ describe('pickBandRivals', () => {
       }),
     ]
     const subject = { latitude: 44.27, longitude: -121.17, beds: 3, sqft: 3600, subdivision: 'Diamond Bar Ranch' }
-    expect(pickBandRivals(rivals('Diamond Bar Ranch'), subject).map((r) => r.address)).toEqual(['4 Duffy', '3 Fairway'])
-    expect(pickBandRivals(rivals('Other Plat'), subject).map((r) => r.address)).toEqual(['4 Duffy', '3 Fairway'])
+    for (const plat of ['Diamond Bar Ranch', 'Other Plat']) {
+      const picked = pickBandRivals(rivals(plat), subject).map((r) => r.address)
+      expect(picked).toContain('5 Craftsman')
+      expect(picked).toContain('4 Duffy')
+      expect(picked).toContain('3 Fairway')
+      expect(picked).not.toContain('6 Craftsman')
+    }
   })
 
   it('never falls back to unlike homes (Matt 2026-10-07)', () => {
     const picked = pickBandRivals(
-      [rival({ listingKey: 'FIVE', address: '5 Craftsman', beds: 5, latitude: 44.2701, longitude: -121.17 })],
+      [rival({ listingKey: 'SIX', address: '6 Craftsman', beds: 6, latitude: 44.2701, longitude: -121.17 })],
       { latitude: 44.27, longitude: -121.17, beds: 3, sqft: 1280 },
     )
     expect(picked).toEqual([])

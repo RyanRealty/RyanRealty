@@ -1312,7 +1312,7 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     expect(set.peers[0]!.whyItSat).toContain('never came down from $500,000')
   })
 
-  it("keeps a one-bedroom miss on the subject's own plat, refuses two apart and the size cutoff, and says so (rule 4, Matt 2026-10-07)", () => {
+  it("keeps one or two bedrooms off on the subject's own plat, refuses the size cutoff, and says which gap (rule 4, Matt 2026-10-09)", () => {
     const set = buildExpiredPeerSet({
       rows: [
         unsold('NEAR', '2515 Keats', 5, {
@@ -1337,11 +1337,13 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       // The closed-sale lookback caps the window (Matt ADD 2026-09-12).
       maxWindowMonths: 6,
     })
-    expect(set.peers.map((p) => p.address)).toEqual(['2515 Keats'])
+    expect(set.peers.map((p) => p.address)).toEqual(['2515 Keats', '10 Oak'])
+    expect(set.peers.map((p) => p.address)).not.toContain('1512 Quiet Ridge')
     expect(set.peers[0]!.roomDifference).toEqual(['beds'])
+    expect(set.peers[1]!.roomDifference).toEqual(['beds'])
     expect(set.likeYours).toBe(true)
     expect(set.sentence).toBe(
-      'Only one home like yours in Hampton Park came off the market without selling in the last six months, and nothing from further out was added to make up the number. 2515 Keats is one bedroom different from yours. No dollar value is applied to the room.',
+      'Only two homes like yours in Hampton Park came off the market without selling in the last six months, and nothing from further out was added to make up the number. 2515 Keats is one bedroom different from yours. 10 Oak is two bedrooms different from yours. No dollar value is applied to the room.',
     )
     expect(set.sentence).not.toContain('within 35 percent')
     expect(set.sentence).not.toContain('None were close')

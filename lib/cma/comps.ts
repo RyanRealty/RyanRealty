@@ -1570,7 +1570,7 @@ export async function selectComps(
   }
   if (x.bath_count > 0) {
     trace.push(
-      `Excluded ${x.bath_count} sale(s) on room count. A sale one bedroom or bathroom away from your home is used only inside your home's own plat, neighborhood or street, and is marked where it is; two or more rooms away is not used anywhere.`,
+      `Excluded ${x.bath_count} sale(s) on room count. A sale up to two bedrooms or two bathrooms off your home is used and weighs less. Three or more rooms off on one count is not used.`,
     )
   }
   if (x.lot_character > 0) {
@@ -1772,7 +1772,7 @@ export async function selectComps(
   }
   const roomNotedCount = comps.filter((c) => (c.roomDifference ?? []).length > 0).length
   if (roomNotedCount > 0) {
-    const d = `${roomNotedCount} sale(s) are one bedroom or bathroom different from your home. Each one still counts, and it counts for less than a sale with the same rooms. No dollar value is applied to the room: paired sales in this market do not support one.`
+    const d = `${roomNotedCount} sale(s) are off by one or two bedrooms or bathrooms. Each one still counts, and it counts for less than a sale with the same rooms. No dollar value is applied to the room: paired sales in this market do not support one.`
     trace.push(d)
     disclosures.push(d)
   }
@@ -1893,7 +1893,7 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
     const rooms = roomCountsDecision(subject, { ...comp, selectionTier: 'broker-selected' })
     if (!rooms.ok) {
       refused.push(
-        `${comp.address} is ${comp.beds ?? '?'} bed / ${printedBaths(comp) ?? '?'} bath against your home's ${subject.beds ?? '?'} / ${printedBaths(subject) ?? '?'}, two or more rooms apart`,
+        `${comp.address} is ${comp.beds ?? '?'} bed / ${printedBaths(comp) ?? '?'} bath against your home's ${subject.beds ?? '?'} / ${printedBaths(subject) ?? '?'}, three or more rooms apart`,
       )
       continue
     }

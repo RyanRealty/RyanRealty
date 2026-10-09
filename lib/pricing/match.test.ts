@@ -134,7 +134,7 @@ describe('walkPricingLadder', () => {
 
   /**
    * THE ONE ROOM RULE (Matt 2026-10-09). One bath apart stays wherever a rung
-   * already reaches, and it is recorded on the comp. Two or more apart is
+   * already reaches, and it is recorded on the comp. Three or more apart is
    * refused. A sale no rung reaches stays out for distance, not for the room.
    */
   it('uses a one-bath difference from inside the subject’s own plat, and records it', () => {
@@ -164,16 +164,21 @@ describe('walkPricingLadder', () => {
     expect(out.comps.map((c) => c.listingKey)).not.toContain('AWAY')
   })
 
-  it('refuses two whole baths apart even inside the subject’s own plat', () => {
-    const pool = [sale({ listingKey: 'FOUR', baths: 4, address: '16 Kenwood' })]
+  it('keeps two whole baths apart inside the subject’s own plat, and refuses three', () => {
+    const pool = [
+      sale({ listingKey: 'TWO', baths: 4, address: '16 Kenwood' }),
+      sale({ listingKey: 'THREE', baths: 5, address: '18 Kenwood' }),
+    ]
     const out = walkPricingLadder(subject({ baths: 2 }), pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey)).not.toContain('FOUR')
+    expect(out.comps.map((c) => c.listingKey)).toContain('TWO')
+    expect(out.comps.find((c) => c.listingKey === 'TWO')?.roomDifference).toEqual(['baths'])
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('THREE')
   })
 
-  it('still refuses two whole baths apart outside the plat', () => {
+  it('keeps two whole baths apart outside the plat when a rung reaches it, and refuses three', () => {
     const pool = [
       sale({
-        listingKey: 'FOUR_AWAY',
+        listingKey: 'TWO_AWAY',
         baths: 4,
         address: '16 Stone',
         subdivision: 'Stone Creek',
@@ -181,9 +186,20 @@ describe('walkPricingLadder', () => {
         latitude: 44.062,
         longitude: -121.302,
       }),
+      sale({
+        listingKey: 'THREE_AWAY',
+        baths: 5,
+        address: '18 Stone',
+        subdivision: 'Stone Creek',
+        subdivisionNorm: 'stone creek',
+        latitude: 44.0621,
+        longitude: -121.3021,
+      }),
     ]
     const out = walkPricingLadder(subject({ baths: 2, marketArea: null }), pool, { asOf })
-    expect(out.comps).toHaveLength(0)
+    expect(out.comps.map((c) => c.listingKey)).toContain('TWO_AWAY')
+    expect(out.comps.find((c) => c.listingKey === 'TWO_AWAY')?.roomDifference).toEqual(['baths'])
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('THREE_AWAY')
   })
 
   it('drops a much more expensive subdivision once the similar-sub rungs run', () => {

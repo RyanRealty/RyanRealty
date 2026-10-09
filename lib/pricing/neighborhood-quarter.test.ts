@@ -240,9 +240,19 @@ describe('a one-room gap stays in the set and weighs less', () => {
     expect(both).toBeGreaterThan(0)
     expect(both).toBeLessThan(oneBed)
     expect(both).toBeGreaterThan(adjacent)
+    const twoBeds = closedCompWeight({ ...weight, saleBeds: 5, saleBaths: 2, locationMatch: 'same-subdivision' })
+    const twoBaths = closedCompWeight({ ...weight, saleBeds: 3, saleBaths: 4, locationMatch: 'same-subdivision' })
+    const twoBoth = closedCompWeight({ ...weight, saleBeds: 5, saleBaths: 4, locationMatch: 'same-subdivision' })
+    expect(twoBeds).toBeGreaterThan(0)
+    expect(twoBeds).toBeLessThan(oneBed)
+    expect(twoBaths).toBeGreaterThan(0)
+    expect(twoBaths).toBeLessThan(closedCompWeight({ ...weight, saleBeds: 3, saleBaths: 3, locationMatch: 'same-subdivision' }))
+    expect(twoBoth).toBeGreaterThan(0)
+    expect(twoBoth).toBeLessThan(twoBeds)
+    expect(twoBoth).toBeGreaterThan(adjacent)
   })
 
-  it('seats a neighborhood sale one bedroom and one bathroom off, and still refuses two bedrooms off', () => {
+  it('seats a neighborhood sale two bedrooms and two bathrooms off, and still refuses three bedrooms off', () => {
     const both = sale({
       listingKey: 'BOTH',
       address: '10 Neighbor',
@@ -258,14 +268,24 @@ describe('a one-room gap stays in the set and weighs less', () => {
       listingKey: 'TWOBEDS',
       address: '12 Schaeffer',
       beds: 5,
+      baths: 4,
+      sqft: 1200,
+      yearBuilt: 2005,
+    })
+    const threeBeds = sale({
+      listingKey: 'THREEBEDS',
+      address: '14 Schaeffer',
+      beds: 6,
       baths: 2,
       sqft: 1200,
       yearBuilt: 2005,
     })
-    const out = walkPricingLadder(subject(), [both, twoBeds], { asOf })
+    const out = walkPricingLadder(subject(), [both, twoBeds, threeBeds], { asOf })
     expect(out.comps.map((c) => c.listingKey)).toContain('BOTH')
-    expect(out.comps.find((c) => c.listingKey === 'BOTH')?.roomDifference).toEqual(['beds', 'baths'])
-    expect(out.comps.map((c) => c.listingKey)).not.toContain('TWOBEDS')
+    expect(out.comps.map((c) => c.listingKey)).toContain('TWOBEDS')
+    expect(out.comps.find((c) => c.listingKey === 'TWOBEDS')?.roomDifference).toEqual(['beds', 'baths'])
+    expect(out.comps.find((c) => c.listingKey === 'TWOBEDS')?.roomDecision?.gap).toEqual({ beds: 2, baths: 2 })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('THREEBEDS')
   })
 
   it('seats a touching plat across the neighborhood line when it is one bathroom off', () => {

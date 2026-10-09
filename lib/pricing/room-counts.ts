@@ -2,15 +2,15 @@
  * ONE ROOM RULE, for bedrooms and bathrooms alike (Matt 2026-09-10, revised
  * 2026-10-09: a room gap weighs less, it does not throw the sale out).
  *
- * Same whole count travels anywhere. ONE bedroom apart, ONE bathroom apart,
- * or one apart on both, stays in the set wherever the search already reached.
- * The closed-comp weight counts that sale for less (a bedroom off at 0.85 of
- * the room step, a bathroom off at 0.90, and both multiply). Location still
- * outranks the room: a same-subdivision sale with a room gap outweighs an
- * adjacent sale with the same room count. No dollar value is applied to the
- * room. Paired sales in this market do not support one.
+ * Same whole count travels anywhere. Up to TWO bedrooms off, up to TWO
+ * bathrooms off, or both, stays wherever the search already reached (Matt
+ * 2026-10-09). The closed-comp weight counts that sale for less: one bedroom
+ * off is 0.85 of the room step, two bedrooms off is 0.70, one bathroom off is
+ * 0.90, two bathrooms off is 0.75, and the two counts multiply. Location still
+ * outranks the room. No dollar value is applied to the room. Paired sales in
+ * this market do not support one.
  *
- * Two or more whole rooms apart on either count is still refused everywhere.
+ * Three or more whole rooms apart on either count is refused everywhere.
  * That is a different house, not a lighter weight. A half bath never decides.
  *
  * WHY THERE IS NO DOLLAR ADJUSTMENT HERE. The obvious implementation is to
@@ -35,10 +35,13 @@
  * (lib/pricing/room-ground.ts), which is this function plus own-ground.
  */
 
-/** One whole room apart stays. Two or more is refused. */
-export const ROOM_GAP_LOCAL_MAX = 1
+/** Up to two whole rooms apart stays. Three or more is refused. */
+export const ROOM_GAP_LOCAL_MAX = 2
 
 export type RoomVerdict = 'match' | 'noted' | 'refuse'
+
+/** Whole-room gap on each count. Zero when the count is unknown or the same. */
+export type RoomGap = { beds: number; baths: number }
 
 /** Whole rooms. A 3.5-bath house is a 3-bath house for this comparison. */
 function whole(count: number | null | undefined): number | null {
@@ -48,8 +51,8 @@ function whole(count: number | null | undefined): number | null {
 
 /**
  * `match` — same whole count, usable anywhere with nothing to say.
- * `noted`  — one room apart; usable, disclosed, and weighed less.
- * `refuse` — two or more whole rooms apart.
+ * `noted`  — one or two rooms apart; usable, disclosed, and weighed less.
+ * `refuse` — three or more whole rooms apart.
  */
 export function roomCountVerdict(
   subjectCount: number | null | undefined,
@@ -57,8 +60,8 @@ export function roomCountVerdict(
   opts: { local: boolean },
 ): RoomVerdict {
   // Ground used to decide admission. It no longer does. The weight, not a
-  // wall, is how a one-room gap counts for less (Matt 2026-10-09). Callers
-  // still pass `local` so the stamp can record where the sale sits.
+  // wall, is how a room gap counts for less (Matt 2026-10-09). Callers still
+  // pass `local` so the stamp can record where the sale sits.
   void opts
   const a = whole(subjectCount)
   const b = whole(compCount)
@@ -71,34 +74,59 @@ export function roomCountVerdict(
   return 'refuse'
 }
 
+function countedGap(a: number | null | undefined, b: number | null | undefined): number {
+  const left = whole(a)
+  const right = whole(b)
+  if (left == null || right == null) return 0
+  return Math.abs(left - right)
+}
+
 /**
- * Both counts at once. One apart on both counts stays. The weight multiplies
- * the two room factors, so that sale counts for less than either gap alone.
- * `ok` is false only when either count is two or more apart. `notes` names
- * every count that differs on a sale we still use.
+ * Both counts at once. Up to two apart on both counts stays. The weight
+ * multiplies the two room factors, so a wider gap counts for less. `ok` is
+ * false only when either count is three or more apart. `notes` names every
+ * count that differs on a sale we still use. `gap` is the whole-room distance.
  */
 export function roomCountsUsable(
   subject: { beds: number | null | undefined; baths: number | null | undefined },
   comp: { beds: number | null | undefined; baths: number | null | undefined },
   opts: { local: boolean; phaseFamily?: boolean },
-): { ok: boolean; notes: Array<'beds' | 'baths'> } {
+): { ok: boolean; notes: Array<'beds' | 'baths'>; gap: RoomGap } {
   const beds = roomCountVerdict(subject.beds, comp.beds, opts)
   const baths = roomCountVerdict(subject.baths, comp.baths, opts)
-  if (beds === 'refuse' || baths === 'refuse') return { ok: false, notes: [] }
+  const gap = { beds: countedGap(subject.beds, comp.beds), baths: countedGap(subject.baths, comp.baths) }
+  if (beds === 'refuse' || baths === 'refuse') return { ok: false, notes: [], gap }
   const notes: Array<'beds' | 'baths'> = []
   if (beds === 'noted') notes.push('beds')
   if (baths === 'noted') notes.push('baths')
-  return { ok: true, notes }
+  return { ok: true, notes, gap }
+}
+
+/** "one bedroom", "two bathrooms", or both, in that order. A missing gap reads as one. */
+export function roomOffPhrase(
+  notes: readonly ('beds' | 'baths')[],
+  gap?: Partial<RoomGap> | null,
+): string {
+  const parts = notes.map((n) => {
+    const off = gap?.[n]
+    if (n === 'beds') return off === 2 ? 'two bedrooms' : 'one bedroom'
+    return off === 2 ? 'two bathrooms' : 'one bathroom'
+  })
+  if (parts.length <= 1) return parts[0] ?? ''
+  return `${parts[0]} and ${parts[1]}`
 }
 
 /**
- * The sentence that must sit beside a sale used one room apart, on the document
- * itself. Short, because it prints under the comp, and it always states that no
- * dollar value was applied — that is the part a reader is owed.
+ * The sentence that sits beside a sale whose rooms are off, on the document
+ * itself. It names one or two, says the sale counts for less, and states that
+ * no dollar value was applied.
  */
-export function roomDifferenceSentence(notes: Array<'beds' | 'baths'> | null | undefined): string | null {
+export function roomDifferenceSentence(
+  notes: Array<'beds' | 'baths'> | null | undefined,
+  gap?: Partial<RoomGap> | null,
+): string | null {
   if (!notes || notes.length === 0) return null
-  const parts = notes.map((n) => (n === 'beds' ? 'bedroom' : 'bathroom'))
-  const list = parts.length === 1 ? parts[0]! : `${parts[0]} and ${parts[1]}`
-  return `One ${list} different from yours. It counts for less than a sale with the same rooms. No dollar value is applied to the room.`
+  const list = roomOffPhrase(notes, gap)
+  const phrase = list.charAt(0).toUpperCase() + list.slice(1)
+  return `${phrase} different from yours. It counts for less than a sale with the same rooms. No dollar value is applied to the room.`
 }

@@ -85,7 +85,7 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
     })
   })
 
-  it('applies rule 4: one room apart stays and is disclosed, on or off the plat; two apart on one count is refused', () => {
+  it('applies rule 4: up to two rooms apart stays and is disclosed; three apart on one count is refused', () => {
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, baths: 3 })).toEqual({
       ok: true,
       ownPlat: true,
@@ -101,7 +101,12 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
       ownPlat: true,
       roomDifference: ['beds', 'baths'],
     })
-    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, beds: 5 })).toEqual({ ok: false, reason: 'rooms', rooms: ['beds'] })
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, beds: 5 })).toEqual({
+      ok: true,
+      ownPlat: true,
+      roomDifference: ['beds'],
+    })
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, beds: 6 })).toEqual({ ok: false, reason: 'rooms', rooms: ['beds'] })
   })
 
   it('holds the plat-wide living-area band, and lets an unknown size through', () => {

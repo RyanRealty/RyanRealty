@@ -98,7 +98,7 @@ describe('ordinary subdivision phases', () => {
     const tooFar = sale({
       listingKey: 'PHASE_FAR',
       address: '9 Phase One',
-      beds: 2,
+      beds: 1,
       baths: 2,
       sqft: 2100,
       closePrice: 500_000,

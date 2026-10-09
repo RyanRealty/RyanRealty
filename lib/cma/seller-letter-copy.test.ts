@@ -237,5 +237,8 @@ describe('the generators write plain English', () => {
       'One bedroom off yours. It counts for less. No dollar adjustment.',
     )
     expect(roomAdjustmentWords(['beds'])).not.toContain('$0')
+    expect(roomAdjustmentWords(['beds', 'baths'], { beds: 2, baths: 2 })).toBe(
+      'Two bedrooms and two bathrooms off yours. It counts for less. No dollar adjustment.',
+    )
   })
 })

@@ -184,14 +184,14 @@ describe('1. the homes that came off unsold and are not like this one', () => {
 
   it('names the room that differs, the years, or the kind of home, and never a reason that is not true', () => {
     const subject = { ...KELLY_SUBJECT, bathsFull: null, bathsHalf: null }
-    // Two baths apart is refused anywhere (rule 4): the bathroom is named, the bedroom is not.
+    // Three baths apart is refused anywhere (rule 4). Two apart stays.
     const rooms = describeUnlikeHome(KELLY_AREA, subject, {
       address: '62685 McClain',
       subdivision: 'Skyline West',
       latitude: 44.0739,
       longitude: -121.3625,
       beds: 3,
-      baths: 4,
+      baths: 5,
       sqft: 1800,
       yearBuilt: 2004,
       propertySubType: 'Single Family Residence',

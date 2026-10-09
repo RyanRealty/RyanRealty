@@ -33,9 +33,11 @@ describe('roomCountsDecision records what it compared', () => {
     })
   })
 
-  it('compares the totals when either side has no split', () => {
+  it('compares the totals when either side has no split, and a two-bath gap stays', () => {
     const d = roomCountsDecision({ ...MILWAUKEE, bathsFull: null, bathsHalf: null }, COLUMBIA)
-    expect(d.ok).toBe(false)
+    expect(d.ok).toBe(true)
+    expect(d.notes).toEqual(['baths'])
+    expect(d.gap.baths).toBe(2)
     expect(d.compared.bathBasis).toBe('total')
     expect(d.compared.subjectBaths).toBe(1)
     expect(d.compared.saleBaths).toBe(3)
@@ -46,9 +48,10 @@ describe('carriedRoomDecision reads the picker stamp', () => {
   it('re-runs the rule on the counts the picker compared when the split did not travel', () => {
     const stamp = roomCountsDecision(MILWAUKEE, COLUMBIA)
     // The subject reaches this check with its total only, and the sale lost
-    // its split too. Without the stamp the totals (1 against 3) refuse.
+    // its split too. Totals three or more apart refuse. The stamp re-runs the
+    // full-bath counts the picker compared, which are one apart.
     const bare = { beds: 2, baths: 1 }
-    const stripped = { ...COLUMBIA, bathsFull: null, bathsHalf: null }
+    const stripped = { ...COLUMBIA, baths: 5, bathsFull: null, bathsHalf: null }
     expect(carriedRoomDecision(bare, stripped).ok).toBe(false)
     const carried = carriedRoomDecision(bare, { ...stripped, roomDecision: stamp })
     expect(carried.ok).toBe(true)
@@ -57,11 +60,11 @@ describe('carriedRoomDecision reads the picker stamp', () => {
   })
 
   it('carries a refusal too: a stamp the picker would have refused still refuses', () => {
-    // Two whole baths apart is still a refusal, on or off the plat. One apart is not.
+    // Three whole baths apart is still a refusal, on or off the plat. Two apart is not.
     const twoApart = {
       ...COLUMBIA,
       baths: 4,
-      bathsFull: 3,
+      bathsFull: 4,
       bathsHalf: 0,
       subdivision: 'Highland',
       ownPlat: false,

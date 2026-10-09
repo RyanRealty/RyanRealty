@@ -350,23 +350,20 @@ describe('one-room rule — picker and review share one decision', () => {
     expect(pickerKeeps(subject, far)).toBe(false)
   })
 
-  it('two baths off is out everywhere, including own plat', () => {
+  it('two baths off stays everywhere the search reached, and three baths off is out', () => {
     const subject = pricingSubject({ baths: 3 })
     const onPlat = pricingSale({ listingKey: 'TWO_OFF', baths: 1, address: '11 Indian Ridge' })
-    expect(roomCountsDecision(subject, { ...onPlat, ownPlat: true }).ok).toBe(false)
-    expect(pickerKeeps(subject, onPlat)).toBe(false)
-
-    const offPlat = pricingSale({
-      listingKey: 'TWO_AWAY',
-      baths: 1,
-      address: '9 Stone',
-      subdivision: 'Stone Creek',
-      subdivisionNorm: 'stone creek',
-      latitude: 44.12,
-      longitude: -121.18,
+    expect(roomCountsDecision(subject, { ...onPlat, ownPlat: true })).toMatchObject({
+      ok: true,
+      notes: ['baths'],
+      gap: { baths: 2 },
     })
-    expect(roomCountsDecision(subject, { ...offPlat, ownPlat: false }).ok).toBe(false)
-    expect(pickerKeeps(subject, offPlat)).toBe(false)
+    expect(pickerKeeps(subject, onPlat)).toBe(true)
+
+    const three = pricingSubject({ baths: 4 })
+    const farRooms = pricingSale({ listingKey: 'THREE_OFF', baths: 1, address: '13 Indian Ridge' })
+    expect(roomCountsDecision(three, { ...farRooms, ownPlat: true }).ok).toBe(false)
+    expect(pickerKeeps(three, farRooms)).toBe(false)
   })
 
   it('fails if the picker and the review disagree on the same sale’s room gap', async () => {

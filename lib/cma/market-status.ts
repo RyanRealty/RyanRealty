@@ -123,7 +123,7 @@ export type CmaExpiredPeer = {
   platSlug?: string | null
   latitude: number | null
   longitude: number | null
-  /** Rule 4: one room apart stays and weighs less. Two or more on one count is refused. No dollar value. */
+  /** Rule 4: up to two whole rooms off stays and weighs less. Three or more on one count is refused. No dollar value. */
   roomDifference?: Array<'beds' | 'baths'> | null
 }
 
@@ -1200,7 +1200,7 @@ export function buildExpiredPeerSet(input: {
   const widenedTo = !shortfall && windowMonths > windows[0]! ? windowMonths : null
   // A peer kept one room apart on the subject's own ground is named with the
   // room, and the sentence says no dollar value is applied (rule 4).
-  const noted = roomNotedSentence(withWhy)
+  const noted = roomNotedSentence(withWhy, input.subject)
   const roomNote = noted ? ` ${noted}` : ''
 
   return {

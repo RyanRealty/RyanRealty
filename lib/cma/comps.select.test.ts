@@ -869,7 +869,7 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
     const cut = await selectComps(kenwood)
     expect(cut.diagnostics.candidates).toBe(11)
     expect(keys(cut)).toEqual(['F0', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6'])
-    expect(cut.trace.some((t) => t.includes('one bedroom or bathroom different'))).toBe(false)
+    expect(cut.trace.some((t) => t.includes('off by one or two bedrooms or bathrooms'))).toBe(false)
 
     poolOf([
       ...[0, 1, 2, 3, 4].map((i) => plat(`F${i}`, i, 500_000 + i * 1_000, SIX_MO)),
@@ -877,7 +877,7 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
     ])
     const kept = await selectComps(kenwood)
     expect(keys(kept)).toContain('BATH0')
-    expect(kept.diagnostics.disclosures.some((d) => d.startsWith('1 sale(s) are one bedroom or bathroom different'))).toBe(true)
+    expect(kept.diagnostics.disclosures.some((d) => d.startsWith('1 sale(s) are off by one or two bedrooms or bathrooms'))).toBe(true)
   })
 
   it('a wider rung reaching five never costs an own-plat sale its seat to the outlier drop (both ladders seat own ground)', async () => {

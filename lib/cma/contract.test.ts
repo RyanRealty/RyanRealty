@@ -414,10 +414,10 @@ describe('evaluateAccuracyContract', () => {
     expect(offGround.detail).toMatch(/counts for less/)
   })
 
-  it('still hard-fails a two-bath gap on a custom or new subject', () => {
+  it('still hard-fails a three-bath gap on a custom or new subject', () => {
     const comps = [
       ...tightSet().slice(0, 5).map((c) => ({ ...c, baths: 2, propertySubType: 'Single Family Residence' })),
-      comp({ closePrice: 700000, sqft: 2000, baths: 4, propertySubType: 'Single Family Residence' }),
+      comp({ closePrice: 700000, sqft: 2000, baths: 5, propertySubType: 'Single Family Residence' }),
     ]
     const subj = subject({ baths: 2, propertySubType: 'Single Family Residence' })
     const adjusted = adjustComps(subj, comps, null)
@@ -540,12 +540,16 @@ describe('evaluateAccuracyContract', () => {
         subjectBaths: 1,
       }
       expect(evaluateAccuracyContract(args).checks.find((c) => c.id === 'bath-count-match')!.pass).toBe(true)
-      // Without the stamp the same inputs compare the totals, 1 against 3, and
-      // refuse a sale the picker kept. That is the regression the stamp closes.
-      const unstamped = adjusted.map((c) => ({ ...c, roomDecision: null }))
+      // Without the stamp the totals are compared. One against five is three
+      // or more apart and refuses a sale the picker kept on full baths. That
+      // is the regression the stamp closes. One against three is two apart
+      // and stays.
+      const unstamped = adjusted.map((c) =>
+        c.address === '852 Columbia' ? { ...c, baths: 5, roomDecision: null } : { ...c, roomDecision: null },
+      )
       const bare = evaluateAccuracyContract({ ...args, comps: unstamped }).checks.find((c) => c.id === 'bath-count-match')!
       expect(bare.pass).toBe(false)
-      expect(bare.detail).toContain('852 Columbia is 2 bed / 3 bath')
+      expect(bare.detail).toContain('852 Columbia is 2 bed / 5 bath')
     })
 
     it('keeps a sale the picker keeps: one full bath apart off the subject’s ground', () => {
@@ -577,9 +581,9 @@ describe('evaluateAccuracyContract', () => {
       expect(contract.pass).toBe(true)
     })
 
-    it('fails two full baths apart even on the own plat, with no stamp to read', () => {
+    it('fails three full baths apart even on the own plat, with no stamp to read', () => {
       const subj = milwaukee()
-      const comps = [...tightSet().slice(0, 5).map(oneBath), { ...columbia(), bathsFull: 3, bathsHalf: 0, baths: 3 }]
+      const comps = [...tightSet().slice(0, 5).map(oneBath), { ...columbia(), bathsFull: 4, bathsHalf: 0, baths: 4 }]
       const adjusted = adjustComps(subj, comps, null)
       const pricing = computePricing(subj, adjusted, null)!
       const contract = evaluateAccuracyContract({
@@ -622,15 +626,15 @@ describe('evaluateAccuracyContract', () => {
       expect(pass.pass).toBe(true)
       expect(pass.detail).not.toContain('?')
       expect(pass.detail).toMatch(/bedroom count was not stored, so bedrooms were not compared/)
-      // A two-bath gap still refuses, and the unknown bedrooms are named, never printed as "?".
+      // A three-bath gap still refuses, and the unknown bedrooms are named, never printed as "?".
       const refused = evaluateAccuracyContract({
         ...base,
         comps: adjusted.map((c) =>
           c.address === '852 Columbia'
             ? {
                 ...c,
-                baths: 3,
-                bathsFull: 3,
+                baths: 4,
+                bathsFull: 4,
                 bathsHalf: 0,
                 roomDecision: null,
                 roomDifference: null,
@@ -643,7 +647,7 @@ describe('evaluateAccuracyContract', () => {
       expect(refused.pass).toBe(false)
       expect(refused.detail).not.toContain('?')
       expect(refused.detail).toBe(
-        "Comp 852 Columbia is 2 bed / 3 full bath against this home's 1 full bath, a room gap the one-room rule refuses. This home's bedroom count was not stored, so bedrooms were not compared.",
+        "Comp 852 Columbia is 2 bed / 4 full bath against this home's 1 full bath, a room gap the one-room rule refuses. This home's bedroom count was not stored, so bedrooms were not compared.",
       )
     })
   })
