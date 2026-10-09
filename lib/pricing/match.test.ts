@@ -3137,6 +3137,12 @@ describe('five price-setting sales is the floor, and a sale that does not set th
     expect(widened?.ran).toBe(true)
     expect(widened?.notSetting).toBe(1)
     expect(widened?.runningTotal).toBe(5)
+    const communityNote = out.notSettingSales?.find((s) => s.listingKey === 'COMMUNITY')
+    expect(communityNote?.code).toBe('community')
+    expect(communityNote?.reason).toBe(
+      'a different community than this home; a sale in another community does not set the price',
+    )
+    expect(communityNote?.address).toBe('40 Resort Rd')
     // The touching plats ran before the widening, in the locked order.
     const ranTiers = out.rungs.filter((r) => r.ran).map((r) => r.tier)
     expect(ranTiers.findIndex((t) => t.startsWith('adjacent-sub-'))).toBeGreaterThanOrEqual(0)
@@ -3283,6 +3289,12 @@ describe('five price-setting sales is the floor, and a sale that does not set th
     expect(wide?.ran).toBe(true)
     expect(wide?.notSetting).toBe(1)
     expect(wide?.added).toBe(0)
+    const indigoNote = out.notSettingSales?.find((s) => s.listingKey === 'INDIGO')
+    expect(indigoNote?.address).toBe('2225 Indigo')
+    expect(indigoNote?.reason).toBe(
+      '1,393 sq ft, 31% smaller than this home; sales more than 25% larger or smaller do not set the price',
+    )
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('INDIGO')
     expect(out.rungs.find((r) => r.tier === 'subdivision-3mo')?.notSetting ?? 0).toBe(0)
     expect(out.starved).toBe(true)
     expect(out.reachedTarget).toBe(false)
