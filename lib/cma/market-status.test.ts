@@ -1256,6 +1256,31 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     expect(peer.listingHistoryLine).toContain('came off the market · 96 days on market')
   })
 
+  it('dates a withdrawn peer on the MLS withdrawal date, not the activity log', () => {
+    // 1355 Jacksonville: WithdrawDate / off_market_date Sep 28, log Sep 29.
+    const set = buildExpiredPeerSet({
+      rows: [
+        unsold('J', '1355 Jacksonville', 1, {
+          StandardStatus: 'Withdrawn',
+          OnMarketDate: '2026-09-23T23:33:01+00:00',
+          ListDate: '2026-09-23T23:33:01+00:00',
+          off_market_date: '2026-09-28',
+          status_change_timestamp: '2026-09-29T17:24:44+00:00',
+          DaysOnMarket: 9,
+          CumulativeDaysOnMarket: null,
+          statusChanges: [{ at: '2026-09-29T17:24:44+00:00', from: 'Active', to: 'Withdrawn' }],
+        }),
+      ],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+    })
+    const peer = set.peers[0]!
+    expect(peer.statusDate).toBe('2026-09-28')
+    expect(peer.offMarketDate).toBe('2026-09-28')
+    expect(peer.statusDate).not.toBe('2026-09-29')
+  })
+
   it('counts a peer with no status log on its own dates, in Pacific days', () => {
     // Listed 7:13 PM Dec 1 Pacific (03:13 UTC Dec 2), off Aug 9: 251 days,
     // whatever the row's DaysOnMarket says.

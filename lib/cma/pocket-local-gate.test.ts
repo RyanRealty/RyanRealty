@@ -35,7 +35,7 @@ import {
   type ListingMarketClose,
   type ListingMarketMove,
 } from '@/lib/cma/listing-window-market'
-import { measureListingWindowMarket } from '@/lib/cma/listing-window-load'
+import { listingWindowDates, measureListingWindowMarket, subjectListingWindow } from '@/lib/cma/listing-window-load'
 import { localReadForSet } from '@/lib/cma/pocket-pricing'
 import { DATE_REASON_UNDER_GRID, dateBasisCaption, salesMethodSentences } from '@/lib/cma/sales-method-note'
 import { FLAT_LOCAL_DATE_SENTENCE, withFlatLocalDateStory } from '@/lib/cma/flat-date-story'
@@ -501,6 +501,68 @@ describe('the build reads one local read for the price and the page', () => {
     expect(none.pocketLocal.missing).toBe('no-listing-window')
     const thin = localReadForSet({ subject, comps, diagnostics, subjectZone: null, window, closes: null, asOf: '2026-10-07' })
     expect(thin.pocketLocal.missing).toBe('too-few-sales')
+  })
+})
+
+describe('an on-market subject has a listing window', () => {
+  const diagnostics = {
+    subject: { subdivision: 'Shevlin West' },
+    ladder: [{ tier: 'subdivision-6mo', ran: true, months_back: 6, comps_added: 7 }],
+    rural_acreage: false,
+    excluded_totals: {},
+  } as unknown as CompSelectionDiagnostics
+
+  it('runs from the active stretch to the letter day, so the no-listing sentence is not the one printed', () => {
+    // 3062 NW Kelly Hill is Active. There is no off-market date. The window is
+    // the current stretch through the letter day, and the existing local gate
+    // is what may move a sale. This does not add a second discount.
+    const window = subjectListingWindow({
+      city: 'Bend',
+      onMarket: true,
+      asOf: '2026-10-08',
+      listDate: '2026-05-01T22:24:26+00:00',
+      activeFrom: '2026-05-01',
+      offDate: null,
+    })
+    expect(window).toEqual({ city: 'Bend', listDate: '2026-05-01', offDate: '2026-10-08' })
+    expect(listingWindowDates(window)).toEqual({ city: 'Bend', listDate: '2026-05-01', offDate: '2026-10-08' })
+    const read = localReadForSet({
+      subject,
+      comps: SALES.map(sale),
+      diagnostics,
+      subjectZone: null,
+      window,
+      closes: null,
+      asOf: '2026-10-08',
+    })
+    expect(read.pocketLocal.missing).not.toBe('no-listing-window')
+    const { comps, pricing } = walk(read.pocketLocal)
+    const caption = dateBasisCaption({ subject, comps, pricing }) ?? ''
+    expect(caption).not.toContain('no recent listing of your home')
+    expect(caption).not.toContain('—')
+  })
+
+  it('leaves an off-market subject on the cycle dates, including a null off date', () => {
+    expect(
+      subjectListingWindow({
+        city: 'Bend',
+        onMarket: false,
+        asOf: '2026-10-08',
+        listDate: '2026-03-06',
+        activeFrom: '2026-03-06',
+        offDate: null,
+      }),
+    ).toEqual({ city: 'Bend', listDate: '2026-03-06', offDate: null })
+    expect(
+      subjectListingWindow({
+        city: 'Bend',
+        onMarket: false,
+        asOf: '2026-10-08',
+        listDate: '2026-03-06',
+        activeFrom: null,
+        offDate: '2026-09-30',
+      }).offDate,
+    ).toBe('2026-09-30')
   })
 })
 

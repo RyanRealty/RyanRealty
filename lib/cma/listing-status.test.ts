@@ -204,6 +204,24 @@ describe('offerRun: days to an accepted offer, on the period that produced it', 
     })
     expect(offerRun({})).toBeNull()
   })
+
+  it('1654 Meadow: a zero MLS count whose on-market day is after the close is not an offer clock', () => {
+    expect(
+      offerRun({
+        onMarketDate: '2025-06-06T21:16:52+00:00',
+        pendingAt: '2025-06-06T21:18:25+00:00',
+        mlsDaysToPending: 0,
+        closeDate: '2025-05-30',
+      }),
+    ).toBeNull()
+    expect(
+      offerRun({
+        onMarketDate: '2025-05-30T21:16:52+00:00',
+        mlsDaysToPending: 0,
+        closeDate: '2025-05-30',
+      }),
+    ).toEqual({ from: '2025-05-30', to: null, days: 0, source: 'mls-days-to-pending' })
+  })
 })
 
 describe('how a listing came off, in one word', () => {
