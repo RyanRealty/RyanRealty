@@ -602,6 +602,8 @@ export async function selectListingUnitNumbers(listingKeys: readonly string[]): 
   for (let i = 0; i < chunks.length; i += PARALLEL) {
     const results = await Promise.all(
       chunks.slice(i, i + PARALLEL).map((chunk) =>
+        // @canonical-key — the keys are sale_pricing_facts.listing_key, which the
+        // facts refresh copies from listings."ListingKey" (migration 20260814020000).
         sb.from('listings').select('ListingKey, unit:details->>UnitNumber').in('ListingKey', chunk),
       ),
     )
