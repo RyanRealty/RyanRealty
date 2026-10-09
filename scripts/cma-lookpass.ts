@@ -24,14 +24,16 @@
  * there, or a tap that changes nothing on the page, fails the run: an
  * interaction nobody drove is an interaction nobody knows works.
  *
- * `--check` adds three MECHANICAL failures on top of the shots, so the three
- * defects Matt found on 2026-09-07 cannot come back without the tool saying so
- * (docs/plans/CMA_REIMAGINED_2026-09-07.md, Done means):
+ * `--check` adds four MECHANICAL failures on top of the shots, so the defects
+ * Matt found cannot come back without the tool saying so
+ * (docs/plans/CMA_REIMAGINED_2026-09-07.md, Done means, and rule 31):
  *
  *   1. a banned word in the seller text of either document
  *   2. a property address that is not inside a tracked ryan-realty.com link
  *   3. a chart label outside its own viewBox at 375, measured in the browser
  *      with getBBox() rather than estimated from a character count
+ *   4. chapter 3's comps map has no `<img class="pin-map">`. An SVG scatter
+ *      is not that image (2745 Aldrich, 2026-10-09).
  *
  * It exits non-zero on any of them.
  *
@@ -236,8 +238,8 @@ async function screenshotDocument(opts: {
 
 /**
  * ── --check ────────────────────────────────────────────────────────────────
- * Three mechanical failures. Each one is a defect Matt found by opening the
- * document, so each one now fails the tool instead of waiting for him.
+ * Four mechanical failures. Each one is a defect found by opening the
+ * document, so each one now fails the tool instead of waiting for a person.
  */
 
 type CheckFailure = { doc: DocKind; rule: string; detail: string }
@@ -909,6 +911,7 @@ async function processSlug(
     ) => Promise<string | null>
     extractChapters: (html: string) => Array<{ id: string; heading: string; svgCount: number; imgCount: number; tableCount: number }>
     findSellerBannedWords: (html: string) => Array<{ label: string; excerpt: string }>
+    mapImageGap: (html: string) => string | null
   },
   overlay?: { name: string; patch: Record<string, unknown> } | null,
 ): Promise<{ slug: string; ok: boolean; contactSheet?: string; failures: CheckFailure[] }> {
@@ -1057,10 +1060,12 @@ async function processSlug(
       if (!html) continue
       failures.push(...checkBannedWords(doc, html, deps.findSellerBannedWords))
       failures.push(...checkTrackedAddresses(doc, html, addresses))
+      const mapGap = deps.mapImageGap(html)
+      if (mapGap) failures.push({ doc, rule: 'map image', detail: mapGap })
     }
     if (failures.length === 0) {
       console.log(
-        `  ✓ check: no banned word, ${addresses.length} address(es) tracked, every chart label inside its frame at 375`,
+        `  ✓ check: no banned word, ${addresses.length} address(es) tracked, every chart label inside its frame at 375, map image present`,
       )
     } else {
       console.error(`  ✗ check: ${failures.length} failure(s)${subjectAddress ? ` on ${subjectAddress}` : ''}`)
@@ -1111,7 +1116,7 @@ async function main(): Promise<void> {
   const { getCmaAdminRowBySlug, getCmaRenderSourceBySlug, getCmaStoredHtmlBySlug } = await import('@/lib/data')
   const { resolveCmaPrintHtml, resolveCmaPrintHtmlFromSource } = await import('@/lib/cma/print-html')
   const { immersiveFromRow } = await import('@/lib/cma/serve-document')
-  const { extractChapters } = await import('@/lib/cma/lookpass-chapters')
+  const { extractChapters, mapImageGap } = await import('@/lib/cma/lookpass-chapters')
   const { findSellerBannedWords } = await import('@/lib/cma/seller-text')
   const puppeteerModule = await import('./lib/marked-puppeteer.mjs')
   const puppeteer = puppeteerModule.default
@@ -1144,6 +1149,7 @@ async function main(): Promise<void> {
         immersiveFromRow,
         extractChapters,
         findSellerBannedWords,
+        mapImageGap,
       }, overlay)
       results.push(result)
     }

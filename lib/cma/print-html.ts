@@ -8,7 +8,7 @@ import type { CmaRenderSource } from '@/lib/data/cma/documents'
 import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
 import { renderCmaHtml, type RenderCmaArgs } from '@/lib/cma/render'
-import { buildCmaMapDataUri, cmaMapOptionsFromArgs } from '@/lib/cma/map'
+import { loadCmaMapTile } from '@/lib/cma/map-tile-cache'
 import type { CompPinMapOverlay } from '@/lib/cma/comp-pin-map'
 import type { CmaBroker } from '@/lib/cma/types'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
@@ -64,23 +64,12 @@ export async function resolveCmaPrintHtmlFromSource(
     // map is a bitmap that cannot answer a tap (tasteReview item 2).
     let mapOverlay: CompPinMapOverlay | null = null
     if (!mapDataUri) {
+      // Same cached tile as the live view. No budget: a slow read still lands
+      // in the letter (lib/cma/live-read-budget.test.ts).
       try {
-        const map = await buildCmaMapDataUri(
-          stored.subject,
-          comps,
-          cmaMapOptionsFromArgs({ ...stored, documentStatus: source.status }),
-        )
-        mapDataUri = map?.dataUri ?? null
-        mapOverlay = map
-          ? {
-              view: map.view,
-              pins: map.pins,
-              boundaryShown: map.boundaryShown,
-              parentShown: map.parentShown,
-              radiusShown: map.radiusShown,
-              streetPlaceShown: map.streetPlaceShown,
-            }
-          : null
+        const map = await loadCmaMapTile({ slug, subject: stored.subject, comps, args: { ...stored, documentStatus: source.status } })
+        mapDataUri = map.dataUri
+        mapOverlay = map.overlay
       } catch {
         mapDataUri = null
         mapOverlay = null
