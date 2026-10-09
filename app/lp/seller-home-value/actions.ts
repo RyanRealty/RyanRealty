@@ -24,6 +24,7 @@ import { leadOriginPath } from '@/lib/crm/lead-origin-path'
 import { cookies, headers } from 'next/headers'
 import { findCrmPersonIdByEmail } from '@/lib/data/cma/crm'
 import { resolveSubmittedIdentity } from '@/lib/crm/submitted-identity'
+import { adMatchConsentCustom } from '@/lib/identity/form-ad-consent'
 
 const siteUrl = siteOrigin()
 
@@ -40,6 +41,11 @@ export type SellerLPTimeline = 'ready-now' | 'next-3-6' | 'next-6-12' | 'explori
 export type SellerLPSubmission = {
   /** A2P/TCPA: true only when the lead actively checked the SMS consent box. */
   smsConsent?: boolean
+  /**
+   * Counsel memo 002 §5.4. True only when the EU/UK hashed-match box was
+   * checked. It is not a cookie grant and it does not gate the valuation.
+   */
+  adMatchConsent?: boolean
   address: string
   name?: string
   email?: string
@@ -484,6 +490,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         sellerPropertyAddress: parsed.full,
         ...(reasonLabel ? { sellerReason: reasonLabel } : {}),
         ...(askSource ? { askSource } : {}),
+        ...adMatchConsentCustom(submission.adMatchConsent === true, new Date().toISOString()),
       }
 
       // 3. Lead-origin note → crm_timeline. Tells the broker WHY this lead came

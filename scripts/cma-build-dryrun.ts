@@ -529,7 +529,8 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   // local read for the set off the sales as the adjusters build them, then the
   // gate. The build's set is the judged one; here it is the ladder's.
   const { selectionIsExclusivePocket } = await import('@/lib/pricing/exclusive-pocket-date-adj')
-  const { loadListingWindowCloses } = await import('@/lib/cma/listing-window-load')
+  const { loadListingWindowCloses, subjectListingWindow } = await import('@/lib/cma/listing-window-load')
+  const { subjectOnMarket } = await import('@/lib/cma/subject-on-market')
   const { localReadForSet, finishExclusivePocketPricing } = await import('@/lib/cma/pocket-pricing')
   const { preserveHydratedClosedCompDom, pricingSaleToCmaComp } = await import('@/lib/pricing/estimate')
   const exclusivePocket = selectionIsExclusivePocket(selection.tiersUsed ?? [])
@@ -540,15 +541,19 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
         return resolveFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey }).cycle
       })()
     : null
-  const listingWindow = {
+  const { zonedDateKey } = await import('@/lib/format/date')
+  const letterDay = zonedDateKey(new Date().toISOString())
+  const listingWindow = subjectListingWindow({
     city: subject.city,
+    onMarket: subjectOnMarket({ subject }),
+    asOf: letterDay,
     listDate: finalCycleForWindow?.listDate ?? subject.lastListDate,
+    activeFrom: subject.stretch?.from ?? finalCycleForWindow?.listDate ?? null,
     offDate: finalCycleForWindow?.offMarketDate ?? null,
-  }
+  })
   const windowCloses = await loadListingWindowCloses({ ...listingWindow, propertySubType: subject.propertySubType }).catch(
     () => null,
   )
-  const { zonedDateKey } = await import('@/lib/format/date')
   const local = localReadForSet({
     subject,
     comps: selection.comps.map((c) => {
@@ -559,7 +564,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
     subjectZone: null,
     window: listingWindow,
     closes: windowCloses,
-    asOf: zonedDateKey(new Date().toISOString()),
+    asOf: letterDay,
   })
   const pocketLocal = opts.pocketLegacy ? undefined : local.pocketLocal
   const adjusted = usePath
@@ -682,7 +687,6 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   // that is on the market the cover is the likely sale the weighted sales
   // point to, read off the printed grid, and the competition is centered on it.
   const { applyOnMarketOpinion, onMarketOpinionTrace } = await import('@/lib/cma/on-market-opinion')
-  const { subjectOnMarket } = await import('@/lib/cma/subject-on-market')
   const subjectIsOnMarket = subjectOnMarket({ subject })
   const preOpinion = subjectIsOnMarket
     ? applyOnMarketOpinion(pricing, printedCompGrid(adjusted, []), { onMarket: true })

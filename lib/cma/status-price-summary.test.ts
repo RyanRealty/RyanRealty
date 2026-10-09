@@ -126,19 +126,20 @@ describe('status price bands', () => {
     expect(html).toContain('Closed<span class="sp-count">2 homes</span>')
     expect(html).toContain('Active<span class="sp-count">1 home</span>')
     // Closed Low row: list 510,400, sold 505,600, no concession recorded, 505600/1600 = 316.
+    expect(html).toContain('Low, average, median, and high are each column on its own.')
     expect(html).toContain(
-      '<tr><th scope="row">Low</th><td class="n">$510,400</td><td class="n">$505,600</td><td class="n"></td><td class="n">$316</td></tr>',
+      '<tr><th scope="row">Low in each column</th><td class="n">$510,400</td><td class="n">$505,600</td><td class="n"></td><td class="n">$316</td></tr>',
     )
     // Closed High row: 512000/1600 = 320. A null concession stays a blank cell.
     expect(html).toContain(
-      '<tr><th scope="row">High</th><td class="n">$528,000</td><td class="n">$512,000</td><td class="n"></td><td class="n">$320</td></tr>',
+      '<tr><th scope="row">High in each column</th><td class="n">$528,000</td><td class="n">$512,000</td><td class="n"></td><td class="n">$320</td></tr>',
     )
     // Active has no sale and no stored concession. $/sqft is the ask (544000/1600 = 340).
     expect(html).toContain(
-      '<tr><th scope="row">Median</th><td class="n">$544,000</td><td class="n"></td><td class="n"></td><td class="n">$340</td></tr>',
+      '<tr><th scope="row">Median in each column</th><td class="n">$544,000</td><td class="n"></td><td class="n"></td><td class="n">$340</td></tr>',
     )
     for (const stat of ['Low', 'Avg', 'Median', 'High']) {
-      expect(html.match(new RegExp(`<th scope="row">${stat}</th>`, 'g'))).toHaveLength(2)
+      expect(html.match(new RegExp(`<th scope="row">${stat} in each column</th>`, 'g'))).toHaveLength(2)
     }
     // The separate "Dollars a square foot" board is folded in, not repeated.
     expect(html).not.toContain('Dollars a square foot')
@@ -160,7 +161,7 @@ describe('status price bands', () => {
     )
     expect(html).toContain('Closed<span class="sp-count">2 homes</span>')
     expect(html).toContain(
-      '<tr><th scope="row">Low</th><td class="n">$490,000</td><td class="n">$480,000</td><td class="n"></td><td class="n">$300</td></tr>',
+      '<tr><th scope="row">Low in each column</th><td class="n">$490,000</td><td class="n">$480,000</td><td class="n"></td><td class="n">$300</td></tr>',
     )
     expect(html).toContain('Closed $/sqft covers 1 of 2 homes (1 with no living area on record).')
   })
@@ -184,7 +185,7 @@ describe('status price bands', () => {
     expect(noSales).toMatch(
       /scope="col">List<\/th><th class="n" scope="col">Concessions<\/th><th class="n" scope="col">\$\/sqft<\/th>/,
     )
-    expect(noSales).toContain('<tr><th scope="row">Low</th><td class="n">$544,000</td><td class="n"></td><td class="n">$340</td></tr>')
+    expect(noSales).toContain('<tr><th scope="row">Low in each column</th><td class="n">$544,000</td><td class="n"></td><td class="n">$340</td></tr>')
     expect(noSales).toMatch(/List is the asking price\./)
     expect(noSales).toMatch(/\$\/sqft is each home&#39;s list price over its own living area\./)
     expect(noSales.match(/<col class="sp-fig">/g)).toHaveLength(3)
@@ -234,7 +235,7 @@ describe('status price bands', () => {
     )
     // 505600 - 15000 = 490600. 490600 / 1600 = 306.625, rounded once to $307.
     expect(html).toContain(
-      '<tr><th scope="row">Median</th><td class="n">$510,400</td><td class="n">$505,600</td><td class="n">$15,000</td><td class="n">$307</td></tr>',
+      '<tr><th scope="row">Median in each column</th><td class="n">$510,400</td><td class="n">$505,600</td><td class="n">$15,000</td><td class="n">$307</td></tr>',
     )
   })
 
@@ -254,8 +255,45 @@ describe('status price bands', () => {
       }),
     )
     expect(stored).toContain(
-      '<tr><th scope="row">Median</th><td class="n">$544,000</td><td class="n">$0</td><td class="n">$340</td></tr>',
+      '<tr><th scope="row">Median in each column</th><td class="n">$544,000</td><td class="n">$0</td><td class="n">$340</td></tr>',
     )
     expect(stored).not.toContain('>Sold<')
+  })
+
+  it('says each closed column is its own statistic, and a zero concession is not the low sale (2382 Jackson)', () => {
+    // 2224 Indigo sold for the low price and reported $11,250. The $0 is the
+    // lowest concession on a different sale. The Low row must not read as one home.
+    const html = statusPriceBoardHtml(
+      statusPriceSummaries({
+        closed: [
+          entry({
+            key: 'indigo',
+            family: 'closed',
+            address: '2224 Indigo',
+            listPrice: 529000,
+            closePrice: 503000,
+            sqft: 1716,
+            concessionsAmount: 11250,
+          }),
+          entry({
+            key: 'other',
+            family: 'closed',
+            address: '2254 Indigo',
+            listPrice: 699000,
+            closePrice: 690000,
+            sqft: 2000,
+            concessionsAmount: 0,
+          }),
+        ],
+      }),
+    )
+    expect(html).toContain('Low, average, median, and high are each column on its own.')
+    expect(html).toContain('none is a recorded zero in the concessions column')
+    expect(html).toContain('<th scope="row">Low in each column</th>')
+    const low = html.match(/<tr><th scope="row">Low in each column<\/th><td class="n">([^<]*)<\/td><td class="n">([^<]*)<\/td><td class="n">([^<]*)<\/td>/)
+    expect(low?.[2]).toBe('$503,000')
+    expect(low?.[3]).toBe('none')
+    expect(low?.[3]).not.toBe('$0')
+    expect(html).not.toContain('>$0<')
   })
 })

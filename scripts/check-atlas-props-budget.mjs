@@ -64,6 +64,7 @@ export const ATLAS_ROUTES = [
   { file: 'app/cities/[slug]/page.tsx', path: '/cities/bend' },
   { file: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx', path: '/cities/bend/awbrey-butte' },
   { file: 'app/communities/[slug]/page.tsx', path: '/communities/tetherow' },
+  { file: 'app/listing/[listingKey]/page.tsx', path: '/homes-for-sale/bend/garajmahal/63083-crusher-220221970' },
 ]
 /** Extra sample URLs for the runtime layer (same templates, other sizes). */
 const EXTRA_PATHS = ['/cities/redmond']

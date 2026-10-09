@@ -61,7 +61,8 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { buildGeoMarketSchemas } from './_v3/geo-schemas'
 import { marketVerdict } from '@/lib/market/classify'
-import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { geoMarketLeftoverGrain, geoMarketPublishes } from '@/lib/market/geo-market-publishes'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
@@ -150,7 +151,7 @@ const loadGeoMarket = cache(async (slugKey: string) => {
   // fallback, so a `.catch(() => null)` here would only hide a real outage
   // behind a confident empty page.
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const leftoverGeo = geoType === 'neighborhood' || geoType === 'city' ? geoType : null
+  const leftoverGeo = geoMarketLeftoverGrain(geoType)
   const insightYear = Number(currentMonthKey.slice(0, 4))
   const [priceHistory, citySnapshots, timeframes, lastCompleteMonthly, blogPosts, publicSegments, publicPace, publicMix, leftoverMonthly, mtOverlays, closedSeries, cityTiles] =
     await Promise.all([
@@ -206,7 +207,7 @@ const loadGeoMarket = cache(async (slugKey: string) => {
   // Unknown-geo guard: leftover HUD miss and no leftover/cache monthly series
   // is not a place we cover. dynamicParams is true, so without this the route
   // is an infinite thin-page space.
-  const publishes = leftoverHudPublishes(hud) || chartMonths.months.length > 0
+  const publishes = geoMarketPublishes(hud, leftoverMonthly, completePriceMonths)
 
   const mosRaw = hud.monthsSupply
   const mosText = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null

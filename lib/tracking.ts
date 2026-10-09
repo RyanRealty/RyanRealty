@@ -10,6 +10,10 @@ import { trackEventWithCAPI } from '@/lib/meta-pixel-helpers'
 import { readSessionId } from '@/lib/analytics/visitor-session'
 import { pushDataLayerEvent } from '@/lib/analytics/ga4-browser-events'
 import { CONSENT_COOKIE, gpcFromNavigator, marketingSharingAllowed } from '@/lib/identity/consent'
+import {
+  CONTEXTUAL_CONSENT_ASK_EVENT,
+  isContextualConsentEvent,
+} from '@/lib/identity/consent-prompt'
 
 declare global {
   interface Window {
@@ -150,6 +154,9 @@ export function trackEvent(eventName: EventName, params: Record<string, unknown>
   pushDataLayerEvent(eventName, params)
   if (eventName === 'generate_lead' && GOOGLE_ADS_CONVERSION_LEAD) {
     fireGoogleAdsConversion(GOOGLE_ADS_CONVERSION_LEAD)
+  }
+  if (typeof window !== 'undefined' && isContextualConsentEvent(eventName)) {
+    window.dispatchEvent(new CustomEvent(CONTEXTUAL_CONSENT_ASK_EVENT))
   }
 }
 

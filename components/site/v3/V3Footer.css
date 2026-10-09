@@ -543,7 +543,8 @@
 
 /* Unlayered: min-width does not apply to `display: inline`, and @layer base
    loses to utilities. Short labels (DMCA) measured 42px wide. */
-.v3-footer__legal a {
+.v3-footer__legal a,
+.v3-footer__legal button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -552,7 +553,8 @@
 }
 
 @layer base {
-  .v3-footer__legal a {
+  .v3-footer__legal a,
+  .v3-footer__legal button {
     color: var(--v3-ink);
     font-size: var(--v3-size-body-sm);
     text-decoration: underline;

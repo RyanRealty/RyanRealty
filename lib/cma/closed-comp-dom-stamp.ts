@@ -105,6 +105,11 @@ export function stampClosedCompDom(comp: CmaComp, extras: ClosedCompListStartExt
           askChanges: extras.askChanges ?? [],
           openingAsk: extras.originalListPrice ?? comp.originalListPrice ?? null,
           currentAsk: extras.listPrice ?? comp.listPrice ?? null,
+          // The ask log was read, including a successful empty read. A
+          // restarted sale with no dated move stamps its opening ask, so the
+          // cut is not hidden behind the current ask (3169 Coho). A caller
+          // that has not read the log does not pass this.
+          unstated: 'opening',
         })
       : null
   if (start == null && domTotal == null && !offer) return comp

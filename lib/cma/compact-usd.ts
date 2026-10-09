@@ -18,6 +18,12 @@
  * million, never "$1000K". A set of labels drawn together (an axis, the asks
  * on one line) goes through `compactUsdLabels`, which adds precision until
  * two different prices never print the same text.
+ *
+ * Chart axes stay on that short label: $550,951 may read "$551K" beside the
+ * exact range on the cover. An ask on an outcome chip may not. $524,900 is
+ * not $525K, and $514,500 is not $515K, when the same card prints the exact
+ * ask. `compactOrExactUsd` keeps the short label only when it names this
+ * price, the same rule `shortOrExactUsd` already uses for a close.
  */
 
 const exactUsd = (dollars: number): string => `$${dollars.toLocaleString('en-US')}`
@@ -64,6 +70,52 @@ function labelAt(n: number, level: 0 | 1 | 2): string {
 /** "$465K", "$1.05M", "$2M". Exact half-up rounding on whole dollars. */
 export function compactUsd(n: number): string {
   return labelAt(n, 0)
+}
+
+/**
+ * Short label only when it names this price. Otherwise the exact dollars.
+ *
+ * $525,000 is "$525K". $524,900 is "$524,900", because "$525K" names
+ * $525,000. From $999,500 the short form is hundredths of a million, and it
+ * names the price only on a whole ten thousand ($1,050,000 is "$1.05M";
+ * $1,785,000 would read "$1.79M").
+ */
+export function compactOrExactUsd(n: number): string {
+  if (!Number.isFinite(n)) return ''
+  const sign = n < 0 ? -1 : 1
+  const d = sign * wholeDollars(n)
+  const abs = Math.abs(d)
+  const step = abs >= 999_500 ? 10_000 : 1_000
+  if (abs >= 500 && abs % step === 0) return labelAt(d, 0)
+  return labelAt(d, 2)
+}
+
+/**
+ * Asks drawn together on one outcome chip or one price path.
+ * Each price uses `compactOrExactUsd`. Two different prices never share a
+ * label; if a short label ever did, both print the dollars.
+ */
+export function compactOrExactLabels(values: readonly (number | null | undefined)[]): (n: number) => string {
+  const prices = [
+    ...new Set(values.filter((v): v is number => v != null && Number.isFinite(v)).map((v) => Math.round(v))),
+  ]
+  const labels = new Map(prices.map((p) => [p, compactOrExactUsd(p)]))
+  const seen = new Map<string, number>()
+  for (const p of prices) {
+    const label = labels.get(p)!
+    const prior = seen.get(label)
+    if (prior != null && prior !== p) {
+      labels.set(prior, labelAt(prior, 2))
+      labels.set(p, labelAt(p, 2))
+    } else {
+      seen.set(label, p)
+    }
+  }
+  return (n: number) => {
+    if (!Number.isFinite(n)) return ''
+    const d = Math.round(n)
+    return labels.get(d) ?? compactOrExactUsd(d)
+  }
 }
 
 /**

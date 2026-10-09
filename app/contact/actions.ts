@@ -43,6 +43,9 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   const isTour = formData.get('intent')?.toString()?.trim() === 'tour'
   // A2P/TCPA fail-closed: SMS only when the consent box was actively checked.
   const smsConsent = formData.get('smsConsent') === 'yes'
+  // Counsel memo 002 §5.4. The EU/UK hashed-match box. Absent means the
+  // visitor did not check it, including every US submit, which never shows it.
+  const adMatchConsent = formData.get('adMatchConsent') === 'yes'
   // Honeypot (FUNNEL-1). Filled = one signal to the intake screen, not a drop:
   // the row is kept and tagged so a false positive can be read and undone.
   const honeypot = (formData.get(CONTACT_TRAP.name)?.toString() ?? '').trim() !== ''
@@ -196,6 +199,18 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
       // Enrichment gates on the native person id sendEvent returned (the old
       // CRM findPersonByEmail re-lookup was a dead no-op post-decommission).
       if (capturedPersonId) {
+        if (adMatchConsent) {
+          try {
+            const { enrichNativeLead } = await import('@/lib/data/crm/ensureNativeLead')
+            const { adMatchConsentCustom } = await import('@/lib/identity/form-ad-consent')
+            await enrichNativeLead({
+              personId: capturedPersonId,
+              custom: adMatchConsentCustom(true, new Date().toISOString()),
+            })
+          } catch (e) {
+            console.warn('[contact-form] ad-match consent write failed:', e)
+          }
+        }
         const recruit = isJoinInquiry(inquiryType)
         if (recruit) {
           await tagRecruitJoin(capturedPersonId)
