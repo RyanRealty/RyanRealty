@@ -7,6 +7,7 @@
  * Pure: static sets and committed JSON only, no DB.
  */
 import { CENTRAL_OREGON_CITY_SLUGS } from '@/lib/central-oregon'
+import { communityPath } from '@/lib/communities/community-public-pair'
 import {
   UNPUBLISHED_RESORT_MARKET_SLUGS,
   communityMarketPublishes,
@@ -70,7 +71,7 @@ export function resolveHousingMarketPath(pathname: string): GeoPathDecision | nu
   }
   if (communityMarketPublishes(second)) return { kind: 'pass' }
   if (UNPUBLISHED_RESORT_MARKET_SLUGS.has(second)) {
-    return { kind: 'redirect', destination: `/communities/${encodeURIComponent(second)}`, status: 308 }
+    return { kind: 'redirect', destination: communityPath(second), status: 308 }
   }
   return { kind: 'not-found' }
 }
