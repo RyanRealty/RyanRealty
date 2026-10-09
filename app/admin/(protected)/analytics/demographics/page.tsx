@@ -2,10 +2,9 @@
 /**
  * /admin/analytics/demographics — who is visiting, how old, where from.
  *
- * Pulls demographics from GA4 Data API. Google Signals is OFF as of
- * 2026-10-08 (set through the GA4 Admin API), so GA4 demographics and
- * cross-device reports will not fill in; expect mostly empty or unknown
- * buckets. Returns:
+ * Pulls demographics from GA4 Data API (Google Signals must be enabled).
+ * Signals is ON: it was turned off on 2026-10-08 and back on the same
+ * evening at Matt's call (GOOGLE_SIGNALS_ENABLED). Returns:
  *   - Age bracket distribution (overall + cross-tabs by page & source)
  *   - Gender split
  *   - Top cities (US-wide + Bend metro drill-down)
@@ -97,8 +96,8 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
       <StatePanel tone="error">
         <p style={{ margin: 0 }}>Demographics report unavailable: {data.error}.</p>
         <p style={{ margin: 'var(--a-s2) 0 0' }}>
-          If GA4_NOT_CONFIGURED: set GOOGLE_GA4_PROPERTY_ID + service-account env vars. Google Signals is off as of
-          2026-10-08 (set through the GA4 Admin API), so GA4 demographic data will not fill in.
+          If GA4_NOT_CONFIGURED: set GOOGLE_GA4_PROPERTY_ID + service-account env vars. If a runtime error: Google
+          Signals may not have synced demographic data for this range yet (24-48h delay after first install).
         </p>
       </StatePanel>
     )
@@ -150,13 +149,12 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
             { key: 'share', header: 'Share', numeric: true, cell: (b) => formatPct(b.users, ageTotal) },
           ]}
           empty={
-            <>No age-bracket data in this window. Google Signals is off as of 2026-10-08, so GA4 demographics will not fill in.</>
+            <>No age-bracket data in this window. Google Signals needs more signed-in-user traffic before it samples demographics.</>
           }
         />
         <Stamp>
-          Google Signals is off as of 2026-10-08 (set through the GA4 Admin API), so GA4 demographics and
-          cross-device reports will not fill in. Unknowns are excluded from percentage math, so percentages sum to 100%
-          across known buckets only.
+          Google Signals samples demographic data from signed-in Google users. Coverage is typically 30-60% of total
+          traffic. Unknowns are excluded from percentage math, so percentages sum to 100% across known buckets only.
         </Stamp>
       </section>
 
@@ -181,8 +179,8 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
           ]}
           empty={
             <>
-              No /lp/seller-home-value visitors with demographic data in this window. Google Signals is off as of
-              2026-10-08, so GA4 demographics will not fill in.
+              No /lp/seller-home-value visitors with demographic data in this window. May need more traffic before Google
+              Signals samples enough.
             </>
           }
         />
@@ -297,8 +295,8 @@ export default async function DemographicsPage({
       </Suspense>
 
       <Stamp>
-        GA4 Data API. Google Signals is off as of 2026-10-08 (set through the GA4 Admin API), so GA4 demographics and
-        cross-device reports will not fill in. Range{' '}
+        GA4 Data API with Google Signals (on; briefly off on 2026-10-08, back on that evening, so that day may show
+        gaps). Demographic coverage is typically 30 to 60 percent of total traffic. Range{' '}
         {range.startDate} to {range.endDate}.
       </Stamp>
     </div>
