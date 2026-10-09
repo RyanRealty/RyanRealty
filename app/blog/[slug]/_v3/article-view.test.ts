@@ -140,3 +140,33 @@ describe('slugifyHeading', () => {
     )
   })
 })
+
+// SEO & AEO Desk brief 2026-10-08 §6: the Bend monthly reports' rail showed
+// "4 months" (the threshold) under "If you are buying" while the sentence said
+// 3.5 (September) and 3.9 (August). Paragraphs verbatim from the live reports.
+describe('months-of-supply chip reads the figure, never the threshold', () => {
+  const report = (mos: string) => `
+<h2>If you are buying</h2>
+<p>Months of supply sits at ${mos}, which is a seller's market by the standard measure: 4 months or less favors sellers, above 4 and under 6 is balanced, 6 or more favors buyers.</p>
+`
+  it('September reads 3.5 months', () => {
+    const chips = buildBlogArticleView(report('3.5')).figures.map((f) => f.value)
+    expect(chips).toEqual(['3.5 months'])
+  })
+  it('August reads 3.9 months', () => {
+    const chips = buildBlogArticleView(report('3.9')).figures.map((f) => f.value)
+    expect(chips).toEqual(['3.9 months'])
+  })
+  it('a threshold alone never becomes a chip', () => {
+    const chips = buildBlogArticleView(
+      `<h2>What the measure means</h2><p>By the standard measure, 4 months or less favors sellers and 6 months or more favors buyers.</p>`,
+    ).figures.map((f) => f.value)
+    expect(chips).toEqual([])
+  })
+  it('a stated duration still reads', () => {
+    const chips = buildBlogArticleView(
+      `<h2>How fast?</h2><p>Bend homes went under contract in a median 31 days this quarter.</p>`,
+    ).figures.map((f) => f.value)
+    expect(chips).toEqual(['31 days'])
+  })
+})

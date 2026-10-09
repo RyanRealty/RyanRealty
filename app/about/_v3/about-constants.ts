@@ -38,11 +38,20 @@
  * comment either.
  */
 
-import { BRAND, CONTACT } from '@/lib/brand/contact'
+import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
+import { formatCalendarDay } from '@/lib/format/date'
 import { LISTING_TERMS } from '@/app/sell/_v3/sell-constants'
 
-/** Firm license as published on the pre-v3 about page (OREA 201253677). */
-export const FIRM_LICENSE = 'OREA 201253677'
+/**
+ * The firm's Oregon Real Estate Agency license (OREA 201253677). The Agency's
+ * License Lookup lists it as license type "Registered Business Name", not a
+ * firm license, so the page says "registered business name" (SEO & AEO Desk
+ * brief 2026-10-08, pending Matt's OK).
+ */
+export const FIRM_LICENSE = `OREA ${BRAND.firmLicense}`
+
+/** The day the Agency's License Lookup was read for every license the page prints (7:36 AM PT). */
+export const ABOUT_LICENSES_CHECKED = '2026-10-08'
 
 /** Matt 2026-09-14 lock. One plain purpose line — not How it started, not Team. */
 export const ABOUT_FIRM_STORY =
@@ -169,8 +178,10 @@ export function aboutFaqItems(
       }`,
     },
     {
-      question: 'Is Ryan Realty licensed in Oregon?',
-      answer: `Yes. ${BRAND.legalName} holds Oregon Real Estate Agency firm license ${FIRM_LICENSE.replace(/^OREA\s+/, '')}, and every broker is licensed in Oregon. Each broker's license number is on their team page.`,
+      // 2026-10-08 brief: replaces "Is Ryan Realty licensed in Oregon?". The
+      // numbers are the Agency's own records, read on ABOUT_LICENSES_CHECKED.
+      question: 'Is Ryan Realty licensed, and how can I check?',
+      answer: `Yes. ${BRAND.legalName} is registered with the Oregon Real Estate Agency under license ${FIRM_LICENSE.replace(/^OREA\s+/, '')}, as a registered business name, and its principal broker is ${BROKERS.matt.nameShort}, license ${BROKERS.matt.license}. ${BROKERS.rebecca.nameShort} (${BROKERS.rebecca.license}) and ${BROKERS.paul.nameShort} (${BROKERS.paul.license}) are licensed Oregon brokers affiliated with the firm. All four records showed as active on the Agency's public License Lookup on ${formatCalendarDay(ABOUT_LICENSES_CHECKED, { month: 'long', day: 'numeric', year: 'numeric' })}, and you can check any of these numbers there yourself.`,
     },
     { question: tumalo.question, answer: tumalo.answer },
   ]

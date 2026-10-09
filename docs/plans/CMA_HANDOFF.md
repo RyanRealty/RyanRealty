@@ -215,6 +215,13 @@ NODE_USE_ENV_PROXY=1 npm run cma:fleet -- --concurrency 4 \
    - **On-market grid fallback:** "Keep the list figure". No change.
    - **Price clock:** "Yes, after this landing". Move rule 16's cut test and the sale-to-original-ask ratios to the last-stretch clock (rule 28) as a separate engine change with its own fleet score, after the current landing. It can move Wild Rose's price. **Next engine task.**
 
+9. **Conflicting doc line from main.** PR #438 (a Grok CLI session) added a "One rule set (Matt 2026-10-08)" paragraph to SKILL.md §0.3. It says:
+   - a 35% living-area picker cutoff is the only size cutoff;
+   - there is no second review;
+   - the search widens when fewer than 3 comps pass.
+
+   That contradicts rule 20 (Matt 2026-10-08, "25% everywhere"), locked rule 8 (minimum 5 price-setting sales) and the review that rule 4 binds to the picker. The code follows the rules from this session, and the paragraph is kept verbatim. **Ask Matt which stands.**
+
 ## Backlog (after the drafts ship)
 
 - Stored `render_args.expiredAudit.findings` strings are stale (pre-trim ranges, 25-day median, "over 1 cut"). Regenerate them on rebuild, or stop storing them.

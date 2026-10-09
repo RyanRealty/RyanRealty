@@ -22,6 +22,10 @@ import {
   readListingForRequest,
 } from '@/lib/routing/listing-unavailable'
 import { getListingCanonicalPathFieldsEdge } from '@/lib/data/listings/getListingCanonicalPathFieldsEdge'
+import {
+  CONSENT_REGION_COOKIE,
+  consentRegionCookieValue,
+} from '@/lib/analytics/consent-regions'
 
 /**
  * Next.js Edge Middleware.
@@ -482,6 +486,34 @@ function attachVidCookie(response: NextResponse, request: NextRequest, host: str
   return response
 }
 
+/**
+ * One-bit region class for the Meta Pixel and the client tracking tier.
+ * Google Consent Mode region defaults do not need this (Google resolves geo
+ * itself). Missing/unknown country is restricted (`1`). Not identifying.
+ * Set on HTML page responses so the first inline script can read it; skipped
+ * on /api/* . Matcher already covers HTML page requests.
+ */
+function attachConsentRegionCookie(response: NextResponse, request: NextRequest, host: string): NextResponse {
+  if (request.nextUrl.pathname.startsWith('/api/')) return response
+  const country = request.headers.get('x-vercel-ip-country') ?? request.headers.get('cf-ipcountry')
+  const value = consentRegionCookieValue(country)
+  if (request.cookies.get(CONSENT_REGION_COOKIE)?.value === value) return response
+  const isProd = host.endsWith('ryan-realty.com')
+  response.cookies.set(CONSENT_REGION_COOKIE, value, {
+    maxAge: 24 * 60 * 60,
+    path: '/',
+    sameSite: 'lax',
+    httpOnly: false,
+    secure: isProd,
+    ...(isProd ? { domain: 'ryan-realty.com' } : {}),
+  })
+  return response
+}
+
+function attachTrackingCookies(response: NextResponse, request: NextRequest, host: string): NextResponse {
+  return attachConsentRegionCookie(attachVidCookie(attachFbcCookie(response, request, host), request, host), request, host)
+}
+
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const url = request.nextUrl
   const pathname = url.pathname
@@ -734,7 +766,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // INBOUND headers, so without this a client-sent x-search would pass
     // through to any future consumer on this branch (review hygiene).
     requestHeaders.set('x-search', request.nextUrl.search ?? '')
-    return attachVidCookie(attachFbcCookie(NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } }), request, host), request, host)
+    return attachTrackingCookies(NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } }), request, host)
   }
 
   // ─── (2) Rate limiting for /api/* ──────────────────────────────────────
@@ -774,7 +806,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   // ─── (3) Default: forward x-pathname so server components can branch ───
-  return attachVidCookie(attachFbcCookie(buildNextResponse(pathname, request), request, host), request, host)
+  return attachTrackingCookies(buildNextResponse(pathname, request), request, host)
 }
 
 // Run on everything that isn't a Next.js internal or static asset.

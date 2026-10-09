@@ -1,0 +1,129 @@
+/* ===========================================================================
+   /about: the direct answer's source and freshness lines, "Who we help", and
+   "Track record, sourced" (2026-10-08).
+   Every value resolves from components/site/v3/tokens.css. Navy and cream
+   only, the same section frame as the playbook sections below the fold.
+   =========================================================================== */
+
+.about-firm__answer {
+  text-wrap: pretty;
+}
+
+.about-firm__source,
+.about-firm__fresh {
+  margin: 0;
+  max-width: 44rem;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+}
+
+/* Element color rules sit in @layer base so Tailwind color utilities still
+   win (ci:css-layers). */
+@layer base {
+  .about-firm__source a,
+  .about-record__facts a,
+  .about-record__links a {
+    color: var(--v3-ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+}
+
+.v3.about-record {
+  display: grid;
+  gap: var(--v3-space-lg);
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+* + .v3.about-record {
+  border-top: var(--v3-rule-section);
+}
+
+@media (min-width: 64rem) {
+  .v3.about-record {
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    column-gap: var(--v3-space-2xl);
+    align-items: start;
+  }
+}
+
+.about-record__head {
+  display: grid;
+  gap: var(--v3-space-xs);
+  min-width: 0;
+}
+
+.about-record__heading {
+  margin: 0;
+}
+
+.about-record__lede {
+  margin: var(--v3-space-xs) 0 0;
+  max-width: 28rem;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  text-wrap: pretty;
+}
+
+.about-record__body {
+  display: grid;
+  gap: var(--v3-space-lg);
+  min-width: 0;
+}
+
+.about-record__list {
+  display: grid;
+  gap: var(--v3-space-xs);
+  margin: 0;
+  padding-left: 1.25em;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+}
+
+.about-record__facts {
+  display: grid;
+  margin: 0;
+}
+
+.about-record__fact {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  padding-block: var(--v3-space-sm);
+  border-top: var(--v3-rule-hairline);
+}
+
+.about-record__fact:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+@media (min-width: 40rem) {
+  .about-record__fact {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 7fr);
+    column-gap: var(--v3-space-md);
+  }
+}
+
+.about-record__fact dt {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+}
+
+.about-record__fact dd {
+  margin: 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+}
+
+.about-record__links {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+}

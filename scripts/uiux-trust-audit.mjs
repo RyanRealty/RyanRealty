@@ -42,7 +42,7 @@ function addFinding(f) {
 }
 
 async function dismissOverlays(page) {
-  for (const label of ['Maybe later', 'Essential only', 'Decline', 'Reject all', 'Accept All', 'Got it', 'Close']) {
+  for (const label of ['Maybe later', 'Essential only', 'Decline', 'Reject all', 'Got it', 'Close']) {
     try {
       const btn = page.getByRole('button', { name: label }).first()
       if (await btn.isVisible({ timeout: 300 })) {

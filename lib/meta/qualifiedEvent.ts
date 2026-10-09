@@ -4,8 +4,8 @@
  * stage (updateCrmStageAction), fire a Meta CAPI "Qualified" event so Meta can
  * learn which leads convert, not just which submit.
  *
- * Safety: consent-gated (a suppressed subject is sent in LDU mode, never for
- * targeting) and DRY-RUN unless META_CAPI_QUALIFIED_ENABLED === 'true'. Mirrors
+ * Safety: consent-gated (a suppressed subject is not sent) and DRY-RUN unless
+ * META_CAPI_QUALIFIED_ENABLED === 'true'. Mirrors
  * the audience-push posture — no surprise PII sends to Meta. At Ryan Realty's
  * lead volume this is the right architecture but latent (Meta needs ~50 events/
  * ad-set/week to optimize), so it ships off and lights up when volume scales.
@@ -70,19 +70,19 @@ export async function fireQualifiedLeadEvent(opts: {
       fn: hash(contact.firstName),
       ln: hash(contact.lastName),
     }
-    // Consent: a suppressed subject still gets the measurement event, but in LDU
-    // (no targeting/personalization). Best-effort — a lookup failure leaves it off.
-    let ldu = false
+    // Consent: a GPC / do-not-share suppression means no Meta CAPI send.
     try {
-      if (shouldExcludeFromSharing(await readSuppressions(opts.personId))) ldu = true
+      if (shouldExcludeFromSharing(await readSuppressions(opts.personId))) {
+        return { fired: false, dryRun: true, reason: 'sharing-suppressed' }
+      }
     } catch {
-      /* leave ldu as-is */
+      /* lookup failure does not block a non-suppressed send */
     }
 
     const eventId = `qualified:${opts.personId}:${opts.stage}`
     if (!isMetaCapiQualifiedEnabled()) {
       console.log(
-        `[qualified-capi] DRY RUN (flag off): person ${opts.personId} stage "${opts.stage}" ldu=${ldu} — no Meta call.`,
+        `[qualified-capi] DRY RUN (flag off): person ${opts.personId} stage "${opts.stage}" — no Meta call.`,
       )
       return { fired: false, dryRun: true, reason: 'flag-disabled' }
     }
@@ -92,14 +92,14 @@ export async function fireQualifiedLeadEvent(opts: {
       { lead_stage: opts.stage, lead_event_source: 'crm' },
       eventId,
       undefined,
-      ldu,
+      false,
     )
     if (!res.ok) {
       console.warn(`[qualified-capi] send failed for person ${opts.personId}: ${res.error}`)
       return { fired: false, dryRun: false, reason: res.error }
     }
     console.log(
-      `[qualified-capi] LIVE Qualified event sent for person ${opts.personId} (stage "${opts.stage}", ldu=${ldu}).`,
+      `[qualified-capi] LIVE Qualified event sent for person ${opts.personId} (stage "${opts.stage}").`,
     )
     return { fired: true, dryRun: false }
   } catch (e) {

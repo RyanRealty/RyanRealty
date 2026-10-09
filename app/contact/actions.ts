@@ -10,6 +10,7 @@ import { canonicallyTagLead, type LeadAudience } from '@/lib/canonical-lead-tagg
 import { classifyPropertyGeo, referralIntakeTags } from '@/lib/referral-geo'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { fireLeadGenerated, fireNonLeadEvent } from '@/lib/lead-tracking'
+import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { contactLeadType } from '@/lib/analytics/lead-event'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { isJoinInquiry, recordJoinConversion, tagRecruitJoin } from '@/lib/data/loop/join-conversion'
@@ -271,26 +272,33 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
     : inquiryLower.includes('seller') || inquiryLower.includes('valuation')
       ? 500
       : 200
-  if (!recruit) await fetch(`${siteOrigin()}/api/meta-capi`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      eventName: 'Lead',
-      email,
-      phone,
-      firstName: name.split(/\s+/)[0] ?? undefined,
-      lastName: name.split(/\s+/).slice(1).join(' ') || undefined,
-      eventId,
-      customData: {
-        inquiry_type: inquiryType,
-        value: leadValue,
-        currency: 'USD',
-      },
-      eventSourceUrl: `${siteOrigin()}/contact`,
-    }),
-  }).catch((err) => {
-    console.warn('[Contact Form] CAPI call failed:', err)
-  })
+  if (!recruit) {
+    const sharing = await visitorCapiConsent()
+    if (sharing.allowed) {
+      await fetch(`${siteOrigin()}/api/meta-capi`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventName: 'Lead',
+          email,
+          phone,
+          firstName: name.split(/\s+/)[0] ?? undefined,
+          lastName: name.split(/\s+/).slice(1).join(' ') || undefined,
+          eventId,
+          consentCookie: sharing.consentCookie,
+          secGpc: sharing.secGpc,
+          customData: {
+            inquiry_type: inquiryType,
+            value: leadValue,
+            currency: 'USD',
+          },
+          eventSourceUrl: `${siteOrigin()}/contact`,
+        }),
+      }).catch((err) => {
+        console.warn('[Contact Form] CAPI call failed:', err)
+      })
+    }
+  }
 
   // GA4: the one server-side generate_lead (lib/analytics/lead-event.ts). A
   // recruit inquiry is not a lead: its own recruit_inquiry event. "general" is

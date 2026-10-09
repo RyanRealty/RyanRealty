@@ -28,6 +28,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { configuredSiteOrigin } from '@/lib/site-origin'
 import { createServiceClient } from '@/lib/supabase/service'
+import { buildTrackedUrl, isUtmCampaign } from '@/lib/analytics/utm'
 
 export const maxDuration = 300
 
@@ -105,28 +106,31 @@ export async function GET(request: NextRequest) {
   // the URL; the seller LP forwards that into the CRM sourceUrl and the
   // seller-lead-attribution cron matches it back to THIS content_performance row.
   // This is the sender half of the north-star attribution path. Idempotent.
-  function stampAttributionUtm(value: unknown, actionId: string, actionType: string): unknown {
+  function stampAttributionUtm(value: unknown, actionId: string): unknown {
     if (typeof value === 'string') {
       return value.replace(/https?:\/\/(?:www\.)?ryan-realty\.com(?:\/[^\s"')]*)?/gi, (urlStr) => {
         try {
           const u = new URL(urlStr)
-          if (!u.searchParams.has('utm_content')) u.searchParams.set('utm_content', actionId)
-          if (!u.searchParams.has('utm_campaign')) u.searchParams.set('utm_campaign', actionType)
-          if (!u.searchParams.has('utm_source')) u.searchParams.set('utm_source', 'social')
-          // 'social' (not 'organic_post') so GA4's default channel grouping
-          // buckets the click as Organic Social instead of Unassigned.
-          if (!u.searchParams.has('utm_medium')) u.searchParams.set('utm_medium', 'social')
-          return u.toString()
+          const campaign = u.searchParams.get('utm_campaign')
+          const content = (u.searchParams.get('utm_content') ?? actionId).toLowerCase().replace(/_/g, '-')
+          const rawSource = u.searchParams.get('utm_source')
+          const source = !rawSource || rawSource === 'social' ? 'facebook' : rawSource
+          return buildTrackedUrl(urlStr, {
+            source,
+            medium: u.searchParams.get('utm_medium') || 'social',
+            campaign: campaign && isUtmCampaign(campaign) ? campaign : 'social-post',
+            content,
+          })
         } catch {
           return urlStr
         }
       })
     }
-    if (Array.isArray(value)) return value.map((v) => stampAttributionUtm(v, actionId, actionType))
+    if (Array.isArray(value)) return value.map((v) => stampAttributionUtm(v, actionId))
     if (value && typeof value === 'object') {
       const out: Record<string, unknown> = {}
       for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-        out[k] = stampAttributionUtm(v, actionId, actionType)
+        out[k] = stampAttributionUtm(v, actionId)
       }
       return out
     }
@@ -174,11 +178,7 @@ export async function GET(request: NextRequest) {
 
     // Stamp the action_id into every ryan-realty.com link so a click-through
     // attributes back to this row (north-star path).
-    const stampedPayload = stampAttributionUtm(
-      publishPayload,
-      row.id,
-      typeof row.action_type === 'string' ? row.action_type : 'content',
-    ) as Record<string, unknown>
+    const stampedPayload = stampAttributionUtm(publishPayload, row.id) as Record<string, unknown>
 
     // R0.1: DB-verified approval — /api/social/publish checks this row's
     // status/approved_by/approved_at/citations server-side. Replaces the

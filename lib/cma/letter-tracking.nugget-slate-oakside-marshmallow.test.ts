@@ -16,7 +16,8 @@ describe('letter tracking — Nugget vs Slate / Oakside / Marshmallow', () => {
     })
     expect(href).toContain('utm_source=cma')
     expect(href).toContain('utm_medium=document')
-    expect(href).toContain('utm_campaign=cma-19815-nugget')
+    expect(href).toContain('utm_campaign=cma-letter')
+    expect(href).toContain('rr_doc=cma-19815-nugget')
     expect(href).toContain(`${IDENTITY_LINK_PARAM}=`)
     const html = `<a href="${href}">comp</a>`
     const check = letterLinkTrackingCheck(html, { personId: 19815 })

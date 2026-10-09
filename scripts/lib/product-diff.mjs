@@ -48,6 +48,11 @@ const ZERO_SHA = /^0+$/
 export function isVercelSkippable(file) {
   if (SKIP_EXACT.has(file)) return true
   if (SKIP_PREFIXES.some((p) => file.startsWith(p))) return true
+  // Unit tests and the repo-root test/ harness do not change the Next build.
+  // Prefix only: app/api/push/test and app/api/google-business-profile/test are
+  // live routes, so a path segment named "test" must still build.
+  if (file.startsWith('test/')) return true
+  if (file.endsWith('.test.ts') || file.endsWith('.test.tsx')) return true
   // Pure markdown / cursor rules at repo root or nested (not under app/).
   if (!file.startsWith('app/') && SKIP_SUFFIXES.some((s) => file.endsWith(s))) return true
   return false

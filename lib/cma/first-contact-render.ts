@@ -4,13 +4,14 @@
  * The composer stores words and clean hrefs. This module turns either that
  * structure, or a broker's edited plain text, into the HTML and the
  * plain-text alternative. buildLeadBody (default and override) and the
- * Review preview both call it. It stamps utm_source=cma and
- * utm_campaign=<slug> only. agent, _pid, utm_medium=email and utm_content
+ * Review preview both call it. It stamps source=cma, medium=email,
+ * campaign=cma-letter and rr_doc=<slug>. agent, _pid and utm_content
  * are added later by decorateOutboundText, once, on the href.
  */
 
 import { cmaAnalysisCardHtml, cmaListPricePlate, cmaReportButtonHtml } from '@/lib/cma/report-button'
 import { peelTrailingUrlPunctuation } from '@/lib/analytics/own-site-links'
+import { buildTrackedUrl, CMA_DOC_PARAM } from '@/lib/analytics/utm'
 
 export const CMA_EMAIL_ORIGIN = 'https://ryan-realty.com'
 
@@ -49,20 +50,23 @@ export function cleanFirstPartyHref(href: string): string {
   }
 }
 
-/** utm_source=cma and utm_campaign=<slug> only. Other keys are the decorator's. */
-export function stampCmaEmailCampaign(href: string, slug: string | null | undefined): string {
-  const campaign = (slug ?? '').trim()
-  if (!campaign) return href
-  let u: URL
+/** source=cma, medium=email, campaign=cma-letter, rr_doc=<slug>. Other keys are the decorator's. */
+export function stampCmaEmailCampaign(href: string, slug: string | null | undefined, opts?: { test?: boolean }): string {
+  const doc = (slug ?? '').trim().toLowerCase()
+  if (!doc) return href
   try {
-    u = new URL(href)
+    const u = new URL(href)
+    if (u.hostname.replace(/^www\./, '') !== 'ryan-realty.com') return href
   } catch {
     return href
   }
-  if (u.hostname.replace(/^www\./, '') !== 'ryan-realty.com') return href
-  if (!u.searchParams.has('utm_source')) u.searchParams.set('utm_source', 'cma')
-  if (!u.searchParams.has('utm_campaign')) u.searchParams.set('utm_campaign', campaign)
-  return u.toString()
+  return buildTrackedUrl(href, {
+    source: 'cma',
+    medium: 'email',
+    campaign: 'cma-letter',
+    extraParams: { [CMA_DOC_PARAM]: doc },
+    test: opts?.test,
+  })
 }
 
 export function labelForBareUrl(raw: string): string {

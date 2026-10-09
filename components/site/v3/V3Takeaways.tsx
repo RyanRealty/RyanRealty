@@ -61,6 +61,50 @@ function withFigures(sentence: string) {
   )
 }
 
+export type V3TakeawaysLeadProps = {
+  /** Plain sentences, each naming the place. */
+  items: readonly string[]
+  /** One quiet line under the paragraph: the source and its date. */
+  source?: string | null
+  /** Links set after the source line ("How we get our numbers"). */
+  links?: readonly { label: string; href: string }[]
+}
+
+/**
+ * The same paragraph without its section or H2, for a page whose H1 already
+ * asks the question: the market pages place it under the headline through
+ * V3Instrument's `lede` slot (SEO & AEO Desk brief 2026-10-08), so the first
+ * text after the H1 is the answer. Plain server-rendered <p>, no island.
+ */
+export function V3TakeawaysLead({ items, source, links = [] }: V3TakeawaysLeadProps) {
+  const rows = items.map((s) => s.trim()).filter(Boolean)
+  if (rows.length < 2) return null
+  const shown = links.filter((l) => l.label.trim() && l.href.trim())
+  return (
+    <div className="v3-takeaways v3-takeaways--lede">
+      <p className="v3-takeaways__lead">
+        {rows.map((s, i) => (
+          <span key={s}>
+            {i > 0 ? ' ' : null}
+            {withFigures(s)}
+          </span>
+        ))}
+      </p>
+      {source?.trim() || shown.length > 0 ? (
+        <p className="v3-takeaways__source">
+          {source?.trim() ?? null}
+          {shown.map((l, i) => (
+            <span key={l.href}>
+              {i === 0 ? (source?.trim() ? ' ' : null) : ' · '}
+              <a href={l.href}>{l.label}</a>
+            </span>
+          ))}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
 export function V3Takeaways({ id, heading, items, source, className }: V3TakeawaysProps) {
   const rows = items.map((s) => s.trim()).filter(Boolean)
   if (rows.length < 2) return null

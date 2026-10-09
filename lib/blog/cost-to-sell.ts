@@ -21,53 +21,16 @@
  *   npx tsx scripts/seed-blog-posts.ts --only aeo-guides-2026-09 --slug cost-to-sell-house-bend-oregon
  */
 import type { BlogFaqItem } from '@/lib/blog/publish-blog-faq'
+import {
+  COST_TO_SELL_INPUTS,
+  otiroStandardOwnersPolicy,
+  type CostToSellInputs,
+} from '@/lib/blog/cost-to-sell-inputs'
 
 export const COST_TO_SELL_SLUG = 'cost-to-sell-house-bend-oregon'
 export const COST_TO_SELL_HREF = `/blog/${COST_TO_SELL_SLUG}` as const
 
-/** The figures the page prints, each traced (brief section 0). */
-export const COST_TO_SELL_INPUTS = {
-  /** T0: "median sale price, last 12 months", single-family, ryan-realty.com/housing-market/bend (Oregon Data Share MLS). */
-  medianSalePrice: 765_000,
-  /** T0: the as-of day that page printed for the median above (YYYY-MM-DD, Pacific). */
-  figuresAsOf: '2026-10-08',
-  /** T1: Ryan Realty listing fee, no add-on fees. */
-  listingFeeRate: 0.03,
-  /** T2: ILLUSTRATIVE only. Not a typical, standard, or average rate; commission is negotiable. */
-  illustrativeBuyerAgentRate: 0.025,
-  /**
-   * T4: OTIRO Rating Manual (eff. 2025-09-01) section 1.008(A), the county
-   * lien search fee table currently in force: Deschutes, $25 per account.
-   */
-  lienSearchFee: 25,
-  /** T5: Deschutes County Title rate card (rev. 03/2023), "Sale (Total Fee)" row at medianSalePrice. Look it up again when the price changes. */
-  escrowSaleTotalFee: 2_679,
-  /** T6: Deschutes County Clerk, first page, effective 2026-07-01. */
-  recordingFirstPage: 102,
-  /** T6: Deschutes County Clerk, each additional page, effective 2026-07-01. */
-  recordingAdditionalPage: 5,
-  /** T8: ILLUSTRATIVE. DOR FY 2025-26 average effective rate for Deschutes, $6.98 per $1,000. */
-  illustrativeEffectiveTaxRate: 0.00698,
-  /** T8: ILLUSTRATIVE closing day for the proration: Oct 30, 2026, Jul 1 to Oct 30 inclusive. */
-  illustrativeProrationDays: 122,
-} as const
-
-export type CostToSellInputs = typeof COST_TO_SELL_INPUTS
-
-/**
- * OTIRO Oregon Rating Manual (eff. 2025-09-01), Schedule One, Basic Insurance
- * Rate for $500,000.01 to $10,000,000: $1,350 plus $1.50 for each $1,000 (and
- * fraction) over $500,000, rounded to the dollar (section 2.010). A standard
- * owner's policy is 100% of the Basic Insurance Rate (section 3.002(A)). Only
- * this bracket is implemented because only this bracket is sourced here.
- */
-export function otiroStandardOwnersPolicy(price: number): number {
-  if (!(price > 500_000 && price <= 10_000_000)) {
-    throw new Error(`otiroStandardOwnersPolicy: ${price} is outside the sourced $500,000.01 to $10M bracket`)
-  }
-  const thousandsOver = Math.ceil((price - 500_000) / 1_000)
-  return Math.round(1_350 + 1.5 * thousandsOver)
-}
+export { COST_TO_SELL_INPUTS, otiroStandardOwnersPolicy, type CostToSellInputs }
 
 export type CostToSellFigures = {
   price: number
@@ -232,6 +195,7 @@ ${TABLE}
 <p>Not in the total: your loan payoff, <a href="/blog/property-taxes-deschutes-county">prorated property taxes</a>, any HOA transfer fee, and anything you agree to credit the buyer. On an October 30 closing with the 2026\u201327 tax bill still unpaid, your share of a roughly ${usd(F.annualTaxIllustrative)} annual bill would be about ${usd(F.prorationIllustrative)}. That is illustrative, so use your own bill on DIAL. If you have already paid the year, the buyer's share comes back to you.</p>
 <p>Where the numbers come from: the ${LISTING} is our listing fee. The owner's title premium is the rate filed for Oregon by the Oregon Title Insurance Rating Organization (manual effective Sept. 1, 2025), so every title company charges the same premium. The escrow fee is from Deschutes County Title's published rate card (revised March 2023), split 50/50 by local custom, so ask for a current quote. Recording is the Deschutes County Clerk's fee effective July 1, 2026. Oregon law (ORS 306.815) bars new local transfer taxes, and Washington County's is the only one in the state. The ${BUYER_AGENT} is an example, not a standard rate. Commission is negotiable.</p>
 <p>Your number depends on whether, and how much, you agree to cover the buyer's agent in the offer you accept.</p>
+<p><a href="/tools/seller-net-sheet">Run your own numbers</a> in our seller net sheet, with your price, payoff, and tax bill.</p>
 
 <h2>Listing fee versus buyer-agent compensation</h2>
 <p>These used to be one number. They are two now. Our listing fee is 3% of the sale price with no add-on fees, and it covers the MLS listing, professional photography, a 3D tour, the marketing plan, every showing, and transaction management through close. Buyer-agent compensation is separate. Under the rules that took effect in August 2024, offers of compensation to the buyer's agent no longer appear in the MLS, and buyers sign a <a href="/blog/buyers-agent-bend-buyer-broker-agreement">written agreement</a> with their own agent that states what that agent will be paid. Whether you offer to cover some or all of that is a term of each offer, and you decide it offer by offer. We walk you through the trade before the first one arrives. Commission is negotiable and every listing agreement is its own conversation.</p>
