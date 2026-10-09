@@ -28,6 +28,10 @@ describe('compliance bypass covers every page the A2P filing cites', () => {
     expect(ctaPaths.filter((p) => !bypass.includes(p))).toEqual([])
   })
 
+  it('the bypass is the filed URL only: a query string (a scraper paging search) is still screened', () => {
+    expect(middleware).toMatch(/if \(!request\.nextUrl\.search && COMPLIANCE_VERIFICATION_PATHS\.has\(/)
+  })
+
   it('the bypass holds only filed pages: the CTA pages plus the linked privacy and terms', () => {
     expect(bypass.filter((p) => !ctaPaths.includes(p) && !LINKED_POLICIES.includes(p))).toEqual([])
     for (const p of LINKED_POLICIES) expect(resubmit).toContain(`https://ryan-realty.com${p}`)

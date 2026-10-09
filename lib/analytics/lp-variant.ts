@@ -11,6 +11,12 @@
  * /home-valuation was), /sell/expired-listings is expired-listing,
  * /sell/for-sale-by-owner is fsbo. The buyer landing pages are buy-<intent>.
  * A /lp/<slug> landing from before the move still reads as <slug>. Pure.
+ *
+ * These are PAGE variants, one per landing page, for session reports. The
+ * lp_variant a form sends GA4 is a FORM variant, and several pages share one:
+ * every /sell page sends seller-home-value and every /buy page sends
+ * lead-landing-buyer. No report joins the two; the lead-flow report keys its
+ * GA4 column on the form variant and its sessions on paths.
  */
 export function lpVariantFromPath(pathOrUrl: string | null | undefined): string | null {
   if (!pathOrUrl) return null
@@ -28,4 +34,24 @@ export function lpVariantFromPath(pathOrUrl: string | null | undefined): string 
   if (buy) return `buy-${buy[1]}`
   const lp = p.match(/^\/lp\/([a-z0-9-]+)/)
   return lp ? lp[1] : null
+}
+
+/** Live pages for the variants whose /lp page 308s or never existed. */
+const LIVE_PATH_BY_VARIANT: Record<string, string> = {
+  'seller-home-value': '/sell',
+  'sell-your-home': '/sell',
+  'expired-listing': '/sell/expired-listings',
+  fsbo: '/sell/for-sale-by-owner',
+  'buyer-listing-alerts': '/homes-for-sale',
+}
+
+/**
+ * The page to open for a variant from lpVariantFromPath: its live page, never a
+ * /lp path that 308s (two hops with the trailing slash) or 404s (buy-<intent>
+ * has no /lp page). Any other history slug keeps its /lp path, which the
+ * 2026-09-06 redirects resolve. Pure.
+ */
+export function lpPathForVariant(variant: string): string {
+  if (variant.startsWith('buy-')) return `/buy/${variant.slice('buy-'.length)}`
+  return LIVE_PATH_BY_VARIANT[variant] ?? `/lp/${variant}`
 }

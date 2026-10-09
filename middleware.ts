@@ -222,7 +222,9 @@ const COMPLIANCE_VERIFICATION_PATHS = new Set([
 function screenBotRequest(request: NextRequest, pathname: string): string | null {
   if (process.env.BOT_SCREEN_DISABLED === '1') return null
   if (pathname.startsWith('/api/')) return null
-  if (COMPLIANCE_VERIFICATION_PATHS.has(pathname.replace(/\/$/, '') || '/')) return null
+  // The filed URL exactly, with no query: a reviewer loads the page once, while
+  // a scraper paging /homes-for-sale?page=N stays screened.
+  if (!request.nextUrl.search && COMPLIANCE_VERIFICATION_PATHS.has(pathname.replace(/\/$/, '') || '/')) return null
 
   const ua = request.headers.get('user-agent') ?? ''
 

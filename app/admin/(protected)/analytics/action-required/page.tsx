@@ -24,7 +24,7 @@ import { StateWord } from '@/components/admin/v2/StateWord'
 import { VerdictLine } from '@/components/admin/v2/VerdictLine'
 import type { AdminState } from '@/components/admin/v2/StateWord'
 import { GridSkeleton, LaneNote, StatePanel } from '../_components/v2/DataGrid'
-import { lpVariantFromPath } from '@/lib/analytics/lp-variant'
+import { lpPathForVariant, lpVariantFromPath } from '@/lib/analytics/lp-variant'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -431,7 +431,7 @@ async function LpRebuildLane() {
                 }
                 action={
                   <a
-                    href={`/lp/${r.variant}/`}
+                    href={lpPathForVariant(r.variant)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="av2-btn av2-btn--quiet"

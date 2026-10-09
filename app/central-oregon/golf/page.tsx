@@ -22,8 +22,9 @@
  * does not ship.
  *
  * The old LP at /lp/central-oregon-golf has 308'd to this hub since
- * 2026-09-06, so "Homes on a golf course" opens the golf-course search
- * (hasGolfCourse) instead of linking this page back to itself.
+ * 2026-09-06, so "Homes on a golf course" opens the golf-homes landing
+ * (/homes-for-sale/on-golf-course: on a course or in a golf community)
+ * instead of linking this page back to itself.
  */
 
 import { communityPublicPair } from '@/lib/communities/community-public-pair'
@@ -134,7 +135,7 @@ export default function GolfIndexPage() {
 
   const edges: V3QuietItem[] = [
     ...communityDoors,
-    { label: 'Homes on a golf course', href: `${listingsBrowsePath()}?hasGolfCourse=1` },
+    { label: 'Homes on a golf course', href: `${listingsBrowsePath()}/on-golf-course` },
     { label: 'Every Central Oregon community', href: '/communities' },
     { label: 'Trails', href: '/central-oregon/trails' },
     { label: 'Search homes', href: listingsBrowsePath() },
