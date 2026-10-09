@@ -675,9 +675,6 @@ const nextConfig: NextConfig = {
       './node_modules/@react-pdf/renderer/**',
       './node_modules/@react-pdf/layout/**',
     ],
-    'app/home-valuation/actions': [
-      './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
-    ],
     // The Vault reads transaction PDFs in these routes (lib/tc/pdf-page-text,
     // lib/tc/doc-read). The reader also renders pages, which needs pdfjs's
     // standard font data: without it every typed value on a SkySlope or

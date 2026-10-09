@@ -13,11 +13,20 @@ export const GROUP_THREAD_FAILED =
 export const GROUP_THREAD_FALLBACK_NOTICE =
   'Could not start one group thread — texted each person separately.'
 
+/**
+ * A group text typed on a phone in quiet hours (Matt 2026-10-04, "1:1 only"):
+ * only a one-person text from a phone skips quiet hours.
+ */
+export const PHONE_GROUP_QUIET_NOTE =
+  'Quiet hours. A group text waits until 8am for everyone on it. To send it now, use a computer and check Send anyway.'
+
 export type ComposePersonChip = {
   id: number
   name: string
   phone: string | null
   email: string | null
+  /** The phone's area-code zones (lib/crm/recipient-timezones), for the composer's quiet-hours flag. */
+  timeZones?: string[]
 }
 
 export function composeRecipientPayload(people: Array<{ id: number }>): {

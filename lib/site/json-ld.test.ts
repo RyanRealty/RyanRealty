@@ -190,6 +190,44 @@ describe('buildJsonLd', () => {
     expect(rec(r.areaServed)).toMatchObject({ '@type': 'Place', name: 'Bend, Oregon' })
     expect(String(r.url)).toMatch(/\/sell\/valuation$/)
   })
+
+  // A merge on 2026-09-22 (cbb5a14fe) dropped this wiring and these two cases;
+  // the verified map in place-entity-same-as.ts sat unused until 2026-09-25.
+  it('place City on /cities/bend carries Wikipedia + Wikidata sameAs and a #place @id', () => {
+    const r = buildJsonLd({
+      type: 'place',
+      placeType: 'City',
+      name: 'Bend',
+      url: '/cities/bend',
+    })
+    expect(r['@type']).toBe('City')
+    expect(String(r['@id'])).toMatch(/\/cities\/bend#place$/)
+    expect(r['@id']).toBe(`${r.url}#place`)
+    const sameAs = r.sameAs as string[]
+    expect(sameAs).toContain('https://en.wikipedia.org/wiki/Bend,_Oregon')
+    expect(sameAs).toContain('https://www.wikidata.org/wiki/Q671288')
+  })
+
+  it('place community on /communities/tetherow cites the official origin', () => {
+    const r = buildJsonLd({
+      type: 'place',
+      name: 'Tetherow',
+      url: '/communities/tetherow',
+    })
+    expect(r.sameAs).toEqual(['https://tetherow.com'])
+  })
+
+  it('place with no verified entity carries no sameAs, and a passed one merges without duplicates', () => {
+    const plain = buildJsonLd({ type: 'place', name: 'Deschutes River Woods', url: '/subdivisions/deschutes-river-woods' })
+    expect(plain.sameAs).toBeUndefined()
+    const merged = buildJsonLd({
+      type: 'place',
+      name: 'Tetherow',
+      url: '/communities/tetherow',
+      sameAs: ['https://tetherow.com/', 'https://example.org/tetherow'],
+    })
+    expect(merged.sameAs).toEqual(['https://tetherow.com', 'https://example.org/tetherow'])
+  })
 })
 
 describe('listingItemList', () => {

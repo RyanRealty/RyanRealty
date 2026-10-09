@@ -17,7 +17,15 @@
  * 250 MB function limit on 2026-09-16 (next.config.ts BPO_LAMBDA_TRACE_EXCLUDES).
  */
 import { auth, searchconsole } from 'googleapis/build/src/apis/searchconsole'
+import { withAuthDeadline } from '@/lib/google-deadline'
 import type { GscIndexStatus, GscSitemapEntry } from './checks'
+
+/**
+ * Per-request deadline for one Sitemaps or URL Inspection call. The crawl-probe
+ * cron (maxDuration 300) makes a few of each per page class, so one stalled
+ * call must fail its check, not hold the run.
+ */
+export const CRAWL_PROBE_GSC_TIMEOUT_MS = 15_000
 
 export type GscClient = {
   siteUrl: string
@@ -31,12 +39,14 @@ export function createGscClient(env: NodeJS.ProcessEnv = process.env): GscClient
   const key = env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.trim()
   if (!email || !key) return null
   const siteUrl = env.GOOGLE_SEARCH_CONSOLE_SITE_URL?.trim() || 'https://ryan-realty.com/'
-  const jwt = new auth.JWT({
-    email,
-    key: key.replace(/\\n/g, '\n'),
-    scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
-  })
-  const sc = searchconsole({ version: 'v1', auth: jwt })
+  const jwt = new auth.JWT(
+    withAuthDeadline({
+      email,
+      key: key.replace(/\\n/g, '\n'),
+      scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
+    }),
+  )
+  const sc = searchconsole({ version: 'v1', auth: jwt, timeout: CRAWL_PROBE_GSC_TIMEOUT_MS })
   return {
     siteUrl,
     async listSitemaps() {

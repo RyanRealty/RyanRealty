@@ -39,9 +39,9 @@ export const CITY_SLUG: Record<string, string> = {
 /**
  * This route's own path, and the value every valuation door on it passes as `from`.
  *
- * app/home-valuation/actions.ts reads that parameter off the referer to resolve the
- * lead's stored source_url, and falls back to the referer's PATH when it is missing,
- * which on a bare /sell/valuation link is the valuation page itself. A door without
+ * submitSellerLPForm reads that parameter off the referer to resolve the lead's
+ * stored source_url (lib/crm/lead-origin-path.ts), and falls back to the form's own
+ * page when it is missing, which on a bare link is /sell or /sell/valuation. A door without
  * this parameter therefore does not merely lose attribution, it records the wrong
  * origin for every seller lead the page produces (2026-07-15 conversion audit). Both
  * KB doors this migration replaced, KbSell and the market HUD, passed the same value.

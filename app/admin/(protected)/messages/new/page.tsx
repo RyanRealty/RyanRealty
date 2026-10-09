@@ -7,6 +7,7 @@ import { requirePersonInScope } from '@/app/actions/crm'
 import { getInboxContactCard } from '@/lib/data/crm/getInboxThread'
 import { getDraftsForPerson } from '@/lib/data/crm/drafts'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
+import { inSmsQuietHoursFor, recipientTimeZones } from '@/lib/crm/recipient-timezones'
 import { EntityTitle } from '@/components/admin/v2'
 import { ComposeSurface } from '@/components/admin/crm/ComposeSurface'
 import { getBrokerSelfComposePreviewAction } from '@/app/admin/(protected)/messages/actions'
@@ -24,7 +25,6 @@ export default async function MessagesNewPage({
   const sp = await searchParams
   const selectedId = Number(sp.c) || null
   const channel = sp.channel === 'email' ? 'email' : 'text'
-  const quiet = inSmsQuietHours()
   const brokerSelf = sp.self === '1'
   const cmaSlug = (sp.cma ?? '').trim().toLowerCase()
 
@@ -53,12 +53,18 @@ export default async function MessagesNewPage({
         name: card.name ?? 'Unknown contact',
         phone: card.phone,
         email: card.email,
+        timeZones: recipientTimeZones(card.phone),
       },
     ]
     draftText = drafts.text?.body ?? ''
     draftEmail = drafts.email?.body ?? ''
     draftSubject = drafts.email?.subject ?? ''
   }
+
+  // The first render's quiet-hours answer: Pacific, plus the contact's own zone
+  // when one is chosen (texting yourself is Pacific alone). The composer then
+  // reads the clock live for whoever is on To.
+  const quiet = brokerSelf ? inSmsQuietHours() : inSmsQuietHoursFor(initialPeople[0]?.phone)
 
   return (
     <div className="av2-scope" style={{ maxWidth: 640, margin: '0 auto', padding: 16 }}>

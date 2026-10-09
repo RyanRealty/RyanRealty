@@ -28,7 +28,7 @@ Use this rule whenever the user asks for **marketing**, **advertising**, **paid 
 | CRM enroll + sequence crons | `app/api/cron/crm-auto-enroll/route.ts`, `app/api/cron/crm-sequence-engine/route.ts` |
 | Admin marketing dashboard data | `app/actions/dashboard.ts` |
 | Native lead capture | `lib/crm/send-event.ts` (`sendEvent` → `ensureNativeLead`) |
-| Meta CAPI from forms | `app/contact/actions.ts`, `app/home-valuation/actions.ts`, routes under `app/api/meta-capi/` |
+| Meta CAPI from forms | `app/contact/actions.ts`, `app/lp/seller-home-value/actions.ts`, routes under `app/api/meta-capi/` |
 | Meta Lead Ads webhook | `app/api/meta/lead-webhook/route.ts` |
 
 ## Do not

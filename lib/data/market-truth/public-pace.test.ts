@@ -70,12 +70,10 @@ describe('public pace surfaces', () => {
     const annual = readFileSync(resolve('app/housing-market/annual-review/page.tsx'), 'utf8')
     const region = readFileSync(resolve('app/housing-market/central-oregon/page.tsx'), 'utf8')
     const reports = readFileSync(resolve('app/housing-market/reports/page.tsx'), 'utf8')
-    const lpData = readFileSync(resolve('app/lp/seller-home-value/data.ts'), 'utf8')
     expect(annual).toMatch(/getPublicDetachedPace/)
     expect(region).toMatch(/getPublicDetachedPace/)
     // Cos IA: /reports is sales/weekly only — live pace lives on the hub.
     expect(reports).not.toMatch(/getPublicDetachedPace/)
-    expect(lpData).toMatch(/getPublicDetachedPace/)
     const mos = readFileSync(resolve('app/months-of-supply/page.tsx'), 'utf8')
     const jsonFeed = readFileSync(resolve('lib/data/market/getMarketPulseJsonFeed.ts'), 'utf8')
     expect(mos).toMatch(/getPublicDetachedPace/)

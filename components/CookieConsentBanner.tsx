@@ -242,9 +242,9 @@ export default function CookieConsentBanner() {
        no focus move or trap, so announcing it as a dialog misled screen readers
        (design-audit P3). Shown only after first scroll or after the visitor
        opens the delayed chip, so Accept all is never a first-viewport fill. */
-    /* z-90: above the listing-detail sticky mobile CTA bar (kb.css
-       .listing-mobile-cta, z-index 80) — the CTA used to slide up OVER the
-       banner's own Accept/Manage/Essential buttons (design-audit P2). */
+    /* z-90: above the z-80 bottom docks (V3StickyAsk.css, V3PhoneDock.css).
+       A z-80 bar once slid up OVER the banner's own Accept/Manage/Essential
+       buttons (design-audit P2). */
     <div
       role="region"
       aria-label="Cookie notice"
