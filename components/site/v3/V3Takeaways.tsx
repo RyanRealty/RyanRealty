@@ -81,7 +81,9 @@ export function V3TakeawaysLead({ items, source, links = [] }: V3TakeawaysLeadPr
   if (rows.length < 2) return null
   const shown = links.filter((l) => l.label.trim() && l.href.trim())
   return (
-    <div className="v3-takeaways v3-takeaways--lede">
+    // id="takeaways": the answer's anchor and the pinned SEO decision
+    // aeo-market-lead-and-tables (data/seo/decisions.json) travel with it.
+    <div id="takeaways" className="v3-takeaways v3-takeaways--lede">
       <p className="v3-takeaways__lead">
         {rows.map((s, i) => (
           <span key={s}>
