@@ -309,7 +309,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       }
     : { listedCount: null, types: [] }
   const paceRead = await withTimeoutFallbackResult(
-    getPublicDetachedPace({ geoType: 'neighborhood', geoSlug: slug }),
+    getPublicDetachedPace({
+      geoType: 'neighborhood',
+      geoSlug: slug,
+    }),
     EMPTY_PUBLIC_PACE,
     3000,
     'comm:meta-pace',

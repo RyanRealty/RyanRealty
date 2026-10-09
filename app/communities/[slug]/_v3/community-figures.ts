@@ -111,7 +111,8 @@ export function reconcilePlaceHoaFaq(
   faqs: readonly CommunityFaqItem[],
   hoa: PublishedPlaceHoa | null,
 ): CommunityFaqItem[] {
-  if (!hoa || hoa.kind !== 'measured' || !hoa.basis) return [...faqs]
+  const basis = hoa?.kind === 'measured' ? hoa.basis : null
+  if (!basis) return [...faqs]
   return faqs.map((item) => {
     if (!item.question.endsWith('have an HOA?')) return item
     return {
@@ -119,8 +120,8 @@ export function reconcilePlaceHoaFaq(
       // The basis IS the published sentence (detached listings since October
       // 2023). Wrapping it in "the median of the N current listings" was the
       // label bug AI answers were quoting (SEO & AEO Desk 2026-10-08).
-      answer: hoa.basis,
-      source: `regional MLS, ${hoa.basis}`,
+      answer: basis,
+      source: `regional MLS, ${basis}`,
     }
   })
 }
