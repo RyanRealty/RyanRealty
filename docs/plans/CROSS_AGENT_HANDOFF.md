@@ -1,6 +1,6 @@
 # Current — 2026-10-09 (Grok, condo units and the seated range)
 
-Surface: Grok. Branch `fix/cma-use-every-seated-sale`, from `origin/main` `ba0c2477d`. Nothing rebuilt, nothing sent, nothing approved. Matt merges. The 144-home fleet was not re-run.
+Surface: Grok. Branch `fix/cma-use-every-seated-sale`. PR #480 (https://github.com/RyanRealty/RyanRealty/pull/480), commits `60d12eb1c` and `5aaba7e21`. Cut from `ba0c2477d`. `origin/main` has since moved to `d844b3baa` (Northwest Crossing guide, #474). No files overlap. Not rebased. Not merged. Matt merges. Nothing rebuilt, nothing sent, nothing approved. The 144-home fleet was not re-run.
 
 **When the plat walk cannot run.** The facts walk already steps a quarter mile at a time inside the neighborhood once the plat rows are short of 5. That step was empty for the home that actually had sales next door.
 
