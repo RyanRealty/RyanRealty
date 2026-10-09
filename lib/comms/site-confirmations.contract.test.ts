@@ -16,7 +16,6 @@ describe('every site submit sends the visitor a same-minute confirmation', () =>
   it.each([
     ['app/contact/actions.ts', 'sendContactConfirmation'],
     ['app/actions/search-alert-capture.ts', 'sendAlertConfirmation'],
-    ['app/lp/expired-listing/actions.ts', 'sendExpiredAcknowledgment'],
   ])('%s calls %s', (file, fn) => {
     const src = read(file)
     expect(src).toContain("@/lib/comms/site-confirmations")
@@ -43,13 +42,6 @@ describe('every site submit sends the visitor a same-minute confirmation', () =>
     expect(seller).toContain('createCmaRequest(')
     expect(seller).not.toContain('notifyLead: false')
   })
-
-  it('the expired LP acknowledges the SUBMIT without mailing the report', () => {
-    const src = read('app/lp/expired-listing/actions.ts')
-    expect(src).toContain('sendExpiredAcknowledgment(')
-    // The owner never asked us for a valuation; that rule outranks the ack.
-    expect(src).toContain('notifyLead: false')
-  })
 })
 
 describe('the confirmations are system sends, and say nothing they cannot back', () => {
@@ -71,7 +63,8 @@ describe('the confirmations are system sends, and say nothing they cannot back',
 
   it('carries an idempotency key on every send, so a double submit mails once', () => {
     // Four in the sender's plumbing (param, type, pass-through) plus one literal
-    // per confirmation family: contact, search alert, listing save, expired.
+    // per confirmation family: contact, search alert, listing save, price watch,
+    // payment estimate.
     expect((code.match(/idempotencyKey:/g) ?? []).length).toBeGreaterThanOrEqual(4)
     for (const prefix of [
       'contact:',
@@ -79,7 +72,6 @@ describe('the confirmations are system sends, and say nothing they cannot back',
       'alert-listing:',
       'alert-price-drop:',
       'payment-estimate:',
-      'expired-ack:',
     ]) {
       expect(code).toContain(prefix)
     }

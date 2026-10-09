@@ -16,7 +16,7 @@ import { getAppointmentsForPerson } from '@/lib/data/crm/getAppointments'
 import { getContactBehaviorSummary } from '@/lib/data/crm/getContactBehaviorSummary'
 import { getDealsForPerson } from '@/lib/data/tc/deal-people'
 import { extractAddressCandidate } from '@/lib/crm/seller-intent'
-import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
+import { inSmsQuietHoursFor, recipientTimeZones } from '@/lib/crm/recipient-timezones'
 import { mailboxForSlug } from '@/lib/data/brokers/directory'
 import { renderCrmMerge, type MergePersonLike } from '@/lib/crm/merge'
 import { buildMergeContext } from '@/lib/crm/merge-context'
@@ -165,8 +165,14 @@ export async function PersonWorkspace({
 
     // Group-text recipients: relationship contacts start unchecked; live
     // group-thread participants come pre-checked (legacy semantics, verbatim).
-    const smsRecipients: Array<{ personId: number; name: string; phone: string; relation: string; defaultOn?: boolean }> =
-      relRecipients.map((r) => ({ ...r, defaultOn: false }))
+    const smsRecipients: Array<{
+      personId: number
+      name: string
+      phone: string
+      relation: string
+      defaultOn?: boolean
+      timeZones?: string[]
+    }> = relRecipients.map((r) => ({ ...r, defaultOn: false }))
     for (const g of groupParticipants) {
       const pid = g.personId ?? 0
       const existing =
@@ -179,6 +185,9 @@ export async function PersonWorkspace({
       }
       smsRecipients.push({ personId: pid, name: g.name, phone: g.phone, relation: 'Group', defaultOn: true })
     }
+    // Each number's area-code zones, so the composer's quiet-hours flag covers
+    // everyone on the text (Matt 2026-10-04, "Both zones").
+    for (const r of smsRecipients) r.timeZones = recipientTimeZones(r.phone)
 
     const composerCustomFields = fieldDefs
       .filter((d) => d.key.startsWith('custom'))
@@ -347,7 +356,8 @@ export async function PersonWorkspace({
             smsNote={smsNote}
             canEmail={canEmail}
             emailNote="No email address on file."
-            quietHours={inSmsQuietHours()}
+            quietHours={inSmsQuietHoursFor(primaryPhone)}
+            primaryTimeZones={recipientTimeZones(primaryPhone)}
             smsTemplates={smsTemplates.map((t) => ({ key: t.key, name: t.name }))}
             emailTemplates={emailTemplates.map((t) => ({ key: t.key, name: t.name }))}
             tplKey={tpl}

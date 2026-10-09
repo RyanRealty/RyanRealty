@@ -20,6 +20,7 @@ import { sendSellerLeadAlertEmail } from '@/lib/seller-lead-alert'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
+import { leadOriginPath } from '@/lib/crm/lead-origin-path'
 import { cookies, headers } from 'next/headers'
 import { findCrmPersonIdByEmail } from '@/lib/data/cma/crm'
 import { resolveSubmittedIdentity } from '@/lib/crm/submitted-identity'
@@ -98,19 +99,6 @@ export type SellerHomeDetails = {
 export type SellerLPResult =
   | { success: true; eventId: string; classification: 'hot' | 'warm' | 'nurture' | 'unknown'; alreadyKnown: boolean; assignedBroker: BrokerSlug | null }
   | { success: false; error: string }
-
-/**
- * Locked off 2026-08-14: no save until contact exists. Address-only
- * advances the form. Contact submit is the first write.
- */
-export async function saveSellerPartialLead(_params: {
-  address: string
-  sessionId: string | undefined
-  source: 'seller-lp' | 'list-now-lp'
-  pagePath?: string
-}): Promise<void> {
-  return
-}
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -248,6 +236,10 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // content_performance.north_star_attributed_seller_leads. Without this the
     // north-star metric can never move off zero.
     const leadPagePath = sanitizePagePath(submission.pagePath)
+    // source_url names the page that PRODUCED the lead: a content page's
+    // valuation link carries ?from=<its path> (lib/crm/lead-origin-path.ts).
+    // The broker's origin note keeps the page the form was on (landingPage).
+    let leadOriginPathname = leadPagePath
     let leadSourceUrl = `${siteUrl}${leadPagePath}`
     // Hoisted so the lead-origin note (below) can reuse the same parsed UTMs
     // without re-reading the referer.
@@ -256,9 +248,12 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     let originUtmCampaign: string | undefined
     let originUtmContent: string | undefined
     try {
-      const referer = (await headers()).get('referer') ?? ''
+      const requestHeaders = await headers()
+      const referer = requestHeaders.get('referer') ?? ''
       if (referer) {
         const refUrl = new URL(referer)
+        leadOriginPathname = leadOriginPath(referer, [new URL(siteUrl).host, requestHeaders.get('host')], leadPagePath)
+        leadSourceUrl = `${siteUrl}${leadOriginPathname}`
         originUtmSource = refUrl.searchParams.get('utm_source') ?? undefined
         originUtmMedium = refUrl.searchParams.get('utm_medium') ?? undefined
         originUtmCampaign = refUrl.searchParams.get('utm_campaign') ?? undefined
@@ -269,7 +264,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
           if (v) passthrough.set(k, v)
         }
         const qs = passthrough.toString()
-        if (qs) leadSourceUrl = `${siteUrl}${leadPagePath}?${qs}`
+        if (qs) leadSourceUrl = `${siteUrl}${leadOriginPathname}?${qs}`
       }
     } catch {
       // malformed referer — fall back to the bare LP url

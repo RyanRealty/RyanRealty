@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * reachability: entry-point vendored catalog source (Matt 2026-09-10), wrapped by a v3 primitive when a section needs it.
+ */
+
 import {
   AnimatePresence,
   type HTMLMotionProps,

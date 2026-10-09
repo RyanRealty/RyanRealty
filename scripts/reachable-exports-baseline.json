@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-26T20:52:36.682Z",
-  "reason": "Pre-gate backlog of components/** and lib/** modules that no file imports. This list may only shrink: wire the module into a surface, mark it \"reachability: entry-point <reason>\" in its first 10 lines, or delete it. New orphans fail the build.",
+  "generatedAt": "2026-09-29T21:24:13.822Z",
+  "reason": "Pre-gate backlog of components/**, lib/**, and app/** non-route modules that no file imports. This list may only shrink: wire the module into a surface, mark it \"reachability: entry-point <reason>\" in its first 10 lines, or delete it. New orphans fail the build.",
   "count": 1,
   "names": [
     "lib/data/crm/getFirstTouchAttribution.ts"

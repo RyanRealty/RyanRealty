@@ -172,9 +172,6 @@ const TSX_EXEMPT = new Set([
   // parses them itself and never resolves a CSS variable, so a token here is
   // silently ignored and the map renders unstyled.
   'app/central-oregon/_v3/PlaceFieldMapImpl.tsx',
-  'app/lp/bend/_components/BendInteractiveMap.tsx',
-  'app/lp/central-oregon-golf/_components/GolfCourseMap.tsx',
-  'components/site/listing-detail/ListingHeroMap.client.tsx',
   'components/site/listing-detail/ListingLocationMap.client.tsx',
   'components/search/MapListingPopup.tsx',
   // <canvas> 2D context: ctx.strokeStyle is a literal, same constraint.

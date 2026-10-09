@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-30T10:46:51.972Z",
-  "total": 116,
+  "total": 114,
   "byFile": {
     "app/_v3/HomeHeroSearch.client.tsx": 1,
     "app/activity/_v3/activity-photo-callers.test.ts": 1,
@@ -16,7 +16,6 @@
     "app/housing-market/og/[...slug]/route.tsx": 2,
     "app/listing/[listingKey]/loading.tsx": 1,
     "app/listing/by-address/[...slug]/loading.tsx": 1,
-    "app/lp/buyer-listing-alerts/BuyerLPForm.tsx": 1,
     "app/lp/central-oregon-golf/_components/GolfCourseMap.tsx": 1,
     "app/lp/seller-home-value/SellerLPForm.tsx": 2,
     "app/lp/tetherow/_components/TetherowBuyerForms.tsx": 3,
@@ -25,7 +24,6 @@
     "app/lp/tetherow/_components/TetherowScroller.tsx": 5,
     "app/lp/tetherow/_components/TetherowStickyCta.tsx": 1,
     "app/lp/tetherow/heath/_components/HeathAssetPerformance.tsx": 1,
-    "app/lp/tetherow/heath/_components/HeathCmaForm.tsx": 1,
     "app/search/og/[...slug]/route.tsx": 2,
     "app/sell/_v3/SellAnswer.tsx": 1,
     "components/ShareButton.tsx": 2,

@@ -868,9 +868,6 @@ describe('place-family indexes', () => {
     expect(plat).not.toMatch(/export const dynamic = 'force-dynamic'/)
     const code = plat.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n')
     expect(code).not.toMatch(/\bsearchParams\b|cookies\(\)|headers\(\)/)
-    const split = readSrc('components/search/PlaceSplitView.tsx')
-    const splitCode = split.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n')
-    expect(splitCode).not.toMatch(/getSession|getPersonIdFromCookie|cookies\(\)|\bsearchParams\b/)
   })
 })
 

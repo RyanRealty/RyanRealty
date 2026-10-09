@@ -1,4 +1,5 @@
 /**
+ * reachability: entry-point executable spec for the comparable DOM and price-history rows, held by lib/cma/canter-letter-flow.contract.test.ts.
  * Matt 2026-09-17: every comparable row (closed / pending / active / expired)
  * must show DOM + listing/price history. Tip Ready / CI refuse if missing.
  */

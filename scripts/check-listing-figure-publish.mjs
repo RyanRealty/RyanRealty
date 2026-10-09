@@ -601,7 +601,8 @@ const SHARE_LABEL_SURFACES = [
   // The v3 Field row builders on the place pages (2026-08-26): these replaced
   // the dual-pane inventory list — the module that printed the Camp Sherman
   // quarter shares — so each must resolve the share label beside its price.
-  'app/cities/[slug]/_v3/city-field-items.ts',
+  // (city's own city-field-items.ts left this list 2026-08-29 when the city
+  // opening moved to PlaceSplitView — see check-publish-street-line.mjs.)
   'app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections.ts',
   'app/communities/[slug]/_v3/community-opening.ts',
   // The price tape between sections on cities, neighborhoods and communities.
@@ -684,7 +685,7 @@ for (const file of SHARE_LABEL_SURFACES) {
 // page families is the drift §8 forbids. So the population is named and frozen:
 // a new surface may not join it, and the number comes down as each is converted.
 // A gate that lets a known class grow is not a gate.
-const UNLABELLED_ASK_SURFACES_MAX = 3 // 6 -> 3 when the KB register was deleted 2026-08-27 (KbFeatured/KbListingMap/KbTicker went with it)
+const UNLABELLED_ASK_SURFACES_MAX = 2 // 6 -> 3 when the KB register was deleted 2026-08-27 (KbFeatured/KbListingMap/KbTicker went with it); 3 -> 2 when app/cities/[slug]/_v3/city-field-items.ts was deleted 2026-09-25 (superseded by PlaceSplitView 2026-08-29)
 {
   const unlabelled = []
   for (const f of [...walkFiles('app'), ...walkFiles('components'), ...walkFiles('lib')]) {

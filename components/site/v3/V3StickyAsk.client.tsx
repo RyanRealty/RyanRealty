@@ -14,15 +14,11 @@
  * rule the chrome decision (docs/plans/PUBLIC_PRODUCT/decisions.md, 2026-08-12)
  * was actually protecting.
  *
- * WHY IT IS SHAPED LIKE THE LISTING BAR ON A PHONE. components/site/listing-
- * detail/ListingMobileContactBar.client.tsx is the site's only other bottom-
- * fixed ask, and its CSS comment says "Conversion-critical". This reuses its
- * geometry — the --v3-sticky-bar-h height, the safe-area inset, the docking
- * above a cookie bar — so the two never read as two different products, and so
- * a phone visitor's thumb finds the same control in the same place on a listing
- * and on a place page. It does NOT reach into that component: the listing bar
- * is a broker bar (Tour / Call / Text) and this is a valuation ask, and they
- * never mount on the same route.
+ * WHY IT IS SHAPED LIKE THE PHONE DOCK. It reuses the dock's geometry (the
+ * --v3-sticky-bar-h height, the safe-area inset, the docking above a cookie
+ * bar, V3PhoneDock.css) so two bottom-fixed controls never read as two
+ * different products. The listing page's sticky Tour / Call / Text bar it was
+ * first shaped after was retired 2026-09-19 and deleted 2026-10-04.
  *
  * SITE-122 (Matt 2026-09-16): below 64rem the phone dock (V3PhoneDock) is the
  * one bottom bar and this plate retires by CSS while a dock is mounted; the

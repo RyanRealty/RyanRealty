@@ -15,6 +15,10 @@
  *   - app/account/**, components/account/** (signed-in management console:
  *     form primitives — switches, dialogs, inputs — that KB does not provide;
  *     same class as admin. 2026-07-30, search-plan Phase 3/4 alert manager.)
+ *   - components/site/v3/**, components/motion/**, components/site/listing-detail/**
+ *     and every route's own _v3 folder under app/: the public v3 register, which reaches
+ *     shadcn through installed catalog source (Matt 2026-09-10). The rest of
+ *     components/site/** is pre-v3 and still counts.
  *
  * Usage:
  *   node scripts/check-shadcn-burndown.mjs                # ratchet (CI)
@@ -54,7 +58,18 @@ const EXCLUDE = [
   // Catalog install path (Matt 2026-09-10): v3 wraps shadcn/beUI source.
   'components/site/v3/',
   'components/motion/',
+  // The public v3 register's route-level files (2026-09-25). The header has
+  // said since 2026-09-10 that public v3 is out of this set, but the list only
+  // named components/site/v3/, so route-level v3 files still counted: the
+  // listing page's own component set here, and every app/**/_v3/ folder
+  // (isRouteV3 below). The rest of components/site/ (LeadCaptureBlock,
+  // ListingCard, NewsletterSignup, golf/, providers/, ...) predates v3 and
+  // stays governed: a new direct @/components/ui import there still fails.
+  'components/site/listing-detail/',
 ]
+
+/** A route's own v3 folder (app/<route>/_v3/): the public register, out of scope. */
+const isRouteV3 = (rel) => /(^|\/)_v3\//.test(`${rel}/`)
 
 function walk(dir, out = []) {
   if (!existsSync(dir)) return out
@@ -63,10 +78,10 @@ function walk(dir, out = []) {
     const full = join(dir, name)
     const rel = relative(ROOT, full).replace(/\\/g, '/')
     if (statSync(full).isDirectory()) {
-      if (EXCLUDE.some((e) => `${rel}/`.startsWith(e))) continue
+      if (EXCLUDE.some((e) => `${rel}/`.startsWith(e)) || isRouteV3(rel)) continue
       walk(full, out)
     } else if (/\.(tsx|ts)$/.test(name) && !/\.test\.(tsx|ts)$/.test(name)) {
-      if (EXCLUDE.some((e) => rel.startsWith(e))) continue
+      if (EXCLUDE.some((e) => rel.startsWith(e)) || isRouteV3(rel)) continue
       out.push(rel)
     }
   }

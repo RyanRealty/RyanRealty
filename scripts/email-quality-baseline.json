@@ -10,7 +10,6 @@
   "app/api/cron/weekly-pipeline-digest/route.ts",
   "app/api/twilio/inbound-sms/route.ts",
   "app/api/twilio/recording/route.ts",
-  "app/home-valuation/actions.ts",
   "lib/alerts/send.ts",
   "lib/cma-deliver.ts",
   "lib/cma-delivery.ts",

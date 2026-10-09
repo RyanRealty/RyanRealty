@@ -14,7 +14,7 @@
  *
  * Compliance gates that DO still apply:
  *   - Access guard (CRM access required)
- *   - quiet-hours check for SMS (8pm to 8am Pacific — Oregon's window)
+ *   - quiet-hours check for SMS (7:55pm to 8am Pacific, inside Oregon's 8pm window)
  *   - A2P 10DLC Twilio gate (sendSms checks a2p campaign status)
  *   - Send path is the same library calls (sendCrmEmail / sendSms) as real sends
  */
@@ -106,11 +106,10 @@ export async function sendTemplateSelfTestAction(
     return { ok: true, message: `Test email sent to ${mailbox.email}` }
   }
 
-  // SMS path. Respect TCPA quiet hours (compliance gate).
-  const { inSmsQuietHours } = await import('@/lib/crm/quiet-hours')
-  if (inSmsQuietHours()) {
-    return { ok: false, error: 'Quiet hours (8pm to 8am Pacific, ORS 646.563). Try again after 8am.' }
-  }
+  // SMS path. Respect TCPA quiet hours (compliance gate), in Pacific and the
+  // receiving cell's own zone.
+  const { smsWindowCloseAtFor } = await import('@/lib/crm/recipient-timezones')
+  const { quietHoursRefusal } = await import('@/lib/comms/guards')
 
   // Route through the cached DAL reader (not raw .from()) for broker telephony.
   const { getBrokerTelephony } = await import('@/lib/data/crm/getBrokerTelephony')
@@ -126,8 +125,11 @@ export async function sendTemplateSelfTestAction(
     return { ok: false, error: 'No Twilio number on file for your broker profile.' }
   }
 
+  const quiet = quietHoursRefusal(toPhone, new Date(), { canOverride: false })
+  if (quiet) return { ok: false, error: quiet }
+
   const { sendSms } = await import('@/lib/crm/twilio')
-  const smsResult = await sendSms({ from: fromNumber, to: toPhone, body: renderedBody })
+  const smsResult = await sendSms({ from: fromNumber, to: toPhone, body: renderedBody, validUntil: smsWindowCloseAtFor(toPhone) })
   if (!smsResult.ok) return { ok: false, error: smsResult.error }
   return { ok: true, message: `Test SMS sent to ${toPhone}` }
 }

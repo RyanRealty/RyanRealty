@@ -18,6 +18,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { CmaComposeAttach, type CmaComposeSeed } from '@/components/admin/crm/CmaComposeAttach'
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer, type SmsRecipient } from '@/components/admin/crm/SmsComposer'
+import { useSmsQuiet } from '@/components/admin/crm/use-sms-quiet'
 import type { ContactCma } from '@/lib/data/crm/getContactCmas'
 
 type TemplateOpt = { key: string; name: string }
@@ -30,6 +31,8 @@ export function CommsSection(props: {
   canEmail: boolean
   emailNote: string | null
   quietHours: boolean
+  /** The lead's area-code zones (lib/crm/recipient-timezones), so quiet hours read live. */
+  primaryTimeZones?: string[]
   smsTemplates: TemplateOpt[]
   emailTemplates: TemplateOpt[]
   tplKey: string | null
@@ -52,6 +55,11 @@ export function CommsSection(props: {
 }) {
   const [channel, setChannel] = useState<'sms' | 'email'>(props.initialChannel)
   const isMobile = useIsMobile()
+  // Pacific and the lead's own zone, read live (Matt 2026-10-04, "Both zones");
+  // once the composer mounts it reports for everyone selected on the text.
+  const leadQuiet = useSmsQuiet(props.primaryTimeZones ?? [], props.quietHours)
+  const [composerQuiet, setComposerQuiet] = useState<boolean | null>(null)
+  const quietNow = composerQuiet ?? leadQuiet
   const [cmaSeed, setCmaSeed] = useState<CmaComposeSeed | null>(null)
   const router = useRouter()
   const pathname = usePathname()
@@ -121,9 +129,9 @@ export function CommsSection(props: {
         {channel === 'sms' && !isMobile ? (
           <span
             style={{ marginLeft: 'auto', fontSize: 'var(--a-text-sm)' }}
-            className={props.quietHours ? 'av2-composer__warn' : 'av2-composer__ok'}
+            className={quietNow ? 'av2-composer__warn' : 'av2-composer__ok'}
           >
-            {props.quietHours ? 'Quiet hours — 1:1 manual send allowed' : 'Inside send window'}
+            {quietNow ? 'Quiet hours — 1:1 manual send allowed' : 'Inside send window'}
           </span>
         ) : null}
       </div>
@@ -147,6 +155,9 @@ export function CommsSection(props: {
               hideMergeFields={isMobile}
               hideQuietHours={isMobile}
               hideAttachments={isMobile}
+              quietHours={props.quietHours}
+              primaryTimeZones={props.primaryTimeZones}
+              onQuietChange={setComposerQuiet}
             />
           </>
         ) : (

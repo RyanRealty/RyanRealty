@@ -11,16 +11,18 @@
  * inventory beyond what XML sitemaps convey.
  * EXITS: /homes-for-sale, /cities, /housing-market, /blog
  *
- * THE PAGE CONTRACT: revalidate 3600, getSiteIndexLinks(), noStore() when
- * generatedAt === null, CollectionPage JSON-LD, V3SectionTracker
- * pageType="site_index".
+ * THE PAGE CONTRACT: revalidate 3600, getSiteIndexLinks(), refuseDegradedIsr()
+ * when generatedAt === null, CollectionPage JSON-LD, V3SectionTracker
+ * pageType="site_index". An empty derivation stands as the ISR copy for 60 s,
+ * not the hour. It called noStore() until 2026-09-25, and inside a runtime ISR
+ * render Next 16 answers noStore() with a 500 (lib/site/degraded-isr.ts).
  *
  * D11: no virtue names. No invented quote. No rendered ranking counts.
  */
 
 import type { Metadata } from 'next'
-import { unstable_noStore as noStore } from 'next/cache'
 import { getSiteIndexLinks } from '@/lib/data'
+import { refuseDegradedIsr } from '@/lib/site/degraded-isr'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import {
@@ -69,7 +71,7 @@ const HUBS = [
 
 export default async function SiteIndexPage() {
   const data = await getSiteIndexLinks()
-  if (data.generatedAt === null) noStore()
+  if (data.generatedAt === null) await refuseDegradedIsr('site-index', ['getSiteIndexLinks'])
 
   const rows: V3LedgerPlainRow[] = []
   for (const city of data.cities) {
