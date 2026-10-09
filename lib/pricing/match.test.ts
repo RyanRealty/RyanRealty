@@ -133,12 +133,9 @@ describe('walkPricingLadder', () => {
   })
 
   /**
-   * THE ONE ROOM RULE (Matt 2026-09-10: adjust inside, wall outside). The old
-   * invariant here was "never prices a one-bath house from a two-bath sale"
-   * anywhere. That wall cut 438 nearby sales on 23 Benaiah and pushed the
-   * search into four other neighborhoods. What replaces it: one bath apart is
-   * used on the subject's OWN plat and recorded on the comp, and never from
-   * outside it.
+   * THE ONE ROOM RULE (Matt 2026-10-09). One bath apart stays wherever a rung
+   * already reaches, and it is recorded on the comp. Two or more apart is
+   * refused. A sale no rung reaches stays out for distance, not for the room.
    */
   it('uses a one-bath difference from inside the subject’s own plat, and records it', () => {
     const pool = [
@@ -151,7 +148,7 @@ describe('walkPricingLadder', () => {
     expect(out.comps.find((c) => c.listingKey === 'ONE')?.roomDifference).toBeNull()
   })
 
-  it('never takes that one-bath difference from outside the subject’s ground', () => {
+  it('a one-bath sale no rung reaches stays out', () => {
     const pool = [
       sale({
         listingKey: 'AWAY',

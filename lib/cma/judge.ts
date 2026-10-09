@@ -196,7 +196,7 @@ function describeComp(c: CmaComp): string {
     c.subdivision ? `subdiv=${c.subdivision}` : null,
     `${c.beds ?? '?'}bd/${c.baths ?? '?'}ba`,
     c.roomDifference?.length
-      ? `room-note: one ${c.roomDifference.map((n) => (n === 'beds' ? 'bedroom' : 'bathroom')).join(' and ')} different on own ground, $0 on the room`
+      ? `room-note: one ${c.roomDifference.map((n) => (n === 'beds' ? 'bedroom' : 'bathroom')).join(' and ')} different, counts for less, $0 on the room`
       : null,
     `${c.sqft}sqft`,
     c.lotAcres != null ? `${c.lotAcres}ac lot` : null,
@@ -324,12 +324,11 @@ const SYSTEM =
   'CUSTOM AND NEW CONSTRUCTION: do not exclude a same-generation custom or new-construction peer as too luxury, ' +
   'too expensive, or a premium tier. Year and quality outrank price. A 2022 custom sale is a peer to a 2024 custom ' +
   'subject even when it sold higher. ' +
-  'THE ONE ROOM RULE (locked, beds and baths, same decision). Same whole count travels anywhere. ONE whole room ' +
-  'apart is used only on the subject\'s own ground — its plat, its mapped neighborhood, or its own street — and is ' +
-  'disclosed on the sale. Do not exclude that sale for the room gap, and apply no dollar value to the room. Two or ' +
-  'more whole rooms apart is refused everywhere: exclude those. A half bath never decides usability. A candidate ' +
-  'with a room-note is already on the subject\'s own ground; keep it. Code holds you to this rule the same way it ' +
-  'holds the $/sqft band. ' +
+  'THE ONE ROOM RULE (beds and baths, same decision). Same whole count travels anywhere. ONE whole bedroom apart, ' +
+  'ONE whole bathroom apart, or one apart on both, stays in the set and counts for less than the same room count. ' +
+  'Do not exclude that sale for the room gap, and apply no dollar value to the room. Two or more whole rooms apart ' +
+  'on either count is refused everywhere: exclude those. A half bath never decides usability. A candidate with a ' +
+  'room-note stays. Code holds you to this rule the same way it holds the $/sqft band. ' +
   // ── narrative discipline ───────────────────────────────────────────────────
   'THE NARRATIVE IS EVIDENCE, NOT SALES COPY. A seller reads it and an independent reviewer checks every clause ' +
   'against the data in this prompt. State what IS known: how many sales you kept, the $/sqft band, the rule that ' +
@@ -818,8 +817,7 @@ function finalizeJudgment(args: {
       if (v.tier === 'exclude') continue
       v.tier = 'exclude'
       v.basis = 'other'
-      v.reason =
-        'Room counts are two or more whole rooms apart, or one apart off this home\'s own ground.'
+      v.reason = 'Room counts are two or more whole rooms apart.'
       resolvedByCode.push(`${v.listingKey}: excluded, one-room rule refuses this sale`)
       continue
     }

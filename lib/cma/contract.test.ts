@@ -331,7 +331,7 @@ describe('evaluateAccuracyContract', () => {
     expect(contract.checks.find((c) => c.id === 'product-type-match')!.pass).toBe(true)
   })
 
-  it('hard-fails when a two-bath sale is used to price a one-bath house', () => {
+  it('accepts a one-bath gap used to price a one-bath house, and says it counts for less', () => {
     const comps = [
       ...tightSet().slice(0, 5).map((c) => ({ ...c, baths: 1, propertySubType: 'Single Family Residence' })),
       comp({ closePrice: 700000, sqft: 2000, baths: 2, propertySubType: 'Single Family Residence' }),
@@ -349,8 +349,11 @@ describe('evaluateAccuracyContract', () => {
       subjectSubType: 'Single Family Residence',
       subjectBaths: 1,
     })
-    expect(contract.pass).toBe(false)
-    expect(contract.checks.find((c) => c.id === 'bath-count-match')!.pass).toBe(false)
+    expect(contract.pass).toBe(true)
+    const check = contract.checks.find((c) => c.id === 'bath-count-match')!
+    expect(check.pass).toBe(true)
+    expect(check.detail).toMatch(/counts for less/)
+    expect(check.detail).toMatch(/No dollar value is applied to the room/)
   })
 
   it('accepts a plus-one-bath own-plat sale the selector disclosed, custom or not', () => {
@@ -382,10 +385,11 @@ describe('evaluateAccuracyContract', () => {
     })
     const check = contract.checks.find((c) => c.id === 'bath-count-match')!
     expect(check.pass).toBe(true)
-    expect(check.detail).toMatch(/own ground/)
+    expect(check.detail).toMatch(/counts for less/)
+    expect(check.detail).toMatch(/No dollar value is applied to the room/)
   })
 
-  it('hard-fails a plus-one-bath sale off the subject’s ground, even on a custom or new subject', () => {
+  it('accepts a plus-one-bath sale off the subject’s ground, and says it counts for less', () => {
     const comps = [
       ...tightSet().slice(0, 5).map((c) => ({ ...c, baths: 2, propertySubType: 'Single Family Residence' })),
       comp({ closePrice: 700000, sqft: 2000, baths: 3, propertySubType: 'Single Family Residence' }),
@@ -405,7 +409,9 @@ describe('evaluateAccuracyContract', () => {
       subjectBeds: 3,
       subjectIsCustomOrNew: true,
     })
-    expect(contract.checks.find((c) => c.id === 'bath-count-match')!.pass).toBe(false)
+    const offGround = contract.checks.find((c) => c.id === 'bath-count-match')!
+    expect(offGround.pass).toBe(true)
+    expect(offGround.detail).toMatch(/counts for less/)
   })
 
   it('still hard-fails a two-bath gap on a custom or new subject', () => {
@@ -430,7 +436,7 @@ describe('evaluateAccuracyContract', () => {
     expect(contract.checks.find((c) => c.id === 'bath-count-match')!.pass).toBe(false)
   })
 
-  it('keeps the exact whole-bath rule for an ordinary resale subject', () => {
+  it('accepts a one-bath gap on an ordinary resale and says it counts for less', () => {
     const comps = [
       ...tightSet().slice(0, 5).map((c) => ({ ...c, baths: 2, propertySubType: 'Single Family Residence' })),
       comp({ closePrice: 700000, sqft: 2000, baths: 3, propertySubType: 'Single Family Residence' }),
@@ -449,7 +455,9 @@ describe('evaluateAccuracyContract', () => {
       subjectBaths: 2,
       subjectIsCustomOrNew: false,
     })
-    expect(contract.checks.find((c) => c.id === 'bath-count-match')!.pass).toBe(false)
+    const check = contract.checks.find((c) => c.id === 'bath-count-match')!
+    expect(check.pass).toBe(true)
+    expect(check.detail).toMatch(/counts for less/)
   })
 
   describe('one room rule carried from the picker (cma-1117-milwaukee, 2026-10-08)', () => {
@@ -507,7 +515,8 @@ describe('evaluateAccuracyContract', () => {
       })
       const check = contract.checks.find((c) => c.id === 'bath-count-match')!
       expect(check.pass).toBe(true)
-      expect(check.detail).toMatch(/own ground/)
+      expect(check.detail).toMatch(/counts for less/)
+      expect(check.detail).toMatch(/No dollar value is applied to the room/)
       expect(check.detail).not.toContain('?')
       expect(contract.pass).toBe(true)
     })
@@ -539,12 +548,12 @@ describe('evaluateAccuracyContract', () => {
       expect(bare.detail).toContain('852 Columbia is 2 bed / 3 bath')
     })
 
-    it('fails a sale the picker refuses: one full bath apart off the subject’s ground', () => {
+    it('keeps a sale the picker keeps: one full bath apart off the subject’s ground', () => {
       const subj = milwaukee()
       const offGround: CmaComp = { ...columbia(), subdivision: 'Highland', ownPlat: false }
       const rooms = roomCountsDecision(subj, offGround)
-      expect(rooms.ok).toBe(false)
-      // Stamped as the picker decided it, and in the set anyway.
+      expect(rooms.ok).toBe(true)
+      expect(rooms.notes).toEqual(['baths'])
       const comps = [...tightSet().slice(0, 5).map(oneBath), { ...offGround, roomDecision: rooms }]
       const adjusted = adjustComps(subj, comps, null)
       const pricing = computePricing(subj, adjusted, null)!
@@ -562,11 +571,10 @@ describe('evaluateAccuracyContract', () => {
         subjectBeds: subj.beds,
       })
       const check = contract.checks.find((c) => c.id === 'bath-count-match')!
-      expect(check.pass).toBe(false)
-      expect(check.detail).toBe(
-        "Comp 852 Columbia is 2 bed / 2 full bath against this home's 2 bed / 1 full bath, a room gap the one-room rule refuses.",
-      )
-      expect(contract.pass).toBe(false)
+      expect(check.pass).toBe(true)
+      expect(check.detail).toMatch(/counts for less/)
+      expect(check.detail).toMatch(/No dollar value is applied to the room/)
+      expect(contract.pass).toBe(true)
     })
 
     it('fails two full baths apart even on the own plat, with no stamp to read', () => {
@@ -614,19 +622,28 @@ describe('evaluateAccuracyContract', () => {
       expect(pass.pass).toBe(true)
       expect(pass.detail).not.toContain('?')
       expect(pass.detail).toMatch(/bedroom count was not stored, so bedrooms were not compared/)
-      // And on a refusal: the bath gap prints, the unknown bedrooms do not.
+      // A two-bath gap still refuses, and the unknown bedrooms are named, never printed as "?".
       const refused = evaluateAccuracyContract({
         ...base,
         comps: adjusted.map((c) =>
           c.address === '852 Columbia'
-            ? { ...c, roomDecision: null, roomDifference: null, ownPlat: false, subdivision: 'Highland' }
+            ? {
+                ...c,
+                baths: 3,
+                bathsFull: 3,
+                bathsHalf: 0,
+                roomDecision: null,
+                roomDifference: null,
+                ownPlat: false,
+                subdivision: 'Highland',
+              }
             : c,
         ),
       }).checks.find((c) => c.id === 'bath-count-match')!
       expect(refused.pass).toBe(false)
       expect(refused.detail).not.toContain('?')
       expect(refused.detail).toBe(
-        "Comp 852 Columbia is 2 bed / 2 full bath against this home's 1 full bath, a room gap the one-room rule refuses. This home's bedroom count was not stored, so bedrooms were not compared.",
+        "Comp 852 Columbia is 2 bed / 3 full bath against this home's 1 full bath, a room gap the one-room rule refuses. This home's bedroom count was not stored, so bedrooms were not compared.",
       )
     })
   })

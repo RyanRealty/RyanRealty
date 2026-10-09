@@ -17,9 +17,9 @@ describe('roomCountVerdict — adjust inside, wall outside', () => {
     expect(roomCountVerdict(3.5, 3, { local: false })).toBe('match')
   })
 
-  it('uses one room apart only on the home’s own ground, and says so', () => {
+  it('keeps one room apart wherever the search already reached, and says so', () => {
     expect(roomCountVerdict(4, 3, { local: true })).toBe('noted')
-    expect(roomCountVerdict(4, 3, { local: false })).toBe('refuse')
+    expect(roomCountVerdict(4, 3, { local: false })).toBe('noted')
   })
 
   it('refuses two rooms apart even next door', () => {
@@ -49,14 +49,16 @@ describe('roomCountsUsable — both counts at once', () => {
     expect(r.notes).toEqual(['beds'])
   })
 
-  it('refuses one bedroom and one bathroom apart, even on the home’s own ground', () => {
+  it('keeps one bedroom and one bathroom apart, and names both', () => {
     const r = roomCountsUsable({ beds: 4, baths: 3 }, { beds: 3, baths: 2 }, { local: true })
-    expect(r.ok).toBe(false)
-    expect(r.notes).toEqual([])
+    expect(r.ok).toBe(true)
+    expect(r.notes).toEqual(['beds', 'baths'])
   })
 
-  it('refuses the same sale from across town', () => {
-    expect(roomCountsUsable({ beds: 5, baths: 4 }, { beds: 4, baths: 4 }, { local: false }).ok).toBe(false)
+  it('keeps one room apart from outside the plat too', () => {
+    const r = roomCountsUsable({ beds: 5, baths: 4 }, { beds: 4, baths: 4 }, { local: false })
+    expect(r.ok).toBe(true)
+    expect(r.notes).toEqual(['beds'])
   })
 
   it('carries no note when everything matches', () => {
@@ -76,10 +78,12 @@ describe('roomDifferenceSentence', () => {
     expect(roomDifferenceSentence(null)).toBeNull()
   })
 
-  it('names the room and refuses to invent a dollar value', () => {
+  it('names the room, says it counts for less, and refuses to invent a dollar value', () => {
     const s = roomDifferenceSentence(['baths'])!
     expect(s).toContain('bathroom')
+    expect(s).toContain('counts for less')
     expect(s).toContain('No dollar value is applied')
+    expect(s).not.toContain('—')
   })
 
   it('names both rooms in one sentence', () => {

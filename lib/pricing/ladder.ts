@@ -11,8 +11,8 @@
  *      Never rural vs urban. Age, stories, beds, baths, GLA filter first.
  *
  * Hard exclusions run on EVERY rung. Beds and baths use the one-room rule
- * (`lib/pricing/room-counts.ts`): same whole count travels anywhere, one
- * room apart only on own ground, two or more refused everywhere. Soft
+ * (`lib/pricing/room-counts.ts`): one room apart stays and weighs less, two
+ * or more apart is refused everywhere. Soft
  * filters (age/story) start tight and loosen as the ladder widens. A
  * half-bath still matches the same whole count (1 and 1.5 both floor to 1).
  */
@@ -279,11 +279,23 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       'This home sits in a golf or resort community, and that community did not have enough of its own sales even across two years. The sales below come from comparable golf and resort communities in Central Oregon rather than from ordinary neighborhoods nearby, because that is the market a buyer of this home shops against.',
   })
   // Integer quarters so 0.25 + 0.25 does not drift. Through 2 miles.
+  // These steps run only when the plat rows are still short of five (the walk
+  // skips them once that plat, the plats that touch it, and the plats that
+  // touch those already hold five). They use the same size rule as the plat
+  // search: 35% to look, 25% to set the price (rule 20, at the door). Inside
+  // a mile they used to demand 15% size, the same number of stories, and 15
+  // years, so a closer sale inside 25% lost its seat to a farther sale the
+  // 20% ring would take (20289 Schaeffer, Matt 2026-10-09). Age and stories
+  // follow the utilities rung: 25 years, stories not required.
   const distanceRings: PricingTier[] = []
   for (let quarter = 1; quarter <= 8; quarter++) {
     const miles = quarter / 4
-    const apples: AppleStrictness = miles <= 1 ? 'strict' : 'utilities'
-    for (const months of [3, 6, 9] as const) distanceRings.push(near(miles, months, apples))
+    for (const months of [3, 6, 9] as const) {
+      distanceRings.push({
+        ...near(miles, months, 'utilities'),
+        sqftBand: PLAT_WIDE_SQFT_BAND,
+      })
+    }
   }
   const tiers: PricingTier[] = [
     // YOUR OWN STREET, FIRST, WHATEVER THE MLS CALLS THE TRACT (Matt

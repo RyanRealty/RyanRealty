@@ -73,7 +73,7 @@ export type CmaBandRival = {
   listingHistoryLine?: string | null
   /** Miles from the subject. Blank on a stored row until print fills it from coordinates. */
   proximity?: string | null
-  /** Rule 4: one room apart on the subject's own ground, kept and disclosed, zero dollars. */
+  /** Rule 4: one room apart stays and weighs less. Two or more on one count is refused. No dollar value. */
   roomDifference?: Array<'beds' | 'baths'> | null
   /**
    * MLS public remarks, carried only while the build fits the home (the

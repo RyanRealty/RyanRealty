@@ -157,7 +157,7 @@ export function roomAdjustmentWords(notes: readonly ('beds' | 'baths')[] | null 
   if (!notes || notes.length === 0) return '-'
   const parts = notes.map((n) => (n === 'beds' ? 'bedroom' : 'bathroom'))
   const list = parts.length === 1 ? `one ${parts[0]}` : `one ${parts[0]} and one ${parts[1]}`
-  return `${list.charAt(0).toUpperCase()}${list.slice(1)} off yours. No dollar adjustment.`
+  return `${list.charAt(0).toUpperCase()}${list.slice(1)} off yours. It counts for less. No dollar adjustment.`
 }
 
 export function sellerLetterStillDirty(html: string, money?: SellerLetterMoney): SellerLetterDefect[] {

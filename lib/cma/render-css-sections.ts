@@ -303,7 +303,7 @@ export function cmaSectionStyles(): string {
   @media print {
     .comp-stack { display: none !important; }
     /* 4pt inside the content box. A right-aligned room sentence
-       ("One bedroom off yours. No dollar adjustment.") was landing 0.04in
+       ("One bedroom off yours. It counts for less. No dollar adjustment.") was landing 0.04in
        past the right margin on a full-width last column. The sentence stays
        whole. The table moves in. */
     .comp-matrix-wrap { display: block !important; overflow-x: visible; max-width: calc(100% - 4pt); }

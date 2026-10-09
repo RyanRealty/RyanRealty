@@ -133,7 +133,7 @@ describe('pickBandRivals', () => {
     expect(pickBandRivals([rival({ address: '  ' })])).toEqual([])
   })
 
-  it("keeps a home one bedroom off only on the subject's own ground, and drops one two bedrooms off (rule 4, Matt 2026-10-07)", () => {
+  it('keeps a home one bedroom off wherever the search reached, and drops one two bedrooms off (rule 4, Matt 2026-10-09)', () => {
     const rivals = (duffyPlat: string) => [
       rival({
         listingKey: 'TWO',
@@ -163,7 +163,7 @@ describe('pickBandRivals', () => {
     ]
     const subject = { latitude: 44.27, longitude: -121.17, beds: 3, sqft: 3600, subdivision: 'Diamond Bar Ranch' }
     expect(pickBandRivals(rivals('Diamond Bar Ranch'), subject).map((r) => r.address)).toEqual(['4 Duffy', '3 Fairway'])
-    expect(pickBandRivals(rivals('Other Plat'), subject).map((r) => r.address)).toEqual(['3 Fairway'])
+    expect(pickBandRivals(rivals('Other Plat'), subject).map((r) => r.address)).toEqual(['4 Duffy', '3 Fairway'])
   })
 
   it('never falls back to unlike homes (Matt 2026-10-07)', () => {

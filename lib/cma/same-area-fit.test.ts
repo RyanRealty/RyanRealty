@@ -85,25 +85,21 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
     })
   })
 
-  it('applies rule 4: one room apart only on the own ground, kept and disclosed; two apart refused', () => {
+  it('applies rule 4: one room apart stays and is disclosed, on or off the plat; two apart on one count is refused', () => {
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, baths: 3 })).toEqual({
       ok: true,
       ownPlat: true,
       roomDifference: ['baths'],
     })
-    // No own ground without coordinates: not the plat, not the street.
-    // The refusal names the counts that differ, so a sentence can say which
-    // room is different and no other (reader review 2026-10-08).
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, baths: 3, subdivision: 'Madison Park' })).toEqual({
-      ok: false,
-      reason: 'rooms',
-      rooms: ['baths'],
+      ok: true,
+      ownPlat: false,
+      roomDifference: ['baths'],
     })
-    // One apart on both counts is two rooms.
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, beds: 2, baths: 3 })).toEqual({
-      ok: false,
-      reason: 'rooms',
-      rooms: ['beds', 'baths'],
+      ok: true,
+      ownPlat: true,
+      roomDifference: ['beds', 'baths'],
     })
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, beds: 5 })).toEqual({ ok: false, reason: 'rooms', rooms: ['beds'] })
   })

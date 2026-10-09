@@ -57,10 +57,18 @@ describe('carriedRoomDecision reads the picker stamp', () => {
   })
 
   it('carries a refusal too: a stamp the picker would have refused still refuses', () => {
-    // 852 Columbia off the subject's own ground: one full bath apart, refused.
-    const offGround = roomCountsDecision(MILWAUKEE, { ...COLUMBIA, subdivision: 'Highland', ownPlat: false })
+    // Two whole baths apart is still a refusal, on or off the plat. One apart is not.
+    const twoApart = {
+      ...COLUMBIA,
+      baths: 4,
+      bathsFull: 3,
+      bathsHalf: 0,
+      subdivision: 'Highland',
+      ownPlat: false,
+    }
+    const offGround = roomCountsDecision(MILWAUKEE, twoApart)
     expect(offGround.ok).toBe(false)
-    expect(carriedRoomDecision(MILWAUKEE, { ...COLUMBIA, roomDecision: offGround }).ok).toBe(false)
+    expect(carriedRoomDecision(MILWAUKEE, { ...twoApart, roomDecision: offGround }).ok).toBe(false)
   })
 
   it('decides from the sale itself when no picker stamped it', () => {

@@ -286,7 +286,7 @@ describe('one-room rule — picker and review share one decision', () => {
       '',
       null,
     )
-    expect(html).toContain('One bathroom off yours. No dollar adjustment.')
+    expect(html).toContain('One bathroom off yours. It counts for less. No dollar adjustment.')
     expect(html).not.toContain('$0 (1 bath)')
     expect(html).toContain('Adjusted for rooms (theirs vs yours)')
   })
@@ -298,7 +298,7 @@ describe('one-room rule — picker and review share one decision', () => {
     expect(pickerKeeps(subject, sale)).toBe(true)
   })
 
-  it('refuses one bed and one bath on own plat, and still keeps a one-bath-only gap', () => {
+  it('keeps one bed and one bath on own plat, and still keeps a one-bath-only gap', () => {
     const subject = pricingSubject({ beds: 4, baths: 3 })
     const both = pricingSale({
       listingKey: 'BED_AND_BATH',
@@ -307,9 +307,9 @@ describe('one-room rule — picker and review share one decision', () => {
       address: '12 Indian Ridge',
     })
     const bothDecision = roomCountsDecision(subject, { ...both, ownPlat: true })
-    expect(bothDecision.ok).toBe(false)
-    expect(bothDecision.notes).toEqual([])
-    expect(pickerKeeps(subject, both)).toBe(false)
+    expect(bothDecision.ok).toBe(true)
+    expect(bothDecision.notes).toEqual(['beds', 'baths'])
+    expect(pickerKeeps(subject, both)).toBe(true)
 
     const bathOnly = pricingSale({
       listingKey: 'BATH_ONLY',
@@ -323,21 +323,31 @@ describe('one-room rule — picker and review share one decision', () => {
     expect(pickerKeeps(subject, bathOnly)).toBe(true)
   })
 
-  it('one bath off off-plat is out', () => {
+  it('one bath off another plat stays when a rung already reaches it, and a sale no rung reaches stays out', () => {
     const subject = pricingSubject({ baths: 3, marketArea: null })
-    const sale = pricingSale({
-      listingKey: 'AWAY',
+    const near = pricingSale({
+      listingKey: 'NEAR',
       baths: 2,
       address: '9 Stone',
       subdivision: 'Stone Creek',
       subdivisionNorm: 'stone creek',
+      latitude: 44.274,
+      longitude: -121.174,
+    })
+    expect(roomCountsDecision(subject, { ...near, ownPlat: false })).toMatchObject({
+      ok: true,
+      notes: ['baths'],
+    })
+    expect(pickerKeeps(subject, near)).toBe(true)
+    const far = pricingSale({
+      ...near,
+      listingKey: 'FAR',
+      address: '90 Stone',
       latitude: 44.12,
       longitude: -121.18,
-      city: 'Bend',
-      citySlug: 'bend',
     })
-    expect(roomCountsDecision(subject, { ...sale, ownPlat: false }).ok).toBe(false)
-    expect(pickerKeeps(subject, sale)).toBe(false)
+    expect(roomCountsDecision(subject, { ...far, ownPlat: false }).ok).toBe(true)
+    expect(pickerKeeps(subject, far)).toBe(false)
   })
 
   it('two baths off is out everywhere, including own plat', () => {
@@ -384,8 +394,8 @@ describe('one-room rule — picker and review share one decision', () => {
         address: row.address,
         subdivision: row.subdivision,
         subdivisionNorm: row.subdivisionNorm,
-        latitude: row.ownPlat ? 44.273 : 44.12,
-        longitude: row.ownPlat ? -121.175 : -121.18,
+        latitude: row.ownPlat ? 44.273 : 44.274,
+        longitude: row.ownPlat ? -121.175 : -121.174,
       })
       const peer = cmaComp({
         listingKey: row.name,
@@ -393,8 +403,8 @@ describe('one-room rule — picker and review share one decision', () => {
         address: row.address,
         subdivision: row.subdivision,
         ownPlat: row.ownPlat,
-        latitude: row.ownPlat ? 44.273 : 44.12,
-        longitude: row.ownPlat ? -121.175 : -121.18,
+        latitude: row.ownPlat ? 44.273 : 44.274,
+        longitude: row.ownPlat ? -121.175 : -121.174,
       })
       const allowed = roomCountsDecision(subject, { ...sale, ownPlat: row.ownPlat }).ok
       const picked = pickerKeeps(subject, sale)

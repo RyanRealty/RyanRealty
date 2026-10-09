@@ -123,7 +123,7 @@ export type CmaExpiredPeer = {
   platSlug?: string | null
   latitude: number | null
   longitude: number | null
-  /** Rule 4: one room apart on the subject's own ground, kept and disclosed, zero dollars. */
+  /** Rule 4: one room apart stays and weighs less. Two or more on one count is refused. No dollar value. */
   roomDifference?: Array<'beds' | 'baths'> | null
 }
 

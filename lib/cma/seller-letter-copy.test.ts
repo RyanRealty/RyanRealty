@@ -233,7 +233,9 @@ describe('the generators write plain English', () => {
   })
 
   it('explains a bedroom difference instead of a zero', () => {
-    expect(roomAdjustmentWords(['beds'])).toBe('One bedroom off yours. No dollar adjustment.')
+    expect(roomAdjustmentWords(['beds'])).toBe(
+      'One bedroom off yours. It counts for less. No dollar adjustment.',
+    )
     expect(roomAdjustmentWords(['beds'])).not.toContain('$0')
   })
 })

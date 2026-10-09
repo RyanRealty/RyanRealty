@@ -1,16 +1,17 @@
 /**
- * ONE ROOM RULE, for bedrooms and bathrooms alike (Matt 2026-09-10:
- * "adjust inside, wall outside").
+ * ONE ROOM RULE, for bedrooms and bathrooms alike (Matt 2026-09-10, revised
+ * 2026-10-09: a room gap weighs less, it does not throw the sale out).
  *
- * Same whole count travels anywhere. ONE bedroom or ONE bathroom apart, not
- * both, is used only on the subject's own ground (its plat, its mapped
- * neighborhood, or its own street) and the document says so on the sale. Two
- * or more apart on either count, or one apart on both, is refused everywhere.
+ * Same whole count travels anywhere. ONE bedroom apart, ONE bathroom apart,
+ * or one apart on both, stays in the set wherever the search already reached.
+ * The closed-comp weight counts that sale for less (a bedroom off at 0.85 of
+ * the room step, a bathroom off at 0.90, and both multiply). Location still
+ * outranks the room: a same-subdivision sale with a room gap outweighs an
+ * adjacent sale with the same room count. No dollar value is applied to the
+ * room. Paired sales in this market do not support one.
  *
- * Phases of one ordinary subdivision are the exception (Matt 2026-10-06).
- * A sale in another phase of that subdivision may be one bedroom and one
- * bathroom apart. It is disclosed, and no dollar value is applied. Two or
- * more apart on either count is still refused. A neighbor does not get this.
+ * Two or more whole rooms apart on either count is still refused everywhere.
+ * That is a different house, not a lighter weight. A half bath never decides.
  *
  * WHY THERE IS NO DOLLAR ADJUSTMENT HERE. The obvious implementation is to
  * price the missing room and adjust. This market does not support a number.
@@ -34,7 +35,7 @@
  * (lib/pricing/room-ground.ts), which is this function plus own-ground.
  */
 
-/** How far apart two room counts may be on the subject's own ground. */
+/** One whole room apart stays. Two or more is refused. */
 export const ROOM_GAP_LOCAL_MAX = 1
 
 export type RoomVerdict = 'match' | 'noted' | 'refuse'
@@ -47,14 +48,18 @@ function whole(count: number | null | undefined): number | null {
 
 /**
  * `match` — same whole count, usable anywhere with nothing to say.
- * `noted`  — one room apart on the subject's own ground; usable, disclosed.
- * `refuse` — one room apart away from home, or two or more apart anywhere.
+ * `noted`  — one room apart; usable, disclosed, and weighed less.
+ * `refuse` — two or more whole rooms apart.
  */
 export function roomCountVerdict(
   subjectCount: number | null | undefined,
   compCount: number | null | undefined,
   opts: { local: boolean },
 ): RoomVerdict {
+  // Ground used to decide admission. It no longer does. The weight, not a
+  // wall, is how a one-room gap counts for less (Matt 2026-10-09). Callers
+  // still pass `local` so the stamp can record where the sale sits.
+  void opts
   const a = whole(subjectCount)
   const b = whole(compCount)
   // An unknown count is not evidence of a difference. The old rule read it the
@@ -62,14 +67,15 @@ export function roomCountVerdict(
   if (a == null || b == null) return 'match'
   const gap = Math.abs(a - b)
   if (gap === 0) return 'match'
-  if (gap <= ROOM_GAP_LOCAL_MAX && opts.local) return 'noted'
+  if (gap <= ROOM_GAP_LOCAL_MAX) return 'noted'
   return 'refuse'
 }
 
 /**
- * Both counts at once. One whole room is one bedroom or one bathroom, not
- * both. `ok` is false when either count is refused, and when both are one
- * apart. `notes` names the single count that differs on a sale we still use.
+ * Both counts at once. One apart on both counts stays. The weight multiplies
+ * the two room factors, so that sale counts for less than either gap alone.
+ * `ok` is false only when either count is two or more apart. `notes` names
+ * every count that differs on a sale we still use.
  */
 export function roomCountsUsable(
   subject: { beds: number | null | undefined; baths: number | null | undefined },
@@ -79,9 +85,6 @@ export function roomCountsUsable(
   const beds = roomCountVerdict(subject.beds, comp.beds, opts)
   const baths = roomCountVerdict(subject.baths, comp.baths, opts)
   if (beds === 'refuse' || baths === 'refuse') return { ok: false, notes: [] }
-  // One apart on both dimensions is two rooms, not the one-room keep.
-  // Another phase of this subdivision is the one place both may be used.
-  if (beds === 'noted' && baths === 'noted' && opts.phaseFamily !== true) return { ok: false, notes: [] }
   const notes: Array<'beds' | 'baths'> = []
   if (beds === 'noted') notes.push('beds')
   if (baths === 'noted') notes.push('baths')
@@ -97,5 +100,5 @@ export function roomDifferenceSentence(notes: Array<'beds' | 'baths'> | null | u
   if (!notes || notes.length === 0) return null
   const parts = notes.map((n) => (n === 'beds' ? 'bedroom' : 'bathroom'))
   const list = parts.length === 1 ? parts[0]! : `${parts[0]} and ${parts[1]}`
-  return `One ${list} different from yours, on your home's own ground. No dollar value is applied to the room.`
+  return `One ${list} different from yours. It counts for less than a sale with the same rooms. No dollar value is applied to the room.`
 }
