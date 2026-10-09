@@ -33,7 +33,7 @@ describe('SITE-178 housing-market hub twin', () => {
     const regionMeta = metadataBlock(region)
     expect(hubMeta).toMatch(/path:\s*'\/housing-market'/)
     expect(hubMeta).not.toMatch(/noindex:\s*true/)
-    expect(hubMeta).toMatch(/title:\s*'Central Oregon Housing Market'/)
+    expect(hubMeta).toMatch(/title:\s*'Central Oregon Housing Market & Prices by City'/)
     expect(regionMeta).toMatch(/path:\s*'\/housing-market\/central-oregon'/)
     expect(regionMeta).toMatch(/noindex:\s*true/)
     expect(regionMeta).toMatch(/title:\s*'Central Oregon housing market report'/)
