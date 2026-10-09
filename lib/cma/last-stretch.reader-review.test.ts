@@ -30,6 +30,7 @@ import {
 } from '@/lib/cma/last-stretch'
 import { stampClosedCompDom } from '@/lib/cma/closed-comp-dom-stamp'
 import { closedEntries, activeEntries, unsoldEntries } from '@/lib/cma/matrix-entry'
+import { askArcCell } from '@/lib/cma/comp-matrix'
 import { bandRowStretch, bandRowToRival, competitorCutLine, withRivalStretch, type BandInventoryRow } from '@/lib/cma/band-rivals'
 import { daysToOfferCaption, renderDaysToOfferHtml } from '@/lib/cma/market-area-chapters'
 import { buildAskExposure, buildFinalCycle, cycleOnTheMarket, resolveListingTimeline } from '@/lib/cma/expired-audit'
@@ -240,6 +241,15 @@ describe('the ask in effect when a stretch began', () => {
     expect(askInEffectAt([], '2025-06-03T21:58:19+00:00', { openingAsk: 849900, currentAsk: 774900 })).toBe(849900)
     // No opening ask on record is no evidence the ask never moved.
     expect(askInEffectAt([], '2025-06-03T21:58:19+00:00', { openingAsk: null, currentAsk: 500000 })).toBeNull()
+    // A dated change still wins when the closed-comp stamp opts in.
+    expect(
+      askInEffectAt(COTTONWOOD_ASKS, '2025-11-14T00:42:52+00:00', {
+        openingAsk: 849900,
+        currentAsk: 774900,
+        restarted: true,
+        unstated: 'opening',
+      }),
+    ).toBe(774900)
   })
 })
 
@@ -310,6 +320,50 @@ describe('1. sales: the first ask and the offer clock are one stretch, labeled',
     expect(stamped.stretch).toEqual({ from: '2025-06-03', firstAsk: 799900, restarted: true })
     const [row] = closedEntries([adjusted(stamped)])
     expect(row!.outcome).toBe('sold $775K · offer 20 days after it last came on the market')
+  })
+
+  it('3169 Coho: a read log with no dated move stamps the opening ask, so the cut shows', () => {
+    // Back on the market Sep 4, 2024 (01:49 UTC Sep 5). The retained log has
+    // no ListPrice line. Original $650,000, last ask $620,000. Leaving the
+    // first ask blank printed only $620K.
+    const stamped = stampClosedCompDom(
+      sale({
+        listingKey: '20240529220403552890000000',
+        address: '3169 Coho',
+        listPrice: 620000,
+        originalListPrice: 650000,
+        closePrice: 599000,
+        closeDate: '2024-10-25',
+        onMarketDate: '2024-09-04',
+      }),
+      {
+        onMarketDate: '2024-09-05T01:49:46+00:00',
+        originalOnMarketTimestamp: '2024-06-01T17:59:05+00:00',
+        statusChanges: [
+          status('2024-09-05T01:49:46+00:00', 'Withdrawn', 'Active'),
+          status('2024-09-08T14:42:06+00:00', 'Active', 'Pending'),
+        ],
+        pendingTimestamp: '2024-09-08T14:42:06+00:00',
+        daysToPending: 3,
+        mlsDaysOnMarket: 49,
+        askChanges: [],
+        originalListPrice: 650000,
+        listPrice: 620000,
+      },
+    )
+    expect(stamped.stretch).toEqual({ from: '2024-09-04', firstAsk: 650000, restarted: true })
+    expect(stamped.daysToOffer).toBe(4)
+    expect(stamped.originalListPrice).toBe(650000)
+    const [row] = closedEntries([adjusted(stamped)])
+    expect(row!.firstAsk).toBe(650000)
+    expect(row!.lastAsk).toBe(620000)
+    expect(row!.priceChanges).toBe(1)
+    expect(row!.outcome).toContain('offer 4 days after it last came on the market')
+    const arc = askArcCell(row!)
+    expect(arc).toContain('$650K')
+    expect(arc).toContain('$620K')
+    // The current ask is not stamped as the first ask.
+    expect(row!.firstAsk).not.toBe(620000)
   })
 
   it('a first stretch is not labeled', () => {

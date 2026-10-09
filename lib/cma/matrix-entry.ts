@@ -38,7 +38,7 @@ import {
 import { keyFor, type CmaMapFamily } from '@/lib/cma/map-families'
 import type { CmaPinFact } from '@/lib/cma/comp-pin-map'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
-import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
+import { closedSaleDaysToOffer, onMarketAfterClose } from '@/lib/cma/listing-history-line'
 import { pacificDay } from '@/lib/cma/listing-status'
 import {
   AFTER_LAST_ON_MARKET,
@@ -320,7 +320,11 @@ export function closedEntries(
     // line print the same count: days to an accepted offer when the record
     // knows it, else first list to close, labeled as that. An offer count
     // longer than the run to close is not one (2107 Carrie, 67 of 66).
-    const ran = days(c.domTotal)
+    const ranRaw = days(c.domTotal)
+    // A stored 0 whose on-market day is after the close is not a run
+    // (1654 Meadow). A positive list-to-close count still prints.
+    const ran =
+      ranRaw === 0 && onMarketAfterClose(c.offerFrom ?? c.onMarketDate, c.closeDate) ? null : ranRaw
     const toOffer = closedSaleDaysToOffer({
       daysToOffer: c.daysToOffer,
       measuredFrom: c.offerFrom ?? null,
