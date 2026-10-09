@@ -74,6 +74,47 @@ Each was started by a cloud agent with `docs/plans/cma-handoff/fix-brief.md`.
 | `fix/relist-clock` **MERGED** (`32077999a`, SKILL rule 28) | Relisted or back-on-market homes use one clock, their last stretch. First ask comes from that stretch, and the row is labeled "after it last came on the market". The subject's first ask is the price in effect when it went Active. | wording/data |
 | `fix/plat-ground-facts` **MERGED** (`537a0b10f`, seat order included) | A recorded addition or phase in the same neighborhood is the home's own subdivision everywhere, including the facts ladder, weights, room rule, pockets, anchor, date gate and review. Rule 24. | yes |
 
+## Late 2026-10-08 / early 10-09 status (read this before "Fleet")
+
+**Final fleet score on `3b1c7b036`** (all ruling fixes; clamp-line is wording only), against the baseline:
+- 108 of 140 build (baseline 109).
+- Newly failing: cma-19717-mount-bachelor.
+- Newly holding under-ask-15: cma-2681-moonlight ($474,000 vs $575,000) and cma-62665-big-sage ($2,294,000 vs $2,750,000).
+- Holds cleared: cma-140-4th and cma-21380-oakview.
+- 22 prices moved, median 2.5%. Range: Oakview +7.8%, Irving -7.4%, Moonlight -5.0%, Ponderosa +4.2%, Jacksonville -3.7%, Devils Lake 61578 +3.5%.
+- Full report: `fleet/final4/*.md` in the cloud scratch (not on disk here). Rerun if needed.
+- **Awaiting Matt's yes to land.**
+
+**All ten drafts were rebuilt from `ecf1a1e62` (drafts only) on 2026-10-09 ~00:20 to 01:00 UTC**, before landing, to save time. Readers then reviewed Jacksonville, Saginaw, Kelly Hill and Wild Rose. Findings:
+- **Kelly Hill: the opinion is now $744,000, not ~$716,000** (range $693,273 to $788,042).
+  - Cause: Westside Meadows sales became own plat (rule 24). The rule-15 local date gate then got no listing window, because an active subject has no off-market date (`build.ts` `offDate: cycle.offMarketDate`), so no sale moved down for date.
+  - The letter also gives a false reason: "there is no recent listing of your home".
+  - Fix on `fix/reader-5-engine` (in progress): an on-market subject's window runs from its on-market date to the letter date.
+- **Jacksonville:**
+  - 1340 Cumberland's remarks say 2 bed / 1 bath, but its MLS fields say 3 bed. **Matt 2026-10-09: "Trust the MLS fields"**, so no change.
+  - The status date comes from the log (Sep 29) rather than the MLS WithdrawDate (Sep 28). Fix on `fix/reader-5-engine`.
+  - The Basis sentence lost its lead, and the River West caption says "listed" for homes that were only on the market in the window. Fix on `fix/reader-5-render`.
+- **Saginaw:**
+  - Chart label collisions ($925K over the end label; the phone caption over $995K).
+  - Two sentences repeated across chapters.
+  - "matched your home" printed when there were zero sales.
+  - Fixes on both reader-5 branches.
+- **Wild Rose:**
+  - "CLAB" in the text vs "Tara View Estates" on the map.
+  - The "Original list" row shows last-stretch asks unlabeled.
+  - Address heads break mid-word.
+  - Fixes on both reader-5 branches.
+- **Not re-read yet:** Woodsman, Jackson, Purcell, Pheasant, Coho, Aldrich.
+
+**`fix/price-clock` `d2ae3129c` is pushed, NOT merged.** Per Matt, it goes after this landing. It moves rule 16's cut test and the comp sale-to-original ratios to the last stretch. Wild Rose goes from $593,000 to $591,000; Saginaw is unchanged. It needs its own fleet score.
+
+**Order from here:**
+1. Matt's yes, then fast-forward main to the branch head and run `deploy:verify`.
+2. Merge `fix/reader-5-engine`, `fix/reader-5-render` and `fix/price-clock`, then run a fleet score.
+3. Matt's yes, then land again.
+4. Rebuild the ten drafts and re-read them.
+5. Send Matt the links.
+
 ## Fleet (rule 25)
 
 ```bash
