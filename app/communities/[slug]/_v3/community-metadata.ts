@@ -27,6 +27,7 @@ import {
   type StatValue,
 } from '@/lib/site/json-ld'
 import { formatCount } from '@/lib/format/count'
+import { formatPriceExact } from '@/lib/format/money'
 import {
   communityStockMixSentence,
   type CommunitySerpStock,
@@ -83,6 +84,11 @@ export function communitySerpTitle(input: {
   if (!isCanonicalCommunitySlug(slug)) {
     return `${name} Homes for Sale | ${city}, OR`
   }
+  // Per-slug SERP tails (SEO & AEO Desk 2026-10-08). Keep Matt's "{name} real
+  // estate" prefix. Black Butte Ranch is unchanged (regex locks the full
+  // string). Each form already fits TITLE_BUDGET (46) plus " | Ryan Realty".
+  if (slug === 'brasada-ranch') return `${name} real estate | Homes, Lots, Agent`
+  if (slug === 'tetherow' || slug === 'broken-top') return `${name} real estate | Bend Homes for Sale`
   // Mountain High GSC: title at pos 5–15 with 0 CTR. Name the on-page listed
   // count, or omit a count. Never a parent-city leak (SEO-58).
   const homes =
@@ -97,15 +103,94 @@ export function communitySerpTitle(input: {
   return fitTitle(`${name} real estate | ${homes} | ${city}, OR`, `${name} real estate | ${homes}`, `${name} real estate`)
 }
 
+function serpTownhomeMix(types: readonly PlaceBuyerGroup[]): string[] {
+  const nouns: string[] = []
+  if (types.includes('homes')) nouns.push('homes')
+  if (types.includes('attached')) nouns.push('townhomes')
+  if (types.includes('cabins')) nouns.push('cabins')
+  if (types.includes('lots')) nouns.push('lots')
+  return nouns.length > 0 ? nouns : ['homes']
+}
+
+function joinNouns(nouns: readonly string[]): string {
+  if (nouns.length === 1) return nouns[0]!
+  if (nouns.length === 2) return `${nouns[0]} and ${nouns[1]}`
+  return `${nouns.slice(0, -1).join(', ')}, and ${nouns[nouns.length - 1]}`
+}
+
+function yoyMetaClause(yoy: number | null | undefined): string {
+  if (yoy == null || !Number.isFinite(yoy)) return ''
+  const pct = Math.round(yoy * 1000) / 10
+  if (pct === 0) return ', about even'
+  return `, ${pct > 0 ? 'up' : 'down'} ${Math.abs(pct).toFixed(1)}%`
+}
+
+/**
+ * Price-led meta for the four resort pages (SEO & AEO Desk 2026-10-08).
+ * Null when the bound 12-month median is missing: the caller then keeps the
+ * current live description. Townhomes/lots are named only when `types` has them.
+ */
+function communityPriceLedDescription(input: {
+  slug: string
+  name: string
+  city: string
+  types: readonly PlaceBuyerGroup[]
+  medianSale12: number
+  yoyMedian?: number | null
+}): string | null {
+  const sale = formatPriceExact(input.medianSale12)
+  if (!sale.startsWith('$')) return null
+  const nouns = serpTownhomeMix(input.types)
+  const mix = joinNouns(nouns)
+  const Mix = mix.charAt(0).toUpperCase() + mix.slice(1)
+  switch (input.slug) {
+    case 'brasada-ranch': {
+      const stock = nouns.includes('lots') ? 'Homes and lots' : 'Homes'
+      return `${input.name} homes sold for a median ${sale} over the last 12 months. ${stock} for sale in ${input.city}, OR, with a local broker. Live MLS.`
+    }
+    case 'black-butte-ranch': {
+      const change = yoyMetaClause(input.yoyMedian)
+      const stock = nouns.includes('lots') ? 'Homes and lots' : 'Homes'
+      return `${input.name}, Oregon homes sold for a median ${sale} over the last 12 months${change}. ${stock} for sale near Sisters. Live MLS inventory.`
+    }
+    case 'tetherow':
+      return `${input.name} homes in west Bend sold for a median ${sale} over the last 12 months. ${Mix} on a David McLay Kidd course. Live MLS.`
+    case 'broken-top': {
+      const stock =
+        nouns.length === 3 && nouns[0] === 'homes' && nouns[1] === 'townhomes' && nouns[2] === 'lots'
+          ? 'homes, townhomes, lots for sale'
+          : `${mix} for sale`
+      return `${input.name} homes in west Bend sold for a median ${sale} over the last 12 months. Gated golf community; ${stock}. Live MLS.`
+    }
+    default:
+      return null
+  }
+}
+
 export function communitySerpDescription(input: {
   slug: string
   name: string
   city: string
   types?: readonly PlaceBuyerGroup[]
   listedCount?: number | null
+  /** 12-month median sale. Null keeps the current live description. */
+  medianSale12?: number | null
+  /** 12-month change as a fraction; used for Black Butte Ranch. */
+  yoyMedian?: number | null
 }): string {
   const { slug, name, city } = input
   const types = input.types ?? []
+  if (input.medianSale12 != null && input.medianSale12 > 0) {
+    const led = communityPriceLedDescription({
+      slug,
+      name,
+      city,
+      types,
+      medianSale12: input.medianSale12,
+      yoyMedian: input.yoyMedian,
+    })
+    if (led && shareDescription(led) === led) return led
+  }
   const mix = communityStockMixSentence(types)
   const setting = COMMUNITY_SERP_SETTING[slug]
   const counted =
@@ -220,6 +305,9 @@ export function communityMetadataInput(input: {
    * interpolated only when it is this listed set (SEO-58).
    */
   stock?: CommunitySerpStock
+  /** 12-month median sale; binds the four resort metas. Null keeps live copy. */
+  medianSale12?: number | null
+  yoyMedian?: number | null
   /**
    * SITE-28. True when no real place name resolved for a compound slug, so the
    * page renders CommunityUnavailable instead of a community. The title and
@@ -310,6 +398,8 @@ export function communityMetadataInput(input: {
       city,
       types: input.stock?.types,
       listedCount: input.stock?.listedCount,
+      medianSale12: input.medianSale12,
+      yoyMedian: input.yoyMedian,
     }),
     // Self-canonical even when noindex. A cross-canonical was the first shape
     // of this fix and it is a footgun: noindex plus rel=canonical pointing
@@ -366,6 +456,8 @@ export function buildCommunitySchemas(input: {
   homes?: ReadonlyArray<ListingItemListHome>
   /** SITE-177. Same listed mix the Field and the meta description publish. */
   stock?: CommunitySerpStock
+  medianSale12?: number | null
+  yoyMedian?: number | null
 }): SchemaInput[] {
   const { slug, name, cityName, citySlug } = input
 
@@ -400,6 +492,8 @@ export function buildCommunitySchemas(input: {
         city: cityName,
         types: input.stock?.types,
         listedCount: input.stock?.listedCount,
+        medianSale12: input.medianSale12,
+        yoyMedian: input.yoyMedian,
       }),
       url: `/communities/${slug}`,
       geo,

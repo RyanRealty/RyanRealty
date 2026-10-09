@@ -114,6 +114,7 @@ import {
   V3PlaceCharacter,
   V3Answers,
   V3Takeaways,
+  V3TakeawaysLead,
   V3Quiet,
   type AtlasRegion,
   V3Amenities,
@@ -169,6 +170,14 @@ import {
   reconcilePlaceHoaFaq,
 } from './_v3/community-figures'
 import { buildPlaceKnowledge, communityGuides, placeKnowledgeSource } from './_v3/place-knowledge'
+import {
+  communityAnswerMarketLink,
+  communityAuthoredFaqs,
+  dropsGeneratedHoaQuestion,
+  isGeneratedHoaQuestion,
+  stockRailAsk,
+} from './_v3/community-authored-faqs'
+import { communityTypeDownLinks, isCommunityAnswerSlug } from './_v3/community-type-links'
 
 import {
   PLACE_NEAR_RECREATION_TRACE,
@@ -299,6 +308,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         types: stockRead.value.types,
       }
     : { listedCount: null, types: [] }
+  const paceRead = await withTimeoutFallbackResult(
+    getPublicDetachedPace({ geoType: 'neighborhood', geoSlug: slug }),
+    EMPTY_PUBLIC_PACE,
+    3000,
+    'comm:meta-pace',
+  )
+  const medianSale12 = paceRead.ok ? paceRead.value.medianClose : null
+  const yoyMedian = paceRead.ok ? paceRead.value.yoyMedian : null
   return pageMetadata(
     communityMetadataInput({
       slug,
@@ -307,6 +324,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       heroImageUrl: community.heroImageUrl,
       refused: resolved?.kind === 'refuse',
       stock,
+      medianSale12,
+      yoyMedian,
     }),
   )
 }
@@ -526,7 +545,7 @@ async function renderCommunityDetail({ params }: Props) {
   const belongingLine = belongingCaption(belonging)
 
   const { measuredAnnual: hoaMeasuredAnnual, measuredBasis: hoaMeasuredBasis } =
-    measuredPlaceHoaInput(placeCharacter)
+    measuredPlaceHoaInput(placeCharacter, publicName)
   const resolvedHoa = publishPlaceHoa({
     measuredAnnual: hoaMeasuredAnnual,
     measuredBasis: hoaMeasuredBasis,
@@ -891,13 +910,41 @@ async function renderCommunityDetail({ params }: Props) {
       dateLabel: formatDate(post.publishedAt),
     })),
   )
+  const lotsRail = stockRailAsk(stockSections.find((section) => section.key === 'land')?.rows)
+  const attachedRail = stockRailAsk(stockSections.find((section) => section.key === 'attached')?.rows)
+  const hoaMeasured = measuredPlaceHoaInput(placeCharacter, publicName)
+  const authoredFaqs = communityAuthoredFaqs({
+    slug,
+    name: publicName,
+    asOfLabel: mosAsOf,
+    medianSale12: publicPace.medianClose,
+    medianList: hud.medianList,
+    closedCount12: publicPace.closedCount,
+    saleToOriginal: publicPace.saleToOriginal,
+    cashShare: publicPace.cashShare,
+    activeSfr: hud.active,
+    lotsForSale: lotsRail.forSale,
+    lotsAskLow: lotsRail.low,
+    lotsAskHigh: lotsRail.high,
+    townhomesForSale: attachedRail.forSale,
+    hoaMonthly: hoaMeasured.measuredMonthly,
+    hoaAnnual: hoaMeasured.measuredAnnual,
+    hoaReported: hoaMeasured.measuredReported,
+    membershipOfficePhone: richContent?.membershipOfficePhone ?? null,
+    membershipTierCount: (richContent?.membershipTiers ?? []).filter((tier) =>
+      String(tier.name ?? tier.tier ?? tier.label ?? '').trim(),
+    ).length,
+  })
+  const generatedFaqs = dropsGeneratedHoaQuestion(authoredFaqs)
+    ? faqs.filter((item) => !isGeneratedHoaQuestion(item.question))
+    : faqs
   const pageFaqs = reconcilePlaceHoaFaq(
-    reconcileListedVsDetachedFaq(faqs, {
+    reconcileListedVsDetachedFaq(generatedFaqs, {
       placeName: publicName,
       listedCount,
       detachedCount: hud.active,
     }),
-    resolvedHoa,
+    dropsGeneratedHoaQuestion(authoredFaqs) ? null : resolvedHoa,
   )
 
   /* ── The cited Q&A (SITE-08) ────────────────────────────────────────────
@@ -948,6 +995,7 @@ async function renderCommunityDetail({ params }: Props) {
     asOfLabel,
     // SITE-01's address ask IS on this page, at the top of the opening.
     valueAsk: { href: '#value', onPage: true },
+    leading: authoredFaqs,
     extra: pageFaqs,
   })
   const answerFaqs = answersFaqItems(placeAnswers)
@@ -1012,6 +1060,36 @@ async function renderCommunityDetail({ params }: Props) {
     listedCount: placeHomes.length > 0 ? placeHomes.length : null,
     types: communityStockTypesFromListings(placeHomes),
   }
+  const communityLede = isCommunityAnswerSlug(slug)
+    ? placeTakeaways({
+        variant: 'community',
+        communitySlug: slug,
+        place: publicName,
+        asOfLabel: mosAsOf,
+        medianList: hud.medianList,
+        saleMedian:
+          publicPace.medianClose != null && publicPace.medianClose > 0
+            ? { value: publicPace.medianClose, when: 'over the last 12 months' }
+            : null,
+        yoyMedian: publicPace.yoyMedian,
+        cashShare: publicPace.cashShare,
+        cityCashShare: cityPace.cashShare,
+        hasTownhomes: listedStock.types.includes('attached'),
+        hasLots: listedStock.types.includes('lots'),
+      })
+    : []
+  const communityAnswerLink = communityAnswerMarketLink({
+    name: publicName,
+    cityName,
+    citySlug,
+    communityMarketHref,
+    cityReportHref,
+  })
+  const typeDownLinks = communityTypeDownLinks({
+    slug,
+    name: publicName,
+    types: listedStock.types,
+  })
   const fieldTypeIndex = communityFieldTypeIndex(placeHomes)
   const communitySchemas = buildCommunitySchemas({
     slug,
@@ -1030,6 +1108,8 @@ async function renderCommunityDetail({ params }: Props) {
     amenityItems: amenityBoard ? amenityItemListItems(amenityBoard, `/communities/${slug}`) : undefined,
     homes: placeHomes,
     stock: listedStock,
+    medianSale12: publicPace.medianClose,
+    yoyMedian: publicPace.yoyMedian,
   })
   const communityGuideSchema = areaGuideVideoSchema(publicName, `/communities/${slug}`, areaGuideVideo)
   if (communityGuideSchema) communitySchemas.push(communityGuideSchema)
@@ -1109,6 +1189,12 @@ async function renderCommunityDetail({ params }: Props) {
                 </>
               ) : null}
               <a href="#homes">{publicName} homes for sale</a>
+              {typeDownLinks.map((link) => (
+                <span key={link.href}>
+                  {' · '}
+                  <a href={link.href}>{link.label}</a>
+                </span>
+              ))}
             </p>
             {belongingLine ? (
               <p
@@ -1120,6 +1206,19 @@ async function renderCommunityDetail({ params }: Props) {
             ) : null}
           </div>
         </div>
+
+        {communityLede.length >= 2 ? (
+          <V3TakeawaysLead
+            items={communityLede}
+            source={
+              mosAsOf
+                ? `Single-family homes, Oregon Data Share MLS, as of ${mosAsOf}.`
+                : 'Single-family homes, Oregon Data Share MLS.'
+            }
+            links={communityAnswerLink ? [communityAnswerLink] : []}
+            className={V3_ROOT_CLASS}
+          />
+        ) : null}
 
         <PlaceSubdivisionMap
           placeName={publicName}
@@ -1190,7 +1289,7 @@ async function renderCommunityDetail({ params }: Props) {
             </div>
           </div>
           <V3Takeaways
-            id="takeaways"
+            id={communityLede.length >= 2 ? 'glance' : 'takeaways'}
             heading={`${publicName} at a glance`}
             items={takeaways}
             source={mosAsOf ? `Single-family homes, Oregon Data Share MLS, as of ${mosAsOf}.` : null}
@@ -1287,7 +1386,7 @@ async function renderCommunityDetail({ params }: Props) {
             source={placeKnowledgeSource({
               name: publicName,
               content: richContent,
-              hasMeasuredHoa: Boolean(measuredPlaceHoaInput(placeCharacter).measuredAnnual),
+              hasMeasuredHoa: Boolean(measuredPlaceHoaInput(placeCharacter, publicName).measuredAnnual),
               hasSchools: placeSchools.length > 0,
             })}
           />

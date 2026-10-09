@@ -27,7 +27,11 @@ import type { V3QuietItem } from '@/components/site/v3'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import type { PlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
+import { redirectsAwayFromSearch } from '@/lib/search/publish-place-browse-href'
+import legacyRedirects from '@/data/legacy-redirects.json'
 import { measuredPlaceHoaInput } from './place-hoa-measured'
+
+const LEGACY_REDIRECTS = legacyRedirects as Record<string, string>
 
 type Registry = {
   subdivision_aliases?: string[]
@@ -77,7 +81,7 @@ export function placeKnowledgeSource(input: {
         : `${publishers.slice(0, -1).join(', ')}, and ${publishers[publishers.length - 1]}`
   const authored = `The facts above come from ${input.name}'s recorded sources: ${list}.`
   const withHoa = input.hasMeasuredHoa
-    ? `${authored} The HOA figure is not authored: it comes from current listings here and carries its own basis on the row.`
+    ? `${authored} The HOA figure is not authored: it is the median of detached listings that reported dues since October 2023, and it carries its own basis on the row.`
     : authored
   return schoolLine ? `${withHoa} ${schoolLine}` : withHoa
 }
@@ -168,7 +172,7 @@ export function buildPlaceKnowledge(input: {
   const { name, content, registry } = input
   const items: V3QuietItem[] = []
 
-  const { measuredAnnual, measuredBasis } = measuredPlaceHoaInput(input.character)
+  const { measuredAnnual, measuredBasis } = measuredPlaceHoaInput(input.character, name)
   const hoa = publishPlaceHoa({
     measuredAnnual,
     measuredBasis,
@@ -176,18 +180,21 @@ export function buildPlaceKnowledge(input: {
     estimateAnnual: registry?.hoa_annual_estimate,
   })
   if (hoa) {
-    items.push({
-      kind: 'fact',
-      // SITE-87: never print the internal word "measured" in visitor copy.
-      term: hoa.kind === 'measured' ? 'HOA from homes here' : hoa.kind === 'master' ? 'Master HOA' : 'HOA estimate',
-      value: `$${hoa.annual.toLocaleString('en-US')} a year`,
-      detail:
-        hoa.kind === 'measured'
-          ? hoa.basis
-          : hoa.kind === 'master'
-            ? 'membership separate'
-            : undefined,
-    })
+    if (hoa.kind === 'measured' && hoa.basis) {
+      items.push({
+        kind: 'prose',
+        term: 'HOA from homes here',
+        body: hoa.basis,
+      })
+    } else {
+      items.push({
+        kind: 'fact',
+        // SITE-87: never print the internal word "measured" in visitor copy.
+        term: hoa.kind === 'master' ? 'Master HOA' : 'HOA estimate',
+        value: `$${hoa.annual.toLocaleString('en-US')} a year`,
+        detail: hoa.kind === 'master' ? 'membership separate' : undefined,
+      })
+    }
   }
 
   // At a glance was four facts joined with ` · ` into one sentence. They are
@@ -398,6 +405,7 @@ export function communityGuides(
         (link) => link.slug.trim().toLowerCase() === key,
       ),
     )
+    .filter((post) => !guideRedirectsToCommunity(post.slug, key))
     .slice()
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
     .slice(0, max)
@@ -408,4 +416,15 @@ export function communityGuides(
       publishedAt: post.publishedAt,
       heroImageUrl: post.heroImageUrl ?? null,
     }))
+}
+
+/**
+ * A guide card whose /blog/{slug} already 308s onto this community is a
+ * self-loop (Tetherow: /blog/tetherow-resort-living-real-estate). Drop it.
+ */
+function guideRedirectsToCommunity(postSlug: string, communitySlug: string): boolean {
+  const path = `/blog/${postSlug.trim().toLowerCase()}`
+  if (!redirectsAwayFromSearch(path)) return false
+  const dest = (LEGACY_REDIRECTS[path] ?? '').replace(/\/+$/, '').toLowerCase()
+  return dest === `/communities/${communitySlug}`
 }

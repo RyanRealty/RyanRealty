@@ -116,13 +116,11 @@ export function reconcilePlaceHoaFaq(
     if (!item.question.endsWith('have an HOA?')) return item
     return {
       ...item,
-      answer:
-        `Yes. Annual HOA dues run $${hoa.annual.toLocaleString('en-US')}, the ${hoa.basis}. ` +
-        `Exact fees vary by lot, phase, and membership level. Verify current amounts with the HOA before any purchase.`,
-      // §0. This row publishes a dollar figure, so it owes the same visible
-      // trace the cited rows carry. It was the only number on the page with
-      // its basis in the prose and no source line (evaluator, 2026-09-08).
-      source: `regional MLS, the ${hoa.basis}`,
+      // The basis IS the published sentence (detached listings since October
+      // 2023). Wrapping it in "the median of the N current listings" was the
+      // label bug AI answers were quoting (SEO & AEO Desk 2026-10-08).
+      answer: hoa.basis,
+      source: `regional MLS, ${hoa.basis}`,
     }
   })
 }

@@ -22,6 +22,7 @@
 import { marketVerdict } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPriceExact } from '@/lib/format/money'
+import { communityTakeaways } from './place-takeaways.community'
 
 export type PlaceTakeawaysInput = {
   /** "Bend", "Sunriver", "Tetherow". */
@@ -50,8 +51,19 @@ export type PlaceTakeawaysInput = {
    * 'market' is the /housing-market/<city> answer block (SEO & AEO Desk brief
    * 2026-10-08): sale price first, then the 12-month change, pace, and supply,
    * written to be quoted on its own. The inputs below are read only by it.
+   * 'community' is the four resort community pages (same brief): identity
+   * first, then sale/ask, then cash or types. Keep 'place' byte-identical.
    */
-  variant?: 'place' | 'market'
+  variant?: 'place' | 'market' | 'community'
+  /** Registry slug; required for variant 'community'. */
+  communitySlug?: string | null
+  /** Share of closes paid in cash, 0..1. Community variant only. */
+  cashShare?: number | null
+  /** Parent-city cash share, 0..1. Community variant only (Tetherow vs Bend). */
+  cityCashShare?: number | null
+  /** Type rails: name townhomes/lots only when the listed set includes them. */
+  hasTownhomes?: boolean
+  hasLots?: boolean
   /** Same month a year earlier, from the same monthly series as saleMedian. */
   priorYearMonthMedian?: { value: number; label: string } | null
   /** Median sale price over the last 12 months (publicPace.medianClose). */
@@ -164,6 +176,7 @@ export function placeTakeaways(input: PlaceTakeawaysInput): string[] {
   const place = input.place.trim()
   if (!place) return []
   if (input.variant === 'market') return marketTakeaways(place, input)
+  if (input.variant === 'community') return communityTakeaways(input)
   const out: string[] = []
   const asOf = input.asOfLabel?.trim() ? ` as of ${input.asOfLabel.trim()}` : ''
 
