@@ -346,3 +346,32 @@ describe('3. a home under contract is dated the day it went under contract', () 
     expect(entry!.outcome).toMatch(/^asking \$549K · \d+ days$/)
   })
 })
+
+describe('a same-ask pending reversal inside an hour stays on the subject clock', () => {
+  // The subject's own cycle uses the same stretch clock as a sold comp.
+  // 2254 Indigo's 22-minute Pending to Active pair, at the ask already in effect.
+  const log: ListingStatusChange[] = [
+    { at: '2025-10-09T00:59:52+00:00', from: 'Active', to: 'Pending' },
+    { at: '2025-10-09T01:22:32+00:00', from: 'Pending', to: 'Active' },
+    { at: '2025-12-10T19:44:51+00:00', from: 'Active', to: 'Canceled' },
+  ]
+
+  it('keeps July 17 when the ask log shows no change in that window', () => {
+    const onMarket = cycleOnTheMarket(
+      cycle({
+        listDate: '2025-07-17T16:00:00+00:00',
+        firstOnMarketAt: '2025-07-17T16:00:00+00:00',
+        offMarketDate: '2025-12-10',
+        status: 'Canceled',
+        outcome: 'canceled',
+      }),
+      log,
+      [{ at: '2025-09-04T17:00:00+00:00', from: 709999, to: 699900 }],
+    )
+    expect(onMarket.listDate).toBe('2025-07-17')
+    expect(onMarket.offMarketDate).toBe('2025-12-10')
+    expect(onMarket.daysOnMarket).toBe(146)
+    expect(onMarket.restarted).toBe(false)
+    expect(onMarket.listedAt).toBe('2025-07-17T16:00:00+00:00')
+  })
+})

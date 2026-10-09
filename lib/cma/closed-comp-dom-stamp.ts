@@ -74,7 +74,10 @@ export function stampClosedCompDom(comp: CmaComp, extras: ClosedCompListStartExt
   // DAYS TO AN OFFER ARE COUNTED ON THE LISTING PERIOD THAT PRODUCED THE SALE
   // (reader review 2026-10-08): Active to Pending, from the status log, else
   // the row's on-market day to its pending timestamp, else days_to_pending.
-  // Never from the first list and never from a Coming Soon entry.
+  // Never from the first list and never from a Coming Soon entry. The ask log
+  // is what says a Pending that flipped back within an hour was the same ask,
+  // so that correction stays on the stretch already open (2254 Indigo).
+  const askChanges = extras.askChanges ?? []
   const offer = offerRunTimed({
     changes,
     onMarketDate: extras.onMarketDate ?? null,
@@ -82,6 +85,7 @@ export function stampClosedCompDom(comp: CmaComp, extras: ClosedCompListStartExt
     pendingAt: extras.pendingTimestamp ?? null,
     mlsDaysToPending: extras.daysToPending ?? null,
     closeDate,
+    askChanges,
   })
   const daysToOffer = closedSaleDaysToOffer({
     daysToOffer: offer ? offer.days : comp.daysToOffer,
@@ -102,7 +106,7 @@ export function stampClosedCompDom(comp: CmaComp, extras: ClosedCompListStartExt
           changes,
           firstOnMarketAt: extras.originalOnMarketTimestamp ?? null,
           listedAt: extras.onMarketDate ?? null,
-          askChanges: extras.askChanges ?? [],
+          askChanges,
           openingAsk: extras.originalListPrice ?? comp.originalListPrice ?? null,
           currentAsk: extras.listPrice ?? comp.listPrice ?? null,
           // The ask log was read, including a successful empty read. A

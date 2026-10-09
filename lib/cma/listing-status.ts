@@ -21,8 +21,12 @@
  * went Active to the day it left Active (Pending, Withdrawn, Canceled,
  * Expired or Closed), both read as Pacific calendar days, counted as whole
  * calendar days between them. A Coming Soon stretch is not on the market. A
- * Pending period ends the time to an offer. The status history says when each
- * of those happened; the listing row's own dates are the fallback when the
+ * Pending period ends the time to an offer. A Pending that flips back to
+ * Active within an hour at the same ask does not end that stretch: it is an
+ * MLS correction, and the stretch already open keeps its clock and the ask
+ * it opened at (2254 Indigo, 22 minutes). A return the next day or later
+ * still starts a new stretch. The status history says when each of those
+ * happened; the listing row's own dates are the fallback when the
  * history does not, and the MLS `days_to_pending` the last one (it counts
  * elapsed hours, so a Friday-to-Monday offer can be a day short of the dates a
  * reader sees printed beside it).
@@ -165,6 +169,25 @@ export function mergeStatusChanges(
   return out.sort((a, b) => eventTime(a.at) - eventTime(b.at))
 }
 
+/**
+ * A Pending, or Active Under Contract, that flips back to Active inside this
+ * window at the same ask is an MLS correction, not a new stretch. 2254 Indigo
+ * went Pending at 00:59:52 UTC on 2025-10-09 and Active again at 01:22:32 UTC,
+ * still $699,900. A return the next day (that same listing, Aug 27 to Aug 28)
+ * or weeks later (61197 Cottonwood) still starts the clock over.
+ */
+export const PENDING_REVERSAL_BLIP_MS = 60 * 60 * 1000
+
+type PeriodOpts = {
+  listedAt?: string | null
+  /**
+   * Ask changes the caller read. An array, including an empty one, means the
+   * ask log was checked. Omit it when the ask was not read: a short reversal
+   * then stays a new stretch, because the same-ask half of the rule is unknown.
+   */
+  askChanges?: readonly AskChange[] | null
+}
+
 /** One stretch a listing was Active, in Pacific days. `to` is null while it still is. */
 export type ActivePeriod = {
   from: string
@@ -184,9 +207,24 @@ export type ActivePeriod = {
  */
 export function activePeriods(
   changes: readonly ListingStatusChange[],
-  opts: { listedAt?: string | null } = {},
+  opts: PeriodOpts = {},
 ): ActivePeriod[] {
   return timedActivePeriods(changes, opts).map(({ from, to, endedAs }) => ({ from, to, endedAs }))
+}
+
+/**
+ * True when a recorded ask change falls after `fromAt` and at or before `toAt`.
+ * A change on the pending timestamp is already the ask that stretch was at.
+ * A change as it comes back is a different ask, and the return is a new stretch.
+ */
+function askChangedBetween(asks: readonly AskChange[], fromAt: string, toAt: string): boolean {
+  const start = eventTime(fromAt)
+  const end = eventTime(toAt)
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return true
+  return mergeAskChanges(asks).some((c) => {
+    const t = eventTime(c.at)
+    return t > start && t <= end
+  })
 }
 
 /** An Active stretch with the exact moment it opened: the status change's timestamp, or the listing's own on-market timestamp. */
@@ -194,12 +232,16 @@ type TimedPeriod = ActivePeriod & { fromAt: string }
 
 function timedActivePeriods(
   changes: readonly ListingStatusChange[],
-  opts: { listedAt?: string | null } = {},
+  opts: PeriodOpts = {},
 ): TimedPeriod[] {
   const sorted = mergeStatusChanges(changes)
   const out: TimedPeriod[] = []
   let open: string | null = null
   let openAt: string | null = null
+  /** The moment the open stretch last left Active, and the status it left for. */
+  let closedAt: string | null = null
+  let closedAs: string | null = null
+  const asks = Array.isArray(opts.askChanges) ? opts.askChanges : null
   const first = sorted[0]
   if (first && statusKind(first.from) === 'active' && opts.listedAt) {
     const start = pacificDay(opts.listedAt)
@@ -214,13 +256,35 @@ function timedActivePeriods(
     if (!day) continue
     if (statusKind(c.to) === 'active') {
       if (open == null) {
-        open = day
-        openAt = c.at
+        const prev = out[out.length - 1]
+        const gap = closedAt != null ? eventTime(c.at) - eventTime(closedAt) : Number.NaN
+        const sameAsk = asks != null && closedAt != null && !askChangedBetween(asks, closedAt, c.at)
+        const blip =
+          prev != null &&
+          closedAt != null &&
+          sameAsk &&
+          statusKind(c.from) === 'offer' &&
+          statusKind(closedAs) === 'offer' &&
+          Number.isFinite(gap) &&
+          gap >= 0 &&
+          gap <= PENDING_REVERSAL_BLIP_MS
+        if (blip) {
+          open = prev.from
+          openAt = prev.fromAt
+          out.pop()
+        } else {
+          open = day
+          openAt = c.at
+        }
+        closedAt = null
+        closedAs = null
       }
       continue
     }
     if (open != null) {
       out.push({ from: open, fromAt: openAt ?? open, to: day, endedAs: c.to.trim() })
+      closedAt = c.at
+      closedAs = c.to
       open = null
       openAt = null
     }
@@ -281,6 +345,8 @@ type ActiveRunInput = {
   offMarketDate?: string | null
   /** The listing's status of record. */
   status?: string | null
+  /** Ask changes the caller read. See `PeriodOpts.askChanges`. */
+  askChanges?: readonly AskChange[] | null
 }
 
 export function lastActiveRun(input: ActiveRunInput): ActiveRun | null {
@@ -299,6 +365,7 @@ export function lastActiveRun(input: ActiveRunInput): ActiveRun | null {
 export function lastActiveRunTimed(input: ActiveRunInput): (ActiveRun & { fromAt: string | null }) | null {
   const periods = timedActivePeriods(input.changes ?? [], {
     listedAt: input.firstOnMarketAt ?? input.onMarketDate ?? null,
+    askChanges: input.askChanges,
   })
   const last = periods[periods.length - 1]
   if (last) {
@@ -331,7 +398,8 @@ export function lastActiveRunTimed(input: ActiveRunInput): (ActiveRun & { fromAt
  * The status log's last Active stretch that ended in an offer, Active day to
  * Pending day. A listing that went Pending, fell out and came back counts from
  * the day it came back (61197 Cottonwood: back Nov 13, Pending Dec 30, 47
- * days, not 264 from its first list in April). Without the log, the listing
+ * days, not 264 from its first list in April). A return within an hour at the
+ * same ask does not count as coming back (2254 Indigo). Without the log, the listing
  * row's on-market day to its pending timestamp. Without either date, the
  * MLS `days_to_pending`, which counts from that same on-market day.
  */
@@ -350,6 +418,8 @@ type OfferRunInput = {
   mlsDaysToPending?: number | null
   /** An offer after the close is not this sale's. */
   closeDate?: string | null
+  /** Ask changes the caller read. See `PeriodOpts.askChanges`. */
+  askChanges?: readonly AskChange[] | null
 }
 
 export function offerRun(input: OfferRunInput): OfferRun | null {
@@ -363,6 +433,7 @@ export function offerRunTimed(input: OfferRunInput): (OfferRun & { fromAt: strin
   const close = pacificDay(input.closeDate)
   const periods = timedActivePeriods(input.changes ?? [], {
     listedAt: input.firstOnMarketAt ?? input.onMarketDate ?? null,
+    askChanges: input.askChanges,
   }).filter((p) => p.to != null && statusKind(p.endedAs) === 'offer' && (!close || p.to <= close))
   const last = periods[periods.length - 1]
   if (last) {
@@ -542,6 +613,8 @@ export function stretchRestarted(input: {
   changes?: readonly ListingStatusChange[] | null
   firstOnMarketAt?: string | null
   listedAt?: string | null
+  /** The same ask log the stretch clock used, so a correction blip is not an earlier stretch. */
+  askChanges?: readonly AskChange[] | null
 }): boolean {
   const day = pacificDay(input.from)
   if (!day) return false
@@ -549,6 +622,7 @@ export function stretchRestarted(input: {
   if (first && first < day) return true
   return timedActivePeriods(input.changes ?? [], {
     listedAt: input.firstOnMarketAt ?? input.listedAt ?? null,
+    askChanges: input.askChanges,
   }).some((p) => p.from < day)
 }
 
@@ -580,6 +654,7 @@ export function listingStretch(input: {
     changes: input.changes,
     firstOnMarketAt: input.firstOnMarketAt,
     listedAt: input.listedAt,
+    askChanges: input.askChanges,
   })
   const firstAsk = askInEffectAt(input.askChanges ?? [], input.startAt, {
     openingAsk: input.openingAsk,

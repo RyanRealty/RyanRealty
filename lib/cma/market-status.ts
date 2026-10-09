@@ -492,6 +492,9 @@ function peerRun(row: CmaMarketAreaRow): (ActiveRun & { fromAt: string | null })
     onMarketDate: row.OnMarketDate ?? row.ListDate,
     offMarketDate: row.off_market_date ?? row.status_change_timestamp ?? row.CloseDate,
     status: row.StandardStatus,
+    // An unsold row omits askChanges when the read found none. That is an
+    // empty log, so a same-ask pending reversal inside an hour stays put.
+    askChanges: row.askChanges ?? [],
   })
 }
 
