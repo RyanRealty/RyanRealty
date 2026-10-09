@@ -383,6 +383,11 @@ export function offerRunTimed(input: OfferRunInput): (OfferRun & { fromAt: strin
   }
   const mls = input.mlsDaysToPending
   if (mls != null && Number.isFinite(mls) && mls >= 0) {
+    // A zero MLS count whose on-market day is after the close is not this
+    // sale's offer clock (1654 Meadow: on the market Jun 6, closed May 30).
+    // A real same-day offer, on-market day on or before the close, still
+    // returns 0.
+    if (from && close && from > close && Math.round(mls) === 0) return null
     return { from, fromAt, to: null, days: Math.round(mls), source: 'mls-days-to-pending' }
   }
   return null
@@ -487,13 +492,27 @@ export function mergeAskChanges(
  * ask (OriginalListPrice). With no change on record the ask never moved, so the
  * opening ask stands for a first stretch; for a stretch that restarted it
  * stands only when the opening and current asks agree, and otherwise the
- * record cannot say (null, never a guess). A row with no opening ask on record
- * has none here either: the current ask is not evidence the ask never moved.
+ * record cannot say (null, never a guess). A dated change still wins over
+ * either ask. A row with no opening ask on record has none here either: the
+ * current ask is not evidence the ask never moved.
+ *
+ * `unstated: 'opening'` is the closed-comp stamp only. A restarted sale whose
+ * read log has no dated move still has an opening ask and a current ask, and
+ * leaving the first blank hides the cut (3169 Coho: opened at $650,000, last
+ * ask $620,000, no ListPrice line in the retained log). The opening ask is
+ * the ask that record can place at the start. Callers that have not read the
+ * log (a band rival with an empty change list) omit the option and stay null.
  */
 export function askInEffectAt(
   changes: readonly AskChange[],
   at: string | null | undefined,
-  opts: { openingAsk?: number | null; currentAsk?: number | null; restarted?: boolean } = {},
+  opts: {
+    openingAsk?: number | null
+    currentAsk?: number | null
+    restarted?: boolean
+    /** Closed-comp stamp only. See the comment above. */
+    unstated?: 'opening'
+  } = {},
 ): number | null {
   const opening = positiveAsk(opts.openingAsk)
   const current = positiveAsk(opts.currentAsk)
@@ -507,7 +526,9 @@ export function askInEffectAt(
     return positiveAsk(after?.from) ?? opening
   }
   if (!opts.restarted) return opening
-  return opening != null && current != null && opening === current ? current : null
+  if (opening != null && current != null && opening === current) return current
+  if (opts.unstated === 'opening') return opening
+  return null
 }
 
 /**
@@ -549,6 +570,8 @@ export function listingStretch(input: {
   openingAsk?: number | null
   /** MLS ListPrice. */
   currentAsk?: number | null
+  /** Passed through to `askInEffectAt`. The closed-comp stamp sets `'opening'`. */
+  unstated?: 'opening'
 }): ListingStretch | null {
   const from = pacificDay(input.startAt)
   if (!from) return null
@@ -562,6 +585,7 @@ export function listingStretch(input: {
     openingAsk: input.openingAsk,
     currentAsk: input.currentAsk,
     restarted,
+    unstated: input.unstated,
   })
   return { from, firstAsk, restarted }
 }
