@@ -9,36 +9,95 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# PARALLEL LAYOUT (2026-10-09, Matt: "we cannot have GitHub taking 45 minutes
+# per PR"). PR #447's run took 45.7 minutes because one job ran every gate in a
+# row (lint 2.8, ci:gates 2.1, test:unit 6.1, build 4.8, route smoke + runtime
+# gates 6.2, pa11y 0.8, Lighthouse 9.5) and only THEN started e2e, which built
+# the app a second time (7.5) before its 2.3 minutes of tests. Queueing was
+# ~0: the time was all serial work.
+#
+# Same gates, same commands, same thresholds, now side by side:
+#   lint · ci:gates · test:unit (3 shards)        start at once, no build needed
+#   build                                         one production build, packed
+#   smoke · content-floor (3) · a11y ·            each unpacks that build and
+#     lighthouse (4) · e2e                        starts its own fresh server
+#   lint-and-build                                fails if ANY job above failed
+#
+# Shards split the work, never the bar: vitest --shard runs every test file
+# exactly once across the shards; LHCI_SHARD and CONTENT_FLOOR_SHARD split the
+# URL and class lists (see lighthouserc.cjs and check-route-content-floor.mjs).
+#
+# `lint-and-build` keeps its name so anything that watches that check still
+# works; it is now the roll-up of every job, e2e included.
+
+# Default token scope. `build` widens it for the bundle-size PR comment.
+permissions:
+  contents: read
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  SKYSLOPE_ACCESS_KEY: ${{ secrets.SKYSLOPE_ACCESS_KEY }}
+  SKYSLOPE_ACCESS_SECRET: ${{ secrets.SKYSLOPE_ACCESS_SECRET }}
+  SKYSLOPE_CLIENT_ID: ${{ secrets.SKYSLOPE_CLIENT_ID }}
+  SKYSLOPE_CLIENT_SECRET: ${{ secrets.SKYSLOPE_CLIENT_SECRET }}
+  # lib/env.ts requiredForRuntime enforces SPARK_API_KEY at server BOOT
+  # (instrumentation register()) — without it `next start` dies with
+  # "Failed to prepare server" and Playwright's webServer times out (the
+  # CI e2e job's 2026-07-17 failure). The critical-flow specs read
+  # Supabase, never Spark, so a dummy satisfies the boot check when the
+  # secret is unset.
+  SPARK_API_KEY: ${{ secrets.SPARK_API_KEY || 'ci-e2e-dummy-not-a-real-key' }}
+
 jobs:
-  lint-and-build:
+  # Docs-only pull requests (every changed file under docs/, e.g. the CMA
+  # handoff note) cannot change the built app: no app, lib or component code
+  # reads docs/. They still get lint, ci:gates and test:unit; the build and
+  # the server-side jobs are skipped. Anything outside docs/ runs everything.
+  changes:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    # "Report bundle sizes" posts a PR comment via actions/github-script. With
-    # no permissions block the GITHUB_TOKEN is read-only, so that step died with
-    # "HttpError: Resource not accessible by integration". It had never run
-    # before — the route smoke above it failed for months, so everything
-    # downstream was skipped and the missing grant stayed invisible.
-    #
-    # contents: read is what actions/checkout needs; naming a permissions block
-    # at all drops everything not listed, so both are explicit.
+    timeout-minutes: 5
     permissions:
-      contents: read
-      pull-requests: write
-    env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      SKYSLOPE_ACCESS_KEY: ${{ secrets.SKYSLOPE_ACCESS_KEY }}
-      SKYSLOPE_ACCESS_SECRET: ${{ secrets.SKYSLOPE_ACCESS_SECRET }}
-      SKYSLOPE_CLIENT_ID: ${{ secrets.SKYSLOPE_CLIENT_ID }}
-      SKYSLOPE_CLIENT_SECRET: ${{ secrets.SKYSLOPE_CLIENT_SECRET }}
-      # lib/env.ts requiredForRuntime enforces SPARK_API_KEY at server BOOT
-      # (instrumentation register()) — without it `next start` dies with
-      # "Failed to prepare server" and Playwright's webServer times out (the
-      # CI e2e job's 2026-07-17 failure). The critical-flow specs read
-      # Supabase, never Spark, so a dummy satisfies the boot check when the
-      # secret is unset.
-      SPARK_API_KEY: ${{ secrets.SPARK_API_KEY || 'ci-e2e-dummy-not-a-real-key' }}
+      pull-requests: read
+    outputs:
+      app: ${{ steps.files.outputs.app }}
     steps:
+      - id: files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
+            --jq '.[].filename' > /tmp/changed.txt
+          total=$(wc -l < /tmp/changed.txt)
+          outside=$(grep -cv '^docs/' /tmp/changed.txt || true)
+          echo "changed files: $total, outside docs/: $outside"
+          # The files API stops at 3000; treat a huge or empty list as app code.
+          if [ "$total" -gt 0 ] && [ "$total" -lt 3000 ] && [ "$outside" -eq 0 ]; then
+            echo "app=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "app=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Full history: ci:gates picks its path lane from
+      # GITHUB_EVENT_BEFORE...GITHUB_SHA (see scripts/lib/ci-gates-select.mjs).
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -47,192 +106,86 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npm run lint
       # Path-aware `ci:gates` (always ∪ matching path). Nightly/cert lanes
-      # run in quality.yml (`--lane=nightly`), not here. Path discovery uses
-      # GITHUB_EVENT_BEFORE...GITHUB_SHA (see scripts/lib/ci-gates-select.mjs).
+      # run in quality.yml (`--lane=nightly`), not here.
       # See docs/MECHANICAL_GATES.md.
       - run: npm run ci:gates
+
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
       # R-221: PR/main CI is unit+gates only. Live-DB int tests run nightly
       # (int-nightly.yml). Sitting on a 8-minute int suite is how agents burn money.
-      - run: npm run test:unit
-      # NODE_OPTIONS: the type-check phase OOMs at Node's default ~4GB heap at
-      # this repo's size (SIGABRT mid "Running TypeScript" — same fix as the
-      # local push chain). Invisible until 2026-07-17 because the lint step
-      # ahead of it failed first from June 24 on.
-      # Push to main: Vercel owns generate. GitHub SSG here was a second/third
-      # copy of the same production compile. Keep the build on pull_request
-      # (no Vercel production generate for PRs when previews are off).
+      # --shard: each of the 3 jobs runs a third of the test files; together
+      # they run every file of both projects (unit, gates) exactly once.
+      - run: npm run test:unit -- --shard=${{ matrix.shard }}/3
+
+  build:
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # "Report bundle sizes" posts a PR comment via actions/github-script, which
+    # needs pull-requests: write (naming a permissions block drops the rest,
+    # so contents: read for actions/checkout is explicit).
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      # Push to main: Vercel owns generate, so the build runs on pull_request
+      # only (this job's `if`).
       - run: npm run build
-        if: github.event_name == 'pull_request'
         env:
           # 10240, not 6144 (2026-09-30): Next's "Running TypeScript" phase
-          # outgrew 6144 on PR #401 (V8 heap limit, SIGABRT). The same job's
-          # ci:commit-compiles already runs the full tsc at 12288 on this
-          # runner. package.json's build script appends this value after its
-          # 6144 default, and the later flag wins.
+          # outgrew 6144 on PR #401 (V8 heap limit, SIGABRT). package.json's
+          # build script appends this value after its 6144 default, and the
+          # later flag wins.
           NODE_OPTIONS: --max-old-space-size=10240
-      # Post-build gates: bundle budget + route smoke. Bundle budget
-      # parses .next/static after the build step above. Route smoke
-      # starts the production server and hits the canonical route set,
-      # asserting no 404/5xx/blank-page regressions per CLAUDE.md
-      # "verify before moving on."
+      # Bundle budget parses .next/static after the build above.
       - run: npm run ci:bundle-budget
-        if: github.event_name == 'pull_request'
-      # Was `npm run ci:route-smoke:start`, i.e. start-server-and-test. That
-      # wrapper has failed on EVERY pull request since at least 2026-07-25
-      # (verified on unrelated branches: same step, same 5:02 wait-on timeout),
-      # and its entire failure output is "Timed out waiting for:
-      # http://127.0.0.1:3000" — no status code, no timing, no server log, so
-      # the cause was undiagnosable from CI. Meanwhile a production build of the
-      # same commit serves `/` with HTTP 200 in 0.55s locally and passes 277/277
-      # routes, so the application is not the cause.
-      #
-      # Split into explicit start / wait / smoke. Same semantics, but the wait
-      # reports what it saw on each probe and the server log is dumped on
-      # failure, so a red run now explains itself instead of timing out mutely.
-      # ci:tap-targets (below) drives headless Chromium through Playwright.
-      # The e2e job installs the browser before its own runs; this job did
-      # not, so from 990e86c every pull request failed the smoke step with
-      # "Executable doesn't exist at ~/.cache/ms-playwright/…" (2026-09-05
-      # session 014FzYVn recorded it as "CI tap-targets needs browser"). Same
-      # install line as the e2e job, gated to pull requests like the step it
-      # serves, so pushes to main pay nothing extra.
-      - name: Install Playwright browsers (route smoke + tap targets)
-        if: github.event_name == 'pull_request'
-        run: npx playwright install --with-deps chromium
 
-      - name: Route smoke test
-        if: github.event_name == 'pull_request'
+      # Pack the build for the runtime-gate jobs: all of .next except the
+      # compiler caches (the data cache under .next/cache stays, so the server
+      # those jobs start is the one this build made), plus the gitignored files
+      # the build wrote outside .next (prebuild's public/pdf.worker.min.mjs,
+      # the generated service worker).
+      - name: Pack build
         run: |
-          # Pick a real listing key (falls back to a known-active one)
-          export SMOKE_LISTING_KEY=$(node scripts/pick-lhci-listing.mjs 2>/dev/null | grep -oE '[0-9]{20,}' | head -1)
-          npm run start:ci > /tmp/route-smoke-server.log 2>&1 &
-          if ! node scripts/wait-for-server.mjs http://127.0.0.1:3000 180; then
-            echo "----- server log -----"
-            cat /tmp/route-smoke-server.log || true
-            exit 1
-          fi
-          npm run ci:route-smoke
-
-          # Rendered-HTML payload ratchet (audit item 16). Runs here rather than
-          # in the static ci:gates chain because it measures a real built server,
-          # and the server started above is already up. /homes-for-sale drifted
-          # 996 KB -> 1,019,774 bytes with nothing watching it.
-          npm run ci:page-payload
-
-          # Atlas props budget, served-bytes layer (UXLIVE-3, visibility audit
-          # 2026-09-22). The static layer runs in ci:gates; this one weighs the
-          # Atlas props in the RSC payload of the built pages (/about,
-          # /cities/bend, Awbrey Butte, Tetherow, Redmond): 192 KiB each, and
-          # no inline dots. /about carried 3.15 MB of them on 2026-09-23.
-          ATLAS_PROPS_BASE_URL=http://127.0.0.1:3000 npm run ci:atlas-props-budget
-
-          # 44x44 tap-target ratchet. Same reason as the payload gate above:
-          # it measures computed getBoundingClientRect on a real rendered
-          # page, which no static parse of CSS or TSX can do, and the WCAG
-          # 2.5.8 "Equivalent" exception it honours (a small control passes
-          # when another control on the SAME page does the job full-size) is
-          # a property of the rendered page, not of the source. Baselined in
-          # scripts/tap-targets-baseline.json; the list may only shrink.
-          npm run ci:tap-targets
-
-          # No-regression floor (Matt 2026-09-12). Every public class keeps the
-          # hero width, image resolution, video, sections, words, links and
-          # JSON-LD it carried when its contentFloor was seeded on parity.json.
-          # A "score rose" pass that lost content fails here before any
-          # evaluator is asked. Lower a floor only by hand, in the same commit.
-          npm run ci:route-content-floor
-
-          # The listing page's first screen on a phone (PR #386, Matt
-          # 2026-09-25 "I hate all the wasted space"). Renders four live
-          # listings found in this server's own listings sitemap (a reel lead,
-          # a photo lead, the longest street address, a price cut) at 375x812
-          # and 390x844: address, price and beds / baths / sq ft inside the
-          # fold, a hero no taller than its photograph, no empty band, Jax
-          # clear of the price. Measured on the rendered page, so it runs here.
-          npm run ci:listing-phone-fold
-
-      # Lighthouse CI — gates PRs on perf/a11y/BP/SEO regression against
-      # lighthouserc.cjs thresholds. Uses start-server-and-test under the hood.
-      # Skipped on push events (already run nightly via quality.yml).
-      # NOTE (2026-08-02): this step and pa11y below have NEVER executed. They
-      # called `npm run ci:lighthouse` / `npm run ci:a11y`, and neither script
-      # existed in package.json — every run died instantly on "Missing script".
-      # Nobody noticed because the route smoke above failed first for months, so
-      # both were permanently skipped. Same shape as the punctuation rule: a
-      # gate that was documented, believed enforced, and checked by nothing.
-      #
-      # The scripts are now defined (the tooling and configs were always here:
-      # @lhci/cli + lighthouserc.cjs, pa11y-ci + .pa11yci.json), so these run
-      # for the first time.
-      #
-      # The first real output HAS now been read (2026-08-02 calibration: 40+
-      # Lighthouse passes, pa11y root-caused from 0/8 to a verified 8/8), which
-      # is what the original continue-on-error was waiting for.
-      #
-      # Both need a server on 127.0.0.1:3000 and lighthouserc.cjs sets no
-      # startServerCommand, so the smoke step above deliberately leaves its
-      # server running. Teardown is the runner's job — see the note below.
-      # BLOCKING as of 2026-08-02 (Matt approved the flip). The config runs
-      # accessibility/SEO/CLS/best-practices at error level — measured margin,
-      # not timing-sensitive — while performance/LCP assert at "warn" (printed,
-      # never fatal) until 2-3 real runner samples validate the estimated CI
-      # hardware headroom in lighthouserc.cjs. Promote perf/LCP there, not here.
-      # G23 — pa11y-ci. The Lighthouse a11y category covers aggregate
-      # scoring but misses specific WCAG 2.1 failures that show up at
-      # component-level (missing alt text, unlabeled inputs, contrast
-      # failures on specific elements). pa11y-ci catches those.
-      # Closes GAP-3 from out/guardrail-inventory-2026-05-28.md.
-      # BLOCKING as of 2026-08-02. Its first real execution reported 0/8 URLs
-      # passing and the failure rendered as a green check for a day because of
-      # continue-on-error. The causes are fixed (contrast scrim, map-marker
-      # titles, third-party iframes scoped out, stale alias URL) and a real
-      # production build measures 8/8 with 0 errors — WCAG rule evaluation is
-      # not CPU-timing-sensitive, so CI hardware cannot flake it the way perf
-      # numbers can.
-      #
-      # RUNS BEFORE LIGHTHOUSE (2026-08-21): a pa11y run scheduled after
-      # Lighthouse's 24 passes flaked on a tree whose local prod build measured
-      # 8/8 with the same config — pa11y now takes the fresh server first, and
-      # Lighthouse (whose own runs are averaged) absorbs the loaded tail.
-      - name: pa11y-ci accessibility
-        if: github.event_name == 'pull_request'
-        run: npm run ci:a11y
-
-      - name: Lighthouse CI
-        if: github.event_name == 'pull_request'
-        run: npm run ci:lighthouse
-
-      # NO explicit teardown step for the smoke server, deliberately.
-      #
-      # A "Stop smoke server" step here killed the process GROUP, reasoning that
-      # `npm run start:ci` spawns next-server as a child so killing the npm pid
-      # alone leaves the child holding port 3000. That took down the RUNNER:
-      # background jobs started from a step inherit the runner's process group,
-      # so the negative-pid kill signalled the runner too. The job died with
-      # exit 143 and "The runner has received a shutdown signal" after every
-      # other step had already passed.
-      #
-      # The runner cleans up after itself regardless — "Terminate orphan
-      # process: next-server" at the end of the job is that working as intended.
-      # The server needs to outlive the smoke step anyway so Lighthouse and
-      # pa11y can reach it, and nothing after them needs port 3000.
-
-      # No build-health step (2026-09-25). `scripts/track-build-health.ts` ran
-      # under `if: always()` and re-ran the tests, two lints and a second full
-      # build after every run, cancelled runs included, then wrote a file the
-      # runner threw away. A superseded run held the concurrency queue while it
-      # rebuilt. Build cost is read from the Vercel build log by
-      # `npm run deploy:verify` (G70); `npm run health:record` still runs it
-      # locally.
+          git ls-files --others --ignored --exclude-standard --directory \
+            | grep -vE '^(node_modules/|\.next/)' > /tmp/build-extra.txt || true
+          echo "extra build outputs:"; cat /tmp/build-extra.txt
+          tar --exclude='.next/cache/webpack' --exclude='.next/cache/turbopack' --exclude='.next/cache/swc' \
+            -I 'zstd -T0 -3' -cf next-build.tar.zst .next -T /tmp/build-extra.txt
+          ls -lh next-build.tar.zst
+      - uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: next-build.tar.zst
+          compression-level: 0
+          retention-days: 1
 
       # Bundle size report. continue-on-error because this posts an informational
       # PR comment: if commenting is unavailable (org token policy, a fork PR
       # where the token is read-only regardless of the block above), that is not
       # a reason to fail a build whose every real gate has passed.
       - name: Report bundle sizes
-        if: github.event_name == 'pull_request'
         continue-on-error: true
         uses: actions/github-script@v7
         with:
@@ -301,51 +254,116 @@ jobs:
               });
             }
 
-  e2e:
+  # Route smoke + the rendered-page ratchets that share one server. History of
+  # the explicit start / wait / smoke split: start-server-and-test timed out
+  # mutely on every PR from 2026-07-25; scripts/wait-for-server.mjs reports
+  # each probe and the server log is dumped on failure (.github/actions/use-build).
+  smoke:
+    needs: build
     runs-on: ubuntu-latest
-    needs: lint-and-build
-    if: github.event_name == 'pull_request'
-    env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      SKYSLOPE_ACCESS_KEY: ${{ secrets.SKYSLOPE_ACCESS_KEY }}
-      SKYSLOPE_ACCESS_SECRET: ${{ secrets.SKYSLOPE_ACCESS_SECRET }}
-      SKYSLOPE_CLIENT_ID: ${{ secrets.SKYSLOPE_CLIENT_ID }}
-      SKYSLOPE_CLIENT_SECRET: ${{ secrets.SKYSLOPE_CLIENT_SECRET }}
-      # lib/env.ts requiredForRuntime enforces SPARK_API_KEY at server BOOT
-      # (instrumentation register()) — without it `next start` dies with
-      # "Failed to prepare server" and Playwright's webServer times out (the
-      # CI e2e job's 2026-07-17 failure). The critical-flow specs read
-      # Supabase, never Spark, so a dummy satisfies the boot check when the
-      # secret is unset.
-      SPARK_API_KEY: ${{ secrets.SPARK_API_KEY || 'ci-e2e-dummy-not-a-real-key' }}
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      # ci:tap-targets drives headless Chromium through Playwright; without
+      # the browser every PR failed with "Executable doesn't exist at
+      # ~/.cache/ms-playwright/…" (2026-09-05).
+      - uses: ./.github/actions/use-build
         with:
-          node-version: '20'
-          cache: 'npm'
+          playwright: 'true'
+      - name: Route smoke test
+        run: |
+          # Pick a real listing key (falls back to a known-active one)
+          export SMOKE_LISTING_KEY=$(node scripts/pick-lhci-listing.mjs 2>/dev/null | grep -oE '[0-9]{20,}' | head -1)
+          npm run ci:route-smoke
 
-      - run: npm ci
+          # Rendered-HTML payload ratchet (audit item 16). Measures a real built
+          # server. /homes-for-sale drifted 996 KB -> 1,019,774 bytes with
+          # nothing watching it.
+          npm run ci:page-payload
 
-      # Build the Next.js app (self-contained, no artifact transfer).
-      # NODE_OPTIONS: same heap fix as lint-and-build — the type-check phase
-      # OOMs at Node's default ~4GB at this repo's size.
-      - name: Build
-        run: npm run build
+          # Atlas props budget, served-bytes layer (UXLIVE-3, visibility audit
+          # 2026-09-22): 192 KiB of Atlas props per built page, no inline dots.
+          # /about carried 3.15 MB of them on 2026-09-23.
+          ATLAS_PROPS_BASE_URL=http://127.0.0.1:3000 npm run ci:atlas-props-budget
+
+          # 44x44 tap-target ratchet, measured on the rendered page (WCAG 2.5.8
+          # "Equivalent" is a property of the page, not the source). Baselined
+          # in scripts/tap-targets-baseline.json; the list may only shrink.
+          npm run ci:tap-targets
+
+          # The listing page's first screen on a phone (PR #386, Matt
+          # 2026-09-25 "I hate all the wasted space"): address, price and
+          # beds / baths / sq ft inside the fold at 375x812 and 390x844.
+          npm run ci:listing-phone-fold
+
+  # No-regression floor (Matt 2026-09-12). Every public class keeps the hero
+  # width, image resolution, video, sections, words, links and JSON-LD it
+  # carried when its contentFloor was seeded on parity.json. Lower a floor only
+  # by hand, in the same commit. 27 classes, about 10 s each: split 3 ways.
+  content-floor:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/use-build
+        with:
+          playwright: 'true'
+      - name: Route content floor
         env:
-          # 10240, not 6144 (2026-09-30): Next's "Running TypeScript" phase
-          # outgrew 6144 on PR #401 (V8 heap limit, SIGABRT). The same job's
-          # ci:commit-compiles already runs the full tsc at 12288 on this
-          # runner. package.json's build script appends this value after its
-          # 6144 default, and the later flag wins.
-          NODE_OPTIONS: --max-old-space-size=10240
+          CONTENT_FLOOR_SHARD: ${{ matrix.shard }}/3
+        run: npm run ci:route-content-floor
 
-      # Install only chromium for speed
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+  # G23 — pa11y-ci, BLOCKING since 2026-08-02 (WCAG 2.1 failures Lighthouse's
+  # aggregate a11y score misses). It always wanted a fresh server (it flaked
+  # after Lighthouse's 24 passes on 2026-08-21); it now has one to itself.
+  a11y:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/use-build
+      - name: pa11y-ci accessibility
+        run: npm run ci:a11y
+
+  # Lighthouse CI — BLOCKING since 2026-08-02. lighthouserc.cjs holds the
+  # thresholds (a11y/SEO/CLS/best-practices at error, perf/LCP at warn until
+  # runner samples validate them; promote there, not here). 8 URLs x 3 runs
+  # took 9.5 minutes on one runner, so LHCI_SHARD splits the URLs 4 ways;
+  # each URL keeps its 3 runs and its assertions.
+  lighthouse:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/use-build
+      - name: Lighthouse CI
+        env:
+          LHCI_SHARD: ${{ matrix.shard }}/4
+        run: npm run ci:lighthouse
+
+  e2e:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      # Playwright's webServer starts `npm run start:ci` itself in CI
+      # (reuseExistingServer is off there), so no server here.
+      - uses: ./.github/actions/use-build
+        with:
+          start-server: 'false'
+          playwright: 'true'
 
       # Run E2E tests (critical flows only — visual regression needs baselines)
       - name: Run E2E tests
@@ -377,3 +395,28 @@ jobs:
           name: visual-diffs
           path: e2e/visual-diffs/
           retention-days: 7
+
+  # The one check to read: green only when every job above passed (or was
+  # skipped by design: the build and its server jobs on pushes to main and on
+  # docs-only PRs). A failed, cancelled or timed-out job turns it red.
+  lint-and-build:
+    if: always()
+    needs: [changes, lint, gates, unit, build, smoke, content-floor, a11y, lighthouse, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every CI job passed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          APP: ${{ needs.changes.outputs.app }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          bad=$(echo "$RESULTS" | jq -r '[to_entries[] | select(.value.result != "success" and .value.result != "skipped") | .key] | join(" ")')
+          if [ -n "$bad" ]; then echo "::error::failed or cancelled: $bad"; exit 1; fi
+          # A PR that touches app code must have actually built and served it.
+          if [ "$EVENT" = "pull_request" ] && [ "$APP" != "false" ]; then
+            missed=$(echo "$RESULTS" | jq -r '[to_entries[] | select(.value.result != "success") | .key] | join(" ")')
+            if [ -n "$missed" ]; then echo "::error::skipped on an app PR: $missed"; exit 1; fi
+          fi
+          echo "All CI jobs passed."

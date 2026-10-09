@@ -95,10 +95,28 @@ const PARITY_OUT = parityOutIdx >= 0 ? String(argv[parityOutIdx + 1] ?? '').trim
 
 const BASE = (SEED_BASE ?? process.env.CONTENT_FLOOR_BASE_URL ?? process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:3000').replace(/\/+$/, '')
 
+// CI SHARDING (2026-10-09). The 27 classes took 4.5 minutes in one CI step.
+// CONTENT_FLOOR_SHARD=i/n keeps class k (0-based, registry order) when
+// k % n == i - 1, so n parallel jobs together measure every class against the
+// same floors. Unset = every class (local runs, run-runtime-gates.sh). Never
+// applies to --seed, which must see the classes it was asked for.
+function shardOf(spec) {
+  if (!spec) return null
+  const m = /^(\d+)\/(\d+)$/.exec(String(spec).trim())
+  if (!m || Number(m[1]) < 1 || Number(m[1]) > Number(m[2])) {
+    console.error(`CONTENT_FLOOR_SHARD must look like "2/3" (got "${spec}").`)
+    process.exit(1)
+  }
+  return { index: Number(m[1]) - 1, total: Number(m[2]) }
+}
+
 function loadClasses() {
   const raw = JSON.parse(readFileSync(join(ROOT, CLASS_REGISTRY_PATH), 'utf8'))
   const list = Array.isArray(raw?.classes) ? raw.classes : []
-  return list.filter((c) => c && typeof c.key === 'string' && typeof c.url === 'string' && (!ONLY || ONLY.includes(c.key)))
+  const valid = list.filter((c) => c && typeof c.key === 'string' && typeof c.url === 'string')
+  const shard = SEED_BASE ? null : shardOf(process.env.CONTENT_FLOOR_SHARD)
+  const sharded = shard ? valid.filter((_, k) => k % shard.total === shard.index) : valid
+  return sharded.filter((c) => !ONLY || ONLY.includes(c.key))
 }
 
 function parityPathFor(key) {

@@ -1,0 +1,49 @@
+name: Use the PR's production build
+description: >
+  Installs dependencies, unpacks the .next build the `build` job made for this
+  commit, and (optionally) starts `next start` on 127.0.0.1:3000 and waits for
+  it. Every runtime gate job uses this so the app is compiled ONCE per run
+  instead of once per job (the old e2e job rebuilt it, 7.5 minutes).
+inputs:
+  start-server:
+    description: Start the production server on 127.0.0.1:3000 and wait for it.
+    default: 'true'
+  playwright:
+    description: Install Playwright's chromium (route smoke, tap targets, content floor, e2e).
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    - shell: bash
+      run: npm ci
+    - uses: actions/download-artifact@v4
+      with:
+        name: next-build
+    - name: Unpack build
+      shell: bash
+      run: |
+        tar -I zstd -xf next-build.tar.zst
+        rm next-build.tar.zst
+        test -f .next/BUILD_ID || { echo "next-build artifact has no .next/BUILD_ID"; exit 1; }
+    - name: Install Playwright browsers
+      if: inputs.playwright == 'true'
+      shell: bash
+      run: npx playwright install --with-deps chromium
+    # Same start / wait as the old single-job route smoke step: the wait
+    # reports what it saw on every probe and the server log is dumped on
+    # failure. No teardown on purpose: killing the process group took the
+    # runner down once (see ci.yml); the runner reaps next-server itself.
+    - name: Start production server
+      if: inputs.start-server == 'true'
+      shell: bash
+      run: |
+        npm run start:ci > /tmp/next-server.log 2>&1 &
+        if ! node scripts/wait-for-server.mjs http://127.0.0.1:3000 180; then
+          echo "----- server log -----"
+          cat /tmp/next-server.log || true
+          exit 1
+        fi
