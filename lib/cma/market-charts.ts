@@ -4,6 +4,7 @@
  */
 
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
+import { compactUsd, compactUsdLabels } from '@/lib/cma/compact-usd'
 import { pacificDay, type CameOffFacts } from '@/lib/cma/listing-status'
 
 const esc = escapeHtml
@@ -26,20 +27,9 @@ function monthLabel(iso: string): string {
   return d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })
 }
 
+/** One short dollar label for every CMA chart (lib/cma/compact-usd.ts). */
 function chartUsd(n: number): string {
-  if (n >= 1_000_000) {
-    const m = n / 1_000_000
-    return `$${m >= 10 || n % 1_000_000 === 0 ? m.toFixed(0) : m.toFixed(1)}M`
-  }
-  return `$${Math.round(n / 1000)}K`
-}
-
-/** Two asks that would round to the same short label print their own dollars. */
-function timelineAskLabel(ask: number, asks: readonly number[]): string {
-  const short = chartUsd(ask)
-  const shared = asks.filter((n) => chartUsd(n) === short).length > 1
-  if (!shared) return short
-  return `$${Math.round(ask).toLocaleString('en-US')}`
+  return compactUsd(n)
 }
 
 function linePath(xs: number[], ys: number[]): string {
@@ -223,6 +213,8 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
   // than as a market that did not move. A rule at each labelled value and one
   // through the middle turns that space back into scale.
   const mid = (axis.floor + axis.ceil) / 2
+  // Three different values on one axis never print the same label.
+  const axisLabel = compactUsdLabels([axis.ceil, mid, axis.floor])
   const rule = (v: number, op: number) =>
     `<line x1="${left}" y1="${y(v).toFixed(1)}" x2="${right}" y2="${y(v).toFixed(1)}" stroke="#102742" stroke-opacity="${op}" stroke-width="1"/>`
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Median close by month" class="trend-svg month-line">
@@ -230,9 +222,9 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
     ${rule(axis.ceil, 0.14)}
     ${rule(mid, 0.1)}
     ${rule(axis.floor, 0.25)}
-    <text x="${left - 10}" y="${(y(axis.ceil) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(axis.ceil)}</text>
-    <text x="${left - 10}" y="${(y(mid) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.55">${chartUsd(mid)}</text>
-    <text x="${left - 10}" y="${(y(axis.floor) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(axis.floor)}</text>
+    <text x="${left - 10}" y="${(y(axis.ceil) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${axisLabel(axis.ceil)}</text>
+    <text x="${left - 10}" y="${(y(mid) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.55">${axisLabel(mid)}</text>
+    <text x="${left - 10}" y="${(y(axis.floor) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${axisLabel(axis.floor)}</text>
     ${path ? `<path d="${path}" fill="none" stroke="#102742" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
     ${dots}${ticks.reverse().join('')}
   </svg>`
@@ -929,12 +921,16 @@ function timelineBody(o: {
   // Only the asks carry a number. A price on every point is unread chaos
   // (dataviz skill, step 4) — the zone is named, not numbered on both edges.
   const last = g.steps[g.steps.length - 1]!
-  const askAmounts = g.steps.map((s) => s.ask)
+  // The asks on the line are one set of labels, and the two edges of the
+  // zone another: two different prices never print the same text (62475
+  // Woodsman's $1,618,053 and $1,554,207 edges both read "$1.6M").
+  const askLabel = compactUsdLabels(g.steps.map((s) => s.ask))
+  const edgeLabel = compactUsdLabels([g.high, g.low])
   const marks = g.steps
     .map((s, i) => {
       const cx = x(s.t)
       const cy = y(s.ask)
-      const label = timelineAskLabel(s.ask, askAmounts)
+      const label = askLabel(s.ask)
       const w = label.length * fs * 0.58
       // The first ask labels above its own run, from the left. A cut labels to
       // the RIGHT of its drop: centred, the label would sit inside the vertical
@@ -1005,8 +1001,8 @@ function timelineBody(o: {
     <line x1="${plotL}" y1="${zoneTop.toFixed(1)}" x2="${plotR}" y2="${zoneTop.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
     <line x1="${plotL}" y1="${zoneBottom.toFixed(1)}" x2="${plotR}" y2="${zoneBottom.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
     <text x="${plotL + 6}" y="${zoneLabelY.toFixed(1)}" font-size="${zoneLabelFs}" fill="${TL_INK}">${zoneTspans}</text>
-    <text x="${plotL - 8}" y="${(zoneTop + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(chartUsd(g.high))}</text>
-    <text x="${plotL - 8}" y="${(zoneBottom + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(chartUsd(g.low))}</text>
+    <text x="${plotL - 8}" y="${(zoneTop + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(edgeLabel(g.high))}</text>
+    <text x="${plotL - 8}" y="${(zoneBottom + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(edgeLabel(g.low))}</text>
     <line x1="${plotL}" y1="${bottom.toFixed(1)}" x2="${plotR}" y2="${bottom.toFixed(1)}" stroke="${TL_EDGE}" stroke-width="0.75"/>
     <path d="${path}" class="tl-ask" fill="none" stroke="${TL_INK}" stroke-width="2.5" stroke-linejoin="miter" stroke-linecap="butt"/>
     ${marks}

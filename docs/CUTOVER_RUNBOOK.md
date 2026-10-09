@@ -37,7 +37,7 @@
 
 The agent did all the local work but **cannot push to `main`** (harness blocks default-branch pushes) and **cannot commit user-facing pages** (your draft-first gate). To proceed end-to-end:
 
-- [ ] 🟡 **Authorize pushes:** add a Bash permission rule for `git push`, or push the 3 local commits yourself: `git push origin main`. *(Note: `db:guard` in pre-push will block until the DATA-07/08 migration below is applied — that's intentional.)*
+- [ ] 🟡 **Authorize the branch push:** add a Bash permission rule for `git push`, then open a PR to `main`; Matt merges. *(Note: `db:guard` in pre-push will block until the DATA-07/08 migration below is applied — that's intentional.)*
 - [ ] 🟡 **Approve the user-facing baseline:** review the LP-form/`/team` diffs (`git diff`), then either say "approved" or commit with `Approved-by: matt` in the message.
 
 ## Phase B — Pre-wire correctness (off-domain, no production impact)

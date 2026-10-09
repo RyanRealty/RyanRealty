@@ -84,6 +84,7 @@ import {
 import { getPlatFamilies } from '@/lib/data/subdivisions/getPlatFamilies'
 import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 import { buildPlaceMosView, type PlaceMosView } from '@/lib/site/place-mos'
 import { marketVerdict } from '@/lib/market/classify'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
@@ -671,7 +672,7 @@ async function renderCommunityDetail({ params }: Props) {
   const [firstNearbyPark, ...restNearbyParks] = nearbyRecreation.parks
   const [firstNearbyTrail, ...restNearbyTrails] = nearbyRecreation.trails
   const communityMarketHref = placeLinks.marketUrl
-  const cityReportHref = citySlug ? `/housing-market/${citySlug}` : '/housing-market'
+  const cityReportHref = citySlug ? cityMarketPath(citySlug) : '/housing-market'
 
   const leftoverFigures: V3InstrumentFigure[] = leftoverMarketFigures(hud, {
     browse: browseHref,

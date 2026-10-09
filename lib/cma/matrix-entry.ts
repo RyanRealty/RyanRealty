@@ -38,8 +38,16 @@ import {
 import { keyFor, type CmaMapFamily } from '@/lib/cma/map-families'
 import type { CmaPinFact } from '@/lib/cma/comp-pin-map'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
-import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
+import { closedSaleDaysToOffer, onMarketAfterClose } from '@/lib/cma/listing-history-line'
 import { pacificDay } from '@/lib/cma/listing-status'
+import {
+  AFTER_LAST_ON_MARKET,
+  listingStretchRead,
+  offerDaysPhrase,
+  printedFirstAsk,
+  saleStretch,
+  subjectFirstAsk,
+} from '@/lib/cma/last-stretch'
 import { sellerOffMarketDate } from '@/lib/cma/seller-letter-copy'
 import type { AskExposureLike } from '@/lib/cma/ask-position'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
@@ -91,7 +99,17 @@ export type MatrixEntry = {
   priceChanges: number | null
   priceChangesExact: boolean
   path: PricePath | null
+  /**
+   * The first ask of the home's last stretch on the market: the price in
+   * effect when that stretch began (Matt 2026-10-08), so it and the days
+   * beside it are one clock. Null when the record cannot say.
+   */
   firstAsk: number | null
+  /**
+   * True when that stretch is not the listing's first (it was withdrawn,
+   * expired or fell out of contract and came back). The outcome line says so.
+   */
+  restarted?: boolean
   lastAsk: number | null
   /** Close price when family is closed; null otherwise. */
   closePrice: number | null
@@ -293,12 +311,20 @@ export function closedEntries(
   isSetAside?: (sale: CmaAdjustedComp) => boolean,
 ): MatrixEntry[] {
   return comps.map((c, i) => {
-    const path = pricePathFromSale(c)
+    // ONE CLOCK, THE LAST STRETCH (Matt 2026-10-08): the first ask is the
+    // price in effect when the offer clock started, and a sale that came back
+    // on the market says so beside its count.
+    const stretch = saleStretch(c)
+    const path = pricePathFromSale({ ...c, firstAsk: stretch.firstAsk })
     // ONE clock per sale (reader review 2026-10-07). The row and the outcome
     // line print the same count: days to an accepted offer when the record
     // knows it, else first list to close, labeled as that. An offer count
     // longer than the run to close is not one (2107 Carrie, 67 of 66).
-    const ran = days(c.domTotal)
+    const ranRaw = days(c.domTotal)
+    // A stored 0 whose on-market day is after the close is not a run
+    // (1654 Meadow). A positive list-to-close count still prints.
+    const ran =
+      ranRaw === 0 && onMarketAfterClose(c.offerFrom ?? c.onMarketDate, c.closeDate) ? null : ranRaw
     const toOffer = closedSaleDaysToOffer({
       daysToOffer: c.daysToOffer,
       measuredFrom: c.offerFrom ?? null,
@@ -309,7 +335,7 @@ export function closedEntries(
     const outcome = [
       c.closePrice > 0 ? `sold ${shortOrExactUsd(c.closePrice)}` : 'sold',
       toOffer != null
-        ? `offer in ${int(toOffer)} ${toOffer === 1 ? 'day' : 'days'}`
+        ? offerDaysPhrase(toOffer, stretch.restarted)
         : ran != null
           ? `listed to closed, ${int(ran)} ${ran === 1 ? 'day' : 'days'}`
           : '',
@@ -354,13 +380,14 @@ export function closedEntries(
       // at; no original ask reaches the renderer for a comparable sale, so the
       // path's own change count is always zero and would assert something the
       // record does not say. Only an original ask on the row makes it knowable.
-      priceChanges: movedOrNull(num(c.originalListPrice), num(c.listPrice)),
+      priceChanges: movedOrNull(stretch.firstAsk, num(c.listPrice)),
       priceChangesExact: false,
       path,
-      firstAsk: num(c.originalListPrice) ?? num(c.listPrice),
+      firstAsk: printedFirstAsk(stretch, num(c.listPrice)),
+      ...(stretch.restarted && toOffer != null ? { restarted: true } : {}),
       lastAsk: num(c.listPrice),
       closePrice: c.closePrice > 0 ? c.closePrice : null,
-      listPrice: num(c.listPrice) ?? num(c.originalListPrice),
+      listPrice: num(c.listPrice) ?? stretch.firstAsk,
       concessionsAmount: concessionOnSale(c),
       proximity: (c.proximity ?? '').trim() || entryProximity(subject, c),
       garageSpaces: c.garageSpaces != null && Number.isFinite(c.garageSpaces) ? Number(c.garageSpaces) : null,
@@ -398,10 +425,11 @@ export function unsoldEntries(
   subject?: Pick<CmaSubject, 'latitude' | 'longitude'> | null,
 ): MatrixEntry[] {
   return peers.map((p, i) => {
+    const stretch = listingStretchRead(p)
     const path = pricePathFromListing({
       address: p.address,
       listPrice: p.listPrice,
-      originalListPrice: p.originalListPrice,
+      originalListPrice: stretch.firstAsk,
       onMarketDate: p.onMarketDate,
       daysOnMarket: p.daysOnMarket,
       status: p.status,
@@ -423,7 +451,12 @@ export function unsoldEntries(
         ctx ?? UNADDRESSED_DOC_LINKS,
       ),
       photoUrl: p.photoUrl?.trim() || null,
-      outcome: dom != null ? `came off after ${int(dom)} ${dom === 1 ? 'day' : 'days'}` : 'came off unsold',
+      outcome:
+        dom != null
+          ? stretch.restarted
+            ? `came off ${int(dom)} ${dom === 1 ? 'day' : 'days'} ${AFTER_LAST_ON_MARKET}`
+            : `came off after ${int(dom)} ${dom === 1 ? 'day' : 'days'}`
+          : 'came off unsold',
       yearBuilt: p.yearBuilt ?? null,
       remodelNote: remodelFragment(remarks),
       remarksRead: remarks != null,
@@ -433,13 +466,14 @@ export function unsoldEntries(
       beds: p.beds ?? null,
       baths: printedBaths(p),
       domDays: dom,
-      priceChanges: movedOrNull(num(p.originalListPrice), num(p.listPrice)),
+      priceChanges: movedOrNull(stretch.firstAsk, num(p.listPrice)),
       priceChangesExact: false,
       path,
-      firstAsk: num(p.originalListPrice) ?? num(p.listPrice),
+      firstAsk: printedFirstAsk(stretch, num(p.listPrice)),
+      ...(stretch.restarted && dom != null ? { restarted: true } : {}),
       lastAsk: num(p.listPrice),
       closePrice: null,
-      listPrice: num(p.listPrice) ?? num(p.originalListPrice),
+      listPrice: num(p.listPrice) ?? stretch.firstAsk,
       concessionsAmount: null,
       proximity: (p as { proximity?: string | null }).proximity?.trim() || entryProximity(subject, p),
       garageSpaces: null,
@@ -490,10 +524,11 @@ export function activeEntries(
     const pendingDay = pending ? (r.pendingDate ?? null) : null
     const told = rivalDays(r)
     const dom = told.days
+    const stretch = listingStretchRead(r)
     const path = pricePathFromListing({
       address: r.address,
       listPrice: r.listPrice,
-      originalListPrice: r.originalListPrice ?? null,
+      originalListPrice: stretch.firstAsk,
       onMarketDate: r.onMarketDate ?? null,
       daysOnMarket: dom,
       status: r.status,
@@ -516,11 +551,14 @@ export function activeEntries(
       ),
       photoUrl: r.photoUrl?.trim() || null,
       outcome: [
-        pending ? `under contract at ${shortUsd(r.listPrice)}` : `asking ${shortUsd(r.listPrice)}`,
+        // The MLS carries a pending home's LIST price, not its contract price
+        // (reader review 2026-10-08: "under contract at $799K" read as the
+        // price it went under contract at).
+        pending ? `listed at ${shortUsd(r.listPrice)}, under contract` : `asking ${shortUsd(r.listPrice)}`,
         dom != null
           ? pending
-            ? `offer in ${int(dom)} ${dom === 1 ? 'day' : 'days'}`
-            : `${int(dom)} ${dom === 1 ? 'day' : 'days'}`
+            ? offerDaysPhrase(dom, stretch.restarted)
+            : `${int(dom)} ${dom === 1 ? 'day' : 'days'}${stretch.restarted ? ' since it last came on the market' : ''}`
           : '',
       ]
         .filter(Boolean)
@@ -535,13 +573,14 @@ export function activeEntries(
       baths: printedBaths(r),
       domDays: dom,
       ...(pending && dom != null ? { domMeasure: 'offer' as const } : {}),
-      priceChanges: movedOrNull(num(r.originalListPrice), num(r.listPrice)),
+      priceChanges: movedOrNull(stretch.firstAsk, num(r.listPrice)),
       priceChangesExact: false,
       path,
-      firstAsk: num(r.originalListPrice) ?? num(r.listPrice),
+      firstAsk: printedFirstAsk(stretch, num(r.listPrice)),
+      ...(stretch.restarted && dom != null ? { restarted: true } : {}),
       lastAsk: num(r.listPrice),
       closePrice: null,
-      listPrice: num(r.listPrice) ?? num(r.originalListPrice),
+      listPrice: num(r.listPrice) ?? stretch.firstAsk,
       concessionsAmount: null,
       proximity: (r as { proximity?: string | null }).proximity?.trim() || entryProximity(subject, r),
       garageSpaces: null,
@@ -587,21 +626,29 @@ export function subjectEntry(input: {
     daysOnMarket: input.domDays,
     status: s.standardStatus,
     printableAsk: input.printableAsk,
-    originalListPrice: s.originalListPrice,
+    // The first ask of its last stretch on the market (Matt 2026-10-08).
+    originalListPrice: subjectFirstAsk({
+      subject: s,
+      exposure: input.exposure ?? null,
+      finalCycle: input.finalCycle ?? null,
+    }),
   })
   const status = (s.standardStatus ?? '').trim().toLowerCase()
   const cameOff = /^(expired|withdrawn|cancell?ed)/.test(status)
-  // Capitalised, unlike the other three families: this cell is a statement
-  // about the reader's own home rather than a label under a pin.
+  // Lower case, like the other three families. The outcome is a label in a
+  // cell or under a pin, beside the peers' own ("came off after 96 days"), and
+  // a sentence that opens with it capitalises it there. 2745 Aldrich printed
+  // "Came off after 108 days" in the subject's column beside a peer's "came
+  // off after 96 days" (reader review 2026-10-08).
   const outcome = cameOff
     ? input.domDays != null
-      ? `Came off after ${int(input.domDays)} ${input.domDays === 1 ? 'day' : 'days'}`
-      : 'Came off unsold'
+      ? `came off after ${int(input.domDays)} ${input.domDays === 1 ? 'day' : 'days'}`
+      : 'came off unsold'
     : input.printableAsk != null && input.printableAsk > 0
-      ? `Listed ${usd(input.printableAsk)}${
+      ? `listed ${usd(input.printableAsk)}${
           input.domDays != null ? ` · ${int(input.domDays)} ${input.domDays === 1 ? 'day' : 'days'}` : ''
         }`
-      : 'Not on the market'
+      : 'not on the market'
   const remarks = remarksOf(s)
   return {
     key: 'subject',

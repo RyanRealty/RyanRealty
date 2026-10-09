@@ -182,9 +182,45 @@ describe('1. a listing\'s time on the market ends the day it left Active', () =>
       domDays: 71,
       printableAsk: 569000,
     })
-    expect(entry.outcome).toBe('Came off after 71 days')
+    // Lower case, like every other family's outcome beside it (2745 Aldrich, reader review 2026-10-08).
+    expect(entry.outcome).toBe('came off after 71 days')
     expect(entry.statusDate).toBe('2026-09-30')
     expect(entry.mlsStatus).toBe('Expired')
+  })
+
+  it('1355 Jacksonville: the status date is the MLS withdrawal date, not the activity log', () => {
+    // WithdrawDate and off_market_date are Sep 28. The MlsStatus log is
+    // Sep 29. Matt 2026-10-09: trust the MLS date.
+    const jacksonville = cycle({
+      listingKey: '20260923221358552279000000',
+      status: 'Withdrawn',
+      listDate: '2026-09-23T23:33:01+00:00',
+      offMarketDate: '2026-09-28',
+      daysOnMarket: 9,
+      outcome: 'withdrawn',
+    })
+    const log: ListingStatusChange[] = [
+      { at: '2026-09-29T17:24:44+00:00', from: 'Active', to: 'Withdrawn' },
+    ]
+    const onMarket = cycleOnTheMarket(jacksonville, log)
+    expect(onMarket.offMarketDate).toBe('2026-09-28')
+    expect(onMarket.offMarketDate).not.toBe('2026-09-29')
+    const final = buildFinalCycle({ cycle: onMarket })!
+    expect(final.offMarketDate).toBe('2026-09-28')
+    expect(final.days).toBe(5)
+    const entry = subjectEntry({
+      subject: {
+        streetAddress: '1355 Jacksonville',
+        standardStatus: 'Withdrawn',
+        lastListPrice: 734999,
+        lastListDate: '2026-09-23T23:33:01+00:00',
+      } as unknown as CmaSubject,
+      finalCycle: final,
+      domDays: final.days,
+      printableAsk: 734999,
+    })
+    expect(entry.statusDate).toBe('2026-09-28')
+    expect(entry.mlsStatus).toBe('Withdrawn')
   })
 })
 
@@ -289,7 +325,8 @@ describe('3. a home under contract is dated the day it went under contract', () 
     expect(rival.daysOnMarket).toBe(18)
     const [entry] = activeEntries([rival])
     expect(entry!.statusDate).toBe('2026-09-11')
-    expect(entry!.outcome).toBe('under contract at $549K · offer in 18 days')
+    // The MLS carries a pending home's list price, not its contract price (reader review 2026-10-08).
+    expect(entry!.outcome).toBe('listed at $549K, under contract · offer in 18 days')
     expect(domCell(entry!, entry!.domDays)).toBe('18 days to an offer')
   })
 
@@ -298,7 +335,7 @@ describe('3. a home under contract is dated the day it went under contract', () 
     const [entry] = activeEntries([stored])
     expect(entry!.statusDate).toBeNull()
     expect(entry!.domDays).toBeNull()
-    expect(entry!.outcome).toBe('under contract at $549K')
+    expect(entry!.outcome).toBe('listed at $549K, under contract')
   })
 
   it('an Active home keeps its days on the market and its list day', () => {

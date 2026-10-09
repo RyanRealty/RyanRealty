@@ -255,8 +255,15 @@ describe('the narrow levels hold to the home own ground', () => {
     const sample = anchorSampler(home)
     expect(sample(salePlace())).toMatchObject({ inFamily: true, sameSubdivisionName: true, inCity: true })
     expect(sample(salePlace({ citySlug: 'redmond' }))).toMatchObject({ inFamily: false, sameSubdivisionName: false, inCity: false })
-    // A sale with no city does not join a narrow level either ('unknown' is citySlug's blank).
-    expect(sample(salePlace({ citySlug: 'unknown' }))).toMatchObject({ inFamily: false, sameSubdivisionName: false })
+    // A sale with no city does not join the family or the MLS-name level
+    // ('unknown' is citySlug's blank). Inside the home's own neighborhood
+    // polygon a family plat is the home's own subdivision whatever its city
+    // field says (Matt 2026-10-08, "Yes, everywhere"): the polygon is the
+    // place. The same plat outside that polygon joins nothing.
+    expect(sample(salePlace({ citySlug: 'unknown' }))).toMatchObject({ inPlat: true, sameSubdivisionName: false })
+    expect(
+      sample(salePlace({ citySlug: 'unknown', latitude: 44.02324, longitude: -121.32792 })),
+    ).toMatchObject({ inPlat: false, inFamily: false, sameSubdivisionName: false })
     // The home's own plat needs no city: the polygon is the place.
     expect(sample(salePlace({ platSlug: 'westside-meadows-ii', citySlug: null })).inPlat).toBe(true)
   })

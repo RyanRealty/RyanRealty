@@ -29,20 +29,23 @@ import {
 } from '@/lib/cma/pricing-method'
 import {
   adjustedRangeLine,
+  coverIsOnMarketOpinion,
   expectedSaleFor,
   expectedSaleSentence,
   headingWithPriceSet,
+  onMarketOpinionFor,
+  onMarketOpinionSentence,
   priceSettingComps,
 } from '@/lib/cma/expected-sale'
 import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { compPinMap } from '@/lib/cma/comp-pin-map'
 import {
-  clampSentence,
   keptCompCount,
   setAsideCompIndexes,
   setAsideRows,
   setAsideSalePredicate,
 } from '@/lib/cma/set-aside'
+import { clampLineFor } from '@/lib/cma/clamp-line'
 import { COVER_PRICE_PHRASE, deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
 import { listCeiling } from '@/lib/cma/render-contract'
@@ -149,8 +152,8 @@ function heldBandSentence(pricing: CmaPricing, comps?: readonly CmaAdjustedComp[
  * withdrawn after 25 days at $599,900, under a band of $610,150 to $678,983.
  * The build holds the letter for Matt (lib/cma/gap-hold.ts
  * applyAskBelowBandHold), and the letter states both facts plainly and once,
- * in this order: the sales that set the price support the band, and buyers
- * passed at the last ask, how long it sat and how it came off. The number on
+ * in this order: the sales that set the price support the band, and the home
+ * did not sell at its last ask, how long it sat and how it came off. The number on
  * the cover is the failed-ask result under the ask, labeled as the price Matt
  * is reviewing (coverPriceHeadline); nothing here repeats it.
  *
@@ -177,7 +180,12 @@ export function heldUnderBandLead(
   const days = finalCycle?.days ?? subjectDomDays(subject)
   const how = cameOffHow(subject, finalCycle)
   const sat = days != null && days > 0 ? `sat ${int(days)} ${days === 1 ? 'day' : 'days'} and ` : ''
-  return `${first} Buyers passed at the last ask of ${usd(ask)}. The listing ${sat}${how}.`
+  // The fact, never buyer intent (reader review 2026-10-08, 20676 Wild Rose:
+  // the MLS shows Active then Withdrawn and nothing between). "Buyers passed"
+  // claimed a judgment no record holds, and "did not go under contract" is not
+  // known for every listing: the subject's status log is not on the row, and
+  // one that fell out of contract and came back still failed at its ask.
+  return `${first} Your home did not sell at its last ask of ${usd(ask)}. The listing ${sat}${how}.`
 }
 
 /** The days a stored step ran, when it is the ask named. */
@@ -296,15 +304,26 @@ export function whatItsWorthLead(
   // at $639,000 while its five sales weighed out to $622,128, and no sentence
   // joined the two. The expected sale is the first thing under the heading,
   // and the list stays "that price" (the cover owns those dollars).
-  const expected = expectedSaleFor({ pricing, comps })
   const liveAsk = subjectPrintableAsk(subject, askCtx)
   // ONE on-market decision for the document (lib/cma/subject-on-market.ts).
   const onMarket = subjectOnMarket({ subject })
+  // THE OPINION OF VALUE IS THE LIKELY SALE (Matt 2026-10-08, rule 27). On an
+  // on-market letter the build puts the weighted sale on the cover, so the
+  // sentence says that figure once, plainly, with no "near" beside the same
+  // number. A row whose cover still carries a list figure (built before the
+  // ruling) keeps the "near" sentence: there the two are different numbers.
+  const opinion = onMarket ? onMarketOpinionFor({ pricing, comps }) : null
+  const opinionOnCover = coverIsOnMarketOpinion(pricing, opinion) ? opinion : null
+  const expected = opinionOnCover ?? expectedSaleFor({ pricing, comps })
   // Name the sales behind the expected sale when the grid prints more than
   // set it, so "the three sales" points at three addresses on the page.
   const setters = priceSettingComps(pricing, comps)
   const named = setters.length > 1 && setters.length < (comps?.length ?? 0) ? setters.map((c) => c.address) : null
-  const expectedLine = expected ? expectedSaleSentence(expected, { onMarket, setters: named }) : ''
+  const expectedLine = opinionOnCover
+    ? onMarketOpinionSentence(opinionOnCover, { setters: named })
+    : expected
+      ? expectedSaleSentence(expected, { onMarket, setters: named })
+      : ''
   // THE VALUE RANGE, ONCE, HERE. tasteReview round two, §1 Words: chapter 3
   // stated it three times inside ten lines. With the grid in hand it is the
   // grid's own adjusted pair (the hero's pair), counted over the same sales
@@ -963,7 +982,16 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   // 2026-10-08). One story, one supported figure, the range.
   // Its place is taken by the two facts the held lead states (heldInBandLead,
   // heldUnderBandLead), and the cover's label carries the rest.
-  const clamp = heldForMatt(p) ? '' : deRepeatRecommendDollars(clampSentence(p), p.recommended)
+  // On an unheld letter its first sentence names what the weighted sales
+  // support, read off the printed grid (lib/cma/clamp-line.ts, Matt
+  // 2026-10-08: 615 Reed Market said $533,000 over weights that blend to
+  // $510,945).
+  const clamp = heldForMatt(p)
+    ? ''
+    : deRepeatRecommendDollars(
+        clampLineFor(p, input.comps, { onMarket: subjectOnMarket({ subject: s }) }),
+        p.recommended,
+      )
   // THE STREET SALE THE COVER IS HELD TO (915 Saginaw, reader review
   // 2026-10-08), said once, under the number it set. Never on a rule 26 hold,
   // which prints no clamp prose.
@@ -1111,6 +1139,20 @@ export function salesThatSetItHeading(
 ): string {
   if (salesSetOnlyTheRange(pricing, comps)) return RANGE_SALES_HEADING
   return heldForMatt(pricing) ? HELD_SALES_HEADING : SALES_THAT_SET_IT_HEADING
+}
+
+/**
+ * The same chapter named inside a sentence: its heading's own words, "the
+ * sales that set the range". Basis and limits called it "the price chapter"
+ * while the chapter was titled "The sales that set the range." (reader review
+ * 2026-10-08), so the reader could not find it by that name.
+ */
+export function salesThatSetItPhrase(
+  pricing: CmaPricing | null | undefined,
+  comps?: readonly CmaAdjustedComp[] | null,
+): string {
+  const heading = salesThatSetItHeading(pricing, comps).replace(/\.$/, '')
+  return `${heading.charAt(0).toLowerCase()}${heading.slice(1)}`
 }
 
 /**

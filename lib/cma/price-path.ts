@@ -36,7 +36,7 @@
  * needs is hidden behind an interaction.
  */
 
-import { formatPriceExact } from '@/lib/format/money'
+import { compactOrExactLabels, compactOrExactUsd, compactUsd, compactUsdLabels } from '@/lib/cma/compact-usd'
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
 import { resolveAskPosition, type AskExposureLike } from '@/lib/cma/ask-position'
 import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
@@ -136,13 +136,13 @@ function today(): string {
   return pacificDay(new Date()) ?? new Date().toISOString().slice(0, 10)
 }
 
-/** $465K. Thousands, because a price path is read at a glance, not audited. */
+/**
+ * $465K, $1.05M. Thousands, because a price path is read at a glance, not
+ * audited. One formatter for every CMA chart (lib/cma/compact-usd.ts): exact
+ * half-up rounding on whole dollars, never a float artifact.
+ */
 export function shortUsd(n: number): string {
-  if (n >= 1_000_000) {
-    const m = n / 1_000_000
-    return `$${m >= 10 || n % 1_000_000 === 0 ? m.toFixed(0) : m.toFixed(2)}M`
-  }
-  return `$${Math.round(n / 1000)}K`
+  return compactUsd(n)
 }
 
 /**
@@ -151,9 +151,24 @@ export function shortUsd(n: number): string {
  * Non-round closes print exact ($609,950 / $957,250) so the letter matches MLS.
  */
 export function shortOrExactUsd(n: number): string {
-  if (!Number.isFinite(n)) return shortUsd(n)
-  if (Math.round(n) % 1000 !== 0) return formatPriceExact(Math.round(n))
-  return shortUsd(n)
+  // Same rule as an ask chip: short only when the short label is the price.
+  return compactOrExactUsd(n)
+}
+
+/**
+ * The labels one price path prints (the opening ask, the cuts, the end).
+ * A short label is kept only when it names that price, so $524,900 does not
+ * read "$525K" beside the exact ask on the same card. The shaded range on
+ * the reading stays on `compactUsdLabels`: that axis is the nearest thousand
+ * of a computed edge, and the cover prints the exact range.
+ */
+export function pricePathMoney(path: PricePath): (n: number) => string {
+  return compactOrExactLabels([
+    path.startPrice,
+    ...path.cuts.map((c) => c.price),
+    path.undatedCutTo,
+    path.closePrice ?? finalAskOf(path),
+  ])
 }
 
 function monthDay(iso: string): string {
@@ -182,13 +197,18 @@ export function pricePathFromFinalCycle(cycle: {
 } | null | undefined, label: string): PricePath | null {
   if (!cycle) return null
   const startDate = day(cycle.listDate)
-  const startPrice = price(cycle.initialAsk) ?? price(cycle.finalAsk)
+  let startPrice = price(cycle.initialAsk) ?? price(cycle.finalAsk)
   if (!startDate || startPrice == null) return null
   const dated: PricePathCut[] = cycle.cutsDated
     ? cycle.cuts
         .map((c) => ({ date: day(c.date), price: price(c.ask) }))
         .filter((c): c is PricePathCut => c.date != null && c.price != null)
     : []
+  // An ask changed on the day the stretch began is its opening ask: the one
+  // before it never ran a day (the ask exposure's own rule). 20676 Wild Rose
+  // drew "Asked $625K on Sep 2", its Coming Soon price, changed to $599,900
+  // the moment before it went Active (Matt 2026-10-08).
+  while (dated.length > 0 && dated[0]!.date === startDate) startPrice = dated.shift()!.price
   const cuts: PricePathCut[] = []
   let era = startPrice
   for (const cut of dated) {
@@ -220,10 +240,10 @@ export function pricePathFromFinalCycle(cycle: {
  * A closed sale, as `render_args.comps` carries it.
  *
  * The row holds the ask it was under when it went under contract and what it
- * closed at, not the ask it opened on — the build writes `listPrice`, and no
- * original ask or price event reaches the renderer for a comparable sale. So
- * the line runs flat at that ask and lands on the close, and the chapter says
- * so rather than implying the ask never moved.
+ * closed at. The ask its last stretch opened at (`firstAsk`, Matt 2026-10-08)
+ * starts the line when the caller has it; no dated price event reaches the
+ * renderer for a comparable sale, so a change between the two is drawn
+ * dashed, and without it the line runs flat at the contract ask.
  *
  * The start of the period is the day the offer clock started when the row
  * carries it (`offerFrom`, the day the listing period that produced the sale
@@ -243,10 +263,18 @@ export function pricePathFromSale(sale: {
   daysToOffer?: number | null
   onMarketDate?: string | null
   offerFrom?: string | null
+  /**
+   * The ask in effect when the listing period that produced the sale began
+   * (lib/cma/last-stretch.ts saleStretch). When it differs from the ask the
+   * sale went under contract at, the line opens on it and steps down dashed:
+   * the row carries no date for the change.
+   */
+  firstAsk?: number | null
 }): PricePath | null {
   const closeDate = day(sale.closeDate)
   const closePrice = price(sale.closePrice)
   const ask = price(sale.listPrice) ?? closePrice
+  const opening = price(sale.firstAsk) ?? ask
   if (!closeDate || closePrice == null || ask == null) return null
   const ran = sale.domTotal != null && sale.domTotal > 0 ? Math.round(sale.domTotal) : null
   // ONE measure per sale, and it is the one the grid already labels: days to
@@ -267,9 +295,9 @@ export function pricePathFromSale(sale: {
     offerStart != null && offerStart <= closeDate ? offerStart : plusDays(closeDate, -(ran ?? 30))
   return {
     startDate,
-    startPrice: ask,
+    startPrice: opening ?? ask,
     cuts: [],
-    undatedCutTo: null,
+    undatedCutTo: opening != null && opening !== ask ? ask : null,
     endDate: closeDate,
     closePrice,
     outcome: 'sold',
@@ -558,6 +586,7 @@ export function priceHistoryLineSvg(
   if (!g) return ''
   const { width: W, height: H, fontSize: fs } = layout
   const minimal = layout.minimal === true
+  const money = pricePathMoney(path)
   // The opening-ask label sits above the first vertex, so the top of the band
   // has to leave a line of type above it in EVERY layout — a minimal drawing
   // that pulled the band up to 13 put "$435K" a pixel outside its own viewBox.
@@ -615,10 +644,10 @@ export function priceHistoryLineSvg(
       // around it, because a 6px dot is not a tap (tasteReview item 3).
       const attrs = `class="pp-cut" data-price="${c.price}" data-date="${esc(c.date)}"${
         id ? ` data-path="${esc(id)}"` : ''
-      } tabindex="0" role="button" aria-label="${esc(`cut to ${shortUsd(c.price)} on ${monthDay(c.date)}`)}"`
+      } tabindex="0" role="button" aria-label="${esc(`cut to ${money(c.price)} on ${monthDay(c.date)}`)}"`
       const label =
         labelCuts && c.price !== endValueForLabels
-          ? `<text x="${(cx + 5).toFixed(1)}" y="${(cy + 13).toFixed(1)}" font-size="${fs}" fill="${MUTED}">${esc(shortUsd(c.price))}</text>`
+          ? `<text x="${(cx + 5).toFixed(1)}" y="${(cy + 13).toFixed(1)}" font-size="${fs}" fill="${MUTED}">${esc(money(c.price))}</text>`
           : ''
       return `<g ${attrs}><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="24" fill="transparent"/><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.2" fill="${INK}"/></g>${label}`
     })
@@ -641,7 +670,7 @@ export function priceHistoryLineSvg(
       : ''
 
   const bare = layout.bare === true
-  const openLabel = shortUsd(path.startPrice)
+  const openLabel = money(path.startPrice)
   const startY = y(path.startPrice)
   // THE WORTH RANGE, SHADED ON EVERY PATH (Delta 3). Matt: "Look, once they
   // dropped it down into this range, it sold, but these people never got down
@@ -705,14 +734,27 @@ export function priceHistoryLinePhoneSvg(
   return priceHistoryLineSvg(path, PRICE_PATH_PHONE, id, range)
 }
 
-/** "sold $457K · offer in 25 days" — the mark at the end names its own measure. */
+/** A close on a path's labels: exact when the short label would round it, else the path's own label. */
+function closeLabel(close: number, money: (n: number) => string): string {
+  const said = shortOrExactUsd(close)
+  return /[KM]$/.test(said) ? money(close) : said
+}
+
+/**
+ * "sold $457K · offer in 25 days": the mark at the end names its own measure.
+ *
+ * A home under contract carries its LIST price on the MLS; the contract price
+ * is not published until it closes. "under contract $799K" read as the price
+ * it went under contract at (1355 Jacksonville, reader review 2026-10-08), so
+ * the label says the price is the list: "listed $799K, under contract".
+ */
 export function priceHistoryEndLabel(path: PricePath): string {
+  const money = pricePathMoney(path)
+  const days = priceHistoryDaysClause(path, ' · ')
+  if (path.outcome === 'sold' && path.closePrice != null) return `sold ${closeLabel(path.closePrice, money)}${days}`
   const value = path.closePrice ?? finalAskOf(path)
-  const word = OUTCOME_WORD[path.outcome]
-  const money = path.outcome === 'sold' && path.closePrice != null
-    ? shortOrExactUsd(path.closePrice)
-    : shortUsd(value)
-  return `${word} ${money}${priceHistoryDaysClause(path, ' · ')}`
+  if (path.outcome === 'under-contract') return `listed ${money(value)}, under contract${days}`
+  return `${OUTCOME_WORD[path.outcome]} ${money(value)}${days}`
 }
 
 /**
@@ -735,13 +777,14 @@ export function priceHistoryDaysClause(path: PricePath, lead = ''): string {
  * the path in prose. Every figure in it is drawn above it.
  */
 export function priceHistoryReading(path: PricePath, range?: PricePathRange | null): string {
-  const bits: string[] = [`${path.label}: asked ${shortUsd(path.startPrice)} on ${monthDay(path.startDate)}`]
-  for (const c of path.cuts) bits.push(`cut to ${shortUsd(c.price)} on ${monthDay(c.date)}`)
-  if (path.undatedCutTo != null) bits.push(`later asked ${shortUsd(path.undatedCutTo)}, date not recorded`)
+  const money = pricePathMoney(path)
+  const bits: string[] = [`${path.label}: asked ${money(path.startPrice)} on ${monthDay(path.startDate)}`]
+  for (const c of path.cuts) bits.push(`cut to ${money(c.price)} on ${monthDay(c.date)}`)
+  if (path.undatedCutTo != null) bits.push(`later asked ${money(path.undatedCutTo)}, date not recorded`)
   const value = path.closePrice ?? finalAskOf(path)
   const end =
     path.outcome === 'sold'
-      ? `sold ${path.closePrice != null ? shortOrExactUsd(path.closePrice) : shortUsd(value)} on ${monthDay(path.endDate)}`
+      ? `sold ${path.closePrice != null ? closeLabel(path.closePrice, money) : money(value)} on ${monthDay(path.endDate)}`
       : path.outcome === 'off-market'
         ? `came off ${monthDay(path.endDate)}`
         : path.outcome === 'under-contract'
@@ -756,8 +799,9 @@ export function priceHistoryReading(path: PricePath, range?: PricePathRange | nu
     const lo = Math.min(range.low, range.high)
     const hi = Math.max(range.low, range.high)
     const last = path.closePrice ?? finalAskOf(path)
+    const rangeLabel = compactUsdLabels([lo, hi])
     bits.push(
-      `shaded range ${shortUsd(lo)} to ${shortUsd(hi)}, ${
+      `shaded range ${rangeLabel(lo)} to ${rangeLabel(hi)}, ${
         last >= lo && last <= hi ? 'which it came into' : last > hi ? 'which it never came down to' : 'which it sat below'
       }`,
     )

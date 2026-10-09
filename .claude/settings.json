@@ -4,8 +4,6 @@
   },
   "permissions": {
     "allow": [
-      "Bash(git push origin main)",
-      "Bash(npm run push -- origin main)",
       "Bash(git push:*)",
       "mcp__Supabase__*",
       "mcp__Vercel__*",

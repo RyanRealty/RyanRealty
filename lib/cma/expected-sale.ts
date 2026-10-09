@@ -126,16 +126,48 @@ export function expectedSaleFor(input: {
   if (!p) return null
   const rec = num(p.recommended)
   if (rec == null || !(rec > 0)) return null
+  const sale = weightedSaleOnGrid(p, input.comps)
+  if (!sale) return null
+  if (sale.expected.price >= rec || isRecommendMark(sale.expected.price, rec)) return null
+  return sale.expected
+}
+
+/**
+ * The weighted sale the printed grid produces, or null: every test
+ * `expectedSaleFor` runs except the one against the cover. The failed-ask
+ * clamp sentence names this figure (lib/cma/clamp-line.ts) on a letter whose
+ * cover the ceiling put under it.
+ */
+export function weightedSaleFromGrid(input: {
+  pricing: CmaPricing | null | undefined
+  comps?: readonly CmaAdjustedComp[] | null
+}): ExpectedSale | null {
+  const p = input.pricing
+  if (!p) return null
+  return weightedSaleOnGrid(p, input.comps)?.expected ?? null
+}
+
+/**
+ * The weighted sale the printed grid produces, with the band it sits in, or
+ * null. Every test `expectedSaleFor` runs except the one against the cover:
+ * the stored weighted price (or `predictedClose` when it IS that price), the
+ * reconciliation's own sales all on the grid, the same weights over the
+ * grid's printed adjusted prices landing on it, and the figure inside the
+ * printed band.
+ */
+function weightedSaleOnGrid(
+  p: CmaPricing,
+  gridComps: readonly CmaAdjustedComp[] | null | undefined,
+): { expected: ExpectedSale; band: { low: number; high: number } } | null {
   const recon = obj((p as unknown as { reconciliation?: unknown }).reconciliation)
   const weighted = num(recon?.weightedPrice)
   if (weighted == null || !(weighted > 0)) return null
   const predicted = num(p.predictedClose)
   const usePredicted = predicted != null && predicted > 0 && Math.abs(predicted - weighted) < 1
   const price = Math.round(usePredicted ? predicted! : weighted)
-  if (price >= rec || isRecommendMark(price, rec)) return null
 
   // THE GRID MUST PRODUCE IT.
-  const comps = input.comps ?? []
+  const comps = gridComps ?? []
   if (comps.length === 0) return null
   const keys = weightedKeys(p)
   if (keys.size === 0) return null
@@ -148,10 +180,107 @@ export function expectedSaleFor(input: {
   const band = tableAdjustedBand(comps, p)
   if (!band || price < band.low || price > band.high) return null
   return {
-    price,
-    field: usePredicted ? 'pricing.predictedClose' : 'pricing.reconciliation.weightedPrice',
-    sales: rows.length,
+    expected: {
+      price,
+      field: usePredicted ? 'pricing.predictedClose' : 'pricing.reconciliation.weightedPrice',
+      sales: rows.length,
+    },
+    band,
   }
+}
+
+// ── the opinion of value on a home that is on the market ────────────────────
+
+/**
+ * The likely sale, as the cover of an on-market letter states it.
+ *
+ * MATT 2026-10-08 ("$716,000, the likely sale"). 3062 NW Kelly Hill is listed
+ * with another brokerage. Its cover read "Our opinion of value $733,000" while
+ * the next page said its three weighted sales "point to a sale near
+ * $716,000": $733,000 was the LIST recommendation ($736,000 held to the top
+ * of the band, $733,116), a figure a listing strategy produces, under a label
+ * that promised the value. On a letter whose subject is on the market
+ * (lib/cma/subject-on-market.ts, rule 27) the opinion of value IS the sale
+ * the weighted sales point to, so the cover, the stored recommended_list, the
+ * price per square foot, the competition band center and the price chapter
+ * all carry that one figure.
+ */
+export type OnMarketOpinion = ExpectedSale & {
+  /**
+   * The figure the cover prints: the weighted sale to the nearest thousand,
+   * the same rounding `expectedSaleNear` prints as "near $X". Held inside the
+   * printed band: when the nearest thousand falls past an end of it (a
+   * weighted sale within $500 of a band end), the thousand inside the band,
+   * and the dollar figure when no thousand fits.
+   */
+  value: number
+}
+
+function thousandInBand(price: number, band: { low: number; high: number }): number {
+  const low = Math.min(band.low, band.high)
+  const high = Math.max(band.low, band.high)
+  let n = Math.round(price / 1000) * 1000
+  if (n > high) n = Math.floor(high / 1000) * 1000
+  if (n < low) n = Math.ceil(low / 1000) * 1000
+  return n >= low && n <= high ? n : price
+}
+
+/**
+ * The opinion of value for an on-market letter, or null when the printed grid
+ * cannot produce the weighted sale (no weighted price on the row, a
+ * reconciliation sale missing from the grid, a grid that moved after the
+ * build, or a figure outside the printed band). Read off the same grid and
+ * the same tests as the price chapter's expected sale, with no comparison to
+ * the cover: on these letters the cover is this figure.
+ */
+export function onMarketOpinionFor(input: {
+  pricing: CmaPricing | null | undefined
+  comps?: readonly CmaAdjustedComp[] | null
+}): OnMarketOpinion | null {
+  const p = input.pricing
+  if (!p) return null
+  const sale = weightedSaleOnGrid(p, input.comps)
+  if (!sale) return null
+  return { ...sale.expected, value: thousandInBand(sale.expected.price, sale.band) }
+}
+
+/**
+ * True when the cover of this letter carries the on-market opinion: the
+ * stored cover figure and the weighted sale the grid produces are the same
+ * number. A row built before the 2026-10-08 ruling still carries a list
+ * figure on its cover, and its price chapter keeps saying the weighted sale
+ * is a different number ("near"), until it is rebuilt.
+ */
+export function coverIsOnMarketOpinion(
+  pricing: CmaPricing | null | undefined,
+  opinion: OnMarketOpinion | null,
+): boolean {
+  const rec = num(pricing?.recommended)
+  return opinion != null && rec != null && rec > 0 && Math.round(rec) === opinion.value
+}
+
+/**
+ * The price chapter's first sentence when the cover IS the weighted sale:
+ * "The three sales that set this value, 2955 Bordeaux, 2974 Chardonnay and
+ * 3080 Kelly Hill, point to $716,000 once each is weighted by how closely it
+ * matches your home."
+ *
+ * Said once, plainly, with no "near": the cover prints the same figure, so a
+ * "near $716,000" under an opinion of $716,000 read as a second number. No
+ * list instruction of any kind (the closing's non-solicitation rule).
+ */
+export function onMarketOpinionSentence(
+  o: OnMarketOpinion,
+  opts?: { setters?: readonly string[] | null },
+): string {
+  const named = (opts?.setters ?? []).map((a) => a.trim()).filter(Boolean)
+  const sales =
+    named.length > 1 && (o.sales == null || o.sales === named.length)
+      ? `the ${countWord(named.length)} sales that set this value, ${joinAnd(named)},`
+      : o.sales != null && o.sales > 1
+        ? `the ${countWord(o.sales)} sales that set this value`
+        : 'the sales that set this value'
+  return `${capitalise(sales)} point to ${usd(o.value)} once each is weighted by how closely it matches your home.`
 }
 
 /**

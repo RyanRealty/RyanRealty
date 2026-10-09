@@ -114,10 +114,14 @@ export function finishExclusivePocketPricing(
   p.notes.unshift(
     exclusivePocketSetNote(subject.city, coolingApplied, moves, args.pocketLocal, (p.timeAdjustment?.n ?? 0) > 0),
   )
+  // The subject's own subdivision: the picker's own-plat stamp (the one ground
+  // decision, lib/pricing/plat-ground.ts, which counts a recorded addition or
+  // phase inside the subject's neighborhood and any MLS spelling of its plat,
+  // Matt 2026-10-08 "Yes, everywhere"), or the subject's own MLS name.
   const sameSub = (subject.subdivision ?? '').trim().toLowerCase()
-  const sameSubRows = sameSub
-    ? adj.filter((c) => (c.subdivision ?? '').trim().toLowerCase() === sameSub)
-    : []
+  const sameSubRows = adj.filter(
+    (c) => c.ownPlat === true || (sameSub !== '' && (c.subdivision ?? '').trim().toLowerCase() === sameSub),
+  )
   const weightTotal = sameSubRows.reduce((sum, c) => sum + (c.weight > 0 ? c.weight : 0), 0)
   const topWeight = sameSubRows.reduce((best, c) => (c.weight > best ? c.weight : best), 0)
   const meaningfulAdjusted = sameSubRows

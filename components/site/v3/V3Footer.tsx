@@ -48,6 +48,7 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
 import { KB_FOOTER_COLUMNS, LEGAL_LINKS } from '@/lib/site-nav'
+import { CookieSettingsLink } from '@/components/CookieSettingsLink'
 import { V3_ROOT_CLASS } from './atoms'
 import { V3FooterFold } from './V3FooterFold.client'
 import { V3Icon, type V3IconName } from './V3Icon'
@@ -419,6 +420,9 @@ export function V3Footer({
                     <Link href={link.href}>{link.label}</Link>
                   </li>
                 ))}
+                <li>
+                  <CookieSettingsLink />
+                </li>
               </ul>
             </nav>
           ) : null}

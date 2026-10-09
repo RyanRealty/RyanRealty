@@ -786,8 +786,11 @@ function finalizeJudgment(args: {
   // fewer than five (lib/cma/judgment-prune.ts, now retired). That brought back
   // every excluded sale, at full weight. This brings back only the one the
   // ruling exempts, at half weight, with its reason on record. `ownPlat` is the
-  // SELECTOR's own-plat decision (samePlat in lib/pricing/price-anchor.ts, or
-  // the street-cluster pocket), so the judge and the ladder cannot disagree
+  // SELECTOR's own-plat decision (onOwnPlat in lib/pricing/plat-ground.ts,
+  // which counts a recorded addition or phase of the subject's subdivision
+  // inside its neighborhood as its own subdivision, Matt 2026-10-08 "Yes,
+  // everywhere"; or the street-cluster pocket), the same decision on both
+  // ladders, so the judge and the ladder cannot disagree
   // about which sales are in the plat. Every own-plat sale is also protected
   // from the band cut below, which is a price-tier cut by another name.
   for (const v of judged.verdicts) {

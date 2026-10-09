@@ -25,7 +25,8 @@ import {
   type OfferTiming,
 } from '@/lib/cma/market-charts'
 import { subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
-import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
+import { closedSaleDaysToOffer, onMarketAfterClose } from '@/lib/cma/listing-history-line'
+import { OF_LAST_ON_MARKET, restartedSalesLine, saleStretch } from '@/lib/cma/last-stretch'
 import { cameOffStatus } from '@/lib/cma/listing-status'
 import { readTrendMeasure } from '@/lib/cma/render-contract'
 import type { CmaMarketArea, CmaSoldBand, CmaStatusBucket } from '@/lib/cma/market-status'
@@ -455,6 +456,9 @@ export function renderDaysToOfferHtml(
   // silent (reader review 2026-10-08: Woodsman's bars ran 1, 3, 4, 5, 6, 7
   // with nothing saying where sale 2 went).
   const missing: Array<{ n: number; address: string; recorded: boolean }> = []
+  // The sales whose count starts the day they last came on the market, not
+  // the day they were first listed (Matt 2026-10-08, "Last stretch, labeled").
+  const restarted: Array<{ n: number; address: string }> = []
   a.comps.forEach((c, i) => {
     // The same offer count the sales table prints for this sale: none when
     // it outruns the sale's own run to close.
@@ -467,7 +471,14 @@ export function renderDaysToOfferHtml(
     })
     if (toOffer == null) {
       const raw = c.daysToOffer
-      missing.push({ n: i + 1, address: c.address, recorded: raw != null && Number.isFinite(raw) && raw >= 0 })
+      // On the market after the close is a recorded date that does not fit
+      // (1654 Meadow), even when the stamped count was already dropped.
+      const inverted = onMarketAfterClose(c.offerFrom ?? c.onMarketDate, c.closeDate)
+      missing.push({
+        n: i + 1,
+        address: c.address,
+        recorded: inverted || (raw != null && Number.isFinite(raw) && raw >= 0),
+      })
       return
     }
     rows.push({
@@ -476,6 +487,7 @@ export function renderDaysToOfferHtml(
       subject: false,
       valueLabel: `${int(toOffer)} ${toOffer === 1 ? 'day' : 'days'}`,
     })
+    if (saleStretch(c).restarted) restarted.push({ n: i + 1, address: c.address })
   })
   if (rows.length < 3) return ''
   const slowest = Math.max(...rows.map((r) => r.days))
@@ -510,7 +522,8 @@ export function renderDaysToOfferHtml(
   const svg = daysToOfferSvg(rows, 'How fast homes like yours went', tick)
   if (!svg) return ''
   const reading = [
-    daysToOfferCaption(shownSales, slowest),
+    daysToOfferCaption(shownSales, slowest, { lastOnMarket: restarted.length > 0 }),
+    restartedSalesLine(restarted),
     tick ? `${possessive(marketPlace!)} median is ${int(marketMedian!)}.` : null,
     subjectDaysReading(against, (d) => `Yours sat ${int(d)} days and did not sell.`),
   ]
@@ -534,9 +547,20 @@ export function renderDaysToOfferHtml(
  * caption claim more sales than the reader can see. "Within" because the
  * slowest bar sits exactly on the figure: Jackson's caption said "inside 146
  * days" over a sale that took exactly 146 (reader review 2026-10-08).
+ *
+ * Every bar counts from the day its sale last came on the market (Matt
+ * 2026-10-08). When any shown sale had been on the market before that, the
+ * sentence names the clock, "within 47 days of last coming on the market":
+ * 61197 Cottonwood was first listed in April and its 47 days run from Nov 13,
+ * so "within 47 days" alone read as 47 days from its first list.
  */
-export function daysToOfferCaption(shown: number, slowest: number): string {
-  return `All ${countWord(shown)} sales shown had an offer within ${int(slowest)} ${Math.round(slowest) === 1 ? 'day' : 'days'}.`
+export function daysToOfferCaption(
+  shown: number,
+  slowest: number,
+  opts: { lastOnMarket?: boolean } = {},
+): string {
+  const clock = opts.lastOnMarket ? ` ${OF_LAST_ON_MARKET}` : ''
+  return `All ${countWord(shown)} sales shown had an offer within ${int(slowest)} ${Math.round(slowest) === 1 ? 'day' : 'days'}${clock}.`
 }
 
 /**

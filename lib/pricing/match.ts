@@ -7,9 +7,10 @@ import { realSubdivision } from '@/lib/cma/comp-tiers'
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { saleInsideSubjectCommunity, saleSearchCommunitySlug, searchCommunitySlug } from '@/lib/cma/community-location'
 import { isResortCommunity } from '@/lib/cma/resort-guard'
-import { anchorPlacePhrase, resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
+import { anchorPlacePhrase, resolvePriceAnchor, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
+import { onOwnPlat, ownGroundSeatRank } from '@/lib/pricing/plat-ground'
 import { describePriceTierLine, insidePriceTier, priceTierLine } from '@/lib/pricing/price-tier'
-import { saleSetsThePrice } from '@/lib/pricing/price-set'
+import { notSettingSaleFrom, priceSetRefusal, saleSetsThePrice, type NotSettingSale } from '@/lib/pricing/price-set'
 import { locationMatchFromFacts, type LocationMatch } from '@/lib/pricing/closed-comp-weight'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
@@ -361,6 +362,12 @@ export type PricingMatchResult = {
    * test literals stay valid; the walk always sets it.
    */
   bench?: SelectedPricingComp[]
+  /**
+   * Sales that passed a rung and rule 20 refused, each with the sentence the
+   * letter prints beside it (SKILL §0.3 rule 29). The walk records the reason.
+   * The renderer does not recompute it. Empty when nothing was refused.
+   */
+  notSettingSales?: NotSettingSale[]
 }
 
 function monthsBetween(laterIso: string, earlierIso: string): number {
@@ -963,12 +970,21 @@ const BRACKET_MAX_AGE_MONTHS = 24
  * THE SAME-SUBDIVISION RUNG'S MEMBERSHIP TEST, as one function. A street-cluster
  * subject's "same subdivision" is its exclusive pocket (Canter / Horse Back /
  * Ranch, not every Black Butte home under the catch-all MLS name); everyone
- * else's is its own plat (samePlat in lib/pricing/price-anchor.ts, the recorded
- * polygon first and the MLS name as the fallback). The rung, the age-restricted
- * wall, and the `ownPlat` stamp every selected sale carries all read this.
+ * else's is its own subdivision by the one ground decision both ladders ask
+ * (onOwnPlat in lib/pricing/plat-ground.ts, Matt 2026-10-08 "Yes,
+ * everywhere"): the recorded polygon first, the plat, a phase of it, an alias
+ * sibling, or a recorded addition or phase of its subdivision family inside
+ * the subject's own neighborhood or community polygon, and the MLS name only
+ * for a sale no polygon holds. The rung, the age-restricted wall, the
+ * price-line exemption, the room rule's own ground, the size bracket, the
+ * pocket rules, the location weight, and the `ownPlat` stamp every selected
+ * sale carries (which the review reads) all read this. Before the ruling it
+ * was samePlat, so a Kenwood First Addition sale for a Kenwood subject came
+ * in on the touching-plat rung at weight 2 here and on the own-plat rung at
+ * weight 3 on the listings ladder.
  */
 function inSubjectPlat(subject: PricingSubject, sale: PricingSale): boolean {
-  return isClusterPocket(subject) ? saleInExclusivePocket(subject, sale) : samePlat(subject, sale)
+  return isClusterPocket(subject) ? saleInExclusivePocket(subject, sale) : onOwnPlat(subject, sale)
 }
 
 /**
@@ -1485,14 +1501,26 @@ function ownGroundGroup(group: number): boolean {
  * holds more qualifying sales than seats, the most recent closes take the
  * seats, and distance breaks a tie on the close date. Beds, baths, size and
  * year, then the listing key, settle anything still tied.
+ *
+ * OWN STREET AND EXACT PLAT FIRST (Matt 2026-10-08). On the own street and
+ * own plat place (group 0) the subject's own-street and exact-plat sales seat
+ * before the rest of its own subdivision (alias siblings, family plats in its
+ * neighborhood), newest first within each (ownGroundSeatRank in
+ * lib/pricing/plat-ground.ts, the order the listings ladder seats in too). A
+ * street-cluster subject's exclusive pocket is one place and is not ranked.
  */
 function pickNewestThenNearest(
   subject: PricingSubject,
   sales: readonly SelectedPricingComp[],
   slots: number,
+  rankOwnGround = false,
 ): SelectedPricingComp[] {
+  const ranked = rankOwnGround && !isClusterPocket(subject)
+  const rank = (sale: SelectedPricingComp): number => (ranked ? ownGroundSeatRank(subject, sale) : 0)
   return [...sales]
     .sort((a, b) => {
+      const order = rank(a) - rank(b)
+      if (order !== 0) return order
       const date = b.closeDate.slice(0, 10).localeCompare(a.closeDate.slice(0, 10))
       if (date !== 0) return date
       const miles = saleMiles(subject, a) - saleMiles(subject, b)
@@ -1530,7 +1558,7 @@ function seatByPlace(
     if (!rows?.length) continue
     const slots = max - kept.length
     if (rows.length <= slots) kept.push(...rows)
-    else if (ownGroundGroup(group)) kept.push(...pickNewestThenNearest(subject, rows, slots))
+    else if (ownGroundGroup(group)) kept.push(...pickNewestThenNearest(subject, rows, slots, group === 0))
     else kept.push(...pickClosestMatches(subject, rows, slots, group === 1 || group === 2))
   }
   return kept
@@ -1547,7 +1575,9 @@ function seatByPlace(
  * SEATS SIX AND SEVEN COME ONLY FROM OWN GROUND. When the rung that reached
  * five was own ground, the own-ground place it belongs to (own street and plat
  * together, or the pocket), whose later windows also walked, fills the seats
- * up to PRICING_WALK_CAP, newest closes first, nearest on a tie. When a rung
+ * up to PRICING_WALK_CAP, newest closes first, nearest on a tie, with the
+ * subject's own-street and exact-plat sales seated before the rest of its own
+ * subdivision (Matt 2026-10-08, "Own street and exact plat first"). When a rung
  * that widens the area reached five (touching plats, the next row, a ring, the
  * neighborhood, the community, the boundary exit, the widening), that rung
  * adds only the shortfall to five, its closest homes first (distance, then
@@ -1589,7 +1619,7 @@ function capPricingSet(
     if (open.length <= slots) {
       kept.push(...open)
     } else if (ownGround) {
-      kept.push(...pickNewestThenNearest(subject, open, slots))
+      kept.push(...pickNewestThenNearest(subject, open, slots, reachGroup === 0))
     } else {
       const ordered = pickClosestMatches(subject, open, open.length, reachGroup === 1 || reachGroup === 2)
       kept.push(...ordered.slice(0, slots))
@@ -1748,7 +1778,16 @@ export function walkPricingLadder(
 
   if (!subject.sqft || subject.sqft < 300) {
     const note = 'Subject has no usable living area, so there is nothing to compare.'
-    return { comps: [], tiersUsed, trace: [note], reachedTarget: false, starved: true, rungs, bench: [] }
+    return {
+      comps: [],
+      tiersUsed,
+      trace: [note],
+      reachedTarget: false,
+      starved: true,
+      rungs,
+      bench: [],
+      notSettingSales: [],
+    }
   }
 
   // Delta 4: the splits, counted over the rural pool for the reader's story.
@@ -1804,11 +1843,13 @@ export function walkPricingLadder(
   // Rule 20, resolved once: a pure function of subject x sale, independent of
   // the rung. Every input is stamped before the walk (toSelected stamps
   // ownPlat; the selector stamps communityLocated and communitySlug on each
-  // row; sqft and lotAcres are row fields).
+  // row; sqft and lotAcres are row fields). The refusal is the same call:
+  // admission and the sentence the letter prints cannot disagree.
   const subjectCommunity = searchCommunitySlug(subject)
-  const setsPrice = (sale: SelectedPricingComp): boolean => {
+  const notSettingSales: NotSettingSale[] = []
+  const priceSetInput = (sale: SelectedPricingComp) => {
     const saleCommunity = saleSearchCommunitySlug(subject, sale)
-    return saleSetsThePrice({
+    return {
       ownPlat: sale.ownPlat,
       subjectSubdivision: subject.subdivision,
       saleSubdivision: sale.subdivision,
@@ -1820,8 +1861,9 @@ export function walkPricingLadder(
       saleSqft: sale.sqft,
       subjectLotAcres: subject.lotAcres,
       saleLotAcres: sale.lotAcres,
-    })
+    }
   }
+  const setsPrice = (sale: SelectedPricingComp): boolean => saleSetsThePrice(priceSetInput(sale))
 
   for (const tier of tiers) {
     if (tier.samePocket && countBeforePocket == null) countBeforePocket = byKey.size
@@ -2023,6 +2065,19 @@ export function walkPricingLadder(
       // rule 20 refused. It is not admitted, it does not count toward the
       // five, and no later rung re-scans it. The walk goes on in order.
       if (!setsPrice(selected)) {
+        const refusal = priceSetRefusal(priceSetInput(selected))
+        if (refusal) {
+          notSettingSales.push(
+            notSettingSaleFrom(
+              {
+                listingKey: selected.listingKey,
+                listNumber: selected.listNumber,
+                address: selected.address,
+              },
+              refusal,
+            ),
+          )
+        }
         bySale.add(saleKey)
         rungNotSetting++
         continue
@@ -2136,6 +2191,7 @@ export function walkPricingLadder(
     aduSkipped: aduSkippedKeys.size,
     exclusiveCount,
     pocketStarved,
+    notSettingSales,
     ...(ruralSplits ? { ruralSplits } : {}),
   }
 }

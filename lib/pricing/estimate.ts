@@ -1294,7 +1294,7 @@ export function reconcileAskAndComps(opts: {
 
 /** First-list DOM hydrate stamps these; market-path rebuild must not drop them. */
 export type HydratedClosedCompDom = Pick<CmaComp, 'onMarketDate' | 'domTotal' | 'listingHistoryLine'> &
-  Partial<Pick<CmaComp, 'daysToOffer' | 'offerFrom'>>
+  Partial<Pick<CmaComp, 'daysToOffer' | 'offerFrom' | 'stretch'>>
 
 /**
  * Overlay earliest-list DOM onto a CmaComp rebuilt from a pricing sale.
@@ -1316,6 +1316,9 @@ export function preserveHydratedClosedCompDom<T extends CmaComp>(
     // A rebuilt sale carries only the record's days-to-offer.
     daysToOffer: hydrated.daysToOffer !== undefined ? hydrated.daysToOffer : rebuilt.daysToOffer,
     offerFrom: hydrated.offerFrom !== undefined ? hydrated.offerFrom : rebuilt.offerFrom,
+    // The last stretch the hydrate read (Matt 2026-10-08): its first ask and
+    // whether the sale came back on the market first. Rides with the clock.
+    ...(hydrated.stretch !== undefined ? { stretch: hydrated.stretch } : {}),
     listingHistoryLine: hydrated.listingHistoryLine ?? rebuilt.listingHistoryLine,
   }
 }

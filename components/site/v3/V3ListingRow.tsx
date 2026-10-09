@@ -219,6 +219,7 @@ export function V3ListingRow({
           alt={listingPhotoAlt(listing)}
           fill
           priority={priority}
+          loading={priority ? 'eager' : 'lazy'}
           sizes={splitThumb ? '200px' : '72px'}
         />
       ) : null}
