@@ -93,7 +93,9 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).not.toMatch(/geoSlug: slug \}/)
     expect(SRC).toMatch(/href: '#homes'/)
     expect(SRC).toMatch(/belongingCaption\(/)
-    expect(SRC).toMatch(/belongingFigures\(richContent, placeCharacter\)/)
+    // The glance reads the character through the curated no-master-HOA gate (2026-10-09).
+    expect(SRC).toMatch(/hoaCharacterFor\(slug, placeCharacter\)/)
+    expect(SRC).toMatch(/belongingFigures\(richContent, hoaCharacter\)/)
     expect(SRC).not.toMatch(/id="facts"/)
     expect(SRC).toMatch(/chartFirst/)
     expect(SRC).toMatch(/foldAfter=\{0\}/)
