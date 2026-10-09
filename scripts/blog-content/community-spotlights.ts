@@ -896,7 +896,7 @@ export const posts: BlogPostSeed[] = [
 
 <h2>HOA Fees</h2>
 
-<p>Eagle Crest dues come in layers. Every lot or unit pays the Eagle Crest Master Association. For 2026 that's $96 a month for the common areas ($108.85 if the owner didn't prepay the pro shop loan), $90 a month for water and sewer on a built lot, and a Resort Sports Center fee of $460.52 a year per unit plus $32 per owner, billed quarterly. Most homes and condos also belong to a sub-association that bills its own dues, so ask for both budgets. In our MLS data, detached Eagle Crest listings that reported dues since October 2023 show a median of $138 a month across 425 listings. Condo and townhome dues aren't in that figure.</p>
+<p>Eagle Crest dues come in layers. Every lot or unit pays the Eagle Crest Master Association. For 2026 that's $96 a month for the common areas ($108.85 if the owner didn't prepay the pro shop loan), $90 a month for water and sewer on a built lot, and a Resort Sports Center fee of $460.52 a year per unit plus $32 a year per owner, billed quarterly. Most homes and condos also belong to a sub-association that bills its own dues, so ask for both budgets. In our MLS data, detached Eagle Crest listings that reported dues since October 2023 show a median of $138 a month across 425 listings. Condo and townhome dues aren't in that figure.</p>
 
 <p><small>Sources: Eagle Crest Master Association, <a href="https://eaglecrestowners.com/hoas/ecma/">2026 Dues and Budget Letter</a> (December 2025); Ryan Realty, <a href="/communities/eagle-crest">Eagle Crest community page</a>, Oregon Data Share MLS, as of Oct 8, 2026.</small></p>
 

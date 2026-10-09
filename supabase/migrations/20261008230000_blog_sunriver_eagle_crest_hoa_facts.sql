@@ -14,7 +14,8 @@
 -- (99 sales) from /communities/eagle-crest as of Oct 8, 2026.
 --
 -- Each update is guarded by the md5 of the body it was written against, and the DO block fails
--- the migration if a body did not land, so a drifted row is never half-edited.
+-- the migration if an existing row did not land on the new body (a drifted row is never
+-- half-edited; a database without these rows is skipped). Re-running is a no-op.
 -- scripts/blog-content/community-spotlights.ts carries the same title, meta, excerpt, and body,
 -- so `npx tsx scripts/seed-blog-posts.ts --only community-spotlights` does not undo this.
 -- To revert, run the REVERT block at the end of this file.
@@ -95,7 +96,7 @@ update public.blog_posts set
     $q$<p>Eagle Crest HOA fees are structured differently depending on the sub-community and property type. Expect to pay $200 to $450 per month, which is significantly less than Brasada Ranch, Caldera Springs, or Tetherow. These fees cover common area maintenance, road upkeep, and access to resort facilities.</p>
 
 <p>Some sub-communities within Eagle Crest have additional HOA layers with their own fees. Before purchasing, confirm the total monthly assessment for the specific property you are considering, not just the resort-level fee. The layered HOA structure can be confusing, and the total cost is what matters for your monthly budget.</p>$q$,
-    $q$<p>Eagle Crest dues come in layers. Every lot or unit pays the Eagle Crest Master Association. For 2026 that's $96 a month for the common areas ($108.85 if the owner didn't prepay the pro shop loan), $90 a month for water and sewer on a built lot, and a Resort Sports Center fee of $460.52 a year per unit plus $32 per owner, billed quarterly. Most homes and condos also belong to a sub-association that bills its own dues, so ask for both budgets. In our MLS data, detached Eagle Crest listings that reported dues since October 2023 show a median of $138 a month across 425 listings. Condo and townhome dues aren't in that figure.</p>
+    $q$<p>Eagle Crest dues come in layers. Every lot or unit pays the Eagle Crest Master Association. For 2026 that's $96 a month for the common areas ($108.85 if the owner didn't prepay the pro shop loan), $90 a month for water and sewer on a built lot, and a Resort Sports Center fee of $460.52 a year per unit plus $32 a year per owner, billed quarterly. Most homes and condos also belong to a sub-association that bills its own dues, so ask for both budgets. In our MLS data, detached Eagle Crest listings that reported dues since October 2023 show a median of $138 a month across 425 listings. Condo and townhome dues aren't in that figure.</p>
 
 <p><small>Sources: Eagle Crest Master Association, <a href="https://eaglecrestowners.com/hoas/ecma/">2026 Dues and Budget Letter</a> (December 2025); Ryan Realty, <a href="/communities/eagle-crest">Eagle Crest community page</a>, Oregon Data Share MLS, as of Oct 8, 2026.</small></p>$q$),
     $q$vacation rental potential, and a Cascade mountain backdrop, all at 30% to 50% of the cost of competitors.</li>$q$,
@@ -105,10 +106,10 @@ where slug = 'eagle-crest-affordable-resort-redmond' and md5(content) = '47207ce
 
 do $chk$
 begin
-  if not exists (select 1 from public.blog_posts where slug = 'sunriver-year-round-living-vs-vacation' and md5(content) = '1c2ed95ed228184745948273785b0376') then
+  if exists (select 1 from public.blog_posts where slug = 'sunriver-year-round-living-vs-vacation') and not exists (select 1 from public.blog_posts where slug = 'sunriver-year-round-living-vs-vacation' and md5(content) = '1c2ed95ed228184745948273785b0376') then
     raise exception 'sunriver-year-round-living-vs-vacation: body did not match the expected base; nothing applied';
   end if;
-  if not exists (select 1 from public.blog_posts where slug = 'eagle-crest-affordable-resort-redmond' and md5(content) = 'b79abc2cc5c724f5f8c9275209c073b7') then
+  if exists (select 1 from public.blog_posts where slug = 'eagle-crest-affordable-resort-redmond') and not exists (select 1 from public.blog_posts where slug = 'eagle-crest-affordable-resort-redmond' and md5(content) = '0f99d66beda46f79d0b6d8d318441371') then
     raise exception 'eagle-crest-affordable-resort-redmond: body did not match the expected base; nothing applied';
   end if;
 end
@@ -139,7 +140,7 @@ $chk$;
 -- <p>Every property owner pays annual SROA assessments, which cover road maintenance, bike path upkeep, common area landscaping, and community programs. These currently run approximately $1,200 to $2,500 per year depending on the property type and size. Some sub-neighborhoods have additional HOA fees on top of SROA dues.</p>
 -- 
 -- <p>SHARC access requires a separate pass. Homeowners can purchase annual passes at a discounted rate (around $500 to $700 per household), or pay per visit. Vacation rental guests typically purchase passes through their management company.</p>$q$) where slug = 'sunriver-year-round-living-vs-vacation';
--- update public.blog_posts set seo_title = 'Eagle Crest Redmond: Affordable Resort Homes', seo_description = 'Eagle Crest resort living in Redmond, Oregon. Whole-ownership homes start at $350,000, with golf, trails, and three sports centers on site.', content = replace(replace(replace(replace(replace(replace(content, $q$vacation rental potential, and a Cascade mountain backdrop, at a lower price point.</li>$q$, $q$vacation rental potential, and a Cascade mountain backdrop, all at 30% to 50% of the cost of competitors.</li>$q$), $q$<p>Eagle Crest dues come in layers. Every lot or unit pays the Eagle Crest Master Association. For 2026 that's $96 a month for the common areas ($108.85 if the owner didn't prepay the pro shop loan), $90 a month for water and sewer on a built lot, and a Resort Sports Center fee of $460.52 a year per unit plus $32 per owner, billed quarterly. Most homes and condos also belong to a sub-association that bills its own dues, so ask for both budgets. In our MLS data, detached Eagle Crest listings that reported dues since October 2023 show a median of $138 a month across 425 listings. Condo and townhome dues aren't in that figure.</p>
+-- update public.blog_posts set seo_title = 'Eagle Crest Redmond: Affordable Resort Homes', seo_description = 'Eagle Crest resort living in Redmond, Oregon. Whole-ownership homes start at $350,000, with golf, trails, and three sports centers on site.', content = replace(replace(replace(replace(replace(replace(content, $q$vacation rental potential, and a Cascade mountain backdrop, at a lower price point.</li>$q$, $q$vacation rental potential, and a Cascade mountain backdrop, all at 30% to 50% of the cost of competitors.</li>$q$), $q$<p>Eagle Crest dues come in layers. Every lot or unit pays the Eagle Crest Master Association. For 2026 that's $96 a month for the common areas ($108.85 if the owner didn't prepay the pro shop loan), $90 a month for water and sewer on a built lot, and a Resort Sports Center fee of $460.52 a year per unit plus $32 a year per owner, billed quarterly. Most homes and condos also belong to a sub-association that bills its own dues, so ask for both budgets. In our MLS data, detached Eagle Crest listings that reported dues since October 2023 show a median of $138 a month across 425 listings. Condo and townhome dues aren't in that figure.</p>
 -- 
 -- <p><small>Sources: Eagle Crest Master Association, <a href="https://eaglecrestowners.com/hoas/ecma/">2026 Dues and Budget Letter</a> (December 2025); Ryan Realty, <a href="/communities/eagle-crest">Eagle Crest community page</a>, Oregon Data Share MLS, as of Oct 8, 2026.</small></p>$q$, $q$<p>Eagle Crest HOA fees are structured differently depending on the sub-community and property type. Expect to pay $200 to $450 per month, which is significantly less than Brasada Ranch, Caldera Springs, or Tetherow. These fees cover common area maintenance, road upkeep, and access to resort facilities.</p>
 -- 
