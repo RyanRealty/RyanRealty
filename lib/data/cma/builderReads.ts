@@ -207,9 +207,18 @@ export async function selectCmaCompsPool(opts: {
    * A land subject pulled against 'A' returns zero rows, silently.
    */
   propertyType?: string | null
+  /**
+   * Throw on a failed read instead of returning no rows. A caller that turns
+   * zero rows into a claim ("no home sold there", lib/cma/own-ground-sold.ts)
+   * passes it, because a failed read is not evidence of absence (§0).
+   */
+  throwOnError?: boolean
 }): Promise<CmaListingRow[]> {
   const sb = client()
-  if (!sb) return []
+  if (!sb) {
+    if (opts.throwOnError) throw new Error('selectCmaCompsPool: Supabase not configured')
+    return []
+  }
   let q = sb
     .from('listings')
     .select(LISTING_CMA_COLUMNS)
@@ -239,6 +248,7 @@ export async function selectCmaCompsPool(opts: {
     .limit(Math.min(Math.max(opts.limit ?? 50, 1), opts.bounds ? 500 : 100))
   if (error) {
     console.error('[selectCmaCompsPool]', error.message)
+    if (opts.throwOnError) throw new Error(`selectCmaCompsPool: ${error.message}`)
     return []
   }
   return (data ?? []) as unknown as CmaListingRow[]

@@ -26,6 +26,7 @@ import {
   type ListingWindowCloses,
 } from '@/lib/cma/listing-window-load'
 import { pocketLocalReadOf, type ListingMarketMove } from '@/lib/cma/listing-window-market'
+import { pacificDay, pacificDaysBetween, statusKind } from '@/lib/cma/listing-status'
 import type { CmaAdjustedComp, CmaComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import {
   ensureMinBandWidth,
@@ -38,8 +39,34 @@ import {
   floorExclusivePocketBandToSameSubCloses,
   type AppliedDateMove,
   type PocketLocalRead,
+  type PocketOwnListing,
 } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { attachSellerNet } from '@/lib/pricing/seller-net'
+
+/**
+ * The home's own listing as its local read (Matt 2026-10-09, 3062 NW Kelly
+ * Hill), or null. Only a home on the market today and not under contract
+ * (Active), whose ask has come down during its current stretch on the market
+ * (rule 28: the stretch's first ask, else OriginalListPrice when the stretch
+ * read is missing and the listing never came back), against its ask today.
+ * Every figure is the subject's own MLS record; nothing is estimated.
+ */
+export function ownListingRead(
+  subject: Pick<CmaSubject, 'standardStatus' | 'lastListPrice' | 'lastListDate'> &
+    Partial<Pick<CmaSubject, 'stretch' | 'originalListPrice'>>,
+  letterDay: string,
+): PocketOwnListing | null {
+  if (statusKind(subject.standardStatus) !== 'active') return null
+  const since = subject.stretch?.from ?? pacificDay(subject.lastListDate ?? null)
+  if (!since) return null
+  const firstAsk = subject.stretch
+    ? subject.stretch.firstAsk
+    : (subject.originalListPrice ?? null)
+  const ask = subject.lastListPrice ?? null
+  if (firstAsk == null || ask == null || !(firstAsk > 0) || !(ask > 0)) return null
+  if (!(ask < firstAsk)) return null
+  return { since, firstAsk: Math.round(firstAsk), ask: Math.round(ask), days: pacificDaysBetween(since, letterDay) }
+}
 
 /**
  * The local page's move for the sales this set prices, and the per-foot
@@ -51,15 +78,23 @@ import { attachSellerNet } from '@/lib/pricing/seller-net'
  * listing window there is nothing to read ('no-listing-window'); a window
  * whose closes are too thin for the page to print a verdict gives
  * 'too-few-sales', 'one-sale-a-half' or 'no-living-area'. Each of those is
- * no local evidence of a fall, and no sale moves for date.
+ * no local evidence of a fall, and no sale moves for date, except on a home
+ * on the market today whose own unsold listing stands in (ownListingRead,
+ * Matt 2026-10-09).
  */
 export function localReadForSet(args: {
   subject: CmaSubject
   comps: readonly CmaComp[]
   diagnostics: CompSelectionDiagnostics
   subjectZone: string | null
-  /** The subject's listing window: the same dates the local page reads over. */
-  window: { city: string | null | undefined; listDate: string | null | undefined; offDate: string | null | undefined }
+  /** The subject's listing window (subjectListingWindow): the same dates the local page reads over. */
+  window: {
+    city: string | null | undefined
+    listDate: string | null | undefined
+    offDate: string | null | undefined
+    /** True when the home is on the market today and the window runs to the letter date. */
+    ongoing?: boolean
+  }
   /** The window's closes, read once before pricing (loadListingWindowCloses). */
   closes: ListingWindowCloses | null
   /** The letter's calendar day, stamped on the move. */
@@ -81,10 +116,16 @@ export function localReadForSet(args: {
     areaName: compArea?.names?.[0] ?? null,
     propertySubType: args.subject.propertySubType,
   })
-  const hasWindow = listingWindowDates(args.window) != null
+  const ongoing = args.window.ongoing === true
+  // An on-market home always has a listing to read over; a window too short to
+  // hold a close is too few sales, never "no recent listing".
+  const hasWindow = listingWindowDates(args.window) != null || (ongoing && Boolean(args.window.listDate))
+  const read = pocketLocalReadOf(listingMarket, hasWindow ? 'too-few-sales' : 'no-listing-window')
+  if (!ongoing) return { listingMarket, pocketLocal: read }
+  const ownListing = read.verdict == null ? ownListingRead(args.subject, args.asOf) : null
   return {
     listingMarket,
-    pocketLocal: pocketLocalReadOf(listingMarket, hasWindow ? 'too-few-sales' : 'no-listing-window'),
+    pocketLocal: { ...read, ongoing: true, ...(ownListing ? { ownListing } : {}) },
   }
 }
 

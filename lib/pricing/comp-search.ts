@@ -42,6 +42,12 @@ export type CompSearchKeptComp = {
    * Absent on rows stored before 2026-10-08.
    */
   ownPlat?: boolean | null
+  /**
+   * The recorded plat's name, as the map labels it (CmaComp.platName). A sale
+   * outside the subject's subdivision is named by it, never by an MLS code
+   * (reader review 2026-10-09, 20676 Wild Rose: "61197 Cottonwood in CLAB").
+   */
+  platName?: string | null
 }
 
 export type CompSearchRung = {
@@ -175,6 +181,14 @@ export function buildCompSearch(input: {
   keptComps: readonly CompSearchKeptComp[]
   /** On acreage: the subject's zone and the split counts, for the reader's sentence. */
   rural?: { subjectZone: string | null | undefined; counts: Partial<RuralSplitCounts> | null | undefined } | null
+  /**
+   * Homes that sold on the subject's own ground over the own rungs' widest
+   * window, any size (CompSelectionDiagnostics.own_ground_sold, read only when
+   * those rungs found nothing). Zero lets the sentence say no home sold there;
+   * more than zero, that none matched. Null or absent: not read, and the
+   * sentence claims neither.
+   */
+  ownGroundSold?: number | null
 }): CompSearch | null {
   const subdivision = usableSubdivision(input.subdivision)
   const ran = input.ladder.filter((r) => r.ran && clean(r.tier))
@@ -238,6 +252,7 @@ export function buildCompSearch(input: {
       ? {
           months: Math.max(0, ...ownRungs.map((r) => (r.monthsBack > 0 ? r.monthsBack : (parseTierMonths(r.tier) ?? 0)))),
           found: ownRungs.reduce((sum, r) => sum + Math.max(0, r.compsAdded), 0),
+          sold: input.ownGroundSold != null && input.ownGroundSold >= 0 ? input.ownGroundSold : null,
         }
       : null
 
@@ -318,7 +333,8 @@ function describeOutsideSales(
       const address = clean(c.address)
       return { text: address ? `${address} on your street` : 'a sale on your street', namesSale: true }
     }
-    const place = usableSubdivision(c.subdivision)
+    // One name everywhere: the recorded plat's name the map prints, else the MLS name.
+    const place = clean(c.platName) ?? usableSubdivision(c.subdivision)
     const address = clean(c.address)
     if (address && place) return { text: `${address} in ${place}`, namesSale: true }
     if (address) return { text: address, namesSale: true }
@@ -333,8 +349,12 @@ function describeOutsideSales(
   return { text: joinPhrases([...new Set(named.map((p) => p.text))]), namesSale: false }
 }
 
-/** What the subject's own-subdivision rungs searched: the widest window, and how many sales they found. */
-type OwnGroundSearch = { months: number; found: number }
+/**
+ * What the subject's own-subdivision rungs searched: the widest window, how
+ * many sales they found, and, when they found none, how many homes sold
+ * there at all over that window, any size (null when that was not read).
+ */
+type OwnGroundSearch = { months: number; found: number; sold?: number | null }
 
 /** "in the last 24 months", or nothing when no window is known. */
 function lastMonths(months: number): string {
@@ -347,8 +367,15 @@ function lastMonths(months: number): string {
  * what the own-subdivision rungs covered: that they searched the subdivision,
  * the window they searched, and whether they found a sale at all.
  *   - They did not run: nothing is claimed about the subdivision.
- *   - They ran and found none: "No sale inside X in the last N months matched
- *     your home", with the window they actually read.
+ *   - They ran and found none, and no home of any size sold there in that
+ *     window: "No home sold in X in the last N months" (reader review
+ *     2026-10-09, 915 Saginaw: "No sale inside Park Place ... matched your
+ *     home" read as sales turned down, and there were none).
+ *   - They ran and found none, and homes did sell there: those sales were
+ *     turned down, so "No sale inside X in the last N months matched your
+ *     home".
+ *   - They ran and found none, and nobody read whether anything sold: the
+ *     sentence says only that the search found none to use.
  *   - They found sales and none is printed: those sales exist, so "no sale
  *     matched" would be false. The sentence says they were found and are not
  *     among the sales the letter uses.
@@ -371,9 +398,19 @@ function absentSentence(args: {
     } among the sales this letter uses.`
     return outsideText ? `${found} The ${n} sales come from ${outsideText}.` : found
   }
+  if (ownSearch.sold === 0) {
+    return outsideText
+      ? `No home sold in ${subdivision}${window}, so the search opened to ${outsideText}.`
+      : `No home sold in ${subdivision}${window}.`
+  }
+  if (ownSearch.sold != null && ownSearch.sold > 0) {
+    return outsideText
+      ? `No sale inside ${subdivision}${window} matched your home, so the search opened to ${outsideText}.`
+      : `No sale inside ${subdivision}${window} matched your home.`
+  }
   return outsideText
-    ? `No sale inside ${subdivision}${window} matched your home, so the search opened to ${outsideText}.`
-    : `No sale inside ${subdivision}${window} matched your home.`
+    ? `The search found no sale inside ${subdivision}${window} to use, so it opened to ${outsideText}.`
+    : `The search found no sale inside ${subdivision}${window} to use.`
 }
 
 function writeSentence(args: {

@@ -17,9 +17,11 @@ import {
   cameOffStatus,
   lastActiveRunTimed,
   listingStretch,
+  mlsEventDay,
   pacificDay,
   sameStatus,
   type ActiveRun,
+  type ListingEventDates,
   type ListingStretch,
 } from '@/lib/cma/listing-status'
 import { listingStretchRead } from '@/lib/cma/last-stretch'
@@ -492,7 +494,22 @@ function peerRun(row: CmaMarketAreaRow): (ActiveRun & { fromAt: string | null })
     onMarketDate: row.OnMarketDate ?? row.ListDate,
     offMarketDate: row.off_market_date ?? row.status_change_timestamp ?? row.CloseDate,
     status: row.StandardStatus,
+    // The MLS row's own date for the event that ended the stretch, not the
+    // day it was keyed in (reader review 2026-10-09).
+    eventDates: peerEventDates(row),
   })
+}
+
+/** The MLS row's own dated fields for the events that end a stretch (lib/cma/listing-status.ts mlsEventDay). */
+function peerEventDates(row: CmaMarketAreaRow): ListingEventDates {
+  return {
+    withdrawDate: row.withdraw_date ?? null,
+    cancellationDate: row.cancellation_date ?? null,
+    expirationDate: row.expiration_date ?? null,
+    offMarketDate: row.off_market_date ?? null,
+    purchaseContractDate: row.purchase_contract_date ?? null,
+    closeDate: row.CloseDate ?? null,
+  }
 }
 
 /**
@@ -616,7 +633,12 @@ export function pickExpiredPeers(
       const status = row.StandardStatus
       const leftAs = run?.source === 'status-history' ? run.leftAs : null
       const cameOffAs = leftAs && !sameStatus(leftAs, status) ? leftAs : null
-      const statusDay = pacificDay(row.status_change_timestamp ?? row.off_market_date ?? null)
+      // The day its status of record took effect: the MLS row's own date for
+      // that event first, the day the change was keyed in only without one
+      // (reader review 2026-10-09).
+      const statusDay =
+        mlsEventDay(status, peerEventDates(row), status) ??
+        pacificDay(row.status_change_timestamp ?? row.off_market_date ?? null)
       const stretch = peerStretch(row, run, originalListPrice, listPrice)
       const peer: CmaExpiredPeer = {
         listingKey: key,

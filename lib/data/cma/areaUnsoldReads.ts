@@ -52,7 +52,49 @@ export const UNSOLD_STATUSES = ['Expired', 'Withdrawn', 'Canceled'] as const
 export const UNSOLD_MAX_MONTHS = 24
 
 const COLS =
-  'ListingKey, StreetNumber, StreetName, City, PhotoURL, OriginalListPrice, Latitude, Longitude, StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, original_on_market_timestamp, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, baths_full, baths_half, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, off_market_date, SubdivisionName, property_sub_type, year_built, lot_size_acres, public_remarks, parcel_number'
+  'ListingKey, StreetNumber, StreetName, City, PhotoURL, OriginalListPrice, Latitude, Longitude, StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, original_on_market_timestamp, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, baths_full, baths_half, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, off_market_date, purchase_contract_date, SubdivisionName, property_sub_type, year_built, lot_size_acres, public_remarks, parcel_number'
+
+/**
+ * The MLS row's own event dates that live only in the RETS payload (reader
+ * review 2026-10-09: a came-off home leaves Active on the day the MLS dates
+ * the event, not the day it was keyed in). Read by ListingKey for the homes
+ * already inside the area, never on the broad read, so the payload is
+ * detoasted for those rows alone (docs/TOAST_READ_DISCIPLINE.md).
+ */
+const EVENT_DATE_COLS =
+  'ListingKey, withdraw_date:details->>WithdrawDate, cancellation_date:details->>CancellationDate, expiration_date:details->>ExpirationDate'
+
+/** Keys per event-date read: one short IN list. */
+const EVENT_DATE_CHUNK = 100
+
+type EventDateRow = {
+  ListingKey?: string | null
+  withdraw_date?: string | null
+  cancellation_date?: string | null
+  expiration_date?: string | null
+}
+
+/** Withdraw, cancellation and expiration dates by ListingKey. A failed read leaves the rows on their typed dates. */
+async function readEventDates(
+  sb: NonNullable<ReturnType<typeof client>>,
+  keys: readonly string[],
+): Promise<Map<string, EventDateRow>> {
+  const out = new Map<string, EventDateRow>()
+  for (let i = 0; i < keys.length; i += EVENT_DATE_CHUNK) {
+    const part = keys.slice(i, i + EVENT_DATE_CHUNK)
+    // @canonical-key — the keys are the ListingKey of rows this read just took from listings.
+    const { data, error } = await sb.from('listings').select(EVENT_DATE_COLS).in('ListingKey', part)
+    if (error) {
+      console.error('[getCmaAreaUnsoldCycles] event dates', error.message)
+      return out
+    }
+    for (const row of (data ?? []) as EventDateRow[]) {
+      const key = String(row.ListingKey ?? '').trim()
+      if (key) out.set(key, row)
+    }
+  }
+  return out
+}
 
 /** What the relist test reads of every other record of the same houses. */
 const LATER_COLS =
@@ -421,7 +463,7 @@ export async function getCmaAreaUnsoldCycles(input: {
     const insideKeys = inside.map((r) => String(r.ListingKey ?? '').trim()).filter(Boolean)
     // And the asks each one's last stretch began at (Matt 2026-10-08, "Last
     // stretch, labeled"). Additive like the status log.
-    const [statusChanges, askChanges] = await Promise.all([
+    const [statusChanges, askChanges, eventDates] = await Promise.all([
       getListingStatusChanges(insideKeys).catch((err) => {
         console.error('[getCmaAreaUnsoldCycles] status changes', err instanceof Error ? err.message : String(err))
         return new Map<string, ListingStatusChange[]>()
@@ -430,15 +472,29 @@ export async function getCmaAreaUnsoldCycles(input: {
         console.error('[getCmaAreaUnsoldCycles] ask changes', err instanceof Error ? err.message : String(err))
         return new Map<string, AskChange[]>()
       }),
+      // The MLS's own withdraw, cancel and expiry dates (reader review
+      // 2026-10-09). Additive like the status log.
+      readEventDates(sb, insideKeys).catch((err) => {
+        console.error('[getCmaAreaUnsoldCycles] event dates', err instanceof Error ? err.message : String(err))
+        return new Map<string, EventDateRow>()
+      }),
     ])
     const withChanges = inside.map((r) => {
       const key = String(r.ListingKey ?? '').trim()
       const changes = statusChanges.get(key)
       const asks = askChanges.get(key)
+      const dated = eventDates.get(key)
       return {
         ...r,
         ...(changes && changes.length > 0 ? { statusChanges: changes } : {}),
         ...(asks && asks.length > 0 ? { askChanges: asks } : {}),
+        ...(dated
+          ? {
+              withdraw_date: dated.withdraw_date ?? null,
+              cancellation_date: dated.cancellation_date ?? null,
+              expiration_date: dated.expiration_date ?? null,
+            }
+          : {}),
       }
     })
     // A cancel and relist is a re-entry, not a failure: 2639 Harvey and 1382

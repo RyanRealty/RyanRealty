@@ -80,6 +80,22 @@ export type CompArea = {
    * subdivision the competition area (3037 Purcell, 2026-10-07).
    */
   street?: { key: string; names: string[]; platSlugs: string[] } | null
+  /**
+   * ONE NAME EVERYWHERE (reader review 2026-10-09, 20676 Wild Rose: the text
+   * named 61197 Cottonwood's subdivision "CLAB", an MLS code, while the map
+   * outlined and labeled it "Tara View Estates", its recorded plat). The name
+   * each entry of `names` prints as, when every printed sale under that MLS
+   * name sits in one recorded plat polygon: that plat's recorded name, the
+   * label the map prints. `names` stays the MLS identity the reads and the
+   * membership test use. Absent on an area stored before this landed.
+   */
+  labels?: Record<string, string>
+}
+
+/** The name an area entry prints as: its recorded plat's name when the area carries one (CompArea.labels). */
+export function compAreaLabel(area: Pick<CompArea, 'labels'> | null | undefined, name: string): string {
+  const label = area?.labels?.[name]
+  return typeof label === 'string' && label.trim() ? label.trim() : name
 }
 
 /** One rung of the counted ladder — the shape `compSearch.rungs` already has. */
@@ -95,6 +111,12 @@ export type CompAreaKeptComp = {
   longitude?: number | null
   /** The selector's own-plat stamp (CmaComp.ownPlat). Absent on rows stored before 2026-10-08. */
   ownPlat?: boolean | null
+  /**
+   * The recorded name of the plat polygon the sale sits in, as the map prints
+   * it (CmaComp.platName, stamped by lib/cma/printed-subdivision.ts). Absent
+   * when no polygon holds the sale or nobody read it.
+   */
+  platName?: string | null
 }
 
 /**
@@ -266,7 +288,9 @@ export function compAreaPhrase(area: CompArea, opts?: { negative?: boolean }): s
       // A plat held to the subject's street is named as that street, never as
       // the whole subdivision (3037 Purcell).
       const streetNames = area.street?.names ?? []
-      const parts = area.names.map((n) => (streetNames.includes(n) ? `your street in ${n}` : n))
+      const parts = area.names.map((n) =>
+        streetNames.includes(n) ? `your street in ${compAreaLabel(area, n)}` : compAreaLabel(area, n),
+      )
       return joinNames(parts, opts?.negative ? 'or' : 'and') || 'your area'
     }
     case 'neighborhood':
@@ -341,29 +365,32 @@ function plattedSentence(
   names: readonly string[],
   subjectSubdivision: string | null,
   relations: ReadonlyMap<string, PlacedPlat> | null,
+  labels?: Record<string, string>,
 ): string {
   const rel = (n: string): PlacedPlat =>
     n === subjectSubdivision ? { relation: 'own', miles: null } : relations?.get(n) ?? { relation: 'other', miles: null }
   const of = (r: PlatRelation) => names.filter((n) => rel(n).relation === r)
   const widest = (group: readonly string[]) => Math.max(...group.map((n) => rel(n).miles ?? 0))
+  // Grouped by the MLS identity, printed by the recorded plat's name.
+  const say = (group: readonly string[]) => joinNames(group.map((n) => compAreaLabel({ labels }, n)))
   const own = of('own')
   const clauses: string[] = []
   const adjacent = of('adjacent')
-  if (adjacent.length > 0) clauses.push(`${joinNames(adjacent)} next to ${own.length > 0 ? 'it' : 'your subdivision'}`)
+  if (adjacent.length > 0) clauses.push(`${say(adjacent)} next to ${own.length > 0 ? 'it' : 'your subdivision'}`)
   const closer = of('closer')
-  if (closer.length > 0) clauses.push(`${joinNames(closer)} one subdivision further out`)
+  if (closer.length > 0) clauses.push(`${say(closer)} one subdivision further out`)
   for (const r of ['pocket', 'ring'] as const) {
     const group = of(r)
     if (group.length === 0) continue
     const miles = widest(group)
-    clauses.push(miles > 0 ? `${joinNames(group)} within ${milesPhrase(miles)} of your home` : joinNames(group))
+    clauses.push(miles > 0 ? `${say(group)} within ${milesPhrase(miles)} of your home` : say(group))
   }
   const other = of('other')
-  if (other.length > 0) clauses.push(joinNames(other))
+  if (other.length > 0) clauses.push(say(other))
   const street = of('street')
-  if (street.length > 0) clauses.push(`the ${joinNames(street)} homes on your street`)
+  if (street.length > 0) clauses.push(`the ${say(street)} homes on your street`)
   if (own.length > 0) {
-    const lead = `${joinNames(own)}, your own subdivision`
+    const lead = `${say(own)}, your own subdivision`
     return clauses.length === 0 ? `${lead}.` : `${lead}, with ${joinNames(clauses)}.`
   }
   const body = joinNames(clauses)
@@ -378,7 +405,7 @@ function areaSentence(
   switch (area.kind) {
     case 'subdivision':
     case 'subdivisions':
-      return plattedSentence(area.names, subjectSubdivision, relations)
+      return plattedSentence(area.names, subjectSubdivision, relations, area.labels)
     case 'neighborhood':
       return `${area.names[0]}, the neighborhood around your home.`
     case 'community':
@@ -444,6 +471,31 @@ function platKeys(input: {
   }
 }
 
+/**
+ * The recorded plat name each MLS name in the area prints as (CompArea.labels),
+ * or null when none differs. Only a name every printed sale under it shares
+ * one recorded plat for: a name split across two plats, or with a sale no
+ * polygon holds, keeps its MLS spelling, because one printed name would then
+ * stand for two places. The subject's own subdivision keeps its own name.
+ */
+function recordedPlatLabels(
+  names: readonly string[],
+  kept: readonly CompAreaKeptComp[],
+  subjectSubdivision: string | null,
+): Record<string, string> | null {
+  const out: Record<string, string> = {}
+  for (const n of names) {
+    if (n === subjectSubdivision) continue
+    const under = kept.filter((c) => usableSubdivision(c.subdivision) === n)
+    if (under.length === 0) continue
+    const plats = new Set(under.map((c) => clean(c.platName) ?? ''))
+    if (plats.size !== 1 || plats.has('')) continue
+    const label = [...plats][0]!
+    if (label !== n) out[n] = label
+  }
+  return Object.keys(out).length > 0 ? out : null
+}
+
 /** The subject's own subdivision first, always (rule 24: the area includes the subject's plat). */
 function subjectFirst(names: readonly string[], subjectSubdivision: string | null): string[] {
   const rest = names.filter((n) => n !== subjectSubdivision)
@@ -499,6 +551,7 @@ export function buildCompArea(input: {
   const platted = (saleNames: readonly string[], rule: string): CompArea => {
     const names = subjectFirst(saleNames, subjectSubdivision)
     const keys = platKeys({ names, subjectSubdivision, subject: input.subject, kept, relations })
+    const labels = recordedPlatLabels(names, kept, subjectSubdivision)
     const own = subjectSubdivision && !saleNames.includes(subjectSubdivision)
       ? `; the subject's own subdivision ${subjectSubdivision} is in the area though no printed sale sits there`
       : ''
@@ -510,8 +563,11 @@ export function buildCompArea(input: {
       names,
       radiusMiles: null,
       centre,
-      source: trace(`${rule}${own}${streetTrace}`),
+      source: trace(`${rule}${own}${streetTrace}${
+        labels ? `; printed by recorded plat name: ${Object.entries(labels).map(([n, l]) => `${n} as ${l}`).join(', ')}` : ''
+      }`),
       ...keys,
+      ...(labels ? { labels } : {}),
     }
     return { ...base, sentence: areaSentence(base, subjectSubdivision, relations) }
   }

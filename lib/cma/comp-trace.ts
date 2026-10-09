@@ -232,6 +232,16 @@ export interface CompSelectionDiagnostics {
    */
   refill_bench?: { rung: string | null; widening: boolean; held: number }
   /**
+   * How many homes sold on the subject's own ground (its plat, phases and
+   * family, or its MLS name off any polygon) over the widest own-subdivision
+   * window, any size and any residential type (lib/cma/own-ground-sold.ts).
+   * Read only when the own-subdivision rungs found nothing, so the comp story
+   * can say "No home sold in X" or "No sale inside X matched your home"
+   * truthfully (reader review 2026-10-09, 915 Saginaw). Absent otherwise, and
+   * on rows stored before then.
+   */
+  own_ground_sold?: { months: number; since: string; n: number; capped: boolean; source: string } | null
+  /**
    * What the comparability review refilled, round by round, and how many
    * bench sales were left. Absent when nothing was refilled.
    */

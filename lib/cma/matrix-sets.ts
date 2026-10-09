@@ -229,6 +229,8 @@ export type CmaCompArea = {
    * does not draw it: it is in the area on that street only (rule 24).
    */
   street?: { key: string; names: readonly string[]; platSlugs: readonly string[] } | null
+  /** The recorded plat name each MLS name prints as (`CompArea.labels`, reader review 2026-10-09). */
+  labels?: Readonly<Record<string, string>> | null
 }
 
 function finite(v: unknown): number | null {
@@ -262,7 +264,17 @@ export function readCompArea(args: unknown): CmaCompArea | null {
     sentence: typeof o.sentence === 'string' && o.sentence.trim() ? o.sentence.trim() : null,
     platSlugs: platSlugs.length > 0 ? platSlugs : null,
     street,
+    labels: readLabels(o.labels),
   }
+}
+
+function readLabels(v: unknown): Record<string, string> | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null
+  const out: Record<string, string> = {}
+  for (const [k, l] of Object.entries(v as Record<string, unknown>)) {
+    if (typeof l === 'string' && l.trim() && k.trim()) out[k.trim()] = l.trim()
+  }
+  return Object.keys(out).length > 0 ? out : null
 }
 
 /**

@@ -465,7 +465,9 @@ export function countedRowsInDocumentCheck(args: {
 /**
  * DOWN ONLY IF LOCAL FELL (Matt 2026-10-08). A pocket letter priced with the
  * local gate (`timeAdjustment.localGate`) moves a sale down for date only
- * when its own local page prints a per-foot fall. A letter that moved a sale
+ * when its own local page prints a per-foot fall, or, with no per-foot trend,
+ * when the gate recorded the home's own unsold listing (an on-market home whose
+ * ask came down, Matt 2026-10-09). A letter that moved a sale
  * while that page prints held flat, rose or no trend, or whose page reads a
  * different verdict from the one the price was gated on, fails the save.
  * Rows priced before the gate carry no `localGate` and are not graded.
@@ -492,6 +494,19 @@ export function pocketDateFollowsLocalReadCheck(args: {
     }
   }
   const movedDown = (args.comps ?? []).filter((c) => (c.timeAdjustment ?? 0) <= -1).length
+  // The home's own unsold listing stands in for a read too thin to judge
+  // (Matt 2026-10-09): with no per-foot trend on the page, a gate that
+  // recorded that listing may move sales down.
+  const ownListing =
+    page.verdict == null && gated == null && (gate as { ownListing?: unknown }).ownListing != null
+  if (movedDown > 0 && ownListing) {
+    return {
+      id,
+      severity: 'hard',
+      pass: true,
+      detail: "Sales moved down for date on the home's own unsold listing; the local page reads no trend.",
+    }
+  }
   if (movedDown > 0 && page.verdict !== 'fell') {
     return {
       id,

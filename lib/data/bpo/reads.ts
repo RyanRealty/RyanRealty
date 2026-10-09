@@ -68,6 +68,14 @@ const BPO_CYCLE_COLUMNS = [
   'ListOfficeName',
   'ModificationTimestamp',
   'status_change_timestamp',
+  // The MLS row's own dates for the events that end a stretch on the market
+  // (reader review 2026-10-09, 1355 Jacksonville: withdrawn Sep 28, keyed in
+  // Sep 29). purchase_contract_date is a column; the rest ride in the RETS
+  // payload. off_market_date (OffMarketDate) is read above.
+  'purchase_contract_date',
+  'withdraw_date:details->>WithdrawDate',
+  'cancellation_date:details->>CancellationDate',
+  'expiration_date:details->>ExpirationDate',
 ].join(', ')
 
 /**

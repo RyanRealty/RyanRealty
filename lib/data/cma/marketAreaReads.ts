@@ -61,6 +61,16 @@ export type CmaMarketAreaRow = {
   /** Selected only by the area-scoped unsold read: the day the listing took its status of record. */
   off_market_date?: string | null
   /**
+   * Selected only by the area-scoped unsold read: the MLS row's own dates for
+   * the events that end a stretch (reader review 2026-10-09), so a came-off
+   * home leaves Active on the day the MLS dates the event, not the day it was
+   * keyed in (lib/cma/listing-status.ts mlsEventDay).
+   */
+  purchase_contract_date?: string | null
+  withdraw_date?: string | null
+  cancellation_date?: string | null
+  expiration_date?: string | null
+  /**
    * Attached only by the area-scoped unsold read: the listing's MLS status
    * changes, oldest first, so the days it was on the market end the day it
    * left Active (lib/cma/listing-status.ts), not the day it expired.

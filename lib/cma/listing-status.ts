@@ -256,6 +256,77 @@ type ActiveRunInput = {
   offMarketDate?: string | null
   /** The listing's status of record. */
   status?: string | null
+  /** The MLS row's own dated fields for the events that end a stretch (mlsEventDay). */
+  eventDates?: ListingEventDates | null
+}
+
+/**
+ * THE MLS ROW'S OWN DATE FOR THE EVENT, NOT THE DAY IT WAS KEYED IN (reader
+ * review 2026-10-09, 1355 Jacksonville). The listing was withdrawn effective
+ * Sep 28 (WithdrawDate and OffMarketDate both 2026-09-28); the status change
+ * was entered Sep 29 at 17:24 UTC (WithdrawnTimestamp, the status log). The
+ * letter printed "Status date Sep 29, 2026" and "withdrawn after 6 days". The
+ * dated field is the MLS's record of when the event happened; the log time is
+ * when somebody typed it.
+ */
+export type ListingEventDates = {
+  /** MLS WithdrawDate. */
+  withdrawDate?: string | null
+  /** MLS CancellationDate. */
+  cancellationDate?: string | null
+  /** MLS ExpirationDate (the listing agreement's end; the day it expired, on an expired listing). */
+  expirationDate?: string | null
+  /** MLS OffMarketDate (listings.off_market_date): the day the status of record took effect. */
+  offMarketDate?: string | null
+  /** MLS PurchaseContractDate (listings.purchase_contract_date): the day an offer was accepted. */
+  purchaseContractDate?: string | null
+  /** MLS CloseDate. */
+  closeDate?: string | null
+}
+
+/**
+ * The Pacific day the MLS row itself dates an event that ended a stretch on
+ * the market, or null when the row carries no dated field for it. `status` is
+ * the status the stretch ended in; `recordStatus` the listing's status of
+ * record, because OffMarketDate dates only the status of record (3177 Coho's
+ * OffMarketDate is its Sep 30 expiry, not its Feb 9 withdrawal).
+ */
+export function mlsEventDay(
+  status: string | null | undefined,
+  dates: ListingEventDates | null | undefined,
+  recordStatus?: string | null,
+): string | null {
+  if (!dates) return null
+  const s = (status ?? '').trim().toLowerCase()
+  const kind = statusKind(s)
+  let dated: string | null | undefined = null
+  if (kind === 'off') {
+    if (/^withdrawn/.test(s)) dated = dates.withdrawDate
+    else if (/^cancell?ed/.test(s)) dated = dates.cancellationDate
+    else if (/^expired/.test(s)) dated = dates.expirationDate
+    if (!dated && sameStatus(status, recordStatus)) dated = dates.offMarketDate
+  } else if (kind === 'offer') {
+    dated = dates.purchaseContractDate
+  } else if (kind === 'sold') {
+    dated = dates.closeDate
+  }
+  return pacificDay(dated ?? null)
+}
+
+/**
+ * The day a stretch left Active: the MLS row's own date for the event that
+ * ended it when the row carries one and it falls inside the stretch the log
+ * shows (on or after the day it began, on or before the day the change was
+ * entered), else the status log's day.
+ */
+function leftActiveDay(
+  from: string,
+  loggedTo: string,
+  endedAs: string | null,
+  input: Pick<ActiveRunInput, 'eventDates' | 'status'>,
+): string {
+  const dated = mlsEventDay(endedAs, input.eventDates, input.status)
+  return dated && dated >= from && dated <= loggedTo ? dated : loggedTo
 }
 
 export function lastActiveRun(input: ActiveRunInput): ActiveRun | null {
@@ -277,17 +348,21 @@ export function lastActiveRunTimed(input: ActiveRunInput): (ActiveRun & { fromAt
   })
   const last = periods[periods.length - 1]
   if (last) {
+    const to = last.to ? leftActiveDay(last.from, last.to, last.endedAs, input) : null
     return {
       from: last.from,
       fromAt: last.fromAt,
-      to: last.to,
+      to,
       leftAs: last.endedAs,
-      days: last.to ? pacificDaysBetween(last.from, last.to) : null,
+      days: to ? pacificDaysBetween(last.from, to) : null,
       source: 'status-history',
     }
   }
   const from = pacificDay(input.onMarketDate)
-  const to = pacificDay(input.offMarketDate)
+  // Without a log the row's own dated field for its status of record, then
+  // its off-market day.
+  const recorded = mlsEventDay(input.status, input.eventDates, input.status)
+  const to = recorded && (!from || recorded >= from) ? recorded : pacificDay(input.offMarketDate)
   if (!from && !to) return null
   return {
     from,

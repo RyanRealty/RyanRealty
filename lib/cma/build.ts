@@ -102,7 +102,7 @@ import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { buildSubjectStatus } from '@/lib/pricing/subject-status'
 import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
 import { readPlacePricingStory } from '@/lib/data/cma/placePricingRead'
-import { loadListingWindowCloses } from '@/lib/cma/listing-window-load'
+import { loadListingWindowCloses, subjectListingWindow } from '@/lib/cma/listing-window-load'
 import { pocketClosedSupportPrice } from '@/lib/pricing/active-dom-nudge'
 import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
 import { assembleCompetition, assembleExpiredPeers, printedCompGrid } from '@/lib/cma/assemble-competition'
@@ -707,11 +707,14 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         restarted: resolvedCycle.restarted === true,
       }
     }
-    const listingWindow = {
-      city: subject.city,
-      listDate: finalCycleRead?.resolved.cycle?.listDate ?? subject.lastListDate,
-      offDate: finalCycleRead?.resolved.cycle?.offMarketDate ?? null,
-    }
+    // ONE WINDOW DECISION (Matt 2026-10-09, 3062 NW Kelly Hill): a failed
+    // listing reads over its final cycle; a home on the market today reads
+    // from the day its current stretch began to the letter date.
+    const listingWindow = subjectListingWindow({
+      subject,
+      finalCycle: finalCycleRead ? (finalCycleRead.resolved.cycle ?? {}) : null,
+      letterDay,
+    })
     const windowCloses = await loadListingWindowCloses({
       ...listingWindow,
       propertySubType: subject.propertySubType,

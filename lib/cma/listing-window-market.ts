@@ -54,6 +54,17 @@ export type ListingMarketMove = {
    * house. Absent keeps the single-family wording the older letters use.
    */
   productNoun?: string | null
+  /**
+   * True when the window runs to the letter date because the home is on the
+   * market today (Matt 2026-10-09). The sentence then opens "Since your home
+   * came on the market", never "While your home was listed".
+   */
+  ongoing?: boolean
+}
+
+/** How the local page opens: the listing is over, or it is still running. */
+function listedOpening(move: Pick<ListingMarketMove, 'ongoing'>): string {
+  return move.ongoing ? 'Since your home came on the market' : 'While your home was listed'
 }
 
 export type ListingMarketClose = {
@@ -332,7 +343,7 @@ function singleSaleSentence(move: ListingMarketMove, product: string, size: stri
     move.early.ppsf != null && move.late.ppsf != null
       ? ` Per square foot, that is ${usd(move.early.ppsf)}, then ${usd(move.late.ppsf)}.`
       : ''
-  return `While your home was listed, ${first}, and ${second}.${foot} One sale is one home's price, not a trend.`
+  return `${listedOpening(move)}, ${first}, and ${second}.${foot} One sale is one home's price, not a trend.`
 }
 
 /** A stored move, or null when the value is not one the local page could print. */
@@ -395,7 +406,7 @@ export function listingMarketSentence(move: ListingMarketMove): string {
   const product = move.productNoun ? `${move.productNoun} ` : ''
   if (listingMarketOneSaleAHalf(move)) return singleSaleSentence(move, product, size)
   const price = moveClause(move.priceMove, move.early.median, move.late.median)
-  const head = `While your home was listed, the median ${product}sale in ${move.place}${size} ${price}.`
+  const head = `${listedOpening(move)}, the median ${product}sale in ${move.place}${size} ${price}.`
   if (move.ppsfMove == null || move.early.ppsf == null || move.late.ppsf == null) return head
   const foot = `The price per square foot ${moveClause(move.ppsfMove, move.early.ppsf, move.late.ppsf)}.`
   const mix = mixSentence(move)

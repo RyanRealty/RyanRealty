@@ -39,6 +39,7 @@ import {
   cameOffThenSentence,
   askInEffectAt,
   lastActiveRunTimed,
+  mlsEventDay,
   mlsEventMillis,
   stretchRestarted,
   mergeStatusChanges,
@@ -330,6 +331,9 @@ export function cycleOnTheMarket(
     onMarketDate: cycle.listDate,
     offMarketDate: cycle.offMarketDate,
     status: cycle.status,
+    // The MLS row's own dates for the event that ended the stretch win over
+    // the day the change was keyed in (reader review 2026-10-09, 1355 Jacksonville).
+    eventDates: cycle.eventDates ?? null,
   })
   // ONE CLOCK, THE LAST STRETCH (Matt 2026-10-08): the moment it began, so
   // the first ask is the ask in effect then, and whether it is the listing's
@@ -348,7 +352,10 @@ export function cycleOnTheMarket(
   }
   const stretch = stretchOf(run.from, run.fromAt)
   const tookRecord = [...log].reverse().find((c) => sameStatus(c.to, cycle.status))
-  const recordDay = pacificDay(tookRecord?.at ?? null) ?? pacificDay(cycle.offMarketDate)
+  const recordDay =
+    mlsEventDay(cycle.status, cycle.eventDates, cycle.status) ??
+    pacificDay(tookRecord?.at ?? null) ??
+    pacificDay(cycle.offMarketDate)
   if (!run.to) return { ...cycle, ...stretch, listDate: run.from }
   // Only a status that differs from the record's is worth carrying: the same
   // status is already the word every surface prints.

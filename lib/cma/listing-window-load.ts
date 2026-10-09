@@ -19,6 +19,9 @@ import {
 } from '@/lib/cma/listing-window-market'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { zonedDateKey } from '@/lib/format/date'
+import { pacificDay } from '@/lib/cma/listing-status'
+import { statusIsOnMarket } from '@/lib/cma/subject-on-market'
+import type { CmaSubject } from '@/lib/cma/types'
 
 const LIVE_STATUS = new Set(['draft', 'needs_review'])
 
@@ -53,6 +56,57 @@ export type ListingWindowCloses = {
   offDate: string
   city: string
   rows: ListingMarketClose[]
+  /** True when the window runs to the letter date: the home is on the market today. */
+  ongoing?: boolean
+}
+
+/** The window the local read and the pocket date gate read over, and whether it is still running. */
+export type SubjectListingWindow = {
+  city: string | null | undefined
+  listDate: string | null | undefined
+  offDate: string | null | undefined
+  /** True when the home is on the market today and the window runs to the letter date. */
+  ongoing: boolean
+}
+
+/**
+ * THE SUBJECT'S LISTING WINDOW, ONE DECISION (Matt 2026-10-09, 3062 NW Kelly
+ * Hill). The build and its dry run both read it here.
+ *
+ *  - A failed listing reads over its final cycle: the day its last stretch
+ *    began to the day it left Active.
+ *  - A home on the market today (lib/cma/subject-on-market.ts, rule 27) reads
+ *    from the day its current stretch began (rule 28, `subject.stretch`, else
+ *    its last list day, as a Pacific day) to the letter date. It used to get no
+ *    window at all, because an active listing has no off-market date, and the
+ *    letter then said "there is no recent listing of your home to measure that
+ *    over" about a home listed since May 1.
+ *  - Anything else keeps its last list day with no end, which is no window.
+ */
+export function subjectListingWindow(args: {
+  subject: Pick<CmaSubject, 'city' | 'lastListDate' | 'standardStatus'> & Partial<Pick<CmaSubject, 'stretch'>>
+  finalCycle?: { listDate?: string | null; offMarketDate?: string | null } | null
+  /** The letter's calendar day (Pacific). */
+  letterDay: string
+}): SubjectListingWindow {
+  const { subject, finalCycle } = args
+  if (finalCycle) {
+    return {
+      city: subject.city,
+      listDate: finalCycle.listDate ?? subject.lastListDate,
+      offDate: finalCycle.offMarketDate ?? null,
+      ongoing: false,
+    }
+  }
+  if (statusIsOnMarket(subject.standardStatus)) {
+    return {
+      city: subject.city,
+      listDate: subject.stretch?.from ?? pacificDay(subject.lastListDate ?? null),
+      offDate: args.letterDay.slice(0, 10),
+      ongoing: true,
+    }
+  }
+  return { city: subject.city, listDate: subject.lastListDate, offDate: null, ongoing: false }
 }
 
 /** The window's dates, or null when there is no dated window to read over. */
@@ -72,7 +126,7 @@ export function listingWindowDates(
  * when the window held no closes at all; the local page prints no chart then.
  */
 export async function loadListingWindowCloses(
-  input: Pick<ListingWindowInput, 'city' | 'listDate' | 'offDate' | 'propertySubType'>,
+  input: Pick<ListingWindowInput, 'city' | 'listDate' | 'offDate' | 'propertySubType'> & { ongoing?: boolean },
 ): Promise<ListingWindowCloses | null> {
   const window = listingWindowDates(input)
   if (!window) return null
@@ -89,7 +143,7 @@ export async function loadListingWindowCloses(
     return null
   }
   if (rows.length === 0) return null
-  return { ...window, rows: closesFromRows(rows) }
+  return { ...window, rows: closesFromRows(rows), ...(input.ongoing ? { ongoing: true } : {}) }
 }
 
 /**
@@ -121,7 +175,12 @@ export function measureListingWindowMarket(
   })
   if (!move) return null
   const productNoun = letterProductNoun(input.propertySubType)
-  return { ...move, asOf: input.asOf.slice(0, 10), ...(productNoun ? { productNoun } : {}) }
+  return {
+    ...move,
+    asOf: input.asOf.slice(0, 10),
+    ...(productNoun ? { productNoun } : {}),
+    ...(closes.ongoing ? { ongoing: true } : {}),
+  }
 }
 
 export async function loadListingWindowMarket(input: ListingWindowInput): Promise<ListingMarketMove | null> {

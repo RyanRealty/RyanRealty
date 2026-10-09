@@ -13,6 +13,7 @@
  *   npx tsx scripts/cma-build-dryrun.ts cma-16083-dyke-la-pine [more slugs...]
  *   npx tsx scripts/cma-build-dryrun.ts --json <slug>
  *   npx tsx scripts/cma-build-dryrun.ts --pocket-legacy <slug>
+ *   npx tsx scripts/cma-build-dryrun.ts --no-catch-up <slug>
  *
  * An exclusive-pocket set is priced the way the build prices it: the letter's
  * local read is measured first, and a sale moves down with the city index
@@ -20,6 +21,11 @@
  * the pocket's band finish runs (lib/cma/pocket-pricing.ts). `--pocket-legacy`
  * prices the pocket without the local gate, the always-down walk the build
  * used before that ruling, so the two can be compared on one home.
+ *
+ * `--no-catch-up` skips the comp search's recent-close catch-up, which
+ * rebuilds missing sale_pricing_facts rows before the pool is read (the one
+ * database write this script otherwise makes). A read-only run reads the pool
+ * as the table holds it.
  *
  * NOT a full build: the LLM comparability judge and the adversarial audit are
  * skipped on purpose (they cost money and they can only REMOVE comps, so a
@@ -79,6 +85,8 @@ type DryRun = {
     sized: boolean
     early: unknown
     late: unknown
+    /** The home's own unsold listing, standing in for a local read too thin to judge (Matt 2026-10-09). */
+    ownListing?: unknown
     listingWindow: { listDate: string | null; offDate: string | null }
   } | null
   recommended: number | null
@@ -340,7 +348,7 @@ function domFromHistoryLine(line: string | null | undefined): number | null {
   return Number.isFinite(n) && n >= 0 ? n : null
 }
 
-async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Promise<DryRun> {
+async function dryRun(slug: string, opts: { pocketLegacy?: boolean; noCatchUp?: boolean } = {}): Promise<DryRun> {
   const { getCmaAdminRowBySlug } = await import('@/lib/data')
   const { resolveCmaSubject } = await import('@/lib/cma/subject')
   const { selectCompsPreferringFacts } = await import('@/lib/pricing/select')
@@ -358,7 +366,8 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   const { MIN_COMPS, brokerCompRefusal } = await import('@/lib/cma/comps')
   const { getBpoListingCyclesByAddress } = await import('@/lib/data/bpo/reads')
   const { analyzeListingHistory } = await import('@/lib/bpo/history')
-  const { readFailedListingCycle, withFailedCycle } = await import('@/lib/cma/failed-cycle-read')
+  const { readFailedListingCycle, readSubjectStretch, withFailedCycle } = await import('@/lib/cma/failed-cycle-read')
+  const { statusIsOnMarket } = await import('@/lib/cma/subject-on-market')
   const { buildFailureFindings, stampFinalCycleDom, resolveFinalCycle, buildAskExposure, applyFailedAskCap, FAILED_ASK_RECENCY_MONTHS } =
     await import('@/lib/cma/expired-audit')
   const { buildSubjectStatus } = await import('@/lib/pricing/subject-status')
@@ -445,6 +454,13 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
     }
   }
 
+  // EXACTLY lib/cma/build.ts: a home on the market counts from the day its
+  // current stretch began, and that stretch opens its listing window (rule 28,
+  // Matt 2026-10-09).
+  if (!lastCycleFailed && subject.lastListDate && statusIsOnMarket(subject.standardStatus)) {
+    subject.stretch = await readSubjectStretch(subject).catch(() => null)
+  }
+
   const asOf = new Date().toISOString().slice(0, 10)
   const customOrNew = isCustomOrNewSubject(
     {
@@ -466,7 +482,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   }
 
   const [selection, market] = await Promise.all([
-    selectCompsPreferringFacts(subject, {}),
+    selectCompsPreferringFacts(subject, opts.noCatchUp ? { catchUpRecent: false } : {}),
     getCmaMarketContext(subject).catch(() => null),
   ])
   // EXACTLY lib/cma/build.ts step 2.9: one home, one sale.
@@ -529,7 +545,9 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   // local read for the set off the sales as the adjusters build them, then the
   // gate. The build's set is the judged one; here it is the ladder's.
   const { selectionIsExclusivePocket } = await import('@/lib/pricing/exclusive-pocket-date-adj')
-  const { loadListingWindowCloses } = await import('@/lib/cma/listing-window-load')
+  const { loadListingWindowCloses, subjectListingWindow } = await import('@/lib/cma/listing-window-load')
+  const { zonedDateKey } = await import('@/lib/format/date')
+  const letterDay = zonedDateKey(new Date().toISOString())
   const { localReadForSet, finishExclusivePocketPricing } = await import('@/lib/cma/pocket-pricing')
   const { preserveHydratedClosedCompDom, pricingSaleToCmaComp } = await import('@/lib/pricing/estimate')
   const exclusivePocket = selectionIsExclusivePocket(selection.tiersUsed ?? [])
@@ -540,15 +558,14 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
         return resolveFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey }).cycle
       })()
     : null
-  const listingWindow = {
-    city: subject.city,
-    listDate: finalCycleForWindow?.listDate ?? subject.lastListDate,
-    offDate: finalCycleForWindow?.offMarketDate ?? null,
-  }
+  const listingWindow = subjectListingWindow({
+    subject,
+    finalCycle: lastCycleFailed ? (finalCycleForWindow ?? {}) : null,
+    letterDay,
+  })
   const windowCloses = await loadListingWindowCloses({ ...listingWindow, propertySubType: subject.propertySubType }).catch(
     () => null,
   )
-  const { zonedDateKey } = await import('@/lib/format/date')
   const local = localReadForSet({
     subject,
     comps: selection.comps.map((c) => {
@@ -559,7 +576,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
     subjectZone: null,
     window: listingWindow,
     closes: windowCloses,
-    asOf: zonedDateKey(new Date().toISOString()),
+    asOf: letterDay,
   })
   const pocketLocal = opts.pocketLegacy ? undefined : local.pocketLocal
   const adjusted = usePath
@@ -608,6 +625,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
     sized: local.pocketLocal.sized,
     early: local.pocketLocal.early,
     late: local.pocketLocal.late,
+    ownListing: local.pocketLocal.ownListing ?? null,
     listingWindow: { listDate: listingWindow.listDate ?? null, offDate: listingWindow.offDate ?? null },
   }
 
@@ -992,6 +1010,7 @@ async function main() {
   const argv = process.argv.slice(2)
   const asJson = argv.includes('--json')
   const pocketLegacy = argv.includes('--pocket-legacy')
+  const noCatchUp = argv.includes('--no-catch-up')
   const slugs = argv.filter((a) => !a.startsWith('--')).map((s) => s.trim().toLowerCase())
   if (!slugs.length) {
     console.error('usage: npx tsx scripts/cma-build-dryrun.ts [--json] <slug> [slug...]')
@@ -999,7 +1018,7 @@ async function main() {
   }
   const out: DryRun[] = []
   for (const slug of slugs) {
-    const r = await dryRun(slug, { pocketLegacy }).catch((e): DryRun => ({
+    const r = await dryRun(slug, { pocketLegacy, noCatchUp }).catch((e): DryRun => ({
       slug, ok: false, stage: 'subject', address: null, city: null, subjectBaths: null, subjectSqft: null,
       customOrNew: null, pricingSource: null, compCount: 0, comps: [], recommended: null,
       range: [null, null], valueRange: [null, null], confidence: null, compPpsfCv: null, needsReview: false, reviewReason: null,

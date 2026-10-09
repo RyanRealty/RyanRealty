@@ -7,6 +7,7 @@
 import { applyCompVerdicts } from '@/lib/cma/client-facing'
 import { resolveCmaParcels } from '@/lib/cma/parcel-shapes'
 import { buildCompSearch } from '@/lib/pricing/comp-search'
+import { withRecordedPlatNames } from '@/lib/cma/printed-subdivision'
 import { buildCompArea, resolveCompetitionArea } from '@/lib/pricing/comp-area'
 import { getCmaAreaUnsoldCycles } from '@/lib/data/cma/areaUnsoldReads'
 import { getListingAskChanges } from '@/lib/data/cma/localOutcomeReads'
@@ -64,7 +65,8 @@ function rowsInBand(rows: readonly CmaBandListingRow[], band: { lo: number; hi: 
 type SalesAreaComp = Pick<
   CmaAdjustedComp,
   'address' | 'subdivision' | 'subdivisionSlug' | 'selectionTier' | 'latitude' | 'longitude' | 'ownPlat'
->
+> &
+  Partial<Pick<CmaAdjustedComp, 'platName'>>
 
 /**
  * The search story and the one sales area, off the sales that price. Pure.
@@ -98,11 +100,16 @@ export function salesSearchAndArea(args: {
       // The selector's own-plat call: a sale on the subject's plat under
       // another MLS spelling is inside the subdivision (reader review 2026-10-08).
       ownPlat: c.ownPlat ?? null,
+      // The recorded plat's name, the one the map labels (reader review 2026-10-09).
+      platName: c.platName ?? null,
     })),
     rural:
       args.diagnostics.rural_acreage || (subject.lotAcres ?? 0) >= 1
         ? { subjectZone: args.subjectZone, counts: args.diagnostics.excluded_totals }
         : null,
+    // Whether any home sold on the subject's own ground at all, when the own
+    // rungs found none (reader review 2026-10-09, 915 Saginaw).
+    ownGroundSold: args.diagnostics.own_ground_sold?.n ?? null,
   })
   const compArea = buildCompArea({
     subject: {
@@ -121,6 +128,7 @@ export function salesSearchAndArea(args: {
       latitude: c.latitude,
       longitude: c.longitude,
       ownPlat: c.ownPlat ?? null,
+      platName: c.platName ?? null,
     })),
   })
   return { compSearch, compArea }
@@ -149,7 +157,10 @@ export async function assembleCompetition(args: {
   generatedAtIso: string
 }) {
   const { subject } = args
-  const renderComps = printedCompGrid(args.comps, args.verdicts)
+  // One name everywhere (reader review 2026-10-09): each printed sale carries
+  // its recorded plat's name, so the search story, the map caption and every
+  // area sentence name it the way the map labels it.
+  const renderComps = await withRecordedPlatNames(printedCompGrid(args.comps, args.verdicts))
   const parcels = await resolveCmaParcels({ subject, comps: renderComps }).catch(() => null)
   const { compSearch, compArea } = salesSearchAndArea({
     subject,

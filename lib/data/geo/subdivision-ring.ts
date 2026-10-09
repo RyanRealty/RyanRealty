@@ -382,6 +382,41 @@ export async function readBoundaryLabel(
 }
 
 /**
+ * Recorded labels for many boundaries in one read, keyed by slug. A slug with
+ * no row is absent from the map. Null when the read failed, so a caller never
+ * mistakes a failed read for "no label".
+ */
+export async function readBoundaryLabels(
+  geoType: 'subdivision' | 'neighborhood',
+  geoSlugs: readonly string[],
+): Promise<Map<string, string> | null> {
+  const keys = [...new Set(geoSlugs.map((s) => s.trim()).filter(Boolean))]
+  const out = new Map<string, string>()
+  if (keys.length === 0) return out
+  try {
+    const sb = createServiceClient()
+    const { data, error } = await sb
+      .from('boundaries')
+      .select('geo_slug, geo_label')
+      .eq('geo_type', geoType)
+      .in('geo_slug', keys)
+    if (error) {
+      console.error('[readBoundaryLabels]', error.message)
+      return null
+    }
+    for (const row of (data ?? []) as Array<{ geo_slug?: string | null; geo_label?: string | null }>) {
+      const slug = row.geo_slug?.trim()
+      const label = row.geo_label?.trim()
+      if (slug && label && !out.has(slug)) out.set(slug, label)
+    }
+    return out
+  } catch (err) {
+    console.error('[readBoundaryLabels]', err instanceof Error ? err.message : err)
+    return null
+  }
+}
+
+/**
  * A point inside a recorded plat, from boundary_geojson. Null when the plat
  * has no polygon or no probe lands inside it. Used only to ask
  * cma_subdivision_ring what touches that plat.

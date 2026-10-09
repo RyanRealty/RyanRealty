@@ -446,7 +446,8 @@ export async function buildCmaMapDataUri(
       .filter((_, i) => families[i]?.family === 'active' || families[i]?.family === 'unsold')
       .map((p) => ({ lat: p.lat, lng: p.lng })),
     heldToStreet: area?.street?.platSlugs ?? null,
-    streetNames: area?.street?.names ?? null,
+    // Printed the way the caption prints them (reader review 2026-10-09).
+    streetNames: area?.street?.names?.map((n) => area?.labels?.[n] ?? n) ?? null,
   })
   const boundaryShown = outlines.shown
   const parentShown = outlines.parentShown

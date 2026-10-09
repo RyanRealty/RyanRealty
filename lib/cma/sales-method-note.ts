@@ -68,6 +68,7 @@ import { realSubdivisionName } from '@/lib/pricing/classes'
 import { isPocketTimeBasis } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { adjustmentNouns, adjustmentsApplied } from '@/lib/cma/adjustments-applied'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
+import { formatCalendarDay } from '@/lib/format/date'
 
 const INDEX_BASIS = 'city-monthly-index-trailing-3'
 
@@ -137,13 +138,16 @@ export function outsideSubdivisionSentence(
   const outside = comps.filter((c) => realSubdivisionName(c.subdivision)?.toLowerCase() !== homeKey)
   if (outside.length === 0 || outside.length >= comps.length) return null
   const total = comps.length
+  // A sale is named by its recorded plat's name, the one the map labels, and
+  // by its MLS name only when no polygon holds it (reader review 2026-10-09).
+  const theirsOf = (c: CmaAdjustedComp) => cleanText(c.platName ?? null) ?? realSubdivisionName(c.subdivision)
   if (outside.length === 1) {
     const c = outside[0]!
-    const theirs = realSubdivisionName(c.subdivision)
+    const theirs = theirsOf(c)
     return `One of the ${countWord(total)} sales, ${c.address}, is outside ${home}${theirs ? `, in ${theirs}` : ''}.`
   }
   const named = outside.map((c) => {
-    const theirs = realSubdivisionName(c.subdivision)
+    const theirs = theirsOf(c)
     return theirs ? `${c.address} in ${theirs}` : c.address
   })
   return `${capitalise(countWord(outside.length))} of the ${countWord(total)} sales are outside ${home}: ${joinAnd(named)}.`
@@ -311,6 +315,21 @@ type LocalGate = {
   toPpsf: number | null
   /** Sales behind the city index on this basis. Zero when the city has no index. */
   indexN: number
+  /** True when the home is on the market today and the read runs to the letter date (Matt 2026-10-09). */
+  ongoing: boolean
+  /** The home's own unsold listing standing in for a read too thin to judge (Matt 2026-10-09). */
+  ownListing: { since: string; firstAsk: number; ask: number; days: number | null } | null
+}
+
+/** The stored own-listing record, or null when any figure is missing. */
+function ownListingOf(v: unknown): LocalGate['ownListing'] {
+  const o = obj(v)
+  if (!o) return null
+  const since = str(o.since)
+  const firstAsk = num(o.firstAsk)
+  const ask = num(o.ask)
+  if (!since || !/^\d{4}-\d{2}-\d{2}$/.test(since) || firstAsk == null || ask == null || !(ask < firstAsk)) return null
+  return { since, firstAsk, ask, days: num(o.days) }
 }
 
 /**
@@ -336,7 +355,20 @@ function localGateOf(ta: Record<string, unknown> | null): LocalGate | null {
     fromPpsf,
     toPpsf,
     indexN: num(ta?.n) ?? 0,
+    ongoing: g.ongoing === true,
+    // Only with no per-foot verdict: a verdict the page prints always wins.
+    ownListing: verdict ? null : ownListingOf(g.ownListing),
   }
+}
+
+/** "while your home was listed", or "since your home came on the market" while it still is. */
+function listedPhrase(g: Pick<LocalGate, 'ongoing'>): string {
+  return g.ongoing ? 'since your home came on the market' : 'while your home was listed'
+}
+
+/** "Your home has been listed since May 1, 2026 and has not sold, and its asking price came down from $775,000 to $699,999" (no closing stop). */
+function ownListingClause(own: NonNullable<LocalGate['ownListing']>): string {
+  return `Your home has been listed since ${formatCalendarDay(own.since, { month: 'long' })} and has not sold, and its asking price came down from ${usd(own.firstAsk)} to ${usd(own.ask)}`
 }
 
 /** "homes like yours in Shevlin West": the homes the local page measured. */
@@ -351,8 +383,8 @@ function localHomes(g: LocalGate, subject: Partial<Pick<CmaSubject, 'subdivision
 function localMoveClause(g: LocalGate): string {
   const from = usd(g.fromPpsf)
   const to = usd(g.toPpsf)
-  if (g.verdict === 'held flat') return `held flat while your home was listed, ${from} then ${to} a square foot`
-  return `${g.verdict} while your home was listed, from ${from} to ${to} a square foot`
+  if (g.verdict === 'held flat') return `held flat ${listedPhrase(g)}, ${from} then ${to} a square foot`
+  return `${g.verdict} ${listedPhrase(g)}, from ${from} to ${to} a square foot`
 }
 
 /** Why no sale moved, off the gate. Always ends on the sold price standing. */
@@ -373,13 +405,20 @@ function localNoMoveReason(
       ? `${Homes} ${localMoveClause(g)}, but every sale here closed when ${whose} median price per square foot was already at or under today's level, so each sale stands at its sold price.`
       : `${Homes} ${localMoveClause(g)}, but there is no monthly price figure for ${city ?? 'this city'} to move the sales by, so each sale stands at its sold price.`
   }
+  if (g.ownListing) {
+    // The home's own unsold listing allowed the move; no sale closed above
+    // today's level, so none moved (Matt 2026-10-09).
+    return g.indexN > 0
+      ? `${ownListingClause(g.ownListing)}. That lets these sales move down with ${whose} figure, but every sale here closed when ${whose} median price per square foot was already at or under today's level, so each sale stands at its sold price.`
+      : `${ownListingClause(g.ownListing)}. That lets these sales move down for date, but there is no monthly price figure for ${city ?? 'this city'} to move them by, so each sale stands at its sold price.`
+  }
   if (g.missing === 'no-listing-window') {
     return `We move these sales down for date only when ${homes} are falling in price, and there is no recent listing of your home to measure that over, so each sale stands at its sold price.`
   }
   if (g.missing === 'no-living-area') {
-    return `We move these sales down for date only when ${homes} fell in price while your home was listed, and those sales carry no living area to measure it by, so each sale stands at its sold price.`
+    return `We move these sales down for date only when ${homes} fell in price ${listedPhrase(g)}, and those sales carry no living area to measure it by, so each sale stands at its sold price.`
   }
-  return `We move these sales down for date only when ${homes} fell in price while your home was listed, and too few of them sold then to tell, so each sale stands at its sold price.`
+  return `We move these sales down for date only when ${homes} fell in price ${listedPhrase(g)}, and too few of them sold then to tell, so each sale stands at its sold price.`
 }
 
 /** The local reason a moved pocket sale moved, or '' when the row has no gate or it did not fall. */
@@ -387,9 +426,15 @@ function localFellSentence(
   g: LocalGate | null,
   subject: Pick<CmaSubject, 'city'> & Partial<Pick<CmaSubject, 'subdivision'>>,
 ): string {
-  if (!g || g.verdict !== 'fell') return ''
+  if (!g) return ''
   const city = cleanText(subject.city ?? null)
   const whose = city ? `${city}'s` : "this city's"
+  if (g.verdict == null && g.ownListing) {
+    // Matt 2026-10-09: with too few local sales to judge, the home's own
+    // unsold listing is the local read.
+    return `Too few ${localHomes(g, subject)} sold ${listedPhrase(g)} to tell which way prices went there. ${ownListingClause(g.ownListing)}, so these sales move down with ${whose} figure.`
+  }
+  if (g.verdict !== 'fell') return ''
   return `These sales move with ${whose} figure only because ${localHomes(g, subject)} also ${localMoveClause(g)}.`
 }
 

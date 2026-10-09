@@ -99,16 +99,20 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
     expect(s!.rungs.reduce((a, r) => a + r.kept, 0)).toBe(5)
   })
 
+  // Reader review 2026-10-09, 915 Saginaw: "No sale inside Park Place in the
+  // last 24 months matched your home" read as sales looked at and turned down,
+  // and no home sold in Park Place at all in those 24 months. "Matched" now
+  // prints only when homes did sell there (own_ground_sold, any size); "No
+  // home sold" only when none did; and with nothing read, neither claim. This
+  // test used to pin "matched" with no read behind it.
+  const emptyOwnRungs = [
+    rung({ tier: 'subdivision-3mo', compsAdded: 0 }),
+    rung({ tier: 'subdivision-6mo', monthsBack: 6, compsAdded: 0 }),
+    rung({ tier: 'nearby-1mi-6mo', monthsBack: 6, compsAdded: 5 }),
+  ]
+
   it('says the subdivision produced nothing ONLY when it produced nothing', () => {
-    const s = buildCompSearch({
-      subdivision: 'Diamond Bar Ranch',
-      ladder: [
-        rung({ tier: 'subdivision-3mo', compsAdded: 0 }),
-        rung({ tier: 'subdivision-6mo', monthsBack: 6, compsAdded: 0 }),
-        rung({ tier: 'nearby-1mi-6mo', monthsBack: 6, compsAdded: 5 }),
-      ],
-      keptComps: other(5),
-    })
+    const s = buildCompSearch({ subdivision: 'Diamond Bar Ranch', ladder: emptyOwnRungs, keptComps: other(5), ownGroundSold: 3 })
     expect(s!.keptBySubdivision['Diamond Bar Ranch']).toBeUndefined()
     // The window the subdivision rungs actually read, not "recent" (reader
     // review 2026-10-08: the sentence claims only what the search covered).
@@ -116,6 +120,62 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
       'No sale inside Diamond Bar Ranch in the last 6 months matched your home, so the search opened to Redmond Heights.',
     )
     expect(s!.sentence).not.toContain('your own street')
+  })
+
+  it('says no home sold there when none did, any size (915 Saginaw, reader review 2026-10-09)', () => {
+    const s = buildCompSearch({
+      subdivision: 'Park Place',
+      ladder: [
+        rung({ tier: 'subdivision-3mo', compsAdded: 0 }),
+        rung({ tier: 'subdivision-24mo-wide', monthsBack: 24, compsAdded: 0 }),
+        rung({ tier: 'nearby-1.25mi-3mo', monthsBack: 3, compsAdded: 3 }),
+      ],
+      keptComps: [
+        { address: '335 17th', subdivision: 'Miller Heights' },
+        { address: '628 Portland', subdivision: 'Kenwood' },
+      ],
+      ownGroundSold: 0,
+    })
+    expect(s!.sentence).toBe(
+      'No home sold in Park Place in the last 24 months, so the search opened to 335 17th in Miller Heights and 628 Portland in Kenwood.',
+    )
+    expect(s!.sentence).not.toMatch(/matched/)
+  })
+
+  it('claims neither when nobody read whether a home sold there', () => {
+    for (const ownGroundSold of [undefined, null]) {
+      const s = buildCompSearch({ subdivision: 'Diamond Bar Ranch', ladder: emptyOwnRungs, keptComps: other(5), ownGroundSold })
+      expect(s!.sentence).toBe(
+        'The search found no sale inside Diamond Bar Ranch in the last 6 months to use, so it opened to Redmond Heights.',
+      )
+      expect(s!.sentence).not.toMatch(/matched|No home sold/)
+    }
+  })
+
+  it('a sold count never overrides sales the rungs found', () => {
+    const s = buildCompSearch({
+      subdivision: 'Diamond Bar Ranch',
+      ladder: [rung({ tier: 'subdivision-24mo', monthsBack: 24, compsAdded: 2 }), rung({ tier: 'nearby-1mi-6mo', monthsBack: 6, compsAdded: 5 })],
+      keptComps: other(5),
+      ownGroundSold: 0,
+    })
+    expect(s!.sentence).toMatch(/^The search found two sales inside Diamond Bar Ranch/)
+  })
+
+  it('names an outside sale by its recorded plat, never an MLS code (20676 Wild Rose, reader review 2026-10-09)', () => {
+    const s = buildCompSearch({
+      subdivision: 'Larkspur',
+      ladder: [rung({ tier: 'subdivision-24mo', monthsBack: 24, compsAdded: 0 }), rung({ tier: 'nearby-1.25mi-9mo', monthsBack: 9, compsAdded: 2 })],
+      keptComps: [
+        { address: '61197 Cottonwood', subdivision: 'CLAB', platName: 'Tara View Estates' },
+        { address: '20825 Chloe', subdivision: 'Chloe Estates', platName: 'Chloe Estates' },
+      ],
+      ownGroundSold: 4,
+    })
+    expect(s!.sentence).toContain('61197 Cottonwood in Tara View Estates')
+    expect(s!.sentence).not.toContain('CLAB')
+    // The MLS name stays the identity the counts are keyed on.
+    expect(s!.keptBySubdivision.CLAB).toBe(1)
   })
 
   it('makes no claim about the subdivision when its rungs never ran', () => {

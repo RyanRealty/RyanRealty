@@ -67,7 +67,25 @@ function rowToCycle(row: BpoListingRow): BpoListingCycle {
     wasRelisted: row['was_relisted'] === true,
     outcome: classifyOutcome(status, closePrice),
     ...(str(row['original_on_market_timestamp']) ? { firstOnMarketAt: str(row['original_on_market_timestamp']) } : {}),
+    ...eventDatesOf(row),
   }
+}
+
+/**
+ * The MLS row's own dated fields for the events that end a stretch (reader
+ * review 2026-10-09, 1355 Jacksonville). Read by cycleOnTheMarket; absent when
+ * the row carries none of them.
+ */
+function eventDatesOf(row: BpoListingRow): { eventDates?: BpoListingCycle['eventDates'] } {
+  const eventDates = {
+    withdrawDate: str(row['withdraw_date']),
+    cancellationDate: str(row['cancellation_date']),
+    expirationDate: str(row['expiration_date']),
+    offMarketDate: str(row['off_market_date']),
+    purchaseContractDate: str(row['purchase_contract_date']),
+    closeDate: str(row['CloseDate']),
+  }
+  return Object.values(eventDates).some((v) => v != null) ? { eventDates } : {}
 }
 
 function pct(part: number, whole: number): number | null {

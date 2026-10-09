@@ -8,6 +8,7 @@
  * Supabase data and traced in citations (CLAUDE.md section 0).
  */
 
+import type { ListingEventDates } from '@/lib/cma/listing-status'
 import type {
   CmaSubject,
   CmaAdjustedComp,
@@ -56,6 +57,14 @@ export interface BpoListingCycle {
   listedAt?: string | null
   /** Set by cycleOnTheMarket: true when that stretch is not the listing's first. */
   restarted?: boolean
+  /**
+   * The MLS row's own dated fields for the events that end a stretch
+   * (WithdrawDate, CancellationDate, ExpirationDate, OffMarketDate,
+   * PurchaseContractDate, CloseDate). cycleOnTheMarket dates the day the
+   * listing left Active by these, not by the day the change was keyed in
+   * (reader review 2026-10-09, 1355 Jacksonville).
+   */
+  eventDates?: ListingEventDates | null
 }
 
 export interface BpoHistorySignal {

@@ -216,6 +216,16 @@ export interface CmaComp {
    */
   ownPlat?: boolean | null
   /**
+   * The recorded name of the plat polygon the sale sits in (`subdivisionSlug`),
+   * as the map labels it (lib/cma/map-outlines.ts printedPlatName). Stamped on
+   * the printed grid (lib/cma/printed-subdivision.ts) so the letter names a
+   * sale's subdivision the way the map does, never by an MLS code nobody
+   * recognizes (reader review 2026-10-09, 20676 Wild Rose: "CLAB" in the text,
+   * "Tara View Estates" on the map). `subdivision` stays the MLS name the
+   * engine reads. Absent when no polygon holds the sale.
+   */
+  platName?: string | null
+  /**
    * Rule 15's location step from where the sale sits (own plat, touching plat,
    * inside the subject's neighborhood or community, else wider), stamped at
    * admission by either ladder (lib/pricing/closed-comp-weight.ts
