@@ -16,13 +16,13 @@ First-party `visitor_*` is the product scoreboard. Through 2026-10-08 client gta
 
 ---
 
-> **Google Signals is OFF as of 2026-10-08** (set through the GA4 Admin API on property 527333348; Analytics confirmed `GOOGLE_SIGNALS_DISABLED`, and ads personalization is off). GA4 demographics and cross-device reports will not fill in. Part 2 below is kept for history only; do not turn Signals back on without Matt's decision (see `docs/GTM_CONSENT_REGION_DEFAULTS.md`).
+> **Google Signals is ON.** It was turned off through the GA4 Admin API on 2026-10-08 and turned back on the same evening (7:01 PM PT) at Matt's call; Analytics confirmed `GOOGLE_SIGNALS_ENABLED` on property 527333348. Demographics and cross-device reports may show a gap for that day.
 
 ## Status as of 2026-08-10 (re-verified live via Admin API)
 
 | Setting | Status | Notes |
 |---|---|---|
-| Google Signals | OFF (since 2026-10-08) | Was enabled 2026-08-10; turned off through the GA4 Admin API on 2026-10-08. Demographics and cross-device reports will not fill in. |
+| Google Signals | ✅ ENABLED + CONSENTED | Auto-verified via `scripts/ga4-admin-setup.mjs` |
 | Custom dimensions registered | ✅ 18 of 18 | All canonical pivots (`lp_variant`, `lp_source`, `lp_medium`, `lp_campaign`, `lp_content`, `broker_slug`, `lead_classification`, `lead_type`, `assigned_broker`, plus 9 more existing) |
 | Conversion events (Key Events) | ✅ 17 marked | Includes all 4 just-added: `listing_inquiry`, `home_valuation_cta_click`, `cma_downloaded`, `newsletter_signup` |
 | Data retention | ✅ 14 months (max) | |
@@ -72,9 +72,7 @@ Total time to read this doc end-to-end: 10 minutes. Total time to actually do th
 
 ---
 
-## Part 2: Google Signals (HISTORICAL: Signals is OFF as of 2026-10-08)
-
-**Current state:** off, set through the GA4 Admin API on 2026-10-08. The steps below describe the old setup and are not to be repeated without Matt's decision.
+## Part 2: Google Signals (unlocks Demographics + Interests + cross-device)
 
 **Why this matters:** Signals is the GA4 feature that turns anonymous visits into rich demographic and interest data — `age 25–34`, `Real Estate Enthusiasts`, `Bend Oregon area`, etc. It's also what enables Google's conversion modeling (filling in conversions for visitors who declined cookies).
 
