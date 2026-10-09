@@ -678,7 +678,8 @@ export function pickExpiredPeers(
         lotAcres: row.lot_size_acres ?? null,
         propertySubType: row.property_sub_type ?? null,
         subdivision: row.SubdivisionName ?? null,
-        ...(row.plat_slug !== undefined ? { platSlug: row.plat_slug } : {}),
+        // Always stored, null when the read found none (Matt 2026-10-09).
+        platSlug: row.plat_slug ?? null,
         latitude: row.Latitude ?? null,
         longitude: row.Longitude ?? null,
       }
