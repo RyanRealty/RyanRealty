@@ -8,6 +8,7 @@ describe('isNonProductionPageLocation — our own browsing is not analytics', ()
   // real traffic and counted as a referral source.
   it.each([
     'http://localhost:3000/housing-market/bend',
+    'http://app.localhost:3000/',
     'http://127.0.0.1:8777/',
     'http://0.0.0.0:3000/search',
     'http://[::1]:3000/',

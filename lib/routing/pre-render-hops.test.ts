@@ -52,6 +52,7 @@ describe('resolvePreRenderHop', () => {
     expect(resolvePreRenderHop('/housing-market/redmond/juniper-preserve')).toBe('/housing-market/bend/pronghorn')
     // A destination the legacy map folds away is followed, never a two-hop chain.
     expect(resolvePreRenderHop('/housing-market/tetherow')).toBe('/communities/tetherow')
+    expect(resolvePreRenderHop('/housing-market/crooked-river-ranch')).toBe('/communities/crooked-river-ranch')
     // Cities, plats and the section's own routes pass through.
     for (const p of ['/housing-market/bend', '/housing-market/bend/broken-top', '/housing-market/bend/stevens-ranch', '/housing-market/reports/sunriver', '/housing-market/central-oregon']) {
       expect(resolvePreRenderHop(p), p).toBeNull()

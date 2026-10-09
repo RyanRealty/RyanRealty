@@ -9,10 +9,13 @@ import { PRIMARY_CITIES } from '@/lib/cities'
 import { GOLF_COURSES } from '@/data/golf/courses'
 import aiQueryMap from '@/lib/seo/ai-query-map.json' assert { type: 'json' }
 import { CORE_MARKET_PATHS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
+import { BLOG_HOUSING_MARKET_GUIDE_REDIRECTS } from '@/lib/routing/blog-market-guide-redirects'
 import { cityTypeLlmsLines, dedupeLlmsLines, marketCityLlmsLines, zipLlmsLines, LLMS_SUBDIVISIONS_PATH } from '@/lib/site/llms-geo'
 import { BRAND, CONTACT } from '@/lib/brand/contact'
 
 const SITE_URL = siteOrigin()
+
+const GUIDE_HOP = new Map(BLOG_HOUSING_MARKET_GUIDE_REDIRECTS.map((r) => [r.source, r.destination]))
 
 export const revalidate = 3600
 
@@ -117,7 +120,12 @@ export async function GET() {
   const guideLines = lines([
     `- All guides: ${SITE_URL}/blog`,
     ...pillars('guides'),
-    ...guides.map((g) => `- ${g.title}: ${SITE_URL}/blog/${g.slug}`),
+    // A retired /blog/<town>-housing-market-guide 404s; list the live page
+    // it 301s to (the same table next.config.ts redirects with).
+    ...guides.map((g) => {
+      const path = `/blog/${g.slug}`
+      return `- ${g.title}: ${SITE_URL}${GUIDE_HOP.get(path) ?? path}`
+    }),
   ])
   // "All posts" shares /blog with "All guides" above, so the dedupe drops it.
   const blogLines = lines([
