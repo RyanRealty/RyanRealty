@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
+import { FormAdConsentNotice, FormAdCookieBox, useFormConsentRestricted } from '@/components/site/FormAdConsent'
+import { writeFormAdConsent } from '@/lib/identity/form-ad-consent'
 import './contact-ask.css'
 import { readRrSessionId } from '@/lib/tracking'
 import { submitContactForm } from '../actions'
@@ -61,6 +63,9 @@ export function ContactAsk({
 }) {
   const isTour = intent === 'tour'
   const [smsConsent, setSmsConsent] = useState(false)
+  const [adCookies, setAdCookies] = useState(false)
+  const [adMatch, setAdMatch] = useState(false)
+  const restricted = useFormConsentRestricted()
   const [fieldDemo, setFieldDemo] = useState<ContactFieldDemo>('idle')
   const [previewSent, setPreviewSent] = useState(false)
 
@@ -138,6 +143,10 @@ export function ContactAsk({
       }
       formData.set('message', message)
       if (smsConsent) formData.set('smsConsent', 'yes')
+      // Memo 5.4: a checked ad-cookie box writes the banner grant. An empty
+      // box writes nothing. The EU/UK match box is a separate consent.
+      writeFormAdConsent(adCookies) // hydration-safe: submit handler, not render
+      if (restricted && adMatch) formData.set('adMatchConsent', 'yes')
       // Forward the trap verbatim: hardcoding it empty is the same as no trap.
       formData.set(CONTACT_TRAP.name, answers[CONTACT_TRAP.name] ?? '')
       const rrSession = readRrSessionId() // hydration-safe: event/effect storage only
@@ -173,7 +182,7 @@ export function ContactAsk({
         again: 'Send another message',
       }
     },
-    [defaultInquiryType, intent, isTour, listingKey, listingSummary, smsConsent],
+    [adCookies, adMatch, defaultInquiryType, intent, isTour, listingKey, listingSummary, restricted, smsConsent],
   )
 
   return (
@@ -216,8 +225,17 @@ export function ContactAsk({
                 <Label htmlFor="contact-trap">{CONTACT_TRAP.label}</Label>
                 <Input id="contact-trap" name={CONTACT_TRAP.name} type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
               </div>
+              <FormAdCookieBox checked={adCookies} onCheckedChange={setAdCookies} />
               <SmsConsentDisclosure checked={smsConsent} onCheckedChange={setSmsConsent} />
             </>
+          }
+          notice={
+            <FormAdConsentNotice
+              surface="ask"
+              restricted={restricted}
+              adMatchChecked={adMatch}
+              onAdMatchCheckedChange={setAdMatch}
+            />
           }
           submitLabel={isTour ? 'Request a tour' : 'Send message'}
           onSubmit={send}
