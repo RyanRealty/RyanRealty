@@ -9,102 +9,103 @@ export const posts: BlogPostSeed[] = [
     tags: ['nw crossing', 'bend', 'neighborhoods', 'walkable'],
     hero_image_url:
       'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920&q=80',
+    author_broker_id: '2fda6811-2edf-49e3-b3ca-33e1052f82e6',
     published_at: '2025-11-08T09:00:00Z',
     status: 'published',
-    seo_title: "NW Crossing in Bend: What Walkable Living Costs",
+    // Live since supabase/migrations/20261009160000_blog_nw_crossing_guide_refresh.sql (brief 2026-10-09).
+    seo_title: 'NW Crossing, Bend: Prices, Schools and Parks',
     seo_description:
-      'Explore NW Crossing in Bend, Oregon. Walkable streets, local shops, parks, schools, and home prices from the $500Ks to over $1M. A practical neighborhood guide.',
+      'NorthWest Crossing homes sold for a median $1,149,500 over 12 months (54 sales, as of Oct 8, 2026). Schools, parks, and the farmers market.',
     excerpt:
-      'NW Crossing is one of the few neighborhoods in Bend where you can walk to coffee, groceries, and a park without touching your car keys. Here is what it actually costs and feels like to live there.',
+      "Homes in NorthWest Crossing, the walkable planned neighborhood on Bend's west side, sold for a median of $1,149,500 over the last 12 months, on 54 single-family sales, as of Oct 8, 2026.",
     content: `
-<p>NW Crossing is a west-side Bend neighborhood designed around walkability, with a village center, sidewalks on both sides of the street, and homes built closer together than the Central Oregon norm.</p>
+<div class="v3-blog-answer" data-figures-as-of="2026-10-08">
+<p>Homes in NorthWest Crossing, the walkable planned neighborhood on Bend's west side, sold for a median of $1,149,500 over the last 12 months, on 54 single-family sales, as of Oct 8, 2026. That's about 50% above Bend's citywide median of $765,000. Homes that went under contract in the last 90 days took a median of 14 days, and the 13 houses for sale now ask a median of $1,449,000.</p>
+<p class="v3-blog-answer-source">Figures: Ryan Realty, Oregon Data Share MLS, detached single-family, as of Oct 8, 2026 (<a href="/communities/northwest-crossing">NorthWest Crossing</a>, <a href="/housing-market/bend">Bend</a>).</p>
+</div>
+<p>NorthWest Crossing is a 486-acre neighborhood that West Bend Property Company, a partnership of Brooks Resources and Tennant Developments, began selling in 2001. Builders bought individual lots through a lottery, so the streets mix styles instead of repeating a few floor plans. Residential development concluded in 2018. Most homes sit within walking distance of the shops on NW Crossing Drive and two public parks.</p>
 
 <h2>Location and layout</h2>
 
-<p>NW Crossing sits on Bend's west side, roughly bounded by Skyliners Road to the north and Mt. Washington Drive to the south. The neighborhood is about a ten-minute drive from downtown Bend and five minutes from the Cascade Lakes Highway, which puts you within easy reach of Mt. Bachelor, Todd Lake, and the Deschutes National Forest trail system.</p>
+<p>NorthWest Crossing sits on Bend's west side, within easy reach of Mt. Bachelor, Todd Lake, and the Deschutes National Forest trail system.</p>
 
-<p>The development was designed as a New Urbanist community: homes are closer together than typical Central Oregon subdivisions, streets have sidewalks on both sides, and a commercial village center was part of the original plan.</p>
-
-<p>The west-side location means slightly higher elevation than the east side, which brings a bit more snow in winter and cooler summer evenings. Sunsets behind the Cascades are visible from much of the neighborhood.</p>
+<p>It was planned as a neo-traditional mixed-use community, with commercial and light industrial space, parks, trails, and civic buildings laid out alongside the homes under a master plan and a mixed-use overlay zone.</p>
 
 <h2>The village center and walkability</h2>
 
-<p>NW Crossing's village is a cluster of shops and restaurants along NW Crossing Drive: Thump Coffee, a small grocery and deli, a pub, a pizza spot, a wine bar, and a handful of other businesses. The mix rotates occasionally, but core tenants have been stable for years. It is not a full downtown, but it covers daily errands without a car trip.</p>
+<p>The neighborhood's shops sit along NW Crossing Drive and NW Mt. Washington Drive. The Grove's Market Hall, at 921 NW Mt. Washington Dr., has nine food and drink counters, including Thump Coffee. It covers coffee and a meal out without a car trip.</p>
 
-<p>Several parks are woven through the neighborhood, connected by paved paths. Discovery Park is the largest, with play structures, open fields, and a community gathering area. The path system also connects to Bend's larger trail network, so you can bike or walk to other parts of the west side without riding along major roads. In summer, you will see people commuting to coffee on foot, kids riding bikes to friends' houses, and dog walkers on every path. In winter, the paths are cleared but see less traffic. The village still functions as a walking destination year-round.</p>
+<p>Two public parks run by the Bend Park and Recreation District anchor the neighborhood. Discovery Park covers 40 acres around a 3-acre lake, with walking trails, a natural play area, a fenced off-leash dog park, a community garden, and a picnic shelter. The lake is irrigation water, and the district doesn't recommend swimming in it. Compass Park, a 5-acre circle at 2500 NW Crossing Dr., has a playground, a picnic shelter, and open lawn.</p>
 
-<p>For families, the walkability extends to schools. NW Crossing is zoned for Elk Meadow Elementary and Cascade Middle School, both within reasonable walking or biking distance for older kids. High school students attend Summit High, which is a short drive or bus ride away.</p>
+<p>Schools are assigned by address. Most of NorthWest Crossing is in the High Lakes Elementary attendance area, and some western sections are in William E. Miller Elementary's. All of it is served by Pacific Crest Middle School and Summit High School, part of Bend-La Pine Schools. Confirm a specific address with the county's <a href="https://dial.deschutes.org" target="_blank" rel="noopener">DIAL lookup</a> before you buy.</p>
 
 <h2>Home styles and architecture</h2>
 
-<p>NW Crossing has a distinct architectural identity compared to much of Bend. The design guidelines favor Craftsman, Northwest Contemporary, and cottage-style homes, rather than the stucco-and-tile style common in some of Bend's newer east-side developments. Homes tend to feature covered front porches, natural materials like stone and wood siding, and muted earth-tone color palettes.</p>
+<p>NorthWest Crossing's architectural review committee publishes design guidelines with style sections for Craftsman, Tudor Revival, Colonial, American Foursquare, Prairie, and Mid-Century Modern homes. Streets use alley-loaded garages, with front porches close to the sidewalk. Single-family homes share the neighborhood with townhomes, cottages, and live/work townhomes.</p>
 
-<p>Lot sizes are smaller than the Central Oregon norm, typically ranging from 3,000 to 7,000 square feet, compact compared to a quarter-acre lot. Community parks and paths are part of the layout alongside smaller private yards.</p>
+<h2 id="price-ranges-and-market-trends">What homes cost in NorthWest Crossing</h2>
 
-<p>Home sizes range from about 1,200 square feet for smaller cottages up to about 3,200 square feet for larger single-family homes. Townhouses and attached homes are also in the mix, with lower entry prices. Garages are typically two-car.</p>
+<p>Single-family homes in NorthWest Crossing sold for a median of $1,149,500 over the last 12 months, on 54 sales, as of Oct 8, 2026. That median is down 3.0% from the 12 months before, and about 50% above Bend's citywide median of $765,000.</p>
 
-<h2>Price ranges and market trends</h2>
+<p>Homes still sell quickly. Half the homes that went under contract in the last 90 days did it within 14 days, against 31 days across Bend. The typical home closed at 97.4% of its original list price, and 35.2% of buyers paid cash, against 28.3% citywide. With 2.4 months of supply, it's a seller's market.</p>
 
-<p>NW Crossing prices run higher than many Bend neighborhoods. As of recent sales data, expect the following ranges:</p>
+<p>Right now, 13 single-family homes are for sale at a median asking price of $1,449,000. Asking prices and sale prices describe different homes, so don't read the gap as a price rise. Townhomes, condos, and cottages are not in these figures. We list them on the community page but don't publish a median for them yet.</p>
 
-<ul>
-<li><strong>Townhouses and attached homes:</strong> $475,000 to $650,000</li>
-<li><strong>Smaller single-family homes (under 1,800 sq ft):</strong> $600,000 to $800,000</li>
-<li><strong>Larger single-family homes (1,800 to 3,200 sq ft):</strong> $800,000 to $1,200,000</li>
-<li><strong>Premium lots or custom builds:</strong> $1,000,000 and up</li>
-</ul>
+<p>All residential lots have been developed, so new supply comes mainly from resales. Eight in ten detached homes here were built between 2003 and 2017.</p>
 
-<p>These prices run higher per square foot than many other Bend neighborhoods. NW Crossing has no new phases or expansion areas, so the supply of homes in the neighborhood is fixed.</p>
+<p>Figures: Ryan Realty, Oregon Data Share MLS, detached single-family, as of Oct 8, 2026 (<a href="/communities/northwest-crossing">NorthWest Crossing homes and market</a>, <a href="/housing-market/bend/northwest-crossing">NorthWest Crossing market report</a>, <a href="/housing-market/bend">Bend</a>). Lot status: Brooks Resources.</p>
 
-<p>Check current <a href="/homes-for-sale">Bend listings</a> to see what is available right now, or visit our <a href="/housing-market">Central Oregon market data</a> for broader pricing trends.</p>
+<p>See <a href="/communities/northwest-crossing">NorthWest Crossing homes for sale</a>, or compare it with other neighborhoods in our <a href="/blog/best-neighborhoods-bend-buyers">Bend neighborhoods guide</a>.</p>
 
-<h2>HOA and community rules</h2>
+<p>If you own here and are thinking about selling, our <a href="/tools/seller-net-sheet">seller net sheet</a> shows what you'd take home after commission, title, and escrow.</p>
 
-<p>NW Crossing has an active homeowners association that manages the common areas, parks, paths, and architectural review process. Monthly dues typically run between $100 and $175 depending on the sub-area within the development. These cover landscape maintenance in common areas, path upkeep, and community events.</p>
+<h2 id="hoa-and-community-rules">Design rules and HOA</h2>
 
-<p>The architectural review committee enforces design standards. NW Crossing is not the place for a bright paint color or a chain-link fence.</p>
+<p>Exterior changes in NorthWest Crossing, including paint, landscaping, tree removal, additions, and new construction, need approval from the NorthWest Crossing Architectural Review Committee. The committee, which says on its site that it is not a homeowners' association, enforces the neighborhood's recorded CC&amp;Rs and design guidelines. NorthWest Crossing has no neighborhood-wide HOA or dues. Discovery Park and Compass Park are public parks run by the Bend Park and Recreation District. Condo and townhome projects inside the neighborhood can have their own associations and dues. Ask for the dues and governing documents on any home you're considering.</p>
 
 <h2>Who lives here</h2>
 
-<p>NW Crossing attracts a mix of buyers, including:</p>
+<p>Buyers here have long included downsizers and retirees alongside families. The developer notes that its buyers shifted toward empty nesters and retirees during the Great Recession. Today 35.2% of NorthWest Crossing sales close in cash, against 28.3% across Bend (as of Oct 8, 2026).</p>
 
-<ul>
-<li><strong>Walkers and cyclists:</strong> The village center, the parks, and the paths are within a short walk of most homes. You will see bikes around the neighborhood.</li>
-<li><strong>Active professionals:</strong> People who work remotely or have flexible schedules and value being able to walk to coffee or lunch without a commute.</li>
-<li><strong>Downsizers:</strong> Some retirees and empty-nesters who want to trade a larger property for a low-maintenance home in a walkable setting.</li>
-</ul>
-
-<p>The community is friendly but not heavily social. There are neighborhood events throughout the year, including a summer concert series, holiday gatherings, and seasonal farmers market appearances.</p>
+<p>The NorthWest Crossing Saturday Farmers Market fills NW Crossing Drive each summer. In 2026, its 19th season, it ran Saturdays from 10 a.m. to 2 p.m., May 30 through Sept. 26.</p>
 
 <h2>Practical considerations</h2>
 
 <h3>Winter access</h3>
 
-<p>The west side of Bend generally gets more snow than the east side, and NW Crossing is no exception. Streets are plowed, but the neighborhood's narrower roads can take longer to clear after a significant storm. Four-wheel drive or all-wheel drive is advisable for Central Oregon winters in general.</p>
+<p>All-wheel or four-wheel drive helps in Central Oregon winters.</p>
 
 <h3>Traffic and parking</h3>
 
-<p>The smaller lot sizes and narrower streets mean on-street parking can get tight, especially during community events or when residents have guests. If you have more than two cars, garage and driveway space matters. Most homes have two-car garages, but a third vehicle will end up on the street.</p>
+<p>Lots are small, so if you have more than two cars, check the garage and driveway space before you write an offer.</p>
 
 <h3>Proximity to recreation</h3>
 
-<p>NW Crossing is one of the closest neighborhoods in Bend to the Cascade Lakes corridor. Phil's Trail is a short drive or a longer bike ride from the neighborhood. Mt. Bachelor is about 25 minutes away. Tumalo Falls is even closer.</p>
-
-<h3>Groceries and services</h3>
-
-<p>While the village center covers casual dining and coffee, you will still need to drive for a full grocery run. The nearest large grocery stores (Newport Market, Trader Joe's, Whole Foods) are about five to ten minutes away. Medical facilities, including St. Charles Bend, are a ten to fifteen minute drive.</p>
+<p>NorthWest Crossing is on the west side, toward Shevlin Park, the Phil's Trail network, and Century Drive to Mt. Bachelor.</p>
 
 <h3>Resale and turnover</h3>
 
-<p>NW Crossing homes do not sit on the market long. The neighborhood has no new phases or expansion areas, and listings typically go under contract within days or a few weeks. Buyers should have financing in order before homes hit the market.</p>
+<p>NorthWest Crossing homes that went under contract in the last 90 days took a median of 14 days, against 31 across Bend (as of Oct 8, 2026). Have financing lined up before you start touring.</p>
 
 <h2>Is NW Crossing right for you</h2>
 
-<p>NW Crossing is a strong fit if you prioritize walkability, appreciate architectural standards, and do not mind smaller lots in exchange for community amenities. It is less ideal if you want acreage, need to keep costs under $500,000, or prefer a more rural Central Oregon feel.</p>
+<p>It is a strong fit if you want walkability, design standards, and a park within a short walk, and you don't mind a smaller lot. It is a harder fit if you want acreage, a more rural feel, or a budget at or below Bend's $765,000 median, since the neighborhood's median sale is about 50% higher.</p>
 
-<p>NW Crossing is one of the few walkable neighborhoods in Bend. There are no new phases planned, so the number of homes in the neighborhood is fixed.</p>
+<p>All of NorthWest Crossing's residential lots have been developed, so what comes up for sale is mostly resale. To see how it compares with other west-side neighborhoods, read our <a href="/blog/westside-vs-eastside-bend">westside vs. eastside guide</a>.</p>
 
-<p>If you want to explore what is currently for sale in NW Crossing or elsewhere on Bend's west side, browse <a href="/homes-for-sale">available homes</a> or reach out to our <a href="/team">team</a> for a conversation about which Bend neighborhoods fit your priorities.</p>
+<p>If you want to explore what is currently for sale in NW Crossing or elsewhere on Bend's west side, browse <a href="/communities/northwest-crossing">available homes</a> or reach out to our <a href="/team">team</a> for a conversation about which Bend neighborhoods fit your priorities.</p>
+
+<h2>Questions</h2>
+<h3>What is the median home price in NorthWest Crossing?</h3>
+<p>The median single-family sale price in NorthWest Crossing was $1,149,500 over the last 12 months, on 54 sales, as of Oct 8, 2026. That's about 50% above Bend's citywide median of $765,000.</p>
+<h3>Are home prices going up in NorthWest Crossing?</h3>
+<p>Not over the last year. The 12-month median sale price of $1,149,500 is down 3.0% from the 12 months before, as of Oct 8, 2026. Homes still sell fast: those that went under contract in the last 90 days took a median of 14 days.</p>
+<h3>What schools serve NorthWest Crossing?</h3>
+<p>Bend-La Pine Schools. Most of the neighborhood is in the High Lakes Elementary attendance area, and some western sections are in William E. Miller Elementary's. All of it is in the Pacific Crest Middle School and Summit High School areas. Confirm a specific address with the Deschutes County DIAL lookup.</p>
+<h3>Does NorthWest Crossing have an HOA?</h3>
+<p>No. NorthWest Crossing has no neighborhood-wide HOA or dues. A design committee enforces the recorded covenants and can fine for violations. Some townhome and condo groups inside the neighborhood have their own associations with monthly dues, so check the listing.</p>
+<h3>When is the NorthWest Crossing farmers market?</h3>
+<p>The NorthWest Crossing Saturday Farmers Market runs on NW Crossing Drive between Mt. Washington Drive and Compass Park. In 2026, its 19th season, it ran Saturdays from 10 a.m. to 2 p.m., May 30 through Sept. 26.</p>
 `,
   },
 
