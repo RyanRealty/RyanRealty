@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { ComparisonProvider } from '@/contexts/ComparisonContext'
 import CookieConsentBanner from '@/components/CookieConsentBanner'
-import HideOnLP, { HideOnAdmin } from '@/components/layout/HideOnLP'
+import { HideOnAdmin } from '@/components/layout/HideOnLP'
 import { AnalyticsScripts } from './AnalyticsScripts'
 import { IdentityBridges } from './IdentityBridges'
 import { Toaster } from '@/components/ui/sonner'
@@ -17,10 +17,10 @@ import { Toaster } from '@/components/ui/sonner'
  * pop-ups stay in layout.tsx because they need positional placement
  * around `children`.
  *
- * The CookieConsentBanner is hidden on /lp/* routes per the existing
- * brand-consent policy — LP visitors see only the lead form. Analytics
- * scripts + identity bridges still run on LPs (CRM / agent-attribution
- * cookies must hydrate on landing-page hits).
+ * The banner stays mounted on every route so footer Cookie settings can open
+ * the second layer. The first layer and the floating icon suppress themselves
+ * on /lp/*, /admin, /sign/*, and /concept/* (consentFirstLayerSuppressed).
+ * Analytics scripts + identity bridges still run on LPs.
  */
 export function RootProvider({ children }: { children: ReactNode }) {
   return (
@@ -37,9 +37,7 @@ export function RootProvider({ children }: { children: ReactNode }) {
           toast.success/error calls render. Client components must never
           mount their own local Toaster. */}
       <Toaster position="bottom-right" />
-      <HideOnLP>
-        <CookieConsentBanner />
-      </HideOnLP>
+      <CookieConsentBanner />
     </ComparisonProvider>
   )
 }
