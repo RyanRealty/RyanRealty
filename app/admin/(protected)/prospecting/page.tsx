@@ -213,6 +213,15 @@ export default async function ProspectingPage({
         <div style={{ flex: '1 1 260px', minWidth: 220 }}>
           <VerdictLine tone={summary.sendable > 0 || summary.needsAudit > 0 ? 'attention' : 'ok'}>
             <b>{summary.sendable} ready to send</b> · {summary.needsAudit} need an audit · {summary.sent} sent
+            {/* Blocked count in the header, not only the filter dropdown (FSBO
+                Desk 2026-10-09: 76 of 76 blocked read as "0 / 0 / 0"). */}
+            {' · '}
+            <Link
+              href={hrefFor(kind, 'excluded', q, 1, sort, dir, city, cityExplicitAll)}
+              style={{ color: 'inherit', textDecoration: 'none' }}
+            >
+              {summary.excluded} blocked
+            </Link>
           </VerdictLine>
         </div>
         <ProspectFilterSelect kind={kind} status={status} q={q} city={city} counts={counts} />

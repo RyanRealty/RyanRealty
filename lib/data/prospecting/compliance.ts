@@ -17,6 +17,7 @@ import { isClosedStatus } from '@/lib/listing-status'
 import { emailBlockedByFlags, phoneBlockedByFlags } from '@/lib/prospecting/intake-gate'
 import {
   blockAllChannels,
+  fsboOffMarketReason,
   hasSendableEmail,
   hasSendablePhone,
   PROSPECT_CHANNELS,
@@ -367,6 +368,8 @@ export interface ProspectComplianceInput {
   enrichment_notes?: string | null
   /** fsbo only — offMarket = status !== 'active' (no longer FSBO). */
   status?: string | null
+  /** fsbo only — last time the scraper saw the ad; names the off-market reason. */
+  last_seen_at?: string | null
   outreach_crm_person_id?: number | null
   fub_person_id?: number | null
 }
@@ -483,7 +486,7 @@ export async function resolveComplianceState(
     if (channels[c].blocked && channels[c].reason) reasons.push(`${c.toUpperCase()}: ${channels[c].reason}`)
   }
   if (relisted) reasons.push('Relisted in MLS')
-  if (offMarket) reasons.push('Off market')
+  if (offMarket) reasons.push(fsboOffMarketReason(prospect.last_seen_at))
 
   const smsBlocked = channels.sms.blocked
   return {

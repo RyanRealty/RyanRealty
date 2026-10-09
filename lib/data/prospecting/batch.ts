@@ -26,6 +26,7 @@ import {
 import {
   blockAllChannels,
   acceptedDocTypesFor,
+  fsboOffMarketReason,
   expectedDocTypeFor,
   hasSendableEmail,
   hasSendablePhone,
@@ -495,7 +496,7 @@ export async function resolveComplianceBatch(
       if (channels[c].blocked && channels[c].reason) reasons.push(`${c.toUpperCase()}: ${channels[c].reason}`)
     }
     if (relisted) reasons.push('Relisted in MLS')
-    if (offMarket) reasons.push('Off market')
+    if (offMarket) reasons.push(fsboOffMarketReason(raw.last_seen_at as string | null | undefined))
 
     out.set(id, {
       hardStop,
