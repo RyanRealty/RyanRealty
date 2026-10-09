@@ -1,6 +1,7 @@
 import type { BlogPostSeed } from '../seed-blog-posts'
 import { buyerClosingCostsSeed } from '../../lib/blog/buyer-closing-costs'
 import { costToSellSeed } from '../../lib/blog/cost-to-sell'
+import { commissionSeed } from '../../lib/blog/real-estate-commission'
 
 /**
  * Buyer + seller AEO guide pack, 2026-09-07. Fifteen guides from the keyword brief (docs/plans/PUBLIC_PRODUCT/AEO_GUIDES_2026-09.md). Six of these slugs replaced older seed entries in the sibling files, so each slug lives in exactly one seed file. Every number in these bodies traces to the source named in that doc; dated figures carry their as-of date in the text.
@@ -227,6 +228,7 @@ export const posts: BlogPostSeed[] = [
   },
   // Body, figures, and FAQ live in lib/blog/cost-to-sell.ts (AIV #1 worked example, 2026-10-08).
   costToSellSeed(),
+  commissionSeed(),
   {
     title: "First-Time Home Buyer Guide for Bend and Central Oregon",
     slug: "first-time-home-buyer-guide-central-oregon",
@@ -571,7 +573,7 @@ export const posts: BlogPostSeed[] = [
 <p>The settlement of the national commission lawsuits required two things of every brokerage on a Realtor-affiliated MLS, which in Central Oregon is every brokerage you will deal with. Offers of buyer-agent compensation came out of the MLS, and buyers working with an agent now sign a written agreement before the first showing that states what the agent will do and what the agent will be paid. The point is that you see the number before you owe it, instead of learning at closing that a fee was baked into the deal.</p>
 
 <h2>What you sign before showings</h2>
-<p>The agreement names the agent and the brokerage, says how long it runs, describes what we do for you, and states the fee. Oregon wrote the same requirement into state law in 2024 with House Bill 4058, which requires a written buyer representation agreement before, or as soon as possible after, an agent starts assisting a buyer. The standard Oregon form is OREF 050, the Buyers Representation Agreement. We go through it with you before the first showing and we do not tour until it is signed, because the MLS rule does not allow it. The term is negotiable. Some buyers sign for a single property or a single day to start, then extend once they are comfortable.</p>
+<p>The agreement names the agent and the brokerage, says how long it runs, describes what we do for you, and states the fee. Oregon wrote the same requirement into state law with House Bill 4058, passed in 2024 and in effect since January 1, 2025 (ORS 696.810), which requires a written buyer representation agreement before, or as soon as possible after, an agent starts assisting a buyer. The standard Oregon form is OREF 050, the Buyers Representation Agreement. We go through it with you before the first showing and we do not tour until it is signed, because the MLS rule does not allow it. The term is negotiable. Some buyers sign for a single property or a single day to start, then extend once they are comfortable.</p>
 
 <h2>How pay works on a real Bend deal</h2>
 <p>The fee in your agreement is what your agent is owed if you buy. Where the money comes from is negotiated in the offer. A seller can still agree to cover some or all of the buyer's agent fee as a term of the sale, and many do, because it widens the pool of buyers who can afford their home. It is no longer assumed and it is no longer posted. When we write your offer we ask the seller to pay it. If the seller covers all of it, you pay nothing out of pocket. If the seller covers part, the balance is yours at closing, and you knew the number before you toured. If you want the seller to pay it, that request goes in the offer, and it is one of the terms the seller weighs alongside price and timing.</p>

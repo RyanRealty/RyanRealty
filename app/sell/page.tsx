@@ -99,6 +99,7 @@ import {
   SELL_POSTER,
   SELL_STAGE_EYEBROW,
   TRACK_RECORD_TRACE,
+  COMMISSION_GUIDE_ROUTE,
 } from './_v3/sell-constants'
 
 export const revalidate = 3600
@@ -505,6 +506,9 @@ export default async function SellPage() {
           showEcho={false}
           showProgress={false}
         />
+        <p className="sell-plan-more">
+          <Link href={COMMISSION_GUIDE_ROUTE}>How commission works in Bend, in dollars</Link>
+        </p>
 
         {/* The reviews used to have their own V3Proof band here. V3ProofBlock
             now carries them, in full and as written, directly under the ask —
