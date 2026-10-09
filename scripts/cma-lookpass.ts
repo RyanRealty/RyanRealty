@@ -24,9 +24,10 @@
  * there, or a tap that changes nothing on the page, fails the run: an
  * interaction nobody drove is an interaction nobody knows works.
  *
- * `--check` adds four MECHANICAL failures on top of the shots, so the defects
+ * `--check` adds five MECHANICAL failures on top of the shots, so the defects
  * Matt found cannot come back without the tool saying so
- * (docs/plans/CMA_REIMAGINED_2026-09-07.md, Done means, and rule 31):
+ * (docs/plans/CMA_REIMAGINED_2026-09-07.md, Done means, rule 31, and the
+ * 2026-10-09 size-mix trend):
  *
  *   1. a banned word in the seller text of either document
  *   2. a property address that is not inside a tracked ryan-realty.com link
@@ -34,6 +35,7 @@
  *      with getBBox() rather than estimated from a character count
  *   4. chapter 3's comps map has no `<img class="pin-map">`. An SVG scatter
  *      is not that image (2745 Aldrich, 2026-10-09).
+ *   5. a size-mix trend that still leads with a sale-price rise or fall
  *
  * It exits non-zero on any of them.
  *
@@ -238,11 +240,63 @@ async function screenshotDocument(opts: {
 
 /**
  * ── --check ────────────────────────────────────────────────────────────────
- * Four mechanical failures. Each one is a defect found by opening the
+ * Five mechanical failures. Each one is a defect found by opening the
  * document, so each one now fails the tool instead of waiting for a person.
+ * The fifth is a size mix still printed as a sale-price rise or fall
+ * (2026-10-09, 2902 Pinnacle).
  */
 
 type CheckFailure = { doc: DocKind; rule: string; detail: string }
+
+/**
+ * 5. A size mix is not a sale-price rise or fall (2026-10-09, 2902 Pinnacle).
+ *
+ * The stored `listingMarket` is what the page re-renders. listingMarketPriceLedMixShift
+ * reads the slope word and the sentence the current renderer prints. A letter
+ * that still says the median sale rose or fell across different sizes fails.
+ */
+async function checkSizeMixTrend(
+  docs: ReadonlyArray<readonly [DocKind, string | null]>,
+  listingMarket: unknown,
+): Promise<CheckFailure[]> {
+  const {
+    readListingMarketMove,
+    listingMarketPriceLedMixShift,
+    listingMarketSizeMix,
+    listingMarketSentence,
+  } = await import('@/lib/cma/listing-window-market')
+  const move = readListingMarketMove(listingMarket)
+  if (!move) return []
+  const failures: CheckFailure[] = []
+  const present = docs.filter((pair): pair is readonly [DocKind, string] => typeof pair[1] === 'string' && pair[1].length > 0)
+  const led = listingMarketPriceLedMixShift(move)
+  if (led) {
+    failures.push({
+      doc: present[0]?.[0] ?? 'letter',
+      rule: 'size-mix trend leads with sale price',
+      detail: led,
+    })
+  }
+  if (!listingMarketSizeMix(move)) return failures
+  const sentence = listingMarketSentence(move)
+  for (const [doc, html] of present) {
+    if (!html.includes('While your home was listed')) continue
+    if (!html.includes(sentence)) {
+      failures.push({
+        doc,
+        rule: 'size-mix trend leads with sale price',
+        detail: 'the printed sentence is not the per-foot reading for homes of different sizes',
+      })
+    } else if (!html.includes('different sizes')) {
+      failures.push({
+        doc,
+        rule: 'size-mix trend leads with sale price',
+        detail: 'the sale-price slope does not say different sizes',
+      })
+    }
+  }
+  return failures
+}
 
 /** 1. A banned word anywhere a seller reads (lib/cma/seller-text.ts). */
 function checkBannedWords(
@@ -962,10 +1016,11 @@ async function processSlug(
     }
     console.log(`  overlay: ${overlay.name} — merged into render_args (nothing written)`)
   }
-  const { subject: subjectAddress, addresses } = collectDocumentAddresses(
+  const renderArgs =
     ((overlaidSource?.render_args as Record<string, unknown> | null) ??
-      (adminRow.render_args as Record<string, unknown> | null)) ?? null,
-  )
+      (adminRow.render_args as Record<string, unknown> | null)) ??
+    null
+  const { subject: subjectAddress, addresses } = collectDocumentAddresses(renderArgs)
 
   // Letter: resolveCmaPrintHtml is the exact function lib/cma-pdf.ts calls
   // for the PDF and the ?print=1 route falls back to — reusing it means a
@@ -1063,9 +1118,18 @@ async function processSlug(
       const mapGap = deps.mapImageGap(html)
       if (mapGap) failures.push({ doc, rule: 'map image', detail: mapGap })
     }
+    failures.push(
+      ...(await checkSizeMixTrend(
+        [
+          ['letter', letter?.html ?? null],
+          ['immersive', immersiveHtml],
+        ],
+        renderArgs?.listingMarket,
+      )),
+    )
     if (failures.length === 0) {
       console.log(
-        `  ✓ check: no banned word, ${addresses.length} address(es) tracked, every chart label inside its frame at 375, map image present`,
+        `  ✓ check: no banned word, ${addresses.length} address(es) tracked, every chart label inside its frame at 375, map image present, no price-led size mix`,
       )
     } else {
       console.error(`  ✗ check: ${failures.length} failure(s)${subjectAddress ? ` on ${subjectAddress}` : ''}`)

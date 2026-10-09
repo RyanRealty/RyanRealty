@@ -914,11 +914,11 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
 /**
  * The market during the listing, under the ask line.
  *
- * The picture is two slopes in one comparison — the sale price, then the
- * price per square foot — because those are two units. The dates and the
- * median size are said once. The sentence states both moves, and the size
- * when that is what makes them disagree. The parent-place story, when the
- * row has one, is the block under this chart.
+ * The picture is two slopes in one comparison, because sale price and price
+ * per square foot are two units. The dates and the median size are said once.
+ * When the two windows are not one size of home, the per-foot slope leads and
+ * the sale-price slope says "different sizes" (listingMarketSentence). The
+ * parent-place story, when the row has one, is the block under this chart.
  */
 function listingMarketHtml(move: ListingMarketMove | null | undefined): string {
   if (!move) return ''
