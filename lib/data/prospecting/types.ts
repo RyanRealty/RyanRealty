@@ -15,6 +15,8 @@
  * - Photo/lat/lng: FSBO rows carry them natively; expired rows join `listings`.
  */
 
+import { formatDate } from '@/lib/format/date'
+
 export type ProspectKind = 'expired' | 'fsbo'
 
 /** Structured skip-trace flags. Email hard stop: 'litigator' | 'deceased' | 'hard-stop'. Phone only: 'dnc' | 'dnc:tcpa'. */
@@ -445,6 +447,20 @@ export function expectedDocTypeFor(_kind: ProspectKind): 'expired-audit' | 'cma'
 /** Doc types that satisfy a kind's "built doc" check (legacy audits included). */
 export function acceptedDocTypesFor(kind: ProspectKind): ReadonlyArray<string> {
   return kind === 'expired' ? ['cma', 'expired-audit'] : ['cma']
+}
+
+/**
+ * Desk-facing reason for an FSBO row the scraper marked off_market (FSBO
+ * Desk 2026-10-09: "653 NE 12th has no flags, yet blocked"). The intake
+ * processor flips `status` to off_market once the ad has not been seen for
+ * 7+ days (lib/fsbo-processor.ts P12), so say WHEN it was last seen instead
+ * of a bare "Off market" that reads like a missing reason. The block itself
+ * is unchanged (Matt 2026-09-03 FSBO live-status hard-skip).
+ */
+export function fsboOffMarketReason(lastSeenAt: string | null | undefined): string {
+  const t = lastSeenAt ? Date.parse(lastSeenAt) : NaN
+  if (!Number.isFinite(t)) return 'Off market (FSBO ad no longer seen)'
+  return `Off market (FSBO ad not seen since ${formatDate(t)})`
 }
 
 /**
