@@ -6,16 +6,20 @@
 import { describe, expect, it } from 'vitest'
 import {
   CAME_OFF_MIXED,
+  PENDING_REVERSAL_BLIP_MS,
   activePeriods,
   cameOffStatus,
   cameOffThenSentence,
   lastActiveRun,
+  listingStretch,
   mergeStatusChanges,
   offerRun,
+  offerRunTimed,
   pacificDay,
   pacificDaysBetween,
   parseMlsStatusChange,
   statusKind,
+  type AskChange,
   type ListingStatusChange,
 } from '@/lib/cma/listing-status'
 
@@ -203,6 +207,119 @@ describe('offerRun: days to an accepted offer, on the period that produced it', 
       source: 'mls-days-to-pending',
     })
     expect(offerRun({})).toBeNull()
+  })
+})
+
+describe('a same-ask pending reversal inside an hour is not a new stretch', () => {
+  // 2254 Indigo's October pair, from the cma-2382-jackson reader review.
+  const listed = '2025-07-17T16:00:00+00:00'
+  const pending = '2025-10-09T00:59:52+00:00'
+  const back = '2025-10-09T01:22:32+00:00'
+  const soldPending = '2025-12-10T19:44:51+00:00'
+  const asks: AskChange[] = [{ at: '2025-09-04T17:00:00+00:00', from: 709999, to: 699900 }]
+  const blip = [
+    change(pending, 'MlsStatus: Active → Pending'),
+    change(back, 'MlsStatus: Pending → Active'),
+    change(soldPending, 'MlsStatus: Active → Pending'),
+  ]
+
+  it('keeps the original on-market clock and the ask that stretch opened at', () => {
+    const run = offerRunTimed({
+      changes: blip,
+      firstOnMarketAt: listed,
+      askChanges: asks,
+      closeDate: '2026-01-23',
+    })
+    expect(run).toMatchObject({ from: '2025-07-17', to: '2025-12-10', days: 146, source: 'status-history' })
+    expect(run?.fromAt).toBe(listed)
+    expect(
+      listingStretch({
+        startAt: run?.fromAt,
+        changes: blip,
+        firstOnMarketAt: listed,
+        askChanges: asks,
+        openingAsk: 709999,
+        currentAsk: 689500,
+      }),
+    ).toEqual({ from: '2025-07-17', firstAsk: 709999, restarted: false })
+    expect(
+      lastActiveRun({
+        changes: [
+          change(pending, 'MlsStatus: Active → Pending'),
+          change(back, 'MlsStatus: Pending → Active'),
+          change(soldPending, 'MlsStatus: Active → Withdrawn'),
+        ],
+        firstOnMarketAt: listed,
+        askChanges: asks,
+        status: 'Withdrawn',
+      }),
+    ).toMatchObject({ from: '2025-07-17', to: '2025-12-10', days: 146, leftAs: 'Withdrawn' })
+  })
+
+  it('glues a reversal at exactly the window and starts over one millisecond past it', () => {
+    const atWindow = new Date(Date.parse(pending) + PENDING_REVERSAL_BLIP_MS).toISOString()
+    const pastWindow = new Date(Date.parse(pending) + PENDING_REVERSAL_BLIP_MS + 1).toISOString()
+    const run = (returnAt: string) =>
+      offerRun({
+        changes: [
+          change(pending, 'MlsStatus: Active → Pending'),
+          change(returnAt, 'MlsStatus: Pending → Active'),
+          change(soldPending, 'MlsStatus: Active → Pending'),
+        ],
+        firstOnMarketAt: listed,
+        askChanges: [],
+        closeDate: '2026-01-23',
+      })
+    expect(run(atWindow)?.from).toBe('2025-07-17')
+    expect(run(pastWindow)?.from).toBe('2025-10-08')
+    expect(run(pastWindow)?.days).toBe(63)
+  })
+
+  it('a reversal inside the window at a new ask is a new stretch', () => {
+    const changed: AskChange[] = [{ at: '2025-10-09T01:10:00+00:00', from: 699900, to: 689500 }]
+    const run = offerRunTimed({
+      changes: blip,
+      firstOnMarketAt: listed,
+      askChanges: changed,
+      closeDate: '2026-01-23',
+    })
+    expect(run).toMatchObject({ from: '2025-10-08', to: '2025-12-10', days: 63 })
+    expect(
+      listingStretch({
+        startAt: run?.fromAt,
+        changes: blip,
+        firstOnMarketAt: listed,
+        askChanges: changed,
+        openingAsk: 709999,
+        currentAsk: 689500,
+      }),
+    ).toEqual({ from: '2025-10-08', firstAsk: 689500, restarted: true })
+  })
+
+  it('does not glue when the ask log was not read, or when the gap is a withdrawal', () => {
+    expect(offerRun({ changes: blip, firstOnMarketAt: listed, closeDate: '2026-01-23' })?.from).toBe('2025-10-08')
+    const withdrawn = [
+      change(pending, 'MlsStatus: Active → Withdrawn'),
+      change(back, 'MlsStatus: Withdrawn → Active'),
+      change(soldPending, 'MlsStatus: Active → Pending'),
+    ]
+    expect(
+      offerRun({ changes: withdrawn, firstOnMarketAt: listed, askChanges: [], closeDate: '2026-01-23' })?.from,
+    ).toBe('2025-10-08')
+  })
+
+  it('a one-day same-ask fallout still starts the clock over', () => {
+    const run = offerRun({
+      changes: [
+        change('2025-08-27T18:00:00+00:00', 'MlsStatus: Active → Pending'),
+        change('2025-08-28T18:00:00+00:00', 'MlsStatus: Pending → Active'),
+        ...blip,
+      ],
+      firstOnMarketAt: listed,
+      askChanges: asks,
+      closeDate: '2026-01-23',
+    })
+    expect(run).toMatchObject({ from: '2025-08-28', to: '2025-12-10', days: 104 })
   })
 })
 

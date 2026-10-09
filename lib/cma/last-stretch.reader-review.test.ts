@@ -347,6 +347,71 @@ describe('1. sales: the first ask and the offer clock are one stretch, labeled',
     expect(row!.priceChanges).toBeNull()
     expect(row!.outcome).toBe('sold $715K · offer 47 days after it last came on the market')
   })
+
+  // 2254 Indigo (20250714223341743203000000), reader review cma-2382-jackson.
+  // The MLS log is one listing: new Jul 17 2025 at $709,999, Active to Pending
+  // Aug 27 and back Aug 28 still at $709,999, cut to $699,900 on Sep 4, then
+  // Pending at 2025-10-09 00:59:52 UTC and Active again at 01:22:32 UTC, still
+  // $699,900 (22 minutes 40 seconds). Pending Dec 10, closed Jan 23 at $670,000.
+  // The Aug 27 and Aug 28 clock times below are a one-day gap on the review's
+  // dates. The review recorded the day, not the minute. The October pair and
+  // the Dec 10 pending are the review's timestamps.
+  const INDIGO_2254_ASKS = [
+    ask('2025-09-04T17:00:00+00:00', 709999, 699900),
+    ask('2025-12-01T18:00:00+00:00', 699900, 689500),
+  ]
+  const INDIGO_2254_BLIP = [
+    status('2025-10-09T00:59:52+00:00', 'Active', 'Pending'),
+    status('2025-10-09T01:22:32+00:00', 'Pending', 'Active'),
+    status('2025-12-10T19:44:51+00:00', 'Active', 'Pending'),
+  ]
+
+  function stampIndigo2254(statusChanges: ListingStatusChange[]): CmaComp {
+    return stampClosedCompDom(
+      sale({
+        listingKey: '20250714223341743203000000',
+        address: '2254 Indigo',
+        listPrice: 689500,
+        originalListPrice: 709999,
+        closePrice: 670000,
+        closeDate: '2026-01-23',
+        onMarketDate: '2025-10-09',
+      }),
+      {
+        onMarketDate: '2025-10-09T01:22:32+00:00',
+        originalOnMarketTimestamp: '2025-07-17T16:00:00+00:00',
+        statusChanges,
+        pendingTimestamp: '2025-12-10T19:44:51+00:00',
+        daysToPending: 62,
+        askChanges: INDIGO_2254_ASKS,
+        originalListPrice: 709999,
+        listPrice: 689500,
+      },
+    )
+  }
+
+  it('2254 Indigo: a 23-minute same-ask pending reversal does not restart the clock or the ask', () => {
+    const stamped = stampIndigo2254(INDIGO_2254_BLIP)
+    expect(stamped.daysToOffer).toBe(146)
+    expect(stamped.offerFrom).toBe('2025-07-17')
+    expect(stamped.stretch).toEqual({ from: '2025-07-17', firstAsk: 709999, restarted: false })
+    const [row] = closedEntries([adjusted(stamped)])
+    expect(row!.outcome).toBe('sold $670K · offer in 146 days')
+    expect(row!.outcome).not.toContain('63 days')
+  })
+
+  it('2254 Indigo: a one-day same-ask fallout still starts the last stretch, and the later 23-minute blip does not', () => {
+    const stamped = stampIndigo2254([
+      status('2025-08-27T18:00:00+00:00', 'Active', 'Pending'),
+      status('2025-08-28T18:00:00+00:00', 'Pending', 'Active'),
+      ...INDIGO_2254_BLIP,
+    ])
+    expect(stamped.daysToOffer).toBe(104)
+    expect(stamped.offerFrom).toBe('2025-08-28')
+    expect(stamped.stretch).toEqual({ from: '2025-08-28', firstAsk: 709999, restarted: true })
+    expect(stamped.offerFrom).not.toBe('2025-10-08')
+    expect(stamped.stretch?.firstAsk).not.toBe(699900)
+  })
 })
 
 describe('the days chart says which clock it counts', () => {

@@ -323,6 +323,7 @@ export interface ExpiredFinalCycle {
 export function cycleOnTheMarket(
   cycle: BpoListingCycle,
   changes: readonly ListingStatusChange[] | null | undefined,
+  askChanges?: readonly AskChange[] | null,
 ): BpoListingCycle {
   const log = mergeStatusChanges(changes ?? [])
   const run = lastActiveRunTimed({
@@ -330,10 +331,13 @@ export function cycleOnTheMarket(
     onMarketDate: cycle.listDate,
     offMarketDate: cycle.offMarketDate,
     status: cycle.status,
+    askChanges,
   })
   // ONE CLOCK, THE LAST STRETCH (Matt 2026-10-08): the moment it began, so
   // the first ask is the ask in effect then, and whether it is the listing's
-  // first stretch, so the letter can say when it is not.
+  // first stretch, so the letter can say when it is not. The ask log, when
+  // the caller read one, keeps a same-ask pending reversal inside an hour on
+  // that stretch (2254 Indigo).
   const stretchOf = (from: string | null, at: string | null) => ({
     listedAt: at ?? cycle.listDate,
     restarted: stretchRestarted({
@@ -341,6 +345,7 @@ export function cycleOnTheMarket(
       changes: log,
       firstOnMarketAt: cycle.firstOnMarketAt ?? null,
       listedAt: cycle.listDate,
+      askChanges,
     }),
   })
   if (!run || run.source !== 'status-history' || !run.from) {
