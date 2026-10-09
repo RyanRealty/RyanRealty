@@ -26,7 +26,7 @@
  *
  * `--check` adds four MECHANICAL failures on top of the shots, so the defects
  * Matt found cannot come back without the tool saying so
- * (docs/plans/CMA_REIMAGINED_2026-09-07.md, Done means, and rule 30):
+ * (docs/plans/CMA_REIMAGINED_2026-09-07.md, Done means, and rule 31):
  *
  *   1. a banned word in the seller text of either document
  *   2. a property address that is not inside a tracked ryan-realty.com link

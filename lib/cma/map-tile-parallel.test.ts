@@ -1,5 +1,5 @@
 /**
- * Plat polygons are read together (rule 30). A sequential loop keeps one
+ * Plat polygons are read together (rule 31). A sequential loop keeps one
  * boundary read in flight. This fails on that loop.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'

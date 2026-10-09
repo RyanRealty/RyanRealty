@@ -9,7 +9,7 @@ import { serveCmaDocument, CMA_DOC_HEADERS } from '@/lib/cma/serve-document'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-// The live letter rebuilds the comps map on this request (rule 30). The map
+// The live letter rebuilds the comps map on this request (rule 31). The map
 // budget inside serveCmaDocument is 12s. This is only the platform backstop,
 // the same one the admin review route already sets.
 export const maxDuration = 30

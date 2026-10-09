@@ -45,7 +45,7 @@ function recipientFromParam(v: string | null | undefined): number | null {
 /** Optional live reads (market, credits, broker, links). Past this, render what is already stored. */
 const CMA_READ_MS = 4_000
 /**
- * The comps map is not one of those optional reads (rule 30, 2745 Aldrich).
+ * The comps map is not one of those optional reads (rule 31, 2745 Aldrich).
  * A cold boundary walk plus the tile can take longer than 4 seconds. The
  * clock starts with the broker read, not after it.
  */
@@ -105,7 +105,7 @@ export async function immersiveFromRow(
     // The overlay travels with the tile: it is the centre, zoom and pin
     // coordinates the tile was actually drawn at, and without it chapter 3's
     // map is a bitmap that cannot answer a tap (tasteReview item 2).
-    // Rule 30: this clock starts now, beside the broker read, on its own budget.
+    // Rule 31: this clock starts now, beside the broker read, on its own budget.
     const mapPromise = stored.mapDataUri
       ? Promise.resolve({ dataUri: stored.mapDataUri as string, overlay: null })
       : withTimeoutFallback(
@@ -113,7 +113,10 @@ export async function immersiveFromRow(
             slug: slug ?? 'cma',
             subject: stored.subject,
             comps,
-            args: stored,
+            // The signed letter's competition and unsold pins need the status
+            // here or a delivered row is re-filtered and the pins disagree
+            // with the tables (Matt 2026-10-09, rule 32).
+            args: { ...stored, documentStatus: row.status },
           }),
           { dataUri: null, overlay: null },
           CMA_MAP_MS,

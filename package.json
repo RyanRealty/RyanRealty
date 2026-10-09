@@ -316,6 +316,7 @@
     "orchestrate:report": "npx tsx scripts/orchestrate.ts report",
     "orchestrate:validate": "npx tsx scripts/orchestrate.ts validate",
     "cma:fleet": "npx tsx scripts/cma-fleet-dryrun.ts",
+    "cma:render-audit": "npx tsx scripts/cma-render-audit.ts",
     "quality:full": "npm run lint && npm run lint:design-tokens && npm run lint:seo-routes && npm run test && npm run build",
     "health:record": "npx tsx scripts/track-build-health.ts",
     "health:compare": "npx tsx scripts/track-build-health.ts compare",

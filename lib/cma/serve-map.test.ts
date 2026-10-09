@@ -1,6 +1,6 @@
 /**
  * The live letter still draws the comps map when the boundary and tile read
- * is slower than the old 4 second optional-read budget (rule 30, 2745 Aldrich
+ * is slower than the old 4 second optional-read budget (rule 31, 2745 Aldrich
  * timed out at 4000ms). The row is the stored Pinnacle letter: asked $585,000,
  * canceled after 90 days, competition band $483,000 to $591,000. The map
  * builder is stubbed. These coordinates are not that home's.

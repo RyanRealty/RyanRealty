@@ -1223,7 +1223,7 @@ export function mapBodyHtml(input: {
   /** The legend's closed-sales line when the sales set the range and not the cover (lib/cma/sales-role.ts). */
   closedLabel?: string | null
 }): string {
-  // Rule 30 (2745 Aldrich, 2026-10-09). No tile, no map. The cream scatter
+  // Rule 31 (2745 Aldrich, 2026-10-09). No tile, no map. The cream scatter
   // compPinMap can still draw is not this map, and a caption, a legend, or
   // "Every pin above" must not refer to a map that is not on the page.
   if (!input.mapDataUri) return ''

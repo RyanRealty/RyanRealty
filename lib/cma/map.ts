@@ -285,7 +285,7 @@ async function outlinesFor(
     }),
     ...(platArea ? (opts.others ?? []).map((p) => ({ lat: p.lat as number | null, lng: p.lng as number | null })) : []),
   ]
-  // Rule 30. The parent read does not need the plat assignment, so it starts
+  // Rule 31. The parent read does not need the plat assignment, so it starts
   // now. The plat polygons are then read together, and kept in slug order.
   const parentWork = parentOutline(subject, marks, opts.parentName)
   let assigned: Array<string | null> = []

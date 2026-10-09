@@ -92,7 +92,7 @@ function countTag(block: string, tag: string): number {
  * immersive's hero and every scroll scene).
  */
 /**
- * The live letter's one map is an `<img class="pin-map">` (rule 30).
+ * The live letter's one map is an `<img class="pin-map">` (rule 31).
  *
  * An `<svg class="pin-map">` is the cream scatter the drawing unit builds
  * when the tile is missing. That is not the map. Returns a sentence when

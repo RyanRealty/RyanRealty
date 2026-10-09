@@ -1,5 +1,5 @@
 /**
- * The live map tile is cached by slug and the map inputs (rule 30).
+ * The live map tile is cached by slug and the map inputs (rule 31).
  * A miss is not stored. A price that does not move a pin does not rebuild it.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'

@@ -67,7 +67,7 @@ export async function resolveCmaPrintHtmlFromSource(
       // Same cached tile as the live view. No budget: a slow read still lands
       // in the letter (lib/cma/live-read-budget.test.ts).
       try {
-        const map = await loadCmaMapTile({ slug, subject: stored.subject, comps, args: stored })
+        const map = await loadCmaMapTile({ slug, subject: stored.subject, comps, args: { ...stored, documentStatus: source.status } })
         mapDataUri = map.dataUri
         mapOverlay = map.overlay
       } catch {

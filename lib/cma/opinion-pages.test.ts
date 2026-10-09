@@ -209,7 +209,7 @@ describe('assembleOpinionPages format', () => {
     expect(
       chapterIsLeadOnly('<h2 class="section is-answer">X.</h2><p class="worth-lead">One.</p><p class="worth-lead-note">Two.</p>'),
     ).toBe(false)
-    // No tile: nothing to fold, and no caption about a map that is not there (rule 30).
+    // No tile: nothing to fold, and no caption about a map that is not there (rule 31).
     expect(mapSubsectionHtml(mapArgs({ ...args(), mapDataUri: null }))).toBe('')
     expect(mapSharesPricePage({ ...args(), mapDataUri: null })).toBe(false)
   })

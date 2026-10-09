@@ -72,7 +72,7 @@ describe('extractChapters', () => {
   })
 })
 
-describe('mapImageGap (rule 30, 2745 Aldrich)', () => {
+describe('mapImageGap (rule 31, 2745 Aldrich)', () => {
   it('accepts an img.pin-map and rejects the cream scatter', () => {
     expect(mapImageGap('<img class="pin-map" src="data:image/png;base64,AAAA" alt="Map" />')).toBeNull()
     expect(
