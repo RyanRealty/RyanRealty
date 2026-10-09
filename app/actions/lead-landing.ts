@@ -41,8 +41,9 @@ type SubmitLeadLandingInput = {
   phone?: string
   timeframe?: string
   message?: string
-  /** Real first-touch attribution captured client-side (utm_* from the URL +
-   *  persisted rr_lp_context). When the visitor arrived from a Facebook ad,
+  /** Attribution captured client-side: utm_* from the URL the form is
+   *  submitted on (getLpContext; its rr_lp_context fallback has had no writer
+   *  since 2026-09-09). When the visitor arrived from a Facebook ad,
    *  lp_source='facebook'. The CRM person carries it as the channel:,
    *  campaign: and ad-content: tags (paidTags below); sendEvent's `campaign`
    *  field is accepted and not stored. */
@@ -80,6 +81,7 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
     // became a redirect. Empty when the visit carried no utm_source.
     const paidTags = resolvePaidAttributionTags({
       utmSource: input.lpContext?.lp_source,
+      utmMedium: input.lpContext?.lp_medium,
       utmCampaign: input.lpContext?.lp_campaign,
       utmContent: input.lpContext?.lp_content,
     })

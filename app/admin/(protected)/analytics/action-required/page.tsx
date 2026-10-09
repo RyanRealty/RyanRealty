@@ -24,6 +24,7 @@ import { StateWord } from '@/components/admin/v2/StateWord'
 import { VerdictLine } from '@/components/admin/v2/VerdictLine'
 import type { AdminState } from '@/components/admin/v2/StateWord'
 import { GridSkeleton, LaneNote, StatePanel } from '../_components/v2/DataGrid'
+import { lpPathForVariant, lpVariantFromPath } from '@/lib/analytics/lp-variant'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -44,15 +45,6 @@ function fmtRel(iso: string): string {
   if (s < 3600) return `${Math.floor(s / 60)}m ago`
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`
   return `${Math.floor(s / 86400)}d ago`
-}
-function lpVariantFromPath(p: string | null): string | null {
-  if (!p) return null
-  let path = p
-  try { path = new URL(p).pathname } catch {}
-  path = path.toLowerCase().replace(/\/+$/, '')
-  if (path === '/home-valuation') return 'seller-home-value'
-  const m = path.match(/^\/lp\/([a-z0-9-]+)/)
-  return m ? m[1] : null
 }
 
 /** The one shape every lane on this page uses: five rows, the rest behind a fold. */
@@ -439,7 +431,7 @@ async function LpRebuildLane() {
                 }
                 action={
                   <a
-                    href={`/lp/${r.variant}/`}
+                    href={lpPathForVariant(r.variant)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="av2-btn av2-btn--quiet"

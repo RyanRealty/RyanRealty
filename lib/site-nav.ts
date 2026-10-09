@@ -164,12 +164,6 @@ export const VALUATION_FORM: NavLink = {
   label: 'Value my home',
 }
 
-/** Ad-funnel LP only — never use in primary chrome. */
-export const VALUATION_LP: NavLink = {
-  href: '/lp/seller-home-value',
-  label: "Get your home's value",
-}
-
 const NEWSLETTER_SUBSCRIBE: NavLink = {
   href: publishNewsletterSubscribeHref(),
   label: 'Monthly briefing',

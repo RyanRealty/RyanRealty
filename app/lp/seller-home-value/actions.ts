@@ -478,6 +478,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       // filterable down to the individual ad in the CRM.
       tags.push(...resolvePaidAttributionTags({
         utmSource: originUtmSource,
+        utmMedium: originUtmMedium,
         utmCampaign: originUtmCampaign,
         utmContent: originUtmContent,
       }))
