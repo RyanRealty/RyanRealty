@@ -71,7 +71,7 @@ export function isAdminPath(pathname: string | null | undefined): boolean {
 
 /** Hostname only: strip a trailing dot, [IPv6] brackets, and :port on names that are not IPv6. */
 function hostnameOnly(host: string): string {
-  let h = host.trim().toLowerCase().replace(/\.$/, '')
+  const h = host.trim().toLowerCase().replace(/\.$/, '')
   const bracket = /^\[([^\]]+)\](?::\d+)?$/.exec(h)
   if (bracket) return bracket[1]
   if (/^[a-z0-9.-]+:\d+$/.test(h)) return h.replace(/:\d+$/, '')
