@@ -10,7 +10,7 @@
 
 ## Current banner (2026-10-08)
 
-Non-blocking first layer (`role="region"`): bottom bar on desktop, bottom sheet on mobile. Hidden on `/lp/*` and never shown when Global Privacy Control is on. Occupancy is unchanged: hidden on mount, chip after 3s, bar after first scroll. Scroll and the close X never record consent.
+Non-blocking first layer (`role="region"`): bottom bar on desktop, bottom sheet on mobile, shown after hydration when a prompt is due. It does not wait for scroll or a chip. Hidden on `/lp/*`, `/admin`, `/sign/*`, and `/concept/*`. Never shown when Global Privacy Control is on. Scroll and the close X never record consent. The banner stays mounted on those paths so footer Cookie settings still opens the second layer.
 
 Copy: heading "Want ads that match the homes you look at?" then the memo body about analytics plus Meta and Google ads, with Privacy and Do Not Sell My Personal Information as small links.
 
@@ -23,6 +23,8 @@ Re-prompt (lib/identity/consent-prompt.ts `shouldShowConsentPrompt`): X or no an
 (a) A first-time visitor makes one honest, one-tap privacy choice — Decline, Accept all, or granular analytics/marketing via Choose what to allow — with the full policy and a Do-Not-Sell path one link away, and can change it from Cookie settings (components/CookieConsentBanner.tsx). (b) The machine outcome is a recorded consent state that lawfully switches on the widest tracking the visitor allowed — GA4 Consent Mode v2 grants, GTM load, Meta Pixel LDU mode, AdSense render, and the consent level stamped on every first-party visitor event that drives intent scoring and hot-lead alerts — so fully serving (a) is precisely what licenses the attribution and behavioral data every capture and conversion process in this registry depends on (components/GoogleAnalytics.tsx:46-65; components/VisitTracker.tsx:199-234; app/api/visitors/track/route.ts:148-149).
 
 ## 2. Inception (what starts it)
+
+The 2026-08-11 notes in this section describe the old path. As of 2026-10-08 the live path is the Current banner section above: no ad-click auto-grant, no chip, and the banner stays mounted. The first layer is suppressed on /lp, /admin, /sign, and /concept.
 
 Three distinct triggers, one shared state machine:
 

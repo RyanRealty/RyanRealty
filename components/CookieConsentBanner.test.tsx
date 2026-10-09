@@ -1,10 +1,8 @@
 /**
  * @vitest-environment jsdom
  *
- * Cookie notice occupancy — first-screen 390 must show the page's thing.
- * Accept all is never a first-viewport filled primary. The legal contract
- * (Decline / Accept all / Choose what to allow, privacy links,
- * ryan_realty_cookie_consent) stays intact after the visitor has seen the thing.
+ * First layer is the memo bar: Decline, Accept all, Choose what to allow.
+ * Scroll and the close X never write consent. /lp stays free of the bar.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { readFileSync } from 'node:fs'
@@ -15,17 +13,23 @@ import CookieConsentBanner, {
   CONSENT_CHOICE_BUTTON_CLASS,
   COOKIE_GPC_SETTINGS_COPY,
   COOKIE_NOTICE_BODY,
-  COOKIE_NOTICE_FOLD_DELAY_MS,
   COOKIE_NOTICE_HEADING,
-  COOKIE_NOTICE_SCROLL_PX,
   CONTEXTUAL_CONSENT_ASK_EVENT,
   OPEN_COOKIE_SETTINGS_EVENT,
   getStoredConsent,
   hasAnalyticsConsent,
-  nextCookieNoticeSurface,
+  hasMarketingConsent,
 } from './CookieConsentBanner'
-import { CONSENT_PURPOSES_VERSION, shouldShowConsentPrompt } from '@/lib/identity/consent-prompt'
+import { CONSENT_PROMPT_DISMISS_KEY, CONSENT_PURPOSES_VERSION, shouldShowConsentPrompt } from '@/lib/identity/consent-prompt'
 import { resetSessionMemory } from '@/lib/analytics/visitor-session'
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => (globalThis as { __consentPath?: string }).__consentPath ?? '/',
+}))
+
+function setConsentPath(path: string) {
+  ;(globalThis as { __consentPath?: string }).__consentPath = path
+}
 
 const SRC = join(process.cwd(), 'components/CookieConsentBanner.tsx')
 const GLOBALS = join(process.cwd(), 'app/globals.css')
@@ -80,41 +84,7 @@ function setGpc(on: boolean) {
   })
 }
 
-describe('nextCookieNoticeSurface', () => {
-  it('keeps the first screen empty on mount', () => {
-    expect(nextCookieNoticeSurface('hidden', 'mount', false)).toBe('hidden')
-  })
-
-  it('never shows a surface when consent is already stored', () => {
-    expect(nextCookieNoticeSurface('hidden', 'delay', true)).toBe('hidden')
-    expect(nextCookieNoticeSurface('hidden', 'scroll', true)).toBe('hidden')
-    expect(nextCookieNoticeSurface('chip', 'open-bar', true)).toBe('hidden')
-  })
-
-  it('delay without scroll earns only the chip, not the filled bar', () => {
-    expect(nextCookieNoticeSurface('hidden', 'delay', false)).toBe('chip')
-  })
-
-  it('first scroll earns the legal bar after the thing has been seen', () => {
-    expect(nextCookieNoticeSurface('hidden', 'scroll', false)).toBe('bar')
-    expect(nextCookieNoticeSurface('chip', 'scroll', false)).toBe('bar')
-  })
-
-  it('opening the chip expands to the legal bar', () => {
-    expect(nextCookieNoticeSurface('chip', 'open-bar', false)).toBe('bar')
-  })
-
-  it('a choice or a recorded consent hides every surface', () => {
-    expect(nextCookieNoticeSurface('bar', 'chosen', false)).toBe('hidden')
-    expect(nextCookieNoticeSurface('chip', 'consent-recorded', false)).toBe('hidden')
-  })
-
-  it('delay after scroll does not demote the bar back to a chip', () => {
-    expect(nextCookieNoticeSurface('bar', 'delay', false)).toBe('bar')
-  })
-})
-
-describe('CookieConsentBanner occupancy', () => {
+describe('CookieConsentBanner first layer', () => {
   let container: HTMLDivElement
   let root: Root | null = null
 
@@ -140,8 +110,8 @@ describe('CookieConsentBanner occupancy', () => {
     localStorage.clear()
     sessionStorage.clear()
     setGpc(false)
+    setConsentPath('/')
     vi.useFakeTimers()
-    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true })
   })
 
   afterEach(() => {
@@ -151,55 +121,44 @@ describe('CookieConsentBanner occupancy', () => {
     localStorage.clear()
     sessionStorage.clear()
     setGpc(false)
+    setConsentPath('/')
   })
 
-  it('renders nothing on the first screen before scroll or delay', async () => {
+  it('publishes the bar height so the phone dock sits above Decline', async () => {
     await mount()
-    expect(container.querySelector('[data-cookie-notice]')).toBeNull()
-    expect(container.textContent).not.toContain('Accept all')
-    expect(container.textContent).not.toContain('Cookies')
+    expect(document.documentElement.style.getPropertyValue('--v3-cookie-bar-h')).toBe('0px')
   })
 
-  it('after 3s without scroll shows a chip, not a filled Accept all', async () => {
+  it('shows the memo bar on mount, Decline then Accept all, without a chip', async () => {
     await mount()
-    await act(async () => {
-      vi.advanceTimersByTime(COOKIE_NOTICE_FOLD_DELAY_MS)
-    })
-    const notice = container.querySelector('[data-cookie-notice="chip"]')
-    expect(notice).not.toBeNull()
-    expect(container.querySelector('[data-cookie-notice="bar"]')).toBeNull()
-    expect(container.textContent).toContain('Cookies')
-    expect(container.textContent).not.toContain('Accept all')
-  })
-
-  it('chip expands to the legal contract: Decline, Accept all, Choose what to allow, privacy links', async () => {
-    await mount()
-    await act(async () => {
-      vi.advanceTimersByTime(COOKIE_NOTICE_FOLD_DELAY_MS)
-    })
-    const chip = container.querySelector('[data-cookie-notice="chip"] button')
-    expect(chip?.textContent).toBe('Cookies')
-    await act(async () => {
-      chip?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(container.querySelector('[data-cookie-notice="bar"]')).not.toBeNull()
-    expect(container.textContent).toContain('Accept all')
-    expect(container.textContent).toContain('Decline')
-    expect(container.textContent).toContain('Choose what to allow')
+    const bar = container.querySelector('[data-cookie-notice="bar"]')
+    expect(bar).not.toBeNull()
+    expect(container.querySelector('[data-cookie-notice="chip"]')).toBeNull()
     expect(container.textContent).toContain(COOKIE_NOTICE_HEADING)
     expect(container.textContent).toContain(COOKIE_NOTICE_BODY)
+    expect(container.textContent).toContain('Choose what to allow')
     expect(container.innerHTML).toContain('/privacy')
     expect(container.innerHTML).toContain('/privacy#donotsell')
     expect(container.textContent).not.toContain('Essential only')
     expect(container.textContent).not.toContain('Preferences')
+    const decline = container.querySelector('[data-consent-action="decline"]')
+    const accept = container.querySelector('[data-consent-action="accept"]')
+    expect(decline!.compareDocumentPosition(accept!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(bar?.getAttribute('data-consent-region')).toBe('restricted')
   })
 
-  it('first scroll reveals the legal bar and Accept all writes the consent cookie', async () => {
+  it('scrolling never writes consent and never hides the bar', async () => {
     await mount()
-    Object.defineProperty(window, 'scrollY', { configurable: true, value: COOKIE_NOTICE_SCROLL_PX, writable: true })
     await act(async () => {
       window.dispatchEvent(new Event('scroll'))
     })
+    expect(getStoredConsent()).toBeNull()
+    expect(document.cookie).not.toContain('ryan_realty_cookie_consent=')
+    expect(container.querySelector('[data-cookie-notice="bar"]')).not.toBeNull()
+  })
+
+  it('Accept all writes the consent cookie', async () => {
+    await mount()
     expect(container.querySelector('[data-cookie-notice="bar"]')).not.toBeNull()
     const accept = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Accept all')
     expect(accept).toBeTruthy()
@@ -215,10 +174,6 @@ describe('CookieConsentBanner occupancy', () => {
 
   it('Decline writes a declined cookie and hides the notice', async () => {
     await mount()
-    Object.defineProperty(window, 'scrollY', { configurable: true, value: COOKIE_NOTICE_SCROLL_PX, writable: true })
-    await act(async () => {
-      window.dispatchEvent(new Event('scroll'))
-    })
     const decline = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Decline')
     await act(async () => {
       decline?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -230,20 +185,13 @@ describe('CookieConsentBanner occupancy', () => {
   it('stays hidden when ryan_realty_cookie_consent is already stored', async () => {
     document.cookie = `ryan_realty_cookie_consent=${encodeURIComponent(JSON.stringify({ analytics: true, marketing: true, v: CONSENT_PURPOSES_VERSION }))}`
     await mount()
-    await act(async () => {
-      vi.advanceTimersByTime(COOKIE_NOTICE_FOLD_DELAY_MS)
-      window.dispatchEvent(new Event('scroll'))
-    })
     expect(container.querySelector('[data-cookie-notice]')).toBeNull()
     expect(container.textContent).not.toContain('Accept all')
   })
 
   it('hides when a later cookie-consent event records a choice', async () => {
     await mount()
-    await act(async () => {
-      vi.advanceTimersByTime(COOKIE_NOTICE_FOLD_DELAY_MS)
-    })
-    expect(container.querySelector('[data-cookie-notice="chip"]')).not.toBeNull()
+    expect(container.querySelector('[data-cookie-notice="bar"]')).not.toBeNull()
     document.cookie = `ryan_realty_cookie_consent=${encodeURIComponent(JSON.stringify({ analytics: true, marketing: true }))}`
     await act(async () => {
       window.dispatchEvent(new CustomEvent('cookie-consent', { detail: 'all' }))
@@ -251,18 +199,13 @@ describe('CookieConsentBanner occupancy', () => {
     expect(container.querySelector('[data-cookie-notice]')).toBeNull()
   })
 
-  it('after X the delay timer does not bring the chip back', async () => {
+  it('after X, scrolling does not bring the bar back and writes no consent', async () => {
     await mount()
-    Object.defineProperty(window, 'scrollY', { configurable: true, value: COOKIE_NOTICE_SCROLL_PX, writable: true })
-    await act(async () => {
-      window.dispatchEvent(new Event('scroll'))
-    })
     const close = container.querySelector('button[aria-label="Close cookie notice"]')
     await act(async () => {
       close?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     await act(async () => {
-      vi.advanceTimersByTime(COOKIE_NOTICE_FOLD_DELAY_MS)
       window.dispatchEvent(new Event('scroll'))
     })
     expect(container.querySelector('[data-cookie-notice]')).toBeNull()
@@ -271,10 +214,6 @@ describe('CookieConsentBanner occupancy', () => {
 
   it('closing with X writes no consent cookie', async () => {
     await mount()
-    Object.defineProperty(window, 'scrollY', { configurable: true, value: COOKIE_NOTICE_SCROLL_PX, writable: true })
-    await act(async () => {
-      window.dispatchEvent(new Event('scroll'))
-    })
     const close = container.querySelector('button[aria-label="Close cookie notice"]')
     expect(close).not.toBeNull()
     await act(async () => {
@@ -283,6 +222,17 @@ describe('CookieConsentBanner occupancy', () => {
     expect(getStoredConsent()).toBeNull()
     expect(document.cookie).not.toContain('ryan_realty_cookie_consent=')
     expect(container.querySelector('[data-cookie-notice]')).toBeNull()
+  })
+
+  it('stays off /lp while Cookie settings still opens the second layer', async () => {
+    setConsentPath('/lp/seller-home-value')
+    await mount()
+    expect(container.querySelector('[data-cookie-notice]')).toBeNull()
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent(OPEN_COOKIE_SETTINGS_EVENT))
+    })
+    expect(document.body.textContent).toContain('Choose what to allow')
+    expect(document.body.textContent).toContain('Essential (always on)')
   })
 })
 
@@ -379,8 +329,6 @@ describe('GPC suppression', () => {
   it('never renders the first layer under GPC, including after the contextual-ask event', async () => {
     await mount()
     await act(async () => {
-      vi.advanceTimersByTime(COOKIE_NOTICE_FOLD_DELAY_MS)
-      Object.defineProperty(window, 'scrollY', { configurable: true, value: COOKIE_NOTICE_SCROLL_PX, writable: true })
       window.dispatchEvent(new Event('scroll'))
       window.dispatchEvent(new CustomEvent(CONTEXTUAL_CONSENT_ASK_EVENT))
     })
@@ -396,6 +344,12 @@ describe('GPC suppression', () => {
     expect(document.body.textContent).toContain(COOKIE_GPC_SETTINGS_COPY)
     expect(document.body.textContent).not.toContain('Analytics: Google')
     expect(document.body.textContent).not.toContain('Save choices')
+  })
+
+  it('GPC overrides a stored accept for analytics and marketing', async () => {
+    document.cookie = `ryan_realty_cookie_consent=${encodeURIComponent(JSON.stringify({ analytics: true, marketing: true, v: CONSENT_PURPOSES_VERSION }))}`
+    expect(hasAnalyticsConsent()).toBe(false)
+    expect(hasMarketingConsent()).toBe(false)
   })
 })
 
@@ -422,10 +376,6 @@ describe('equal button sizing', () => {
 
   async function revealBar() {
     await mount()
-    Object.defineProperty(window, 'scrollY', { configurable: true, value: COOKIE_NOTICE_SCROLL_PX, writable: true })
-    await act(async () => {
-      window.dispatchEvent(new Event('scroll'))
-    })
   }
 
   beforeEach(() => {
@@ -452,10 +402,14 @@ describe('equal button sizing', () => {
     expect(decline).not.toBeNull()
     expect(accept).not.toBeNull()
     expect(decline!.compareDocumentPosition(accept!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(decline!.className).toContain(CONSENT_CHOICE_BUTTON_CLASS.split(' ')[0])
-    expect(accept!.className).toContain(CONSENT_CHOICE_BUTTON_CLASS.split(' ')[0])
-    expect(decline!.className).toContain('w-full')
-    expect(accept!.className).toContain('w-full')
+    for (const token of CONSENT_CHOICE_BUTTON_CLASS.split(' ')) {
+      expect(decline!.className).toContain(token)
+      expect(accept!.className).toContain(token)
+    }
+    expect(decline!.className).not.toContain('h-9')
+    expect(accept!.className).not.toContain('h-9')
+    expect(decline!.className).not.toContain('h-8')
+    expect(accept!.className).not.toContain('h-8')
     expect(decline!.getAttribute('data-variant')).toBe(accept!.getAttribute('data-variant'))
     expect(decline!.getAttribute('data-variant')).toBe('secondary')
     unmount()
@@ -469,8 +423,24 @@ describe('equal button sizing', () => {
     const usAccept = container.querySelector('[data-consent-action="accept"]')
     expect(usDecline!.getAttribute('data-variant')).toBe('secondary')
     expect(usAccept!.getAttribute('data-variant')).toBe('default')
-    expect(usDecline!.className).toContain('w-full')
-    expect(usAccept!.className).toContain('w-full')
+    for (const token of CONSENT_CHOICE_BUTTON_CLASS.split(' ')) {
+      expect(usDecline!.className).toContain(token)
+      expect(usAccept!.className).toContain(token)
+    }
+  })
+
+  it('US Accept all is the brand navy fill named in globals.css', () => {
+    const css = readFileSync(GLOBALS, 'utf8')
+    expect(css).toContain('#102742')
+    const primary = /--primary:\s*oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/.exec(css)
+    expect(primary).toBeTruthy()
+    const [r, g, b] = oklchToSrgb(+primary![1], +primary![2], +primary![3]).map((c) => Math.round(c * 255))
+    expect(r).toBeGreaterThanOrEqual(14)
+    expect(r).toBeLessThanOrEqual(20)
+    expect(g).toBeGreaterThanOrEqual(35)
+    expect(g).toBeLessThanOrEqual(45)
+    expect(b).toBeGreaterThanOrEqual(60)
+    expect(b).toBeLessThanOrEqual(72)
   })
 
   it('US Decline secondary tokens meet WCAG 4.5:1', () => {
@@ -526,13 +496,18 @@ describe('contextual ask', () => {
     setGpc(false)
   })
 
-  it('fires once for US no-answer, not for restricted, not under GPC, not after an answer', async () => {
+  it('fires once for US no-answer, not for restricted, not after an answer', async () => {
     document.cookie = 'rr_cr=0; path=/'
+    sessionStorage.setItem(CONSENT_PROMPT_DISMISS_KEY, '1')
     await mount()
+    expect(container.querySelector('[data-cookie-notice]')).toBeNull()
     await act(async () => {
       window.dispatchEvent(new CustomEvent(CONTEXTUAL_CONSENT_ASK_EVENT))
     })
-    expect(container.querySelector('[data-cookie-notice="bar"]')).not.toBeNull()
+    const bar = container.querySelector('[data-cookie-notice="bar"]')
+    expect(bar).not.toBeNull()
+    expect(bar?.textContent).toContain('Decline')
+    expect(bar?.textContent).toContain('Accept all')
     const close = container.querySelector('button[aria-label="Close cookie notice"]')
     await act(async () => {
       close?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -547,6 +522,7 @@ describe('contextual ask', () => {
     cookies.clear()
     localStorage.clear()
     sessionStorage.clear()
+    sessionStorage.setItem(CONSENT_PROMPT_DISMISS_KEY, '1')
     document.cookie = 'rr_cr=1; path=/'
     await mount()
     await act(async () => {
@@ -568,6 +544,74 @@ describe('contextual ask', () => {
   })
 })
 
+describe('Choose what to allow', () => {
+  let container: HTMLDivElement
+  let root: Root | null = null
+
+  async function mount() {
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    await act(async () => {
+      root!.render(React.createElement(CookieConsentBanner))
+    })
+  }
+
+  function unmount() {
+    if (!root) return
+    const current = root
+    root = null
+    act(() => current.unmount())
+    container.remove()
+  }
+
+  async function openChooser() {
+    await mount()
+    const open = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Choose what to allow')
+    await act(async () => {
+      open?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  }
+
+  beforeEach(() => {
+    cookies.clear()
+    localStorage.clear()
+    sessionStorage.clear()
+    setGpc(false)
+    setConsentPath('/')
+  })
+
+  afterEach(() => {
+    unmount()
+    cookies.clear()
+    localStorage.clear()
+    sessionStorage.clear()
+    setGpc(false)
+    setConsentPath('/')
+  })
+
+  it('US: analytics on, marketing off, essential has no toggle, third parties named', async () => {
+    document.cookie = 'rr_cr=0; path=/'
+    await openChooser()
+    const analytics = document.body.querySelector('[data-consent-toggle="analytics"]')
+    const marketing = document.body.querySelector('[data-consent-toggle="marketing"]')
+    expect(analytics?.getAttribute('aria-checked')).toBe('true')
+    expect(marketing?.getAttribute('aria-checked')).toBe('false')
+    expect(document.body.querySelector('[data-consent-essential="always"] [data-slot="switch"]')).toBeNull()
+    expect(document.body.textContent).toContain('Google Analytics')
+    expect(document.body.textContent).toContain('Facebook')
+    expect(document.body.textContent).toContain('Google Ads')
+    expect(document.body.textContent).toContain('Save choices')
+  })
+
+  it('restricted region: analytics and marketing both start off', async () => {
+    document.cookie = 'rr_cr=1; path=/'
+    await openChooser()
+    expect(document.body.querySelector('[data-consent-toggle="analytics"]')?.getAttribute('aria-checked')).toBe('false')
+    expect(document.body.querySelector('[data-consent-toggle="marketing"]')?.getAttribute('aria-checked')).toBe('false')
+  })
+})
+
 describe('CookieConsentBanner source contract', () => {
   const src = readFileSync(SRC, 'utf8')
 
@@ -583,12 +627,10 @@ describe('CookieConsentBanner source contract', () => {
     expect(src).not.toContain('Preferences')
   })
 
-  it('does not paint the bar on mount and delays the chip past the first screen', () => {
-    expect(COOKIE_NOTICE_FOLD_DELAY_MS).toBe(3000)
-    expect(COOKIE_NOTICE_SCROLL_PX).toBe(24)
-    expect(src).toContain("useState<CookieNoticeSurface>('hidden')")
-    expect(src).toContain("data-cookie-notice=\"chip\"")
-    expect(src).toContain("data-cookie-notice=\"bar\"")
+  it('paints the bar itself, not a chip, and never auto-grants on scroll', () => {
+    expect(src).toContain('data-cookie-notice="bar"')
+    expect(src).not.toContain('data-cookie-notice="chip"')
+    expect(src).not.toContain('autoGrantConsentForAdTraffic')
     expect(src).not.toMatch(/if \(consent === null\) setVisible\(true\)/)
   })
 
@@ -597,7 +639,6 @@ describe('CookieConsentBanner source contract', () => {
     expect(src).toContain('from "@/components/ui/dialog"')
     expect(src).toContain('from "@/components/ui/switch"')
     expect(src).toContain('from "@/components/ui/label"')
-    expect(src).toContain("from '@/lib/utils'")
     expect(src).toContain('variant="secondary"')
     expect(src).not.toMatch(/<button/)
     expect(src).not.toMatch(/#[0-9a-fA-F]{3,8}/)

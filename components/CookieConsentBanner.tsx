@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -13,7 +14,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { cn } from '@/lib/utils'
 import { gpcFromNavigator, parseConsentCookie, type ConsentState } from '@/lib/identity/consent'
 import { consentRegionRestrictedFromCookieHeader } from '@/lib/analytics/consent-regions'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -25,6 +25,7 @@ import {
   CONSENT_PURPOSES_VERSION,
   CONTEXTUAL_CONSENT_ASK_EVENT,
   OPEN_COOKIE_SETTINGS_EVENT,
+  consentFirstLayerSuppressed,
   parseConsentDecisionMeta,
   parsePromptBookkeeping,
   serializePromptBookkeeping,
@@ -44,13 +45,8 @@ export {
 const COOKIE_CONSENT_KEY = 'ryan_realty_cookie_consent'
 const CONSENT_EXPIRY_YEARS = 1
 
-/** First-screen 390 stays clear this long. Chip only, never the filled bar. */
-export const COOKIE_NOTICE_FOLD_DELAY_MS = 3000
-/** First scroll past this reveals the legal bar. The visitor has seen the thing. */
-export const COOKIE_NOTICE_SCROLL_PX = 24
-
 /** Shared size so Decline and Accept all are the same height and width. */
-export const CONSENT_CHOICE_BUTTON_CLASS = 'h-11 w-full'
+export const CONSENT_CHOICE_BUTTON_CLASS = 'h-11 min-h-11 w-full min-w-0 px-3'
 
 export const COOKIE_NOTICE_HEADING = 'Want ads that match the homes you look at?'
 export const COOKIE_NOTICE_BODY =
@@ -59,46 +55,6 @@ export const COOKIE_GPC_SETTINGS_COPY =
   "Your browser's Global Privacy Control signal is on, so marketing and analytics stay off."
 
 export type { ConsentState }
-
-export type CookieNoticeSurface = 'hidden' | 'chip' | 'bar'
-
-export type CookieNoticeEvent =
-  | 'mount'
-  | 'scroll'
-  | 'delay'
-  | 'open-bar'
-  | 'chosen'
-  | 'consent-recorded'
-
-/**
- * Occupancy machine for the consent surface. Mount never claims the fold.
- * Scroll (the thing has been seen) earns the legal bar. The 3s delay earns
- * only a corner chip so Accept all is never a first-viewport filled primary.
- */
-export function nextCookieNoticeSurface(
-  surface: CookieNoticeSurface,
-  event: CookieNoticeEvent,
-  hasConsent: boolean,
-): CookieNoticeSurface {
-  if (hasConsent) return 'hidden'
-  switch (event) {
-    case 'mount':
-      return 'hidden'
-    case 'scroll':
-      return 'bar'
-    case 'delay':
-      return surface === 'bar' ? 'bar' : 'chip'
-    case 'open-bar':
-      return 'bar'
-    case 'chosen':
-    case 'consent-recorded':
-      return 'hidden'
-    default: {
-      const _exhaustive: never = event
-      return _exhaustive
-    }
-  }
-}
 
 /** The stored consent choice, or null when the visitor has not answered the
  *  banner yet. Callers that need to distinguish "no choice" (functional
@@ -192,7 +148,9 @@ function writeBookkeeping(next: PromptBookkeeping) {
 }
 
 export default function CookieConsentBanner() {
-  const [surface, setSurface] = useState<CookieNoticeSurface>('hidden')
+  const pathname = usePathname()
+  const chromeHidden = consentFirstLayerSuppressed(pathname)
+  const [surface, setSurface] = useState<'hidden' | 'bar'>('hidden')
   const [prefsOpen, setPrefsOpen] = useState(false)
   const [analytics, setAnalytics] = useState(true)
   const [marketing, setMarketing] = useState(false)
@@ -206,7 +164,6 @@ export default function CookieConsentBanner() {
     contextualAskUsed: false,
   })
   const shownMarked = useRef(false)
-  const suppressOccupancy = useRef(false)
 
   useEffect(() => {
     const gpc = gpcFromNavigator(typeof navigator !== 'undefined' ? navigator : undefined)
@@ -255,12 +212,6 @@ export default function CookieConsentBanner() {
       now,
     })
 
-    const apply = (event: CookieNoticeEvent) => {
-      setSurface((current) =>
-        nextCookieNoticeSurface(current, event, suppressOccupancy.current || !mayPrompt),
-      )
-    }
-
     const onConsent = () => {
       const next = readPromptStored()
       promptRef.current.stored = next
@@ -268,9 +219,8 @@ export default function CookieConsentBanner() {
         setAnalytics(next.analytics)
         setMarketing(next.marketing)
         setHasChoice(true)
-        suppressOccupancy.current = true
       }
-      apply('consent-recorded')
+      setSurface('hidden')
     }
     window.addEventListener('cookie-consent', onConsent)
 
@@ -308,25 +258,9 @@ export default function CookieConsentBanner() {
     }
     window.addEventListener(CONTEXTUAL_CONSENT_ASK_EVENT, onContextual)
 
-    let timer: number | undefined
-    const onScroll = () => {
-      if (window.scrollY < COOKIE_NOTICE_SCROLL_PX) return
-      apply('scroll')
-      window.removeEventListener('scroll', onScroll)
-    }
-
-    if (mayPrompt) {
-      if (window.scrollY >= COOKIE_NOTICE_SCROLL_PX) {
-        apply('scroll')
-      } else {
-        window.addEventListener('scroll', onScroll, { passive: true })
-      }
-      timer = window.setTimeout(() => apply('delay'), COOKIE_NOTICE_FOLD_DELAY_MS)
-    }
+    if (mayPrompt) setSurface('bar')
 
     return () => {
-      if (timer !== undefined) window.clearTimeout(timer)
-      window.removeEventListener('scroll', onScroll)
       window.removeEventListener('cookie-consent', onConsent)
       window.removeEventListener(OPEN_COOKIE_SETTINGS_EVENT, onOpenSettings)
       window.removeEventListener(CONTEXTUAL_CONSENT_ASK_EVENT, onContextual)
@@ -334,15 +268,14 @@ export default function CookieConsentBanner() {
   }, [])
 
   useEffect(() => {
-    if (surface !== 'chip' && surface !== 'bar') return
+    if (surface !== 'bar' || chromeHidden) return
     if (shownMarked.current) return
     shownMarked.current = true
     const now = Date.now() // hydration-safe: effect after reveal, not render
     writeBookkeeping({ ...readBookkeeping(), lastShownAt: now })
-  }, [surface])
+  }, [surface, chromeHidden])
 
   function acceptAll() {
-    suppressOccupancy.current = true
     setConsentState({ analytics: true, marketing: true })
     setAnalytics(true)
     setMarketing(true)
@@ -354,7 +287,6 @@ export default function CookieConsentBanner() {
   }
 
   function declineAll() {
-    suppressOccupancy.current = true
     setConsentState({ analytics: false, marketing: false })
     setAnalytics(false)
     setMarketing(false)
@@ -366,7 +298,6 @@ export default function CookieConsentBanner() {
   }
 
   function saveChoices() {
-    suppressOccupancy.current = true
     setConsentState({ analytics, marketing })
     setHasChoice(true)
     promptRef.current.stored = { analytics, marketing, v: CONSENT_PURPOSES_VERSION }
@@ -376,7 +307,6 @@ export default function CookieConsentBanner() {
   }
 
   function closeWithoutAnswer() {
-    suppressOccupancy.current = true
     try {
       sessionStorage.setItem(CONSENT_PROMPT_DISMISS_KEY, '1')
     } catch {
@@ -402,15 +332,44 @@ export default function CookieConsentBanner() {
 
   const acceptVariant = restricted ? 'secondary' : 'default'
   const declineVariant = 'secondary' as const
-  const showIcon = hasChoice && surface === 'hidden' && !prefsOpen
-  const showFirstLayer = !gpcOn && (surface === 'chip' || surface === 'bar')
+  const showIcon = hasChoice && surface === 'hidden' && !prefsOpen && !chromeHidden
+  const showFirstLayer = !gpcOn && !chromeHidden && !prefsOpen && surface === 'bar'
+
+  // The phone dock and sticky ask sit above this bar via --v3-cookie-bar-h.
+  // The old fallback (5.5rem) is shorter than this sheet, so they landed on Decline.
+  useEffect(() => {
+    const root = document.documentElement
+    if (!showFirstLayer) {
+      root.style.removeProperty('--v3-cookie-bar-h')
+      return
+    }
+    const bar = document.querySelector<HTMLElement>('[data-cookie-notice="bar"]')
+    if (!bar) return
+    const apply = () => {
+      const height = Math.ceil(bar.getBoundingClientRect().height)
+      root.style.setProperty('--v3-cookie-bar-h', `${height}px`)
+    }
+    apply()
+    if (typeof ResizeObserver === 'undefined') {
+      return () => root.style.removeProperty('--v3-cookie-bar-h')
+    }
+    const observer = new ResizeObserver(apply)
+    observer.observe(bar)
+    return () => {
+      observer.disconnect()
+      root.style.removeProperty('--v3-cookie-bar-h')
+    }
+  }, [showFirstLayer])
 
   if (!showFirstLayer && !prefsOpen && !showIcon) return null
 
   return (
     <>
     <Dialog open={prefsOpen} onOpenChange={setPrefsOpen}>
-      <DialogContent>
+      <DialogContent
+        className="z-[120] bg-card sm:max-w-md max-h-[min(32rem,calc(100svh-2rem))] overflow-y-auto"
+        overlayClassName="z-[120]"
+      >
         <DialogHeader>
           <DialogTitle>Choose what to allow</DialogTitle>
           {gpcOn ? (
@@ -423,24 +382,34 @@ export default function CookieConsentBanner() {
         </DialogHeader>
         {gpcOn ? null : (
           <div className="grid gap-4">
-            <p className="text-sm">
+            <p className="text-sm" data-consent-essential="always">
               Essential (always on): sign-in session, your cookie choice.
             </p>
-            <Label className="flex items-center justify-between gap-3">
-              <span className="text-sm">Analytics: Google (Google Analytics)</span>
-              <Switch checked={analytics} onCheckedChange={(checked) => setAnalytics(checked === true)} />
+            <Label className="flex items-start justify-between gap-3">
+              <span className="min-w-0 text-sm">Analytics: Google (Google Analytics)</span>
+              <Switch
+                className="mt-0.5 shrink-0"
+                data-consent-toggle="analytics"
+                checked={analytics}
+                onCheckedChange={(checked) => setAnalytics(checked === true)}
+              />
             </Label>
-            <Label className="flex items-center justify-between gap-3">
-              <span className="text-sm">
+            <Label className="flex items-start justify-between gap-3">
+              <span className="min-w-0 text-sm">
                 Marketing (Meta and Google ads): Meta (Facebook, Instagram) and Google (Google Ads)
               </span>
-              <Switch checked={marketing} onCheckedChange={(checked) => setMarketing(checked === true)} />
+              <Switch
+                className="mt-0.5 shrink-0"
+                data-consent-toggle="marketing"
+                checked={marketing}
+                onCheckedChange={(checked) => setMarketing(checked === true)}
+              />
             </Label>
           </div>
         )}
         {gpcOn ? null : (
-          <DialogFooter>
-            <Button type="button" onClick={saveChoices}>Save choices</Button>
+          <DialogFooter className="bg-card sm:flex-col">
+            <Button type="button" className="h-11 w-full flex-1" onClick={saveChoices}>Save choices</Button>
           </DialogFooter>
         )}
       </DialogContent>
@@ -463,38 +432,19 @@ export default function CookieConsentBanner() {
         <HugeiconsIcon icon={Settings01Icon} strokeWidth={2} />
       </Button>
     ) : null}
-    {showFirstLayer && surface === 'chip' && (
-    <div
-      role="region"
-      aria-label="Cookie notice"
-      data-cookie-notice="chip"
-      className={cn('fixed bottom-4 end-4 z-[90]')}
-    >
-      <Button
-        type="button"
-        variant="outline"
-        className="min-h-11"
-        onClick={() => setSurface((current) => nextCookieNoticeSurface(current, 'open-bar', false))}
-      >
-        Cookies
-      </Button>
-    </div>
-    )}
-    {showFirstLayer && surface === 'bar' && (
-    /* role="region", not role="dialog": this is a persistent non-modal bar with
-       no focus move or trap, so announcing it as a dialog misled screen readers
-       (design-audit P3). Shown only after first scroll or after the visitor
-       opens the delayed chip, so Accept all is never a first-viewport fill. */
-    /* z-90: above the z-80 bottom docks (V3StickyAsk.css, V3PhoneDock.css).
-       A z-80 bar once slid up OVER the banner's own Accept and Decline
-       buttons (design-audit P2). */
+    {showFirstLayer ? (
+    /* role="region", not role="dialog": non-modal bottom bar / sheet.
+       Scroll and the close control do not record consent.
+       z-90: above the z-80 bottom docks so those docks cannot cover Decline. */
     <div
       role="region"
       aria-label="Cookie notice"
       data-cookie-notice="bar"
-      className="fixed bottom-0 left-0 right-0 z-[90] max-h-svh overflow-y-auto rounded-t-xl border-t border-border bg-card px-4 py-3 shadow-md sm:rounded-none sm:px-6"
+      data-consent-region={restricted ? 'restricted' : 'us'}
+      className="fixed bottom-0 left-0 right-0 z-[90] max-h-[85svh] overflow-y-auto rounded-t-xl border-t border-border bg-card px-4 pt-3 shadow-md sm:rounded-none sm:px-6"
+      style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
     >
-      <div className="relative mx-auto max-w-3xl">
+      <div className="relative mx-auto max-w-3xl pe-12">
         <Button
           type="button"
           variant="ghost"
@@ -505,7 +455,7 @@ export default function CookieConsentBanner() {
         >
           <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
         </Button>
-        <p className="pr-12 text-sm font-medium text-foreground sm:text-base">
+        <p className="text-sm font-medium text-foreground sm:text-base">
           {COOKIE_NOTICE_HEADING}
         </p>
         <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
@@ -516,10 +466,9 @@ export default function CookieConsentBanner() {
           {' · '}
           <Link href="/privacy#donotsell" className="font-medium text-foreground underline hover:no-underline">Do Not Sell My Personal Information</Link>
         </p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="mt-3 grid grid-cols-2 items-stretch gap-2">
           <Button
             type="button"
-            size="lg"
             variant={declineVariant}
             className={CONSENT_CHOICE_BUTTON_CLASS}
             data-consent-action="decline"
@@ -529,7 +478,6 @@ export default function CookieConsentBanner() {
           </Button>
           <Button
             type="button"
-            size="lg"
             variant={acceptVariant}
             className={CONSENT_CHOICE_BUTTON_CLASS}
             data-consent-action="accept"
@@ -548,7 +496,7 @@ export default function CookieConsentBanner() {
         </Button>
       </div>
     </div>
-    )}
+    ) : null}
     </>
   )
 }

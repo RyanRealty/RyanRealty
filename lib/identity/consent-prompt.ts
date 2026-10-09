@@ -34,7 +34,26 @@ export function isContextualConsentEvent(name: string): name is ContextualConsen
 
 export const MS_PER_DAY = 24 * 60 * 60 * 1000
 export const US_DECLINE_REPROMPT_DAYS = 90
+/**
+ * Six months (Counsel memo 002 §5.3; ICO "six months").
+ * 183 days is half of 365, rounded up, so the wait is never shorter than six calendar months.
+ * Applies to every restricted region (EEA, UK, CH, and unknown), which is what `rr_cr` already means.
+ */
 export const RESTRICTED_DECLINE_REPROMPT_DAYS = 183
+
+/**
+ * First-layer bar and the floating settings icon stay off these paths.
+ * Cookie settings in the footer still opens the second layer, so the banner stays mounted.
+ * Matches HideOnLP: /lp/*, /admin, /sign/*, /concept/*.
+ */
+export function consentFirstLayerSuppressed(pathname: string | null | undefined): boolean {
+  if (!pathname) return false
+  if (pathname.startsWith('/lp/')) return true
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) return true
+  if (pathname.startsWith('/sign/')) return true
+  if (pathname.startsWith('/concept/')) return true
+  return false
+}
 
 /** localStorage: last shown time and whether the contextual ask was used. */
 export const CONSENT_PROMPT_STORAGE_KEY = 'rr_consent_prompt'
@@ -69,11 +88,15 @@ export function isConsentAccept(
 }
 
 /**
- * Whether the first-layer cookie notice may run (occupancy still decides chip vs bar).
+ * Whether the first-layer bar may show. The banner paints that bar as soon as
+ * this returns true. There is no chip and no scroll gate.
  *
  * GPC: never. Same-session X: never. Accept: only if purposes version changed.
  * Decline: after 90 days (US) or 183 days (restricted). No answer: next session,
- * at most once per 24h since it was last shown.
+ * at most once per 24h since it was last shown. A same-tab reload is not a new
+ * session, so the daily cap does not hide an unanswered notice on refresh.
+ * React Strict Mode sets the session key on the first effect pass; skipping the
+ * cap when newSession is false keeps that second pass from hiding the bar.
  */
 export function shouldShowConsentPrompt({
   stored,

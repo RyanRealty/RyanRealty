@@ -4,6 +4,7 @@ import {
   MS_PER_DAY,
   RESTRICTED_DECLINE_REPROMPT_DAYS,
   US_DECLINE_REPROMPT_DAYS,
+  consentFirstLayerSuppressed,
   parseConsentDecisionMeta,
   parsePromptBookkeeping,
   shouldShowConsentPrompt,
@@ -148,6 +149,42 @@ describe('shouldShowConsentPrompt', () => {
     ).toBe(false)
   })
 
+  it('a same-session refresh restores an unanswered notice', () => {
+    expect(
+      shouldShowConsentPrompt(
+        args({
+          newSession: false,
+          lastShownAt: NOW - 60_000,
+        }),
+      ),
+    ).toBe(true)
+  })
+
+  it('GPC never re-prompts a stored accept', () => {
+    expect(
+      shouldShowConsentPrompt(
+        args({
+          gpc: true,
+          stored: { analytics: true, marketing: true, v: CONSENT_PURPOSES_VERSION },
+          decidedAt: NOW - 10 * DAY,
+        }),
+      ),
+    ).toBe(false)
+  })
+
+  it('a partial save is an answer, so it does not nag the next day', () => {
+    expect(
+      shouldShowConsentPrompt(
+        args({
+          stored: { analytics: true, marketing: false, v: CONSENT_PURPOSES_VERSION },
+          decidedAt: NOW - 2 * DAY,
+          newSession: true,
+          lastShownAt: NOW - 2 * DAY,
+        }),
+      ),
+    ).toBe(false)
+  })
+
   it('same-session X wins over a due decline re-prompt', () => {
     expect(
       shouldShowConsentPrompt(
@@ -212,6 +249,19 @@ describe('shouldShowContextualConsentAsk', () => {
         contextualAskUsed: false,
       }),
     ).toBe(false)
+  })
+})
+
+describe('consentFirstLayerSuppressed', () => {
+  it('hides the first layer on landing, admin, sign, and concept paths', () => {
+    expect(consentFirstLayerSuppressed('/lp/seller-home-value')).toBe(true)
+    expect(consentFirstLayerSuppressed('/admin')).toBe(true)
+    expect(consentFirstLayerSuppressed('/admin/crm')).toBe(true)
+    expect(consentFirstLayerSuppressed('/sign/packet')).toBe(true)
+    expect(consentFirstLayerSuppressed('/concept/home')).toBe(true)
+    expect(consentFirstLayerSuppressed('/')).toBe(false)
+    expect(consentFirstLayerSuppressed('/sell')).toBe(false)
+    expect(consentFirstLayerSuppressed(null)).toBe(false)
   })
 })
 
