@@ -231,6 +231,11 @@ export function rowsToPlacePricingStory(input: {
     // The plain noun the letter uses, never the MLS value ("Single Family
     // Residence" printed raw in the Mountain View note, reader review
     // 2026-10-07).
-    sourceNote: `${placeName} ${productPlural(subtype)} on the market ${longDate(start)} through ${longDate(end)}, ${homes}.`,
+    // What the count holds, as the letter prints it (lib/cma/place-pricing-story.ts
+    // placeSourceNote): a home whose listing was listed, went on the market,
+    // came off or closed inside the window, one per address.
+    sourceNote: `${placeName} ${productPlural(subtype)} listed, sold or taken off the market between ${longDate(
+      start,
+    )} and ${longDate(end)}: ${homes}, each address counted once.`,
   }
 }

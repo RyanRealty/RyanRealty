@@ -161,7 +161,20 @@ export function statusPpsfCaptionHtml(family: 'closed' | 'unsold' | 'active', en
   if (!row) return ''
   const list = row.list
   const sold = row.sold
-  const listVerb = row.homes === 1 ? 'lists' : 'list'
+  // A sale and a listing that came off are done: they WERE listed at a rate.
+  // "This one listing lists at $612 a foot" spoke of 636 Portland, canceled in
+  // August, as if it were still for sale (reader review 2026-10-09, 915
+  // Saginaw). A home for sale or under contract still lists at its ask.
+  const listVerb =
+    family === 'closed'
+      ? 'listed'
+      : family === 'unsold'
+        ? row.homes === 1
+          ? 'was listed'
+          : 'were listed'
+        : row.homes === 1
+          ? 'lists'
+          : 'list'
   // The sold rate is the price after a recorded credit, the same figure the
   // table's row prints under "Sold $/sqft after concessions". "Sold at $293 to
   // $386 a foot" over 2224 Indigo, a $503,000 sale on 1,676 sqft ($300 before

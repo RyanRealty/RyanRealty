@@ -6,6 +6,7 @@
 import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
 import { escapeHtml } from '@/lib/cma/render-blocks'
 import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
+import { pacificDay } from '@/lib/cma/listing-status'
 import { realSubdivisionName } from '@/lib/pricing/classes'
 
 const esc = escapeHtml
@@ -47,6 +48,75 @@ export type PlaceStoryHome = {
   city?: string | null
   latitude?: number | null
   longitude?: number | null
+  /** Its MLS status, and the days its own listing was listed, went on and came off the market. */
+  status?: string | null
+  listDate?: string | null
+  onMarketDate?: string | null
+  offMarketDate?: string | null
+}
+
+const FAILED = /^(expired|withdrawn|cancell?ed)/i
+
+function shiftMonths(iso: string, months: number): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(Date.UTC(y!, m! - 1 + months, d)).toISOString().slice(0, 10)
+}
+
+/**
+ * Whether the home's own listing is one of the homes the story counts, and one
+ * of those that came off without selling.
+ *
+ * The count (lib/cma/place-pricing-aggregate.ts rowsToPlacePricingStory) is
+ * every address in the place whose listing was listed, went on the market,
+ * came off it or closed inside the twelve months, the home itself included:
+ * the read is the place's listings, and the home's listing is one of them
+ * (1355 Jacksonville, withdrawn Sep 28 after listing Sep 23, is one of River
+ * West's 139 and one of its 21; reader review 2026-10-09). Read here off the
+ * same window and the same polygon test the lead uses, so the sentence can
+ * say so. A home outside the place, or with no dated listing in the window,
+ * is not counted and nothing is said.
+ */
+export function homeInPlaceCount(
+  story: Pick<PlacePricingStory, 'asOf' | 'placeName'>,
+  home: PlaceStoryHome | null | undefined,
+): { counted: boolean; didNotSell: boolean } {
+  const none = { counted: false, didNotSell: false }
+  if (!home || !homeInsidePlace(story, home)) return none
+  const end = (story.asOf ?? '').slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(end)) return none
+  const start = shiftMonths(end, -12)
+  const inWindow = [home.listDate, home.onMarketDate, home.offMarketDate].some((d) => {
+    const day = pacificDay(d ?? null)
+    return day != null && day >= start && day <= end
+  })
+  if (!inWindow) return none
+  return { counted: true, didNotSell: FAILED.test((home.status ?? '').trim()) }
+}
+
+function homeInsidePlace(story: Pick<PlacePricingStory, 'placeName'>, home: PlaceStoryHome): boolean {
+  const slug = resolveMarketArea(home.latitude ?? null, home.longitude ?? null)
+  return slug != null && marketAreaName(slug)?.trim() === story.placeName.trim()
+}
+
+/** What the count is, as the source line under the story says it. */
+export const PLACE_COUNT_WHAT = 'listed, sold or taken off the market'
+
+/** The source line as rows built before 2026-10-09 stored it. */
+const STORED_SOURCE_NOTE = /^(.+?) listed (.+?) through (.+?), ([\d,]+) (homes?)\.$/
+
+/**
+ * The source line under the story, in what it counts: "River West
+ * single-family homes listed, sold or taken off the market between October
+ * 8, 2025 and October 8, 2026: 139 homes, each address counted once." It
+ * said "listed October 8, 2025 through October 8, 2026, 139 homes" over a
+ * count that also holds homes listed before the window that sold or came off
+ * inside it. A stored line in the old words is restated from its own figures;
+ * any other prints as stored.
+ */
+export function placeSourceNote(note: string): string {
+  const m = STORED_SOURCE_NOTE.exec(note.trim())
+  if (!m) return note.trim()
+  return `${m[1]} ${PLACE_COUNT_WHAT} between ${m[2]} and ${m[3]}: ${m[4]} ${m[5]}, each address counted once.`
 }
 
 function possessive(name: string): string {
@@ -100,10 +170,19 @@ export function placePricingStoryHtml(
   home?: PlaceStoryHome | null,
 ): string {
   if (!story || !(story.listedHomes > 0)) return ''
-  const lines: string[] = [
-    placeStoryLead(story, home),
-    `${count(story.listedHomes)} homes were on the market. ${count(story.didNotSell)} of them came off the market without selling.`,
-  ]
+  // The words say what the count holds: every home listed, sold or taken off
+  // the market in the window, and the reader's own home when it is one of
+  // them (reader review 2026-10-09, 1355 Jacksonville: "139 homes were
+  // listed" counted homes that sold or came off without being listed in the
+  // window, and the home itself).
+  const own = homeInPlaceCount(story, home)
+  const listed = `${count(story.listedHomes)} ${story.listedHomes === 1 ? 'home was' : 'homes were'} ${PLACE_COUNT_WHAT}${
+    own.counted ? ', yours among them' : ''
+  }.`
+  const unsold = `${count(story.didNotSell)} of them came off the market without selling${
+    own.didNotSell && story.didNotSell > 0 ? ', yours included' : ''
+  }.`
+  const lines: string[] = [placeStoryLead(story, home), `${listed} ${unsold}`]
   if (story.droppedPrice > 0) {
     let line = `${count(story.droppedPrice)} dropped the price.`
     if (finite(story.typicalCutShare)) {
@@ -133,15 +212,7 @@ export function placePricingStoryHtml(
       : 'The homes that did not sell are the ones this report is measured against.',
   )
   const small = doc === 'letter' ? 'small' : 'small r'
-  // A stored note said "homes listed October …" for homes that were on the
-  // market in the window, sold or not (reader review, 1355 Jacksonville,
-  // River West, 2026-10-08). New notes already say "on the market".
-  const note = story.sourceNote
-    .trim()
-    .replace(
-      / homes listed (?=(?:January|February|March|April|May|June|July|August|September|October|November|December|\d))/,
-      ' homes on the market ',
-    )
+  const note = placeSourceNote(story.sourceNote)
   return `<div class="keep-note">
   ${lines.map(paragraph).join('\n  ')}
   ${note ? `<p class="${small}">${esc(note)}</p>` : ''}

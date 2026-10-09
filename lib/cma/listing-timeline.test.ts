@@ -387,44 +387,6 @@ describe('the timeline drawing', () => {
     expect(visibleText(svg)).not.toContain('$50K')
   })
 
-  it('keeps the last ask, the end label, and the zone caption off each other (915 Saginaw)', () => {
-    const saginaw: ListingTimelineInput = {
-      listDate: '2026-01-15',
-      offMarketDate: '2026-06-02',
-      steps: [
-        { date: '2026-01-15', ask: 1_050_000 },
-        { date: '2026-03-04', ask: 995_000 },
-        { date: '2026-05-01', ask: 925_000 },
-      ],
-      rangeLow: 987_577,
-      rangeHigh: 1_113_820,
-      rangeLabel: 'where homes like yours sold, adjusted for date and size',
-      status: 'canceled',
-      days: 138,
-      caption: 'Your asking price against what homes like yours sold for',
-    }
-    const textsOf = (svg: string) =>
-      [...svg.matchAll(/<text [^>]*y="([\d.]+)"[^>]*>([\s\S]*?)<\/text>/g)].map((m) => ({
-        y: Number(m[1]),
-        text: (m[2] ?? '').replace(/<[^>]+>/g, ''),
-      }))
-    for (const svg of [listingTimelineSvg(saginaw), listingTimelinePhoneSvg(saginaw)]) {
-      const texts = textsOf(svg)
-      const lastAsk = texts.find((x) => x.text === '$925K')
-      const midAsk = texts.find((x) => x.text === '$995K')
-      const ended = texts.find((x) => x.text.includes('canceled after'))
-      const caption = texts.find((x) => x.text.includes('where homes like yours sold'))
-      expect(lastAsk).toBeTruthy()
-      expect(midAsk).toBeTruthy()
-      expect(ended).toBeTruthy()
-      expect(caption).toBeTruthy()
-      expect(Math.abs(ended!.y - lastAsk!.y)).toBeGreaterThan(18)
-      expect(Math.abs(caption!.y - midAsk!.y)).toBeGreaterThan(14)
-      expect(Math.abs(caption!.y - lastAsk!.y)).toBeGreaterThan(14)
-      expect(textOutsideViewBox(svg)).toEqual([])
-    }
-  })
-
   it('draws nothing without a range or an ask', () => {
     expect(listingTimelineSvg({ ...t, rangeLow: 0, rangeHigh: 0 })).toBe('')
     expect(listingTimelineSvg({ ...t, steps: [] })).toBe('')

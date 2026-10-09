@@ -69,6 +69,13 @@ export type CmaPinFact = {
   priceChanges: number | null
   /** False when the record says only THAT the price moved, not how often. */
   priceChangesExact?: boolean
+  /**
+   * The price changes are counted over the home's last stretch on the market,
+   * which is not its listing's first: "no price change" holds only since it
+   * came back (reader review 2026-10-09, 61197 Cottonwood went from $849,900
+   * to $774,900 before it came back at $774,900).
+   */
+  sinceCameBack?: boolean
   latitude?: number | null
   longitude?: number | null
   /** Matrix 3's split: an active pin's row is in the Active or the Pending table. */
@@ -199,7 +206,9 @@ export function pinRevealLine(fact: CmaPinFact): string {
   if (fact.priceChanges != null && fact.priceChanges >= 0) {
     bits.push(
       fact.priceChanges === 0
-        ? 'no price change'
+        ? fact.sinceCameBack
+          ? `no price change since it last came on the market`
+          : 'no price change'
         : fact.priceChangesExact
           ? `${int(fact.priceChanges)} price change${fact.priceChanges === 1 ? '' : 's'}`
           : 'came down at least once',
@@ -217,6 +226,8 @@ export const SET_ASIDE_PIN_NOTE = 'Set aside: did not set the price'
  * (reader review 2026-10-08).
  */
 export const SET_ASIDE_PIN_NOTE_RANGE = 'Set aside: did not set the range'
+/** The same note on a home on the market, whose sales set an opinion of value (rule 27). */
+export const SET_ASIDE_PIN_NOTE_VALUE = 'Set aside: did not set the value'
 
 /**
  * The set-aside pin's note, by the decision the legend's closed line was
@@ -224,7 +235,9 @@ export const SET_ASIDE_PIN_NOTE_RANGE = 'Set aside: did not set the range'
  * every set-aside pin.
  */
 export function setAsidePinNote(closedLabel?: string | null): string {
-  return closedLabel === CLOSED_SET_RANGE_LABEL ? SET_ASIDE_PIN_NOTE_RANGE : SET_ASIDE_PIN_NOTE
+  if (closedLabel === CLOSED_SET_RANGE_LABEL) return SET_ASIDE_PIN_NOTE_RANGE
+  if (closedLabel === CLOSED_SET_VALUE_LABEL) return SET_ASIDE_PIN_NOTE_VALUE
+  return SET_ASIDE_PIN_NOTE
 }
 
 /** The whole pin, in words, for a screen reader and for the button's label. */
@@ -416,6 +429,11 @@ export type CompPinMapInput = {
 
 /** The legend line for closed sales on a letter whose cover the sales did not set. */
 export const CLOSED_SET_RANGE_LABEL = 'Closed sales: these set the range'
+/**
+ * The legend line on a home on the market (rule 27), whose cover is an opinion
+ * of value (reader review 2026-10-09, 3062 NW Kelly Hill).
+ */
+export const CLOSED_SET_VALUE_LABEL = 'Closed sales: these set the value'
 
 /**
  * The map, and the pins it actually drew.

@@ -45,7 +45,6 @@ import { saleCarriesConcession, statusPpsfCaptionHtml } from '@/lib/cma/status-p
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 import { formatDate } from '@/lib/format/date'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
-import { AFTER_LAST_ON_MARKET } from '@/lib/cma/last-stretch'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import { anySaleMovedForDate } from '@/lib/cma/adjustments-applied'
 import { comparisonSalePrice, concessionOffClose, concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
@@ -596,18 +595,6 @@ export function moneyCell(n: number | null | undefined): string {
   return n != null && n > 0 ? usd(n) : '-'
 }
 
-/**
- * Original list is the ask when this stretch of the market began. When the
- * home had already been on the market and came back, that ask is not the MLS
- * original, so the cell says so (reader review, 20676 Wild Rose, 2026-10-08).
- * A column that did not restart keeps the dollar alone.
- */
-function originalListCell(entry: MatrixEntry): string {
-  const money = moneyCell(entry.firstAsk)
-  if (money === '-' || entry.restarted !== true) return money
-  return `${money}, ${AFTER_LAST_ON_MARKET}`
-}
-
 /** The "Weight in this price" cell: the reconciliation's own figure, one decimal. */
 export function weightCell(weight: number | null | undefined): string {
   return weight != null && Number.isFinite(weight) ? `${weight.toFixed(1)}%` : '-'
@@ -631,6 +618,23 @@ export function domCell(
   if (entry.domMeasure === 'listed-to-closed') return `${count}, listed to closed`
   if (entry.domMeasure === 'offer' && entry.family === 'active') return `${count} to an offer`
   return count
+}
+
+/**
+ * THE ORIGINAL LIST, SAID FOR WHAT IT IS (reader review 2026-10-09).
+ *
+ * A home that was withdrawn, expired, canceled or fell out of contract and
+ * came back prints the ask it came back at (rule 28), not the MLS
+ * OriginalListPrice: 628 Portland opened at $1,475,000 and came back at
+ * $1,395,000, and its cell read "Original list $1,395,000". The cell names
+ * that ask: "$1,395,000 when it came back". Every other home's cell is its
+ * original list, as before.
+ */
+export const CAME_BACK_SUFFIX = 'when it came back'
+
+export function originalListCell(entry: Pick<MatrixEntry, 'firstAsk' | 'firstAskRestarted'>): string {
+  const cell = moneyCell(entry.firstAsk)
+  return cell !== '-' && entry.firstAskRestarted === true ? `${cell} ${CAME_BACK_SUFFIX}` : cell
 }
 
 function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string[] {
@@ -868,8 +872,13 @@ export const SOLD_PPSF_NET_ROW_LABEL = 'Sold $/sqft after concessions'
 function sharedRowWords(
   family: 'closed' | 'unsold' | 'active',
   entries: readonly MatrixEntry[],
-  rows: ReadonlyArray<MatrixRow>,
+  rows0: ReadonlyArray<MatrixRow>,
 ): ReadonlyArray<MatrixRow> {
+  // A cell that says "when it came back" carries words, so its row wraps like
+  // the other worded rows: a nowrap figure cell would run into the next
+  // home's column.
+  const cameBack = entries.some((e) => e.firstAskRestarted === true)
+  const rows = cameBack ? rows0.map((row) => (row.label === 'Original list' ? { ...row, figure: false } : row)) : rows0
   if (family !== 'closed') return rows
   const credit = entries.some(saleCarriesConcession)
   return rows.map((row) => {

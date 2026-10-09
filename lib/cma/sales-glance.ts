@@ -39,6 +39,8 @@ export type SalesGlanceInput = {
   comps: readonly CmaAdjustedComp[]
   pricing: CmaPricing
   docLinks?: TrackedDocLinkCtx | null
+  /** The subject is on the market (rule 27): the weight column is "in this value". */
+  onMarket?: boolean
 }
 
 export type SalesGlanceRow = {
@@ -118,7 +120,9 @@ export function salesGlanceHtml(input: SalesGlanceInput): string {
       // The grid's own words for its weight row on this letter: on a cover
       // the weights did not make, they are not "in this price"
       // (lib/cma/sales-role.ts).
-      showWeight ? `<th scope="col" class="n">${esc(weightRowLabel(input.pricing, input.comps))}</th>` : ''
+      showWeight
+        ? `<th scope="col" class="n">${esc(weightRowLabel(input.pricing, input.comps, { onMarket: input.onMarket }))}</th>`
+        : ''
     }</tr></thead>
     <tbody>${body}</tbody>
   </table>

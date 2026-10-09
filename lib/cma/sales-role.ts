@@ -98,15 +98,53 @@ export function salesSetOnlyTheRange(
   return heldForMatt(pricing) || !clampSentence(pricing)
 }
 
+/**
+ * WHAT THE SALES SET, IN THE LETTER'S OWN WORD (reader review 2026-10-09,
+ * 3062 NW Kelly Hill).
+ *
+ *  - `range`: the cover is not the weights' number (`salesSetOnlyTheRange`).
+ *  - `value`: a home on the market (rule 27, lib/cma/subject-on-market.ts).
+ *    Its cover is "Our opinion of value", and the grid under it said "The
+ *    sales that set this price" and "Weight in this price": a price is what
+ *    a seller lists at, and this letter recommends none.
+ *  - `price`: every other letter.
+ *
+ * The heading over the grid, its weight row, the map's legend and pin notes,
+ * the heading's count of the sales that set it, the reconciliation sentence
+ * and Basis and limits all ask this one decision.
+ */
+export type SalesRole = 'range' | 'value' | 'price'
+
+export function salesRole(
+  pricing: CmaPricing | null | undefined,
+  comps: readonly CmaAdjustedComp[] | null | undefined,
+  opts?: { onMarket?: boolean },
+): SalesRole {
+  if (salesSetOnlyTheRange(pricing, comps)) return 'range'
+  return opts?.onMarket === true ? 'value' : 'price'
+}
+
+/** "set the range", "set the value", "set the price". */
+export function setWhat(role: SalesRole): string {
+  return role === 'range' ? 'set the range' : role === 'value' ? 'set the value' : 'set the price'
+}
+
 /** The grid's weight row, named for what the weights are on this letter. */
 export const WEIGHT_IN_PRICE_ROW_LABEL = 'Weight in this price'
+export const WEIGHT_IN_VALUE_ROW_LABEL = 'Weight in this value'
 export const WEIGHT_AMONG_SALES_ROW_LABEL = 'Weight among these sales'
 
 export function weightRowLabel(
   pricing: CmaPricing | null | undefined,
   comps: readonly CmaAdjustedComp[] | null | undefined,
+  opts?: { onMarket?: boolean },
 ): string {
-  return salesSetOnlyTheRange(pricing, comps) ? WEIGHT_AMONG_SALES_ROW_LABEL : WEIGHT_IN_PRICE_ROW_LABEL
+  const role = salesRole(pricing, comps, opts)
+  return role === 'range'
+    ? WEIGHT_AMONG_SALES_ROW_LABEL
+    : role === 'value'
+      ? WEIGHT_IN_VALUE_ROW_LABEL
+      : WEIGHT_IN_PRICE_ROW_LABEL
 }
 
 /** "the three sales that set the range", where the stored sentence said "behind this price". */
@@ -116,15 +154,19 @@ const BEHIND_THIS_PRICE = /\bsales behind this price\b/g
  * The stored reconciliation sentence (lib/pricing/reconciliation.ts writes it
  * at build, so a delivered letter carries it as written) in the letter's
  * words for this letter: on a range-only letter its "sales behind this price"
- * is "sales that set the range".
+ * is "sales that set the range", and on a home on the market it is "sales
+ * behind this value".
  */
 export function reconciliationSentenceFor(
   sentence: string,
   pricing: CmaPricing | null | undefined,
   comps: readonly CmaAdjustedComp[] | null | undefined,
+  opts?: { onMarket?: boolean },
 ): string {
-  if (!salesSetOnlyTheRange(pricing, comps)) return sentence
-  return sentence.replace(BEHIND_THIS_PRICE, 'sales that set the range')
+  const role = salesRole(pricing, comps, opts)
+  if (role === 'range') return sentence.replace(BEHIND_THIS_PRICE, 'sales that set the range')
+  if (role === 'value') return sentence.replace(BEHIND_THIS_PRICE, 'sales behind this value')
+  return sentence
 }
 
 /** What the weight figures are, under the grid. */

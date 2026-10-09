@@ -13,7 +13,12 @@ export type PlacePricingStory = {
   windowMonths: 12
   /** ISO date (YYYY-MM-DD) the window was measured through. */
   asOf: string
-  /** Homes listed in the window, any later status. */
+  /**
+   * Homes (one per address) whose listing was listed, went on the market,
+   * came off it or closed inside the window, any status: the subject's own
+   * listing among them when it did. The letter says it that way
+   * (lib/cma/place-pricing-story.ts).
+   */
   listedHomes: number
   /** Of those, homes that came off Expired, Canceled, or Withdrawn and did not close. */
   didNotSell: number
