@@ -17,10 +17,12 @@ concurrency:
 # ~0: the time was all serial work.
 #
 # Same gates, same commands, same thresholds, now side by side:
-#   lint · ci:gates · test:unit (3 shards)        start at once, no build needed
+#   lint · gates (ci:gates + type check) ·        start at once, no build needed
+#     test:unit (3 shards)
 #   build                                         one production build, packed
-#   smoke · content-floor (3) · a11y ·            each unpacks that build and
-#     lighthouse (4) · e2e                        starts its own fresh server
+#   smoke · content-floor (4) · a11y ·            start with the build (checkout,
+#     lighthouse (4) · e2e                        npm ci, browsers), then unpack
+#                                                 it and start a fresh server
 #   lint-and-build                                fails if ANY job above failed
 #
 # Shards split the work, never the bar: vitest --shard runs every test file
@@ -110,6 +112,15 @@ jobs:
       # run in quality.yml (`--lane=nightly`), not here.
       # See docs/MECHANICAL_GATES.md.
       - run: npm run ci:gates
+      # The type check `next build` used to run inside the build job ("Running
+      # TypeScript", 2.2 minutes on the critical path). Same program: tsconfig
+      # includes .next/types, which `next typegen` writes without a build.
+      - name: Type check (the check next build ran)
+        env:
+          NODE_OPTIONS: --max-old-space-size=10240
+        run: |
+          npx next typegen
+          npx tsc --noEmit -p tsconfig.json
 
   unit:
     runs-on: ubuntu-latest
@@ -158,17 +169,19 @@ jobs:
           # build script appends this value after its 6144 default, and the
           # later flag wins.
           NODE_OPTIONS: --max-old-space-size=10240
-      # Bundle budget parses .next/static after the build above.
-      - run: npm run ci:bundle-budget
+          # The type check runs in the gates job instead (same tsconfig, same
+          # tsc, in parallel). next.config.ts reads this; nothing else sets it.
+          RR_CI_TYPECHECK_SEPARATE: '1'
 
       # Pack the build for the runtime-gate jobs: all of .next except the
       # compiler caches (the data cache under .next/cache stays, so the server
-      # those jobs start is the one this build made), plus the gitignored files
-      # the build wrote outside .next (prebuild's public/pdf.worker.min.mjs,
-      # the generated service worker).
+      # those jobs start is the one this build made), plus every untracked
+      # file the build wrote outside .next (prebuild's public/pdf.worker.min.mjs,
+      # the generated service worker). Packed before the budget and the
+      # bundle comment so the waiting jobs get it as early as possible.
       - name: Pack build
         run: |
-          git ls-files --others --ignored --exclude-standard --directory \
+          git ls-files --others --directory \
             | grep -vE '^(node_modules/|\.next/)' > /tmp/build-extra.txt || true
           echo "extra build outputs:"; cat /tmp/build-extra.txt
           tar --exclude='.next/cache/webpack' --exclude='.next/cache/turbopack' --exclude='.next/cache/swc' \
@@ -180,6 +193,9 @@ jobs:
           path: next-build.tar.zst
           compression-level: 0
           retention-days: 1
+
+      # Bundle budget parses .next/static after the build above.
+      - run: npm run ci:bundle-budget
 
       # Bundle size report. continue-on-error because this posts an informational
       # PR comment: if commenting is unavailable (org token policy, a fork PR
@@ -259,8 +275,12 @@ jobs:
   # mutely on every PR from 2026-07-25; scripts/wait-for-server.mjs reports
   # each probe and the server log is dumped on failure (.github/actions/use-build).
   smoke:
-    needs: build
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read  # use-build polls this run for the build artifact
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -299,15 +319,19 @@ jobs:
   # No-regression floor (Matt 2026-09-12). Every public class keeps the hero
   # width, image resolution, video, sections, words, links and JSON-LD it
   # carried when its contentFloor was seeded on parity.json. Lower a floor only
-  # by hand, in the same commit. 27 classes, about 10 s each: split 3 ways.
+  # by hand, in the same commit. 27 classes, about 10 s each: split 4 ways.
   content-floor:
-    needs: build
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read  # use-build polls this run for the build artifact
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/use-build
@@ -315,15 +339,19 @@ jobs:
           playwright: 'true'
       - name: Route content floor
         env:
-          CONTENT_FLOOR_SHARD: ${{ matrix.shard }}/3
+          CONTENT_FLOOR_SHARD: ${{ matrix.shard }}/4
         run: npm run ci:route-content-floor
 
   # G23 — pa11y-ci, BLOCKING since 2026-08-02 (WCAG 2.1 failures Lighthouse's
   # aggregate a11y score misses). It always wanted a fresh server (it flaked
   # after Lighthouse's 24 passes on 2026-08-21); it now has one to itself.
   a11y:
-    needs: build
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read  # use-build polls this run for the build artifact
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -337,8 +365,12 @@ jobs:
   # took 9.5 minutes on one runner, so LHCI_SHARD splits the URLs 4 ways;
   # each URL keeps its 3 runs and its assertions.
   lighthouse:
-    needs: build
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read  # use-build polls this run for the build artifact
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -353,8 +385,12 @@ jobs:
         run: npm run ci:lighthouse
 
   e2e:
-    needs: build
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read  # use-build polls this run for the build artifact
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4

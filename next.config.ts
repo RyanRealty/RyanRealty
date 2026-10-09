@@ -163,7 +163,13 @@ const nextConfig: NextConfig = {
     // code push, and CI's lint-and-build job builds again on GitHub runners
     // (VERCEL is unset in both, so this flag stays false there). The Vercel
     // pass was a redundant third check. Approved-by: matt 2026-07-29.
-    ignoreBuildErrors: process.env.VERCEL === '1',
+    //
+    // RR_CI_TYPECHECK_SEPARATE (2026-10-09): GitHub CI's build job sets it
+    // because the gates job runs the same check in parallel (`next typegen`
+    // then `tsc --noEmit -p tsconfig.json`), which took 2.2 minutes off the
+    // PR critical path. Nothing else sets it, so local and push-chain builds
+    // still type-check in full.
+    ignoreBuildErrors: process.env.VERCEL === '1' || process.env.RR_CI_TYPECHECK_SEPARATE === '1',
   },
   // pdfjs-dist breaks when Turbopack bundles it into a server action (TC
   // document upload page-count). Load it from node_modules at runtime instead.
