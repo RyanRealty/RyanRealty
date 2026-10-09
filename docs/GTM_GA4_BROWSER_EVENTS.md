@@ -27,6 +27,7 @@ dataLayer.push({ event: 'section_view', section: 'proof', page_type: 'sell',   /
 
 - `ga4_params` holds only the allowlisted parameters below (no phone numbers, emails, hrefs or paths).
 - Aliases are folded to one name per fact: `section_id` → `section`, `percent` → `depth`, `depth_percent` → `depth`, `listing_id` → `listing_key`, `place_slug` → `place`, `cta_label` → `cta`, `cta_context` → `cta_location`.
+- `listing_key` reaches GA4 as `lk_<key>` when the key is all digits (it always is for MLS keys). GA4 stored a bare 26-digit key as a double and dropped digits (2026-10-08, e.g. `2.0251020154621696e+25`). Only `ga4_params.listing_key` carries the prefix; the flat dataLayer key, the first-party store and Meta `content_ids` keep the bare key. No GTM change: the same Data Layer Variable and tag pass it through. Strip `lk_` to join GA4 data back to listings. Rows before 2026-10-09 stay floats and cannot be recovered.
 - `page_type` and `broker_slug` are page context, read as flat keys (the GTM bootstrap and PageViewTracker stamp
   them on every navigation).
 - Not sent by this tag, on purpose: `generate_lead` (server only, Measurement Protocol, one per real submission),

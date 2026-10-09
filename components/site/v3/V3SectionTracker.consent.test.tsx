@@ -131,6 +131,19 @@ afterEach(() => {
   setConsent(undefined)
 })
 
+describe('V3SectionTracker GA4 section_view', () => {
+  it('names its surface, so GA4 surface is not empty on section_view', async () => {
+    const w = window as Window & { dataLayer?: unknown[] }
+    w.dataLayer = []
+    setConsent(ALL)
+    await mount()
+    viewSection('market')
+    const ev = (w.dataLayer as Array<Record<string, unknown>>).find((e) => e.event === 'section_view')
+    expect(ev?.ga4_params).toEqual({ section: 'market', surface: 'page_section' })
+    delete w.dataLayer
+  })
+})
+
 describe('V3SectionTracker carries the consent VisitTracker computes', () => {
   it('a section_view posts consent, the session, the arrival attribution, the visit and the section in metadata', async () => {
     setConsent(ALL)

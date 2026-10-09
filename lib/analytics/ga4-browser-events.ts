@@ -201,6 +201,28 @@ export const GA4_PARAM_ALIASES: Readonly<Record<string, string>> = {
 const GA4_PARAM_VALUE_MAX = 100
 
 /**
+ * LISTING KEYS STAY TEXT. A listing key is a 26-digit string. GTM's tag sends a
+ * JS string as `ep.listing_key` (only a JS number goes as `epn.`), but GA4's
+ * collection still reads an all-digit `ep.` value as a number: on 2026-10-08
+ * every listing_key in GA4 was a double such as 2.0251020154621696e+25, the
+ * last nine or so digits gone. A non-numeric prefix keeps it a string end to
+ * end with no GTM change (same DLV, same tag). Only GA4's copy is prefixed;
+ * the flat dataLayer keys, the first-party store and the Meta content_ids keep
+ * the bare key. Strip `lk_` to join a GA4 export back to listings.
+ */
+export const GA4_LISTING_KEY_PREFIX = 'lk_'
+
+/** True for a value GA4 would read as a number (digits, decimal, exponent). */
+const NUMERIC_LOOKING = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/
+
+/** The GA4 form of a listing key: `lk_<key>` when the key would read as a number. */
+export function ga4ListingKey(raw: string | number): string | null {
+  const v = typeof raw === 'number' ? (Number.isFinite(raw) ? String(raw) : '') : raw.trim()
+  if (!v) return null
+  return NUMERIC_LOOKING.test(v) ? `${GA4_LISTING_KEY_PREFIX}${v}` : v
+}
+
+/**
  * The GA4 parameters for one event: allowlisted names only, aliases folded to
  * the canonical name (an explicit canonical key wins over an alias), scalars
  * only, strings capped at GA4's 100 characters.
@@ -210,6 +232,11 @@ export function ga4ParamsFrom(params: Record<string, unknown> = {}): Record<stri
   const put = (name: string, raw: unknown, overwrite: boolean) => {
     if (!PER_EVENT_PARAMS.has(name)) return
     if (!overwrite && name in out) return
+    if (name === 'listing_key' && (typeof raw === 'string' || typeof raw === 'number')) {
+      const v = ga4ListingKey(raw)
+      if (v) out[name] = v.slice(0, GA4_PARAM_VALUE_MAX)
+      return
+    }
     if (typeof raw === 'string') {
       const v = raw.trim()
       if (v) out[name] = v.slice(0, GA4_PARAM_VALUE_MAX)
