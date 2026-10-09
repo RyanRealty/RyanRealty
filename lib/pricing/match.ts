@@ -10,7 +10,7 @@ import { isResortCommunity } from '@/lib/cma/resort-guard'
 import { anchorPlacePhrase, resolvePriceAnchor, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
 import { onOwnPlat, ownGroundSeatRank } from '@/lib/pricing/plat-ground'
 import { describePriceTierLine, insidePriceTier, priceTierLine } from '@/lib/pricing/price-tier'
-import { saleSetsThePrice } from '@/lib/pricing/price-set'
+import { notSettingSaleFrom, priceSetRefusal, saleSetsThePrice, type NotSettingSale } from '@/lib/pricing/price-set'
 import { locationMatchFromFacts, type LocationMatch } from '@/lib/pricing/closed-comp-weight'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
@@ -362,6 +362,12 @@ export type PricingMatchResult = {
    * test literals stay valid; the walk always sets it.
    */
   bench?: SelectedPricingComp[]
+  /**
+   * Sales that passed a rung and rule 20 refused, each with the sentence the
+   * letter prints beside it (SKILL §0.3 rule 29). The walk records the reason.
+   * The renderer does not recompute it. Empty when nothing was refused.
+   */
+  notSettingSales?: NotSettingSale[]
 }
 
 function monthsBetween(laterIso: string, earlierIso: string): number {
@@ -1772,7 +1778,16 @@ export function walkPricingLadder(
 
   if (!subject.sqft || subject.sqft < 300) {
     const note = 'Subject has no usable living area, so there is nothing to compare.'
-    return { comps: [], tiersUsed, trace: [note], reachedTarget: false, starved: true, rungs, bench: [] }
+    return {
+      comps: [],
+      tiersUsed,
+      trace: [note],
+      reachedTarget: false,
+      starved: true,
+      rungs,
+      bench: [],
+      notSettingSales: [],
+    }
   }
 
   // Delta 4: the splits, counted over the rural pool for the reader's story.
@@ -1828,11 +1843,13 @@ export function walkPricingLadder(
   // Rule 20, resolved once: a pure function of subject x sale, independent of
   // the rung. Every input is stamped before the walk (toSelected stamps
   // ownPlat; the selector stamps communityLocated and communitySlug on each
-  // row; sqft and lotAcres are row fields).
+  // row; sqft and lotAcres are row fields). The refusal is the same call:
+  // admission and the sentence the letter prints cannot disagree.
   const subjectCommunity = searchCommunitySlug(subject)
-  const setsPrice = (sale: SelectedPricingComp): boolean => {
+  const notSettingSales: NotSettingSale[] = []
+  const priceSetInput = (sale: SelectedPricingComp) => {
     const saleCommunity = saleSearchCommunitySlug(subject, sale)
-    return saleSetsThePrice({
+    return {
       ownPlat: sale.ownPlat,
       subjectSubdivision: subject.subdivision,
       saleSubdivision: sale.subdivision,
@@ -1844,8 +1861,9 @@ export function walkPricingLadder(
       saleSqft: sale.sqft,
       subjectLotAcres: subject.lotAcres,
       saleLotAcres: sale.lotAcres,
-    })
+    }
   }
+  const setsPrice = (sale: SelectedPricingComp): boolean => saleSetsThePrice(priceSetInput(sale))
 
   for (const tier of tiers) {
     if (tier.samePocket && countBeforePocket == null) countBeforePocket = byKey.size
@@ -2047,6 +2065,19 @@ export function walkPricingLadder(
       // rule 20 refused. It is not admitted, it does not count toward the
       // five, and no later rung re-scans it. The walk goes on in order.
       if (!setsPrice(selected)) {
+        const refusal = priceSetRefusal(priceSetInput(selected))
+        if (refusal) {
+          notSettingSales.push(
+            notSettingSaleFrom(
+              {
+                listingKey: selected.listingKey,
+                listNumber: selected.listNumber,
+                address: selected.address,
+              },
+              refusal,
+            ),
+          )
+        }
         bySale.add(saleKey)
         rungNotSetting++
         continue
@@ -2160,6 +2191,7 @@ export function walkPricingLadder(
     aduSkipped: aduSkippedKeys.size,
     exclusiveCount,
     pocketStarved,
+    notSettingSales,
     ...(ruralSplits ? { ruralSplits } : {}),
   }
 }

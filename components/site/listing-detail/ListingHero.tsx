@@ -16,9 +16,6 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from '@/components/ui/carousel'
-import { PhotoGalleryLightbox } from './PhotoGalleryLightbox'
-import { ListingTourOverlay } from './ListingTourOverlay'
-import { ListingStreetViewOverlay } from './ListingStreetViewOverlay'
 import {
   publishListingHeroUnmute,
   publishListingHeroVideo,
@@ -47,6 +44,18 @@ const ListingMediaMap = dynamic(() => import('./ListingLocationMap.client'), {
   ssr: false,
   loading: () => <div className="listing-mosaic__map-slot" aria-hidden />,
 })
+const PhotoGalleryLightbox = dynamic(
+  () => import('./PhotoGalleryLightbox').then((m) => m.PhotoGalleryLightbox),
+  { ssr: false, loading: () => null },
+)
+const ListingTourOverlay = dynamic(
+  () => import('./ListingTourOverlay').then((m) => m.ListingTourOverlay),
+  { ssr: false, loading: () => null },
+)
+const ListingStreetViewOverlay = dynamic(
+  () => import('./ListingStreetViewOverlay').then((m) => m.ListingStreetViewOverlay),
+  { ssr: false, loading: () => null },
+)
 
 /**
  * Listing media: ONE FRAME and a FILMSTRIP (site queue SITE-45).

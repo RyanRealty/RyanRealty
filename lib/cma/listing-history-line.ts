@@ -48,6 +48,20 @@ export function closedCompCivilDay(iso: string | null | undefined): string | nul
 }
 
 /**
+ * The on-market (or offer-clock) Pacific day is after the close. A same-day
+ * close is not this: the days are 0 and that 0 is real. 1654 Meadow went on
+ * the market Jun 6, 2025 and closed May 30, and a 0 there is not an offer.
+ */
+export function onMarketAfterClose(
+  onMarket: string | null | undefined,
+  close: string | null | undefined,
+): boolean {
+  const from = closedCompCivilDay(onMarket)
+  const to = closedCompCivilDay(close)
+  return from != null && to != null && from > to
+}
+
+/**
  * Whole calendar days between two dates, each read as its Pacific day. The one
  * day count the letter prints (lib/cma/listing-status.ts). Never invents.
  */
@@ -191,6 +205,9 @@ export function closedSaleDomTotal(facts: {
   const start = earliestClosedCompListDate(facts) ?? facts.onMarketDate
   const calendar = calendarDaysBetween(start, facts.closeDate)
   if (calendar != null && (mls == null || mls < calendar)) return calendar
+  // A zero MLS count with the on-market day after the close is not a run
+  // (1654 Meadow). A positive MLS count still stands.
+  if ((mls == null || mls === 0) && onMarketAfterClose(start, facts.closeDate)) return null
   if (mls != null) return mls
   return calendar
 }
@@ -210,11 +227,13 @@ export function closedSaleDomTotal(facts: {
  * price path now all print this one count, and the path starts on the day the
  * count starts (`CmaComp.offerFrom`).
  *
- * Two checks keep a figure that cannot be this sale's off the page:
+ * Three checks keep a figure that cannot be this sale's off the page:
  *  - an offer clock longer than the whole run to close is not an offer clock
  *    (2107 Carrie printed 66 days on market beside an offer in 67): null, and
  *    the row falls back to the listed-to-closed count, labeled as that;
- *  - nor is one that, counted from the day it started, ends after the close.
+ *  - nor is one that, counted from the day it started, ends after the close;
+ *  - nor is a count, including 0, whose on-market day is itself after the
+ *    close (1654 Meadow). A same-day close still returns 0.
  */
 export function closedSaleDaysToOffer(facts: {
   daysToOffer: number | null | undefined
@@ -233,6 +252,7 @@ export function closedSaleDaysToOffer(facts: {
   const total = facts.domTotal
   if (total != null && Number.isFinite(total) && total >= 0 && days > Math.round(total)) return null
   const from = closedCompCivilDay(facts.measuredFrom) ?? closedCompCivilDay(facts.firstListDate)
+  if (onMarketAfterClose(from, facts.closeDate)) return null
   const run = from ? calendarDaysBetween(from, facts.closeDate) : null
   if (run != null && days > run) return null
   return days
@@ -298,7 +318,11 @@ export function listingHistoryLine(facts: ListingHistoryFacts): string | null {
   const when = dayWhen(facts.onMarketDate) ?? monthWhen(facts.onMarketDate)
   const closedWhen = dayWhen(facts.closeDate) ?? monthWhen(facts.closeDate)
   const dom = daysOnMarketFrom(facts)
-  const domBit = dom != null ? `${dom} day${dom === 1 ? '' : 's'} on market` : null
+  // A recorded 0 with the on-market day after the close is not a same-day
+  // offer (1654 Meadow). A real same-day close still prints 0. An active
+  // listing has no close, so its 0 still prints.
+  const invertedZero = dom === 0 && onMarketAfterClose(facts.onMarketDate, facts.closeDate)
+  const domBit = dom != null && !invertedZero ? `${dom} day${dom === 1 ? '' : 's'} on market` : null
 
   const bits: string[] = []
 
