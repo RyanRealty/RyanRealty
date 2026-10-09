@@ -110,6 +110,17 @@ describe('parseConsentCookie + trackingLevelFromConsent', () => {
   it('names the cookie the banner writes', () => {
     expect(CONSENT_COOKIE).toBe('ryan_realty_cookie_consent')
   })
+
+  it('ignores extra ts and v fields on a modern cookie', () => {
+    expect(parseConsentCookie(enc({ analytics: true, marketing: true, ts: 1_700_000_000_000, v: 1 }))).toEqual({
+      analytics: true,
+      marketing: true,
+    })
+    expect(parseConsentCookie(enc({ analytics: false, marketing: false, ts: 1, v: 1 }))).toEqual({
+      analytics: false,
+      marketing: false,
+    })
+  })
 })
 
 describe('isAdTrafficSearch', () => {
