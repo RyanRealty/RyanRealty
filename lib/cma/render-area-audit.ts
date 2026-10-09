@@ -112,6 +112,16 @@ export function auditCmaRenderRow(input: {
   }
   const subject = doc.subject
   if (!subject) return empty
+  // The stored subject leaves these fields optional. The render filter's
+  // subject type does not (CmaSubject: streetAddress is a string, listing
+  // keys are string | null). Empty and null match the same way in the
+  // subject check, so this changes no row.
+  const subjectForFilter = {
+    listingKey: subject.listingKey ?? null,
+    mlsNumber: subject.mlsNumber ?? null,
+    streetAddress: subject.streetAddress ?? '',
+    propertySubType: subject.propertySubType ?? null,
+  }
   const status = input.status ?? 'draft'
   const withStatus = { ...(args as object), documentStatus: status }
   const frozen = letterIsFrozen(status)
@@ -123,9 +133,9 @@ export function auditCmaRenderRow(input: {
   const storedRivals = (doc.bandRivals?.rivals ?? doc.extras?.band?.rivals ?? []).filter(
     (r) => (r.address ?? '').trim() && (r.listPrice ?? 0) > 0,
   )
-  const printedRivals = activeRivalsFor(storedRivals, subject, filterArea, { frozen, buildArea: bandArea })
+  const printedRivals = activeRivalsFor(storedRivals, subjectForFilter, filterArea, { frozen, buildArea: bandArea })
   for (const row of dropped(storedRivals, printedRivals)) {
-    if (isSubjectListing(row, subject)) continue
+    if (isSubjectListing(row, subjectForFilter)) continue
     const where = `${input.slug} rival ${row.address}`
     if (frozen) {
       fail.push(`${where} dropped on a ${status} letter`)
@@ -146,14 +156,14 @@ export function auditCmaRenderRow(input: {
     (p) => (p.address ?? '').trim() && (p.listPrice ?? 0) > 0,
   )
   const printedPeers = unsoldPeersFor({
-    subject,
+    subject: subjectForFilter,
     peers: storedPeers,
     area: doc.compArea ?? null,
     buildArea: peerArea,
     frozen,
   })
   for (const row of dropped(storedPeers, printedPeers)) {
-    if (isSubjectListing(row, subject)) continue
+    if (isSubjectListing(row, subjectForFilter)) continue
     const where = `${input.slug} unsold ${row.address}`
     if (frozen) {
       fail.push(`${where} dropped on a ${status} letter`)
