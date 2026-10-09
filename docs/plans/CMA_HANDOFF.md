@@ -1,6 +1,6 @@
 # CMA work handoff (Bend expired letters + 3062 NW Kelly Hill)
 
-**Read this first if you are picking up the CMA work.** It is kept current by whichever session is doing the work. Last updated 2026-10-08 evening by the Claude Code cloud session.
+**Read this first if you are picking up the CMA work.** It is kept current by whichever session is doing the work. Last updated 2026-10-09 by the Grok session on this branch.
 
 ## Start here (any machine)
 
@@ -10,7 +10,25 @@ git checkout claude/beautiful-lamport-2x4fjs && git pull origin claude/beautiful
 git ls-remote origin fix/on-market-value fix/relist-clock fix/plat-ground-facts   # in-flight fix branches, see "In flight"
 ```
 
-The work branch is `claude/beautiful-lamport-2x4fjs`. Open a PR to `main`; Matt merges. Never push, fast-forward, or merge `main` yourself. No rebase, force-push or reset.
+The work branch is `claude/beautiful-lamport-2x4fjs`. Landing is a pull request to main. Matt merges. Do not push, fast-forward, or merge into main. No rebase, force-push, or reset.
+
+## STOPPING POINT, 2026-10-09
+
+This section is the current order. It overrides every older landing line in this file.
+
+Landing is a pull request to main. Matt merges. Do not push, fast-forward, or merge into main. No rebase, force-push, or reset. Nothing is sent to any owner. The production database is read-only from these sessions.
+
+This session (`~/RyanRealty`, branch `claude/beautiful-lamport-2x4fjs`) found `origin/main` already joined to the branch. Merge commit `632b64564` ("Merge origin/main before landing (round 1)", author Claude) has parents `be92e394e` and `0918d4418` (Google Signals back on, #446). At the start of this write, that commit was the tip of both `origin/main` and this branch. This session did not push to main. The commit that adds this section is the pull request.
+
+Other sessions own the rest. This session did not do their work.
+
+- `fix/price-clock` at `d2ae3129c`. Its unit file was 14/14 when last reviewed. Its own pull request.
+- `fix/reader-5-engine`. Kelly Hill on-market date window. Matt's direction is closer to $716,000. Do not hardcode that dollar amount.
+- `fix/reader-5-render`. Chart and wording fixes from the fifth read.
+- Six read-only letter reviews. They land in `~/grok-build/reviews/<slug>.md`. Checked at this commit: that directory exists and is empty, so the reviews are in progress. Slugs: `cma-62475-woodsman`, `cma-2382-jackson`, `cma-3037-purcell`, `cma-1648-pheasant`, `cma-3177-coho`, `cma-2745-aldrich`.
+- The fleet score lands in `~/grok-build/fleet/`. A price-clock run is in progress at `~/grok-build/fleet/price-clock/`, git SHA `d2ae3129c`, run `2026-10-09T03-18-36.729Z`. It is not finished (`complete` is false, `finishedAt` is empty). At this check it had scored 11 homes: 6 built, 5 failed on the minimum-comp floor, 0 harness errors. That partial is not the fleet result.
+
+Nothing has been sent to any owner. Do not rebuild the ten drafts until Matt approves the pull requests and names the letters.
 
 ## Hard constraints (Matt's, standing)
 
@@ -74,6 +92,32 @@ Each was started by a cloud agent with `docs/plans/cma-handoff/fix-brief.md`.
 | `fix/relist-clock` **MERGED** (`32077999a`, SKILL rule 28) | Relisted or back-on-market homes use one clock, their last stretch. First ask comes from that stretch, and the row is labeled "after it last came on the market". The subject's first ask is the price in effect when it went Active. | wording/data |
 | `fix/plat-ground-facts` **MERGED** (`537a0b10f`, seat order included) | A recorded addition or phase in the same neighborhood is the home's own subdivision everywhere, including the facts ladder, weights, room rule, pockets, anchor, date gate and review. Rule 24. | yes |
 
+## Cloud session record, 2026-10-09
+
+- **Landed on main:** `632b64564` with Matt's yes on the final fleet score: 108 of 140 build; 22 moves, median 2.5%; holds +2/-2; Mount Bachelor newly failing. It carries all of the 10-08 rulings plus clamp-line.
+  - First job: run `npm run deploy:verify` and confirm it is READY. Retry once on "fetch failed".
+- **Drafts:** all ten were rebuilt on 10-09 from `ecf1a1e62`, i.e. the landed code minus main's own commits. They are drafts and nothing was sent. They will be rebuilt again after step 2 below.
+- **Branches pushed, NOT merged** (merge into `claude/beautiful-lamport-2x4fjs` in this order, run the unit tests, then run a fleet score):
+  1. **`fix/price-clock` `d2ae3129c`.** Rule 16's cut test and the comp sale-to-original ratios move to the last stretch (Matt: "Yes, after this landing"). Wild Rose goes from $593,000 to $591,000.
+  2. **`fix/reader-5-engine`** (if on origin).
+     - An on-market subject's rule-15 window runs from its on-market date to the letter date.
+     - **Matt 2026-10-09 on Kelly Hill: "it's definitely going to be closer to 716. It's listed at 699 currently, and it hasn't sold."** When the window has too few local sales, a home that sat unsold through its asks counts as the local market not rising. Its own-ground sales then move down with Bend's index, which brings Kelly Hill back to about $716,000. The note under the grid must say so truthfully.
+     - Also: MLS dated fields (WithdrawDate etc.) set the day a stretch ended; "No home sold in X" replaces "matched" when zero sales; one subdivision name in text and map (never a bare MLS code like "CLAB").
+  3. **`fix/reader-5-render`** (if on origin):
+     - "What happened" chart labels must never collide;
+     - each sentence prints once per letter;
+     - the "Original list" cell says when it is the ask on the home's return;
+     - complete Jacksonville Basis sentence;
+     - River West caption matches its count;
+     - "value", not "price", on on-market letters;
+     - no mid-word address breaks;
+     - Saginaw small wording.
+
+  If a reader-5 branch is missing on origin, redo it from these bullets with `docs/plans/cma-handoff/fix-brief.md`.
+- **Then:** each of those branches is its own pull request. Matt merges. Do not push, fast-forward, or merge into main. After a merge is on main, `deploy:verify`. Rebuild the ten only when Matt names the letters. Reader notes land in `~/grok-build/reviews/<slug>.md`. Re-read all ten, including the six not re-read on 10-09 (Woodsman, Jackson, Purcell, Pheasant, Coho, Aldrich). Then send Matt the links table only after he approves each letter.
+- **Matt 2026-10-09: "Trust the MLS fields"** for room counts. 1340 Cumberland stays 3 bed even though its remarks say 2, and Jacksonville is unchanged.
+- **Open for Matt:** see "Open questions" below. Item 9 is new: main's "One rule set" doc paragraph contradicts rule 20's 25% line and the 5-sale floor.
+
 ## Late 2026-10-08 / early 10-09 status (read this before "Fleet")
 
 **Final fleet score on `3b1c7b036`** (all ruling fixes; clamp-line is wording only), against the baseline:
@@ -108,12 +152,7 @@ Each was started by a cloud agent with `docs/plans/cma-handoff/fix-brief.md`.
 
 **`fix/price-clock` `d2ae3129c` is pushed, NOT merged.** Per Matt, it goes after this landing. It moves rule 16's cut test and the comp sale-to-original ratios to the last stretch. Wild Rose goes from $593,000 to $591,000; Saginaw is unchanged. It needs its own fleet score.
 
-**Order from here:**
-1. Matt's yes, then open a PR to `main`; Matt merges. After he merges, run `deploy:verify`.
-2. Merge `fix/reader-5-engine`, `fix/reader-5-render` and `fix/price-clock`, then run a fleet score.
-3. Matt's yes, then open a PR to `main`; Matt merges.
-4. Rebuild the ten drafts and re-read them.
-5. Send Matt the links.
+**Order from here:** superseded by "STOPPING POINT, 2026-10-09" above. Do not fast-forward main. Each fix branch is its own pull request. Matt merges.
 
 ## Fleet (rule 25)
 
@@ -142,8 +181,8 @@ NODE_USE_ENV_PROXY=1 npm run cma:fleet -- --concurrency 4 \
 
 ## Landing steps after the fleet yes
 
-1. `CI_GATES_SERIAL=1 npm run push` the branch, then open a PR to `main`; Matt merges.
-2. `npm run deploy:verify`.
+1. Open a pull request to main. Matt merges. Do not push, fast-forward, or merge into main.
+2. After that merge is on main, `npm run deploy:verify`.
 3. Rebuild the drafts, one at a time or 2 to 3 in parallel: `npx tsx scripts/_rebuild-cma.ts <slug>`. This writes the draft row only; it cannot send.
 4. Run one reader agent per letter with `docs/plans/cma-handoff/reader-brief.md`. Fix hard defects, then repeat.
 5. Give Matt the links table: `https://ryan-realty.com/admin/cmas/<slug>/view`, with recommended vs last ask, range, and hold status. Wait for his per-report approval.
