@@ -540,8 +540,32 @@ function onMarketSortKey(iso: string | null | undefined): number {
 }
 
 /**
+ * A later listing key of the same house is a relist even when that key's own
+ * clock starts the day it went Active. 3446 Jackwood's May listing
+ * (20260519200451052267000000) opened on its own on-market day, so that key
+ * alone is not a restart; the January listing under another key is. A missing
+ * earlier day, or the same listing key twice, is not an earlier stretch.
+ * The kept row's first ask and days stay the last stretch's.
+ */
+function markEarlierListing(primary: CmaExpiredPeer, earlier: readonly CmaExpiredPeer[]): CmaExpiredPeer {
+  const primaryDay = pacificDay(primary.onMarketDate)
+  if (!primaryDay) return primary
+  const cameBack = earlier.some((peer) => {
+    if (peer.listingKey === primary.listingKey) return false
+    const day = pacificDay(peer.onMarketDate)
+    return day != null && day < primaryDay
+  })
+  if (!cameBack) return primary
+  if (primary.stretch) return { ...primary, stretch: { ...primary.stretch, restarted: true } }
+  const opening = primary.originalListPrice
+  const firstAsk = opening != null && Number.isFinite(opening) && opening > 0 ? Math.round(opening) : null
+  return { ...primary, stretch: { from: primaryDay, firstAsk, restarted: true } }
+}
+
+/**
  * Same street twice (two failed list cycles) → one peer column.
  * Primary facts from the newest cycle; Listing history carries every cycle.
+ * An earlier cycle under a different listing key labels the kept row as a relist.
  */
 export function collapseExpiredPeerCycles(peers: readonly CmaExpiredPeer[]): CmaExpiredPeer[] {
   const byAddr = new Map<string, CmaExpiredPeer[]>()
@@ -560,7 +584,7 @@ export function collapseExpiredPeerCycles(peers: readonly CmaExpiredPeer[]): Cma
     const sorted = [...group].sort(
       (a, b) => onMarketSortKey(b.onMarketDate) - onMarketSortKey(a.onMarketDate),
     )
-    const primary = sorted[0]!
+    const primary = markEarlierListing(sorted[0]!, sorted.slice(1))
     const histories = sorted
       .map((p) => p.listingHistoryLine?.trim())
       .filter((line): line is string => Boolean(line))
@@ -616,7 +640,13 @@ export function pickExpiredPeers(
       const status = row.StandardStatus
       const leftAs = run?.source === 'status-history' ? run.leftAs : null
       const cameOffAs = leftAs && !sameStatus(leftAs, status) ? leftAs : null
-      const statusDay = pacificDay(row.status_change_timestamp ?? row.off_market_date ?? null)
+      // The date beside the status of record. When that status is the one it
+      // left Active for, the MLS off-market date wins over the activity log
+      // (1355 Jacksonville: WithdrawDate Sep 28, log Sep 29). A later status
+      // (withdrawn, then expired) keeps the log's status-of-record day.
+      const mlsOff = pacificDay(row.off_market_date)
+      const logStatusDay = pacificDay(row.status_change_timestamp ?? null)
+      const statusDay = cameOffAs ? (logStatusDay ?? mlsOff) : (mlsOff ?? logStatusDay)
       const stretch = peerStretch(row, run, originalListPrice, listPrice)
       const peer: CmaExpiredPeer = {
         listingKey: key,
@@ -648,7 +678,8 @@ export function pickExpiredPeers(
         lotAcres: row.lot_size_acres ?? null,
         propertySubType: row.property_sub_type ?? null,
         subdivision: row.SubdivisionName ?? null,
-        ...(row.plat_slug !== undefined ? { platSlug: row.plat_slug } : {}),
+        // Always stored, null when the read found none (Matt 2026-10-09).
+        platSlug: row.plat_slug ?? null,
         latitude: row.Latitude ?? null,
         longitude: row.Longitude ?? null,
       }

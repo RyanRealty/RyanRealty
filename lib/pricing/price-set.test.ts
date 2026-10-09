@@ -4,10 +4,14 @@ import { listPriceFromEngine } from '@/lib/pricing/estimate'
 import { PLAT_SQFT_BAND, PLAT_WIDE_SQFT_BAND } from '@/lib/pricing/ladder'
 import {
   clearlyDifferentSize,
+  communityRefusalReason,
   PRICE_SET_SQFT_BAND,
+  priceSetRefusal,
   pricingFailureMessage,
+  productRefusalReason,
   recommendationOutsideSaleSet,
   saleSetsThePrice,
+  sizeRefusalReason,
 } from '@/lib/pricing/price-set'
 import { weightedAdjustedPrice } from '@/lib/pricing/reconciliation'
 
@@ -364,6 +368,33 @@ describe('one size limit for any sale that sets the price: 25% everywhere (Matt 
     expect(clearlyDifferentSize(2016, 2522)).toBe(true)
     expect(saleSetsThePrice({ ...jackson, saleSqft: 1510 })).toBe(false)
     expect(saleSetsThePrice({ ...jackson, saleSqft: 2522 })).toBe(false)
+  })
+
+  it('names the size refusal in the words the letter prints, and does not call 25% a miss (2745 Aldrich)', () => {
+    const aldrich = sizeRefusalReason(1201, 1574)
+    expect(aldrich).toBe(
+      '1,574 sq ft, 31% larger than this home; sales more than 25% larger or smaller do not set the price',
+    )
+    expect(priceSetRefusal({ subjectSqft: 1201, saleSqft: 1574, ownPlat: true })).toEqual({
+      code: 'size',
+      reason: aldrich,
+    })
+    expect(saleSetsThePrice({ subjectSqft: 1201, saleSqft: 1574, ownPlat: true })).toBe(false)
+    // 30.85% smaller rounds to 31, the same whole-percent reading as Aldrich.
+    expect(sizeRefusalReason(2016, 1393)).toBe(
+      '1,393 sq ft, 31% smaller than this home; sales more than 25% larger or smaller do not set the price',
+    )
+    // Just past the line, a rounded 25 would say the sale is inside the band.
+    const barely = sizeRefusalReason(10000, 12504)
+    expect(clearlyDifferentSize(10000, 12504)).toBe(true)
+    expect(barely).toContain('25.1% larger')
+    expect(barely).not.toContain(', 25% larger')
+    expect(productRefusalReason(0.2, 5)).toBe(
+      "5 acres against this home's 0.2 acres; a cottage and an acreage property do not set each other's price",
+    )
+    expect(communityRefusalReason()).toBe(
+      'a different community than this home; a sale in another community does not set the price',
+    )
   })
 
   it('the old 35% band no longer admits a sale between 25% and 35%', () => {

@@ -8,10 +8,27 @@
  * skipped must not wait out the cap and exit 2. A CANCELED deploy that lost
  * to a newer production build is superseded, not a broken commit.
  */
+import { classifyDiff, isVercelSkippable, listChangedFiles } from './product-diff.mjs'
+
 export const DEFAULT_TIMEOUT_MS = 15 * 60 * 1000
 export const DEFAULT_SKIP_WAIT_MS = 45 * 1000
 
 const ACTIVE_STATES = new Set(['READY', 'BUILDING', 'QUEUED', 'INITIALIZING', 'PENDING'])
+
+/**
+ * How the commit being verified classifies for Vercel's ignoreCommand: that
+ * commit's own diff (a merge against its first parent), never the checkout's
+ * HEAD. `deploy:verify <sha>` from a docs-only HEAD used to classify the docs
+ * commit, so a product deploy Vercel had not listed within the SKIP window
+ * printed SKIP and exited 0 (2026-10-09, the #424 squash merge read as
+ * "skip, 1 file(s)").
+ *
+ * @param {string} sha
+ * @param {{ cwd?: string, prev?: string }} [opts]  prev: as listChangedFiles (default: the env range)
+ */
+export function classifyTip(sha, opts = {}) {
+  return classifyDiff(listChangedFiles({ head: sha, cwd: opts.cwd, prev: opts.prev }), { skippable: isVercelSkippable })
+}
 
 /**
  * @param {'unknown' | 'empty' | 'skip' | 'build'} status

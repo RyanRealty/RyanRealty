@@ -78,6 +78,36 @@ describe('askArcCell', () => {
     expect(single).not.toContain('class="arc-arrow"')
     expect(single).not.toContain('\u2192')
   })
+
+  it('prints the ask in dollars when the short label would name a different price (2799 Aldrich, 2058 Hollow Tree)', () => {
+    const aldrich = askArcCell({
+      firstAsk: 524_900,
+      lastAsk: 524_900,
+      outcome: 'sold $520K · offer in 7 days',
+      endLabel: '',
+    } as MatrixEntry)
+    expect(aldrich).toContain('$524,900')
+    expect(aldrich).not.toContain('$525K')
+    expect(aldrich).toContain('sold $520K')
+
+    const hollow = askArcCell({
+      firstAsk: 514_500,
+      lastAsk: 514_500,
+      outcome: 'sold $503K · offer in 23 days',
+      endLabel: '',
+    } as MatrixEntry)
+    expect(hollow).toContain('$514,500')
+    expect(hollow).not.toContain('$515K')
+
+    const spring = askArcCell({
+      firstAsk: 525_000,
+      lastAsk: 505_000,
+      outcome: 'came off after 96 days',
+      endLabel: '',
+    } as MatrixEntry)
+    expect(spring).toContain('$525K')
+    expect(spring).toContain('$505K')
+  })
 })
 
 describe('renderCompMatrixHtml', () => {

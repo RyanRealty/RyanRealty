@@ -82,9 +82,16 @@ describe('submitLeadLandingForm paid attribution', () => {
     expect(canonicallyTagLead).toHaveBeenCalledWith(expect.objectContaining({ extraTags: [] }))
   })
 
+  it('names an organic post click for its platform, never as an ad, and keeps the post id', async () => {
+    await submitLeadLandingForm(input({ lp_source: 'facebook', lp_medium: 'social', lp_campaign: 'social-post', lp_content: 'act-77' }))
+    expect(canonicallyTagLead).toHaveBeenCalledWith(
+      expect.objectContaining({ extraTags: ['channel:facebook', 'campaign:social-post', 'ad-content:act-77'] }),
+    )
+  })
+
   it('keeps the tags on the native fallback when the CRM push fails', async () => {
     sendEvent.mockResolvedValueOnce({ ok: false, error: 'down' })
-    const res = await submitLeadLandingForm(input({ lp_source: 'facebook', lp_content: 'act-9' }))
+    const res = await submitLeadLandingForm(input({ lp_source: 'facebook', lp_medium: 'paid_social', lp_content: 'act-9' }))
     expect(res.error).toBe('down')
     expect(ensureNativeLead).toHaveBeenCalledWith(
       expect.objectContaining({

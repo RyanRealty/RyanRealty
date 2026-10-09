@@ -58,6 +58,7 @@ describe('place-type pages', () => {
     }
     expect(CITY).toMatch(/label: 'For sale'/)
     expect(COMM).toMatch(/label: 'For sale'/)
+    expect(COMM).toMatch(/All \$\{publicName\} real estate/)
   })
 
   it('puts the listing dial of photographed listings in the fold (SITE-106 / SITE-107, dial 2026-09-24)', () => {

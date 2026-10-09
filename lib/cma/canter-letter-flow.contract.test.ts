@@ -166,7 +166,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       /scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">Concessions<\/th><th class="n" scope="col">\$\/sqft<\/th>/,
     )
     expect(html.match(/<tbody data-status=/g)).toHaveLength(3)
-    expect(html.match(/<th scope="row">Median<\/th>/g)).toHaveLength(3)
+    expect(html.match(/<th scope="row">Median in each column<\/th>/g)).toHaveLength(3)
     expect(html).not.toContain('data-ppsf-status="board"')
   })
 

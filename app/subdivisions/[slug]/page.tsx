@@ -150,6 +150,7 @@ import {
   getPlatFamilyFootprint,
 } from '@/lib/data/subdivisions/getPlatFamilyFootprint'
 import { platFamilyDisplayName, platFamilyRole } from '@/lib/market/plat-family'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 import {
   familyClosedTrace,
   familyCrumb,
@@ -1378,7 +1379,10 @@ async function renderSubdivisionPage({ params }: Props) {
     lifestyleItems: lifestyleForCentroid(platCentroid),
     peerPlats: peerPlatsForResort(resortSlug, slug),
     browseHref,
-    marketHref: citySlug ? `/housing-market/${citySlug}/${slug}` : '/housing-market',
+    // leftoverGeo is never subdivision on /housing-market/[city]/[slug]
+    // (lib/market/geo-market-publishes), so a plat report never publishes.
+    // Link the city report instead of a hollow two-segment shell.
+    marketHref: citySlug ? cityMarketPath(citySlug) : '/housing-market',
     pagePath: `/subdivisions/${slug}`,
   })
 
@@ -1773,6 +1777,11 @@ async function renderSubdivisionPage({ params }: Props) {
             {familyLine.tail}
           </p>
         ) : null}
+        {resortSlug && resortLabel && (!familyLine || familyLine.href !== communityPath(resortSlug)) ? (
+          <p className="plat-family-line">
+            <a href={communityPath(resortSlug)}>All {resortLabel} real estate</a>
+          </p>
+        ) : null}
 
         {/* SITE-86: drawing + figure in the first viewport. Atlas is the drawing
             (type toggles; price scrubber is off). MOS two-bar + alerts/V3Number are
@@ -1856,7 +1865,7 @@ async function renderSubdivisionPage({ params }: Props) {
                   {resortSlug ? (
                     <>
                       {' · '}
-                      <a href={communityPath(resortSlug)}>{resortLabel ?? 'Resort'} homes for sale</a>
+                      <a href={communityPath(resortSlug)}>All {resortLabel ?? 'Resort'} real estate</a>
                     </>
                   ) : null}
                   {familyUp && (!resortSlug || familyUp.href !== communityPath(resortSlug)) ? (

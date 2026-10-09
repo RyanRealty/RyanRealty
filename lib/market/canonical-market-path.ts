@@ -101,5 +101,6 @@ export function resolveMarketCommunityHop(pathname: string): string | null {
  */
 export function cityMarketPath(slug: string): string {
   const s = slug.trim().toLowerCase()
-  return communityMarketPath(s) ?? `/housing-market/${s}`
+  const path = communityMarketPath(s) ?? `/housing-market/${s}`
+  return LEGACY[path] ?? path
 }

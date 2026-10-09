@@ -832,6 +832,44 @@
   width: 100%;
 }
 
+/* Mobile fold actions sit in flow under the price. Never sticky/fixed. */
+.listing-face__fold {
+  display: none;
+  grid-column: 1 / -1;
+}
+
+.listing-face__fold-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: 2px solid var(--v3-navy);
+  background: transparent;
+  color: var(--v3-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  text-align: center;
+  text-decoration: none;
+}
+
+.listing-face__fold-action--primary {
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+}
+
+@media (max-width: 63.99rem) {
+  .listing-face--has-fold .listing-ask-row {
+    display: none;
+  }
+  .listing-face__fold {
+    display: grid;
+    gap: var(--v3-space-2xs);
+    margin-top: var(--v3-space-2xs);
+  }
+}
+
 .listing-who--flow {
   display: block;
 }

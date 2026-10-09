@@ -34,7 +34,6 @@ import { readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
 import { execSync } from 'child_process'
 import { homedir } from 'os'
-import { classifyDiff, isVercelSkippable, listChangedFiles } from './lib/product-diff.mjs'
 // The live probe speaks the shared CI user agent: the middleware bot screen
 // 403s an unknown UA, and ci:probe-ua fails any raw-HTTP probe without it.
 import { CI_PROBE_USER_AGENT } from './lib/ci-probe-ua.mjs'
@@ -46,6 +45,7 @@ import { checkInlineScripts, formatInlineScriptReport } from './lib/inline-scrip
 import {
   DEFAULT_TIMEOUT_MS,
   DEFAULT_SKIP_WAIT_MS,
+  classifyTip,
   isSkippableTip,
   findSupersedingDeploy,
 } from './lib/deploy-verify-policy.mjs'
@@ -355,8 +355,8 @@ async function main() {
     out('no API token found; using Vercel CLI, then GitHub Vercel status, for deploy checks')
   }
 
-  const tipFiles = listChangedFiles()
-  const tipClass = classifyDiff(tipFiles, { skippable: isVercelSkippable })
+  // The commit being verified, never the checkout's HEAD (classifyTip).
+  const tipClass = classifyTip(sha)
   const skippableTip = isSkippableTip(tipClass.status)
   // let, not const (2026-09-08): the short SKIP window exists to stop a docs-only
   // tip from waiting 15 minutes for a deploy Vercel will never make. Once a
@@ -364,9 +364,7 @@ async function main() {
   // deploy exists and is building, so the full budget applies. Leaving it const
   // made every site round time out at 45s on a BUILDING deploy and exit 2, which
   // is indistinguishable from a real production ERROR: the net that catches a
-  // broken generate was being read as noise. A merge commit makes it worse,
-  // because `git diff-tree -r` prints zero files for a merge, so the tip
-  // classifies as skippable even when the merged range rebuilds the site.
+  // broken generate was being read as noise.
   let waitMs = skippableTip ? SKIP_WAIT_MS : TIMEOUT_MS
   if (skippableTip) {
     out(

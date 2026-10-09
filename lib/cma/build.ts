@@ -102,7 +102,7 @@ import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { buildSubjectStatus } from '@/lib/pricing/subject-status'
 import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
 import { readPlacePricingStory } from '@/lib/data/cma/placePricingRead'
-import { loadListingWindowCloses } from '@/lib/cma/listing-window-load'
+import { loadListingWindowCloses, subjectListingWindow } from '@/lib/cma/listing-window-load'
 import { pocketClosedSupportPrice } from '@/lib/pricing/active-dom-nudge'
 import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
 import { assembleCompetition, assembleExpiredPeers, printedCompGrid } from '@/lib/cma/assemble-competition'
@@ -707,11 +707,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         restarted: resolvedCycle.restarted === true,
       }
     }
-    const listingWindow = {
+    // An on-market home has no off-market date. Its window runs from the
+    // current stretch to the letter day (3062 NW Kelly Hill, Matt 2026-10-09).
+    // An off-market home keeps the cycle's own dates, including a null off date.
+    const listingWindow = subjectListingWindow({
       city: subject.city,
+      onMarket: subjectOnMarket({ subject }),
+      asOf: letterDay,
       listDate: finalCycleRead?.resolved.cycle?.listDate ?? subject.lastListDate,
+      activeFrom: subject.stretch?.from ?? finalCycleRead?.resolved.cycle?.listDate ?? null,
       offDate: finalCycleRead?.resolved.cycle?.offMarketDate ?? null,
-    }
+    })
     const windowCloses = await loadListingWindowCloses({
       ...listingWindow,
       propertySubType: subject.propertySubType,
@@ -1684,6 +1690,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       thisHomePlan,
       tiersUsed: selection.tiersUsed,
       listingMarket,
+      excludedSaleNotes: selection.diagnostics.not_setting_sales ?? [],
     }
 
     // Spread, never a second hand-written list: a field added to one list and

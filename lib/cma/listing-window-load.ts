@@ -17,6 +17,7 @@ import {
   type ListingMarketClose,
   type ListingMarketMove,
 } from '@/lib/cma/listing-window-market'
+import { pacificDay } from '@/lib/cma/listing-status'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { zonedDateKey } from '@/lib/format/date'
 
@@ -53,6 +54,34 @@ export type ListingWindowCloses = {
   offDate: string
   city: string
   rows: ListingMarketClose[]
+}
+
+/**
+ * The dates the local read is measured over.
+ *
+ * An on-market home has no off-market date. Its window is the current Active
+ * stretch through the letter day. An off-market home keeps the cycle's own
+ * dates, including a null off date when the cycle has none.
+ */
+export function subjectListingWindow(args: {
+  city: string | null | undefined
+  onMarket: boolean
+  asOf: string
+  listDate: string | null | undefined
+  /** Pacific day the current Active stretch began. */
+  activeFrom: string | null | undefined
+  offDate: string | null | undefined
+}): { city: string | null | undefined; listDate: string | null | undefined; offDate: string | null } {
+  if (!args.onMarket) {
+    return { city: args.city, listDate: args.listDate, offDate: args.offDate ?? null }
+  }
+  // 3062 NW Kelly Hill is Active, so the cycle has no off-market date and the
+  // date gate used to read nothing (Matt 2026-10-09). The window is the current
+  // stretch through the letter day. The existing local gate is what may move a
+  // sale. This does not add a second discount.
+  const listDate = pacificDay(args.activeFrom) ?? pacificDay(args.listDate) ?? args.listDate ?? null
+  const offDate = pacificDay(args.asOf) ?? String(args.asOf ?? '').slice(0, 10)
+  return { city: args.city, listDate, offDate: offDate || null }
 }
 
 /** The window's dates, or null when there is no dated window to read over. */

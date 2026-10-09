@@ -88,6 +88,18 @@
       "why": "A resort is never a neighborhood page under a city."
     },
     {
+      "id": "market-hub-title",
+      "path": "/housing-market",
+      "expect": {
+        "status": 200,
+        "index": true,
+        "canonical": "self",
+        "title": "^Central Oregon Housing Market & Prices by City"
+      },
+      "decided": "Matt 2026-10-08",
+      "why": "SEO & AEO Desk GSC brief 2026-10-08 6.6: the one indexable regional market page (SITE-178) names prices and cities in its title."
+    },
+    {
       "id": "market-title-price",
       "path": "/housing-market/bend",
       "expect": {

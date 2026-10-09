@@ -358,7 +358,9 @@ export async function autoEnrollByPersonId(
           t.startsWith('audience:') ||
           (t.startsWith('source:') && t.includes('-lp')) ||
           t.startsWith('intent:') ||
-          t.startsWith('channel:fb-ads') ||
+          // Any channel tag: it is stamped from the visit's link at a form
+          // submit (resolvePaidAttributionTags), organic post or ad alike.
+          t.startsWith('channel:') ||
           t.startsWith('source:fb-ads'),
       )
       // A bare website sign-in (Google / SSO): source is the site itself, no

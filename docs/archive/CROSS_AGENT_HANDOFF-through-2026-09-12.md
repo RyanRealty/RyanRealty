@@ -3370,8 +3370,8 @@ audit), `0301398e` (handoff).
   its CURATED map; three stale CURATED targets were corrected so a regen no longer
   reverts hand fixes. Expect the live-sitemap 404 warnings.
 - `npm run push` from a worktree branch stamps then runs a plain `git push` that
-  fails with no upstream. Follow with `git push origin HEAD:main` inside the marker
-  window, and fetch first: a sibling landing between rebase and push rejects it.
+  fails with no upstream. Push the branch (`git push -u origin HEAD`) and open a PR
+  to `main`; Matt merges. Fetch first: a sibling landing between rebase and push rejects it.
 
 **Do not**
 - Reseed blog posts without diffing against the live rows first.
@@ -3450,8 +3450,8 @@ Owner: Claude (Fable). Worktree `~/RyanRealty-wt-aeo-audit`, branch
 - Old cost-of-living / closing-cost / property-tax figures were cut, not replaced.
   Re-adding any needs a fresh primary-source pull (ledger lists what came out).
 - `npm run push` from a worktree branch now stamps and then runs a plain `git push`,
-  which fails with no upstream. Follow it with `git push origin HEAD:main` inside
-  the marker window.
+  which fails with no upstream. Push the branch (`git push -u origin HEAD`) and open a PR
+  to `main`; Matt merges.
 
 **Do not**
 - Reseed blog posts with `scripts/seed-blog-posts.ts` without diffing against the

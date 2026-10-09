@@ -6,6 +6,7 @@ import type { ListingTile } from '@/lib/data/types/listing'
 import type { V3ListingRowData } from '@/components/site/v3'
 import { listingTileHref } from '@/lib/slug'
 import { listingMlsStreetLine, publishCardAddress } from '@/lib/listing/publish-street-line'
+import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
 
 export const SIMILAR_RAIL_CAP = 6
 
@@ -37,6 +38,13 @@ export function listingTileToRow(tile: ListingTile): V3ListingRowData {
 
 export function listingSimilarRail(tiles: readonly ListingTile[], cap = SIMILAR_RAIL_CAP): V3ListingRowData[] {
   return tiles.slice(0, cap).map(listingTileToRow)
+}
+
+const ACTIVE = new Set<string>(PUBLIC_ACTIVE_STATUSES)
+
+/** Nearby homes a reader can still buy. Closed comparables are not an onward path. */
+export function listingSimilarActive(tiles: readonly ListingTile[]): ListingTile[] {
+  return tiles.filter((tile) => ACTIVE.has(tile.status))
 }
 
 function haystack(tile: ListingTile): string[] {

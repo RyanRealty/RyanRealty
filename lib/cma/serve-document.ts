@@ -117,7 +117,16 @@ export async function immersiveFromRow(
       : withTimeoutFallback(
           (async () => {
             try {
-              const map = await buildCmaMapDataUri(stored.subject, comps, cmaMapOptionsFromArgs(stored))
+              const map = await buildCmaMapDataUri(
+                stored.subject,
+                comps,
+                // The chapters read documentStatus off the render object, which
+                // is attached below. The map is built first, so the signed
+                // letter's competition and unsold pins need the status here
+                // or a delivered row is re-filtered and the pins disagree
+                // with the tables (Matt 2026-10-09).
+                cmaMapOptionsFromArgs({ ...stored, documentStatus: row.status }),
+              )
               if (!map?.dataUri) return { dataUri: null as string | null, overlay: null as CompPinMapOverlay | null }
               return {
                 dataUri: map.dataUri,

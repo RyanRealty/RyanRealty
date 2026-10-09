@@ -111,18 +111,17 @@ export function reconcilePlaceHoaFaq(
   faqs: readonly CommunityFaqItem[],
   hoa: PublishedPlaceHoa | null,
 ): CommunityFaqItem[] {
-  if (!hoa || hoa.kind !== 'measured' || !hoa.basis) return [...faqs]
+  const basis = hoa?.kind === 'measured' ? hoa.basis : null
+  if (!basis) return [...faqs]
   return faqs.map((item) => {
     if (!item.question.endsWith('have an HOA?')) return item
     return {
       ...item,
-      answer:
-        `Yes. Annual HOA dues run $${hoa.annual.toLocaleString('en-US')}, the ${hoa.basis}. ` +
-        `Exact fees vary by lot, phase, and membership level. Verify current amounts with the HOA before any purchase.`,
-      // §0. This row publishes a dollar figure, so it owes the same visible
-      // trace the cited rows carry. It was the only number on the page with
-      // its basis in the prose and no source line (evaluator, 2026-09-08).
-      source: `regional MLS, the ${hoa.basis}`,
+      // The basis IS the published sentence (detached listings since October
+      // 2023). Wrapping it in "the median of the N current listings" was the
+      // label bug AI answers were quoting (SEO & AEO Desk 2026-10-08).
+      answer: basis,
+      source: `regional MLS, ${basis}`,
     }
   })
 }
@@ -232,7 +231,8 @@ export function buildExploreEdges(input: {
       : [{ label: `Search ${input.communityName} homes`, href: input.browseHref, group: input.communityName }]),
     // SITE-171: /housing-market/bend/tetherow 301s onto this community page.
     // A "market report" door that bounces back is not a door.
-    ...(redirectsAwayFromSearch(input.communityMarketHref)
+    ...(redirectsAwayFromSearch(input.communityMarketHref) ||
+    input.communityMarketHref === input.cityReportHref
       ? []
       : [
           {

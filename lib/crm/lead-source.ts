@@ -46,20 +46,47 @@ function slugifyTag(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 }
 
+/** GA4's paid-channel medium rule (Paid Search, Social, Video, Shopping, Other). */
+const PAID_MEDIUM_RE = /^(.*cp.*|ppc|retargeting|paid.*)$/
+/** GA4's Display channel mediums, also ads. */
+const DISPLAY_MEDIUMS = new Set(['display', 'banner', 'expandable', 'interstitial', 'cpm'])
+
 /**
- * Structured paid-channel attribution tags for a lead. channel:<n> covers
+ * Did the click come from an ad? Google's default channel rules
+ * (support.google.com/analytics/answer/9756891): a paid channel's utm_medium
+ * matches ^(.*cp.*|ppc|retargeting|paid.*)$, and Display's is one of display,
+ * banner, expandable, interstitial or cpm. Our own ad links say paid_social or
+ * cpc (lib/analytics/utm.ts); a hand-built ad may say paid, ppc or cpm. An
+ * organic post (social), the Google Business Profile link (organic), the
+ * newsletter and a CRM email (email), or no medium at all, are not ads. Pure.
+ */
+export function isPaidMedium(medium: string | null | undefined): boolean {
+  const m = String(medium ?? '').trim().toLowerCase()
+  return m !== '' && (PAID_MEDIUM_RE.test(m) || DISPLAY_MEDIUMS.has(m))
+}
+
+/**
+ * Attribution tags from the link that brought a lead. channel:<n> covers
  * "which platform," campaign:<n> covers "which campaign," ad-content:<n>
- * covers "which specific ad/creative" (from utm_content) — the granularity
- * needed to answer "how many people who saw ad X actually converted."
+ * covers "which specific post or ad" (utm_content; the publisher sets it to
+ * the post's action_id, which is how buyer- and seller-lead-attribution match
+ * a lead to content_performance, organic posts included). The channel ends in
+ * -ads only for a paid click (isPaidMedium): channel:fb-ads, channel:google-ads.
+ * Any other link is named for its source (channel:facebook, channel:gbp,
+ * channel:newsletter, channel:crm). Until 2026-10-09 every utm_source read as
+ * an ad, so the Google Business Profile link tagged leads channel:gbp-ads.
  */
 export function resolvePaidAttributionTags(params: {
   utmSource?: string
+  utmMedium?: string
   utmCampaign?: string
   utmContent?: string
 }): string[] {
   const key = params.utmSource?.trim().toLowerCase()
   if (!key) return []
-  const tags: string[] = [`channel:${key === 'fb' ? 'fb-ads' : key === 'facebook' ? 'fb-ads' : `${slugifyTag(key)}-ads`}`]
+  const name = key === 'fb' || key === 'facebook' ? 'fb' : slugifyTag(key)
+  const channel = isPaidMedium(params.utmMedium) ? `${name}-ads` : name === 'fb' ? 'facebook' : name
+  const tags: string[] = [`channel:${channel}`]
   if (params.utmCampaign) tags.push(`campaign:${slugifyTag(params.utmCampaign)}`)
   if (params.utmContent) tags.push(`ad-content:${slugifyTag(params.utmContent)}`)
   return tags

@@ -70,6 +70,9 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).toMatch(/loadCommunitySerpStock/)
     expect(SRC).toMatch(/belongingHeadline\(/)
     expect(SRC).toMatch(/\{headline\}/)
+    expect(SRC).toMatch(/<V3TakeawaysLead/)
+    expect(SRC).toMatch(/communityAuthoredFaqs/)
+    expect(SRC).toMatch(/communityTypeDownLinks/)
     // seedRing keys on having a TRUSTED outline: the stored row, keyed by the
     // registry and passed by the one trust rule (2026-09-25).
     expect(SRC).toMatch(/const seedRing = mapPolygon != null/)

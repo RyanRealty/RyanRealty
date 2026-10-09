@@ -61,7 +61,8 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { buildGeoMarketSchemas } from './_v3/geo-schemas'
 import { marketVerdict } from '@/lib/market/classify'
-import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { geoMarketLeftoverGrain, geoMarketPublishes } from '@/lib/market/geo-market-publishes'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
@@ -96,6 +97,7 @@ import {
 } from './_v3/city-insight'
 import { cityHomesRows } from './_v3/city-homes'
 import { geoTitle } from './_v3/geo-title'
+import { SALE_LED_META_PATHS, saleLedGeoDescription } from './_v3/geo-description'
 import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string[] }>> {
@@ -149,7 +151,7 @@ const loadGeoMarket = cache(async (slugKey: string) => {
   // fallback, so a `.catch(() => null)` here would only hide a real outage
   // behind a confident empty page.
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const leftoverGeo = geoType === 'neighborhood' || geoType === 'city' ? geoType : null
+  const leftoverGeo = geoMarketLeftoverGrain(geoType)
   const insightYear = Number(currentMonthKey.slice(0, 4))
   const [priceHistory, citySnapshots, timeframes, lastCompleteMonthly, blogPosts, publicSegments, publicPace, publicMix, leftoverMonthly, mtOverlays, closedSeries, cityTiles] =
     await Promise.all([
@@ -205,7 +207,7 @@ const loadGeoMarket = cache(async (slugKey: string) => {
   // Unknown-geo guard: leftover HUD miss and no leftover/cache monthly series
   // is not a place we cover. dynamicParams is true, so without this the route
   // is an infinite thin-page space.
-  const publishes = leftoverHudPublishes(hud) || chartMonths.months.length > 0
+  const publishes = geoMarketPublishes(hud, leftoverMonthly, completePriceMonths)
 
   const mosRaw = hud.monthsSupply
   const mosText = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
@@ -388,14 +390,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!data.publishes) notFound()
 
   const { geoName, citySlug } = data.geo
+  // /housing-market/bend leads its snippet with what homes sold for (GSC brief
+  // 2026-10-08 §6.1); every other geo keeps the list-led description.
+  const saleLedDescription = SALE_LED_META_PATHS.has(data.canonicalPath)
+    ? saleLedGeoDescription({
+        geoName,
+        datasetVariables: data.datasetVariables,
+        yoyMedianPrice: data.publicPace.yoyMedian,
+      })
+    : null
   return pageMetadata({
     title: geoTitle({ geoName, datasetVariables: data.datasetVariables }),
-    description: geoDescription({
-      geoName,
-      datasetVariables: data.datasetVariables,
-      verdictLabel: data.verdict.label,
-      insightClause: data.insightClause,
-    }),
+    description:
+      saleLedDescription ??
+      geoDescription({
+        geoName,
+        datasetVariables: data.datasetVariables,
+        verdictLabel: data.verdict.label,
+        insightClause: data.insightClause,
+      }),
     path: data.canonicalPath,
     keywords: [
       `${geoName} housing market`,

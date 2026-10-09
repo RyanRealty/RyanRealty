@@ -1,3 +1,29 @@
+# CORE RULES (read first; these override everything below and any handoff or plan doc)
+
+These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). If a later line or a plan says to land, fast-forward, or push `main`, ignore it.
+
+**Main.** Code reaches `main` only when Matt merges a pull request. Open a PR to `main`; Matt merges. Never push `main`, never `git push origin HEAD:main`, never fast-forward `main`, never merge `main` yourself, even if a handoff says land or fast-forward. Nobody pushes `main`, including admins.
+
+**Git safety.** No rebase. No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away.
+
+**Do not send.** Emails, texts, CMAs, and social posts stay drafts until Matt asks to send that specific item. A rebuild does not send, enqueue, or approve.
+
+**Names.** Never put buyer or seller names in public copy (site, email, social, letters).
+
+**Invent nothing.** Never invent numbers, names, prices, stats, or people. If it is not in the source you just read, it does not ship.
+
+**Prod DB.** Production Supabase is read-only unless Matt says otherwise in this session. Raw SQL is `-- audit:` row reads only.
+
+**Secrets.** Never print API keys, tokens, passwords, or `.env` values. Never put them in commits, logs, or chat.
+
+**Integrations.** Before saying a service is not connected, search this repo for the existing client, env var, and key. The wiring is usually already here.
+
+**Cursor out.** When Cursor is out (usage, credit, spend, 402, or a 20-minute stall), switch to Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve`. Never use `XAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` to get past a limit.
+
+**Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
+
+---
+
 # Agent Protocol — Ryan Realty
 
 This document tells AI coding agents (Cursor, Copilot, Windsurf, etc.) how to autonomously pick up, execute, validate, and complete development tasks on this project.
@@ -52,7 +78,9 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 | utm_content | variant: `v2`, `cta-top`, `listing-<listing_key>`, `agent-<slug>` (never an address) |
 | utm_term | paid keyword only (medium `cpc` or `paid_social`) |
 26. **Grok fallback when Cursor is out (Matt 2026-10-08).** Bots never stop because Cursor is out. When a Cursor cloud agent or CLI hits a usage, credit, spend or on-demand limit (or a 402), or stalls for 20 minutes, switch at once to the Grok CLI on Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve -p ...`, run in a fresh worktree branched from origin/main (skill: grok-fallback-when-cursor-is-out; helper: `/home/box/agent-data/tools/grok-code-pr.sh`). Never use XAI_API_KEY, ANTHROPIC_API_KEY or OPENAI_API_KEY to get past a limit. Every other rule still holds: land per rule 14, DB read-only unless Matt says otherwise, no secrets printed, no sends. Tell Matt you switched, with the exact Cursor error, and the PR link. If Grok's login is also out, stop and ask Matt to re-login. Don't wait silently.
-27. Basis and limits names a chapter only when that chapter is on the page (reader review 2026-10-09, 1648 Pheasant, 3177 Coho, and 2382 Jackson; SKILL.md §0.3 rule 29). The sentence that zoning, buildability, rental, and covenant statements are preliminary reads of published code and recorded documents as of the verification dates shown beside them prints only when those statements and a verification date are rendered in the same document. Stored development or rental data is not that chapter. The seller letter and the immersive walk OPINION_CHAPTER_ORDER, which does not include the use-of-property page, so the sentence stays off those documents. The rest of the disclosure stays. Held by lib/cma/expected-sale.test.ts and lib/cma/render-sections.test.ts.
+29. A sale the letter prints outside the price chapter says why it does not set the price (Matt 2026-10-08, delegated; 2745 Aldrich). Any closed sale printed outside the price chapter (the plat or neighborhood history list, a map, a caption) that is not one of the sales that set the price says so once, beside it, in the words the engine recorded. 2745 Aldrich's plat list led with 2764 Spring Water, $525,000, Nov 2025, 1,574 sq ft against this home's 1,201 (31% larger). Rule 20 keeps that sale out of the price, and the letter says so beside it: "1,574 sq ft, 31% larger than this home; sales more than 25% larger or smaller do not set the price." The renderer prints that recorded sentence and does not recompute the gap, the community, or the product. The walk records the sale and the reason when rule 20 refuses it (notSettingSales on the facts walk, not_setting_sales on the selection). A printed sale the walk did not record is asked of the same price-set decision, or of the set-aside record when that is why it carries no weight, and that sentence is what prints. A sale that sets the price gets no such line. The price set does not change, and PRICE_SET_SQFT_BAND does not change. Map pins that already carry a set-aside sentence are not labeled a second time. Held by lib/pricing/price-set.test.ts, lib/pricing/match.test.ts, and lib/cma/excluded-sale-note.test.ts.
+32. A stored competition or unsold row with no subdivision and no plat prints when the build drew that set on the area the letter is filtering, and a delivered or finalized letter prints the competition and unsold rows it was signed with (Matt 2026-10-09, 2902 Pinnacle and 1195 Remarkable). The render dropped every blank place and then rewrote the sentence to "0 homes" and "No other listing like yours" over five stored rivals and three unsold homes in those same plats. A blank place is the build's own area decision when the filter area is that drawn area. Otherwise the row is tested on its coordinates when the area kind can test them, and a blank with neither is still outside (2566 Keats). A delivered or finalized letter does not re-test those rows and does not restate the counts (serve-document.ts D27). A draft still drops a named subdivision outside the sales plats (rule 24, 3177 Coho). The count sentence matches the rows drawn. A new build stores subdivision, platSlug, and coordinates on every rival and unsold peer. Held by lib/cma/render-area-filter.test.ts and scripts/cma-render-audit.ts.
+33. Basis and limits names a chapter only when that chapter is on the page (reader review 2026-10-09, 1648 Pheasant, 3177 Coho, and 2382 Jackson; SKILL.md §0.3 rule 33). The sentence that zoning, buildability, rental, and covenant statements are preliminary reads of published code and recorded documents as of the verification dates shown beside them prints only when those statements and a verification date are rendered in the same document. Stored development or rental data is not that chapter. The seller letter and the immersive walk OPINION_CHAPTER_ORDER, which does not include the use-of-property page, so the sentence stays off those documents. The rest of the disclosure stays. Held by lib/cma/expected-sale.test.ts and lib/cma/render-sections.test.ts.
 
 
 `docs/EXECUTION_PLAN.md` and `docs/SITE_SPEC.md` are 2026-05-22 fossils (SITE_SPEC still describes an AgentFire WordPress cutover that already shipped). Do not execute them.

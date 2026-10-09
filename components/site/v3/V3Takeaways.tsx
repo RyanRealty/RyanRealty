@@ -68,6 +68,7 @@ export type V3TakeawaysLeadProps = {
   source?: string | null
   /** Links set after the source line ("How we get our numbers"). */
   links?: readonly { label: string; href: string }[]
+  className?: string
 }
 
 /**
@@ -76,12 +77,14 @@ export type V3TakeawaysLeadProps = {
  * V3Instrument's `lede` slot (SEO & AEO Desk brief 2026-10-08), so the first
  * text after the H1 is the answer. Plain server-rendered <p>, no island.
  */
-export function V3TakeawaysLead({ items, source, links = [] }: V3TakeawaysLeadProps) {
+export function V3TakeawaysLead({ items, source, links = [], className }: V3TakeawaysLeadProps) {
   const rows = items.map((s) => s.trim()).filter(Boolean)
   if (rows.length < 2) return null
   const shown = links.filter((l) => l.label.trim() && l.href.trim())
   return (
-    <div className="v3-takeaways v3-takeaways--lede">
+    // id="takeaways": the answer's anchor and the pinned SEO decision
+    // aeo-market-lead-and-tables (data/seo/decisions.json) travel with it.
+    <div id="takeaways" className={cn('v3-takeaways', 'v3-takeaways--lede', className)}>
       <p className="v3-takeaways__lead">
         {rows.map((s, i) => (
           <span key={s}>

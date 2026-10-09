@@ -21,6 +21,7 @@ import {
   medianCloseLineSvg,
 } from './market-charts'
 import { immersiveWiderMarketChapters, renderStatusGridHtml } from './market-area-chapters'
+import { unsoldEntries } from './matrix-entry'
 import { renderImmersiveCmaHtml } from './immersive'
 import type { RenderCmaArgs } from './render'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
@@ -514,6 +515,126 @@ describe('pickExpiredPeers', () => {
     expect(out[0]!.daysOnMarket).toBe(40) // newest cycle primary
     expect(out[0]!.listingHistoryLine).toContain('80 days on market')
     expect(out[0]!.listingHistoryLine).toContain('40 days on market')
+  })
+
+  it('3446 Jackwood: an earlier canceled listing under a new key labels the kept cycle as a relist and keeps that cycle\'s first ask', () => {
+    // May key 20260519200451052267000000 opened the day it went Active, so
+    // that key alone is not a restart. January key 20260115174332908439000000
+    // is the same house. The letter keeps May's $1,599,900 and 67 days, and
+    // says the days run after it last came on the market.
+    const base: CmaExpiredPeer = {
+      address: '3446 NW Jackwood Dr',
+      photoUrl: null,
+      beds: 4,
+      baths: 3,
+      sqft: 3200,
+      yearBuilt: 2005,
+      lotAcres: 0.3,
+      propertySubType: 'Single Family Residence',
+      latitude: 44.05,
+      longitude: -121.35,
+      status: 'Canceled',
+      listingKey: '',
+      listPrice: 0,
+      originalListPrice: null,
+      daysOnMarket: null,
+      onMarketDate: null,
+      listingHistoryLine: null,
+    }
+    const january: CmaExpiredPeer = {
+      ...base,
+      listingKey: '20260115174332908439000000',
+      listPrice: 1_649_900,
+      originalListPrice: 1_739_900,
+      daysOnMarket: 91,
+      onMarketDate: '2026-01-22T19:12:42+00:00',
+      stretch: { from: '2026-01-22', firstAsk: 1_739_900, restarted: false },
+      listingHistoryLine: 'Listed Jan 22, 2026 at $1,739,900, cut to $1,649,900, came off canceled · 91 days on market',
+    }
+    const may: CmaExpiredPeer = {
+      ...base,
+      listingKey: '20260519200451052267000000',
+      listPrice: 1_549_000,
+      originalListPrice: 1_599_900,
+      daysOnMarket: 67,
+      onMarketDate: '2026-05-21T17:42:48+00:00',
+      stretch: { from: '2026-05-21', firstAsk: 1_599_900, restarted: false },
+      listingHistoryLine: 'Listed May 21, 2026 at $1,599,900, cut to $1,549,000, came off canceled · 67 days on market',
+    }
+    const [kept] = collapseExpiredPeerCycles([january, may])
+    expect(kept!.listingKey).toBe('20260519200451052267000000')
+    expect(kept!.daysOnMarket).toBe(67)
+    expect(kept!.listPrice).toBe(1_549_000)
+    expect(kept!.stretch).toEqual({ from: '2026-05-21', firstAsk: 1_599_900, restarted: true })
+    expect(kept!.listingHistoryLine).toContain('91 days on market')
+    expect(kept!.listingHistoryLine).toContain('67 days on market')
+    const [entry] = unsoldEntries([kept!])
+    expect(entry!.outcome).toBe('came off 67 days after it last came on the market')
+    expect(entry!.firstAsk).toBe(1_599_900)
+    expect(entry!.priceChanges).toBe(1)
+    expect(entry!.restarted).toBe(true)
+  })
+
+  it('does not call a cycle a relist without an earlier different listing, and does not copy the current ask', () => {
+    const peer = (over: Partial<CmaExpiredPeer>): CmaExpiredPeer => ({
+      listingKey: 'K',
+      address: '1 Same St',
+      listPrice: 1_549_000,
+      originalListPrice: 1_599_900,
+      status: 'Canceled',
+      daysOnMarket: 67,
+      onMarketDate: '2026-05-21',
+      stretch: { from: '2026-05-21', firstAsk: 1_599_900, restarted: false },
+      photoUrl: null,
+      listingHistoryLine: null,
+      beds: 3,
+      baths: 2,
+      sqft: 1400,
+      yearBuilt: 1990,
+      lotAcres: 0.2,
+      propertySubType: 'Single Family Residence',
+      latitude: null,
+      longitude: null,
+      ...over,
+    })
+    const [sameKey] = collapseExpiredPeerCycles([
+      peer({ onMarketDate: '2026-01-22', stretch: { from: '2026-01-22', firstAsk: 1_739_900, restarted: false } }),
+      peer({}),
+    ])
+    expect(sameKey!.stretch?.restarted).toBe(false)
+
+    const [undated] = collapseExpiredPeerCycles([
+      peer({ listingKey: 'EARLIER', onMarketDate: null, stretch: undefined }),
+      peer({}),
+    ])
+    expect(undated!.stretch).toEqual({ from: '2026-05-21', firstAsk: 1_599_900, restarted: false })
+
+    const [sameDay] = collapseExpiredPeerCycles([
+      peer({ listingKey: 'EARLIER', onMarketDate: '2026-05-21T07:00:00+00:00' }),
+      peer({}),
+    ])
+    expect(sameDay!.stretch?.restarted).toBe(false)
+
+    const [unstamped] = collapseExpiredPeerCycles([
+      peer({
+        listingKey: 'EARLIER',
+        onMarketDate: '2026-01-22',
+        stretch: { from: '2026-01-22', firstAsk: 1_739_900, restarted: false },
+      }),
+      peer({ stretch: undefined }),
+    ])
+    expect(unstamped!.stretch).toEqual({ from: '2026-05-21', firstAsk: 1_599_900, restarted: true })
+    expect(unstamped!.stretch?.firstAsk).not.toBe(unstamped!.listPrice)
+
+    const [unknownAsk] = collapseExpiredPeerCycles([
+      peer({
+        listingKey: 'EARLIER',
+        onMarketDate: '2026-01-22',
+        stretch: { from: '2026-01-22', firstAsk: 1_739_900, restarted: false },
+      }),
+      peer({ stretch: { from: '2026-05-21', firstAsk: null, restarted: false } }),
+    ])
+    expect(unknownAsk!.stretch).toEqual({ from: '2026-05-21', firstAsk: null, restarted: true })
   })
 })
 
@@ -1135,6 +1256,31 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     expect(peer.whyItSat).toContain('96 days on the market')
     expect(peer.whyItSat).not.toContain('288')
     expect(peer.listingHistoryLine).toContain('came off the market · 96 days on market')
+  })
+
+  it('dates a withdrawn peer on the MLS withdrawal date, not the activity log', () => {
+    // 1355 Jacksonville: WithdrawDate / off_market_date Sep 28, log Sep 29.
+    const set = buildExpiredPeerSet({
+      rows: [
+        unsold('J', '1355 Jacksonville', 1, {
+          StandardStatus: 'Withdrawn',
+          OnMarketDate: '2026-09-23T23:33:01+00:00',
+          ListDate: '2026-09-23T23:33:01+00:00',
+          off_market_date: '2026-09-28',
+          status_change_timestamp: '2026-09-29T17:24:44+00:00',
+          DaysOnMarket: 9,
+          CumulativeDaysOnMarket: null,
+          statusChanges: [{ at: '2026-09-29T17:24:44+00:00', from: 'Active', to: 'Withdrawn' }],
+        }),
+      ],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+    })
+    const peer = set.peers[0]!
+    expect(peer.statusDate).toBe('2026-09-28')
+    expect(peer.offMarketDate).toBe('2026-09-28')
+    expect(peer.statusDate).not.toBe('2026-09-29')
   })
 
   it('counts a peer with no status log on its own dates, in Pacific days', () => {

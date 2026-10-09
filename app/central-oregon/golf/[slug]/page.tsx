@@ -9,9 +9,9 @@
  * THE PAGE CONTRACT: generateStaticParams from GOLF_COURSES, dynamicParams
  * false, revalidate 300, generateMetadata from the registry, Place + FAQPage +
  * breadcrumb via MetadataBlock, V3SectionTracker pageType="golf". getGolfDetail
- * degrades on a listings timeout (check-prerender-db-safety). One registry with
- * /lp/central-oregon-golf. The LP hub stays a Quiet edge, not a smashed SEO
- * substitute.
+ * degrades on a listings timeout (check-prerender-db-safety). Up links go to
+ * the /central-oregon/golf hub; the old /lp/central-oregon-golf 308s there
+ * (2026-09-06), so linking it made every breadcrumb a redirect.
  *
  * KB-era deletions: photo hero / golfHeroFor, VenueMap, KbFeatured,
  * AreaMarketBand, KbBreadcrumb, KbFooter, SmoothScrollProvider, kb.css,
@@ -130,7 +130,7 @@ export default async function GolfDetailPage({ params }: Props) {
       type: 'breadcrumb',
       items: [
         { name: 'Home', url: '/' },
-        { name: 'Golf', url: '/lp/central-oregon-golf' },
+        { name: 'Golf', url: '/central-oregon/golf' },
         { name: course.shortName, url: `/central-oregon/golf/${slug}` },
       ],
     },
@@ -175,7 +175,7 @@ export default async function GolfDetailPage({ params }: Props) {
   if (course.teeTimeUrl?.trim()) {
     quietItems.push({ label: 'Tee times and course info', href: course.teeTimeUrl.trim() })
   }
-  quietItems.push({ label: 'Central Oregon golf guide', href: '/lp/central-oregon-golf' })
+  quietItems.push({ label: 'Central Oregon golf guide', href: '/central-oregon/golf' })
   if (course.communitySlug?.trim()) {
     quietItems.push({ label: 'Community around this course', href: communityPath(course.communitySlug) })
   }
@@ -199,7 +199,7 @@ export default async function GolfDetailPage({ params }: Props) {
         <V3Breadcrumb
           trail={[
             { label: 'Home', href: '/' },
-            { label: 'Golf', href: '/lp/central-oregon-golf' },
+            { label: 'Golf', href: '/central-oregon/golf' },
             { label: shortName },
           ]}
         />

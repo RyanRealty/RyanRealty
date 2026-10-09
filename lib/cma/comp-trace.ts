@@ -29,6 +29,8 @@
  *     ->>'product_type')::int) from cmas;
  */
 
+import type { NotSettingSale } from '@/lib/pricing/price-set'
+
 /** Every reason a candidate row can be dropped, counted per tier and in total. */
 export interface CompExclusionCounts {
   /** A townhome / condo / manufactured / leased-land / co-op against a detached subject (or vice versa). */
@@ -213,6 +215,12 @@ export interface CompSelectionDiagnostics {
    * on listings). They never counted toward the five (Matt 2026-10-07).
    */
   not_price_setting: number
+  /**
+   * The sales behind `not_price_setting`, named, with the sentence rule 20
+   * recorded (SKILL §0.3 rule 29). The letter prints `reason` beside a history
+   * sale that is not in the price set. Absent on rows built before it landed.
+   */
+  not_setting_sales?: NotSettingSale[]
   /** Comps handed to pricing by selectComps (after outliers + cap). */
   final_count: number
   /** Tier -> count, over the comps that actually got priced. Filled by the builder. */
