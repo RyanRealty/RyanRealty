@@ -19,6 +19,11 @@ export const THAT_PRICE = 'that price'
  * (reader review 2026-10-08, 62475 Woodsman and 2382 Jackson).
  */
 export const COVER_PRICE_PHRASE = 'the price on the cover'
+/**
+ * The same, on a home on the market (rule 27): its cover is "Our opinion of
+ * value", so the letter names that number as the value on the cover.
+ */
+export const COVER_VALUE_PHRASE = 'the value on the cover'
 
 /** True when `n` is the same mark as the recommended list (exact or 1k-round). */
 export function isRecommendMark(n: number, recommended: number): boolean {

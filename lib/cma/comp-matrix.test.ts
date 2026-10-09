@@ -207,11 +207,26 @@ describe('renderCompMatrixHtml', () => {
     expect(html).not.toContain('\u2192')
     expect(html).toContain('Jun 25, 2026')
     expect(html).not.toContain('Adjusted to subject')
+    expect(html).not.toContain('after it last came on the market')
     // No MLS photo on the fixture → honest empty thumb boxes so column heights align.
     expect(html).toContain('matrix-thumb is-empty')
     expect(html).not.toMatch(/<img class="matrix-thumb"/)
     // Punctuation law over the visible text; `&amp;` in a tracked URL is markup.
     expect(html.replace(/&[a-z]+;/g, '')).not.toMatch(/[—;]/)
+  })
+
+  it('labels a restarted original ask as the last stretch on the market (20676 Wild Rose)', () => {
+    const restarted = {
+      ...comp,
+      address: '61197 Cottonwood',
+      listPrice: 699000,
+      originalListPrice: 849900,
+      stretch: { from: '2025-11-13', firstAsk: 774900, restarted: true },
+    } as CmaAdjustedComp
+    const html = renderCompMatrixHtml(subject, padSales(restarted))
+    expect(html).toContain('$774,900 when it came back')
+    const quiet = renderCompMatrixHtml(subject, padSales(comp))
+    expect(quiet).not.toContain('when it came back')
   })
 
   it('keeps the CMA a seller actually gets to one undivided table', () => {
@@ -424,8 +439,11 @@ describe('land columns', () => {
       confidence: 'High',
       notes: [],
     } as unknown as CmaPricing
+    // A home off the market: the sales set its price. (The fixture's own
+    // status is Active, and a home on the market is told the sales that set
+    // its value, rule 27; reader review 2026-10-09, 3062 NW Kelly Hill.)
     const page = salesThatSetItPage({
-      subject,
+      subject: { ...subject, standardStatus: 'Expired' },
       comps: padSales(comp),
       market: { geoLabel: 'Bend' } as CmaMarketContext,
       pricing,
@@ -436,6 +454,14 @@ describe('land columns', () => {
     expect(body).not.toContain('<h3 class="subhead">The sales that set this price</h3>')
     // Visible chapter title once; aria-label may still carry the matrix heading string.
     expect((body.match(/<h[23][^>]*>[^<]*The sales that set this price/g) ?? []).length).toBe(1)
+    const onMarket = salesThatSetItPage({
+      subject,
+      comps: padSales(comp),
+      market: { geoLabel: 'Bend' } as CmaMarketContext,
+      pricing,
+    })!.body
+    expect(onMarket).toContain('<h2 class="section">The sales that set this value.</h2>')
+    expect(onMarket).not.toContain('set this price')
   })
 
   it('still prints living area for an improved comp', () => {

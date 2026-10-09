@@ -244,6 +244,21 @@ describe('E1 — the search sentence never claims a shortage the printed sales r
     )
   })
 
+  it('rewrites a stored zero-sale sentence that said the search matched the home (915 Saginaw)', () => {
+    const args = {
+      compSearch: {
+        subdivision: 'Park Place',
+        rungs: [],
+        keptBySubdivision: {},
+        sentence:
+          'No sale inside Park Place in the last 24 months matched your home, so the search opened to 628 Portland in Kenwood.',
+      },
+    }
+    expect(compSearchSentence({ subdivision: 'Park Place', args, comps: [] })).toBe(
+      'No home sold in Park Place in the last 24 months, so the search opened to 628 Portland in Kenwood.',
+    )
+  })
+
   it('refuses even a STORED sentence that claims a shortage the grid refutes', () => {
     const args = {
       compSearch: {
@@ -396,13 +411,15 @@ describe('E3 — the strip caption, the chapter lead, the range cause and the se
     expect(html).not.toContain('The six closed sales below set this number')
   })
 
-  it('the market chapter counts the kept sales and prints their adjusted spread, never a set-aside end', () => {
+  it('the market chapter counts the kept sales and prints their raw closes, never a set-aside end', () => {
     const html = cityMedianReconciliationHtml(opinionArgs())
     expect(html).toContain('The four sales behind your price')
     expect(html).toContain('sold for $368,000 to $477,000')
-    // $370,000 to $479,000 is the kept four's adjusted spread; $296,000 and
-    // $512,000 are the two sales the document set aside.
-    expect(html).toContain('$370,000 to $479,000')
+    // The adjusted span ($370,000 to $479,000) is the price chapter's sentence.
+    // Restating it here repeated the range (reader review, 915 Saginaw, 2026-10-08).
+    // $296,000 and $512,000 are the two sales the document set aside.
+    expect(html).not.toContain('$370,000 to $479,000')
+    expect(html).not.toContain('adjusted, they support')
     expect(html).not.toContain('$296,000')
     expect(html).not.toContain('$512,000')
     expect(html).not.toContain('The six sales behind your price')

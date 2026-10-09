@@ -110,6 +110,14 @@ export type MatrixEntry = {
    * expired or fell out of contract and came back). The outcome line says so.
    */
   restarted?: boolean
+  /**
+   * True when `firstAsk` is the price the home came back on the market at:
+   * its last stretch is not its listing's first. The "Original list" cell says
+   * so ("$1,395,000 when it came back"), and so does a pin that saw no price
+   * change on that stretch (reader review 2026-10-09, 628 Portland and 61197
+   * Cottonwood). Set whether or not the record knows the stretch's days.
+   */
+  firstAskRestarted?: boolean
   lastAsk: number | null
   /** Close price when family is closed; null otherwise. */
   closePrice: number | null
@@ -385,6 +393,7 @@ export function closedEntries(
       path,
       firstAsk: printedFirstAsk(stretch, num(c.listPrice)),
       ...(stretch.restarted && toOffer != null ? { restarted: true } : {}),
+      ...(stretch.restarted && printedFirstAsk(stretch, num(c.listPrice)) != null ? { firstAskRestarted: true } : {}),
       lastAsk: num(c.listPrice),
       closePrice: c.closePrice > 0 ? c.closePrice : null,
       listPrice: num(c.listPrice) ?? stretch.firstAsk,
@@ -471,6 +480,7 @@ export function unsoldEntries(
       path,
       firstAsk: printedFirstAsk(stretch, num(p.listPrice)),
       ...(stretch.restarted && dom != null ? { restarted: true } : {}),
+      ...(stretch.restarted && printedFirstAsk(stretch, num(p.listPrice)) != null ? { firstAskRestarted: true } : {}),
       lastAsk: num(p.listPrice),
       closePrice: null,
       listPrice: num(p.listPrice) ?? stretch.firstAsk,
@@ -578,6 +588,7 @@ export function activeEntries(
       path,
       firstAsk: printedFirstAsk(stretch, num(r.listPrice)),
       ...(stretch.restarted && dom != null ? { restarted: true } : {}),
+      ...(stretch.restarted && printedFirstAsk(stretch, num(r.listPrice)) != null ? { firstAskRestarted: true } : {}),
       lastAsk: num(r.listPrice),
       closePrice: null,
       listPrice: num(r.listPrice) ?? stretch.firstAsk,
@@ -671,6 +682,12 @@ export function subjectEntry(input: {
     priceChangesExact: (input.finalCycle?.cutsDated ?? false) === true,
     path,
     firstAsk: path?.startPrice ?? input.printableAsk,
+    // The reader's own home that came back: its first ask is the price it
+    // came back at, and its column says so.
+    ...((s.stretch?.restarted === true || input.finalCycle?.restarted === true) &&
+    (path?.startPrice ?? input.printableAsk) != null
+      ? { firstAskRestarted: true }
+      : {}),
     lastAsk: path ? finalAskOf(path) : input.printableAsk,
     closePrice: null,
     listPrice: input.printableAsk,
@@ -711,6 +728,7 @@ export function pinFactsFor(entries: readonly MatrixEntry[]): CmaPinFact[] {
       domMeasure: e.domMeasure,
       priceChanges: e.priceChanges,
       priceChangesExact: e.priceChangesExact,
+      ...(e.firstAskRestarted ? { sinceCameBack: true } : {}),
       latitude: e.latitude,
       longitude: e.longitude,
       ...(e.status ? { status: e.status } : {}),

@@ -94,6 +94,7 @@ export function salesSearchAndArea(args: {
     keptComps: args.comps.map((c) => ({
       address: c.address,
       subdivision: c.subdivision,
+      subdivisionSlug: c.subdivisionSlug ?? null,
       selectionTier: c.selectionTier,
       // The selector's own-plat call: a sale on the subject's plat under
       // another MLS spelling is inside the subdivision (reader review 2026-10-08).

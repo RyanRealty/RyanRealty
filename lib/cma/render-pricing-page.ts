@@ -46,7 +46,7 @@ import {
   setAsideSalePredicate,
 } from '@/lib/cma/set-aside'
 import { clampLineFor } from '@/lib/cma/clamp-line'
-import { COVER_PRICE_PHRASE, deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
+import { COVER_PRICE_PHRASE, COVER_VALUE_PHRASE, deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
 import { listCeiling } from '@/lib/cma/render-contract'
 import { subjectOnMarket } from '@/lib/cma/subject-on-market'
@@ -58,7 +58,7 @@ import { compSearchSentence } from '@/lib/cma/render-comp-search'
 import { newHomeRateParagraph } from '@/lib/cma/new-home-rate'
 import { resaleNeverOwnedParagraph } from '@/lib/cma/resale-never-owned'
 import { dateBasisCaption } from '@/lib/cma/sales-method-note'
-import { salesSetOnlyTheRange, weightRowLabel } from '@/lib/cma/sales-role'
+import { salesRole, salesSetOnlyTheRange, setWhat, weightRowLabel } from '@/lib/cma/sales-role'
 import { streetAnchorRead } from '@/lib/cma/street-anchor'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
@@ -136,12 +136,16 @@ function cameOffPhrase(status: string | null | undefined): string {
  * letter whose cover the weights did not make (lib/cma/sales-role.ts) the
  * sales are the ones that set the range (reader review 2026-10-08).
  */
-function heldBandSentence(pricing: CmaPricing, comps?: readonly CmaAdjustedComp[] | null): string {
+function heldBandSentence(
+  pricing: CmaPricing,
+  comps?: readonly CmaAdjustedComp[] | null,
+  onMarket = false,
+): string {
   const table = comps && comps.length > 0 ? tableAdjustedBand(comps, pricing) : null
   const low = table?.low ?? Math.min(pricing.valueLow, pricing.valueHigh)
   const high = table?.high ?? Math.max(pricing.valueLow, pricing.valueHigh)
   const n = comps && comps.length > 0 ? keptCompCount(pricing, comps) : 0
-  const set = salesSetOnlyTheRange(pricing, comps) ? 'set the range' : 'set the price'
+  const set = setWhat(salesRole(pricing, comps, { onMarket }))
   const who = n > 0 ? `The ${countWord(n)} sales that ${set}` : `The sales that ${set}`
   return `${who} support ${usd(low)} to ${usd(high)}.`
 }
@@ -173,7 +177,7 @@ export function heldUnderBandLead(
   comps?: readonly CmaAdjustedComp[] | null,
   finalCycle?: import('@/lib/cma/expired-audit').ExpiredFinalCycle | null,
 ): string {
-  const first = heldBandSentence(pricing, comps)
+  const first = heldBandSentence(pricing, comps, subjectOnMarket({ subject }))
   const heldAsk = pricing.hold?.ask != null && pricing.hold.ask > 0 ? pricing.hold.ask : null
   const ask = failedSubjectAsk(subject, askCtx) ?? heldAsk ?? pricing.failedAsk ?? null
   if (ask == null || !(ask > 0)) return first
@@ -796,16 +800,19 @@ function dateBasisLine(input: { subject: CmaSubject; comps: readonly CmaAdjusted
  * sales produce it; this rate stays on the list price, the one figure every
  * document carries.
  */
-export function perSquareFootSentence(sqft: number, price: number): string {
-  const cover = `${COVER_PRICE_PHRASE.charAt(0).toUpperCase()}${COVER_PRICE_PHRASE.slice(1)}`
+export function perSquareFootSentence(sqft: number, price: number, opts?: { onMarket?: boolean }): string {
+  // A home on the market carries an opinion of value on its cover, not a
+  // price (rule 27).
+  const phrase = opts?.onMarket === true ? COVER_VALUE_PHRASE : COVER_PRICE_PHRASE
+  const cover = `${phrase.charAt(0).toUpperCase()}${phrase.slice(1)}`
   return `${cover} comes to ${usd(Math.round(price / sqft))} per square foot across your home's ${int(sqft)} square feet.`
 }
 
-function perSquareFootLine(input: { subject: CmaSubject; pricing: CmaPricing }): string {
+function perSquareFootLine(input: { subject: CmaSubject; pricing: CmaPricing; onMarket?: boolean }): string {
   const sqft = input.subject.sqft
   const price = input.pricing.recommended
   if (sqft == null || !(sqft > 0) || price == null || !(price > 0)) return ''
-  return `<p class="small">${esc(perSquareFootSentence(sqft, price))}</p>`
+  return `<p class="small">${esc(perSquareFootSentence(sqft, price, { onMarket: input.onMarket }))}</p>`
 }
 
 /**
@@ -894,6 +901,16 @@ export type PricingPageInput = {
   }>
   /** A sale under one percent of the weight, left out of the seller letter. */
   negligibleWeightNote?: string | null
+  /**
+   * The subject is on the market today (rule 27, lib/cma/subject-on-market.ts,
+   * read off the whole row). Absent: read off the subject's own status.
+   */
+  onMarket?: boolean
+}
+
+/** Rule 27, asked once per page: the row's answer, else the subject's status. */
+function onMarketOf(input: Pick<PricingPageInput, 'onMarket' | 'subject'>): boolean {
+  return input.onMarket ?? subjectOnMarket({ subject: input.subject })
 }
 
 /** The price chapter's name: its running header on every sheet. */
@@ -966,6 +983,7 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
     subdivision: s.subdivision,
     comps: input.comps,
     pricing: p,
+    role: salesRole(p, input.comps, { onMarket: onMarketOf(input) }),
   })
   // THE CLAMP, UNDER THE NUMBER IT MOVED. When the failed-ask clamp binds, the
   // printed price is not the one the method above it produces — Concorde
@@ -989,7 +1007,7 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   const clamp = heldForMatt(p)
     ? ''
     : deRepeatRecommendDollars(
-        clampLineFor(p, input.comps, { onMarket: subjectOnMarket({ subject: s }) }),
+        clampLineFor(p, input.comps, { onMarket: onMarketOf(input) }),
         p.recommended,
       )
   // THE STREET SALE THE COVER IS HELD TO (915 Saginaw, reader review
@@ -1087,19 +1105,19 @@ export function salesThatSetItPage(input: PricingPageInput): CmaPageDef | null {
       // H2.section already names the chapter — skip duplicate H3.subhead.
       omitHeading: true,
       // A matrix that runs onto a second page heads it "<chapter>, continued".
-      heading: salesThatSetItHeading(p, input.comps).replace(/\.$/, ''),
+      heading: salesThatSetItHeading(p, input.comps, { onMarket: onMarketOf(input) }).replace(/\.$/, ''),
       // The set-aside columns carry the map's own mark (reader review, 3177
       // Coho, 2026-10-08), by the decision the map and the list below read.
       isSetAside: setAsideSalePredicate(p, input.comps),
-      weightLabel: weightRowLabel(p, input.comps),
+      weightLabel: weightRowLabel(p, input.comps, { onMarket: onMarketOf(input) }),
       footer: `${concessionsCaption(input.comps)}
   ${dateBasisLine({ subject: s, comps: input.comps, pricing: p })}
-  ${renderReconciliationHtml(p, input.comps)}
-  ${perSquareFootLine({ subject: s, pricing: p })}`,
+  ${renderReconciliationHtml(p, input.comps, { onMarket: onMarketOf(input) })}
+  ${perSquareFootLine({ subject: s, pricing: p, onMarket: onMarketOf(input) })}`,
     },
   )
   if (!matrix.trim()) return null
-  const heading = salesThatSetItHeading(p, input.comps)
+  const heading = salesThatSetItHeading(p, input.comps, { onMarket: onMarketOf(input) })
   const label = heading.replace(/\.$/, '')
   return {
     meta: `${esc(s.streetAddress)} · ${esc(label)}`,
@@ -1132,12 +1150,22 @@ export const HELD_SALES_HEADING = 'The sales behind this price.'
  * built from them (reader review 2026-10-08).
  */
 export const RANGE_SALES_HEADING = 'The sales that set the range.'
+/**
+ * The same chapter on a home on the market (rule 27): its cover is "Our
+ * opinion of value", and "The sales that set this price" named a price the
+ * letter does not give (reader review 2026-10-09, 3062 NW Kelly Hill).
+ */
+export const VALUE_SALES_HEADING = 'The sales that set this value.'
+export const HELD_VALUE_SALES_HEADING = 'The sales behind this value.'
 
 export function salesThatSetItHeading(
   pricing: CmaPricing | null | undefined,
   comps?: readonly CmaAdjustedComp[] | null,
+  opts?: { onMarket?: boolean },
 ): string {
-  if (salesSetOnlyTheRange(pricing, comps)) return RANGE_SALES_HEADING
+  const role = salesRole(pricing, comps, opts)
+  if (role === 'range') return RANGE_SALES_HEADING
+  if (role === 'value') return heldForMatt(pricing) ? HELD_VALUE_SALES_HEADING : VALUE_SALES_HEADING
   return heldForMatt(pricing) ? HELD_SALES_HEADING : SALES_THAT_SET_IT_HEADING
 }
 
@@ -1150,8 +1178,9 @@ export function salesThatSetItHeading(
 export function salesThatSetItPhrase(
   pricing: CmaPricing | null | undefined,
   comps?: readonly CmaAdjustedComp[] | null,
+  opts?: { onMarket?: boolean },
 ): string {
-  const heading = salesThatSetItHeading(pricing, comps).replace(/\.$/, '')
+  const heading = salesThatSetItHeading(pricing, comps, opts).replace(/\.$/, '')
   return `${heading.charAt(0).toLowerCase()}${heading.slice(1)}`
 }
 

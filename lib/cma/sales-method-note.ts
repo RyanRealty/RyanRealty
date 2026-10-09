@@ -64,6 +64,7 @@
 import { cleanText, countWord, int, usd } from '@/lib/cma/render-blocks'
 import { sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
 import { FLAT_LOCAL_DATE_SENTENCE } from '@/lib/cma/flat-date-story'
+import { letterPlaceName, nameFromPlatSlug } from '@/lib/cma/letter-place-name'
 import { realSubdivisionName } from '@/lib/pricing/classes'
 import { isPocketTimeBasis } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { adjustmentNouns, adjustmentsApplied } from '@/lib/cma/adjustments-applied'
@@ -124,6 +125,14 @@ const ADDED_SENTENCE = /\bmore (?:was|were) added\b/i
  * Pointe Village." Read off the printed grid. Null when the home has no
  * subdivision or every printed sale is in it.
  */
+/** The place a sale prints in. A bare MLS code yields to the recorded plat. */
+function printedOutsidePlace(c: CmaAdjustedComp): string | null {
+  const mls = realSubdivisionName(c.subdivision)
+  if (!mls) return null
+  const place = letterPlaceName(mls, nameFromPlatSlug(c.subdivisionSlug))
+  return place || null
+}
+
 export function outsideSubdivisionSentence(
   subject: Pick<CmaSubject, 'subdivision'>,
   comps: readonly CmaAdjustedComp[],
@@ -131,38 +140,79 @@ export function outsideSubdivisionSentence(
   const home = realSubdivisionName(cleanText(subject.subdivision ?? null))
   if (!home) return null
   const homeKey = home.toLowerCase()
-  // A sale with no subdivision on its record is unknown, not outside: §0 says
-  // no claim the data does not hold, so the pricing side's own words print.
-  if (comps.some((c) => !realSubdivisionName(c.subdivision))) return null
-  const outside = comps.filter((c) => realSubdivisionName(c.subdivision)?.toLowerCase() !== homeKey)
+  // A sale on the subject's own plat is inside, whatever MLS spelling the row
+  // carries (reader review, 1355 Jacksonville, 2026-10-08: 1367 Milwaukee is
+  // "Northwest Townsite Co 2nd Addt" and sits in Northwest Townsite). Counting
+  // it outside made every sale look outside, and the Basis sentence lost its
+  // lead. A sale with no subdivision and no own-plat stamp is unknown, not
+  // outside: §0 says no claim the data does not hold.
+  const known = (c: CmaAdjustedComp) => c.ownPlat === true || realSubdivisionName(c.subdivision) != null
+  if (!comps.every(known)) return null
+  const outside = comps.filter(
+    (c) => c.ownPlat !== true && realSubdivisionName(c.subdivision)?.toLowerCase() !== homeKey,
+  )
   if (outside.length === 0 || outside.length >= comps.length) return null
   const total = comps.length
   if (outside.length === 1) {
     const c = outside[0]!
-    const theirs = realSubdivisionName(c.subdivision)
+    const theirs = printedOutsidePlace(c)
     return `One of the ${countWord(total)} sales, ${c.address}, is outside ${home}${theirs ? `, in ${theirs}` : ''}.`
   }
   const named = outside.map((c) => {
-    const theirs = realSubdivisionName(c.subdivision)
+    const theirs = printedOutsidePlace(c)
     return theirs ? `${c.address} in ${theirs}` : c.address
   })
   return `${capitalise(countWord(outside.length))} of the ${countWord(total)} sales are outside ${home}: ${joinAnd(named)}.`
 }
 
 /**
+ * "Four more were added: 1345 Milwaukee in Grandview, ..." made whole on its
+ * own, from the heading sentence it followed.
+ *
+ * The search story's first sentence is the price chapter's heading ("One of
+ * the five sales is in Northwest Townsite."), and the rest prints in Basis and
+ * limits, a chapter and several pages away. There "Four more were added"
+ * opened the method paragraph with nothing it was more than (reader review
+ * 2026-10-09, 1355 Jacksonville). When the grid cannot name the sales outside
+ * the subdivision itself (`outsideSubdivisionSentence`), the sentence is
+ * restated from the two stored ones, saying only what they said: "Four of
+ * the five sales are outside Northwest Townsite: 1345 Milwaukee in Grandview,
+ * ...", or, when the story named places rather than sales, "Four of the five
+ * sales come from Grandview and Highland." Null when the heading is not the
+ * "N of the M sales are in X" sentence the added one follows.
+ */
+export function addedSentenceOnItsOwn(heading: string | null | undefined, added: string): string | null {
+  const head = /^(\w+) of the (\w+) sales (?:is|are) in (.+?)\.$/i.exec((heading ?? '').trim())
+  const more = /^(\w+) more (?:was|were) added(?:: (.+)| from (.+))\.$/i.exec(added.trim())
+  if (!head || !more) return null
+  const total = head[2]!.toLowerCase()
+  const place = head[3]!
+  const rest = more[1]!.toLowerCase()
+  const one = rest === 'one'
+  const lead = `${capitalise(rest)} of the ${total} sales`
+  if (more[2]) return `${lead} ${one ? 'is' : 'are'} outside ${place}: ${more[2]}.`
+  return `${lead} ${one ? 'comes' : 'come'} from ${more[3]}.`
+}
+
+/**
  * The rest of the search story, after the sentence the chapter uses as its
- * heading. The "added" sentence is rewritten from the grid; anything else in
- * the story prints as the pricing side wrote it.
+ * heading. The "added" sentence is rewritten from the grid, or, when the grid
+ * cannot say it, made whole from the heading it followed; anything else in the
+ * story prints as the pricing side wrote it.
  */
 function searchNote(
   subject: Pick<CmaSubject, 'subdivision'>,
   comps: readonly CmaAdjustedComp[],
   tail: string | null | undefined,
+  heading?: string | null,
 ): string[] {
   const said = str(tail)
   if (!said) return []
   const outside = outsideSubdivisionSentence(subject, comps)
-  return sentencesOf(said).map((s) => (outside && ADDED_SENTENCE.test(s) ? outside : s))
+  return sentencesOf(said).map((s) => {
+    if (!ADDED_SENTENCE.test(s)) return s
+    return outside ?? addedSentenceOnItsOwn(heading, s) ?? s
+  })
 }
 
 // ── the date move ───────────────────────────────────────────────────────────
@@ -478,9 +528,11 @@ function dateNote(
     if (!anyMoved) return ['None of these sales is moved for the month it sold.']
     const city = cleanText(subject.city ?? null)
     const whose = city ? `${city}'s` : "this city's"
+    // The grid caption already says the date move (dateBasisCaption). Saying
+    // it again here is the repeated sentence (reader review, 915 Saginaw,
+    // 2026-10-08). Basis leads with the sample the grid does not give.
     return [
-      `To bring each sale to today's market, we move it by how much ${whose} median price per square foot changed between the month it sold and the last three full months.`,
-      `That figure is built from ${int(n)} home sales across ${city ?? 'the city'}.`,
+      `${whose} median price per square foot, the figure under the sales grid, is built from ${int(n)} home sales across ${city ?? 'the city'}.`,
       indexShapeSentence(ta),
       dateMovesSentence(comps, ta),
     ].filter(Boolean)
@@ -602,11 +654,13 @@ export function salesMethodSentences(input: {
   pricing: CmaPricing
   /** The search story after its first sentence (the price chapter's heading). */
   searchTail?: string | null
+  /** That first sentence, which the tail's "N more were added" follows. */
+  searchHead?: string | null
   /** The subject is on the market today (lib/cma/subject-on-market.ts). */
   onMarket?: boolean
 }): string[] {
   return [
-    ...searchNote(input.subject, input.comps, input.searchTail),
+    ...searchNote(input.subject, input.comps, input.searchTail, input.searchHead),
     ...dateNote(input.subject, input.comps, input.pricing),
     ...askShareNote(input.subject, input.pricing, input.onMarket === true),
   ].map((s) => sanitizeLetterEmDash(s))

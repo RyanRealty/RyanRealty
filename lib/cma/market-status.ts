@@ -5,7 +5,7 @@
  */
 
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
-import { compAreaContains, compAreaIn, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
+import { compAreaContains, compAreaIn, type CompArea } from '@/lib/pricing/comp-area'
 import { countWord } from '@/lib/pricing/estimate'
 import { keepSameProductType, letterProductMatch } from '@/lib/cma/market-area'
 import { realSubdivision } from '@/lib/cma/comp-tiers'
@@ -1375,9 +1375,72 @@ function peerSetSentence(input: {
   // Fewer than three even at the widest window. Say the number, say the
   // window, and say plainly that nothing was brought in from outside the
   // WHOLE search area, so the sentence never implies only one plat was read.
-  const outside =
-    input.searchArea.kind === 'radius' ? 'further out' : `outside ${compAreaPhrase(input.searchArea)}`
-  return `Only ${homes} ${where} came off the market without selling in the last ${w} months, and nothing from ${outside} was added to make up the number.`
+  return shortfallPeerSentence({
+    searchArea: input.searchArea,
+    count: n,
+    likeYours: input.likeYours,
+    windowMonths: input.windowMonths,
+  })
+}
+
+/**
+ * "Only one home like yours in Park Place, Miller Heights, Kenwood, West Hills
+ * and Bend View came off the market without selling in the last six months,
+ * and nothing from further out was added to make up the number."
+ *
+ * THE COUNT NAMES THE GROUND IT SEARCHED (reader review 2026-10-09, 915
+ * Saginaw). "Only one home like yours in Kenwood came off the market" named
+ * the plat the one home sits in, and read as if only Kenwood was searched
+ * when all five subdivisions were; the area then followed in a clause of its
+ * own ("nothing from outside Park Place, ..."). "Only one" is a claim about
+ * the whole search, so the search area is where it is said, once, and what
+ * was not added is everything further out.
+ */
+export function shortfallPeerSentence(input: {
+  searchArea: CompArea
+  count: number
+  likeYours: boolean
+  windowMonths: number
+}): string {
+  const n = input.count
+  const homes = `${countWord(n)} ${n === 1 ? 'home' : 'homes'}${input.likeYours ? ' like yours' : ''}`
+  return `Only ${homes} ${compAreaIn(input.searchArea)} came off the market without selling in the last ${monthsWord(
+    input.windowMonths,
+  )} months, and nothing from further out was added to make up the number.`
+}
+
+/** The shortfall count as rows built before 2026-10-09 stored it. */
+const STORED_SHORTFALL =
+  /^Only \S+ homes?(?: like yours)? .+? came off the market without selling in the last \S+ months, and nothing from .+? was added to make up the number\./
+
+/**
+ * A stored peer-set sentence in today's words: its shortfall count names the
+ * whole search area (`shortfallPeerSentence`), read off the fields stored
+ * beside it. Delivered letters re-render from stored render_args, so the
+ * render asks this. Anything else prints as stored.
+ */
+export function storedPeerSentenceToday(
+  sentence: string,
+  peers: {
+    area?: CompArea | null
+    count?: number | null
+    likeYours?: boolean | null
+    windowMonths?: number | null
+    shortfall?: boolean | null
+  },
+): string {
+  const n = peers.count ?? 0
+  if (!peers.area || !peers.shortfall || !(n > 0) || !(Number(peers.windowMonths) > 0)) return sentence
+  if (!STORED_SHORTFALL.test(sentence)) return sentence
+  return sentence.replace(
+    STORED_SHORTFALL,
+    shortfallPeerSentence({
+      searchArea: peers.area,
+      count: n,
+      likeYours: peers.likeYours === true,
+      windowMonths: Number(peers.windowMonths),
+    }),
+  )
 }
 
 /**
