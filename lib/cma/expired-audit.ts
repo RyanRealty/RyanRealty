@@ -1226,6 +1226,56 @@ function weightedPriceOf(pricing: { reconciliation?: { weightedPrice?: number | 
 }
 
 /**
+ * Rule 16 (Matt 2026-10-08, delegated). The under-the-ask test reads the
+ * weighted price of the sales that set the price. When that price is already
+ * under the last ask, the failed-ask pull does not run. The recommendation is
+ * that price to the nearest thousand, the same figure the clamp line calls
+ * "near $X". A list tier above it is not used.
+ *
+ * 3037 Purcell blends to $561,188 under a $565,000 ask. The list tier was
+ * $576,000, and the pull printed $555,000. The cover is $561,000.
+ * 62475 Woodsman blends to $1,577,841 under a $1,600,000 ask. The list tier
+ * was $1,620,000, and the pull printed $1,576,000. The cover is $1,578,000.
+ *
+ * A nearest thousand that lands on or over the ask is not under the ask, so
+ * the pull still runs. A weighted price at or above the ask is unchanged
+ * here. A recommendation already under the weighted thousand is not raised:
+ * the street anchor sits between the two calls to this function, and this
+ * step does not put that price back up.
+ *
+ * Returns true when this branch owns the price and the pull must not run.
+ */
+function leaveWeightedPriceUnderAsk(
+  pricing: {
+    conservative: number
+    recommended: number
+    highEnd: number
+    valueLow?: number
+    valueHigh?: number
+    rangeRule?: { saleLow?: number; evidenceLow?: number } | null
+    reconciliation?: { weightedPrice?: number | null } | null
+  },
+  ask: number,
+): boolean {
+  const weighted = weightedPriceOf(pricing)
+  if (weighted == null || !(weighted < ask)) return false
+  const near = Math.round(weighted / 1000) * 1000
+  if (!(near > 0) || !(near < ask)) return false
+  if (pricing.recommended > near) pricing.recommended = near
+  // The list-from-close floor sits above this price (Purcell: $572,000 over
+  // the $561,188 blend). The high-DOM actives pull stops on the conservative
+  // tier, so that floor is not used. It falls to the closed-sale low when
+  // that low is at or under the recommendation.
+  if (pricing.conservative > pricing.recommended) {
+    const saleLow = closedSaleLow(pricing)
+    pricing.conservative =
+      saleLow != null && saleLow > 0 && saleLow <= pricing.recommended ? saleLow : pricing.recommended
+  }
+  if (pricing.highEnd > pricing.recommended && pricing.highEnd >= ask) pricing.highEnd = pricing.recommended
+  return true
+}
+
+/**
  * The sentence the document prints where the clamp binds.
  *
  * The cover owns the recommended dollars. This sentence must not say "that
@@ -1354,17 +1404,31 @@ export function applyFailedAskCap(
     pricing.failedAskBelowRange = true
     const note = failedAskBelowRangeNote(ask)
     if (!pricing.notes.includes(note)) pricing.notes.push(note)
-    const evidenceRec = priorBefore.get('recommended') ?? pricing.recommended
-    // Already under the ask: leave the comps. Do not pin the list up to a
-    // sale that sits on or above the ask that failed, and do not cut again.
-    if (evidenceRec < ask) {
-      reanchorSellerNet(pricing)
-      return { applied: false, cappedTo: null, uncappedRecommended: null, belowRange: true }
-    }
   }
   // A broker override with a note may sit below the sales. Do not lift or cut it.
   if (band && salesLow != null && pricing.recommended < salesLow && hasStoredBelowRangeReason(pricing)) {
     return none
+  }
+
+  // The weighted price of the sales that set the price is already under the
+  // ask. Leave it. Do not test the list tier, and do not pull again.
+  if (leaveWeightedPriceUnderAsk(pricing, ask)) {
+    reanchorSellerNet(pricing)
+    return {
+      applied: false,
+      cappedTo: null,
+      uncappedRecommended: null,
+      belowRange: pricing.failedAskBelowRange === true,
+    }
+  }
+  if (askBand && ask < askBand.low) {
+    const evidenceRec = priorBefore.get('recommended') ?? pricing.recommended
+    // No weighted price under the ask. The list tier is already under that
+    // ask: leave it. Do not pin the list up onto a sale, and do not cut again.
+    if (evidenceRec < ask) {
+      reanchorSellerNet(pricing)
+      return { applied: false, cappedTo: null, uncappedRecommended: null, belowRange: true }
+    }
   }
 
   let recent = false
@@ -1391,8 +1455,9 @@ export function applyFailedAskCap(
     askInsideBand && !hasStoredBelowRangeReason(pricing)
       ? Math.max(ceilings.highEnd.value, recCeil)
       : ceilings.highEnd.value
-  // Comps under the failed ask stay. Comps at or above it come under the ask
-  // by the small step in priceUnderFailedAsk. A percentile ceiling must not
+  // The list tier, used when no weighted price is under the ask. A list tier
+  // under the ask stays. A list tier at or above it comes under the ask by
+  // the small step in priceUnderFailedAsk. A percentile ceiling must not
   // take a second cut off a price that is already under, and it must not
   // leave the recommendation sitting on the ask.
   const evidenceRec = priorBefore.get('recommended') ?? pricing.recommended
