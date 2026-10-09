@@ -215,7 +215,13 @@ export function readRrSessionId(): string | undefined {
 // ----------------------------------------------------------------------------
 // Landing page context — UTM capture + sessionStorage persistence.
 // See marketing_brain_skills/tools_registry/ga4-instrumentation/SKILL.md for
-// the LP tracking convention this implements.
+// the LP tracking convention this implements. trackLandingPageView (the only
+// writer of rr_lp_context and the only sender of view_landing_page) has had no
+// caller since LandingPageTracker was deleted on 2026-09-09, after the /lp
+// pages it ran on 308'd on 2026-09-06. GA4 property 527333348 held no
+// view_landing_page event from 2026-08-01 to 2026-10-09 (Data API, read that
+// day), so the three GA4 audiences in scripts/ga4-admin.mjs that need it are
+// empty. getLpContext therefore reads the URL only in practice.
 // ----------------------------------------------------------------------------
 
 export type LpContext = {
