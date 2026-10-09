@@ -6,6 +6,7 @@
  * terms. Anchors name the type ("Brasada Ranch houses") so the two URLs do
  * not bid for the same phrase.
  */
+import { communityPath } from '@/lib/communities/community-public-pair'
 import type { PlaceBuyerGroup } from './community-stock-types'
 
 export const COMMUNITY_ANSWER_SLUGS = [
@@ -39,19 +40,19 @@ export function communityTypeDownLinks(input: {
   const out: CommunityTypeDownLink[] = []
   if (present.has('homes')) {
     out.push({
-      href: `/communities/${slug}/types/single-family`,
+      href: `${communityPath(slug)}/types/single-family`,
       label: `${name} houses`,
     })
   }
   if (slug === 'broken-top' && present.has('attached')) {
     out.push({
-      href: `/communities/${slug}/types/townhomes`,
+      href: `${communityPath(slug)}/types/townhomes`,
       label: `${name} townhomes`,
     })
   }
   if (present.has('lots')) {
     out.push({
-      href: `/communities/${slug}/types/lots-and-land`,
+      href: `${communityPath(slug)}/types/lots-and-land`,
       label: `${name} lots`,
     })
   }

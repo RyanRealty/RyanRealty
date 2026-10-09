@@ -23,6 +23,7 @@
  * same reason: a figure frozen in JSON is stale the day it ships.
  */
 
+import { communityPath } from '@/lib/communities/community-public-pair'
 import type { V3QuietItem } from '@/components/site/v3'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import type { PlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
@@ -426,5 +427,5 @@ function guideRedirectsToCommunity(postSlug: string, communitySlug: string): boo
   const path = `/blog/${postSlug.trim().toLowerCase()}`
   if (!redirectsAwayFromSearch(path)) return false
   const dest = (LEGACY_REDIRECTS[path] ?? '').replace(/\/+$/, '').toLowerCase()
-  return dest === `/communities/${communitySlug}`
+  return dest === communityPath(communitySlug)
 }
