@@ -276,6 +276,10 @@ export function competitionSetWithoutSubject(
           unlikeCount: set.unlikeCount,
           shortOfFive: set.shortOfFive,
           rivals,
+          subject:
+            subject && typeof subject === 'object'
+              ? (subject as { beds?: number | null; baths?: number | null })
+              : null,
         })
       : null
   return { lo: set.lo, hi: set.hi, activeCount, pendingCount, rivals, sentence: recounted }

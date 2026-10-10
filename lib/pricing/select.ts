@@ -41,6 +41,7 @@ import {
   selectPricingFactsPool,
   selectSeniorCommunityListingKeys,
   selectListingBathSplits,
+  selectListingUnitNumbers,
   RECENT_CLOSE_CATCH_UP_DAYS,
   type PricingFactsCatchUp,
 } from '@/lib/data/pricing/facts'
@@ -79,6 +80,7 @@ export function cmaSubjectToPricing(
   return {
     listingKey: subject.listingKey,
     streetAddress: subject.streetAddress,
+    unitNumber: subject.unitNumber ?? null,
     city: subject.city,
     citySlug: citySlug(subject.city),
     subdivision: subject.subdivision,
@@ -246,9 +248,10 @@ export async function selectPricingComps(
   // evidence either way.
   // The MLS full / half bath split, also only on listings: the room rule
   // compares full baths, and facts `baths` counts a powder room whole.
-  const [seniorKeys, bathSplits] = await Promise.all([
+  const [seniorKeys, bathSplits, unitNumbers] = await Promise.all([
     selectSeniorCommunityListingKeys([...byKey.keys()]),
     selectListingBathSplits([...byKey.keys()]),
+    selectListingUnitNumbers([...byKey.keys()]),
   ])
   const sales = [...byKey.values()].map((s) => ({
     ...s,
@@ -256,6 +259,7 @@ export async function selectPricingComps(
     seniorCommunityYn: seniorKeys.has(s.listingKey) ? true : null,
     bathsFull: bathSplits.get(s.listingKey)?.full ?? null,
     bathsHalf: bathSplits.get(s.listingKey)?.half ?? null,
+    unitNumber: unitNumbers.get(s.listingKey) ?? null,
   }))
   // Touching plats, closest first. When this home has a neighborhood, a plat
   // with inNeighborhood false stays out. Null means no polygon was tested and

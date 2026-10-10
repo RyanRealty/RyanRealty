@@ -273,12 +273,15 @@ describe('the size bracket seats a sale with the picker’s one-room decision (r
     const taosComp = comps.find((c) => c.listingKey === 'TAOS')!
     expect(taosComp.roomDecision?.ok).toBe(true)
     // The grid row a reader sees beside the sale.
-    expect(roomAdjustmentWords(taosComp.roomDifference)).toBe('One bathroom off yours. No dollar adjustment.')
+    expect(roomAdjustmentWords(taosComp.roomDifference)).toBe(
+      'One bathroom off yours. It counts for less. No dollar adjustment.',
+    )
 
     const adjusted = adjustComps(cmaSubjectOf(subject), comps, null)
     const contract = contractFor(subject, adjusted)
     expect(roomCheck(contract).pass).toBe(true)
-    expect(roomCheck(contract).detail).toMatch(/own ground .* disclosed/)
+    expect(roomCheck(contract).detail).toMatch(/counts for less/)
+    expect(roomCheck(contract).detail).toMatch(/No dollar value is applied to the room/)
   })
 
   it('cma-63264-rossby: one bedroom apart in a next-row plat inside the mapped neighborhood is seated and passed', () => {
@@ -349,13 +352,13 @@ describe('the size bracket seats a sale with the picker’s one-room decision (r
     const contract = contractFor(subject, adjusted)
     expect(roomCheck(contract).pass).toBe(true)
     expect(roomAdjustmentWords(comps.find((c) => c.listingKey === 'VISTA_MEADOW')!.roomDifference)).toBe(
-      'One bedroom off yours. No dollar adjustment.',
+      'One bedroom off yours. It counts for less. No dollar adjustment.',
     )
   })
 
-  it('never seats a sale the rule refuses: two full baths apart, and the bracket takes the next eligible home', () => {
+  it('never seats a sale the rule refuses: three full baths apart, and the bracket takes the next eligible home', () => {
     const subject = subjectOf({})
-    const twoApart = taos({ bathsFull: 4, bathsHalf: 0, baths: 4 })
+    const twoApart = taos({ bathsFull: 5, bathsHalf: 0, baths: 5 })
     // Farther in size than Taos, so it is the bracket's second choice.
     const sameRooms = taos({
       listingKey: 'NEXT_LARGER',
@@ -376,7 +379,7 @@ describe('the size bracket seats a sale with the picker’s one-room decision (r
     expect(seated?.roomDecision?.notes).toEqual([])
   })
 
-  it('never seats a one-room sale off own ground: a touching plat with no shared name, neighborhood or street', () => {
+  it('seats a one-room sale on a touching plat the bracket already reaches', () => {
     const { subject, own } = redmondPlat()
     const offGround = redmondSale({
       listingKey: 'EAST',
@@ -393,10 +396,10 @@ describe('the size bracket seats a sale with the picker’s one-room decision (r
       latitude: 44.2565,
       longitude: -121.1545,
     })
-    const refused = walkPricingLadder(subject, [...own, offGround], { asOf })
-    expect(refused.comps.find((c) => c.listingKey === 'EAST')).toBeUndefined()
-    // The same home at the subject's room counts is seated by the bracket, so
-    // the room rule, not another wall, is what kept the first one out.
+    const seated = walkPricingLadder(subject, [...own, offGround], { asOf })
+    const east = seated.comps.find((c) => c.listingKey === 'EAST')
+    expect(east?.selectionTier).toBe('gla-bracket')
+    expect(east?.roomDifference).toEqual(['baths'])
     const control = walkPricingLadder(subject, [...own, { ...offGround, baths: 2, bathsFull: 2 }], { asOf })
     expect(control.comps.find((c) => c.listingKey === 'EAST')?.selectionTier).toBe('gla-bracket')
   })
@@ -429,7 +432,7 @@ describe('the size bracket seats a sale with the picker’s one-room decision (r
 })
 
 describe('the accuracy contract decides an unstamped sale on the subject’s own ground', () => {
-  it('passes a one-room sale inside the mapped neighborhood when handed the subject’s location, and refuses it with the room counts alone', () => {
+  it('passes a one-room sale from the room counts alone', () => {
     const subject = subjectOf({})
     const out = walkPricingLadder(subject, [...ownPlatSmaller(), taos()], { asOf })
     const comps = out.comps.map(pricingSaleToCmaComp)
@@ -437,13 +440,10 @@ describe('the accuracy contract decides an unstamped sale on the subject’s own
     const unstamped = comps.map((c) => (c.listingKey === 'TAOS' ? { ...c, roomDecision: null, roomDifference: null } : c))
     const adjusted = adjustComps(cmaSubjectOf(subject), unstamped, null)
     expect(roomCheck(contractFor(subject, adjusted, true)).pass).toBe(true)
-    // The contract handed only room counts cannot see the neighborhood, which
-    // is the failure cma-20435-powder-mountain and cma-63264-rossby hit.
     const bare = roomCheck(contractFor(subject, adjusted, false))
-    expect(bare.pass).toBe(false)
-    expect(bare.detail).toBe(
-      "Comp 60645 Taos is 3 bed / 3 full bath against this home's 3 bed / 2 full bath, a room gap the one-room rule refuses.",
-    )
+    expect(bare.pass).toBe(true)
+    expect(bare.detail).toMatch(/counts for less/)
+    expect(bare.detail).toMatch(/No dollar value is applied to the room/)
   })
 })
 

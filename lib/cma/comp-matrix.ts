@@ -775,7 +775,7 @@ export function sizeAdjustmentCell(
  * away on a set where every sale matches.
  */
 function roomAdjustmentCell(comp: CmaAdjustedComp): string {
-  return roomAdjustmentWords(comp.roomDifference ?? [])
+  return roomAdjustmentWords(comp.roomDifference ?? [], comp.roomDecision?.gap)
 }
 
 /** The adjustment-grid cells for one closed sale, in ADJUSTMENT_ROWS order. */

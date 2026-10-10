@@ -119,14 +119,10 @@ function price(subject: CmaSubject, adjusted: CmaAdjustedComp[], holdFailedAskUn
   })
 }
 
-describe('1. the street-anchor twin at the low end is set aside like any end sale (120 Benaiah)', () => {
-  // The 2026-10-07 review's repro: the twin at $500,000 and five sales at
-  // $600,000 to $680,000 printed $550,000 under a $600,000 to $660,000 band.
-  // That review released the twin back into the range so the band reached
-  // the capped price. Matt's ruling on 915 Saginaw (2026-10-08, "Trim
-  // normally") replaced that: the printed range is always the trimmed range,
-  // the twin is the lowest adjusted sale, so it is set aside with the highest
-  // and the same-street cap does not set the price. One sale never decides it.
+describe('1. the street-anchor twin stays in the price (120 Benaiah)', () => {
+  // The twin at $500,000 and five sales at $600,000 to $680,000. Every sale
+  // stays (Matt 2026-10-09). The twin is the low, so the same-street cap
+  // holds the list at $550,000, inside $500,000 to $680,000.
   const adjusted = [
     sale('T', '120 Benaiah Ln', 500_000),
     sale('A', '1 Other St', 600_000),
@@ -136,25 +132,23 @@ describe('1. the street-anchor twin at the low end is set aside like any end sal
     sale('E', '5 Other St', 680_000),
   ]
 
-  it('sets the twin aside with the high end, keeps it out of the weights, and does not cap', () => {
+  it('keeps the twin in the weights and caps the list inside the full spread', () => {
     const p = price(subjectOf(), adjusted)
     expect(p).not.toBeNull()
-    expect(p!.streetAnchor).toMatchObject({ listingKeys: ['T'], setAside: true, capped: false, ceiling: 550_000 })
-    expect(p!.recommended).not.toBe(550_000)
-    expect(p!.recommended).toBeGreaterThanOrEqual(600_000)
-    expect((p!.setAside ?? []).map((s) => s.listingKey)).toEqual(['T', 'E'])
-    expect(p!.reconciliation?.weights.map((w) => w.listingKey)).not.toContain('T')
+    expect(p!.setAside ?? []).toEqual([])
+    expect(p!.streetAnchor).toMatchObject({ listingKeys: ['T'], setAside: false, capped: true, ceiling: 550_000, after: 550_000 })
+    expect(p!.recommended).toBe(550_000)
+    expect(p!.reconciliation?.weights.map((w) => w.listingKey)).toContain('T')
+    expect(p!.rangeRule?.rule).toBe('min-max')
     expect(p!.rangeRule?.n).toBe(6)
-    expect(p!.rangeRule?.kept).toBe(4)
-    expect(p!.rangeRule?.sentence).toContain('Two of the six sales sat outside every one of them and were set aside')
-    expect(p!.valueLow).toBeGreaterThan(500_000)
+    expect(p!.rangeRule?.kept).toBe(6)
 
     const pinned = pinPrintedBandToSettingSales(p!, adjusted)
-    expect(pinned.valueLow).toBe(600_000)
-    expect(pinned.valueHigh).toBe(660_000)
+    expect(pinned.valueLow).toBe(500_000)
+    expect(pinned.valueHigh).toBe(680_000)
+    expect(pinned.recommended).toBe(550_000)
     expect(pinned.recommended).toBeGreaterThanOrEqual(pinned.valueLow)
-    expect(pinned.rangeRule?.sentence).toContain('$600,000 to $660,000')
-    expect(setAsideRows(pinned, adjusted).map((r) => r.address)).toEqual(['120 Benaiah Ln', '5 Other St'])
+    expect(setAsideRows(pinned, adjusted)).toEqual([])
 
     const letter = evaluateLetterConsistencyContract({
       html: '<p></p>',
@@ -166,7 +160,6 @@ describe('1. the street-anchor twin at the low end is set aside like any end sal
     const byId = new Map(letter.checks.map((c) => [c.id, c]))
     expect(byId.get('recommended-at-or-above-band-low')?.pass).toBe(true)
     expect(byId.get('band-overlaps-closed-comps')?.pass).toBe(true)
-    expect(byId.get('band-overlaps-closed-comps')?.detail).toContain('the highest and lowest set aside')
   })
 
   it('a recommendation under the printed band low with no failed-ask ceiling fails the build and the letter', () => {
@@ -216,23 +209,23 @@ describe('2. set-aside rows match by listing key, not by a unit-less address', (
   const unitSale = (key: string, address: string, adj: number) =>
     sale(key, address, adj, { sqft: 1200, beds: 2, subdivision: 'Kenwood', propertySubType: 'Townhouse' } as Partial<CmaAdjustedComp>)
   const adjusted = [
-    unitSale('U1', '100 Main St', 500_000), // highest, set aside
-    unitSale('U2', '100 Main St', 470_000), // kept, same building, same printed address
+    unitSale('U1', '100 Main St', 500_000),
+    unitSale('U2', '100 Main St', 470_000),
     unitSale('A', '1 Other St', 440_000),
     unitSale('B', '2 Other St', 450_000),
     unitSale('C', '3 Other St', 460_000),
-    unitSale('D', '4 Other St', 420_000), // lowest, set aside
+    unitSale('D', '4 Other St', 420_000),
   ]
 
-  it('keeps U2 in the pinned band, the grid and the cover band', () => {
+  it('keeps both homes at the same address in the pinned band', () => {
     const p = price(unitSubject, adjusted)
     expect(p).not.toBeNull()
-    expect((p!.setAside ?? []).map((s) => s.listingKey).sort()).toEqual(['D', 'U1'])
+    expect(p!.setAside ?? []).toEqual([])
     const pinned = pinPrintedBandToSettingSales(p!, adjusted)
-    expect(pinned.valueLow).toBe(440_000)
-    expect(pinned.valueHigh).toBe(470_000)
-    expect([...setAsideCompIndexes(pinned, adjusted)].sort()).toEqual([0, 5])
-    expect(tableAdjustedBand(adjusted, pinned)).toEqual({ low: 440_000, high: 470_000 })
+    expect(pinned.valueLow).toBe(420_000)
+    expect(pinned.valueHigh).toBe(500_000)
+    expect([...setAsideCompIndexes(pinned, adjusted)]).toEqual([])
+    expect(tableAdjustedBand(adjusted, pinned)).toEqual({ low: 420_000, high: 500_000 })
     const letter = evaluateLetterConsistencyContract({
       html: '<p></p>',
       names: null,
@@ -571,12 +564,12 @@ describe('rule 26: the held letter says both, once (Matt 2026-10-07, "Hold, lett
       const res = applyAskBelowBandHold(p, { lastListPrice: 925_000, auditVerdict: 'pass' })
       expect(res.ok).toBe(true)
       expect(p.hold?.kind).toBe(ASK_BELOW_BAND_KIND)
-      // Six priced, the highest and lowest set aside: four set the band.
-      expect(p.valueLow).toBe(942_000)
-      expect(p.valueHigh).toBe(966_000)
+      // All six sales sit above the failed ask, and all six set the band.
+      expect(p.valueLow).toBe(935_000)
+      expect(p.valueHigh).toBe(975_000)
       const lead = whatItsWorthLead(subject, p, { asOfIso: '2026-10-07', hasFinalCycle: true }, adjusted, finalCycle)
       expect(lead).toBe(
-        'The four sales that set the range support $942,000 to $966,000. Your home did not sell at its last ask of $925,000. The listing sat 120 days and expired.',
+        'The six sales that set the range support $935,000 to $975,000. Your home did not sell at its last ask of $925,000. The listing sat 120 days and expired.',
       )
       for (const bad of FORBIDDEN) expect(lead).not.toContain(bad)
       const letter = evaluateLetterConsistencyContract({ html: `<p>${lead}</p>`, names: null, identity: null, pricing: p, closedComps: adjusted })

@@ -1,88 +1,20 @@
-# Current — 2026-10-08 (Claude Code, CMA engine: Matt's rulings, reviews, fixes)
+# Current — 2026-10-09 (Grok, one rule set and the parkway setback)
 
-Surface: Claude Code. Branch `claude/beautiful-lamport-2x4fjs`. Main was fast-forwarded to `b3132caf5` on 2026-10-08 and PR #428 is closed as merged. Nothing sent, nothing approved. This block supersedes the CMA block in the Earlier block titled "no sign-in on CMA reports, email link host, CMA report improvements": its worktree branches (five-sales floor, ask-in-band hold, same-area rule) are merged on main, and its open questions on Saginaw, curated sets, FSBO asks and the stacked pulls are answered below. Rule numbers are `marketing_brain_skills/producers/cma/SKILL.md` §0.3.
+Surface: Grok. Branch `fix/cma-use-every-seated-sale`. PR #480 (https://github.com/RyanRealty/RyanRealty/pull/480). Prior commits on the branch: `bb2c94806` (up to two bedrooms and two bathrooms off), `3965ca956` (one room off weighs less, and the short-plat quarter-mile size), `60d12eb1c` (condo units and the seated range), `5aaba7e21` (listing-key annotation), `1373d13e9`. This commit makes the price door the picker's 35% cutoff, stops the review and the audit from removing a sale the picker seated, and stops the US-97 frontage band from refusing the next house on the same side of the parkway. Cut from `ba0c2477d`. Not rebased. Land path is `npm run ship` (Matt 2026-10-09). Nothing rebuilt, nothing sent, nothing approved. The 144-home fleet was killed at 82/144 and was not restarted.
 
-**Matt's rulings 2026-10-07**
-- Five price-setting sales is the floor (rule 8).
-- Walk to seven while the same area holds qualifying sales: own ground across its full 24-month window, and stop widening the area at five (rule 8).
-- The printed band is always the trimmed range (rule 8).
-- An ask inside the trimmed band is a hold for Matt (rule 22).
-- Same property type only; a duplex never prices a detached home (rule 23).
-- Actives and expireds come from the sales' own area and rules; plat membership is the recorded polygon (rule 24).
-- Every engine change is scored on the fleet first (rule 25, `npm run cma:fleet`).
-- A home whose every qualifying sale sits above its failed ask is held for Matt and the letter says both: "Hold, letter says both" (rule 26).
-- Curated sets meet the floor.
-- A FSBO ask in the band is information only.
-- The failed-ask pull and the sitting-actives pull stack (rule 16).
+**One rule set (Matt 2026-10-09).** The picker and the review look at the same sales. The one size cutoff is 35% living area, to look and to set the price. A review exclude, a weak weight, and a split across review passes do not remove a sale, change its weight, or refill the set on an automatic build. The audit records a finding and does not drop the sale. Product walls still drop: a different subtype, multi-unit remarks, an ADU the subject does not have, age-restricted housing, and a resale priced as never-owned new construction. A broker-curated set still halves a weak pick and does not drop it. The five-sale floor stays. The citation no longer reads a first-round audit. That snapshot stayed empty once the audit stopped dropping a sale, and the type check rejected the read. There is no earlier round.
 
-**Rulings added since the block was written**
-- Matt 2026-10-07, "Walk to 7, price on 5+", refined: an over-full own ground (own street, own plat, pocket windows) keeps its newest closes first, distance breaking ties. A rung that widens the area adds only the sales needed to reach five, so seats six and seven come only from the home's own ground (rule 8). Consequence: a set reached through a widening rung has exactly five, so one comparability-review drop is a comp shortage.
-- Matt 2026-10-08, "Refill from the same rung": when the review drops a sale from a set that a widening rung reached (exactly five under "only what's needed"), the search takes the next-best sale from that same rung and prices on five. A split vote refills once. In flight on `fix/review-refill`. Until it lands, the consequence above still holds.
-- Matt 2026-10-08, "25% everywhere": one 25% size band for every sale that sets the price (rule 20) and, the same day, for the homes shown as competition and came off unsold (rule 24). 2382 Jackson's 1,393 sqft sale no longer prices the 2,016 sqft home.
-- Matt 2026-10-07: Google reviewer names on the closing page stay. Reviewers are not buyers or sellers (rule 12).
+**US-97 setback.** A pin within 0.1 miles of the TIGER centerline is on the frontage. It splits from a house on the other side, and from a house at least 0.15 miles farther from the centerline. It does not split from the next house on the same side. Hayden Ranch against Diamond Bar Ranch still splits. The line between 20090 Mount Faith and 20052 Badger does not cross the parkway.
 
-**Work merged** (SHAs are the fix commit, then the merge commit)
-- Earlier on 2026-10-07: the three engine branches (five-sales floor with the ask-in-band hold and same type; same-area actives and expireds; the fleet scorer), the reviewers' fixes (sentinel plat names, the GLA bracket wall, the printed-band boundary, the hold measured flag, the queue line), and the trimmed-band letter contract (`1adca31aa`).
-- Band fixes and rule 26: `fix/band-review` `2bcaffb3d`, merge `3ecce563d`.
-- Walk to seven, plus wording and day-count fixes: `fix/walk-to-seven` `f6bdf1fbd`, `fix/reader-clocks` `f9e902a70`, merge `66291e912`.
-- Rule 24 wording and the first handoff block: `docs/cma-handoff-1007` `75bfc9e35`, merge `37544804b`.
-- The CI race fix, an ignore rule for the perf-budget test sandbox: `a99fbd358`.
-- Pocket-letter fixes: `fix/reader-pocket` `254894f21`, merge `36182fb3c`.
-- Atlas tap-target CI fix: `fix/atlas-tap-target` `c868a1f08`, merge `eea9341fa`. Rail rows past the fold are one hidden list. A polygon is a control only with its full-size partner.
-- Location weight by where the sale sits, whole baths from `baths_full` and `baths_half`, rung windows in the trace: `fix/weight-location` `7d3c7f253`, merge `f9ac2b976`.
-- Walk-to-seven review fixes and the seating rulings: `fix/walk7-review` `fbf910633`, merge `8f1c80711`.
-- Comp-pool freshness: `fix/reader-fresh` `fbc79a481`, merge `a5b0ba9e1`. `docs/DAL_INDEX.md` and `docs/DATABASE_SCHEMA_SNAPSHOT.md` were regenerated with `npm run ci:data-access:refresh`. Root cause: `sale_pricing_facts` is refreshed by a sweep in ListingKey order, so a new close reaches the pool only when the sweep passes the end of the keyspace (the newest close was 2026-09-28). Every comp search now catches up closes from the last 90 days before reading the pool, and the cron does the same citywide.
-- The 25% size band: `fix/size-25` `53d0a3d7c` plus `25f8bc775` (the 25% band on the competition fit too), merge `7a11eca9e`.
-- The handoff record: `docs/cma-handoff-1008` `4eee96da8`, merge `b3132caf5`.
+**Read-only walks, catch-up off, 2026-10-09, after this commit's rules.** 2339 Labiche holds 5. The fifth sale is 2735 Crossing, 1,282 sq ft, 28% larger, Northwest Crossing. 20090 Mount Faith holds 5: 20079 Elizabeth and 20052 Badger (High Desert Village, the touching plat), 61336 Elkhorn, 20017 Voltera, and 20041 Voltera. Badger closed 2025-11-21, 1,497 sq ft, 3 bed and 2 bath. 20289 Schaeffer holds 4, the same four Empire Estates townhouses. The closest other townhouses are on Empire in Calaveras, outside Boyd Acres. That parent wall stays. Do not treat Calaveras or Rivers Edge as comps for Schaeffer.
 
-**Landed 2026-10-08.** Main is at `b3132caf5`. On the final tree, `tsc --noEmit` shows 0 errors. `vitest --project unit` over lib/pricing, lib/cma, lib/data, app/actions, lib/bpo, lib/atlas, lib/place and components/site ran 628 files: 7,197 tests passed, 2 skipped. `npm run deploy:verify`: deploy `dpl_AJnZEM3QDniQ8X9K7ZeiJnDDY77G` READY in 369s. ryan-realty.com returned 200. The sitemap.xml, core, geo, content, listings and matrix sitemaps all returned 200. Listings had 7,509 entries, 7,509 with a photo. The live SEO baseline holds: 21 pinned decisions, 0 broken.
+**Earlier one-room walk of the 23 comps-stage failures, not re-run after two rooms or this commit.** 7 reached five and 16 stayed short. That is not a majority. Reach five then: 1027 Albany, 19318 Marshmallow, 19717 Mount Bachelor at 616 sq ft, 20 McCann unit 8, 23 Benaiah, 2545 Awbrey, 2745 Ordway. On McCann, 20 McCann unit 5 and 26 McCann #2 are both 1,604 sq ft, 3 bed and 4 bath, and both closed at $975,000. Look at those two rows before that letter is rebuilt. They may be one sale stamped twice. Still short and not re-probed after this commit: 1015 4th, 111 Hawthorne, 115 Mount Washington, 120 Sisemore, 139 Roosevelt, 1913 Monterey Mews, 19358 Laurelhurst, 19479 Campbell, 19635 Clear Night, 19717 Mt Bachelor Dr at 1,194 sq ft, 20184 Merriewood, 24 Roosevelt. 1940 Monterey Pines held 4 and is Pending, so the on-market gate skips the build.
 
-**Rebuilds on the final engine** (drafts only, nothing sent)
-- Built: 3177 Coho ($551,000 against a $569,000 ask), 3037 Purcell ($545,000 / $565,000; the 2026-10-05 Silver Sage sale is now in its pool), 2745 Aldrich ($479,000 / $495,000).
-- Built and held, ask inside the band: 2382 Jackson ($624,000 / $639,000), 62475 Woodsman ($1,576,000 / $1,600,000, seven sales).
-- Failed: 1648 Pheasant (3 of 5 same type), 1355 Jacksonville and 711 Georgia (no sales inside the neighborhood), 20676 Wild Rose (the review kept 3 of 5), 915 Saginaw (JUDGE_UNSTABLE, 4 of 5).
+**Parks at Broken Top on a Century West price.** 19318 Marshmallow seated 19527 Mirror Lake and 61387 Cultus Lake. 19635 Clear Night seated 61519 Cultus Lake. All three carry the MLS name Parks At Broken Top and resolved to market area bend-century-west. The resort registry removed that plat from Broken Top on 2026-08-26. Do not add the alias back unless Matt says that plat name stays out of a Century West price.
 
-**Two defects found by the fleet score on the landed code** (fixes in flight)
-- `fix/bath-contract`: the accuracy contract's bath-count-match check read bath totals while the picker compared full baths. It failed homes the picker kept: 1117 Milwaukee, 1122 Foxwood, 1624 Overlook.
-- `fix/review-refill`: the "Refill from the same rung" ruling above.
+**Not this change.** The expired and for-sale chapters are still the old sale-plat freeze. Plat-walk work is git stash `plat-walk wip 2026-10-09`. Do not pop it. Do not rebuild until Matt names the letters. Keats and Remarkable stay delivered. Oakview stays a hold. Do not drop the five-sale floor. Room weights from `bb2c94806` stay: one bedroom 0.85, two bedrooms 0.70, one bathroom 0.90, two bathrooms 0.75.
 
-**Baseline fleet score on the live engine** (scratch run, 141 open Bend expired CMAs): 112 build, 29 fail. Of the 112 builds, 89 sit on five sales and 23 on three or four. Those 23 fail the new floor unless the walk finds more in their own area.
-
-**CMA work: read [`docs/plans/CMA_HANDOFF.md`](CMA_HANDOFF.md) first** (on branch `claude/beautiful-lamport-2x4fjs` until it lands on main). It holds the live state, the in-flight branches, the fleet baseline, the ten drafts, the briefs and the next steps.
-
-**Evening 2026-10-08 (branch at `011530cbc`, pushed; main at `95af9d7bd`, deploy `dpl_33tipxiwy9fhkoDr9UgkMZ2KQSSP` verified).** Main took anchor-family, listing-days, wording-2, rival-fit, trim-over-anchor and street-key (whole street name), and all ten drafts were rebuilt on it. A final reader pass on all ten found defects, fixed on branches and merged here (not yet on main, not rebuilt):
-- One decision for "on the subject's ground" by plat polygon, any MLS spelling: `fix/plat-identity` `fceb282b5` (`lib/pricing/plat-ground.ts`; listings ladder own-plat rungs, place block, came-off and band reads). 1355 Jacksonville now finds 1367 Milwaukee ("Northwest Townsite Co 2nd Addt"); 915 Saginaw's competition now sees 733 Saginaw and 1340 Trenton.
-- Wording round 3: `fix/letter-wording-3` `0ea6cb430` (clamped held covers read "set the range"; pin note; whole elapsed months; tied top weights; held net title; lot-size disclosure under rule 20; "Your last ask was").
-- Wording round 4: `fix/letter-wording-4` `f6fc98a62` (came-off homes print their own asks and the true reason; compact money labels exact and distinct; chips carry the close month; competition and on-market closing wording).
-
-**Matt's rulings, evening 2026-10-08:** an on-market subject's opinion of value is the likely sale the weighted sales point to (rule 27; Kelly Hill $716,000, not the $733,000 list figure); relisted homes use one clock, their last stretch, with first ask from that stretch and a label (rule on listing days); a recorded addition or phase in the same neighborhood is the home's own subdivision everywhere, pricing weights included (rule 24); the held letter says the home "did not sell at its last ask", never "buyers passed" (rule 26). Fix branches in progress: `fix/on-market-value`, `fix/relist-clock`, `fix/plat-ground-facts`.
-
-**Next:** merge those three, fleet score (rule 25), Matt's yes, open a PR to `main`; Matt merges. After he merges, `npm run deploy:verify`, rebuild the ten drafts (drafts only), one more reader pass, links to Matt. Nothing sends without his per-report approval.
-
-**Later on 2026-10-08 (branch at `31382ad9e`, pushed; main still at `055307bea`, deploy `dpl_Fawmm7GctKY8GfeAmpscB4dGquYB` verified).** Three reader reviews (Purcell, Jackson, Woodsman) and one of a new regular CMA (3062 NW Kelly Hill, built at Matt's request while listed with eXp Realty, slug `cma-3062-nw-kelly-hill`) found letter defects; all fixed on branches and merged here, nothing rebuilt or sent yet:
-- Ask history drops sub-1% cuts (Woodsman's Apr 30 $1,680,000) and the in-range story claimed a whole listing sat inside the range: `fix/ask-story` `36f0b30e4` (any ask change is a step; days above vs inside the range are counted; "without an offer" is gone; the neighborhood is introduced).
-- Held letters read as settled, orphan per-foot sentence, untraceable band center: `fix/held-wording` `4c815d451`. The net column head stays words, not dollars (`50a1bd36a`): "At the list price", "At the price on the cover" when held (Matt lock 2026-09-12).
-- Map legend called set-aside sales price-setting, pages pointed at maps they lacked, empty did-not-sell pages: `fix/map-pages` `c263a6fbb`.
-- Grid columns did not foot where a sale had a seller credit: `fix/grid-concession` `b8eef9e04`.
-- "712 homes" did not say single-family and the month line read a different population: `fix/market-supply` `110e7cf68` (712 / 204 / 3.5 are right under Market Truth D1/D5/D27; the reviewers' 4.4 mixed two populations).
-- Pocket date record said the Bend index was unused while it moved sales: `fix/date-basis` `002a63591`.
-- A home on the market got a pitch (Our Recommended List Price, List in that range, our fee) and counted its own listing as competition: `fix/on-market-subject` `879746c8b`, SKILL rule 27.
-- Picker vs contract room decision (20435 Powder Mountain, 63264 Rossby): `fix/room-contract` `f3af0799a`.
-- A failed build now keeps its reason trail on `build_summary.last_failure`: `fix/failure-trace` `3d4c4d0db` (main).
-
-**Matt's rulings 2026-10-08 (all in SKILL.md §0.3, all merged here):** ADU sale skips (rule 23, `fix/adu-skip` `598a785c5`); one 20% price line from the independent anchor for search and review, and lot size under one acre is disclosed, never a drop (rule 20, `fix/tier-lot` `b2f7133e5`); refill stays on the same rung (rule 8); 3% for everyone, the 2.5% expired sheet retired (rule 27, `fix/fee-3pct` `62cd60de8`); only real communities wall the search (rule 8, `fix/community-wall` `aded296cc`; 1355 Jacksonville builds at $732,000 on five River West sales in the dry run); own-ground sales move down with the Bend index only when the letter's own local read fell (rule 15, `fix/pocket-local-date` `faf3362b5`; Woodsman's sales now stand at sold price, Shevlin West held flat). Fleet result on `055307bea` accepted by Matt (101 of 140 build; the new failures were his five-sale floor).
-
-**Next:** the final fleet score on `31382ad9e` (rule 25) goes to Matt; on his yes, open a PR to `main`; Matt merges. After he merges, `npm run deploy:verify`, rebuild Coho, Aldrich, Purcell, Jackson, Woodsman, Saginaw, Pheasant, Wild Rose, Jacksonville and Kelly Hill (drafts only), a reader pass, then links to Matt. Open: the public listing read (`lib/pricing/select.ts` `priceSubjectFromFacts`, cron stamp) still walks pocket sales down with no local read; whether Matt's own-ground date rule applies to the public listing page is his call. Cedar Ridge is on the real-derived-community list but no recorded plat carries it.
-
-**Still open**
-- The after-change fleet score against the 2026-10-07 baseline. The first run was lost to a worker restart at 85 of 141. The rerun on `b3132caf5` is in progress. It will be run again on the fixed code for the affected homes.
-- Matt's per-report approval for every rebuilt draft. None has been sent; nothing sends without it.
-- A second reader review.
-- Flex gold lock tests in `lib/pricing/match.test.ts` are `it.skip` pending Matt.
-- The CLAUDE.md restructure Matt approved, for after the CMA engine work.
-- Carried unchanged from the Earlier CMA block: Burnside's date-adjustment check; 139 Roosevelt and 714 10th finding zero sales inside their neighborhoods.
-
-Skills read this pass: `marketing_brain_skills/producers/cma/SKILL.md`, `marketing_brain_skills/brand-voice/VOICE.md`.
+Skills read: `marketing_brain_skills/producers/cma/SKILL.md`.
 
 ## Earlier — 2026-10-07 (Claude Code, Studio motion stage, paper films and the score from prompt-motion.com, true-shape listing video, production ffmpeg, D113 repair, You Should Know plugin)
 

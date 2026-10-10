@@ -17,18 +17,24 @@ describe('roomCountVerdict — adjust inside, wall outside', () => {
     expect(roomCountVerdict(3.5, 3, { local: false })).toBe('match')
   })
 
-  it('uses one room apart only on the home’s own ground, and says so', () => {
+  it('keeps one room apart wherever the search already reached, and says so', () => {
     expect(roomCountVerdict(4, 3, { local: true })).toBe('noted')
-    expect(roomCountVerdict(4, 3, { local: false })).toBe('refuse')
+    expect(roomCountVerdict(4, 3, { local: false })).toBe('noted')
   })
 
-  it('refuses two rooms apart even next door', () => {
-    expect(roomCountVerdict(4, 2, { local: true })).toBe('refuse')
-    expect(roomCountVerdict(2, 4, { local: true })).toBe('refuse')
+  it('keeps two rooms apart wherever the search already reached, and says so', () => {
+    expect(roomCountVerdict(4, 2, { local: true })).toBe('noted')
+    expect(roomCountVerdict(2, 4, { local: false })).toBe('noted')
   })
 
-  it('refuses a bath and a half apart anywhere — 4 against 2.5 is two whole baths', () => {
-    expect(roomCountVerdict(4, 2.5, { local: true })).toBe('refuse')
+  it('refuses three rooms apart even next door', () => {
+    expect(roomCountVerdict(5, 2, { local: true })).toBe('refuse')
+    expect(roomCountVerdict(2, 5, { local: true })).toBe('refuse')
+  })
+
+  it('keeps two whole baths apart, and refuses three', () => {
+    expect(roomCountVerdict(4, 2.5, { local: true })).toBe('noted')
+    expect(roomCountVerdict(4, 1.5, { local: true })).toBe('refuse')
   })
 
   it('treats an unknown count as a data gap, not a mismatch', () => {
@@ -37,8 +43,8 @@ describe('roomCountVerdict — adjust inside, wall outside', () => {
     expect(roomCountVerdict(3, 0, { local: false })).toBe('match')
   })
 
-  it('holds the local gap at one room', () => {
-    expect(ROOM_GAP_LOCAL_MAX).toBe(1)
+  it('holds the gap at two rooms', () => {
+    expect(ROOM_GAP_LOCAL_MAX).toBe(2)
   })
 })
 
@@ -49,14 +55,16 @@ describe('roomCountsUsable — both counts at once', () => {
     expect(r.notes).toEqual(['beds'])
   })
 
-  it('refuses one bedroom and one bathroom apart, even on the home’s own ground', () => {
+  it('keeps one bedroom and one bathroom apart, and names both', () => {
     const r = roomCountsUsable({ beds: 4, baths: 3 }, { beds: 3, baths: 2 }, { local: true })
-    expect(r.ok).toBe(false)
-    expect(r.notes).toEqual([])
+    expect(r.ok).toBe(true)
+    expect(r.notes).toEqual(['beds', 'baths'])
   })
 
-  it('refuses the same sale from across town', () => {
-    expect(roomCountsUsable({ beds: 5, baths: 4 }, { beds: 4, baths: 4 }, { local: false }).ok).toBe(false)
+  it('keeps one room apart from outside the plat too', () => {
+    const r = roomCountsUsable({ beds: 5, baths: 4 }, { beds: 4, baths: 4 }, { local: false })
+    expect(r.ok).toBe(true)
+    expect(r.notes).toEqual(['beds'])
   })
 
   it('carries no note when everything matches', () => {
@@ -65,8 +73,16 @@ describe('roomCountsUsable — both counts at once', () => {
     expect(r.notes).toEqual([])
   })
 
-  it('refuses on either room, not just baths', () => {
-    expect(roomCountsUsable({ beds: 5, baths: 3 }, { beds: 3, baths: 3 }, { local: true }).ok).toBe(false)
+  it('keeps two bedrooms and two bathrooms off, and names both', () => {
+    const r = roomCountsUsable({ beds: 4, baths: 3 }, { beds: 2, baths: 1 }, { local: false })
+    expect(r.ok).toBe(true)
+    expect(r.notes).toEqual(['beds', 'baths'])
+    expect(r.gap).toEqual({ beds: 2, baths: 2 })
+  })
+
+  it('refuses three apart on either room, not just baths', () => {
+    expect(roomCountsUsable({ beds: 6, baths: 3 }, { beds: 3, baths: 3 }, { local: true }).ok).toBe(false)
+    expect(roomCountsUsable({ beds: 3, baths: 5 }, { beds: 3, baths: 2 }, { local: true }).ok).toBe(false)
   })
 })
 
@@ -76,13 +92,22 @@ describe('roomDifferenceSentence', () => {
     expect(roomDifferenceSentence(null)).toBeNull()
   })
 
-  it('names the room and refuses to invent a dollar value', () => {
+  it('names the room, says it counts for less, and refuses to invent a dollar value', () => {
     const s = roomDifferenceSentence(['baths'])!
     expect(s).toContain('bathroom')
+    expect(s).toContain('counts for less')
     expect(s).toContain('No dollar value is applied')
+    expect(s).not.toContain('—')
   })
 
   it('names both rooms in one sentence', () => {
-    expect(roomDifferenceSentence(['beds', 'baths'])).toContain('bedroom and bathroom')
+    expect(roomDifferenceSentence(['beds', 'baths'])).toContain('One bedroom and one bathroom')
+  })
+
+  it('names a two-bedroom gap as two, and still applies no dollar', () => {
+    const s = roomDifferenceSentence(['beds', 'baths'], { beds: 2, baths: 1 })!
+    expect(s).toContain('Two bedrooms and one bathroom')
+    expect(s).toContain('No dollar value is applied')
+    expect(s).not.toContain('—')
   })
 })

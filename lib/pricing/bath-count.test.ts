@@ -54,14 +54,14 @@ describe('one-room rule (rule 4) on whole baths, 915 Saginaw shape', () => {
     const d = roomCountsDecision(subject, { ...VICKSBURG, beds: 4, marketArea: 'bend-river-west' })
     expect(d).toMatchObject({ ok: true, notes: [] })
     const totalsOnly = roomCountsDecision({ beds: 4, baths: 3 }, { beds: 4, baths: 2, marketArea: null })
-    expect(totalsOnly.ok).toBe(false)
+    expect(totalsOnly).toMatchObject({ ok: true, notes: ['baths'] })
   })
 
-  it('1168 Federal (3 full) is one whole bath apart: kept and disclosed in River West, refused off it', () => {
+  it('1168 Federal (3 full) is one whole bath apart: kept and disclosed in River West and off it', () => {
     const home = roomCountsDecision(subject, { ...FEDERAL, beds: 4, marketArea: 'bend-river-west' })
     expect(home).toMatchObject({ ok: true, notes: ['baths'] })
     const away = roomCountsDecision(subject, { ...FEDERAL, beds: 4, marketArea: 'bend-awbrey-butte' })
-    expect(away.ok).toBe(false)
+    expect(away).toMatchObject({ ok: true, notes: ['baths'] })
   })
 })
 

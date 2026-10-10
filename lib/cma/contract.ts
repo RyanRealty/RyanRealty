@@ -305,7 +305,7 @@ export function evaluateAccuracyContract(args: {
       : crossRoom
         ? `Comp ${crossRoom.comp.address} is ${comparedRoomsText(crossRoom.decision.compared, 'sale')} against this home's ${comparedRoomsText(crossRoom.decision.compared, 'subject')}, a room gap the one-room rule refuses.${notCompared}`
         : roomNoted > 0
-          ? `Every priced sale matches the subject's ${subjectRooms} counts, except ${roomNoted} on this home's own ground that sit one room away and are disclosed as such.${notCompared}`
+          ? `Every priced sale matches the subject's ${subjectRooms} counts, except ${roomNoted} that sit as many as two bedrooms or two bathrooms off. Each one counts for less, and each is disclosed. No dollar value is applied to the room.${notCompared}`
           : `Every priced sale has a room count the one-room rule allows (${subjectRooms}).${notCompared}`,
   })
   checks.push({

@@ -502,6 +502,15 @@ export function productCompatible(a: ProductKey, b: ProductKey): boolean {
 export const TOWNHOUSE_FACTS_OR =
   'and(product_class.eq.attached,property_sub_type.ilike.%town%),product_class.eq.townhouse'
 
+/**
+ * Condo closes are stored as product_class attached, the same bucket as
+ * townhouses. Bend on 2026-10-09: 158 condo closes since 2024-10-09, every
+ * one attached, zero with product_class condo. An equality on condo returns
+ * an empty pool, which is how 2745 Ordway's own building never entered.
+ */
+export const CONDO_FACTS_OR =
+  'and(product_class.eq.attached,property_sub_type.ilike.%condo%),product_class.eq.condo'
+
 export type FactsProductClause = {
   eq?: ['product_class', string]
   or?: string
@@ -510,6 +519,7 @@ export type FactsProductClause = {
 export function factsProductClauses(productClass: string | null | undefined): FactsProductClause {
   if (!productClass || productClass === 'unknown' || productClass === 'multi-unit') return {}
   if (productClass === 'townhouse') return { or: TOWNHOUSE_FACTS_OR }
+  if (productClass === 'condo') return { or: CONDO_FACTS_OR }
   return { eq: ['product_class', productClass] }
 }
 

@@ -459,7 +459,7 @@ Listing-alerts backend ready (setup PR):
     TypeScript: PASS
     Migration safe: PASS (CREATE IF NOT EXISTS, indexes idempotent)
 
-Matt merges the PR in GitHub to ship.
+npm run ship lands the PR in GitHub to ship.
 ```
 
 Then stop. Wait for Matt to merge.
@@ -470,7 +470,7 @@ Then stop. Wait for Matt to merge.
 
 | approval_type | what it means | who can grant |
 |---|---|---|
-| `matt-review-PR` | Matt merges the GitHub PR (for setup action) | Matt only |
+| `matt-review-PR` | npm run ship lands the GitHub PR (for setup action) | agent |
 | `none` | Digest send + pause + unsubscribe run autonomously after setup | N/A |
 
 This producer uses **`matt-review-PR`** for the one-time setup action, then

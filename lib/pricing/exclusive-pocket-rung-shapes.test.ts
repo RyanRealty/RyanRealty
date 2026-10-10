@@ -106,15 +106,15 @@ describe('wider rungs are not an exclusive pocket', () => {
       subjectSub: 'Cedar Ranch',
     })
     expect(out.exclusive).toBe(false)
-    // The $1,035,511 and $1,487,539 ends are set aside; the kept three run
-    // $1,197,737 to $1,450,453. No city index in the stored row, so the
-    // small upward date move on the oldest same-plat sale is not applied.
+    // All five adjusted prices set the range, $1,035,511 to $1,487,539.
+    // No city index in the stored row, so the small upward date move on
+    // the oldest same-plat sale is not applied.
     expect(out.sales.map((sale) => sale.adjustedPrice)).toEqual([1_487_539, 1_450_453, 1_035_511, 1_197_737, 1_384_717])
-    expect(out.engine.rangeRule?.rule).toBe('trimmed-one-each-end')
-    expect(out.engine.rangeRule?.kept).toBe(3)
-    expect(out.finished.recommended).toBe(1_385_000)
-    expect(out.finished.valueLow).toBe(1_195_000)
-    expect(out.finished.valueHigh).toBe(1_455_000)
+    expect(out.engine.rangeRule?.rule).toBe('min-max')
+    expect(out.engine.rangeRule?.kept).toBe(5)
+    expect(out.finished.recommended).toBe(1_413_000)
+    expect(out.finished.valueLow).toBe(1_035_000)
+    expect(out.finished.valueHigh).toBe(1_490_000)
     expect(out.finished.conservative).toBeLessThanOrEqual(out.finished.recommended)
     expect(out.finished.recommended).toBeLessThanOrEqual(out.finished.highEnd)
   })
@@ -156,18 +156,17 @@ describe('wider rungs are not an exclusive pocket', () => {
     })
     expect(out.exclusive).toBe(false)
     expect(out.sales.map((sale) => sale.adjustedPrice)).toEqual([654_415, 759_173, 699_000, 744_897, 739_398])
-    // Five sales, trimmed (Matt 2026-10-07): the $654,415 and $759,173 ends
-    // are set aside and the kept three run $699,000 to $744,897. The failed
-    // ask of $698,000 then pulls the list under the band.
-    expect(out.engine.rangeRule?.rule).toBe('trimmed-one-each-end')
-    expect(out.engine.rangeRule?.kept).toBe(3)
-    expect(out.finished.valueLow).toBe(699_000)
-    expect(out.finished.valueHigh).toBe(745_000)
-    // The $698,000 ask sits under the band low, so the cap holds the list at
-    // that low (failedAskBelowRange) instead of printing under the sales.
-    expect(out.finished.recommended).toBe(699_000)
+    // All five set the range, $654,415 to $759,173. The $698,000 ask sits
+    // inside that spread. The list finishes at $677,000, under the ask.
+    expect(out.engine.rangeRule?.rule).toBe('min-max')
+    expect(out.engine.rangeRule?.kept).toBe(5)
+    expect(out.finished.valueLow).toBe(654_000)
+    expect(out.finished.valueHigh).toBe(760_000)
+    expect(out.finished.recommended).toBe(677_000)
     expect(out.finished.conservative).toBeLessThanOrEqual(out.finished.recommended)
     expect(out.finished.recommended).toBeLessThanOrEqual(out.finished.highEnd)
-    expect(misread.finished.recommended).toBe(693_000)
+    // The exclusive misread keeps the same five sales too. Its list moves
+    // because those ends now count.
+    expect(misread.finished.recommended).toBe(692_000)
   })
 })

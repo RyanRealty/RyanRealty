@@ -6,10 +6,10 @@
  * (lib/cma/community-location.ts), not the MLS subdivision string and not a
  * remark. A sale from another community never sets the price, however short
  * the set is (Matt 2026-10-07). Neither does a clearly different size (more
- * than PRICE_SET_SQFT_BAND, 25%, larger or smaller, wherever the search found
- * it: Matt 2026-10-08) or a clearly different product (a cottage versus
- * acreage). A different plat that is not the subject's community is that
- * different community, not a neighbor that still prices the home.
+ * than PRICE_SET_SQFT_BAND, the picker's one cutoff, 35%) or a clearly
+ * different product (a cottage versus acreage). A different plat that is not
+ * the subject's community is that different community, not a neighbor that
+ * still prices the home.
  *
  * Both walks (lib/pricing/match.ts, lib/cma/comps.ts) apply this test at
  * admission: a sale that fails it is not admitted, does not count toward the
@@ -25,7 +25,7 @@
  */
 import { communityForAddress } from '@/lib/cma/community-location'
 import { lotCompatible, normSubdivision } from '@/lib/pricing/classes'
-import { PLAT_SQFT_BAND, PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { PLAT_WIDE_SQFT_BAND, PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 
 export type PriceSetSale = {
   ownPlat?: boolean | null
@@ -42,25 +42,23 @@ export type PriceSetSale = {
 }
 
 /**
- * THE ONE SIZE LIMIT FOR ANY SALE THAT SETS THE PRICE (Matt 2026-10-08, "25%
- * everywhere"): a sale more than 25% larger or smaller than the subject never
- * sets the price, wherever the search found it. 2382 Jackson (2,016 sqft) was
- * priced with 2225 Indigo (2 bed, 1,393 sqft, 30.9% smaller), admitted on a
- * wider rung at full weight because this test read the 35% search band; under
- * the ruling it never sets the price.
+ * THE ONE SIZE LIMIT (Matt 2026-10-09: the picker and the review look at the
+ * same cutoff). The search keeps a sale out to about 35% living area
+ * (PLAT_WIDE_SQFT_BAND, and the listings ladder's LOCATION_SQFT_BAND). That
+ * is the only size cutoff. A sale the wide rung admitted is not refused here
+ * for a tighter gap. 2339 Labiche held four sales until 2735 Crossing
+ * (1,282 sq ft against 1,001, 28% larger) was thrown out by a 25% door the
+ * search had already passed. 2225 Indigo (1,393 sq ft against 2,016, 30.9%
+ * smaller) is inside the same line and sets the price.
  *
- * The same number as the plat rungs' band (PLAT_SQFT_BAND), defined once. The
- * wider rungs (PLAT_WIDE_SQFT_BAND, the touching-plat, next-row and community
- * rungs, the listings ladder's LOCATION_SQFT_BAND) still SEARCH past it; a
- * sale they read between 25% and their band passes the rung's walls and is
- * refused here at the door, counted as not setting, never weighed.
+ * A sale more than 35% off never sets the price. Exactly 35% still does.
+ * Unknown size is not "clearly different".
  */
-export const PRICE_SET_SQFT_BAND = PLAT_SQFT_BAND
+export const PRICE_SET_SQFT_BAND = PLAT_WIDE_SQFT_BAND
 
 /**
  * Living area more than PRICE_SET_SQFT_BAND off the subject's, measured on the
- * subject. Exactly 25% still sets the price; 25.1% does not. Unknown size is
- * not "clearly different".
+ * subject. Exactly 35% still sets the price; just past it does not.
  */
 export function clearlyDifferentSize(
   subjectSqft: number | null | undefined,
@@ -133,13 +131,14 @@ export function notSettingSaleFrom(
 }
 
 /**
- * Whole percent, except just past the 25% line, where a rounded 25 would say
- * the sale is inside the band. 1,574 against 1,201 is 31%.
+ * Whole percent, except just past the cutoff, where a rounded whole percent
+ * would say the sale is inside the band.
  */
 function percentOffLabel(subjectSqft: number, saleSqft: number): string {
+  const line = Math.round(PRICE_SET_SQFT_BAND * 100)
   const hundred = (Math.abs(saleSqft - subjectSqft) / subjectSqft) * 100
   const whole = Math.round(hundred)
-  if (whole > 25) return String(whole)
+  if (whole > line) return String(whole)
   const tenths = Math.ceil(hundred * 10 - 1e-9) / 10
   const text = tenths.toFixed(1)
   return text.endsWith('.0') ? text.slice(0, -2) : text
@@ -149,10 +148,11 @@ function sqftLabel(n: number): string {
   return Math.round(n).toLocaleString('en-US')
 }
 
-/** "1,574 sq ft, 31% larger than this home; sales more than 25% larger or smaller do not set the price" */
+/** "1,634 sq ft, 36% larger than this home; sales more than 35% larger or smaller do not set the price" */
 export function sizeRefusalReason(subjectSqft: number, saleSqft: number): string {
   const direction = saleSqft > subjectSqft ? 'larger' : 'smaller'
-  return `${sqftLabel(saleSqft)} sq ft, ${percentOffLabel(subjectSqft, saleSqft)}% ${direction} than this home; sales more than 25% larger or smaller do not set the price`
+  const line = Math.round(PRICE_SET_SQFT_BAND * 100)
+  return `${sqftLabel(saleSqft)} sq ft, ${percentOffLabel(subjectSqft, saleSqft)}% ${direction} than this home; sales more than ${line}% larger or smaller do not set the price`
 }
 
 function acreText(n: number): string {

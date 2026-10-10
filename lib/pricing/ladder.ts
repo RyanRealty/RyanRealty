@@ -11,8 +11,8 @@
  *      Never rural vs urban. Age, stories, beds, baths, GLA filter first.
  *
  * Hard exclusions run on EVERY rung. Beds and baths use the one-room rule
- * (`lib/pricing/room-counts.ts`): same whole count travels anywhere, one
- * room apart only on own ground, two or more refused everywhere. Soft
+ * (`lib/pricing/room-counts.ts`): one room apart stays and weighs less, two
+ * or more apart is refused everywhere. Soft
  * filters (age/story) start tight and loosen as the ladder widens. A
  * half-bath still matches the same whole count (1 and 1.5 both floor to 1).
  */
@@ -279,11 +279,22 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       'This home sits in a golf or resort community, and that community did not have enough of its own sales even across two years. The sales below come from comparable golf and resort communities in Central Oregon rather than from ordinary neighborhoods nearby, because that is the market a buyer of this home shops against.',
   })
   // Integer quarters so 0.25 + 0.25 does not drift. Through 2 miles.
+  // These steps run only when the plat rows are still short of five (the walk
+  // skips them once that plat, the plats that touch it, and the plats that
+  // touch those already hold five). They use the one size cutoff, 35% to look
+  // and 35% to set the price. Inside a mile they used to demand 15% size, the
+  // same number of stories, and 15 years, so a closer sale lost its seat to a
+  // farther sale the wider ring would take (20289 Schaeffer, Matt 2026-10-09).
+  // Age and stories follow the utilities rung: 25 years, stories not required.
   const distanceRings: PricingTier[] = []
   for (let quarter = 1; quarter <= 8; quarter++) {
     const miles = quarter / 4
-    const apples: AppleStrictness = miles <= 1 ? 'strict' : 'utilities'
-    for (const months of [3, 6, 9] as const) distanceRings.push(near(miles, months, apples))
+    for (const months of [3, 6, 9] as const) {
+      distanceRings.push({
+        ...near(miles, months, 'utilities'),
+        sqftBand: PLAT_WIDE_SQFT_BAND,
+      })
+    }
   }
   const tiers: PricingTier[] = [
     // YOUR OWN STREET, FIRST, WHATEVER THE MLS CALLS THE TRACT (Matt
@@ -499,12 +510,12 @@ export const PRICING_MIN_COMPS = 5
  */
 export const PRICING_WALK_CAP = 7
 /**
- * The floor is the trim threshold: every priced set sets its highest and
- * lowest aside (Matt 2026-10-07, the band is always the trimmed range). A
- * future floor change moves the trim with it on purpose.
+ * The floor is where the range rule starts. At five or more, every seated
+ * sale sets the price and the band is their full adjusted spread (Matt
+ * 2026-10-09). Under five the build already failed, and the rule stays off.
  */
 export const RANGE_TRIM_MIN_N = PRICING_MIN_COMPS
-/** Never peel the range below three kept sales. A five-sale set keeps three. */
+/** Kept so older rows and tests can name the retired three-sale peel. */
 export const RANGE_MIN_KEPT = 3
 /**
  * The search may cross the subject's neighborhood/community boundary only
@@ -720,11 +731,10 @@ export function pocketStopsLaterRungs(args: {
  * the plat this band is the ONLY dimensional test: beds, baths, vintage and
  * story count are all disclosed rather than refused (lib/pricing/match.ts).
  *
- * PLAT_WIDE_SQFT_BAND is a SEARCH band only (Matt 2026-10-08, "25%
- * everywhere"). A sale a wide rung reads past 25% passes the rung's walls and
- * is refused at the door by rule 20 (PRICE_SET_SQFT_BAND in
- * lib/pricing/price-set.ts, equal to PLAT_SQFT_BAND): it never sets the
- * price and never counts toward the five.
+ * PLAT_WIDE_SQFT_BAND is the one size cutoff (Matt 2026-10-09). The wide
+ * rungs search it, and PRICE_SET_SQFT_BAND in lib/pricing/price-set.ts is
+ * the same number. A sale the wide rung admits is not refused for a tighter
+ * living-area gap. A sale more than 35% off never sets the price.
  */
 export const PLAT_SQFT_BAND = 0.25
 export const PLAT_WIDE_SQFT_BAND = 0.35

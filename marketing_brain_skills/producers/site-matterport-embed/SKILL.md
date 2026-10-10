@@ -384,7 +384,7 @@ gh pr create \
 - Design tokens: PASS (shadcn/ui only, no hex)
 
 ## Approval gate
-Matt merges this PR in GitHub. Do NOT approve via the action row in the brain.
+npm run ship lands this PR in GitHub. Do NOT approve via the action row in the brain.
 
 Generated with Claude Code / marketing brain.  site-matterport-embed producer
 EOF
@@ -533,7 +533,7 @@ Draft ready: site-matterport-embed.  <mls_id>
     Description appended: "Includes 3D virtual tour."
     JSON-LD: tourBookingPage = <matterport_url>
 
-Matt merges the PR in GitHub to ship. No additional approval step in the brain.
+npm run ship lands the PR in GitHub to ship. No additional approval step in the brain.
 ```
 
 Then stop. Wait for the merge.
@@ -544,7 +544,7 @@ Then stop. Wait for the merge.
 
 | approval_type | what it means | who can grant |
 |---|---|---|
-| `matt-review-PR` | Matt merges the PR in GitHub | Matt only.  via GitHub UI |
+| `matt-review-PR` | npm run ship lands the PR in GitHub | agent.  via GitHub UI |
 
 This producer does NOT use `matt-review-draft`. The PR is the draft. Matt
 evaluates the diff in GitHub and merges to ship. The action row advances from
@@ -569,7 +569,7 @@ that updates the brain, or via manual status update if the webhook is offline).
         │
         ▼ (PR opened)
       ready        ← executor_response populated with pr_url, branch, files
-        │ Matt merges PR in GitHub
+        │ npm run ship lands PR in GitHub
         ▼
     approved       ← approved_by='matt', approved_at=now()
         │ Vercel build completes

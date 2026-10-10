@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { thisMarketBodyHtml, type OpinionPageArgs } from '@/lib/cma/opinion-pages'
-import { UNSEATED_PRINT_REASON } from '@/lib/pricing/price-set'
+import { sizeRefusalReason, UNSEATED_PRINT_REASON } from '@/lib/pricing/price-set'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { NotSettingSale } from '@/lib/pricing/price-set'
 
-const ALDRICH =
-  '1,574 sq ft, 31% larger than this home; sales more than 25% larger or smaller do not set the price'
+/** 1,634 sq ft is 36% larger than 1,201, past the one 35% cutoff. */
+const PAST_BAND = sizeRefusalReason(1201, 1634)
 
 function args(over: Partial<OpinionPageArgs> = {}): OpinionPageArgs {
   const subject = {
@@ -50,7 +50,7 @@ function args(over: Partial<OpinionPageArgs> = {}): OpinionPageArgs {
           address: '2764 Spring Water',
           closePrice: 525000,
           closeDate: '2025-11-12',
-          sqft: 1574,
+          sqft: 1634,
           photoUrl: null,
           line: '',
         },
@@ -112,14 +112,41 @@ describe('a printed sale that does not set the price says why, once, beside it (
     'h3',
   )
 
-  it('prints the engine size sentence beside 2764 and not inside the chip', () => {
-    expect(html.split(ALDRICH).length - 1).toBe(1)
+  it('prints the engine size sentence beside a sale past 35%, and does not size-refuse 31%', () => {
+    expect(html.split(PAST_BAND).length - 1).toBe(1)
     const spring = chip(html, '2764 Spring Water')
     expect(spring).toContain('street-sale-why')
-    expect(spring).toContain(ALDRICH)
+    expect(spring).toContain(PAST_BAND)
     const anchor = spring.match(/<a class="street-sale"[\s\S]*?<\/a>/)?.[0] ?? ''
-    expect(anchor).not.toContain(ALDRICH)
+    expect(anchor).not.toContain(PAST_BAND)
     expect(anchor).toContain('2764 Spring Water')
+    // The real Spring Water gap, 1,574 against 1,201, is 31%. That sets the
+    // price. A history row at that size that is not in the grid says it is
+    // not one of the sales, and does not invent a size refusal.
+    const inside = thisMarketBodyHtml(
+      args({
+        subdivisionStory: {
+          ...args().subdivisionStory!,
+          notableSales: [
+            {
+              listNumber: '220206710',
+              address: '2764 Spring Water',
+              closePrice: 525000,
+              closeDate: '2025-11-12',
+              sqft: 1574,
+              photoUrl: null,
+              line: '',
+            },
+          ],
+        },
+      }),
+      'h3',
+    )
+    const fitted = chip(inside, '2764 Spring Water')
+    expect(fitted).toContain(UNSEATED_PRINT_REASON)
+    expect(fitted).not.toContain('31%')
+    expect(fitted).not.toContain('more than 25%')
+    expect(fitted).not.toContain('more than 35%')
   })
 
   it('does not label a sale that sets the price', () => {

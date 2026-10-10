@@ -584,6 +584,44 @@ export async function selectListingBathSplits(
   return out
 }
 
+/**
+ * MLS unit numbers for pool sales. sale_pricing_facts has no unit column, so
+ * every unit in a condo building shares one street address. The walk uses the
+ * unit to tell those homes apart (2745 Ordway). A blank unit is left out. A
+ * failed read fails open: the listing key still removes the subject's own row.
+ */
+export async function selectListingUnitNumbers(listingKeys: readonly string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>()
+  const sb = client()
+  if (!sb || listingKeys.length === 0) return out
+  const keys = [...new Set(listingKeys.filter((k) => typeof k === 'string' && k.trim()))]
+  const CHUNK = 150
+  const chunks: string[][] = []
+  for (let i = 0; i < keys.length; i += CHUNK) chunks.push(keys.slice(i, i + CHUNK))
+  const PARALLEL = 4
+  for (let i = 0; i < chunks.length; i += PARALLEL) {
+    const results = await Promise.all(
+      chunks.slice(i, i + PARALLEL).map((chunk) =>
+        // @canonical-key — the keys are sale_pricing_facts.listing_key, which the
+        // facts refresh copies from listings."ListingKey" (migration 20260814020000).
+        sb.from('listings').select('ListingKey, unit:details->>UnitNumber').in('ListingKey', chunk),
+      ),
+    )
+    for (const { data, error } of results) {
+      if (error) {
+        console.error('[selectListingUnitNumbers]', error.message)
+        continue
+      }
+      for (const r of (data ?? []) as Array<{ ListingKey?: unknown; unit?: unknown }>) {
+        if (typeof r.ListingKey !== 'string') continue
+        const unit = typeof r.unit === 'string' ? r.unit.trim() : ''
+        if (unit) out.set(r.ListingKey, unit)
+      }
+    }
+  }
+  return out
+}
+
 /** One-row WaterSource read. Safe: bounded by ListingKey. */
 export async function getListingWaterSource(listingKey: string): Promise<unknown> {
   const sb = client()

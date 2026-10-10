@@ -153,18 +153,17 @@ describe('1. the homes that came off unsold and are not like this one', () => {
       maxWindowMonths: 18,
       priceBand: { lo: 405_000, hi: 1_362_000 },
     })
-    expect(set.count).toBe(0)
+    // McClain at 2,142 sq ft is 26% larger than 1,702, inside the one 35% cutoff,
+    // so it is compared. Summerhill at 3,070 sq ft is not.
+    expect(set.count).toBe(1)
     expect(set.areaTotal).toBe(2)
+    expect(set.likeYours).toBe(true)
     expect(set.sentence).toBe(
-      'We searched listings in Westside Meadows and Skyline West between $405,000 and $1,362,000. Two homes came off the market without selling in the last 18 months, last listed at $895,000 and $999,000. Both are more than 25 percent larger than this home, so they are not compared here.',
+      'Only one home like yours in Westside Meadows and Skyline West came off the market without selling in the last 18 months, and nothing from further out was added to make up the number.',
     )
-    // Both are 3 bed like the subject: no room is named, and no four-way list.
     expect(set.sentence).not.toMatch(/bedroom|bathroom|age\b/)
     expect(set.sentence).not.toContain(EM_DASH)
-    expect(set.unlike).toEqual([
-      { lastAsk: 895000, reason: 'size', direction: 'larger', limit: 25 },
-      { lastAsk: 999000, reason: 'size', direction: 'larger', limit: 25 },
-    ])
+    expect(set.unlike).toEqual([{ lastAsk: 895000, reason: 'size', direction: 'larger', limit: 35 }])
   })
 
   it('1355 Jacksonville: one other home, said as "other" under the seller\'s own listing', () => {
@@ -178,20 +177,20 @@ describe('1. the homes that came off unsold and are not like this one', () => {
       subjectCameOff: true,
     })
     expect(set.sentence).toBe(
-      'We searched listings in Westside Meadows and Skyline West between $405,000 and $1,362,000. One other home came off the market without selling in the last 18 months, last listed at $895,000. It is more than 25 percent larger than this home, so it is not compared here.',
+      'We searched listings in Westside Meadows and Skyline West between $405,000 and $1,362,000. One other home came off the market without selling in the last 18 months, last listed at $895,000. It is more than 35 percent larger than this home, so it is not compared here.',
     )
   })
 
   it('names the room that differs, the years, or the kind of home, and never a reason that is not true', () => {
     const subject = { ...KELLY_SUBJECT, bathsFull: null, bathsHalf: null }
-    // Two baths apart is refused anywhere (rule 4): the bathroom is named, the bedroom is not.
+    // Three baths apart is refused anywhere (rule 4). Two apart stays.
     const rooms = describeUnlikeHome(KELLY_AREA, subject, {
       address: '62685 McClain',
       subdivision: 'Skyline West',
       latitude: 44.0739,
       longitude: -121.3625,
       beds: 3,
-      baths: 4,
+      baths: 5,
       sqft: 1800,
       yearBuilt: 2004,
       propertySubType: 'Single Family Residence',

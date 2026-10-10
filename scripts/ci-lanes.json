@@ -25,6 +25,7 @@
     "ci:pdf-trace-guard",
     "ci:entity-scope",
     "ci:gates-wired",
+    "ci:ship-path",
     "ci:governed-send",
     "ci:hidden-exclusion-surfaces",
     "ci:hooks-installed",

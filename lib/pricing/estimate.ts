@@ -26,7 +26,7 @@ import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject
 import { citySlug, classifyHoa, storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
 import { capClosedCompShares, closedCompWeight } from '@/lib/pricing/closed-comp-weight'
 import { recommendationOutsideSaleSet } from '@/lib/pricing/price-set'
-import { PRICING_MIN_COMPS, RANGE_MIN_KEPT, RANGE_TRIM_MIN_N } from '@/lib/pricing/ladder'
+import { PRICING_MIN_COMPS, RANGE_TRIM_MIN_N } from '@/lib/pricing/ladder'
 import { subjectHasRecordedSubdivision, type SelectedPricingComp } from '@/lib/pricing/match'
 import { closedSaleDomTotal } from '@/lib/cma/listing-history-line'
 import { proximityLabel } from '@/lib/cma/market-area'
@@ -641,9 +641,9 @@ export const TIME_ADJUSTMENT_MEASURE_INDEX = 'median price a square foot, every 
 export const TIME_ADJUSTMENT_MEASURE_YOY = 'median sale price, detached homes'
 
 /**
- * 'min-max' is legacy stored rows only; no production writer since 2026-10-07
- * (Matt: the band is always the trimmed range). Readers keep it so a row
- * built before that date still renders its own sentence.
+ * 'min-max' is the band the pricer writes (Matt 2026-10-09): every seated
+ * sale, low to high. 'trimmed-one-each-end' is a stored row from before
+ * that, and readers still render it.
  */
 export type PricingRangeRuleName = 'trimmed-one-each-end' | 'min-max'
 
@@ -652,7 +652,7 @@ export interface PricingRangeRule {
   rule: PricingRangeRuleName
   /** Sales the rule ran over. */
   n: number
-  /** Sales left after the rule (n, or n − 2). */
+  /** Sales that set the price. A new price keeps n. A stored trimmed row may say fewer. */
   kept: number
   /** The low and high of the PRINTED adjusted sale prices, before any ask step. */
   adjustedLow: number
@@ -691,30 +691,16 @@ export interface PricingRangeRule {
 }
 
 /**
- * SET ASIDE MEANS SET ASIDE (tasteReview round three, §2 item 1).
+ * Every sale that reached this set sets the price (Matt 2026-10-09).
  *
- * The range rule trimmed one sale at each end to draw the range and then
- * the price was reconciled over ALL of them, so on cma-65365-concorde the two
- * sales the document said had been set aside carried 38.4 percent of the
- * recommended price, and on cma-19968 22.3 percent. A reader told a sale was
- * removed will not expect it to be the second-heaviest sale in the answer.
+ * The search already refused a sale that is a different size, product, or
+ * community, or outside the 20% price line. What is left has been adjusted
+ * for concessions, date, and size. The low and the high of those adjusted
+ * prices are the range. Neither end is dropped for being an end.
  *
- * One rule, applied everywhere: at six or more priced sales the single highest
- * and the single lowest adjusted price are set aside. They stay in the grid as
- * evidence and they carry NOTHING — not a weight, not a dollar of the printed
- * price, not an end of the range. This is the one place that decides which
- * sales those are, so the range, the weights, the sentence and the count a
- * reader can check cannot come apart.
- *
- * Then the new ends. On 20506 Murphy the trim left a July 2025 sale at
- * $800,000 carrying a small fraction of the median weight, and that sale
- * drew the top of the shaded range. An end lighter than half the median
- * weight of the sales still in does not set the range. Peel it, the lighter
- * end first, and stop at three sales.
- *
- * The kept and set-aside lists both keep the ORDER they were given: the grid
- * renders in that order and a weight numbered three must be the sale numbered
- * three.
+ * Under the floor the rule stays null: that set already failed. The kept
+ * list is the order the sales were given, so a weight numbered three is the
+ * sale numbered three.
  */
 export function partitionByRangeRule<T extends { adjustedPrice?: number | null; weight?: number | null }>(
   sales: readonly T[],
@@ -723,89 +709,15 @@ export function partitionByRangeRule<T extends { adjustedPrice?: number | null; 
     (s): s is T & { adjustedPrice: number } =>
       s.adjustedPrice != null && Number.isFinite(s.adjustedPrice) && s.adjustedPrice > 0,
   )
-  // Under the floor the rule stays null: that set already failed the floor.
-  // At or above it (RANGE_TRIM_MIN_N is PRICING_MIN_COMPS, Matt 2026-10-07)
-  // the single highest and the single lowest are set aside: five keeps three
-  // (RANGE_MIN_KEPT stops peelLightRangeEnds there), six keeps four, seven
-  // keeps five. Nothing sits between the two thresholds, so there is no
-  // min-max branch.
   if (priced.length < Math.max(PRICING_MIN_COMPS, RANGE_TRIM_MIN_N)) {
     return { priced, kept: priced, setAside: [], rule: null }
   }
-  // Sort a COPY of the indices so ties resolve by position and the original
-  // order survives into both lists.
-  const order = priced.map((_, i) => i).sort((a, b) => priced[a]!.adjustedPrice - priced[b]!.adjustedPrice)
-  const aside = new Set([order[0]!, order[order.length - 1]!])
-  peelLightRangeEnds(priced, aside)
-  return {
-    priced,
-    kept: priced.filter((_, i) => !aside.has(i)),
-    setAside: priced.filter((_, i) => aside.has(i)),
-    rule: 'trimmed-one-each-end',
-  }
+  return { priced, kept: priced, setAside: [], rule: 'min-max' }
 }
 
 /**
- * Drop an end that barely moves the price.
- *
- * Weights are the ones the sales already carry (recency and size). Missing
- * weights leave the one-each-end trim alone. Equal weights sit on the
- * median, so they are never the light end.
- */
-function peelLightRangeEnds(
-  priced: ReadonlyArray<{ adjustedPrice: number; weight?: number | null }>,
-  aside: Set<number>,
-): void {
-  const weights = priced.map((s) =>
-    typeof s.weight === 'number' && Number.isFinite(s.weight) && s.weight >= 0 ? s.weight : null,
-  )
-  if (weights.some((w) => w == null)) return
-  for (;;) {
-    const kept: number[] = []
-    for (let i = 0; i < priced.length; i++) if (!aside.has(i)) kept.push(i)
-    if (kept.length <= RANGE_MIN_KEPT) return
-    const total = kept.reduce((sum, i) => sum + weights[i]!, 0)
-    if (total <= 0) return
-    const keptWeights = kept.map((i) => weights[i]!)
-    const light = medianWeight(keptWeights) * RANGE_END_LIGHT_MEDIAN_FRACTION
-    const ends = (['low', 'high'] as const)
-      .map((side) => lightestAtExtreme(priced, weights, kept, side))
-      .filter((i, idx, arr) => arr.indexOf(i) === idx)
-      .map((i) => ({ i, weight: weights[i]! }))
-      .filter((e) => e.weight < light)
-      .sort((a, b) => a.weight - b.weight)
-    if (ends.length === 0) return
-    aside.add(ends[0]!.i)
-  }
-}
-
-function medianWeight(weights: number[]): number {
-  const sorted = [...weights].sort((a, b) => a - b)
-  const mid = Math.floor(sorted.length / 2)
-  return sorted.length % 2 === 1 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2
-}
-
-/** The lightest sale sitting on the low or high price of the sales still in. */
-function lightestAtExtreme(
-  priced: ReadonlyArray<{ adjustedPrice: number }>,
-  weights: Array<number | null>,
-  kept: number[],
-  side: 'low' | 'high',
-): number {
-  const target =
-    side === 'low'
-      ? Math.min(...kept.map((i) => priced[i]!.adjustedPrice))
-      : Math.max(...kept.map((i) => priced[i]!.adjustedPrice))
-  return kept
-    .filter((i) => priced[i]!.adjustedPrice === target)
-    .sort((a, b) => weights[a]! - weights[b]!)[0]!
-}
-
-/**
- * The printed range, off the partition: the spread of the KEPT sales. Under
- * `trimmed-one-each-end` that is the same low and high the old sorted slice
- * produced — the second-lowest and second-highest — reached the one way that
- * cannot disagree with the weights.
+ * The printed range, off the partition: the lowest and highest adjusted
+ * price of the sales that set the price.
  */
 export function rangeFromPartition(part: {
   priced: readonly { adjustedPrice?: number | null }[]
@@ -1085,16 +997,11 @@ export function syncRangeRuleToHeroBand<T extends { valueLow: number; valueHigh:
  * set the price. Exact dollars. A later thousand-dollar round is a second
  * band, and a sale that weighs nothing does not set either end.
  *
- * THE SET-ASIDE SALES ARE READ BY NAME (Matt 2026-10-07, the band is always
- * the trimmed range). A sale the range rule set aside still carries weight
- * > 0 on renderComps (nothing writes printedWeight in production), so until
- * this change every six-plus-sale letter re-printed min to max here and the
- * rule name was rewritten to 'min-max'. Now the named rows in
- * pricing.setAside are excluded from the pin, the rule name survives (so
- * trimsEachEnd() is true on the stored row and setAsideCompIndexes finds the
- * named rows), and the sentence says how many were set aside. Weight is NOT
- * zeroed on a set-aside row: the contract's comp-floor and the pricer's own
- * floor count them as setters, which they are.
+ * A stored letter can still name sales in pricing.setAside. Those rows are
+ * excluded from the pin, the stored rule name survives, and the sentence
+ * says how many were set aside. A new price names none (Matt 2026-10-09),
+ * so the pin is the lowest and highest adjusted price of the seated sales.
+ * Weight is not zeroed on a stored set-aside row.
  */
 export function pinPrintedBandToSettingSales<
   T extends {
@@ -1342,6 +1249,7 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     listingKey: sale.listingKey,
     mlsNumber: sale.listNumber,
     address: sale.address,
+    unitNumber: sale.unitNumber ?? null,
     city: sale.city,
     subdivision: sale.subdivision,
     subdivisionSlug: sale.subdivisionSlug ?? null,
@@ -1625,16 +1533,9 @@ export function listPriceFromEngine(opts: {
     ? partitionByRangeRule(opts.adjusted)
     : { priced: [], kept: [], setAside: [], rule: null as PricingRangeRuleName | null }
   const part = recPart
-  const endpointSplit =
-    opts.subjectSqft > 0
-      ? splitBandEndpoints(recPart.kept)
-      : { kept: recPart.kept, ppsfAside: 0, weightAside: 0 }
-  const useEndpointKept = endpointSplit.kept.length >= 3
-  const endpointKept = useEndpointKept ? endpointSplit.kept : recPart.kept
-  const range = rangeFromPartition({
-    ...recPart,
-    kept: endpointKept,
-  })
+  // The range is the low and the high of the same sales that set the price.
+  // A seated sale is not peeled off either end after it has been adjusted.
+  const range = rangeFromPartition(part)
   const reconciledValue =
     range != null
       ? weightedAdjustedPrice(
@@ -1747,8 +1648,8 @@ export function listPriceFromEngine(opts: {
           ratiosExcluded,
           saleLow: saleLow ?? undefined,
           saleHigh: saleHigh ?? undefined,
-          endpointPpsfAside: useEndpointKept ? endpointSplit.ppsfAside : 0,
-          endpointWeightAside: useEndpointKept ? endpointSplit.weightAside : 0,
+          endpointPpsfAside: 0,
+          endpointWeightAside: 0,
           // BOTH COUNTS, BY NAME. The sentence states how many sales set the
           // ends and how many were in the set. When the printed band was
           // opened past those sales, it says so instead of calling the opened
@@ -2025,20 +1926,14 @@ export function priceCmaSet(args: {
   // No fill: a sale that does not set the price keeps its weight of 0, and
   // under five that do the pricer returns null (Matt 2026-10-07).
   const adjusted = args.adjusted
-  // The range rule runs FIRST, and the sales it sets aside never reach the
-  // reconciliation: a sale the document says was removed carries none of the
-  // price (tasteReview round three, §2 item 1). `listPriceFromEngine` runs the
-  // same pure partition over the same array, so the printed weights and the
-  // printed number come from one set.
+  // The range rule runs first. It keeps every seated sale (Matt 2026-10-09),
+  // so part.setAside is empty on a new price and every one of those sales
+  // reaches the reconciliation. `listPriceFromEngine` runs the same partition,
+  // so the printed weights and the printed number come from one set. A
+  // same-street sale in that set still anchors. rangeSetAside stays so a
+  // caller that names a removed sale does not let it anchor.
   const priceSetting = adjusted.filter((c) => c.weight > 0)
   const part = partitionByRangeRule(priceSetting)
-  // TRIM NORMALLY (Matt 2026-10-08, 915 Saginaw). A sale on the subject's own
-  // street that the rule set aside as an end (the lowest or highest adjusted
-  // sale) is set aside like any end sale: it is never released back into the
-  // range, it carries no weight, and the same-street cap and the street floor
-  // do not touch the price. One sale never decides the price. The street sale
-  // INSIDE the kept set still anchors exactly as before (lib/cma/pricing.ts
-  // applyStreetAnchor); this ruling is about the trimmed ends only.
   const asideRefs = new Set<CmaAdjustedComp>(part.setAside)
   const asideKeys = new Set(part.setAside.map((s) => s.listingKey).filter(Boolean))
   const rangeSetAside = (c: CmaAdjustedComp): boolean =>
@@ -2157,11 +2052,9 @@ export function priceCmaSet(args: {
         priceOverride: args.input.priceOverride ?? null,
         notes: covered.notes,
         prior: covered.streetAnchor ?? null,
-        // A trimmed end never anchors (Matt 2026-10-08, "Trim normally"). The
-        // sale stays on pricing.setAside, the range rule keeps its counts,
-        // ends and sentence, and the record says it was set aside and did not
-        // cap. Nothing releases it back into the range: the street sale that
-        // anchors is always one the range rule kept.
+        // A sale named in part.setAside does not anchor. A new price names
+        // none, so a same-street sale in the set anchors, including one that
+        // is the low or the high.
         setAside: rangeSetAside,
       },
       { conservative: covered.conservative, recommended: covered.recommended, highEnd: covered.highEnd },
@@ -2176,12 +2069,11 @@ export function priceCmaSet(args: {
       covered.valueHigh = covered.highEnd
       covered.needsReview = true
     }
-    // The coarse pre-pin check reads every sale that passed rule 20, trimmed
-    // ends included: a list carried to an ask may sit over the kept sales
-    // until the pin pulls it onto them. The band check that decides the hold
-    // reads the printed (trimmed) band after the pin (lib/cma/gap-hold.ts
-    // applyAskBelowBandHold): 915 Saginaw's failed-ask pull under all three
-    // kept sales is the rule 26 ask-below-band hold there.
+    // The coarse pre-pin check reads every seated sale. A list carried to an
+    // ask may sit over those sales until the pin pulls it onto them. The
+    // hold reads the printed band after the pin (lib/cma/gap-hold.ts). A
+    // list under every seated sale is not a price, unless the build is
+    // holding a failed-ask pull.
     const settingPrices = adjusted
       .filter((c) => c.weight > 0 && c.adjustedPrice > 0)
       .map((c) => c.adjustedPrice)

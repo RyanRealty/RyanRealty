@@ -1,27 +1,22 @@
 /**
- * TRIM NORMALLY (Matt 2026-10-08, 915 Saginaw).
+ * Every seated sale sets the price (Matt 2026-10-09). A high and a low are
+ * the range. The search is unchanged.
  *
- * The printed range is always the trimmed range. A sale on the subject's own
- * street that is the lowest (or highest) adjusted sale is set aside like any
- * end sale: it is not released back into the range, the same-street cap does
- * not set the price, and the street floor does not set the bottom of the
- * band. One sale never decides the price.
+ * 915 Saginaw: five sales adjusted to 536 Saginaw $727,148 (own street),
+ * 2068 Cascade View $987,577, 335 17th $1,053,909, 628 Portland $1,113,820
+ * and 2258 6th $1,298,050. All five stay. The street sale is the low, so the
+ * same-street cap holds the list at $727,148 x 1.10 = $800,000. The canceled
+ * ask of $925,000 sits inside $727,148 to $1,298,050, which is the ask-in-band
+ * hold.
  *
- * The reader review of cma-915-saginaw: five sales adjusted to 536 Saginaw
- * $727,148 (own street), 2068 Cascade View $987,577, 335 17th $1,053,909,
- * 628 Portland $1,113,820 and 2258 6th $1,298,050. The trim set aside both
- * ends, then the anchor released 536 Saginaw, redrew the band to $727,148 to
- * $1,113,820 and capped the cover at $727,148 x 1.10 = $800,000 under a
- * canceled $925,000 ask. After the ruling the range is the three middle
- * sales, the price is the failed-ask pull, and that price sits under every
- * sale that set it: the rule 26 ask-below-band hold.
- *
- * A same-street sale INSIDE the kept set still anchors (23 Benaiah).
+ * A caller can still name a set-aside sale. That sale does not anchor. The
+ * pricer no longer names the ends. A same-street sale in the set still
+ * anchors (23 Benaiah).
  */
 import { describe, expect, it } from 'vitest'
 import { applyStreetAnchor, computePricing, streetAnchorHolds } from '@/lib/cma/pricing'
 import { pinPrintedBandToSettingSales, priceCmaSet } from '@/lib/pricing/estimate'
-import { applyAskBelowBandHold, applyAskInBandHold, ASK_BELOW_BAND_KIND } from '@/lib/cma/gap-hold'
+import { applyAskBelowBandHold, applyAskInBandHold } from '@/lib/cma/gap-hold'
 import { applyFailedAskCap, reclassifyFailedAskOnPrintedBand } from '@/lib/cma/expired-audit'
 import { setAsideRows } from '@/lib/cma/set-aside'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
@@ -105,7 +100,7 @@ function price(subject: CmaSubject, adjusted: CmaAdjustedComp[], holdFailedAskUn
   })
 }
 
-describe('915 Saginaw: the street sale is the lowest adjusted sale, so it is set aside and does not cap', () => {
+describe('915 Saginaw: the street sale is the low end and stays in the price, so it caps', () => {
   const subject = subjectOf({
     streetAddress: '915 Saginaw Ave',
     standardStatus: 'Canceled',
@@ -120,43 +115,31 @@ describe('915 Saginaw: the street sale is the lowest adjusted sale, so it is set
     sale('S536', '536 Saginaw Ave', 727_148),
   ]
 
-  it('sets both ends aside, keeps the three middle sales, and records an anchor that did not cap', () => {
+  it('keeps all five sales, and the street sale caps the list at $800,000', () => {
     const p = price(subject, adjusted, true)
     expect(p).not.toBeNull()
-    // Both ends, in the grid's order, each with the ordinary end reason.
-    expect((p!.setAside ?? []).map((s) => [s.listingKey, s.end])).toEqual([
-      ['K6', 'high'],
-      ['S536', 'low'],
-    ])
-    expect(p!.setAside!.find((s) => s.listingKey === 'S536')!.reason).toContain('lowest of the adjusted sales')
-    expect(p!.rangeRule?.rule).toBe('trimmed-one-each-end')
+    expect(p!.setAside ?? []).toEqual([])
+    expect(p!.rangeRule?.rule).toBe('min-max')
     expect(p!.rangeRule?.n).toBe(5)
-    expect(p!.rangeRule?.kept).toBe(3)
-    expect(p!.rangeRule?.sentence).toContain('Two of the five sales sat outside every one of them and were set aside')
-    // The street sale carries none of the price.
-    expect(p!.reconciliation?.weights.map((w) => w.listingKey).sort()).toEqual(['K17', 'KCV', 'KPO'])
-    // The record says it was set aside and did not cap.
+    expect(p!.rangeRule?.kept).toBe(5)
+    expect(p!.rangeRule?.sentence).not.toContain('set aside')
+    expect(p!.rangeRule?.sentence).toContain('$727,000 to $1,300,000')
+    expect(p!.reconciliation?.weights.map((w) => w.listingKey).sort()).toEqual(['K17', 'K6', 'KCV', 'KPO', 'S536'])
     expect(p!.streetAnchor).toMatchObject({
       addresses: ['536 Saginaw Ave'],
       listingKeys: ['S536'],
       anchor: 727_148,
       ceiling: 800_000,
-      setAside: true,
-      capped: false,
+      after: 800_000,
+      setAside: false,
+      capped: true,
     })
-    expect(streetAnchorHolds(p!.streetAnchor)).toBe(false)
-    expect(p!.streetAnchor!.after).toBe(p!.streetAnchor!.before)
-    expect(p!.streetAnchor!.after).toBe(p!.recommended)
-    // Not the street cap, and no cap sentence naming a price the page does not print.
-    expect(p!.recommended).not.toBe(800_000)
-    expect(p!.recommended).toBeGreaterThan(800_000)
-    expect(p!.recommended).toBeLessThan(925_000)
-    expect(p!.notes.some((n) => /sits? on the same street/.test(n))).toBe(false)
-    // The hero band never reaches down to the set-aside street sale.
-    expect(p!.valueLow).toBeGreaterThan(727_148)
+    expect(streetAnchorHolds(p!.streetAnchor)).toBe(true)
+    expect(p!.recommended).toBe(800_000)
+    expect(p!.notes.some((n) => n.includes('536 Saginaw Ave is the same size as this home and sits on the same street'))).toBe(true)
   })
 
-  it('pins to $987,577 to $1,113,820 and holds as ask-below-band, not ask-in-band', () => {
+  it('pins to $727,148 to $1,298,050, and the $925,000 ask is inside that band', () => {
     const priced = price(subject, adjusted, true)!
     // EXACTLY the build: the second failed-ask pass with the listing's own
     // facts (lib/cma/build.ts step 4; 138 days, first asked $1,050,000).
@@ -167,26 +150,24 @@ describe('915 Saginaw: the street sale is the lowest adjusted sale, so it is set
       originalListPrice: 1_050_000,
     })
     const p = pinPrintedBandToSettingSales(priced, adjusted)
-    expect(p.valueLow).toBe(987_577)
-    expect(p.valueHigh).toBe(1_113_820)
-    expect(p.recommended).toBeLessThan(925_000)
-    expect(p.recommended).toBeLessThan(p.valueLow)
-    expect(setAsideRows(p, adjusted).map((r) => r.address)).toEqual(['2258 6th St', '536 Saginaw Ave'])
+    expect(p.valueLow).toBe(727_148)
+    expect(p.valueHigh).toBe(1_298_050)
+    expect(p.recommended).toBe(800_000)
+    expect(setAsideRows(p, adjusted)).toEqual([])
 
     reclassifyFailedAskOnPrintedBand(p, 925_000)
-    expect(p.failedAskBelowRange).toBe(true)
+    expect(p.failedAskBelowRange).toBe(false)
     applyAskInBandHold(p, { lastCycleFailed: true, lastListPrice: 925_000, auditVerdict: 'pass' })
-    // $925,000 is under the printed $987,000 low: not rule 22.
-    expect(p.hold ?? null).toBeNull()
+    expect(p.hold?.kind).toBe('ask-in-band')
+    expect(p.hold).toMatchObject({ ask: 925_000, bandLow: 727_000, bandHigh: 1_300_000 })
+    expect(p.hold?.reason).toContain('sits inside the sales range of $727,000 to $1,300,000')
     const res = applyAskBelowBandHold(p, { lastListPrice: 925_000, auditVerdict: 'pass' })
     expect(res.ok).toBe(true)
-    expect(p.hold?.kind).toBe(ASK_BELOW_BAND_KIND)
-    expect(p.hold).toMatchObject({ ask: 925_000, bandLow: 987_000, bandHigh: 1_115_000 })
-    expect(p.hold?.reason).toContain('sits under the sales range of $987,000 to $1,115,000')
+    expect(p.hold?.kind).toBe('ask-in-band')
   })
 })
 
-describe('the street sale at the high end is set aside too', () => {
+describe('the street sale at the high end stays in the price', () => {
   const adjusted = [
     sale('A', '1 Other St', 600_000),
     sale('B', '2 Other St', 620_000),
@@ -196,28 +177,24 @@ describe('the street sale at the high end is set aside too', () => {
     sale('T', '120 Benaiah Ln', 720_000),
   ]
 
-  it('sets it aside as the highest sale, prices from the kept four, and nothing anchors', () => {
+  it('keeps it in the weights, and the cap does not bind because the blend sits under the street ceiling', () => {
     const p = price(subjectOf(), adjusted)
     expect(p).not.toBeNull()
-    expect((p!.setAside ?? []).map((s) => [s.listingKey, s.end])).toEqual([
-      ['A', 'low'],
-      ['T', 'high'],
-    ])
-    expect(p!.setAside!.find((s) => s.listingKey === 'T')!.reason).toContain('highest of the adjusted sales')
-    expect(p!.reconciliation?.weights.map((w) => w.listingKey)).not.toContain('T')
+    expect(p!.setAside ?? []).toEqual([])
+    expect(p!.reconciliation?.weights.map((w) => w.listingKey)).toContain('T')
     expect(p!.streetAnchor ?? null).toBeNull()
     const pinned = pinPrintedBandToSettingSales(p!, adjusted)
-    expect(pinned.valueLow).toBe(620_000)
-    expect(pinned.valueHigh).toBe(680_000)
-    expect(pinned.recommended).toBeGreaterThanOrEqual(620_000)
-    expect(pinned.recommended).toBeLessThanOrEqual(680_000)
+    expect(pinned.valueLow).toBe(600_000)
+    expect(pinned.valueHigh).toBe(720_000)
+    expect(pinned.recommended).toBe(653_333)
+    expect(pinned.recommended).toBeGreaterThanOrEqual(600_000)
+    expect(pinned.recommended).toBeLessThanOrEqual(720_000)
   })
 })
 
-describe('23 Benaiah: the street twin inside the kept set still anchors (unchanged)', () => {
-  // A lower sale sits under the twin, so the twin is not an end. The trim
-  // sets aside $480,000 and $680,000; the twin at $500,000 is kept, and the
-  // cap holds the price to it plus a tenth.
+describe('23 Benaiah: the street twin in the set still anchors', () => {
+  // The $480,000 sale and the $680,000 sale stay in the range. The twin at
+  // $500,000 is in the set, and the cap holds the list to it plus a tenth.
   const subject = subjectOf({ streetAddress: '23 Benaiah Ln' } as Partial<CmaSubject>)
   const adjusted = [
     sale('L', '9 Other St', 480_000),
@@ -229,10 +206,10 @@ describe('23 Benaiah: the street twin inside the kept set still anchors (unchang
     sale('E', '5 Other St', 680_000),
   ]
 
-  it('caps at the twin plus a tenth, keeps the twin in the weights, and sets aside only the two ends', () => {
+  it('caps at the twin plus a tenth, and the low sale stays in the band', () => {
     const p = price(subject, adjusted)
     expect(p).not.toBeNull()
-    expect((p!.setAside ?? []).map((s) => s.listingKey)).toEqual(['L', 'E'])
+    expect(p!.setAside ?? []).toEqual([])
     expect(p!.reconciliation?.weights.map((w) => w.listingKey)).toContain('T')
     expect(p!.streetAnchor).toMatchObject({
       addresses: ['31 Benaiah Ln'],
@@ -249,11 +226,10 @@ describe('23 Benaiah: the street twin inside the kept set still anchors (unchang
     expect(p!.recommended).toBe(550_000)
     expect(p!.needsReview).toBe(true)
     expect(p!.notes.some((n) => n.includes('31 Benaiah Ln is the same size as this home and sits on the same street'))).toBe(true)
-    // The street floor still draws the bottom of the band.
-    expect(p!.valueLow).toBeLessThanOrEqual(500_000)
+    expect(p!.valueLow).toBe(480_000)
     const pinned = pinPrintedBandToSettingSales(p!, adjusted)
-    expect(pinned.valueLow).toBe(500_000)
-    expect(pinned.valueHigh).toBe(660_000)
+    expect(pinned.valueLow).toBe(480_000)
+    expect(pinned.valueHigh).toBe(680_000)
     expect(pinned.recommended).toBe(550_000)
   })
 })

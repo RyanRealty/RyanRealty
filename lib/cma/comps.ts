@@ -37,6 +37,7 @@ import { getPlatFamilyFootprint } from '@/lib/data/subdivisions/getPlatFamilyFoo
 import { getPlatGroundBounds } from '@/lib/data/cma/platGroundBounds'
 import { ownGroundSeatRank, platGround, platGroundReach, platGroundTrace } from '@/lib/pricing/plat-ground'
 import { keepTightestByClosePrice, PRICING_MIN_COMPS, PRICING_TARGET_COMPS, PRICING_WALK_CAP } from '@/lib/pricing/ladder'
+import { addressIsThisHome } from '@/lib/pricing/same-address'
 import type { CompRefillBench } from '@/lib/cma/review-refill'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
@@ -134,8 +135,9 @@ export { realSubdivision }
  * for want of comparable sales. On 2026-10-07 he reversed that: a three-sale
  * letter printed a raw min-to-max band and one stray sale put the failed ask
  * inside it, which contradicts the letter. The floor is five price-setting
- * sales, the band is always the trimmed range, and a sale that does not set
- * the price (lib/pricing/price-set.ts) never counts toward the five.
+ * sales. A sale that does not set the price (lib/pricing/price-set.ts) never
+ * counts toward the five. On 2026-10-09 the band became the full spread of
+ * the sales that cleared that floor. The high and the low stay in the price.
  */
 export const MIN_COMPS = PRICING_MIN_COMPS
 /**
@@ -1168,16 +1170,17 @@ export async function selectComps(
       // ATTACHED subject are ambiguous and admit (the subject's true self is
       // already caught by ListingKey above), while on a detached subject the
       // bare address match stays self, which is what it always meant there.
-      if (subject.streetAddress && comp.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
-        const su = (subject.unitNumber ?? '').trim().toLowerCase()
-        const cu = (comp.unitNumber ?? '').trim().toLowerCase()
-        const attached = !keepSameProductType('Single Family Residence', subject.propertySubType)
-        const unitsDiffer = su !== cu
-        const bothAbsentOnAttached = !su && !cu && attached
-        if (!unitsDiffer && !bothAbsentOnAttached) {
-          rung.excluded.self++
-          continue
-        }
+      if (
+        addressIsThisHome({
+          subjectAddress: subject.streetAddress,
+          saleAddress: comp.address,
+          subjectUnit: subject.unitNumber,
+          saleUnit: comp.unitNumber,
+          sharedBuilding: !keepSameProductType('Single Family Residence', subject.propertySubType),
+        })
+      ) {
+        rung.excluded.self++
+        continue
       }
       if (byKey.has(comp.listingKey)) {
         rung.excluded.duplicate++
@@ -1567,7 +1570,7 @@ export async function selectComps(
   }
   if (x.bath_count > 0) {
     trace.push(
-      `Excluded ${x.bath_count} sale(s) on room count. A sale one bedroom or bathroom away from your home is used only inside your home's own plat, neighborhood or street, and is marked where it is; two or more rooms away is not used anywhere.`,
+      `Excluded ${x.bath_count} sale(s) on room count. A sale up to two bedrooms or two bathrooms off your home is used and weighs less. Three or more rooms off on one count is not used.`,
     )
   }
   if (x.lot_character > 0) {
@@ -1769,7 +1772,7 @@ export async function selectComps(
   }
   const roomNotedCount = comps.filter((c) => (c.roomDifference ?? []).length > 0).length
   if (roomNotedCount > 0) {
-    const d = `${roomNotedCount} sale(s) are one bedroom or bathroom different from your home. They are used because they sit on your home's own ground — its plat, its neighborhood or its street — and each is marked on the report. No dollar value is applied to the room: paired sales in this market do not support one.`
+    const d = `${roomNotedCount} sale(s) are off by one or two bedrooms or bathrooms. Each one still counts, and it counts for less than a sale with the same rooms. No dollar value is applied to the room: paired sales in this market do not support one.`
     trace.push(d)
     disclosures.push(d)
   }
@@ -1890,7 +1893,7 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
     const rooms = roomCountsDecision(subject, { ...comp, selectionTier: 'broker-selected' })
     if (!rooms.ok) {
       refused.push(
-        `${comp.address} is ${comp.beds ?? '?'} bed / ${printedBaths(comp) ?? '?'} bath against your home's ${subject.beds ?? '?'} / ${printedBaths(subject) ?? '?'}, two or more rooms apart`,
+        `${comp.address} is ${comp.beds ?? '?'} bed / ${printedBaths(comp) ?? '?'} bath against your home's ${subject.beds ?? '?'} / ${printedBaths(subject) ?? '?'}, three or more rooms apart`,
       )
       continue
     }

@@ -150,19 +150,16 @@ export function adjustComps(
  * survives so the sentence names the whole distance once instead of half of it
  * twice.
  *
- * TRIM NORMALLY (Matt 2026-10-08, 915 Saginaw). The printed range is always
- * the trimmed range, and one sale never decides the price. A same-street sale
- * that is the lowest (or highest) adjusted sale is set aside by the range rule
- * like any end sale (lib/pricing/estimate.ts partitionByRangeRule), and a sale
- * that was set aside does not anchor: no cap, no floor, no weight. 536 Saginaw
- * at $727,148 under four sales at $987,577 to $1,298,050 used to be released
- * back into the range and cap the price at $800,000; it now stays set aside
- * and the price comes from the sales that set the range. `setAside` names the
- * range rule's set-aside sales; when every same-street sale is among them and
+ * A same-street sale in the set that prices anchors (Matt 2026-10-09). The
+ * range is the low and the high of every seated sale, so a street sale that
+ * used to be an end is in the set and this cap can fire. 536 Saginaw at
+ * $727,148 under four sales at $987,577 to $1,298,050 holds the list at
+ * $800,000. `setAside` is for a caller that still names a removed sale. The
+ * pricer no longer does that. When every same-street sale is among them and
  * the cap would have bound, the record says so (`setAside: true`,
- * `capped: false`) and nothing moves. This ruling is about the trimmed ends
- * only: a same-street sale INSIDE the kept set anchors exactly as before (23
- * Benaiah). A caller with no range rule passes no `setAside`.
+ * `capped: false`) and nothing moves. A same-street sale in the set anchors
+ * exactly as before (23 Benaiah). A caller with no range rule passes no
+ * `setAside`.
  */
 export function applyStreetAnchor(
   ctx: {
@@ -172,7 +169,7 @@ export function applyStreetAnchor(
     notes: string[]
     /** A previous application, when one has already run on this pricing. */
     prior?: CmaPricingStreetAnchor | null
-    /** True for a sale the range rule set aside (a trimmed end). It never anchors. */
+    /** True for a sale a caller named as set aside. It never anchors. */
     setAside?: (sale: CmaAdjustedComp) => boolean
   },
   tiers: { conservative: number; recommended: number; highEnd: number },
@@ -274,9 +271,9 @@ export function computePricing(
     priceOverride?: number | null
     site?: CmaSiteData | null
     /**
-     * The sales the caller's range rule set aside (priceCmaSet passes the
-     * trimmed ends). A same-street sale among them does not anchor (Matt
-     * 2026-10-08, "Trim normally"). Omitted, every same-street sale anchors.
+     * Sales a caller named as set aside. A same-street sale among them does
+     * not anchor. The pricer passes an empty set (Matt 2026-10-09). Omitted,
+     * every same-street sale anchors.
      */
     streetAnchorSetAside?: (sale: CmaAdjustedComp) => boolean
   } = {},

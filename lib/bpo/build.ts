@@ -142,10 +142,10 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     // 2.5. LLM comparability judgment (shared with the CMA engine, fail-open).
     // Vets every candidate comp on the full feature set before any math.
     // REFILL FROM THE SAME RUNG (Matt 2026-10-08): the one helper the CMA
-    // build uses (lib/cma/review-refill.ts). A drop or a split on an
-    // exactly-five set a widening rung reached refills from that rung's bench
-    // and reviews again; an unstable review after that fails the build as
-    // before (the outer catch records it).
+    // build uses (lib/cma/review-refill.ts). A review exclude or a split does
+    // not remove a sale (Matt 2026-10-09). When the product wall leaves a
+    // widening rung short of five, the next sale on that rung is taken. A
+    // split no longer comes back as unstable.
     const review = await reviewWithRefill({
       subject,
       selection,
@@ -169,7 +169,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         const err =
           gated.droppedProduct > 0
             ? `Not enough sales of the same product type to price this home. ${gated.comps.length} of ${selection.comps.length} candidates matched, and this home needs ${MIN_COMPS}.`
-            : `Not enough comparable sales the review would keep. ${gated.comps.length} of ${selection.comps.length} stayed, and this home needs ${MIN_COMPS}.`
+            : `Not enough comparable sales to price this home. ${gated.comps.length} of ${selection.comps.length} stayed, and this home needs ${MIN_COMPS}.`
         await recordFailure(slug, err)
         return { ok: false, error: err, slug }
       }
@@ -177,7 +177,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       differentProduct = gated.droppedProduct
       if (judgment) {
         selection.trace.push(
-          `Comparability judgment (${judgment.model}): kept ${judgment.keptKeys.length} of ${selection.comps.length} candidates, excluded ${judgment.verdicts.filter((v) => v.tier === 'exclude').length} as non-comparable, down-weighted ${judgment.verdicts.filter((v) => v.tier === 'weak').length}. ${gated.trace}`,
+          `Comparability judgment (${judgment.model}) read the sales the picker kept. It does not remove one or change its weight. ${gated.trace}`,
         )
       } else {
         selection.trace.push(
@@ -187,9 +187,13 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         )
       }
     }
-    const tierByKey = new Map(judgment?.verdicts.map((v) => [v.listingKey, v.tier]) ?? [])
+    const tierByKey = new Map(
+      (judgment?.verdicts ?? []).filter((v) => v.tier === 'strong').map((v) => [v.listingKey, v.tier] as const),
+    )
     const reviewExclusions = () =>
-      judgment?.verdicts.filter((v) => v.tier === 'exclude').map((v) => ({ listingKey: v.listingKey, reason: v.reason })) ?? []
+      judgment?.verdicts
+        .filter((v) => v.tier === 'exclude' && !compsForPricing.some((c) => c.listingKey === v.listingKey))
+        .map((v) => ({ listingKey: v.listingKey, reason: v.reason })) ?? []
     // The judge's narrative, held apart from whatever a pass prints, and gated
     // again on every set this opinion prices (the same gate as the CMA,
     // lib/cma/narrative-final.ts). `gatedKeys` is the set the review and the
@@ -232,7 +236,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       await recordFailure(slug, err)
       return { ok: false, error: err, slug }
     }
-    let { adj: adjusted, p: pricing, op: opinion } = derived
+    const { adj: adjusted, p: pricing, op: opinion } = derived
 
     // 4.4. Adversarial accuracy audit — independent second pass attacking the
     // OPINION (Matt directive 2026-07-11: BPOs are adversarially audited like
@@ -295,12 +299,14 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         candidates: selection.comps,
       })
     alignNarrative()
-    let audit = await runAudit()
+    const audit = await runAudit()
 
-    // 4.45. Bounded self-repair — comp-selection/data-integrity findings tied
-    // to specific comps: drop them, re-derive pricing AND opinion, re-audit once.
-    let firstRoundAudit: typeof audit = null
-    let repairedKeys: string[] = []
+    // 4.45. The audit reads the sales the picker kept. It does not remove one
+    // (Matt 2026-10-09). A finding stays on the row and the contract still
+    // forces broker review. The opinion does not move to a shorter set.
+    // There is no first-round snapshot: that field only existed to remember
+    // the audit from before a sale was dropped.
+    const repairedKeys: string[] = []
     if (audit && audit.verdict !== 'pass') {
       const flagged = [
         ...new Set(
@@ -309,30 +315,16 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
               (f) =>
                 (f.severity === 'critical' || f.severity === 'major') &&
                 (f.category === 'comp-selection' || f.category === 'data-integrity') &&
-                f.compListingKey,
+                Boolean(f.compListingKey) &&
+                compsForPricing.some((c) => c.listingKey === f.compListingKey),
             )
             .map((f) => f.compListingKey!),
         ),
       ]
-      const remaining = compsForPricing.filter((c) => !flagged.includes(c.listingKey))
-      // A five-sale set cannot lose a sale and still price (the cap equals the
-      // floor, Matt 2026-10-07): a flagged comp falls through to the review
-      // flag, never a silent reprice.
-      if (flagged.length > 0 && remaining.length >= MIN_COMPS) {
-        const rederived = deriveAll(remaining)
-        if (rederived.p && rederived.op) {
-          firstRoundAudit = audit
-          repairedKeys = flagged
-          compsForPricing = remaining
-          adjusted = rederived.adj
-          pricing = rederived.p
-          opinion = rederived.op
-          selection.trace.push(
-            `Adversarial audit repair: ${flagged.length} comp(s) flagged by the independent audit were removed, the opinion re-derived on the ${remaining.length}-comp set, then re-audited.`,
-          )
-          alignNarrative()
-          audit = await runAudit()
-        }
+      if (flagged.length > 0) {
+        selection.trace.push(
+          `The audit reads the sales the picker kept. It does not remove one. It named ${flagged.length} of those sales, and the finding stays for broker review.`,
+        )
       }
     }
 
@@ -381,7 +373,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     // the client-safe rationale block).
     let rationale = buildBpoRationale({ subject, history, opinion, market, comps: adjusted })
     if (judgment) {
-      rationale += ` Comparable review: ${compsForPricing.length} of ${selection.comps.length} candidate sales kept after a per-comp comparability review. ${judgment.narrative}`
+      rationale += ` Comparable review: ${compsForPricing.length} of ${selection.comps.length} candidate sales are the sales the picker kept. The review read those same sales and did not remove one. ${judgment.narrative}`
     }
     if (repairedKeys.length) {
       // What happened, and nothing the gate made untrue: the narrative above
@@ -462,7 +454,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
             findings: audit.findings,
             cost_usd: audit.costUsd,
             repaired_comp_keys: repairedKeys.length ? repairedKeys : undefined,
-            first_round_verdict: firstRoundAudit?.verdict,
+            first_round_verdict: undefined,
           }
         : { source: 'none', note: 'Audit unavailable — needs_review forced.' },
       comps: adjusted.map((c) => ({
@@ -594,9 +586,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
             summary: audit.summary,
             findings: audit.findings,
             repaired_comp_keys: repairedKeys.length ? repairedKeys : undefined,
-            first_round: firstRoundAudit
-              ? { verdict: firstRoundAudit.verdict, summary: firstRoundAudit.summary, findings: firstRoundAudit.findings, cost_usd: firstRoundAudit.costUsd }
-              : undefined,
+            first_round: undefined,
           }
         : { used_llm: false as const, note: 'Adversarial audit unavailable; needs_review forced via the contract.' },
       accuracy_contract: contract,

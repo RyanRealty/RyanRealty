@@ -133,12 +133,9 @@ describe('walkPricingLadder', () => {
   })
 
   /**
-   * THE ONE ROOM RULE (Matt 2026-09-10: adjust inside, wall outside). The old
-   * invariant here was "never prices a one-bath house from a two-bath sale"
-   * anywhere. That wall cut 438 nearby sales on 23 Benaiah and pushed the
-   * search into four other neighborhoods. What replaces it: one bath apart is
-   * used on the subject's OWN plat and recorded on the comp, and never from
-   * outside it.
+   * THE ONE ROOM RULE (Matt 2026-10-09). One bath apart stays wherever a rung
+   * already reaches, and it is recorded on the comp. Three or more apart is
+   * refused. A sale no rung reaches stays out for distance, not for the room.
    */
   it('uses a one-bath difference from inside the subject’s own plat, and records it', () => {
     const pool = [
@@ -151,7 +148,7 @@ describe('walkPricingLadder', () => {
     expect(out.comps.find((c) => c.listingKey === 'ONE')?.roomDifference).toBeNull()
   })
 
-  it('never takes that one-bath difference from outside the subject’s ground', () => {
+  it('a one-bath sale no rung reaches stays out', () => {
     const pool = [
       sale({
         listingKey: 'AWAY',
@@ -167,16 +164,21 @@ describe('walkPricingLadder', () => {
     expect(out.comps.map((c) => c.listingKey)).not.toContain('AWAY')
   })
 
-  it('refuses two whole baths apart even inside the subject’s own plat', () => {
-    const pool = [sale({ listingKey: 'FOUR', baths: 4, address: '16 Kenwood' })]
+  it('keeps two whole baths apart inside the subject’s own plat, and refuses three', () => {
+    const pool = [
+      sale({ listingKey: 'TWO', baths: 4, address: '16 Kenwood' }),
+      sale({ listingKey: 'THREE', baths: 5, address: '18 Kenwood' }),
+    ]
     const out = walkPricingLadder(subject({ baths: 2 }), pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey)).not.toContain('FOUR')
+    expect(out.comps.map((c) => c.listingKey)).toContain('TWO')
+    expect(out.comps.find((c) => c.listingKey === 'TWO')?.roomDifference).toEqual(['baths'])
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('THREE')
   })
 
-  it('still refuses two whole baths apart outside the plat', () => {
+  it('keeps two whole baths apart outside the plat when a rung reaches it, and refuses three', () => {
     const pool = [
       sale({
-        listingKey: 'FOUR_AWAY',
+        listingKey: 'TWO_AWAY',
         baths: 4,
         address: '16 Stone',
         subdivision: 'Stone Creek',
@@ -184,9 +186,20 @@ describe('walkPricingLadder', () => {
         latitude: 44.062,
         longitude: -121.302,
       }),
+      sale({
+        listingKey: 'THREE_AWAY',
+        baths: 5,
+        address: '18 Stone',
+        subdivision: 'Stone Creek',
+        subdivisionNorm: 'stone creek',
+        latitude: 44.0621,
+        longitude: -121.3021,
+      }),
     ]
     const out = walkPricingLadder(subject({ baths: 2, marketArea: null }), pool, { asOf })
-    expect(out.comps).toHaveLength(0)
+    expect(out.comps.map((c) => c.listingKey)).toContain('TWO_AWAY')
+    expect(out.comps.find((c) => c.listingKey === 'TWO_AWAY')?.roomDifference).toEqual(['baths'])
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('THREE_AWAY')
   })
 
   it('drops a much more expensive subdivision once the similar-sub rungs run', () => {
@@ -3264,11 +3277,10 @@ describe('five price-setting sales is the floor, and a sale that does not set th
     expect(widened?.added).toBe(0)
   })
 
-  it('a sale more than 25% smaller on a wider plat rung does not set the price and does not reach five (Matt 2026-10-08, 2382 Jackson against 2225 Indigo)', () => {
-    // 2382 Jackson is 2,016 sqft. 2225 Indigo, 2 bed, 1,393 sqft, is 30.9%
-    // smaller: the 25% plat rung refuses it at the wall, the 35% -wide rung
-    // reads it, and rule 20 refuses it at the door. It is never admitted, it
-    // never counts toward the five, and four own-plat setters are a shortage.
+  it('a sale inside 35% on a wider plat rung sets the price and reaches five (2225 Indigo, 30.9% smaller)', () => {
+    // 2382 Jackson is 2,016 sqft. 2225 Indigo, 1,393 sqft, is 30.9% smaller.
+    // The tight plat rung does not read it. The 35% rung does, and that is
+    // the same line the price uses, so Indigo is the fifth sale.
     const jackson = plain({ sqft: 2016 })
     const indigo = {
       ...own('INDIGO', 4),
@@ -3282,32 +3294,28 @@ describe('five price-setting sales is the floor, and a sale that does not set th
     }
     const pool = [own('A', 0), own('B', 1), own('C', 2), own('D', 3), indigo]
     const out = walkPricingLadder(jackson, pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D'])
-    expect(out.comps.map((c) => c.listingKey)).not.toContain('INDIGO')
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D', 'INDIGO'])
     expect(out.comps.every((c) => c.setsPrice === true)).toBe(true)
     const wide = out.rungs.find((r) => r.tier === 'subdivision-3mo-wide')
     expect(wide?.ran).toBe(true)
-    expect(wide?.notSetting).toBe(1)
-    expect(wide?.added).toBe(0)
-    const indigoNote = out.notSettingSales?.find((s) => s.listingKey === 'INDIGO')
-    expect(indigoNote?.address).toBe('2225 Indigo')
-    expect(indigoNote?.reason).toBe(
-      '1,393 sq ft, 31% smaller than this home; sales more than 25% larger or smaller do not set the price',
-    )
-    expect(out.comps.map((c) => c.listingKey)).not.toContain('INDIGO')
+    expect(wide?.notSetting).toBe(0)
+    expect(wide?.added).toBe(1)
+    expect(out.notSettingSales?.find((s) => s.listingKey === 'INDIGO')).toBeUndefined()
     expect(out.rungs.find((r) => r.tier === 'subdivision-3mo')?.notSetting ?? 0).toBe(0)
-    expect(out.starved).toBe(true)
-    expect(out.reachedTarget).toBe(false)
-    expect(out.trace.some((t) => t.includes('Comp shortage: only 4 price-setting sale(s)'))).toBe(true)
-    expect(out.trace.some((t) => t.includes('do not set the price'))).toBe(true)
+    expect(out.starved).toBe(false)
+    expect(out.reachedTarget).toBe(true)
 
-    // A fifth own-plat sale 17.9% smaller (1,655 sqft) still sets the price and reaches five.
-    const fifth = { ...own('FIFTH', 5), sqft: 1655, closePrice: 585_000, closePpsf: 585_000 / 1655 }
-    const reached = walkPricingLadder(jackson, [...pool, fifth], { asOf })
-    expect(reached.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D', 'FIFTH'])
-    expect(reached.comps.map((c) => c.listingKey)).not.toContain('INDIGO')
-    expect(reached.reachedTarget).toBe(true)
-    expect(reached.starved).toBe(false)
+    // A sale past 35% still does not set the price. 1,280 against 2,016 is 36.5%.
+    const past = {
+      ...own('PAST', 6),
+      address: '100 Past',
+      sqft: 1280,
+      closePrice: 400_000,
+      closePpsf: 400_000 / 1280,
+    }
+    const refused = walkPricingLadder(jackson, [past], { asOf })
+    expect(refused.comps.map((c) => c.listingKey)).not.toContain('PAST')
+    expect(refused.notSettingSales ?? []).toEqual([])
   })
 
   it('a duplex by its remarks never prices a single-family home (rule 23, 1531 10th against 915 Saginaw)', () => {

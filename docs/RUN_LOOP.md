@@ -86,18 +86,17 @@ mechanics (worktrees, cloud sandboxes, the judge chain): the skill.
 
 ## 5. Land (one path for every builder)
 
-1. Commit with `Node: <id>` (G72) on your branch or worktree.
-2. `npm run push` from a checkout that tracks `origin/main`: it runs `ci:gates`, eslint,
-   and the unit tests for the changed files, then pushes `main` and retries a race.
-3. `npm run deploy:verify` until READY, open the live page, write the evidence.
+1. Commit on the branch. A site commit carries `Node: <id>` (G72).
+2. Finished work is `npm run ship`: local gates, push this branch, open the pull
+   request if it is missing, and merge it. Unfinished work is `npm run push`
+   plus one handoff line.
+3. When the diff changes the app, that command runs `deploy:verify` until READY.
+   A docs-only diff skips the Vercel build.
 
-A session bound to its own branch never lands on `main` itself: it runs `npm run gates:stamp`,
-`git push -u origin <branch>`, and writes `LAND <branch>@<sha>` on the node with `--note`; the
-next session that can push `main` lands it before it claims anything. Nobody waits on a person
-to merge. `npm run push` pushes the branch it tracks (rebasing onto it on a race) and refuses,
+Never `git push` `main`. `npm run push` pushes the branch it tracks and refuses,
 exit 5, a branch other than `main` or `wt/*` whose upstream is `main`, which
 `git checkout -B <branch> origin/main` makes (it once sent a session's commits to main).
-One `ci:gates` per ship; do not poll GitHub Actions (R-221).
+One `ci:gates` per ship; do not poll GitHub Actions (R-221). On conflict, stop.
 
 ## 6. The ledger trailer (ranking-affecting commits)
 

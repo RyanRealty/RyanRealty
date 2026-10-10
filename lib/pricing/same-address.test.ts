@@ -3,7 +3,7 @@
  * twice at a $167,500 difference (tasteReview round three, §3).
  */
 import { describe, expect, it } from 'vitest'
-import { dropPriorSalesOfSameHome, isSameProperty, normalizeAddress } from './same-address'
+import { addressIsThisHome, dropPriorSalesOfSameHome, isSameProperty, normalizeAddress } from './same-address'
 
 /** The live cma-19968 set, keys and all. */
 const TARGEE_JUNE = {
@@ -76,6 +76,34 @@ describe('dropPriorSalesOfSameHome', () => {
     expect(out.dropped.map((d) => d.listingKey).sort()).toEqual(
       ['OLD', TARGEE_MARCH.listingKey].sort(),
     )
+  })
+
+  it('treats a different condo unit as a different home, and a detached house at the same address as this home', () => {
+    expect(
+      addressIsThisHome({
+        subjectAddress: '2745 Ordway',
+        saleAddress: '2745 Ordway',
+        subjectUnit: '104',
+        saleUnit: '207',
+        productClass: 'condo',
+      }),
+    ).toBe(false)
+    expect(
+      addressIsThisHome({
+        subjectAddress: '2745 Ordway',
+        saleAddress: '2745 Ordway',
+        subjectUnit: '104',
+        saleUnit: '104',
+        productClass: 'condo',
+      }),
+    ).toBe(true)
+    expect(
+      addressIsThisHome({
+        subjectAddress: '23 Benaiah',
+        saleAddress: '23 Benaiah',
+        productClass: 'detached',
+      }),
+    ).toBe(true)
   })
 
   it('normalizes case, spacing and trailing punctuation, and nothing else', () => {

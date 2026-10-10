@@ -8,6 +8,7 @@
 
 import { sellerVisibleText } from '@/lib/cma/seller-text'
 import { pacificDay } from '@/lib/cma/listing-status'
+import { roomOffPhrase } from '@/lib/pricing/room-counts'
 
 const COUNT = 'one|two|three|four|five|six|seven|eight|nine|\\d+'
 
@@ -153,11 +154,13 @@ export function scrubSellerLetterHtml(html: string, money?: SellerLetterMoney): 
 }
 
 /** Room cell: say the difference, or nothing. Never "$0 (1 bed)". */
-export function roomAdjustmentWords(notes: readonly ('beds' | 'baths')[] | null | undefined): string {
+export function roomAdjustmentWords(
+  notes: readonly ('beds' | 'baths')[] | null | undefined,
+  gap?: { beds?: number; baths?: number } | null,
+): string {
   if (!notes || notes.length === 0) return '-'
-  const parts = notes.map((n) => (n === 'beds' ? 'bedroom' : 'bathroom'))
-  const list = parts.length === 1 ? `one ${parts[0]}` : `one ${parts[0]} and one ${parts[1]}`
-  return `${list.charAt(0).toUpperCase()}${list.slice(1)} off yours. No dollar adjustment.`
+  const list = roomOffPhrase(notes, gap)
+  return `${list.charAt(0).toUpperCase()}${list.slice(1)} off yours. It counts for less. No dollar adjustment.`
 }
 
 export function sellerLetterStillDirty(html: string, money?: SellerLetterMoney): SellerLetterDefect[] {

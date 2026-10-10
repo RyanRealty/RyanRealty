@@ -1,8 +1,8 @@
 # CORE RULES (read first; these override everything below and any handoff or plan doc)
 
-These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). If a later line or a plan says to land, fast-forward, or push `main`, ignore it.
+These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait, or to `git push` `main`, is stale.
 
-**Main.** Code reaches `main` only when Matt merges a pull request. Open a PR to `main`; Matt merges. Never push `main`, never `git push origin HEAD:main`, never fast-forward `main`, never merge `main` yourself, even if a handoff says land or fast-forward. Nobody pushes `main`, including admins.
+**Main.** A finished unit is `npm run ship` (Matt 2026-10-09): gates, push the branch, merge the pull request. Vercel deploys `main`. Never `git push` `main`. Unfinished work is `npm run push` only.
 
 **Git safety.** No rebase. No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away.
 
@@ -39,7 +39,7 @@ The enterprise map (`docs/plans/ENTERPRISE_MAP/`) is the whole-system SoR for wh
 what is verified, and what is open. Subject work (admin, CRM, growth) still runs; it
 does not erase other planes from Sense.
 
-**Every development cycle routes through THE LOOP v1.6.0 — [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** Session boot: `npx tsx scripts/loop-brief.ts` (the durable work graph, not the chat, is the source of record for in-flight work). The brief serves a **ship class**: same-category fleet findings share one `npm run push` and one `deploy:verify`. **"Run the loop" = [`docs/RUN_LOOP.md`](docs/RUN_LOOP.md)**, one page for all tools.
+**Every development cycle routes through THE LOOP v1.6.0 — [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** Session boot: `npx tsx scripts/loop-brief.ts` (the durable work graph, not the chat, is the source of record for in-flight work). The brief serves a **ship class**: same-category fleet findings share one `npm run ship`. **"Run the loop" = [`docs/RUN_LOOP.md`](docs/RUN_LOOP.md)**, one page for all tools.
 Enforced by G44 (`ci:process-canon`).
 
 **A rule that lives only in chat history is lost next session.** When Matt issues a directive
@@ -465,7 +465,7 @@ Served cache rows are stamped `methodology_version = 'v3-2026-05-07'`, not the n
   verified by reading the relevant code. Every fix must be tested before it's reported done.
 - **Truthful and accurate, always.** If you're not sure, say so. Never state something as fact
   unless you've confirmed it.
-- **Every change ships as a branch + PR (locked process rule 14, Matt 2026-10-08).**
+- **A finished change is `npm run ship` (Matt 2026-10-09).**
   See [`AGENTS.md`](AGENTS.md). **R-221:** do not poll GitHub Actions.
 - **Never ask Matt to run anything or what access you have; never queue found work for him
   (Matt 2026-09-25, 10-07).** Access: [`docs/ACCESS_INVENTORY.md`](docs/ACCESS_INVENTORY.md).
@@ -559,7 +559,7 @@ else fires on trigger match.
 1. One CMA path. Price on current main only. No second ladder. No 80% send floor. Do not merge PR 408 or any 80% floor. PR 401 stays. Do not revert 770a4fd1.
 2. Recommended price is the house from comps only. ADU, second lot, and rental income are letter notes, not dollars, until Matt says otherwise.
 3. Hold for Matt if the rec is more than 15% under last ask, or any amount over it. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold.
-4. One room rule: same whole bed or bath count anywhere. One whole room apart only on the subject's own plat, mapped neighborhood, or own street, kept and disclosed, zero dollars. Two or more apart refused everywhere. The picker and the review call the same decision. The review must not exclude a sale the picker kept for a room gap this rule allows.
+4. Room rule (Matt 2026-10-09): up to two beds and two baths off stays and weighs less (one bed 0.85, two beds 0.70, one bath 0.90, two baths 0.75). No dollar on the room. Location still outranks it. Three or more apart on one count is refused. Picker and review agree.
 5. Pocket rungs are skipped when the plat and the street already have five sales before the first quarter-mile pocket rung. A cheap different-plat pocket sale drops when no own-plat sale remains in the set that is actually priced. Do not check only the pre-review set.
 6. Do not build or send a CMA if the home is listed again. Live status first. Active, pending, or otherwise on the market means skip.
 7. A rebuild does not send, enqueue, or approve.
@@ -569,7 +569,7 @@ else fires on trigger match.
 11. Approved CMAs send only in the weekday 9:03 AM PT window.
 12. Never use buyer or seller names in social, email, or public copy.
 13. No em dashes in public site copy.
-14. Every change ships as a branch + PR to `main` (Matt 2026-10-08). Push the branch right away. Matt merges. Nobody pushes to `main`, including admins. No rebase, force-push, or reset.
+14. A finished change is `npm run ship` (Matt 2026-10-09). Never `git push` `main`. No rebase, force-push, or reset.
 15. A townhouse subject uses closed townhouse sales. sale_pricing_facts stores those closes as product_class attached, not townhouse, so the facts pool filters property_sub_type to townhouse and classes the row as townhouse. Do not pull condos, apartments, or other attached homes just because they share product_class attached. Do not change how single-family comps are chosen.
 16. **Grok fallback when Cursor is out (Matt 2026-10-08).** See [`AGENTS.md`](AGENTS.md) rule 26.
 

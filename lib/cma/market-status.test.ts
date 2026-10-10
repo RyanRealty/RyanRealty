@@ -1312,7 +1312,7 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     expect(set.peers[0]!.whyItSat).toContain('never came down from $500,000')
   })
 
-  it("keeps a one-bedroom miss on the subject's own plat, refuses two apart and the size cutoff, and says so (rule 4, Matt 2026-10-07)", () => {
+  it("keeps one or two bedrooms off on the subject's own plat, refuses the size cutoff, and says which gap (rule 4, Matt 2026-10-09)", () => {
     const set = buildExpiredPeerSet({
       rows: [
         unsold('NEAR', '2515 Keats', 5, {
@@ -1337,11 +1337,13 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       // The closed-sale lookback caps the window (Matt ADD 2026-09-12).
       maxWindowMonths: 6,
     })
-    expect(set.peers.map((p) => p.address)).toEqual(['2515 Keats'])
+    expect(set.peers.map((p) => p.address)).toEqual(['2515 Keats', '10 Oak'])
+    expect(set.peers.map((p) => p.address)).not.toContain('1512 Quiet Ridge')
     expect(set.peers[0]!.roomDifference).toEqual(['beds'])
+    expect(set.peers[1]!.roomDifference).toEqual(['beds'])
     expect(set.likeYours).toBe(true)
     expect(set.sentence).toBe(
-      'Only one home like yours in Hampton Park came off the market without selling in the last six months, and nothing from further out was added to make up the number. 2515 Keats is one bedroom different from yours. No dollar value is applied to the room.',
+      'Only two homes like yours in Hampton Park came off the market without selling in the last six months, and nothing from further out was added to make up the number. 2515 Keats is one bedroom different from yours. 10 Oak is two bedrooms different from yours. No dollar value is applied to the room.',
     )
     expect(set.sentence).not.toContain('within 35 percent')
     expect(set.sentence).not.toContain('None were close')
@@ -1568,10 +1570,10 @@ describe('the peer sentence counts the rows it shows', () => {
     // NW Kelly Hill, reader review 2026-10-08). Bedrooms are not named: size
     // is the refusal the fit returned.
     expect(set.sentence).toBe(
-      'We searched listings in River West between $660,000 and $2,220,000. Seven homes came off the market without selling in the last 24 months, last listed between $900,000 and $906,000. All seven are more than 25 percent larger than this home, so they are not compared here.',
+      'We searched listings in River West between $660,000 and $2,220,000. Seven homes came off the market without selling in the last 24 months, last listed between $900,000 and $906,000. All seven are more than 35 percent larger than this home, so they are not compared here.',
     )
     expect(set.unlike).toHaveLength(7)
-    expect(set.unlike?.every((h) => h.reason === 'size' && h.direction === 'larger' && h.limit === 25)).toBe(true)
+    expect(set.unlike?.every((h) => h.reason === 'size' && h.direction === 'larger' && h.limit === 35)).toBe(true)
     expect(set.sentence).not.toMatch(/bedrooms|bathrooms|age/)
     expect(set.priceBand).toEqual({ lo: 660_000, hi: 2_220_000 })
     expect(set.sentence).not.toMatch(/No home /)

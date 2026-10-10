@@ -98,7 +98,7 @@ describe('ordinary subdivision phases', () => {
     const tooFar = sale({
       listingKey: 'PHASE_FAR',
       address: '9 Phase One',
-      beds: 2,
+      beds: 1,
       baths: 2,
       sqft: 2100,
       closePrice: 500_000,
@@ -176,7 +176,9 @@ describe('ordinary subdivision phases', () => {
     expect(phaseComp?.roomDifference).toEqual(['beds', 'baths'])
     expect(picked('PHASE_FAR')).toBeUndefined()
     expect(picked('NEXT_ROW')?.selectionTier.startsWith('closer-sub-')).toBe(true)
-    expect(picked('NEXT_ROOMS')).toBeUndefined()
+    expect(picked('NEXT_ROOMS')?.selectionTier.startsWith('closer-sub-')).toBe(true)
+    expect(picked('NEXT_ROOMS')?.roomDifference).toEqual(['beds', 'baths'])
+    expect(picked('NEXT_ROOMS')?.setsPrice).toBe(true)
     // The two rows hold two sales, short of the minimum, so the walk goes on
     // inside the Orchard District after both rows (rule 15). The outside sales
     // arrive on a ring, never on the next-row seat or the size bracket.

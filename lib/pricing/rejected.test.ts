@@ -74,11 +74,11 @@ describe('rejectionReason', () => {
     )
   })
 
-  it('then the bath count, stated against the reader’s own', () => {
+  it('then a three-bath gap, stated against the reader’s own', () => {
     expect(
       rejectionReason(
         candidate({
-          baths: 3,
+          baths: 5,
           subdivision: 'Other Park',
           city: 'Bend',
           latitude: 44.02,
@@ -88,7 +88,7 @@ describe('rejectionReason', () => {
         SUBJECT,
         ASOF,
       ),
-    ).toBe('3 baths against your 2')
+    ).toBe('5 baths against your 2')
   })
 
   it('does not call a one-bath own-plat gap a rejection — the one-room rule keeps that sale', () => {
