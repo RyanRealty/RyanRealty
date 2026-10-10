@@ -429,7 +429,7 @@ Buyer's guide ready: <community_name>
     2. POST to /api/buyers-guide/request with a test email
     3. Confirm PDF attached, CRM lead created, voice-validated cover note
 
-Matt merges the PR in GitHub to ship.
+npm run ship lands the PR in GitHub to ship.
 ```
 
 Then stop. Wait for Matt to merge.
@@ -440,7 +440,7 @@ Then stop. Wait for Matt to merge.
 
 | approval_type | what it means | who can grant |
 |---|---|---|
-| `matt-review-PR` | Matt merges the GitHub PR (for create/update/setup) | Matt only |
+| `matt-review-PR` | npm run ship lands the GitHub PR (for create/update/setup) | agent |
 | `none` | Send action runs autonomously (LP form -> email) | N/A |
 
 This producer uses **`matt-review-PR`** for create/update/setup, **`none`**

@@ -252,7 +252,7 @@ Then stop. Do not commit. Do not push. Wait for Matt's explicit approval.
 | approval_type | what it means | who can grant |
 |---|---|---|
 | `matt-review-draft` | Matt sees the draft and says "ship it" / "approved" / "go" | Matt only |
-| `matt-review-PR` | Matt merges the PR in GitHub | Matt only |
+| `matt-review-PR` | npm run ship lands the PR in GitHub | agent |
 | `matt-explicit` | Matt explicitly names the action in the conversation | Matt only |
 | `none` | No approval needed (alerts and analysis only — never for published content) | N/A |
 

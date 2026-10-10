@@ -1,8 +1,8 @@
 # CORE RULES (read first; these override everything below and any handoff or plan doc)
 
-These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). If a later line or a plan says to land, fast-forward, or push `main`, ignore it.
+These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait for a person to merge code, or to `git push` `main`, is stale.
 
-**Main.** Code reaches `main` only when Matt merges a pull request. Open a PR to `main`; Matt merges. Never push `main`, never `git push origin HEAD:main`, never fast-forward `main`, never merge `main` yourself, even if a handoff says land or fast-forward. Nobody pushes `main`, including admins.
+**Main.** A finished unit is `npm run ship` (Matt 2026-10-09): local gates, push the branch, merge the pull request. Vercel deploys `main`. Never `git push` `main`. Unfinished work is `npm run push` plus one handoff line.
 
 **Git safety.** No rebase. No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away.
 
@@ -56,7 +56,7 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 11. Approved CMAs send only in the weekday 9:03 AM PT window.
 12. Never use buyer or seller names in social, email, or public copy.
 13. No em dashes in public site copy.
-14. Every change ships as a branch + PR (Matt 2026-10-08). Push the branch to GitHub right away and open a PR to `main`. Matt merges. Nobody pushes to `main`, including admins. No rebase, force-push, or reset.
+14. A finished change is `npm run ship` (Matt 2026-10-09). Unfinished work is pushed as a branch right away. Never `git push` `main`. No rebase, force-push, or reset.
 15. Recommended price is the weighted price of the sales the picker kept. A closer match weighs more. A looser match stays. Location order, heaviest first, is the long-standing search order: same subdivision (weight 3), adjacent subdivisions (weight 2), the neighborhood or community (weight 1). Size and bedrooms come after that and cannot reorder it. A same-subdivision sale outweighs a similar-size neighborhood sale. An adjacent-subdivision sale sits between those two. One size cutoff, the picker's, about 35% living area. The review does not drop a picker-kept sale for a tighter size gap or a 15-year vintage wall. When the first location search is short of 3 comps, widen the closed-sale age and date range. Do not return a short set. The pull walks same subdivision, then adjacent subdivisions, then the neighborhood community, and widens the closed-sale age and date inside each before the next. After that community, distance rings start at 0.25 miles and step up by 0.25 miles. Do not open with a 1-mile ring. Do not fall back to same-zip while a closer place still has sales.
 **One rule set (Matt 2026-10-08).** There is no second review. The picker rules are the process. "One rule set. The picker's size cutoff, sales kept out to about a 35% living-area gap, is the only size cutoff. Nothing re-judges a sale the picker kept. If the first search returns fewer than 3 comps that pass, widen the closed-sale age and date range and search again. Do not return a short set with no recovery, and do not run a token-burning review that uses different cuts."
 16. An expired, canceled, or withdrawn home that did not sell was overpriced. The recommended price must come out under the last ask. A number that matches the ask, or sits over it, is wrong. The comps still set the price. Location weights stay same subdivision 3, adjacent 2, neighborhood 1, and size and bedrooms cannot reorder that. If the weighted comp price is already under the last ask, leave it. Do not add a second discount. If it is at the last ask or above it, pull it under. With no days on market and no original ask, the pull is $1,000, not a percent. When days on market or an original ask is already on the subject, start at 1% under and deepen with days on market toward 120 days. No price cut, when the original ask is known and did not come down, adds up to 2% more, so 3% at 120 days. A known price cut, or no original ask to judge a cut by, adds at most 0.5% more, so 1.5% at 120 days. The pull floors to the thousand and stays inside 3%. This is only for a home that failed to sell. Do not apply it to a normal comp sale. The hold is separate and unchanged: a rec more than 15% under last ask, or any amount over last ask, is a hold. Exactly 15% under is not a hold. Recommended price is still the house from comps only. ADU, second lot, and rental stay notes, not dollars. The under-the-ask test reads the weighted price of the sales that set the price (reconciliation.weightedPrice), not the list tier above it (Matt 2026-10-08, delegated): 3037 Purcell's sales blend to $561,188, already under the $565,000 ask, so the cover is $561,000 before the actives pull and the $576,000 list tier is not used; 62475 Woodsman's sales blend to $1,577,841, already under the $1,600,000 ask, so the cover is $1,578,000 before the actives pull and the $1,620,000 list tier is not used. When that weighted price is at or above the last ask, this pull is unchanged. The high-DOM sitting-actives pull still applies after. Held by lib/cma/failed-ask-weighted.test.ts.
@@ -87,7 +87,7 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 
 `docs/EXECUTION_PLAN.md` and `docs/SITE_SPEC.md` are 2026-05-22 fossils (SITE_SPEC still describes an AgentFire WordPress cutover that already shipped). Do not execute them.
 
-**Done = the served ship class is locally accepted, then one `npm run push` + `deploy:verify` when the app changed.**
+**Done = the served ship class is locally accepted, then one `npm run ship`. That includes `deploy:verify` when the app changed.**
 
 **Fresh environment** (no `node_modules`, no git hooks): run `bash scripts/cloud-setup.sh` first. It installs the dependencies, the git hooks and the brand fonts. Claude Code cloud sessions get the same from `.claude/hooks/session-start.sh`.
 
@@ -109,15 +109,15 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 
 ### Start of every session (any tool)
 
-1. `git fetch origin` and branch from current `origin/main`. Do not rebase, force-push, or reset. All code work is pushed to GitHub as a branch right away (locked process rule 14).
+1. `git fetch origin` and branch from current `origin/main`. Do not rebase, force-push, or reset. A finished unit is `npm run ship`. Unfinished work is `npm run push` right away (rule 14).
 2. If you are picking up mid-thread from the other surface, read the newest `~/.claude/plans/HANDOFF-*.md` when one exists (narrative); otherwise **`git log origin/main -5`** is enough.
 3. What you can reach (Supabase, the Google service account, Gmail, Vercel, GitHub, the rest) is in [`docs/ACCESS_INVENTORY.md`](docs/ACCESS_INVENTORY.md). Never ask Matt what access you have (Matt 2026-10-07). A provider refusal is a scope or grant to name precisely, not a question.
 4. **The public origin is https://ryan-realty.com. Never use `ryanrealty.vercel.app` for anything outward** (a link, email, SMS, canonical, OG or sitemap URL, PDF, redirect, lead source, or a URL a script prints or posts; Matt 2026-10-07). `siteOrigin()` / `siteUrl()` / `siteHost()` in [`lib/site-origin.ts`](lib/site-origin.ts) (plain-node scripts: `scripts/lib/site-origin.mjs`) is the only way to build an outward URL; never read `NEXT_PUBLIC_SITE_URL` directly (production still holds the alias). Held by `ci:site-origin` (G81).
 
 ### Ship discipline (non-negotiable)
 
-1. **Production truth is `origin/main`.** All code work is pushed to GitHub as a branch right away. Every change ships as a branch + PR to `main`; Matt merges. Nobody pushes to `main`, including admins (Matt 2026-10-08). No rebase, force-push, or reset. Unfinished work still gets a line in `docs/plans/CROSS_AGENT_HANDOFF.md`. Network failure is the only excuse for the branch not being on origin yet. Say that explicitly.
-2. **Production follows Git.** Pushing `main` triggers Vercel production when the diff affects the Next app; “shipped” means Matt merged the PR and remote `main` is updated and, when app code changed, the production deploy is **READY** (see `.cursor/rules/deploy-verify-before-done.mdc`). Docs/skills/changelog-only pushes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
+1. **Production truth is `origin/main`.** A finished change is `npm run ship` (Matt 2026-10-09). Never `git push` `main`. No rebase, force-push, or reset. Unfinished work still gets a line in `docs/plans/CROSS_AGENT_HANDOFF.md`. Network failure is the only excuse for the branch not being on origin yet. Say that explicitly.
+2. **Production follows Git.** A merge onto `main` triggers Vercel production when the diff affects the Next app; “shipped” means `origin/main` moved and, when app code changed, the production deploy is **READY** (see `.cursor/rules/deploy-verify-before-done.mdc`). Docs/skills/changelog-only changes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
 3. **No hanging migrations.** New files under `supabase/migrations/` are not real until they run on **hosted** Supabase. Apply them in the **same delivery effort** as the code that needs them — never “commit now, migrate later” (`.cursor/rules/supabase-migrations-auto.mdc`, `.cursor/rules/production-parity.mdc`).
 4. **Branch, then push.** Day-to-day edits go on a branch from current `origin/main` and that branch is pushed to GitHub right away. Use linked worktrees for parallel agents, not as a silent parking lot. See **Worktrees** below.
 
@@ -125,13 +125,13 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 
 July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change *when* and *what* you push:
 
-1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit on the branch**, `NODE_OPTIONS=--max-old-space-size=8192 npm run push` (pushes that branch, not `main`), then `npm run deploy:verify` when the user-facing app changed and Matt has merged the PR.
+1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit on the branch**, then `NODE_OPTIONS=--max-old-space-size=8192 npm run ship`. That command runs `deploy:verify` when the app changed.
 2. **Docs / skills / rules / plans / handoffs only** → **batch into one commit**, then push once. Local `npm run push` already skips `next build` for non-buildable diffs; Vercel skips the remote build via `ignoreCommand`. Do not drip many docs commits that each burn local `ci:gates`.
 3. **Do not push mid-thought.** Commit locally while iterating if you need a restore point; push when the unit of work is coherent.
 4. **Ship class (fleet / loop):** same-category bot findings share one isolated verify + one production deploy. `loop-brief` prints the class. Do not run `npm run push` after each finding.
 5. **R-221 — do not poll GitHub Actions.** One `ci:gates` per ship. After a green local stamp + push, stop. Do not `gh run view` in a loop. Do not rematch `origin/main` unless GitHub says CONFLICTING. Live-DB int tests are nightly (`test:int`), not a reason to sit idle.
 6. **Release / changelog:** GitHub Releases carry the notes. Do not recreate a `chore: update changelog` commit on `main` — that path burned hundreds of full production builds.
-7. **Worktree branches:** push them to GitHub right away. Do not keep the only copy local. Do not merge them to `main` yourself. Open a PR to `main`; Matt merges.
+7. **Worktree branches:** a finished unit is `npm run ship` from that checkout. Unfinished work is `npm run push` plus a handoff line. Do not keep the only copy local.
 
 ### Worktrees (allowed — design against stranded work)
 
@@ -143,7 +143,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 
 1. Branch name: `wt/<topic>-YYYYMMDD` (or harness names like `claude/…`). Push the branch before stop, or write the handoff.
 2. Path: sibling dir such as `../RyanRealty-wt-<topic>` — not nested inside the primary tree.
-3. Session end: push the branch to origin with `npm run push`. Do not merge, rebase, force-push, or reset onto `main`. If work is unfinished, also write branch + absolute path + next step into `docs/plans/CROSS_AGENT_HANDOFF.md` Current block on that branch.
+3. Session end: unfinished work is `npm run push` plus a handoff line (branch, absolute path, next step) in `docs/plans/CROSS_AGENT_HANDOFF.md`. A finished unit is `npm run ship`. No rebase, force-push, or reset.
 4. Cleanup when merged: delete branch, `git worktree remove <path>`, `git worktree prune`. Run `node scripts/worktree-hygiene.mjs` at session start/end.
 5. Never leave the only copy of valued commits in an unpushed worktree with no handoff line.
 
@@ -163,7 +163,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 
 ### Cross-agent handoff (mandatory when work spans tools)
 
-1. **Push the branch to origin first** (nothing handoff-worthy should be unpushed). Do not merge it to `main`.
+1. **Unfinished work pushes the branch and stops.** A finished unit is `npm run ship` and does not stop at a handoff.
 2. Open **`docs/plans/CROSS_AGENT_HANDOFF.md`** and replace the **Current** block (exactly one; never stack a second, `ci:handoff-current` fails it; carry any still-open Matt directive forward): surface, time, commit SHA, what finished, what is next, blockers, which **`SKILL.md` files you actually read**.
 3. Optionally also write narrative under **`~/.claude/plans/HANDOFF-*.md`** for Claude Desktop-only context (paths on disk, local-only experiments)—still assume the other agent only **pulls git** and reads **`CROSS_AGENT_HANDOFF.md`**.
 
@@ -459,27 +459,27 @@ If UI or routes changed, the matching `ci:*` members are already in `ci:gates`. 
 ## How to Complete
 
 ```bash
-NODE_OPTIONS=--max-old-space-size=8192 npm run push   # the branch, not main
+NODE_OPTIONS=--max-old-space-size=8192 npm run ship
 ```
 
-`orchestrate.ts complete` is retired. The work graph updates from loop/sentinel, not from that CLI.
+`npm run push` saves an unfinished branch. It does not reach production. `orchestrate.ts complete` is retired. The work graph updates from loop/sentinel, not from that CLI.
 
-## CRITICAL: Push the branch and open a PR. Matt merges. Nobody pushes `main`.
+## CRITICAL: A finished unit is `npm run ship`. Never `git push` `main`.
 
-**Production deploys from `main` only. Every change reaches `main` only through a PR that Matt merges. Nobody pushes to `main`, including admins (Matt 2026-10-08).** Routine work: commit on a branch from current `origin/main` and `npm run push` that branch, then open a PR to `main`. Do not merge, rebase, force-push, or reset. Do not leave the only copy of valued work unpushed. Unfinished work gets a line in `CROSS_AGENT_HANDOFF.md`.
+**Production deploys from `main`. A finished change is `npm run ship` (Matt 2026-10-09): local gates, push the branch, merge the pull request, then `deploy:verify` when the app changed.** Never `git push` `main`. No rebase, force-push, or reset. Do not leave the only copy of valued work unpushed. Unfinished work is `npm run push` plus a line in `CROSS_AGENT_HANDOFF.md`. One `ci:gates` per ship; do not poll GitHub Actions.
 
 ```bash
-# DEFAULT: push the branch, not main
-NODE_OPTIONS=--max-old-space-size=8192 npm run push
+# DEFAULT: finished work
+NODE_OPTIONS=--max-old-space-size=8192 npm run ship
 
-# WORKTREE: branch from current origin/main, push the branch, do not merge it
+# WORKTREE: branch from current origin/main, then the same command from that checkout
 git fetch origin
 git worktree add -b wt/crm-mobile-20260726 ../RyanRealty-wt-crm-mobile origin/main
 # …work in the other checkout…
-# npm run push of that branch. Do not merge it to main.
+# npm run ship from that checkout when the unit is finished
 
 # WRONG
-# merge, rebase, force-push, or reset onto main yourself
+# git push main, rebase, force-push, or reset
 # leave the only copy of the work unpushed, with no handoff
 ```
 
