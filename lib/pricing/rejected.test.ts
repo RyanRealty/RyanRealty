@@ -118,9 +118,13 @@ describe('rejectionReason', () => {
     )
   })
 
-  it('states the two-year window when the sale sold outside it', () => {
-    expect(rejectionReason(candidate({ closeDate: '2024-01-15' }), SUBJECT, ASOF)).toBe(
-      'sold 32 months ago, outside the two years this analysis draws from',
+  it('does not call a sale inside the 36-month recovery window too old', () => {
+    expect(rejectionReason(candidate({ closeDate: '2024-01-15' }), SUBJECT, ASOF)).toBeNull()
+  })
+
+  it('states the recovery window when the sale sold outside it', () => {
+    expect(rejectionReason(candidate({ closeDate: '2023-05-01' }), SUBJECT, ASOF)).toBe(
+      'sold 40 months ago, outside the 36 months this analysis draws from',
     )
   })
 
