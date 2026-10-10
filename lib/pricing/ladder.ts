@@ -73,6 +73,13 @@ export type PricingTier = {
    * outright while the bounded ladder is still reaching the minimum.
    */
   whenStarved?: boolean
+  /**
+   * Same places, older closes. Runs only while the set is still under five.
+   * A set that already holds five never sees these, so a letter that already
+   * prices does not pick up a 30-month sale. Not a wider ring and not a
+   * boundary exit.
+   */
+  dateRecovery?: boolean
 }
 
 /**
@@ -261,6 +268,46 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     bedSlop: 1,
     bathSlop: 1,
   })
+  const OLDER_DISCLOSURE =
+    'The newer window in these same places held fewer than five sales, so the search kept the same street, the same plat, the plats next to it, and this home\'s community, and took sales that closed between 24 and 36 months ago. An older sale carries a larger market adjustment and less weight.'
+  const olderSamePlaces = (months: number): PricingTier[] => [
+    {
+      ...street(months),
+      name: `older-street-${months}mo`,
+      dateRecovery: true,
+      disclosure: OLDER_DISCLOSURE,
+    },
+    {
+      ...sub(months),
+      name: `older-subdivision-${months}mo`,
+      dateRecovery: true,
+      disclosure: OLDER_DISCLOSURE,
+    },
+    {
+      ...sub(months, PLAT_WIDE_SQFT_BAND, '-wide'),
+      name: `older-subdivision-${months}mo-wide`,
+      dateRecovery: true,
+      disclosure: OLDER_DISCLOSURE,
+    },
+    {
+      ...adjacent(months, 'utilities'),
+      name: `older-adjacent-${months}mo`,
+      dateRecovery: true,
+      disclosure: OLDER_DISCLOSURE,
+    },
+    {
+      ...closer(months, 'utilities'),
+      name: `older-closer-${months}mo`,
+      dateRecovery: true,
+      disclosure: OLDER_DISCLOSURE,
+    },
+    {
+      ...community(months, 'utilities'),
+      name: `older-community-${months}mo`,
+      dateRecovery: true,
+      disclosure: OLDER_DISCLOSURE,
+    },
+  ]
   const likeCommunity = (months: number): PricingTier => ({
     name: `like-community-${months}mo`,
     monthsBack: months,
@@ -338,6 +385,15 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     closer(12, 'utilities'),
     closer(18, 'utilities'),
     closer(24, 'utilities'),
+    // SAME PLACES, OLDER CLOSES (Matt 2026-10-09). The rows above stop at 24
+    // months. A plat whose matching sales closed just past that, and nowhere
+    // newer, came back with an empty set (Cascade Courtyard, Staats). These
+    // rungs reopen the subject's own street, its own plat, the plats that
+    // touch it, the next row, and its community out to 36 months, and only
+    // while the set is still under five. They do not open a wider ring. A
+    // set that already holds five skips them.
+    ...olderSamePlaces(30),
+    ...olderSamePlaces(36),
     // No recorded plat (and rural acreage with no plat): the distance ladder.
     // A recorded subdivision opens these only when its plat rows above hold
     // fewer than the minimum; the parent wall still holds on every one.
@@ -623,21 +679,23 @@ function monthsBefore(asOf: string | undefined, closeDate: string | null | undef
  */
 export const LOCAL_POOL_RADIUS_MILES = 3
 /**
- * How far back the facts pool is loaded, in calendar months. Ordinary rungs
- * stop at 24, so the pool stops there too: an 18-month floor never loaded a
- * sale one day older than that, and a 24-month rung could not see it. Custom
- * and new rungs also stop at 24, but the pool stays at 30 so a sale the
- * 24-month rung should see is not lost to the calendar-month versus 30.44-day
- * mismatch. Do not shrink the custom window. Do not pull ordinary sales past 24.
+ * How far back the facts pool is loaded, in calendar months. The rungs that
+ * always run stop at 24 (30 for custom and new, so a 24-month rung is not
+ * lost to the calendar-month versus 30.44-day mismatch). Do not shrink the
+ * custom window. The load goes out to DATE_RECOVERY_MONTHS so a short set
+ * can see a same-plat sale past 24 months. The price anchor stays on the
+ * ordinary or custom window (walkPricingLadder), so a letter that already
+ * has five sales does not move because an older close entered the pool.
  */
 export const ORDINARY_FACTS_POOL_MONTHS = 24
 export const CUSTOM_FACTS_POOL_MONTHS = 30
+/** Same places, reopened only while a set is still under five. */
+export const DATE_RECOVERY_MONTHS = 36
 
 export function factsPoolCloseAfter(asOf: string, customOrNew: boolean): string {
+  const rungMonths = customOrNew ? CUSTOM_FACTS_POOL_MONTHS : ORDINARY_FACTS_POOL_MONTHS
   const closeAfter = new Date(asOf.slice(0, 10))
-  closeAfter.setMonth(
-    closeAfter.getMonth() - (customOrNew ? CUSTOM_FACTS_POOL_MONTHS : ORDINARY_FACTS_POOL_MONTHS),
-  )
+  closeAfter.setMonth(closeAfter.getMonth() - Math.max(rungMonths, DATE_RECOVERY_MONTHS))
   return closeAfter.toISOString().slice(0, 10)
 }
 /**
@@ -647,8 +705,11 @@ export function factsPoolCloseAfter(asOf: string, customOrNew: boolean): string 
  */
 export const WIDENED_SQFT_BAND = 0.25
 
-/** Own street, own plat, or the 0.25 mi street-cluster pocket. */
-export function isPocketExclusiveTier(tier: Pick<PricingTier, 'sameSubdivision' | 'sameStreetOnly' | 'samePocket'>): boolean {
+/** Own street, own plat, or the 0.25 mi street-cluster pocket. A date-recovery rung is the same place but it does not keep walking once five sales are seated. */
+export function isPocketExclusiveTier(
+  tier: Pick<PricingTier, 'sameSubdivision' | 'sameStreetOnly' | 'samePocket' | 'dateRecovery'>,
+): boolean {
+  if (tier.dateRecovery) return false
   return Boolean(tier.sameSubdivision || tier.sameStreetOnly || tier.samePocket)
 }
 
@@ -657,7 +718,7 @@ export function isPocketExclusiveTier(tier: Pick<PricingTier, 'sameSubdivision' 
  * Not the exclusive pocket, not adjacent plats, not designated communities.
  */
 export function isGeographyWidenTier(tier: PricingTier): boolean {
-  if (tier.whenStarved || tier.ruralOnly) return false
+  if (tier.dateRecovery || tier.whenStarved || tier.ruralOnly) return false
   if (isPocketExclusiveTier(tier)) return false
   if (tier.sameCommunity || tier.likeCommunity || tier.adjacentSubdivision || tier.closerSubdivision) return false
   return true

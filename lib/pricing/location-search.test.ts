@@ -202,4 +202,41 @@ describe('location search', () => {
     expect(unplatted.indexOf('nearby-0.25mi-6mo')).toBeLessThan(unplatted.indexOf('nearby-1mi-6mo'))
     expect(unplatted[0]).toBe('subdivision-6mo')
   })
+
+  it('seats a same-plat sale past 24 months when the newer window is short of five, and leaves a full set alone', () => {
+    const asOf = '2026-10-09'
+    const old = sale({
+      listingKey: 'OLD30',
+      address: '30 Kenwood',
+      closeDate: '2024-04-15',
+      sqft: 2000,
+      closePrice: 690_000,
+    })
+    const short = walkPricingLadder(subject(), [old], { asOf, anchorWindowMonths: 24 })
+    expect(short.comps.map((c) => c.listingKey)).toEqual(['OLD30'])
+    expect(short.comps[0]?.selectionTier).toMatch(/^older-subdivision-/)
+
+    const recent = [1, 2, 3, 4, 5].map((i) =>
+      sale({
+        listingKey: `NEW${i}`,
+        address: `${i} Kenwood`,
+        closeDate: '2026-08-01',
+        closePrice: 700_000 + i,
+      }),
+    )
+    const full = walkPricingLadder(subject(), [...recent, old], { asOf, anchorWindowMonths: 24 })
+    const fullKeys = full.comps.map((c) => c.listingKey)
+    expect(fullKeys).not.toContain('OLD30')
+    expect(fullKeys.length).toBeGreaterThanOrEqual(5)
+
+    const names = pricingTierLadder().map((t) => t.name)
+    expect(names.indexOf('closer-sub-24mo')).toBeLessThan(names.indexOf('older-subdivision-30mo'))
+    expect(names.indexOf('older-subdivision-36mo-wide')).toBeLessThan(names.indexOf('pocket-3mo'))
+    const nearby = names.filter((name) => name.startsWith('nearby-'))
+    expect(nearby.filter((name) => name.startsWith('nearby-0.25mi-'))).toEqual([
+      'nearby-0.25mi-3mo',
+      'nearby-0.25mi-6mo',
+      'nearby-0.25mi-9mo',
+    ])
+  })
 })
