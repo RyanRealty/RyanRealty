@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
-import { evaluateAccuracyContract } from '@/lib/cma/contract'
+import { COMP_MAX_AGE_MONTHS, evaluateAccuracyContract } from '@/lib/cma/contract'
+import { DATE_RECOVERY_MONTHS } from '@/lib/pricing/ladder'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
 import type { CmaAudit } from '@/lib/cma/audit'
 import type { CompJudgment } from '@/lib/cma/judge'
@@ -103,6 +104,11 @@ function judgmentFor(comps: CmaComp[]): CompJudgment {
 }
 
 describe('evaluateAccuracyContract', () => {
+  it('uses the same age cap as the recovery rungs', () => {
+    expect(COMP_MAX_AGE_MONTHS).toBe(DATE_RECOVERY_MONTHS)
+    expect(COMP_MAX_AGE_MONTHS).toBe(36)
+  })
+
   it('passes clean on a tight, judged, converged set', () => {
     const comps = tightSet()
     const adjusted = adjustComps(subject(), comps, null)
@@ -138,8 +144,25 @@ describe('evaluateAccuracyContract', () => {
     expect(contract.checks.find((c) => c.id === 'llm-judgment-ran')!.pass).toBe(false)
   })
 
-  it('hard-fails on a comp older than the 24-month window', () => {
-    const stale = comp({ closeDate: new Date(Date.now() - 800 * 86_400_000).toISOString().slice(0, 10) })
+  it('keeps a same-place sale inside the 36-month recovery window', () => {
+    // About 26 months: past the ordinary 24-month rung, inside recovery.
+    const older = comp({ closeDate: new Date(Date.now() - 800 * 86_400_000).toISOString().slice(0, 10) })
+    const comps = [...tightSet().slice(0, 5), older]
+    const adjusted = adjustComps(subject(), comps, null)
+    const pricing = computePricing(subject(), adjusted, null)!
+    const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+    })
+    expect(contract.checks.find((c) => c.id === 'comp-data-sanity')!.pass).toBe(true)
+  })
+
+  it('hard-fails on a comp older than the 36-month recovery window', () => {
+    const stale = comp({ closeDate: new Date(Date.now() - 1200 * 86_400_000).toISOString().slice(0, 10) })
     const comps = [...tightSet().slice(0, 5), stale]
     const adjusted = adjustComps(subject(), comps, null)
     const pricing = computePricing(subject(), adjusted, null)!

@@ -43,11 +43,12 @@ const SIZE_GAP = 0.2
 /** Years apart at or above this is worth stating. */
 const AGE_GAP = 20
 /**
- * The window the analysis draws from. Mirrors COMP_MAX_AGE_MONTHS in
- * lib/cma/contract.ts, which is the check that fails a build over it. Held
- * locally so lib/pricing does not import the CMA contract to write a sentence.
+ * The window the analysis draws from. Matches COMP_MAX_AGE_MONTHS (36),
+ * which is DATE_RECOVERY_MONTHS. A same-place sale between 24 and 36 months
+ * can set the price, so it is not "outside" this window. Held locally so
+ * lib/pricing does not import the CMA contract to write a sentence.
  */
-const WINDOW_MONTHS = 24
+const WINDOW_MONTHS = 36
 
 const MS_PER_MONTH = 30.44 * 86_400_000
 
@@ -263,7 +264,7 @@ export function rejectionReason(
 
   const months = monthsSince(sale.closeDate, asOfMs)
   if (months != null && months > WINDOW_MONTHS) {
-    return `sold ${Math.round(months)} months ago, outside the two years this analysis draws from`
+    return `sold ${Math.round(months)} months ago, outside the 36 months this analysis draws from`
   }
 
   // A gap is a reason only when it is WIDER than the widest gap among the sales

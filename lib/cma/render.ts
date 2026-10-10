@@ -322,10 +322,9 @@ function wrapPage(page: PageDef): string {
 /**
  * A subject photo older than this no longer shows today's house.
  *
- * 24 months is not arbitrary: it is the same recency window the accuracy
- * contract already enforces on comparable sales ("close date within 24
- * months"). A photo we would not accept as evidence of a comp's condition is
- * not evidence of the subject's either.
+ * 24 months is the photo rule for this house. A seated sale can be older
+ * than that when the short-set recovery rung kept it (out to 36 months).
+ * A photo we would not accept as evidence of today's house is not shown.
  */
 const STALE_SUBJECT_PHOTO_MONTHS = 24
 
