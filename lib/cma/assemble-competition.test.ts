@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CmaBandListingRow } from '@/lib/data/cma/bandInventory'
+import type { SubdivisionRing } from '@/lib/data/geo/subdivision-ring'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 
@@ -13,7 +14,7 @@ import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 const getCmaAreaBandInventory = vi.fn()
 const getCmaAreaUnsoldCycles = vi.hoisted(() => vi.fn(async () => null))
 const getSubdivisionRing = vi.hoisted(() =>
-  vi.fn(async () => ({
+  vi.fn(async (): Promise<SubdivisionRing | null> => ({
     homeSlug: 'old-bend-plat',
     homeLabel: 'Old Bend',
     neighborhoodSlug: 'bend-old-bend',
