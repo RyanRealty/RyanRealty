@@ -50,6 +50,7 @@ import {
   type WaterClass,
 } from '@/lib/pricing/classes'
 import {
+  ORDINARY_FACTS_POOL_MONTHS,
   PRICING_MIN_COMPS,
   PRICING_TARGET_COMPS,
   PRICING_WALK_CAP,
@@ -1813,7 +1814,12 @@ export function walkPricingLadder(
   // row and plat read left it, not the inferred pocket: the anchor's levels are
   // its own recorded plat, that plat's family, and its own MLS subdivision name
   // before any wider ground.
-  const priceAnchor = resolvePriceAnchor(rawSubject, pool)
+  // The anchor stays on the ordinary (or custom) window. The pool also holds
+  // closes out to 36 months for the date-recovery rungs, and those older
+  // closes must not move the line on a letter that already has five sales.
+  const anchorMonths = opts.anchorWindowMonths ?? ORDINARY_FACTS_POOL_MONTHS
+  const withinAnchor = pool.filter((s) => monthsBetween(asOf, s.closeDate) <= anchorMonths)
+  const priceAnchor = resolvePriceAnchor(rawSubject, withinAnchor.length > 0 ? withinAnchor : pool)
   // The one 20% line around it (lib/pricing/price-tier.ts), or null with no anchor.
   const priceLine = priceTierLine(priceAnchor?.ppsf)
   /** Distinct sales the price line skipped, across every rung. */
@@ -2123,13 +2129,18 @@ export function walkPricingLadder(
       : pool
     for (const sale of scanPool) {
       if (byKey.has(sale.listingKey)) continue
+      // A close inside 24 months already had the normal rungs. Recovery is
+      // only the sales those rungs could not see because they were older.
+      if (tier.dateRecovery && monthsBetween(asOf, sale.closeDate) <= ORDINARY_FACTS_POOL_MONTHS) continue
       // ONE SALE, ONE ROW. A relisting of the same closed transaction carries a
-      // new listing key, so keying on that alone lets one sale into a set twice
-      // — once in the median and again at an end of the printed range. Address
-      // plus city plus close price: two different homes do not close at the
-      // exact same price at the same street address, and a duplicate always
-      // agrees with itself on price even when it disagrees on square footage.
-      const saleKey = `${sale.address.trim().toLowerCase()}|${(sale.city ?? '').trim().toLowerCase()}|${Math.round(sale.closePrice)}`
+      // new listing key, so keying on that alone lets one sale into a set twice,
+      // once in the median and again at an end of the printed range. Address,
+      // unit, city, and close price. A blank unit stays on address and price, so
+      // one house relisted at the same price still enters once. Two units in one
+      // building are two sales even when they close at the same dollar (1940
+      // Monterey Pines units 2 and 12, both $520,000).
+      const unit = (sale.unitNumber ?? '').trim().toLowerCase()
+      const saleKey = `${sale.address.trim().toLowerCase()}|${unit}|${(sale.city ?? '').trim().toLowerCase()}|${Math.round(sale.closePrice)}`
       if (bySale.has(saleKey)) continue
       const { ok, why, roomDecision, sewerNote, priceTier } = passesTier(
         subject,

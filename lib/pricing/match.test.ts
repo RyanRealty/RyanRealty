@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { distanceMiles } from '@/lib/cma/market-area'
 import { productClassFromFactsRow, SUBDIVISION_TIER_RATIO } from '@/lib/pricing/classes'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
-import { CUSTOM_FACTS_POOL_MONTHS, factsPoolCloseAfter, ORDINARY_FACTS_POOL_MONTHS } from '@/lib/pricing/ladder'
+import { CUSTOM_FACTS_POOL_MONTHS, DATE_RECOVERY_MONTHS, factsPoolCloseAfter, ORDINARY_FACTS_POOL_MONTHS } from '@/lib/pricing/ladder'
 import { nextRowSubdivisionSlugs, touchingPlatsForSearch } from '@/lib/data/geo/subdivision-ring'
 import { walkPricingLadder, type PricingSale, type PricingSubject } from '@/lib/pricing/match'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -83,6 +83,36 @@ function sale(over: Partial<PricingSale> = {}): PricingSale {
 const asOf = '2026-08-01'
 
 describe('walkPricingLadder', () => {
+  it('keeps two units at one address that closed at the same price', () => {
+    const pool = [
+      sale({
+        listingKey: 'U2',
+        address: '1940 Monterey Pines',
+        unitNumber: 'UNIT 2',
+        closePrice: 520_000,
+        closeDate: '2026-06-01',
+      }),
+      sale({
+        listingKey: 'U12',
+        address: '1940 Monterey Pines',
+        unitNumber: 'UNIT 12',
+        closePrice: 520_000,
+        closeDate: '2026-05-15',
+      }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['U12', 'U2'])
+  })
+
+  it('still counts one house once when a second row has the same address and price and no unit', () => {
+    const pool = [
+      sale({ listingKey: 'A', address: '10 Same St', closePrice: 700_000, closeDate: '2026-06-01' }),
+      sale({ listingKey: 'B', address: '10 Same St', closePrice: 700_000, closeDate: '2026-05-01' }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['A'])
+  })
+
   it('takes same-subdivision 3-month sales before it reaches for distance', () => {
     const pool = [
       sale({ listingKey: 'RECENT', closeDate: '2026-06-15', address: '10 Kenwood' }),
@@ -1730,8 +1760,8 @@ describe('the GLA bracket obeys the 24-month wall', () => {
   it('will not swap in a sale the accuracy contract would hard-fail as stale', () => {
     // Every kept sale smaller than the subject, so the bracket wants a larger
     // one. The only larger sale on offer closed 27 months ago.
-    const smaller = Array.from({ length: 3 }, (_, i) =>
-      sale({ listingKey: `S${i}`, address: `${i} Kenwood`, sqft: 1800, closeDate: '2026-06-01' }),
+    const smaller = Array.from({ length: 5 }, (_, i) =>
+      sale({ listingKey: `S${i}`, address: `${i} Kenwood`, sqft: 1800, closeDate: '2026-06-01', closePrice: 700_000 + i }),
     )
     const staleBigger = sale({
       listingKey: 'STALE',
@@ -2571,18 +2601,21 @@ describe('a comp from the wrong house', () => {
 })
 
 describe('the facts pool reaches the rung that names it', () => {
-  it('loads a sale one day outside 18 months, and does not load one past 24', () => {
+  it('loads the 36-month recovery window, and keeps the anchor windows', () => {
     const asOf = '2026-10-01'
     const ordinary = factsPoolCloseAfter(asOf, false)
     const custom = factsPoolCloseAfter(asOf, true)
     expect(ORDINARY_FACTS_POOL_MONTHS).toBe(24)
     expect(CUSTOM_FACTS_POOL_MONTHS).toBe(30)
+    expect(DATE_RECOVERY_MONTHS).toBe(36)
     // 1367 Milwaukee closed 2025-03-31, one day before the old 18-month floor.
     expect(ordinary <= '2025-03-31').toBe(true)
-    // 1125 Columbia closed about 24.6 months out.
-    expect(ordinary > '2024-09-13').toBe(true)
-    // Custom/new still reaches past the ordinary floor. Do not shrink it.
-    expect(custom < ordinary).toBe(true)
+    // 1125 Columbia closed about 24.6 months out. The recovery load includes it.
+    // The price anchor still ignores it (ORDINARY_FACTS_POOL_MONTHS).
+    expect(ordinary <= '2024-09-13').toBe(true)
+    expect(ordinary > '2023-08-01').toBe(true)
+    // Custom/new is not shorter than the recovery window, and not shorter than 30.
+    expect(custom <= ordinary).toBe(true)
     expect(custom <= '2024-09-13').toBe(true)
   })
 
@@ -2620,7 +2653,7 @@ describe('the facts pool reaches the rung that names it', () => {
     expect(out.rungs.find((r) => r.tier === 'subdivision-12mo')?.added).toBe(0)
   })
 
-  it('does not keep a sale past 24 months', () => {
+  it('keeps a same-plat sale past 24 months on the recovery rung, not on the 24-month rung', () => {
     const asOf = '2026-10-01'
     const columbia = sale({
       listingKey: 'COLUMBIA',
@@ -2648,8 +2681,9 @@ describe('the facts pool reaches the rung that names it', () => {
       [columbia],
       { asOf },
     )
-    expect(factsPoolCloseAfter(asOf, false) > columbia.closeDate).toBe(true)
-    expect(out.comps.map((c) => c.listingKey)).not.toContain('COLUMBIA')
+    expect(factsPoolCloseAfter(asOf, false) <= columbia.closeDate).toBe(true)
+    expect(out.comps.map((c) => c.listingKey)).toContain('COLUMBIA')
+    expect(out.comps[0]?.selectionTier).toMatch(/^older-subdivision-/)
     expect(out.rungs.find((r) => r.tier === 'subdivision-24mo')?.added).toBe(0)
   })
 })

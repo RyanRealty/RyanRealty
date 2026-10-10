@@ -121,6 +121,7 @@ case "$first" in
     ;;
   *)
     echo "ship: app changed. Waiting for production."
-    npm run deploy:verify
+    # Production records the merge commit. The branch tip is an ancestor of it.
+    npm run deploy:verify -- "$(git rev-parse origin/main)"
     ;;
 esac

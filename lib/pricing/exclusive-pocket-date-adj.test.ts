@@ -17,7 +17,15 @@ import type { MarketPath } from '@/lib/pricing/market-path'
 
 /** The file's own definition, written out so a new prefix cannot hide inside the classifier. */
 function expectedLadderClass(name: string): Exclude<RungClass, 'broker-selected' | 'unclassified'> {
-  if (name.startsWith('own-street-') || name.startsWith('subdivision-') || name.startsWith('pocket-')) return 'exclusive'
+  if (
+    name.startsWith('own-street-') ||
+    name.startsWith('subdivision-') ||
+    name.startsWith('pocket-') ||
+    name.startsWith('older-street-') ||
+    name.startsWith('older-subdivision-')
+  ) {
+    return 'exclusive'
+  }
   return 'widen'
 }
 

@@ -417,15 +417,21 @@ function emptyDiagnostics(
  * 926 and 925 sqft five months apart), counting once in the median and again
  * at the end of the printed range.
  *
- * The key is address + city + CLOSE PRICE, deliberately not address alone.
- * Two condos in one building often carry no unit number in the MLS, and
- * collapsing them would silently throw away a real comp; two different homes
- * closing at the exact same price at the same street address is not a thing.
- * Square footage is out of the key because the duplicate above disagreed with
- * itself by one foot.
+ * The key is address + unit + city + CLOSE PRICE, deliberately not address alone.
+ * A blank unit stays on address and price, so a building whose MLS rows have
+ * no unit number is not collapsed into one sale. Two units that both carry a
+ * unit number are two sales even when they close at the same dollar (1940
+ * Monterey Pines units 2 and 12, both $520,000). Square footage stays out of
+ * the key because the Ordway duplicate disagreed with itself by one foot.
  */
-function saleKey(comp: { address: string; city?: string | null; closePrice: number }): string {
-  return `${comp.address.trim().toLowerCase()}|${(comp.city ?? '').trim().toLowerCase()}|${Math.round(comp.closePrice)}`
+function saleKey(comp: {
+  address: string
+  city?: string | null
+  closePrice: number
+  unitNumber?: string | null
+}): string {
+  const unit = (comp.unitNumber ?? '').trim().toLowerCase()
+  return `${comp.address.trim().toLowerCase()}|${unit}|${(comp.city ?? '').trim().toLowerCase()}|${Math.round(comp.closePrice)}`
 }
 
 export async function selectComps(

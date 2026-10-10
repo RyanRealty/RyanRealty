@@ -165,8 +165,8 @@ export async function selectPricingComps(
     },
     asOfYear,
   )
-  // Ordinary: 24 months, the longest ordinary rung, and no further. Custom/new
-  // stays at 30 so those 24-month rungs still have a pool. Do not shrink the 30.
+  // The load reaches the 36-month recovery rungs. The price anchor still
+  // reads the ordinary 24-month window, or 30 for custom and new.
   const closeAfterIso = factsPoolCloseAfter(asOf, customOrNew)
   const sqft = pricingSubject.sqft
   // THE POOL IS NEVER OLDER THAN THE CHARTS (2026-10-07, 3037 Purcell). The

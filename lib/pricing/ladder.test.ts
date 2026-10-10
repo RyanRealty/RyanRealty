@@ -108,7 +108,9 @@ describe('pricingTierLadder — containment (Matt 2026-09-08)', () => {
     expect(names.indexOf('beyond-5mi-12mo')).toBeLessThan(names.indexOf('rural-10mi-9mo'))
     for (const t of tiers) {
       expect(!!t.crossBoundary).toBe(t.name.startsWith('beyond-'))
-      expect(!!t.adjacentSubdivision).toBe(t.name.startsWith('adjacent-sub-'))
+      expect(!!t.adjacentSubdivision).toBe(
+        t.name.startsWith('adjacent-sub-') || t.name.startsWith('older-adjacent-'),
+      )
       if (t.crossBoundary) expect(t.disclosure).toMatch(/crossed its boundary/)
     }
   })
@@ -157,7 +159,10 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
 
   it('marks exclusive pocket rungs vs geography-widening rungs', () => {
     for (const t of pricingTierLadder()) {
-      if (t.name.startsWith('subdivision-') || t.name.startsWith('own-street-') || t.name.startsWith('pocket-')) {
+      if (t.dateRecovery) {
+        expect(isPocketExclusiveTier(t)).toBe(false)
+        expect(isGeographyWidenTier(t)).toBe(false)
+      } else if (t.name.startsWith('subdivision-') || t.name.startsWith('own-street-') || t.name.startsWith('pocket-')) {
         expect(isPocketExclusiveTier(t)).toBe(true)
         expect(isGeographyWidenTier(t)).toBe(false)
       }
@@ -202,7 +207,9 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
 
   it('marks the community rungs sameCommunity and nothing else', () => {
     for (const t of pricingTierLadder()) {
-      expect(!!t.sameCommunity).toBe(t.name.startsWith('community-'))
+      expect(!!t.sameCommunity).toBe(
+        t.name.startsWith('community-') || t.name.startsWith('older-community-'),
+      )
       expect(!!t.likeCommunity).toBe(t.name.startsWith('like-community-'))
       expect(!!t.samePocket).toBe(t.name.startsWith('pocket-'))
     }

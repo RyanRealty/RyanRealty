@@ -8,7 +8,14 @@
  * and the ladder builders refuse to emit one.
  */
 
-export const EXCLUSIVE_RUNG_PREFIXES = ['own-street-', 'subdivision-', 'pocket-'] as const
+export const EXCLUSIVE_RUNG_PREFIXES = [
+  'own-street-',
+  'subdivision-',
+  'pocket-',
+  // Same street or same plat, only older. Still this home's own ground.
+  'older-street-',
+  'older-subdivision-',
+] as const
 
 /**
  * Wider than the subject's own street, plat, or quarter-mile pocket.
@@ -32,6 +39,9 @@ export const WIDEN_RUNG_PREFIXES = [
   'adjacent-sub-',
   'closer-sub-',
   'community-',
+  'older-adjacent-',
+  'older-closer-',
+  'older-community-',
 ] as const
 
 export type RungClass = 'exclusive' | 'widen' | 'broker-selected' | 'unclassified'
