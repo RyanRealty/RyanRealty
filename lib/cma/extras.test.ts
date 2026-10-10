@@ -199,9 +199,11 @@ describe('computeBandPosition', () => {
       area,
     )
     expect(fitting!.activeCount).toBe(12)
+    expect(fitting!.source).toContain('The price was not a filter. The plats were.')
     expect(fitting!.source).toContain(
-      'the 12 active listings in the band that passed the sales rules (sameAreaFit) inside the sales area, not every listing in the band',
+      'The 12 active listings that passed the hard walls on these plats (sameAreaFit)',
     )
+    expect(fitting!.source).not.toContain('ListPrice 494000..604000')
     expect(fitting!.source).not.toContain('all 12 active listings in the band')
     // A read that was not fitted keeps saying it is the whole band.
     const whole = computeBandPosition(

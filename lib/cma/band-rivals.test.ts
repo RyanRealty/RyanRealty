@@ -652,10 +652,9 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
       'No home like yours in Old Bend is for sale between $360,000 and $440,000, but one is under contract.',
     )
 
-    // The same 1925 home in a recorded-plat area is past the 25-year band
-    // there, and the assembly never counts it: the area sets the band.
+    // Year built does not remove the same 1925 home on a recorded plat (Matt 2026-10-10).
     const plat: CompArea = { ...ROOSTER, names: ['Old Bend Plat'], kind: 'subdivision' }
-    expect(sameAreaFit(plat, subject, { ...old, subdivision: 'Old Bend Plat' }).ok).toBe(false)
+    expect(sameAreaFit(plat, subject, { ...old, subdivision: 'Old Bend Plat' }).ok).toBe(true)
   })
 
   it('says "the nearest eight" over eight drawn for sale when the area holds more, whatever is under contract (rule 17)', () => {

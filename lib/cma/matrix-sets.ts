@@ -352,6 +352,18 @@ export function compAreaSentence(args: unknown): string | null {
   return readCompArea(args)?.sentence ?? null
 }
 
+/**
+ * The plats a set was drawn on. A pool set keeps its own plats. An older set
+ * stays on the sales plats, and does not fall back to the peer area.
+ */
+export function competitionDrawArea(
+  sales: CompArea | null | undefined,
+  set?: { poolGeography?: boolean | null; area?: CompArea | null } | null,
+): CompArea | null {
+  if (set?.poolGeography && set.area) return set.area
+  return sales ?? null
+}
+
 /** Both sets off one stored `render_args`, for the tile builder. */
 export function matrixSetsFromArgs(args: unknown): {
   unsold: CmaExpiredPeer[]
@@ -372,29 +384,39 @@ export function matrixSetsFromArgs(args: unknown): {
   const doc = a as {
     compArea?: CompArea | null
     documentStatus?: string | null
-    expiredPeers?: { peers?: readonly CmaExpiredPeer[] | null; area?: CompArea | null } | null
-    bandRivals?: { rivals?: readonly CmaBandRival[] | null; area?: CompArea | null } | null
+    expiredPeers?: {
+      peers?: readonly CmaExpiredPeer[] | null
+      area?: CompArea | null
+      poolGeography?: boolean | null
+    } | null
+    bandRivals?: {
+      rivals?: readonly CmaBandRival[] | null
+      area?: CompArea | null
+      poolGeography?: boolean | null
+    } | null
   } | null
   const peers = doc?.expiredPeers?.peers ?? a?.extras?.marketArea?.expiredPeers ?? []
   const rivals = doc?.bandRivals?.rivals ?? a?.extras?.band?.rivals ?? []
   const frozen = letterIsFrozen(doc?.documentStatus)
   const peerArea = doc?.expiredPeers?.area ?? null
   const bandArea = doc?.bandRivals?.area ?? null
+  const salesArea = doc?.compArea ?? null
   return {
     unsold: subject
       ? unsoldPeersFor({
           subject,
           peers,
-          area: doc?.compArea ?? null,
+          area: competitionDrawArea(salesArea, doc?.expiredPeers),
           buildArea: peerArea,
           frozen,
         })
       : [],
     // The sales area first. An old row's widened `bandRivals.area` no longer
     // admits a pin outside the plats the sales sit in (Matt 2026-10-07).
-    // A blank place is admitted when that sales area is the area the build
-    // drew, and a signed letter keeps the rows it stored (Matt 2026-10-09).
-    active: activeRivalsFor(rivals, subject, doc?.compArea ?? bandArea ?? null, {
+    // A pool set keeps the plats it was drawn on. A blank place is admitted
+    // when that area is the area the build drew, and a signed letter keeps
+    // the rows it stored (Matt 2026-10-09).
+    active: activeRivalsFor(rivals, subject, competitionDrawArea(salesArea ?? bandArea, doc?.bandRivals), {
       frozen,
       buildArea: bandArea,
     }),

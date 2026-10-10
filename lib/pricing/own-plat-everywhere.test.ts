@@ -202,10 +202,14 @@ describe('the facts walk seats the addition on the own-plat rung, at weight 3, u
   const out = walkPricingLadder(subject(), pool(), { asOf, anchorWindowMonths: 24 })
   const seated = (key: string) => out.comps.find((c) => c.listingKey === key)
 
-  it('own ground holds seven, so nothing widens: every addition sale came in on a subdivision rung', () => {
-    expect(out.comps).toHaveLength(7)
+  it('own ground seats the best five, so nothing widens: every seated sale came in on a subdivision rung', () => {
+    // Same size, beds, baths, and year. Recency keeps ADD_CHEAP, ADD_1, KEN_1,
+    // KEN_2, and ADD_2. KEN_3, ADD_3, and the one-bedroom sale wait.
+    expect(out.comps).toHaveLength(5)
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['ADD_1', 'ADD_2', 'ADD_CHEAP', 'KEN_1', 'KEN_2'])
     for (const c of out.comps) expect([c.listingKey, c.selectionTier.startsWith('subdivision-')]).toEqual([c.listingKey, true])
     expect(out.tiersUsed.some((t) => t.startsWith('adjacent-sub-'))).toBe(false)
+    expect((out.bench ?? []).map((c) => c.listingKey)).toEqual(['KEN_3', 'ADD_3', 'ADD_ROOM'])
   })
 
   it('stamps the addition own plat and weighs it as the same subdivision', () => {
@@ -219,8 +223,11 @@ describe('the facts walk seats the addition on the own-plat rung, at weight 3, u
     expect(seated('ADD_CHEAP')?.ownPlat).toBe(true)
   })
 
-  it('the year band does not apply, and one bedroom apart is own ground, kept and disclosed', () => {
-    const c = seated('ADD_ROOM')!
+  it('the year band does not apply, and one bedroom apart is own ground, kept on the bench and disclosed', () => {
+    expect(seated('ADD_ROOM')).toBeUndefined()
+    const c = (out.bench ?? []).find((row) => row.listingKey === 'ADD_ROOM')!
+    expect(c.ownPlat).toBe(true)
+    expect(c.selectionTier.startsWith('subdivision-')).toBe(true)
     expect(c.roomDecision?.ok).toBe(true)
     expect(c.roomDifference).toEqual(['beds'])
   })
@@ -238,8 +245,12 @@ describe('the facts walk seats the addition on the own-plat rung, at weight 3, u
       expect(c.ownPlat).toBe(false)
       expect(c.selectionTier.startsWith('subdivision-')).toBe(false)
     }
-    // The $300 sale is graded on the line there and skipped.
-    expect(walked.comps.some((c) => c.listingKey === 'ADD_CHEAP')).toBe(false)
+    // The $300 sale is an adjacent plat. The price line does not remove it
+    // there, and it is the newest equal-size adjacent sale, so it seats.
+    const cheap = walked.comps.find((c) => c.listingKey === 'ADD_CHEAP')
+    expect(cheap?.ownPlat).toBe(false)
+    expect(cheap?.selectionTier.startsWith('adjacent-sub-')).toBe(true)
+    expect(cheap?.locationMatch).toBe('adjacent-subdivision')
   })
 })
 
@@ -406,7 +417,15 @@ describe('the picker and the review call the same decision on an addition sale (
   })
 
   it('the review restores the addition sale it cut on price and the one it cut for the bedroom', async () => {
-    const walked = walkPricingLadder(subject(), pool(), { asOf, anchorWindowMonths: 24 })
+    // Five admitted sales, so both the cheap sale and the one-bedroom sale
+    // are in the priced set. The review has to keep what the picker kept.
+    const kept = pool().filter((row) =>
+      ['KEN_1', 'KEN_2', 'KEN_3', 'ADD_CHEAP', 'ADD_ROOM'].includes(row.listingKey),
+    )
+    const walked = walkPricingLadder(subject(), kept, { asOf, anchorWindowMonths: 24 })
+    expect(walked.comps.map((c) => c.listingKey)).toEqual(
+      expect.arrayContaining(['ADD_CHEAP', 'ADD_ROOM']),
+    )
     const comps = walked.comps.map(toComp)
     const room = comps.find((c) => c.listingKey === 'ADD_ROOM')!
     // The picker's room call, read back the way every later check reads it.
@@ -424,7 +443,7 @@ describe('the picker and the review call the same decision on an addition sale (
         ppsfCeiling: 540,
         exclusionRule: 'Priced on closed sales from $360 to $540 per square foot.',
         confidence: 'Moderate',
-        narrative: 'Seven sales set the range.',
+        narrative: 'Five sales set the range.',
         verdicts: verdicts.map((v) => ({
           listingKey: v.listingKey,
           tier: v.tier,
@@ -521,18 +540,12 @@ describe('own street and exact plat seat first inside own ground (Matt 2026-10-0
     expect(ownGroundSeatRank(s, { ...rows[2]!, ownPlat: false })).toBe(2)
   })
 
-  it('keeps 20624 Foxborough Ln and 20645 Hummingbird, then the five newest phase sales', () => {
+  it('keeps the five closest in living area, including 20624 Foxborough Ln and 20645 Hummingbird', () => {
     const out = walkPricingLadder(fox(), foxPool(), { asOf, anchorWindowMonths: 24 })
-    expect(out.comps).toHaveLength(7)
-    expect(out.comps.map((c) => c.listingKey).sort()).toEqual([
-      'BROOK1',
-      'BROOK2',
-      'COUPLES',
-      'DOVE1',
-      'DOVE2',
-      'FOXLN',
-      'HUMMING',
-    ])
+    // Subject is 1,314 sqft. Closest first: White Dove 1,320, Brookhollow
+    // 1,300, Foxborough Ln 1,334, Hummingbird 1,335, Songbird 1,280.
+    expect(out.comps).toHaveLength(5)
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['BROOK2', 'DOVE2', 'FOXLN', 'HUMMING', 'SONG'])
     const foxLn = out.comps.find((c) => c.listingKey === 'FOXLN')!
     expect(foxLn.closePrice).toBe(575_000)
     expect(foxLn.selectionTier).toBe('own-street-24mo')

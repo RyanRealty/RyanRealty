@@ -702,6 +702,12 @@ export type CmaBandRivalSet = {
   shortOfFive?: boolean
   /** What lo..hi is centered on and how wide it opened; the letter states it (lib/cma/competition-band-basis.ts). */
   bandBasis?: import('@/lib/cma/competition-band-basis').CompetitionBandBasis | null
+  /**
+   * The set was drawn on its own plats (the subject's plat, the plats that
+   * touch it, and the next row when that row was opened), not on the plats
+   * the sold comps happened to sit in. The render keeps those homes.
+   */
+  poolGeography?: boolean
 }
 
 /**

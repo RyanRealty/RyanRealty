@@ -282,6 +282,41 @@ function rowToRival(row: CmaBandListingRow, status: 'Active' | 'Pending'): CmaBa
   return withRivalStretch(rival, bandRowStretch(row))
 }
 
+/** Citation for the homes the competition chapter counted. A fitted pool names the plats, not a dollar band. */
+function bandPositionSource(input: {
+  area?: CompArea | null
+  city: string
+  lo: number
+  hi: number
+  propertySubType?: string | null
+  activeCount: number
+  activeShown: number
+  truncated: boolean
+  sameAreaFit: boolean
+  ownLeftOut: boolean
+  typeFiltered: boolean
+}): string {
+  const scope = input.area
+    ? `CompArea ${input.area.kind} ${compAreaPhrase(input.area)}`
+    : `City='${input.city}'`
+  const typeBit = `same property type${input.propertySubType ? ` (${input.propertySubType})` : ''}, Active + Pending`
+  const notes = `${input.ownLeftOut ? ", this home's own listing left out" : ''}${
+    input.typeFiltered ? `, ${input.activeShown} after the same-product-type filter` : ''
+  }`
+  const ceiling = input.truncated
+    ? `band exceeded the read ceiling, so these figures cover the first ${input.activeShown} of ${input.activeCount} active listings`
+    : null
+  const measured = 'days on market measured from OnMarketDate'
+  if (input.sameAreaFit) {
+    const which =
+      ceiling ??
+      `The ${input.activeCount} active listings that passed the hard walls on these plats (sameAreaFit)`
+    return `Supabase listings, ${scope}, ${typeBit}, pulled at build time. The price was not a filter. The plats were. ${which}${notes}; ${measured}`
+  }
+  const which = ceiling ?? `all ${input.activeCount} active listings in the band`
+  return `Supabase listings, ${scope}, ${typeBit}, ListPrice ${input.lo}..${input.hi}, pulled at build time — ${which}${notes}; ${measured}`
+}
+
 export function computeBandPosition(
   inv: {
     activeAsks: number[]
@@ -355,19 +390,19 @@ export function computeBandPosition(
     activeMedianAsk: median(asks),
     activeMedianDom: median(doms),
     rivals: pickBandRivals(raw, subject),
-    source: `Supabase listings, ${
-      area
-        ? `CompArea ${area.kind} ${compAreaPhrase(area)}`
-        : `City='${city}'`
-    }, same property type${subject?.propertySubType ? ` (${subject.propertySubType})` : ''}, Active + Pending, ListPrice ${lo}..${hi}, pulled at build time — ${
-      inv.truncated
-        ? `band exceeded the read ceiling, so these figures cover the first ${activeRows.length} of ${inv.activeCount} active listings`
-        : `${
-            inv.sameAreaFit
-              ? `the ${inv.activeCount} active listings in the band that passed the sales rules (sameAreaFit) inside the sales area, not every listing in the band`
-              : `all ${inv.activeCount} active listings in the band`
-          }${ownLeftOut ? ", this home's own listing left out" : ''}${typeFiltered ? `, ${activeRows.length} after the same-product-type filter` : ''}`
-    }; days on market measured from OnMarketDate`,
+    source: bandPositionSource({
+      area,
+      city,
+      lo,
+      hi,
+      propertySubType: subject?.propertySubType,
+      activeCount: inv.activeCount,
+      activeShown: activeRows.length,
+      truncated: inv.truncated,
+      sameAreaFit: inv.sameAreaFit === true,
+      ownLeftOut,
+      typeFiltered,
+    }),
   }
 }
 

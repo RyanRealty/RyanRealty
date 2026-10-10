@@ -203,7 +203,7 @@ describe('location search', () => {
     expect(unplatted[0]).toBe('subdivision-6mo')
   })
 
-  it('seats a same-plat sale past 24 months when the newer window is short of five, and leaves a full set alone', () => {
+  it('seats a same-plat sale past 24 months when the newer window is short, and an exact-size older sale stays in a full set', () => {
     const asOf = '2026-10-09'
     const old = sale({
       listingKey: 'OLD30',
@@ -226,8 +226,13 @@ describe('location search', () => {
     )
     const full = walkPricingLadder(subject(), [...recent, old], { asOf, anchorWindowMonths: 24 })
     const fullKeys = full.comps.map((c) => c.listingKey)
-    expect(fullKeys).not.toContain('OLD30')
-    expect(fullKeys.length).toBeGreaterThanOrEqual(5)
+    // OLD30 is the subject's exact size. The five newer sales are 20 sqft off
+    // and tied with each other, so the exact-size sale seats and NEW5, the
+    // last tied id, is the one that waits.
+    expect(fullKeys).toHaveLength(5)
+    expect(fullKeys).toContain('OLD30')
+    expect(fullKeys).not.toContain('NEW5')
+    expect(full.comps.find((c) => c.listingKey === 'OLD30')?.selectionTier).toMatch(/^older-subdivision-/)
 
     const names = pricingTierLadder().map((t) => t.name)
     expect(names.indexOf('closer-sub-24mo')).toBeLessThan(names.indexOf('older-subdivision-30mo'))

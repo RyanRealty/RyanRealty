@@ -4,10 +4,10 @@
  * A rung that widens the area seats only what reaches five. The sales it
  * qualified past that are its bench, in the rung's own order (closest matches
  * first), and the comparability review refills from there, never from a wider
- * rung. Own ground has no bench: it already seats up to seven.
+ * rung. Own ground seats the best five. The rest of that plat is the bench.
  */
 import { describe, expect, it } from 'vitest'
-import { PRICING_TARGET_COMPS, PRICING_WALK_CAP } from '@/lib/pricing/ladder'
+import { PRICING_TARGET_COMPS } from '@/lib/pricing/ladder'
 import { walkPricingLadder, type PricingSale, type PricingSubject } from '@/lib/pricing/match'
 
 function subject(over: Partial<PricingSubject> = {}): PricingSubject {
@@ -134,7 +134,7 @@ describe('the refill bench (Matt 2026-10-08)', () => {
     expect((out.bench ?? []).some((c) => seated.includes(c.listingKey))).toBe(false)
   })
 
-  it('is empty when own ground reached five: own ground seats up to seven and nothing refills', () => {
+  it('keeps the five newest own-plat sales and benches the rest', () => {
     const subj = subject()
     const own = (listingKey: string, closeDate: string) =>
       sale({ ...atMiles(0.04), listingKey, address: `${listingKey} Own Ln`, closeDate })
@@ -150,9 +150,12 @@ describe('the refill bench (Matt 2026-10-08)', () => {
       own('O9', '2026-04-30'),
     ]
     const out = walkPricingLadder(subj, pool, { asOf })
-    expect(out.comps).toHaveLength(PRICING_WALK_CAP)
+    // Same size, beds, baths, and year. Recency seats O1 through O5.
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['O1', 'O2', 'O3', 'O4', 'O5'])
+    expect(out.comps).toHaveLength(PRICING_TARGET_COMPS)
     expect(out.reachedOnTier?.startsWith('subdivision-')).toBe(true)
     expect(out.reachedOnWidening).toBe(false)
-    expect(out.bench).toEqual([])
+    expect((out.bench ?? []).map((c) => c.listingKey)).toEqual(['O6', 'O7', 'O8', 'O9'])
+    expect((out.bench ?? []).every((c) => c.selectionTier.startsWith('subdivision-'))).toBe(true)
   })
 })

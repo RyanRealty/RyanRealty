@@ -16,6 +16,7 @@ import type { CmaBandRival } from '@/lib/cma/band-rivals'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import {
   activeRivalsFor,
+  competitionDrawArea,
   isSubjectListing,
   letterIsFrozen,
   matrixSetsFromArgs,
@@ -91,6 +92,7 @@ export function auditCmaRenderRow(input: {
     generatedAtIso?: string | null
     bandRivals?: {
       area?: CompArea | null
+      poolGeography?: boolean
       rivals?: CmaBandRival[] | null
       lo?: number
       hi?: number
@@ -100,6 +102,7 @@ export function auditCmaRenderRow(input: {
     } | null
     expiredPeers?: {
       area?: CompArea | null
+      poolGeography?: boolean
       peers?: CmaExpiredPeer[] | null
       count?: number
       sentence?: string | null
@@ -126,9 +129,10 @@ export function auditCmaRenderRow(input: {
   const withStatus = { ...(args as object), documentStatus: status }
   const frozen = letterIsFrozen(status)
   const sets = matrixSetsFromArgs(withStatus)
-  const filterArea = doc.compArea ?? doc.bandRivals?.area ?? null
   const bandArea = doc.bandRivals?.area ?? null
   const peerArea = doc.expiredPeers?.area ?? null
+  const filterArea = competitionDrawArea(doc.compArea ?? bandArea, doc.bandRivals)
+  const peerFilter = competitionDrawArea(doc.compArea ?? null, doc.expiredPeers)
 
   const storedRivals = (doc.bandRivals?.rivals ?? doc.extras?.band?.rivals ?? []).filter(
     (r) => (r.address ?? '').trim() && (r.listPrice ?? 0) > 0,
@@ -158,7 +162,7 @@ export function auditCmaRenderRow(input: {
   const printedPeers = unsoldPeersFor({
     subject: subjectForFilter,
     peers: storedPeers,
-    area: doc.compArea ?? null,
+    area: peerFilter,
     buildArea: peerArea,
     frozen,
   })
@@ -167,7 +171,7 @@ export function auditCmaRenderRow(input: {
     const where = `${input.slug} unsold ${row.address}`
     if (frozen) {
       fail.push(`${where} dropped on a ${status} letter`)
-    } else if (lacksPlace(row) && sameDrawnArea(doc.compArea ?? null, peerArea)) {
+    } else if (lacksPlace(row) && sameDrawnArea(peerFilter, peerArea)) {
       fail.push(`${where} has no place and was drawn on this area`)
     } else if (usableSubdivision(row.subdivision)) {
       rule24.push(`${where} names ${row.subdivision}, outside the sales plats`)

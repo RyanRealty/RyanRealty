@@ -120,7 +120,7 @@ describe('empty competition still prints, Foxborough and Purcell', () => {
     expect(peers.count).toBe(0)
     expect(peers.peers).toEqual([])
     expect(peers.sentence).toBe(
-      'No home in Purcell came off the market without selling in the last 12 months.',
+      'No home like yours in Purcell came off the market without selling in the last 36 months.',
     )
     expect(peers.sentence).not.toMatch(/[—–]/)
 

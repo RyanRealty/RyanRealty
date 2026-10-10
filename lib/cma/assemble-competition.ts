@@ -1,15 +1,21 @@
 /**
- * The rival set the nudge reads, and the expired set the letter prints, both
- * inside the sales area and by the sales rules (Matt 2026-10-07, rule 24).
- * Loaded before the graded audit so that audit sees the list after the nudge.
+ * Homes for sale, under contract, and off the market unsold, on the subject's
+ * recorded plat and the plats that touch it (Matt 2026-10-10). The sold
+ * search still builds compArea. This file does not choose the sold comps.
  */
 
 import { applyCompVerdicts } from '@/lib/cma/client-facing'
 import { resolveCmaParcels } from '@/lib/cma/parcel-shapes'
 import { buildCompSearch } from '@/lib/pricing/comp-search'
-import { buildCompArea, resolveCompetitionArea } from '@/lib/pricing/comp-area'
+import { buildCompArea, type CompArea } from '@/lib/pricing/comp-area'
 import { getCmaAreaUnsoldCycles } from '@/lib/data/cma/areaUnsoldReads'
 import { getListingAskChanges } from '@/lib/data/cma/localOutcomeReads'
+import {
+  getSubdivisionRing,
+  nextRowSubdivisionSlugs,
+  readNeighborRings,
+  touchingPlatsForSearch,
+} from '@/lib/data/geo/subdivision-ring'
 import {
   getCmaAreaBandInventory,
   type CmaAreaBandInventory,
@@ -18,47 +24,43 @@ import {
 import {
   buildExpiredPeerSet,
   keptCompMedianPpsf,
-  marketAreaPriceBand,
   peerMatchesSubject,
   type CmaExpiredPeerSet,
 } from '@/lib/cma/market-status'
 import {
-  bandAroundList,
-  bandAroundListAt,
   bandRowStretch,
   bandRowToRival,
-  buildBandRivalSet,
-  chooseCompetitionBand,
-  COMPETITION_BAND_STEPS,
-  COMPETITION_GOOD_COUNT,
-  COMPETITION_SHOWN_CAP,
   daysSinceOnMarket,
-  emptyCompetitionSet,
   type CmaBandRival,
   type CmaBandRivalSet,
   type CompetitionRingPick,
   withRivalStretch,
 } from '@/lib/cma/band-rivals'
-import { sameAreaFit, sameAreaSubject, type SameAreaCandidate, type SameAreaFit } from '@/lib/cma/same-area-fit'
-import { describeUnlikeHome } from '@/lib/cma/unlike-reason'
+import { roomNotedSentence, sameAreaFit, sameAreaSubject, type SameAreaCandidate } from '@/lib/cma/same-area-fit'
+import { distanceMiles } from '@/lib/cma/market-area'
+import { rankBestPool } from '@/lib/pricing/best-pool'
+import {
+  POOL_CAP,
+  POOL_EXPIRED_MONTHS,
+  POOL_NO_PLAT_SENTENCE,
+  POOL_QUERY_HI,
+  POOL_QUERY_LO,
+  bathCountGap,
+  keepHousePoolPlats,
+  platLabelFromSlug,
+  poolCompArea,
+  poolCompetitionSentence,
+  poolCompetitionSource,
+  poolPlace,
+  poolReadFailedSentence,
+  poolWhere,
+  wholeCountGap,
+  type PoolMeta,
+  type PoolPlat,
+} from '@/lib/cma/pool-area'
 import { attachCompConcessions } from '@/lib/pricing/seller-net'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
-
-/** One price step inside the sales area: every home the band holds, and the ones that pass the rules. */
-type BandStep = {
-  halfWidth: number
-  band: { lo: number; hi: number }
-  all: CmaBandRival[]
-  fitting: CmaBandRival[]
-}
-
-function rowsInBand(rows: readonly CmaBandListingRow[], band: { lo: number; hi: number }): CmaBandListingRow[] {
-  return rows.filter((r) => {
-    const price = Number(r.ListPrice)
-    return Number.isFinite(price) && price >= band.lo && price <= band.hi
-  })
-}
 
 /** The fields of a priced sale the search story and the sales area read. */
 type SalesAreaComp = Pick<
@@ -158,302 +160,353 @@ export async function assembleCompetition(args: {
     diagnostics: args.diagnostics,
     subjectZone: args.subjectZone,
   })
-  const competitionRings = compArea
-    ? resolveCompetitionArea({
-        compArea,
-        subject: {
-          latitude: subject.latitude,
-          longitude: subject.longitude,
-          city: subject.city,
-        },
-        keptComps: renderComps.map((c) => ({
-          subdivision: c.subdivision,
-          selectionTier: c.selectionTier,
-          latitude: c.latitude,
-          longitude: c.longitude,
-        })),
-      }).filter((r) => r.kind !== 'city')
-    : []
-  const widestCompetitionRing = competitionRings.length > 0 ? competitionRings[competitionRings.length - 1]! : null
-  const peerBand = marketAreaPriceBand(args.recommended || subject.lastListPrice || 0)
-  const firstBand = bandAroundList(args.recommended)
-  const [unsoldRead, firstInventory] = await Promise.all([
-    widestCompetitionRing && peerBand
-      ? getCmaAreaUnsoldCycles({
-          area: widestCompetitionRing,
-          city: subject.city,
-          propertySubType: subject.propertySubType,
-          priceLo: peerBand.lo,
-          priceHi: peerBand.hi,
-        })
-          // A read that threw is not evidence that nothing came off (§0):
-          // no set, and the citation says `source: none`.
-          .then((read) => (read?.failed ? null : read))
-          .catch(() => null)
-      : Promise.resolve(null),
-    widestCompetitionRing && firstBand
-      ? getCmaAreaBandInventory({
-          area: widestCompetitionRing,
-          city: subject.city,
-          lo: firstBand.lo,
-          hi: firstBand.hi,
-          propertySubType: subject.propertySubType,
-        }).catch(() => null)
-      : Promise.resolve(null),
-  ])
+  const lat = subject.latitude
+  const lng = subject.longitude
+  const centre =
+    lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null
+  const ring = centre ? await getSubdivisionRing(centre.lat, centre.lng) : null
 
-  // THE ONE AREA, THE ONE FIT (Matt 2026-10-07, rule 24). Every home the
-  // chapter counts sits inside the sales area and passes the same rules the
-  // sales passed. When a short recorded plat holds fewer than five such homes
-  // at ±10%, the price band opens one step at a time INSIDE that area, never
-  // the parent neighborhood, never a quarter-mile ring. One extra read at
-  // most: the ±25% band is a superset of every step, so the rest is a walk in
-  // memory, the same shape as the expired window ladder.
-  const fitSubject = sameAreaSubject(subject)
-  // One fit per listing, however many band steps hold it.
-  const fits = new Map<string, SameAreaFit>()
-  const candidateOf = (r: CmaBandRival): SameAreaCandidate => ({
-    address: r.address,
-    subdivision: r.subdivision,
-    // The polygon the band read placed it in (reader review 2026-10-08).
-    subdivisionSlug: r.platSlug,
-    latitude: r.latitude,
-    longitude: r.longitude,
-    beds: r.beds,
-    baths: r.baths,
-    bathsFull: r.bathsFull ?? null,
-    bathsHalf: r.bathsHalf ?? null,
-    sqft: r.sqft,
-    yearBuilt: r.yearBuilt,
-    propertySubType: r.propertySubType,
-    publicRemarks: r.publicRemarks ?? null,
-  })
-  const fitOf = (r: CmaBandRival): SameAreaFit => {
-    const known = fits.get(r.listingKey)
-    if (known) return known
-    const fit = sameAreaFit(widestCompetitionRing, fitSubject, candidateOf(r))
-    fits.set(r.listingKey, fit)
-    return fit
+  const noPlatArea: CompArea = {
+    kind: 'subdivision',
+    names: [],
+    radiusMiles: null,
+    centre,
+    platSlugs: [],
+    source: POOL_NO_PLAT_SENTENCE,
+    sentence: POOL_NO_PLAT_SENTENCE,
   }
-  // The subject's own listing is never its competition: a home on the market
-  // sits inside its own band and came back as "1 home like yours is for sale"
-  // (3062 NW Kelly Hill, reader review 2026-10-08). Out by listing key, and by
-  // address for any other record of the same house.
-  const toRivals = (inv: CmaAreaBandInventory): CmaBandRival[] =>
-    [
-      ...inv.activeRows.map((r) => bandRowToRival(r, 'Active')),
-      ...inv.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
-    ].filter((r): r is CmaBandRival => r != null && !peerMatchesSubject(r, subject))
-  const stamp = (all: readonly CmaBandRival[]): CmaBandRival[] =>
-    all.flatMap((r) => {
-      const fit = fitOf(r)
-      return fit.ok ? [{ ...r, roomDifference: fit.roomDifference }] : []
-    })
-  const steps: BandStep[] = []
-  if (firstInventory && firstBand) {
-    const all = toRivals(firstInventory)
-    steps.push({ halfWidth: COMPETITION_BAND_STEPS[0], band: firstBand, all, fitting: stamp(all) })
-  }
-  let wideInventory: CmaAreaBandInventory | null = null
-  // True when the ladder needed the ±25% read and it failed. The ±10% count
-  // stands and the letter sentence does not change, but the citation says
-  // the band was never opened, so a reviewer can tell a short ±10% set from
-  // one the ladder walked.
-  let wideReadFailed = false
-  const recommended = args.recommended || subject.lastListPrice || 0
-  const shortPlat =
-    compArea != null && (compArea.kind === 'subdivision' || compArea.kind === 'subdivisions')
-  if (
-    steps[0] &&
-    widestCompetitionRing &&
-    recommended > 0 &&
-    shortPlat &&
-    steps[0].fitting.length < COMPETITION_GOOD_COUNT
-  ) {
-    const widest = bandAroundListAt(recommended, COMPETITION_BAND_STEPS[COMPETITION_BAND_STEPS.length - 1]!)
-    wideInventory = widest
-      ? await getCmaAreaBandInventory({
-          area: widestCompetitionRing,
-          city: subject.city,
-          lo: widest.lo,
-          hi: widest.hi,
-          propertySubType: subject.propertySubType,
-        }).catch(() => null)
-      : null
-    if (widest && !wideInventory) wideReadFailed = true
-    if (wideInventory) {
-      const wideAll = toRivals(wideInventory)
-      for (const halfWidth of COMPETITION_BAND_STEPS.slice(1)) {
-        const band = bandAroundListAt(recommended, halfWidth)
-        if (!band) continue
-        const all = wideAll.filter((r) => r.listPrice >= band.lo && r.listPrice <= band.hi)
-        const fitting = stamp(all)
-        steps.push({ halfWidth, band, all, fitting })
-        if (fitting.length >= COMPETITION_GOOD_COUNT) break
-      }
-    }
-  }
-  const chosen = chooseCompetitionBand(steps)
 
-  // The returned objects describe the PRINTED band and the FITTING set, so
-  // buildCmaExtras (the listing plan's "homes like yours are for sale in this
-  // band"), the nudge and the citations in lib/cma/build.ts all read the one
-  // count the sentence states (rule 17) with no edit there. An opened band is
-  // cut from the wide read by ListPrice, and its citation names that band,
-  // not the wide read's.
-  const rivalBand = chosen?.band ?? firstBand
-  // `sameAreaFit: true` tells buildCmaExtras these rows are the fitting set,
-  // so citations.price_band.source does not call them the whole band.
+  let poolArea: CompArea | null = null
+  let pool: PoolMeta | null = null
+  let bandRivals: CmaBandRivalSet | null = null
   let widestAreaInventory: (CmaAreaBandInventory & { sameAreaFit: true }) | null = null
   let competitionRing: CompetitionRingPick<CmaBandListingRow> | null = null
-  let bandRivals: CmaBandRivalSet | null = null
-  if (chosen && widestCompetitionRing) {
-    const opened = chosen.halfWidth > COMPETITION_BAND_STEPS[0]
-    const source = opened ? wideInventory : firstInventory
-    if (source) {
-      const activeRows = opened ? rowsInBand(source.activeRows, chosen.band) : source.activeRows
-      const pendingRows = opened ? rowsInBand(source.pendingRows, chosen.band) : source.pendingRows
-      const fittingKeys = new Set(chosen.fitting.map((r) => r.listingKey))
-      const fittingActive = activeRows.filter((r) => fittingKeys.has(r.ListingKey))
-      const fittingPending = pendingRows.filter((r) => fittingKeys.has(r.ListingKey))
-      const pct = (halfWidth: number) => `±${Math.round(halfWidth * 100)}%`
-      const stepsNote =
-        steps.length > 1
-          ? `; band steps tried ${steps.map((s) => pct(s.halfWidth)).join('/')} inside the same area, never a wider place (Matt 2026-10-07)`
-          : ''
-      const wideFailedNote = wideReadFailed
-        ? `; the ±${Math.round(COMPETITION_BAND_STEPS[COMPETITION_BAND_STEPS.length - 1]! * 100)}% band read failed, so the band was never opened; the ±${Math.round(
-            COMPETITION_BAND_STEPS[0] * 100,
-          )}% count stands`
-        : ''
-      const openedNote = opened
-        ? `; band opened from ±10% to ${pct(chosen.halfWidth)}, read once at ${pct(
-            COMPETITION_BAND_STEPS[COMPETITION_BAND_STEPS.length - 1]!,
-          )} (ListPrice ${source.lo}..${source.hi}, ${source.citation.rowsAfterAreaTest} rows) and cut to this band in memory`
-        : ''
+  let rivalBand: { lo: number; hi: number } | null = null
+  let unsoldArea: CompArea | null = null
+
+  const readInventory = (area: CompArea) =>
+    getCmaAreaBandInventory({
+      area,
+      city: subject.city,
+      lo: POOL_QUERY_LO,
+      hi: POOL_QUERY_HI,
+      propertySubType: subject.propertySubType,
+    }).catch(() => null)
+
+  if (!ring || !centre) {
+    bandRivals = {
+      area: noPlatArea,
+      lo: 0,
+      hi: 0,
+      activeCount: 0,
+      pendingCount: 0,
+      rivals: [],
+      sentence: POOL_NO_PLAT_SENTENCE,
+      source: POOL_NO_PLAT_SENTENCE,
+      widenedFrom: null,
+      ringsTried: [],
+      shortOfFive: false,
+      poolGeography: true,
+    }
+  } else {
+    const fitBase = sameAreaSubject(subject)
+    const hasNeighborhood = Boolean(ring.neighborhoodSlug) || Boolean(fitBase.marketArea)
+    const ownSlug = ring.homeSlug
+    const ownLabel = ring.homeLabel.trim() || platLabelFromSlug(ownSlug)
+    const own: PoolPlat = { slug: ownSlug, label: ownLabel }
+    const touching = keepHousePoolPlats(
+      touchingPlatsForSearch(ring.ring, hasNeighborhood).filter((plat) => plat.slug !== ownSlug),
+      subject.propertySubType,
+      ownSlug,
+    )
+    const adjacent: PoolPlat[] = touching.map((plat) => ({
+      slug: plat.slug,
+      label: plat.label.trim() || platLabelFromSlug(plat.slug),
+    }))
+    const fitSubject = { ...fitBase, subdivision: ownLabel, subdivisionSlug: ownSlug }
+
+    const rivalsOf = (inv: CmaAreaBandInventory): CmaBandRival[] =>
+      [
+        ...inv.activeRows.map((row) => bandRowToRival(row, 'Active')),
+        ...inv.pendingRows.map((row) => bandRowToRival(row, 'Pending')),
+      ].filter((row): row is CmaBandRival => row != null && !peerMatchesSubject(row, subject))
+
+    const fitAll = (area: CompArea, rivals: readonly CmaBandRival[], meta: PoolMeta) => {
+      const ownSlugs = new Set(meta.ownSlugs)
+      const ownNames = new Set([meta.ownLabel.trim().toLowerCase()].filter(Boolean))
+      const adjacentSlugs = new Set(meta.adjacentSlugs)
+      const adjacentNames = new Set(meta.adjacentLabels.map((name) => name.trim().toLowerCase()).filter(Boolean))
+      const nextSlugs = new Set(meta.openedNext ? meta.nextSlugs : [])
+      const nextNames = new Set(
+        (meta.openedNext ? meta.nextLabels : []).map((name) => name.trim().toLowerCase()).filter(Boolean),
+      )
+      const fitting: Array<{
+        id: string
+        place: ReturnType<typeof poolPlace>
+        sqft: number | null
+        bedsOff: number
+        bathsOff: number
+        yearBuilt: number | null
+        ask: number
+        miles: number | null
+        rival: CmaBandRival
+      }> = []
+      for (const rival of rivals) {
+        const candidate: SameAreaCandidate = {
+          address: rival.address,
+          subdivision: rival.subdivision,
+          subdivisionSlug: rival.platSlug,
+          latitude: rival.latitude,
+          longitude: rival.longitude,
+          beds: rival.beds,
+          baths: rival.baths,
+          bathsFull: rival.bathsFull ?? null,
+          bathsHalf: rival.bathsHalf ?? null,
+          sqft: rival.sqft,
+          yearBuilt: rival.yearBuilt,
+          propertySubType: rival.propertySubType,
+          publicRemarks: rival.publicRemarks ?? null,
+        }
+        const fit = sameAreaFit(area, fitSubject, candidate)
+        if (!fit.ok) continue
+        fitting.push({
+          id: rival.listingKey,
+          place: poolPlace({
+            ownPlat: fit.ownPlat,
+            slug: rival.platSlug,
+            name: rival.subdivision,
+            ownSlugs,
+            ownNames,
+            adjacentSlugs,
+            adjacentNames,
+            nextSlugs,
+            nextNames,
+            openedNext: meta.openedNext,
+          }),
+          sqft: rival.sqft ?? null,
+          bedsOff: wholeCountGap(fitSubject.beds, rival.beds),
+          bathsOff: bathCountGap(fitSubject, rival),
+          yearBuilt: rival.yearBuilt ?? null,
+          ask: rival.listPrice,
+          miles: distanceMiles(centre, { lat: rival.latitude, lng: rival.longitude }),
+          rival: { ...rival, roomDifference: fit.roomDifference },
+        })
+      }
+      return fitting
+    }
+
+    const metaOf = (next: readonly PoolPlat[], openedNext: boolean): PoolMeta => ({
+      ownSlugs: [own.slug],
+      adjacentSlugs: adjacent.map((plat) => plat.slug),
+      nextSlugs: openedNext ? next.map((plat) => plat.slug) : [],
+      ownLabel: own.label,
+      adjacentLabels: adjacent.map((plat) => plat.label),
+      nextLabels: openedNext ? next.map((plat) => plat.label) : [],
+      openedNext,
+    })
+
+    const withoutRemarks = (rival: CmaBandRival): CmaBandRival => {
+      if (rival.publicRemarks == null) return rival
+      const { publicRemarks: _remarks, ...rest } = rival
+      return rest
+    }
+
+    let openedNext = false
+    let nextReadFailed = false
+    let area = poolCompArea({ own, adjacent, next: [], openedNext: false, centre })
+    let meta = metaOf([], false)
+    const inventory = await readInventory(area)
+
+    if (!inventory) {
+      const where = poolWhere({ ownLabel: own.label, openedNext: false })
+      bandRivals = {
+        area,
+        lo: 0,
+        hi: 0,
+        activeCount: 0,
+        pendingCount: 0,
+        rivals: [],
+        sentence: poolReadFailedSentence(where),
+        source: poolCompetitionSource({ ownLabel: own.label, openedNext: false, asOfIso: args.generatedAtIso }),
+        widenedFrom: null,
+        ringsTried: [],
+        shortOfFive: false,
+        poolGeography: true,
+      }
+      pool = meta
+      poolArea = area
+      unsoldArea = area
+    } else {
+      let fitting = fitAll(area, rivalsOf(inventory), meta)
+      let sourceInventory = inventory
+      if (fitting.length < POOL_CAP && touching.length > 0) {
+        const neighborRings = await readNeighborRings(touching).catch(() => [])
+        const nextSlugs = nextRowSubdivisionSlugs({
+          subjectSlug: own.slug,
+          firstRingSlugs: touching.map((plat) => plat.slug),
+          neighborRings,
+          subjectHasNeighborhood: hasNeighborhood,
+        })
+        const adjacentSet = new Set(adjacent.map((plat) => plat.slug))
+        const nextPlats = keepHousePoolPlats(
+          nextSlugs
+            .filter((slug) => slug && slug !== own.slug && !adjacentSet.has(slug))
+            .map((slug) => ({ slug, label: platLabelFromSlug(slug) })),
+          subject.propertySubType,
+          own.slug,
+        )
+        if (nextPlats.length > 0) {
+          const expanded = poolCompArea({ own, adjacent, next: nextPlats, openedNext: true, centre })
+          const second = await readInventory(expanded)
+          if (second) {
+            openedNext = true
+            area = expanded
+            meta = metaOf(nextPlats, true)
+            sourceInventory = second
+            fitting = fitAll(area, rivalsOf(second), meta)
+          } else {
+            nextReadFailed = true
+          }
+        }
+      }
+
+      const ranked = rankBestPool(
+        fitting,
+        {
+          sqft: fitSubject.sqft,
+          yearBuilt: fitSubject.yearBuilt,
+          recommended: args.recommended > 0 ? args.recommended : null,
+        },
+        'active',
+        POOL_CAP,
+      )
+      let printed = ranked.map((item) => withoutRemarks(item.rival))
+      if (printed.length > 0) {
+        const askChanges = await getListingAskChanges(printed.map((rival) => rival.listingKey)).catch((err) => {
+          console.error('[assembleCompetition] ask changes', err instanceof Error ? err.message : String(err))
+          return null
+        })
+        if (askChanges) {
+          const rowByKey = new Map(
+            [...sourceInventory.activeRows, ...sourceInventory.pendingRows].map((row) => [row.ListingKey, row]),
+          )
+          printed = printed.map((rival) => {
+            const row = rowByKey.get(rival.listingKey)
+            const next = row
+              ? withRivalStretch(rival, bandRowStretch(row, askChanges.get(rival.listingKey) ?? []))
+              : rival
+            return withoutRemarks(next)
+          })
+        }
+      }
+      const asks = printed.map((rival) => rival.listPrice).filter((n) => Number.isFinite(n) && n > 0)
+      const lo = asks.length > 0 ? Math.min(...asks) : 0
+      const hi = asks.length > 0 ? Math.max(...asks) : 0
+      const activeCount = printed.filter((rival) => rival.status === 'Active').length
+      const pendingCount = printed.filter((rival) => rival.status === 'Pending').length
+      const printedKeys = new Set(printed.map((rival) => rival.listingKey))
+      const fittingActive = sourceInventory.activeRows.filter((row) => printedKeys.has(row.ListingKey))
+      const fittingPending = sourceInventory.pendingRows.filter((row) => printedKeys.has(row.ListingKey))
+      const nextNote = nextReadFailed ? ' The next row was not read.' : ''
       const citation = {
-        ...source.citation,
-        filter: `${
-          opened
-            ? source.citation.filter.replace(
-                `ListPrice ${source.lo}..${source.hi}`,
-                `ListPrice ${chosen.band.lo}..${chosen.band.hi}`,
-              )
-            : source.citation.filter
-        }${stepsNote}${openedNote}${wideFailedNote}; sameAreaFit kept ${chosen.fitting.length} of ${chosen.all.length}`,
-        rows: opened ? activeRows.length + pendingRows.length : source.citation.rows,
-        rowsAfterAreaTest: opened ? activeRows.length + pendingRows.length : source.citation.rowsAfterAreaTest,
+        ...sourceInventory.citation,
+        filter: `${sourceInventory.citation.filter} ListPrice ${POOL_QUERY_LO}..${POOL_QUERY_HI} is a query ceiling, not a rule. The price was not a filter. The plats were. rankBestPool kept ${printed.length} of ${fitting.length}.${nextNote}`,
+        rows: printed.length,
+        rowsAfterAreaTest: printed.length,
       }
       widestAreaInventory = {
-        ...source,
-        lo: chosen.band.lo,
-        hi: chosen.band.hi,
+        ...sourceInventory,
+        area,
+        lo,
+        hi,
         activeRows: fittingActive,
         pendingRows: fittingPending,
         activeCount: fittingActive.length,
         pendingCount: fittingPending.length,
-        activeAsks: fittingActive.map((r) => Number(r.ListPrice)).filter((n) => Number.isFinite(n) && n > 0),
+        activeAsks: fittingActive.map((row) => Number(row.ListPrice)).filter((n) => Number.isFinite(n) && n > 0),
         activeDaysOnMarket: fittingActive
-          .map((r) => daysSinceOnMarket(r.OnMarketDate))
+          .map((row) => daysSinceOnMarket(row.OnMarketDate))
           .filter((n): n is number => n != null),
         citation,
         sameAreaFit: true,
       }
       competitionRing = {
-        area: widestCompetitionRing,
+        area,
         ringsTried: [],
         widenedFrom: null,
         activeRows: fittingActive,
         pendingRows: fittingPending,
-        activeCount: fittingActive.length,
-        pendingCount: fittingPending.length,
+        activeCount,
+        pendingCount,
       }
-      // ONE CLOCK PER HOME, ITS LAST STRETCH (Matt 2026-10-08). A printed
-      // competitor's first ask is the ask in effect the day its days count
-      // from, read off its ask history: 2260 Indigo came back Jun 15 at
-      // $645,000, not its January $670,000. Additive: an unread history
-      // leaves a home that came back without a first ask, never an earlier one.
-      const rowByKey = new Map([...activeRows, ...pendingRows].map((row) => [row.ListingKey, row]))
-      const askChanges = await getListingAskChanges(chosen.fitting.map((r) => r.listingKey)).catch((err) => {
-        console.error('[assembleCompetition] ask changes', err instanceof Error ? err.message : String(err))
-        return null
-      })
-      const printed = chosen.fitting.map((r) => {
-        const row = rowByKey.get(r.listingKey)
-        return row && askChanges ? withRivalStretch(r, bandRowStretch(row, askChanges.get(r.listingKey) ?? [])) : r
-      })
-      bandRivals = buildBandRivalSet({
-        area: widestCompetitionRing,
-        lo: chosen.band.lo,
-        hi: chosen.band.hi,
-        activeCount: fittingActive.length,
-        pendingCount: fittingPending.length,
-        unlikeCount: chosen.all.length - chosen.fitting.length,
-        // Each unlike home with the refusal the fit returned, so the sentence
-        // names only the reason that is true of it (reader review 2026-10-08).
-        unlike: chosen.all.flatMap((r) => {
-          if (fitOf(r).ok) return []
-          const home = describeUnlikeHome(widestCompetitionRing, fitSubject, candidateOf(r), r.listPrice)
-          return home ? [home] : []
-        }),
-        // True when the band ladder was walked and still holds fewer than
-        // five, whichever step printed (a tie keeps the tighter band). The
-        // citation above records every step tried.
-        shortOfFive: steps.length > 1 && chosen.fitting.length < COMPETITION_GOOD_COUNT,
+      rivalBand = asks.length > 0 ? { lo, hi } : null
+      const roomNote = roomNotedSentence(printed, fitSubject)
+      const heldBack = Math.max(0, fitting.length - printed.length)
+      bandRivals = {
+        area,
+        lo,
+        hi,
+        activeCount,
+        pendingCount,
         rivals: printed,
-        subject: fitSubject,
-        cap: COMPETITION_SHOWN_CAP,
-        asOfIso: args.generatedAtIso,
+        sentence: poolCompetitionSentence({
+          ownLabel: own.label,
+          openedNext,
+          activeCount,
+          pendingCount,
+          roomNote,
+          heldBack,
+        }),
+        source: poolCompetitionSource({
+          ownLabel: own.label,
+          openedNext,
+          asOfIso: args.generatedAtIso,
+        }),
         widenedFrom: null,
         ringsTried: [],
+        shortOfFive: false,
+        poolGeography: true,
+      }
+      pool = meta
+      poolArea = area
+      unsoldArea = area
+    }
+  }
+
+  const unsoldRead = unsoldArea
+    ? await getCmaAreaUnsoldCycles({
+        area: unsoldArea,
+        city: subject.city,
+        propertySubType: subject.propertySubType,
+        priceLo: POOL_QUERY_LO,
+        priceHi: POOL_QUERY_HI,
+        months: POOL_EXPIRED_MONTHS,
       })
-    }
-  }
-  const competitionArea = widestCompetitionRing
-  if (!bandRivals && rivalBand && compArea) {
-    bandRivals = emptyCompetitionSet({
-      rings: competitionRings,
-      compArea,
-      lo: rivalBand.lo,
-      hi: rivalBand.hi,
-    })
-  }
-  // The range is read around the list BEFORE the homes in it are weighed
-  // (they are what the active-days pull reads), so it cannot be centered on
-  // the final list without depending on itself. The letter says what it is
-  // centered on, and whether it opened past ±10% (competition-band-basis.ts).
-  if (bandRivals && rivalBand && args.recommended > 0) {
-    bandRivals = {
-      ...bandRivals,
-      bandBasis: {
-        center: args.recommended,
-        // rivalBand is chosen.band whenever a step was chosen, else the ±10% band.
-        halfWidth: chosen?.halfWidth ?? COMPETITION_BAND_STEPS[0],
-        baseHalfWidth: COMPETITION_BAND_STEPS[0],
-      },
-    }
-  }
+        .then((read) => (read?.failed ? null : read))
+        .catch(() => null)
+    : null
+
   return {
     renderComps,
     parcels,
     compSearch,
     compArea,
-    competitionRings,
-    widestCompetitionRing,
-    peerBand,
+    competitionRings: poolArea ? [poolArea] : [],
+    widestCompetitionRing: poolArea,
+    peerBand: null,
     rivalBand,
     unsoldRead,
     widestAreaInventory,
     competitionRing,
-    competitionArea,
+    competitionArea: poolArea,
     bandRivals,
+    pool,
   }
 }
 
 /**
- * The homes that came off unsold, from the SAME one ring the competition was
- * read over and by the same rules (Matt 2026-10-07, rule 24). The build and
- * the dry run both call this, so a dry-run score equals a build's.
+ * Homes that came off unsold, on the same plats as the homes for sale
+ * (Matt 2026-10-10). Thirty-six months. The rank keeps five.
  */
 export function assembleExpiredPeers(args: {
   competition: Awaited<ReturnType<typeof assembleCompetition>>
@@ -462,24 +515,7 @@ export function assembleExpiredPeers(args: {
   now?: Date
 }): { expiredPeers: CmaExpiredPeerSet | null; compsLookbackMonths: number } {
   const { competition, subject } = args
-  const now = args.now ?? new Date()
-  // Same lookback as the closed sales that set the price. No older expireds
-  // from a longer window than the solds (Matt ADD 2026-09-12).
-  const ages = competition.renderComps
-    .map((c) => {
-      const iso = (c.closeDate ?? '').slice(0, 10)
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null
-      const ms = now.getTime() - Date.parse(`${iso}T12:00:00.000Z`)
-      if (!Number.isFinite(ms) || ms < 0) return null
-      return Math.ceil(ms / (1000 * 60 * 60 * 24 * 30.44))
-    })
-    .filter((n): n is number => n != null && n > 0)
-  const compsLookbackMonths = ages.length > 0 ? Math.max(3, Math.max(...ages)) : 12
-  const area = competition.widestCompetitionRing
-  // `unsoldRead` was already read over this one ring; there is no ring loop.
-  // An EMPTY read still produces a sentence ("No home in X came off"). A
-  // FAILED read produces no set at all: a read that threw is not evidence
-  // that nothing came off (§0), and the citation says `source: none`.
+  const area = competition.competitionArea ?? competition.widestCompetitionRing
   const expiredPeers =
     area && competition.unsoldRead
       ? buildExpiredPeerSet({
@@ -489,21 +525,22 @@ export function assembleExpiredPeers(args: {
             streetAddress: subject.streetAddress,
             listingKey: subject.listingKey,
             mlsNumber: subject.mlsNumber,
+            ...(competition.pool
+              ? {
+                  subdivision: competition.pool.ownLabel,
+                  subdivisionSlug: competition.pool.ownSlugs[0] ?? subject.subdivisionSlug,
+                }
+              : {}),
           },
           area,
-          asOf: now,
+          asOf: args.now ?? new Date(),
           keptCompMedianPpsf: keptCompMedianPpsf(competition.renderComps),
-          maxWindowMonths: compsLookbackMonths,
           closedSaleAddresses: competition.renderComps.map((c) => c.address),
           subjectCameOff: args.lastCycleFailed,
           liveAddresses: (competition.bandRivals?.rivals ?? []).map((rival) => rival.address),
-          // A house that came off, relisted and sold (or is listed again) did
-          // not come off unsold (cma-1648-pheasant, 2026-10-08).
           laterCycles: competition.unsoldRead.laterCycles ?? [],
-          // The list-price window the unsold read counted, so the sentence
-          // that says its count names it (reader review 2026-10-08).
-          priceBand: competition.peerBand,
+          pool: competition.pool,
         })
       : null
-  return { expiredPeers, compsLookbackMonths }
+  return { expiredPeers, compsLookbackMonths: POOL_EXPIRED_MONTHS }
 }
