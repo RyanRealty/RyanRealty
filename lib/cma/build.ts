@@ -1035,7 +1035,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // forces broker review. The price does not move to a shorter set.
     // There is no first-round snapshot: that field only existed to remember
     // the audit from before a sale was dropped.
-    let repairedKeys: string[] = []
+    const repairedKeys: string[] = []
     if (audit && audit.verdict !== 'pass') {
       const flagged = [
         ...new Set(

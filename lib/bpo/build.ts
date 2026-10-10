@@ -236,7 +236,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       await recordFailure(slug, err)
       return { ok: false, error: err, slug }
     }
-    let { adj: adjusted, p: pricing, op: opinion } = derived
+    const { adj: adjusted, p: pricing, op: opinion } = derived
 
     // 4.4. Adversarial accuracy audit — independent second pass attacking the
     // OPINION (Matt directive 2026-07-11: BPOs are adversarially audited like
@@ -299,14 +299,14 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         candidates: selection.comps,
       })
     alignNarrative()
-    let audit = await runAudit()
+    const audit = await runAudit()
 
     // 4.45. The audit reads the sales the picker kept. It does not remove one
     // (Matt 2026-10-09). A finding stays on the row and the contract still
     // forces broker review. The opinion does not move to a shorter set.
     // There is no first-round snapshot: that field only existed to remember
     // the audit from before a sale was dropped.
-    let repairedKeys: string[] = []
+    const repairedKeys: string[] = []
     if (audit && audit.verdict !== 'pass') {
       const flagged = [
         ...new Set(
