@@ -304,7 +304,8 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     // 4.45. The audit reads the sales the picker kept. It does not remove one
     // (Matt 2026-10-09). A finding stays on the row and the contract still
     // forces broker review. The opinion does not move to a shorter set.
-    let firstRoundAudit: typeof audit = null
+    // There is no first-round snapshot: that field only existed to remember
+    // the audit from before a sale was dropped.
     let repairedKeys: string[] = []
     if (audit && audit.verdict !== 'pass') {
       const flagged = [
@@ -453,7 +454,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
             findings: audit.findings,
             cost_usd: audit.costUsd,
             repaired_comp_keys: repairedKeys.length ? repairedKeys : undefined,
-            first_round_verdict: firstRoundAudit?.verdict,
+            first_round_verdict: undefined,
           }
         : { source: 'none', note: 'Audit unavailable — needs_review forced.' },
       comps: adjusted.map((c) => ({
@@ -585,9 +586,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
             summary: audit.summary,
             findings: audit.findings,
             repaired_comp_keys: repairedKeys.length ? repairedKeys : undefined,
-            first_round: firstRoundAudit
-              ? { verdict: firstRoundAudit.verdict, summary: firstRoundAudit.summary, findings: firstRoundAudit.findings, cost_usd: firstRoundAudit.costUsd }
-              : undefined,
+            first_round: undefined,
           }
         : { used_llm: false as const, note: 'Adversarial audit unavailable; needs_review forced via the contract.' },
       accuracy_contract: contract,

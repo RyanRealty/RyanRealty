@@ -1033,7 +1033,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // 4.45. The audit reads the sales the picker kept. It does not remove one
     // (Matt 2026-10-09). A finding stays on the row and the contract still
     // forces broker review. The price does not move to a shorter set.
-    let firstRoundAudit: typeof audit = null
+    // There is no first-round snapshot: that field only existed to remember
+    // the audit from before a sale was dropped.
     let repairedKeys: string[] = []
     if (audit && audit.verdict !== 'pass') {
       const flagged = [
@@ -1056,33 +1057,22 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       }
     }
 
-    // 4.46. Narrative repair — the findings the comp repair above cannot touch.
+    // 4.46. Narrative repair. The comps and the price do not move here.
     //
-    // A finding with a compListingKey is about a SALE, and 4.45 answers it by
-    // dropping the sale. A finding without one is about the PROSE: a miscounted
-    // bedroom claim, a $/sqft bracket no comp falls in. Those had no repair path
-    // at all, so a sound analysis described one sentence badly failed the audit
-    // and parked in draft permanently. On 2026-08-06 that was every stored CMA,
-    // 8 of 8 on `Audit verdict: fail`.
-    //
-    // The comps and the pricing do not move here. Only the sentences do, and
-    // the deterministic integrity check must not get worse, and the audit is
-    // then re-run so the recorded verdict describes the narrative that actually
-    // ships. Once. A document that still fails stays flagged, which is the
-    // correct outcome — the point is to stop failing for a fixable sentence,
+    // 4.45 does not drop a sale, so a finding about a seated sale stays on the
+    // row. What this pass may change is a sentence: a miscounted bedroom, a
+    // $/sqft bracket no sale falls in. The deterministic integrity check must
+    // not get worse, and the audit is then re-run so the recorded verdict
+    // describes the narrative that actually ships. Once. A document that still
+    // fails stays flagged. The point is to stop failing for a fixable sentence,
     // not to talk the auditor out of a real finding.
     let narrativeRepair: { model: string; costUsd: number; accepted: boolean } | null = null
     if (audit && audit.verdict !== 'pass' && judgment && !isCurated) {
-      // Eligibility is "the comp repair did not already answer this", NOT
-      // "the finding mentions no comp". Naming a comp does not make a finding
-      // about the comp: the second Byron rebuild failed on "the narrative
-      // falsely claims the 3-bed comp is weighted half when the actual weight
-      // is 0.3249", which cites 20603 Kira and is nonetheless a sentence
-      // problem about a sale we correctly kept. Filtering on compListingKey
-      // sent it to the comp-dropping path, which had nothing to drop, so
-      // nothing repaired it. Anything 4.45 already resolved by removing the
-      // sale is excluded here; everything else that still fails is prose the
-      // model gets one chance to correct.
+      // Naming a sale does not make a finding about dropping that sale. The
+      // second Byron rebuild failed on a sentence that cited 20603 Kira and
+      // was still a sentence problem about a sale the picker kept. 4.45 does
+      // not remove a sale, so repairedKeys stays empty and every critical or
+      // major finding is prose the model gets one chance to correct.
       const proseFindings = audit.findings
         .filter(
           (f) =>
@@ -1746,7 +1736,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             findings: audit.findings,
             cost_usd: audit.costUsd,
             repaired_comp_keys: repairedKeys.length ? repairedKeys : undefined,
-            first_round_verdict: firstRoundAudit?.verdict,
+            first_round_verdict: undefined,
           }
         : { source: 'none', note: 'Audit unavailable — needs_review forced.' },
       comps: adjusted.map((c) => ({
@@ -2033,7 +2023,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       site,
       judgment,
       audit,
-      firstRoundAudit,
+      firstRoundAudit: null,
       repairedKeys,
       contract,
       pricing,
