@@ -45,7 +45,7 @@ import {
 import { selectionIsExclusivePocket } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { finishExclusivePocketPricing, localReadForSet } from '@/lib/cma/pocket-pricing'
 import { buildRejectedSales } from '@/lib/pricing/rejected'
-import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
+import { dropPriorSalesOfSameHome, seatDistinctHomes } from '@/lib/pricing/same-address'
 import { buildPricingReview, confidenceForVerdict } from '@/lib/pricing/review'
 import { applyAskBelowBandHold, applyAskInBandHold } from '@/lib/cma/gap-hold'
 import { attachSellerNet, reanchorSellerNet } from '@/lib/pricing/seller-net'
@@ -477,6 +477,47 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           .map((d) => d.address)
           .join(', ')}) and were dropped so no home is counted twice.`,
       )
+    }
+
+    // The walk can still hand five keys that are four homes. The bench already
+    // holds the next home. Take it only when a duplicate drop left the set
+    // short. A set that was never short does not pull from the bench.
+    if (priorSaleDrops.length > 0 && selection.comps.length < MIN_COMPS) {
+      const bench = selection.refill?.comps ?? []
+      if (bench.length > 0) {
+        const filled = seatDistinctHomes([...selection.comps, ...bench], MIN_COMPS)
+        const before = new Set(selection.comps.map((comp) => comp.listingKey))
+        const added = filled.seated.filter((comp) => !before.has(comp.listingKey))
+        if (added.length > 0 && filled.seated.length > selection.comps.length) {
+          const benchSales = selection.refill?.pricingSales ?? []
+          const salesByKey = new Map(
+            [...(selection.pricingSales ?? []), ...benchSales].map((sale) => [sale.listingKey, sale]),
+          )
+          const nextSales = selection.pricingSales
+            ? filled.seated
+                .map((comp) => salesByKey.get(comp.listingKey))
+                .filter((sale): sale is NonNullable<typeof sale> => sale != null)
+            : null
+          const salesMatch = nextSales == null || nextSales.length === filled.seated.length
+          if (salesMatch) {
+            selection.comps = filled.seated
+            if (nextSales) selection.pricingSales = nextSales
+            const seatedKeys = new Set(filled.seated.map((comp) => comp.listingKey))
+            if (selection.refill) {
+              selection.refill = {
+                ...selection.refill,
+                comps: selection.refill.comps.filter((comp) => !seatedKeys.has(comp.listingKey)),
+                pricingSales: selection.refill.pricingSales?.filter((sale) => !seatedKeys.has(sale.listingKey)),
+              }
+            }
+            selection.trace.push(
+              `One home, one sale left the set short of ${MIN_COMPS}, so the next home took that seat (${added
+                .map((comp) => comp.address)
+                .join(', ')}).`,
+            )
+          }
+        }
+      }
     }
 
     // Relists reset OnMarketDate. Calendar DOM from that date undercounts
