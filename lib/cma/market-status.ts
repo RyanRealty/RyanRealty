@@ -7,7 +7,17 @@
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { compAreaContains, compAreaIn, type CompArea } from '@/lib/pricing/comp-area'
 import { countWord } from '@/lib/pricing/estimate'
-import { keepSameProductType, letterProductMatch } from '@/lib/cma/market-area'
+import { rankBestPool } from '@/lib/pricing/best-pool'
+import { distanceMiles, keepSameProductType, letterProductMatch } from '@/lib/cma/market-area'
+import {
+  POOL_CAP,
+  POOL_EXPIRED_MONTHS,
+  bathCountGap,
+  poolExpiredSentence,
+  poolPlace,
+  wholeCountGap,
+  type PoolMeta,
+} from '@/lib/cma/pool-area'
 import { realSubdivision } from '@/lib/cma/comp-tiers'
 import { roomNotedSentence, sameAreaFit, sameAreaSubject, type SameAreaCandidate } from '@/lib/cma/same-area-fit'
 import { describeUnlikeHome, unlikeAsksPhrase, unlikeReasonSentence, type CmaUnlikeHome } from '@/lib/cma/unlike-reason'
@@ -258,6 +268,9 @@ export type ExpiredPeerSubject = Pick<
   propertySubType?: string | null
   /** The rest of what the sales rules read (lib/cma/same-area-fit.ts). Absent on older callers. */
   baths?: number | null
+  /** Full baths, when the row carries the split. The gap uses these before the totals. */
+  bathsFull?: number | null
+  bathsHalf?: number | null
   yearBuilt?: number | null
   subdivision?: string | null
   subdivisionSlug?: string | null
@@ -472,6 +485,23 @@ function rowToCandidate(row: CmaMarketAreaRow): SameAreaCandidate {
     yearBuilt: row.year_built ?? null,
     propertySubType: row.property_sub_type ?? null,
     publicRemarks: row.public_remarks ?? null,
+  }
+}
+
+function peerToCandidate(peer: CmaExpiredPeer): SameAreaCandidate {
+  return {
+    address: peer.address,
+    subdivision: peer.subdivision ?? null,
+    subdivisionSlug: peer.platSlug,
+    latitude: peer.latitude,
+    longitude: peer.longitude,
+    beds: peer.beds,
+    baths: peer.baths,
+    bathsFull: peer.bathsFull ?? null,
+    bathsHalf: peer.bathsHalf ?? null,
+    sqft: peer.sqft,
+    yearBuilt: peer.yearBuilt,
+    propertySubType: peer.propertySubType,
   }
 }
 
@@ -950,6 +980,11 @@ export type CmaExpiredPeerSet = {
    * before 2026-10-08.
    */
   unlike?: CmaUnlikeHome[]
+  /**
+   * Drawn on the pool plats, not on the plats the sold comps happened to sit in.
+   * The render keeps these rows when this is set.
+   */
+  poolGeography?: boolean
 }
 
 function usd(n: number): string {
@@ -1095,8 +1130,16 @@ export function buildExpiredPeerSet(input: {
    * now, did not come off unsold (laterOutcomeCycle). Omitted drops nothing.
    */
   laterCycles?: readonly HouseCycleRecord[]
-  /** The list-price window `rows` were read inside (getCmaAreaUnsoldCycles priceLo..priceHi). */
+  /**
+   * Ignored for membership. Price does not decide which home came off.
+   * Kept so older callers still type-check.
+   */
   priceBand?: { lo: number; hi: number } | null
+  /**
+   * The plat pool this set was drawn on. Place is own, adjacent, or the next
+   * row. Absent callers still use the 36-month rank, and the sentence names `area`.
+   */
+  pool?: PoolMeta | null
 }): CmaExpiredPeerSet {
   const asOf = input.asOf ?? new Date()
   // One house key for every "same street" test here: "3062 NW Kelly Hill" on a
@@ -1128,110 +1171,115 @@ export function buildExpiredPeerSet(input: {
       return address.length === 0 || !liveNorms.has(address)
     })
 
-  const maxW =
-    input.maxWindowMonths != null && Number.isFinite(input.maxWindowMonths) && input.maxWindowMonths > 0
-      ? Math.max(3, Math.round(input.maxWindowMonths))
-      : null
-  const filtered = [...EXPIRED_PEER_WINDOWS].filter((w) => (maxW == null ? true : w <= maxW))
-  const windows = filtered.length > 0 ? filtered : [maxW ?? 12]
-  let windowMonths = windows[windows.length - 1]!
-  let peers: CmaExpiredPeer[] = []
-  let areaTotal = 0
-  let found = 0
-  let likeYours = false
-  const tried: number[] = []
-  // A row outside the sales area is not in the area, whatever read returned
-  // it (Matt 2026-10-07, rule 24): the same exact test the fit applies, so
-  // `areaTotal` only counts homes the fit compared, and "none were close"
-  // is never said of a home that was never inside.
+  // One window: 36 months. Price is not a wall. The rank keeps five.
+  // maxWindowMonths and priceBand stay on the input for older callers and do not decide membership.
+  void input.maxWindowMonths
+  void input.priceBand
+  const windowMonths = POOL_EXPIRED_MONTHS
+  const inWindow = dated.filter((x) => x.months <= windowMonths).map((x) => x.row)
   const inArea = (r: CmaMarketAreaRow) =>
     compAreaContains(input.area, {
       latitude: r.Latitude ?? null,
       longitude: r.Longitude ?? null,
       subdivision: r.SubdivisionName ?? null,
       city: r.City ?? null,
-      // The polygon the area read placed it in, when it read one.
       platSlug: r.plat_slug,
-      // A plat held to the subject's street holds only that street.
       address: r.StreetName?.trim() ? `${(r.StreetNumber ?? '').trim()} ${r.StreetName.trim()}`.trim() : null,
     })
   const key = (r: CmaMarketAreaRow) => normalizePeerAddress(peerAddress(r)) || String(r.ListingKey ?? '')
-  let lastEligible: CmaMarketAreaRow[] = []
-  for (const w of windows) {
-    tried.push(w)
-    const inWindow = dated.filter((x) => x.months <= w).map((x) => x.row)
-    peers = pickExpiredPeers(inWindow, input.subject, input.area)
-    // How many homes came off in the area at all, one per address, subject
-    // excluded. The narrowed set is what the document prints; this is what the
-    // sentence would otherwise silently claim to be counting.
-    // What the sentence counts is the set the table shows. `found` is that
-    // set: homes that fit this one. Unlike homes stay in areaTotal only.
-    const eligible = inWindow.filter(
-      (r) =>
-        inArea(r) &&
-        !isSubjectExpiredRow(r, input.subject) &&
-        peerAddress(r).length > 0 &&
-        Number(r.ListPrice) > 0,
-    )
-    areaTotal = new Set(eligible.map(key).filter((k) => k.length > 0)).size
-    lastEligible = eligible
-    // Pins are only homes that fit. Unlike homes stay in areaTotal. They do
-    // not fill the three-home quota, so this window keeps opening.
-    likeYours = peers.length > 0
-    found = peers.length
-    windowMonths = w
-    if (peers.length >= EXPIRED_PEER_MIN) break
-  }
-  // The homes the sentence counts that are not peers, each with its own last
-  // ask and the refusal the fit returned for it (lib/cma/unlike-reason.ts), so
-  // the sentence says only the reason that is true of them.
+  const eligible = inWindow.filter(
+    (r) =>
+      inArea(r) &&
+      !isSubjectExpiredRow(r, input.subject) &&
+      peerAddress(r).length > 0 &&
+      Number(r.ListPrice) > 0,
+  )
+  const areaTotal = new Set(eligible.map(key).filter((k) => k.length > 0)).size
+  const fitting = pickExpiredPeers(inWindow, input.subject, input.area)
   const unlike = unlikeUnsoldHomes({
-    eligible: lastEligible,
+    eligible,
     months: new Map(dated.map((x) => [x.row, x.months])),
-    peers,
+    peers: fitting,
     subject: input.subject,
     area: input.area,
     key,
   })
 
-  const withWhy = peers.map((p) => ({ ...p, whyItSat: whyItSat(p, input.keptCompMedianPpsf) }))
+  const pool = input.pool ?? null
+  const lower = (names: readonly string[]) =>
+    new Set(names.map((name) => name.trim().toLowerCase()).filter(Boolean))
+  const ownSlugs = new Set(pool?.ownSlugs ?? [])
+  const ownNames = lower(pool ? [pool.ownLabel] : [])
+  const adjacentSlugs = new Set(pool?.adjacentSlugs ?? [])
+  const adjacentNames = lower(pool?.adjacentLabels ?? [])
+  const nextSlugs = new Set(pool?.openedNext ? pool.nextSlugs : [])
+  const nextNames = lower(pool?.openedNext ? pool.nextLabels : [])
+  const subjectPoint = { lat: input.subject.latitude ?? null, lng: input.subject.longitude ?? null }
+  const ranked = rankBestPool(
+    fitting.map((peer) => {
+      const fit = sameAreaFit(input.area, input.subject, peerToCandidate(peer))
+      const ownPlat = fit.ok && fit.ownPlat
+      return {
+        id: peer.listingKey,
+        place: pool
+          ? poolPlace({
+              ownPlat,
+              slug: peer.platSlug,
+              name: peer.subdivision,
+              ownSlugs,
+              ownNames,
+              adjacentSlugs,
+              adjacentNames,
+              nextSlugs,
+              nextNames,
+              openedNext: pool.openedNext,
+            })
+          : ownPlat
+            ? 'own'
+            : 'adjacent',
+        sqft: peer.sqft,
+        bedsOff: wholeCountGap(input.subject.beds, peer.beds),
+        bathsOff: bathCountGap(input.subject, peer),
+        yearBuilt: peer.yearBuilt,
+        when: (peer.offMarketDate ?? peer.statusDate ?? '').slice(0, 10) || null,
+        miles: distanceMiles(subjectPoint, { lat: peer.latitude, lng: peer.longitude }),
+        peer,
+      }
+    }),
+    { sqft: input.subject.sqft ?? null, yearBuilt: input.subject.yearBuilt ?? null },
+    'expired',
+    POOL_CAP,
+  )
+  const withWhy = ranked.map((item) => ({ ...item.peer, whyItSat: whyItSat(item.peer, input.keptCompMedianPpsf) }))
   const count = withWhy.length
-  const shortfall = count < EXPIRED_PEER_MIN
-  const widenedTo = !shortfall && windowMonths > windows[0]! ? windowMonths : null
-  // A peer kept one room apart on the subject's own ground is named with the
-  // room, and the sentence says no dollar value is applied (rule 4).
+  const heldBack = Math.max(0, fitting.length - count)
   const noted = roomNotedSentence(withWhy, input.subject)
   const roomNote = noted ? ` ${noted}` : ''
 
   return {
     area: input.area,
     windowMonths,
-    windowsTried: tried,
-    widenedTo,
+    windowsTried: [windowMonths],
+    widenedTo: null,
     count,
     areaTotal,
-    found,
-    likeYours,
-    shortfall,
+    found: count,
+    likeYours: count > 0,
+    shortfall: false,
     sentence:
-      peerSetSentence({
-        area: sentenceArea(input.area, withWhy),
-        searchArea: input.area,
+      poolExpiredSentence({
+        ownLabel: pool?.ownLabel ?? null,
+        openedNext: pool?.openedNext === true,
+        area: input.area,
         count,
-        areaTotal,
-        windowMonths,
-        shortfall,
-        likeYours,
         subjectCameOff: input.subjectCameOff === true,
-        priceBand: input.priceBand ?? null,
-        unlike,
+        heldBack,
       }) + roomNote,
     peers: withWhy,
     unlike,
-    ...(input.priceBand ? { priceBand: { lo: input.priceBand.lo, hi: input.priceBand.hi } } : {}),
+    poolGeography: true,
   }
 }
-
 /**
  * One entry per counted address that is not a peer: its most recent cycle in
  * the window, that cycle's last ask, and why the fit refused it. The same

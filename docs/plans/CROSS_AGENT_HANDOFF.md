@@ -1,4 +1,16 @@
-# Current — 2026-10-09 (Grok, older same-place sales and distinct units)
+# Current — 2026-10-10 (Grok, whole plat pool)
+
+Surface: Grok. Branch `fix/cma-whole-pool`, cut from origin/main `ad8cc8cd5` (PR #482). Upstream must stay the feature branch, never main. Matt merges the PR. Nothing rebuilt, nothing sent, nothing approved. Do not rebuild `cma-120-sisemore` unless Matt asks. Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet.
+
+**What this commit does.** The subject's recorded plat and every plat that touches it are read before the best five are chosen, for sold sales, for homes that came off without selling, and for homes for sale or under contract. The next row opens only while that pair holds fewer than five that pass the hard walls. Year built does not remove a home on those plats. A subdivision price cell does not remove one either. Both walls stay on the later rungs. The priced set is the best five sold sales. Own weighs 3, adjacent 2, next weighs 1. If more than five passed, the letter says the others were in the pool. Tests that expected seven seats, or a size bracket swapping a later sale in over five own-plat sales, now expect that best five.
+
+**Read-only, 120 Sisemore, as of 2026-10-10, catch-up off. The stored draft was not rewritten.** The sold pool held 16. The five that set the price, newest first: 621 Delaware (Deschutes), 355 Delaware, 225 Delaware, 315 Hunter, 304 Hunter. Homes for sale: 320 Riverside at $1,400,000 and 828 Florida at $999,000. 429 State is out because it is about 40% off in living area (1,043 against 1,738). Year built and a price outside $900,000 to $1,100,000 did not remove the other two. Inventory was not truncated. Five expired or canceled homes printed, and the next row was open because the first ring held fewer than five homes for sale.
+
+**Still open.** Do not rebuild McCann until 20 McCann unit 5 and 26 McCann #2 are checked (both about 1,604 sq ft, 3 bed and 4 bath, $975,000). Schaeffer stays outside Boyd Acres for Calaveras and Rivers Edge. Do not add Parks At Broken Top back as a Broken Top alias. The homes that stayed short on the 2026-10-10 book walk stay short. Oakview stays a hold. Keats and Remarkable stay delivered.
+
+Skills read: none of the CMA skill file. The change follows the 2026-10-10 pool rule and AGENTS.md. Git commit format from `.cursor/rules/git-commit.mdc`.
+
+## Earlier — 2026-10-09 (Grok, older same-place sales and distinct units)
 
 Surface: Grok. Branch `fix/cma-older-same-place`, cut from origin/main `fb9ce4516` (PR #480 merged). Upstream stays unset. Do not point it at main. Land path is `npm run ship`. Nothing rebuilt, nothing sent, nothing approved. Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet.
 

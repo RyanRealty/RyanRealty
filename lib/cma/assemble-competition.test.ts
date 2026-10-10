@@ -11,13 +11,36 @@ import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
  */
 
 const getCmaAreaBandInventory = vi.fn()
+const getCmaAreaUnsoldCycles = vi.hoisted(() => vi.fn(async () => null))
+const getSubdivisionRing = vi.hoisted(() =>
+  vi.fn(async () => ({
+    homeSlug: 'old-bend-plat',
+    homeLabel: 'Old Bend',
+    neighborhoodSlug: 'bend-old-bend',
+    ring: [] as Array<{
+      slug: string
+      label: string
+      gapM: number
+      pointM: number
+      inNeighborhood: boolean | null
+      rank: number
+    }>,
+  })),
+)
+const readNeighborRings = vi.hoisted(() =>
+  vi.fn(async () => [] as Array<{
+    homeSlug: string
+    neighborhoodSlug?: string | null
+    plats: Array<{ slug: string; gapM: number; pointM: number; inNeighborhood: boolean | null }>
+  }>),
+)
 
 type AnyFn = (...args: unknown[]) => unknown
 vi.mock('@/lib/data/cma/bandInventory', () => ({
   getCmaAreaBandInventory: (...args: unknown[]) => (getCmaAreaBandInventory as AnyFn)(...args),
 }))
 vi.mock('@/lib/data/cma/areaUnsoldReads', () => ({
-  getCmaAreaUnsoldCycles: async () => null,
+  getCmaAreaUnsoldCycles: (...args: unknown[]) => (getCmaAreaUnsoldCycles as AnyFn)(...args),
 }))
 const getListingAskChanges = vi.fn(async (): Promise<Map<string, unknown[]>> => new Map())
 vi.mock('@/lib/data/cma/localOutcomeReads', () => ({
@@ -26,6 +49,10 @@ vi.mock('@/lib/data/cma/localOutcomeReads', () => ({
 vi.mock('@/lib/cma/parcel-shapes', () => ({
   resolveCmaParcels: async () => null,
 }))
+vi.mock('@/lib/data/geo/subdivision-ring', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/data/geo/subdivision-ring')>()
+  return { ...actual, getSubdivisionRing, readNeighborRings }
+})
 
 import { assembleCompetition } from '@/lib/cma/assemble-competition'
 
@@ -91,7 +118,8 @@ function row(over: Partial<CmaBandListingRow>): CmaBandListingRow {
     Longitude: -121.316,
     property_sub_type: 'Single Family Residence',
     City: 'Bend',
-    SubdivisionName: null,
+    SubdivisionName: 'Old Bend',
+    plat_slug: 'old-bend-plat',
     BedroomsTotal: 3,
     BathroomsTotal: 2,
     TotalLivingAreaSqFt: 1500,
@@ -153,12 +181,43 @@ function oldBendArgs(s: CmaSubject) {
   }
 }
 
+const DEFAULT_RING = {
+  homeSlug: 'old-bend-plat',
+  homeLabel: 'Old Bend',
+  neighborhoodSlug: 'bend-old-bend',
+  ring: [] as Array<{
+    slug: string
+    label: string
+    gapM: number
+    pointM: number
+    inNeighborhood: boolean | null
+    rank: number
+  }>,
+}
+
+const PARK_ADDITION = {
+  slug: 'park-addition',
+  label: 'Park Addition',
+  gapM: 0,
+  pointM: 40,
+  inNeighborhood: true,
+  rank: 1,
+}
+
 describe('assembleCompetition: the sentence counts what the table draws (rule 17, rule 24)', () => {
   beforeEach(() => {
     getCmaAreaBandInventory.mockReset()
+    getCmaAreaUnsoldCycles.mockReset()
+    getCmaAreaUnsoldCycles.mockResolvedValue(null)
+    getListingAskChanges.mockReset()
+    getListingAskChanges.mockResolvedValue(new Map())
+    getSubdivisionRing.mockReset()
+    getSubdivisionRing.mockResolvedValue(DEFAULT_RING)
+    readNeighborRings.mockReset()
+    readNeighborRings.mockResolvedValue([])
   })
 
-  it('draws the 1925 home a neighborhood area counted against a 2015 subject (no year test in a neighborhood)', async () => {
+  it('draws the 1925 home on the recorded plat against a 2015 subject (year ranks, it does not refuse)', async () => {
     getCmaAreaBandInventory.mockImplementation(async (q: { lo: number; hi: number }) =>
       inventory({ lo: q.lo, hi: q.hi, activeRows: [row({ ListingKey: 'OLD', year_built: 1925 })], pendingRows: [] }),
     )
@@ -171,12 +230,25 @@ describe('assembleCompetition: the sentence counts what the table draws (rule 17
     expect(out.bandRivals?.activeCount).toBe(1)
     expect(out.bandRivals?.rivals.map((r) => r.listingKey)).toEqual(['OLD'])
     expect(out.bandRivals?.sentence).toBe(
-      '1 home like yours is for sale in Old Bend between $360,000 and $440,000. None are under contract right now.',
+      '1 home like yours is for sale in Old Bend and the plats that touch it. None are under contract right now.',
     )
-    expect(out.widestAreaInventory?.citation.filter).toContain('sameAreaFit kept 1 of 1')
-    // buildCmaExtras reads this flag so citations.price_band.source calls
-    // these the fitting homes, not the whole band.
+    expect(out.bandRivals?.sentence).not.toMatch(/between \$|[—–]/)
+    expect(out.bandRivals?.bandBasis).toBeUndefined()
+    expect(out.peerBand).toBeNull()
+    expect(out.rivalBand).toEqual({ lo: 400_000, hi: 400_000 })
+    expect(out.pool?.ownLabel).toBe('Old Bend')
+    expect(out.pool?.openedNext).toBe(false)
+    expect(getCmaAreaBandInventory).toHaveBeenCalledTimes(1)
+    expect(getCmaAreaBandInventory).toHaveBeenCalledWith(expect.objectContaining({ lo: 1, hi: 50_000_000 }))
+    expect(readNeighborRings).not.toHaveBeenCalled()
+    const filter = out.widestAreaInventory?.citation.filter ?? ''
+    expect(filter).toContain('The price was not a filter')
+    expect(filter).toContain('The plats were')
+    expect(filter).toContain('rankBestPool kept 1 of 1')
     expect(out.widestAreaInventory?.sameAreaFit).toBe(true)
+    expect(getCmaAreaUnsoldCycles).toHaveBeenCalledWith(
+      expect.objectContaining({ priceLo: 1, priceHi: 50_000_000, months: 36 }),
+    )
   })
 
   it('stamps each printed competitor with its last stretch off its ask history (Matt 2026-10-08)', async () => {
@@ -231,131 +303,128 @@ describe('assembleCompetition: the sentence counts what the table draws (rule 17
     expect(out.bandRivals?.pendingCount).toBe(1)
     expect(out.bandRivals?.rivals.map((r) => `${r.listingKey}:${r.status}`)).toEqual(['P78:Pending'])
     expect(out.bandRivals?.sentence).toBe(
-      'No home like yours in Old Bend is for sale between $360,000 and $440,000, but one is under contract.',
+      'No home like yours is for sale in Old Bend or the plats that touch it, but one is under contract.',
     )
+    expect(out.bandRivals?.sentence).not.toMatch(/between \$|[—–]/)
   })
 
-  it('records in the citation that the ±25% read failed and the ±10% count stands, and the sentence does not change', async () => {
-    // Two printed sales from the subdivision rung, in Rooster Rock and the
-    // plat next to it: a short recorded-plat area, so the band ladder runs.
-    const coho = subject({
-      streetAddress: '3177 Coho',
-      subdivision: 'Rooster Rock',
-      latitude: 44.03,
-      longitude: -121.27,
-      yearBuilt: 2018,
-      sqft: 1458,
-    })
-    const args = {
-      ...oldBendArgs(coho),
-      comps: [
-        comp({ listingKey: 'C1', address: '1 Coho', subdivision: 'Rooster Rock', selectionTier: 'subdivision-12mo', latitude: 44.03, longitude: -121.27 }),
-        comp({ listingKey: 'C2', address: '2 Mink', subdivision: 'Madison Park', selectionTier: 'subdivision-12mo', latitude: 44.031, longitude: -121.27 }),
-      ],
-      diagnostics: diagnostics([{ tier: 'subdivision-12mo', added: 2 }], 'Rooster Rock'),
-      recommended: 549_000,
-    }
-    const tight = [
-      row({
-        ListingKey: 'ALD',
-        StreetNumber: '2820',
-        StreetName: 'Aldrich',
-        ListPrice: 550_000,
-        SubdivisionName: 'Rooster Rock',
-        Latitude: 44.03,
-        Longitude: -121.271,
-        TotalLivingAreaSqFt: 1500,
-        year_built: 2016,
-      }),
-    ]
-    getCmaAreaBandInventory.mockImplementation(async (q: { lo: number; hi: number }) => {
-      // The ±10% read answers; the ±25% read fails.
-      if (q.lo === 494_000 && q.hi === 604_000) {
-        return inventory({ lo: q.lo, hi: q.hi, activeRows: tight, pendingRows: [] })
-      }
-      throw new Error('statement timeout')
-    })
-    const failed = await assembleCompetition(args)
-    expect(failed.compArea?.kind).toBe('subdivisions')
-    expect(getCmaAreaBandInventory).toHaveBeenCalledTimes(2)
-    const filter = failed.widestAreaInventory?.citation.filter ?? ''
-    expect(filter).toContain('the ±25% band read failed, so the band was never opened; the ±10% count stands')
-    expect(filter).not.toContain('band steps tried')
-    expect(failed.bandRivals?.activeCount).toBe(1)
-    expect(failed.bandRivals?.rivals.map((r) => r.address)).toEqual(['2820 Aldrich'])
-    const sentence = failed.bandRivals?.sentence
-
-    // The same ±10% set with a ±25% read that answered and found nothing more:
-    // the ladder walked, so the sentence says nothing from outside was added,
-    // and the citation lists the steps. The failed read says neither.
-    getCmaAreaBandInventory.mockReset()
-    getCmaAreaBandInventory.mockImplementation(async (q: { lo: number; hi: number }) =>
-      inventory({ lo: q.lo, hi: q.hi, activeRows: tight, pendingRows: [] }),
+  it('does not compare homes for sale when the inventory read fails, and does not open the next row', async () => {
+    getSubdivisionRing.mockResolvedValue({ ...DEFAULT_RING, ring: [PARK_ADDITION] })
+    getCmaAreaBandInventory.mockRejectedValue(new Error('statement timeout'))
+    const failed = await assembleCompetition(oldBendArgs(subject()))
+    expect(getCmaAreaBandInventory).toHaveBeenCalledTimes(1)
+    expect(readNeighborRings).not.toHaveBeenCalled()
+    expect(failed.widestAreaInventory).toBeNull()
+    expect(failed.bandRivals?.rivals).toEqual([])
+    expect(failed.bandRivals?.sentence).toBe(
+      'The homes for sale in Old Bend and the plats that touch it were not read, so none are compared here.',
     )
-    const walked = await assembleCompetition(args)
-    expect(walked.widestAreaInventory?.citation.filter).toContain('band steps tried ±10%/±15%/±20%/±25%')
-    expect(walked.widestAreaInventory?.citation.filter).not.toContain('read failed')
-    expect(walked.bandRivals?.sentence).toContain('Nothing from outside Rooster Rock and Madison Park was added')
-
-    // The failed read leaves the ±10% sentence exactly as it was: the count it
-    // holds, and no claim that the band was walked.
-    expect(sentence).toBe(
-      '1 home like yours is for sale in Rooster Rock and Madison Park between $494,000 and $604,000. None are under contract right now.',
-    )
-    expect(sentence).not.toMatch(/[—–]/)
+    expect(failed.bandRivals?.sentence).not.toMatch(/[—–]/)
   })
 
-  it('records what the range is centered on, and the step it opened to (reader review 2026-10-07)', async () => {
-    const coho = subject({
-      streetAddress: '3177 Coho',
-      subdivision: 'Rooster Rock',
-      latitude: 44.03,
-      longitude: -121.27,
-      yearBuilt: 2018,
-      sqft: 1458,
-    })
-    const args = {
-      ...oldBendArgs(coho),
-      comps: [
-        comp({ listingKey: 'C1', address: '1 Coho', subdivision: 'Rooster Rock', selectionTier: 'subdivision-12mo', latitude: 44.03, longitude: -121.27 }),
-        comp({ listingKey: 'C2', address: '2 Mink', subdivision: 'Madison Park', selectionTier: 'subdivision-12mo', latitude: 44.031, longitude: -121.27 }),
-      ],
-      diagnostics: diagnostics([{ tier: 'subdivision-12mo', added: 2 }], 'Rooster Rock'),
-      recommended: 549_000,
-    }
-    const like = (key: string, price: number) =>
+  it('keeps a touching-plat home about 40% above the recommendation when it is one of the best five', async () => {
+    getSubdivisionRing.mockResolvedValue({ ...DEFAULT_RING, ring: [PARK_ADDITION] })
+    const own = (key: string) =>
       row({
         ListingKey: key,
         StreetNumber: key,
-        StreetName: 'Aldrich',
-        ListPrice: price,
-        SubdivisionName: 'Rooster Rock',
-        Latitude: 44.03,
-        Longitude: -121.271,
-        TotalLivingAreaSqFt: 1500,
-        year_built: 2016,
+        StreetName: 'Delaware',
+        ListPrice: 1_000_000,
+        SubdivisionName: 'Old Bend',
+        plat_slug: 'old-bend-plat',
+        TotalLivingAreaSqFt: 1950,
+        year_built: 2015,
       })
-    // One home inside ±10% ($494,000..$604,000); four more inside ±15%.
-    const all = [like('1', 550_000), like('2', 480_000), like('3', 470_000), like('4', 620_000), like('5', 625_000)]
     getCmaAreaBandInventory.mockImplementation(async (q: { lo: number; hi: number }) =>
       inventory({
         lo: q.lo,
         hi: q.hi,
-        activeRows: all.filter((r) => Number(r.ListPrice) >= q.lo && Number(r.ListPrice) <= q.hi),
+        activeRows: [
+          own('A'),
+          own('B'),
+          own('C'),
+          own('D'),
+          row({
+            ListingKey: 'PARK',
+            StreetNumber: '320',
+            StreetName: 'Riverside',
+            ListPrice: 1_400_000,
+            SubdivisionName: 'Park Addition',
+            plat_slug: 'park-addition',
+            TotalLivingAreaSqFt: 1500,
+            year_built: 2015,
+          }),
+          row({
+            ListingKey: 'BIG',
+            StreetNumber: '1',
+            StreetName: 'Over',
+            ListPrice: 1_000_000,
+            TotalLivingAreaSqFt: 2100,
+          }),
+          row({
+            ListingKey: 'BEDS',
+            StreetNumber: '2',
+            StreetName: 'Rooms',
+            ListPrice: 1_000_000,
+            BedroomsTotal: 6,
+          }),
+        ],
         pendingRows: [],
       }),
     )
-    const opened = await assembleCompetition(args)
-    expect(opened.bandRivals?.lo).toBe(467_000)
-    expect(opened.bandRivals?.hi).toBe(631_000)
-    expect(opened.bandRivals?.bandBasis).toEqual({ center: 549_000, halfWidth: 0.15, baseHalfWidth: 0.1 })
-
-    // A ±10% band that held five needs no opening; the basis says ±10%.
-    getCmaAreaBandInventory.mockReset()
-    getCmaAreaBandInventory.mockImplementation(async (q: { lo: number; hi: number }) =>
-      inventory({ lo: q.lo, hi: q.hi, activeRows: [1, 2, 3, 4, 5].map((i) => like(String(i), 550_000)), pendingRows: [] }),
+    const out = await assembleCompetition({ ...oldBendArgs(subject()), recommended: 1_000_000 })
+    expect(readNeighborRings).not.toHaveBeenCalled()
+    expect(out.bandRivals?.rivals.map((r) => r.listingKey)).toEqual(['A', 'B', 'C', 'D', 'PARK'])
+    expect(out.bandRivals?.rivals.map((r) => r.listingKey)).not.toContain('BIG')
+    expect(out.bandRivals?.rivals.map((r) => r.listingKey)).not.toContain('BEDS')
+    expect(out.bandRivals?.activeCount).toBe(5)
+    expect(out.bandRivals?.lo).toBe(1_000_000)
+    expect(out.bandRivals?.hi).toBe(1_400_000)
+    expect(out.bandRivals?.bandBasis).toBeUndefined()
+    expect(out.bandRivals?.sentence).toBe(
+      '5 homes like yours are for sale in Old Bend and the plats that touch it. None are under contract right now.',
     )
-    const tight = await assembleCompetition(args)
-    expect(tight.bandRivals?.bandBasis).toEqual({ center: 549_000, halfWidth: 0.1, baseHalfWidth: 0.1 })
+    expect(out.widestAreaInventory?.citation.filter).toContain('rankBestPool kept 5 of 5')
+  })
+
+  it('opens the next row only when own and touching plats hold fewer than five that fit', async () => {
+    getSubdivisionRing.mockResolvedValue({ ...DEFAULT_RING, ring: [PARK_ADDITION] })
+    readNeighborRings.mockResolvedValue([
+      {
+        homeSlug: 'park-addition',
+        plats: [{ slug: 'riverside', gapM: 0, pointM: 80, inNeighborhood: true }],
+      },
+    ])
+    const two = [
+      row({ ListingKey: 'ONE', StreetNumber: '1', StreetName: 'A' }),
+      row({ ListingKey: 'TWO', StreetNumber: '2', StreetName: 'B' }),
+    ]
+    getCmaAreaBandInventory.mockImplementation(async (q: { lo: number; hi: number; area?: { platSlugs?: string[] } }) =>
+      inventory({ lo: q.lo, hi: q.hi, activeRows: two, pendingRows: [] }),
+    )
+    const out = await assembleCompetition(oldBendArgs(subject()))
+    expect(readNeighborRings).toHaveBeenCalledTimes(1)
+    expect(getCmaAreaBandInventory).toHaveBeenCalledTimes(2)
+    const second = getCmaAreaBandInventory.mock.calls[1]?.[0] as { area?: { platSlugs?: string[] } }
+    expect(second.area?.platSlugs).toContain('riverside')
+    expect(out.pool?.openedNext).toBe(true)
+    expect(out.bandRivals?.sentence).toBe(
+      '2 homes like yours are for sale in Old Bend, the plats that touch it, and the plats that touch those. None are under contract right now.',
+    )
+    expect(out.bandRivals?.rivals).toHaveLength(2)
+  })
+
+  it('does not use the city or a mile radius when the home is not inside a recorded plat', async () => {
+    getSubdivisionRing.mockResolvedValue(null)
+    const out = await assembleCompetition(oldBendArgs(subject()))
+    expect(getCmaAreaBandInventory).not.toHaveBeenCalled()
+    expect(getCmaAreaUnsoldCycles).not.toHaveBeenCalled()
+    expect(out.competitionArea).toBeNull()
+    expect(out.competitionRings).toEqual([])
+    expect(out.pool).toBeNull()
+    expect(out.bandRivals?.rivals).toEqual([])
+    expect(out.bandRivals?.sentence).toBe(
+      'This home is not inside a recorded plat, so no homes for sale were compared. The search did not use the city or a mile radius.',
+    )
   })
 })

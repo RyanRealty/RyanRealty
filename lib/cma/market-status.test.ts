@@ -1024,7 +1024,7 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     })
   }
 
-  it('stops at the first window holding three', () => {
+  it('keeps every home inside 36 months and ranks the more recent first', () => {
     const set = buildExpiredPeerSet({
       rows: [
         unsold('A', '10 Aspen', 1),
@@ -1036,56 +1036,58 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       area: AREA,
       asOf: ASOF,
     })
-    expect(set.windowMonths).toBe(6)
-    expect(set.count).toBe(3)
-    expect(set.widenedTo).toBe(6)
+    expect(set.windowMonths).toBe(36)
+    expect(set.windowsTried).toEqual([36])
+    expect(set.count).toBe(4)
+    expect(set.widenedTo).toBeNull()
     expect(set.shortfall).toBe(false)
-    expect(set.peers.map((p) => p.address)).toEqual(['10 Aspen', '20 Birch', '30 Cedar'])
+    expect(set.peers.map((p) => p.address)).toEqual(['10 Aspen', '20 Birch', '30 Cedar', '40 Dogwood'])
     expect(set.sentence).toBe(
-      'Three homes like yours in Diamond Bar Ranch came off the market without selling in the last six months.',
+      'Four homes like yours in Diamond Bar Ranch came off the market without selling in the last 36 months.',
     )
   })
 
-  it('does not widen when the first window already holds three', () => {
+  it('uses 36 months when three homes already came off inside a shorter span', () => {
     const set = buildExpiredPeerSet({
       rows: [unsold('A', '10 Aspen', 1), unsold('B', '20 Birch', 2), unsold('C', '30 Cedar', 2)],
       subject: subj,
       area: AREA,
       asOf: ASOF,
     })
-    expect(set.windowMonths).toBe(3)
+    expect(set.windowMonths).toBe(36)
     expect(set.widenedTo).toBeNull()
+    expect(set.shortfall).toBe(false)
     expect(set.sentence).toBe(
-      'Three homes like yours in Diamond Bar Ranch came off the market without selling in the last three months.',
+      'Three homes like yours in Diamond Bar Ranch came off the market without selling in the last 36 months.',
     )
   })
 
-  it('reaches 24 months and says so rather than pad from outside the area', () => {
+  it('keeps homes that came off 20 and 22 months ago inside the 36 month lookback', () => {
     const set = buildExpiredPeerSet({
       rows: [unsold('A', '10 Aspen', 20), unsold('B', '20 Birch', 22)],
       subject: subj,
       area: AREA,
       asOf: ASOF,
     })
-    expect(set.windowMonths).toBe(24)
+    expect(set.windowMonths).toBe(36)
     expect(set.count).toBe(2)
     expect(set.areaTotal).toBe(2)
     expect(set.found).toBe(2)
     expect(set.likeYours).toBe(true)
-    expect(set.shortfall).toBe(true)
-    expect(set.sentence).toContain('two homes like yours in Diamond Bar Ranch')
-    // The count names the whole search area, so what was not added is what
-    // lies further out (reader review 2026-10-09, 915 Saginaw).
-    expect(set.sentence).toContain('nothing from further out was added')
+    expect(set.shortfall).toBe(false)
+    expect(set.sentence).toBe(
+      'Two homes like yours in Diamond Bar Ranch came off the market without selling in the last 36 months.',
+    )
+    expect(set.sentence).not.toContain('nothing from further out')
   })
 
   it('says plainly when nothing in the area failed', () => {
     const set = buildExpiredPeerSet({ rows: [], subject: subj, area: AREA, asOf: ASOF })
     expect(set.count).toBe(0)
-    expect(set.shortfall).toBe(true)
+    expect(set.shortfall).toBe(false)
     expect(set.peers).toEqual([])
     expect(set.sentence).toBe(
-      'No home in Diamond Bar Ranch came off the market without selling in the last 24 months.',
+      'No home like yours in Diamond Bar Ranch came off the market without selling in the last 36 months.',
     )
   })
 
@@ -1104,7 +1106,7 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     })
     expect(off.count).toBe(0)
     expect(off.sentence).toBe(
-      'No other home like yours in Diamond Bar Ranch came off the market without selling in the last 24 months.',
+      'No other home like yours in Diamond Bar Ranch came off the market without selling in the last 36 months.',
     )
     expect(off.sentence).not.toMatch(/^No home/)
 
@@ -1116,7 +1118,7 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       subjectCameOff: false,
     })
     expect(stayed.sentence).toBe(
-      'No home in Diamond Bar Ranch came off the market without selling in the last 24 months.',
+      'No home like yours in Diamond Bar Ranch came off the market without selling in the last 36 months.',
     )
 
     const withPeers = buildExpiredPeerSet({
@@ -1164,8 +1166,8 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       area: AREA,
       asOf: ASOF,
     })
-    expect(set.windowMonths).toBe(12)
-    expect(set.widenedTo).toBe(12)
+    expect(set.windowMonths).toBe(36)
+    expect(set.widenedTo).toBeNull()
     expect(set.count).toBe(3)
     expect(set.likeYours).toBe(true)
     expect(set.peers.map((p) => p.address)).toEqual(['10 Aspen', '20 Birch', '30 Cedar'])
@@ -1337,13 +1339,14 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       // The closed-sale lookback caps the window (Matt ADD 2026-09-12).
       maxWindowMonths: 6,
     })
-    expect(set.peers.map((p) => p.address)).toEqual(['2515 Keats', '10 Oak'])
+    expect(set.peers.map((p) => p.address)).toEqual(['10 Oak', '2515 Keats'])
     expect(set.peers.map((p) => p.address)).not.toContain('1512 Quiet Ridge')
     expect(set.peers[0]!.roomDifference).toEqual(['beds'])
     expect(set.peers[1]!.roomDifference).toEqual(['beds'])
     expect(set.likeYours).toBe(true)
+    expect(set.shortfall).toBe(false)
     expect(set.sentence).toBe(
-      'Only two homes like yours in Hampton Park came off the market without selling in the last six months, and nothing from further out was added to make up the number. 2515 Keats is one bedroom different from yours. 10 Oak is two bedrooms different from yours. No dollar value is applied to the room.',
+      'Two homes like yours in Hampton Park came off the market without selling in the last 36 months. 10 Oak is two bedrooms different from yours. 2515 Keats is one bedroom different from yours. No dollar value is applied to the room.',
     )
     expect(set.sentence).not.toContain('within 35 percent')
     expect(set.sentence).not.toContain('None were close')
@@ -1378,12 +1381,9 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       maxWindowMonths: 6,
     })
     expect(set.peers.map((p) => p.address)).toEqual(['2515 Keats'])
-    expect(set.shortfall).toBe(true)
-    // "Only one home like yours in Hampton Park" read as if only Hampton Park
-    // was searched; the count names the whole search area (reader review
-    // 2026-10-09, 915 Saginaw: "in Kenwood" over five subdivisions searched).
+    expect(set.shortfall).toBe(false)
     expect(set.sentence).toBe(
-      'Only one home like yours in Hampton Park and Deer Pointe Village came off the market without selling in the last six months, and nothing from further out was added to make up the number. 2515 Keats is one bedroom different from yours. No dollar value is applied to the room.',
+      'One home like yours in Hampton Park and Deer Pointe Village came off the market without selling in the last 36 months. 2515 Keats is one bedroom different from yours. No dollar value is applied to the room.',
     )
     expect(set.sentence).not.toContain('Quiet Canyon')
     expect(set.sentence).not.toMatch(/[—–]/)
@@ -1399,7 +1399,7 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     })
     expect(set.peers).toEqual([])
     expect(set.sentence).toBe(
-      'No other home like yours in River West came off the market without selling in the last 24 months.',
+      'No other home like yours in River West came off the market without selling in the last 36 months.',
     )
   })
 
@@ -1429,7 +1429,7 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     expect(set.peers).toEqual([])
     expect(set.areaTotal).toBe(0)
     expect(set.sentence).toBe(
-      'No home in Rooster Rock or Madison Park came off the market without selling in the last 12 months.',
+      'No home like yours in Rooster Rock or Madison Park came off the market without selling in the last 36 months.',
     )
     expect(set.sentence).not.toContain('High Pointe')
     expect(set.sentence).not.toContain('Owls')
@@ -1446,15 +1446,15 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       area: AREA,
       asOf: ASOF,
     })
-    expect(set.peers.map((p) => p.address)).toEqual(['10 Aspen', '20 Birch', '30 Cedar'])
+    expect(set.peers.map((p) => p.address)).toEqual(['20 Birch', '30 Cedar', '10 Aspen'])
     expect(set.peers.find((p) => p.address === '10 Aspen')!.roomDifference).toEqual(['baths'])
     expect(set.sentence).toBe(
-      'Three homes like yours in Diamond Bar Ranch came off the market without selling in the last three months. 10 Aspen is one bathroom different from yours. No dollar value is applied to the room.',
+      'Three homes like yours in Diamond Bar Ranch came off the market without selling in the last 36 months. 10 Aspen is one bathroom different from yours. No dollar value is applied to the room.',
     )
     expect(set.sentence).not.toMatch(/[—–]/)
   })
 
-  it('holds the year band off the own plat and never on it (Matt 2026-10-07)', () => {
+  it('keeps a 1975 home on the own plat and on the plat beside it (year is not a wall)', () => {
     const twoPlats: CompArea = {
       ...AREA,
       kind: 'subdivisions',
@@ -1467,8 +1467,8 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       area: twoPlats,
       asOf: ASOF,
     })
-    expect(off.peers).toEqual([])
     expect(off.areaTotal).toBe(1)
+    expect(off.peers.map((p) => p.address)).toEqual(['10 Aspen'])
     const own = buildExpiredPeerSet({
       rows: [unsold('OLD', '10 Aspen', 1, { year_built: 1975, SubdivisionName: 'Diamond Bar Ranch' })],
       subject: subj,
@@ -1570,15 +1570,14 @@ describe('the peer sentence counts the rows it shows', () => {
     // NW Kelly Hill, reader review 2026-10-08). Bedrooms are not named: size
     // is the refusal the fit returned.
     expect(set.sentence).toBe(
-      'We searched listings in River West between $660,000 and $2,220,000. Seven homes came off the market without selling in the last 24 months, last listed between $900,000 and $906,000. All seven are more than 35 percent larger than this home, so they are not compared here.',
+      'No home like yours in River West came off the market without selling in the last 36 months.',
     )
     expect(set.unlike).toHaveLength(7)
     expect(set.unlike?.every((h) => h.reason === 'size' && h.direction === 'larger' && h.limit === 35)).toBe(true)
-    expect(set.sentence).not.toMatch(/bedrooms|bathrooms|age/)
-    expect(set.priceBand).toEqual({ lo: 660_000, hi: 2_220_000 })
-    expect(set.sentence).not.toMatch(/No home /)
-    expect(set.sentence).not.toContain('—')
-    expect(set.sentence).not.toContain('like yours')
+    expect(set.sentence).not.toMatch(/bedrooms|bathrooms|age|between \$|—/)
+    expect(set.priceBand).toBeUndefined()
+    expect(set.shortfall).toBe(false)
+    expect(set.windowMonths).toBe(36)
   })
 })
 
@@ -1699,7 +1698,7 @@ describe('a house that came off, relisted and sold did not come off unsold (cma-
     expect(set.count).toBe(0)
     expect(set.peers).toEqual([])
     expect(set.sentence).toBe(
-      'No other home like yours in Pheasant Hill, Neal, Meadowview Estate or North Pilot Butte came off the market without selling in the last 12 months.',
+      'No other home like yours in Pheasant Hill, Neal, Meadowview Estate or North Pilot Butte came off the market without selling in the last 36 months.',
     )
     // The read before the relist records: both canceled cycles counted.
     const before = buildExpiredPeerSet({

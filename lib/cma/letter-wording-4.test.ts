@@ -159,7 +159,7 @@ describe('1. the homes that came off unsold and are not like this one', () => {
     expect(set.areaTotal).toBe(2)
     expect(set.likeYours).toBe(true)
     expect(set.sentence).toBe(
-      'Only one home like yours in Westside Meadows and Skyline West came off the market without selling in the last 18 months, and nothing from further out was added to make up the number.',
+      'One home like yours in Westside Meadows and Skyline West came off the market without selling in the last 36 months.',
     )
     expect(set.sentence).not.toMatch(/bedroom|bathroom|age\b/)
     expect(set.sentence).not.toContain(EM_DASH)
@@ -177,7 +177,7 @@ describe('1. the homes that came off unsold and are not like this one', () => {
       subjectCameOff: true,
     })
     expect(set.sentence).toBe(
-      'We searched listings in Westside Meadows and Skyline West between $405,000 and $1,362,000. One other home came off the market without selling in the last 18 months, last listed at $895,000. It is more than 35 percent larger than this home, so it is not compared here.',
+      'No other home like yours in Westside Meadows or Skyline West came off the market without selling in the last 36 months.',
     )
   })
 
@@ -210,8 +210,9 @@ describe('1. the homes that came off unsold and are not like this one', () => {
       yearBuilt: 1970,
       propertySubType: 'Single Family Residence',
     }, 650000)
-    expect(age).toEqual({ lastAsk: 650000, reason: 'age', direction: 'older', limit: 25 })
-    expect(unlikeReasonSentence([age!, age!])).toBe(
+    expect(age).toBeNull()
+    const storedAge: CmaUnlikeHome = { lastAsk: 650000, reason: 'age', direction: 'older', limit: 25 }
+    expect(unlikeReasonSentence([storedAge, storedAge])).toBe(
       'Both were built more than 25 years before this home, so they are not compared here.',
     )
     // Mixed reasons are counted, each with its own verb.

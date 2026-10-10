@@ -85,7 +85,13 @@ import {
   type PricingPageInput,
 } from '@/lib/cma/render-pricing-page'
 import { lotDifferenceSentence } from '@/lib/cma/lot-disclosure'
-import { activeRivalsFor, competitionSetWithoutSubject, letterIsFrozen, unsoldPeersFor } from '@/lib/cma/matrix-sets'
+import {
+  activeRivalsFor,
+  competitionDrawArea,
+  competitionSetWithoutSubject,
+  letterIsFrozen,
+  unsoldPeersFor,
+} from '@/lib/cma/matrix-sets'
 import { letterProductMatch, productClass } from '@/lib/cma/market-area'
 import { realSubdivisionName } from '@/lib/pricing/classes'
 import { namedSalesPlace, salesAreaIsBounded } from '@/lib/pricing/comp-area'
@@ -300,7 +306,7 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
       unsoldPeersFor({
         subject: a.subject,
         peers: a.expiredPeers?.peers ?? a.extras?.marketArea?.expiredPeers,
-        area: a.compArea,
+        area: competitionDrawArea(a.compArea, a.expiredPeers),
         buildArea: a.expiredPeers?.area ?? null,
         frozen: letterIsFrozen(a.documentStatus),
       }),
@@ -312,7 +318,7 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
       activeRivalsFor(
         a.bandRivals?.rivals ?? a.extras?.band?.rivals,
         a.subject,
-        a.compArea ?? a.bandRivals?.area,
+        competitionDrawArea(a.compArea ?? a.bandRivals?.area, a.bandRivals),
         { buildArea: a.bandRivals?.area ?? null, frozen: letterIsFrozen(a.documentStatus) },
       ),
       a.docLinks ?? null,
@@ -408,7 +414,7 @@ export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
     rivals: activeRivalsFor(
       a.bandRivals?.rivals ?? a.extras?.band?.rivals,
       a.subject,
-      a.compArea ?? a.bandRivals?.area,
+      competitionDrawArea(a.compArea ?? a.bandRivals?.area, a.bandRivals),
       { buildArea: a.bandRivals?.area ?? null, frozen: letterIsFrozen(a.documentStatus) },
     ).map((r) => ({
       address: r.address,
@@ -2493,7 +2499,7 @@ export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
     hi: b.hi,
     activeCount: b.activeCount,
     pendingCount: b.pendingCount,
-    rivals: activeRivalsFor(b.rivals, a.subject, a.compArea ?? a.bandRivals?.area, {
+    rivals: activeRivalsFor(b.rivals, a.subject, competitionDrawArea(a.compArea ?? a.bandRivals?.area, a.bandRivals), {
       buildArea: a.bandRivals?.area ?? null,
       frozen: letterIsFrozen(a.documentStatus),
     }),

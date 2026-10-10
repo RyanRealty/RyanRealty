@@ -3,13 +3,11 @@ import { pricingTierLadder } from '@/lib/pricing/ladder'
 import { walkPricingLadder, type PricingSale, type PricingSubject } from '@/lib/pricing/match'
 
 /**
- * THE SIZE BRACKET APPLIES THE YEAR BAND AND STORY RULE OF THE RUNG IT STANDS
- * IN FOR (2026-10-08). On 711 Georgia (2 bed, 1,307 sqft, built 2016) the
- * bracket replaced 240 Georgia, the only own-street sale, with 355 Delaware
- * (1,160 sqft, built 1925) from a touching plat. Every touching-plat rung had
- * refused 355 Delaware on the year band (25 years at the loosest); the bracket
- * read no year band at all. A sale the walk's own rung would refuse on age or
- * stories is not a size fix.
+ * YEAR BUILT DOES NOT REMOVE A TOUCHING-PLAT SALE (Matt 2026-10-10). On 711
+ * Georgia the old size bracket swapped in 355 Delaware from a touching plat
+ * over own-plat sales. Five own-plat sales now keep the price. The touching
+ * sale stays in the pool. A two-story sale the strict touching rung refuses
+ * still stays out.
  */
 const asOf = '2026-10-08'
 
@@ -112,25 +110,29 @@ function touchingSmaller(over: Partial<PricingSale>): PricingSale {
 }
 
 describe('the size bracket and the year band', () => {
-  it('does not swap in a touching-plat sale every touching-plat rung refused on the year band', () => {
+  it('keeps five own-plat sales ahead of an older touching-plat sale', () => {
     const out = walkPricingLadder(georgia(), [...ownPlatLarger(), touchingSmaller({ yearBuilt: 1925 })], { asOf })
     expect(out.comps.map((c) => c.listingKey)).not.toContain('TOUCHING')
+    expect(out.comps).toHaveLength(5)
+    expect((out.bench ?? []).map((c) => c.listingKey)).toContain('TOUCHING')
     expect(out.tiersUsed).not.toContain('gla-bracket')
     expect(out.trace.some((t) => t.startsWith('GLA bracket'))).toBe(false)
   })
 
-  it('still swaps in a touching-plat sale inside the touching rung\'s year band', () => {
-    // 2016 against 1995 is 21 years: outside the strict touching rung (15),
-    // inside the wider one (25), so a touching rung admits it.
+  it('still leaves a closer-year touching sale on the bench when five own sales already passed', () => {
+    // 2016 against 1995 is 21 years. Year built does not remove it on a
+    // touching plat. Five own-plat sales still outrank it.
     const out = walkPricingLadder(georgia(), [...ownPlatLarger(), touchingSmaller({ yearBuilt: 1995 })], { asOf })
-    expect(out.comps.map((c) => c.listingKey)).toContain('TOUCHING')
-    expect(out.trace.some((t) => t.startsWith('GLA bracket: replaced'))).toBe(true)
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('TOUCHING')
+    expect(out.comps).toHaveLength(5)
+    expect((out.bench ?? []).map((c) => c.listingKey)).toEqual(['TOUCHING'])
+    expect(out.trace.some((t) => t.startsWith('GLA bracket'))).toBe(false)
   })
 
   it('reads the story rule of the rung it stands in for', () => {
-    // A ladder whose only touching rungs are the strict ones (same story,
-    // 15 years). A two-story touching sale is refused by the swap as by the
-    // rung; a one-story one in the same year is taken.
+    // A ladder whose only touching rungs are the strict ones (same story).
+    // A two-story touching sale is refused by that rung. A one-story sale is
+    // admitted, then left on the bench because five own-plat sales outrank it.
     const tiers = pricingTierLadder().filter(
       (t) => t.sameSubdivision || (t.adjacentSubdivision && t.apples === 'strict'),
     )
@@ -140,11 +142,14 @@ describe('the size bracket and the year band', () => {
       { asOf, tiers },
     )
     expect(twoStory.comps.map((c) => c.listingKey)).not.toContain('TOUCHING')
+    expect((twoStory.bench ?? []).map((c) => c.listingKey)).not.toContain('TOUCHING')
     const oneStory = walkPricingLadder(
       georgia(),
       [...ownPlatLarger(), touchingSmaller({ yearBuilt: 2010, storyClass: 'one' })],
       { asOf, tiers },
     )
-    expect(oneStory.comps.map((c) => c.listingKey)).toContain('TOUCHING')
+    expect(oneStory.comps.map((c) => c.listingKey)).not.toContain('TOUCHING')
+    expect(oneStory.comps).toHaveLength(5)
+    expect((oneStory.bench ?? []).map((c) => c.listingKey)).toEqual(['TOUCHING'])
   })
 })

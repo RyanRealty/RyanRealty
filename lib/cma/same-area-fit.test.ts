@@ -120,13 +120,11 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: null }).ok).toBe(true)
   })
 
-  it('holds the year band off the own plat, and never on it', () => {
-    // 1988 against 2018 is 30 years, past the 25 the next-row rungs admit.
-    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, subdivision: 'Madison Park', yearBuilt: 1988 })).toEqual({
-      ok: false,
-      reason: 'age',
-    })
-    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, yearBuilt: 1988 }).ok).toBe(true)
+  it('does not remove a home for year built, on or off the own plat (Matt 2026-10-10)', () => {
+    // 1988 against 2018 is 30 years. Year ranks. It does not refuse the home.
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, subdivision: 'Madison Park', yearBuilt: 1988 }).ok).toBe(true)
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, yearBuilt: 1920 }).ok).toBe(true)
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, subdivision: 'Madison Park', yearBuilt: 2024 }).ok).toBe(true)
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, subdivision: 'Madison Park', yearBuilt: null }).ok).toBe(true)
   })
 
@@ -176,7 +174,7 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
     })
   })
 
-  it("holds the distance rungs' year band inside a radius area", () => {
+  it('keeps a home inside a radius area whatever its year', () => {
     const circle: CompArea = {
       kind: 'radius',
       names: [],
@@ -187,7 +185,7 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
     }
     const inside = { ...ALDRICH, subdivision: null, latitude: 44.0554, longitude: -121.3153 }
     expect(sameAreaFit(circle, COHO, { ...inside, yearBuilt: 1990 }).ok).toBe(true)
-    expect(sameAreaFit(circle, COHO, { ...inside, yearBuilt: 1985 })).toEqual({ ok: false, reason: 'age' })
+    expect(sameAreaFit(circle, COHO, { ...inside, yearBuilt: 1985 }).ok).toBe(true)
   })
 
   it('skips the area test when there is no area', () => {

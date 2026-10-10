@@ -9,11 +9,10 @@ import { walkPricingLadder, type PricingSale, type PricingSubject } from '@/lib/
 /**
  * RULE 4, ONE DECISION WHEREVER THE SALE CAME FROM (2026-10-08).
  *
- * The size bracket (a swap that runs after the walk when every kept sale sits
- * on one side of the subject's living area) seated a sale without the picker's
- * room stamp. The accuracy contract, which reads only the subject's room
- * counts, then decided that sale off own ground and failed the build on a sale
- * the picker itself had seated:
+ * A one-room sale that passes the hard wall stays in the pool and is disclosed
+ * at zero dollars. Five own-plat sales outrank it, so it waits. When the own
+ * plat is short of five it seats on the rung that admitted it. The accuracy
+ * contract reads the same room counts:
  *
  *  - cma-20435-powder-mountain: 60645 Taos, 3 bed / 3 full baths against the
  *    subject's 3 bed / 2 full baths, a touching plat inside the subject's
@@ -251,13 +250,27 @@ function contractFor(s: PricingSubject, comps: CmaAdjustedComp[], withGround = t
 const roomCheck = (c: ReturnType<typeof contractFor>) => c.checks.find((x) => x.id === 'bath-count-match')!
 
 describe('the size bracket seats a sale with the picker’s one-room decision (rule 4)', () => {
-  it('cma-20435-powder-mountain: one full bath apart inside the mapped neighborhood is seated, stamped, passed by the contract and disclosed at zero dollars', () => {
+  it('cma-20435-powder-mountain: five own sales keep the price, and one full bath apart waits on the bench', () => {
     const subject = subjectOf({})
     const out = walkPricingLadder(subject, [...ownPlatSmaller(), taos()], { asOf })
+    expect(out.comps.find((c) => c.listingKey === 'TAOS')).toBeUndefined()
+    expect(out.comps).toHaveLength(5)
+    const waiting = (out.bench ?? []).find((c) => c.listingKey === 'TAOS')
+    expect(waiting?.selectionTier.startsWith('adjacent-')).toBe(true)
+    expect(waiting?.ownPlat).toBe(false)
+    expect(waiting?.roomDecision?.ok).toBe(true)
+    expect(waiting?.roomDecision?.notes).toEqual(['baths'])
+    expect(waiting?.roomDifference).toEqual(['baths'])
+    expect(out.tiersUsed).not.toContain('gla-bracket')
+  })
+
+  it('cma-20435-powder-mountain: one full bath apart seats on its adjacent rung when the own plat is short of five', () => {
+    const subject = subjectOf({})
+    const out = walkPricingLadder(subject, [...ownPlatSmaller().slice(0, 4), taos()], { asOf })
     const seated = out.comps.find((c) => c.listingKey === 'TAOS')
-    expect(seated?.selectionTier).toBe('gla-bracket')
+    expect(seated?.selectionTier.startsWith('adjacent-')).toBe(true)
+    expect(seated?.selectionTier).not.toBe('gla-bracket')
     expect(seated?.ownPlat).toBe(false)
-    // The stamp the picker made, with the counts it compared and the ground.
     expect(seated?.roomDecision?.ok).toBe(true)
     expect(seated?.roomDecision?.notes).toEqual(['baths'])
     expect(seated?.roomDecision?.compared).toMatchObject({
@@ -268,11 +281,9 @@ describe('the size bracket seats a sale with the picker’s one-room decision (r
     })
     expect(seated?.roomDifference).toEqual(['baths'])
 
-    // The sale carries the stamp into the document's comp (lib/pricing/select.ts).
     const comps = out.comps.map(pricingSaleToCmaComp)
     const taosComp = comps.find((c) => c.listingKey === 'TAOS')!
     expect(taosComp.roomDecision?.ok).toBe(true)
-    // The grid row a reader sees beside the sale.
     expect(roomAdjustmentWords(taosComp.roomDifference)).toBe(
       'One bathroom off yours. It counts for less. No dollar adjustment.',
     )
@@ -339,9 +350,14 @@ describe('the size bracket seats a sale with the picker’s one-room decision (r
       longitude: -121.3125,
       marketArea: 'bend-boyd-acres',
     })
-    const out = walkPricingLadder(subject, [...own, vistaMeadow], { asOf })
+    const full = walkPricingLadder(subject, [...own, vistaMeadow], { asOf })
+    expect(full.comps.find((c) => c.listingKey === 'VISTA_MEADOW')).toBeUndefined()
+    expect(full.comps).toHaveLength(5)
+    expect(full.tiersUsed).not.toContain('gla-bracket')
+
+    const out = walkPricingLadder(subject, [...own.slice(0, 4), vistaMeadow], { asOf })
     const seated = out.comps.find((c) => c.listingKey === 'VISTA_MEADOW')
-    expect(seated?.selectionTier).toBe('gla-bracket')
+    expect(seated?.selectionTier.startsWith('closer-sub-')).toBe(true)
     expect(seated?.roomDecision?.ok).toBe(true)
     expect(seated?.roomDecision?.notes).toEqual(['beds'])
     expect(seated?.roomDecision?.compared).toMatchObject({ subjectBeds: 3, saleBeds: 4, local: true })
@@ -373,10 +389,13 @@ describe('the size bracket seats a sale with the picker’s one-room decision (r
     })
     const out = walkPricingLadder(subject, [...ownPlatSmaller(), twoApart, sameRooms], { asOf })
     expect(out.comps.find((c) => c.listingKey === 'TAOS')).toBeUndefined()
-    const seated = out.comps.find((c) => c.listingKey === 'NEXT_LARGER')
-    expect(seated?.selectionTier).toBe('gla-bracket')
-    expect(seated?.roomDecision?.ok).toBe(true)
-    expect(seated?.roomDecision?.notes).toEqual([])
+    expect((out.bench ?? []).find((c) => c.listingKey === 'TAOS')).toBeUndefined()
+    expect(out.comps.find((c) => c.listingKey === 'NEXT_LARGER')).toBeUndefined()
+    const waiting = (out.bench ?? []).find((c) => c.listingKey === 'NEXT_LARGER')
+    expect(waiting?.selectionTier.startsWith('adjacent-')).toBe(true)
+    expect(waiting?.roomDecision?.ok).toBe(true)
+    expect(waiting?.roomDecision?.notes).toEqual([])
+    expect(out.tiersUsed).not.toContain('gla-bracket')
   })
 
   it('seats a one-room sale on a touching plat the bracket already reaches', () => {
@@ -396,12 +415,22 @@ describe('the size bracket seats a sale with the picker’s one-room decision (r
       latitude: 44.2565,
       longitude: -121.1545,
     })
-    const seated = walkPricingLadder(subject, [...own, offGround], { asOf })
-    const east = seated.comps.find((c) => c.listingKey === 'EAST')
-    expect(east?.selectionTier).toBe('gla-bracket')
+    const full = walkPricingLadder(subject, [...own, offGround], { asOf })
+    expect(full.comps.find((c) => c.listingKey === 'EAST')).toBeUndefined()
+    expect(full.comps).toHaveLength(5)
+    const waiting = (full.bench ?? []).find((c) => c.listingKey === 'EAST')
+    expect(waiting?.roomDifference).toEqual(['baths'])
+    expect(waiting?.selectionTier.startsWith('adjacent-')).toBe(true)
+
+    const short = walkPricingLadder(subject, [...own.slice(0, 4), offGround], { asOf })
+    const east = short.comps.find((c) => c.listingKey === 'EAST')
+    expect(east?.selectionTier.startsWith('adjacent-')).toBe(true)
+    expect(east?.selectionTier).not.toBe('gla-bracket')
     expect(east?.roomDifference).toEqual(['baths'])
+
     const control = walkPricingLadder(subject, [...own, { ...offGround, baths: 2, bathsFull: 2 }], { asOf })
-    expect(control.comps.find((c) => c.listingKey === 'EAST')?.selectionTier).toBe('gla-bracket')
+    expect(control.comps.find((c) => c.listingKey === 'EAST')).toBeUndefined()
+    expect((control.bench ?? []).some((c) => c.listingKey === 'EAST')).toBe(true)
   })
 
   it('keeps a one-room sale on the subject’s recorded plat even when the MLS name differs (one call for every door)', () => {
@@ -434,7 +463,8 @@ describe('the size bracket seats a sale with the picker’s one-room decision (r
 describe('the accuracy contract decides an unstamped sale on the subject’s own ground', () => {
   it('passes a one-room sale from the room counts alone', () => {
     const subject = subjectOf({})
-    const out = walkPricingLadder(subject, [...ownPlatSmaller(), taos()], { asOf })
+    const out = walkPricingLadder(subject, [...ownPlatSmaller().slice(0, 4), taos()], { asOf })
+    expect(out.comps.some((c) => c.listingKey === 'TAOS')).toBe(true)
     const comps = out.comps.map(pricingSaleToCmaComp)
     // A sale that reached the contract with no stamp, as the bracket's did before this fix.
     const unstamped = comps.map((c) => (c.listingKey === 'TAOS' ? { ...c, roomDecision: null, roomDifference: null } : c))

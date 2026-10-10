@@ -22,7 +22,7 @@
  */
 
 import { PRICE_SET_SQFT_BAND } from '@/lib/pricing/price-set'
-import { aduSaleRefused, classifyAgeBand, multiUnitFromRemarks } from '@/lib/pricing/classes'
+import { aduSaleRefused, multiUnitFromRemarks } from '@/lib/pricing/classes'
 import { onOwnPlat } from '@/lib/pricing/plat-ground'
 import { roomOffPhrase } from '@/lib/pricing/room-counts'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
@@ -183,9 +183,8 @@ export function sameAreaSubject(s: CmaSubject): SameAreaSubject {
  *    anywhere; up to two bedrooms off, up to two bathrooms off, or both,
  *    wherever the search already reached, kept and disclosed and weighed
  *    less; three or more apart on one count refused; an unknown count is a match.
- * 6. AGE. Skipped on the own plat, as the walk skips it. Otherwise built
- *    within the year band of the rungs that bound the area (`sameAreaAgeYears`)
- *    when both years are known.
+ * 6. YEAR. Not a wall (Matt 2026-10-10). A 1920 house and a 2024 infill on
+ *    this plat, or on a plat that touches it, both stay. Year only ranks.
  *
  * Not applied, because they belong to a closed sale or a strict rung only:
  * close date, plausible close, months back, the $/sqft tier cut, story class.
@@ -273,28 +272,8 @@ export function sameAreaFit(
     if (differs(c.subjectBaths, c.saleBaths)) which.push('baths')
     return { ok: false, reason: 'rooms', rooms: which }
   }
-  if (
-    !ownPlat &&
-    !ageOk(subject.yearBuilt ?? null, c.yearBuilt ?? null, new Date().getUTCFullYear(), sameAreaAgeYears(area))
-  ) {
-    return { ok: false, reason: 'age' }
-  }
+  // Year built never removes a home from this pool (Matt 2026-10-10).
   return { ok: true, ownPlat, roomDifference: rooms.notes }
-}
-
-/** Mirrors `ageOk` in lib/pricing/match.ts (private there, and that file is off limits to this change). */
-function ageOk(
-  subjectYear: number | null,
-  candidateYear: number | null,
-  asOfYear: number,
-  maxYears: number | null,
-): boolean {
-  if (maxYears == null) return true
-  if (subjectYear == null || candidateYear == null) return true
-  const a = classifyAgeBand(subjectYear, asOfYear)
-  const b = classifyAgeBand(candidateYear, asOfYear)
-  if (a === 'unknown' || b === 'unknown') return true
-  return Math.abs(subjectYear - candidateYear) <= maxYears
 }
 
 function wholeRooms(count: number | null | undefined): number | null {
