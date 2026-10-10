@@ -994,12 +994,11 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
   })
 })
 
-describe('selectComps — a sale more than 25% off the subject never sets the price, on any rung (Matt 2026-10-08, 25% everywhere)', () => {
+describe('selectComps — a sale inside the picker\'s 35% sets the price on every rung (Matt 2026-10-09)', () => {
   // The listings ladder reads every plat rung at the 35% search band
-  // (LOCATION_SQFT_BAND), so 2225 Indigo, 1,393 sqft against 2382 Jackson's
-  // 2,016 (30.9% smaller), comes back from the plat query. Rule 20 refuses it
-  // at the door: it is counted as not price-setting, never admitted, and four
-  // own-plat setters do not reach five.
+  // (LOCATION_SQFT_BAND). 2225 Indigo, 1,393 sqft against 2382 Jackson's
+  // 2,016 (30.9% smaller), comes back from the plat query and sets the price.
+  // The same line is the price. A second 25% door does not throw it out.
   const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10)
   const RECENT = daysAgo(45)
   const jackson = subject({ subdivision: 'Kenwood', sqft: 2016 })
@@ -1020,21 +1019,22 @@ describe('selectComps — a sale more than 25% off the subject never sets the pr
     )
   }
 
-  it('a 30.9% smaller plat sale is counted as not price-setting, never admitted, and four setters are a shortage', async () => {
+  it('a 30.9% smaller plat sale sets the price and five setters reach the floor', async () => {
     platPool([plat('A', 0), plat('B', 1), plat('C', 2), plat('D', 3), indigo])
     const sel = await selectComps(jackson)
-    expect(keys(sel)).toEqual(['A', 'B', 'C', 'D'])
+    expect(keys(sel)).toEqual(['A', 'B', 'C', 'D', 'INDIGO'])
     expect(sel.comps.every((c) => c.setsPrice === true)).toBe(true)
-    expect(sel.diagnostics.excluded_totals.not_price_setting).toBe(1)
-    expect(sel.diagnostics.reached_target).toBe(false)
+    expect(sel.diagnostics.excluded_totals.not_price_setting).toBe(0)
+    expect(sel.diagnostics.reached_target).toBe(true)
   })
 
-  it('a 17.9% smaller plat sale still sets the price and reaches five', async () => {
-    platPool([plat('A', 0), plat('B', 1), plat('C', 2), plat('D', 3), indigo, plat('FIFTH', 5, { TotalLivingAreaSqFt: 1655, ClosePrice: 410_000 })])
+  it('a sale past 35% still does not set the price', async () => {
+    const past = plat('PAST', 8, { TotalLivingAreaSqFt: 1280, ClosePrice: 300_000 })
+    platPool([plat('A', 0), plat('B', 1), plat('C', 2), plat('D', 3), past])
     const sel = await selectComps(jackson)
-    expect(keys(sel)).toEqual(['A', 'B', 'C', 'D', 'FIFTH'])
-    expect(sel.diagnostics.excluded_totals.not_price_setting).toBe(1)
-    expect(sel.diagnostics.reached_target).toBe(true)
+    expect(keys(sel)).toEqual(['A', 'B', 'C', 'D'])
+    expect(sel.comps.map((c) => c.listingKey)).not.toContain('PAST')
+    expect(sel.diagnostics.reached_target).toBe(false)
   })
 })
 

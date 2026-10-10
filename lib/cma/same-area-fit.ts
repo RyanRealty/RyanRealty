@@ -60,10 +60,10 @@ export function sameAreaAgeYears(area: CompArea | null): number | null {
 }
 
 /**
- * One size rule for every home in the letter (Matt 2026-10-08, "25% everywhere",
- * extended the same day to the competition and came-off homes): a home more
- * than a quarter larger or smaller than the subject is never shown as like
- * yours, the same band that decides which sales set the price.
+ * One size rule for every home in the letter (Matt 2026-10-09): the picker's
+ * 35% living-area cutoff. A home more than 35% larger or smaller than the
+ * subject is never shown as like yours. That is the same band that decides
+ * which sales set the price.
  */
 export const SAME_AREA_SQFT_BAND = PRICE_SET_SQFT_BAND
 

@@ -315,7 +315,7 @@ const SYSTEM =
   'exclude for lot size there, on any basis. Weigh it less if you must. At one acre and above on either side, a ' +
   'lot of a materially different size may still be excluded with basis=lot. ' +
   'Apply the same discipline to every non-numeric criterion. Do not exclude a sale for living area inside ' +
-  '25 percent of the subject, and do not exclude one for year built. The picker already made those cuts, ' +
+  '35 percent of the subject, and do not exclude one for year built. The picker already made those cuts, ' +
   'and it widens closed-sale age and date when the first location search is short of 3. A looser match stays. ' +
   'Weigh it less. Do not drop it. ' +
   'WHAT REVIEWERS CATCH MOST OFTEN, in order: a kept comp in an amenity-bearing planned community or resort when the subject is not, or the reverse; ' +

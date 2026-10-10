@@ -112,10 +112,10 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
   it('holds the plat-wide living-area band, and lets an unknown size through', () => {
     // 2,100 against 1,458 is 44 percent.
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: 2100 })).toEqual({ ok: false, reason: 'size' })
-    // 1,960 is 34.4 percent, inside the band.
-    // 25% is the band for every home in the letter (Matt 2026-10-08): 1,960 sqft
-    // is 34% over the 1,458 sqft subject and is no longer like yours; 1,800 (23%) is.
-    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: 1960 })).toEqual({ ok: false, reason: 'size' })
+    // 1,960 is 34.4 percent of 1,458, inside the picker's 35%. 1,969 is just past
+    // (1,458 × 1.35 = 1,968.3). 1,800 (23%) stays inside.
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: 1960 }).ok).toBe(true)
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: 1969 })).toEqual({ ok: false, reason: 'size' })
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: 1800 }).ok).toBe(true)
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: null }).ok).toBe(true)
   })
@@ -198,7 +198,7 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
     expect(SAME_AREA_AGE_YEARS).toBe(25)
     expect(SAME_AREA_RADIUS_AGE_YEARS).toBe(30)
     expect(SAME_AREA_SQFT_BAND).toBe(PRICE_SET_SQFT_BAND)
-    expect(SAME_AREA_SQFT_BAND).toBe(0.25)
+    expect(SAME_AREA_SQFT_BAND).toBe(0.35)
     expect(sameAreaAgeYears(AREA)).toBe(25)
     expect(sameAreaAgeYears(OLD_BEND)).toBeNull()
     expect(sameAreaAgeYears({ ...OLD_BEND, kind: 'community' })).toBeNull()
@@ -252,7 +252,7 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
       publicRemarks:
         'The property includes a 1924-built, 3-beds, 1-bath home with 1,056 sq ft that can be lived in as-is, renovated, or incorporated into a larger vision for the site. The generous lot may offer possibilities for a lot split, duplex, multi-unit development,\r\nADU, or new custom home, subject to City approval.\r\nStreet and alley frontage add flexibility for access, parking and site design.',
     }
-    // Own plat, 1,056 sqft is 20.5% over 876 (inside 25%), one bathroom
+    // Own plat, 1,056 sqft is 20.5% over 876 (inside 35%), one bathroom
     // apart on own ground: kept and disclosed, no year test on the own plat.
     expect(sameAreaFit(area, subject, neighbor)).toEqual({ ok: true, ownPlat: true, roomDifference: ['baths'] })
     // A home that does state a duplex or an ADU is still refused.
@@ -350,7 +350,7 @@ describe('sameAreaFit reads the polygon the area read placed the home in (reader
     expect(fit.ok).toBe(true)
   })
 
-  it("1425 Fresno is inside 1355 Jacksonville's area by its polygon, and the 25% size rule still refuses it (1,121 sqft against 876)", () => {
+  it("1425 Fresno is inside 1355 Jacksonville's area by its polygon, and 1,121 sqft fits inside 35% of 876", () => {
     const JACKSONVILLE: SameAreaSubject = {
       streetAddress: '1355 Jacksonville',
       city: 'Bend',
@@ -390,8 +390,10 @@ describe('sameAreaFit reads the polygon the area read placed the home in (reader
     }
     // By name alone ("Co 2nd Addt" is not an area name) it was outside.
     expect(sameAreaFit(area, JACKSONVILLE, { ...fresno, subdivisionSlug: undefined })).toEqual({ ok: false, reason: 'area' })
-    // By its polygon it is inside; 1,121 is 28% over 876, past the one 25% band.
-    expect(sameAreaFit(area, JACKSONVILLE, fresno)).toEqual({ ok: false, reason: 'size' })
+    // By its polygon it is inside. 1,121 is 28% over 876, inside the one 35% cutoff.
+    expect(sameAreaFit(area, JACKSONVILLE, fresno)).toEqual({ ok: true, ownPlat: true, roomDifference: [] })
+    // 876 × 1.35 = 1,182.6, so 1,183 is past the cutoff and still refused for size.
+    expect(sameAreaFit(area, JACKSONVILLE, { ...fresno, sqft: 1183 })).toEqual({ ok: false, reason: 'size' })
     // The same home at the subject's size would be like it, and own plat.
     expect(sameAreaFit(area, JACKSONVILLE, { ...fresno, sqft: 900 })).toEqual({ ok: true, ownPlat: true, roomDifference: [] })
   })

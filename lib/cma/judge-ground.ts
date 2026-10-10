@@ -11,15 +11,15 @@
  *     the subject or the comp. A number that matches neither is a contradiction.
  *  2. A size floor (a cutoff that is not the subject's living area) is supported
  *     only when the comp is on the failing side of that cutoff AND the living
- *     area gap is past SIZE_FLOOR_GAP (25%, the one price-setting band, rule
- *     20). A smaller gap is the invented 1600 sqft floor: the sale is a bit
+ *     area gap is past SIZE_FLOOR_GAP (the picker's one cutoff, 35%). A
+ *     smaller gap is the invented 1600 sqft floor: the sale is a bit
  *     smaller, not a different size class.
  *  3. A direct size comparison that names the real sqft, with no floor, needs
- *     the same gap as a floor: past SIZE_FLOOR_GAP (25%, the picker's
- *     living-area band). A tighter cut dropped sales the picker kept. There is
- *     one size cutoff, and it is the picker's: a sale at exactly 25% sets the
- *     price (lib/pricing/price-set.ts clearlyDifferentSize), so the review
- *     may not drop it either.
+ *     the same gap as a floor: past SIZE_FLOOR_GAP. A tighter cut dropped
+ *     sales the picker kept. There is one size cutoff, and it is the
+ *     picker's: a sale at exactly 35% sets the price
+ *     (lib/pricing/price-set.ts clearlyDifferentSize), so the review may not
+ *     drop it either.
  *  4. A $/sqft floor, ceiling, or band is supported only when the comp's actual
  *     $/sqft is outside it. "Below $419" when the sale is at $430 is ignored.
  *  5. ONE 20% LINE (Matt 2026-10-08, lib/pricing/price-tier.ts). When the
@@ -65,7 +65,7 @@
  *     disprove is not thrown out. An exclusion we can disprove is.
  *
  * Legitimate exclusions stay: a real duplex in the remarks, a living area gap
- * past 25%, a $/sqft outside the 20% line, a doubled lot at an acre or more, a room gap
+ * past 35%, a $/sqft outside the 20% line, a doubled lot at an acre or more, a room gap
  * the one-room rule refuses, a fairway the remarks actually name. Year built
  * does not drop a sale the picker kept.
  */
@@ -85,9 +85,9 @@ import { carriedRoomDecision } from '@/lib/pricing/room-ground'
 import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
 
 /**
- * The one size cutoff, the picker's (Matt 2026-10-08, "25% everywhere"): the
- * same band rule 20 refuses a sale on. A gap PAST it supports an exclusion; a
- * gap on it does not, because that sale set the price.
+ * The one size cutoff, the picker's 35% (Matt 2026-10-09): the same band
+ * rule 20 refuses a sale on. A gap PAST it supports an exclusion; a gap on
+ * it does not, because that sale set the price.
  */
 export const SIZE_FLOOR_GAP = PRICE_SET_SQFT_BAND
 /**

@@ -1,11 +1,8 @@
 /**
- * REFILL FROM THE SAME RUNG (Matt 2026-10-08).
- *
- * The build-level mechanics with the judge mocked: a drop from an exactly-five
- * set a widening rung reached refills from that rung's bench and prices on
- * five; an empty bench fails as a shortage; own ground never refills; a split
- * vote refills once and re-judges; the refill is bounded. The two builds are
- * held to the one helper by reading their source.
+ * The review reads the picker's set and does not remove a sale from it
+ * (Matt 2026-10-09). A price-tier exclude, an empty bench, own ground, and a
+ * split vote all leave the five seated sales in the priced set. Nothing refills
+ * off a review cut. The two builds are held to the one helper by reading their source.
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -120,12 +117,12 @@ function scriptedJudge(script: Array<(comps: CmaComp[]) => CompJudgment | JudgeU
   return { judge, seen }
 }
 
-describe('refill from the same rung (Matt 2026-10-08)', () => {
-  it('one drop from an exactly-five widening-rung set refills from the bench and prices on five', async () => {
+describe('the review does not remove a sale the picker kept (Matt 2026-10-09)', () => {
+  it('a price-tier exclude on an exactly-five set leaves all five and does not refill', async () => {
     const bench = [comp('B1'), comp('B2')]
     const benchSales = bench.map((c) => ({ listingKey: c.listingKey }) as SelectedPricingComp)
     const sales = FIVE.map((c) => ({ listingKey: c.listingKey }) as SelectedPricingComp)
-    const { judge, seen } = scriptedJudge([(c) => judgmentOf(c, ['C3']), (c) => judgmentOf(c, [])])
+    const { judge, seen } = scriptedJudge([(c) => judgmentOf(c, ['C3'])])
     const prepared: string[] = []
     const out = await reviewWithRefill({
       subject,
@@ -143,30 +140,17 @@ describe('refill from the same rung (Matt 2026-10-08)', () => {
     })
     expect(out.unstable).toBeNull()
     expect(out.gated.shortage).toBe(false)
-    expect(keys(out.gated.comps)).toEqual(['C1', 'C2', 'C4', 'C5', 'B1'])
-    // The review ran on the original set, then on the kept sales plus the
-    // refilled one. B2 was never needed and never judged.
-    expect(seen).toEqual([
-      ['C1', 'C2', 'C3', 'C4', 'C5'],
-      ['C1', 'C2', 'C4', 'C5', 'B1'],
-    ])
-    expect(prepared).toEqual(['B1'])
-    // Every candidate the review saw, so the letter's "N of M kept" counts B1.
-    expect(keys(out.candidates)).toEqual(['C1', 'C2', 'C3', 'C4', 'C5', 'B1'])
-    expect(keys(out.pricingSales ?? [])).toEqual(['C1', 'C2', 'C3', 'C4', 'C5', 'B1'])
-    // The dropped sale keeps its exclude verdict for the rejected list and the audit.
+    expect(keys(out.gated.comps)).toEqual(keys(FIVE))
+    expect(seen).toEqual([keys(FIVE)])
+    expect(prepared).toEqual([])
+    expect(keys(out.candidates)).toEqual(keys(FIVE))
+    expect(keys(out.pricingSales ?? [])).toEqual(keys(FIVE))
     expect(out.judgment?.verdicts.find((v) => v.listingKey === 'C3')?.tier).toBe('exclude')
-    expect(out.judgment?.keptKeys).toEqual(['C1', 'C2', 'C4', 'C5', 'B1'])
-    expect(out.refill).toEqual({
-      rung: RUNG,
-      rounds: [{ round: 1, reason: 'excluded', dropped: ['C3'], refilled: ['B1'] }],
-      bench_left: 1,
-    })
-    expect(out.trace.join(' ')).toMatch(/Refill from the same rung/)
-    expect(out.trace.join(' ')).toMatch(new RegExp(`never widened past ${RUNG}`))
+    expect(out.refill).toBeNull()
+    expect(out.trace.join(' ')).not.toMatch(/Refill from the same rung/)
   })
 
-  it('an empty bench fails as a comp shortage, as before', async () => {
+  it('an empty bench does not turn a review exclude into a shortage', async () => {
     const { judge, seen } = scriptedJudge([(c) => judgmentOf(c, ['C3'])])
     const out = await reviewWithRefill({
       subject,
@@ -175,32 +159,30 @@ describe('refill from the same rung (Matt 2026-10-08)', () => {
       minComps: PRICING_MIN_COMPS,
     })
     expect(seen).toHaveLength(1)
-    expect(out.gated.shortage).toBe(true)
-    expect(keys(out.gated.comps)).toEqual(['C1', 'C2', 'C4', 'C5'])
+    expect(out.gated.shortage).toBe(false)
+    expect(keys(out.gated.comps)).toEqual(keys(FIVE))
     expect(out.refill).toBeNull()
-    expect(keys(out.candidates)).toEqual(keys(FIVE))
   })
 
-  it('own ground never refills: it already seats up to seven', async () => {
+  it('own ground keeps the sale a review would have cut', async () => {
     const { judge, seen } = scriptedJudge([(c) => judgmentOf(c, ['C3'])])
     const out = await reviewWithRefill({
       subject,
       selection: {
         comps: FIVE.map((c) => ({ ...c, selectionTier: 'subdivision-12mo' })),
-        // Not a widening rung, so even a sale past the seats is not a bench.
         refill: { rung: 'subdivision-12mo', widening: false, comps: [comp('B1', { selectionTier: 'subdivision-12mo' })] },
       },
       judge,
       minComps: PRICING_MIN_COMPS,
     })
     expect(seen).toHaveLength(1)
-    expect(out.gated.shortage).toBe(true)
+    expect(out.gated.shortage).toBe(false)
+    expect(keys(out.gated.comps)).toEqual(keys(FIVE))
     expect(out.refill).toBeNull()
-    expect(keys(out.candidates)).toEqual(keys(FIVE))
   })
 
-  it('a split vote on an exactly-five set refills once from the same rung and re-judges', async () => {
-    const { judge, seen } = scriptedJudge([(c) => unstableOn(c, ['C5']), (c) => judgmentOf(c, [])])
+  it('a split vote prices the five the picker kept and does not refill or fail the build', async () => {
+    const { judge, seen } = scriptedJudge([(c) => unstableOn(c, ['C5'])])
     const out = await reviewWithRefill({
       subject,
       selection: { comps: [...FIVE], refill: { rung: RUNG, widening: true, comps: [comp('B1')] } },
@@ -208,19 +190,15 @@ describe('refill from the same rung (Matt 2026-10-08)', () => {
       minComps: PRICING_MIN_COMPS,
     })
     expect(out.unstable).toBeNull()
+    expect(out.judgment).toBeNull()
     expect(out.gated.shortage).toBe(false)
-    expect(keys(out.gated.comps)).toEqual(['C1', 'C2', 'C3', 'C4', 'B1'])
-    expect(seen).toEqual([
-      ['C1', 'C2', 'C3', 'C4', 'C5'],
-      ['C1', 'C2', 'C3', 'C4', 'B1'],
-    ])
-    expect(out.refill?.rounds).toEqual([{ round: 1, reason: 'split', dropped: ['C5'], refilled: ['B1'] }])
-    const split = out.judgment?.verdicts.find((v) => v.listingKey === 'C5')
-    expect(split?.tier).toBe('exclude')
-    expect(split?.reason).toMatch(/split/)
+    expect(keys(out.gated.comps)).toEqual(keys(FIVE))
+    expect(seen).toEqual([keys(FIVE)])
+    expect(out.refill).toBeNull()
+    expect(out.trace.join(' ')).toMatch(/still price this home/)
   })
 
-  it('a split that is still split after the refill ends the build unstable', async () => {
+  it('a second split is never asked for, because the first split does not change the set', async () => {
     const { judge, seen } = scriptedJudge([(c) => unstableOn(c, ['C5']), (c) => unstableOn(c, ['B1'])])
     const out = await reviewWithRefill({
       subject,
@@ -228,13 +206,13 @@ describe('refill from the same rung (Matt 2026-10-08)', () => {
       judge,
       minComps: PRICING_MIN_COMPS,
     })
-    expect(seen).toHaveLength(2)
-    expect(out.unstable).toBeInstanceOf(JudgeUnstableError)
-    expect(out.judgment).toBeNull()
-    expect(out.refill?.bench_left).toBe(0)
+    expect(seen).toHaveLength(1)
+    expect(out.unstable).toBeNull()
+    expect(keys(out.gated.comps)).toEqual(keys(FIVE))
+    expect(out.refill).toBeNull()
   })
 
-  it('the refilled sale dropped too with the rung exhausted is a comp shortage', async () => {
+  it('does not take the next bench sale when the review would drop one and then the refill', async () => {
     const { judge, seen } = scriptedJudge([(c) => judgmentOf(c, ['C3']), (c) => judgmentOf(c, ['B1'])])
     const out = await reviewWithRefill({
       subject,
@@ -242,22 +220,15 @@ describe('refill from the same rung (Matt 2026-10-08)', () => {
       judge,
       minComps: PRICING_MIN_COMPS,
     })
-    expect(seen).toHaveLength(2)
-    expect(out.gated.shortage).toBe(true)
-    expect(keys(out.gated.comps)).toEqual(['C1', 'C2', 'C4', 'C5'])
-    expect(out.refill?.bench_left).toBe(0)
-    // Both drops carry an exclude verdict on the final judgment.
-    expect(out.judgment?.verdicts.filter((v) => v.tier === 'exclude').map((v) => v.listingKey).sort()).toEqual(['B1', 'C3'])
+    expect(seen).toHaveLength(1)
+    expect(out.gated.shortage).toBe(false)
+    expect(keys(out.gated.comps)).toEqual(keys(FIVE))
+    expect(out.refill).toBeNull()
   })
 
-  it('is bounded to REVIEW_REFILL_MAX_ROUNDS rounds even while the bench still holds sales', async () => {
+  it('does not keep reviewing while a bench still holds sales', async () => {
     const bench = ['B1', 'B2', 'B3', 'B4'].map((k) => comp(k))
-    const { judge, seen } = scriptedJudge([
-      (c) => judgmentOf(c, ['C3']),
-      (c) => judgmentOf(c, ['B1']),
-      (c) => judgmentOf(c, ['B2']),
-      (c) => judgmentOf(c, []),
-    ])
+    const { judge, seen } = scriptedJudge([(c) => judgmentOf(c, ['C3'])])
     const out = await reviewWithRefill({
       subject,
       selection: { comps: [...FIVE], refill: { rung: RUNG, widening: true, comps: bench } },
@@ -265,10 +236,9 @@ describe('refill from the same rung (Matt 2026-10-08)', () => {
       minComps: PRICING_MIN_COMPS,
     })
     expect(REVIEW_REFILL_MAX_ROUNDS).toBe(2)
-    expect(seen).toHaveLength(1 + REVIEW_REFILL_MAX_ROUNDS)
-    expect(out.gated.shortage).toBe(true)
-    expect(out.refill?.rounds.map((r) => r.refilled)).toEqual([['B1'], ['B2']])
-    expect(out.refill?.bench_left).toBe(2)
+    expect(seen).toHaveLength(1)
+    expect(out.gated.shortage).toBe(false)
+    expect(out.refill).toBeNull()
   })
 
   it('no review at all means no refill: the product-matched pool prices as before', async () => {
@@ -290,6 +260,10 @@ describe('refill from the same rung (Matt 2026-10-08)', () => {
     const bpo = readFileSync(join(process.cwd(), 'lib/bpo/build.ts'), 'utf8')
     expect(cma).toMatch(/reviewWithRefill\(\{/)
     expect(bpo).toMatch(/reviewWithRefill\(\{/)
+    expect(cma).toContain('The audit reads the sales the picker kept. It does not remove one.')
+    expect(bpo).toContain('The audit reads the sales the picker kept. It does not remove one.')
+    expect(cma).not.toContain('were removed and the analysis re-priced')
+    expect(bpo).not.toContain('were removed, the opinion re-derived')
     expect(cma).not.toMatch(/pricingCompsAfterJudgment\(/)
     expect(bpo).not.toMatch(/pricingCompsAfterJudgment\(/)
     // The refilled candidates become the selection the letter describes.

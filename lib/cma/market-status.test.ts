@@ -1570,10 +1570,10 @@ describe('the peer sentence counts the rows it shows', () => {
     // NW Kelly Hill, reader review 2026-10-08). Bedrooms are not named: size
     // is the refusal the fit returned.
     expect(set.sentence).toBe(
-      'We searched listings in River West between $660,000 and $2,220,000. Seven homes came off the market without selling in the last 24 months, last listed between $900,000 and $906,000. All seven are more than 25 percent larger than this home, so they are not compared here.',
+      'We searched listings in River West between $660,000 and $2,220,000. Seven homes came off the market without selling in the last 24 months, last listed between $900,000 and $906,000. All seven are more than 35 percent larger than this home, so they are not compared here.',
     )
     expect(set.unlike).toHaveLength(7)
-    expect(set.unlike?.every((h) => h.reason === 'size' && h.direction === 'larger' && h.limit === 25)).toBe(true)
+    expect(set.unlike?.every((h) => h.reason === 'size' && h.direction === 'larger' && h.limit === 35)).toBe(true)
     expect(set.sentence).not.toMatch(/bedrooms|bathrooms|age/)
     expect(set.priceBand).toEqual({ lo: 660_000, hi: 2_220_000 })
     expect(set.sentence).not.toMatch(/No home /)

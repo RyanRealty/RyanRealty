@@ -281,12 +281,11 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
   // Integer quarters so 0.25 + 0.25 does not drift. Through 2 miles.
   // These steps run only when the plat rows are still short of five (the walk
   // skips them once that plat, the plats that touch it, and the plats that
-  // touch those already hold five). They use the same size rule as the plat
-  // search: 35% to look, 25% to set the price (rule 20, at the door). Inside
-  // a mile they used to demand 15% size, the same number of stories, and 15
-  // years, so a closer sale inside 25% lost its seat to a farther sale the
-  // 20% ring would take (20289 Schaeffer, Matt 2026-10-09). Age and stories
-  // follow the utilities rung: 25 years, stories not required.
+  // touch those already hold five). They use the one size cutoff, 35% to look
+  // and 35% to set the price. Inside a mile they used to demand 15% size, the
+  // same number of stories, and 15 years, so a closer sale lost its seat to a
+  // farther sale the wider ring would take (20289 Schaeffer, Matt 2026-10-09).
+  // Age and stories follow the utilities rung: 25 years, stories not required.
   const distanceRings: PricingTier[] = []
   for (let quarter = 1; quarter <= 8; quarter++) {
     const miles = quarter / 4
@@ -732,11 +731,10 @@ export function pocketStopsLaterRungs(args: {
  * the plat this band is the ONLY dimensional test: beds, baths, vintage and
  * story count are all disclosed rather than refused (lib/pricing/match.ts).
  *
- * PLAT_WIDE_SQFT_BAND is a SEARCH band only (Matt 2026-10-08, "25%
- * everywhere"). A sale a wide rung reads past 25% passes the rung's walls and
- * is refused at the door by rule 20 (PRICE_SET_SQFT_BAND in
- * lib/pricing/price-set.ts, equal to PLAT_SQFT_BAND): it never sets the
- * price and never counts toward the five.
+ * PLAT_WIDE_SQFT_BAND is the one size cutoff (Matt 2026-10-09). The wide
+ * rungs search it, and PRICE_SET_SQFT_BAND in lib/pricing/price-set.ts is
+ * the same number. A sale the wide rung admits is not refused for a tighter
+ * living-area gap. A sale more than 35% off never sets the price.
  */
 export const PLAT_SQFT_BAND = 0.25
 export const PLAT_WIDE_SQFT_BAND = 0.35
