@@ -65,7 +65,7 @@ import {
   pocketStopsLaterRungs,
   pocketStarvedForYearQuality,
 } from '@/lib/pricing/ladder'
-import { addressIsThisHome } from '@/lib/pricing/same-address'
+import { addressIsThisHome, distinctHomeCount, isSameProperty, seatDistinctHomes } from '@/lib/pricing/same-address'
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible, type RuralSplitCounts } from '@/lib/pricing/rural'
 import {
   applyInferredPocket,
@@ -1755,13 +1755,17 @@ function tierOutsideRecordedPlatRows(tier: PricingTier): boolean {
  *
  * Every count in this function (countBeforePocket, platRowCount, the stop at
  * PRICING_TARGET_COMPS, the whenStarved and likeCommunity gates, the plat
- * lock, crossBoundary at BOUNDARY_EXIT_BELOW, exclusiveCount, runningTotal)
- * reads byKey, and byKey holds price-setting sales only: a sale that passes a
+ * lock) counts distinct homes in byKey. Two closes of one house are one home,
+ * so they do not close the next row or fill the five. crossBoundary at
+ * BOUNDARY_EXIT_BELOW, exclusiveCount, and runningTotal still read byKey,
+ * and byKey holds price-setting sales only: a sale that passes a
  * rung's walls and fails rule 20 (lib/pricing/price-set.ts saleSetsThePrice:
  * another community, or a clearly different size or product) is counted on
  * the rung as notSetting, recorded in bySale so no later rung re-scans it
  * (the test is tier-independent, so it would refuse again), and never
- * admitted. No gate is rewritten; the walk simply goes on.
+ * admitted. The walls are unchanged. Two closes of one house do not count as
+ * two of the five, so the ordered list continues when the keys are not yet
+ * five homes.
  *
  * ORDER PROOF. The tiers come from lib/pricing/ladder.ts in the locked order
  * (own street and plat, the plats that touch it, the plats that touch those,
@@ -1773,10 +1777,10 @@ function tierOutsideRecordedPlatRows(tier: PricingTier): boolean {
  * community, so a confined subject never leaves its parent to reach five: it
  * ends short and the build fails as a comp shortage. An unconfined subject
  * reaches crossBoundary only under BOUNDARY_EXIT_BELOW setters, as before,
- * and crossBoundary is still refused with no marketArea. Reaching five never
- * crosses a wall the old walk would not cross; it only continues further down
- * the same ordered list when a non-setter was met. Never a radius search in
- * place of the order.
+ * and crossBoundary is still refused with no marketArea. Reaching five homes
+ * never crosses a wall the walk would not cross. It only continues further
+ * down the same ordered list when a non-setter was met, or when two keys were
+ * one home. Never a radius search in place of the order.
  *
  * GATHER, THEN SEAT FIVE (Matt 2026-10-10). Own street, own plat, and every
  * plat that touches them, including the 30- and 36-month rungs, all run
@@ -1846,6 +1850,8 @@ export function walkPricingLadder(
   )
   const tiers = opts.tiers ?? pricingTierLadder({ customOrNew: customLadder })
   const byKey = new Map<string, SelectedPricingComp>()
+  /** Five listing keys can be four homes. The gates that mean "five" count homes. */
+  const homesInSet = () => distinctHomeCount([...byKey.values()])
   /** Sales already held, so one closed sale cannot enter a set twice. */
   const bySale = new Set<string>()
   const rungs: PricingLadderRung[] = []
@@ -2008,9 +2014,9 @@ export function walkPricingLadder(
   let nextRowClosed: boolean | null = null
 
   for (const { tier, pass } of planned) {
-    if (tier.samePocket && countBeforePocket == null) countBeforePocket = byKey.size
+    if (tier.samePocket && countBeforePocket == null) countBeforePocket = homesInSet()
     if (recordedPlat && platRowCount == null && tierOutsideRecordedPlatRows(tier)) {
-      platRowCount = byKey.size
+      platRowCount = homesInSet()
       if (platRowCount < PRICING_MIN_COMPS) {
         trace.push(
           `${subject.subdivision ?? 'The recorded plat'}, the plats that touch it, and the plats that touch those held ${platRowCount} price-setting sale${platRowCount === 1 ? '' : 's'}, short of ${PRICING_MIN_COMPS}, so the search went on inside the neighborhood, closest first.`,
@@ -2041,7 +2047,7 @@ export function walkPricingLadder(
     // next-row rung runs. Distance, community, and the other rungs still
     // stop once five are seated. A pocket rung is the same exception it was.
     if (pass === 'next') {
-      if (nextRowClosed == null) nextRowClosed = byKey.size >= PRICING_TARGET_COMPS
+      if (nextRowClosed == null) nextRowClosed = homesInSet() >= PRICING_TARGET_COMPS
       if (nextRowClosed) {
         rungs.push({
           tier: tier.name,
@@ -2055,7 +2061,7 @@ export function walkPricingLadder(
         })
         continue
       }
-    } else if (pass === 'rest' && byKey.size >= PRICING_TARGET_COMPS && !isPocketExclusiveTier(tier)) {
+    } else if (pass === 'rest' && homesInSet() >= PRICING_TARGET_COMPS && !isPocketExclusiveTier(tier)) {
       rungs.push({
         tier: tier.name,
         ran: false,
@@ -2072,7 +2078,7 @@ export function walkPricingLadder(
     }
     const skip =
       // THE WIDENING RUNS ONLY WHEN THE BOUNDED LADDER CAME UP SHORT.
-      tier.whenStarved && byKey.size >= PRICING_MIN_COMPS
+      tier.whenStarved && homesInSet() >= PRICING_MIN_COMPS
         ? 'the bounded search already reached the minimum, so no widening was needed'
         : tier.whenStarved &&
             pocketStopsLaterRungs({
@@ -2086,7 +2092,7 @@ export function walkPricingLadder(
         ? 'the subject is not inside a planned or golf community'
         : tier.likeCommunity && !isResortCommunity(subjectCommunity)
         ? 'the subject is not inside a golf or resort community'
-        : tier.likeCommunity && byKey.size >= PRICING_MIN_COMPS
+        : tier.likeCommunity && homesInSet() >= PRICING_MIN_COMPS
         ? 'the community supplied the minimum, so no peer community was needed'
         : tier.sameSubdivision && !subject.subdivisionSlug && !subject.subdivisionNorm
         ? 'no recorded plat holds the subject, and its MLS row names none either'
@@ -2317,7 +2323,7 @@ export function walkPricingLadder(
       if (tier.disclosure) trace.push(tier.disclosure)
     }
     if (isPocketExclusiveTier(tier)) exclusiveCount = byKey.size
-    if (reachedOnTier == null && byKey.size >= PRICING_TARGET_COMPS) reachedOnTier = tier.name
+    if (reachedOnTier == null && homesInSet() >= PRICING_TARGET_COMPS) reachedOnTier = tier.name
   }
 
   if (aduSkippedKeys.size > 0) {
@@ -2340,11 +2346,15 @@ export function walkPricingLadder(
     'sold',
     poolComps.length,
   )
-  const seatedPool = poolOrder.slice(0, PRICING_TARGET_COMPS).map((home) => poolById.get(home.id)!)
-  const poolBench = poolOrder.slice(PRICING_TARGET_COMPS).map((home) => poolById.get(home.id)!)
-  // Five or more from the plat pool: those five are the price. A short pool
-  // keeps every one of them and fills from the later rungs, up to five.
-  const poolFull = poolComps.length >= PRICING_TARGET_COMPS
+  const poolRanked = poolOrder
+    .map((home) => poolById.get(home.id))
+    .filter((comp): comp is SelectedPricingComp => comp != null)
+  // Five distinct homes. Two closes of one house take one seat, and the next
+  // ranked home takes the seat the earlier close does not get.
+  const poolSeat = seatDistinctHomes(poolRanked, PRICING_TARGET_COMPS)
+  const seatedPool = poolSeat.seated
+  const poolBench = poolSeat.held
+  const poolFull = seatedPool.length >= PRICING_TARGET_COMPS
   let sliced: SelectedPricingComp[]
   let seatBench: SelectedPricingComp[]
   let widening: boolean
@@ -2357,9 +2367,27 @@ export function walkPricingLadder(
     const slots = PRICING_TARGET_COMPS - seatedPool.length
     const restReach = poolPlaceFromTier(reachedOnTier) == null ? reachedOnTier : null
     const restSeats = capPricingSet(subject, restComps, slots, restReach)
-    sliced = [...seatedPool, ...restSeats.kept]
-    seatBench = [...poolBench, ...restSeats.bench]
+    const merged = seatDistinctHomes(
+      [...seatedPool, ...restSeats.kept, ...restSeats.bench],
+      PRICING_TARGET_COMPS,
+    )
+    sliced = merged.seated
+    seatBench = [...poolBench, ...merged.held]
     widening = restSeats.widening
+  }
+  const naiveDistinct = distinctHomeCount(poolRanked.slice(0, PRICING_TARGET_COMPS))
+  if (sliced.length > naiveDistinct) {
+    const earlier = poolRanked.filter(
+      (sale) =>
+        !sliced.some((kept) => kept.listingKey === sale.listingKey) &&
+        sliced.some((kept) => isSameProperty(sale, kept)),
+    )
+    if (earlier.length > 0) {
+      const names = earlier.map((sale) => sale.address).join(', ')
+      trace.push(
+        `${names} ${earlier.length === 1 ? 'is an earlier sale' : 'are earlier sales'} of a home already in the five, so ${earlier.length === 1 ? 'it is' : 'they are'} not counted twice. The next home took that seat.`,
+      )
+    }
   }
   // A full pool is already the best five. The size bracket must not pull a
   // later-rung sale into that set. A short pool still may.

@@ -1670,13 +1670,15 @@ describe('one sale, one row', () => {
     expect(out.comps[0]!.listingKey).toBe('FIRST')
   })
 
-  it('keeps two real sales of the same house at different prices', () => {
+  it('admits two real sales of the same house at different prices, and the later close takes the seat', () => {
     const pool = [
       sale({ listingKey: 'A', address: '2745 Ordway', closePrice: 799_000, closeDate: '2026-06-22' }),
       sale({ listingKey: 'B', address: '2745 Ordway', closePrice: 640_000, closeDate: '2025-09-14' }),
     ]
     const out = walkPricingLadder(subject(), pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B'])
+    const admitted = out.rungs.filter((rung) => rung.ran).reduce((max, rung) => Math.max(max, rung.runningTotal), 0)
+    expect(admitted).toBeGreaterThanOrEqual(2)
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['A'])
   })
 })
 
@@ -3753,6 +3755,23 @@ describe('best five from the whole plat pool (Matt 2026-10-10)', () => {
       closePrice: 700_000,
       ...over,
     })
+
+  it('seats the next home when one of the five keys is an earlier sale of another', () => {
+    const homes = ['H1', 'H2', 'H3', 'H4'].map((key) => row(key, 'old-ground', 'Old Ground'))
+    const earlier = row('H2-EARLIER', 'old-ground', 'Old Ground', {
+      address: 'H2 Pool Ln',
+      sqft: 2000,
+      closeDate: '2025-03-01',
+      closePrice: 640_000,
+    })
+    const sixth = row('H6', 'old-ground', 'Old Ground', { sqft: 2300 })
+    const out = walkPricingLadder(subj(), [...homes, earlier, sixth], { asOf })
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toHaveLength(5)
+    expect(keys).toEqual(expect.arrayContaining(['H1', 'H2', 'H3', 'H4', 'H6']))
+    expect(keys).not.toContain('H2-EARLIER')
+    expect(out.trace.some((line) => line.includes('not counted twice'))).toBe(true)
+  })
 
   it('keeps a much newer adjacent sale and ranks it behind a closer year', () => {
     const closer = ['C1', 'C2', 'C3', 'C4', 'C5'].map((key) =>

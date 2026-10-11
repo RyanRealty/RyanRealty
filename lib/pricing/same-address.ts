@@ -148,3 +148,57 @@ export function dropPriorSalesOfSameHome<T extends SameAddressCandidate>(
 
   return { kept: sales.filter((s) => !drop.has(s.listingKey)), dropped }
 }
+
+/** How many homes a set holds after one close per home. */
+export function distinctHomeCount(sales: readonly SameAddressCandidate[]): number {
+  return dropPriorSalesOfSameHome(sales).kept.length
+}
+
+export interface SeatDistinctResult<T> {
+  /** Up to `limit` homes, in the order they took a seat. */
+  seated: T[]
+  /** Ranked homes that did not take a seat. */
+  held: T[]
+  /** An earlier close that lost its seat to a later close of the same home. */
+  replaced: T[]
+}
+
+/**
+ * Seat up to `limit` homes from a ranked list. Two closes of one home take
+ * one seat: the most recent close keeps it, and the walk continues to the
+ * next home. Stopping at five listing keys, then dropping the earlier close,
+ * is how a full pool came back as four.
+ */
+export function seatDistinctHomes<T extends SameAddressCandidate>(
+  ranked: readonly T[],
+  limit: number,
+): SeatDistinctResult<T> {
+  const seated: T[] = []
+  const held: T[] = []
+  const replaced: T[] = []
+  if (limit <= 0) return { seated, held: [...ranked], replaced }
+
+  for (const sale of ranked) {
+    const trial = dropPriorSalesOfSameHome([...seated, sale])
+    const keptSale = trial.kept.some((row) => row.listingKey === sale.listingKey)
+    if (!keptSale) {
+      held.push(sale)
+      continue
+    }
+    if (trial.kept.length === seated.length + 1) {
+      if (seated.length >= limit) {
+        held.push(sale)
+        continue
+      }
+      seated.push(sale)
+      continue
+    }
+    const keptKeys = new Set(trial.kept.map((row) => row.listingKey))
+    for (const prev of seated) {
+      if (!keptKeys.has(prev.listingKey)) replaced.push(prev)
+    }
+    seated.splice(0, seated.length, ...trial.kept)
+  }
+
+  return { seated, held, replaced }
+}
