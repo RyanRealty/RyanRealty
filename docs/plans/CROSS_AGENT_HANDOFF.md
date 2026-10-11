@@ -1,16 +1,38 @@
-# Current — 2026-10-11 (Grok, outreach build gate)
+# Current — 2026-10-11 (Grok, 13 approved CMA sends)
 
-Surface: Grok. Branch `fix/cma-outreach-build-gate`, cut from origin/main `c6c855384` (PR #484). Upstream is this feature branch, never main. Matt merges. Nothing new was sent or rebuilt for this commit. Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet.
+Surface: Grok. Branch `fix/cma-outreach-build-gate`, PR #485, cut from origin/main `c6c855384`. Upstream is this feature branch, never main. Matt merges. Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Do not send any letter named below again.
 
-**What this commit does.** `buildCma` calls `gateOutreachBuild` before `snapshotCmaVersion`. Expired and FSBO only. Order: live status, then compliance, then a sendable non-suppressed email, then a cell whose line type is mobile, wireless, or cell. An untyped phone is not a cell. `cli-rebuild` does not skip the gate. The stored `request_source` and `doc_type`, or a linked expired or FSBO row, decide. Seller-form, place-page, lead-form, and broker-asked CMAs are unchanged. The queued payload carries `owner_phones` so a first SMS-only build can still prove a typed cell. A rebuild that only has an untyped stored number refuses.
+**Sent today on Gmail, after Matt approved the within-15% above-range set.** Existing drafts. Not rebuilt. Each passed a live off-market check, a sendable non-suppressed email, five price-setting sales, last ask above the printed band, and a recommendation within 15% under the ask. `sendCmaToLead` returned transport gmail. Each has one `email_events` row, event `sent`, key `cma:<slug>`. At send time open=0, click=0, bounce=0. Gmail does not write a provider `delivered` event; `cmas.status` is the receipt. Public letter: `https://ryan-realty.com/cma/<slug>`.
 
-**Measured above-range count, 2026-10-11, read-only.** Of 40 Bend expired letters whose 2026-10-10 walk seated five and whose last ask sits above the printed adjusted band: 31 are still off the market with a sendable email (14 within 15% under, 17 more than 15% under). 8 have no sendable email. 1 email is suppressed. 0 are back on the market. Mahogany and Aldrich are already delivered. Nolan is above its range and has no email, so the gate refuses it. Homes that never seated five, and letters that were not rewalked, do not have a known range.
+- 1648 Pheasant `cma-1648-pheasant` ask $599,900, band $475,306–$587,555, rec $531,000
+- 20653 Foxborough `cma-20653-foxborough` ask $599,000, band $505,476–$559,360, rec $528,000
+- 20850 Delta `cma-20850-delta` ask $814,900, band $748,823–$790,560, rec $754,000
+- 21512 Etna `cma-21512-etna` ask $649,999, band $588,843–$625,826, rec $593,000
+- 2462 Lynda `cma-2462-lynda` ask $619,000, band $533,043–$595,093, rec $552,000
+- 2923 Deborah `cma-2923-deborah` ask $575,000, band $413,863–$544,752, rec $497,000
+- 2949 Flagstone `cma-2949-flagstone` ask $568,900, band $534,765–$561,162, rec $538,000
+- 3037 Purcell `cma-3037-purcell` ask $565,000, band $503,611–$550,951, rec $526,000
+- 3063 Brownstone `cma-3063-brownstone` ask $669,900, band $637,400–$659,900, rec $640,000
+- 3802 Petrosa `cma-3802-petrosa` ask $774,900, band $709,900–$754,900, rec $713,000
+- 60865 Sweet Pea `cma-60865-sweet-pea` ask $660,000, band $549,000–$657,964, rec $605,000
+- 61574 Devils Lake `cma-61574-devils-lake` ask $849,900, band $744,407–$829,611, rec $806,000
+- 61579 Lucia `cma-61579-lucia` ask $565,000, band $470,338–$512,310, rec $491,000
 
-**Still open.** Do not send anyone else. Oakview stays a hold. Leave 1265 Remarkable and 1913 Monterey Mews out unless Matt names them. Do not rebuild McCann until 20 McCann unit 5 and 26 McCann #2 are checked (both about 1,604 sq ft, $975,000). Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top back as a Broken Top alias. The homes that stayed short on the 2026-10-10 book walk stay short.
+**Already delivered yesterday. Do not send again.** Aldrich `cma-2745-aldrich` and Mahogany `cma-19877-mahogany`, both 2026-10-11 17:55–17:56 UTC, Gmail, `sent=1`. Still open=0, click=0, bounce=0, no public page view.
 
-Skills read: none. The gate is AGENTS.md rule 24, called from `buildCma`. Git commit format from `.cursor/rules/git-commit.mdc`.
+**Not sent. `email_events` sent=0. Still drafts. Nothing to open.**
 
-Skills read: none of the CMA skill file. The change follows the 2026-10-10 pool rule and AGENTS.md. Git commit format from `.cursor/rules/git-commit.mdc`.
+- 1913 Monterey Mews `cma-1913-monterey-mews` stayed a draft. The stored letter prices on 3 sales. The floor is 5. It was not rebuilt. Ask $660,000, band $565,000–$659,000, rec $601,000, which is above the band and within 15%, but three sales cannot go out.
+- Holds, more than 15% under the last ask: 1122 Foxwood, 1235 Hartford, 140 4th, 1265 Remarkable, 120 Sisemore, 1624 Overlook, 1975 Butler Market, 1975 Harriman, 19985 Voltera, 20184 Merriewood, 21315 Livingston, 21380 Oakview, 2667 Jones, 2681 Moonlight, 3153 Cromwell, 69 Piper, 711 Georgia.
+- No sendable email: 1027 Albany, 19920 Ponderosa, 3353 Collier, 454 Burnside, 60933 Sydney Harbor, 61370 Fairfield, 62619 Lawler, 63106 Sophwith, and Nolan `cma-62856-nolan` (untyped phone is not a cell).
+- 20513 Byron is suppressed.
+- Inside-range and ask-below-band letters were not sent. Lucus stays suppressed.
+
+**Gate.** PR #485 is still open. `gateOutreachBuild` is not on production until Matt merges. The sends above ran from this worktree, which has the gate, and each send also ran `screenAddressForSolicitation`.
+
+**Still open.** Do not rebuild McCann until 20 McCann unit 5 and 26 McCann #2 are checked (both about 1,604 sq ft, $975,000). Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top back as a Broken Top alias. The homes that stayed short on the 2026-10-10 book walk stay short. Oakview stays a hold.
+
+Skills read: none. The send used `sendCmaToLead` after the live gate. Git commit format from `.cursor/rules/git-commit.mdc`.
 
 ## Earlier — 2026-10-09 (Grok, older same-place sales and distinct units)
 
