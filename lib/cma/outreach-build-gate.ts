@@ -6,8 +6,7 @@
  * do not use this. The decision is decideProspectIntake. This module does
  * not send.
  */
-import { createServiceClient } from '@/lib/supabase/service'
-import { getCmaAdminReviewRowBySlug } from '@/lib/data'
+import { getCmaAdminReviewRowBySlug, getListingParcelNumber, getOutreachBuildProspect } from '@/lib/data'
 import { getPersonForCmaKickoff } from '@/lib/data/crm/cmaKickoff'
 import { probeIntakeBackOnMarket } from '@/lib/data/prospecting/compliance'
 import { hasSendableEmail } from '@/lib/data/prospecting/types'
@@ -113,108 +112,6 @@ export function decideOutreachBuild(input: {
   return { ok: true }
 }
 
-type ProspectRow = {
-  street_address: string | null
-  city: string | null
-  comparator: string | null
-  hardStop: boolean
-  flags: string[]
-  contactEmail: string | null
-  contactPhone: string | null
-}
-
-function flagList(raw: unknown): string[] {
-  if (!Array.isArray(raw)) return []
-  return raw.filter((flag): flag is string => typeof flag === 'string')
-}
-
-async function linkedKind(cmaId: string): Promise<OutreachKind | null> {
-  const sb = createServiceClient()
-  const [expired, fsbo] = await Promise.all([
-    sb.from('expired_listings').select('id').eq('cma_id', cmaId).limit(1),
-    sb.from('fsbo_listings').select('id').eq('cma_id', cmaId).limit(1),
-  ])
-  if (expired.error || fsbo.error) throw new Error(expired.error?.message ?? fsbo.error?.message ?? 'prospect read failed')
-  if ((expired.data ?? []).length > 0) return 'expired'
-  if ((fsbo.data ?? []).length > 0) return 'fsbo'
-  return null
-}
-
-async function loadProspect(cmaId: string, kind: OutreachKind): Promise<ProspectRow | null> {
-  const sb = createServiceClient()
-  if (kind === 'expired') {
-    const { data, error } = await sb
-      .from('expired_listings')
-      .select(
-        'street_address, city, status_change_timestamp, compliance_hard_stop, compliance_flags, contact_email, contact_phone',
-      )
-      .eq('cma_id', cmaId)
-      .limit(1)
-    if (error) throw new Error(error.message)
-    const row = (data ?? [])[0] as
-      | {
-          street_address?: string | null
-          city?: string | null
-          status_change_timestamp?: string | null
-          compliance_hard_stop?: boolean | null
-          compliance_flags?: unknown
-          contact_email?: string | null
-          contact_phone?: string | null
-        }
-      | undefined
-    if (!row) return null
-    return {
-      street_address: row.street_address ?? null,
-      city: row.city ?? null,
-      comparator: row.status_change_timestamp ?? null,
-      hardStop: row.compliance_hard_stop === true,
-      flags: flagList(row.compliance_flags),
-      contactEmail: row.contact_email ?? null,
-      contactPhone: row.contact_phone ?? null,
-    }
-  }
-  const { data, error } = await sb
-    .from('fsbo_listings')
-    .select('street_address, city, detected_at, compliance_hard_stop, compliance_flags, contact_email, contact_phone')
-    .eq('cma_id', cmaId)
-    .limit(1)
-  if (error) throw new Error(error.message)
-  const row = (data ?? [])[0] as
-    | {
-        street_address?: string | null
-        city?: string | null
-        detected_at?: string | null
-        compliance_hard_stop?: boolean | null
-        compliance_flags?: unknown
-        contact_email?: string | null
-        contact_phone?: string | null
-      }
-    | undefined
-  if (!row) return null
-  return {
-    street_address: row.street_address ?? null,
-    city: row.city ?? null,
-    comparator: row.detected_at ?? null,
-    hardStop: row.compliance_hard_stop === true,
-    flags: flagList(row.compliance_flags),
-    contactEmail: row.contact_email ?? null,
-    contactPhone: row.contact_phone ?? null,
-  }
-}
-
-async function parcelForListing(listingKey: string): Promise<string | null> {
-  const sb = createServiceClient()
-  const { data, error } = await sb
-    .from('listings')
-    .select('parcel_number')
-    .eq('ListingKey', listingKey)
-    .maybeSingle()
-  if (error) throw new Error(error.message)
-  const parcel = (data as { parcel_number?: string | null } | null)?.parcel_number ?? null
-  const trimmed = (parcel ?? '').trim()
-  return trimmed || null
-}
-
 function firstSendable(candidates: Array<string | null | undefined>): string | null {
   for (const candidate of candidates) {
     const email = (candidate ?? '').trim().toLowerCase()
@@ -251,19 +148,19 @@ export async function gateOutreachBuild(input: CmaBuildInput): Promise<OutreachB
     return { ok: false, reason: ROW_UNREAD }
   }
   let kind = outreachOrigin(input.requestSource, input.docType) ?? (row ? outreachOrigin(row.request_source as string | null, row.doc_type as string | null) : null)
+  let prospect: Awaited<ReturnType<typeof getOutreachBuildProspect>> = null
   if (!kind && row?.id) {
     try {
-      kind = await linkedKind(String(row.id))
+      prospect = await getOutreachBuildProspect(String(row.id))
     } catch {
       return { ok: false, reason: UNREADABLE }
     }
+    kind = prospect?.kind ?? null
   }
   if (!kind) return { ok: true }
-
-  let prospect: ProspectRow | null = null
-  if (row?.id) {
+  if (!prospect && row?.id) {
     try {
-      prospect = await loadProspect(String(row.id), kind)
+      prospect = await getOutreachBuildProspect(String(row.id))
     } catch {
       return { ok: false, reason: UNREADABLE }
     }
@@ -273,13 +170,13 @@ export async function gateOutreachBuild(input: CmaBuildInput): Promise<OutreachB
   let parcel: string | null = null
   if (listingKey) {
     try {
-      parcel = await parcelForListing(listingKey)
+      parcel = await getListingParcelNumber(listingKey)
     } catch {
       return { ok: false, reason: UNREADABLE }
     }
   }
 
-  const street = outreachStreet(prospect?.street_address) ?? outreachStreet(input.rawAddress) ?? outreachStreet(row?.subject_address as string | null)
+  const street = outreachStreet(prospect?.streetAddress) ?? outreachStreet(input.rawAddress) ?? outreachStreet(row?.subject_address as string | null)
   const city = prospect?.city ?? input.city ?? (row?.subject_city as string | null) ?? null
   const live = await probeIntakeBackOnMarket({
     kind,
