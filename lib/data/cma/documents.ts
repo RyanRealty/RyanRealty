@@ -6,6 +6,7 @@
 
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -198,10 +199,11 @@ export async function getListingParcelNumber(listingKey: string): Promise<string
   if (!sb) throw new Error('getListingParcelNumber: Supabase not configured')
   const key = listingKey.trim()
   if (!key) return null
+  const canonicalKey = await resolveCanonicalListingKey(key)
   const { data, error } = await sb
     .from('listings')
     .select('parcel_number')
-    .eq('ListingKey', key)
+    .eq('ListingKey', canonicalKey)
     .maybeSingle()
   if (error) throw new Error(`getListingParcelNumber failed: ${error.message}`)
   const parcel = ((data as { parcel_number?: string | null } | null)?.parcel_number ?? '').trim()
