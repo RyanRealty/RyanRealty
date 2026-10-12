@@ -127,14 +127,55 @@ async function brokerForForwardCell(phone: string): Promise<string | null> {
  * later (verified 2026-07-15). Never throws: a forward failure must not 500 the
  * webhook (a non-2xx makes Twilio retry the whole inbound and double-log).
  */
-async function forwardToBrokerCell(broker: string, senderPhone: string, body: string): Promise<void> {
+async function forwardToBrokerCell(broker: string, senderPhone: string, body: string): Promise<InboundOutcome> {
   try {
     const [cell, line] = await Promise.all([forwardCellForBroker(broker), brokerTwilioNumber(broker)])
-    if (!cell || !line || normalizeTo10(cell) === normalizeTo10(senderPhone)) return
+    if (!cell || !line) return { outcome: 'forward_failed', reason: `no forward cell or business line for ${broker}` }
+    if (normalizeTo10(cell) === normalizeTo10(senderPhone)) return { outcome: 'dropped', reason: 'sender is the forward cell' }
     const r = await sendSms({ from: line, to: cell, body })
-    if (!r.ok) console.error('[twilio/inbound-sms] broker cell forward failed', r.error)
+    if (!r.ok) {
+      console.error('[twilio/inbound-sms] broker cell forward failed', r.error)
+      return { outcome: 'forward_failed', reason: `forward to ${broker}`, forwardTo: cell, forwardError: r.error }
+    }
+    return { outcome: 'forwarded', reason: `forward to ${broker}`, forwardTo: cell, forwardSid: r.sid }
   } catch (err) {
     console.error('[twilio/inbound-sms] broker cell forward failed', err)
+    return { outcome: 'forward_failed', reason: `forward to ${broker}`, forwardError: err instanceof Error ? err.message : String(err) }
+  }
+}
+
+type InboundOutcome = {
+  outcome: 'forwarded' | 'dropped' | 'forward_failed' | 'agent'
+  reason: string
+  forwardTo?: string
+  forwardSid?: string
+  forwardError?: string
+}
+
+/**
+ * Record what happened to an inbound text (crm_sms_inbound_log). The
+ * crm-health-check cron reads it against Twilio's received messages, so a text
+ * that was never processed or never reached a broker's phone pages instead of
+ * vanishing. Never throws: a log failure must not 500 the webhook.
+ */
+async function logInbound(sid: string, from: string, to: string, o: InboundOutcome): Promise<void> {
+  try {
+    const { error } = await createServiceClient().from('crm_sms_inbound_log').upsert(
+      {
+        message_sid: sid,
+        from_number: from,
+        to_number: to,
+        outcome: o.outcome,
+        reason: o.reason,
+        forward_to: o.forwardTo ?? null,
+        forward_sid: o.forwardSid ?? null,
+        forward_error: o.forwardError ?? null,
+      },
+      { onConflict: 'message_sid' },
+    )
+    if (error) console.error('[twilio/inbound-sms] inbound log write failed', error.message)
+  } catch (err) {
+    console.error('[twilio/inbound-sms] inbound log write failed', err)
   }
 }
 
@@ -151,10 +192,13 @@ export async function POST(request: Request) {
   const body = (params.Body ?? '').trim()
   const sid = params.MessageSid ?? `unknown-${Date.now()}`
 
-  // Block gate: a blocked/spam number's texts are dropped silently (no log, no
-  // alert, empty 200 so Twilio doesn't retry).
+  // Block gate: a blocked/spam number's texts are dropped (no timeline, no
+  // alert, empty 200 so Twilio doesn't retry), recorded in the inbound log only.
   const { isNumberBlocked } = await import('@/lib/data/crm/getBlockedNumber')
-  if (await isNumberBlocked(from)) return twiml()
+  if (await isNumberBlocked(from)) {
+    await logInbound(sid, from, to, { outcome: 'dropped', reason: 'blocked number' })
+    return twiml()
+  }
 
   // Reply-loop guard / broker SMS agent branch (docs/plans/BROKER_SMS_AGENT_2026-07-31.md
   // R1.1). A text FROM a broker's own forward cell TO the shared marketing
@@ -181,6 +225,7 @@ export async function POST(request: Request) {
     // (per-broker pilot flag off) and 'duplicate' (Twilio webhook retry) are
     // silent no-ops — every outcome here acks Twilio the same way the
     // pre-agent guard below did.
+    await logInbound(sid, from, to, { outcome: 'agent', reason: `broker sms agent: ${result.status}` })
     return twiml()
   }
   // A broker texting a COLLEAGUE's business line (Matt's cell → Paul's line) is
@@ -194,11 +239,17 @@ export async function POST(request: Request) {
       const media = parseMms(params)
       const relayBody = body || (media.length ? `[${media.length} attachment${media.length > 1 ? 's' : ''}]` : '')
       const name = CRM_BROKER_DISPLAY[senderBroker] ?? senderBroker
-      await forwardToBrokerCell(
+      const relayed = await forwardToBrokerCell(
         dialedLineOwner,
         from,
         `Text from ${name} (${from}):\n${relayBody.slice(0, 400)}\n\nReply to ${name} at ${from}.`,
       )
+      await logInbound(sid, from, to, relayed)
+    } else {
+      await logInbound(sid, from, to, {
+        outcome: 'dropped',
+        reason: dialedLineOwner ? `${senderBroker} texted own business line` : `${senderBroker} texted the shared marketing line`,
+      })
     }
     return twiml()
   }
@@ -307,6 +358,7 @@ export async function POST(request: Request) {
 
     // HELP keyword → carrier-required help reply (does not change subscription).
     if (HELP_WORDS.has(firstToken)) {
+      await logInbound(sid, from, to, { outcome: 'dropped', reason: 'HELP keyword' })
       return twiml('Ryan Realty. Reply STOP to opt out. Msg and data rates may apply. For help visit ryan-realty.com/contact.')
     }
 
@@ -317,6 +369,7 @@ export async function POST(request: Request) {
         person_id: match.personId, kind: 'system',
         title: 'SMS opt-out (STOP) — sms channel suppressed', source: 'twilio',
       })
+      await logInbound(sid, from, to, { outcome: 'dropped', reason: 'STOP keyword' })
       return twiml('You have been unsubscribed and will not receive further texts. Reply START to resubscribe.')
     }
 
@@ -329,6 +382,7 @@ export async function POST(request: Request) {
         person_id: match.personId, kind: 'system',
         title: 'SMS opt-in (START) — sms stop-keyword suppression removed', source: 'twilio',
       })
+      await logInbound(sid, from, to, { outcome: 'dropped', reason: 'START keyword' })
       return twiml('You are resubscribed and will receive texts again. Reply STOP to opt out.')
     }
 
@@ -467,14 +521,15 @@ export async function POST(request: Request) {
     // CALL reaches the broker's phone but their TEXT did not). Deep-links to the
     // CRM thread where a reply also sends from the business line. Auto-replies
     // (STOP/HELP/START) are handled above and never forwarded.
-    if (!HELP_WORDS.has(firstToken) && !STOP_WORDS.has(firstToken) && !START_WORDS.has(firstToken)) {
-      await forwardToBrokerCell(
-        alertBroker,
-        from,
-        `Text from ${match.name ?? from} (${from}):\n${displayBody.slice(0, 400)}\n\nReply (sends from your business line): ryan-realty.com/admin/people/${match.personId}#comms`,
-      )
-    }
+    const forwarded = await forwardToBrokerCell(
+      alertBroker,
+      from,
+      `Text from ${match.name ?? from} (${from}):\n${displayBody.slice(0, 400)}\n\nReply (sends from your business line): ryan-realty.com/admin/people/${match.personId}#comms`,
+    )
+    await logInbound(sid, from, to, forwarded)
+    return twiml()
   }
 
+  await logInbound(sid, from, to, { outcome: 'forward_failed', reason: 'no CRM person for sender' })
   return twiml()
 }
