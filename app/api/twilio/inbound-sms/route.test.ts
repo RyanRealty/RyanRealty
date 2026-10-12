@@ -9,7 +9,8 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-const { CELLS, LINES, MARKETING, sendSms, findOrCreatePersonByPhone, ten } = vi.hoisted(() => ({
+const { CELLS, LINES, MARKETING, sendSms, findOrCreatePersonByPhone, ten, upserts } = vi.hoisted(() => ({
+  upserts: [] as Array<{ table: string; row: Record<string, unknown> }>,
   CELLS: { matt: '+15410000001', paul: '+15410000002', rebecca: '+15410000003' },
   LINES: { matt: '+15419990001', paul: '+15419990002', rebecca: '+15419990003' },
   MARKETING: '+15419990000',
@@ -67,10 +68,14 @@ vi.mock('@/lib/tc/file-comms-write', () => ({ fileCommsToVault: async () => {} }
 vi.mock('@/lib/supabase/service', () => {
   const chain: Record<string, unknown> = {}
   const resolved = Promise.resolve({ data: null, error: null })
-  for (const k of ['select', 'eq', 'insert', 'upsert', 'update']) chain[k] = () => chain
+  for (const k of ['select', 'eq', 'insert', 'update']) chain[k] = () => chain
   chain.maybeSingle = () => resolved
   chain.then = (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) => resolved.then(res, rej)
-  return { createServiceClient: () => ({ from: () => chain }) }
+  return {
+    createServiceClient: () => ({
+      from: (table: string) => ({ ...chain, upsert: (row: Record<string, unknown>) => { upserts.push({ table, row }); return chain } }),
+    }),
+  }
 })
 
 import { POST } from './route'
@@ -88,6 +93,7 @@ describe('inbound-sms broker cell routing', () => {
   beforeEach(() => {
     sendSms.mockClear()
     findOrCreatePersonByPhone.mockClear()
+    upserts.length = 0
   })
 
   it("relays a broker's text on a colleague's line to the colleague's cell", async () => {
@@ -106,6 +112,10 @@ describe('inbound-sms broker cell routing', () => {
     await POST(inbound(CELLS.paul, LINES.paul, 'reply in thread'))
     expect(sendSms).not.toHaveBeenCalled()
     expect(findOrCreatePersonByPhone).not.toHaveBeenCalled()
+    expect(upserts.find((u) => u.table === 'crm_sms_inbound_log')?.row).toMatchObject({
+      outcome: 'dropped',
+      reason: 'paul texted own business line',
+    })
   })
 
   it("drops a broker's text on the shared marketing line", async () => {
@@ -119,5 +129,6 @@ describe('inbound-sms broker cell routing', () => {
     expect(findOrCreatePersonByPhone).toHaveBeenCalledTimes(1)
     expect(sendSms).toHaveBeenCalledTimes(1)
     expect(sendSms.mock.calls[0][0]).toMatchObject({ from: LINES.paul, to: CELLS.paul })
+    expect(upserts.find((u) => u.table === 'crm_sms_inbound_log')?.row).toMatchObject({ outcome: 'forwarded', forward_sid: 'SM1' })
   })
 })
