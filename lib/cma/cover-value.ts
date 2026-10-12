@@ -15,6 +15,7 @@ import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import { subjectOnMarket } from '@/lib/cma/subject-on-market'
 import { adjustmentsApplied, anySaleMovedForDate } from '@/lib/cma/adjustments-applied'
 import { streetAnchorRead } from '@/lib/cma/street-anchor'
+import { askInBandPriceExempt } from '@/lib/cma/gap-hold'
 
 const esc = escapeHtml
 
@@ -35,13 +36,19 @@ export function heldUnderBand(p: Pick<CmaPricing, 'hold'> | null | undefined): b
 }
 
 /**
- * True on any letter the build holds for Matt (rule 22 'ask-in-band' or rule
- * 26 'ask-below-band'). A held letter gives no list instruction and prints no
- * clamp sentence: its cover price is the one Matt is reviewing.
+ * True on a letter that still waits for Matt. Ask-below-band always does.
+ * A stored ask-in-band kind does only when the recommendation is missing,
+ * equal to that ask, over it, or more than 15% under it. A recommendation
+ * already under the ask and within 15% is the letter, even when the row
+ * still carries the old kind. A held letter gives no list instruction.
  */
-export function heldForMatt(p: Pick<CmaPricing, 'hold'> | null | undefined): boolean {
+export function heldForMatt(
+  p: { hold?: CmaPricing['hold']; recommended?: number | null } | null | undefined,
+): boolean {
   const kind = p?.hold?.kind
-  return kind === 'ask-in-band' || kind === 'ask-below-band'
+  if (kind === 'ask-below-band') return true
+  if (kind !== 'ask-in-band') return false
+  return !askInBandPriceExempt(p?.recommended ?? p?.hold?.recommended, p?.hold?.ask)
 }
 
 /**
