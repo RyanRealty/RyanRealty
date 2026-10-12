@@ -16,7 +16,7 @@ function atMiles(miles: number) {
   return { latitude: HERE.latitude + miles / 69, longitude: HERE.longitude }
 }
 
-function milesFromSubject(sale: { latitude: number; longitude: number }): number {
+function milesFromSubject(sale: { latitude: number | null; longitude: number | null }): number {
   return (
     distanceMiles({ lat: HERE.latitude, lng: HERE.longitude }, { lat: sale.latitude, lng: sale.longitude }) ??
     Number.POSITIVE_INFINITY
