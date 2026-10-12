@@ -1,6 +1,6 @@
 # Current — 2026-10-11 (Grok, company-owned cold outreach hold)
 
-Surface: Grok. Branch `fix/company-owner-hold-20261011`, cut from origin/main. Land path is `npm run ship`. Nothing rebuilt, nothing sent, nothing approved. Do not email the inbox that replied on 3802 Petrosa. Do not send an apology. Do not re-send 61579 Lucia.
+Surface: Grok. Landed on main at `4812c989c` via PR #486. Production deploy READY. Nothing rebuilt, nothing sent, nothing approved. Do not email the inbox that replied on 3802 Petrosa. Do not send an apology. Do not re-send 61579 Lucia.
 
 **What this commit does.** A cold expired or FSBO send refuses when the county legal owner is a company (LLC, L.L.C., LP, L.P., LLP, L.L.P., Inc, Incorporated, Corp, Corporation). The check reads the legal-owner sentence, not the skip-trace person. Family trusts, trustees, and estates still send. The refusal is on the send rail, the email intro, and the text intro, before the claim. Both drains dequeue `company-owned` so the queue does not stall. Intake still builds the CMA. Asked CMAs (seller form, place page, lead form, broker, BPO) are not held. A missing legal-owner sentence does not hold. A failed notes read refuses the cold send. The prospect row carries `enrichmentNotes` from `enrichment_notes`, so that send path typechecks.
 
