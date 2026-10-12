@@ -116,27 +116,26 @@ async function brokerForForwardCell(phone: string): Promise<string | null> {
 }
 
 /**
- * A broker texting a COLLEAGUE's business line (Matt's cell → Paul's line) is an
- * internal message, not a lead and not a reply loop: relay it to the colleague's
- * cell from the colleague's line. The colleague's reply in that phone thread
- * lands on their own line from their own cell and is dropped by the loop guard,
- * so the body points them back to the sender's cell.
+ * Forward an inbound text to a broker's own cell, sent FROM that broker's
+ * A2P-verified business line so the phone thread is the business number. The
+ * one send site for both forwards below (client text, and a colleague's text).
+ * Skipped when the cell is the sender (no echo back to the person texting).
+ *
+ * AWAITED by callers, not fire-and-forget: on Vercel the function context is
+ * frozen the instant we return the TwiML, so a `void sendSms(...)` in flight
+ * gets killed and the forward only lands on Twilio's inbound RETRY minutes
+ * later (verified 2026-07-15). Never throws: a forward failure must not 500 the
+ * webhook (a non-2xx makes Twilio retry the whole inbound and double-log).
  */
-async function relayBrokerToBroker(params: {
-  senderBroker: string
-  senderCell: string
-  dialedBroker: string
-  body: string
-}): Promise<void> {
-  const [cell, line] = await Promise.all([
-    forwardCellForBroker(params.dialedBroker),
-    brokerTwilioNumber(params.dialedBroker),
-  ])
-  if (!cell || !line || normalizeTo10(cell) === normalizeTo10(params.senderCell)) return
-  const name = CRM_BROKER_DISPLAY[params.senderBroker] ?? params.senderBroker
-  const fwd = `Text from ${name} (${params.senderCell}):\n${params.body.slice(0, 400)}\n\nReply to ${name} at ${params.senderCell}.`
-  const r = await sendSms({ from: line, to: cell, body: fwd })
-  if (!r.ok) console.error('[twilio/inbound-sms] broker-to-broker relay failed', r.error)
+async function forwardToBrokerCell(broker: string, senderPhone: string, body: string): Promise<void> {
+  try {
+    const [cell, line] = await Promise.all([forwardCellForBroker(broker), brokerTwilioNumber(broker)])
+    if (!cell || !line || normalizeTo10(cell) === normalizeTo10(senderPhone)) return
+    const r = await sendSms({ from: line, to: cell, body })
+    if (!r.ok) console.error('[twilio/inbound-sms] broker cell forward failed', r.error)
+  } catch (err) {
+    console.error('[twilio/inbound-sms] broker cell forward failed', err)
+  }
 }
 
 // prospectOutreachContext moved to @/lib/crm/prospect-context (W5.3) so the
@@ -184,16 +183,22 @@ export async function POST(request: Request) {
     // pre-agent guard below did.
     return twiml()
   }
+  // A broker texting a COLLEAGUE's business line (Matt's cell → Paul's line) is
+  // an internal message, not a lead and not a reply loop: relay it to the
+  // colleague's cell. The colleague's reply in that phone thread lands on their
+  // own line from their own cell and drops here, so the body points them back
+  // to the sender's cell.
   if (senderBroker) {
     const dialedLineOwner = await brokerForTwilioNumber(to)
     if (dialedLineOwner && dialedLineOwner !== senderBroker) {
       const media = parseMms(params)
       const relayBody = body || (media.length ? `[${media.length} attachment${media.length > 1 ? 's' : ''}]` : '')
-      try {
-        await relayBrokerToBroker({ senderBroker, senderCell: from, dialedBroker: dialedLineOwner, body: relayBody })
-      } catch (err) {
-        console.error('[twilio/inbound-sms] broker-to-broker relay failed', err)
-      }
+      const name = CRM_BROKER_DISPLAY[senderBroker] ?? senderBroker
+      await forwardToBrokerCell(
+        dialedLineOwner,
+        from,
+        `Text from ${name} (${from}):\n${relayBody.slice(0, 400)}\n\nReply to ${name} at ${from}.`,
+      )
     }
     return twiml()
   }
@@ -459,32 +464,15 @@ export async function POST(request: Request) {
 
     // Real-time forward to the assigned broker's cell — parity with the inbound
     // VOICE call-forward, which already rings the cell (the reason a client's
-    // CALL reaches the broker's phone but their TEXT did not). Sends FROM the
-    // broker's own A2P-verified business line so the phone thread is the business
-    // number, and deep-links to the CRM thread where a reply also sends from the
-    // business line. Auto-replies (STOP/HELP/START) are handled above and never
-    // forwarded.
-    //
-    // AWAITED, not fire-and-forget: on Vercel the function context is frozen the
-    // instant we return the TwiML, so a `void sendSms(...)` in flight gets killed
-    // and the forward only lands on Twilio's inbound RETRY minutes later (verified
-    // 2026-07-15 — a client reply logged to the CRM at 19:36 but did not reach the
-    // broker's phone until 19:48). Awaiting the single fast Twilio POST guarantees
-    // it completes; the try/catch keeps a forward failure from 500-ing the webhook
-    // (a non-2xx makes Twilio retry the whole inbound and double-log).
+    // CALL reaches the broker's phone but their TEXT did not). Deep-links to the
+    // CRM thread where a reply also sends from the business line. Auto-replies
+    // (STOP/HELP/START) are handled above and never forwarded.
     if (!HELP_WORDS.has(firstToken) && !STOP_WORDS.has(firstToken) && !START_WORDS.has(firstToken)) {
-      const [brokerCell, brokerLine] = await Promise.all([
-        forwardCellForBroker(alertBroker),
-        brokerTwilioNumber(alertBroker),
-      ])
-      if (brokerCell && brokerLine && normalizeTo10(brokerCell) !== normalizeTo10(from)) {
-        const fwd = `Text from ${match.name ?? from} (${from}):\n${displayBody.slice(0, 400)}\n\nReply (sends from your business line): ryan-realty.com/admin/people/${match.personId}#comms`
-        try {
-          await sendSms({ from: brokerLine, to: brokerCell, body: fwd })
-        } catch (err) {
-          console.error('inbound-sms: broker cell forward failed', err)
-        }
-      }
+      await forwardToBrokerCell(
+        alertBroker,
+        from,
+        `Text from ${match.name ?? from} (${from}):\n${displayBody.slice(0, 400)}\n\nReply (sends from your business line): ryan-realty.com/admin/people/${match.personId}#comms`,
+      )
     }
   }
 
