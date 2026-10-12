@@ -19,4 +19,11 @@ describe('CMA admin review read stays off the blobs', () => {
     expect(SRC).toMatch(/from\('fsbo_listings'\)/)
     expect(SRC).toMatch(/\.eq\('cma_id'/)
   })
+
+  it('getCmaProspectEnrichmentNotes reads the county notes by cma_id and throws when the read fails', () => {
+    expect(SRC).toMatch(/export async function getCmaProspectEnrichmentNotes/)
+    expect(SRC).toMatch(/select\('enrichment_notes'\)/)
+    expect(SRC).toMatch(/getCmaProspectEnrichmentNotes expired failed/)
+    expect(SRC).toMatch(/getCmaProspectEnrichmentNotes fsbo failed/)
+  })
 })

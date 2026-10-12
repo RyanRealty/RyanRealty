@@ -53,6 +53,7 @@ import {
 } from '@/lib/cma/versions'
 import { buildCma } from '@/lib/cma/build'
 import { prepareCmaSendPreview, sendCmaToLead } from '@/lib/cma/send'
+import { companyOwnerSendHold, isCompanyOwnerHoldError } from '@/lib/prospecting/company-owner'
 import { ensureNativeLead, enrichNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { searchPeopleByName } from '@/lib/data/crm/searchPeople'
 import { attachCmaToPerson } from '@/lib/data/cma/crm'
@@ -154,6 +155,8 @@ export async function sendProspectingIntro(
 
     const prospect = await getProspect(kind, id)
     if (!prospect) return { ok: false, error: 'Prospect not found.', code: 'not-found' }
+    const companyHold = companyOwnerSendHold(prospect.enrichmentNotes)
+    if (companyHold) return { ok: false, error: companyHold, code: 'company-owned' }
 
     // 3. Built-doc: a document must exist AND be client-ready (the public /cma
     // route 404s drafts, so the texted link must be finalized/delivered). The
@@ -495,6 +498,8 @@ export async function sendProspectingEmailIntro(
 
     const prospect = await getProspect(kind, id)
     if (!prospect) return { ok: false, error: 'Prospect not found.', code: 'not-found' }
+    const companyHold = companyOwnerSendHold(prospect.enrichmentNotes)
+    if (companyHold) return { ok: false, error: companyHold, code: 'company-owned' }
 
     // 3. Built-doc: client-ready only — the emailed link/PDF must never be a
     // draft (same chain as the SMS steps, including the cma_id-first slug
@@ -679,6 +684,10 @@ export async function sendProspectingEmailIntro(
       { callerHoldsProspectClaim: true },
     )
     if (!sent.ok) {
+      if (isCompanyOwnerHoldError(sent.error)) {
+        await releaseProspectEmailSend(kind, id)
+        return { ok: false, error: sent.error, code: 'company-owned' }
+      }
       if (isUnconfirmedGmailSendError(sent.error)) {
         console.error('[sendProspectingEmailIntro] Gmail did not confirm the send; claim kept for stuck-send recovery:', {
           kind,

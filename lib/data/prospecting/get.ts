@@ -229,6 +229,7 @@ export function mapExpiredSkeleton(
     longitude: listing?.longitude ?? null,
     contactPhone: (raw.contact_phone as string | null) ?? null,
     contactEmail: (raw.contact_email as string | null) ?? null,
+    enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
     doc,
     compliance,
   }
@@ -257,6 +258,7 @@ export function mapFsboSkeleton(
     longitude: numOrNull(raw.longitude),
     contactPhone: (raw.contact_phone as string | null) ?? null,
     contactEmail: (raw.contact_email as string | null) ?? null,
+    enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
     doc,
     compliance,
   }
@@ -692,7 +694,6 @@ function propertyFromExpired(raw: RawRow, listing: ExpiredListingJoin | null): O
     cumulativeDaysOnMarket: numOrNull(raw.cumulative_days_on_market),
     contactSource: (raw.contact_source as string | null) ?? null,
     ownerLookupStatus: (raw.owner_lookup_status as string | null) ?? null,
-    enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
   }
 }
 
@@ -716,7 +717,6 @@ function propertyFromFsbo(raw: RawRow): Omit<ProspectDetail, keyof ProspectRow |
     cumulativeDaysOnMarket: null,
     contactSource: (raw.contact_source as string | null) ?? null,
     ownerLookupStatus: (raw.owner_lookup_status as string | null) ?? null,
-    enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
   }
 }
 

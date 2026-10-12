@@ -147,6 +147,68 @@ describe('sendProspectingEmailIntro — claim held elsewhere', () => {
   })
 })
 
+describe('sendProspectingEmailIntro — company-owned county owner', () => {
+  const COMPANY =
+    'Resolved via Deschutes County assessor records. Legal owner (entity): PAHLISCH HOMES AT PETROSA LP. Skip-trace resolved contact: Someone Else.'
+  const TRUST =
+    'Resolved via Deschutes County assessor records. Legal owner (entity): FRANK N SERBUS TRUST. Skip-trace resolved contact: Frank N Serbus.'
+
+  it('holds before the claim and sends nothing', async () => {
+    h.getProspect.mockResolvedValue({
+      kind: 'expired',
+      id: ID,
+      ownerName: 'Someone Else',
+      streetAddress: '3802 Petrosa',
+      city: 'Bend',
+      contactEmail: OWNER,
+      enrichmentNotes: COMPANY,
+      doc: { state: 'ready', slug: 'cma-3802-petrosa', docType: 'cma', status: 'finalized' },
+      compliance: { offMarket: false, relisted: false, channels: { email: { blocked: false, reason: null } } },
+    })
+    const out = await sendProspectingEmailIntro('expired', ID, ARGS)
+    expect(out).toEqual({
+      ok: false,
+      error: 'County owner is a company (PAHLISCH HOMES AT PETROSA LP). Cold outreach stays held.',
+      code: 'company-owned',
+    })
+    expect(h.claimProspectEmailSend).not.toHaveBeenCalled()
+    expect(h.sendCmaToLead).not.toHaveBeenCalled()
+  })
+
+  it('still reaches the claim for a family trust', async () => {
+    h.getProspect.mockResolvedValue({
+      kind: 'expired',
+      id: ID,
+      ownerName: 'Frank N Serbus',
+      streetAddress: '2462 Lynda',
+      city: 'Bend',
+      contactEmail: OWNER,
+      enrichmentNotes: TRUST,
+      doc: { state: 'ready', slug: 'cma-2462-lynda', docType: 'cma', status: 'finalized' },
+      compliance: { offMarket: false, relisted: false, channels: { email: { blocked: false, reason: null } } },
+    })
+    h.claimProspectEmailSend.mockResolvedValue('claimed_elsewhere')
+    const out = await sendProspectingEmailIntro('expired', ID, ARGS)
+    expect(out).toMatchObject({ ok: false, code: 'in-progress' })
+    expect(h.claimProspectEmailSend).toHaveBeenCalled()
+  })
+
+  it('maps a rail company hold to company-owned and releases the claim', async () => {
+    h.sendCmaToLead.mockResolvedValue({
+      ok: false,
+      error: 'County owner is a company (LUCIA ST LLC). Cold outreach stays held.',
+    })
+    const out = await sendProspectingEmailIntro('expired', ID, ARGS)
+    expect(out).toEqual({
+      ok: false,
+      error: 'County owner is a company (LUCIA ST LLC). Cold outreach stays held.',
+      code: 'company-owned',
+    })
+    expect(h.releaseProspectEmailSend).toHaveBeenCalledWith('expired', ID)
+    expect(h.finalizeProspectEmailSend).not.toHaveBeenCalled()
+  })
+})
+
 describe('sendProspectingEmailIntro — rail failure', () => {
   it('keeps the claim when Gmail took the message and never confirmed it', async () => {
     h.sendCmaToLead.mockResolvedValue({ ok: false, error: UNCONFIRMED })
