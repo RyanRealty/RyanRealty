@@ -124,7 +124,7 @@ describe('build_summary says whether the build measured the ask against the band
   // measure goes through the live backstop (expired origin, ask inside the
   // stored band).
   const gate = (summary: Record<string, unknown>, ask: number) =>
-    recommendationGapHold(915_000, ask, {
+    recommendationGapHold(null, ask, {
       low: 893_000,
       high: 951_000,
       holdKind: null,
@@ -170,7 +170,13 @@ describe('build_summary says whether the build measured the ask against the band
   })
 
   it('a stored hold is a decision, measured or not', () => {
-    const pricing = { ...input({}).pricing, valueLow: 893_000, valueHigh: 951_000, failedAsk: 925_000 } as CmaPricing
+    const pricing = {
+      ...input({}).pricing,
+      valueLow: 893_000,
+      valueHigh: 951_000,
+      recommended: 700_000,
+      failedAsk: 925_000,
+    } as CmaPricing
     applyAskInBandHold(pricing, { lastCycleFailed: true, lastListPrice: 925_000, auditVerdict: 'pass' })
     const summary = composeBuildSummary(input(pricing))
     expect(summary.hold_kind).toBe('ask-in-band')
