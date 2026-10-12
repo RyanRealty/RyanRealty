@@ -81,6 +81,7 @@ const DEQUEUE_CODES: ReadonlySet<SendGuardCode> = new Set<SendGuardCode>([
   'already-sent',
   'no-doc',
   'not-found',
+  'company-owned',
 ])
 
 export async function drainProspectingFirstTouchDrip(now: Date = new Date()): Promise<DripDrainResult> {

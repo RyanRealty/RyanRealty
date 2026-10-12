@@ -386,6 +386,11 @@ export type SendGuardCode =
   | 'merge-unresolved'
   | 'send-failed'
   | 'not-found'
+  /**
+   * County legal owner is a company (LLC, LP, LLP, Inc, Corp). Cold email and
+   * SMS stay held. Family trusts are not this code. Both drains dequeue it.
+   */
+  | 'company-owned'
 
 export type SendIntroResult =
   | { ok: true; sid: string; personId: number; sentAt: string }

@@ -1,4 +1,16 @@
-# Current — 2026-10-10 (Grok, whole plat pool)
+# Current — 2026-10-11 (Grok, company-owned cold outreach hold)
+
+Surface: Grok. Branch `fix/company-owner-hold-20261011`, cut from origin/main. Land path is `npm run ship`. Nothing rebuilt, nothing sent, nothing approved. Do not email the inbox that replied on 3802 Petrosa. Do not send an apology. Do not re-send 61579 Lucia.
+
+**What this commit does.** A cold expired or FSBO send refuses when the county legal owner is a company (LLC, L.L.C., LP, L.P., LLP, L.L.P., Inc, Incorporated, Corp, Corporation). The check reads the legal-owner sentence, not the skip-trace person. Family trusts, trustees, and estates still send. The refusal is on the send rail, the email intro, and the text intro, before the claim. Both drains dequeue `company-owned` so the queue does not stall. Intake still builds the CMA. Asked CMAs (seller form, place page, lead form, broker, BPO) are not held. A missing legal-owner sentence does not hold. A failed notes read refuses the cold send.
+
+**The miss.** County owner of 3802 Petrosa and 3063 Brownstone is PAHLISCH HOMES AT PETROSA LP. Skip trace kept the first email and those two letters went Sunday 2026-10-11. The recipient replied it was not her home. That inbox is suppressed (crm_suppressions id 15645, person 61033, channel all, reason wrong-party). 1355 Ochoa is PAHLISCH HOMES AT COLLIER LLC and was not sent. 61579 Lucia is LUCIA ST LLC and already went.
+
+**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool` in the primary checkout. Do not rebuild `cma-120-sisemore` unless Matt asks. Do not rebuild McCann until 20 McCann unit 5 and 26 McCann #2 are checked. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top back as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
+
+Skills read: `.claude/skills/tdd/SKILL.md`, `.cursor/rules/git-commit.mdc`. Database shape from `docs/DATABASE_SCHEMA_SNAPSHOT.md` and `supabase/migrations/20260610010000_crm_core.sql`.
+
+## Earlier — 2026-10-10 (Grok, whole plat pool)
 
 Surface: Grok. Branch `fix/cma-whole-pool`, cut from origin/main `ad8cc8cd5` (PR #482). Upstream must stay the feature branch, never main. Matt merges the PR. Nothing rebuilt, nothing sent, nothing approved. Do not rebuild `cma-120-sisemore` unless Matt asks. Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet.
 
