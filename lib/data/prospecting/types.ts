@@ -158,6 +158,8 @@ export interface ProspectRow {
   // contact (admin surface — raw is acceptable; UI masks for display)
   contactPhone: string | null
   contactEmail: string | null
+  /** County lookup notes. The company-owner hold reads the legal-owner sentence here. */
+  enrichmentNotes: string | null
 
   doc: ProspectDocState
   compliance: ProspectComplianceState
@@ -220,7 +222,6 @@ export interface ProspectDetail extends ProspectRow {
   cumulativeDaysOnMarket: number | null
   contactSource: string | null
   ownerLookupStatus: string | null
-  enrichmentNotes: string | null
   /**
    * Whole years the owner has held the property, when a source proves it.
    * Source priority (get.ts deriveOwnershipSince): crm_people.custom
