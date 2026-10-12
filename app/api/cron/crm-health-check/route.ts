@@ -114,10 +114,11 @@ async function gatherUnforwardedTexts(
     const since = new Date(now.getTime() - INBOUND_FORWARD_LOOKBACK_HOURS * 3600 * 1000).toISOString()
     const [messages, logRes, firstRes] = await Promise.all([
       getRecentTwilioMessages(INBOUND_FORWARD_LOOKBACK_HOURS, now),
-      sb.from('crm_sms_inbound_log').select('message_sid,outcome,forward_sid').gte('ts', since).limit(2000),
+      sb.from('crm_sms_inbound_log').select('message_sid,outcome,forward_sid').gte('ts', since).limit(1000),
       sb.from('crm_sms_inbound_log').select('ts').order('ts', { ascending: true }).limit(1).maybeSingle(),
     ])
-    if (!messages || logRes.error || firstRes.error) return null
+    // A full page means the log may be truncated; skip rather than false-page.
+    if (!messages || logRes.error || firstRes.error || (logRes.data?.length ?? 0) >= 1000) return null
     return findUnforwardedTexts({
       messages,
       log: (logRes.data ?? []).map((r) => ({ messageSid: r.message_sid, outcome: r.outcome, forwardSid: r.forward_sid })),
