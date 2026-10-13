@@ -25,7 +25,8 @@ describe('price-drop FAQ schema', () => {
       type: 'faqPage',
       dateModified: '2026-10-13T17:00:00.000Z',
     })
-    const items = (schema as { items: Array<{ question: string; answer: string }> }).items
+    if (!schema || schema.type !== 'faqPage') throw new Error('expected faqPage schema')
+    const items = schema.items
     expect(items).toHaveLength(answers.length)
     expect(items[0]?.question).toBe(answers[0]?.question)
     expect(items[0]?.answer).toBe(answers[0]?.body)

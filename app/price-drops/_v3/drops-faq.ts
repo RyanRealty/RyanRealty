@@ -44,11 +44,11 @@ export function priceDropFaqSchema(
 ): SchemaInput | null {
   if (answers.length === 0) return null
   return {
-    type: 'faqPage',
-    items: answers.map((row) => ({
-      question: row.question,
-      answer: Array.isArray(row.body) ? row.body.join(' ') : row.body,
-    })),
-    ...(dateModified ? { dateModified } : {}),
-  }
+      type: 'faqPage',
+      items: answers.map((row) => ({
+        question: row.question,
+        answer: Array.isArray(row.body) ? row.body.join(' ') : String(row.body ?? ''),
+      })),
+      ...(dateModified ? { dateModified } : {}),
+    }
 }

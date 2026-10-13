@@ -214,6 +214,7 @@ function drop(over: Partial<PriceDrop> = {}): PriceDrop {
     priceDropCount: 1,
     daysSinceLastChange: 2,
     lastPriceChangeDate: '2026-08-10T00:00:00.000Z',
+    windowCutCount: 1,
     dom: 21,
     boundaryCity: 'Bend',
     boundaryNeighborhood: null,

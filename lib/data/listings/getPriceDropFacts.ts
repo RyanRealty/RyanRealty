@@ -97,7 +97,7 @@ async function fetchFacts(
       .select(columns.join(','))
       .in('listing_key', chunk)
     if (error) throw new Error(`[getPriceDropFacts] listing_search_mv: ${error.message}`)
-    for (const row of (data ?? []) as SearchRow[]) {
+    for (const row of (data ?? []) as unknown as SearchRow[]) {
       const fact = byKey[row.listing_key]
       if (!fact) continue
       fact.ownerWillCarry = hasOwnerWillCarry(asStringList(row.listing_terms))
