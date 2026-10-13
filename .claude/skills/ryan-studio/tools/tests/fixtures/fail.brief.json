@@ -1,0 +1,10 @@
+{
+  "video_type": "buyer_ad",
+  "title": "Your dream home awaits",
+  "hook": {"text": "Just listed at 123 Main Street", "time_s": 3.5},
+  "length_s": 45,
+  "numbers": [{"on_screen": "$750K", "value": 750000, "definition": "list price", "window": "last 90 days", "geography": "", "source": "data/x.sql"}],
+  "footage": [{"kind": "mls_photo", "path": "photos/front.jpg", "rights": "unclear", "restyled": true}],
+  "end_card": {"spec": "old endcard.js", "phone": "541.703.3095"},
+  "caption": "Perfect for young families \u2014 discover Bend!!"
+}
