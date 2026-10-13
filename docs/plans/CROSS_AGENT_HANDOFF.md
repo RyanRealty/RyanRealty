@@ -1,4 +1,14 @@
-# Current — 2026-10-13 (Cursor, inbound SMS clear + industry exclusion, PR only)
+# Current — 2026-10-13 (Cursor, one business + one author JSON-LD)
+
+Surface: Cursor cloud. Branch `cursor/one-author-entity-118d` from origin/main `91f2eb061`. User asked rebase onto latest main, then squash-merge this PR after its own CI (main-also-fail does not count), then verify production. Do not `git push` main. Nothing sent.
+
+**What this branch does.** Every BlogPosting author is `{@id: https://ryan-realty.com/team/matthew-ryan#person}`. Person sameAs adds verified Zillow, LinkedIn, Experience.com, YouTube, Instagram. Organization sameAs adds Zillow, Yelp, Experience.com. `/team/matthew-ryan` renders a 400-600 word bio from repo facts (LLC 2014, Bend office June 2023). Homepage title is `Ryan Realty | Bend, Oregon Real Estate Brokerage`. Realtor.com and Homes.com stay off: no verified live person URL.
+
+**Still open from prior Current.** Branch `cursor/clear-import-suppression-on-inbound-sms-f271`: do not apply hosted SQL, do not run the backfill, do not send.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES, `CLAUDE.md` §0/§2/§7.
+
+## Earlier — 2026-10-13 (Cursor, inbound SMS clear + industry exclusion, PR only)
 
 Surface: Cursor cloud. Branch `cursor/clear-import-suppression-on-inbound-sms-f271` from origin/main `b802ee703`. Do not merge. Do not `git push` main. Do not apply hosted SQL. Do not run the backfill. Nothing sent.
 

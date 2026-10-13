@@ -109,11 +109,20 @@ export const BRAND = {
    *           private forward target (AEO-7): a profile edit for Matt, not code.
    * Realtor.com is NOT here: no profile URL for the brokerage or a broker
    * could be found (search index has none, public.brokers.realtor_id is null,
-   * realtor.com answers bots with 429). Add it when Matt supplies the URL.
+   * realtor.com answers bots with 429 / geo-blocks this environment). Add it
+   * when a live person or office URL is confirmed.
+   * Homes.com is NOT here: no profile URL is in the repo, and live fetches
+   * from this environment are Access Denied. Add it when a live URL is confirmed.
+   * experience  Matt's Experience.com page (verified 2026-10-08 and again
+   *             2026-10-13): "Matthew Ryan, Principal Broker, Ryan Realty LLC",
+   *             license 201206613, links ryan-realty.com. There is no separate
+   *             brokerage Experience.com page; this is the same pattern as
+   *             Zillow (Matt's agent profile under the brokerage screen name).
    */
   directoryProfiles: {
     zillow: 'https://www.zillow.com/profile/Ryan%20Realty%20Bend',
     yelp: 'https://www.yelp.com/biz/ryan-realty-bend',
+    experience: 'https://www.experience.com/reviews/matthew-15390858',
   },
 } as const
 
@@ -145,10 +154,14 @@ export const BROKER_SAME_AS: Readonly<Record<string, readonly string[]>> = {
   'matthew-ryan': [
     BRAND.directoryProfiles.zillow,
     'https://www.linkedin.com/in/mattmryan',
-    /** Verified 2026-10-08 (curl, Chrome UA, 200): "Matthew Ryan, Principal Broker, Ryan
-     *  Realty LLC", license 201206613, links ryan-realty.com. Marked "Unclaimed Profile";
-     *  Matt to claim it. */
-    'https://www.experience.com/reviews/matthew-15390858',
+    /** Verified 2026-10-08 (curl, Chrome UA, 200) and 2026-10-13: "Matthew Ryan,
+     *  Principal Broker, Ryan Realty LLC", license 201206613, links ryan-realty.com. */
+    BRAND.directoryProfiles.experience,
+    /** Brokerage channel and Instagram: the handles Matt uses in public.brokers
+     *  social_* and the only YouTube / Instagram URLs in the repo. Realtor.com
+     *  and Homes.com are omitted until a live person-profile URL is confirmed. */
+    BRAND.social.youtube,
+    BRAND.social.instagram,
   ],
 }
 

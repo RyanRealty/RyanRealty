@@ -67,6 +67,7 @@ import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { brokerPersonNode } from '@/lib/site/broker-entity'
+import { matthewRyanBio } from '@/lib/site/matthew-ryan-bio'
 
 const siteUrl = siteOrigin()
 const OFFICE_NAME = 'Ryan Realty'
@@ -79,10 +80,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!broker) notFound()
   const siteName = brokerage?.name ?? 'Ryan Realty'
   const title = `${broker.display_name}, Bend realtor`
-  const description =
-    broker.bio?.trim()?.slice(0, 155) ??
-    `${broker.display_name}, ${broker.title ?? 'Real Estate Broker'} at ${siteName}. Licensed in Oregon. Contact for Central Oregon real estate.`
   const canonicalSlug = broker.slug || slug
+  const bioForMeta =
+    canonicalSlug === 'matthew-ryan'
+      ? matthewRyanBio()
+      : broker.bio?.trim() || ''
+  const description =
+    bioForMeta.slice(0, 155) ||
+    `${broker.display_name}, ${broker.title ?? 'Real Estate Broker'} at ${siteName}. Licensed in Oregon. Contact for Central Oregon real estate.`
   const canonical = `${siteUrl}/team/${canonicalSlug}`
   const ogImage = `${siteUrl}/api/og?type=broker&id=${encodeURIComponent(canonicalSlug)}`
   return {
@@ -155,9 +160,12 @@ export default async function TeamMemberPage({ params }: Props) {
   const [firstOwn, ...restOwn] = ownRows
   const [firstFirm, ...restFirm] = firmRows
 
-  const bioText = broker.bio?.trim()
-    ? broker.bio.trim()
-    : factualFallbackBio({ displayName: broker.display_name, firstName, closings: ownRows.length, phone: broker.phone })
+  const bioText =
+    canonicalPathSlug === 'matthew-ryan'
+      ? matthewRyanBio()
+      : broker.bio?.trim()
+        ? broker.bio.trim()
+        : factualFallbackBio({ displayName: broker.display_name, firstName, closings: ownRows.length, phone: broker.phone })
 
   const digits = broker.phone ? broker.phone.replace(/[^\d]/g, '') : ''
   const e164 = digits.length === 10 ? `+1${digits}` : digits.length === 11 && digits.startsWith('1') ? `+${digits}` : digits
