@@ -4,7 +4,7 @@
  * and intake-screened (suspect) submits return ok but counted=false, matching
  * the server's skip of `fireLeadGenerated`.
  *
- * /buy keeps the raw server action (PR #497).
+ * /buy and /buy/alerts keep the raw server action (PR #497 / #502).
  */
 
 import {

@@ -101,6 +101,7 @@ describe('alert clients except /buy go through the counted sign_up wrapper', () 
     )
     expect(raw.map((f) => f.rel).sort()).toEqual([
       'app/buy/_v3/BuyAlertsSheet.client.tsx',
+      'app/buy/alerts/_v3/BuyAlertsSignup.client.tsx',
       'lib/analytics/submit-alert-signup.ts',
     ])
   })

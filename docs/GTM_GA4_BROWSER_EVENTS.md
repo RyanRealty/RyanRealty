@@ -126,7 +126,7 @@ Also confirm the built-in variable **Event** is enabled (Variables → Configure
 
 ## Publish
 
-**Submit** → Version name `GA4 browser events via dataLayer (2026-10-08)` → **Publish**.
+**Submit** → Version name `GA4 browser events via dataLayer (2026-10-13)` → **Publish**.
 
 ## After publish (Analytics agent verifies)
 
