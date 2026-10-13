@@ -338,6 +338,7 @@
     "docs:check:summary": "npx tsx scripts/check-docs-freshness.ts --summary",
     "test:history": "node scripts/test-listing-history.mjs",
     "video:reprocess:hero": "node scripts/reprocess-hero-video.mjs",
+    "video:check": "tsx scripts/video-check.ts",
     "env:verify": "npx tsx scripts/verify-env.ts",
     "deploy:verify": "NODE_USE_ENV_PROXY=1 node scripts/check-vercel-deploy.mjs",
     "seo:live": "node scripts/check-live-seo.mjs",
