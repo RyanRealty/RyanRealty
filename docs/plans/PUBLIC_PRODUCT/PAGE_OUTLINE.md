@@ -56,7 +56,7 @@ Not the primary target (do not write the H1 as if it were): generic `Bend homes 
 
 ### Footer-by-city (confirmed)
 
-The town name is the door (`Bend` → `/cities/bend`). Communities nest under the town (`Tetherow`). Keyword sentences (`Homes for sale in Bend`, `Bend housing market`) live on `/site-index`, not as a hairline dump in chrome (SITE-157, Matt 2026-09-20).
+The town name is the door (`Bend` → `/cities/bend`). Communities nest under the town (`Tetherow`). Keyword sentences (`Homes for sale in Bend`, `Bend housing market`) stay off the Markets hairline (SITE-157, Matt 2026-09-20). Exact-match inventory doors (`Bend homes for sale`) live in the first footer column, **Homes for sale by area**: `/homes-for-sale/{bend,redmond,sisters,sunriver,la-pine}` plus the top eight community hubs.
 
 ### Live titles that violate this lock (fix when we build)
 
@@ -102,6 +102,7 @@ From `out/audits/ui-ux-inconsistencies/2026-09-05/findings/seo-live-metadata.md`
 **Contents (itemized, by city — SEO):**
 
 - Band: cityscape under columns; wordmark in the brand block (not overlaid on the sky)
+- **Homes for sale by area** — exact-match `{Place} homes for sale` to `/homes-for-sale/bend`, `/homes-for-sale/redmond`, `/homes-for-sale/sisters`, `/homes-for-sale/sunriver`, `/homes-for-sale/la-pine`, plus Tetherow, Broken Top, NorthWest Crossing, Eagle Crest, Black Butte Ranch, Juniper Preserve, Brasada Ranch, Caldera Springs
 - **Bend** — city place page · Bend neighborhoods · Tetherow · Broken Top · NorthWest Crossing · Awbrey Glen
 - **Redmond** — city place page · Eagle Crest · Juniper Preserve
 - **Sisters** — city place page · Black Butte Ranch

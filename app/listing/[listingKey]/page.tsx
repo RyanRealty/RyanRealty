@@ -36,7 +36,6 @@ import {
 import { isPublicOffMarketStatus } from '@/lib/listing-status-public'
 import { listingIndexPolicy, listingOffMarketAnchor } from '@/lib/listing/listing-index-policy'
 import { listingCommunityDoor } from '@/lib/listing/listing-community-door'
-import { ListingCommunityDoor } from '@/components/site/listing-detail/ListingCommunityDoor'
 import { publishListingOffMarketFacts } from '@/lib/listing/publish-listing-offmarket'
 import { ListingOffMarketFacts } from '@/components/site/listing-detail/ListingOffMarketFacts'
 import { ListingOutOfAreaNotice } from '@/components/site/listing-detail/ListingOutOfAreaNotice'
@@ -69,6 +68,8 @@ import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-s
 import { formatDate as formatCalendarDate } from '@/lib/format/date'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
+import { ListingHubLinks } from '@/components/site/listing-detail/ListingHubLinks'
+import { listingHubLinks } from '@/lib/listing/listing-hub-links'
 import { ListingQuickFacts } from '@/components/site/listing-detail/ListingQuickFacts'
 import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
 import { DescriptionBlock } from '@/components/site/listing-detail/DescriptionBlock'
@@ -349,7 +350,6 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   const outOfAreaNotice = buildListingOutOfAreaNotice(outOfArea, outOfAreaCityRow !== null)
 
   const { placeContext, marketGeo } = resolveListingPlaceAndMarket(listing)
-  const communityDoor = listingCommunityDoor(placeContext.curatedCommunity)
   const aliasLadder = listingAliasPlatLadder({
     mlsSubdivisionName: listing.subdivisionName,
     boundarySubdivision: listing.boundarySubdivision,
@@ -651,6 +651,12 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     subdivision: aliasLadder.plat ?? placeContext.subdivision,
     address: street || `Listing ${listingKey}`,
   })
+  // Exact-match text doors to /homes-for-sale/{city} and the #513 community
+  // hub. Breadcrumb already climbs city → community (listingPlaceTrail).
+  const hubLinks = listingHubLinks({
+    city: listing.city && listing.citySlug ? { label: listing.city, slug: listing.citySlug } : null,
+    community: placeContext.curatedCommunity,
+  })
 
   const contactKey =
     publishListingContactKey({ listNumber: listing.listNumber, listingKey: listing.listingKey }) ??
@@ -871,7 +877,6 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
         read={pillRead}
         ours={listingAgent != null || /ryan realty/i.test(listing.listOfficeName ?? '')}
       />
-      {communityDoor ? <ListingCommunityDoor door={communityDoor} /> : null}
       {/* SITE-33 — THIS IS NOT OUR MARKET, said before the page says anything
           else about the home. A reader who scrolls past the price strip on a
           Medford house has already been told, by a "| Ryan Realty — Central
@@ -880,6 +885,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           it ends in that city's referral page. Null on every Central Oregon
           listing. */}
       {outOfAreaNotice ? <ListingOutOfAreaNotice notice={outOfAreaNotice} /> : null}
+      {hubLinks ? <ListingHubLinks links={hubLinks} /> : null}
       {/* SITE-21 — THE SOLD FACTS, first thing under the price. What happened
           to this house is the answer the reader came for, and it is the only
           claim about its price that is still true. */}
