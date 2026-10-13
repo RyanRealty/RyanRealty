@@ -4,6 +4,7 @@
  */
 import type { ListingTile } from '@/lib/data/types/listing'
 import type { V3ListingRowData } from '@/components/site/v3'
+import { pointInRings, type Ring } from '@/lib/geo/project-svg'
 import { listingTileHref } from '@/lib/slug'
 import { listingMlsStreetLine, publishCardAddress } from '@/lib/listing/publish-street-line'
 import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
@@ -49,13 +50,70 @@ export function listingSimilarActive(tiles: readonly ListingTile[]): ListingTile
 
 export type ListingMapPin = { lat: number; lng: number }
 
+/** Homes farther than this are another town, not this subdivision. */
+export const HERO_MAP_NEARBY_MILES = 0.75
+
+/**
+ * A subdivision outline wider than this is the wrong polygon (a city or a
+ * neighborhood). The hero map does not frame it.
+ */
+export const HERO_MAP_FRAME_MAX_MILES = 4
+
+export type ListingHeroMapFrame = {
+  lat: number
+  lng: number
+  rings?: readonly Ring[]
+}
+
+function milesBetween(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLng = toRad(lng2 - lng1)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
+  return 3958.8 * 2 * Math.asin(Math.min(1, Math.sqrt(a)))
+}
+
+/** Keep a subdivision outline only when it is actually subdivision-sized. */
+export function listingHeroSubdivisionRings(rings: readonly Ring[] | null | undefined): Ring[] {
+  if (!rings || rings.length === 0) return []
+  let minLat = Infinity
+  let maxLat = -Infinity
+  let minLng = Infinity
+  let maxLng = -Infinity
+  for (const ring of rings) {
+    for (const [lng, lat] of ring) {
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
+      if (lat < minLat) minLat = lat
+      if (lat > maxLat) maxLat = lat
+      if (lng < minLng) minLng = lng
+      if (lng > maxLng) maxLng = lng
+    }
+  }
+  if (!Number.isFinite(minLat) || !Number.isFinite(maxLat)) return []
+  const span = milesBetween(minLat, minLng, maxLat, maxLng)
+  if (span <= 0 || span > HERO_MAP_FRAME_MAX_MILES) return []
+  return [...rings]
+}
+
 /** Active nearby homes that can take a pin. A missing coordinate is not a pin. */
-export function listingHeroMapPins(tiles: readonly ListingTile[]): ListingMapPin[] {
+export function listingHeroMapPins(
+  tiles: readonly ListingTile[],
+  frame?: ListingHeroMapFrame,
+): ListingMapPin[] {
+  const rings =
+    frame && frame.rings && frame.rings.length > 0 ? listingHeroSubdivisionRings(frame.rings) : []
   const pins: ListingMapPin[] = []
   const seen = new Set<string>()
   for (const tile of listingSimilarActive(tiles)) {
     if (tile.lat == null || tile.lng == null) continue
     if (!Number.isFinite(tile.lat) || !Number.isFinite(tile.lng)) continue
+    if (rings.length > 0) {
+      if (!pointInRings(tile.lng, tile.lat, rings)) continue
+    } else if (frame && Number.isFinite(frame.lat) && Number.isFinite(frame.lng)) {
+      if (milesBetween(frame.lat, frame.lng, tile.lat, tile.lng) > HERO_MAP_NEARBY_MILES) continue
+    }
     const key = `${tile.lat.toFixed(5)},${tile.lng.toFixed(5)}`
     if (seen.has(key)) continue
     seen.add(key)
