@@ -1,6 +1,6 @@
 # Current — 2026-10-13 (Cursor, sitemap + listing index hygiene)
 
-Surface: Cursor cloud. Branch `cursor/sitemap-index-hygiene-f2b8` from origin/main `7a17527a1`. Sitemap / robots only. Nothing sent. Do not `git push` main.
+Surface: Cursor cloud. Branch `cursor/sitemap-index-hygiene-f2b8` from origin/main `817c6bd2e`. Sitemap / robots only. Nothing sent. Do not `git push` main.
 
 **What this branch does.** `listings.xml` submits Active, Active Under Contract, and Pending with `lastmod` from `modified_at`. Closed / Expired / Withdrawn / Canceled pages older than 90 days are `noindex, follow` with a community or city hub canonical (`listingIndexPolicy`, extending #513). `geo.xml` browse pairs and `matrix.xml` combos with fewer than 3 active listings drop and noindex. Live before counts: listings 7,484 · geo 3,961 · matrix 842.
 
@@ -9,6 +9,16 @@ Surface: Cursor cloud. Branch `cursor/sitemap-index-hygiene-f2b8` from origin/ma
 **Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool` in the primary checkout. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §0 (listing_tile_mv).
+
+## Earlier — 2026-10-13 (Cursor, one business + one author JSON-LD)
+
+Surface: Cursor cloud. Landed on origin/main via #519 after `7a17527a1`. User asked squash-merge after its own CI. Do not `git push` main. Nothing sent.
+
+**What that change did.** Every BlogPosting author is `{@id: https://ryan-realty.com/team/matthew-ryan#person}`. Person sameAs adds verified Zillow, LinkedIn, Experience.com, YouTube, Instagram. Organization sameAs adds Zillow, Yelp, Experience.com. `/team/matthew-ryan` renders a 400-600 word bio from repo facts (LLC 2014, Bend office June 2023). Homepage title is `Ryan Realty | Bend, Oregon Real Estate Brokerage`. Realtor.com and Homes.com stay off: no verified live person URL.
+
+**Still open.** Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill. Do not send. Lead-event parse error already landed on main via #516 / #518.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES, `CLAUDE.md` §0/§2/§7.
 
 ## Earlier — 2026-10-13 (Cursor, inbound SMS clear + industry exclusion, PR only)
 
