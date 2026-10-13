@@ -10,7 +10,8 @@
  * 1,759 live listings never appeared in listings.xml. A thrown universe
  * build served an empty urlset (200) while the MV still held the inventory.
  *
- * This DAL is the listings class source of truth: PUBLIC_ACTIVE_STATUSES,
+ * This DAL is the listings class source of truth: LISTING_SITEMAP_STATUSES
+ * (Active, Active Under Contract, Pending),
  * stable `listing_key` order, throw on error (never cache/serve empty on a
  * blip). Path assembly is `listingTileHref` so locs match the listing
  * canonical. Per docs/DATABASE_FOR_AI_AGENTS.md §0, public active inventory
@@ -34,7 +35,7 @@
  * same unique key, just walked forward instead of jumped into).
  */
 import { supabaseAnon } from '@/lib/data/client'
-import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
+import { LISTING_SITEMAP_STATUSES } from '@/lib/listing-status-public'
 import {
   applyRecrawlLastmod,
   assembleListingSitemapRows,
@@ -99,7 +100,7 @@ async function fetchActiveCount(supabase: AnonClient): Promise<number | null> {
     supabase
       .from('listing_tile_mv')
       .select('listing_key', { count: 'exact', head: true })
-      .in('standard_status', PUBLIC_ACTIVE_STATUSES),
+      .in('standard_status', LISTING_SITEMAP_STATUSES),
   )
   if (error) {
     console.error(
@@ -125,7 +126,7 @@ async function fetchAllPagesKeyset(supabase: AnonClient): Promise<ListingSitemap
       const base = supabase
         .from('listing_tile_mv')
         .select(SELECT_COLS)
-        .in('standard_status', PUBLIC_ACTIVE_STATUSES)
+        .in('standard_status', LISTING_SITEMAP_STATUSES)
       // ORDER BY is not optional. Unordered pages on this MV returned 7,586
       // rows / 5,827 unique listing_keys (2026-08-19).
       const filtered = lastKey === null ? base : base.gt('listing_key', lastKey)
@@ -158,7 +159,7 @@ async function fetchActiveListingTiles(): Promise<ListingSitemapTile[]> {
 
   if (total !== null && total > 0 && rows.length === 0) {
     throw new Error(
-      `[getListingSitemapRows] listing_tile_mv reported ${total} Active/AUC rows but the page read returned 0`,
+      `[getListingSitemapRows] listing_tile_mv reported ${total} Active/AUC/Pending rows but the page read returned 0`,
     )
   }
   return rows
@@ -170,10 +171,11 @@ async function fetchActiveListingTiles(): Promise<ListingSitemapTile[]> {
  * sitemap and noindexed their pages, taking listings.xml from 7,501 to 3,312
  * URLs. Search Console then showed that noindex cost about 36% of the
  * impression drop since Sep 12 (~2,500 impressions and ~30 clicks a week), so
- * Matt reverted it: every Active/AUC listing with an assembled path ships,
- * whatever its city. The page keeps its honesty block and is index, follow.
- * Held by ci:listing-offmarket-index (no `noindex` in the listing
- * generateMetadata, no service-area filter in this read).
+ * Matt reverted it: every on-market listing (Active, Active Under Contract,
+ * Pending) with an assembled path ships, whatever its city. The page keeps
+ * its honesty block. Off-market pages are never submitted.
+ * Held by ci:listing-offmarket-index (listingIndexPolicy, no service-area
+ * filter in this read).
  */
 
 /**
@@ -193,7 +195,7 @@ async function fetchMediaSuppressedKeys(): Promise<ReadonlySet<string> | null> {
     supabase
       .from('listings')
       .select('ListingKey')
-      .in('StandardStatus', PUBLIC_ACTIVE_STATUSES)
+      .in('StandardStatus', LISTING_SITEMAP_STATUSES)
       .eq('media_suppressed', true)
       .limit(1000),
     2,

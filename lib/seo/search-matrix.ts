@@ -8,15 +8,15 @@
  * (lib/data/listings/getSearchMatrixInventory — the slim on-market row set).
  *
  * Emission contract (both must hold):
- *   1. >= SEARCH_MATRIX_MIN_ACTIVE listings verifiably match the combo from
- *      live inventory (§0: a submitted URL is never backed by invented
+ *   1. >= SEARCH_MATRIX_MIN_ACTIVE (3) listings verifiably match the combo
+ *      from live inventory (§0: a submitted URL is never backed by invented
  *      inventory), AND
  *   2. the geo has real editorial depth content (a stored description /
  *      registry description / static blurb) — a bare listing grid with no
  *      depth never earns an index slot.
- * Zero-inventory combos stay RENDERABLE but are noindexed at render time via
- * shouldNoIndexMatrixCombo (fail-OPEN: an unknown inventory state never
- * noindexes a live page).
+ * Combos with fewer than 3 verified actives, or with no unique depth, stay
+ * RENDERABLE but are noindexed at render time via shouldNoIndexMatrixCombo
+ * (fail-OPEN: an unknown inventory state never noindexes a live page).
  *
  * DERIVABILITY RULE (same principle as lib/data/seo/derive-search-links.ts):
  * a preset is only evaluated at matrix scope when EVERY filter param it
@@ -53,7 +53,7 @@ import {
 // ───────────────────────── Constants ─────────────────────────
 
 /** Minimum verified active matches for a combo to earn a sitemap slot. */
-export const SEARCH_MATRIX_MIN_ACTIVE = 1
+export const SEARCH_MATRIX_MIN_ACTIVE = 3
 
 // ───────────────────────── Types ─────────────────────────
 
@@ -427,11 +427,13 @@ export function searchMatrixSitemapUrls(
  *   the count could NOT be verified (inventory read failed, uncurated geo, or
  *   a non-derivable preset).
  *
- * noindex ONLY on a VERIFIED zero — an unknown state fails OPEN (never
- * noindex a live page on a transient read blip; see the DAL docstring).
- * Depth content gates sitemap SUBMISSION, not indexability: a combo with
- * real inventory but no editorial depth simply is not submitted.
+ * noindex on a VERIFIED count below SEARCH_MATRIX_MIN_ACTIVE (3), or a
+ * verified zero. An unknown state fails OPEN (never noindex a live page on
+ * a transient read blip; see the DAL docstring). Depth content plus the
+ * same floor gate sitemap SUBMISSION: a combo with 1–2 homes, or with
+ * inventory but no editorial depth, is not submitted and is noindexed
+ * once the count is verified.
  */
 export function shouldNoIndexMatrixCombo(verifiedActiveCount: number | null): boolean {
-  return verifiedActiveCount != null && verifiedActiveCount <= 0
+  return verifiedActiveCount != null && verifiedActiveCount < SEARCH_MATRIX_MIN_ACTIVE
 }

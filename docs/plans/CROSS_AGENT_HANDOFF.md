@@ -1,8 +1,8 @@
 # Current — 2026-10-13 (Cursor, HTML payload budget)
 
-Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `09d783c99` (merged, not rebased: #521 fold, #532, #505, #512). Land path is `gh pr merge 527 --squash` after this PR's own CI. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `40ffcb2b9` (merged, not rebased: #533 sitemap, #521 fold, #532, #505, #512). Land path is `gh pr merge 527 --squash` after this PR's own CI. Nobody pushes main. Nothing sent.
 
-**What this branch does.** Caps public listing SSR grids at 24 cards (`SSR_GRID_PAGE`; home rails 36). Community fold grid and map homes past 24 load from `GET /api/place/homes`. Search SSR no longer reads cookies (`getSession` / saved / liked); viewer state hydrates after paint so `/homes-for-sale/bend` can use the public `s-maxage=60` header. Listing media flight capped at 24 photos. `ci:page-payload` shrink-only ratchet plus a 200 KB hard fail when serialized unique listing cards exceed one grid page. Community fold layout from #521 is kept; only the card cap is ours.
+**What this branch does.** Caps public listing SSR grids at 24 cards (`SSR_GRID_PAGE`; home rails 36). Community fold grid and map homes past 24 load from `GET /api/place/homes`. Search SSR no longer reads cookies (`getSession` / saved / liked); viewer state hydrates after paint so `/homes-for-sale/bend` can use the public `s-maxage=60` header. Listing media flight capped at 24 photos. `ci:page-payload` shrink-only ratchet plus a 200 KB hard fail when serialized unique listing cards exceed one grid page. Community fold layout from #521 is kept; only the card cap is ours. #533 listing-index / sitemap policy is taken from main as-is.
 
 **Measured (identity, 2026-10-13).** Production before → local after (`next start`): `/` 493347 → 472180 B (36 cards, TTFB ~127 ms); `/communities/tetherow` 710608 → 676659 B (22 cards, TTFB 8–38 ms); `/homes-for-sale/bend` 415747 → 301396 B (24 cards, TTFB 32–139 ms, was ~2.0 s); `/homes-for-sale` 437386 → 324569 B; `/listing/22054302` 208030 → 188557 B. Gzip already under 150 KB on the named routes.
 
@@ -12,25 +12,21 @@ Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `docs/RUN_LOOP.md` (this is payload plumbing, not a site-queue look change).
 
-## Earlier — 2026-10-13 (Cursor, rebase #512 onto main)
+## Earlier — 2026-10-13 (Cursor, sitemap + listing index hygiene)
 
-Surface: Cursor cloud. Branch `cursor/price-drops-accuracy-61bb` landed on main via #512. Nothing sent. Production DB stayed read-only.
+Surface: Cursor cloud. Branch `cursor/sitemap-index-hygiene-f2b8` landed on main via #533. Sitemap / robots only. Nothing sent.
 
-**What this branch does.** `/price-drops` counts only honest currently-active asking-price cuts. Cuts over 40% and ~10x decimal-shift typos are withheld (Hunnell 90%). #510's >50% typo guard, MLS-number dedupe, and `ci:private-remarks` / `ci:deals-copy` / `ci:imagine-no-paid-api` stay. Signup is a price-drop alert on the #502 listing-alert path (events + ads consent + landingSearch), through #505's `submit-alert-signup` wrapper, without dropping buy/alerts formId / lpContext. Studio-rules keeps main #532 named test files so Node 20 and Node 22 both run.
+**What that branch did.** `listings.xml` submits Active, Active Under Contract, and Pending with `lastmod` from `modified_at`. Closed / Expired / Withdrawn / Canceled pages older than 90 days are `noindex, follow` with a community or city hub canonical (`listingIndexPolicy`, extending #513). `geo.xml` browse pairs and `matrix.xml` combos with fewer than 3 active listings drop and noindex. Live before counts: listings 7,487 · geo 3,961 · matrix 842.
 
-**Not this change.** Do not send alerts. Do not apply SQL. Do not rebuild letters. Do not resend the 2026-10-11 letters.
+**Not this change.** Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill.
 
-Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES.
+**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool` in the primary checkout. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
 
-## Earlier — 2026-10-13 (Cursor, rebase #512 onto main)
+Skills read: `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §0 (listing_tile_mv).
 
-Surface: Cursor cloud. Branch `cursor/price-drops-accuracy-61bb` rebased onto origin/main `9c66b81b0` (after #502, #516/#518, #499, #515, #519, #526, #513). Nothing sent. Production DB stayed read-only.
+## Earlier — 2026-10-13 (Cursor, price-drops accuracy)
 
-**What this branch does.** `/price-drops` counts only honest currently-active asking-price cuts. Cuts over 40% and ~10x decimal-shift typos are withheld (Hunnell 90%). #510's >50% typo guard, MLS-number dedupe, and `ci:private-remarks` / `ci:deals-copy` / `ci:imagine-no-paid-api` stay. Signup is a price-drop alert on the #502 listing-alert path (events + ads consent + landingSearch), without dropping buy/alerts formId / lpContext. Studio-rules keeps main #526 (`node --test` on the tests directory) so GitHub Node 20 stays green.
-
-**Not this change.** Do not send alerts. Do not apply SQL. Do not rebuild letters. Do not resend the 2026-10-11 letters.
-
-Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES.
+Surface: Cursor cloud. Branch `cursor/price-drops-accuracy-61bb` landed on main via #512. Nothing sent.
 
 ## Earlier — 2026-10-13 (Cursor, off-market listing noindex + community door, landing)
 
@@ -54,17 +50,15 @@ Surface: Cursor cloud. Branch `cursor/one-author-entity-118d` merged onto origin
 
 Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES, `CLAUDE.md` §0/§2/§7.
 
-## Earlier — 2026-10-13 (Cursor, ad copy / voiceover / caption process)
+## Earlier — 2026-10-13 (Cursor, community fold upgrade)
 
-Surface: Cursor cloud. Branch `cursor/ai-voiceover-scripts-8a9c`, merged latest origin/main. Docs only.
+Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688`. Landed on main via #521. Do not `git push` main. Nothing sent.
 
-**What this commit does.** Matt's 2026-10-13 ad, voiceover, and caption process now lives in the agent instruction files. New [`docs/ai-voiceover-scripts.md`](../ai-voiceover-scripts.md). AGENTS.md has the section "Ad copy, voiceover and captions" with the six locks. CLAUDE.md keeps main's Video CORE RULES (mandatory rules + `spec_rules`; video_gate is backup) and adds the ad/VO pointer on that same line. VOICE.md adds a spoken-ad note so written site/email/CMA voice stays that file.
+**What that change did.** Every `/communities/[slug]` page server-renders above the fold: H1 community homes for sale, a live leftover answer, active grid, recently-sold table, HOA/STR/amenities, FAQ, and a local broker block.
 
-**Not this change.** Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send until Matt asks. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase. Do not run the CRM backfill.
+## Earlier — 2026-10-13 (Cursor, off-market listing noindex + community door)
 
-**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool` in the primary checkout. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
-
-Skills read: `.cursor/rules/git-commit.mdc`, `scripts/check-claude-canon.mjs`.
+Surface: Cursor cloud. Branch `cursor/listing-offmarket-noindex-2c0f`. Landed on main via #513. This PR extends the 90-day stale rule and sitemap floors on top of that door.
 
 ## Earlier — 2026-10-13 (Cursor, inbound SMS clear + industry exclusion, PR only)
 
