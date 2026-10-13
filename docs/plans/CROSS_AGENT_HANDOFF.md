@@ -1,4 +1,16 @@
-# Current — 2026-10-13 (Cursor, one business + one author JSON-LD)
+# Current — 2026-10-13 (Cursor, off-market listing noindex + community door, landing)
+
+Surface: Cursor cloud. Branch `cursor/listing-offmarket-noindex-2c0f` rebased onto origin/main `6f0b60010` (#519 one-author JSON-LD; includes #504 Quick facts). PR #513. Matt approved merge. Do not `git push` main. Nothing sent.
+
+**What this branch does.** Closed / Expired / Canceled / Withdrawn listing pages ship `noindex, follow`. When the home belongs to a registry community the HTML canonical is that `/communities/<slug>` page. Pending stays indexed. Active listings keep `index, follow` and print a prominent "{Name} homes for sale" door to the community page. `listings.xml` already ships Active/AUC only; sitemap, nav, and llms.txt were not touched. Quick facts from #504 is kept.
+
+**Verified on Brasada.** Active MLS 220229872: `index, follow`, self-canonical, door "Brasada Ranch homes for sale" → `/communities/brasada-ranch`. Closed MLS 220224479: `noindex, follow`, canonical `https://ryan-realty.com/communities/brasada-ranch`, HTTP 200.
+
+**Not this change.** Do not send. Do not apply hosted SQL.
+
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §3a (registry communities), `AGENTS.md` CORE RULES.
+
+## Earlier — 2026-10-13 (Cursor, one business + one author JSON-LD)
 
 Surface: Cursor cloud. Branch `cursor/one-author-entity-118d` merged onto origin/main `7a17527a1`. User asked squash-merge #519 after its own CI (main-also-fail does not count), then verify production. Do not `git push` main. Nothing sent.
 

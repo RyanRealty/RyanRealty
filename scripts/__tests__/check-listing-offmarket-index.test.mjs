@@ -5,25 +5,14 @@ import { dirname, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 
 /**
- * THE BREAK TEST FOR ci:listing-offmarket-index (SITE-32).
+ * THE BREAK TEST FOR ci:listing-offmarket-index.
  *
- * The policy this gate holds is an ABSENCE — no status branch at either listing
- * metadata chokepoint — so the only proof the gate works is a tree where the
- * branch has been put back, in every plausible spelling, failing every time.
- *
- * The spellings matter more here than usual. On 2026-09-08
- * ci:listing-canonical-single passed ten runs against the very defect it was
- * written for, because that defect had been re-typed one character apart and
- * the gate held the SPELLING it had been tested against. So the noindex is
- * restored here as a direct call, as a bare property comparison against a
- * status literal, through a local const one hop away, behind a shorthand, and
- * as a hand-built robots object.
- *
- * SITE-33 REVERTED (Matt 2026-10-05, "Undo it"): the out-of-area noindex cost
- * ~36% of the Search Console impression drop since Sep 12, so geography is no
- * longer a sanctioned input either. Restoring `noindex: outOfArea !== null` in
- * any spelling fails, and so does putting a service-area filter back into the
- * listings sitemap read.
+ * Off-market listing URLs are noindex, follow (Matt 2026-10-13). The gate
+ * holds that generateMetadata calls listingIndexPolicy and passes its
+ * noindex + canonicalPath, that the helper itself noindexes Closed / Expired
+ * / Canceled / Withdrawn, and that geography still cannot reach the directive
+ * (SITE-33 reverted). Removing the helper, flipping it to index off-market,
+ * or restoring an out-of-area noindex must fail.
  *
  * The gate runs against a SANDBOX copy of the files it reads, so a deliberately
  * broken tree never touches the repo.
@@ -47,6 +36,7 @@ const LOOKUP_DAL = 'lib/data/listings/getListingDetail.ts'
 const MIDDLEWARE = 'middleware.ts'
 const UNAVAILABLE_503 = 'lib/routing/listing-unavailable.ts'
 const SITEMAP_ROWS = 'lib/data/sitemap/getListingSitemapRows.ts'
+const POLICY = 'lib/listing/listing-index-policy.ts'
 
 const FILES = [
   'scripts/check-listing-offmarket-index.mjs',
@@ -60,6 +50,7 @@ const FILES = [
   MIDDLEWARE,
   UNAVAILABLE_503,
   SITEMAP_ROWS,
+  POLICY,
 ]
 
 function reset() {
@@ -116,39 +107,21 @@ describe('ci:listing-offmarket-index', () => {
     expect(code).toBe(0)
   })
 
-  describe('a status branch at the [listingKey] chokepoint fails, however it is written', () => {
-    it('a predicate call as the directive', () => {
+  describe('the listingIndexPolicy chokepoint is load-bearing', () => {
+    it('removing the helper call fails', () => {
       reset()
-      edit(PAGE, OG_LINE, OG_LINE + '\n    noindex: isPublicOffMarketStatus(listing.status),')
+      edit(PAGE, 'listingIndexPolicy({', 'void ({')
       const { code, out } = run()
       expect(code).toBe(1)
-      expect(out).toMatch(/isPublicOffMarketStatus|Status is not an input/)
+      expect(out).toContain('must call listingIndexPolicy')
     })
 
-    it('a bare comparison against a status literal', () => {
+    it('an inline status noindex beside the helper fails', () => {
       reset()
       edit(PAGE, OG_LINE, OG_LINE + "\n    noindex: listing.status === 'Closed',")
       const { code, out } = run()
       expect(code).toBe(1)
-      expect(out).toContain('Status is not an input')
-    })
-
-    it('the status test hidden one hop away in a local const', () => {
-      reset()
-      edit(PAGE, CANONICAL_DECL, CANONICAL_DECL + '\n  const hidden = isPublicOffMarketStatus(listing.status)')
-      edit(PAGE, OG_LINE, OG_LINE + '\n    noindex: hidden,')
-      const { code, out } = run()
-      expect(code).toBe(1)
-      expect(out).toContain('generateMetadata passes `noindex: hidden`')
-    })
-
-    it('the status test hidden behind a shorthand property', () => {
-      reset()
-      edit(PAGE, CANONICAL_DECL, CANONICAL_DECL + "\n  const noindex = listing.standardStatus === 'Expired'")
-      edit(PAGE, OG_LINE, OG_LINE + '\n    noindex,')
-      const { code, out } = run()
-      expect(code).toBe(1)
-      expect(out).toContain('generateMetadata passes `noindex`')
+      expect(out).toContain('generateMetadata passes `noindex: listing.status === \'Closed\'`')
     })
 
     it('a robots object hand-built around pageMetadata', () => {
@@ -165,6 +138,14 @@ describe('ci:listing-offmarket-index', () => {
       const { code, out } = run()
       expect(code).toBe(1)
       expect(out).toContain('nofollow')
+    })
+
+    it('the helper flipped to keep off-market indexed', () => {
+      reset()
+      edit(POLICY, 'noindex: true,', 'noindex: false,')
+      const { code, out } = run()
+      expect(code).toBe(1)
+      expect(out).toMatch(/Closed with a community href|must be \{ noindex: true/)
     })
 
     it('the refusal metadata re-pointed at a status test', () => {
