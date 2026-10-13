@@ -23,13 +23,60 @@ export type AtlasLabelCandidate = PackedAtlasLabel & {
   rank: number
 }
 
+/** Average glyph width in ems. The painter and the box use the same figure. */
+const LABEL_EM = 0.58
+
+/**
+ * Word-wrap a label to `maxW` pixels. A single word longer than the line is
+ * broken, so a recorded plat name cannot paint as one line past the map edge.
+ * The page check refuses that ink: a one-line "Deschutes River Recreation
+ * Homesites…" label crossed the CMA's right margin by about 5pt.
+ */
+export function wrapLabelLines(text: string, maxW: number, fs: number): string[] {
+  const cw = Math.max(1, fs * LABEL_EM)
+  const limit = Math.max(cw * 4, maxW)
+  const words = text.split(/\s+/).filter(Boolean)
+  if (words.length === 0) return []
+  const lines: string[] = []
+  let line = ''
+  const fits = (s: string) => s.length * cw <= limit + 0.01
+  const pushWord = (word: string) => {
+    if (fits(word)) {
+      line = word
+      return
+    }
+    let rest = word
+    while (!fits(rest)) {
+      const n = Math.max(1, Math.floor(limit / cw))
+      lines.push(rest.slice(0, n))
+      rest = rest.slice(n)
+    }
+    line = rest
+  }
+  for (const word of words) {
+    if (!line) {
+      pushWord(word)
+      continue
+    }
+    const next = `${line} ${word}`
+    if (fits(next)) line = next
+    else {
+      lines.push(line)
+      line = ''
+      pushWord(word)
+    }
+  }
+  if (line) lines.push(line)
+  return lines
+}
+
 /** Approximate the painted box so packing can run without measuring the DOM. */
 export function atlasLabelBox(text: string, kind: AtlasLabelKind): { hw: number; hh: number } {
   const fs = kind === 'street' ? 9.5 : kind === 'place' ? 11 : kind === 'active' || kind === 'home' ? 13 : 12
   const maxW = kind === 'active' || kind === 'home' ? 220 : kind === 'street' ? 92 : 120
-  const content = Math.max(28, text.length * fs * 0.58)
+  const content = Math.max(28, text.length * fs * LABEL_EM)
   const w = Math.min(maxW, content)
-  const lines = content > maxW ? 2 : 1
+  const lines = Math.max(1, wrapLabelLines(text, w, fs).length)
   return { hw: w / 2 + 4, hh: (lines * fs * 1.2) / 2 + 4 }
 }
 
