@@ -1,80 +1,270 @@
 {
- "version": "2026-10-13",
+ "version": "2026-10-13b",
+ "_doc": "One factory (docs/plans/STUDIO_ONE_FACTORY.md). A technique is on the menu only when it is real: status 'ready' and, for kind 'code', a lib/studio module plus the test that holds it (ci:studio-techniques checks both exist). 'planned' techniques are ideas with a named home; video_gate refuses them in a brief. Categories feed video:check checks 15 and 16: every film needs one ready hook, scene and type technique, and its hook + scene set may not repeat any of the last five films.",
+ "categories": {
+  "hook": "How the first 1 to 2 s stops the scroll.",
+  "scene": "The picture device that carries the story (a chart drawn on, a map, pins, footage moves).",
+  "type": "How words and numbers arrive and hold.",
+  "transition": "How one beat becomes the next, and the loop seam.",
+  "cta": "The topic call to action before the end card.",
+  "sound": "Score, sonification, sync.",
+  "footage": "How real or Imagine footage is made or moved. Not a creative layer on its own.",
+  "process": "How the work is made and reviewed. Not a creative layer."
+ },
  "techniques": {
   "eased_number_reveal": {
    "name": "Eased number reveal",
    "file": "eased_number_reveal.md",
-   "source": "RULEBOOK 2b (calm eased entrances, 2026-10-09)"
+   "source": "RULEBOOK 2b (calm eased entrances, 2026-10-09)",
+   "category": "type",
+   "kind": "code",
+   "status": "planned",
+   "home": "lib/studio/motion/cues.ts (scale-in, then hold drift)"
   },
   "subframe_motion_blur": {
    "name": "Subframe motion blur",
    "file": "subframe_motion_blur.md",
-   "source": "video-skills-research 2026-10-13 #2 (claude-motion-design)"
+   "source": "video-skills-research 2026-10-13 #2 (claude-motion-design)",
+   "category": "transition",
+   "kind": "code",
+   "status": "planned",
+   "home": "lib/studio/motion/render.ts (subframes per output frame)"
   },
   "draft_then_master": {
    "name": "Draft then master",
    "file": "draft_then_master.md",
-   "source": "round4 #3 (@imagine 2026-09-18)"
+   "source": "round4 #3 (@imagine 2026-09-18)",
+   "category": "process",
+   "kind": "process",
+   "status": "ready"
   },
   "imagine_official_prompt": {
    "name": "Imagine official 30-60 word prompt",
    "file": "imagine_official_prompt.md",
-   "source": "round4 #1 (@imagine 2026-09-18)"
+   "source": "round4 #1 (@imagine 2026-09-18)",
+   "category": "footage",
+   "kind": "prompt",
+   "status": "ready"
   },
   "imagine_first_last_keyframe": {
    "name": "Imagine first/last frame plate",
    "file": "imagine_first_last_keyframe.md",
-   "source": "video-skills-research #3, round2 playbook (@imagine 2026-09-08, @XFreeze 2026-09-23)"
+   "source": "video-skills-research #3, round2 playbook (@imagine 2026-09-08, @XFreeze 2026-09-23)",
+   "category": "footage",
+   "kind": "prompt",
+   "status": "ready"
   },
   "imagine_seamless_loop": {
    "name": "Imagine seamless loop (Loop role)",
    "file": "imagine_seamless_loop.md",
-   "source": "round4 seasonal loop; @imagine 2026-09-08"
+   "source": "round4 seasonal loop; @imagine 2026-09-08",
+   "category": "footage",
+   "kind": "prompt",
+   "status": "ready"
   },
   "loop_seam_edit": {
    "name": "Loopable edit seam",
    "file": "loop_seam_edit.md",
-   "source": "Matt core recipe: loopable"
+   "source": "Matt core recipe: loopable",
+   "category": "transition",
+   "kind": "code",
+   "status": "planned",
+   "home": "lib/studio/motion/endcard.ts loop option over frame 0 (the renderer must lay frame 0 under the card first)"
   },
   "imagine_imperfection": {
    "name": "Ask for imperfection",
    "file": "imagine_imperfection.md",
-   "source": "round4 #4 (@imagine Odyssey 2026-09-29)"
+   "source": "round4 #4 (@imagine Odyssey 2026-09-29)",
+   "category": "footage",
+   "kind": "prompt",
+   "status": "ready"
   },
   "behavior_not_emotion": {
    "name": "Describe behavior, not emotion",
    "file": "behavior_not_emotion.md",
-   "source": "round4 #6 (PJ Ace 2026-09-16, Heavy Pulp)"
+   "source": "round4 #6 (PJ Ace 2026-09-16, Heavy Pulp)",
+   "category": "footage",
+   "kind": "prompt",
+   "status": "ready"
   },
   "tiktok_caption_burn": {
    "name": "TikTok burned-in captions",
    "file": "tiktok_caption_burn.md",
-   "source": "Matt rule 2026-10-13"
+   "source": "Matt rule 2026-10-13",
+   "category": "type",
+   "kind": "code",
+   "status": "ready",
+   "module": "lib/studio/voice/captions.ts",
+   "test": "lib/studio/voice/captions.test.ts"
   },
   "contact_sheet_review": {
    "name": "Contact-sheet self review",
    "file": "contact_sheet_review.md",
-   "source": "video-skills-research #5 (claude-motion)"
+   "source": "video-skills-research #5 (claude-motion)",
+   "category": "process",
+   "kind": "code",
+   "status": "ready",
+   "module": "lib/studio/qa/contact.ts",
+   "test": "lib/studio/qa/contact.test.ts"
   },
   "measured_drop_sync": {
    "name": "Measured music drop",
    "file": "measured_drop_sync.md",
-   "source": "video-skills-research #6"
+   "source": "video-skills-research #6",
+   "category": "sound",
+   "kind": "code",
+   "status": "planned",
+   "home": "lib/studio/motion/sound.ts (drop time from band energy, hero number placed on it)"
   },
   "dollar_first_hook": {
    "name": "Dollar/number-first hook",
    "file": "dollar_first_hook.md",
-   "source": "r5-meta-ad-library hook pattern #3"
+   "source": "r5-meta-ad-library hook pattern #3",
+   "category": "hook",
+   "kind": "code",
+   "status": "planned",
+   "home": "lib/studio/timeline (hook planner: a sourced figure on screen by 1.0 s)"
   },
   "question_secret_hook": {
    "name": "Question + secret hook",
    "file": "question_secret_hook.md",
-   "source": "r5 hook pattern #1"
+   "source": "r5 hook pattern #1",
+   "category": "hook",
+   "kind": "code",
+   "status": "planned",
+   "home": "lib/studio/timeline (hook planner: a question card, then the turn)"
   },
   "send_invite_hook": {
-   "name": "Send-invite hook",
+   "name": "Send-invite line",
    "file": "send_invite_hook.md",
-   "source": "video-skills-research #4 (sends per reach)"
+   "source": "video-skills-research #4 (sends per reach)",
+   "category": "cta",
+   "kind": "code",
+   "status": "planned",
+   "home": "lib/studio/timeline (payoff line before the end card)"
+  },
+  "line_draw_riding_dot": {
+   "name": "Line drawn on with a riding dot",
+   "file": "line_draw_riding_dot.md",
+   "source": "prompt-motion research 2026-10-07 (ultimaxbt-bbebf5: the dot and the line move as one)",
+   "category": "scene",
+   "kind": "code",
+   "status": "ready",
+   "module": "lib/studio/motion/chart.ts",
+   "test": "lib/studio/motion/paper.test.ts"
+  },
+  "outline_draw_zoom": {
+   "name": "Camera into a place, its outline drawn on",
+   "file": "outline_draw_zoom.md",
+   "source": "prompt-motion research 2026-10-07 (log-space zoom about the fixed point)",
+   "category": "scene",
+   "kind": "code",
+   "status": "ready",
+   "module": "lib/studio/motion/map.ts",
+   "test": "lib/studio/motion/paper.test.ts"
+  },
+  "meter_fill_verdict": {
+   "name": "Months-of-supply meter filling to its value",
+   "file": "meter_fill_verdict.md",
+   "source": "Studio motion stage 2026-10-07 (critic pass: a meter fills to its value)",
+   "category": "scene",
+   "kind": "code",
+   "status": "ready",
+   "module": "lib/studio/motion/cues.ts",
+   "test": "lib/studio/motion/cues.test.ts"
+  },
+  "true_shape_pan": {
+   "name": "True-shape pan across a real photo",
+   "file": "true_shape_pan.md",
+   "source": "Matt 2026-10-07: listing photos never squeezed",
+   "category": "footage",
+   "kind": "code",
+   "status": "ready",
+   "module": "lib/video/pan.ts",
+   "test": "lib/video/pan.test.ts"
+  },
+  "data_sonification": {
+   "name": "Each data point a note pitched by its value",
+   "file": "data_sonification.md",
+   "source": "prompt-motion research 2026-10-07 (sync points computed from the picture's curves)",
+   "category": "sound",
+   "kind": "code",
+   "status": "ready",
+   "module": "lib/studio/motion/sound.ts",
+   "test": "lib/studio/motion/sound.test.ts"
+  },
+  "composed_score": {
+   "name": "Code-composed score mastered to -14 LUFS",
+   "file": "composed_score.md",
+   "source": "prompt-motion research 2026-10-07 (cinetic: synthesised score, measured master)",
+   "category": "sound",
+   "kind": "code",
+   "status": "ready",
+   "module": "lib/studio/score/compose.ts",
+   "test": "lib/studio/score/score.test.ts"
+  },
+  "map_pins_pop": {
+   "name": "Pins pop onto a map, one per real record",
+   "file": "map_pins_pop.md",
+   "source": "Matt 2026-10-13 buyer ad: price drops and concessions on the map, then the overlap",
+   "category": "scene",
+   "kind": "code",
+   "status": "planned",
+   "home": "lib/studio/motion/pins.ts"
+  },
+  "one_dot_thread": {
+   "name": "One dot threads every scene",
+   "file": "one_dot_thread.md",
+   "source": "prompt-motion gallery ultimaxbt-bbebf5",
+   "category": "scene",
+   "kind": "code",
+   "status": "planned",
+   "home": "lib/studio/motion (a persistent dot carried across cues)"
+  },
+  "bucket_drain": {
+   "name": "Months of supply as a bucket draining",
+   "file": "bucket_drain.md",
+   "source": "prompt-motion gallery parkerrex-1a54fe",
+   "category": "scene",
+   "kind": "code",
+   "status": "planned",
+   "home": "lib/studio/motion/bucket.ts"
+  },
+  "words_become_structure": {
+   "name": "Words become structure",
+   "file": "words_become_structure.md",
+   "source": "prompt-motion gallery gdgtify-287ddf",
+   "category": "type",
+   "kind": "code",
+   "status": "planned",
+   "home": "lib/studio/motion (kinetic type that builds the scene)"
+  },
+  "collision_notes": {
+   "name": "Each sale lands as a dot and a note",
+   "file": "collision_notes.md",
+   "source": "prompt-motion gallery kamstudiolabs-447565",
+   "category": "scene",
+   "kind": "code",
+   "status": "planned",
+   "home": "lib/studio/motion + lib/studio/motion/sound.ts"
+  },
+  "milestone_timeline": {
+   "name": "A market timeline, each point a sourced figure",
+   "file": "milestone_timeline.md",
+   "source": "prompt-motion gallery kloss-xyz-fe0c31",
+   "category": "scene",
+   "kind": "code",
+   "status": "planned",
+   "home": "lib/studio/motion/timeline-scene.ts"
+  },
+  "paper_cutout_layers": {
+   "name": "Cut-paper landscape layers",
+   "file": "paper_cutout_layers.md",
+   "source": "prompt-motion gallery x4b47x-9cc84f",
+   "category": "scene",
+   "kind": "code",
+   "status": "planned",
+   "home": "lib/studio/motion (navy cut-paper layers from owned references)"
   }
  }
 }

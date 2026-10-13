@@ -174,7 +174,7 @@ export function gate(brief, timeline, cfg) {
   // Technique library
   let reg = {}; try { reg = JSON.parse(readFileSync(join(here, '..', 'techniques', 'registry.json'), 'utf8')).techniques || {}; } catch { fail('techniques/registry.json missing.'); }
   if (!Array.isArray(brief.techniques) || !brief.techniques.length) fail('Brief needs "techniques": names from techniques/registry.json.');
-  else for (const n of brief.techniques) if (!reg[n]) fail(`Technique "${n}" is not in techniques/registry.json.`);
+  else for (const n of brief.techniques) { if (!reg[n]) fail(`Technique "${n}" is not in techniques/registry.json.`); else if (reg[n].status === 'planned') fail(`Technique "${n}" is planned, not built yet (home: ${reg[n].home || 'unnamed'}). Pick a ready technique; the renderer can only run code that exists.`); }
 
   // Type specifics
   if (t.requires_sources && !(brief.sources || []).length) fail('Civic piece needs sources (meeting, date, clip id, documents).');

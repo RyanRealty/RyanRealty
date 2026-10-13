@@ -2,6 +2,7 @@
   "version": 1,
   "always": [
     "ci:studio-rules",
+    "ci:studio-techniques",
     "ci:broker-own-book",
     "ci:commit-compiles",
     "ci:count-degraded-read",

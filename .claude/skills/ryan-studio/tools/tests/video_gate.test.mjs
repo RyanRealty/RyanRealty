@@ -43,6 +43,7 @@ test('spec rules: each mandatory rule blocks', () => {
     [(b) => { b.spec_rules.end_card_sequence = ['logo', 'Call now 541.703.3095']; }, /End card must be/],
     [(b) => { b.spec_rules.topic_cta = { text: 'Get the report', placement: 'end_card' }; }, /own card/],
     [(b) => { b.techniques = ['made_up']; }, /not in techniques/],
+    [(b) => { b.techniques = ['eased_number_reveal']; }, /is planned, not built yet/],
     [(b) => { b.caption = 'Bend top team'; }, /Top team/i],
   ];
   for (const [mut, re] of cases) { const b = pb(); mut(b); assert.match(fails(b), re); }

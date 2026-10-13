@@ -83,7 +83,7 @@ export const QA_THRESHOLDS = Object.freeze({
 })
 
 /** Techniques (check 15) and the film ledger (check 16). */
-export const TECHNIQUE_CATEGORIES = ['hook', 'scene', 'type', 'transition', 'sound', 'footage', 'process'] as const
+export const TECHNIQUE_CATEGORIES = ['hook', 'scene', 'type', 'transition', 'cta', 'sound', 'footage', 'process'] as const
 export type TechniqueCategory = (typeof TECHNIQUE_CATEGORIES)[number]
 
 /** A film must have run at least one technique of each of these (check 15). */
