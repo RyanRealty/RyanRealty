@@ -1,4 +1,4 @@
-// @no-parity — buyer-answer child of the city hub. Live MLS figures, no Wave-3 mockup kit.
+// @no-parity — buyer-answer child of the city hub. Live MLS figures, no Wave-3 mockup kit. V3Breadcrumb is in BuyerAnswerPage.
 import type { Metadata } from 'next'
 import { getCityListings, getMarketPulse } from '@/lib/data'
 import { communityBuyerAnswerParams } from '@/lib/buyer-answers'
