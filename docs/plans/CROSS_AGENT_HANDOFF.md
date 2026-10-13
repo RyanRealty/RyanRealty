@@ -1,6 +1,6 @@
 # Current — 2026-10-13 (Cursor, community fold upgrade)
 
-Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688` merged latest origin/main (`6f0b60010`, includes #504 AEO and #519 JSON-LD). App change. Land path is this PR, then squash-merge after this PR's CI, then production verify. Nothing sent. No hosted SQL.
+Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688` merged latest origin/main (`9c66b81b0`, includes #504 AEO, #519 JSON-LD, #513 off-market noindex). App change. Land path is this PR, then squash-merge after this PR's CI, then production verify. Nothing sent. No hosted SQL.
 
 **What this branch does.** Every `/communities/[slug]` page server-renders above the fold: H1 `{Community} Homes for Sale`, a 2-3 sentence live leftover answer (active count, median list, 12-month median sale, median days to contract) cited `Oregon Data Share MLS, as of <date>`, then the active listing grid, a recently-sold 6-month table, existing HOA/STR/amenities, FAQ, and a Your local broker block to `/team/matthew-ryan`. Title is `{Community} Homes for Sale | {registry city}, OR | Ryan Realty`. Missing or non-positive figures drop their clause. No invented numbers.
 
@@ -9,6 +9,16 @@ Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688` merged 
 **Next.** PR #521. Wait for this PR's CI (main-also-failing checks do not count), squash-merge, `deploy:verify`, hit the live community URLs.
 
 Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` (cache / leftover HUD, not raw listings aggregations).
+
+## Earlier — 2026-10-13 (Cursor, off-market listing noindex + community door, landing)
+
+Surface: Cursor cloud. Branch `cursor/listing-offmarket-noindex-2c0f`. Landed on main via #513. Do not `git push` main. Nothing sent.
+
+**What this branch does.** Closed / Expired / Canceled / Withdrawn listing pages ship `noindex, follow`. When the home belongs to a registry community the HTML canonical is that `/communities/<slug>` page. Pending stays indexed. Active listings keep `index, follow` and print a prominent "{Name} homes for sale" door to the community page.
+
+**Verified on Brasada.** Active MLS 220229872: `index, follow`, self-canonical, door "Brasada Ranch homes for sale" → `/communities/brasada-ranch`. Closed MLS 220224479: `noindex, follow`, canonical `https://ryan-realty.com/communities/brasada-ranch`, HTTP 200.
+
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §3a.
 
 ## Earlier — 2026-10-13 (Cursor, one business + one author JSON-LD)
 

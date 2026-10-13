@@ -42,9 +42,9 @@ const PROBE_TIMEOUT_MS = 4000
 // the script bumps to the FINAL fallback (cities/bend, which always
 // resolves and gives lhci something to measure).
 const KNOWN_LISTING_URLS = [
-  '/homes-for-sale/bend/tetherow/61281-mcroberts-220218727',
   '/homes-for-sale/bend/tetherow/19345-roswell-220219277',
   '/homes-for-sale/bend/tetherow/61311-mcroberts-220220611',
+  // 220218727 went Withdrawn; off-market listings are now noindex (#513), so it fails the SEO gate.
 ]
 
 const FINAL_FALLBACK = '/cities/bend'
