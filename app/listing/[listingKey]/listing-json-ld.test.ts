@@ -22,3 +22,45 @@ describe('buildListingJsonLd freshness', () => {
     expect(n.dateModified).toBeUndefined()
   })
 })
+
+describe('buildListingJsonLd Quick facts match', () => {
+  it('emits Residence about and additionalProperty from the same facts as the visible block', () => {
+    const schemas = buildListingJsonLd({
+      ...base,
+      listing: {
+        ...listing,
+        communityName: 'Tetherow',
+        hoaMonthly: 171,
+        propertySubType: 'Single Family Residence',
+        propertyType: 'A',
+        onMarketDate: '2026-10-01',
+      },
+    })
+    const rel = schemas.find((s) => s.type === 'realEstateListing') as unknown as {
+      residenceType?: string
+      additionalProperty?: { name: string; value: string }[]
+      beds?: number
+      baths?: number
+      listPrice?: number
+    }
+    expect(rel.residenceType).toBe('SingleFamilyResidence')
+    expect(rel.beds).toBe(3)
+    expect(rel.baths).toBe(2)
+    expect(rel.listPrice).toBe(500000)
+    expect(rel.additionalProperty?.find((p) => p.name === 'Community')?.value).toBe('Tetherow')
+    expect(rel.additionalProperty?.find((p) => p.name === 'HOA')?.value).toBe('$171 per month')
+    expect(rel.additionalProperty?.find((p) => p.name === 'Status')?.value).toBe('Active')
+  })
+
+  it('withholds Residence about on a lot', () => {
+    const n = node({
+      ...listing,
+      propertyType: 'D',
+      propertySubType: 'Residential Lots',
+      beds: null,
+      baths: null,
+      sqft: null,
+    })
+    expect(n.residenceType).toBeUndefined()
+  })
+})

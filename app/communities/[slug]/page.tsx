@@ -191,7 +191,7 @@ import {
   isGeneratedHoaQuestion,
   stockRailAsk,
 } from './_v3/community-authored-faqs'
-import { communityTypeDownLinks, isCommunityAnswerSlug } from './_v3/community-type-links'
+import { communityTypeDownLinks, isCommunityLedeSlug } from './_v3/community-type-links'
 
 import {
   PLACE_NEAR_RECREATION_TRACE,
@@ -1102,7 +1102,7 @@ async function renderCommunityDetail({ params }: Props) {
     listedCount: placeHomes.length > 0 ? placeHomes.length : null,
     types: communityStockTypesFromListings(placeHomes),
   }
-  const communityLede = isCommunityAnswerSlug(slug)
+  const communityLede = isCommunityLedeSlug(slug)
     ? placeTakeaways({
         variant: 'community',
         communitySlug: slug,
@@ -1249,8 +1249,8 @@ async function renderCommunityDetail({ params }: Props) {
           </div>
         </div>
 
-        <CommunityFoldAnswer answer={foldAnswer} link={communityAnswerLink} />
-        <CommunityHomesGrid placeName={publicName} homes={placeHomes} />
+        <CommunityFoldAnswer id="answer" answer={foldAnswer} link={communityAnswerLink} />
+        <CommunityHomesGrid id="homes" placeName={publicName} homes={placeHomes} />
         {soldLedger ? (
           <V3Ledger
             id="sold"
@@ -1544,7 +1544,7 @@ async function renderCommunityDetail({ params }: Props) {
           }`}
         />
 
-        <CommunityBroker block={brokerBlock} />
+        <CommunityBroker id="broker" block={brokerBlock} />
       </main>
 
       <V3Footer columns={V3_FOOTER_COLUMNS} />

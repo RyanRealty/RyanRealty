@@ -27,6 +27,7 @@
 import { toIsoTimestamp } from '@/lib/format/date'
 import { listingShareSummary } from '@/lib/share-metadata'
 import { publishListingStatusWord } from '@/lib/listing/publish-listing-published-price'
+import { publishListingQuickFacts } from '@/lib/listing/publish-listing-quick-facts'
 import { listingCanonicalHref } from '@/lib/slug'
 import type { PlaceCrumb } from '@/lib/site/place-trail'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -68,6 +69,7 @@ export type ListingJsonLdInput = {
     sqft: number | null
     totalLivingAreaSqFt: number | null
     lotSizeSqft: number | null
+    lotSizeAcres?: number | null
     yearBuilt: number | null
     lat: number | null
     lng: number | null
@@ -76,6 +78,13 @@ export type ListingJsonLdInput = {
     onMarketDate?: string | null
     /** MLS ModificationTimestamp (ISO). Feeds RealEstateListing.dateModified. */
     modifiedAt?: string | null
+    closeDate?: string | null
+    communityName?: string | null
+    hoaMonthly?: number | null
+    associationFee?: number | null
+    associationFeeFrequency?: string | null
+    propertySubType?: string | null
+    propertyType?: string | null
   }
   photoUrls: readonly string[]
   agent: { fullName: string; email: string | null; phoneDirect: string | null } | null
@@ -104,6 +113,27 @@ export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
   const livingArea = listing.sqft ?? listing.totalLivingAreaSqFt
   const ancestors = trail.filter((crumb) => crumb.href)
   const here = street || `Listing ${listingKey}`
+  const quickFacts = publishListingQuickFacts({
+    street,
+    city: listing.city,
+    price: wholePropertyPrice,
+    beds: listing.beds,
+    baths: listing.baths,
+    sqft: livingArea,
+    lotSizeAcres: listing.lotSizeAcres,
+    lotSizeSqft: listing.lotSizeSqft,
+    yearBuilt: listing.yearBuilt,
+    communityName: listing.communityName,
+    subdivisionName: listing.subdivisionName,
+    status: listing.status,
+    onMarketDate: listing.onMarketDate,
+    closeDate: listing.closeDate,
+    hoaMonthly: listing.hoaMonthly,
+    associationFee: listing.associationFee,
+    associationFeeFrequency: listing.associationFeeFrequency,
+    propertySubType: listing.propertySubType,
+    propertyType: listing.propertyType,
+  })
 
   return [
     {
@@ -157,6 +187,12 @@ export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
       availability: listing.status ?? undefined,
       datePosted: toIsoTimestamp(listing.onMarketDate) ?? undefined,
       dateModified: toIsoTimestamp(listing.modifiedAt) ?? undefined,
+      residenceType: quickFacts?.residenceType ?? undefined,
+      additionalProperty: quickFacts
+        ? quickFacts.rows
+            .filter((row) => ['Community', 'Status', 'Days on market', 'HOA', 'Lot'].includes(row.term))
+            .map((row) => ({ name: row.term, value: row.value }))
+        : undefined,
     },
   ]
 }

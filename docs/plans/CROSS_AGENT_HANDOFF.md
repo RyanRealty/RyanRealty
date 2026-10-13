@@ -1,6 +1,6 @@
 # Current — 2026-10-13 (Cursor, community fold upgrade)
 
-Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688` from origin/main `62f92384b`. App change. Land path is this PR, then squash-merge after this PR's CI, then production verify. Nothing sent. No hosted SQL.
+Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688` merged latest origin/main (`bfddc4020`, includes #504 AEO). App change. Land path is this PR, then squash-merge after this PR's CI, then production verify. Nothing sent. No hosted SQL.
 
 **What this branch does.** Every `/communities/[slug]` page server-renders above the fold: H1 `{Community} Homes for Sale`, a 2-3 sentence live leftover answer (active count, median list, 12-month median sale, median days to contract) cited `Oregon Data Share MLS, as of <date>`, then the active listing grid, a recently-sold 6-month table, existing HOA/STR/amenities, FAQ, and a Your local broker block to `/team/matthew-ryan`. Title is `{Community} Homes for Sale | {registry city}, OR | Ryan Realty`. Missing or non-positive figures drop their clause. No invented numbers.
 
@@ -9,6 +9,28 @@ Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688` from or
 **Next.** Open the PR, wait for this PR's CI (main-also-failing checks do not count), squash-merge, `deploy:verify`, hit the live community URLs.
 
 Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` (cache / leftover HUD, not raw listings aggregations).
+
+## Earlier — 2026-10-13 (Cursor, ad copy / voiceover / caption process)
+
+Surface: Cursor cloud. Branch `cursor/ai-voiceover-scripts-8a9c`, merged latest origin/main. Docs only. Landed on main via #507. Nobody pushes main. Nothing rebuilt, nothing sent, nothing approved.
+
+**What this commit does.** Matt's 2026-10-13 ad, voiceover, and caption process now lives in the agent instruction files. New [`docs/ai-voiceover-scripts.md`](../ai-voiceover-scripts.md). AGENTS.md has the section "Ad copy, voiceover and captions" with the six locks. CLAUDE.md keeps main's Video CORE RULES (mandatory rules + `spec_rules`; video_gate is backup) and adds the ad/VO pointer on that same line. VOICE.md adds a spoken-ad note so written site/email/CMA voice stays that file.
+
+**Not this change.** Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send until Matt asks. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase. Do not run the CRM backfill.
+
+**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool` in the primary checkout. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `scripts/check-claude-canon.mjs`.
+
+## Earlier — 2026-10-13 (Cursor, inbound SMS clear + industry exclusion, PR only)
+
+Surface: Cursor cloud. Branch `cursor/clear-import-suppression-on-inbound-sms-f271` from origin/main `b802ee703`. Do not merge. Do not `git push` main. Do not apply hosted SQL. Do not run the backfill. Nothing sent.
+
+**What this branch does.** Inbound `sms_in` marks that person's non-opt-out `crm_suppressions` rows cleared (`cleared_at` / `cleared_by` / `cleared_reason`). STOP / bounce / complaint / unsubscribe / GPC stay. START still deletes only `sms` + `stop-keyword`. Durable tag `industry:contact` plus existing realtor/vendor tags and exact industry stages exclude people from every bulk, drip, list, ad, and marketing send. The 1:1 admin composer ignores the industry flag. Backfill script `scripts/crm-reclass-import-hard-stops.ts` is dry-run by default; `--apply` is for Matt after merge.
+
+**Not this change.** Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase from this session. Do not run the backfill. Do not refresh the G16 snapshot against live. Do not send.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES.
 
 ## Earlier — 2026-10-12 (Grok, ask-in-band stands when the price already does)
 

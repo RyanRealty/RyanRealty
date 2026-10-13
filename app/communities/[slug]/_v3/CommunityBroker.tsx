@@ -1,9 +1,15 @@
 import { V3_ROOT_CLASS, V3Button, V3Heading } from '@/components/site/v3'
 import type { CommunityBrokerBlock } from './community-broker'
 
-export function CommunityBroker({ block }: { block: CommunityBrokerBlock }) {
+export function CommunityBroker({
+  block,
+  id = 'broker',
+}: {
+  block: CommunityBrokerBlock
+  id?: string
+}) {
   return (
-    <section id="broker" className={`${V3_ROOT_CLASS} community-broker`} aria-labelledby="broker-heading">
+    <section id={id} className={`${V3_ROOT_CLASS} community-broker`} aria-labelledby="broker-heading">
       <V3Heading level={2} id="broker-heading">
         {block.heading}
       </V3Heading>

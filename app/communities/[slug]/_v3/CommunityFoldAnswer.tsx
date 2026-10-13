@@ -24,14 +24,16 @@ export function CommunityFoldAnswer({
   answer,
   link,
   className,
+  id = 'answer',
 }: {
   answer: CommunityFoldAnswer
   link?: { label: string; href: string } | null
   className?: string
+  id?: string
 }) {
   if (answer.sentences.length === 0 && !answer.fallback) return null
   return (
-    <div id="answer" className={cn(V3_ROOT_CLASS, 'v3-takeaways', 'v3-takeaways--lede', className)}>
+    <div id={id} className={cn(V3_ROOT_CLASS, 'v3-takeaways', 'v3-takeaways--lede', className)}>
       {answer.sentences.length > 0 ? (
         <p className="v3-takeaways__lead">
           {answer.sentences.map((sentence, i) => (
