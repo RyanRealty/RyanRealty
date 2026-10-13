@@ -131,14 +131,9 @@ export async function submitSearchAlertSignup(input: {
   const base = siteOrigin()
   const searchUrl = `${base}${buildSearchUrlFromFilters(normalized)}`
   const formId: LeadFormId = input.formId && isLeadFormId(input.formId) ? input.formId : 'search_alert'
-  const lpVariant = (
-    input.lpVariant ??
-    (formId === 'buyer_alerts_lp'
-      ? 'buy-alerts'
-      : formId === 'buyer_leverage_lp'
-        ? 'buy-leverage'
-        : 'search-alert')
-  ).slice(0, 80)
+  const fallbackVariant = formId === 'buyer_alerts_lp' ? 'buy-alerts' : formId === 'buyer_leverage_lp' ? 'buy-leverage' : null
+  const lp_variant = input.lpVariant ?? fallbackVariant ?? 'search-alert'
+  const lpVariant = lp_variant.slice(0, 80)
   const referer = (await headers()).get('referer')
   const attr = mergeListingAlertAttribution(input.lpContext, referer)
   const paidTags = resolvePaidAttributionTags({
