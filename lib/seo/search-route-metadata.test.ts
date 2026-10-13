@@ -63,7 +63,7 @@ afterAll(() => {
 beforeEach(() => {
   process.env.NEXT_PUBLIC_SITE_URL = 'https://ryan-realty.com'
   inventory.mockReset().mockResolvedValue([
-    { cityLower: 'bend', subdivisionName: 'Cambria', rows: [row('Closed', 22)] },
+    { cityLower: 'bend', subdivisionName: 'Cambria', rows: [row('Closed', 22), row('Active', 3)] },
     { cityLower: 'bend', subdivisionName: 'Boulevard', rows: [row('Closed', 40)] },
     { cityLower: 'bend', subdivisionName: 'Amundson', rows: [row('Closed', 7)] },
     { cityLower: 'bend', subdivisionName: 'Cascade Vill Mob HP', rows: [row('Closed', 93), row('Active', 6)] },

@@ -34,10 +34,10 @@ import {
   publishListingStatusWord,
 } from '@/lib/listing/publish-listing-published-price'
 import { isPublicOffMarketStatus } from '@/lib/listing-status-public'
-import { publishListingOffMarketFacts } from '@/lib/listing/publish-listing-offmarket'
-import { listingIndexPolicy } from '@/lib/listing/listing-index-policy'
+import { listingIndexPolicy, listingOffMarketAnchor } from '@/lib/listing/listing-index-policy'
 import { listingCommunityDoor } from '@/lib/listing/listing-community-door'
 import { ListingCommunityDoor } from '@/components/site/listing-detail/ListingCommunityDoor'
+import { publishListingOffMarketFacts } from '@/lib/listing/publish-listing-offmarket'
 import { ListingOffMarketFacts } from '@/components/site/listing-detail/ListingOffMarketFacts'
 import { ListingOutOfAreaNotice } from '@/components/site/listing-detail/ListingOutOfAreaNotice'
 import { buildListingOutOfAreaNotice } from '@/components/site/listing-detail/listing-out-of-area'
@@ -249,16 +249,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     status: listing.status,
     listingPath: canonicalPath,
     communityHref: listingCommunityDoor(metaPlace.curatedCommunity)?.href ?? null,
+    cityHref: metaPlace.city?.href ?? null,
+    offMarketAt: listingOffMarketAnchor({
+      closeDate: listing.closeDate,
+      modifiedAt: listing.modifiedAt,
+    }),
   })
 
-  // SITE-33 REVERTED (Matt 2026-10-05): geography is not an input. Out-of-area
-  // Active/AUC listings stay index, follow and still ship in listings.xml.
-  //
-  // SITE-32 superseded 2026-10-13: off-market pages (Closed, Expired, Canceled,
-  // Withdrawn) are noindex, follow. When the home belongs to a registry
-  // community the HTML canonical is that community page. Pending stays indexed.
-  // The page still returns 200 with SITE-21's honest state. listings.xml is
-  // still Active/AUC only. Held by listingIndexPolicy + ci:listing-offmarket-index.
+  // Off-market pages older than 90 days are noindex, follow. Canonical is the
+  // community hub, else the city hub, else the listing. Recent Closed /
+  // Expired / Withdrawn and every on-market status stay index, follow on the
+  // listing URL. Geography is not an input for on-market homes (SITE-33
+  // reverted 2026-10-05). Held by listingIndexPolicy + ci:listing-offmarket-index.
   return pageMetadata({
     title,
     description: metaDescription,
@@ -326,8 +328,9 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   const offMarket = isPublicOffMarketStatus(listing.status)
 
   // SITE-33 — this home's market, for the honesty block only. Since Matt's
-  // 2026-10-05 revert it no longer touches robots or the sitemap: out-of-area
-  // homes are index, follow and in listings.xml. Null on every Central Oregon home, so
+  // 2026-10-05 revert it no longer touches robots or the sitemap for on-market
+  // homes: out-of-area Active/AUC/Pending stay index, follow and in listings.xml.
+  // Null on every Central Oregon home, so
   // a Bend page pays nothing: the geo read below only runs when the answer is
   // already "outside our market".
   const outOfArea = outOfAreaListingPolicy(listing.city)
