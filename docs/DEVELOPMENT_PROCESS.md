@@ -187,6 +187,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 | `FORMS_REVIEW_ADMIN_MATCH_2026-08-22.md` | **live** (2026-08-22) — forms-review walk record for the TC plane. |
 | `FORMS_REVIEW_PREPARE_SEND_2026-08-22.md` | **live** (2026-08-22) — forms-review walk record for the TC plane. |
 | `FORMS_REVIEW_WALK_2026-08-22.md` | **live** (2026-08-22) — forms-review walk record for the TC plane. |
+| `STUDIO_ONE_FACTORY.md` | **live** (2026-10-13) - Matt's ruling "one factory + output check": every video renders through `lib/studio`, the render writes a manifest, and `npm run video:check` measures the finished MP4 against it before anything reaches Matt. Carries the manifest shape (`voice`, `captions`, `texts`, `numbers`) and the 14 measured checks. |
 | `seo-voice/` | **live** — top-site public program: **GOAL_10X_EXECUTABLE** (master), feature verify/improve grind + VERIFY_LOG, goal system, IA matrix, data foundation, dual-source measurement, bottlenecks, endtoend foundation log. Every file within is covered by this row. |
 | `master-plan.md`, `data-architecture-plan.md`, `continuous-improvement.md` | superseded by this canon for process authority; still on disk as orchestrate/ownership reference inputs (W13.1 keep) |
 | `money-path-contract-plan-2026-06-04.md` | open input — feed into the loop's backlog |
