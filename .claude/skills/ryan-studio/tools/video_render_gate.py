@@ -10,7 +10,9 @@ Exit 0 = PASS, 1 = FAIL (reasons printed), 2 = usage / tooling error (also block
 Needs: ffprobe, tesseract (OCR), python3 opencv + numpy.
 
 Checks (all hard-fail):
- 1 END SEQUENCE  OCR on frames from the last 4 s (every 0.25 s). Must see, in order of first
+ 1 END SEQUENCE  OCR on frames from the last 4 s (every 0.25 s), full frame plus the detected
+                 navy CTA pill (crop, 3x upscale, invert, psm 7) and navy logo artwork (2x, psm 6);
+                 full-frame OCR misses pill text and splits the logo face. Accents folded to ASCII. Must see, in order of first
                  appearance: the logo (OCR 'Realty' + 'Ryan' or the 'BEND, OREGON' lockup line), Quality, Local, Service, 'Call now',
                  541.703.3095. Any other CTA wording in that window fails ('We'll run your
                  numbers.' etc. are allowed only BEFORE the last 4 s).
@@ -29,7 +31,7 @@ Checks (all hard-fail):
                  ($ + digits, e.g. $612,000 / $1.2M / $612K) AND 'closed' or 'sold'. Consecutive
                  hits form a segment; any segment lasting <= 3.0 s (+0.5 s sampling slack) fails.
 """
-import argparse, json, re, subprocess, sys, tempfile, os
+import argparse, json, re, subprocess, sys, tempfile, os, unicodedata
 import cv2, numpy as np
 
 LOOP_MAX_DIFF = 0.20
@@ -72,6 +74,46 @@ def ocr(img):
             texts.append(r.stdout)
     return " ".join(" ".join(texts).split())
 
+NAVY_BGR = np.array([0x42, 0x27, 0x10], dtype=np.int16)  # #102742
+def pill_ocr(img):
+    """End-card CTA pill: a solid navy rounded rectangle with light text (EndCardV5 'Call now').
+    Full-frame tesseract skips text inside it, so detect the pill, crop, upscale 3x, invert, psm 7."""
+    h, w = img.shape[:2]
+    m = (np.abs(img.astype(np.int16) - NAVY_BGR).max(axis=2) <= 40).astype(np.uint8)
+    cs, _ = cv2.findContours(cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8)), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    out = []
+    for c in cs:  # outer contour only, so the light letters inside the pill count as filled
+        x, y, bw, bh = cv2.boundingRect(c); area = cv2.contourArea(c)
+        if not (0.15 * w <= bw <= 0.8 * w and 0.02 * h <= bh <= 0.12 * h): continue
+        if not (2.0 <= bw / bh <= 7.0) or area < 0.85 * bw * bh: continue
+        crop = img[y + bh // 8: y + bh - bh // 8, x + bh // 4: x + bw - bh // 4]
+        g = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+        g = cv2.resize(255 - g, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)  # light-on-navy -> dark-on-light
+        g = cv2.copyMakeBorder(g, 40, 40, 40, 40, cv2.BORDER_CONSTANT, value=255)
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "pill.png"); cv2.imwrite(p, g)
+            out.append(subprocess.run(["tesseract", p, "-", "--psm", "7"], capture_output=True, text=True).stdout)
+    return " ".join(" ".join(out).split())
+
+def logo_ocr(img):
+    """End-card logo: navy Ryan Realty artwork in the upper half. Full-frame tesseract often splits the
+    display face ('R an R ty'), so OCR the navy artwork's bounding box, upscaled 2x, psm 6."""
+    h, w = img.shape[:2]; y0, y1 = int(0.1 * h), int(0.5 * h)
+    band = img[y0:y1]
+    m = (np.abs(band.astype(np.int16) - NAVY_BGR).max(axis=2) <= 40).astype(np.uint8)
+    m = cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    ys, xs = np.nonzero(m)
+    if len(ys) < 0.003 * m.size: return ""
+    p = 20; crop = band[max(0, ys.min() - p): ys.max() + p, max(0, xs.min() - p): xs.max() + p]
+    g = cv2.resize(cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY), None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+    with tempfile.TemporaryDirectory() as d:
+        f = os.path.join(d, "logo.png"); cv2.imwrite(f, g)
+        return " ".join(subprocess.run(["tesseract", f, "-", "--psm", "6"], capture_output=True, text=True).stdout.split())
+
+def endcard_ocr(img):
+    t = " ".join(x for x in (ocr(img), pill_ocr(img), logo_ocr(img)) if x)
+    return unicodedata.normalize("NFKD", t).encode("ascii", "ignore").decode()  # 'Réalty' -> 'Realty'
+
 def norm_phone(s): return re.sub(r"[^0-9]", "", s)
 
 def run(path, vtype, silent, vo_start, vo_end):
@@ -89,8 +131,8 @@ def run(path, vtype, silent, vo_start, vo_end):
     endw = {}
     t = max(0.0, dur - 4.0)
     while t < dur - 0.01:
-        endw[round(t, 2)] = ocr(v.at(t)); t += 0.25
-    endw[round(dur, 2)] = ocr(v.last())
+        endw[round(t, 2)] = endcard_ocr(v.at(t)); t += 0.25
+    endw[round(dur, 2)] = endcard_ocr(v.last())
     alltext = list(samples.items()) + list(endw.items())
     # 1 end sequence
     def first(pred):
