@@ -21,9 +21,11 @@ import type { PriceDropFieldItem } from './drops-field-items'
 import './price-drops-field.css'
 
 export function PriceDropCatalog({
+  id = 'all-cuts',
   items,
   showCityFilter = true,
 }: {
+  id?: string
   items: readonly PriceDropFieldItem[]
   showCityFilter?: boolean
 }) {
@@ -44,7 +46,7 @@ export function PriceDropCatalog({
 
   return (
     <section
-      id="all-cuts"
+      id={id}
       className={cn(V3_ROOT_CLASS, 'pd-catalog')}
       aria-label="Every home that cut its asking price this week"
     >

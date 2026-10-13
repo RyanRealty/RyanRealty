@@ -222,7 +222,7 @@ export default async function PriceDropsRegionPage() {
                   label="This week's price cuts by how far the ask came down"
                 />
               ) : null}
-              <PriceDropCatalog items={fieldItems} />
+              <PriceDropCatalog id="all-cuts" items={fieldItems} />
             </div>
             <V3SourceLine
               className={`${V3_ROOT_CLASS} pd-source`}
