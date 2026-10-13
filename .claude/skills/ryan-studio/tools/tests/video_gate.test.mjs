@@ -26,7 +26,7 @@ test('usage error exits 2', () => {
 });
 
 import { readFileSync } from 'node:fs';
-import { gate as g } from '../video_gate.mjs';
+import { gate as g, spokenVoiceCheck } from '../video_gate.mjs';
 const load = (f) => JSON.parse(readFileSync(join(here, 'fixtures', f), 'utf8'));
 const cfg = JSON.parse(readFileSync(join(here, '..', 'video_types.json'), 'utf8'));
 const pb = () => load('pass.brief.json'), pt = load('pass.timeline.json');
@@ -57,4 +57,20 @@ test('footage rights list: Snowdrift is cleared for ads, unknown sources fail', 
   assert.doesNotMatch(fails(b), /footage_rights|not cleared/);
   const c = pb(); c.footage.push({ kind: 'stock_licensed', path: 'x.mp4', rights: 'licensed', source: 'random_vendor' });
   assert.match(fails(c), /not in rights\/footage_rights.json/);
+});
+
+const E2 = "Moving up? Okay, so here's the thing. Same ten thousand dollars. Two ways to use it. Off the price? About fifty-five dollars a month. As a seller concession, toward your rate? About one hundred sixty-nine dollars a month. Honestly, that's a big gap. We'll run your numbers.";
+test('spoken voice: E2 conversational VO passes', () => {
+  assert.deepEqual(spokenVoiceCheck(E2), []);
+});
+test('spoken voice: prose/ad script fails with clear reasons', () => {
+  const ad = "Introducing an unparalleled opportunity nestled in the heart of Bend; this residence boasts sweeping views (and more). It is the dream home that buyers have been waiting for, and it is available now for a limited time. Furthermore, homeowners will utilize the expansive kitchen, which does not compromise on quality or craftsmanship or finish or light or space in any way whatsoever for the family. Act now.";
+  const r = spokenVoiceCheck(ad).join('\n');
+  for (const re of [/contractions/, /Sentence \d+ runs/, /Ad cliche "introducing"/, /Ad cliche "dream home"/, /Ad cliche "act now"/, /Written-only word "furthermore"/, /Written-only word "utilize"/, /Semicolon/, /Parentheses/, /No "you"/]) assert.match(r, re);
+});
+test('spoken voice: the gate blocks a brief with a prose VO, and with no VO', () => {
+  const b = pb(); b.spec_rules.voiceover.script = "Furthermore, it is important to note that inventory is rising; buyers will benefit.";
+  assert.match(fails(b), /Spoken voice/);
+  const c = pb(); delete c.spec_rules.voiceover.script;
+  assert.match(fails(c), /script is required/);
 });

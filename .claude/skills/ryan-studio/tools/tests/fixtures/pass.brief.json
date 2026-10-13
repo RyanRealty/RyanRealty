@@ -69,7 +69,7 @@
    "tone": "warm_conversational",
    "engine": "elevenlabs_v3",
    "script_follows_engine_rules": true,
-   "script": "Seven in ten Bend homes... sold UNDER asking."
+   "script": "So... seven in ten Bend homes sold UNDER asking. You've got room to talk."
   },
   "loopable": true,
   "end_card_sequence": [
