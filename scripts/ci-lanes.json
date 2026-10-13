@@ -1386,6 +1386,9 @@
       "lib/data/loop/signals.ts",
       "docs/plans/COMPANY_SCOREBOARD.md"
     ],
+    "ci:video-gate-tests": [
+      ".claude/skills/ryan-studio/tools/**"
+    ],
     "ci:vm-parity": [
       "scripts/**",
       "scripts/vm-parity-baseline.json"
