@@ -1,4 +1,14 @@
-# Current — 2026-10-13 (Cursor, ad copy / voiceover / caption process)
+# Current — 2026-10-13 (Cursor, one business + one author JSON-LD)
+
+Surface: Cursor cloud. Branch `cursor/one-author-entity-118d` merged onto origin/main `7a17527a1`. User asked squash-merge #519 after its own CI (main-also-fail does not count), then verify production. Do not `git push` main. Nothing sent.
+
+**What this branch does.** Every BlogPosting author is `{@id: https://ryan-realty.com/team/matthew-ryan#person}`. Person sameAs adds verified Zillow, LinkedIn, Experience.com, YouTube, Instagram. Organization sameAs adds Zillow, Yelp, Experience.com. `/team/matthew-ryan` renders a 400-600 word bio from repo facts (LLC 2014, Bend office June 2023). Homepage title is `Ryan Realty | Bend, Oregon Real Estate Brokerage`. Realtor.com and Homes.com stay off: no verified live person URL.
+
+**Still open.** Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill. Do not send. Lead-event parse error already landed on main via #516 / #518.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES, `CLAUDE.md` §0/§2/§7.
+
+## Earlier — 2026-10-13 (Cursor, ad copy / voiceover / caption process)
 
 Surface: Cursor cloud. Branch `cursor/ai-voiceover-scripts-8a9c`, merged latest origin/main. Docs only. Do not run `npm run ship`. Do not merge. Nobody pushes main. Nothing rebuilt, nothing sent, nothing approved.
 
