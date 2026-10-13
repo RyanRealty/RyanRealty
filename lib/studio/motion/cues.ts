@@ -14,14 +14,17 @@
  *  - Entrances fade up 400ms with at most 16px of travel on the brand
  *    ease-out (design_system/ryan-realty/SKILL.md motion ladder). Type never
  *    scales and never rides the moving photo.
- *  - The logo is a closer, never an opener: the brand card is the final 2.5s.
+ *  - The logo is a closer, never an opener. A film that carries the brand
+ *    ends on Matt's locked end card (endcard.ts, locked 2026-10-08): 3.05s,
+ *    appended after the footage so it never eats the picture. The old 2.5s
+ *    wordmark card is no longer planned.
  *  - Every number on screen is one of the subject's verified figures, written
  *    exactly as the §0 trace holds it (figureLeaks is the backstop). The
  *    months-of-supply verdict comes from lib/market/classify.ts, so the words
  *    can never disagree with the number they sit beside.
- *  - A listing's closing card carries the LISTING AGENT's headshot. A listing
- *    from another brokerage gets no brand card at all: we do not put the
- *    brokerage's name on another office's listing.
+ *  - A listing's closing card carries the LISTING AGENT's headshot, then the
+ *    locked end card. A listing from another brokerage gets no brand card at
+ *    all: we do not put the brokerage's name on another office's listing.
  */
 import { MOS_BALANCED_MAX, MOS_SELLER_MAX, marketVerdict } from '@/lib/market/classify'
 import { formatDate } from '@/lib/format/date'
@@ -29,6 +32,7 @@ import { unauthorisedFigures } from '../caption'
 import { presence, progress } from './ease'
 import { CHART_DRAW_SECONDS, chartGeometry, dotAt, drawProgress, type ChartPoint, type MotionSeries } from './chart'
 import { cameraAt, mapGeometry, type MapGeometry, type MotionOutline } from './map'
+import { ENDCARD, endcardLayout, endcardState, endcardTimes, type EndcardOptions, type EndcardTimes } from './endcard'
 
 export type { MotionSeries } from './chart'
 export type { MotionOutline } from './map'
@@ -41,8 +45,10 @@ export const EXIT_SECONDS = 0.3
 export const TRAVEL_PX = 16
 /** When the first card starts. Fully in by 0.7s, inside the 1.0s rule. */
 export const LEAD_START_SECONDS = 0.3
-/** The closing card's share of the end of the film. */
+/** The listing agent's card: the last 2.5s of the footage, before the end card. */
 export const CLOSER_SECONDS = 2.5
+/** The locked end card's length (END_CARD_SPEC: Call now at 1.25s, out at 3.05s). */
+export const ENDCARD_SECONDS = ENDCARD.duration
 /** No readable card shorter than this. */
 export const MIN_CARD_SECONDS = 2.5
 /** A card past this length is a held slide, not motion. */
@@ -68,8 +74,9 @@ export type MotionSpec = {
    */
   lead: 'listing' | 'market' | 'trend' | 'map'
   /**
-   * 'brand': wordmark card. 'listing-agent': the listing agent's card, our
-   * listings only. 'none': no brand in frame; attribution lives in the caption.
+   * 'brand': the locked end card. 'listing-agent': the listing agent's card,
+   * then the locked end card, our listings only. 'none': no brand in frame;
+   * attribution lives in the caption.
    */
   closer: 'brand' | 'listing-agent' | 'none'
   /**
@@ -177,9 +184,22 @@ export type MotionCue =
       figureKeys: string[]
     })
   | (CueTiming & {
+      /**
+       * The listing agent's card. A brand closer (agent null) still renders
+       * but is no longer planned: the locked end card replaced it.
+       */
       kind: 'closer'
       cta: string
       agent: MotionAgent | null
+    })
+  | (CueTiming & {
+      /** Matt's locked end card (endcard.ts). Its own clock: options.start is this cue's start. */
+      kind: 'endcard'
+      words: [string, string, string]
+      cta: string
+      phone: string
+      options: EndcardOptions
+      times: EndcardTimes
     })
 
 export type MotionPlan = {
@@ -187,6 +207,12 @@ export type MotionPlan = {
   duration: number
   /** 'footage' lays the cards over a clip; 'paper' draws the whole film on cream. */
   surface: 'footage' | 'paper'
+  /**
+   * The footage's own length when the film runs past it (the end card is
+   * appended after the clip): the renderer holds the clip's last frame
+   * under the opaque card for the rest.
+   */
+  footageSeconds?: number
   /** What the planner chose not to draw, and why. Recorded on the draft. */
   notes: string[]
 }
@@ -218,6 +244,17 @@ export const CUE_PARTS: Record<MotionCue['kind'], Array<{ part: string; delay: n
     { part: 'card', delay: 0 },
     { part: 'mark', delay: 0.15 },
     { part: 'cta', delay: 0.3 },
+  ],
+  // The end card keeps its own clock (endcard.ts); the delays are unused.
+  endcard: [
+    { part: 'card', delay: 0 },
+    { part: 'stage', delay: 0 },
+    { part: 'logo', delay: 0 },
+    { part: 'quality', delay: 0 },
+    { part: 'local', delay: 0 },
+    { part: 'service', delay: 0 },
+    { part: 'pill', delay: 0 },
+    { part: 'phone', delay: 0 },
   ],
 }
 
@@ -258,7 +295,7 @@ function roomsLine(figures: Record<string, string>): { text: string | null; keys
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never
 /** A lead card before it is placed in time. */
-type LeadDraft = DistributiveOmit<Exclude<MotionCue, { kind: 'closer' }>, 'id' | 'start' | 'end'>
+type LeadDraft = DistributiveOmit<Exclude<MotionCue, { kind: 'closer' | 'endcard' }>, 'id' | 'start' | 'end'>
 
 /** The listing cards: address first, then what it costs and holds. */
 function listingLeads(subject: MotionSubject, slots: number): LeadDraft[] {
@@ -370,22 +407,67 @@ export function figureScope(subject: MotionSubject, figureKey: string): 'Single-
   return typeof trace?.filter === 'string' && trace.filter.includes("segment='detached'") ? 'Single-family' : null
 }
 
-/** The closing card after the last lead, or null, with the planner's note. */
-function closerFor(spec: MotionSpec, subject: MotionSubject, notes: string[]): Extract<MotionCue, { kind: 'closer' }> | null {
-  if (spec.closer === 'brand') return { kind: 'closer', id: 'closer', start: 0, end: 0, cta: CLOSER_CTA, agent: null }
-  if (spec.closer === 'none') return null
-  if (subject.agent) return { kind: 'closer', id: 'closer', start: 0, end: 0, cta: CLOSER_CTA, agent: subject.agent }
+/**
+ * How the film closes: the listing agent's card (our listings only), and
+ * whether the locked end card follows. With the planner's note when a brand
+ * card is withheld.
+ */
+function closingFor(
+  spec: MotionSpec,
+  subject: MotionSubject,
+  notes: string[],
+): { agent: Extract<MotionCue, { kind: 'closer' }> | null; endcard: boolean } {
+  if (spec.closer === 'brand') return { agent: null, endcard: true }
+  if (spec.closer === 'none') return { agent: null, endcard: false }
+  if (subject.agent) {
+    return { agent: { kind: 'closer', id: 'closer', start: 0, end: 0, cta: CLOSER_CTA, agent: subject.agent }, endcard: true }
+  }
   notes.push('No closing card: the listing agent is not a Ryan Realty broker.')
-  return null
+  return { agent: null, endcard: false }
 }
 
-/** Put the closer after the last lead and close the film on it. */
-function sealPaperFilm(leads: MotionCue[], closer: MotionCue | null, notes: string[]): MotionPlan {
+/**
+ * The first frame at or after t, so the end card's first hit is a whole frame.
+ * Rounded DOWN to the millisecond: rounding 6.06667 up to 6.067 would put the
+ * start a hair after the frame it names, and the card would land a frame late.
+ */
+function onFrame(t: number, fps = ENDCARD.fps): number {
+  return Math.floor((Math.ceil(t * fps - 1e-6) / fps) * 1000) / 1000
+}
+
+/**
+ * The locked end card starting at `start`. Throws if the card's own guards
+ * fail (endcard.ts): a broken lock never renders quietly.
+ */
+export function endcardCue(start: number, options: Omit<EndcardOptions, 'start'> = {}): Extract<MotionCue, { kind: 'endcard' }> {
+  const opts: EndcardOptions = { ...options, start }
+  const times = endcardTimes(opts)
+  const { copy } = endcardLayout(opts)
+  return { kind: 'endcard', id: 'endcard', start, end: times.out, words: copy.words, cta: copy.cta, phone: copy.phone, options: opts, times }
+}
+
+/** The end card alone on cream: the golden still and the QA render draw this. */
+export function planEndcardOnly(options: Omit<EndcardOptions, 'start'> = {}): MotionPlan {
+  const cue = endcardCue(0, options)
+  return { cues: [cue], duration: cue.end, surface: 'paper', notes: [] }
+}
+
+/** Put the agent card and the end card after the last lead and close the film on them. */
+function sealPaperFilm(
+  leads: MotionCue[],
+  closing: ReturnType<typeof closingFor>,
+  notes: string[],
+): MotionPlan {
   const lastEnd = leads.length ? Math.max(...leads.map((c) => c.end)) : 0
-  if (!closer) return { cues: leads, duration: round3(lastEnd + CUE_GAP_SECONDS), surface: 'paper', notes }
-  const start = round3(lastEnd + CUE_GAP_SECONDS)
-  const end = round3(start + CLOSER_SECONDS)
-  return { cues: [...leads, { ...closer, start, end }], duration: end, surface: 'paper', notes }
+  const cues = [...leads]
+  let at = round3(lastEnd + CUE_GAP_SECONDS)
+  if (closing.agent) {
+    cues.push({ ...closing.agent, start: at, end: round3(at + CLOSER_SECONDS) })
+    at = round3(at + CLOSER_SECONDS)
+  }
+  if (!closing.endcard) return { cues, duration: at, surface: 'paper', notes }
+  const endcard = endcardCue(onFrame(at))
+  return { cues: [...cues, endcard], duration: endcard.end, surface: 'paper', notes }
 }
 
 function round3(n: number): number {
@@ -436,7 +518,7 @@ function planTrend(spec: MotionSpec, subject: MotionSubject): MotionPlan {
   } else {
     notes.push('No meter card: the cache withheld months of supply for this place.')
   }
-  return sealPaperFilm(leads, closerFor(spec, subject, notes), notes)
+  return sealPaperFilm(leads, closingFor(spec, subject, notes), notes)
 }
 
 /**
@@ -500,7 +582,7 @@ function planMap(spec: MotionSpec, subject: MotionSubject): MotionPlan {
     drawSeconds: MAP_DRAW_SECONDS,
     figureKeys: [],
   })
-  return sealPaperFilm(leads, closerFor(spec, subject, notes), notes)
+  return sealPaperFilm(leads, closingFor(spec, subject, notes), notes)
 }
 
 /**
@@ -513,6 +595,11 @@ function planMap(spec: MotionSpec, subject: MotionSubject): MotionPlan {
  *
  * A paper film (trend, map) has no footage to fit, so `duration` is ignored
  * and the plan's own length is what its cards need.
+ *
+ * Over footage, `duration` is the clip's length. The agent's card (our
+ * listings) sits on the clip's last 2.5s; the locked end card is opaque cream,
+ * so it is appended after the clip, on the next whole frame, and the film runs
+ * 3.05s past the footage.
  */
 export function planMotion(input: {
   spec: MotionSpec
@@ -526,10 +613,11 @@ export function planMotion(input: {
   const notes: string[] = []
   const beats = (input.beats?.length ? input.beats : [0]).filter((b) => b >= 0 && b < duration)
 
-  let closer: MotionCue | null = closerFor(spec, subject, notes)
+  const closing = closingFor(spec, subject, notes)
+  let closer: MotionCue | null = closing.agent
   const closerStart = duration - CLOSER_SECONDS
   if (closer && closerStart < LEAD_START_SECONDS + MIN_CARD_SECONDS + CUE_GAP_SECONDS) {
-    notes.push(`No closing card: a ${duration.toFixed(1)}s clip has no room for one after the lead.`)
+    notes.push(`No agent card: a ${duration.toFixed(1)}s clip has no room for one after the lead.`)
     closer = null
   }
   const leadLimit = closer ? closerStart - CUE_GAP_SECONDS : duration - CUE_GAP_SECONDS
@@ -557,7 +645,10 @@ export function planMotion(input: {
   }) as MotionCue)
 
   if (closer) closer = { ...closer, start: closerStart, end: duration }
-  return { cues: closer ? [...leads, closer] : leads, duration, surface: 'footage', notes }
+  const cues = closer ? [...leads, closer] : leads
+  if (!closing.endcard || duration <= 0) return { cues, duration, surface: 'footage', notes }
+  const endcard = endcardCue(onFrame(duration))
+  return { cues: [...cues, endcard], duration: endcard.end, surface: 'footage', footageSeconds: duration, notes }
 }
 
 /** Every string a cue puts on screen. */
@@ -585,6 +676,8 @@ export function cueTexts(cue: MotionCue): string[] {
       return [cue.eyebrow, cue.line]
     case 'closer':
       return [cue.agent ? 'Listed by' : '', cue.agent?.name ?? '', cue.cta]
+    case 'endcard':
+      return [...cue.words, cue.cta, cue.phone]
   }
 }
 
@@ -596,12 +689,14 @@ export function cueTexts(cue: MotionCue): string[] {
  * from the traces, the meter's threshold constants and domain max (a ruler),
  * and a chart's scale labels (round values, a ruler). A chart's month labels pass because they
  * are part of its figures' keys ("median sale price, Sep 2026"), the way
- * every figure label is. Anything else that looks
- * like a number is a leak, and a leak kills the draft.
+ * every figure label is. The end card's words and phone number are the
+ * brokerage's own copy, locked by Matt, not a market claim. Anything else
+ * that looks like a number is a leak, and a leak kills the draft.
  */
 export function figureLeaks(plan: MotionPlan, subject: MotionSubject, rendered?: string[]): string[] {
   const authored: string[] = [subject.label, subject.heading?.line ?? '', subject.heading?.eyebrow ?? '', CLOSER_CTA]
   for (const cue of plan.cues) {
+    if (cue.kind === 'endcard') authored.push(...cue.words, cue.cta, cue.phone)
     if (cue.kind === 'meter') {
       authored.push(String(cue.thresholds[0]), String(cue.thresholds[1]), String(Math.round(cue.domainMax)))
     }
@@ -637,6 +732,40 @@ export type ElementState = {
   fill?: number
   locator?: number
   context?: number
+  /** End card: horizontal translation (px), scale about the element's own origin, and the loop iris radius (null: no clip). */
+  x?: number
+  scale?: number
+  clip?: number | null
+}
+
+/**
+ * The end card's parts at frame t, from its own pure clock (endcard.ts). Every
+ * length is authored at 1080 wide and scaled with the frame.
+ */
+function endcardFrame(cue: Extract<MotionCue, { kind: 'endcard' }>, t: number, scale: number): ElementState[] {
+  const s = endcardState(t, cue.options)
+  const px = (n: number) => Math.round(n * scale * 100) / 100 + 0
+  const pose = (part: string, p: { x: number; y: number; scale: number; opacity: number }): ElementState => ({
+    id: `${cue.id}-${part}`,
+    opacity: p.opacity,
+    y: px(p.y),
+    x: px(p.x),
+    scale: p.scale,
+  })
+  // The cream field cuts in and carries the loop's iris; it never scales, so
+  // over footage it always covers the frame. The stage inside it breathes.
+  const card: ElementState = { id: `${cue.id}-card`, opacity: s.card.opacity, y: 0 }
+  if (cue.options.loop) card.clip = s.card.iris == null ? null : px(s.card.iris)
+  return [
+    card,
+    { id: `${cue.id}-stage`, opacity: s.card.opacity, y: 0, x: 0, scale: s.card.scale },
+    pose('logo', s.logo),
+    pose('quality', s.quality),
+    pose('local', s.local),
+    pose('service', s.service),
+    pose('pill', s.pill),
+    pose('phone', s.phone),
+  ]
 }
 
 
@@ -648,6 +777,10 @@ export type ElementState = {
 export function frameState(plan: MotionPlan, t: number, scale = 1): ElementState[] {
   const out: ElementState[] = []
   for (const cue of plan.cues) {
+    if (cue.kind === 'endcard') {
+      out.push(...endcardFrame(cue, t, scale))
+      continue
+    }
     const exit = cue.kind === 'closer' ? 0 : EXIT_SECONDS
     for (const { part, delay } of CUE_PARTS[cue.kind]) {
       // A paper film's picture (the chart's axis, the map) is up on frame 0:
@@ -707,6 +840,11 @@ export function frameState(plan: MotionPlan, t: number, scale = 1): ElementState
  */
 export function stillTimes(plan: MotionPlan): Array<{ cueId: string; t: number }> {
   return plan.cues.map((cue) => {
+    // The end card's still is the frame the golden is taken at (endcard.golden.png,
+    // STUDIO_ONE_FACTORY check 12): half a second after Call now, everything in.
+    if (cue.kind === 'endcard') {
+      return { cueId: cue.id, t: Math.round(Math.min(cue.times.call + 0.5, cue.end - 1 / ENDCARD.fps) * 1000) / 1000 }
+    }
     // A chart or map still is taken once its picture has finished: the line
     // landed with both labels in, the outline drawn and filled.
     const settled =

@@ -13,7 +13,10 @@
  *                       548-byte patch face (amboqia-i-patch.woff2)
  *   Azo Sans Medium     public/fonts, eyebrows only
  *   wordmark            public/brand/logo-horizontal-navy.png (navy ink,
- *                       transparent), never re-typeset
+ *                       transparent), never re-typeset: the agent card
+ *   endcardLogo         public/brand/wordmark-stacked-navy.png, the real stacked
+ *                       logo the locked end card carries (byte-identical to
+ *                       design_system/ryan-realty/assets/brand/logo-blue.png)
  *
  * Broker headshots live under public/images, which every function excludes,
  * so on Vercel they come from the live site instead of the disk.
@@ -30,6 +33,7 @@ export const MOTION_ASSET_FILES = {
   geist500: 'node_modules/geist/dist/fonts/geist-sans/Geist-Medium.woff2',
   geist600: 'node_modules/geist/dist/fonts/geist-sans/Geist-SemiBold.woff2',
   wordmark: 'public/brand/logo-horizontal-navy.png',
+  endcardLogo: 'public/brand/wordmark-stacked-navy.png',
 } as const
 
 export type MotionFonts = Record<'amboqia' | 'amboqiaI' | 'azo' | 'geist400' | 'geist500' | 'geist600', string>
@@ -37,6 +41,8 @@ export type MotionFonts = Record<'amboqia' | 'amboqiaI' | 'azo' | 'geist400' | '
 export type MotionAssets = {
   fonts: MotionFonts
   wordmark: string
+  /** The stacked logo at the top of the locked end card. */
+  endcardLogo: string
   /** Data URI per site-relative headshot path the plan asked for. */
   headshots: Record<string, string>
 }
@@ -78,7 +84,7 @@ async function dataUri(file: string): Promise<string> {
   return `data:${mimeFor(file)};base64,${bytes.toString('base64')}`
 }
 
-let fontsAndMark: Promise<{ fonts: MotionFonts; wordmark: string }> | null = null
+let fontsAndMark: Promise<{ fonts: MotionFonts; wordmark: string; endcardLogo: string }> | null = null
 
 /** Load everything a plan needs. Fonts and the wordmark load once per instance. */
 export async function loadMotionAssets(headshotPaths: string[] = []): Promise<MotionAssets> {
@@ -92,9 +98,11 @@ export async function loadMotionAssets(headshotPaths: string[] = []): Promise<Mo
       dataUri(f.geist500),
       dataUri(f.geist600),
       dataUri(f.wordmark),
-    ]).then(([amboqia, amboqiaI, azo, geist400, geist500, geist600, wordmark]) => ({
+      dataUri(f.endcardLogo),
+    ]).then(([amboqia, amboqiaI, azo, geist400, geist500, geist600, wordmark, endcardLogo]) => ({
       fonts: { amboqia, amboqiaI, azo, geist400, geist500, geist600 },
       wordmark,
+      endcardLogo,
     }))
     // A failed load should be retried next time, not cached forever.
     fontsAndMark.catch(() => {

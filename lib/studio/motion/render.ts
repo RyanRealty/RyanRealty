@@ -57,6 +57,12 @@ function runFfmpeg(bin: string, args: string[], timeoutMs: number): Promise<{ co
   })
 }
 
+/** A PNG's IHDR colour type: 2 is RGB, 6 is RGBA. -1 when the bytes are not a PNG. */
+export function pngColourType(png: Buffer): number {
+  const isPng = png.length > 25 && png.readUInt32BE(0) === 0x89504e47 && png.toString('ascii', 12, 16) === 'IHDR'
+  return isPng ? png[25] : -1
+}
+
 /** Read duration and frame size from ffmpeg's own banner. */
 export function parseProbe(stderr: string): VideoProbe | null {
   const d = stderr.match(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/)
@@ -80,10 +86,27 @@ export async function probeVideo(ffmpeg: string, path: string): Promise<VideoPro
  * cropped to fill the frame; the overlay is converted to bt709 limited range
  * before the blend, because overlay blends in YUV and would otherwise drag the
  * whole graph through the bt601 default.
+ *
+ * `holdUntil` > 0 makes the picture last that long, holding the clip's last
+ * frame past its end: the locked end card is appended after the footage, and
+ * overlay ends with its main input, so the picture under the (opaque) card
+ * has to outlast the clip. The clip is laid on a base of that length with
+ * overlay's eof_action=repeat, which every ffmpeg the Studio runs has (the
+ * bundled 4.1 has no tpad). The base is never seen: the clip covers it, then
+ * its last frame does.
  */
-export function overlayGraph(width: number, height: number, fps: number): string {
+export function overlayGraph(width: number, height: number, fps: number, holdUntil = 0): string {
+  const clip = `[1:v]fps=${fps},scale=${width}:${height}:force_original_aspect_ratio=increase:flags=lanczos,crop=${width}:${height},setsar=1,format=yuv420p`
+  const bg =
+    holdUntil > 0
+      ? [
+          `color=c=black:s=${width}x${height}:r=${fps}:d=${holdUntil.toFixed(3)},setsar=1,format=yuv420p[base]`,
+          `${clip}[clip]`,
+          '[base][clip]overlay=0:0:format=auto:eof_action=repeat[bg]',
+        ]
+      : [`${clip}[bg]`]
   return [
-    `[1:v]fps=${fps},scale=${width}:${height}:force_original_aspect_ratio=increase:flags=lanczos,crop=${width}:${height},setsar=1,format=yuv420p[bg]`,
+    ...bg,
     `[0:v]setsar=1,format=rgba,scale=in_range=pc:out_color_matrix=bt709:out_range=tv,format=yuva420p[fg]`,
     // eof_action=pass and no shortest: an overlay that ends early never cuts the film.
     `[bg][fg]overlay=0:0:format=auto:eof_action=pass,format=yuv420p[v]`,
@@ -193,12 +216,16 @@ export async function renderMotion(input: RenderMotionInput): Promise<RenderMoti
     if (input.basePath) inputs.push('-i', input.basePath)
     const audioIndex = input.audioPath ? (input.basePath ? 2 : 1) : null
     if (input.audioPath) inputs.push('-i', input.audioPath)
+    // The film runs past the clip when the end card is appended: hold the
+    // clip's last frame to the film's end, plus a second of margin that the
+    // -t below cuts off.
+    const holds = plan.footageSeconds != null && plan.duration > plan.footageSeconds
     const ff = spawn(
       input.ffmpeg,
       [
         '-y', '-hide_banner', '-loglevel', 'error',
         ...inputs,
-        '-filter_complex', input.basePath ? overlayGraph(width, height, fps) : paperGraph(),
+        '-filter_complex', input.basePath ? overlayGraph(width, height, fps, holds ? frames / fps + 1 : 0) : paperGraph(),
         '-map', '[v]',
         ...(audioIndex != null ? ['-map', `${audioIndex}:a`, ...SCORE_ENCODE_ARGS] : ['-an']),
         ...MOTION_ENCODE_ARGS,
@@ -240,6 +267,7 @@ export async function renderMotion(input: RenderMotionInput): Promise<RenderMoti
     let previous = ''
     let png: Buffer | null = null
     let captured = 0
+    let firstColourType: number | null = null
     for (let i = 0; i < frames; i++) {
       if (ffBroken || ffClosed) break
       const states = frameState(plan, i / fps, scale)
@@ -254,6 +282,17 @@ export async function renderMotion(input: RenderMotionInput): Promise<RenderMoti
         png = Buffer.from(shot.data, 'base64')
         previous = signature
         captured++
+        // Chromium writes an opaque page as RGB and a see-through one as RGBA.
+        // A change mid-film makes ffmpeg rebuild its filter graph and drop
+        // frames, so it is refused here rather than shipped as black frames.
+        const colourType = pngColourType(png)
+        firstColourType ??= colourType
+        if (colourType !== firstColourType) {
+          ff.kill('SIGKILL')
+          throw new Error(
+            `Frame ${i} changed the overlay's PNG colour type (${firstColourType} to ${colourType}); ffmpeg would rebuild its graph mid-film`,
+          )
+        }
       }
       if (stillFrames.has(i)) {
         const visible = (await page.evaluate(() =>

@@ -187,16 +187,18 @@ describe('map geometry', () => {
 })
 
 describe('planMotion: paper films', () => {
-  it('a trend film: the line, the meter, the closer, on paper, at its own length', () => {
+  it('a trend film: the line, the meter, the locked end card, on paper, at its own length', () => {
     const plan = planMotion({ spec: { lead: 'trend', closer: 'brand' }, subject: trendSubject(), duration: 6 })
     expect(plan.surface).toBe('paper')
-    expect(plan.cues.map((c) => c.kind)).toEqual(['chart', 'meter', 'closer'])
+    expect(plan.cues.map((c) => c.kind)).toEqual(['chart', 'meter', 'endcard'])
     const [chart] = byKind(plan, 'chart')
     expect(chart.start).toBe(0)
     expect(chart.drawStart).toBe(CHART_DRAW_START)
     expect(chart.first.text).toBe('$650,000')
     expect(chart.last.text).toBe('$734,000')
-    expect(plan.duration).toBe(byKind(plan, 'closer')[0].end)
+    const [endcard] = byKind(plan, 'endcard')
+    expect(plan.duration).toBe(endcard.end)
+    expect(endcard.end - endcard.start).toBeCloseTo(3.05, 6)
     expect(plan.duration).toBeGreaterThan(12)
     expect(figureLeaks(plan, trendSubject())).toEqual([])
     expect(cueTexts(chart)).toEqual(expect.arrayContaining(['Oct 2024', 'Sep 2026', 'Median sale price']))
@@ -204,7 +206,7 @@ describe('planMotion: paper films', () => {
 
   it('a market whose months of supply was withheld has no meter card', () => {
     const plan = planMotion({ spec: { lead: 'trend', closer: 'brand' }, subject: trendSubject(false), duration: 6 })
-    expect(plan.cues.map((c) => c.kind)).toEqual(['chart', 'closer'])
+    expect(plan.cues.map((c) => c.kind)).toEqual(['chart', 'endcard'])
     expect(plan.notes.join(' ')).toContain('withheld months of supply')
   })
 
@@ -253,9 +255,9 @@ describe('planMotion: paper films', () => {
     expect(figureLeaks(plan, trendSubject(), ['$650,000', '$712,000'])).toEqual(['$712,000'])
   })
 
-  it('a map film: the map, the place figures under it, the closer', () => {
+  it('a map film: the map, the place figures under it, the locked end card', () => {
     const plan = planMotion({ spec: { lead: 'map', closer: 'brand' }, subject: mapSubject(), duration: 6 })
-    expect(plan.cues.map((c) => c.kind)).toEqual(['map', 'figure', 'closer'])
+    expect(plan.cues.map((c) => c.kind)).toEqual(['map', 'figure', 'endcard'])
     const [figure] = byKind(plan, 'figure')
     expect(figure.value).toBe('23')
     expect(figure.detail).toBe('Median list price $1,150,000')
@@ -319,6 +321,7 @@ describe('buildMotionPage: paper', () => {
   const assets: MotionAssets = {
     fonts: { amboqia: 'data:a', amboqiaI: 'data:a', azo: 'data:a', geist400: 'data:a', geist500: 'data:a', geist600: 'data:a' },
     wordmark: 'data:image/png;base64,AAAA',
+    endcardLogo: 'data:image/png;base64,CCCC',
     headshots: {},
   }
 
@@ -326,6 +329,10 @@ describe('buildMotionPage: paper', () => {
     const plan = planMotion({ spec: { lead: 'trend', closer: 'brand' }, subject: trendSubject(), duration: 6 })
     const html = buildMotionPage({ plan, width: 1080, height: 1920, assets })
     expect(html).toContain('<body class="paper">')
+    // On paper the page is opaque throughout, so the field needs no see-through edge.
+    expect(html).toContain('<section class="endcard" id="endcard-card">')
+    expect(html).toMatch(/\.endcard\{[^}]*\}/)
+    expect(html.match(/\.endcard\{[^}]*\}/)![0]).not.toContain('mask-image')
     expect(html).toContain('id="lead1-reveal"')
     expect(html).toContain('id="lead1-dot"')
     expect(html).toContain('>Oct 2024<')

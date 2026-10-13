@@ -102,11 +102,15 @@ export type ComposeMotionDeps = {
  * one colour profile, no font hinting, no LCD text, and no GPU compositing,
  * whose software path can leave stale raster behind a moving card.
  */
+export const MOTION_CHROME_ARGS = [
+  '--force-color-profile=srgb',
+  '--font-render-hinting=none',
+  '--disable-lcd-text',
+  '--disable-gpu-compositing',
+] as const
+
 function launchBrowser(viewport: { width: number; height: number }) {
-  return launchChromium({
-    viewport,
-    args: ['--force-color-profile=srgb', '--font-render-hinting=none', '--disable-lcd-text', '--disable-gpu-compositing'],
-  })
+  return launchChromium({ viewport, args: [...MOTION_CHROME_ARGS] })
 }
 
 const defaultDeps: ComposeMotionDeps = {

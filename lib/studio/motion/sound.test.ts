@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CUE_PARTS, ENTER_SECONDS, planMotion, type MotionSubject } from './cues'
+import { ENTER_SECONDS, planMotion, type MotionSubject } from './cues'
 import { scoreFor } from './sound'
 
 const market: MotionSubject = {
@@ -14,21 +14,43 @@ describe('scoreFor', () => {
     expect(scoreFor(plan, { lead: 'market', closer: 'brand' }, market, 'x')).toBeNull()
   })
 
-  it('reads every sound off the plan: card in, marker lands, the mark resolves', () => {
+  it('reads every sound off the plan: card in, marker lands, each end card word, the call resolves', () => {
     const spec = { lead: 'market' as const, closer: 'brand' as const, sound: 'measured' as const }
     const plan = planMotion({ spec, subject: market, duration: 6 })
     const score = scoreFor(plan, spec, market, 'draft-9')!
-    const [meter, closer] = plan.cues
-    expect(score).toMatchObject({ duration: 6, seed: 'draft-9', mood: 'measured' })
+    const [meter, endcard] = plan.cues
+    if (endcard.kind !== 'endcard') throw new Error('no end card')
+    expect(score).toMatchObject({ duration: 9.05, seed: 'draft-9', mood: 'measured' })
     expect(score.sections).toEqual([
-      { start: 0, end: closer.start },
-      { start: closer.start, end: 6 },
+      { start: 0, end: endcard.start },
+      { start: endcard.start, end: 9.05 },
     ])
     expect(score.events).toEqual([
       { kind: 'enter', t: meter.start, weight: 1 },
       { kind: 'land', t: Math.round((meter.start + ENTER_SECONDS + 0.6) * 1000) / 1000, weight: 0.7 },
-      { kind: 'lockup', t: closer.start + CUE_PARTS.closer.find((p) => p.part === 'mark')!.delay },
+      { kind: 'enter', t: endcard.times.quality, weight: 0.8 },
+      { kind: 'enter', t: endcard.times.local, weight: 0.7 },
+      { kind: 'enter', t: endcard.times.service, weight: 0.7 },
+      { kind: 'lockup', t: endcard.times.call },
     ])
+  })
+
+  it("an agent's card before the end card is an entrance; the end card keeps the lockup", () => {
+    const listing: MotionSubject = {
+      label: '61234 Elm St, Bend',
+      heading: { eyebrow: 'Bend', line: '61234 Elm St' },
+      figures: { 'list price': '$1,250,000' },
+      citations: [{ figure: '$1,250,000' }],
+      agent: { name: 'Matt Ryan', headshotPath: null },
+    }
+    const spec = { lead: 'listing' as const, closer: 'listing-agent' as const, sound: 'calm' as const }
+    const plan = planMotion({ spec, subject: listing, duration: 6 })
+    const score = scoreFor(plan, spec, listing, 'x')!
+    const closer = plan.cues.find((c) => c.kind === 'closer')!
+    const endcard = plan.cues.find((c) => c.kind === 'endcard')
+    if (endcard?.kind !== 'endcard') throw new Error('no end card')
+    expect(score.events.filter((e) => e.kind === 'lockup')).toEqual([{ kind: 'lockup', t: endcard.times.call }])
+    expect(score.events).toContainEqual({ kind: 'enter', t: closer.start, weight: 1 })
   })
 
   it('a trend film plays one note per plotted month, in time order, carrying its value', () => {
