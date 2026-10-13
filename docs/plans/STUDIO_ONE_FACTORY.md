@@ -17,6 +17,28 @@ renderer cannot be skipped; a check that measures the file cannot be talked past
 This supersedes RULEBOOK conflict C10 (the box HTML + `render.mjs` pipeline as "the real
 pipeline"). CLAUDE.md §4 already said one factory; this makes it the only path.
 
+## Two layers (Matt 2026-10-13)
+
+"It shouldn't matter where the video is built ... The code needs to be the same." and "I
+don't want every video to look the same, but it has to have the same underlying elements
+... We're not looking at the same regurgitated content every time."
+
+- **Where:** anywhere the repo runs (Matt's Mac mini or a cloud session). The factory is
+  this code, not a machine. Same code, same check, same result.
+- **The spine, identical in every video and measured** (checks 1 to 13 below): hook by
+  the type's limit, length window, every hold at least 2.5 s, nothing frozen, the female
+  voice with captions synced to it, sourced numbers, loudness, safe area, the loop, the
+  locked end card, navy and cream, our fonts, the logo only on the end card.
+- **The creative layer, different in every video:** every technique in
+  `.claude/skills/ryan-studio/techniques/registry.json` names the `lib/studio` module that
+  implements it and the test that holds it; a technique with no code is not on the menu
+  (a gate holds the registry to the code). Each brief names a one-sentence idea, the
+  feeling (creative-brain pipeline), and at least one hook device, one scene device and
+  one type treatment. The renderer records the techniques it actually ran in the
+  manifest (`techniques`), and the check fails a brief technique that never ran (check
+  15) and a film whose hook device and scene set repeat any of the last five films
+  (check 16, the repeat check). The reviewer (check 14) judges taste on top.
+
 ## The path, every video
 
 1. Brief + timeline, written to the ryan-studio schema (`.claude/skills/ryan-studio/templates/brief.schema.json`). `video_gate.mjs` still runs first, on the paperwork.
@@ -77,6 +99,8 @@ pipeline"). CLAUDE.md §4 already said one factory; this makes it the only path.
 | 12 | End card | manifest times vs END_CARD_SPEC; the frame at `endcard.call + 0.5 s` vs the locked golden still (SSIM) | missing, out of order, words over ~1.2 s, call hold under 1.5 s, SSIM below 0.92 |
 | 13 | Loop | SSIM of the last frame vs frame 0 | below 0.85 |
 | 14 | Review (`--final` only) | `<name>.review.json`: `sha256`, `reviewer`, `watched`, `listened`, `verdict` | missing, wrong hash, same author as the build, verdict not `ship` |
+| 15 | Techniques ran | brief `techniques` vs manifest `techniques` (what the renderer executed) | a brief technique the renderer never ran; fewer than one hook device, one scene device and one type treatment |
+| 16 | Not a repeat | this manifest vs the last five manifests in the film ledger | same hook device and the same scene set as any of the last five |
 
 Thresholds live in one place (`lib/studio/qa/thresholds.ts`) so a change is one line and a
 test. A check that cannot be measured fails, never passes by default.
