@@ -766,16 +766,27 @@ describe('slug search page: guest save + reachable map-move (2026-06-09)', () =>
   it('renders SearchAlertCapture for the guest email -> CRM buyer-lead path', () => {
     expect(slug).toMatch(/import \{ SearchAlertCapture \}/)
     expect(slug).toMatch(/<SearchAlertCapture/)
-    // It must be told the signed-in state (guests only) and the path-derived city.
-    expect(slug).toMatch(/signedIn=\{!!session\?\.user\}/)
+    // Signed-out shell on SSR so the HTML is visitor-independent; the capture
+    // hydrates signed-in after paint (useViewerListingState).
+    expect(slug).toMatch(/signedIn=\{false\}/)
     expect(slug).toMatch(/defaultFilters=\{guestAlertFilters\}/)
   })
 
-  it('keeps the signed-in save-search button (now inside the shared SearchFilterBar)', () => {
+  it('keeps the save-search button (now inside the shared SearchFilterBar)', () => {
     expect(slug).toMatch(/<SearchFilterBar/)
-    expect(slug).toMatch(/signedIn=\{!!session\?\.user\}/)
+    expect(slug).toMatch(/signedIn=\{false\}/)
     const bar = readFileSync(resolve(__dirname, '../../SearchFilterBar.tsx'), 'utf8')
-    expect(bar).toMatch(/<SaveSearchButton user=\{!!props\.signedIn\} pathContext=\{props\.pathContext\}/)
+    expect(bar).toMatch(/<SaveSearchButton user=\{viewerState\.signedIn\} pathContext=\{props\.pathContext\}/)
+  })
+
+  it('does not read cookies on the public search SSR path', () => {
+    const index = readSrc('app/search/page.tsx')
+    expect(slug).not.toMatch(/getSession\(/)
+    expect(index).not.toMatch(/getSession\(/)
+    expect(slug).not.toMatch(/getSavedListingKeys\(/)
+    expect(index).not.toMatch(/getSavedListingKeys\(/)
+    expect(slug).not.toMatch(/getLikedListingKeys\(/)
+    expect(index).not.toMatch(/getLikedListingKeys\(/)
   })
 
   it('SaveSearchButton stays mid-browse for guests and signed-in (B2)', () => {
@@ -842,6 +853,7 @@ describe('SearchAlertCapture is path-aware (slug-page filters)', () => {
   it('accepts path-derived defaults so slug-page filters are captured', () => {
     expect(src).toMatch(/defaultSubdivision/)
     expect(src).toMatch(/defaultFilters/)
+    expect(src).toMatch(/useViewerListingState/)
   })
 
   it('supports layout-safe map/split inline variant (B1 residual)', () => {

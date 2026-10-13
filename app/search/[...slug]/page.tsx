@@ -5,7 +5,6 @@ import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { getListingsWithAdvanced } from '../../actions/listings'
 import { getRecentPriceDropEntries, type ListingCardPriceDrop } from '@/lib/data'
-import { getSession } from '../../actions/auth'
 import { SearchAlertCapture } from '../../../components/search/SearchAlertCapture'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
 import { cityEntityKey, homesForSalePath, listingTileHref } from '../../../lib/slug'
@@ -39,9 +38,6 @@ import { getResortEntityKeys } from '../../actions/subdivision-flags'
 import { getSubdivisionTabContent } from '../../actions/subdivision-descriptions'
 import TrackSearchView from '../../../components/tracking/TrackSearchView'
 import { ResultsStamp } from '@/components/search/ResultsStamp.client'
-import { getSavedListingKeys } from '../../actions/saved-listings'
-import { getLikedListingKeys } from '../../actions/likes'
-import { getBuyingPreferences } from '../../actions/buying-preferences'
 import { shouldNoIndexSearchVariant } from '../../../lib/seo-routing'
 import { decodeMapPolygon } from '@/lib/map-polygon'
 import { generateStaticParams as buildSearchStaticParams, IS_PRODUCTION_BUILD } from './search-static'
@@ -257,15 +253,10 @@ export default async function SearchPage({
         : null
     // No shared price-drop read here: the split view prints dated drops from
     // its own per-card read (getViewportListings, attachListingCardExtras).
-    const session = await withTimeout(getSession(), null, 600)
-    const [savedKeys, likedKeys, prefs] =
-      session?.user
-        ? await Promise.all([
-            withTimeout(getSavedListingKeys(), [], 600),
-            withTimeout(getLikedListingKeys(), [], 600),
-            withTimeout(getBuyingPreferences(), null, 600),
-          ])
-        : ([[], [] as string[], null] as [string[], string[], Awaited<ReturnType<typeof getBuyingPreferences>>])
+    // Saved / liked / signed-in hydrate after paint (useViewerListingState).
+    // A cookies() read here would make every city browse dynamic and defeat
+    // the s-maxage=60 CDN header (production TTFB on /homes-for-sale/bend
+    // was ~2.0 s).
     return renderMapSplitView({
       sp,
       slug,
@@ -285,10 +276,10 @@ export default async function SearchPage({
             : placeHomesForSaleHeading(displayName)),
       searchPagePath,
       searchBreadcrumbItems,
-      savedKeys,
-      likedKeys,
-      session,
-      prefs,
+      savedKeys: [],
+      likedKeys: [],
+      session: null,
+      prefs: null,
       effectiveStatusFilter,
       initialPolygon,
       presetChips,
@@ -299,9 +290,10 @@ export default async function SearchPage({
 
   // Fetch the independent data the clean results page renders in one parallel batch:
   //   listings (grid + pagination), recent price drops (the "Price drop"
-  //   badge), session (save-search), resort entity keys (JSON-LD + breadcrumb
-  //   resort flag).
-  const [listingsResult, priceDrops, session, resortEntityKeys, citySfrTiles] = await Promise.all([
+  //   badge), resort entity keys (JSON-LD + breadcrumb resort flag).
+  // Signed-in / saved / liked hydrate on the client so this HTML stays
+  // visitor-independent and the CDN can hold it.
+  const [listingsResult, priceDrops, resortEntityKeys, citySfrTiles] = await Promise.all([
     // Route through getListingsWithAdvanced: it serves the common city + base-
     // filter case from the slim, resilient-cached listing_tile_mv (sub-second,
     // with an EXACT count so pagination/header stay right) and only falls back
@@ -322,7 +314,6 @@ export default async function SearchPage({
           getRecentPriceDropEntries(30).then((entries) => new Map(entries)),
           new Map<string, ListingCardPriceDrop>(),
         ),
-    withTimeout(getSession(), null, 600),
     withTimeout(getResortEntityKeys(), new Set<string>()),
     isPlainCityBrowse && city ? loadCitySfrTilesForSearch(city) : Promise.resolve([]),
   ])
@@ -500,7 +491,7 @@ export default async function SearchPage({
           most city/preset links land on, not just the bare /homes-for-sale page. */}
       {(city || hasFilterOnly) && (
         <SearchAlertCapture
-          signedIn={!!session?.user}
+          signedIn={false}
           defaultCity={filterCity ?? ''}
           defaultSubdivision={filterSubdivision ?? ''}
           defaultFilters={guestAlertFilters}
@@ -619,7 +610,7 @@ export default async function SearchPage({
           <SearchFilterBar
             basePath={searchPagePath}
             presetChips={presetChips}
-            signedIn={!!session?.user}
+            signedIn={false}
             pathContext={{ ...resolved, city, citySlug: slug[0] }}
             minPrice={numStr(filterOpts.minPrice)}
             maxPrice={numStr(filterOpts.maxPrice)}
