@@ -61,7 +61,7 @@ const ALERTS_DOOR = 'idx-registration'
  * confirmation mail, no browser stitch, no GA4 lead.
  */
 
-export type SearchAlertResult = { ok: true } | { ok: false; error: string }
+export type SearchAlertResult = { ok: true; counted: boolean } | { ok: false; error: string }
 
 export async function submitSearchAlertSignup(input: {
   email: string
@@ -79,7 +79,7 @@ export async function submitSearchAlertSignup(input: {
 }): Promise<SearchAlertResult> {
   // 1. Honeypot. A filled hidden field means a bot. Pretend success, do nothing.
   if (typeof input.company === 'string' && input.company.trim() !== '') {
-    return { ok: true }
+    return { ok: true, counted: false }
   }
 
   // 2. Per-IP rate limit. Server actions bypass the middleware /api limiter, so
@@ -305,7 +305,7 @@ export async function submitSearchAlertSignup(input: {
     }
   }
 
-  return { ok: true }
+  return { ok: true, counted: !suspect }
 }
 
 /**
@@ -330,7 +330,7 @@ export async function submitListingSaveCapture(input: {
   sessionId?: string
 }): Promise<SearchAlertResult> {
   if (typeof input.company === 'string' && input.company.trim() !== '') {
-    return { ok: true }
+    return { ok: true, counted: false }
   }
   const isProd = process.env.NODE_ENV === 'production'
   try {
@@ -454,7 +454,7 @@ export async function submitListingSaveCapture(input: {
     }
   }
 
-  return { ok: true }
+  return { ok: true, counted: !suspect }
 }
 
 /**
@@ -501,7 +501,7 @@ export async function submitListingPriceDropWatch(input: {
   sessionId?: string
 }): Promise<SearchAlertResult> {
   if (typeof input.company === 'string' && input.company.trim() !== '') {
-    return { ok: true }
+    return { ok: true, counted: false }
   }
 
   const isProd = process.env.NODE_ENV === 'production'
@@ -658,5 +658,5 @@ export async function submitListingPriceDropWatch(input: {
     }
   }
 
-  return { ok: true }
+  return { ok: true, counted: !suspect }
 }
