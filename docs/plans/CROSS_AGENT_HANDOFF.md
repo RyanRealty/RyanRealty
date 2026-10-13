@@ -1,6 +1,6 @@
 # Current — 2026-10-13 (Cursor, /price-drops accuracy, PR only)
 
-Surface: Cursor cloud. Branch `cursor/price-drops-accuracy-61bb` from origin/main `bb7eb241c`. Do not merge. Do not `git push` main. Nothing sent. Production DB stayed read-only.
+Surface: Cursor cloud. Branch `cursor/price-drops-accuracy-61bb` from origin/main `bb7eb241c`. Tip `79dc89bb8` plus follow-up. Do not merge. Do not `git push` main. Nothing sent. Production DB stayed read-only.
 
 **What this branch does.** `/price-drops` and `/price-drops/[area]` drop cuts over 40% and ~10x decimal-shift typos (64794 Hunnell Rd $16.49M → $1.649M). Totals, including "this week $X cut", use the same filter on currently active SFR. Catalog lists every qualifying home with city / price / beds filters and load-more. Band carousels no longer repeat a home. Signup is a price-drop alert (`price_change` on, listing-alerts path), ads consent + gclid/fbclid/utm_* on the CRM, `generate_lead` stays lead_type + form_id.
 
