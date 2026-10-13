@@ -1,12 +1,14 @@
-# Current — 2026-10-13 (Cursor, inbound SMS clear + industry exclusion, PR only)
+# Current — 2026-10-13 (Cursor, community fold upgrade)
 
-Surface: Cursor cloud. Branch `cursor/clear-import-suppression-on-inbound-sms-f271` from origin/main `b802ee703`. Do not merge. Do not `git push` main. Do not apply hosted SQL. Do not run the backfill. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688` from origin/main `62f92384b`. App change. Land path is this PR, then squash-merge after this PR's CI, then production verify. Nothing sent. No hosted SQL.
 
-**What this branch does.** Inbound `sms_in` marks that person's non-opt-out `crm_suppressions` rows cleared (`cleared_at` / `cleared_by` / `cleared_reason`). STOP / bounce / complaint / unsubscribe / GPC stay. START still deletes only `sms` + `stop-keyword`. Durable tag `industry:contact` plus existing realtor/vendor tags and exact industry stages exclude people from every bulk, drip, list, ad, and marketing send. The 1:1 admin composer ignores the industry flag. Backfill script `scripts/crm-reclass-import-hard-stops.ts` is dry-run by default; `--apply` is for Matt after merge.
+**What this branch does.** Every `/communities/[slug]` page server-renders above the fold: H1 `{Community} Homes for Sale`, a 2-3 sentence live leftover answer (active count, median list, 12-month median sale, median days to contract) cited `Oregon Data Share MLS, as of <date>`, then the active listing grid, a recently-sold 6-month table, existing HOA/STR/amenities, FAQ, and a Your local broker block to `/team/matthew-ryan`. Title is `{Community} Homes for Sale | {registry city}, OR | Ryan Realty`. Missing or non-positive figures drop their clause. No invented numbers.
 
-**Not this change.** Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase from this session. Do not run the backfill. Do not refresh the G16 snapshot against live. Do not send.
+**Verified locally (prerender, 2026-10-13).** Tetherow: 12 SFR, list $2,747,500, 12-mo sale $2,257,500, 54 days to contract. Same shape on Brasada Ranch, Broken Top, Black Butte Ranch, Sunriver, Eagle Crest, Caldera Springs, NorthWest Crossing. No `$0`.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES.
+**Next.** Open the PR, wait for this PR's CI (main-also-failing checks do not count), squash-merge, `deploy:verify`, hit the live community URLs.
+
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` (cache / leftover HUD, not raw listings aggregations).
 
 ## Earlier — 2026-10-12 (Grok, ask-in-band stands when the price already does)
 
