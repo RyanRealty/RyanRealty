@@ -23,6 +23,7 @@ function chain(table: string) {
     in: () => q,
     eq: () => q,
     or: () => q,
+    is: () => q,
     order: () => q,
     limit: () => q,
     then(resolve: (v: { data: Row[]; error: null }) => void) {
@@ -122,6 +123,15 @@ describe('FSBO queue gate — real blocks still hold', () => {
     peopleRows = [{ id: 57336, tags: ['compliance:hard-stop'] }]
     const { bucket } = await bucketOf(fsbo())
     expect(bucket).toBe('excluded')
+  })
+
+  it('an industry contact is excluded from every prospecting channel', async () => {
+    peopleRows = [{ id: 57336, tags: ['industry:contact'], stage: 'Real Estate Agent' }]
+    const { bucket, compliance } = await bucketOf(fsbo())
+    expect(bucket).toBe('excluded')
+    expect(compliance.allChannelsBlocked).toBe(true)
+    expect(compliance.channels.sms.blocked).toBe(true)
+    expect(compliance.channels.email.blocked).toBe(true)
   })
 
   it('a placeholder row with no address, phone or email has no open channel', async () => {

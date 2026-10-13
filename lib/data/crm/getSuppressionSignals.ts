@@ -21,6 +21,7 @@
  */
 import { createServiceClient } from '@/lib/supabase/service'
 import { TAG_CHANNEL } from '@/lib/crm/suppressions'
+import { whereActiveSuppression } from '@/lib/crm/suppression-lifecycle'
 
 /**
  * A normalized suppression signal: the channel it applies to ('all' blocks
@@ -36,7 +37,7 @@ export async function getSuppressionSignals(personId: number): Promise<Suppressi
   }
   const sb = createServiceClient()
   const [rows, person] = await Promise.all([
-    sb.from('crm_suppressions').select('channel,reason').eq('person_id', personId),
+    whereActiveSuppression(sb.from('crm_suppressions').select('channel,reason').eq('person_id', personId)),
     sb.from('crm_people').select('tags').eq('id', personId).maybeSingle(),
   ])
   if (rows.error) {

@@ -22,7 +22,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
 
-**Video.** Before a video, Reel, ad, or landing page, read `.claude/skills/ryan-studio`. Ad copy, VO, captions: AGENTS.md and [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). Brief and `video_gate` before any render. No private copies.
+**Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. Ad copy, VO, captions: [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). video_gate is backup.
 
 ---
 

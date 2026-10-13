@@ -37,6 +37,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { uploadOfflineConversion } from '@/lib/meta-offline-conversions'
+import { isIndustryContact } from '@/lib/crm/industry-contact'
 import { withIdempotency } from '@/lib/crm/idempotency'
 import { primaryValue } from '@/lib/crm/merge'
 import {
@@ -66,6 +67,8 @@ type PersonRow = {
   last_name: string | null
   emails: unknown
   phones: unknown
+  tags: unknown
+  stage: string | null
 }
 
 export async function GET(request: NextRequest) {
@@ -125,6 +128,7 @@ export async function GET(request: NextRequest) {
       .select('channel')
       .eq('person_id', deal.person_id)
       .eq('channel', 'all')
+      .is('cleared_at', null)
       .limit(1)
     if (suppErr) {
       // Fail CLOSED, exactly like the send chokepoint: an unreadable compliance
@@ -140,7 +144,7 @@ export async function GET(request: NextRequest) {
 
     const { data: person, error: personErr } = await sb
       .from('crm_people')
-      .select('id,first_name,last_name,emails,phones')
+      .select('id,first_name,last_name,emails,phones,tags,stage')
       .eq('id', deal.person_id)
       .maybeSingle()
     if (personErr || !person) {
@@ -148,6 +152,10 @@ export async function GET(request: NextRequest) {
       continue
     }
     const p = person as PersonRow
+    if (isIndustryContact({ tags: p.tags, stage: p.stage })) {
+      skipped.push(`deal ${deal.id}: industry contact — never uploaded`)
+      continue
+    }
     const email = primaryValue(p.emails)
     const phone = primaryValue(p.phones)
 

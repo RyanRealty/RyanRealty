@@ -20,6 +20,7 @@ const h = vi.hoisted(() => ({
   enrichNativeLead: vi.fn(),
   isSuppressed: vi.fn(),
   isSuppressedByEmail: vi.fn(),
+  readPersonAudienceFields: vi.fn(),
   claimProspectEmailSend: vi.fn(),
   releaseProspectEmailSend: vi.fn(),
   stampProspectEmailMessageId: vi.fn(),
@@ -78,6 +79,10 @@ vi.mock('@/lib/crm/suppressions', () => ({
   isSuppressedByPhone: vi.fn(),
   isSuppressedByEmail: h.isSuppressedByEmail,
 }))
+vi.mock('@/lib/data/crm/getPeopleAudienceFields', () => ({
+  readPersonAudienceFields: h.readPersonAudienceFields,
+  getPeopleAudienceFields: vi.fn(),
+}))
 vi.mock('@/lib/crm/twilio', () => ({ sendSmsViaMessagingService: vi.fn(), toE164: vi.fn() }))
 vi.mock('@/app/actions/crm-template-test', () => ({ sendTemplateSelfTestAction: vi.fn() }))
 
@@ -113,6 +118,7 @@ beforeEach(() => {
   h.enrichNativeLead.mockResolvedValue(undefined)
   h.isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
   h.isSuppressedByEmail.mockResolvedValue({ suppressed: false, reasons: [] })
+  h.readPersonAudienceFields.mockResolvedValue({ fields: { id: 5, tags: [], stage: null }, error: null })
   h.claimProspectEmailSend.mockResolvedValue('claimed')
   h.releaseProspectEmailSend.mockResolvedValue(undefined)
   h.stampProspectEmailMessageId.mockResolvedValue(undefined)
@@ -232,5 +238,22 @@ describe('sendProspectingEmailIntro — rail failure', () => {
     expect(h.stampProspectEmailMessageId).toHaveBeenCalledWith('expired', ID, 'g-1')
     expect(h.finalizeProspectEmailSend).toHaveBeenCalledTimes(1)
     expect(h.releaseProspectEmailSend).not.toHaveBeenCalled()
+  })
+})
+
+describe('sendProspectingEmailIntro — industry contact', () => {
+  it('refuses a broker or vendor before the claim', async () => {
+    h.readPersonAudienceFields.mockResolvedValue({
+      fields: { id: 5, tags: ['industry:contact'], stage: 'Real Estate Agent' },
+      error: null,
+    })
+    const out = await sendProspectingEmailIntro('expired', ID, ARGS)
+    expect(out).toEqual({
+      ok: false,
+      error: 'Industry contact — excluded from marketing outreach.',
+      code: 'industry-contact',
+    })
+    expect(h.claimProspectEmailSend).not.toHaveBeenCalled()
+    expect(h.sendCmaToLead).not.toHaveBeenCalled()
   })
 })
