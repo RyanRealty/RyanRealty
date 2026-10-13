@@ -1,4 +1,18 @@
-# Current — 2026-10-13 (Cursor, ad copy / voiceover / caption process)
+# Current — 2026-10-13 (Cursor, HTML payload budget)
+
+Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `f631e6aba` (merged, not rebased). Land path is `npm run ship` after this PR's own CI. Nobody pushes main. Nothing sent.
+
+**What this branch does.** Caps public listing SSR grids at 24 cards (`SSR_GRID_PAGE`; home rails 36). Community homes past 24 load from `GET /api/place/homes`. Search SSR no longer reads cookies (`getSession` / saved / liked); viewer state hydrates after paint so `/homes-for-sale/bend` can use the public `s-maxage=60` header. Listing media flight capped at 24 photos. `ci:page-payload` shrink-only ratchet plus a 200 KB hard fail when serialized unique listing cards exceed one grid page. Community layout untouched (SEO A collision).
+
+**Measured (identity, 2026-10-13).** Production before → local after (`next start`): `/` 493347 → 472180 B (36 cards, TTFB ~127 ms); `/communities/tetherow` 710608 → 676659 B (22 cards, TTFB 8–38 ms); `/homes-for-sale/bend` 415747 → 301396 B (24 cards, TTFB 32–139 ms, was ~2.0 s); `/homes-for-sale` 437386 → 324569 B; `/listing/22054302` 208030 → 188557 B. Gzip already under 150 KB on the named routes. Uncompressed 150/200 KB full-document targets are the RSC tree, not leftover inventory dumps.
+
+**Not this change.** Do not merge `cursor/ai-voiceover-scripts-8a9c` unless Matt asks. Do not merge the SMS suppression branch. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill. Do not send. Do not merge `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters.
+
+**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool`. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `docs/RUN_LOOP.md` (this is payload plumbing, not a site-queue look change).
+
+## Earlier — 2026-10-13 (Cursor, ad copy / voiceover / caption process)
 
 Surface: Cursor cloud. Branch `cursor/ai-voiceover-scripts-8a9c`, merged latest origin/main. Docs only. Do not run `npm run ship`. Do not merge. Nobody pushes main. Nothing rebuilt, nothing sent, nothing approved.
 
