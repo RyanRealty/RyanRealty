@@ -166,8 +166,8 @@ export default async function BuyConcessionsPage() {
           id="answer"
           level={1}
           eyebrow={v3Text('Bend · last 90 days')}
-          headline={v3Text(HERO_HEADLINE)} // PLACEHOLDER-COPY: copy-v2.md missing; H1 is specified
-          note={v3Text(HERO_LEDE)} // PLACEHOLDER-COPY
+          headline={v3Text(HERO_HEADLINE)}
+          note={v3Text(HERO_LEDE)}
           figures={heroFigures}
           source={v3Text(CONCESSION_SOURCE)}
           sourceName={v3Text('Oregon Data Share')}

@@ -7,12 +7,11 @@ export const TITLE = 'Seller concessions for Bend buyers'
 export const DESCRIPTION =
   'Compare a price cut to the same dollars as a seller concession that buys down the rate. At least 1 in 2 Bend sales in the last 90 days reported a seller concession.'
 
-// PLACEHOLDER-COPY: copy-v2.md is missing. Hero H1 is specified; lede is a stand-in.
+// Draft copy from Writing Bot (Oct 13), pending Matt's OK.
 export const HERO_HEADLINE = 'Buyers have leverage in Bend.'
 
-// PLACEHOLDER-COPY
 export const HERO_LEDE =
-  'A seller credit that buys the rate down can cut the monthly payment more than taking the same dollars off the price.'
+  'At least 1 in 2 Bend sales in the last 90 days came with a seller concession. Used to buy down your rate, that credit can lower your monthly payment more than the same dollars off the price.'
 
 export const LENDER_LINE = 'Not lending advice. Talk to your lender.'
 
