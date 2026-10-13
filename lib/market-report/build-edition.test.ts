@@ -93,7 +93,8 @@ describe('buildKpis', () => {
     expect(k.mos).toBeCloseTo(4.0245, 4)
     expect(k.verdict).toBe('balanced')
     const text = marketSummary('Central Oregon', NOUN_SFR, k).join(' ')
-    expect(text).toContain('4.1 months of supply, a balanced market')
+    expect(text).toContain('4.1 months of supply')
+    expect(text).not.toMatch(/seller's market|buyer's market|balanced market/i)
   })
 
   it('reports year-over-year change only when both sides clear the floor', () => {
@@ -189,7 +190,7 @@ describe('buildEdition', () => {
     expect(text).toContain('$780,000')
     expect(text).toContain('up 4% from July 2025')
     expect(text).toContain('4.0 months of supply')
-    expect(text).toContain("a seller's market by our measure (4 months or less is a seller's market)")
+    expect(text).not.toMatch(/seller's market|buyer's market|balanced market/i)
   })
 
   it('uses no em dashes in any sentence', () => {

@@ -40,12 +40,12 @@ describe('stickyAskVerdict · the figure', () => {
     // Naive rounding prints "4.0", which the page's own threshold sentence
     // ("4 or less is a seller's market") then contradicts.
     expect(built?.monthsOfSupply).toBe('4.1')
-    expect(built?.label).toBe('balanced market')
+    expect(built?.label).toBe('4.1 months of supply')
   })
 
   it('4.0 exactly is a seller market, matching marketVerdict at the boundary', () => {
     const built = stickyAskVerdict({ monthsOfSupply: 4, refreshedAt: REFRESHED }, 'market_pulse_live')
-    expect(built?.label).toBe("seller's market")
+    expect(built?.label).toBe('4.0 months of supply')
     expect(built?.kind).toBe('sellers')
   })
 
@@ -80,7 +80,7 @@ describe('stickyAskTail', () => {
   const verdict = stickyAskVerdict({ monthsOfSupply: 3.9, refreshedAt: REFRESHED }, 'market_pulse_live')
 
   it('reads as one plain line', () => {
-    expect(stickyAskTail('Bend', verdict)).toBe("Bend · seller's market · 3.9 months · as of Sep 7")
+    expect(stickyAskTail('Bend', verdict)).toBe('Bend · 3.9 months of supply · as of Sep 7')
   })
 
   it('is null with no verdict, so the control prints the ask alone', () => {

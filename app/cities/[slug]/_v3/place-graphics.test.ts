@@ -67,8 +67,8 @@ describe('placeCostChart', () => {
 describe('cityVerdictCaption', () => {
   it('states months of homes on the market, then the verdict', () => {
     expect(
-      cityVerdictCaption({ mos: 3.9, verdict: { kind: 'sellers', label: "seller's market" } }),
-    ).toBe("3.9 months of homes on the market. A seller's market.")
+      cityVerdictCaption({ mos: 3.9, verdict: { kind: 'sellers', label: '3.9 months of supply' } }),
+    ).toBe('3.9 months of homes on the market.')
     expect(cityVerdictCaption({ mos: 3.9, verdict: { kind: 'unknown', label: 'unknown' } })).toBeNull()
     expect(cityVerdictCaption({ mos: null, verdict: { kind: 'sellers', label: "seller's market" } })).toBeNull()
   })

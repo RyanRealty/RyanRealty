@@ -20,7 +20,7 @@ const BEND_MT: SellBendMarket = {
   monthsOfSupply: 4.45402298850575,
   mosLabel: '4.5',
   verdictKind: 'balanced',
-  verdictLabel: 'balanced market',
+  verdictLabel: '4.5 months of supply',
   medianListPrice: 915000,
   computedAt: '2026-08-23T00:00:00.000Z',
   completeThrough: '2026-08-22',
@@ -86,7 +86,7 @@ describe('getSellBendMarket', () => {
     const hit = overlayDetachedMarket(pulse, BEND_MT)
     expect(hit.activeCount).toBe(775)
     expect(hit.monthsOfSupply).toBe(4.45402298850575)
-    expect(hit.marketHealthLabel).toBe('balanced market')
+    expect(hit.marketHealthLabel).toBe('4.5 months of supply')
     expect(hit.medianListPrice).toBe(915000)
     expect(hit.medianDaysToPending).toBe(15)
     expect(hit.newThisWeek).toBe(12)
@@ -204,8 +204,8 @@ describe('getSellBendMarket', () => {
   it('RECON Bend detached 4.454 months is 4.5 display and a balanced verdict', () => {
     const mos = 4.45402298850575
     expect(formatMonthsOfSupply(mos)).toBe('4.5')
-    expect(marketVerdict(mos)).toEqual({ kind: 'balanced', label: 'balanced market' })
-    expect(marketVerdict(3.54)).toEqual({ kind: 'sellers', label: "seller's market" })
+    expect(marketVerdict(mos)).toEqual({ kind: 'balanced', label: '4.5 months of supply' })
+    expect(marketVerdict(3.54)).toEqual({ kind: 'sellers', label: '3.5 months of supply' })
   })
 })
 

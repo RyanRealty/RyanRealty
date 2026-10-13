@@ -46,7 +46,7 @@ export async function GET(_: Request, context: { params: Promise<{ slug: string[
   const mos = hud.monthsSupply != null ? `${formatMonthsOfSupply(hud.monthsSupply)} mo supply` : null
   const median = hud.medianList != null ? `$${Math.round(hud.medianList).toLocaleString()}` : null
   const verdict = hud.monthsSupply != null ? marketVerdict(hud.monthsSupply) : null
-  const label = verdict && verdict.kind !== 'unknown' ? verdict.label : null
+  const label = verdict && verdict.kind !== 'unknown' ? verdict.label : mos
 
   const bars = [
     Number(hud.active ?? 0) / 120,

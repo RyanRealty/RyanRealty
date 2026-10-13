@@ -60,7 +60,7 @@ describe('datasetFaqConflicts (AEO-1)', () => {
   })
 
   it('reads a months-of-supply value printed with one decimal', () => {
-    const faq = [{ question: "Is Bend a buyer's or seller's market?", answer: 'Bend has 4.0 months of supply, which is a balanced market.' }]
+    const faq = [{ question: 'How many months of supply does Bend have?', answer: 'Bend has 4.0 months of supply.' }]
     expect(datasetFaqConflicts([{ name: 'Months of Supply', value: 4 }], faq)).toEqual([])
     expect(datasetFaqConflicts([{ name: 'Months of Supply', value: 4.4 }], faq)).toHaveLength(1)
   })

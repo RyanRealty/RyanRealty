@@ -112,7 +112,7 @@ export function CommunityMarketView({
   })
 
   const headline =
-    verdict.kind === 'unknown' ? `${geoName} housing market` : `${geoName} housing market: a ${verdict.label}`
+    verdict.kind === 'unknown' ? `${geoName} housing market` : `${geoName} housing market: ${verdict.label}`
 
   return (
     <>
