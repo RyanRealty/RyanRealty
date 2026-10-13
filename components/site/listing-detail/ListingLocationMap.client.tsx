@@ -15,12 +15,21 @@ import MapListingPopup, { type MapListingPopupData } from '@/components/search/M
 const NAVY = '#102742'
 const CREAM = '#faf8f4'
 
+type MapPin = { lat: number; lng: number }
+
 type Props = {
   lat: number
   lng: number
   boundary?: GeoJSON.Geometry | null
   zoom?: number
   popup?: MapListingPopupData | null
+  /**
+   * Fill a parent that already has a height (the listing hero frame).
+   * The 420px clamp is for the location block, whose parent can init at 0.
+   */
+  fill?: boolean
+  /** Other active homes. The subject pin is drawn separately. */
+  nearby?: readonly MapPin[]
 }
 
 function geojsonToPaths(geo: GeoJSON.Geometry): google.maps.LatLngLiteral[][] {
@@ -41,17 +50,39 @@ function geojsonToPaths(geo: GeoJSON.Geometry): google.maps.LatLngLiteral[][] {
 // rural listing (Prineville, La Pine outskirts) framed almost nothing but two
 // street labels on an empty basemap. 13 keeps the surrounding road grid and
 // town context in frame; the hero photos carry the street-level view.
-export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 13, popup }: Props) {
+export default function ListingLocationMapClient({
+  lat,
+  lng,
+  boundary,
+  zoom = 13,
+  popup,
+  fill = false,
+  nearby = [],
+}: Props) {
   const { ready, error } = useGoogleMapsReady()
   const [map, setMap] = useState<google.maps.Map | null>(null)
   const [popupOpen, setPopupOpen] = useState(false)
 
-  // Intrinsic height: clamp from viewport so GoogleMaps never inits at 0px.
+  // The hero frame already has a height, so 100% fills it. The location
+  // block does not, and a 0px map never paints tiles.
   const containerStyle = useMemo(
-    () => ({ width: '100%', height: 'min(52vh, 420px)', minHeight: 280 }),
-    [],
+    () =>
+      fill
+        ? { width: '100%', height: '100%' }
+        : { width: '100%', height: 'min(52vh, 420px)', minHeight: 280 },
+    [fill],
   )
   const center = useMemo(() => ({ lat, lng }), [lat, lng])
+  const nearbyPins = useMemo(
+    () =>
+      nearby.filter(
+        (pin) =>
+          Number.isFinite(pin.lat) &&
+          Number.isFinite(pin.lng) &&
+          (Math.abs(pin.lat - lat) > 1e-5 || Math.abs(pin.lng - lng) > 1e-5),
+      ),
+    [nearby, lat, lng],
+  )
 
   // preferMapId false: single-pin listing map must always show tiles even if
   // Cloud Map ID is misconfigured; editorial MAP_SEARCH_STYLES still apply.
@@ -97,13 +128,21 @@ export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 13
   )
 
   useEffect(() => {
-    if (!map || paths.length === 0) return
+    if (!map) return
+    if (nearbyPins.length > 0) {
+      const bounds = new google.maps.LatLngBounds()
+      bounds.extend(center)
+      for (const pin of nearbyPins) bounds.extend(pin)
+      map.fitBounds(bounds, 48)
+      return
+    }
+    if (paths.length === 0) return
     const bounds = new google.maps.LatLngBounds()
     for (const ring of paths) {
       for (const point of ring) bounds.extend(point)
     }
     if (!bounds.isEmpty()) map.fitBounds(bounds, 32)
-  }, [map, paths])
+  }, [map, paths, nearbyPins, center])
 
   if (error) {
     if (staticFallback) {
@@ -138,13 +177,19 @@ export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 13
   }
 
   return (
-    <div className="h-full w-full overflow-hidden" style={{ minHeight: 280, border: '3px solid var(--navy)' }}>
+    <div
+      className="h-full w-full overflow-hidden"
+      style={fill ? undefined : { minHeight: 280, border: '3px solid var(--navy)' }}
+    >
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
         zoom={zoom}
         options={mapOptions}
-        onLoad={setMap}
+        onLoad={(loaded) => {
+          setMap(loaded)
+          if (fill) google.maps.event.trigger(loaded, 'resize')
+        }}
       >
         {paths.length > 0 ? (
           <Polygon
@@ -159,6 +204,20 @@ export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 13
             }}
           />
         ) : null}
+        {nearbyPins.map((pin) => (
+          <Marker
+            key={`${pin.lat.toFixed(5)},${pin.lng.toFixed(5)}`}
+            position={pin}
+            icon={{
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 7,
+              fillColor: NAVY,
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 2,
+            }}
+          />
+        ))}
         <Marker
           position={center}
           onClick={() => setPopupOpen(true)}

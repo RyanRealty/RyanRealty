@@ -3,6 +3,7 @@ import type { ListingTile } from '@/lib/data/types/listing'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
+  listingHeroMapPins,
   listingSimilarActive,
   listingSimilarDedupe,
   listingSimilarInPlace,
@@ -63,6 +64,18 @@ describe('listingTileToRow', () => {
     expect(row.propertySubType).toBe('Single Family Residence')
     expect(row.href).toMatch(/220221963/)
     expect(row.href.startsWith('/')).toBe(true)
+  })
+})
+
+describe('listingHeroMapPins', () => {
+  it('keeps active homes that have coordinates', () => {
+    const pins = listingHeroMapPins([
+      tile({ listingKey: 'a', lat: 44.07, lng: -121.31 }),
+      tile({ listingKey: 'closed', status: 'Closed', lat: 44.08, lng: -121.32 }),
+      tile({ listingKey: 'nolat', lat: null, lng: -121.3 }),
+      tile({ listingKey: 'dup', lat: 44.07, lng: -121.31 }),
+    ])
+    expect(pins).toEqual([{ lat: 44.07, lng: -121.31 }])
   })
 })
 
