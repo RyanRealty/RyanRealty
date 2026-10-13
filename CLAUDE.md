@@ -2,6 +2,7 @@
 
 ## MANDATORY VIDEO RULES (read before making any video; Matt, locked 2026-10-13)
 These are the spec, not a review step. Every brief must fill `spec_rules` in `.claude/skills/ryan-studio/templates/brief.schema.json`; a brief without them is invalid.
+- [ ] Every final mp4 must PASS `.claude/skills/ryan-studio/tools/video_render_gate.py` (hard fail: locked end card, loop, 15-30 s, hook, captions, no "top team", no 3 s price+closed) and be delivered only via `tools/deliver_video.sh`, which refuses files without a matching pass stamp.
 - [ ] Hook lands in the first 1-2 s.
 - [ ] 15-30 s long.
 - [ ] Real footage (plates and maps sit on real footage, never instead of it).

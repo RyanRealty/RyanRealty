@@ -18,7 +18,9 @@ These are the spec, not a review step. Every brief must fill `spec_rules` in `.c
 - [ ] Same process whatever tool runs it (Grok, Claude, Imagine, Cursor).
 - [ ] No "top team" wording. No 3 s clips of a price next to "closed".
 - [ ] Pick techniques by name from `.claude/skills/ryan-studio/techniques/registry.json` and list them in `brief.techniques`.
-`video_gate.mjs` is the backup check that confirms the brief, not the primary enforcement.
+- [ ] **RENDER GATE (hard fail, mandatory):** run `python3 .claude/skills/ryan-studio/tools/video_render_gate.py <final.mp4> [--silent]` on the FINAL mp4. It OCRs the frames and HARD-FAILS (exit 1) on: end sequence not logo -> Quality/Local/Service -> "Call now" + 541.703.3095 in the last 4 s (or any other CTA there), non-loopable ending (first vs last frame mean diff > 0.20 or SSIM < 0.35), length outside 15-30 s, no hook text by 2 s, missing burned-in captions on a voiced cut (buyer_ad silent cut needs `--silent`), "top team" anywhere, any <= 3 s price + closed/sold segment. No warnings, no overrides.
+- [ ] **Delivery only through `tools/deliver_video.sh <final.mp4> <dest>`** (Ryan Reels, Desktop, Drive, chat). It refuses unless the render gate wrote a passing `<file>.gate.json` stamp for that exact sha256. Never cp/AirDrop/upload a video any other way.
+`video_gate.mjs` checks the brief/timeline before render; `video_render_gate.py` checks the actual render and is mandatory before anything leaves the box.
 
 # Ryan Studio (repo copy, shared by Claude Code and Grok CLI)
 
