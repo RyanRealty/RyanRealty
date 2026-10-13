@@ -56,6 +56,7 @@ export const LEAD_FORM_IDS = [
   'inbound_agent_referral',
   'out_of_area_referral',
   'meta_lead_ad',
+  'buy_concessions',
 ] as const
 
 export type LeadFormId = (typeof LEAD_FORM_IDS)[number]
