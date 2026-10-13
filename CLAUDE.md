@@ -22,6 +22,8 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
 
+**Video, social, landing pages.** Claude Code and Grok CLI both load `.claude/skills/`. Before any video, Reel, ad, or landing page, read `.claude/skills/ryan-studio` (and its `references/RULEBOOK.md`), then `motion-stats-craft`, `imagine-video-craft`, `motion-render-quality`, and the `cm-*` / `motion-blur-design` skills. Same skills on both agents; no private copies.
+
 ---
 
 # Ryan Realty — agent canon
