@@ -23,9 +23,9 @@ describe('homepage hero search uses the public search stack', () => {
     expect(PAGE).not.toMatch(/headline=\{v3Text\('Ryan Realty, Bend'\)\}/)
     // gsc-trend-11 (2026-09-23): the brand leads the title.
     // Brand first, then the terms GSC shows / for (Matt 2026-10-04).
-    expect(PAGE).toMatch(/title:\s*\{\s*absolute:\s*'Ryan Realty \| Bend Oregon Real Estate & Homes for Sale'\s*\}/)
-    expect(PAGE).toMatch(/openGraph: \{[\s\S]*?title: 'Ryan Realty \| Bend Oregon Real Estate & Homes for Sale'/)
-    expect(PAGE).toMatch(/twitter: \{[\s\S]*?title: 'Ryan Realty \| Bend Oregon Real Estate & Homes for Sale'/)
+    expect(PAGE).toMatch(/title:\s*\{\s*absolute:\s*'Ryan Realty \| Bend, Oregon Real Estate Brokerage'\s*\}/)
+    expect(PAGE).toMatch(/openGraph: \{[\s\S]*?title: 'Ryan Realty \| Bend, Oregon Real Estate Brokerage'/)
+    expect(PAGE).toMatch(/twitter: \{[\s\S]*?title: 'Ryan Realty \| Bend, Oregon Real Estate Brokerage'/)
     expect(PAGE).toMatch(/<HomeHeroSearch[^>]*valuationHref=/)
   })
 
