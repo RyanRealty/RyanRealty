@@ -1,4 +1,18 @@
-# Current — 2026-10-13 (Cursor, rebase #512 onto main)
+# Current — 2026-10-13 (Cursor, PR #505 sign_up + GTM lead_type, landed)
+
+Surface: Cursor cloud. PR #505 squash-merged to `origin/main` `f1058b79d`. Production `dpl_EHY1R2WHBcSs5w3xFuYuTQmq56wL` READY, aliased to ryan-realty.com. Live `/cities/bend` HTML and JS chunks carry that dpl and `event:"sign_up"` with `lead_type:"buyer_alerts"`. Do not `git push` main. Nothing sent.
+
+**What landed.** Alert enroll (except `/buy` and `/buy/alerts`) pushes browser `sign_up` with `method`, `form_id`, and `lead_type` `buyer_alerts`. `generate_lead` stays server-only. GTM import adds `DLV - ga4 lead_type`.
+
+**Matt still does this in the live GTM web container:** Admin → Import Container → `docs/gtm/ga4-browser-events.import.json` → Existing workspace → Merge → Rename conflicting. Version name `GA4 browser events via dataLayer (2026-10-13)` → Publish. `sign_up` already fires through the live trigger; the import is so `lead_type` reaches GA4.
+
+**Later on main.** #512 merged as `09d783c99` (price-drops accuracy). Its production deploy was BUILDING at verify time. #505 stays an ancestor. Do not send alerts. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill.
+
+**CI on the PR.** Only real red was content-floor `/sell` `heroImageNatural` 1920 < 3780. Not this PR. `#532` restored the 4200 hero on main before merge. `lint-and-build` failed only because it rolled up that content-floor result.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `docs/GTM_GA4_BROWSER_EVENTS.md`, `AGENTS.md` CORE RULES.
+
+## Earlier — 2026-10-13 (Cursor, rebase #512 onto main)
 
 Surface: Cursor cloud. Branch `cursor/price-drops-accuracy-61bb` rebased onto origin/main `f1058b79d` (after #502, #516/#518, #499, #515, #519, #526, #513, #520, #521, #498, #531, #532, #505). Nothing sent. Production DB stayed read-only.
 
