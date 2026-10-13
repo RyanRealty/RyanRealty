@@ -1,6 +1,8 @@
 {
   "version": 1,
   "always": [
+    "ci:private-remarks",
+    "ci:imagine-no-paid-api",
     "ci:broker-own-book",
     "ci:commit-compiles",
     "ci:count-degraded-read",

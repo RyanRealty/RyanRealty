@@ -175,6 +175,9 @@ export type ActivityEventRow = {
 
 // Exported for unit tests (was→now→% consistency lock, §0). Not part of the
 // public DAL surface — callers use getPriceDrops / getPriceDropDigest.
+/** Cuts larger than this percent are feed typos and are excluded. */
+export const MAX_REAL_DROP_PCT = 50
+
 export function tileAndEventToDrop(
   tile: ListingTile,
   event: ActivityEventRow,
@@ -210,6 +213,10 @@ export function tileAndEventToDrop(
 
   const dropAmount = previousPrice - listPrice
   const lastDropPct = (dropAmount / previousPrice) * 100
+
+  // Typo guard (Matt 2026-10-13): a cut over half the price is a feed typo
+  // (the 90% Hunnell Rd "cut"), not a real reduction. It never ships.
+  if (lastDropPct > MAX_REAL_DROP_PCT) return null
 
   // Total drop from original (same as last drop for one-event model)
   const totalDropPct = lastDropPct
@@ -365,6 +372,8 @@ async function fetchQualifyingDrops(
   const ACTIVE_STATUSES = new Set(['Active', 'Active Under Contract'])
 
   const joined: PriceDrop[] = []
+  // One card per home: the same MLS number can arrive under two listing keys.
+  const seenListNumbers = new Set<string>()
   for (const [key, event] of latestByKey.entries()) {
     const tile = tileByKey.get(key)
     if (!tile) continue
@@ -394,6 +403,10 @@ async function fetchQualifyingDrops(
 
     const drop = tileAndEventToDrop(tile, event, nowMs)
     if (!drop) continue
+    if (tile.listNumber) {
+      if (seenListNumbers.has(tile.listNumber)) continue
+      seenListNumbers.add(tile.listNumber)
+    }
 
     joined.push(drop)
   }
