@@ -353,6 +353,14 @@ const CHECKS = [
       'Weekly report pages MUST emit schema.org Report JSON-LD from live report data\n' +
       '  plus a BreadcrumbList, on the canonical /housing-market/reports/[slug] URL.',
   },
+  {
+    file: 'app/buy/alerts/page.tsx',
+    label: 'buy alerts: WebPage + FAQPage + breadcrumb',
+    all: ["type: 'webPage'", "type: 'faqPage'", "type: 'breadcrumb'"],
+    why:
+      '/buy/alerts MUST emit WebPage + FAQPage + BreadcrumbList via MetadataBlock so\n' +
+      '  the signup is a citable, crawlable listing-alert page.',
+  },
 ]
 
 const errors = []

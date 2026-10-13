@@ -82,6 +82,7 @@ export async function GET() {
     `- New construction in Bend: ${SITE_URL}/new-construction`,
     `- Price Drop Radar (Central Oregon): ${SITE_URL}/price-drops`,
     `- Bend price drops: ${SITE_URL}/price-drops/bend`,
+    `- Listing alerts: ${SITE_URL}/buy/alerts`,
     `- Redmond price drops: ${SITE_URL}/price-drops/redmond`,
     `- Sisters price drops: ${SITE_URL}/price-drops/sisters`,
     ...pillars('listings'),

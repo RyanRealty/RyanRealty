@@ -128,6 +128,23 @@ describe('leadEventParams', () => {
     expect(p).not.toHaveProperty('email')
   })
 
+  it('lets client attribution win over referer UTMs so click-around still converts', () => {
+    const referer = attributionParamsFromSearch('?utm_source=google&utm_medium=cpc&gclid=G1')
+    const p = leadEventParams(
+      {
+        ...ok,
+        attribution: { lp_source: 'facebook', lp_medium: 'paid_social', fbclid: 'F1' },
+      },
+      referer,
+    )
+    expect(p).toMatchObject({
+      lp_source: 'facebook',
+      lp_medium: 'paid_social',
+      gclid: 'G1',
+      fbclid: 'F1',
+    })
+  })
+
   it('never lets extra change what the lead is or inject dollar values', () => {
     const p = leadEventParams({
       ...ok,
@@ -144,6 +161,8 @@ describe('leadEventParams', () => {
       expect(f).toMatch(/^[a-z][a-z0-9_]*$/)
       expect(isLeadFormId(f)).toBe(true)
     }
+    expect(LEAD_FORM_IDS).toContain('buyer_alerts_lp')
+    expect(LEAD_FORM_IDS).toContain('buyer_leverage_lp')
   })
 })
 

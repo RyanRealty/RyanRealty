@@ -40,9 +40,13 @@ vi.mock('@/lib/data/leads/listingAlerts', () => ({
   upsertListingAlert: (...args: unknown[]) => h.upsertListingAlert(...args),
 }))
 
-vi.mock('@/lib/lead-tracking', () => ({
-  fireLeadGenerated: (...args: unknown[]) => h.fireLeadGenerated(...args),
-}))
+vi.mock('@/lib/lead-tracking', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/lead-tracking')>()
+  return {
+    ...actual,
+    fireLeadGenerated: (...args: unknown[]) => h.fireLeadGenerated(...args),
+  }
+})
 
 // SITE-09: the same-minute confirmation is a governed send; never reach the rail
 // (or Supabase, through the signing-broker resolver) from a unit test.
@@ -67,7 +71,7 @@ const BASE = {
   company: '',
 }
 
-async function signup(overrides: Partial<typeof BASE> & { sessionId?: string } = {}) {
+async function signup(overrides: Partial<Parameters<typeof submitSearchAlertSignup>[0]> = {}) {
   return submitSearchAlertSignup({ ...BASE, ...overrides })
 }
 
@@ -177,5 +181,70 @@ describe('submitSearchAlertSignup identity stitch', () => {
     expect(result).toEqual({ ok: true })
     expect(h.stitchFormSubmitIdentity).not.toHaveBeenCalled()
     expect(h.upsertListingAlert).toHaveBeenCalled()
+  })
+
+  it('defaults generate_lead to search_alert / search-alert for existing callers', async () => {
+    await signup()
+    expect(h.fireLeadGenerated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lp_variant: 'search-alert',
+        lead_type: 'buyer_alerts',
+        form_id: 'search_alert',
+      }),
+    )
+  })
+
+  it('accepts formId, lpVariant, and lpContext and writes UTM CRM tags', async () => {
+    await signup({
+      formId: 'buyer_alerts_lp',
+      lpVariant: 'buy-alerts',
+      lpContext: {
+        lp_source: 'facebook',
+        lp_medium: 'paid_social',
+        lp_campaign: 'buyer-price-drops',
+        lp_content: 'reloc-h3-v1',
+        gclid: 'G1',
+        fbclid: 'F1',
+      },
+    })
+    expect(h.fireLeadGenerated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lp_variant: 'buy-alerts',
+        lead_type: 'buyer_alerts',
+        form_id: 'buyer_alerts_lp',
+        attribution: expect.objectContaining({
+          lp_source: 'facebook',
+          lp_medium: 'paid_social',
+          gclid: 'G1',
+          fbclid: 'F1',
+        }),
+      }),
+    )
+    const sent = h.sendEvent.mock.calls[0][0] as { sourceUrl: string; campaign?: { source?: string } }
+    expect(sent.sourceUrl).toContain('utm_source=facebook')
+    expect(sent.sourceUrl).toContain('gclid=G1')
+    expect(sent.campaign).toMatchObject({ source: 'facebook', medium: 'paid_social' })
+    expect(h.canonicallyTagLead).toHaveBeenCalledWith(
+      expect.objectContaining({
+        extraTags: expect.arrayContaining(['channel:fb-ads', 'campaign:buyer-price-drops', 'ad-content:reloc-h3-v1']),
+        originContext: expect.objectContaining({
+          utmSource: 'facebook',
+          utmMedium: 'paid_social',
+          utmCampaign: 'buyer-price-drops',
+          utmContent: 'reloc-h3-v1',
+        }),
+      }),
+    )
+  })
+
+  it('defaults buyer_leverage_lp to buy-leverage and fires that form_id with buyer_alerts', async () => {
+    await signup({ formId: 'buyer_leverage_lp' })
+    expect(h.fireLeadGenerated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lp_variant: 'buy-leverage',
+        lead_type: 'buyer_alerts',
+        form_id: 'buyer_leverage_lp',
+      }),
+    )
   })
 })

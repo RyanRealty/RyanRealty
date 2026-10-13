@@ -72,6 +72,12 @@ export type FireLeadParams = {
    * no dollar values on leads).
    */
   extra?: Record<string, string | number | boolean | undefined | null>
+  /**
+   * Client-captured UTM / click ids (getLpContext). Win over the request
+   * Referer so a visitor who clicks around still carries the ad source into
+   * generate_lead. Referer fills any key the client omitted.
+   */
+  attribution?: LeadAttributionParams
 }
 
 /** First-party campaign params on generate_lead. Allowlisted, no PII. Independent of ad cookies. */
@@ -93,6 +99,29 @@ export type LeadAttributionParams = {
   lp_term?: string
   gclid?: string
   fbclid?: string
+}
+
+const ATTRIBUTION_KEYS: (keyof LeadAttributionParams)[] = [
+  'lp_source',
+  'lp_medium',
+  'lp_campaign',
+  'lp_content',
+  'lp_term',
+  'gclid',
+  'fbclid',
+]
+
+/** Client-defined keys win; referer fills anything the client omitted. */
+export function mergeLeadAttributionParams(
+  referer: LeadAttributionParams = {},
+  client?: LeadAttributionParams | null,
+): LeadAttributionParams {
+  const out: LeadAttributionParams = {}
+  for (const key of ATTRIBUTION_KEYS) {
+    const value = client?.[key] ?? referer[key]
+    if (value) out[key] = value
+  }
+  return out
 }
 
 /** Campaign params from the referer, the same way every lead path read them. */
@@ -164,6 +193,7 @@ export function leadEventParams(
   delete extra.lp_campaign
   delete extra.lp_content
   delete extra.lp_term
+  const mergedUtm = mergeLeadAttributionParams(utm, params.attribution)
   return {
     lp_variant: params.lp_variant,
     broker_slug: params.broker_slug,
@@ -171,7 +201,7 @@ export function leadEventParams(
     event_id: params.event_id,
     crm_person_id: params.crm_person_id ?? params.fub_person_id ?? undefined,
     ...extra,
-    ...utm,
+    ...mergedUtm,
     // Last, so `extra` can never change what the lead is.
     lead_type: params.lead_type,
     form_id: params.form_id,

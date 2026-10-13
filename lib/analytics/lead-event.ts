@@ -41,6 +41,7 @@ export const LEAD_FORM_IDS = [
   'fsbo_lp',
   'expired_lp',
   'buyer_alerts_lp',
+  'buyer_leverage_lp',
   'tetherow_heath_cma',
   'tetherow_lp',
   'lead_landing',

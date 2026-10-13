@@ -21,6 +21,14 @@ import { upsertListingAlert } from '@/lib/data/leads/listingAlerts'
 import { nativeCrmPersonId } from '@/lib/alerts/enroll-identity'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
+import { isLeadFormId, type LeadFormId } from '@/lib/analytics/lead-event'
+import { resolvePaidAttributionTags } from '@/lib/crm/lead-source'
+import {
+  appendListingAlertAttribution,
+  listingAlertCampaign,
+  mergeListingAlertAttribution,
+  type ListingAlertLpContext,
+} from '@/lib/alerts/listing-alert-attribution'
 
 /**
  * Anonymous "get listing alerts for this search" capture (public).
@@ -62,6 +70,12 @@ export async function submitSearchAlertSignup(input: {
   company?: string
   /** VisitTracker session id. READ on the client, never minted here. */
   sessionId?: string
+  /** Defaults to search_alert so existing sheets stay unchanged. */
+  formId?: LeadFormId
+  /** Defaults to search-alert, or buy-alerts when formId is buyer_alerts_lp. */
+  lpVariant?: string
+  /** Client lpContext (utm_*, gclid, fbclid). Wins over the submit Referer. */
+  lpContext?: ListingAlertLpContext
 }): Promise<SearchAlertResult> {
   // 1. Honeypot. A filled hidden field means a bot. Pretend success, do nothing.
   if (typeof input.company === 'string' && input.company.trim() !== '') {
@@ -116,6 +130,25 @@ export async function submitSearchAlertSignup(input: {
   const summary = getFiltersSummary(normalized)
   const base = siteOrigin()
   const searchUrl = `${base}${buildSearchUrlFromFilters(normalized)}`
+  const formId: LeadFormId = input.formId && isLeadFormId(input.formId) ? input.formId : 'search_alert'
+  const lpVariant = (
+    input.lpVariant ??
+    (formId === 'buyer_alerts_lp'
+      ? 'buy-alerts'
+      : formId === 'buyer_leverage_lp'
+        ? 'buy-leverage'
+        : 'search-alert')
+  ).slice(0, 80)
+  const referer = (await headers()).get('referer')
+  const attr = mergeListingAlertAttribution(input.lpContext, referer)
+  const paidTags = resolvePaidAttributionTags({
+    utmSource: attr.lp_source,
+    utmMedium: attr.lp_medium,
+    utmCampaign: attr.lp_campaign,
+    utmContent: attr.lp_content,
+  })
+  const attributedUrl = appendListingAlertAttribution(searchUrl, attr)
+  const campaign = listingAlertCampaign(attr)
 
   // 5. Native buyer lead: sendEvent captures via ensureNativeLead (CRM
   //    decommissioned 2026-06-24) and returns the crm_people id, which gates
@@ -137,9 +170,10 @@ export async function submitSearchAlertSignup(input: {
       person: { emails: [{ value: email }] },
       source: ALERTS_DOOR,
       system: 'Ryan Realty Website',
-      sourceUrl: searchUrl,
+      sourceUrl: attributedUrl,
       message: `Saved search: ${name}${summary ? `, ${summary}` : ''}`,
       brokerAttribution: attributed ? { brokerSlug: attributed.broker } : undefined,
+      campaign,
     })
     const nativeId = result.ok ? nativeCrmPersonId(result.personId) : null
     crmPersonId = nativeId
@@ -152,13 +186,18 @@ export async function submitSearchAlertSignup(input: {
           audience: 'buyer',
           source: 'idx-registration',
           tier: 'warm',
+          extraTags: paidTags,
           originContext: {
             source: 'saved-search',
             sourceLabel: 'Listing-alert signup',
-            landingPage: searchUrl,
+            landingPage: attributedUrl,
             audience: 'buyer',
             tier: 'warm',
             want: `Listing alerts for ${name}${summary ? `, ${summary}` : ''}`,
+            utmSource: attr.lp_source,
+            utmMedium: attr.lp_medium,
+            utmCampaign: attr.lp_campaign,
+            utmContent: attr.lp_content,
           },
         })
         // Notify the assigned broker so a signup is never missed — a native
@@ -238,14 +277,34 @@ export async function submitSearchAlertSignup(input: {
   }
 
   // 7. GA4 conversion mirror (best-effort, zero value: this is a free capture).
+  // form_id must be a string literal in each call object (lead-event.test.ts).
   if (!suspect) {
     try {
-      await fireLeadGenerated({
-        lp_variant: 'search-alert',
-        lead_type: 'buyer_alerts',
-        form_id: 'search_alert',
-        fub_person_id: fubPersonId ?? undefined,
-      })
+      if (formId === 'buyer_alerts_lp') {
+        await fireLeadGenerated({
+          lp_variant: lpVariant,
+          lead_type: 'buyer_alerts',
+          form_id: 'buyer_alerts_lp',
+          fub_person_id: fubPersonId ?? undefined,
+          attribution: attr,
+        })
+      } else if (formId === 'buyer_leverage_lp') {
+        await fireLeadGenerated({
+          lp_variant: lpVariant,
+          lead_type: 'buyer_alerts',
+          form_id: 'buyer_leverage_lp',
+          fub_person_id: fubPersonId ?? undefined,
+          attribution: attr,
+        })
+      } else {
+        await fireLeadGenerated({
+          lp_variant: lpVariant,
+          lead_type: 'buyer_alerts',
+          form_id: 'search_alert',
+          fub_person_id: fubPersonId ?? undefined,
+          attribution: attr,
+        })
+      }
     } catch {
       // best-effort
     }
