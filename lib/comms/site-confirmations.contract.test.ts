@@ -104,6 +104,7 @@ describe('the confirmations are system sends, and say nothing they cannot back',
     )
     expect(branch).toMatch(/watching the price/i)
     expect(branch).toMatch(/stop it from any of them/i)
+    expect(branch).toMatch(/homes in/)
     expect(branch).not.toMatch(/comes on the market/i)
     expect(branch).not.toMatch(/matches/i)
   })
