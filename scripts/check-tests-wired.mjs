@@ -43,7 +43,7 @@ import { collectLaneGates, parseChainGateNames } from './check-gates-wired.mjs'
 export const TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/
 
 /** Never scanned, whatever .gitignore says. */
-const NEVER_SCANNED = ['node_modules/', '.next/', '.claude/worktrees/', '.git/']
+const NEVER_SCANNED = ['node_modules/', '.next/', '.claude/worktrees/', '.claude/skills/', '.git/']
 
 const toPosix = (p) => p.split(sep).join('/')
 
