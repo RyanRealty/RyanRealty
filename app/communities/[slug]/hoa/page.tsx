@@ -2,7 +2,7 @@
 import type { Metadata } from 'next'
 import { getCommunityBySlug, getMarketPulse, getListingTiles, getGeoBoundaryMapData } from '@/lib/data'
 import { communityBuyerAnswerParams } from '@/lib/buyer-answers'
-import { BuyerAnswerRoute, buyerAnswerMetadata } from '@/app/_v3/buyer-answer/serve'
+import { BuyerAnswerRoute, buyerAnswerMetadataInput, pageMetadata } from '@/app/_v3/buyer-answer/serve'
 
 export const revalidate = 900
 export const dynamicParams = true
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   void getMarketPulse
   void getListingTiles
   void getGeoBoundaryMapData
-  return buyerAnswerMetadata({ kind: 'hoa', slug, placeKind: 'community' })
+  return pageMetadata(await buyerAnswerMetadataInput({ kind: 'hoa', slug, placeKind: 'community' }))
 }
 
 export default async function CommunityHoaPage({ params }: Props) {

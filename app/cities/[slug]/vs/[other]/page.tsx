@@ -2,7 +2,7 @@
 import type { Metadata } from 'next'
 import { getCityListings, getMarketPulse } from '@/lib/data'
 import { vsBuyerAnswerParams } from '@/lib/buyer-answers'
-import { BuyerAnswerRoute, buyerAnswerMetadata } from '@/app/_v3/buyer-answer/serve'
+import { BuyerAnswerRoute, buyerAnswerMetadataInput, pageMetadata } from '@/app/_v3/buyer-answer/serve'
 
 export const revalidate = 900
 export const dynamicParams = true
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, other } = await params
   void getCityListings
   void getMarketPulse
-  return buyerAnswerMetadata({ kind: 'vs', slug, other, placeKind: 'city' })
+  return pageMetadata(await buyerAnswerMetadataInput({ kind: 'vs', slug, other, placeKind: 'city' }))
 }
 
 export default async function CityVsPage({ params }: Props) {
