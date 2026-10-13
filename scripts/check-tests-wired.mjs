@@ -43,7 +43,10 @@ import { collectLaneGates, parseChainGateNames } from './check-gates-wired.mjs'
 export const TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/
 
 /** Never scanned, whatever .gitignore says. */
-const NEVER_SCANNED = ['node_modules/', '.next/', '.claude/worktrees/', '.claude/skills/', '.git/']
+const NEVER_SCANNED = ['node_modules/', '.next/', '.claude/worktrees/', '.git/']
+/** Skill docs stay out of this gate. Skill-local node tests (video_gate) must be wired. */
+const SKILL_NON_TEST = /^\.claude\/skills\//
+const SKILL_WIRED_TEST = /^\.claude\/skills\/.+\/tools\/tests\/.+\.(test|spec)\.[cm]?[jt]sx?$/
 
 const toPosix = (p) => p.split(sep).join('/')
 
@@ -61,6 +64,7 @@ export function listTestFiles(root) {
   for (const f of r.stdout.split('\0')) {
     if (!f || !TEST_FILE.test(f)) continue
     if (NEVER_SCANNED.some((p) => f.startsWith(p) || f.includes(`/${p}`))) continue
+    if (SKILL_NON_TEST.test(f) && !SKILL_WIRED_TEST.test(f)) continue
     if (!existsSync(join(root, f))) continue // deleted in the worktree, not yet staged
     seen.add(f)
   }

@@ -1,12 +1,18 @@
-# Current — 2026-10-13 (Cursor, community fold upgrade)
+# Current — 2026-10-13 (Cursor, make main CI green)
 
-Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688` merged latest origin/main (`9c66b81b0`, includes #504 AEO, #519 JSON-LD, #513 off-market noindex). App change. Land path is this PR, then squash-merge after this PR's CI, then production verify. Nothing sent. No hosted SQL.
+Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` merged origin/main `6a9b37fb6` (#520, #521, #498, #531). PR #532. Fix the red required checks, then squash-merge. Nothing sent. Nobody pushes main.
+
+**What this commit does.** `ci:studio-rules` names `video_gate.test.mjs` and `video_render_gate.test.mjs` so both run on Node 20 and Node 22 (directory form is MODULE_NOT_FOUND on 22; glob form is not found on 20). `ci:tests-wired` now sees those skill-local files and counts them wired. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150 `tetherow-golf-aerial.jpg`) instead of a 1920 `asset_library` pick, so content-floor heroImageNatural stays 3780 (reverts the 1728 floor #520 set). `ci:public-listing-status` and `ci:claude-canon` already pass on this tip.
+
+**Not this change.** Do not send. Do not apply hosted SQL. Do not merge the phase-pool branch. Do not rebuild letters.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `scripts/check-claude-canon.mjs`, `scripts/check-tests-wired.mjs`, `scripts/check-public-listing-status.mjs`, `docs/DATABASE_FOR_AI_AGENTS.md` (surface-image read only).
+
+## Earlier — 2026-10-13 (Cursor, community fold upgrade)
+
+Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688`. Landed on main via #521. Do not `git push` main. Nothing sent.
 
 **What this branch does.** Every `/communities/[slug]` page server-renders above the fold: H1 `{Community} Homes for Sale`, a 2-3 sentence live leftover answer (active count, median list, 12-month median sale, median days to contract) cited `Oregon Data Share MLS, as of <date>`, then the active listing grid, a recently-sold 6-month table, existing HOA/STR/amenities, FAQ, and a Your local broker block to `/team/matthew-ryan`. Title is `{Community} Homes for Sale | {registry city}, OR | Ryan Realty`. Missing or non-positive figures drop their clause. No invented numbers.
-
-**Verified locally (prerender, 2026-10-13).** Tetherow: 12 SFR, list $2,747,500, 12-mo sale $2,257,500, 54 days to contract. Same shape on Brasada Ranch, Broken Top, Black Butte Ranch, Sunriver, Eagle Crest, Caldera Springs, NorthWest Crossing. No `$0`.
-
-**Next.** PR #521. Wait for this PR's CI (main-also-failing checks do not count), squash-merge, `deploy:verify`, hit the live community URLs.
 
 Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` (cache / leftover HUD, not raw listings aggregations).
 
@@ -15,8 +21,6 @@ Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.m
 Surface: Cursor cloud. Branch `cursor/listing-offmarket-noindex-2c0f`. Landed on main via #513. Do not `git push` main. Nothing sent.
 
 **What this branch does.** Closed / Expired / Canceled / Withdrawn listing pages ship `noindex, follow`. When the home belongs to a registry community the HTML canonical is that `/communities/<slug>` page. Pending stays indexed. Active listings keep `index, follow` and print a prominent "{Name} homes for sale" door to the community page.
-
-**Verified on Brasada.** Active MLS 220229872: `index, follow`, self-canonical, door "Brasada Ranch homes for sale" → `/communities/brasada-ranch`. Closed MLS 220224479: `noindex, follow`, canonical `https://ryan-realty.com/communities/brasada-ranch`, HTTP 200.
 
 Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §3a.
 
