@@ -38,6 +38,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# Local research pack for /buy/concessions. Never commit.
+.concessions-spec/
+
 # vercel
 .vercel
 .firecrawl/
