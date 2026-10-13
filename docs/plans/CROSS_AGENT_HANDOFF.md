@@ -1,10 +1,18 @@
-# Current — 2026-10-14 (Cursor, make main CI green)
+# Current — 2026-10-14 (Cursor, listings-failure no-cache, merging #511)
 
-Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` merged origin/main `29fd04d93` (#536, #538). PR #532. Finish remaining red checks, then squash-merge. Nothing sent. Nobody pushes main.
+Surface: Cursor cloud. Branch `cursor/listings-failure-no-cache-fd1f` rebased onto origin/main `5293aa46c` (includes #539 main CI reds, #538 geo-guard, #528 buyer-answer pages, #533, #512, #532, #521). Matt approved merge of PR #511. Do not `git push` main. Nothing sent.
 
-**What this commit does.** `ci:studio-rules` names both studio node tests. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150) so content-floor stays 3780. After #521, type links jump to `#homes-dial-<group>`. After #528, `serve.ts` re-exports `V3Footer`. After #498, `/buy/concessions` takes the 30-yr rate from `getLiveMortgageRate` / `getCalculatorDefaults` and points are `dollars / loan * 100` so `ci:stat-source` stays one engine.
+**What this branch does.** Community and resort pages throw `ListingsUnavailableError` after one retry when the listings or community read does not answer, so Next keeps the last good ISR copy. A cold miss is HTTP 500 + noindex. `CommunityDegraded` is deleted. #521's fold stays. Type links keep #539 `#homes-dial-<group>`. `ci:sitemap-url-health` walks sitemap locs for 200 / self-canonical on `https://ryan-realty.com` / not noindex.
 
-**Not this change.** Do not send. Do not apply hosted SQL. Do not merge the phase-pool branch. Do not rebuild letters.
+**Not this change.** Do not send. Do not apply hosted SQL.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES.
+
+## Earlier — 2026-10-14 (Cursor, make main CI green)
+
+Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` merged origin/main `29fd04d93`. Landed on main via #539. Nothing sent. Nobody pushes main.
+
+**What that commit did.** `ci:studio-rules` names both studio node tests. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150) so content-floor stays 3780. After #521, type links jump to `#homes-dial-<group>`. After #528, `serve.ts` re-exports `V3Footer`. After #498, `/buy/concessions` takes the 30-yr rate from `getLiveMortgageRate` / `getCalculatorDefaults` and points are `dollars / loan * 100` so `ci:stat-source` stays one engine.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `scripts/check-stat-source.mjs`, `scripts/check-tests-wired.mjs`, `scripts/check-date-format.mjs`.
 
