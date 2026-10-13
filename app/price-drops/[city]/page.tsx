@@ -235,7 +235,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
                   label={`${cityName} price cuts by how far the ask came down`}
                 />
               ) : null}
-              <PriceDropCatalog items={fieldItems} showCityFilter={false} />
+              <PriceDropCatalog id="all-cuts" items={fieldItems} showCityFilter={false} />
             </div>
             <V3SourceLine
               className={`${V3_ROOT_CLASS} pd-source`}

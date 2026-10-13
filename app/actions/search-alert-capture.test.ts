@@ -14,12 +14,12 @@ const h = vi.hoisted(() => ({
   stitchFormSubmitIdentity: vi.fn(),
   getCookie: vi.fn(),
   sendAlertConfirmation: vi.fn(),
-  headerGet: vi.fn(() => null),
+  headerGet: vi.fn((_name?: string) => null as string | null),
 }))
 
 vi.mock('next/headers', () => ({
   cookies: () => Promise.resolve({ get: h.getCookie }),
-  headers: () => Promise.resolve({ get: (...args: unknown[]) => h.headerGet(...args) }),
+  headers: () => Promise.resolve({ get: (name: string) => h.headerGet(name) }),
 }))
 
 vi.mock('@/lib/rate-limit', () => ({
