@@ -168,7 +168,7 @@ export function CityMarketView({
   const headline =
     verdict.kind === 'unknown'
       ? `${cityName} housing market`
-      : `${cityName} housing market: a ${verdict.label}`
+      : `${cityName} housing market: ${verdict.label}`
 
   // SITE-81: face is name + stamp; disclosure is one plain sentence. MOS math
   // lives on #market-mos's own source, not duplicated here.

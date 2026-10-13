@@ -158,7 +158,7 @@ type V3LedgerRowBase = {
  * line at all (DATA_GRAPHICS.md small-n rule: omit, do not pad).
  */
 export type V3LedgerReveal = {
-  /** "Seller's market · 3.8 months of supply", "Too few closes for a supply reading". */
+  /** "3.8 months of supply", "Too few closes for a supply reading". */
   line: V3Text
   series?: readonly (number | null)[]
   /** What the series counts, for the accessible name: "closed sales by month, last 12 months". */
@@ -291,7 +291,7 @@ type V3LedgerBase = {
    * A drawing under the note, before the rows: the one place a list's headline
    * claim is drawn rather than said. The city index puts the region's months
    * of supply here as V3Drawing's two bars (homes for sale against a month of
-   * sales) instead of "Balanced market at 4.9 months of supply" as a sentence,
+   * sales) instead of "4.9 months of supply" as a sentence,
    * which is the form DATA_GRAPHICS.md names and the evaluator asked for.
    *
    * A ReactNode because the drawing carries its own claim, reading and source

@@ -442,10 +442,7 @@ function buildPostMarkdown(cityConfig, period, stats, topNeighborhoodList, meta,
     : `${cityName} real estate market overview ${monthLabel} ${yr}`
   const heroUrl = heroAsset?.file_url || heroAsset?.source_url || null
 
-  const mosLabel = stats.mosClass === 'sellers' ? "seller's market"
-    : stats.mosClass === 'balanced' ? 'balanced market'
-    : stats.mosClass === 'buyers' ? "buyer's market"
-    : 'undetermined market conditions'
+  const mosLine = stats.mos != null ? `${Number(stats.mos).toFixed(1)} months of supply` : null
 
   const lines = []
 
@@ -459,7 +456,7 @@ function buildPostMarkdown(cityConfig, period, stats, topNeighborhoodList, meta,
   const ledeParts = []
   if (stats.medianSalePrice) ledeParts.push(`the median sale price for a single-family home reached **${fmtMoney(stats.medianSalePrice)}**`)
   if (stats.yoyPct != null) ledeParts.push(`**${fmtPct(stats.yoyPct)} from the same month last year**`)
-  if (stats.mos != null) ledeParts.push(`months of supply stood at **${stats.mos.toFixed(1)} months**, placing the market in ${mosLabel} territory`)
+  if (mosLine) ledeParts.push(`months of supply stood at **${mosLine}**`)
 
   if (ledeParts.length > 0) {
     lines.push(`In ${monthLabel} ${yr}, the ${cityName} single-family residential market showed clear directional data: ${ledeParts.join(', ')}. Here is the full breakdown, sourced directly from live MLS data.`)
@@ -502,13 +499,7 @@ function buildPostMarkdown(cityConfig, period, stats, topNeighborhoodList, meta,
   lines.push('## Months of Supply')
   lines.push('')
   if (stats.mos != null) {
-    const mosThreshold = stats.mosClass === 'sellers'
-      ? 'Under 4 months signals a seller\'s market, where demand exceeds supply.'
-      : stats.mosClass === 'balanced'
-      ? 'Between 4 and 6 months is considered balanced territory.'
-      : 'Above 6 months is a buyer\'s market, where supply outpaces demand.'
-
-    lines.push(`Months of supply in ${cityName} was **${stats.mos.toFixed(1)} months** in ${monthLabel} ${yr}. ${mosThreshold} At **${stats.mos.toFixed(1)} months**, the market is classified as a **${mosLabel}**.`)
+    lines.push(`Months of supply in ${cityName} was **${stats.mos.toFixed(1)} months** in ${monthLabel} ${yr}. A lower months-of-supply figure means fewer homes for sale relative to the recent sales pace.`)
     lines.push('')
     lines.push(`The months of supply formula: active listings divided by average monthly closings over the prior 6 months. This metric gives the most reliable directional read on supply and demand balance.`)
   } else {
@@ -662,7 +653,7 @@ function buildPostMarkdown(cityConfig, period, stats, topNeighborhoodList, meta,
     closingParts.push(`**Buyers** in ${cityName} should expect competition. Come in prepared with pre-approval, a clear budget, and a realistic offer.`)
     closingParts.push(`**Sellers** hold the advantage. Price your home correctly and it will move. Overpricing still costs time.`)
   } else if (stats.mosClass === 'balanced') {
-    closingParts.push(`**Buyers** have more options than in a tight seller's market, but well-priced homes are still moving.`)
+    closingParts.push(`**Buyers** have more options than when supply is tight, but well-priced homes are still moving.`)
     closingParts.push(`**Sellers** can expect reasonable offers, but inflated pricing will sit.`)
   } else if (stats.mosClass === 'buyers') {
     closingParts.push(`**Buyers** have negotiating room. Take your time and negotiate.`)

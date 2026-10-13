@@ -97,7 +97,7 @@ const MT_BEND: SellBendMarket = {
   monthsOfSupply: 4.45,
   mosLabel: '4.5',
   verdictKind: 'balanced',
-  verdictLabel: 'balanced market',
+  verdictLabel: '4.5 months of supply',
   medianListPrice: 825_000,
   computedAt: '2026-08-23T12:00:00Z',
   completeThrough: '2026-08-22',
@@ -160,8 +160,8 @@ describe('getMarketPulseJsonFeed', () => {
     expect(detachedMock).toHaveBeenCalled()
     expect(result.figures.activeListings).toBe(775)
     expect(result.figures.monthsOfSupply).toBe(4.45)
-    expect(result.figures.marketHealthLabel).toBe('balanced market')
-    expect(result.methodology.verdict).toBe('balanced market')
+    expect(result.figures.marketHealthLabel).toBe('4.5 months of supply')
+    expect(result.methodology.verdict).toBe('4.5 months of supply')
     expect(result.methodology.verdictKind).toBe('balanced')
     expect(result.figures.medianListPrice).toBe(825_000)
     expect(result.collectedAt).toBe(MT_BEND.computedAt)

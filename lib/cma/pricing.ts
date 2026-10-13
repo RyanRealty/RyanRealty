@@ -371,8 +371,8 @@ export function computePricing(
     highEnd = round5000(recommended * 1.04)
     notes.push(
       market.monthsOfSupply != null
-        ? `${market.geoLabel} is carrying ${formatMonthsOfSupply(market.monthsOfSupply)} months of supply (buyer's market), so the High End tier is pulled in to 4% above the recommended list.`
-        : `${market.geoLabel} is a buyer's market, so the High End tier is pulled in to 4% above the recommended list.`,
+        ? `${market.geoLabel} is carrying ${formatMonthsOfSupply(market.monthsOfSupply)} months of supply, so the High End tier is pulled in to 4% above the recommended list.`
+        : `${market.geoLabel} has more homes for sale than the recent sales pace, so the High End tier is pulled in to 4% above the recommended list.`,
     )
   }
 

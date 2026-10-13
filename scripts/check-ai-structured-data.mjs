@@ -119,6 +119,14 @@ const CHECKS = [
       '  preference; without it every edited evergreen post loses its freshness signal.',
   },
   {
+    file: 'lib/structured-data.ts',
+    label: 'blog author: one Person @id',
+    all: ['brokerPersonId', 'BLOG_AUTHOR_PERSON_SLUG', 'generateBlogSchema'],
+    why:
+      'Every BlogPosting author MUST join the founder Person node at\n' +
+      '  /team/matthew-ryan#person so Google reads one author, not a new Person per post.',
+  },
+  {
     file: 'app/neighborhoods/page.tsx',
     label: 'neighborhoods index: breadcrumb + CollectionPage',
     all: ['MetadataBlock'],

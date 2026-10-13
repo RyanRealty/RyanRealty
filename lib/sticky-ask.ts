@@ -30,7 +30,7 @@ import { formatDate } from '@/lib/format/date'
 export type StickyAskVerdict = {
   /** From marketVerdict() — never computed from the number a second time. */
   kind: MarketKind
-  /** From marketVerdict() — "seller's market" / "balanced market" / "buyer's market". */
+  /** From marketVerdict() — public months-of-supply line. */
   label: string
   /** From formatMonthsOfSupply() — boundary-safe digits, e.g. "3.9". */
   monthsOfSupply: string
@@ -100,14 +100,14 @@ export function stickyAskVerdict(
 
 /**
  * The one line of quiet type beside the ask:
- *   "Bend · seller's market · 3.9 months · as of Sep 7"
+ *   "Bend · 3.9 months of supply · as of Sep 7"
  * Assembly only — every part arrived formatted. Returns null with no verdict,
  * and the control then prints the label alone.
  */
 export function stickyAskTail(place: string, verdict: StickyAskVerdict | null | undefined): string | null {
   const name = place.trim()
   if (!verdict || !name) return null
-  return `${name} · ${verdict.label} · ${verdict.monthsOfSupply} months · as of ${verdict.readAt}`
+  return `${name} · ${verdict.monthsOfSupply} months of supply · as of ${verdict.readAt}`
 }
 
 /**

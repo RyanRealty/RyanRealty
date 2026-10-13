@@ -16,30 +16,30 @@ describe('community supply page', () => {
     const supply = buildCommunitySupply({
       ...BASE,
       placeName: 'Sunriver',
-      verdictProse: 'A balanced market.',
+      verdictProse: '4.9 months of supply.',
       floor: { closedSixMonths: 23, minN: 30, asOf: 'Oct 1, 2026' },
     })
-    expect(supply).toEqual({ kind: 'published', prose: 'A balanced market.' })
+    expect(supply).toEqual({ kind: 'published', prose: '4.9 months of supply.' })
   })
 
   it('withheld under the floor: the count it rests on, the floor, and the parent city by name', () => {
     const supply = buildCommunitySupply({
       ...BASE,
       floor: { closedSixMonths: 23, minN: 30, asOf: 'Oct 1, 2026' },
-      cityVerdictLabel: "seller's market",
+      cityVerdictLabel: '3.9 months of supply',
     })
     expect(supply?.kind).toBe('floor')
     if (supply?.kind !== 'floor') return
     expect(supply.lead).toBe('23 houses sold in Tetherow in the last six months.')
-    expect(supply.floorSentence).toBe("Calling it a buyer's or seller's market takes 30 sales, so we don't.")
-    expect(supply.contextSentence).toBe("Bend as a whole is a seller's market.")
+    expect(supply.floorSentence).toBe("Publishing months of supply takes 30 sales, so we don't.")
+    expect(supply.contextSentence).toBe('Bend as a whole has 3.9 months of supply.')
     expect(supply.closedLabel).toBe('23')
     expect(supply.tallySource).toMatch(/one mark per sale/)
     expect(supply.tallySource).toMatch(/as of Oct 1, 2026$/)
     // Never the withheld ratio and never a verdict for the community itself.
     const text = [supply.lead, supply.floorSentence, supply.contextSentence].join(' ')
-    expect(text).not.toMatch(/\d+\.\d+ months/)
     expect(text).not.toMatch(/Tetherow (is|as a whole is) a/)
+    expect(text).not.toMatch(/seller's market|buyer's market|balanced market/i)
     expect(text).not.toMatch(/—/)
   })
 
@@ -117,11 +117,11 @@ describe('community supply page door', () => {
     const floorBoard = buildCommunityInsightBoard({
       ...BASE,
       floor: { closedSixMonths: 23, minN: 30, asOf: null },
-      cityVerdictLabel: "seller's market",
+      cityVerdictLabel: '3.9 months of supply',
     })
     expect(floorBoard.supplyHref).toBe('/housing-market/bend')
     expect(floorBoard.supplyHrefLabel).toBe('The Bend market report')
-    const published = buildCommunityInsightBoard({ ...BASE, placeName: 'Sunriver', verdictProse: 'A balanced market.' })
+    const published = buildCommunityInsightBoard({ ...BASE, placeName: 'Sunriver', verdictProse: '4.9 months of supply.' })
     expect(published.supplyHref).toBe('/months-of-supply')
   })
 })

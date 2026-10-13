@@ -969,7 +969,7 @@ describe('chapter order', () => {
     expect(html).toContain('sold-hero')
     expect(html).toContain('id="sold-90"')
     expect(html).toContain('id="inventory"')
-    expect(html).toMatch(/seller(&#39;|')s market territory/)
+    expect(html).not.toMatch(/seller(&#39;|')s market|buyer(&#39;|')s market|balanced market/)
     expect(html).toContain('class="szn mos-wide"')
     expect(html).toContain('homes are for sale in')
   })

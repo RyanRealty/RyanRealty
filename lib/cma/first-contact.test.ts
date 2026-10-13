@@ -234,9 +234,9 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
   })
 
   it('keeps months of supply out of the expired letter, including when the pulse was loaded', () => {
-    expect(citySupplySentence('Bend', 2.95)).toBe("Bend has 3.0 months of supply right now. That is a seller's market.")
-    expect(citySupplySentence('Bend', 4.05)).toBe('Bend has 4.1 months of supply right now. That is a balanced market.')
-    expect(citySupplySentence('Bend', 6)).toBe("Bend has 6.0 months of supply right now. That is a buyer's market.")
+    expect(citySupplySentence('Bend', 2.95)).toBe('Bend has 3.0 months of supply right now.')
+    expect(citySupplySentence('Bend', 4.05)).toBe('Bend has 4.1 months of supply right now.')
+    expect(citySupplySentence('Bend', 6)).toBe('Bend has 6.0 months of supply right now.')
     expect(citySupplySentence('Bend', null)).toBeNull()
     expect(citySupplySentence('', 2.95)).toBeNull()
     const withPulse = composeCmaFirstContact('expired', { ...FACTS, monthsOfSupply: 2.95 })
@@ -246,7 +246,7 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     expect(withPulse.bodyText).not.toContain('balanced market')
     expect(withPulse.bodyText).toContain('See the full market analysis')
     const asked = composeCmaFirstContact('seller-valuation', { ...FACTS, monthsOfSupply: 2.95 })
-    expect(asked.bodyText).toContain("Bend has 3.0 months of supply right now. That is a seller's market.")
+    expect(asked.bodyText).toContain('Bend has 3.0 months of supply right now.')
     const without = composeCmaFirstContact('expired', FACTS)
     expect(without.bodyText).not.toContain('months of supply')
     const noCity = composeCmaFirstContact('expired', { ...FACTS, city: null, monthsOfSupply: 2.95 })

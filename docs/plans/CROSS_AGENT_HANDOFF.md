@@ -1,14 +1,24 @@
 # Current — 2026-10-13 (Cursor, community fold upgrade)
 
-Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688` merged latest origin/main (`bfddc4020`, includes #504 AEO). App change. Land path is this PR, then squash-merge after this PR's CI, then production verify. Nothing sent. No hosted SQL.
+Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688` merged latest origin/main (`6f0b60010`, includes #504 AEO and #519 JSON-LD). App change. Land path is this PR, then squash-merge after this PR's CI, then production verify. Nothing sent. No hosted SQL.
 
 **What this branch does.** Every `/communities/[slug]` page server-renders above the fold: H1 `{Community} Homes for Sale`, a 2-3 sentence live leftover answer (active count, median list, 12-month median sale, median days to contract) cited `Oregon Data Share MLS, as of <date>`, then the active listing grid, a recently-sold 6-month table, existing HOA/STR/amenities, FAQ, and a Your local broker block to `/team/matthew-ryan`. Title is `{Community} Homes for Sale | {registry city}, OR | Ryan Realty`. Missing or non-positive figures drop their clause. No invented numbers.
 
 **Verified locally (prerender, 2026-10-13).** Tetherow: 12 SFR, list $2,747,500, 12-mo sale $2,257,500, 54 days to contract. Same shape on Brasada Ranch, Broken Top, Black Butte Ranch, Sunriver, Eagle Crest, Caldera Springs, NorthWest Crossing. No `$0`.
 
-**Next.** PR #521 is open and mergeable on latest main (`bfddc4020`). Wait for this PR's CI (main-also-failing checks do not count), squash-merge, `deploy:verify`, hit the live community URLs. GitHub cancelled the first CI run in the runner queue; a follow-up push retriggers it.
+**Next.** PR #521. Wait for this PR's CI (main-also-failing checks do not count), squash-merge, `deploy:verify`, hit the live community URLs.
 
 Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` (cache / leftover HUD, not raw listings aggregations).
+
+## Earlier — 2026-10-13 (Cursor, one business + one author JSON-LD)
+
+Surface: Cursor cloud. Branch `cursor/one-author-entity-118d` merged onto origin/main `7a17527a1`. Landed on main via #519. Do not `git push` main. Nothing sent.
+
+**What this branch does.** Every BlogPosting author is `{@id: https://ryan-realty.com/team/matthew-ryan#person}`. Person sameAs adds verified Zillow, LinkedIn, Experience.com, YouTube, Instagram. Organization sameAs adds Zillow, Yelp, Experience.com. `/team/matthew-ryan` renders a 400-600 word bio from repo facts (LLC 2014, Bend office June 2023). Homepage title is `Ryan Realty | Bend, Oregon Real Estate Brokerage`. Realtor.com and Homes.com stay off: no verified live person URL.
+
+**Still open.** Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill. Do not send. Lead-event parse error already landed on main via #516 / #518.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES, `CLAUDE.md` §0/§2/§7.
 
 ## Earlier — 2026-10-13 (Cursor, ad copy / voiceover / caption process)
 

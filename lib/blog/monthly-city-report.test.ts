@@ -30,7 +30,8 @@ describe('buildMonthlyCityReport', () => {
     expect(r.post.category).toBe('Market Reports')
     expect(r.post.content).toContain('<strong>$750,000</strong>, down 5.7% from $795,000 in August 2025')
     expect(r.post.content).toContain('<strong>180</strong>, up 9.1% from 165 a year earlier')
-    expect(r.post.content).toContain('Months of supply sits at 3.9, which is a seller\'s market')
+    expect(r.post.content).toContain('Months of supply sits at 3.9.')
+    expect(r.post.content).not.toMatch(/seller's market|buyer's market|balanced market/i)
     expect(r.post.content).toContain('verified September 7, 2026')
     expect(r.post.content).toContain('from the same monthly series the Bend market page charts, verified September 7, 2026')
     // the median sale price figure appears in the numbers list, the bottom line, and one answer, never as a second value
@@ -43,10 +44,12 @@ describe('buildMonthlyCityReport', () => {
   it('prints balanced and buyer verdicts from the same rule, never a rounded value across the line', () => {
     const balanced = buildMonthlyCityReport({ ...base, live: { ...base.live, monthsOfSupply: 4.04 } })
     if (!balanced.ok) throw new Error(balanced.reason)
-    expect(balanced.post.content).toContain('4.1, which is a balanced market')
+    expect(balanced.post.content).toContain('Months of supply sits at 4.1.')
+    expect(balanced.post.content).not.toMatch(/seller's market|buyer's market|balanced market/i)
     const buyers = buildMonthlyCityReport({ ...base, live: { ...base.live, monthsOfSupply: 6.5 } })
     if (!buyers.ok) throw new Error(buyers.reason)
-    expect(buyers.post.content).toContain("6.5, which is a buyer's market")
+    expect(buyers.post.content).toContain('Months of supply sits at 6.5.')
+    expect(buyers.post.content).not.toMatch(/seller's market|buyer's market|balanced market/i)
   })
 
   it('omits the year-over-year clauses when the prior year is missing', () => {

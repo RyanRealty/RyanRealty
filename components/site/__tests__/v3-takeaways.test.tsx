@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { V3Takeaways, V3TakeawaysLead } from '@/components/site/v3'
 
 const ITEMS = [
-  "Bend has 3.6 months of supply, a seller's market, so sellers have the edge.",
+  'Bend has 3.6 months of supply.',
   'The median single-family home in Bend sold for $759,000 in September 2026.',
   'The typical Bend home sold for 97.0% of its original asking price over the last 12 months.',
 ]
