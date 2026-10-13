@@ -2934,11 +2934,13 @@ body:has([data-slot='dialog-content'][data-state='open']) .v3.v3-chrome {
   line-height: 1.3;
 }
 
-.listing-community-door a {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--v3-tap);
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 0.12em;
+@layer base {
+  .listing-community-door a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--v3-tap);
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.12em;
+  }
 }
