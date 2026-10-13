@@ -7,6 +7,7 @@ import {
   type PersonTimelineChannel,
   type PersonTimelineItem,
 } from '@/lib/data/crm/person-timeline'
+import { formatDate } from '@/lib/format/date'
 
 const FILTERS: Array<{ id: 'all' | PersonTimelineChannel; label: string }> = [
   { id: 'all', label: 'All' },
@@ -18,15 +19,19 @@ const FILTERS: Array<{ id: 'all' | PersonTimelineChannel; label: string }> = [
 ]
 
 function dayKey(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', year: 'numeric', month: 'short', day: 'numeric' })
+  const label = formatDate(iso)
+  return label === '—' ? '' : label
 }
 
 function timeLabel(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
+  const label = formatDate(iso, {
+    month: undefined,
+    day: undefined,
+    year: undefined,
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+  return label === '—' ? '' : label
 }
 
 function icon(channel: PersonTimelineChannel): string {

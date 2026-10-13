@@ -2,6 +2,7 @@
  * Right-now strip: last activity, last message, next step.
  * Pure. PersonWorkspace feeds it the merged timeline plus open tasks.
  */
+import { formatDate } from '@/lib/format/date'
 import { agoLabel } from '@/lib/format/relative-ago'
 import type { PersonTimelineItem } from './person-timeline'
 
@@ -32,13 +33,14 @@ function isReplyTask(task: PersonRightNowTask): boolean {
 }
 
 function ptStamp(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleString('en-US', {
+  const label = formatDate(iso, {
+    month: undefined,
+    day: undefined,
+    year: undefined,
     hour: 'numeric',
     minute: '2-digit',
-    timeZone: 'America/Los_Angeles',
   })
+  return label === '—' ? '' : label
 }
 
 function channelWord(channel: string): string {
