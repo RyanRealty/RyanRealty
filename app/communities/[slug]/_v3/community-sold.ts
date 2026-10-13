@@ -46,6 +46,7 @@ export type CommunitySoldRow = {
 }
 
 export function communitySoldWindowStart(asOf: Date): string {
+  // date-format-ok: Pacific day parts for the 6-month sold window, not a displayed date
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Los_Angeles',
     year: 'numeric',
