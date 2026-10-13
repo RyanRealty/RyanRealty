@@ -44,12 +44,6 @@ export type EditionEmail = {
 
 type EditionInput = Pick<EditionRow, 'edition_month' | 'payload' | 'pdf_path' | 'generated_at'>
 
-const VERDICT_WORDS: Record<Verdict, string> = {
-  seller: "a seller's market",
-  balanced: 'a balanced market',
-  buyer: "a buyer's market",
-}
-
 /** The R-2 verdict vocabulary. */
 const VERDICT_CITED: Record<Verdict, 'sellers' | 'balanced' | 'buyers'> = {
   seller: 'sellers',
@@ -136,7 +130,7 @@ export function buildEditionEmail(edition: EditionInput, opts: { site?: string }
   const supplyShown = k.mos != null && k.verdict != null
   if (supplyShown) {
     const printed = mosText(k.mos)
-    cells.push({ figure: printed, caption: `months of supply, ${VERDICT_WORDS[k.verdict!]}` })
+    cells.push({ figure: printed, caption: 'months of supply' })
     cite(`${place} months of supply, end of ${label} (as printed)`, Number(printed), `payload.region.kpis.mos = ${k.mos}`)
     cite(`${place} market verdict, end of ${label}`, VERDICT_CITED[k.verdict!], 'payload.region.kpis.verdict')
     cite(`${place} homes for sale, end of ${label}`, k.active, 'payload.region.kpis.active')
@@ -188,7 +182,7 @@ export function buildEditionEmail(edition: EditionInput, opts: { site?: string }
     k.median.v != null
       ? `The median ${NOUN_SFR.one} in ${place} sold for ${money(k.median.v)} in ${month}.`
       : `The ${place} market in ${month}, from our monthly report.`
-  const previewText = supplyShown ? `${lead} ${mosText(k.mos)} months of supply: ${VERDICT_WORDS[k.verdict!]}.` : lead
+  const previewText = supplyShown ? `${lead} ${mosText(k.mos)} months of supply.` : lead
 
   // ── HTML (section rows) ───────────────────────────────────────────────────
   const eyebrow = (text: string, top = 0) =>

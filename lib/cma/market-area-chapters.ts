@@ -290,7 +290,7 @@ export function renderInventoryBoardHtml(
         windowMonths,
       )} months, an average of ${int(Math.round(perMonth))} sold each month. At that pace it would take ${formatMonthsOfSupply(
         mos,
-      )} months to sell what is listed, which is ${verdict.label.toLowerCase()} territory.`,
+      )} months to sell what is listed.`,
     )
   } else if (mos != null && verdict) {
     // The degraded branch, when the active count or the pace is missing. It
@@ -299,7 +299,7 @@ export function renderInventoryBoardHtml(
     sentences.push(
       `At the pace single-family homes are selling in ${place} it would take ${formatMonthsOfSupply(
         mos,
-      )} months to sell what is listed, which is ${verdict.label.toLowerCase()} territory.`,
+      )} months to sell what is listed.`,
     )
   }
   // NO THIRD SOLD-TO-FIRST-ASK FIGURE. `saleToListRatio` is the pace read's

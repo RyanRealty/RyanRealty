@@ -25,7 +25,7 @@ const MART_TRACE =
   'Closed MLS sales through Oregon Data Share, Bend, all property types, calendar year 2025. Not active inventory.'
 
 const PULSE_QUESTION =
-  /median home price|homes are for sale|buyer's or seller's|take to sell|stay on the market|homes sold in .+ in the last year/i
+  /median home price|homes are for sale|months of supply|take to sell|stay on the market|homes sold in .+ in the last year/i
 
 describe('buildPlaceFaqExtras', () => {
   it('emits nothing without named sources already on the page', () => {

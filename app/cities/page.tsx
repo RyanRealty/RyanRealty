@@ -138,7 +138,7 @@ function cityReveal(layers: DetachedOverlay | undefined, months: readonly Public
   // marketVerdict() labels read "seller's market"; the line opens a sentence.
   const verdict = headlines ? headlines.verdictLabel.charAt(0).toUpperCase() + headlines.verdictLabel.slice(1) : null
   const line = headlines
-    ? `${verdict} · ${headlines.mosLabel} months of supply`
+    ? `${headlines.mosLabel} months of supply`
     : layers?.inventory
       ? 'No published months-of-supply reading for this city'
       : null
@@ -397,7 +397,7 @@ async function renderCitiesIndex() {
     const layers = overlays.get(`city:${city.slug}`)
     const headlines = layers?.headlines ?? null
     const restingSupply = headlines
-      ? `${headlines.verdictLabel.charAt(0).toUpperCase()}${headlines.verdictLabel.slice(1)} · ${headlines.mosLabel} months`
+      ? `${headlines.mosLabel} months of supply`
       : null
     const detail = restingCityDetail({
       medianLine: median ? `Median list ${median}` : null,
@@ -553,8 +553,8 @@ async function renderCitiesIndex() {
   // When the drawing cannot be drawn, the note carries the figure as before.
   const directoryNote = regionDrawing
     ? `${formatCount(directory.length)} cities, A to Z.`
-    : mosText && regionVerdict
-      ? `${regionVerdict.label} at ${mosText} months of supply.`
+    : mosText
+      ? `${mosText} months of supply.`
       : ''
 
   return (

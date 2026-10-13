@@ -53,9 +53,9 @@ function meterSvg(cue: Extract<MotionCue, { kind: 'meter' }>, ink: string, groun
   // lit in its LABEL; the bar itself fills only to the value, because a fill
   // that ran to the zone's edge read as a gauge at 4 (critic pass 2026-10-07).
   const zones = [
-    { from: 0, to: low, label: 'Seller\u2019s', active: cue.verdictKind === 'sellers' },
-    { from: low, to: high, label: 'Balanced', active: cue.verdictKind === 'balanced' },
-    { from: high, to: cue.domainMax, label: 'Buyer\u2019s', active: cue.verdictKind === 'buyers' },
+    { from: 0, to: low, label: '4 mo', active: cue.verdictKind === 'sellers' },
+    { from: low, to: high, label: '6 mo', active: cue.verdictKind === 'balanced' },
+    { from: high, to: cue.domainMax, label: `${Math.round(cue.domainMax)} mo`, active: cue.verdictKind === 'buyers' },
   ]
   const trackY = 28
   const track = `<line x1="0" x2="${x(cue.domainMax)}" y1="${trackY}" y2="${trackY}" stroke="${ink}" stroke-opacity="0.38" stroke-width="3" stroke-linecap="butt"/>`

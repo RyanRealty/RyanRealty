@@ -14,7 +14,7 @@ const base = {
   placeLabel: 'Sunriver',
   street: '17936 Red Cedar',
   monthsOfSupply: '5.8',
-  verdictLabel: 'balanced market',
+  verdictLabel: '5.8 months of supply',
   activeCount: 48,
   salesPerMonth: 48 / 5.8,
   daysToPending: 28,
@@ -67,7 +67,7 @@ describe('the supply two-bar · a reader can reproduce the verdict', () => {
       activeCount: 671,
       salesPerMonth: 671 / 3.886,
       monthsOfSupply: '3.9',
-      verdictLabel: "seller's market",
+      verdictLabel: '3.9 months of supply',
     })!
     const sold = supply.bars!.find((b) => b.name === 'Under contract in a month')!
     expect(sold.label).toBe('173')
