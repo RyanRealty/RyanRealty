@@ -6,7 +6,7 @@ Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688` merged 
 
 **Verified locally (prerender, 2026-10-13).** Tetherow: 12 SFR, list $2,747,500, 12-mo sale $2,257,500, 54 days to contract. Same shape on Brasada Ranch, Broken Top, Black Butte Ranch, Sunriver, Eagle Crest, Caldera Springs, NorthWest Crossing. No `$0`.
 
-**Next.** Open the PR, wait for this PR's CI (main-also-failing checks do not count), squash-merge, `deploy:verify`, hit the live community URLs.
+**Next.** PR #521 is open and mergeable on latest main (`bfddc4020`). Wait for this PR's CI (main-also-failing checks do not count), squash-merge, `deploy:verify`, hit the live community URLs. GitHub cancelled the first CI run in the runner queue; a follow-up push retriggers it.
 
 Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` (cache / leftover HUD, not raw listings aggregations).
 
