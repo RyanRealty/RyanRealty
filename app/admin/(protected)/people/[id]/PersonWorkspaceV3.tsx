@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Suspense, type ComponentProps } from 'react'
+import '@/components/admin/v2/admin-v2.css'
 import { CmaTextMeButton } from '@/components/admin/crm/CmaTextMeButton'
 import { LeadComposer } from '@/components/admin/crm/lead-page-v3/LeadComposer'
 import { LeadSidebar, SidebarSec } from '@/components/admin/crm/lead-page-v3/LeadSidebar'
@@ -111,12 +112,6 @@ export function PersonWorkspaceV3(props: {
 
   return (
     <>
-      <style>{`
-        @media (max-width: 900px) {
-          .lead-v3-grid { grid-template-columns: 1fr !important; }
-          .lead-v3-now { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
       {props.kickoffReady ? (
         <section aria-label="CMA build" style={{ marginBottom: 16 }}>
           <p style={{ color: 'var(--a-ok)', fontWeight: 500, fontSize: 'var(--a-text-sm)' }}>
