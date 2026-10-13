@@ -99,6 +99,8 @@ type Props = {
   cityLine?: string | null
   lat?: number | null
   lng?: number | null
+  /** Active homes near this one. The map frames the subject together with these. */
+  nearby?: ReadonlyArray<{ lat: number; lng: number }>
   openHouseLabel?: string | null
   className?: string
   /**
@@ -200,6 +202,7 @@ export function ListingHero({
   cityLine,
   lat,
   lng,
+  nearby = [],
   openHouseLabel,
   className,
   lcpPriority = true,
@@ -473,7 +476,7 @@ export function ListingHero({
         ) : null}
         {showMap ? (
           <div className="listing-mosaic__pane">
-            <ListingMediaMap lat={lat!} lng={lng!} zoom={16} />
+            <ListingMediaMap lat={lat!} lng={lng!} zoom={16} fill nearby={nearby} />
           </div>
         ) : null}
         {showMap || showTour || showVideo ? null : (

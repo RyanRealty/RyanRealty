@@ -83,6 +83,7 @@ import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-trut
 import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
 import { ListingSimilarStrip } from '@/components/site/listing-detail/ListingSimilarStrip'
 import {
+  listingHeroMapPins,
   listingSimilarActive,
   listingSimilarDedupe,
   listingSimilarInPlace,
@@ -726,6 +727,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
       cityLine={listing.city}
       lat={listing.lat}
       lng={listing.lng}
+      nearby={listingHeroMapPins(relatedHomes.nearby)}
       openHouseLabel={
         openHouses[0]
           ? publishOpenHouseBadgeLabel(openHouses[0].event_date, openHouses[0].start_time)

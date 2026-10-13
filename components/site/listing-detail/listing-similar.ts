@@ -47,6 +47,23 @@ export function listingSimilarActive(tiles: readonly ListingTile[]): ListingTile
   return tiles.filter((tile) => ACTIVE.has(tile.status))
 }
 
+export type ListingMapPin = { lat: number; lng: number }
+
+/** Active nearby homes that can take a pin. A missing coordinate is not a pin. */
+export function listingHeroMapPins(tiles: readonly ListingTile[]): ListingMapPin[] {
+  const pins: ListingMapPin[] = []
+  const seen = new Set<string>()
+  for (const tile of listingSimilarActive(tiles)) {
+    if (tile.lat == null || tile.lng == null) continue
+    if (!Number.isFinite(tile.lat) || !Number.isFinite(tile.lng)) continue
+    const key = `${tile.lat.toFixed(5)},${tile.lng.toFixed(5)}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    pins.push({ lat: tile.lat, lng: tile.lng })
+  }
+  return pins
+}
+
 function haystack(tile: ListingTile): string[] {
   // ListingTile carries the neighborhood as boundaryNeighborhood only — the
   // neighborhoodName field lives on a different type in the same module.
