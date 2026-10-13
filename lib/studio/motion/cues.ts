@@ -291,8 +291,8 @@ function listingLeads(subject: MotionSubject, slots: number): LeadDraft[] {
 }
 
 /**
- * The market card. Months of supply is the one number that says what kind of
- * market this is, so it leads, on a meter with its verdict. When the cache
+ * The market card. Months of supply is the one number that leads, on a meter
+ * with the supply line as its verdict copy. When the cache
  * withheld it (an untrusted grain), the median list price stands in; when
  * neither exists the card names the place and claims nothing.
  */
@@ -308,10 +308,9 @@ function marketLeads(subject: MotionSubject): LeadDraft[] {
         value: mosText,
         mos,
         // The displayed value never crosses a threshold the raw value does
-        // not (lib/format/months-of-supply.ts), so the verdict of the printed
-        // number is the verdict of the market. One call names the words and
-        // lights the zone, so the two cannot disagree.
-        verdict: '',
+        // not (lib/format/months-of-supply.ts). Public copy is the supply
+        // line; verdictKind lights the matching month zone.
+        verdict: verdict.label,
         verdictKind: verdict.kind,
         thresholds: [MOS_SELLER_MAX, MOS_BALANCED_MAX],
         domainMax: Math.max(10, Math.ceil(mos + 1)),
@@ -594,8 +593,8 @@ export function cueTexts(cue: MotionCue): string[] {
  *
  * Authored text is allowed through on purpose and only that: the subject's
  * own label (a street number is not a market claim), the as-of dates read
- * from the traces, the meter's threshold constants, and a chart's scale
- * labels (round values, a ruler). A chart's month labels pass because they
+ * from the traces, the meter's threshold constants and domain max (a ruler),
+ * and a chart's scale labels (round values, a ruler). A chart's month labels pass because they
  * are part of its figures' keys ("median sale price, Sep 2026"), the way
  * every figure label is. Anything else that looks
  * like a number is a leak, and a leak kills the draft.
@@ -603,7 +602,9 @@ export function cueTexts(cue: MotionCue): string[] {
 export function figureLeaks(plan: MotionPlan, subject: MotionSubject, rendered?: string[]): string[] {
   const authored: string[] = [subject.label, subject.heading?.line ?? '', subject.heading?.eyebrow ?? '', CLOSER_CTA]
   for (const cue of plan.cues) {
-    if (cue.kind === 'meter') authored.push(String(cue.thresholds[0]), String(cue.thresholds[1]))
+    if (cue.kind === 'meter') {
+      authored.push(String(cue.thresholds[0]), String(cue.thresholds[1]), String(Math.round(cue.domainMax)))
+    }
     if ((cue.kind === 'figure' || cue.kind === 'meter' || cue.kind === 'chart') && cue.asOf) authored.push(cue.asOf)
     // A chart's scale labels are a ruler at round values, not a claim.
     if (cue.kind === 'chart') authored.push(...cue.gridlines.map((g) => g.label))
