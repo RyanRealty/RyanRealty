@@ -122,6 +122,8 @@ export function mergeLeadAttributionParams(
     if (value) out[key] = value
   }
   return out
+}
+
 /** Overlay client lpContext (utm/gclid/fbclid) on referer params so click-around keeps the ad. */
 export function mergeLeadAttribution(
   fromReferer: LeadAttributionParams,
