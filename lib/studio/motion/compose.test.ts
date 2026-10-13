@@ -28,7 +28,7 @@ function deps(overrides: Partial<ComposeMotionDeps> = {}): ComposeMotionDeps {
     render: vi.fn(async (input: RenderMotionInput) => ({
       body: Buffer.from('final'),
       stills: input.stills.map((s) => ({ ...s, jpg: Buffer.from('jpg') })),
-      renderedText: ['Bend, Oregon', '4.1', 'months of supply', "Seller's market", 'As of Oct 6, 2026', '4', '6'],
+      renderedText: ['Bend, Oregon', '4.1', 'months of supply', 'As of Oct 6, 2026', '4', '6'],
       fonts: [{ family: 'RR Geist', weight: '600', status: 'loaded' }],
       frames: 180,
       captured: 41,

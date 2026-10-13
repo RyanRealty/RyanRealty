@@ -45,7 +45,7 @@ const MT_HIT = {
   monthsOfSupply: 4.45402298850575,
   mosLabel: '4.5',
   verdictKind: 'balanced' as const,
-  verdictLabel: 'balanced market',
+  verdictLabel: '4.5 months of supply',
   medianListPrice: 915_000,
   computedAt: '2026-08-23T00:00:00.000Z',
   completeThrough: '2026-08-21',

@@ -1,17 +1,22 @@
 /**
- * Canonical months-of-supply (MoS) formula + market verdict. Audit p0.4.
+ * Canonical months-of-supply (MoS) formula + internal classification. Audit p0.4.
  *
  * CLAUDE.md §0 mandate: MoS = active listings / (homes closed in the last 6
- * months / 6). Thresholds: <= 4 seller's, 4-6 balanced, >= 6 buyer's.
+ * months / 6). Thresholds stay in this file for CMA and other internal
+ * branching: <= 4 sellers, 4-6 balanced, >= 6 buyers.
  *
- * Several market pages previously PRINTED a different, wrong formula in their
- * AI-citable methodology trace ("active listings divided by (closed last 30 days
- * times 2)") — a §0 data-accuracy/compliance hazard on a licensed-broker
- * surface, since the printed math contradicted both the canonical formula and
- * the number actually shown (which comes from the market_pulse_live.months_of_supply
- * column computed by the refresh_market_pulse() RPC). This module is the single
- * source for the formula text, the thresholds, and the verdict.
+ * Public copy prints the months-of-supply figure (`label` is that line), never
+ * a market-type phrase. Several market pages previously PRINTED a different,
+ * wrong formula in their AI-citable methodology trace ("active listings divided
+ * by (closed last 30 days times 2)") — a §0 data-accuracy/compliance hazard on
+ * a licensed-broker surface, since the printed math contradicted both the
+ * canonical formula and the number actually shown (which comes from the
+ * market_pulse_live.months_of_supply column computed by the
+ * refresh_market_pulse() RPC). This module is the single source for the formula
+ * text and the thresholds.
  */
+import { publicSupplyLine } from '@/lib/format/months-of-supply'
+
 export type MarketKind = 'sellers' | 'balanced' | 'buyers' | 'unknown'
 
 export const MOS_SELLER_MAX = 4
@@ -24,12 +29,16 @@ export function monthsOfSupply(activeListings: number, closedLast6Months: number
   return activeListings / (closedLast6Months / 6)
 }
 
-/** Verdict for a months-of-supply value. Single source of the <=4 / <6 / >=6 boundaries. */
+/**
+ * Classification for a months-of-supply value. `kind` is internal.
+ * `label` is the public line ("4.2 months of supply"), never a market type.
+ */
 export function marketVerdict(mos: number | null | undefined): { kind: MarketKind; label: string } {
   if (mos == null || !Number.isFinite(mos)) return { kind: 'unknown', label: 'unknown' }
-  if (mos <= MOS_SELLER_MAX) return { kind: 'sellers', label: "seller's market" }
-  if (mos < MOS_BALANCED_MAX) return { kind: 'balanced', label: 'balanced market' }
-  return { kind: 'buyers', label: "buyer's market" }
+  const label = publicSupplyLine(mos)
+  if (mos <= MOS_SELLER_MAX) return { kind: 'sellers', label }
+  if (mos < MOS_BALANCED_MAX) return { kind: 'balanced', label }
+  return { kind: 'buyers', label }
 }
 
 /** One-sentence formula clause for AI-citable methodology traces (§0). */
@@ -43,12 +52,8 @@ export const MOS_METHODOLOGY_CLAUSE =
 export const MOS_PLAIN_LABEL = 'homes for sale vs a month of sales'
 
 /**
- * Threshold sentence, and it must read the way marketVerdict() computes. The old
- * wording said "Under 4 months is a seller's market, 4 to 6 is balanced", which
- * contradicts the function at exactly 4.0: `mos <= MOS_SELLER_MAX` calls 4.0 a
- * seller's market while the sentence calls it balanced. Five public market pages
- * print this clause beside a verdict, so the disagreement was publishable
- * (CLAUDE.md section 0: the narrative matches the number it sits next to).
+ * What a high or low months-of-supply figure means, without a market-type
+ * label. Public pages print this beside the number.
  */
 export const MOS_THRESHOLD_CLAUSE =
-  "4 months of supply or less is a seller's market, above 4 and under 6 is balanced, 6 or more is a buyer's market."
+  'A lower months-of-supply figure means fewer homes for sale relative to the recent sales pace.'

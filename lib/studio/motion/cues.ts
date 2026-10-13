@@ -221,11 +221,6 @@ export const CUE_PARTS: Record<MotionCue['kind'], Array<{ part: string; delay: n
   ],
 }
 
-/** "$1,250,000" stays as written; only the case of a sentence start changes. */
-function capitalise(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1)
-}
-
 /**
  * The date the data behind a figure describes, from its §0 trace: the cache's
  * refreshed_at or the cell's computed_at. Never fetched_at: that is when we
@@ -316,7 +311,7 @@ function marketLeads(subject: MotionSubject): LeadDraft[] {
         // not (lib/format/months-of-supply.ts), so the verdict of the printed
         // number is the verdict of the market. One call names the words and
         // lights the zone, so the two cannot disagree.
-        verdict: capitalise(verdict.label),
+        verdict: '',
         verdictKind: verdict.kind,
         thresholds: [MOS_SELLER_MAX, MOS_BALANCED_MAX],
         domainMax: Math.max(10, Math.ceil(mos + 1)),

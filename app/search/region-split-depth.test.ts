@@ -32,8 +32,8 @@ describe('buildRegionMarketBand (SITE-201)', () => {
     expect(byKey.get('median-list')?.value).toBe('$700,000')
     // 4.02 is balanced; the boundary-safe display is 4.1, never a 4.0 that reads seller's.
     expect(byKey.get('supply')?.value).toBe('4.1')
-    expect(byKey.get('supply')?.label).toContain('balanced market')
-    expect(band.headline).toBe('Central Oregon is a balanced market right now')
+    expect(byKey.get('supply')?.label).toBe('months of supply')
+    expect(band.headline).toBe('Central Oregon has 4.1 months of supply right now')
     for (const f of band.figures) {
       expect(faq.faqs.map((q) => q.answer).join(' ')).toContain(f.value)
     }

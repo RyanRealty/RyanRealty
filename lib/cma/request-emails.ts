@@ -258,7 +258,7 @@ export async function sendPlaceValueConfirmation(params: {
 
   const facts: string[] = []
   if (params.verdictLabel && params.monthsOfSupply != null) {
-    facts.push(`${params.placeName} is a ${params.verdictLabel} right now, with ${formatMonthsOfSupply(params.monthsOfSupply)} months of supply.`)
+    facts.push(`${params.placeName} has ${formatMonthsOfSupply(params.monthsOfSupply)} months of supply right now.`)
   }
   if (params.daysToPending != null) {
     facts.push(`Homes there go pending in a median ${Math.round(params.daysToPending)} days.`)

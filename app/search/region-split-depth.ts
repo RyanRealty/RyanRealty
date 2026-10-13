@@ -140,7 +140,7 @@ export function buildRegionMarketBand(faq: MarketFaqResult | null): RegionMarket
     figures.push({
       key: 'supply',
       value: formatMonthsOfSupply(mos),
-      label: `months of supply, ${verdict.label.toLowerCase()}`,
+      label: 'months of supply',
       sentence: 'How long the homes for sale would last at the recent pace of sales.',
       href: '/housing-market/central-oregon',
     })
@@ -167,7 +167,7 @@ export function buildRegionMarketBand(faq: MarketFaqResult | null): RegionMarket
   if (figures.length === 0) return null
   return {
     headline: verdict
-      ? `Central Oregon is a ${verdict.label.toLowerCase()} right now`
+      ? `Central Oregon has ${formatMonthsOfSupply(mos!)} months of supply right now`
       : 'The Central Oregon housing market right now',
     figures,
     source: 'Single-family homes across Central Oregon in the regional MLS, counted by Ryan Realty',
