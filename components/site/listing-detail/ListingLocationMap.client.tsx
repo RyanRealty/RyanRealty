@@ -129,6 +129,17 @@ export default function ListingLocationMapClient({
 
   useEffect(() => {
     if (!map) return
+    // The hero map frames the subdivision. Nearby pins must not pull the
+    // camera out to the next town.
+    if (fill && paths.length > 0) {
+      const bounds = new google.maps.LatLngBounds()
+      bounds.extend(center)
+      for (const ring of paths) {
+        for (const point of ring) bounds.extend(point)
+      }
+      if (!bounds.isEmpty()) map.fitBounds(bounds, 48)
+      return
+    }
     if (nearbyPins.length > 0) {
       const bounds = new google.maps.LatLngBounds()
       bounds.extend(center)
@@ -142,7 +153,7 @@ export default function ListingLocationMapClient({
       for (const point of ring) bounds.extend(point)
     }
     if (!bounds.isEmpty()) map.fitBounds(bounds, 32)
-  }, [map, paths, nearbyPins, center])
+  }, [map, paths, nearbyPins, center, fill])
 
   if (error) {
     if (staticFallback) {

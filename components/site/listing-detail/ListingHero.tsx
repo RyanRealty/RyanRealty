@@ -99,8 +99,10 @@ type Props = {
   cityLine?: string | null
   lat?: number | null
   lng?: number | null
-  /** Active homes near this one. The map frames the subject together with these. */
+  /** Active homes in this subdivision. The map frames the subdivision, not the region. */
   nearby?: ReadonlyArray<{ lat: number; lng: number }>
+  /** Subdivision outline. The Map tab fits this, not every nearby pin. */
+  boundary?: GeoJSON.Geometry | null
   openHouseLabel?: string | null
   className?: string
   /**
@@ -203,6 +205,7 @@ export function ListingHero({
   lat,
   lng,
   nearby = [],
+  boundary = null,
   openHouseLabel,
   className,
   lcpPriority = true,
@@ -476,7 +479,7 @@ export function ListingHero({
         ) : null}
         {showMap ? (
           <div className="listing-mosaic__pane">
-            <ListingMediaMap lat={lat!} lng={lng!} zoom={16} fill nearby={nearby} />
+            <ListingMediaMap lat={lat!} lng={lng!} zoom={16} fill nearby={nearby} boundary={boundary} />
           </div>
         ) : null}
         {showMap || showTour || showVideo ? null : (
