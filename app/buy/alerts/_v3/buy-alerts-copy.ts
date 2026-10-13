@@ -1,5 +1,5 @@
 /**
- * Interpolate BUY_ALERTS_COPY with live leftover HUD and price-drop facts.
+ * Interpolate BUY_ALERTS_COPY with live published city and price-drop facts.
  * Pure: the page loads facts, this fills tokens. Missing figures omit their
  * sentence. No figure is invented here.
  */

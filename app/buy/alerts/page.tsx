@@ -5,10 +5,11 @@
  * barrel. Order: Breadcrumb, the answer (H1 and live proof), Sheet (signup),
  * Questions, Sources, Quiet, Footer.
  *
- * H1 is the fallback without a same-day claim: the send engine is the hourly
- * cron GET /api/cron/saved-search-alerts (`0 * * * *` in vercel.json). Town,
- * price, and bed filters are real (filters.city / cities / minPrice / maxPrice /
- * beds in submitSearchAlertSignup).
+ * H1 and meta are the fallback without a same-day claim: the send engine is
+ * the hourly cron GET /api/cron/saved-search-alerts (`0 * * * *` in
+ * vercel.json). Town, price, and bed filters are real (filters.city / cities /
+ * minPrice / maxPrice / beds in submitSearchAlertSignup); meta still omits
+ * "price and beds" per the approved fallback.
  */
 import { cache } from 'react'
 import type { Metadata } from 'next'
@@ -29,7 +30,12 @@ import {
   type V3QuietItem,
 } from '@/components/site/v3'
 import { CalculatorSheet } from '@/app/tools/mortgage-calculator/_v3/CalculatorSheet'
-import { BUY_ALERTS_COPY, BUY_ALERTS_LINKS, ROUTE_PATH } from './_v3/buy-alerts-constants'
+import {
+  BUY_ALERTS_COPY,
+  BUY_ALERTS_LINKS,
+  BUY_ALERTS_TOWN_LINKS,
+  ROUTE_PATH,
+} from './_v3/buy-alerts-constants'
 import { buyAlertsCopy } from './_v3/buy-alerts-copy'
 import { loadBuyAlertsFacts } from './_v3/buy-alerts-facts'
 import { BuyAlertsSignup } from './_v3/BuyAlertsSignup.client'
@@ -70,13 +76,14 @@ export default async function BuyAlertsPage() {
   ]
 
   const nextItems: V3QuietItem[] = [
-    { label: BUY_ALERTS_COPY.linkHomes, href: BUY_ALERTS_LINKS.homes },
-    { label: BUY_ALERTS_COPY.linkBendHomes, href: BUY_ALERTS_LINKS.bendHomes },
     { label: BUY_ALERTS_COPY.linkPriceDrops, href: BUY_ALERTS_LINKS.priceDrops },
-    { label: BUY_ALERTS_COPY.linkBendDrops, href: BUY_ALERTS_LINKS.bendDrops },
+    { label: BUY_ALERTS_COPY.linkHomes, href: BUY_ALERTS_LINKS.homes },
     { label: BUY_ALERTS_COPY.linkOpenHouses, href: BUY_ALERTS_LINKS.openHouses },
     { label: BUY_ALERTS_COPY.linkNewConstruction, href: BUY_ALERTS_LINKS.newConstruction },
-    { label: BUY_ALERTS_COPY.linkBendCity, href: BUY_ALERTS_LINKS.bendCity },
+    { label: BUY_ALERTS_COPY.linkLeverage, href: BUY_ALERTS_LINKS.leverage },
+    { label: BUY_ALERTS_COPY.linkBook, href: BUY_ALERTS_LINKS.book },
+    { label: BUY_ALERTS_COPY.linkFairHousing, href: BUY_ALERTS_LINKS.fairHousing },
+    { label: BUY_ALERTS_COPY.linkPrivacy, href: BUY_ALERTS_LINKS.privacy },
   ]
 
   return (
@@ -99,21 +106,49 @@ export default async function BuyAlertsPage() {
             {copy.h1}
           </V3Heading>
           <p className="buy-alerts-lede">{copy.whatYouGet}</p>
-          <p className="buy-alerts-proof">{copy.leverage}</p>
+
+          <V3Heading id="inbox-heading" level={2}>
+            {BUY_ALERTS_COPY.inboxHeading}
+          </V3Heading>
+          <ul className="buy-alerts-inbox">
+            <li>{BUY_ALERTS_COPY.inboxNew}</li>
+            <li>{BUY_ALERTS_COPY.inboxDrops}</li>
+            <li>{BUY_ALERTS_COPY.inboxCalls}</li>
+            <li>{BUY_ALERTS_COPY.inboxUnsub}</li>
+          </ul>
+
+          <V3Heading id="why-heading" level={2}>
+            {BUY_ALERTS_COPY.whyHeading}
+          </V3Heading>
+          {copy.volume ? <p className="buy-alerts-proof">{copy.volume}</p> : null}
+          <p className="buy-alerts-proof">
+            {copy.dropsCount ? (
+              <>
+                {copy.dropsCount}
+                {copy.dropsMedian ? `, ${copy.dropsMedian}` : '.'}{' '}
+              </>
+            ) : null}
+            {copy.leverage}{' '}
+            <Link href={BUY_ALERTS_LINKS.leverage}>{BUY_ALERTS_COPY.seeWhy}</Link>.
+          </p>
           {copy.leverageMos ? <p className="buy-alerts-proof">{copy.leverageMos}</p> : null}
-          {copy.volume ? (
-            <p className="buy-alerts-proof">
-              {copy.volume}{' '}
-              <Link href={BUY_ALERTS_LINKS.bendCity}>{BUY_ALERTS_COPY.linkBendCity}</Link>.
-            </p>
-          ) : null}
-          {copy.dropsCount ? (
-            <p className="buy-alerts-proof">
-              {copy.dropsCount}
-              {copy.dropsMedian ? ` ${copy.dropsMedian}` : ''}{' '}
-              <Link href={BUY_ALERTS_LINKS.bendDrops}>{BUY_ALERTS_COPY.linkBendDrops}</Link>.
-            </p>
-          ) : null}
+
+          <V3Heading id="pick-towns-heading" level={2}>
+            {BUY_ALERTS_COPY.pickTownsHeading}
+          </V3Heading>
+          <p className="buy-alerts-town-links">
+            {BUY_ALERTS_TOWN_LINKS.map((town, i) => (
+              <span key={town.href}>
+                {i > 0 ? ' · ' : ''}
+                <Link href={town.href}>{town.label}</Link>
+              </span>
+            ))}
+          </p>
+          <p className="buy-alerts-proof">
+            {BUY_ALERTS_COPY.saveSearchBefore}{' '}
+            <Link href={BUY_ALERTS_LINKS.homes}>{BUY_ALERTS_COPY.saveSearchLink}</Link>{' '}
+            {BUY_ALERTS_COPY.saveSearchAfter}
+          </p>
           <p className="buy-alerts-source">{copy.source}</p>
         </section>
 

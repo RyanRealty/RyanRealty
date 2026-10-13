@@ -6,6 +6,7 @@
  * Cadence and unsubscribe are visitor-visible sentences in this file so
  * ci:alert-capture-disclosure can read them after comments are stripped.
  */
+import Link from 'next/link'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { FormAdConsentNotice, FormAdCookieBox, useFormConsentRestricted } from '@/components/site/FormAdConsent'
@@ -25,6 +26,7 @@ import {
   BUY_ALERTS_COPY,
   BUY_ALERTS_DEFAULT_TOWNS,
   BUY_ALERTS_FORM_ID,
+  BUY_ALERTS_LINKS,
   BUY_ALERTS_LP_VARIANT,
   BUY_ALERTS_TOWNS,
 } from './buy-alerts-constants'
@@ -34,7 +36,7 @@ import '@/components/site/v3/V3Ask.css'
 type Status = 'asking' | 'sending' | 'sent' | 'failed'
 
 const FORM_CADENCE: typeof BUY_ALERTS_COPY.formCadence =
-  'One email per new listing. Unsubscribe any time.'
+  'Free. One email per new listing. Unsubscribe any time.'
 
 const PRICE_OPTIONS = V3_PRICE_STOPS.filter((n) => n > 0).map((n) => ({
   value: String(n),
@@ -213,7 +215,10 @@ export function BuyAlertsSignup() {
         </V3Button>
       </div>
 
-      <p className="buy-alerts-cadence">{FORM_CADENCE}</p>
+      <p className="buy-alerts-cadence">
+        {FORM_CADENCE}{' '}
+        <Link href={BUY_ALERTS_LINKS.privacy}>{BUY_ALERTS_COPY.linkPrivacy}</Link>
+      </p>
 
       <FormAdConsentNotice
         surface="ask"

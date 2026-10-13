@@ -4,6 +4,8 @@
 @layer base {
   .v3 .buy-alerts-lede,
   .v3 .buy-alerts-proof,
+  .v3 .buy-alerts-inbox,
+  .v3 .buy-alerts-town-links,
   .v3 .buy-alerts-faq dd,
   .v3 .buy-alerts-sources {
     color: var(--v3-ink);
@@ -29,9 +31,18 @@
 }
 
 .v3 .buy-alerts-lede,
-.v3 .buy-alerts-proof {
+.v3 .buy-alerts-proof,
+.v3 .buy-alerts-town-links {
   max-width: var(--v3-measure-text);
   margin: var(--v3-space-sm) 0 0;
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-body);
+}
+
+.v3 .buy-alerts-inbox {
+  max-width: var(--v3-measure-text);
+  margin: var(--v3-space-sm) 0 0;
+  padding-left: var(--v3-space-md);
   font-size: var(--v3-size-body-lg);
   line-height: var(--v3-leading-body);
 }

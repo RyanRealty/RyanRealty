@@ -1,7 +1,7 @@
 /**
- * Live leftover HUD and Bend price-drop facts for /buy/alerts.
- * Same helpers the published city, leftover HUD, and price-drop pages use.
- * A failed read publishes no count. Pulse never fills these cells.
+ * Live published city and Bend price-drop facts for /buy/alerts.
+ * Same helpers the city and price-drop pages use. A failed read publishes
+ * no count. Pulse never fills these cells.
  */
 import { formatDate } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
