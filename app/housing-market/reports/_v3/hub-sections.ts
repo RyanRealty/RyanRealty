@@ -64,7 +64,7 @@ export function buildRegionFigures(
     figures.push({
       value: v3Text(formatMonthsOfSupply(mosRaw)),
       label: v3Text(
-        verdict.kind === 'unknown' ? 'months of supply' : `months of supply, ${verdict.label}`,
+        'months of supply',
       ),
       href: '/months-of-supply',
     })

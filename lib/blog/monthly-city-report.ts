@@ -166,7 +166,7 @@ export function buildMonthlyCityReport(input: MonthlyReportInput): MonthlyReport
   const liveSentences: string[] = []
   if (live?.activeCount != null) liveSentences.push(`${city.label} is carrying ${live.activeCount} active single-family listings as of ${liveDate}.`)
   if (mos != null && verdict.kind !== 'unknown') {
-    liveSentences.push(`Months of supply sits at ${formatMonthsOfSupply(mos)}, which is a ${verdict.label} by the standard measure: 4 months or less favors sellers, above 4 and under 6 is balanced, 6 or more favors buyers.`)
+    liveSentences.push(`Months of supply sits at ${formatMonthsOfSupply(mos)}.`)
   }
   if (live?.medianDaysToPending != null) liveSentences.push(`The homes going pending now are doing it in a median ${Math.round(live.medianDaysToPending)} days.`)
 
@@ -201,8 +201,8 @@ ${lines.join('\n')}
 <p>${money(median)} for a single-family home, the median of ${sold} closed sales in our MLS database, verified ${verified}.</p>
 <h3>How many homes sold in ${city.label} in ${monthName} ${year}?</h3>
 <p>${sold} single-family homes closed in ${city.label} in ${monthName} ${year}${priorYear?.soldCount ? `, against ${priorYear.soldCount} in ${monthName} ${Number(year) - 1}` : ''}.</p>
-<h3>Is ${city.label} a buyer's or seller's market right now?</h3>
-<p>${mos != null && verdict.kind !== 'unknown' ? `As of ${liveDate}, ${city.label} has ${formatMonthsOfSupply(mos)} months of supply, which is a ${verdict.label}. Four months or less favors sellers, above four and under six is balanced, six or more favors buyers.` : `The current months of supply and the verdict it carries are on the <a href="${city.marketHref}">${city.label} market page</a>, updated from live MLS data.`}</p>
+<h3>How many months of supply does ${city.label} have right now?</h3>
+<p>${mos != null && verdict.kind !== 'unknown' ? `As of ${liveDate}, ${city.label} has ${formatMonthsOfSupply(mos)} months of supply.` : `The current months of supply are on the <a href="${city.marketHref}">${city.label} market page</a>, updated from live MLS data.`}</p>
 <h3>How long do homes take to sell in ${city.label}?</h3>
 <p>${current.medianDom != null ? `The homes that closed in ${monthName} ${year} had a median of ${Math.round(current.medianDom)} days on market.` : `The current median days on market is on the ${city.label} market page.`}${live?.medianDaysToPending != null ? ` The homes going pending as of ${liveDate} are doing it in a median ${Math.round(live.medianDaysToPending)} days.` : ''}</p>
 <h3>Where do these numbers come from?</h3>

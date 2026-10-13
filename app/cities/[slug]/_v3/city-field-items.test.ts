@@ -17,7 +17,7 @@ describe('cityFieldCaption', () => {
         verdictKind: 'sellers',
         verdictLabel: "seller's market",
       }),
-    ).toBe('The 248 newest single-family listings in Bend · 3.6 months of supply · a seller\'s market')
+    ).toBe('The 248 newest single-family listings in Bend · 3.6 months of supply')
   })
 
   it('omits a verdict when MoS is absent', () => {

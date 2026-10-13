@@ -373,7 +373,7 @@ function geoDescription(input: {
   if (clauses.length === 0) {
     return `Single-family market data for ${input.geoName}, Oregon: inventory, list prices, and how fast homes go under contract.`
   }
-  const verdictClause = supply != null ? ` A ${input.verdictLabel}.` : ''
+  const verdictClause = ''
   const insight = input.insightClause ? ` ${input.insightClause}` : ''
   const head = `${input.geoName} single-family homes: ${clauses.join(', ')}.${verdictClause}${insight}`
   const tail = ' Live from Oregon Data Share MLS.'

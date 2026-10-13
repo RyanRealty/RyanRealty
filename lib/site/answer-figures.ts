@@ -201,7 +201,7 @@ export function buildAnswerFigures(input: AnswerFiguresInput): AnswerFigure[] {
       ],
       ...(input.verdictLabel
         ? {
-            verdict: `That is ${input.monthsOfSupply} months of homes on the market, which is a ${input.verdictLabel}.`,
+            verdict: `That is ${input.monthsOfSupply} months of homes on the market.`,
           }
         : {}),
       source: input.sources.supply,

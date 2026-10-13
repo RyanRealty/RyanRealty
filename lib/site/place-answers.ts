@@ -328,23 +328,19 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
   const asked = new Set<string>()
   const ask = (question: string) => asked.add(question.trim().toLowerCase())
 
-  // ── The verdict, drawn as a position rather than said as a word ───────────
-  // The bands ARE lib/market/classify.ts: 4 or less is a seller's market, above
-  // 4 and under 6 balanced, 6 or more a buyer's. marketVerdict reads the RAW
-  // value and formatMonthsOfSupply is the only thing that rounds it, so the
-  // word, the digits and the filled band can never disagree (ci:market-formula).
+  // Months of supply, drawn as a position on a 0–12 month rule.
+  // marketVerdict reads the RAW value and formatMonthsOfSupply is the only
+  // thing that rounds it (ci:market-formula).
   if (positive(f.monthsOfSupply)) {
     const raw = f.monthsOfSupply
     const shown = formatMonthsOfSupply(raw)
     const verdict = marketVerdict(raw)
-    const kind =
-      verdict.kind === 'sellers' ? "seller's" : verdict.kind === 'buyers' ? "buyer's" : 'balanced'
     answers.push({
       id: 'answer-verdict',
       open: true,
-      question: `Is ${place} a buyer's or seller's market?`,
+      question: `How many months of supply does ${place} have?`,
       body: [
-        `${place} has ${shown} months of supply, which is a ${kind} market. ${MOS_THRESHOLD_CLAUSE}`,
+        `${place} has ${shown} months of supply. ${MOS_THRESHOLD_CLAUSE}`,
         `Months of supply is how long it would take to sell every home on the market here at the pace homes have actually been selling. Fewer months means buyers are competing; more means they can take their time.`,
       ],
       figure: {
@@ -362,9 +358,9 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
           subjectLabel: place,
           format: { unit: ' months', decimals: 1 },
           bands: [
-            { to: 4, label: "seller's" },
-            { to: 6, label: 'balanced' },
-            { to: 12, label: "buyer's" },
+            { to: 4, label: '4 mo' },
+            { to: 6, label: '6 mo' },
+            { to: 12, label: '12 mo' },
           ],
         },
       },
@@ -377,7 +373,7 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       ),
     })
     traces.push(
-      `${shown} months of supply (${verdict.label}): ${trace(`months of supply on ${f.monthsOfSupplyActiveCount ?? '?'} active`)}`,
+      `${shown} months of supply: ${trace(`months of supply on ${f.monthsOfSupplyActiveCount ?? '?'} active`)}`,
     )
   } else if (f.closedCount && positive(f.closedCount.count)) {
     // NO VERDICT, SAID OUT LOUD, with the figure that explains the refusal.
@@ -388,12 +384,12 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
     answers.push({
       id: 'answer-verdict',
       open: true,
-      question: `Is ${place} a buyer's or seller's market?`,
+      question: `How many months of supply does ${place} have?`,
       body: [
         // AEO-5 / VOICE-5 (visibility audit 2026-09-22): the fact in plain
         // words; "sales we can attribute" and "we are not printing one" were
         // how the pipeline talks, and an answer engine quotes this sentence.
-        `Too few homes have sold in ${place} on their own to call it a buyer's or seller's market with confidence.`,
+        `Too few homes have sold in ${place} on their own to publish a months-of-supply reading.`,
         `${count.toLocaleString('en-US')} ${closedHomes} closed in ${place} ${windowLabel}${city ? `, so the ${city} market as a whole is the better guide` : ''}. Ask us and we will read the comparable sales for your street instead.`,
         // The drawing carries the window before as a second run of marks, so
         // the sentence carries it too — the FAQPage payload is derived from

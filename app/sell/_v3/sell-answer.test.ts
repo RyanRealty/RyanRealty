@@ -34,7 +34,7 @@ const BEND: SellAnswerData = {
   placeLabel: 'Bend',
   grain: 'city',
   placeHref: '/housing-market/bend',
-  verdictLabel: "seller's market",
+  verdictLabel: '3.9 months of supply',
   monthsOfSupply: '3.9',
   activeCount: 671,
   salesPerMonth: 671 / 3.88610038610039,
@@ -67,7 +67,7 @@ const FIGURES = () =>
     placeLabel: 'Bend',
     street: '2732 NW Ordway Ave',
     monthsOfSupply: '3.9',
-    verdictLabel: "seller's market",
+    verdictLabel: '3.9 months of supply',
     activeCount: 671,
     salesPerMonth: salesPerMonthFrom(671, 3.88610038610039),
     daysToPending: 23,
@@ -88,7 +88,7 @@ const FIGURES = () =>
 
 describe('the answer says something, in a sentence, with no price', () => {
   it('leads with the verdict as a claim', () => {
-    expect(sellAnswerClaim(BEND)).toBe("Bend is a seller's market right now.")
+    expect(sellAnswerClaim(BEND)).toBe('Bend has 3.9 months of supply right now.')
   })
 
   it('still makes a claim when the place publishes no verdict', () => {
@@ -154,9 +154,7 @@ describe('months of supply is drawn, not asserted', () => {
     expect(bars[1]?.name).toBe('Under contract in a month')
     // The verdict is the figure's CAPTION, which is the whole point of drawing
     // it: no tile anywhere says "3.9" on its own.
-    expect(supply()?.verdict).toBe(
-      "That is 3.9 months of homes on the market, which is a seller's market.",
-    )
+    expect(supply()?.verdict).toBe('That is 3.9 months of homes on the market.')
   })
 
   it('draws nothing when either side is missing', () => {
@@ -164,7 +162,7 @@ describe('months of supply is drawn, not asserted', () => {
       placeLabel: 'Bend',
       street: 'x',
       monthsOfSupply: '3.9',
-      verdictLabel: "seller's market",
+      verdictLabel: '3.9 months of supply',
       activeCount: null,
       salesPerMonth: 173,
       daysToPending: null,

@@ -166,13 +166,13 @@ describe('V3Ledger reveal', () => {
 
   it('renders the reveal on the row that has one, and the island once per list', () => {
     const html = render([
-      row({ reveal: { line: v3Text("Seller's market · 3.8 months of supply"), series: twelve, seriesLabel: v3Text('closes by month') } }),
+      row({ reveal: { line: v3Text('3.8 months of supply'), series: twelve, seriesLabel: v3Text('closes by month') } }),
       row({ href: '/cities/redmond' }),
     ])
     expect(html.match(/class="v3-ledger__reveal"/g)).toHaveLength(1)
     expect(html.match(/v3-ledger__hold/g)).toHaveLength(1)
     expect(html).toContain('v3-ledger--reveal')
-    expect(html).toContain("Seller&#x27;s market · 3.8 months of supply")
+    expect(html).toContain('3.8 months of supply')
     expect(html.match(/<svg class="v3-ledger__spark"/g)).toHaveLength(1)
     expect(html).toMatch(/<path d="M[\d.]+ [\d.]+ L/)
     expect(html).toContain('<circle')

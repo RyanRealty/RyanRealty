@@ -11,16 +11,16 @@ import { count, days, money, monthName, mosText } from './format'
 import type { Kpis, TierRowOut, Verdict } from './types'
 
 export const VERDICT_LABEL: Record<Verdict, string> = {
-  seller: "a seller's market",
-  balanced: 'a balanced market',
-  buyer: "a buyer's market",
+  seller: 'tighter supply',
+  balanced: 'an even sales pace',
+  buyer: 'more homes relative to the sales pace',
 }
 
-/** The threshold that decided a verdict, said the way marketVerdict() computes it. */
+/** What the months-of-supply figure means, without a market-type label. */
 export const VERDICT_THRESHOLD: Record<Verdict, string> = {
-  seller: "4 months or less is a seller's market",
-  balanced: 'above 4 and under 6 months is balanced',
-  buyer: "6 months or more is a buyer's market",
+  seller: 'listings are getting absorbed faster than they are replaced',
+  balanced: 'the sales pace and the listings on the market are close',
+  buyer: 'buyers have leverage',
 }
 
 export type HomesNoun = { one: string; many: string }
@@ -91,7 +91,7 @@ export function marketSummary(place: string, noun: HomesNoun, k: Kpis): string[]
     const endMonth = monthName(k.period.end.slice(0, 7))
     const homes = k.active === 1 ? '1 was' : `${count(k.active)} were`
     out.push(
-      `At the end of ${endMonth}, ${homes} for sale against ${count(k.closed6)} sales over the past six months: ${mosText(k.mos)} months of supply, ${VERDICT_LABEL[k.verdict]} by our measure (${VERDICT_THRESHOLD[k.verdict]}).`,
+      `At the end of ${endMonth}, ${homes} for sale against ${count(k.closed6)} sales over the past six months: ${mosText(k.mos)} months of supply.`,
     )
   }
   return out
@@ -109,7 +109,7 @@ export function tierSentence(tiers: readonly TierRowOut[]): string | null {
   if (sellerTiers.length === 0 || buyerTiers.length === 0) return null
   const list = (xs: string[]) =>
     xs.length <= 2 ? xs.join(' and ') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`
-  return `By price the market splits: ${list(sellerTiers.map((t) => t.label))} ran as a seller's market, while ${list(buyerTiers.map((t) => t.label))} gave buyers more room.`
+  return `By price the market splits: ${list(sellerTiers.map((t) => t.label))} had tighter supply, while ${list(buyerTiers.map((t) => t.label))} gave buyers more room.`
 }
 
 /** The threshold sentence that rides with every printed verdict. */

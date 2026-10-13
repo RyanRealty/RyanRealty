@@ -17,7 +17,7 @@ const headlines = {
   monthsOfSupply: 3.9,
   mosLabel: '3.9 months',
   verdictKind: 'sellers',
-  verdictLabel: "seller's market",
+  verdictLabel: '3.9 months of supply',
   medianListPrice: 950000,
   computedAt: '2026-09-07T16:28:00Z',
   completeThrough: '2026-08-31',
@@ -50,7 +50,7 @@ describe('getPlaceValueAnswer', () => {
     expect(a.trace.join('\n')).toContain('days to pending 23')
     expect(a.trace.join('\n')).toContain('cash share 41.0%')
     // Verdict thresholds are the canon's: <= 4 is a seller's market.
-    expect(a.verdict?.label).toBe("seller's market")
+    expect(a.verdict?.label).toBe('3.9 months of supply')
   })
 
   it('reports no figures, no verdict, and an empty trace when the metric layer has nothing', async () => {
