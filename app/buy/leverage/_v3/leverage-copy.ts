@@ -135,7 +135,7 @@ export const LEVERAGE_COPY = {
   faq5Fallback: 'Homes that have sat, and homes that already took a cut. See this week\'s Bend price drops.',
   faq6Question: 'How often are these numbers updated?',
   faq6Answer:
-    'Daily from the MLS. Each figure names its window and as-of date. The method page explains months of supply, and sale-to-list.',
+    'Daily from the MLS. Each figure names its window and as-of date. The method page explains months of supply and sale-to-list.',
   relatedBendMarket: 'Bend housing market',
   relatedBendCity: 'Bend city page',
   relatedShift: 'Bend tilting toward buyers (dated article)',
