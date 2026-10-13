@@ -1,4 +1,14 @@
-# Current — 2026-10-13 (Cursor, /price-drops accuracy, PR only)
+# Current — 2026-10-13 (Cursor, /price-drops city deals upgrade, stacked PR only)
+
+Surface: Cursor cloud. Branch `cursor/price-drops-deals-10f2` stacked on `cursor/price-drops-accuracy-61bb` (PR #512). Do not merge. Do not `git push` main. Nothing sent. Production DB stayed read-only.
+
+**What this branch does.** Upgrades `/price-drops/bend`, `/redmond`, `/sisters`, `/la-pine` in place. Title and H1 stay "Price drops in {city}". Answer block at the top. Factual signals only: repeat cuts, long days on market, owner-will-carry. Remarks seller-credit and REO/short-sale filters exist behind flags that default OFF. Never renders, serializes, or logs private remarks. FAQPage + ItemList + BreadcrumbList. Keeps #512 sanity filter. No `/deals/bend` redirect. No foreclosure doors (those pages do not exist). Under-$X doors only where those routes already exist.
+
+**Not this change.** Do not merge. Do not send alerts. Do not apply SQL. Do not turn the remarks or REO flags on.
+
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/plans/CROSS_AGENT_HANDOFF.md` Current, `AGENTS.md` CORE RULES, `design_system/public/TASTE.md`.
+
+## Earlier — 2026-10-13 (Cursor, /price-drops accuracy, PR only)
 
 Surface: Cursor cloud. Branch `cursor/price-drops-accuracy-61bb` @ `a26ce2858` from origin/main `bb7eb241c`. Do not merge. Do not `git push` main. Nothing sent. Production DB stayed read-only.
 
