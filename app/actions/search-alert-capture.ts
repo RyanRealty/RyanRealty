@@ -19,14 +19,15 @@ import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { upsertListingAlert } from '@/lib/data/leads/listingAlerts'
 import { nativeCrmPersonId } from '@/lib/alerts/enroll-identity'
-import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { attributionParamsFromSearch, fireLeadGenerated } from '@/lib/lead-tracking'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { isLeadFormId, type LeadFormId } from '@/lib/analytics/lead-event'
 import { resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import {
   appendListingAlertAttribution,
+  listingAlertAttributionFromContext,
   listingAlertCampaign,
-  mergeListingAlertAttribution,
+  mergeLeadAttribution,
   type ListingAlertLpContext,
 } from '@/lib/alerts/listing-alert-attribution'
 
@@ -61,7 +62,27 @@ const ALERTS_DOOR = 'idx-registration'
  * confirmation mail, no browser stitch, no GA4 lead.
  */
 
-export type SearchAlertResult = { ok: true } | { ok: false; error: string }
+export type SearchAlertResult = { ok: true; counted: boolean } | { ok: false; error: string }
+
+const ALERT_EVENT_KEYS = [
+  'new',
+  'price_change',
+  'status_change',
+  'back_on_market',
+  'sold',
+  'open_house',
+] as const
+
+function sanitizeAlertEvents(
+  raw: Record<string, boolean> | undefined,
+): Record<string, boolean> | undefined {
+  if (!raw) return undefined
+  const out: Record<string, boolean> = {}
+  for (const key of ALERT_EVENT_KEYS) {
+    if (typeof raw[key] === 'boolean') out[key] = raw[key]
+  }
+  return Object.keys(out).length > 0 ? out : undefined
+}
 
 export async function submitSearchAlertSignup(input: {
   email: string
@@ -74,12 +95,25 @@ export async function submitSearchAlertSignup(input: {
   formId?: LeadFormId
   /** Defaults to search-alert, or buy-alerts when formId is buyer_alerts_lp. */
   lpVariant?: string
-  /** Client lpContext (utm_*, gclid, fbclid). Wins over the submit Referer. */
+  /** Client lpContext (utm_*, gclid, fbclid). Wins over landingSearch and Referer. */
   lpContext?: ListingAlertLpContext
+  /**
+   * Typed-event toggles for a NEW listing_alerts row. Price-drop pages pass
+   * price_change on and everything else off. Omit for the default feed.
+   */
+  events?: Record<string, boolean>
+  /** Counsel memo 002 §5.4. EU/UK hashed-match box only. */
+  adMatchConsent?: boolean
+  /**
+   * The page query string (utm_*, gclid, fbclid). Used when lpContext is empty.
+   * Server also reads referer when both are empty, same as the seller and
+   * contact forms.
+   */
+  landingSearch?: string
 }): Promise<SearchAlertResult> {
   // 1. Honeypot. A filled hidden field means a bot. Pretend success, do nothing.
   if (typeof input.company === 'string' && input.company.trim() !== '') {
-    return { ok: true }
+    return { ok: true, counted: false }
   }
 
   // 2. Per-IP rate limit. Server actions bypass the middleware /api limiter, so
@@ -130,12 +164,27 @@ export async function submitSearchAlertSignup(input: {
   const summary = getFiltersSummary(normalized)
   const base = siteOrigin()
   const searchUrl = `${base}${buildSearchUrlFromFilters(normalized)}`
+  const events = sanitizeAlertEvents(input.events)
+  const isPriceDropAlert = Boolean(
+    events && events.price_change === true && events.new === false,
+  )
   const formId: LeadFormId = input.formId && isLeadFormId(input.formId) ? input.formId : 'search_alert'
   const fallbackVariant = formId === 'buyer_alerts_lp' ? 'buy-alerts' : formId === 'buyer_leverage_lp' ? 'buy-leverage' : null
   const lp_variant = input.lpVariant ?? fallbackVariant ?? 'search-alert'
   const lpVariant = lp_variant.slice(0, 80)
   const referer = (await headers()).get('referer')
-  const attr = mergeListingAlertAttribution(input.lpContext, referer)
+  let fromReferer = {}
+  if (referer) {
+    try {
+      fromReferer = attributionParamsFromSearch(new URL(referer).searchParams)
+    } catch {
+      fromReferer = {}
+    }
+  }
+  const attr = mergeLeadAttribution(
+    listingAlertAttributionFromContext(input.lpContext),
+    mergeLeadAttribution(attributionParamsFromSearch(input.landingSearch ?? ''), fromReferer),
+  )
   const paidTags = resolvePaidAttributionTags({
     utmSource: attr.lp_source,
     utmMedium: attr.lp_medium,
@@ -166,7 +215,9 @@ export async function submitSearchAlertSignup(input: {
       source: ALERTS_DOOR,
       system: 'Ryan Realty Website',
       sourceUrl: attributedUrl,
-      message: `Saved search: ${name}${summary ? `, ${summary}` : ''}`,
+      message: isPriceDropAlert
+        ? `Price-drop alert: ${name}${summary ? `, ${summary}` : ''}`
+        : `Saved search: ${name}${summary ? `, ${summary}` : ''}`,
       brokerAttribution: attributed ? { brokerSlug: attributed.broker } : undefined,
       campaign,
     })
@@ -183,12 +234,14 @@ export async function submitSearchAlertSignup(input: {
           tier: 'warm',
           extraTags: paidTags,
           originContext: {
-            source: 'saved-search',
-            sourceLabel: 'Listing-alert signup',
+            source: isPriceDropAlert ? 'price-drop-alert' : 'saved-search',
+            sourceLabel: isPriceDropAlert ? 'Price-drop alert signup' : 'Listing-alert signup',
             landingPage: attributedUrl,
             audience: 'buyer',
             tier: 'warm',
-            want: `Listing alerts for ${name}${summary ? `, ${summary}` : ''}`,
+            want: isPriceDropAlert
+              ? `Price-drop alerts for ${name}${summary ? `, ${summary}` : ''}`
+              : `Listing alerts for ${name}${summary ? `, ${summary}` : ''}`,
             utmSource: attr.lp_source,
             utmMedium: attr.lp_medium,
             utmCampaign: attr.lp_campaign,
@@ -200,7 +253,9 @@ export async function submitSearchAlertSignup(input: {
         // createRealtimeTask). Awaited so the serverless freeze cannot drop it.
         await createNativeTask({
           personId: nativeId,
-          name: `New listing-alert signup: ${summary}`,
+          name: isPriceDropAlert
+            ? `New price-drop alert signup: ${summary}`
+            : `New listing-alert signup: ${summary}`,
           type: 'Follow Up',
           dueInMinutes: 5,
         })
@@ -232,6 +287,18 @@ export async function submitSearchAlertSignup(input: {
       } catch {
         // Best-effort. Identifying the browser must never fail the signup.
       }
+      if (input.adMatchConsent === true) {
+        try {
+          const { enrichNativeLead } = await import('@/lib/data/crm/ensureNativeLead')
+          const { adMatchConsentCustom } = await import('@/lib/identity/form-ad-consent')
+          await enrichNativeLead({
+            personId: nativeId,
+            custom: adMatchConsentCustom(true, new Date().toISOString()),
+          })
+        } catch {
+          // Best-effort. An unchecked box already records nothing.
+        }
+      }
     }
   } catch {
     // Best-effort. Never block the signup or the durable persistence.
@@ -245,6 +312,7 @@ export async function submitSearchAlertSignup(input: {
     name,
     crmPersonId,
     fubPersonId,
+    ...(events ? { events } : {}),
   })
   if (!persisted.ok) return { ok: false, error: 'We could not set up your alert. Please try again.' }
 
@@ -260,7 +328,9 @@ export async function submitSearchAlertSignup(input: {
       const ack = await sendAlertConfirmation({
         personId: crmPersonId,
         leadEmail: email,
-        kind: 'search',
+        ...(isPriceDropAlert
+          ? { kind: 'price-drop' as const }
+          : { kind: 'search' as const }),
         criteriaSummary: summary || name,
       })
       console.log(
@@ -305,7 +375,7 @@ export async function submitSearchAlertSignup(input: {
     }
   }
 
-  return { ok: true }
+  return { ok: true, counted: !suspect }
 }
 
 /**
@@ -330,7 +400,7 @@ export async function submitListingSaveCapture(input: {
   sessionId?: string
 }): Promise<SearchAlertResult> {
   if (typeof input.company === 'string' && input.company.trim() !== '') {
-    return { ok: true }
+    return { ok: true, counted: false }
   }
   const isProd = process.env.NODE_ENV === 'production'
   try {
@@ -454,7 +524,7 @@ export async function submitListingSaveCapture(input: {
     }
   }
 
-  return { ok: true }
+  return { ok: true, counted: !suspect }
 }
 
 /**
@@ -501,7 +571,7 @@ export async function submitListingPriceDropWatch(input: {
   sessionId?: string
 }): Promise<SearchAlertResult> {
   if (typeof input.company === 'string' && input.company.trim() !== '') {
-    return { ok: true }
+    return { ok: true, counted: false }
   }
 
   const isProd = process.env.NODE_ENV === 'production'
@@ -658,5 +728,5 @@ export async function submitListingPriceDropWatch(input: {
     }
   }
 
-  return { ok: true }
+  return { ok: true, counted: !suspect }
 }

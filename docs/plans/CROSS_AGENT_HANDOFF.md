@@ -1,6 +1,6 @@
 # Current — 2026-10-13 (Cursor, sitemap + listing index hygiene)
 
-Surface: Cursor cloud. Branch `cursor/sitemap-index-hygiene-f2b8` from origin/main `6a9b37fb6` (includes #513). Sitemap / robots only. Nothing sent. Do not `git push` main.
+Surface: Cursor cloud. Branch `cursor/sitemap-index-hygiene-f2b8` from origin/main `09d783c99` (includes #513, #521, #512). Sitemap / robots only. Nothing sent. Do not `git push` main.
 
 **What this branch does.** `listings.xml` submits Active, Active Under Contract, and Pending with `lastmod` from `modified_at`. Closed / Expired / Withdrawn / Canceled pages older than 90 days are `noindex, follow` with a community or city hub canonical (`listingIndexPolicy`, extending #513). `geo.xml` browse pairs and `matrix.xml` combos with fewer than 3 active listings drop and noindex. Live before counts: listings 7,487 · geo 3,961 · matrix 842.
 
@@ -10,11 +10,27 @@ Surface: Cursor cloud. Branch `cursor/sitemap-index-hygiene-f2b8` from origin/ma
 
 Skills read: `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §0 (listing_tile_mv).
 
+## Earlier — 2026-10-13 (Cursor, price-drops accuracy)
+
+Surface: Cursor cloud. Branch `cursor/price-drops-accuracy-61bb` landed on main via #512. Nothing sent.
+
+## Earlier — 2026-10-13 (Cursor, off-market listing noindex + community door, landing)
+
+Surface: Cursor cloud. Branch `cursor/listing-offmarket-noindex-2c0f` merged as #513 onto origin/main after #526. Do not `git push` main. Nothing sent.
+
+**What that branch did.** Closed / Expired / Canceled / Withdrawn listing pages ship `noindex, follow`. When the home belongs to a registry community the HTML canonical is that `/communities/<slug>` page. Pending stays indexed. Active listings keep `index, follow` and print a prominent "{Name} homes for sale" door to the community page. `listings.xml` already ships Active/AUC only.
+
+**Verified on Brasada.** Active MLS 220229872: `index, follow`, self-canonical, door "Brasada Ranch homes for sale" → `/communities/brasada-ranch`. Closed MLS 220224479: `noindex, follow`, canonical `https://ryan-realty.com/communities/brasada-ranch`, HTTP 200.
+
+**Not this change.** Do not send. Do not apply hosted SQL.
+
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §3a (registry communities), `AGENTS.md` CORE RULES.
+
 ## Earlier — 2026-10-13 (Cursor, one business + one author JSON-LD)
 
-Surface: Cursor cloud. Landed on origin/main via #519 after `7a17527a1`. User asked squash-merge after its own CI. Do not `git push` main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/one-author-entity-118d` merged onto origin/main `7a17527a1` as #519 (`6f0b60010`). Nothing sent.
 
-**What that change did.** Every BlogPosting author is `{@id: https://ryan-realty.com/team/matthew-ryan#person}`. Person sameAs adds verified Zillow, LinkedIn, Experience.com, YouTube, Instagram. Organization sameAs adds Zillow, Yelp, Experience.com. `/team/matthew-ryan` renders a 400-600 word bio from repo facts (LLC 2014, Bend office June 2023). Homepage title is `Ryan Realty | Bend, Oregon Real Estate Brokerage`. Realtor.com and Homes.com stay off: no verified live person URL.
+**What that branch did.** Every BlogPosting author is `{@id: https://ryan-realty.com/team/matthew-ryan#person}`. Person sameAs adds verified Zillow, LinkedIn, Experience.com, YouTube, Instagram. Organization sameAs adds Zillow, Yelp, Experience.com. `/team/matthew-ryan` renders a 400-600 word bio from repo facts (LLC 2014, Bend office June 2023). Homepage title is `Ryan Realty | Bend, Oregon Real Estate Brokerage`. Realtor.com and Homes.com stay off: no verified live person URL.
 
 **Still open.** Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill. Do not send. Lead-event parse error already landed on main via #516 / #518.
 
