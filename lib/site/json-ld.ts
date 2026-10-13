@@ -103,6 +103,16 @@ export type RealEstateListingInput = {
   datePosted?: string
   /** ISO 8601: last MLS modification (ModificationTimestamp). */
   dateModified?: string
+  /**
+   * The dwelling the listing is about. Omitted for land/commercial so a lot
+   * is not published as a Residence. Same beds/baths/sqft/year as the listing.
+   */
+  residenceType?: 'Residence' | 'SingleFamilyResidence' | 'House' | 'Apartment'
+  /**
+   * Visible Quick facts (community, status, days on market, HOA, lot acres)
+   * as PropertyValue rows so the machine node matches the definition list.
+   */
+  additionalProperty?: ReadonlyArray<StatValue>
 }
 
 export type BreadcrumbInput = {
@@ -477,6 +487,8 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
         offers: buildOffer(input.listPrice, input.availability),
         datePosted: input.datePosted,
         dateModified: input.dateModified,
+        additionalProperty: listingAdditionalProperty(input.additionalProperty),
+        about: listingResidenceAbout(input),
         image: input.photos && input.photos.length > 0 ? input.photos.slice(0, 5).map(absoluteUrl) : undefined,
         listingAgent: input.listingAgent ? prune({
           '@type': 'RealEstateAgent',
@@ -689,6 +701,48 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
           : undefined,
       })
   }
+}
+
+function listingAdditionalProperty(
+  rows: ReadonlyArray<StatValue> | undefined,
+): Record<string, unknown>[] | undefined {
+  if (!rows || rows.length === 0) return undefined
+  const out = rows.map((p) =>
+    prune({
+      '@type': 'PropertyValue',
+      name: p.name,
+      value: p.value,
+      unitText: p.unitText,
+    }),
+  )
+  return out.length > 0 ? out : undefined
+}
+
+function listingResidenceAbout(input: RealEstateListingInput): Record<string, unknown> | undefined {
+  if (!input.residenceType) return undefined
+  const address = input.address
+    ? prune({
+        '@type': 'PostalAddress',
+        streetAddress: input.address.street,
+        addressLocality: input.address.city,
+        addressRegion: input.address.state,
+        postalCode: input.address.postalCode,
+        addressCountry: input.address.country ?? 'US',
+      })
+    : undefined
+  return prune({
+    '@type': input.residenceType,
+    name: input.name,
+    address,
+    numberOfBedrooms: input.beds,
+    numberOfBathroomsTotal: input.baths,
+    floorSize:
+      input.livingAreaSqft != null
+        ? { '@type': 'QuantitativeValue', value: input.livingAreaSqft, unitCode: 'FTK' }
+        : undefined,
+    yearBuilt: input.yearBuilt,
+    additionalProperty: listingAdditionalProperty(input.additionalProperty),
+  })
 }
 
 /**
