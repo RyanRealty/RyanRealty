@@ -26,6 +26,8 @@ export const UTM_SOURCES = [
   'instagram',
   'x',
   'youtube',
+  'tiktok',
+  'google',
   'newsletter',
   'zillow',
   'realtor',
@@ -48,7 +50,9 @@ export const UTM_MEDIUMS = [
  * per-property or per-send id.
  *
  * Beyond the B4 table: listing-alerts, gbp-profile, newsletter, social-post,
- * crm-outbound (generic CRM fill / test-send default).
+ * crm-outbound (generic CRM fill / test-send default), plus the named buyer
+ * program slugs. A later `buyer-<angle>` kebab slug also matches
+ * BUYER_CAMPAIGN_RE (same style as market-report-YYYY-MM).
  */
 export const UTM_CAMPAIGNS = [
   'cma-letter',
@@ -61,13 +65,23 @@ export const UTM_CAMPAIGNS = [
   'newsletter',
   'social-post',
   'crm-outbound',
+  'buyer-leverage',
+  'buyer-price-drops',
+  'buyer-what-it-buys',
+  'buyer-relocate',
+  'buyer-first-home',
+  'buyer-deal-report',
 ] as const
 
 export const UTM_CONTENT_EXACT = ['v2', 'cta-top', 'why-list'] as const
 
 export type UtmSource = (typeof UTM_SOURCES)[number] | `referral-${string}`
 export type UtmMedium = (typeof UTM_MEDIUMS)[number]
-export type UtmCampaign = (typeof UTM_CAMPAIGNS)[number] | `market-report-${string}` | `test-${string}`
+export type UtmCampaign =
+  | (typeof UTM_CAMPAIGNS)[number]
+  | `market-report-${string}`
+  | `buyer-${string}`
+  | `test-${string}`
 export type UtmContent = (typeof UTM_CONTENT_EXACT)[number] | `listing-${string}` | `agent-${string}` | string
 
 export type UtmFields = {
@@ -201,10 +215,24 @@ const PROGRAM_WORDS = new Set([
   'agent',
   'test',
   'referral',
+  'buyer',
+  'leverage',
+  'drops',
+  'relocate',
+  'home',
+  'deal',
+  'first',
+  'price',
+  'what',
+  'buys',
+  'google',
+  'tiktok',
 ])
 
 const REFERRAL_SOURCE_RE = /^referral-[a-z0-9](?:[a-z0-9.-]{0,61}[a-z0-9])?$/
 const MARKET_REPORT_RE = /^market-report-\d{4}-(0[1-9]|1[0-2])$/
+/** Stable buyer program slug: `buyer-<angle>` kebab, never a bare `buyer`. */
+const BUYER_CAMPAIGN_RE = /^buyer-[a-z0-9]+(?:-[a-z0-9]+)*$/
 const LISTING_CONTENT_RE = /^listing-[a-z0-9]+$/
 const AGENT_CONTENT_RE = /^agent-[a-z][a-z0-9-]{0,60}$/
 const CONTENT_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -218,8 +246,16 @@ export function isUtmMedium(value: string): value is UtmMedium {
   return MEDIUM_SET.has(value)
 }
 
+function isBuyerCampaign(value: string): boolean {
+  if (!BUYER_CAMPAIGN_RE.test(value)) return false
+  if (utmValueLooksLikeAddress(value)) return false
+  const parts = value.split('-').filter(Boolean)
+  if (parts.slice(1).some((part) => GIVEN_NAMES.has(part))) return false
+  return true
+}
+
 export function isUtmCampaign(value: string): value is UtmCampaign {
-  if (CAMPAIGN_SET.has(value) || MARKET_REPORT_RE.test(value)) return true
+  if (CAMPAIGN_SET.has(value) || MARKET_REPORT_RE.test(value) || isBuyerCampaign(value)) return true
   if (value.startsWith('test-')) {
     const inner = value.slice(5)
     return inner.length > 0 && isUtmCampaign(inner)
@@ -397,7 +433,15 @@ function fallbackCampaign(source: string): string {
   if (source === 'cma') return 'cma-letter'
   if (source === 'gbp') return 'gbp-profile'
   if (source === 'newsletter') return 'newsletter'
-  if (source === 'facebook' || source === 'instagram' || source === 'x' || source === 'youtube') return 'social-post'
+  if (
+    source === 'facebook' ||
+    source === 'instagram' ||
+    source === 'x' ||
+    source === 'youtube' ||
+    source === 'tiktok'
+  ) {
+    return 'social-post'
+  }
   return 'crm-outbound'
 }
 
@@ -547,10 +591,10 @@ export function platformUtmSource(
       return 'youtube'
     case 'x':
       return 'x'
+    case 'tiktok':
+      return 'tiktok'
     case 'google_business_profile':
       return 'gbp'
-    case 'tiktok':
-      return 'referral-tiktok.com'
     case 'linkedin':
       return 'referral-linkedin.com'
     case 'pinterest':
