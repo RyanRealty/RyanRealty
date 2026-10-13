@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { V3Button, V3Heading, V3_ROOT_CLASS } from '@/components/site/v3'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { cn } from '@/lib/utils'
+import { PRICE_DROP_SIGNAL_DEFINITIONS, type PriceDropSignalKind } from '@/lib/price-drops/signals'
 import {
   PRICE_DROP_BED_FILTERS,
   PRICE_DROP_CATALOG_PAGE_SIZE,
@@ -146,7 +147,9 @@ export function PriceDropCatalog({
         <p className="pd-catalog__empty">No cut this week matches those filters.</p>
       ) : (
         <ul className="pd-catalog__list" role="list">
-          {visible.map((item) => (
+          {visible.map((item) => {
+            const signals = catalogRowSignals(item)
+            return (
             <li key={item.id}>
               <Link href={item.href} className="pd-catalog__row">
                 {item.photoSrc ? (
@@ -164,10 +167,14 @@ export function PriceDropCatalog({
                   <span className="pd-catalog__street">{item.title}</span>
                   {item.dropLine ? <span className="pd-catalog__drop">{item.dropLine}</span> : null}
                   {item.specs ? <span className="pd-catalog__specs">{item.specs}</span> : null}
+                  {signals.length > 0 ? (
+                    <span className="pd-catalog__signals">{signals.join(' · ')}</span>
+                  ) : null}
                 </span>
               </Link>
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
 
@@ -183,5 +190,19 @@ export function PriceDropCatalog({
         </div>
       ) : null}
     </section>
+  )
+}
+
+const ROW_SIGNAL_ORDER: PriceDropSignalKind[] = [
+  'repeatCuts',
+  'longDom',
+  'ownerWillCarry',
+  'sellerCredit',
+  'bankOwned',
+]
+
+function catalogRowSignals(item: PriceDropFieldItem): string[] {
+  return ROW_SIGNAL_ORDER.filter((kind) => item.signals?.[kind]).map(
+    (kind) => PRICE_DROP_SIGNAL_DEFINITIONS[kind].label,
   )
 }
