@@ -123,7 +123,7 @@ describe('buildLeverageSnapshot', () => {
     expect(snap.areas.find((a) => a.slug === 'redmond')?.note).toMatch(/Little leverage/)
     expect(snap.areas.find((a) => a.slug === 'sisters')?.note).toMatch(/Mixed/)
     expect(snap.areas.find((a) => a.slug === 'la-pine')?.monthsSupplyLabel).toBeNull()
-    expect(snap.areas.find((a) => a.slug === 'la-pine')?.note).toMatch(/not published/)
+    expect(snap.areas.find((a) => a.slug === 'la-pine')?.note).toBe('Cuts and pace give buyers room')
     expect(JSON.stringify(snap)).not.toContain('68.5')
     expect(JSON.stringify(snap)).not.toContain('2.97')
     expect(JSON.stringify(snap)).not.toMatch(/\b471\b/)

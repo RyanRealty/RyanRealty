@@ -4,7 +4,9 @@
  *
  * TODO(BUY-2): point ALERTS_HREF at /buy/alerts when that page ships
  * (sibling worktree grok/buy-alerts-20261013). Until then the existing
- * price-drop alert form is the live capture.
+ * price-drop alert form is the live capture. Open note: that page uses the
+ * fallback H1/meta (hourly cron, no same-day claim), no SMS, and no
+ * unsupported price/beds filters.
  */
 export const ROUTE_PATH = '/buy/leverage'
 
@@ -59,7 +61,7 @@ export const LEVERAGE_LP_VARIANT = 'buy-leverage'
 
 export const MLS_SOURCE = 'Oregon Data Share MLS, single-family homes'
 
-/** Printed when a leftover HUD or pace cell is withheld. Never an em dash. */
+/** Printed when a MOS or pace cell is withheld. Never an em dash. */
 export const CELL_UNPUBLISHED = 'not published'
 
 export const LEVERAGE_TRAP = { name: 'company', label: 'Company' } as const

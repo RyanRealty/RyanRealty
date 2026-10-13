@@ -1,13 +1,14 @@
 /**
  * /buy/leverage — buyers have leverage in Bend (SEO & AEO Desk 2026-10-13, BUY-1).
  *
- * Live leftover HUD + 12-month pace, the same cells /housing-market/bend,
+ * Live public MOS + 12-month pace, the same cells /housing-market/bend,
  * /cities/bend, /price-drops/bend, and /months-of-supply print. Pulse 68.5%
  * under asking, 2.97 months, and 471 active stay off this page.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, v3 barrel. Order:
- * Breadcrumb, answer (H1 + proof), area table, two ask forms, Questions,
- * Sources, Quiet, Footer. Answer, table, and FAQ are server HTML.
+ * Breadcrumb, answer (H1 + proof), pace, week, area table, how to use it,
+ * two ask forms, Questions, Sources, Quiet, Footer. Answer, table, and FAQ
+ * are server HTML.
  */
 import { cache } from 'react'
 import type { Metadata } from 'next'
@@ -131,26 +132,37 @@ export default async function BuyLeveragePage() {
             </p>
           ))}
           {copy.qualifier ? <p className="v3-net-answer">{copy.qualifier}</p> : null}
-          {copy.paceLine ? <p className="v3-net-answer">{copy.paceLine}</p> : null}
-          {copy.weekLine ? (
-            <p className="v3-net-answer">
-              {copy.weekLine}{' '}
-              <Link href={LEVERAGE_LINKS.bendDrops}>Bend price drops this week</Link>.
-            </p>
-          ) : null}
-          {copy.regionLine ? <p className="v3-net-answer">{copy.regionLine}</p> : null}
           <p className="v3-net-answer-source">
             {copy.methodLine}{' '}
-            <Link href={LEVERAGE_LINKS.bendMarket}>Bend housing market</Link>
-            {', '}
-            <Link href={LEVERAGE_LINKS.bendCity}>Bend city page</Link>
-            {', '}
-            <Link href={LEVERAGE_LINKS.monthsOfSupply}>months of supply</Link>
-            {', '}
-            <Link href={LEVERAGE_LINKS.method}>how we get our numbers</Link>.
+            <Link href={LEVERAGE_LINKS.method}>How we get our numbers</Link>.
           </p>
           <V3SourceLine sourceName={MLS_SOURCE} asOf={asOf} source={copy.methodLine} />
         </section>
+
+        {copy.paceLine || copy.saleToListLine ? (
+          <section id="pace" className="v3-net-section" aria-labelledby="pace-heading">
+            <V3Heading level={2} id="pace-heading">
+              {copy.paceHeading}
+            </V3Heading>
+            {copy.paceLine ? <p>{copy.paceLine}</p> : null}
+            {copy.saleToListLine ? <p>{copy.saleToListLine}</p> : null}
+            <p>
+              <Link href={LEVERAGE_LINKS.bendMarket}>{copy.paceLinkLabel}</Link>
+            </p>
+          </section>
+        ) : null}
+
+        {copy.weekLine ? (
+          <section id="week" className="v3-net-section" aria-labelledby="week-heading">
+            <V3Heading level={2} id="week-heading">
+              {copy.weekHeading}
+            </V3Heading>
+            <p>{copy.weekLine}</p>
+            <p>
+              <Link href={LEVERAGE_LINKS.bendDrops}>{copy.weekLinkLabel}</Link>
+            </p>
+          </section>
+        ) : null}
 
         <section id="towns" className="v3-net-section" aria-labelledby="towns-heading">
           <V3Heading level={2} id="towns-heading">
@@ -160,11 +172,11 @@ export default async function BuyLeveragePage() {
             <caption>{copy.areaCaption}</caption>
             <thead>
               <tr>
-                <th scope="col">Town</th>
-                <th scope="col">Months of supply</th>
-                <th scope="col">Sales after a cut</th>
-                <th scope="col">Days to an offer</th>
-                <th scope="col">Note</th>
+                <th scope="col">{copy.colArea}</th>
+                <th scope="col">{copy.colMos}</th>
+                <th scope="col">{copy.colCut}</th>
+                <th scope="col">{copy.colDays}</th>
+                <th scope="col">{copy.colRead}</th>
               </tr>
             </thead>
             <tbody>
@@ -181,7 +193,34 @@ export default async function BuyLeveragePage() {
               ))}
             </tbody>
           </table>
+          {copy.regionLine ? (
+            <p>
+              {copy.regionLine}{' '}
+              <Link href={LEVERAGE_LINKS.monthsOfSupply}>{copy.regionLinkLabel}</Link>
+            </p>
+          ) : null}
         </section>
+
+        {copy.useStart ? (
+          <section id="how" className="v3-net-section" aria-labelledby="how-heading">
+            <V3Heading level={2} id="how-heading">
+              {copy.useHeading}
+            </V3Heading>
+            <p>{copy.useStart}</p>
+            <p>
+              {copy.usePayment}{' '}
+              <Link href={LEVERAGE_LINKS.mortgage}>{copy.usePaymentLink}</Link>
+              {' and check '}
+              <Link href={LEVERAGE_LINKS.closingCosts}>{copy.useClosingLink}</Link>.
+            </p>
+            <p>
+              {copy.useStory}{' '}
+              <Link href={LEVERAGE_LINKS.shiftArticle}>{copy.useShiftLink}</Link>
+              {` ${copy.useShiftNote} and `}
+              <Link href={LEVERAGE_LINKS.goodTime}>{copy.useGoodTimeLink}</Link>.
+            </p>
+          </section>
+        ) : null}
 
         <section
           id="ask"
@@ -229,7 +268,7 @@ export default async function BuyLeveragePage() {
             </li>
             <li>
               <Link href={LEVERAGE_LINKS.bendDrops}>Bend price drops</Link>
-              {' for this week\'s asking-price cuts'}
+              {" for this week's asking-price cuts"}
             </li>
             <li>
               <Link href={LEVERAGE_LINKS.monthsOfSupply}>Months of supply</Link>

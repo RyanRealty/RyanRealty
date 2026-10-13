@@ -1,12 +1,12 @@
 /**
- * Crawlable copy on /buy/leverage (SEO & AEO Desk brief 2026-10-13, BUY-1).
- * Every figure is interpolated from leftover HUD / public pace / price-drop
- * helpers. Writing Bot swaps LEVERAGE_COPY in one edit.
+ * Crawlable copy on /buy/leverage (Matt-approved Writing Bot copy, 2026-10-13).
+ * Every figure is interpolated from public MOS / public pace / price-drop
+ * helpers. Live numbers are filled in leverageCopy().
  *
  * Wording lock: say "buyers have leverage". Do not write "buyer's market"
  * or "buyers market" anywhere on this page, including FAQ questions.
  */
-import { MOS_SELLER_MAX } from '@/lib/market/classify'
+import { MOS_BALANCED_MAX, MOS_SELLER_MAX } from '@/lib/market/classify'
 import { LEVERAGE_H1, LEVERAGE_LINKS, LEVERAGE_TITLE } from './leverage-constants'
 import type { LeverageAreaRow, LeverageSnapshot } from './leverage-types'
 
@@ -23,10 +23,16 @@ export type LeverageCopy = {
   metaDescription: string
   answer: string[]
   weekLine: string | null
+  weekHeading: string
+  weekLinkLabel: string
   qualifier: string | null
+  paceHeading: string
   paceLine: string | null
+  saleToListLine: string | null
+  paceLinkLabel: string
   methodLine: string
   regionLine: string | null
+  regionLinkLabel: string
   areaCaption: string
   faqs: LeverageFaq[]
   reportHeading: string
@@ -41,6 +47,20 @@ export type LeverageCopy = {
   consultSuccessBody: string
   questionsHeading: string
   townsHeading: string
+  colArea: string
+  colMos: string
+  colCut: string
+  colDays: string
+  colRead: string
+  useHeading: string
+  useStart: string | null
+  usePayment: string
+  usePaymentLink: string
+  useClosingLink: string
+  useStory: string
+  useShiftLink: string
+  useShiftNote: string
+  useGoodTimeLink: string
   sourcesHeading: string
   nextHeading: string
   formNameLabel: string
@@ -53,7 +73,7 @@ export type LeverageCopy = {
 
 /**
  * All user-visible copy for /buy/leverage. Live numbers are filled in
- * leverageCopy(); swap this object when Writing Bot copy lands.
+ * leverageCopy().
  */
 export const LEVERAGE_COPY = {
   title: LEVERAGE_TITLE,
@@ -65,34 +85,60 @@ export const LEVERAGE_COPY = {
     'Buyers have leverage in Bend again: {cut} of homes sold after a price cut and closed at {ask} of first ask. Live MLS numbers, updated daily.',
   mosWindow:
     'Months of supply is active listings divided by average monthly closings over the last 6 months.',
-  methodPulseNote:
-    'Pulse active counts and unpublished pulse months of supply stay off this page.',
+  footerLine: 'Single-family homes, Oregon Data Share MLS, as of {asOf}. Windows as labeled.',
+  footerLineNoAsOf: 'Single-family homes, Oregon Data Share MLS. Windows as labeled.',
   answerYesOnPrice:
-    'Yes, on price.{asOf} {cut} of Bend homes that sold in the last 12 months took a price cut first, the median cut was {medianCut}, and homes closed at {ask} of their first asking price.',
+    'Yes, on price. {asOf}{cut} of Bend homes that sold in the last 12 months took a price cut first. The median cut was {medianCut}, and homes closed at {ask} of their first asking price.',
   answerYesOnPriceNoMedian:
-    'Yes, on price.{asOf} {cut} of Bend homes that sold in the last 12 months took a price cut first, and homes closed at {ask} of their first asking price.',
+    'Yes, on price. {asOf}{cut} of Bend homes that sold in the last 12 months took a price cut first, and homes closed at {ask} of their first asking price.',
   answerYesOnPriceFallback:
     'Yes, on price.{asOf} Buyers have leverage in Bend on price cuts and first asks. The live share and sale-to-list figures are on the Bend housing market page when they publish.',
   qualifierUnderFour:
-    'Bend still has {mos} months of supply, under the 4-month line, so it is not oversupplied. The leverage is in pricing, not in inventory.',
-  paceBoth: 'Homes are taking a median {days90} days to an offer over the last 90 days, vs {days12} over 12 months.',
-  pace90: 'Homes are taking a median {days90} days to an offer over the last 90 days.',
+    "Bend still has {mos} months of supply, under the 4-month line, so it isn't oversupplied. Buyers have leverage in Bend on price and first asks, not on inventory.",
+  paceHeading: 'Homes are taking longer to get an offer',
+  paceBoth:
+    'Over the last 90 days, the median Bend home took {days90} days to get an offer. Over the last 12 months it was {days12}. Recent listings are sitting a little longer, and a home that has sat is a home where the seller is more likely to listen.',
+  pace90:
+    'Over the last 90 days, the median Bend home took {days90} days to get an offer. Recent listings are sitting a little longer, and a home that has sat is a home where the seller is more likely to listen.',
+  saleToListBoth:
+    'The median Bend sale closed at {ask} of its first asking price and {final} of its final list price over the last 12 months. Most of that gap comes from price cuts made before an offer comes in, so the asking price on day one is often not the number that matters.',
+  saleToListAsk:
+    'The median Bend sale closed at {ask} of its first asking price over the last 12 months. Most of the gap from first ask comes from price cuts made before an offer comes in, so the asking price on day one is often not the number that matters.',
+  paceLinkLabel: 'See the full Bend numbers',
+  weekHeading: "This week's price cuts in Bend",
   weekWithMedian:
-    '{count} Bend homes cut their asking price in the last 7 days. Median drop {median}{asOf}.',
+    '{count} Bend homes cut their asking price in the last 7 days. The median drop was {median}{asOf}.',
   weekCountOnly: '{count} Bend homes cut their asking price in the last 7 days{asOf}.',
-  regionLine:
-    'Central Oregon overall is {mos} months of supply, with {cut} of sales after a cut{days}.',
-  regionDays: ' and {days} days to an offer over the last 90 days',
+  weekLinkLabel: "See this week's Bend price drops",
+  regionLine: '{asOf}Central Oregon overall: {mos} months of supply, {cut} sold after a cut.',
+  regionLinkLabel: 'Central Oregon months of supply',
   areaCaption:
-    'Months of supply, share of sales after a price cut (12 months), and days to an offer (last 90 days). {method}',
-  townsHeading: 'Leverage by town',
+    'Months of supply, sold after a price cut (12 months), and median days to an offer (last 90 days). {method}',
+  townsHeading: 'Where buyers have room in Central Oregon',
+  colArea: 'Area',
+  colMos: 'Months of supply',
+  colCut: 'Sold after a price cut (12 mo)',
+  colDays: 'Median days to an offer (90 days)',
+  colRead: 'Read',
+  useHeading: 'How to use it',
+  useStart:
+    "Start with homes that have been listed longer than {days} days or have already cut their price. Those are the sellers most likely to talk about price or credits. A home that's priced right and just listed can still draw a fast offer, especially in Sisters.",
+  useStartFallback:
+    "Start with homes that have sat or have already cut their price. Those are the sellers most likely to talk about price or credits. A home that's priced right and just listed can still draw a fast offer, especially in Sisters.",
+  usePayment: 'Know your number before you tour.',
+  usePaymentLink: 'Run your payment',
+  useClosingLink: 'buyer closing costs in Bend',
+  useStory: 'For the longer story, read',
+  useShiftLink: 'Bend is tilting toward buyers',
+  useShiftNote: '(data from July 17, 2026)',
+  useGoodTimeLink: 'is now a good time to buy in Bend',
   questionsHeading: 'Questions',
   sourcesHeading: 'Sources',
   nextHeading: 'Next step',
-  reportHeading: 'Get my weekly deal report',
+  reportHeading: 'Get the weekly deal report',
   reportSubhead:
-    'Email is required. Phone is optional. A broker follows up with Bend and Central Oregon homes that cut price. This is not an automated newsletter.',
-  reportButton: 'Send me deal notes',
+    'Bend price cuts, new listings and the leverage numbers. Email is required. Phone is optional. A broker follows up. This is not an automated newsletter.',
+  reportButton: 'Send me the report',
   reportSuccessTitle: 'Request received',
   reportSuccessBody: 'A Ryan Realty broker will follow up. This does not enroll you in an automated weekly email.',
   consultHeading: 'Talk to a buyer agent',
@@ -109,56 +155,58 @@ export const LEVERAGE_COPY = {
   bookDoor: 'Or pick a time',
   again: 'Send another request',
   faq1Question: 'Do buyers have the upper hand in Bend right now?',
-  faq1YesUnderFour:
-    'Yes, on price.{asOf} {cut} sold after a cut and closed at {ask} of first ask. Bend still has {mos} months of supply, under the 4-month line, so the upper hand is in pricing, not in inventory.',
-  faq1YesOnPrice: 'Yes, on price.{asOf} {cut} sold after a cut and closed at {ask} of first ask.',
+  faq1NotBySupply:
+    'Not by supply. Bend has {mos} months of supply{asOf}, under the 6-month mark people usually use. But buyers have leverage in Bend on price: {cut} of homes sold in the last 12 months after a price cut, and the median home closed at {ask} of its first ask.',
+  faq1YesOnPrice:
+    'Buyers have leverage in Bend on price: {cut} of homes sold in the last 12 months after a price cut, and the median home closed at {ask} of its first ask.',
   faq1Fallback:
-    'Yes, on price. Buyers have leverage in Bend on price cuts and first asks. See the Bend housing market page for the live months of supply.',
+    'Buyers have leverage in Bend on price cuts and first asks. See the Bend housing market page for the live months of supply.',
   faq2Question: 'How much below asking do Bend homes sell?',
   faq2Both:
-    'Median {ask} of first ask, {final} of final list (last 12 months{asOf}). The gap is mostly price cuts before the offer.',
-  faq2Ask: 'Median {ask} of first ask (last 12 months{asOf}). The gap is mostly price cuts before the offer.',
+    'Over the last 12 months, the median Bend home sold at {ask} of its first asking price and {final} of its final list price. The gap is mostly price cuts made before an offer.',
+  faq2Ask:
+    'Over the last 12 months, the median Bend home sold at {ask} of its first asking price. The gap is mostly price cuts made before an offer.',
   faq2Fallback:
     'The Bend city page prints sale price against the first asking price, last 12 months, when that cell publishes.',
   faq3Question: 'Can I ask for seller credits in Bend?',
   faq3Answer:
-    'Yes, it is common to ask. Our dated article on Bend tilting toward buyers has the concession figures from closed MLS data. We do not reprint a concession percent here because that article is dated.',
+    'Yes. Asking for credits toward closing costs or repairs is common, and a home that has sat or already cut its price gives you more room to ask.',
   faq4Question: 'Which Central Oregon towns give buyers the most room?',
+  faq4Open: 'Prineville ({prineville} months of supply) and Sunriver ({sunriver}).',
   faq4Fallback:
-    'Prineville and Sunriver have been the more open towns when months of supply publishes above 4. Sisters is mixed when well-priced homes still go fast. Redmond sits near the 4-month line, so do not run a leverage-in-Redmond claim.',
-  faq4SistersMixedFast: ' Sisters is mixed when well-priced homes still go fast.',
-  faq4SistersMixedDays: ' Sisters is mixed ({days} days to an offer over the last 90 days).',
-  faq4Redmond: ' Redmond {mos} months, little leverage.',
-  faq5Question: 'Which homes give the most room?',
+    'Prineville and Sunriver have been the more open towns when months of supply publishes above 4. Sisters is mixed when well-priced homes still go fast. Redmond sits near the 4-month line, so there is little leverage beyond homes that have sat.',
+  faq4SistersMixedFast: ' Sisters is mixed, and well-priced homes still go fast.',
+  faq4SistersMixedDays: ' Sisters is mixed, with a median of {days} days to an offer.',
+  faq4Redmond: " Redmond is at {mos} months, so there's little leverage beyond homes that have sat.",
+  faq5Question: 'Which homes give the most room to negotiate?',
   faq5WithDays:
-    'Homes listed longer than the typical {days} days to an offer, and homes that already took a cut. See this week\'s Bend price drops.',
-  faq5Fallback: 'Homes that have sat, and homes that already took a cut. See this week\'s Bend price drops.',
+    'Homes listed longer than the typical {days} days to an offer, and homes that have already cut their price.',
+  faq5Fallback: 'Homes that have sat, and homes that have already cut their price.',
   faq6Question: 'How often are these numbers updated?',
-  faq6Answer:
-    'Daily from the MLS. Each figure names its window and as-of date. The method page explains months of supply and sale-to-list.',
+  faq6Answer: 'Daily, from Oregon Data Share MLS.',
   relatedBendMarket: 'Bend housing market',
   relatedBendCity: 'Bend city page',
-  relatedShift: 'Bend tilting toward buyers (dated article)',
-  relatedDrops: 'Bend price drops this week',
+  relatedShift: 'Our concession data',
+  relatedDrops: "This week's Bend price drops",
   relatedMethod: 'How we get our numbers',
-  nextBendMarket: 'Bend housing market',
-  nextDrops: 'Bend price drops this week',
+  nextBendMarket: 'See the full Bend numbers',
+  nextDrops: 'See Bend price drops',
   nextMos: 'Months of supply',
   nextMethod: 'How we get our numbers',
-  nextAlerts: 'Listing alerts',
-  nextBook: 'Book a broker',
+  nextAlerts: 'Get listing alerts',
+  nextBook: 'Talk to Matt',
   nextGoodTime: 'Is now a good time to buy in Bend',
   nextClosingCosts: 'Closing costs for Bend buyers',
   nextMortgage: 'Mortgage calculator',
-  noteLaPineUnpublished: 'Cuts and days support room to negotiate. Months of supply is not published here.',
-  noteBendUnderFour: 'Leverage is on price cuts and first asks, not on inventory.',
+  noteLaPineUnpublished: 'Cuts and pace give buyers room',
+  noteBendUnderFour: 'Leverage on price, not supply',
   noteBendReadMos: 'Read the live months of supply beside the price-cut share.',
-  noteRedmondLittle: 'Little leverage. Room to negotiate on homes that have sat.',
-  noteRedmondSat: 'Room to negotiate on homes that have sat.',
-  noteSistersMixedFast: 'Mixed. Supply is open, and well-priced homes still go fast.',
-  noteSistersOpen: 'More room on homes that have sat.',
-  noteSistersSat: 'Claim leverage only on homes that have sat.',
-  noteOpen: 'These numbers support leverage on price and terms.',
+  noteRedmondLittle: 'Little leverage. Room to negotiate on homes that have sat',
+  noteRedmondSat: 'Room to negotiate on homes that have sat',
+  noteSistersMixedFast: 'Mixed. Well-priced homes still go fast',
+  noteSistersOpen: 'More room on homes that have sat',
+  noteSistersSat: 'Claim leverage only on homes that have sat',
+  noteOpen: 'Buyers have room',
   noteReadMos: 'Read the live months of supply beside the price-cut share.',
 } as const
 
@@ -166,10 +214,32 @@ function fill(template: string, vars: Record<string, string>): string {
   return template.replace(/\{([a-z0-9]+)\}/gi, (_, key: string) => vars[key] ?? '')
 }
 
+function asOfLead(asOf: string | null): string {
+  return asOf ? `As of ${asOf}, ` : ''
+}
+
+function asOfPeriod(asOf: string | null): string {
+  return asOf ? ` As of ${asOf}.` : ''
+}
+
+function asOfInline(asOf: string | null): string {
+  return asOf ? ` as of ${asOf}` : ''
+}
+
+function asOfParen(asOf: string | null): string {
+  return asOf ? ` (as of ${asOf})` : ''
+}
+
 export function displayedMosUnderFour(mos: number | null, mosLabel: string | null): boolean {
   if (mos == null || mosLabel == null) return false
   const shown = Number.parseFloat(mosLabel)
   return Number.isFinite(shown) && shown < MOS_SELLER_MAX
+}
+
+export function displayedMosUnderSix(mos: number | null, mosLabel: string | null): boolean {
+  if (mos == null || mosLabel == null) return false
+  const shown = Number.parseFloat(mosLabel)
+  return Number.isFinite(shown) && shown < MOS_BALANCED_MAX
 }
 
 export function areaNote(input: {
@@ -217,10 +287,6 @@ export function leverageMetaDescription(snap: LeverageSnapshot): string {
   return LEVERAGE_COPY.fallbackMeta
 }
 
-function asOfClause(asOf: string | null): string {
-  return asOf ? ` As of ${asOf}.` : ''
-}
-
 export function leverageCopy(snap: LeverageSnapshot): LeverageCopy {
   const bend = snap.bend
   const asOf = bend.asOfLabel
@@ -230,7 +296,7 @@ export function leverageCopy(snap: LeverageSnapshot): LeverageCopy {
   if (bend.priceCutShareLabel && bend.medianPriceCutLabel && bend.saleToFirstAskLabel) {
     answer.push(
       fill(LEVERAGE_COPY.answerYesOnPrice, {
-        asOf: asOfClause(asOf),
+        asOf: asOfLead(asOf),
         cut: bend.priceCutShareLabel,
         medianCut: bend.medianPriceCutLabel,
         ask: bend.saleToFirstAskLabel,
@@ -239,13 +305,13 @@ export function leverageCopy(snap: LeverageSnapshot): LeverageCopy {
   } else if (bend.priceCutShareLabel && bend.saleToFirstAskLabel) {
     answer.push(
       fill(LEVERAGE_COPY.answerYesOnPriceNoMedian, {
-        asOf: asOfClause(asOf),
+        asOf: asOfLead(asOf),
         cut: bend.priceCutShareLabel,
         ask: bend.saleToFirstAskLabel,
       }),
     )
   } else {
-    answer.push(fill(LEVERAGE_COPY.answerYesOnPriceFallback, { asOf: asOfClause(asOf) }))
+    answer.push(fill(LEVERAGE_COPY.answerYesOnPriceFallback, { asOf: asOfPeriod(asOf) }))
   }
 
   const qualifier =
@@ -263,7 +329,17 @@ export function leverageCopy(snap: LeverageSnapshot): LeverageCopy {
         ? fill(LEVERAGE_COPY.pace90, { days90: String(bend.daysToOffer90) })
         : null
 
-  const weekAsOf = snap.weekDrops?.asOfLabel ? `, as of ${snap.weekDrops.asOfLabel}` : ''
+  const saleToListLine =
+    bend.saleToFirstAskLabel && bend.saleToFinalListLabel
+      ? fill(LEVERAGE_COPY.saleToListBoth, {
+          ask: bend.saleToFirstAskLabel,
+          final: bend.saleToFinalListLabel,
+        })
+      : bend.saleToFirstAskLabel
+        ? fill(LEVERAGE_COPY.saleToListAsk, { ask: bend.saleToFirstAskLabel })
+        : null
+
+  const weekAsOf = asOfParen(snap.weekDrops?.asOfLabel ?? null)
   const weekLine =
     snap.weekDrops && !snap.weekDrops.degraded && snap.weekDrops.count > 0
       ? snap.weekDrops.medianDropLabel
@@ -279,19 +355,25 @@ export function leverageCopy(snap: LeverageSnapshot): LeverageCopy {
       : null
 
   const region = snap.region
+  const regionAsOf = region.asOfLabel ?? asOf
   const regionLine =
     region.monthsSupplyLabel && region.priceCutShareLabel
       ? fill(LEVERAGE_COPY.regionLine, {
+          asOf: regionAsOf ? `All figures as of ${regionAsOf}. ` : '',
           mos: region.monthsSupplyLabel,
           cut: region.priceCutShareLabel,
-          days:
-            region.daysToOffer90 != null
-              ? fill(LEVERAGE_COPY.regionDays, { days: String(region.daysToOffer90) })
-              : '',
         })
       : null
 
+  const useStart =
+    bend.daysToOffer90 != null
+      ? fill(LEVERAGE_COPY.useStart, { days: String(bend.daysToOffer90) })
+      : LEVERAGE_COPY.useStartFallback
+
   const faqs = leverageFaqs(snap)
+  const methodLine = asOf
+    ? `${fill(LEVERAGE_COPY.footerLine, { asOf })} ${LEVERAGE_COPY.mosWindow}`
+    : `${LEVERAGE_COPY.footerLineNoAsOf} ${LEVERAGE_COPY.mosWindow}`
 
   return {
     title: LEVERAGE_COPY.title,
@@ -300,10 +382,16 @@ export function leverageCopy(snap: LeverageSnapshot): LeverageCopy {
     metaDescription: leverageMetaDescription(snap),
     answer,
     weekLine,
+    weekHeading: LEVERAGE_COPY.weekHeading,
+    weekLinkLabel: LEVERAGE_COPY.weekLinkLabel,
     qualifier,
+    paceHeading: LEVERAGE_COPY.paceHeading,
     paceLine,
-    methodLine: `${snap.methodLine} ${LEVERAGE_COPY.mosWindow} ${LEVERAGE_COPY.methodPulseNote}`,
+    saleToListLine,
+    paceLinkLabel: LEVERAGE_COPY.paceLinkLabel,
+    methodLine,
     regionLine,
+    regionLinkLabel: LEVERAGE_COPY.regionLinkLabel,
     areaCaption: fill(LEVERAGE_COPY.areaCaption, { method: snap.methodLine }),
     faqs,
     reportHeading: LEVERAGE_COPY.reportHeading,
@@ -318,6 +406,20 @@ export function leverageCopy(snap: LeverageSnapshot): LeverageCopy {
     consultSuccessBody: LEVERAGE_COPY.consultSuccessBody,
     questionsHeading: LEVERAGE_COPY.questionsHeading,
     townsHeading: LEVERAGE_COPY.townsHeading,
+    colArea: LEVERAGE_COPY.colArea,
+    colMos: LEVERAGE_COPY.colMos,
+    colCut: LEVERAGE_COPY.colCut,
+    colDays: LEVERAGE_COPY.colDays,
+    colRead: LEVERAGE_COPY.colRead,
+    useHeading: LEVERAGE_COPY.useHeading,
+    useStart,
+    usePayment: LEVERAGE_COPY.usePayment,
+    usePaymentLink: LEVERAGE_COPY.usePaymentLink,
+    useClosingLink: LEVERAGE_COPY.useClosingLink,
+    useStory: LEVERAGE_COPY.useStory,
+    useShiftLink: LEVERAGE_COPY.useShiftLink,
+    useShiftNote: LEVERAGE_COPY.useShiftNote,
+    useGoodTimeLink: LEVERAGE_COPY.useGoodTimeLink,
     sourcesHeading: LEVERAGE_COPY.sourcesHeading,
     nextHeading: LEVERAGE_COPY.nextHeading,
     formNameLabel: LEVERAGE_COPY.formNameLabel,
@@ -331,14 +433,12 @@ export function leverageCopy(snap: LeverageSnapshot): LeverageCopy {
 
 export function leverageFaqs(snap: LeverageSnapshot): LeverageFaq[] {
   const bend = snap.bend
-  const asOf = bend.asOfLabel ? `, as of ${bend.asOfLabel}` : ''
-  const asOfSentence = asOfClause(bend.asOfLabel)
-  const underFour = displayedMosUnderFour(bend.monthsSupply, bend.monthsSupplyLabel)
+  const underSix = displayedMosUnderSix(bend.monthsSupply, bend.monthsSupplyLabel)
 
   const q1Answer = (() => {
-    if (underFour && bend.monthsSupplyLabel && bend.priceCutShareLabel && bend.saleToFirstAskLabel) {
-      return fill(LEVERAGE_COPY.faq1YesUnderFour, {
-        asOf: asOfSentence,
+    if (underSix && bend.monthsSupplyLabel && bend.priceCutShareLabel && bend.saleToFirstAskLabel) {
+      return fill(LEVERAGE_COPY.faq1NotBySupply, {
+        asOf: asOfInline(bend.asOfLabel),
         cut: bend.priceCutShareLabel,
         ask: bend.saleToFirstAskLabel,
         mos: bend.monthsSupplyLabel,
@@ -346,7 +446,6 @@ export function leverageFaqs(snap: LeverageSnapshot): LeverageFaq[] {
     }
     if (bend.priceCutShareLabel && bend.saleToFirstAskLabel) {
       return fill(LEVERAGE_COPY.faq1YesOnPrice, {
-        asOf: asOfSentence || asOf,
         cut: bend.priceCutShareLabel,
         ask: bend.saleToFirstAskLabel,
       })
@@ -359,11 +458,10 @@ export function leverageFaqs(snap: LeverageSnapshot): LeverageFaq[] {
       return fill(LEVERAGE_COPY.faq2Both, {
         ask: bend.saleToFirstAskLabel,
         final: bend.saleToFinalListLabel,
-        asOf,
       })
     }
     if (bend.saleToFirstAskLabel) {
-      return fill(LEVERAGE_COPY.faq2Ask, { ask: bend.saleToFirstAskLabel, asOf })
+      return fill(LEVERAGE_COPY.faq2Ask, { ask: bend.saleToFirstAskLabel })
     }
     return LEVERAGE_COPY.faq2Fallback
   })()
@@ -413,17 +511,13 @@ export function leverageRoomTownsLine(areas: readonly LeverageAreaRow[]): string
   const sunriver = areas.find((a) => a.slug === 'sunriver')
   const sisters = areas.find((a) => a.slug === 'sisters')
   const redmond = areas.find((a) => a.slug === 'redmond')
-  const parts: string[] = []
-  if (prineville?.monthsSupplyLabel) {
-    parts.push(`Prineville ${prineville.monthsSupplyLabel} months`)
-  }
-  if (sunriver?.monthsSupplyLabel) {
-    parts.push(`Sunriver ${sunriver.monthsSupplyLabel} months`)
-  }
-  if (parts.length === 0) {
+  if (!prineville?.monthsSupplyLabel || !sunriver?.monthsSupplyLabel) {
     return LEVERAGE_COPY.faq4Fallback
   }
-  let line = `${parts.join(' and ')}.`
+  let line = fill(LEVERAGE_COPY.faq4Open, {
+    prineville: prineville.monthsSupplyLabel,
+    sunriver: sunriver.monthsSupplyLabel,
+  })
   if (sisters?.daysToOffer90 != null) {
     line += fill(LEVERAGE_COPY.faq4SistersMixedDays, { days: String(sisters.daysToOffer90) })
   } else {
