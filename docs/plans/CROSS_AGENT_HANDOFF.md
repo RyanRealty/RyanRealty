@@ -1,4 +1,16 @@
-# Current — 2026-10-13 (Cursor, inbound SMS clear + industry exclusion, PR only)
+# Current — 2026-10-13 (Cursor, /price-drops accuracy, PR only)
+
+Surface: Cursor cloud. Branch `cursor/price-drops-accuracy-61bb` from origin/main `bb7eb241c`. Do not merge. Do not `git push` main. Nothing sent. Production DB stayed read-only.
+
+**What this branch does.** `/price-drops` and `/price-drops/[area]` drop cuts over 40% and ~10x decimal-shift typos (64794 Hunnell Rd $16.49M → $1.649M). Totals, including "this week $X cut", use the same filter on currently active SFR. Catalog lists every qualifying home with city / price / beds filters and load-more. Band carousels no longer repeat a home. Signup is a price-drop alert (`price_change` on, listing-alerts path), ads consent + gclid/fbclid/utm_* on the CRM, `generate_lead` stays lead_type + form_id.
+
+**Live audit (read-only, 2026-10-13).** Central Oregon Active SFR photographed, last 7 days, currently reduced: 186 before sanity, 1 excluded (Hunnell, 90%, ratio 10.00), 185 after. Week dollars $22,406,114 → $7,565,114. Review snapshot had said 91/48.
+
+**Not this change.** Do not merge. Do not send alerts. Do not apply SQL.
+
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/plans/CROSS_AGENT_HANDOFF.md` Current, `AGENTS.md` CORE RULES.
+
+## Earlier — 2026-10-13 (Cursor, inbound SMS clear + industry exclusion, PR only)
 
 Surface: Cursor cloud. Branch `cursor/clear-import-suppression-on-inbound-sms-f271` from origin/main `b802ee703`. Do not merge. Do not `git push` main. Do not apply hosted SQL. Do not run the backfill. Nothing sent.
 

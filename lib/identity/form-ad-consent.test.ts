@@ -80,8 +80,10 @@ describe('ad-match CRM fields', () => {
 describe('form wiring', () => {
   const sell = read('app/sell/_v3/SellValueForm.tsx')
   const contact = read('app/contact/_v3/ContactAsk.client.tsx')
+  const priceDrops = read('app/price-drops/_v3/PriceDropAlertsSheet.client.tsx')
   const sellerAction = read('app/lp/seller-home-value/actions.ts')
   const contactAction = read('app/contact/actions.ts')
+  const alertAction = read('app/actions/search-alert-capture.ts')
 
   it('keeps the valuation email required attribute next to its id', () => {
     expect(sell).toMatch(/id="sell-value-email"[\s\S]{0,220}required/)
@@ -99,6 +101,8 @@ describe('form wiring', () => {
     expect(contact).toContain('<SmsConsentDisclosure')
     expect(sell).toContain('<FormAdCookieBox')
     expect(contact).toContain('<FormAdCookieBox')
+    expect(priceDrops).toContain('<FormAdCookieBox')
+    expect(priceDrops).toContain('<FormAdConsentNotice')
   })
 
   it('writes contact consent only from the submit handler', () => {
@@ -107,7 +111,7 @@ describe('form wiring', () => {
   })
 
   it('does not add consent fields to generate_lead', () => {
-    for (const src of [sellerAction, contactAction]) {
+    for (const src of [sellerAction, contactAction, alertAction]) {
       const block = callBlock(src, 'fireLeadGenerated')
       expect(block).toContain('lead_type')
       expect(block).toContain('form_id')
@@ -123,5 +127,8 @@ describe('form wiring', () => {
     expect(sellerAction).toContain('createCmaRequest')
     expect(contactAction).toContain("formData.get('adMatchConsent') === 'yes'")
     expect(contactAction).toContain('adMatchConsentCustom(true, new Date().toISOString())')
+    expect(priceDrops).toContain('writeFormAdConsent(adCookies) // hydration-safe: submit handler, not render')
+    expect(priceDrops).toContain('...(restricted && adMatch ? { adMatchConsent: true } : {})')
+    expect(alertAction).toContain('adMatchConsentCustom(true, new Date().toISOString())')
   })
 })

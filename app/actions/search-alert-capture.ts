@@ -55,6 +55,80 @@ const ALERTS_DOOR = 'idx-registration'
 
 export type SearchAlertResult = { ok: true } | { ok: false; error: string }
 
+const ALERT_EVENT_KEYS = [
+  'new',
+  'price_change',
+  'status_change',
+  'back_on_market',
+  'sold',
+  'open_house',
+] as const
+
+const ATTR_QUERY_KEYS = [
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_content',
+  'utm_term',
+  'gclid',
+  'fbclid',
+] as const
+
+function sanitizeAlertEvents(
+  raw: Record<string, boolean> | undefined,
+): Record<string, boolean> | undefined {
+  if (!raw) return undefined
+  const out: Record<string, boolean> = {}
+  for (const key of ALERT_EVENT_KEYS) {
+    if (typeof raw[key] === 'boolean') out[key] = raw[key]
+  }
+  return Object.keys(out).length > 0 ? out : undefined
+}
+
+function attributionFromSearch(search: string | null | undefined): URLSearchParams {
+  const qs = new URLSearchParams()
+  if (!search?.trim()) return qs
+  try {
+    const raw = search.trim()
+    const params = new URLSearchParams(raw.startsWith('?') ? raw.slice(1) : raw)
+    for (const key of ATTR_QUERY_KEYS) {
+      const value = params.get(key)?.trim()
+      if (value) qs.set(key, value.slice(0, 200))
+    }
+  } catch {
+    // Attacker-controlled query. Keep the alert, drop the junk.
+  }
+  return qs
+}
+
+function campaignFromAttribution(qs: URLSearchParams): {
+  source: string
+  medium?: string
+  campaign?: string
+  term?: string
+  content?: string
+} | undefined {
+  const source = qs.get('utm_source')
+  if (!source) return undefined
+  const medium = qs.get('utm_medium')
+  const campaign = qs.get('utm_campaign')
+  const term = qs.get('utm_term')
+  const content = qs.get('utm_content')
+  return {
+    source,
+    ...(medium ? { medium } : {}),
+    ...(campaign ? { campaign } : {}),
+    ...(term ? { term } : {}),
+    ...(content ? { content } : {}),
+  }
+}
+
+function withAttributionQuery(baseUrl: string, qs: URLSearchParams): string {
+  const extra = qs.toString()
+  if (!extra) return baseUrl
+  return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}${extra}`
+}
+
 export async function submitSearchAlertSignup(input: {
   email: string
   filters: Record<string, unknown>
@@ -62,6 +136,18 @@ export async function submitSearchAlertSignup(input: {
   company?: string
   /** VisitTracker session id. READ on the client, never minted here. */
   sessionId?: string
+  /**
+   * Typed-event toggles for a NEW listing_alerts row. Price-drop pages pass
+   * price_change on and everything else off. Omit for the default feed.
+   */
+  events?: Record<string, boolean>
+  /** Counsel memo 002 §5.4. EU/UK hashed-match box only. */
+  adMatchConsent?: boolean
+  /**
+   * The page query string (utm_*, gclid, fbclid). Server also reads referer
+   * when this is empty, same as the seller and contact forms.
+   */
+  landingSearch?: string
 }): Promise<SearchAlertResult> {
   // 1. Honeypot. A filled hidden field means a bot. Pretend success, do nothing.
   if (typeof input.company === 'string' && input.company.trim() !== '') {
@@ -116,6 +202,21 @@ export async function submitSearchAlertSignup(input: {
   const summary = getFiltersSummary(normalized)
   const base = siteOrigin()
   const searchUrl = `${base}${buildSearchUrlFromFilters(normalized)}`
+  const events = sanitizeAlertEvents(input.events)
+  const isPriceDropAlert = Boolean(
+    events && events.price_change === true && events.new === false,
+  )
+  let attr = attributionFromSearch(input.landingSearch)
+  if ([...attr.keys()].length === 0) {
+    try {
+      const referer = (await headers()).get('referer')
+      if (referer) attr = attributionFromSearch(new URL(referer).search)
+    } catch {
+      // Referer not parseable. The alert still saves.
+    }
+  }
+  const sourceUrl = withAttributionQuery(searchUrl, attr)
+  const campaign = campaignFromAttribution(attr)
 
   // 5. Native buyer lead: sendEvent captures via ensureNativeLead (CRM
   //    decommissioned 2026-06-24) and returns the crm_people id, which gates
@@ -137,9 +238,12 @@ export async function submitSearchAlertSignup(input: {
       person: { emails: [{ value: email }] },
       source: ALERTS_DOOR,
       system: 'Ryan Realty Website',
-      sourceUrl: searchUrl,
-      message: `Saved search: ${name}${summary ? `, ${summary}` : ''}`,
+      sourceUrl,
+      message: isPriceDropAlert
+        ? `Price-drop alert: ${name}${summary ? `, ${summary}` : ''}`
+        : `Saved search: ${name}${summary ? `, ${summary}` : ''}`,
       brokerAttribution: attributed ? { brokerSlug: attributed.broker } : undefined,
+      campaign,
     })
     const nativeId = result.ok ? nativeCrmPersonId(result.personId) : null
     crmPersonId = nativeId
@@ -153,12 +257,14 @@ export async function submitSearchAlertSignup(input: {
           source: 'idx-registration',
           tier: 'warm',
           originContext: {
-            source: 'saved-search',
-            sourceLabel: 'Listing-alert signup',
-            landingPage: searchUrl,
+            source: isPriceDropAlert ? 'price-drop-alert' : 'saved-search',
+            sourceLabel: isPriceDropAlert ? 'Price-drop alert signup' : 'Listing-alert signup',
+            landingPage: sourceUrl,
             audience: 'buyer',
             tier: 'warm',
-            want: `Listing alerts for ${name}${summary ? `, ${summary}` : ''}`,
+            want: isPriceDropAlert
+              ? `Price-drop alerts for ${name}${summary ? `, ${summary}` : ''}`
+              : `Listing alerts for ${name}${summary ? `, ${summary}` : ''}`,
           },
         })
         // Notify the assigned broker so a signup is never missed — a native
@@ -166,7 +272,9 @@ export async function submitSearchAlertSignup(input: {
         // createRealtimeTask). Awaited so the serverless freeze cannot drop it.
         await createNativeTask({
           personId: nativeId,
-          name: `New listing-alert signup: ${summary}`,
+          name: isPriceDropAlert
+            ? `New price-drop alert signup: ${summary}`
+            : `New listing-alert signup: ${summary}`,
           type: 'Follow Up',
           dueInMinutes: 5,
         })
@@ -198,6 +306,18 @@ export async function submitSearchAlertSignup(input: {
       } catch {
         // Best-effort. Identifying the browser must never fail the signup.
       }
+      if (input.adMatchConsent === true) {
+        try {
+          const { enrichNativeLead } = await import('@/lib/data/crm/ensureNativeLead')
+          const { adMatchConsentCustom } = await import('@/lib/identity/form-ad-consent')
+          await enrichNativeLead({
+            personId: nativeId,
+            custom: adMatchConsentCustom(true, new Date().toISOString()),
+          })
+        } catch {
+          // Best-effort. An unchecked box already records nothing.
+        }
+      }
     }
   } catch {
     // Best-effort. Never block the signup or the durable persistence.
@@ -211,6 +331,7 @@ export async function submitSearchAlertSignup(input: {
     name,
     crmPersonId,
     fubPersonId,
+    ...(events ? { events } : {}),
   })
   if (!persisted.ok) return { ok: false, error: 'We could not set up your alert. Please try again.' }
 
@@ -226,7 +347,9 @@ export async function submitSearchAlertSignup(input: {
       const ack = await sendAlertConfirmation({
         personId: crmPersonId,
         leadEmail: email,
-        kind: 'search',
+        ...(isPriceDropAlert
+          ? { kind: 'price-drop' as const }
+          : { kind: 'search' as const }),
         criteriaSummary: summary || name,
       })
       console.log(

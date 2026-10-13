@@ -50,6 +50,7 @@ import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { getListingTiles } from '@/lib/data/listings/getListingTiles'
+import { isPlausibleAskingPriceCut } from '@/lib/data/listings/price-drop-sanity'
 import { isServiceAreaCity } from '@/lib/data/listings/service-area'
 import type { ListingTile } from '@/lib/data/types/listing'
 
@@ -131,7 +132,7 @@ export type GetPriceDropsInput = {
   city?: string
   /** Days to look back for the last price change. Default 7. Max 30. */
   days?: number
-  /** Max listings to return. Default 60. Max 100. The list's only cap. */
+  /** Max listings to return. Default 60. Max 500. The list's only cap. */
   limit?: number
   /** Offset for pagination. Default 0. */
   offset?: number
@@ -142,10 +143,14 @@ export type GetPriceDropsResult = {
   /** Every drop in scope that cleared the filters: the population, never the cap. */
   total: number
   /**
-   * The most drops one read returns (`limit`, max 100). When `total` exceeds
+   * The most drops one read returns (`limit`, max 500). When `total` exceeds
    * it, `drops` is the deepest `cap` cuts and the rest are counted, not listed.
    */
   cap: number
+  /** Sum of lastDropAmount across every qualifying cut, not the capped page. */
+  totalReduced: number
+  /** Median lastDropPct across every qualifying cut, or null when none. */
+  medianDropPct: number | null
   /** ISO timestamp of the data fetch (for dateModified in JSON-LD). */
   fetchedAt: string
   /**
@@ -207,6 +212,8 @@ export function tileAndEventToDrop(
   // reduced at all (Matt report 2026-07-12). An unverifiable / non-current drop
   // does not ship (§0 data accuracy) — return null so it is excluded.
   if (previousPrice == null || previousPrice <= listPrice) return null
+  // Over 40% or a ~10x decimal-place shift is a feed typo, not a markdown.
+  if (!isPlausibleAskingPriceCut(previousPrice, listPrice)) return null
 
   const dropAmount = previousPrice - listPrice
   const lastDropPct = (dropAmount / previousPrice) * 100
@@ -264,9 +271,23 @@ export function tileAndEventToDrop(
  */
 const MAX_EVENTS = 20_000
 
-/** The list's row cap: the caller's `limit`, default 60, never above 100. */
+/** The list's row cap: the caller's `limit`, default 60, never above 500. */
 function listCap(input: GetPriceDropsInput): number {
-  return Math.min(input.limit ?? 60, 100)
+  return Math.min(input.limit ?? 60, 500)
+}
+
+function sumReduced(drops: readonly PriceDrop[]): number {
+  return drops.reduce((sum, d) => sum + (d.lastDropAmount ?? 0), 0)
+}
+
+function medianDropPctOf(drops: readonly PriceDrop[]): number | null {
+  const pcts = drops
+    .map((d) => d.lastDropPct)
+    .filter((p): p is number => p !== null && Number.isFinite(p) && p > 0)
+    .sort((a, b) => a - b)
+  if (pcts.length === 0) return null
+  const mid = Math.floor(pcts.length / 2)
+  return pcts.length % 2 === 0 ? (pcts[mid - 1]! + pcts[mid]!) / 2 : pcts[mid]!
 }
 
 /**
@@ -429,6 +450,8 @@ async function fetchPriceDrops(
     drops: qualifying.slice(offset, offset + cap),
     total: qualifying.length,
     cap,
+    totalReduced: sumReduced(qualifying),
+    medianDropPct: medianDropPctOf(qualifying),
     fetchedAt,
     degraded: false,
   }
@@ -466,8 +489,7 @@ async function fetchPriceDropDigest(
     }
   }
 
-  // Total dollars reduced across all drops
-  const totalReduced = drops.reduce((sum, d) => sum + (d.lastDropAmount ?? 0), 0)
+  const totalReduced = sumReduced(drops)
 
   // Biggest drop by dollar amount
   const sorted = [...drops].sort(
@@ -484,18 +506,7 @@ async function fetchPriceDropDigest(
       }
     : null
 
-  // Median drop pct
-  const pcts = drops
-    .map((d) => d.lastDropPct)
-    .filter((p): p is number => p !== null)
-    .sort((a, b) => a - b)
-  const mid = Math.floor(pcts.length / 2)
-  const medianDropPct =
-    pcts.length === 0
-      ? null
-      : pcts.length % 2 === 0
-        ? (pcts[mid - 1] + pcts[mid]) / 2
-        : pcts[mid]
+  const medianDropPct = medianDropPctOf(drops)
 
   return {
     count: drops.length,
@@ -545,9 +556,19 @@ export const getPriceDrops = (
     // event read pages past 1,000 rows; an empty tile read throws instead of
     // caching an empty week; `limit` is the only list cap; the result carries
     // `cap` and `degraded`. Evict entries built the old way.
-    ['price-drops-v7', key],
+    // v8 (2026-10-13): withhold cuts over 40% and ~10x decimal-shift typos
+    // (Hunnell $16.49M → $1.649M); totals cover the qualifying set; list cap 500.
+    ['price-drops-v8', key],
     { revalidate: 1800, tags: [cacheTag.listings] },
-    { drops: [], total: 0, cap: listCap(input), fetchedAt: new Date().toISOString(), degraded: true },
+    {
+      drops: [],
+      total: 0,
+      cap: listCap(input),
+      totalReduced: 0,
+      medianDropPct: null,
+      fetchedAt: new Date().toISOString(),
+      degraded: true,
+    },
   )()
 }
 
@@ -573,7 +594,8 @@ export const getPriceDropDigest = (
     // v5 (2026-07-12, §0): prev→current drop math — evict event-new_price entries.
     // v6 (2026-09-24, §0): count and aggregates cover the whole window, not
     // the 60/40 list cap; the price-drops-v7 read changes; `degraded`.
-    ['price-drop-digest-v6', key],
+    // v7 (2026-10-13): same sanity filter as price-drops-v8.
+    ['price-drop-digest-v7', key],
     { revalidate: 3600, tags: [cacheTag.listings] },
     {
       count: 0,
