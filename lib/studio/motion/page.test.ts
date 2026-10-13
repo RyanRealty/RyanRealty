@@ -13,6 +13,7 @@ const assets: MotionAssets = {
     geist600: 'data:font/woff2;base64,AAAA',
   },
   wordmark: 'data:image/png;base64,AAAA',
+  endcardLogo: 'data:image/png;base64,CCCC',
   headshots: { '/images/brokers/ryan-matt.png': 'data:image/png;base64,BBBB' },
 }
 
@@ -91,6 +92,32 @@ describe('buildMotionPage', () => {
     const page = buildMotionPage({ plan: plan2, width: 1080, height: 1920, assets })
     expect(page).toContain('Paula Example')
     expect(page).not.toContain('class="headshot"')
+  })
+
+  it('draws the locked end card: the real logo, the three words, the call, no URL', () => {
+    expect(html).toContain('id="endcard-card"')
+    expect(html).toMatch(/<img class="ec-logo" id="endcard-logo" src="data:image\/png;base64,CCCC"/)
+    for (const word of ['Quality', 'Local', 'Service']) expect(html).toContain(`<span data-text>${word}</span>`)
+    expect(html).toContain('<span data-text>Call now</span>')
+    expect(html).toContain('541.703.3095')
+    // The words are Amboqia with the I patch at the fitted size; the phone is Geist.
+    expect(html).toMatch(/\.ec-word\{[^}]*font:400 82px\/1 'RR Amboqia I','RR Amboqia'/)
+    expect(html).toMatch(/\.ec-phone\{[^}]*font:600 64px\/1 'RR Geist'/)
+    // The pill is 660 wide at x 205, y 1130..1290; the phone at y 1320.
+    expect(html).toMatch(/\.ec-pill\{position:absolute;left:205px;top:1130px;width:660px;height:160px;/)
+    expect(html).toMatch(/\.ec-phone\{position:absolute;left:0;top:1320px;/)
+    // The call block rises from behind a clip that ends above y 1540 at any card scale.
+    const clip = Number(html.match(/\.ec-callbox\{[^}]*height:([\d.]+)px/)?.[1])
+    expect(clip * 1.024 - 960 * 0.024).toBeLessThanOrEqual(1540)
+    // The field never scales; the stage inside it breathes.
+    expect(html).toContain('<section class="endcard" id="endcard-card"><div class="ec-stage" id="endcard-stage">')
+    // Over footage one edge column of the field is 254/255, so Chromium never
+    // writes an RGB frame into an RGBA stream (ffmpeg would rebuild its graph).
+    expect(html).toMatch(/\.endcard\{[^}]*mask-image:linear-gradient\(to right,rgba\(16,39,66,0\.996\) 1px,#102742 1px\)/)
+    // No URL, no dot separators on the end card.
+    const card = html.slice(html.indexOf('<section class="endcard"'), html.indexOf('</section>', html.indexOf('<section class="endcard"')))
+    expect(card).not.toContain('ryan-realty.com')
+    expect(card).not.toMatch(/[·•]/)
   })
 
   it('scales its geometry with the frame width', () => {

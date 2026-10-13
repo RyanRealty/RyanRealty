@@ -3,7 +3,8 @@
  *
  * One timeline for picture and sound. Every sound event is a moment the
  * picture already has: a card's entrance, the meter's marker landing, the
- * trend line passing a month, the map's outline closing, the closer's mark.
+ * trend line passing a month, the map's outline closing, the end card's words
+ * and its Call now.
  * Nothing here types a timestamp; each time comes from the same plan and the
  * same curves frameState draws with, so a note lands on the frame its cause
  * does (the prompt-motion research: hand-typed sync points land 8-11 frames
@@ -31,13 +32,25 @@ export function scoreFor(plan: MotionPlan, spec: MotionSpec, subject: MotionSubj
   const events: ScoreEvent[] = []
   const sections: ScoreSection[] = []
 
+  const endsOnEndcard = plan.cues.some((cue) => cue.kind === 'endcard')
   for (const cue of plan.cues) {
     // A new chord on every card: the music turns the page with the picture.
     sections.push({ start: sections.length === 0 ? 0 : cue.start, end: cue.end })
     switch (cue.kind) {
+      case 'endcard':
+        // Each word lands on its own hit, as the spec times them; the lockup
+        // (the bell, the pad resolving) lands on Call now, the card's most
+        // resolved moment and not its loudest.
+        events.push({ kind: 'enter', t: cue.times.quality, weight: 0.8 })
+        events.push({ kind: 'enter', t: cue.times.local, weight: 0.7 })
+        events.push({ kind: 'enter', t: cue.times.service, weight: 0.7 })
+        events.push({ kind: 'lockup', t: cue.times.call })
+        break
       case 'closer':
-        // The mark is the most resolved moment, not the loudest.
-        events.push({ kind: 'lockup', t: cue.start + (CUE_PARTS.closer.find((p) => p.part === 'mark')?.delay ?? 0) })
+        // The agent's card is an entrance when the end card follows it; on its
+        // own, its mark is the lockup.
+        if (endsOnEndcard) events.push({ kind: 'enter', t: cue.start, weight: 1 })
+        else events.push({ kind: 'lockup', t: cue.start + (CUE_PARTS.closer.find((p) => p.part === 'mark')?.delay ?? 0) })
         break
       case 'meter':
         events.push({ kind: 'enter', t: cue.start, weight: 1 })

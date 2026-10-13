@@ -25,6 +25,7 @@
 import type { MotionAssets } from './assets'
 import { CUE_PARTS, type MotionCue, type MotionPlan } from './cues'
 import { CHART_BOX, END_LABEL_DX, LABEL_MONTH_Y, LABEL_VALUE_Y, LEADER_TOP, SCALE_LABEL_X, TEXT_LEFT } from './chart'
+import { ENDCARD, endcardLayout } from './endcard'
 import { MAP_BOX } from './map'
 
 const NAVY = '#102742'
@@ -141,11 +142,71 @@ ${g.rings.map((ring) => `<path d="${ring.d}" class="place" pathLength="1" stroke
 <header class="head" id="${cue.id}-head">${textEl('p', 'eyebrow', cue.eyebrow || null)}${textEl('h1', 'line', cue.line)}</header>`
 }
 
+/**
+ * The locked end card (endcard.ts): an opaque cream field over everything,
+ * the real stacked logo, the three words, and the call block inside a box
+ * that ends at the safe line (y 1540), so the slam rises from behind it and
+ * nothing ever crosses the bottom 380 px. Each word is a full-width line
+ * centred on x 540; the runtime moves its centre to the planned x and scales
+ * it about that centre, on its baseline. The inner span is what the
+ * every-frame check measures.
+ *
+ * Two layers: the cream field (`-card`: the cut in, the loop's iris) never
+ * scales, so over footage it always covers the whole frame; the stage inside
+ * it (`-stage`) carries the breathe and the punches.
+ *
+ * Over footage, the field's left-most pixel column is 254/255 opaque.
+ * Chromium writes a fully opaque screenshot as an RGB PNG with no alpha
+ * channel, and ffmpeg re-initialises its whole filter graph when the overlay
+ * stream's pixel format changes mid-film: the first end card frames came out
+ * black. One column at 254/255 keeps every frame RGBA, and the footage under
+ * it moves that column by at most one code value.
+ */
+function endcardHtml(cue: Extract<MotionCue, { kind: 'endcard' }>, assets: MotionAssets): string {
+  const words = (['quality', 'local', 'service'] as const)
+    .map((part, i) => `<p class="ec-word" id="${cue.id}-${part}"><span data-text>${esc(cue.words[i])}</span></p>`)
+    .join('')
+  return `<section class="endcard" id="${cue.id}-card"><div class="ec-stage" id="${cue.id}-stage">
+<img class="ec-logo" id="${cue.id}-logo" src="${assets.endcardLogo}" alt="Ryan Realty"/>
+${words}
+<div class="ec-callbox"><div class="ec-pill" id="${cue.id}-pill"><span data-text>${esc(cue.cta)}</span></div><p class="ec-phone" id="${cue.id}-phone" data-text>${esc(cue.phone)}</p></div>
+</div></section>`
+}
+
+/** Over footage, the alpha of the field's left-most column (see endcardHtml). */
+export const ENDCARD_FOOTAGE_EDGE_ALPHA = 0.996
+
+/** The end card's CSS at frame width scale s. Every number comes from ENDCARD. */
+function endcardCss(cue: Extract<MotionCue, { kind: 'endcard' }>, s: number, paper: boolean): string {
+  const px = (n: number) => `${Math.round(n * s * 100) / 100}px`
+  const E = ENDCARD
+  const { fs } = endcardLayout(cue.options)
+  const logoH = (E.logo.width * E.logo.naturalHeight) / E.logo.naturalWidth
+  const pill = E.call.pill
+  // The call block's clip lives inside the card, which breathes and punches.
+  // Sized for the card's largest scale, so its edge never passes y 1540.
+  const maxCard = 1 + E.card.breathe + E.card.punch
+  const clipBottom = Math.floor((E.frame.centreY + (E.safe.bottom - E.frame.centreY) / maxCard) * 100) / 100
+  const edge = `linear-gradient(to right,rgba(16,39,66,${ENDCARD_FOOTAGE_EDGE_ALPHA}) ${px(1)},${NAVY} ${px(1)})`
+  const mask = paper ? '' : `-webkit-mask-image:${edge};mask-image:${edge};`
+  return `
+.endcard{position:absolute;left:0;top:0;width:${px(E.frame.width)};height:${px(E.frame.height)};background:${CREAM};opacity:0;overflow:hidden;${mask}will-change:opacity}
+.ec-stage{position:absolute;left:0;top:0;width:${px(E.frame.width)};height:${px(E.frame.height)};transform-origin:${px(E.frame.centreX)} ${px(E.frame.centreY)};will-change:transform}
+.ec-logo{position:absolute;left:${px(E.frame.centreX - E.logo.width / 2)};top:${px(E.logo.top)};width:${px(E.logo.width)};height:${px(logoH)};opacity:0;will-change:transform,opacity}
+.ec-word{position:absolute;left:0;top:${px(E.words.top)};width:${px(E.frame.width)};text-align:center;white-space:nowrap;font:400 ${px(fs)}/1 'RR Amboqia I','RR Amboqia',serif;font-synthesis:none;letter-spacing:0;color:${NAVY};opacity:0;transform-origin:${px(E.frame.centreX)} ${px(fs * E.words.baselineEm)};will-change:transform,opacity}
+.ec-callbox{position:absolute;left:0;top:0;width:${px(E.frame.width)};height:${px(clipBottom)};overflow:hidden}
+.ec-pill{position:absolute;left:${px(pill.left)};top:${px(pill.top)};width:${px(pill.width)};height:${px(pill.height)};border-radius:${px(pill.height / 2)};background:${NAVY};color:${CREAM};display:flex;align-items:center;justify-content:center;font:600 ${px(E.call.ctaPx)}/1 'RR Geist',sans-serif;letter-spacing:0.01em;opacity:0;will-change:transform,opacity}
+.ec-phone{position:absolute;left:0;top:${px(E.call.phoneTop)};width:${px(E.frame.width)};text-align:center;font:600 ${px(E.call.phonePx)}/1 'RR Geist',sans-serif;letter-spacing:0.02em;color:${NAVY};opacity:0;will-change:transform,opacity}
+`
+}
+
 function cardHtml(cue: MotionCue, assets: MotionAssets, paper: boolean): string {
   const id = `${cue.id}-card`
   const ink = paper ? NAVY : CREAM
   const ground = paper ? CREAM : NAVY
   switch (cue.kind) {
+    case 'endcard':
+      return endcardHtml(cue, assets)
     case 'chart':
       return chartHtml(cue)
     case 'map':
@@ -187,7 +248,14 @@ window.__rrApply = function (states) {
     var el = document.getElementById(s.id);
     if (!el) continue;
     el.style.opacity = String(s.opacity);
-    el.style.transform = 'translate3d(0,' + s.y + 'px,0)';
+    if (s.x != null || s.scale != null) {
+      el.style.transform = 'translate3d(' + (s.x || 0) + 'px,' + s.y + 'px,0) scale(' + (s.scale == null ? 1 : s.scale) + ')';
+    } else {
+      el.style.transform = 'translate3d(0,' + s.y + 'px,0)';
+    }
+    if (s.clip !== undefined) {
+      el.style.clipPath = s.clip == null ? 'none' : 'circle(' + s.clip + 'px at 50% 50%)';
+    }
     if (s.marker != null) {
       var m = document.getElementById(s.id.replace(/-card$/, '-marker'));
       if (m) {
@@ -354,6 +422,8 @@ html,body{background:${CREAM}}
 .map .locator{fill:${NAVY}}
 `
     : ''
+  const endcard = plan.cues.find((cue): cue is Extract<MotionCue, { kind: 'endcard' }> => cue.kind === 'endcard')
+  const endCss = endcard ? endcardCss(endcard, s, paper) : ''
   const body = plan.cues.map((cue) => cardHtml(cue, assets, paper)).join('\n')
-  return `<!doctype html><html><head><meta charset="utf-8"><style>${css}${paperCss}</style></head><body${paper ? ' class="paper"' : ''}>${body}<script>${RUNTIME}</script></body></html>`
+  return `<!doctype html><html><head><meta charset="utf-8"><style>${css}${paperCss}${endCss}</style></head><body${paper ? ' class="paper"' : ''}>${body}<script>${RUNTIME}</script></body></html>`
 }
