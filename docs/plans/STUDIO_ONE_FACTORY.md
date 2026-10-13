@@ -1,7 +1,8 @@
 # One video factory, measured output (Matt 2026-10-13)
 
-Status 2026-10-13: ruling recorded; being built. `npm run studio:render` and
-`npm run video:check` land with the build and are not available until this line changes.
+Status 2026-10-13: `npm run video:check` (`lib/studio/qa/`), the locked end card
+(`lib/studio/motion/endcard.ts`) and the voice and captions (`lib/studio/voice/`) are
+built. `npm run studio:render` is being built and is not available until this line changes.
 
 Matt's ruling, 2026-10-13: "One factory + output check." Every video, from any bot (Claude,
 Grok, Imagine, Cursor), renders through the repo's Studio code (`lib/studio`). Grok

@@ -10,7 +10,6 @@ export {
   DEFAULT_OUTPUT_FORMATS,
   ELEVENLABS_BASE_URL,
   ElevenLabsError,
-  FALLBACK_MODEL,
   V3_MAX_CHARACTERS,
   VOICE_ENV,
   manifestVoice,

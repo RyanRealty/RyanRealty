@@ -23,7 +23,6 @@ import { encodeWav, integratedLoudness, truePeakDb } from '../lib/studio/score'
 import {
   DEFAULT_MODEL,
   ElevenLabsError,
-  FALLBACK_MODEL,
   alignmentToWords,
   decodeVoiceAudio,
   manifestVoice,
@@ -47,15 +46,9 @@ async function main(): Promise<void> {
   const text = argValue('--text') ?? DEFAULT_LINE
   const notes: string[] = []
 
-  let synthesis: Synthesis
-  try {
-    synthesis = await synthesizeWithTimestamps({ text, voiceId, model: DEFAULT_MODEL })
-  } catch (error) {
-    if (!(error instanceof ElevenLabsError) || error.status < 400 || error.status >= 500 || error.status === 401 || error.status === 429) throw error
-    notes.push(`${DEFAULT_MODEL} was refused (HTTP ${error.status}: ${error.detail}); retrying on ${FALLBACK_MODEL} with the audio tags removed`)
-    console.warn(notes.at(-1))
-    synthesis = await synthesizeWithTimestamps({ text: text.replace(/\[[^\]]*\]\s*/g, ''), voiceId, model: FALLBACK_MODEL })
-  }
+  // No model fallback: scripts/_voice_lib.py bans eleven_multilingual_v2 for our voice,
+  // so a v3 refusal stops the smoke and says why instead of swapping engines.
+  const synthesis: Synthesis = await synthesizeWithTimestamps({ text, voiceId, model: DEFAULT_MODEL })
   for (const refusal of synthesis.refusedFormats) {
     notes.push(`output format ${refusal.format} was refused (HTTP ${refusal.status}: ${refusal.detail})`)
   }

@@ -40,8 +40,6 @@ import type { CharacterAlignment, ManifestVoice, SpokenWord } from './types'
 export const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io'
 /** The model Matt's 2026-10-13 rule names for the ad voice. */
 export const DEFAULT_MODEL = 'eleven_v3'
-/** The one fallback when a voice rejects v3 (record that it happened). */
-export const FALLBACK_MODEL = 'eleven_multilingual_v2'
 /** eleven_v3's documented request limit, characters. */
 export const V3_MAX_CHARACTERS = 5000
 

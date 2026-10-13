@@ -11,6 +11,9 @@ import {
 
 // No test here reaches the network: every call goes through an injected fetch.
 
+/** A test environment: Next's types make NODE_ENV required on ProcessEnv. */
+const env = (vars: Record<string, string>): NodeJS.ProcessEnv => vars as unknown as NodeJS.ProcessEnv
+
 const KEY = 'xi-test-key-0123456789'
 const VOICE = 'voice-abc'
 
@@ -173,7 +176,7 @@ describe('synthesizeWithTimestamps: failures', () => {
   })
 
   it('retries a 429 and a 5xx with a growing wait, then succeeds', async () => {
-    const sleep = vi.fn(async () => {})
+    const sleep = vi.fn(async (_ms: number) => {})
     const fetch = mockFetch(failing(429, 'slow down'), failing(503, 'try later'), ok())
     const result = await synthesizeWithTimestamps({ text: 'Okay', voiceId: VOICE }, { apiKey: KEY, fetch, sleep })
     expect(result.outputFormat).toBe('pcm_48000')
@@ -217,9 +220,9 @@ describe('synthesizeWithTimestamps: failures', () => {
 
 describe('voice ids and the manifest block', () => {
   it('reads the named voice from the environment and names the variable when it is unset', () => {
-    expect(voiceIdFor('ellen', { ELEVENLABS_VOICE_ID_ELLEN: ' ell-1 ' })).toBe('ell-1')
-    expect(voiceIdFor('victoria', { ELEVENLABS_VOICE_ID_VICTORIA: 'vic-1' })).toBe('vic-1')
-    expect(() => voiceIdFor('ellen', {})).toThrow(/ELEVENLABS_VOICE_ID_ELLEN/)
+    expect(voiceIdFor('ellen', env({ ELEVENLABS_VOICE_ID_ELLEN: ' ell-1 ' }))).toBe('ell-1')
+    expect(voiceIdFor('victoria', env({ ELEVENLABS_VOICE_ID_VICTORIA: 'vic-1' }))).toBe('vic-1')
+    expect(() => voiceIdFor('ellen', env({}))).toThrow(/ELEVENLABS_VOICE_ID_ELLEN/)
   })
 
   it('builds the manifest voice block with exactly engine, model, voiceId and words', () => {

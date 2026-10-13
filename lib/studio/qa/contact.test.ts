@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { buildContactFilter, contactFrames, findFont, labelText } from './contact'
 import type { Manifest } from './manifest'
 
+/** A test environment: Next's types make NODE_ENV required on ProcessEnv. */
+const env = (vars: Record<string, string>): NodeJS.ProcessEnv => vars as unknown as NodeJS.ProcessEnv
+
 const manifest = {
   beats: [
     { id: 'hook', role: 'hook', start: 0, end: 3.1 },
@@ -61,12 +64,12 @@ describe('buildContactFilter', () => {
 
 describe('findFont', () => {
   it('prefers QA_FONT_FILE when it exists', () => {
-    expect(findFont({ QA_FONT_FILE: '/x/f.ttf' }, (p) => p === '/x/f.ttf')).toBe('/x/f.ttf')
+    expect(findFont(env({ QA_FONT_FILE: '/x/f.ttf' }), (p) => p === '/x/f.ttf')).toBe('/x/f.ttf')
   })
 
   it('falls back to a common path, and reports none', () => {
-    expect(findFont({}, (p) => p.endsWith('DejaVuSans.ttf'))).toMatch(/DejaVuSans\.ttf$/)
-    expect(findFont({}, () => false)).toBeNull()
-    expect(findFont({ QA_FONT_FILE: '/missing.ttf' }, () => false)).toBeNull()
+    expect(findFont(env({}), (p) => p.endsWith('DejaVuSans.ttf'))).toMatch(/DejaVuSans\.ttf$/)
+    expect(findFont(env({}), () => false)).toBeNull()
+    expect(findFont(env({ QA_FONT_FILE: '/missing.ttf' }), () => false)).toBeNull()
   })
 })

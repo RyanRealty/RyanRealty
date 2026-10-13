@@ -11,6 +11,9 @@ import {
 } from './measure'
 
 // Captured from ffmpeg 6.1.1 on 2026-10-13.
+/** A test environment: Next's types make NODE_ENV required on ProcessEnv. */
+const env = (vars: Record<string, string>): NodeJS.ProcessEnv => vars as unknown as NodeJS.ProcessEnv
+
 const EBUR_LOG = `[Parsed_ebur128_0 @ 0x56279e26c000] t: 6.99998    TARGET:-23 LUFS    M: -21.8 S: -21.8     I: -21.8 LUFS       LRA:   0.0 LU  FTPK: -17.8 dBFS  TPK: -16.1 dBFS
 [out#0/null @ 0x56279e1a59c0] video:0kB audio:658kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: unknown
 size=N/A time=00:00:07.00 bitrate=N/A speed=85.9x
@@ -43,18 +46,18 @@ const SHOWINFO = `[Parsed_showinfo_1 @ 0x561d2d212400] config in time_base: 1/15
 
 describe('resolveBinary', () => {
   it('prefers the env var', () => {
-    expect(resolveBinary('ffmpeg', { FFMPEG_PATH: '/opt/ff/ffmpeg' }, () => true)).toBe('/opt/ff/ffmpeg')
-    expect(resolveBinary('ffprobe', { FFPROBE_PATH: ' /opt/ff/ffprobe ' }, () => true)).toBe('/opt/ff/ffprobe')
+    expect(resolveBinary('ffmpeg', env({ FFMPEG_PATH: '/opt/ff/ffmpeg' }), () => true)).toBe('/opt/ff/ffmpeg')
+    expect(resolveBinary('ffprobe', env({ FFPROBE_PATH: ' /opt/ff/ffprobe ' }), () => true)).toBe('/opt/ff/ffprobe')
   })
 
   it('does not mix up the two env vars', () => {
-    expect(resolveBinary('ffprobe', { FFMPEG_PATH: '/opt/ff/ffmpeg' }, () => false)).toBe('ffprobe')
+    expect(resolveBinary('ffprobe', env({ FFMPEG_PATH: '/opt/ff/ffmpeg' }), () => false)).toBe('ffprobe')
   })
 
   it('falls back to /usr/bin when it exists, else the bare name', () => {
-    expect(resolveBinary('ffmpeg', {}, (p) => p === '/usr/bin/ffmpeg')).toBe('/usr/bin/ffmpeg')
-    expect(resolveBinary('ffprobe', {}, () => false)).toBe('ffprobe')
-    expect(resolveBinary('ffmpeg', { FFMPEG_PATH: '  ' }, () => false)).toBe('ffmpeg')
+    expect(resolveBinary('ffmpeg', env({}), (p) => p === '/usr/bin/ffmpeg')).toBe('/usr/bin/ffmpeg')
+    expect(resolveBinary('ffprobe', env({}), () => false)).toBe('ffprobe')
+    expect(resolveBinary('ffmpeg', env({ FFMPEG_PATH: '  ' }), () => false)).toBe('ffmpeg')
   })
 })
 
