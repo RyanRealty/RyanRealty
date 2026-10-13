@@ -38,6 +38,7 @@ import { CO_TRAILS } from '@/data/co-trails'
 import { CO_SCHOOLS } from '@/data/co-schools'
 import { CO_PARKS } from '@/data/co-parks'
 import { CORE_MARKET_PATHS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
+import { buyerAnswerSitemapPaths } from '@/lib/buyer-answers'
 
 // The ONLY slugs with a real /communities/[slug] page — derived directly from
 // the curated resort registry (data/resort-communities.json) so the sitemap
@@ -482,6 +483,18 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
         lastModified: now,
         changeFrequency: 'daily',
         priority: 0.8,
+      })
+    }
+
+    // Long-tail buyer answers under community and city hubs
+    // (lib/buyer-answers — HOA/STR only when sourced). Per
+    // docs/DATABASE_FOR_AI_AGENTS.md §3a, community pulse is neighborhood + bare slug.
+    for (const path of buyerAnswerSitemapPaths()) {
+      dynamicPages.push({
+        url: `${baseUrl}${path}`,
+        lastModified: now,
+        changeFrequency: 'daily',
+        priority: 0.7,
       })
     }
 

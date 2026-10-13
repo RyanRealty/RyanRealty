@@ -69,6 +69,7 @@ Content is the point. **URLs** are what we cut.
 | Listing | house URL | This house. |
 | Place indexes | `/cities`, `/neighborhoods`, `/communities`, `/subdivisions` | Directories. Not a fourth Bend. |
 | Place pages | `/cities/[city]`, `/cities/[city]/[hood]`, `/communities/[slug]`, `/subdivisions/[slug]`, `/zip/[zip]` | The landing pages. Spec in PLACE_PAGES.md. |
+| Buyer answers | `/communities/[slug]/{living,cost,hoa,short-term-rentals,vs/[other]}`, `/cities/[slug]/{living,cost,vs/[other]}` | Long-tail buyer questions with a 40-60 word live MLS answer, table, listings, FAQPage. HOA/STR only when sourced. Registry: `lib/buyer-answers`. |
 | Open houses / price drops | `/open-houses`, `/price-drops` | Modes of Homes. Same house row as search. |
 | Our listings | `/our-homes` | Broker inventory. |
 | Commercial space for lease | `/commercial-space-for-lease` | Every active commercial lease (MLS G) in Central Oregon, grouped by town, each rent with its unit or "Lease rate not published" (Matt 2026-09-23). A lease is not for sale, so it is never in Homes or a for-sale count. No menu slot: every place page's "Commercial space for lease" section links here, and the sitemap lists it. Unit rule: [`PLACE_PAGES.md`](PLACE_PAGES.md). |

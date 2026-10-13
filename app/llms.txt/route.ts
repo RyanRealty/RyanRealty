@@ -12,6 +12,7 @@ import { CORE_MARKET_PATHS } from '@/app/housing-market/[...slug]/_v3/geo-consta
 import { BLOG_HOUSING_MARKET_GUIDE_REDIRECTS } from '@/lib/routing/blog-market-guide-redirects'
 import { cityTypeLlmsLines, dedupeLlmsLines, marketCityLlmsLines, zipLlmsLines, LLMS_SUBDIVISIONS_PATH } from '@/lib/site/llms-geo'
 import { BRAND, CONTACT } from '@/lib/brand/contact'
+import { BUYER_ANSWER_DEFS } from '@/lib/buyer-answers'
 
 const SITE_URL = siteOrigin()
 
@@ -109,6 +110,10 @@ export async function GET() {
       (c) => `- ${c.label} (${c.city}): ${SITE_URL}/communities/${publicCommunitySlug(c)}`,
     ),
   ])
+  const buyerAnswerLines = lines([
+    ...pillars('buyer-answers'),
+    ...BUYER_ANSWER_DEFS.map((def) => `- ${def.query}: ${SITE_URL}${def.path}`),
+  ])
   const neighborhoodLines = lines(
     neighborhoods
       .map((n) => {
@@ -192,6 +197,9 @@ One page per property type in each city: the ones for sale now, live from the re
 ## Cities${cityLines}
 
 ## Communities${communityLines}
+
+## Buyer answers
+Long-tail buyer questions answered with live Oregon Data Share MLS figures, a table, listings, and FAQPage schema.${buyerAnswerLines}
 
 ## Neighborhoods${neighborhoodLines}
 
