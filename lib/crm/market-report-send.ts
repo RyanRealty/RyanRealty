@@ -62,6 +62,7 @@ export type SkipReason =
   | 'no-email'
   | 'no-areas' // all subscribed areas resolved unavailable in the cache
   | 'suppressed'
+  | 'industry-contact'
   | 'send-error'
 
 export type ContactSendOutcome =
@@ -115,7 +116,7 @@ const REAL_DEPS: SendDeps = {
 }
 
 function emptyReasonCounts(): Record<SkipReason, number> {
-  return { 'not-due': 0, 'no-email': 0, 'no-areas': 0, suppressed: 0, 'send-error': 0 }
+  return { 'not-due': 0, 'no-email': 0, 'no-areas': 0, suppressed: 0, 'industry-contact': 0, 'send-error': 0 }
 }
 
 /**

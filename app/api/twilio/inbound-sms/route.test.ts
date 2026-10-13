@@ -56,7 +56,7 @@ vi.mock('@/app/actions/crm-inbox', () => ({ markConversationUnreadOnInbound: asy
 vi.mock('@/lib/crm/suppressions', () => ({
   addSuppression: async () => {},
   removeSuppression: async () => {},
-  clearNonOptOutSuppressions: (...a: unknown[]) => clearNonOptOutSuppressions(...a),
+  clearNonOptOutSuppressions,
 }))
 vi.mock('@/lib/crm/broker-alerts', () => ({ newLeadAlertBody: () => '', queueBrokerAlert: async () => {} }))
 vi.mock('@/lib/crm/gmail', () => ({ sendCrmEmail: async () => {} }))

@@ -9,10 +9,13 @@ const sendEmail = vi.fn()
 const recordEmailEvent = vi.fn()
 vi.mock('@/lib/crm/suppressions', () => ({ isSuppressed: (...a: unknown[]) => isSuppressed(...a) }))
 const { readPersonAudienceFields } = vi.hoisted(() => ({
-  readPersonAudienceFields: vi.fn(async () => ({ fields: { id: 100, tags: [], stage: null }, error: null })),
+  readPersonAudienceFields: vi.fn(async (): Promise<{
+    fields: { id: number; tags: string[]; stage: string | null }
+    error: string | null
+  }> => ({ fields: { id: 100, tags: [], stage: null }, error: null })),
 }))
 vi.mock('@/lib/data/crm/getPeopleAudienceFields', () => ({
-  readPersonAudienceFields: (...a: unknown[]) => readPersonAudienceFields(...a),
+  readPersonAudienceFields,
 }))
 vi.mock('@/lib/resend', () => ({ sendEmail: (...a: unknown[]) => sendEmail(...a) }))
 vi.mock('@/lib/crm/email-events', () => ({ recordEmailEvent: (...a: unknown[]) => recordEmailEvent(...a) }))
