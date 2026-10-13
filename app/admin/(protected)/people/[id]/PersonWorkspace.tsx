@@ -57,6 +57,19 @@ import { HomesSection } from './HomesSection'
 import { SiteActivitySection } from './SiteActivitySection'
 import { SendSection } from './SendSection'
 import { TasksSection } from './TasksSection'
+import { getContactMemberships } from '@/lib/data/crm/getContactMemberships'
+import {
+  getContactReportSubscription,
+  listAvailableMarketReportAreas,
+} from '@/lib/data/crm/getContactReportSubscriptions'
+import { getLatestNewsletterIssue } from '@/lib/data/crm/getLatestNewsletterIssue'
+import { getPersonSiteActivity } from '@/lib/data/crm/getSiteActivity'
+import { resolvePersonIdentity } from '@/lib/data/crm/resolvePersonIdentity'
+import { conversationHasInboundSms, mergePersonTimeline, pageViewsFromVisits } from '@/lib/data/crm/person-timeline'
+import { sendDeliverableForPerson } from '@/app/actions/send-deliverable'
+import { startBpoFromPerson } from '../actions'
+import type { PersonNoteRow } from '@/lib/data/crm/getPersonNotes'
+import { PersonWorkspaceV3, type PersonWorkspaceV3Details } from './PersonWorkspaceV3'
 
 export type PersonWorkspaceSearch = {
   intent?: string
@@ -72,10 +85,18 @@ export async function PersonWorkspace({
   idNum,
   card,
   sp,
+  layout = 'v2',
+  notes = [],
+  nowLine = null,
+  details,
 }: {
   idNum: number
   card: InboxContactCard
   sp: PersonWorkspaceSearch
+  layout?: 'v2' | 'v3'
+  notes?: PersonNoteRow[]
+  nowLine?: string | null
+  details?: PersonWorkspaceV3Details
 }) {
   const [
     feed,
@@ -228,6 +249,102 @@ export async function PersonWorkspace({
       outcomeName: a.outcomeName,
       location: a.location,
     }))
+
+    if (layout === 'v3' && details) {
+      const identity = await resolvePersonIdentity(idNum)
+      const [memberships, reportSub, reportAreas, latestNewsletter, siteActivity] = await Promise.all([
+        getContactMemberships(idNum),
+        getContactReportSubscription(idNum),
+        listAvailableMarketReportAreas(),
+        getLatestNewsletterIssue(),
+        getPersonSiteActivity({
+          personId: idNum,
+          fubLegacyId: identity.fubLegacyId,
+          emails: personEmails.length > 0 ? personEmails : identity.emails,
+          days: 30,
+        }),
+      ])
+      const timeline = mergePersonTimeline({
+        conversation: conversation.items,
+        feed,
+        notes,
+        pageViews: pageViewsFromVisits(siteActivity.visits),
+        emailSends: emailTracking.sends,
+      })
+      return (
+        <PersonWorkspaceV3
+          personId={idNum}
+          card={card}
+          notes={notes}
+          nowLine={nowLine}
+          kickoffReady={showKickoff && kicked}
+          timeline={timeline}
+          tasks={foldTasks}
+          appointments={foldAppointments}
+          completeTask={completeTaskFromPerson.bind(null, idNum)}
+          addTask={addTaskFromPerson.bind(null, idNum)}
+          details={details}
+          deals={personDeals}
+          prospectStory={prospectStory}
+          inboundAddress={suggestedAddress}
+          whoLabels={whoLabels}
+          relationships={relationships}
+          personEmails={personEmails}
+          cmas={cmas}
+          bpos={bpos}
+          memberships={memberships}
+          reportSub={reportSub}
+          siteActivity={siteActivity}
+          composer={{
+            personId: idNum,
+            initialChannel,
+            canSms,
+            smsNote,
+            canEmail,
+            emailNote: 'No email address on file.',
+            quietHours: inSmsQuietHoursFor(primaryPhone),
+            primaryTimeZones: recipientTimeZones(primaryPhone),
+            smsTemplates: smsTemplates.map((t) => ({ key: t.key, name: t.name })),
+            emailTemplates: emailTemplates.map((t) => ({ key: t.key, name: t.name })),
+            tplKey: tpl,
+            smsTplKey: smsTpl,
+            emailInitialSubject,
+            emailInitialBody,
+            smsInitialBody,
+            signatureHtml: signature?.html ?? null,
+            toLabel: primaryEmail ? (person.name ? `${person.name} · ${primaryEmail}` : primaryEmail) : null,
+            initialTo: primaryEmail ? [primaryEmail.toLowerCase()] : [],
+            recipientOptions,
+            customFields: composerCustomFields,
+            smsRecipients,
+            sendSms: sendSmsFromPerson.bind(null, idNum),
+            sendEmail: sendEmailFromPerson.bind(null, idNum),
+            saveEmailDraft: saveEmailDraftFromPerson.bind(null, idNum),
+            saveSmsDraft: saveSmsDraftFromPerson.bind(null, idNum),
+            cmas,
+            bpos,
+            composeCma: sp.composeCma ?? null,
+            toLine: primaryPhone ? `to ${primaryPhone}` : primaryEmail,
+            inboundClearsImportDnt: conversationHasInboundSms(conversation.items),
+            emailSuppressed,
+            defaultCity: geo?.city ?? null,
+            reportAreas,
+            subscribedAreas: reportSub?.areas ?? [],
+            newsletterSubscribed: memberships.newsletter.subscribed,
+            latestNewsletter: latestNewsletter
+              ? {
+                  subject: latestNewsletter.subject,
+                  status: latestNewsletter.status,
+                  sentAt: latestNewsletter.sentAt,
+                }
+              : null,
+            cmaBuildHref: '?intent=cma&v=3',
+            bpoGenerateAction: startBpoFromPerson.bind(null, idNum),
+            newsletterSendAction: sendDeliverableForPerson.bind(null, idNum, 'newsletter'),
+          }}
+        />
+      )
+    }
 
     fold = (
       <>
