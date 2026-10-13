@@ -7,6 +7,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
 import { TAG_CHANNEL, type SendChannel } from '@/lib/crm/tag-channel'
+import { isTrueOptOutSuppression, whereActiveSuppression } from '@/lib/crm/suppression-lifecycle'
 
 /**
  * Re-exported from lib/crm/tag-channel.ts, which carries the mapping without
@@ -18,7 +19,9 @@ export { type SendChannel, TAG_CHANNEL } from '@/lib/crm/tag-channel'
 export async function isSuppressed(personId: number, channel: SendChannel): Promise<{ suppressed: boolean; reasons: string[] }> {
   const sb = createServiceClient()
   const [rows, person] = await Promise.all([
-    sb.from('crm_suppressions').select('channel,reason').eq('person_id', personId).in('channel', ['all', channel]),
+    whereActiveSuppression(
+      sb.from('crm_suppressions').select('channel,reason').eq('person_id', personId).in('channel', ['all', channel]),
+    ),
     sb.from('crm_people').select('tags').eq('id', personId).maybeSingle(),
   ])
   if (rows.error) {
@@ -110,12 +113,10 @@ export async function isSuppressedByEmail(
     }
   }
 
-  // 3. Email-keyed suppression rows (no person required).
-  const rows = await sb
-    .from('crm_suppressions')
-    .select('channel,reason')
-    .eq('value', normalized)
-    .in('channel', ['all', channel])
+  // 3. Email-keyed suppression rows (no person required). Cleared rows do not block.
+  const rows = await whereActiveSuppression(
+    sb.from('crm_suppressions').select('channel,reason').eq('value', normalized).in('channel', ['all', channel]),
+  )
   if (rows.error) {
     return { suppressed: true, reasons: ['email-suppression-check-failed: ' + rows.error.message] }
   }
@@ -160,11 +161,13 @@ export async function isSuppressedByPhone(
 
   // 2. Value-keyed suppression rows (no person required) — match both the last-10
   // and the +1E.164 form, since imported opt-outs may be stored either way.
-  const rows = await sb
-    .from('crm_suppressions')
-    .select('channel,reason')
-    .in('value', [last10, `+1${last10}`])
-    .in('channel', ['all', channel])
+  const rows = await whereActiveSuppression(
+    sb
+      .from('crm_suppressions')
+      .select('channel,reason')
+      .in('value', [last10, `+1${last10}`])
+      .in('channel', ['all', channel]),
+  )
   if (rows.error) {
     return { suppressed: true, reasons: ['phone-suppression-check-failed: ' + rows.error.message] }
   }
@@ -187,6 +190,47 @@ export async function removeSuppression(params: {
   let q = sb.from('crm_suppressions').delete().eq('person_id', params.personId).eq('channel', params.channel)
   if (params.reason) q = q.eq('reason', params.reason)
   await q
+}
+
+/**
+ * Mark every active non-opt-out suppression for this person as cleared.
+ * Never deletes. Never clears STOP / bounce / complaint / unsubscribe / GPC.
+ * Called after a recorded inbound sms_in (including STOP/START/HELP).
+ */
+export async function clearNonOptOutSuppressions(params: {
+  personId: number
+  clearedBy: string
+  clearedReason: string
+}): Promise<{ cleared: number }> {
+  if (!Number.isInteger(params.personId) || params.personId <= 0) return { cleared: 0 }
+  const sb = createServiceClient()
+  const { data, error } = await whereActiveSuppression(
+    sb.from('crm_suppressions').select('id,reason,source').eq('person_id', params.personId),
+  )
+  if (error) {
+    console.error('[clearNonOptOutSuppressions]', error.message)
+    return { cleared: 0 }
+  }
+  const ids = (data ?? [])
+    .filter((r) => !isTrueOptOutSuppression(r))
+    .map((r) => Number(r.id))
+    .filter((n) => Number.isFinite(n))
+  if (ids.length === 0) return { cleared: 0 }
+  const { error: updErr } = await whereActiveSuppression(
+    sb
+      .from('crm_suppressions')
+      .update({
+        cleared_at: new Date().toISOString(),
+        cleared_by: params.clearedBy,
+        cleared_reason: params.clearedReason,
+      })
+      .in('id', ids),
+  )
+  if (updErr) {
+    console.error('[clearNonOptOutSuppressions]', updErr.message)
+    return { cleared: 0 }
+  }
+  return { cleared: ids.length }
 }
 
 export async function addSuppression(params: {

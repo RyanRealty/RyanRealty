@@ -36,6 +36,8 @@ import 'server-only'
 
 import { isDue } from '@/lib/crm/market-report-cadence'
 import { isSuppressed } from '@/lib/crm/suppressions'
+import { isIndustryContact } from '@/lib/crm/industry-contact'
+import { readPersonAudienceFields } from '@/lib/data/crm/getPeopleAudienceFields'
 import { prepareDeliverableEmail } from '@/lib/email/prepare'
 import { buildUnsubscribeUrl } from '@/lib/email/unsubscribe-token'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
@@ -143,6 +145,13 @@ export async function sendOneSubscriber(input: {
   const gate = await isSuppressed(personId, 'email')
   if (gate.suppressed) {
     return { personId, status: 'skipped', reason: 'suppressed', detail: gate.reasons.join(', ') }
+  }
+  const industry = await readPersonAudienceFields(personId)
+  if (industry.error) {
+    return { personId, status: 'skipped', reason: 'suppressed', detail: 'industry-check-failed: ' + industry.error }
+  }
+  if (industry.fields && isIndustryContact(industry.fields)) {
+    return { personId, status: 'skipped', reason: 'industry-contact', detail: 'industry:contact' }
   }
 
   // Multipart + List-Unsubscribe + CAN-SPAM footer (same unsubscribeUrl so the

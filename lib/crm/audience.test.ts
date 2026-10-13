@@ -77,6 +77,23 @@ vi.mock('@/lib/data/crm/getSavedViewSegment', async () => {
   }
 })
 
+const { audienceState } = vi.hoisted(() => ({
+  audienceState: {
+    fields: new Map<number, { id: number; tags: unknown; stage: string | null }>(),
+    error: null as string | null,
+  },
+}))
+vi.mock('@/lib/data/crm/getPeopleAudienceFields', () => ({
+  getPeopleAudienceFields: async (_sb: unknown, ids: number[]) => {
+    if (audienceState.error) return { fields: new Map(), error: audienceState.error }
+    const fields = new Map<number, { id: number; tags: unknown; stage: string | null }>()
+    for (const id of ids) {
+      fields.set(id, audienceState.fields.get(id) ?? { id, tags: [], stage: null })
+    }
+    return { fields, error: null }
+  },
+}))
+
 import {
   resolveAudienceIds,
   resolveSendableAudience,
@@ -102,6 +119,8 @@ beforeEach(() => {
   queryError = null
   viewSegment = null
   viewSegmentThrows = null
+  audienceState.fields = new Map()
+  audienceState.error = null
 })
 afterEach(() => vi.clearAllMocks())
 
@@ -237,5 +256,16 @@ describe('resolveSendableAudience', () => {
     population = [1, 2, 3]
     await resolveSendableAudience(sb(), { ids: [1, 2] }, 'rebecca', 'email')
     expect(buildCalls[0].scope).toBe('rebecca')
+  })
+
+  it('drops industry contacts from the sendable set (1:1 composer is a different path)', async () => {
+    population = [1, 2, 3]
+    audienceState.fields = new Map([
+      [2, { id: 2, tags: ['industry:contact'], stage: null }],
+    ])
+    const res = await resolveSendableAudience(sb(), { ast: EMPTY_SEGMENT }, null, 'sms')
+    expect(res.ids.sort()).toEqual([1, 3])
+    expect(res.skipped).toBe(1)
+    expect(res.skippedReasons[2]).toEqual(['industry:contact'])
   })
 })

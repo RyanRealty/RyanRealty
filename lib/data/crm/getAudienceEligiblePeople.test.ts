@@ -6,6 +6,7 @@ import {
 
 describe('isAudienceExcludedByTag — realtor/agent targeting exclusion', () => {
   it('excludes the real-world realtor tag variants', () => {
+    expect(isAudienceExcludedByTag(['industry:contact'])).toBe(true)
     expect(isAudienceExcludedByTag(['industry:realtor'])).toBe(true)
     expect(isAudienceExcludedByTag(['Realtor'])).toBe(true)
     expect(isAudienceExcludedByTag(['realtor'])).toBe(true)
@@ -30,6 +31,7 @@ describe('isAudienceExcludedByTag — realtor/agent targeting exclusion', () => 
   it('is case-insensitive', () => {
     expect(isAudienceExcludedByTag(['INDUSTRY:REALTOR'])).toBe(true)
     expect(isAudienceExcludedByTag(['ReAlToR'])).toBe(true)
+    expect(isAudienceExcludedByTag(['city:bend'], 'Real Estate Agent')).toBe(true)
   })
 
   it('ships with at least the realtor pattern', () => {

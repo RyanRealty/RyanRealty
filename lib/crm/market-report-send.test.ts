@@ -8,6 +8,12 @@ const isSuppressed = vi.fn()
 const sendEmail = vi.fn()
 const recordEmailEvent = vi.fn()
 vi.mock('@/lib/crm/suppressions', () => ({ isSuppressed: (...a: unknown[]) => isSuppressed(...a) }))
+const { readPersonAudienceFields } = vi.hoisted(() => ({
+  readPersonAudienceFields: vi.fn(async () => ({ fields: { id: 100, tags: [], stage: null }, error: null })),
+}))
+vi.mock('@/lib/data/crm/getPeopleAudienceFields', () => ({
+  readPersonAudienceFields: (...a: unknown[]) => readPersonAudienceFields(...a),
+}))
 vi.mock('@/lib/resend', () => ({ sendEmail: (...a: unknown[]) => sendEmail(...a) }))
 vi.mock('@/lib/crm/email-events', () => ({ recordEmailEvent: (...a: unknown[]) => recordEmailEvent(...a) }))
 // The fetch-failure path pages Matt through queueBrokerHealthAlert. Unmocked, it
@@ -72,6 +78,8 @@ beforeEach(() => {
   isSuppressed.mockReset()
   sendEmail.mockReset()
   recordEmailEvent.mockReset()
+  readPersonAudienceFields.mockReset()
+  readPersonAudienceFields.mockResolvedValue({ fields: { id: 100, tags: [], stage: null }, error: null })
 })
 
 describe('runMarketReportSend — cadence + skip taxonomy', () => {
@@ -181,6 +189,17 @@ describe('sendOneSubscriber — suppression chokepoint', () => {
     unsubscribeUrl: 'https://ryan-realty.com/api/email/unsubscribe?t=tok',
     emailKey: 'market-report:run:100',
   }
+
+  it('does NOT send when the contact is an industry contact', async () => {
+    isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    readPersonAudienceFields.mockResolvedValue({
+      fields: { id: 100, tags: ['industry:contact'], stage: null },
+      error: null,
+    })
+    const out = await sendOneSubscriber(baseArgs)
+    expect(out).toMatchObject({ status: 'skipped', reason: 'industry-contact' })
+    expect(sendEmail).not.toHaveBeenCalled()
+  })
 
   it('does NOT send when the contact is suppressed (fail-closed)', async () => {
     isSuppressed.mockResolvedValue({ suppressed: true, reasons: ['tag:unsubscribed'] })

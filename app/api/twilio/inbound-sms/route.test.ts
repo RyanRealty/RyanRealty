@@ -9,7 +9,7 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-const { CELLS, LINES, MARKETING, sendSms, findOrCreatePersonByPhone, ten, upserts } = vi.hoisted(() => ({
+const { CELLS, LINES, MARKETING, sendSms, findOrCreatePersonByPhone, ten, upserts, clearNonOptOutSuppressions } = vi.hoisted(() => ({
   upserts: [] as Array<{ table: string; row: Record<string, unknown> }>,
   CELLS: { matt: '+15410000001', paul: '+15410000002', rebecca: '+15410000003' },
   LINES: { matt: '+15419990001', paul: '+15419990002', rebecca: '+15419990003' },
@@ -19,6 +19,7 @@ const { CELLS, LINES, MARKETING, sendSms, findOrCreatePersonByPhone, ten, upsert
     match: { personId: 7, name: 'Client', broker: 'paul' },
     created: false,
   })),
+  clearNonOptOutSuppressions: vi.fn(async () => ({ cleared: 0 })),
   ten: (v: string | null | undefined) => {
     const d = String(v ?? '').replace(/\D/g, '')
     return d.length >= 10 ? d.slice(-10) : d || null
@@ -52,7 +53,11 @@ vi.mock('@/lib/data/crm/getBrokerTelephony', () => ({
 vi.mock('@/lib/data/crm/getBlockedNumber', () => ({ isNumberBlocked: async () => false }))
 vi.mock('@/lib/data/crm/findOrCreatePersonByPhone', () => ({ findOrCreatePersonByPhone: () => findOrCreatePersonByPhone() }))
 vi.mock('@/app/actions/crm-inbox', () => ({ markConversationUnreadOnInbound: async () => {} }))
-vi.mock('@/lib/crm/suppressions', () => ({ addSuppression: async () => {}, removeSuppression: async () => {} }))
+vi.mock('@/lib/crm/suppressions', () => ({
+  addSuppression: async () => {},
+  removeSuppression: async () => {},
+  clearNonOptOutSuppressions: (...a: unknown[]) => clearNonOptOutSuppressions(...a),
+}))
 vi.mock('@/lib/crm/broker-alerts', () => ({ newLeadAlertBody: () => '', queueBrokerAlert: async () => {} }))
 vi.mock('@/lib/crm/gmail', () => ({ sendCrmEmail: async () => {} }))
 vi.mock('@/lib/data/brokers/directory', () => ({ mailboxForSlug: async () => ({ email: 'desk@example.com' }) }))
@@ -94,6 +99,7 @@ describe('inbound-sms broker cell routing', () => {
     sendSms.mockClear()
     findOrCreatePersonByPhone.mockClear()
     upserts.length = 0
+    clearNonOptOutSuppressions.mockClear()
   })
 
   it("relays a broker's text on a colleague's line to the colleague's cell", async () => {
@@ -130,5 +136,20 @@ describe('inbound-sms broker cell routing', () => {
     expect(sendSms).toHaveBeenCalledTimes(1)
     expect(sendSms.mock.calls[0][0]).toMatchObject({ from: LINES.paul, to: CELLS.paul })
     expect(upserts.find((u) => u.table === 'crm_sms_inbound_log')?.row).toMatchObject({ outcome: 'forwarded', forward_sid: 'SM1' })
+    expect(clearNonOptOutSuppressions).toHaveBeenCalledWith(
+      expect.objectContaining({ personId: 7, clearedBy: 'inbound-sms', clearedReason: expect.stringMatching(/^inbound sms_in /) }),
+    )
+  })
+
+  it('clears non-opt-out suppressions on STOP, then writes the STOP row', async () => {
+    const addSuppression = (await import('@/lib/crm/suppressions')).addSuppression
+    await POST(inbound('+15035550123', LINES.paul, 'STOP'))
+    expect(clearNonOptOutSuppressions).toHaveBeenCalled()
+    expect(addSuppression).toBeDefined()
+  })
+
+  it('does not clear suppressions for a broker-cell drop', async () => {
+    await POST(inbound(CELLS.paul, LINES.paul, 'reply in thread'))
+    expect(clearNonOptOutSuppressions).not.toHaveBeenCalled()
   })
 })

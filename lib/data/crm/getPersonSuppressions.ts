@@ -15,6 +15,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { whereActiveSuppression } from '@/lib/crm/suppression-lifecycle'
 
 export type PersonSuppressionRow = { channel: string; reason: string }
 
@@ -22,10 +23,9 @@ export async function getPersonSuppressions(personId: number): Promise<PersonSup
   if (typeof personId !== 'number' || !Number.isFinite(personId)) return []
   try {
     const sb = createServiceClient()
-    const { data, error } = await sb
-      .from('crm_suppressions')
-      .select('channel,reason')
-      .eq('person_id', personId)
+    const { data, error } = await whereActiveSuppression(
+      sb.from('crm_suppressions').select('channel,reason').eq('person_id', personId),
+    )
     if (error || !data) return []
     return data.map((r) => ({ channel: String(r.channel), reason: String(r.reason) }))
   } catch {
