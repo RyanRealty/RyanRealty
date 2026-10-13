@@ -23,6 +23,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { sendCrmEmail } from '@/lib/crm/gmail'
 import { mailboxForSlug } from '@/lib/data/brokers/directory'
 import { isSuppressed } from '@/lib/crm/suppressions'
+import { isIndustryContact } from '@/lib/crm/industry-contact'
 import { referencesCmaLink, findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { decorateOutboundText } from '@/lib/identity/outbound-links'
 import {
@@ -184,6 +185,12 @@ export async function GET(request: Request) {
         .eq('id', en.person_id)
         .single()
       if (!person) { await finish({ status: 'stopped' }); errored++; continue }
+      if (isIndustryContact({ tags: person.tags, stage: person.stage })) {
+        await finish({ status: 'suppressed' })
+        await log(`Sequence "${seq.name}" halted — industry contact`)
+        suppressed++
+        continue
+      }
 
       // ── Condition node resolution ────────────────────────────────────────
       // A 'condition' node (type === 'condition') is not an execution step —

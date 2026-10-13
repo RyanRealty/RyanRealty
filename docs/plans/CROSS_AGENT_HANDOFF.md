@@ -1,4 +1,14 @@
-# Current — 2026-10-12 (Grok, ask-in-band stands when the price already does)
+# Current — 2026-10-13 (Cursor, inbound SMS clear + industry exclusion, PR only)
+
+Surface: Cursor cloud. Branch `cursor/clear-import-suppression-on-inbound-sms-f271` from origin/main `b802ee703`. Do not merge. Do not `git push` main. Do not apply hosted SQL. Do not run the backfill. Nothing sent.
+
+**What this branch does.** Inbound `sms_in` marks that person's non-opt-out `crm_suppressions` rows cleared (`cleared_at` / `cleared_by` / `cleared_reason`). STOP / bounce / complaint / unsubscribe / GPC stay. START still deletes only `sms` + `stop-keyword`. Durable tag `industry:contact` plus existing realtor/vendor tags and exact industry stages exclude people from every bulk, drip, list, ad, and marketing send. The 1:1 admin composer ignores the industry flag. Backfill script `scripts/crm-reclass-import-hard-stops.ts` is dry-run by default; `--apply` is for Matt after merge.
+
+**Not this change.** Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase from this session. Do not run the backfill. Do not refresh the G16 snapshot against live. Do not send.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES.
+
+## Earlier — 2026-10-12 (Grok, ask-in-band stands when the price already does)
 
 Surface: Grok. Branch `fix/cma-ask-in-band-sentence` in `/Users/matthewryan/RyanRealty-wt-ask-sentence`, cut from origin/main `874435e73`. Matt merges the PR. Nobody pushes main. Nothing rebuilt, nothing sent, nothing approved.
 

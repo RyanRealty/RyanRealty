@@ -15,7 +15,7 @@ import { DEFAULT_DESK_BROKER, brokerForTwilioNumber, verifiedTwilioParams, broke
 import { getBrokerTelephony } from '@/lib/data/crm/getBrokerTelephony'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { markConversationUnreadOnInbound } from '@/app/actions/crm-inbox'
-import { addSuppression, removeSuppression } from '@/lib/crm/suppressions'
+import { addSuppression, clearNonOptOutSuppressions, removeSuppression } from '@/lib/crm/suppressions'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import { hasSellerIntent } from '@/lib/crm/seller-intent'
 import { sendCrmEmail } from '@/lib/crm/gmail'
@@ -284,6 +284,18 @@ export async function POST(request: Request) {
       },
       { onConflict: 'dedupe_key', ignoreDuplicates: true },
     )
+
+    // A recorded sms_in lifts import / non-opt-out suppressions (mark, never
+    // delete). STOP/START/HELP still run after this; real opt-outs stay.
+    try {
+      await clearNonOptOutSuppressions({
+        personId: match.personId,
+        clearedBy: 'inbound-sms',
+        clearedReason: `inbound sms_in ${sid}`,
+      })
+    } catch (e) {
+      console.warn('[twilio/inbound-sms] clear non-opt-out suppressions failed', e)
+    }
 
     // Shadow-write into the conversation model (RC1). Non-fatal: the timeline is
     // still the source of truth until the inbox read path flips. The message-insert

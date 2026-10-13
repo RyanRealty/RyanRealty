@@ -92,9 +92,11 @@ vi.mock('@/app/actions/crm-inbox', () => ({ markConversationUnreadOnInbound: (id
 
 const addSuppression = vi.fn(async (_p: unknown) => {})
 const removeSuppression = vi.fn(async (_p: unknown) => {})
+const clearNonOptOutSuppressions = vi.fn(async (_p: unknown) => ({ cleared: 0 }))
 vi.mock('@/lib/crm/suppressions', () => ({
   addSuppression: (p: unknown) => addSuppression(p),
   removeSuppression: (p: unknown) => removeSuppression(p),
+  clearNonOptOutSuppressions: (p: unknown) => clearNonOptOutSuppressions(p),
 }))
 
 const queueBrokerAlert = vi.fn(async (_p: unknown) => {})
@@ -168,6 +170,9 @@ describe('conversations-events — group inbound recording', () => {
       expect(payload.groupMembers).toEqual(['+19093430531', '+17143376028', '+15417033095'])
       expect(payload.conversationSid).toBe('CH' + 'a'.repeat(32))
     }
+    expect(clearNonOptOutSuppressions).toHaveBeenCalledWith(
+      expect.objectContaining({ personId: 52283, clearedBy: 'conversations-events' }),
+    )
     expect(markUnread).toHaveBeenCalledWith(52283)
     // Broker follow-up: reply task on the author's contact — upserted on a
     // per-message dedupe_key so a webhook retry can't stack duplicate tasks.

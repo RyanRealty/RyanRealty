@@ -392,6 +392,8 @@ export type SendGuardCode =
    * SMS stay held. Family trusts are not this code. Both drains dequeue it.
    */
   | 'company-owned'
+  /** Broker, lender, or vendor — marketing outreach only. 1:1 composer stays open. */
+  | 'industry-contact'
 
 export type SendIntroResult =
   | { ok: true; sid: string; personId: number; sentAt: string }

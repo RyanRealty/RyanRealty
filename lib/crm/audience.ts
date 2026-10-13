@@ -37,6 +37,8 @@ import {
 import { buildCrmPeopleQuery } from '@/lib/data/crm/buildCrmPeopleQuery'
 import { getSavedViewSegment, savedViewToSegment } from '@/lib/data/crm/getSavedViewSegment'
 import { isSuppressed, type SendChannel } from '@/lib/crm/suppressions'
+import { INDUSTRY_BULK_SKIP_REASON, isIndustryContact } from '@/lib/crm/industry-contact'
+import { getPeopleAudienceFields } from '@/lib/data/crm/getPeopleAudienceFields'
 
 // Re-export so callers that already import the segment recovery from the audience
 // bus keep working; the canonical home is lib/data/crm/getSavedViewSegment.
@@ -188,9 +190,30 @@ export async function resolveSendableAudience(
   const sendable: number[] = []
   const skippedReasons: Record<number, string[]> = {}
 
+  const industry = await getPeopleAudienceFields(sb, ids)
+  if (industry.error) {
+    return {
+      ids: [],
+      skipped: ids.length,
+      skippedReasons: Object.fromEntries(
+        ids.map((id) => [id, ['industry-check-failed: ' + industry.error]]),
+      ),
+    }
+  }
+
+  const remaining: number[] = []
+  for (const id of ids) {
+    const fields = industry.fields.get(id)
+    if (fields && isIndustryContact(fields)) {
+      skippedReasons[id] = [INDUSTRY_BULK_SKIP_REASON]
+      continue
+    }
+    remaining.push(id)
+  }
+
   const CONCURRENCY = 25
-  for (let i = 0; i < ids.length; i += CONCURRENCY) {
-    const batch = ids.slice(i, i + CONCURRENCY)
+  for (let i = 0; i < remaining.length; i += CONCURRENCY) {
+    const batch = remaining.slice(i, i + CONCURRENCY)
     const checks = await Promise.all(
       batch.map(async (id) => {
         // isSuppressed fails CLOSED on its own (a thrown/erroring read returns
