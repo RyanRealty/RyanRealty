@@ -26,7 +26,7 @@ export function AttachMenu(props: { onPick: (id: AttachMenuItemId) => void }) {
             background: 'var(--a-surface)',
             border: '1px solid var(--a-border)',
             borderRadius: 10,
-            boxShadow: '0 10px 30px color-mix(in oklab, var(--a-text) 12%, transparent)',
+            boxShadow: 'var(--a-shadow-overlay)',
           }}
         >
           {ATTACH_MENU_ITEMS.map((item) => (

@@ -20,14 +20,14 @@ export function RightNowStrip(props: {
         overflow: 'hidden',
       }}
     >
-      <div style={{ padding: '14px 20px', borderRight: '1px solid color-mix(in oklab, var(--a-bg) 18%, transparent)' }}>
+      <div style={{ padding: '14px 20px', borderRight: '1px solid var(--a-text-2)' }}>
         <div style={{ fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', opacity: 0.7, marginBottom: 4 }}>
           Last activity
         </div>
         <div style={{ fontSize: 16, fontWeight: 600 }}>{props.strip.lastActivity.title}</div>
         <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>{props.strip.lastActivity.detail}</div>
       </div>
-      <div style={{ padding: '14px 20px', borderRight: '1px solid color-mix(in oklab, var(--a-bg) 18%, transparent)' }}>
+      <div style={{ padding: '14px 20px', borderRight: '1px solid var(--a-text-2)' }}>
         <div style={{ fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', opacity: 0.7, marginBottom: 4 }}>
           Last message{msg ? ` · ${msg.channel === 'sms' ? 'SMS' : msg.channel === 'email' ? 'Email' : 'Call'} · ${msg.direction}` : ''}
         </div>
