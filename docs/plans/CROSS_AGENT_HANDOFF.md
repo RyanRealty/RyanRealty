@@ -1,14 +1,36 @@
 # Current — 2026-10-13 (Cursor, ad copy / voiceover / caption process)
 
-Surface: Cursor cloud. Branch `cursor/ai-voiceover-scripts-8a9c`. Docs only. Do not run `npm run ship`. Do not merge. Nobody pushes main. Nothing rebuilt, nothing sent, nothing approved.
+Surface: Cursor cloud. Branch `cursor/ai-voiceover-scripts-8a9c`, merged origin/main `1c912ac82`. Docs only. Do not run `npm run ship`. Do not merge. Nobody pushes main. Nothing rebuilt, nothing sent, nothing approved.
 
-**What this commit does.** Matt's 2026-10-13 ad, voiceover, and caption process now lives in the agent instruction files. New [`docs/ai-voiceover-scripts.md`](../ai-voiceover-scripts.md) (engine markup and caption timing). AGENTS.md has the section "Ad copy, voiceover and captions" with the six locks. CLAUDE.md CORE RULES Video line points at that section and the new doc (canon shrink gate still green). VOICE.md adds a spoken-ad note so written site/email/CMA voice stays this file.
+**What this commit does.** Matt's 2026-10-13 ad, voiceover, and caption process now lives in the agent instruction files. New [`docs/ai-voiceover-scripts.md`](../ai-voiceover-scripts.md) (engine markup and caption timing). AGENTS.md has the section "Ad copy, voiceover and captions" with the six locks. CLAUDE.md keeps main's Video line (mandatory rules + `spec_rules`; video_gate is backup) and points at that section and the new doc after CORE RULES. VOICE.md adds a spoken-ad note so written site/email/CMA voice stays that file.
 
-**Not this change.** Do not merge this PR unless Matt asks. Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send until Matt asks. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann.
+**Not this change.** Do not merge this PR unless Matt asks. Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send until Matt asks. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase. Do not run the CRM backfill.
 
 **Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool` in the primary checkout. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `scripts/check-claude-canon.mjs`.
+
+## Earlier — 2026-10-13 (Cursor, inbound SMS clear + industry exclusion, PR only)
+
+Surface: Cursor cloud. Branch `cursor/clear-import-suppression-on-inbound-sms-f271` from origin/main `b802ee703`. Do not merge. Do not `git push` main. Do not apply hosted SQL. Do not run the backfill. Nothing sent.
+
+**What this branch does.** Inbound `sms_in` marks that person's non-opt-out `crm_suppressions` rows cleared (`cleared_at` / `cleared_by` / `cleared_reason`). STOP / bounce / complaint / unsubscribe / GPC stay. START still deletes only `sms` + `stop-keyword`. Durable tag `industry:contact` plus existing realtor/vendor tags and exact industry stages exclude people from every bulk, drip, list, ad, and marketing send. The 1:1 admin composer ignores the industry flag. Backfill script `scripts/crm-reclass-import-hard-stops.ts` is dry-run by default; `--apply` is for Matt after merge.
+
+**Not this change.** Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase from this session. Do not run the backfill. Do not refresh the G16 snapshot against live. Do not send.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES.
+
+## Earlier — 2026-10-12 (Grok, ask-in-band stands when the price already does)
+
+Surface: Grok. Branch `fix/cma-ask-in-band-sentence` in `/Users/matthewryan/RyanRealty-wt-ask-sentence`, cut from origin/main `874435e73`. Matt merges the PR. Nobody pushes main. Nothing rebuilt, nothing sent, nothing approved.
+
+**What this commit does.** An expired CMA whose recommendation is already under the last ask, and not more than 15% under, is no longer held because that ask sits inside the sales band. Exactly 15% under is not a hold. A stored ask-in-band kind does not block approve or the send gates in that case, and the letter uses the recommendation headline. When the ask is inside the range and strictly below the high, the ask story adds: "One of the sales that set this price is above that ask." Prices and the band do not change. The email body does not change. Ask-below-band stays held. A recommendation that is missing, equal to the ask, over it, or more than 15% under stays held.
+
+**Not this change.** Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild these letters to re-pick comps. A full rebuild re-picks sales and can move the price. The live page and the PDF render from render_args, so this prose lands on deploy. Do not send until Matt has merged, production is running this code, and the next weekday 9:03 AM PT window. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann.
+
+**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool` in the primary checkout. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold on this branch. Keats and Remarkable stay delivered.
+
+Skills read: `.cursor/rules/git-commit.mdc`. The change follows AGENTS.md rules 3, 7, 9, 11, and 17, and Matt's 2026-10-12 stand-behind call.
 
 ## Earlier — 2026-10-11 (Grok, company-owned cold outreach hold)
 
