@@ -1,3 +1,5 @@
+import { ALL_SEARCH_URL_PARAMS } from '@/lib/search/field-registry'
+
 export type QueryParams = Record<string, string | string[] | undefined>
 
 function firstParam(value: string | string[] | undefined): string | null {
@@ -24,6 +26,67 @@ export function appendIndexableSearchParams(
     if (raw != null && raw !== '') url.searchParams.set(key, raw)
   }
 }
+
+/**
+ * Every query key that changes the RESULT SET of a search page. A URL carrying
+ * one is a different page from its path and must not index (its canonical is
+ * the path). The hand-kept list below is joined with the search field
+ * registry's own URL params (lib/search/field-registry.ts), so a filter the
+ * registry adds can never mint an indexable variant again.
+ *
+ * SITE-215 (2026-10-13): two keys the slug route reads were missing, and
+ * Google indexed both variants as pages of their own (served index,follow with
+ * a canonical to the path, which Google ignored because the result set differs):
+ *   /homes-for-sale/bend?newConstruction=1          172 impressions at
+ *     position 68.1, 2026-09-28..10-09, the whole "new construction bend"
+ *     family that /new-construction is meant to own; it dragged the
+ *     homes-for-sale-city class from position 48.96 to 55.73.
+ *   /homes-for-sale/<city>?propertySubTypes=<type>  173 of the class's 292
+ *     impressions 2026-08-15..09-11 (black-butte-ranch?propertySubTypes=
+ *     Condominium alone 87 at 55.4). The singular `propertySubType` was on
+ *     the list; the plural CSV key the page actually reads was not.
+ * Source: Search Console Search Analytics, page dimension, filter page
+ * contains "?", https://ryan-realty.com/ (scratchpad/gsc-215var.mjs).
+ */
+const SEARCH_RESULT_SET_KEYS: ReadonlySet<string> = new Set<string>([
+  'minPrice',
+  'maxPrice',
+  'beds',
+  'baths',
+  'minSqFt',
+  'maxSqFt',
+  'maxBeds',
+  'maxBaths',
+  'yearBuiltMin',
+  'yearBuiltMax',
+  'lotAcresMin',
+  'lotAcresMax',
+  'postalCode',
+  'propertyType',
+  'propertySubType',
+  'propertySubTypes',
+  'statusFilter',
+  'keywords',
+  'hasOpenHouse',
+  'garageMin',
+  'hasPool',
+  'hasView',
+  'hasWaterfront',
+  'hasFireplace',
+  'hasGolfCourse',
+  'gatedCommunity',
+  'newConstruction',
+  'newListingsDays',
+  'daysOnMarket',
+  'sort',
+  'includeClosed',
+  // A drawn search area is a result set, not a camera position.
+  'poly',
+  'shapes',
+  // 'view' and 'bbox' are camera state, not a result set: see the note above.
+  'perPage',
+  ...ALL_SEARCH_URL_PARAMS,
+])
 
 /**
  * True when a search URL's QUERY makes it a different result set from its
@@ -62,36 +125,7 @@ export function shouldNoIndexSearchVariant(searchParams: QueryParams | undefined
   const page = Number(firstParam(searchParams.page) ?? '1')
   if (Number.isFinite(page) && page > 1) return true
 
-  const blockedKeys = [
-    'minPrice',
-    'maxPrice',
-    'beds',
-    'baths',
-    'minSqFt',
-    'maxSqFt',
-    'maxBeds',
-    'maxBaths',
-    'yearBuiltMin',
-    'yearBuiltMax',
-    'lotAcresMin',
-    'lotAcresMax',
-    'postalCode',
-    'propertyType',
-    'propertySubType',
-    'statusFilter',
-    'keywords',
-    'hasOpenHouse',
-    'garageMin',
-    'hasPool',
-    'hasView',
-    'hasWaterfront',
-    'newListingsDays',
-    'sort',
-    'includeClosed',
-    // 'view' and 'bbox' are camera state, not a result set: see the note above.
-    'perPage',
-  ]
-  return blockedKeys.some((key) => {
+  return [...SEARCH_RESULT_SET_KEYS].some((key) => {
     const raw = firstParam(searchParams[key])
     return raw != null && raw !== ''
   })

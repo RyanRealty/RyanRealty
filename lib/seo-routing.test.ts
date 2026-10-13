@@ -3,7 +3,9 @@ import {
   appendIndexableSearchParams,
   shouldNoIndexBlogIndex,
   shouldNoIndexSearchVariant,
+  SEARCH_CANONICAL_STRIP_KEYS,
 } from './seo-routing'
+import { ALL_SEARCH_URL_PARAMS } from './search/field-registry'
 
 describe('shouldNoIndexSearchVariant', () => {
   it('returns false for canonical search page', () => {
@@ -33,6 +35,40 @@ describe('shouldNoIndexSearchVariant', () => {
 
   it('ignores empty filter values', () => {
     expect(shouldNoIndexSearchVariant({ minPrice: '' })).toBe(false)
+  })
+
+  // SITE-215 (2026-10-13): /homes-for-sale/bend?newConstruction=1 (172 GSC
+  // impressions at position 68, 09-28..10-09) and
+  // /homes-for-sale/<city>?propertySubTypes=<type> (173 of the class's 292
+  // impressions 08-15..09-11) were indexed as pages of their own because the
+  // keys the slug route reads were not on the noindex list.
+  it('noindexes every result-set key the slug route reads', () => {
+    for (const key of [
+      'newConstruction',
+      'propertySubTypes',
+      'gatedCommunity',
+      'hasGolfCourse',
+      'hasFireplace',
+      'daysOnMarket',
+      'poly',
+      'shapes',
+    ]) {
+      expect(shouldNoIndexSearchVariant({ [key]: '1' }), key).toBe(true)
+    }
+  })
+
+  it('noindexes every URL param the search field registry can write', () => {
+    expect(ALL_SEARCH_URL_PARAMS.length).toBeGreaterThan(50)
+    for (const key of ALL_SEARCH_URL_PARAMS) {
+      expect(shouldNoIndexSearchVariant({ [key]: '1' }), key).toBe(true)
+    }
+  })
+
+  it('keeps the camera keys out of the registry and off the list', () => {
+    for (const key of SEARCH_CANONICAL_STRIP_KEYS) {
+      expect(ALL_SEARCH_URL_PARAMS).not.toContain(key)
+      expect(shouldNoIndexSearchVariant({ [key]: 'list' })).toBe(false)
+    }
   })
 })
 

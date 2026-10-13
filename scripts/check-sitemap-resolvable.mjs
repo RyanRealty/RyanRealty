@@ -89,7 +89,7 @@ const FAMILIES = [
   // so the emitted intent slugs must be real keys in lead-landing-content.ts
   // (slugChecks), else the route resolves but the PAGE 404s.
   { id: 'sell', roots: ['sell'], resolvers: ['app/sell/page.tsx', 'app/sell/valuation/page.tsx', 'app/sell/[intent]/page.tsx'], slugSource: 'lib/lead-landing-content.ts', slugs: ['for-sale-by-owner', 'expired-listings', 'inherited-home'] },
-  { id: 'buy', roots: ['buy'], resolvers: ['app/buy/page.tsx', 'app/buy/[intent]/page.tsx', 'app/buy/leverage/page.tsx'], slugSource: 'lib/lead-landing-content.ts', slugs: ['first-time-home-buyer', 'relocation', 'investment'] },
+  { id: 'buy', roots: ['buy'], resolvers: ['app/buy/page.tsx', 'app/buy/[intent]/page.tsx', 'app/buy/leverage/page.tsx', 'app/buy/alerts/page.tsx'], slugSource: 'lib/lead-landing-content.ts', slugs: ['first-time-home-buyer', 'relocation', 'investment'] },
   { id: 'tools', roots: ['tools'], resolvers: ['app/tools/mortgage-calculator/page.tsx', 'app/tools/rental-property-calculator/page.tsx', 'app/tools/appreciation/page.tsx', 'app/tools/seller-net-sheet/page.tsx'] },
   // Static single-page families (each is a bare /segment -> app/segment/page.tsx).
   // /feed 301s to /videos?view=feed and is noindex — do not emit it.
