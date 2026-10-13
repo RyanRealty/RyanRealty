@@ -107,7 +107,7 @@ function snap(over: Partial<LeverageSnapshot> = {}): LeverageSnapshot {
       : over.weekDrops,
     methodLine:
       over.methodLine ??
-      'Oregon Data Share MLS, single-family homes, leftover HUD and 12-month pace, as of Oct 13, 2026.',
+      'Oregon Data Share MLS, single-family homes, months of supply and 12-month pace, as of Oct 13, 2026.',
   }
 }
 

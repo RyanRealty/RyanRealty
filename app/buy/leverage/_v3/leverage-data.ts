@@ -201,8 +201,8 @@ export function buildLeverageSnapshot(input: {
 
   const methodAsOf = bend.asOfLabel
   const methodLine = methodAsOf
-    ? `${MLS_SOURCE}, leftover HUD and 12-month pace, as of ${methodAsOf}`
-    : `${MLS_SOURCE}, leftover HUD and 12-month pace`
+    ? `${MLS_SOURCE}, months of supply and 12-month pace, as of ${methodAsOf}`
+    : `${MLS_SOURCE}, months of supply and 12-month pace`
 
   return {
     bend,
