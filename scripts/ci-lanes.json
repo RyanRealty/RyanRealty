@@ -694,6 +694,7 @@
       "scripts/ci-lanes.json",
       "scripts/check-tests-wired.mjs",
       "scripts/check-gates-wired.mjs",
+      ".claude/skills/ryan-studio/tools/tests/**",
       ".husky/**",
       ".github/workflows/**"
     ],

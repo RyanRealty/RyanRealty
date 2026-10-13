@@ -1,14 +1,12 @@
-# Current — 2026-10-13 (Cursor, off-market listing noindex + community door, landing)
+# Current — 2026-10-13 (Cursor, make main CI green)
 
-Surface: Cursor cloud. Branch `cursor/listing-offmarket-noindex-2c0f` rebased onto origin/main `6f0b60010` (#519 one-author JSON-LD; includes #504 Quick facts). PR #513. Matt approved merge. Do not `git push` main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` from origin/main `9c66b81b0`. Fix the red required checks, then squash-merge. Nothing sent. Nobody pushes main.
 
-**What this branch does.** Closed / Expired / Canceled / Withdrawn listing pages ship `noindex, follow`. When the home belongs to a registry community the HTML canonical is that `/communities/<slug>` page. Pending stays indexed. Active listings keep `index, follow` and print a prominent "{Name} homes for sale" door to the community page. `listings.xml` already ships Active/AUC only; sitemap, nav, and llms.txt were not touched. Quick facts from #504 is kept.
+**What this commit does.** `ci:studio-rules` names `video_gate.test.mjs` so the tests run on Node 20 and Node 22 (directory form is MODULE_NOT_FOUND on 22; glob form is not found on 20). `ci:tests-wired` now sees that skill-local test and counts it wired. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150 `tetherow-golf-aerial.jpg`) instead of a 1920 `asset_library` pick, so content-floor heroImageNatural stays 3780. `ci:public-listing-status` and `ci:claude-canon` already pass on this tip (38705/38733).
 
-**Verified on Brasada.** Active MLS 220229872: `index, follow`, self-canonical, door "Brasada Ranch homes for sale" → `/communities/brasada-ranch`. Closed MLS 220224479: `noindex, follow`, canonical `https://ryan-realty.com/communities/brasada-ranch`, HTTP 200.
+**Not this change.** Do not send. Do not apply hosted SQL. Do not merge the phase-pool branch. Do not rebuild letters.
 
-**Not this change.** Do not send. Do not apply hosted SQL.
-
-Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §3a (registry communities), `AGENTS.md` CORE RULES.
+Skills read: `.cursor/rules/git-commit.mdc`, `scripts/check-claude-canon.mjs`, `scripts/check-tests-wired.mjs`, `scripts/check-public-listing-status.mjs`, `docs/DATABASE_FOR_AI_AGENTS.md` (surface-image read only).
 
 ## Earlier — 2026-10-13 (Cursor, one business + one author JSON-LD)
 

@@ -110,7 +110,7 @@
   },
   "dataLayer": {
     "getMarketPulse": "lib/data/market/getMarketPulse.ts. market_pulse_live, geo_type='city', geo_slug='bend', property_type='A'. Feeds the Instrument.",
-    "getSurfaceImage": "lib/data/media/getSurfaceImages.ts. Distinct approved hero for /sell, fallback tetherow-golf-aerial. Feeds V3Stage posterSrc. No homepage Old Mill video on this route: a Stage with a poster is complete, and /sell was already on a distinct still so it would not reuse the homepage banner.",
+    "SELL_POSTER": "public/images/homepage/tetherow-golf-aerial.jpg (4200×3150). V3Stage posterSrc. Not getSurfaceImage: that pool served a 1920 library still under the 3780 natural-width floor. No homepage Old Mill video on this route.",
     "getBrokerageTrackRecord": "lib/data/track-record.ts. Closed Ryan Realty list-side sales. Feeds Quiet proof prose, not the Bend Instrument.",
     "SellValueForm": "app/sell/_v3/SellValueForm.tsx into app/lp/seller-home-value/actions.ts. Bound to SellCapture. Same action, same payload, same field names, pagePath=/sell.",
     "note": "Every read is a DAL function from @/lib/data (G8). Nothing is fetched that the page does not render. getCityMarketDetail, getLifestyleImages, and getSoldStories were dropped with the sections that consumed them. Route-local constants live in app/sell/_v3/sell-constants.ts."
@@ -273,6 +273,6 @@
       "video": 0,
       "jsonLd": 6
     },
-    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason. 2026-10-13: /sell Stage uses the repo SELL_POSTER (4200×3150 tetherow-golf-aerial.jpg), not a 1920 asset_library pick. Floor stays 3780 = 0.9 × 4200. No upscale."
   }
 }
