@@ -1,8 +1,8 @@
 # Current — 2026-10-13 (Cursor, sitemap + listing index hygiene)
 
-Surface: Cursor cloud. Branch `cursor/sitemap-index-hygiene-f2b8` from origin/main `817c6bd2e`. Sitemap / robots only. Nothing sent. Do not `git push` main.
+Surface: Cursor cloud. Branch `cursor/sitemap-index-hygiene-f2b8` from origin/main `6a9b37fb6` (includes #513). Sitemap / robots only. Nothing sent. Do not `git push` main.
 
-**What this branch does.** `listings.xml` submits Active, Active Under Contract, and Pending with `lastmod` from `modified_at`. Closed / Expired / Withdrawn / Canceled pages older than 90 days are `noindex, follow` with a community or city hub canonical (`listingIndexPolicy`, extending #513). `geo.xml` browse pairs and `matrix.xml` combos with fewer than 3 active listings drop and noindex. Live before counts: listings 7,484 · geo 3,961 · matrix 842.
+**What this branch does.** `listings.xml` submits Active, Active Under Contract, and Pending with `lastmod` from `modified_at`. Closed / Expired / Withdrawn / Canceled pages older than 90 days are `noindex, follow` with a community or city hub canonical (`listingIndexPolicy`, extending #513). `geo.xml` browse pairs and `matrix.xml` combos with fewer than 3 active listings drop and noindex. Live before counts: listings 7,487 · geo 3,961 · matrix 842.
 
 **Not this change.** Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill.
 
@@ -19,6 +19,16 @@ Surface: Cursor cloud. Landed on origin/main via #519 after `7a17527a1`. User as
 **Still open.** Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill. Do not send. Lead-event parse error already landed on main via #516 / #518.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES, `CLAUDE.md` §0/§2/§7.
+
+## Earlier — 2026-10-13 (Cursor, community fold upgrade)
+
+Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688`. Landed on main via #521. Do not `git push` main. Nothing sent.
+
+**What that change did.** Every `/communities/[slug]` page server-renders above the fold: H1 community homes for sale, a live leftover answer, active grid, recently-sold table, HOA/STR/amenities, FAQ, and a local broker block.
+
+## Earlier — 2026-10-13 (Cursor, off-market listing noindex + community door)
+
+Surface: Cursor cloud. Branch `cursor/listing-offmarket-noindex-2c0f`. Landed on main via #513. This PR extends the 90-day stale rule and sitemap floors on top of that door.
 
 ## Earlier — 2026-10-13 (Cursor, inbound SMS clear + industry exclusion, PR only)
 

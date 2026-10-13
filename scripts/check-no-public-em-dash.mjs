@@ -89,6 +89,7 @@ const ROOTS = [
   'app/communities',
   'app/subdivisions',
   'app/sell',
+  'app/buy/concessions',
   'components/site/v3',
   'lib/site',
   'lib/place',

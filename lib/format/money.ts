@@ -7,6 +7,12 @@
  * `ci:currency-format` gate ratchets new bare currency formatters toward zero.
  */
 const USD0 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+const USD2 = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
 
 /** Full price, rounded to the nearest $1,000 per brand voice ($895,000 not $894,750). */
 export function formatPrice(n: number | null | undefined): string {
@@ -22,6 +28,12 @@ export function formatPrice(n: number | null | undefined): string {
 export function formatPriceExact(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return '—'
   return USD0.format(n)
+}
+
+/** Dollar-and-cent price for payment math (P&I), never thousand-rounded. */
+export function formatPriceCents(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return '—'
+  return USD2.format(n)
 }
 
 /** Compact price for tight UI: `$1.2M` / `$895K`. One agreed rounding rule. */
