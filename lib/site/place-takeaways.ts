@@ -51,8 +51,9 @@ export type PlaceTakeawaysInput = {
    * 'market' is the /housing-market/<city> answer block (SEO & AEO Desk brief
    * 2026-10-08): sale price first, then the 12-month change, pace, and supply,
    * written to be quoted on its own. The inputs below are read only by it.
-   * 'community' is the four resort community pages (same brief): identity
-   * first, then sale/ask, then cash or types. Keep 'place' byte-identical.
+   * 'community' is the resort community pages plus Sunriver and Mountain High:
+   * identity first, then sale/ask, then cash, types, or belonging. Keep 'place'
+   * byte-identical.
    */
   variant?: 'place' | 'market' | 'community'
   /** Registry slug; required for variant 'community'. */

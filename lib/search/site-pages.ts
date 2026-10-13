@@ -24,6 +24,7 @@ export const SITE_PAGES: SitePageEntry[] = [
   { label: 'Cities', href: '/cities', keywords: ['city', 'towns', 'area', 'guide', 'neighborhood'] },
   { label: 'Open houses', href: '/open-houses', keywords: ['open', 'house', 'tour'] },
   { label: 'Price drops', href: '/price-drops', keywords: ['price', 'drop', 'reduced'] },
+  { label: 'Listing alerts', href: '/buy/alerts', keywords: ['alert', 'email', 'new listing', 'price cut'] },
   { label: 'Buyer leverage', href: '/buy/leverage', keywords: ['leverage', 'buyers', 'negotiate', 'price cuts'] },
   { label: 'Our listings', href: '/our-homes', keywords: ['ryan', 'realty', 'listings'] },
   { label: 'Sell your home', href: '/sell', keywords: ['sell', 'seller', 'listing'] },

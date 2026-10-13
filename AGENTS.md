@@ -22,7 +22,20 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
 
-**Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. video_gate is backup.
+**Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. Ad copy, VO, captions: [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). video_gate is backup.
+
+---
+
+## Ad copy, voiceover and captions
+
+All ad work (copy, captions, voice, video, avatar) follows this same process on every tool (Grok, Claude, or another). Never a generic fallback. Written voice stays [`marketing_brain_skills/brand-voice/VOICE.md`](marketing_brain_skills/brand-voice/VOICE.md). Engine markup, script template, and caption timing: [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md).
+
+1. Same process on every tool. Never drop to a generic script because the tool changed.
+2. Warm and conversational, like a friendly person on a phone call: short sentences, one idea each, light filler, natural pauses. Never scripted, robotic, broadcast, or market-report, and never complicated.
+3. The voiceover is a female voice.
+4. TikTok-style burned-in captions, 1-4 words per card, timed from the final rendered audio's timestamps. Never estimated.
+5. Write the VO in the confirmed engine's official markup. ElevenLabs v3/v4: ellipses, line breaks, and audio tags; no `<break>`. ElevenLabs v2: `<break time>`; no audio tags. Grok TTS: inline `[pause]` / `[breath]`; no SSML. Money is spoken words on every engine.
+6. Facts and numbers stay exactly as in the approved brief. Say "buyers have leverage," never "buyer's market." No em dashes, no client names or addresses, no "top team." Financing ads carry "Not lending advice. Talk to your lender." Nothing publishes without Matt.
 
 ---
 
@@ -180,7 +193,7 @@ If a workspace **skill** might apply—even slightly—**read its `SKILL.md` fir
 - **Any public site work (any tool):** the backlog is the site queue in `loop_work_nodes` (domain `public-ux`, version_gap `SITE-*`). Follow **`docs/RUN_LOOP.md`**: it holds the claim path, the accept test, the land path and the stop rule for every tool, and nothing here restates them. Lane mechanics: `.claude/skills/site-queue/SKILL.md` (Cursor and Grok: `.cursor/skills/site-queue/SKILL.md`). Site commits carry a `Node: <id>` trailer (G72, commit-msg hook). Do not write a new site audit; append findings to a node.
 - **This repo:** `.cursor/skills/**/SKILL.md` (e.g. Oregon OREF, OREA PB, SkySlope, professional Word, etc.)
 - **Cursor-bundled / plugin skills:** paths under `~/.cursor/plugins/.../skills/**/SKILL.md` when the task matches their description (Next.js, Vercel, Supabase, TDD, debugging, etc.)
-- **Video:** no producer `SKILL.md` remains. Rules live in `CLAUDE.md` §4. Caption modules only: `video_production_skills/captions/canonical/`.
+- **Video:** no producer `SKILL.md` remains. Rules live in `CLAUDE.md` §4. Ad copy, voiceover and captions: this file's section of that name and [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). Caption modules only: `video_production_skills/captions/canonical/`.
 - **Publishing trigger:** if Matt says "go ahead and publish it" after approving content, load `automation_skills/automation/publish/SKILL.md` (and know the live path is `/api/cron/publisher-sweep` → `/api/social/publish`)
 - **Cowork-only skills** (e.g. mounted **docx** under `mnt/.claude/skills/`): see section **E** in the global registry; copy into `~/.claude/skills/` if you need the same skill in Claude Code CLI.
 - **Marketing, advertising, paid social, Meta or Facebook or Instagram ads, lead generation, seller acquisition, CPL or CAPI, weekly optimization packets, `agent_insights` marketing rows:** Read **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** first (canonical end-to-end system map). For **how each path creates a lead** (webhooks, forms, dedup, sinks), read **`docs/MARKETING_LEAD_FLOW.md`**. Then **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`** for launch checklist and budgets. For the recurring optimization routine load **`.cursor/skills/facebook-seller-growth/SKILL.md`** (and append learnings to **`docs/marketing/facebook-seller-growth-LEARNINGS.md`**). Cursor surfaces **`.cursor/rules/marketing-advertising-workflow.mdc`** when the task matches these topics.
