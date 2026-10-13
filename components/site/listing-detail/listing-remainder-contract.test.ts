@@ -185,6 +185,7 @@ describe('listing remainder composition', () => {
     // mount and call the on-market page reordered when it is not.
     const order = [
       '<PriceCtaStrip',
+      '<ListingQuickFacts',
       '<PropertySpecs',
       '<DescriptionBlock',
       '<MortgageCalculator',
@@ -217,6 +218,7 @@ describe('listing remainder composition', () => {
     const order = [
       '<PriceCtaStrip',
       '<ListingOffMarketFacts',
+      '<ListingQuickFacts',
       '<ListingSimilarStrip',
       '<ListingLikeThisAlerts',
       '<PropertySpecs',

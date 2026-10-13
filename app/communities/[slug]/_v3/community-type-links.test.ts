@@ -3,6 +3,7 @@ import {
   communityAllRealEstateLabel,
   communityTypeDownLinks,
   isCommunityAnswerSlug,
+  isCommunityLedeSlug,
 } from './community-type-links'
 
 describe('communityTypeDownLinks', () => {
@@ -48,6 +49,8 @@ describe('communityTypeDownLinks', () => {
       communityTypeDownLinks({ slug: 'sunriver', name: 'Sunriver', types: ['homes', 'lots'] }),
     ).toEqual([])
     expect(isCommunityAnswerSlug('sunriver')).toBe(false)
+    expect(isCommunityLedeSlug('sunriver')).toBe(true)
+    expect(isCommunityLedeSlug('mountain-high')).toBe(true)
     expect(communityAllRealEstateLabel('Broken Top')).toBe('All Broken Top real estate')
   })
 })

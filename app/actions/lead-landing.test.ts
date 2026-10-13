@@ -20,13 +20,23 @@ vi.mock('@/lib/canonical-lead-tagger', () => ({
 }))
 
 const ensureNativeLead = vi.fn()
+const enrichNativeLead = vi.fn()
 vi.mock('@/lib/data/crm/ensureNativeLead', () => ({
   ensureNativeLead: (...args: unknown[]) => ensureNativeLead(...args),
+  enrichNativeLead: (...args: unknown[]) => enrichNativeLead(...args),
 }))
 
 vi.mock('@/lib/visitor-backfill', () => ({ stitchFormSubmitIdentity: vi.fn(async () => undefined) }))
 vi.mock('@/lib/resend', () => ({ sendContactNotification: vi.fn(async () => undefined) }))
-vi.mock('@/lib/lead-tracking', () => ({ fireLeadGenerated: vi.fn(async () => undefined) }))
+
+const fireLeadGenerated = vi.fn()
+vi.mock('@/lib/lead-tracking', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/lead-tracking')>()
+  return {
+    ...actual,
+    fireLeadGenerated: (...args: unknown[]) => fireLeadGenerated(...args),
+  }
+})
 vi.mock('@/lib/meta-pixel-helpers', () => ({ generateEventId: () => 'evt-1' }))
 vi.mock('next/headers', () => ({
   cookies: async () => ({ get: () => undefined }),
@@ -54,6 +64,8 @@ beforeEach(() => {
   sendEvent.mockReset().mockResolvedValue({ ok: true, personId: PERSON_ID })
   canonicallyTagLead.mockReset().mockResolvedValue({ ok: true })
   ensureNativeLead.mockReset().mockResolvedValue({ personId: PERSON_ID, created: true })
+  enrichNativeLead.mockReset().mockResolvedValue(undefined)
+  fireLeadGenerated.mockReset().mockResolvedValue(undefined)
   vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200 })))
 })
 
@@ -100,5 +112,35 @@ describe('submitLeadLandingForm paid attribution', () => {
       }),
     )
     expect(canonicallyTagLead).not.toHaveBeenCalled()
+  })
+
+  it('puts gclid and fbclid from lpContext on the CRM source URL', async () => {
+    await submitLeadLandingForm(
+      input({ lp_source: 'google', gclid: 'g-1', fbclid: 'f-1' }),
+    )
+    const sourceUrl = sendEvent.mock.calls[0]?.[0].sourceUrl as string
+    expect(sourceUrl).toContain('gclid=g-1')
+    expect(sourceUrl).toContain('fbclid=f-1')
+    expect(sourceUrl).toContain('utm_source=google')
+  })
+
+  it('accepts form_id, lead_type, and lp_variant overrides without value on generate_lead', async () => {
+    await submitLeadLandingForm({
+      ...input(),
+      formId: 'buyer_leverage_lp',
+      leadType: 'buyer_alerts',
+      lpVariant: 'buy-leverage',
+      omitCapiValue: true,
+    })
+    expect(fireLeadGenerated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lead_type: 'buyer_alerts',
+        form_id: 'buyer_leverage_lp',
+        lp_variant: 'buy-leverage',
+      }),
+    )
+    const payload = fireLeadGenerated.mock.calls[0]?.[0] as Record<string, unknown>
+    expect(JSON.stringify(payload)).not.toMatch(/"value"/)
+    expect(JSON.stringify(payload)).not.toMatch(/currency/)
   })
 })
