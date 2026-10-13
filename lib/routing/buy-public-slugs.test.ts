@@ -15,6 +15,7 @@ describe('buy public slugs', () => {
       'relocation',
       'investment',
       'leverage',
+      'alerts',
     ])
     expect(isUnknownBuyPublicPath('/buy')).toBe(false)
     expect(isUnknownBuyPublicPath('/buy/')).toBe(false)
@@ -23,7 +24,7 @@ describe('buy public slugs', () => {
     expect(isUnknownBuyPublicPath('/buy/relocation')).toBe(false)
     expect(isUnknownBuyPublicPath('/buy/investment')).toBe(false)
     expect(isUnknownBuyPublicPath('/buy/first-time')).toBe(true)
-    expect(isUnknownBuyPublicPath('/buy/alerts')).toBe(true)
+    expect(isUnknownBuyPublicPath('/buy/alerts')).toBe(false)
     expect(isUnknownBuyPublicPath('/homes-for-sale')).toBe(false)
   })
 
@@ -35,6 +36,6 @@ describe('buy public slugs', () => {
     expect(buyPublicSlugFromPath('/buy/First-Time')).toBe('first-time')
     expect(buyPublicSlugFromPath('/buy/leverage/extra')).toBeNull()
     expect(isKnownBuyPublicSlug('leverage')).toBe(true)
-    expect(isKnownBuyPublicSlug('alerts')).toBe(false)
+    expect(isKnownBuyPublicSlug('alerts')).toBe(true)
   })
 })

@@ -4,11 +4,11 @@
  * a real 404 from this list. Bare /buy is not in the list so next.config can
  * 301 it to /homes-for-sale.
  *
- * /buy/alerts is a sibling worktree. Do not add it here until that page ships.
+ * /buy/alerts shipped in #502.
  */
 export const BUY_INTENT_SLUGS = ['first-time-home-buyer', 'relocation', 'investment'] as const
 
-export const BUY_STATIC_SLUGS = ['leverage'] as const
+export const BUY_STATIC_SLUGS = ['leverage', 'alerts'] as const
 
 export const BUY_PUBLIC_SLUGS = [...BUY_INTENT_SLUGS, ...BUY_STATIC_SLUGS] as const
 
