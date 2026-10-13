@@ -22,9 +22,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
 
-**Video, social, landing pages.** Claude Code and Grok CLI both load `.claude/skills/`. Before any video, Reel, ad, or landing page, read `.claude/skills/ryan-studio` (and its `references/RULEBOOK.md`), then `motion-stats-craft`, `imagine-video-craft`, `motion-render-quality`, and the `cm-*` / `motion-blur-design` skills. Same skills on both agents; no private copies.
-
-**Video gate.** Every video must have a brief and pass video_gate before any render. (`.claude/skills/ryan-studio/rules/VIDEO_TYPES.md`, `node .claude/skills/ryan-studio/tools/video_gate.mjs brief.json timeline.json`)
+**Video.** Before a video, Reel, ad, or landing page, read `.claude/skills/ryan-studio`. A brief and `video_gate` pass before any render. No private copies.
 
 ---
 
