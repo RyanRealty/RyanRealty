@@ -83,6 +83,7 @@ export async function GET() {
     `- Price Drop Radar (Central Oregon): ${SITE_URL}/price-drops`,
     `- Buyers have leverage in Bend (live MLS numbers): ${SITE_URL}/buy/leverage`,
     `- Bend price drops: ${SITE_URL}/price-drops/bend`,
+    `- Listing alerts: ${SITE_URL}/buy/alerts`,
     `- Redmond price drops: ${SITE_URL}/price-drops/redmond`,
     `- Sisters price drops: ${SITE_URL}/price-drops/sisters`,
     ...pillars('listings'),

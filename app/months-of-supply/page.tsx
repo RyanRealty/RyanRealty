@@ -327,13 +327,7 @@ export default async function MonthsOfSupplyPage() {
       href: MOS_REGION_REPORT,
     })
   }
-  if (regionVerdict.kind !== 'unknown') {
-    regionFigures.push({
-      value: v3Text(capitalize(regionVerdict.label)),
-      label: v3Text('Central Oregon today'),
-      href: MOS_REGION_REPORT,
-    })
-  }
+
   for (const row of publicSegments) {
     if (row.monthsOfSupply == null || row.activeCount == null || row.activeCount <= 0) continue
     regionFigures.push({
@@ -364,7 +358,6 @@ export default async function MonthsOfSupplyPage() {
   const rowed = new Set<string>()
   for (const label of MOS_CITY_LABELS) {
     if (label !== 'Bend' || bendHud.monthsSupply == null) continue
-    const verdict = marketVerdict(bendHud.monthsSupply)
     rowed.add(label)
     cityRows.push({
       href: MOS_CITY_REPORT[label],
@@ -374,8 +367,6 @@ export default async function MonthsOfSupplyPage() {
           : 'active count unpublished',
       ),
       what: v3Text(label),
-      detail:
-        verdict.kind === 'unknown' ? undefined : v3Text(capitalize(verdict.label)),
       value: v3Text(formatMonthsOfSupply(bendHud.monthsSupply)),
       id: label.toLowerCase(),
     })

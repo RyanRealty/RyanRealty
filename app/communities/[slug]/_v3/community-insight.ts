@@ -57,7 +57,7 @@ export type CommunityInsightPath = NeighborhoodInsightPath
 /** Page one when the community's own months of supply published. */
 export type CommunitySupplyPublished = {
   kind: 'published'
-  /** "A balanced market." The verdict, bound to the figure the bars draw. */
+  /** "4.9 months of supply." Bound to the figure the bars draw. */
   prose: string
 }
 
@@ -69,9 +69,9 @@ export type CommunitySupplyFloor = {
   closedLabel: string
   /** "23 houses sold in Tetherow in the last six months." Count first, then the floor. */
   lead: string
-  /** "Calling it a buyer's or seller's market takes 30 sales, so we don't." */
+  /** "Publishing months of supply takes 30 sales, so we don't." */
   floorSentence: string
-  /** "Bend as a whole is a seller's market." Null when the parent city has no published read. */
+  /** "Bend as a whole has 3.9 months of supply." Null when the parent city has no published read. */
   contextSentence: string | null
   /** The floor, for the tally drawing when there is no parent read to draw. */
   minN: number
@@ -121,7 +121,7 @@ export type CommunityInsightInput = {
    * null. Ignored when verdictProse is set: a published figure wins.
    */
   floor: { closedSixMonths: number; minN: number; asOf: string | null } | null
-  /** The parent city's verdict label ("seller's market") when its bars publish, else null. */
+  /** The parent city's months-of-supply line when its bars publish, else null. */
   cityVerdictLabel: string | null
   /**
    * Complete months, oldest first, as `leftoverNeighborhoodOrCityMonthly`
@@ -185,9 +185,9 @@ export function buildCommunitySupply(
     n === 0
       ? `No houses sold in ${place} in the last six months.`
       : `${formatCount(n)} ${housesWord(n)} sold in ${place} in the last six months.`
-  const floorSentence = `Calling it a buyer's or seller's market takes ${formatCount(floor.minN)} sales, so we don't.`
+  const floorSentence = `Publishing months of supply takes ${formatCount(floor.minN)} sales, so we don't.`
   const contextSentence = input.cityVerdictLabel
-    ? `${input.cityName} as a whole is a ${input.cityVerdictLabel}.`
+    ? `${input.cityName} as a whole has ${input.cityVerdictLabel}.`
     : null
   const tallySource =
     `Oregon Data Share · detached single-family houses inside the recorded ${place} boundary that closed in the last 180 days, ` +

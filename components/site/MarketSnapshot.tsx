@@ -1,5 +1,6 @@
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { publicSupplyLine } from '@/lib/format/months-of-supply'
 import { cityDetachedSlug, getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import {
@@ -74,17 +75,9 @@ function StatCard({ label, value, sub, badge }: StatCardProps) {
   )
 }
 
-/**
- * Months of supply classifies the market per the locked CLAUDE.md threshold:
- *   value of 4 or less is a seller's market, 4 to 6 is balanced, 6 or more is a
- *   buyer's market. Verdict copy matches the threshold, not the snapshot's
- *   `market_health_label` field, which is computed elsewhere and can be opinionated.
- */
-function marketVerdict(mos: number | null): { kind: 'hot' | 'balanced' | 'buyer'; text: string } | undefined {
-  if (mos == null) return undefined
-  if (mos <= 4) return { kind: 'hot', text: "Seller's market" }
-  if (mos >= 6) return { kind: 'buyer', text: "Buyer's market" }
-  return { kind: 'balanced', text: 'Balanced' }
+function supplyBadge(mos: number | null): { kind: 'balanced'; text: string } | undefined {
+  if (mos == null || !Number.isFinite(mos)) return undefined
+  return { kind: 'balanced', text: publicSupplyLine(mos) }
 }
 
 function fmtFreshness(iso: string): string {
@@ -145,7 +138,7 @@ export default async function MarketSnapshot({
   const closedLast30Days = hud.closed30
   const updatedAt = layers?.headlines?.computedAt ?? layers?.inventory?.computedAt ?? ''
 
-  const verdict = marketVerdict(monthsOfSupply)
+  const verdict = supplyBadge(monthsOfSupply)
   const geoLabel = cityName ?? 'Central Oregon'
   const marketHubHref = citySlug ? cityMarketPath(citySlug) : '/housing-market'
 

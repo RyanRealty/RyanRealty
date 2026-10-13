@@ -127,7 +127,7 @@ export async function answerPlaceValue(input: PlaceValueAnswerInput): Promise<Pl
 
   const headline =
     verdict && mos != null
-      ? `${place.name} is a ${verdict.label} right now.`
+      ? `${place.name} has ${verdict.label} right now.`
       : `Here is what we can tell you about ${place.name} right now.`
 
   // THE PROSE IS ONLY WHAT THE DRAWINGS DO NOT SAY (site queue SITE-02b). The
@@ -139,7 +139,7 @@ export async function answerPlaceValue(input: PlaceValueAnswerInput): Promise<Pl
   if (cash != null) body.push(`${(cash * 100).toFixed(0)}% of buyers here paid cash over the last year.`)
   if (!answer?.hasFigures) {
     body.unshift(
-      `${place.name} has had fewer recent sales than a fair buyer's or seller's verdict needs, so we are not printing one. The written valuation carries the comparable sales.`,
+      `${place.name} has had fewer recent sales than a months-of-supply reading needs, so we are not printing one. The written valuation carries the comparable sales.`,
     )
   }
 

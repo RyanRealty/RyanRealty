@@ -178,7 +178,7 @@ import {
   isGeneratedHoaQuestion,
   stockRailAsk,
 } from './_v3/community-authored-faqs'
-import { communityTypeDownLinks, isCommunityAnswerSlug } from './_v3/community-type-links'
+import { communityTypeDownLinks, isCommunityLedeSlug } from './_v3/community-type-links'
 
 import {
   PLACE_NEAR_RECREATION_TRACE,
@@ -737,7 +737,7 @@ async function renderCommunityDetail({ params }: Props) {
     cityName,
     marketHref: cityReportHref,
     verdictProse:
-      placeMos && hud.monthsSupply != null ? `A ${marketVerdict(hud.monthsSupply).label}.` : null,
+      placeMos && hud.monthsSupply != null ? `${marketVerdict(hud.monthsSupply).label}.` : null,
     floor: supplyFloor
       ? {
           closedSixMonths: supplyFloor.closedSixMonths,
@@ -1064,7 +1064,7 @@ async function renderCommunityDetail({ params }: Props) {
     listedCount: placeHomes.length > 0 ? placeHomes.length : null,
     types: communityStockTypesFromListings(placeHomes),
   }
-  const communityLede = isCommunityAnswerSlug(slug)
+  const communityLede = isCommunityLedeSlug(slug)
     ? placeTakeaways({
         variant: 'community',
         communitySlug: slug,

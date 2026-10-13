@@ -3,13 +3,11 @@
  *
  * The moat (docs/CONTENT_ENGINE_SPEC.md §3): every event/venue page carries a
  * LIVE, honest market read for its city — median list price, active inventory,
- * months of supply + the seller/balanced/buyer classification, and the typical
- * days to a signed contract. Data comes from leftover HUD membership. A leftover
- * miss omits. Pulse does not fill. Nothing here is invented (CLAUDE.md §0).
- *
- * Months-of-supply thresholds are the canonical ones (CLAUDE.md §0):
- *   ≤ 4  seller's market · 4–6  balanced · ≥ 6  buyer's market
+ * months of supply, and the typical days to a signed contract. Data comes from
+ * leftover HUD membership. A leftover miss omits. Pulse does not fill. Nothing
+ * here is invented (CLAUDE.md §0).
  */
+import { publicSupplyLine } from '@/lib/format/months-of-supply'
 
 export type AreaMarket = {
   city: string
@@ -30,7 +28,7 @@ export function marketClass(monthsOfSupply: number | null): MarketClass | null {
 }
 
 export function marketClassLabel(c: MarketClass): string {
-  return c === 'seller' ? "a seller's market" : c === 'buyer' ? "a buyer's market" : 'a balanced market'
+  return c
 }
 
 /** Round to the nearest thousand and format as $X,XXX,000 (brand-voice currency). */
@@ -50,9 +48,7 @@ export function marketSentence(m: AreaMarket): string | null {
 
   const parts: string[] = []
   if (cls && m.monthsOfSupply != null) {
-    parts.push(
-      `${m.city} is ${marketClassLabel(cls)} right now, with about ${m.monthsOfSupply.toFixed(1)} months of inventory`,
-    )
+    parts.push(`${m.city} has ${publicSupplyLine(m.monthsOfSupply)} right now`)
   } else {
     parts.push(`Here is where the ${m.city} market stands right now`)
   }

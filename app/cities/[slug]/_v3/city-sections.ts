@@ -621,7 +621,7 @@ export function cityFieldCaption(input: {
   // its own trace, and the Instrument's action is the view-all door.
   const homes = `The ${input.count.toLocaleString('en-US')} newest single-family listings in ${input.cityName}`
   if (input.verdictKind === 'unknown' || input.mosLabel == null) return homes
-  return `${homes} · ${input.mosLabel} months of supply · a ${input.verdictLabel}`
+  return `${homes} · ${input.mosLabel} months of supply`
 }
 
 /**

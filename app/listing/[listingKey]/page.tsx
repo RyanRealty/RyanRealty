@@ -66,6 +66,7 @@ import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-s
 import { formatDate as formatCalendarDate } from '@/lib/format/date'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
+import { ListingQuickFacts } from '@/components/site/listing-detail/ListingQuickFacts'
 import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
 import { DescriptionBlock } from '@/components/site/listing-detail/DescriptionBlock'
 import { GoverningDocumentsBlock } from '@/components/site/listing-detail/GoverningDocumentsBlock'
@@ -898,6 +899,27 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           browseLabel={similarLabel}
         />
       ) : null}
+      <ListingQuickFacts
+        street={street}
+        city={listing.city}
+        price={wholePropertyPrice}
+        beds={listing.beds}
+        baths={listing.baths}
+        sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
+        lotSizeAcres={listing.lotSizeAcres}
+        lotSizeSqft={listing.lotSizeSqft}
+        yearBuilt={listing.yearBuilt}
+        communityName={listing.communityName}
+        subdivisionName={listing.subdivisionName}
+        status={listing.status}
+        onMarketDate={listing.onMarketDate}
+        closeDate={listing.closeDate}
+        hoaMonthly={listing.hoaMonthly}
+        associationFee={listing.associationFee}
+        associationFeeFrequency={listing.associationFeeFrequency}
+        propertySubType={listing.propertySubType}
+        propertyType={listing.propertyType}
+      />
       {/* The homes a reader CAN buy get the prominence on a page about one
           they cannot: the rail moves from the bottom of the page to directly
           under the sold facts. MASTER_SPEC §4.9. */}
