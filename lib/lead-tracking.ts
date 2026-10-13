@@ -72,6 +72,11 @@ export type FireLeadParams = {
    * no dollar values on leads).
    */
   extra?: Record<string, string | number | boolean | undefined | null>
+  /**
+   * Client-captured utm, gclid, and fbclid from lpContext. Wins over the submit
+   * request Referer so a visitor who clicked around still attributes.
+   */
+  attribution?: LeadAttributionParams
 }
 
 /** First-party campaign params on generate_lead. Allowlisted, no PII. Independent of ad cookies. */
@@ -93,6 +98,42 @@ export type LeadAttributionParams = {
   lp_term?: string
   gclid?: string
   fbclid?: string
+}
+
+/** Overlay client lpContext (utm/gclid/fbclid) on referer params so click-around keeps the ad. */
+export function mergeLeadAttribution(
+  fromReferer: LeadAttributionParams,
+  fromClient?: LeadAttributionParams,
+): LeadAttributionParams {
+  if (!fromClient) return { ...fromReferer }
+  const overlay: LeadAttributionParams = {}
+  const keys = [
+    'lp_source',
+    'lp_medium',
+    'lp_campaign',
+    'lp_content',
+    'lp_term',
+    'gclid',
+    'fbclid',
+  ] as const
+  for (const key of keys) {
+    const v = fromClient[key]
+    if (typeof v === 'string' && v.trim()) overlay[key] = v.trim()
+  }
+  return { ...fromReferer, ...overlay }
+}
+
+/** Query string for CRM sourceUrl from the same keys generate_lead stores as lp_*. */
+export function attributionQueryString(attr: LeadAttributionParams): string {
+  const qs = new URLSearchParams()
+  if (attr.lp_source) qs.set('utm_source', attr.lp_source)
+  if (attr.lp_medium) qs.set('utm_medium', attr.lp_medium)
+  if (attr.lp_campaign) qs.set('utm_campaign', attr.lp_campaign)
+  if (attr.lp_content) qs.set('utm_content', attr.lp_content)
+  if (attr.lp_term) qs.set('utm_term', attr.lp_term)
+  if (attr.gclid) qs.set('gclid', attr.gclid)
+  if (attr.fbclid) qs.set('fbclid', attr.fbclid)
+  return qs.toString()
 }
 
 /** Campaign params from the referer, the same way every lead path read them. */
@@ -197,7 +238,7 @@ export async function fireLeadGenerated(params: FireLeadParams): Promise<void> {
       console.info(`[lead-tracking] ${eventName} not sent to GA4 for ${params.lp_variant}: GPC or a cookie decline`)
       return
     }
-    const eventParams = leadEventParams(params, utm)
+    const eventParams = leadEventParams(params, mergeLeadAttribution(utm, params.attribution))
     if (!eventParams) return
     await fireGa4Event({
       eventName,

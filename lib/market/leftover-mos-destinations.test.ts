@@ -17,6 +17,7 @@ const files = {
   // rule forward unchanged.
   mega: readFileSync(resolve('lib/data/nav/getMegaMenuData.ts'), 'utf8'),
   search: readFileSync(resolve('lib/market/search-city-sfr-publish.ts'), 'utf8'),
+  leverage: readFileSync(resolve('app/buy/leverage/_v3/leverage-data.ts'), 'utf8'),
 }
 
 describe('D21 leftover MOS destinations and leftover remainder', () => {

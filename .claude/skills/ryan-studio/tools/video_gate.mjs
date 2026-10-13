@@ -15,6 +15,38 @@ const SAFE = { maxX: 960, maxY: 1640 };
 const ADDRESS = /\b\d{2,6}\s+(?:[NSEW]\.?\s+)?[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*\s+(?:St|Street|Ave|Avenue|Rd|Road|Dr|Drive|Ln|Lane|Way|Ct|Court|Blvd|Boulevard|Pl|Place|Loop|Cir|Circle|Pkwy|Hwy|Trl|Trail|Ter)\b\.?/;
 const NAMEISH = /\b(?:Mr|Mrs|Ms|Dr)\.?\s+[A-Z][a-z]+|\bthe\s+[A-Z][a-z]+s\b(?=\s+(?:family|sold|bought|closed|purchased))/;
 
+
+// Spoken-voice check (Matt, 2026-10-13): VO must read like a person talking on camera, not prose or an ad.
+export const SPOKEN = {
+  maxAvgWords: 14, maxSentenceWords: 22, maxUncontractedShare: 0.34,
+  uncontracted: ['it is', 'you are', 'we are', 'they are', 'we will', 'you will', 'i will', 'it will', 'do not', 'does not', 'did not', 'is not', 'are not', 'can not', 'cannot', 'will not', 'would not', 'should not', 'could not', 'that is', 'there is', 'here is', 'what is', 'i am', 'let us', 'i have', 'you have', 'we have', 'have not', 'has not'],
+  cliches: ['look no further', 'dream home', "don't miss out", 'do not miss out', 'unparalleled', 'nestled', 'boasts', 'act now', 'limited time', 'opportunity awaits', "whether you're", 'whether you are', 'introducing'],
+  written: ['furthermore', 'additionally', 'moreover', 'in conclusion', 'utilize', 'utilise'],
+  markers: /\b(you|your|you're|you've|you'll|so|okay|ok|honestly|here's the thing|hey|look)\b/i,
+};
+export function spokenVoiceCheck(script) {
+  const fails = [];
+  const text = String(script || '').replace(/\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!text) return ['VO script is empty.'];
+  const low = text.toLowerCase().replace(/[\u2019]/g, "'");
+  const count = (w) => (low.match(new RegExp(`\\b${w.replace(/ /g, '\\s+')}\\b`, 'g')) || []).length;
+  const unc = SPOKEN.uncontracted.reduce((n, w) => n + count(w), 0);
+  const con = (low.match(/\b[a-z]+'(s|re|ll|ve|d|m|t)\b/g) || []).length;
+  if (unc >= 2 && unc / (unc + con) > SPOKEN.maxUncontractedShare) fail(`Too few contractions: ${unc} uncontracted pairs (it is, you are, do not...) vs ${con} contractions. Talk like a person: it's, you're, don't.`);
+  const sentences = text.split(/(?:\.{3}|…|[.?!])+/).map((x) => x.trim()).filter((x) => /[a-z]/i.test(x));
+  const lens = sentences.map((x) => x.split(/\s+/).length);
+  const avg = lens.reduce((a, b) => a + b, 0) / (lens.length || 1);
+  if (avg > SPOKEN.maxAvgWords) fail(`Sentences average ${avg.toFixed(1)} words; spoken VO averages ${SPOKEN.maxAvgWords} or fewer.`);
+  sentences.forEach((x, i) => { if (lens[i] > SPOKEN.maxSentenceWords) fail(`Sentence ${i + 1} runs ${lens[i]} words (max ${SPOKEN.maxSentenceWords}): "${x.slice(0, 60)}..."`); });
+  for (const c of SPOKEN.cliches) if (low.includes(c)) fail(`Ad cliche "${c}".`);
+  for (const w of SPOKEN.written) if (new RegExp(`\\b${w}\\b`).test(low)) fail(`Written-only word "${w}".`);
+  if (/;/.test(text)) fail('Semicolon in VO. Nobody speaks a semicolon; split it.');
+  if (/[()]/.test(text)) fail('Parentheses in VO. Say it or cut it.');
+  if (!SPOKEN.markers.test(low)) fail('No "you" and no conversational marker (so, okay, honestly, here\'s the thing). Talk to the viewer.');
+  return fails;
+  function fail(m) { fails.push(`Spoken voice: ${m}`); }
+}
+
 export function gate(brief, timeline, cfg) {
   const fails = [], warns = [];
   const fail = (m) => fails.push(m), warn = (m) => warns.push(m);
@@ -119,12 +151,25 @@ export function gate(brief, timeline, cfg) {
     if (vo.voice !== 'female' || vo.tone !== 'warm_conversational') fail('Voiceover must be a female, warm, conversational voice.');
     if (!['elevenlabs_v3', 'grok_tts'].includes(vo.engine)) fail('spec_rules.voiceover.engine must be elevenlabs_v3 or grok_tts.');
     if (vo.script_follows_engine_rules !== true) fail('VO script must follow the engine\'s own best practices.');
+    if (!vo.script || !String(vo.script).trim()) fail('spec_rules.voiceover.script is required (the spoken-voice check reads it).');
+    else for (const m of spokenVoiceCheck(vo.script)) fail(m);
     if (vo.script) {
       if (vo.engine === 'elevenlabs_v3') { if (/<break/i.test(vo.script)) fail('ElevenLabs v3 script uses break tags. Use ellipses and audio tags.'); if (/\d/.test(vo.script)) fail('ElevenLabs v3 script has digits. Spell numbers out.'); if (/\[(pause|breath)\]/i.test(vo.script)) fail('[pause]/[breath] are Grok TTS tags, not ElevenLabs v3.'); }
       if (vo.engine === 'grok_tts' && /<break/i.test(vo.script)) fail('Grok TTS script uses break tags. Use [pause] / [breath].');
     }
     if (JSON.stringify(sr.end_card_sequence) !== JSON.stringify(EC)) fail('End card must be: logo, then Quality / Local / Service, then Call now 541.703.3095.');
     if (sr.topic_cta?.text && sr.topic_cta.placement !== 'own_card_before_end_card') fail('A topic CTA gets its own card before the end card, never in place of it.');
+  }
+
+  // Footage rights list (rights/footage_rights.json)
+  let rl = {}; try { rl = JSON.parse(readFileSync(join(here, '..', 'rights', 'footage_rights.json'), 'utf8')).sources || {}; } catch { fail('rights/footage_rights.json missing.'); }
+  const use = brief.special_ad_category || brief.use === 'ads' ? 'ads' : 'organic';
+  for (const f of (brief.footage || [])) {
+    let src = f.source;
+    if (!src) for (const [k, v] of Object.entries(rl)) if ((v.match || []).some((m) => String(f.path || '').toLowerCase().includes(m))) src = k;
+    if (!src) continue;
+    if (!rl[src]) fail(`Footage ${f.path}: source "${src}" is not in rights/footage_rights.json.`);
+    else if (!(rl[src].cleared_for || []).includes(use)) fail(`Footage ${f.path}: ${rl[src].name} is not cleared for ${use}.`);
   }
   // Technique library
   let reg = {}; try { reg = JSON.parse(readFileSync(join(here, '..', 'techniques', 'registry.json'), 'utf8')).techniques || {}; } catch { fail('techniques/registry.json missing.'); }
