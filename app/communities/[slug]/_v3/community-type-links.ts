@@ -22,6 +22,19 @@ export function isCommunityAnswerSlug(slug: string): slug is CommunityAnswerSlug
   return (COMMUNITY_ANSWER_SLUGS as readonly string[]).includes(slug)
 }
 
+/** ChatGPT landing communities plus the four resort answer pages. Type down-links stay on the four. */
+export const COMMUNITY_LEDE_SLUGS = [
+  ...COMMUNITY_ANSWER_SLUGS,
+  'sunriver',
+  'mountain-high',
+] as const
+
+export type CommunityLedeSlug = (typeof COMMUNITY_LEDE_SLUGS)[number]
+
+export function isCommunityLedeSlug(slug: string): slug is CommunityLedeSlug {
+  return (COMMUNITY_LEDE_SLUGS as readonly string[]).includes(slug)
+}
+
 export type CommunityTypeDownLink = { href: string; label: string }
 
 /**

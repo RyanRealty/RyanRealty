@@ -1,8 +1,9 @@
 /**
  * The /communities/{slug} answer block for the four resort pages (SEO & AEO
- * Desk brief 2026-10-08). Identity sentences are authored registry facts
- * (acres, course, drive times). Sale, ask, cash, and type clauses bind to the
- * same fields the page already prints; a null drops its sentence, never $0.
+ * Desk brief 2026-10-08) plus Sunriver and Mountain High. Identity sentences
+ * are authored registry facts (acres, course, drive times). Sale, ask, cash,
+ * and type clauses bind to the same fields the page already prints; a null
+ * drops its sentence, never $0.
  */
 import { formatPaceShare } from '@/lib/data/market-truth/public-pace'
 import { formatPriceExact } from '@/lib/format/money'
@@ -35,6 +36,10 @@ function identity(slug: string): string | null {
       return "Tetherow is a 700-acre golf community on Bend's west side, built around a David McLay Kidd course that opened in 2008."
     case 'broken-top':
       return "Broken Top is a gated golf community on Bend's west side, established in 1992 around a private Tom Weiskopf and Jay Morrish course."
+    case 'sunriver':
+      return 'Sunriver is a 3,300-acre planned resort community about 15 miles south of Bend, along the Deschutes River, with the first home sites sold in 1968.'
+    case 'mountain-high':
+      return 'Mountain High is a gated south Bend neighborhood off China Hat Road, built around the public nine-hole Old Back Nine.'
     default:
       return null
   }
@@ -83,10 +88,16 @@ function closeSentence(slug: string, input: PlaceTakeawaysInput): string | null 
     if (input.hasLots) return 'Lots also come up for sale inside the gates.'
     return null
   }
+  if (slug === 'sunriver') {
+    return 'Every property belongs to the Sunriver Owners Association, and the plan includes three 18-hole golf courses and 34 miles of paved paths.'
+  }
+  if (slug === 'mountain-high') {
+    return 'It is organized into three villages: Alpine, Aspen, and Willow Creek.'
+  }
   return null
 }
 
-/** Up to three standalone sentences for the four resort community pages. */
+/** Up to three standalone sentences for the resort and ChatGPT landing community pages. */
 export function communityTakeaways(input: PlaceTakeawaysInput): string[] {
   const slug = input.communitySlug?.trim().toLowerCase() ?? ''
   const lead = identity(slug)

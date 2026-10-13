@@ -34,6 +34,7 @@ import {
   publishBlogRelatedHomes,
 } from '@/lib/blog/publish-blog-related-homes'
 import { publishBlogReportPeriod } from '@/lib/blog/publish-blog-report-period'
+import { ensureChatgptLandingBody } from '@/lib/blog/chatgpt-landing-answers'
 import { blogRelatedHomeRows } from './blog-related-homes'
 import { buildBlogArticleView } from './article-view'
 import { extractAnswerFirst } from './answer-first'
@@ -117,7 +118,10 @@ export async function renderBlogPost(
   const contextualCta = publishBlogContextualCta(buyablePlace)
   const pageUrl = `${siteUrl}/blog/${encodeURIComponent(post.slug)}`
   const readMinutes = estimateReadTime(post.content)
-  const rawBody = post.content?.trim() || post.excerpt?.trim() || ''
+  const rawBody = ensureChatgptLandingBody(
+    post.slug,
+    post.content?.trim() || post.excerpt?.trim() || '',
+  )
   const period = publishBlogReportPeriod({
     title: post.title,
     html: rawBody,
