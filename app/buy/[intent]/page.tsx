@@ -5,10 +5,16 @@ import LeadLandingPage from '@/components/landing/LeadLandingPage'
 import { getBuyLanding } from '@/lib/lead-landing-content'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
+import { BUY_INTENT_SLUGS } from '@/lib/routing/buy-public-slugs'
 
 const siteUrl = siteOrigin()
 
 export const revalidate = 3600
+export const dynamicParams = false
+
+export function generateStaticParams(): Array<{ intent: string }> {
+  return BUY_INTENT_SLUGS.map((intent) => ({ intent }))
+}
 
 type Props = {
   params: Promise<{ intent: string }>

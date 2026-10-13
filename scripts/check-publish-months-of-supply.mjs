@@ -100,6 +100,10 @@ const leftoverHudSurfaces = [
     path: 'lib/data/nav/getMegaMenuData.ts',
     label: 'mega menu leftover MOS through leftoverHudKpis',
   },
+  {
+    path: 'app/buy/leverage/_v3/leverage-data.ts',
+    label: 'buyer leverage hub gates MOS through leftoverHudKpis',
+  },
 ]
 
 const surfaces = [
