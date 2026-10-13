@@ -1,8 +1,8 @@
 # Current — 2026-10-13 (Cursor, make main CI green)
 
-Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` from origin/main `9c66b81b0`. Fix the red required checks, then squash-merge. Nothing sent. Nobody pushes main.
+Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` merged origin/main `cf00abb47` (#520). PR #532. Fix the red required checks, then squash-merge. Nothing sent. Nobody pushes main.
 
-**What this commit does.** `ci:studio-rules` names `video_gate.test.mjs` so the tests run on Node 20 and Node 22 (directory form is MODULE_NOT_FOUND on 22; glob form is not found on 20). `ci:tests-wired` now sees that skill-local test and counts it wired. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150 `tetherow-golf-aerial.jpg`) instead of a 1920 `asset_library` pick, so content-floor heroImageNatural stays 3780. `ci:public-listing-status` and `ci:claude-canon` already pass on this tip (38705/38733).
+**What this commit does.** `ci:studio-rules` names `video_gate.test.mjs` and `video_render_gate.test.mjs` so both run on Node 20 and Node 22 (directory form is MODULE_NOT_FOUND on 22; glob form is not found on 20). `ci:tests-wired` now sees those skill-local files and counts them wired. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150 `tetherow-golf-aerial.jpg`) instead of a 1920 `asset_library` pick, so content-floor heroImageNatural stays 3780 (reverts the 1728 floor #520 set). `ci:public-listing-status` and `ci:claude-canon` already pass on this tip.
 
 **Not this change.** Do not send. Do not apply hosted SQL. Do not merge the phase-pool branch. Do not rebuild letters.
 
