@@ -84,6 +84,7 @@ next-env.d.ts
 # ...and the four engineering-practice skills adapted from Matt Pocock's course-video-manager (2026-07-11) — tracked so they survive clones + are visible to Cursor
 !.claude/skills/domain-context/
 !.claude/skills/tdd/
+!.claude/skills/ryan-studio/
 !.claude/skills/optimize-data-loading/
 !.claude/skills/document-external-api/
 # ...and the crm-e2e + tc-builder loop skills — promoted to tracked (W13.3, 2026-07-21) so the in-house CRM/TC build loops survive clones + are visible to Cursor

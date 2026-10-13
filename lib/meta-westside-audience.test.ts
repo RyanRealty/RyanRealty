@@ -104,6 +104,7 @@ describe('isRealtorTagged', () => {
     expect(isRealtorTagged(['Realtor'])).toBe(true)
     expect(isRealtorTagged(['principal-BROKER'])).toBe(true)
     expect(isRealtorTagged(['industry:realtor'])).toBe(true)
+    expect(isRealtorTagged(['industry:contact'])).toBe(true)
     expect(isRealtorTagged(['listing agent'])).toBe(true)
     expect(isRealtorTagged(['seller-lead', 'westside'])).toBe(false)
     expect(isRealtorTagged([])).toBe(false)

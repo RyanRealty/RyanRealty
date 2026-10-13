@@ -75,6 +75,7 @@ export const PUBLIC_ISR_TTLS = [
   ['app/buy/page.tsx', 3600],
   ['app/buy/[intent]/page.tsx', 3600],
   ['app/buy/concessions/page.tsx', 3600],
+  ['app/buy/leverage/page.tsx', 3600],
   ['app/invest/page.tsx', 3600],
   ['app/cities/page.tsx', 3600],
   ['app/communities/page.tsx', 3600],

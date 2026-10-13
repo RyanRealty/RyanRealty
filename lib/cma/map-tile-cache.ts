@@ -24,7 +24,8 @@ import { buildCmaMapDataUri, cmaMapOptionsFromArgs, type CmaMapOptions, type Cma
 import type { CompPinMapOverlay } from '@/lib/cma/comp-pin-map'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
 
-const TILE_VERSION = 'cma-map-tile-v1'
+// v2: plat labels wrap to the packed box. v1 tiles painted one line past the page margin.
+const TILE_VERSION = 'cma-map-tile-v2'
 const MEMORY_CAP = 32
 
 export type LoadedCmaMap = {

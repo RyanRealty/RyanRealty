@@ -1,0 +1,80 @@
+{
+ "version": "2026-10-13",
+ "techniques": {
+  "eased_number_reveal": {
+   "name": "Eased number reveal",
+   "file": "eased_number_reveal.md",
+   "source": "RULEBOOK 2b (calm eased entrances, 2026-10-09)"
+  },
+  "subframe_motion_blur": {
+   "name": "Subframe motion blur",
+   "file": "subframe_motion_blur.md",
+   "source": "video-skills-research 2026-10-13 #2 (claude-motion-design)"
+  },
+  "draft_then_master": {
+   "name": "Draft then master",
+   "file": "draft_then_master.md",
+   "source": "round4 #3 (@imagine 2026-09-18)"
+  },
+  "imagine_official_prompt": {
+   "name": "Imagine official 30-60 word prompt",
+   "file": "imagine_official_prompt.md",
+   "source": "round4 #1 (@imagine 2026-09-18)"
+  },
+  "imagine_first_last_keyframe": {
+   "name": "Imagine first/last frame plate",
+   "file": "imagine_first_last_keyframe.md",
+   "source": "video-skills-research #3, round2 playbook (@imagine 2026-09-08, @XFreeze 2026-09-23)"
+  },
+  "imagine_seamless_loop": {
+   "name": "Imagine seamless loop (Loop role)",
+   "file": "imagine_seamless_loop.md",
+   "source": "round4 seasonal loop; @imagine 2026-09-08"
+  },
+  "loop_seam_edit": {
+   "name": "Loopable edit seam",
+   "file": "loop_seam_edit.md",
+   "source": "Matt core recipe: loopable"
+  },
+  "imagine_imperfection": {
+   "name": "Ask for imperfection",
+   "file": "imagine_imperfection.md",
+   "source": "round4 #4 (@imagine Odyssey 2026-09-29)"
+  },
+  "behavior_not_emotion": {
+   "name": "Describe behavior, not emotion",
+   "file": "behavior_not_emotion.md",
+   "source": "round4 #6 (PJ Ace 2026-09-16, Heavy Pulp)"
+  },
+  "tiktok_caption_burn": {
+   "name": "TikTok burned-in captions",
+   "file": "tiktok_caption_burn.md",
+   "source": "Matt rule 2026-10-13"
+  },
+  "contact_sheet_review": {
+   "name": "Contact-sheet self review",
+   "file": "contact_sheet_review.md",
+   "source": "video-skills-research #5 (claude-motion)"
+  },
+  "measured_drop_sync": {
+   "name": "Measured music drop",
+   "file": "measured_drop_sync.md",
+   "source": "video-skills-research #6"
+  },
+  "dollar_first_hook": {
+   "name": "Dollar/number-first hook",
+   "file": "dollar_first_hook.md",
+   "source": "r5-meta-ad-library hook pattern #3"
+  },
+  "question_secret_hook": {
+   "name": "Question + secret hook",
+   "file": "question_secret_hook.md",
+   "source": "r5 hook pattern #1"
+  },
+  "send_invite_hook": {
+   "name": "Send-invite hook",
+   "file": "send_invite_hook.md",
+   "source": "video-skills-research #4 (sends per reach)"
+  }
+ }
+}

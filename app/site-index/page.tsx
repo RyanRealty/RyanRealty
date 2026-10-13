@@ -60,6 +60,7 @@ const HUBS = [
   { href: '/housing-market', label: 'Housing market' },
   { href: '/open-houses', label: 'Open houses' },
   { href: '/price-drops', label: 'Price drops' },
+  { href: '/buy/leverage', label: 'Buyer leverage' },
   { href: '/invest', label: 'Investment property' },
   { href: '/tools/appreciation', label: 'Home appreciation calculator' },
   { href: '/buy/first-time-home-buyer', label: 'First-time buyer plan' },
