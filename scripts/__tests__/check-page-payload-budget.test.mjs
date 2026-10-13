@@ -30,6 +30,11 @@ describe('page-payload budget (200 KB hard ceiling)', () => {
         '"listingKey":"a","ListingKey":"a","listingKey":"b","photoUrl":"/x.jpg"',
       ),
     ).toBe(2)
+    expect(
+      countSerializedListingKeys(
+        'initialListings\\":[{\\"ListingKey\\":\\"aaa\\"},{\\"ListingKey\\":\\"bbb\\"}]',
+      ),
+    ).toBe(2)
   })
 
   it('fails a 400 KB city browse that still dumped 48 cards', () => {

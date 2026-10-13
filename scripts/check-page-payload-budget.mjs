@@ -85,7 +85,9 @@ export const HARD_CEILING_HOME_RAIL_CARDS = 36
 
 export function countSerializedListingKeys(html) {
   const keys = new Set()
-  for (const match of String(html).matchAll(/"(?:listingKey|ListingKey)":"([^"]+)"/g)) {
+  // Served HTML quotes keys two ways: raw JSON (`"ListingKey":"…"`) and the
+  // RSC flight (`\"ListingKey\":\"…\"`). Count unique values, not mentions.
+  for (const match of String(html).matchAll(/\\?"(?:listingKey|ListingKey)\\?":\\?"([^"\\]+)/g)) {
     keys.add(match[1])
   }
   return keys.size
