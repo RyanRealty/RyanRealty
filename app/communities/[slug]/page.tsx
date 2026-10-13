@@ -115,7 +115,6 @@ import {
   V3PlaceCharacter,
   V3Answers,
   V3Takeaways,
-  V3TakeawaysLead,
   V3Quiet,
   type AtlasRegion,
   V3Amenities,
@@ -138,6 +137,20 @@ import { getPlaceOpeningListings, getSubdivisionOnMarketRows } from '@/lib/data'
 
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { CommunityAmenities } from './_v3/CommunityAmenities.client'
+import { CommunityFoldAnswer } from './_v3/CommunityFoldAnswer'
+import { CommunityHomesGrid } from './_v3/CommunityHomesGrid'
+import { CommunityBroker } from './_v3/CommunityBroker'
+import { communityBrokerBlock } from './_v3/community-broker'
+import {
+  communityFoldAnswer,
+  communityFoldDaysToContract,
+} from './_v3/community-fold-answer'
+import {
+  communitySoldLedgerRows,
+  communitySoldRows,
+  communitySoldWindowStart,
+} from './_v3/community-sold'
+import { loadCommunitySoldTiles } from './_v3/community-sold-load'
 import { amenityItemListItems, buildCommunityAmenityBoard } from './_v3/community-amenities'
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { regionsFromChildCells } from '@/lib/place/child-rings'
@@ -524,6 +537,14 @@ async function renderCommunityDetail({ params }: Props) {
       ? withTimeoutFallback(getPlaceSchools('neighborhood', trustedOutlineSlug), [], 4500, 'comm:schools')
       : Promise.resolve([] as Awaited<ReturnType<typeof getPlaceSchools>>),
   ])
+  const soldWindowEnd = zonedDateKey(new Date())
+  const soldWindowStart = communitySoldWindowStart(new Date())
+  const soldTiles = await loadCommunitySoldTiles({
+    neighborhoodSlug,
+    aliases: placeAliases,
+    windowStart: soldWindowStart,
+    windowEnd: soldWindowEnd,
+  })
   const commMt = commOverlays.get(`neighborhood:${cityDetachedSlug(neighborhoodSlug)}`)
   const hud = leftoverHudKpis({
     grain: 'neighborhood',
@@ -573,6 +594,23 @@ async function renderCommunityDetail({ params }: Props) {
   const leftoverStamp =
     commMt?.headlines?.computedAt ?? commMt?.inventory?.computedAt ?? snapshot?.refreshedAt ?? null
   const mosAsOf = leftoverStamp ? formatDate(leftoverStamp) : null
+  const foldAnswer = communityFoldAnswer({
+    place: publicName,
+    asOfLabel: mosAsOf,
+    active: hud.active,
+    medianList: hud.medianList,
+    medianSale12: publicPace.medianClose,
+    ...communityFoldDaysToContract(hud.daysToPending, publicPace.daysToContract),
+  })
+  const brokerBlock = communityBrokerBlock(publicName)
+  const soldLedger = communitySoldLedgerRows(
+    communitySoldRows({
+      tiles: soldTiles,
+      aliases: placeAliases,
+      windowStart: soldWindowStart,
+      windowEnd: soldWindowEnd,
+    }),
+  )
   const placeMos = buildPlaceMosView({
     active: hud.active,
     monthsSupply: hud.monthsSupply,
@@ -1214,16 +1252,19 @@ async function renderCommunityDetail({ params }: Props) {
           </div>
         </div>
 
-        {communityLede.length >= 2 ? (
-          <V3TakeawaysLead
-            items={communityLede}
-            source={
+        <CommunityFoldAnswer id="answer" answer={foldAnswer} link={communityAnswerLink} />
+        <CommunityHomesGrid id="homes" placeName={publicName} homes={placeHomes.slice(0, SSR_GRID_PAGE)} />
+        {soldLedger ? (
+          <V3Ledger
+            id="sold"
+            eyebrow={v3Text(`${publicName} · Sold`)}
+            heading={v3Text('Recently sold (6 mo)')}
+            rows={soldLedger}
+            source={v3Text(
               mosAsOf
-                ? `Single-family homes, Oregon Data Share MLS, as of ${mosAsOf}.`
-                : 'Single-family homes, Oregon Data Share MLS.'
-            }
-            links={communityAnswerLink ? [communityAnswerLink] : []}
-            className={V3_ROOT_CLASS}
+                ? `Oregon Data Share MLS, closed sales in ${publicName} in the last 6 months, as of ${mosAsOf}.`
+                : `Oregon Data Share MLS, closed sales in ${publicName} in the last 6 months.`,
+            )}
           />
         ) : null}
 
@@ -1323,7 +1364,7 @@ async function renderCommunityDetail({ params }: Props) {
               subdivision chosen on the map. */}
           {/* "699 for sale on the map": the same set the Atlas above counts, and not
               the market figure's houses (Matt 2026-10-04, reconcile the counts). */}
-          <PlaceSubdivisionHomes id="homes" countScope="on the map" />
+          <PlaceSubdivisionHomes id="homes-dial" countScope="on the map" />
         </PlaceSubdivisionMap>
 
         <div className="community-fold">
@@ -1507,6 +1548,8 @@ async function renderCommunityDetail({ params }: Props) {
             asOfLabel ? ` Market data updated ${asOfLabel}.` : ''
           }`}
         />
+
+        <CommunityBroker id="broker" block={brokerBlock} />
       </main>
 
       <V3Footer columns={V3_FOOTER_COLUMNS} />

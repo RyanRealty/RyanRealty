@@ -2,7 +2,7 @@
 
 These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait, or to `git push` `main`, is stale.
 
-**Main.** Done means live in production (Matt 2026-10-13). `npm run ship`: gates, push the branch, merge your own PR once CI is green, confirm the Vercel production deploy. Never ask "want me to merge?". Never `git push` `main`. Unfinished work is `npm run push` only.
+**Main.** Work isn't done until merged and live in production (Matt 2026-10-13). Agents merge their own PRs once checks pass; never ask. `npm run ship`: gates, push, merge, confirm the Vercel production deploy. Never `git push` `main`. Unfinished work is `npm run push` only.
 
 **Git safety.** No rebase. No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away.
 

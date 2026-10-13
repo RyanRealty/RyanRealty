@@ -41,13 +41,19 @@ describe('place pages show listings on the dial, never a carousel', () => {
     expect(src).not.toMatch(/components\/ui\/carousel/)
   })
 
-  it.each(['city', 'neighborhood', 'community'] as const)(
+  it.each(['city', 'neighborhood'] as const)(
     '%s page puts its homes under the map on PlaceSubdivisionHomes (the dial host)',
     (grain) => {
       const src = read(PLACE_ROUTES[grain])
       expect(src).toMatch(/<PlaceSubdivisionHomes id="homes"( countScope="[^"]+")? \/>/)
     },
   )
+
+  it('community page puts the crawlable for-sale grid at #homes and keeps the dial under the map', () => {
+    const src = read(PLACE_ROUTES.community)
+    expect(src).toMatch(/<CommunityHomesGrid id="homes"/)
+    expect(src).toMatch(/<PlaceSubdivisionHomes id="homes-dial"( countScope="[^"]+")? \/>/)
+  })
 
   it.each(Object.keys(PLACE_ROUTES).filter((grain) => !HELD.has(grain)))(
     '%s page takes the dial (no held layout)',
@@ -60,7 +66,7 @@ describe('place pages show listings on the dial, never a carousel', () => {
     const src = read(PLACE_ROUTES.community)
     expect(src).toMatch(/<PlaceSubdivisionMap\b/)
     expect(src).not.toMatch(/<PlaceSubdivisionMap[^>]*?layout=/)
-    expect(src).toMatch(/<PlaceSubdivisionHomes[\s\S]*?id="homes"/)
+    expect(src).toMatch(/<PlaceSubdivisionHomes[\s\S]*?id="homes-dial"/)
   })
 
   it('the plat inventory is the dial', () => {

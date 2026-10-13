@@ -1,8 +1,8 @@
 # Current — 2026-10-13 (Cursor, HTML payload budget)
 
-Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `cf00abb47` (merged, not rebased). Land path is squash-merge after this PR's own CI. `ci:studio-rules` is green on GitHub Node 20 (#526). Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `6efd3387f` (merged, not rebased: #521 community fold, #532 studio-rules, #498, #531). Land path is `gh pr merge 527 --squash` after this PR's own CI. Nobody pushes main. Nothing sent.
 
-**What this branch does.** Caps public listing SSR grids at 24 cards (`SSR_GRID_PAGE`; home rails 36). Community homes past 24 load from `GET /api/place/homes`. Search SSR no longer reads cookies (`getSession` / saved / liked); viewer state hydrates after paint so `/homes-for-sale/bend` can use the public `s-maxage=60` header. Listing media flight capped at 24 photos. `ci:page-payload` shrink-only ratchet plus a 200 KB hard fail when serialized unique listing cards exceed one grid page. Community layout untouched (SEO A collision).
+**What this branch does.** Caps public listing SSR grids at 24 cards (`SSR_GRID_PAGE`; home rails 36). Community fold grid and map homes past 24 load from `GET /api/place/homes`. Search SSR no longer reads cookies (`getSession` / saved / liked); viewer state hydrates after paint so `/homes-for-sale/bend` can use the public `s-maxage=60` header. Listing media flight capped at 24 photos. `ci:page-payload` shrink-only ratchet plus a 200 KB hard fail when serialized unique listing cards exceed one grid page. Community fold layout from #521 is kept; only the card cap is ours.
 
 **Measured (identity, 2026-10-13).** Production before → local after (`next start`): `/` 493347 → 472180 B (36 cards, TTFB ~127 ms); `/communities/tetherow` 710608 → 676659 B (22 cards, TTFB 8–38 ms); `/homes-for-sale/bend` 415747 → 301396 B (24 cards, TTFB 32–139 ms, was ~2.0 s); `/homes-for-sale` 437386 → 324569 B; `/listing/22054302` 208030 → 188557 B. Gzip already under 150 KB on the named routes. Uncompressed 150/200 KB full-document targets are the RSC tree, not leftover inventory dumps.
 
@@ -12,21 +12,35 @@ Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `docs/RUN_LOOP.md` (this is payload plumbing, not a site-queue look change).
 
+## Earlier — 2026-10-13 (Cursor, make main CI green)
+
+Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` merged origin/main `6a9b37fb6` (#520, #521, #498, #531). Landed on main via #532. Nothing sent. Nobody pushes main.
+
+**What this commit does.** `ci:studio-rules` names `video_gate.test.mjs` and `video_render_gate.test.mjs` so both run on Node 20 and Node 22 (directory form is MODULE_NOT_FOUND on 22; glob form is not found on 20). `ci:tests-wired` now sees those skill-local files and counts them wired. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150 `tetherow-golf-aerial.jpg`) instead of a 1920 `asset_library` pick, so content-floor heroImageNatural stays 3780 (reverts the 1728 floor #520 set). `ci:public-listing-status` and `ci:claude-canon` already pass on this tip.
+
+**Not this change.** Do not send. Do not apply hosted SQL. Do not merge the phase-pool branch. Do not rebuild letters.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `scripts/check-claude-canon.mjs`, `scripts/check-tests-wired.mjs`, `scripts/check-public-listing-status.mjs`, `docs/DATABASE_FOR_AI_AGENTS.md` (surface-image read only).
+
+## Earlier — 2026-10-13 (Cursor, community fold upgrade)
+
+Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688`. Landed on main via #521. Do not `git push` main. Nothing sent.
+
+**What this branch does.** Every `/communities/[slug]` page server-renders above the fold: H1 `{Community} Homes for Sale`, a 2-3 sentence live leftover answer (active count, median list, 12-month median sale, median days to contract) cited `Oregon Data Share MLS, as of <date>`, then the active listing grid, a recently-sold 6-month table, existing HOA/STR/amenities, FAQ, and a Your local broker block to `/team/matthew-ryan`. Title is `{Community} Homes for Sale | {registry city}, OR | Ryan Realty`. Missing or non-positive figures drop their clause. No invented numbers.
+
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` (cache / leftover HUD, not raw listings aggregations).
+
 ## Earlier — 2026-10-13 (Cursor, off-market listing noindex + community door, landing)
 
-Surface: Cursor cloud. Branch `cursor/listing-offmarket-noindex-2c0f` rebased onto origin/main `6f0b60010` (#519 one-author JSON-LD; includes #504 Quick facts). PR #513. Matt approved merge. Do not `git push` main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/listing-offmarket-noindex-2c0f`. Landed on main via #513. Do not `git push` main. Nothing sent.
 
-**What this branch does.** Closed / Expired / Canceled / Withdrawn listing pages ship `noindex, follow`. When the home belongs to a registry community the HTML canonical is that `/communities/<slug>` page. Pending stays indexed. Active listings keep `index, follow` and print a prominent "{Name} homes for sale" door to the community page. `listings.xml` already ships Active/AUC only; sitemap, nav, and llms.txt were not touched. Quick facts from #504 is kept.
+**What this branch does.** Closed / Expired / Canceled / Withdrawn listing pages ship `noindex, follow`. When the home belongs to a registry community the HTML canonical is that `/communities/<slug>` page. Pending stays indexed. Active listings keep `index, follow` and print a prominent "{Name} homes for sale" door to the community page.
 
-**Verified on Brasada.** Active MLS 220229872: `index, follow`, self-canonical, door "Brasada Ranch homes for sale" → `/communities/brasada-ranch`. Closed MLS 220224479: `noindex, follow`, canonical `https://ryan-realty.com/communities/brasada-ranch`, HTTP 200.
-
-**Not this change.** Do not send. Do not apply hosted SQL.
-
-Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §3a (registry communities), `AGENTS.md` CORE RULES.
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §3a.
 
 ## Earlier — 2026-10-13 (Cursor, one business + one author JSON-LD)
 
-Surface: Cursor cloud. Branch `cursor/one-author-entity-118d` merged onto origin/main `7a17527a1`. User asked squash-merge #519 after its own CI (main-also-fail does not count), then verify production. Do not `git push` main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/one-author-entity-118d` merged onto origin/main `7a17527a1`. Landed on main via #519. Do not `git push` main. Nothing sent.
 
 **What this branch does.** Every BlogPosting author is `{@id: https://ryan-realty.com/team/matthew-ryan#person}`. Person sameAs adds verified Zillow, LinkedIn, Experience.com, YouTube, Instagram. Organization sameAs adds Zillow, Yelp, Experience.com. `/team/matthew-ryan` renders a 400-600 word bio from repo facts (LLC 2014, Bend office June 2023). Homepage title is `Ryan Realty | Bend, Oregon Real Estate Brokerage`. Realtor.com and Homes.com stay off: no verified live person URL.
 
@@ -36,11 +50,11 @@ Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES, `CLAUDE.md`
 
 ## Earlier — 2026-10-13 (Cursor, ad copy / voiceover / caption process)
 
-Surface: Cursor cloud. Branch `cursor/ai-voiceover-scripts-8a9c`, merged latest origin/main. Docs only. Do not run `npm run ship`. Do not merge. Nobody pushes main. Nothing rebuilt, nothing sent, nothing approved.
+Surface: Cursor cloud. Branch `cursor/ai-voiceover-scripts-8a9c`, merged latest origin/main. Docs only. Landed on main via #507. Nobody pushes main. Nothing rebuilt, nothing sent, nothing approved.
 
 **What this commit does.** Matt's 2026-10-13 ad, voiceover, and caption process now lives in the agent instruction files. New [`docs/ai-voiceover-scripts.md`](../ai-voiceover-scripts.md). AGENTS.md has the section "Ad copy, voiceover and captions" with the six locks. CLAUDE.md keeps main's Video CORE RULES (mandatory rules + `spec_rules`; video_gate is backup) and adds the ad/VO pointer on that same line. VOICE.md adds a spoken-ad note so written site/email/CMA voice stays that file.
 
-**Not this change.** Do not merge this PR unless Matt asks. Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send until Matt asks. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase. Do not run the CRM backfill.
+**Not this change.** Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send until Matt asks. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase. Do not run the CRM backfill.
 
 **Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool` in the primary checkout. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
 
