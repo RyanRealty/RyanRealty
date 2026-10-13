@@ -176,6 +176,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 | Doc | Status |
 |---|---|
 | `ENTERPRISE_MAP/` | **live** — whole-system enterprise map (inventories, plan dispositions, CAP/INT/FAC matrices, evidence log, advancement plan, session handoff). Covers product + integrations + dev factory + plan ghosts. Bootstrap: `docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md`. Every file within is covered by this row. |
+| `STUDIO_ONE_FACTORY.md` | **live** — Matt 2026-10-13: one video factory (`lib/studio`) and the measured-output contract (render manifest, the 14 checks `video:check` runs on the finished MP4, the reviewer verdict). Every video, every bot. |
 | `PROGRAM_2026-07-21/` | **live** — the RR-PLATFORM-DECISIONS completion program package (master spec, recorded decisions, audits, completion ledger, preserved skills). One of the two sanctioned plan homes; every file within it is covered by this row. |
 | `ADMIN_REBUILD/` | **live** — the admin/CRM rebuild package (specs, audit reports). The second sanctioned plan home; every file within it is covered by this row. |
 | `ADMIN_PRODUCT/` | **live** — Admin Product OS memory root **and** the Broker OS plan of record (`BROKER-OPERATING-SYSTEM-PLAN.md`). Live board (where we are): `EXECUTION.md`. Every file within is covered by this row. |
