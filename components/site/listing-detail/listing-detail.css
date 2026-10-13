@@ -324,6 +324,40 @@
   margin-top: var(--v3-space-sm);
 }
 
+/* AEO Quick facts: sentence + definition list under the price strip. */
+.listing-quick-facts {
+  max-width: var(--v3-measure-text, 40rem);
+  margin: var(--v3-space-lg) 0 0;
+  padding: var(--v3-space-md) 0;
+  border-top: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
+}
+
+.listing-quick-facts .sec-title {
+  margin: 0 0 var(--v3-space-sm);
+}
+
+.listing-quick-facts__answer {
+  margin: 0;
+  max-width: var(--v3-measure-text, 40rem);
+  font-size: var(--v3-size-body-lg, 1.125rem);
+  line-height: 1.5;
+  color: var(--v3-navy);
+}
+
+.listing-quick-facts__list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  margin: var(--v3-space-md) 0 0;
+}
+
+@media (min-width: 40rem) {
+  .listing-quick-facts__list {
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--v3-space-xl);
+  }
+}
+
 .listing-pay {
   display: flex;
   flex-direction: column;
