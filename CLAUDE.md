@@ -24,6 +24,8 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Video, social, landing pages.** Claude Code and Grok CLI both load `.claude/skills/`. Before any video, Reel, ad, or landing page, read `.claude/skills/ryan-studio` (and its `references/RULEBOOK.md`), then `motion-stats-craft`, `imagine-video-craft`, `motion-render-quality`, and the `cm-*` / `motion-blur-design` skills. Same skills on both agents; no private copies.
 
+**Video gate.** Every video must have a brief and pass video_gate before any render. (`.claude/skills/ryan-studio/rules/VIDEO_TYPES.md`, `node .claude/skills/ryan-studio/tools/video_gate.mjs brief.json timeline.json`)
+
 ---
 
 # Ryan Realty — agent canon
