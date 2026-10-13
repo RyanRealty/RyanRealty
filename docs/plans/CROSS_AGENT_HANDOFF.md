@@ -1,12 +1,24 @@
-# Current — 2026-10-13 (Cursor, make main CI green)
+# Current — 2026-10-13 (Cursor, community fold live)
 
-Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` merged origin/main `6a9b37fb6` (#520, #521, #498, #531). PR #532. Fix the red required checks, then squash-merge. Nothing sent. Nobody pushes main.
+Surface: Cursor cloud. Community fold landed on main via #521 (`6a00b604a`). Production READY: `6a9b37fb` (#498) aliases `ryan-realty.com` and includes that SHA. Later tip `f1058b79d` (#505) is still building. Nothing sent. No hosted SQL.
 
-**What this commit does.** `ci:studio-rules` names `video_gate.test.mjs` and `video_render_gate.test.mjs` so both run on Node 20 and Node 22 (directory form is MODULE_NOT_FOUND on 22; glob form is not found on 20). `ci:tests-wired` now sees those skill-local files and counts them wired. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150 `tetherow-golf-aerial.jpg`) instead of a 1920 `asset_library` pick, so content-floor heroImageNatural stays 3780 (reverts the 1728 floor #520 set). `ci:public-listing-status` and `ci:claude-canon` already pass on this tip.
+**What shipped.** Every `/communities/[slug]` page server-renders above the fold: Title Case H1 `{Community} Homes for Sale`, a live leftover answer (active count, median list, 12-month median sale, median days to contract) cited `Oregon Data Share MLS, as of <date>`, then the active listing grid, a recently-sold 6-month table, existing HOA/STR/amenities, FAQ, and Your local broker to `/team/matthew-ryan`. Title is `{Community} Homes for Sale | {registry city}, OR | Ryan Realty`. Missing or non-positive figures drop their clause. No invented numbers.
 
-**Not this change.** Do not send. Do not apply hosted SQL. Do not merge the phase-pool branch. Do not rebuild letters.
+**Live as of Oct 13, 2026 (Oregon Data Share MLS).** Tetherow 12 SFR / list $2,747,500 / 12-mo $2,257,500 / 54 days. Brasada Ranch 44 / $1,537,500 / $1,400,000 / 84. Broken Top 14 / $2,297,000 / $1,725,000 / 16. Black Butte Ranch 28 / $1,242,500 / $1,050,000 / 57. Sunriver 56 / $898,000 / $865,000 / 31. Eagle Crest 61 / $837,900 / $835,000 / 45. Caldera Springs 21 / $2,100,000 / $1,957,500 / 63. NorthWest Crossing 11 / $1,475,000 / $1,149,500 / 14.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `scripts/check-claude-canon.mjs`, `scripts/check-tests-wired.mjs`, `scripts/check-public-listing-status.mjs`, `docs/DATABASE_FOR_AI_AGENTS.md` (surface-image read only).
+**Note.** The #521 deploy itself ERROR'd on Vercel `duplicated_cron_job` for `/api/cron/performance-pull-7d` at `0 3 * * *`. `vercel.json` has that pair once. Same file as the prior READY. Later main deploys READY. Treat as a concurrent patchBuild race, not a second cron entry.
+
+**Still open.** Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not send.
+
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` (cache / leftover HUD).
+
+## Earlier — 2026-10-13 (Cursor, make main CI green)
+
+Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c`. Landed on main via #532 (`6efd3387f`). Do not `git push` main. Nothing sent.
+
+**What this commit does.** `ci:studio-rules` names `video_gate.test.mjs` and `video_render_gate.test.mjs` so both run on Node 20 and Node 22. `/sell` Stage uses the repo `SELL_POSTER` so content-floor heroImageNatural stays 3780.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `scripts/check-claude-canon.mjs`, `scripts/check-tests-wired.mjs`.
 
 ## Earlier — 2026-10-13 (Cursor, community fold upgrade)
 
