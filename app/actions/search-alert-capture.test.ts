@@ -101,7 +101,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
   it('calls stitchFormSubmitIdentity with rr_vid + person id when a person exists', async () => {
     const result = await signup()
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, counted: true })
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledTimes(1)
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledWith({
       personId: PERSON_ID,
@@ -124,7 +124,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
   it('passes a valid uuid v4 sessionId through to stitch', async () => {
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toMatchObject({ ok: true })
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledTimes(1)
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledWith({
       personId: PERSON_ID,
@@ -137,7 +137,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
   it('does not stitch when the honeypot is filled', async () => {
     const result = await signup({ company: 'Acme Bot Farm' })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, counted: false })
     expect(h.sendEvent).not.toHaveBeenCalled()
     expect(h.stitchFormSubmitIdentity).not.toHaveBeenCalled()
     expect(h.upsertListingAlert).not.toHaveBeenCalled()
@@ -148,7 +148,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
 
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toMatchObject({ ok: true })
     expect(h.upsertListingAlert).toHaveBeenCalled()
   })
 
@@ -164,7 +164,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
 
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, counted: false })
     expect(h.upsertListingAlert).toHaveBeenCalledWith(expect.objectContaining({ email: EMAIL, crmPersonId: PERSON_ID }))
     expect(h.canonicallyTagLead).not.toHaveBeenCalled()
     expect(h.createNativeTask).not.toHaveBeenCalled()
@@ -178,7 +178,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
 
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toMatchObject({ ok: true })
     expect(h.stitchFormSubmitIdentity).not.toHaveBeenCalled()
     expect(h.upsertListingAlert).toHaveBeenCalled()
   })

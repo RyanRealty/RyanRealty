@@ -30,10 +30,16 @@ dataLayer.push({ event: 'section_view', section: 'proof', page_type: 'sell',   /
 - `listing_key` reaches GA4 as `lk_<key>` when the key is all digits (it always is for MLS keys). GA4 stored a bare 26-digit key as a double and dropped digits (2026-10-08, e.g. `2.0251020154621696e+25`). Only `ga4_params.listing_key` carries the prefix; the flat dataLayer key, the first-party store and Meta `content_ids` keep the bare key. No GTM change: the same Data Layer Variable and tag pass it through. Strip `lk_` to join GA4 data back to listings. Rows before 2026-10-09 stay floats and cannot be recovered.
 - `page_type` and `broker_slug` are page context, read as flat keys (the GTM bootstrap and PageViewTracker stamp
   them on every navigation).
-- Not sent by this tag, on purpose: `generate_lead` (server only, Measurement Protocol, one per real submission),
-  `page_view` (the Google tag owns it), `valuation_requested` (the server sends it for the same submissions),
+- Alert enroll pushes `sign_up` (already on this trigger) with `method`,
+  `form_id`, and `lead_type`.
+- Not sent by this tag, on purpose: `generate_lead` (server only, Measurement
+  Protocol, one per real submission), `page_view` (the Google tag owns it),
+  `valuation_requested` (the server sends it for the same submissions),
   `form_start` (enhanced measurement's Form interactions already sends it; add
   it to the list in code only after that toggle is off).
+- This import does not include unused live-container triggers 6 (`CE page_view`)
+  or 7 (`CE generate_lead`); they are not in this file. Pause or delete them by
+  hand in GTM if they still exist. Never call the GTM API from this repo.
 
 ## Option A: import (about 3 minutes)
 
@@ -41,8 +47,10 @@ dataLayer.push({ event: 'section_view', section: 'proof', page_type: 'sell',   /
 2. Choose file: `docs/gtm/ga4-browser-events.import.json` (from this repo).
 3. Workspace: **Existing** → Default Workspace. Import option: **Merge** → **Rename conflicting tags, triggers, and
    variables**. Confirm.
-4. It adds 1 tag (`GA4 - dataLayer events`), 1 trigger (`CE - GA4 browser events`) and 28 Data Layer Variables
-   (`DLV - ga4 …`). It changes nothing that exists.
+4. It adds 1 tag (`GA4 - dataLayer events`), 1 trigger (`CE - GA4 browser events`) and 29 Data Layer Variables
+   (`DLV - ga4 …`). It changes nothing that exists. **Matt must import and publish**
+   so `lead_type` on `sign_up` reaches GA4. `sign_up` was already on the trigger regex.
+   Do not add `generate_lead` to that regex.
 5. Skip to **Test**. If GTM rejects the file, use Option B; the result is identical.
 
 ## Option B: by hand
@@ -82,6 +90,7 @@ value. Name the variable as in the "GTM variable" column.
 | 26 | `lp_content` | `DLV - ga4 lp_content` | `ga4_params.lp_content` |
 | 27 | `metric_id` | `DLV - ga4 metric_id` | `ga4_params.metric_id` |
 | 28 | `metric_rating` | `DLV - ga4 metric_rating` | `ga4_params.metric_rating` |
+| 29 | `lead_type` | `DLV - ga4 lead_type` | `ga4_params.lead_type` |
 
 Also confirm the built-in variable **Event** is enabled (Variables → Configure → Event). It is on by default.
 
@@ -102,7 +111,7 @@ Also confirm the built-in variable **Event** is enabled (Variables → Configure
 - Measurement ID: `G-ST40W4WM6T`
 - Event Name: `{{Event}}`
 - Event Parameters: one row per line of the table above: Parameter Name = "GA4 parameter", Value = the
-  `{{DLV - ga4 …}}` variable. (28 rows. Empty values are not sent.)
+  `{{DLV - ga4 …}}` variable. (29 rows. Empty values are not sent.)
 - Leave "Send Ecommerce data" off. Consent: leave the built-in consent checks as they are (do not add any).
 - Triggering: `CE - GA4 browser events`.
 
@@ -124,7 +133,7 @@ Also confirm the built-in variable **Event** is enabled (Variables → Configure
 - Next day: GA4 Data API `section_view` > 0, `call_initiated` > 0 on a day with a tel: click.
 - Register event-scoped custom dimensions for `section`, `depth`, `surface`, `cta`, `form_id` if they should show in
   reports (Admin → Data display → Custom definitions). `page_type`, `cta_location`, `source`, `city_slug`,
-  `listing_key`, `lp_*`, `broker_slug`, `method` and `context` are already registered.
+  `listing_key`, `lp_*`, `broker_slug`, `method`, `lead_type` and `context` are already registered.
 
 ## Changing the list later
 
