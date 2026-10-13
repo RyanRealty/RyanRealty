@@ -142,6 +142,9 @@ import { amenityItemListItems, buildCommunityAmenityBoard } from './_v3/communit
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { regionsFromChildCells } from '@/lib/place/child-rings'
 import { placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
+import { placeHomesCountLabel } from '@/lib/place/place-count-label'
+import { communityHomesSrc } from '@/lib/place/place-homes-src'
+import { SSR_GRID_PAGE } from '@/lib/site/ssr-grid-page'
 import { loadPlaceLeaseSection } from '@/lib/place/place-lease-stock'
 import { placeBoundaryClause, placeInventorySource } from '@/lib/place/place-inventory-source'
 import { childListingKeys, slugFromPlaceHref, subdivisionRailEntries } from '@/lib/place/place-child-stock'
@@ -1227,7 +1230,9 @@ async function renderCommunityDetail({ params }: Props) {
         <PlaceSubdivisionMap
           placeName={publicName}
           rail={railEntries}
-          homes={placeHomes}
+          homes={placeHomes.slice(0, SSR_GRID_PAGE)}
+          homesSrc={placeHomes.length > SSR_GRID_PAGE ? communityHomesSrc(slug) : undefined}
+          homesCountLabel={placeHomesCountLabel(placeHomes)}
           leases={leaseSection?.rows ?? []}
           keysBySlug={homesByChild}
           source={inventorySource}

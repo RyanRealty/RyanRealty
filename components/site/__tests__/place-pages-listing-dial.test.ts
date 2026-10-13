@@ -73,4 +73,11 @@ describe('place pages show listings on the dial, never a carousel', () => {
     expect(src).toMatch(/layout = 'dial'/)
     expect(src).toMatch(/if \(layout === 'rails'\)/)
   })
+
+  it('loads remaining homes from homesSrc after paint so the SSR seed can stay one page', () => {
+    const src = read(HOMES_BLOCK)
+    expect(src).toMatch(/homesSrc/)
+    expect(src).toMatch(/fetch\(src\)/)
+    expect(src).toMatch(/homesCountLabel/)
+  })
 })

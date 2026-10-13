@@ -6,9 +6,9 @@ import {
   getListingTiles,
   getBrokers,
   getReviews,
-  attachListingCardExtras,
   loadRecentPriceDropEvents,
 } from '@/lib/data'
+import { unionListingTiles } from '@/lib/place/place-inventory-stock'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
@@ -37,12 +37,13 @@ import { loadHomeFeaturedCommunitySlides } from './_v3/home-featured-communities
 import { cityHero, hasCuratedCityHero, preferPlaceHeroOrNull } from '@/lib/geo-images'
 import { formatPriceExact } from '@/lib/format/money'
 import { homeHeroSearchItems } from './_v3/home-hero-search-items'
-import { homeRailRows, enrichHomeRailRows } from './_v3/home-rail-items'
+import { homeRailRows } from './_v3/home-rail-items'
 import { homeRailItemList } from './_v3/home-jsonld'
 import {
   HERO_VIDEO,
   HERO_POSTER,
-  HOME_TILE_FETCH,
+  HOME_RAIL_DROP_KEYS,
+  HOME_RAIL_POOL,
   preferPlaceHero,
 } from './_v3/home-constants'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
@@ -117,10 +118,10 @@ const TOWN_LABEL: Record<(typeof TOWN_ORDER)[number], string> = {
 }
 
 export default async function Home() {
-  const [cities, tiles, brokers, openHouseLabels, recentPriceDrops, reviewSummary, featuredCommunitySlides, pulseBundle, newConRun] =
+  const [cities, newestTiles, brokers, openHouseLabels, recentPriceDrops, reviewSummary, featuredCommunitySlides, pulseBundle, newConRun] =
     await Promise.all([
       getCitiesForIndex().catch(() => []),
-      getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
+      getListingTiles({ status: 'active', limit: HOME_RAIL_POOL, sort: 'newest' }).catch(() => []),
       getBrokers().catch(() => []),
       loadOpenHouseBadgeLabels().catch(() => ({})),
       loadRecentPriceDropEvents(30).catch(() => new Map()),
@@ -141,6 +142,19 @@ export default async function Home() {
         return null
       }),
     ])
+  const newestKeys = new Set(newestTiles.map((tile) => tile.listingKey))
+  const missingDropKeys = [...recentPriceDrops.keys()]
+    .filter((key) => !newestKeys.has(key))
+    .slice(0, HOME_RAIL_DROP_KEYS)
+  const dropTiles =
+    missingDropKeys.length > 0
+      ? await getListingTiles({
+          listingKeys: missingDropKeys,
+          status: 'active',
+          limit: missingDropKeys.length,
+        }).catch(() => [])
+      : []
+  const tiles = unionListingTiles(newestTiles, dropTiles)
   const pulse = pulseBundle?.pulse ?? null
 
   const cityBySlug = new Map(cities.map((c) => [c.slug, c]))
@@ -149,7 +163,7 @@ export default async function Home() {
     .map((b) => aboutFaceFromBroker(b))
     .filter((face): face is AboutFace => face !== null)
 
-  const railRowsRaw = homeRailRows(tiles, {
+  const railRows = homeRailRows(tiles, {
     nowMs: Date.now(),
     regionalHref: publishRegionalSearchHref(),
     bendHref: '/homes-for-sale/bend',
@@ -158,11 +172,6 @@ export default async function Home() {
     openHouseLabels,
     priceDrops: recentPriceDrops,
   })
-  const railKeys = railRowsRaw.flatMap((row) => row.cards.map((card) => card.listingKey))
-  const railExtras = await attachListingCardExtras(railKeys).catch(
-    () => new Map(),
-  )
-  const railRows = enrichHomeRailRows(railRowsRaw, railExtras)
   const railListLd = homeRailItemList(railRows)
   const guideDoors = aeoHubHomeStripDoors()
   const guideQuestions = homeGuideQaQuestions()
