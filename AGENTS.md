@@ -22,7 +22,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
 
-**Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. Ad copy, VO, captions: [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). video_gate is backup.
+**Video.** One factory (Matt 2026-10-13): every video, any bot or machine, renders via `npm run studio:render`; Imagine makes footage only. Nothing reaches Matt until `npm run video:check -- <mp4> --final` passes. Rules: `.claude/skills/ryan-studio/SKILL.md`.
 
 ---
 
