@@ -1,14 +1,14 @@
-# Current — 2026-10-13 (Cursor, ad copy / voiceover / caption process)
+# Current — 2026-10-13 (Cursor, sitemap + listing index hygiene)
 
-Surface: Cursor cloud. Branch `cursor/ai-voiceover-scripts-8a9c`, merged latest origin/main. Docs only. Do not run `npm run ship`. Do not merge. Nobody pushes main. Nothing rebuilt, nothing sent, nothing approved.
+Surface: Cursor cloud. Branch `cursor/sitemap-index-hygiene-f2b8` from origin/main `7a17527a1`. Sitemap / robots only. Nothing sent. Do not `git push` main.
 
-**What this commit does.** Matt's 2026-10-13 ad, voiceover, and caption process now lives in the agent instruction files. New [`docs/ai-voiceover-scripts.md`](../ai-voiceover-scripts.md). AGENTS.md has the section "Ad copy, voiceover and captions" with the six locks. CLAUDE.md keeps main's Video CORE RULES (mandatory rules + `spec_rules`; video_gate is backup) and adds the ad/VO pointer on that same line. VOICE.md adds a spoken-ad note so written site/email/CMA voice stays that file.
+**What this branch does.** `listings.xml` submits Active, Active Under Contract, and Pending with `lastmod` from `modified_at`. Closed / Expired / Withdrawn / Canceled pages older than 90 days are `noindex, follow` with a community or city hub canonical (`listingIndexPolicy`, extending #513). `geo.xml` browse pairs and `matrix.xml` combos with fewer than 3 active listings drop and noindex. Live before counts: listings 7,484 · geo 3,961 · matrix 842.
 
-**Not this change.** Do not merge this PR unless Matt asks. Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send until Matt asks. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase. Do not run the CRM backfill.
+**Not this change.** Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill.
 
 **Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool` in the primary checkout. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `scripts/check-claude-canon.mjs`.
+Skills read: `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §0 (listing_tile_mv).
 
 ## Earlier — 2026-10-13 (Cursor, inbound SMS clear + industry exclusion, PR only)
 

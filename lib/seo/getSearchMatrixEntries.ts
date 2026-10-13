@@ -117,10 +117,11 @@ async function buildSubdivisionGeos(descriptionKeys: ReadonlySet<string>): Promi
  * cost 194-456s and why both the 600s and 1800s build ceilings were breached.
  *
  * The fix is to stop storing counts at all. `shouldNoIndexMatrixCombo` is
- * `count != null && count <= 0` — the ONLY thing either map is consulted for is
- * "is this combo a VERIFIED ZERO". So we store just the zero paths. Absent from
- * the set means index (a positive count and an unknown combo both fail OPEN,
- * exactly as before); present means noindex. Same decision, a fraction of the
+ * `count != null && count < SEARCH_MATRIX_MIN_ACTIVE` — the ONLY thing either
+ * map is consulted for is "is this combo below the 3-active floor". So we
+ * store just the thin/zero paths. Absent from the set means index (a
+ * positive count and an unknown combo both fail OPEN, exactly as before);
+ * present means noindex. Same decision, a fraction of the
  * bytes.
  */
 type SerializedMatrix = {
@@ -326,8 +327,9 @@ export async function resolvePresetTypeTwinPath(slug: string[], presetSlug: stri
 
 /**
  * Render-time robots decision for a 3-segment combo: true = noindex.
- * Noindex ONLY on a VERIFIED zero-inventory combo. Unknown states (failed
- * inventory read, uncurated geo, non-derivable preset) fail OPEN.
+ * Noindex on a VERIFIED count below SEARCH_MATRIX_MIN_ACTIVE (3). Unknown
+ * states (failed inventory read, uncurated geo, non-derivable preset) fail
+ * OPEN.
  */
 export async function getMatrixComboNoIndex(
   citySlug: string,
@@ -350,9 +352,9 @@ export async function getMatrixComboNoIndex(
 /**
  * W3.1 — the 2-segment /homes-for-sale/{city}/{preset} decision, used by BOTH
  * the render-time robots tag AND the sitemap emission (one source of truth):
- *   true  = VERIFIED city-wide zero → noindex the page AND omit it from the
- *           sitemap (never submit a zero-inventory indexable URL, §0).
- *   false = >= 1 verified match, OR unverifiable (non-serviceable city /
+ *   true  = VERIFIED city-wide count below 3 → noindex the page AND omit it
+ *           from the sitemap (never submit a thin inventory URL, §0).
+ *   false = >= 3 verified matches, OR unverifiable (non-serviceable city /
  *           non-derivable preset / failed read) → index + emit, failing OPEN so
  *           a transient read blip never hides a live page.
  */
