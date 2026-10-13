@@ -1,10 +1,10 @@
-# Current — 2026-10-13 (Cursor, off-market listing noindex + community door, landing)
+# Current — 2026-10-13 (Cursor, off-market listing noindex landed)
 
-Surface: Cursor cloud. Branch `cursor/listing-offmarket-noindex-2c0f` rebased onto origin/main `6f0b60010` (#519 one-author JSON-LD; includes #504 Quick facts). PR #513. Matt approved merge. Do not `git push` main. Nothing sent.
+Surface: Cursor cloud. Squash-merged #513 to origin/main `9c66b81b0`. Production deploy `dpl_BUfnSftuqmWd2LiwABWpFYffHb55` READY on ryan-realty.com. Do not `git push` main. Nothing sent.
 
-**What this branch does.** Closed / Expired / Canceled / Withdrawn listing pages ship `noindex, follow`. When the home belongs to a registry community the HTML canonical is that `/communities/<slug>` page. Pending stays indexed. Active listings keep `index, follow` and print a prominent "{Name} homes for sale" door to the community page. `listings.xml` already ships Active/AUC only; sitemap, nav, and llms.txt were not touched. Quick facts from #504 is kept.
+**What landed.** Closed / Expired / Canceled / Withdrawn listing pages ship `noindex, follow`. When the home belongs to a registry community the HTML canonical is that `/communities/<slug>` page. Pending stays indexed. Active listings keep `index, follow` and print a prominent "{Name} homes for sale" door to the community page. `listings.xml` already ships Active/AUC only; sitemap, nav, and llms.txt were not touched. Quick facts from #504 is kept.
 
-**Verified on Brasada.** Active MLS 220229872: `index, follow`, self-canonical, door "Brasada Ranch homes for sale" → `/communities/brasada-ranch`. Closed MLS 220224479: `noindex, follow`, canonical `https://ryan-realty.com/communities/brasada-ranch`, HTTP 200.
+**Verified on production Brasada.** Closed MLS 220224479: `/listing/220224479` 308s to the address URL, HTTP 200, robots `noindex, follow`, canonical `https://ryan-realty.com/communities/brasada-ranch`. Active MLS 220229872: `index, follow`, self-canonical, door "Brasada Ranch homes for sale" → `/communities/brasada-ranch`.
 
 **Not this change.** Do not send. Do not apply hosted SQL.
 
