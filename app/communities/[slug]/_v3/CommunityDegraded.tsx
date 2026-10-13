@@ -38,7 +38,7 @@ export function CommunityDegraded({
       <main className={V3_ROOT_CLASS}>
         <V3Quiet
           id="degraded"
-          heading={`${name} homes for sale`}
+          heading={`${name} Homes for Sale`}
           headingLevel={1}
           items={[
             {

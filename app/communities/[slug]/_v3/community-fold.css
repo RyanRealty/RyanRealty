@@ -68,6 +68,41 @@
   text-decoration-thickness: 2px;
 }
 
+.community-homes-grid,
+.community-broker {
+  width: 100%;
+  max-width: min(100%, 90rem);
+  margin-inline: auto;
+  padding-inline: var(--v3-gutter);
+  padding-block: var(--v3-space-lg);
+}
+
+.community-homes-grid__list {
+  list-style: none;
+  margin: var(--v3-space-md) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--v3-space-md);
+}
+
+@media (min-width: 48rem) {
+  .community-homes-grid__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.community-broker__body {
+  max-width: var(--v3-measure-text);
+  margin: var(--v3-space-md) 0 var(--v3-space-lg);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+}
+
+.community-broker__body a {
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
 .community-fold {
   width: 100%;
   max-width: min(100%, 90rem);
