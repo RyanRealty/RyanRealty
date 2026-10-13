@@ -100,10 +100,8 @@ export function publicSegmentBrowseHref(
   return q ? `${path}?${q}` : path
 }
 
-export function publicSegmentVerdictLabel(verdict: string | null): string | null {
-  if (verdict === 'seller') return "seller's market"
-  if (verdict === 'buyer') return "buyer's market"
-  if (verdict === 'balanced') return 'balanced market'
+/** Public copy prints months of supply, never a market-type label. */
+export function publicSegmentVerdictLabel(_verdict: string | null): string | null {
   return null
 }
 

@@ -19,8 +19,8 @@
  * (CLAUDE.md §0). Nothing here recomputes a statistic.
  */
 import type { EditionListItem, EditionRow } from '@/lib/data/market-report/editions'
-import { monthLabel, monthName } from '@/lib/market-report/format'
-import { VERDICT_LABEL, VERDICT_RULE } from '@/lib/market-report/narrative'
+import { monthLabel, monthName, mosText } from '@/lib/market-report/format'
+import { VERDICT_RULE } from '@/lib/market-report/narrative'
 import { valuationHref } from '@/lib/site/valuation-href'
 import {
   v3Text,
@@ -50,7 +50,6 @@ import {
   overviewNote,
   overviewSource,
   pdfFacts,
-  publishedVerdict,
   sectionSource,
   supplySeasons,
 } from './report-view'
@@ -159,8 +158,8 @@ export function EditionSections({ editionMonth: key, edition, editions, complete
 
       {cities.map((section) => {
         const place = section.geo.label
-        const verdict = publishedVerdict(section.kpis)
         const monthWord = monthName(key)
+        const mos = section.kpis.mos
         return (
           <V3Instrument
             key={section.geo.slug}
@@ -168,7 +167,9 @@ export function EditionSections({ editionMonth: key, edition, editions, complete
             level={2}
             chartLead
             eyebrow={v3Text(`${cityRun} · ${when}`)}
-            headline={v3Text(verdict ? `${place} in ${monthWord}: ${VERDICT_LABEL[verdict]}` : `${place} in ${monthWord}`)}
+            headline={v3Text(
+              mos != null ? `${place} in ${monthWord}: ${mosText(mos)} months of supply` : `${place} in ${monthWord}`,
+            )}
             {...(section.summary.length ? { note: v3Text(section.summary.join(' ')) } : {})}
             figures={marketFigures(section.kpis, { supplyHref: '/months-of-supply' })}
             chart={medianTrendChart(section.series, place)}

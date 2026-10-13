@@ -2,7 +2,7 @@
 
 These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait, or to `git push` `main`, is stale.
 
-**Main.** A finished unit is `npm run ship` (Matt 2026-10-09): gates, push the branch, merge the pull request. Vercel deploys `main`. Never `git push` `main`. Unfinished work is `npm run push` only.
+**Main.** Done means live in production (Matt 2026-10-13). `npm run ship`: gates, push the branch, merge your own PR once CI is green, confirm the Vercel production deploy. Never ask "want me to merge?". Never `git push` `main`. Unfinished work is `npm run push` only.
 
 **Git safety.** No rebase. No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away.
 
@@ -22,7 +22,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
 
-**Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. video_gate is backup.
+**Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. Ad copy, VO, captions: [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). video_gate is backup.
 
 ---
 

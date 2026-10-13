@@ -21,12 +21,10 @@ import { v3Text } from './atoms'
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 function cell(year: number, month: number, value: number): V3SeasonCell {
-  const call = value <= 4 ? "a seller's market" : value < 6 ? 'a balanced market' : "a buyer's market"
   return {
     value,
     tick: v3Text(`${MONTHS[month]} ${year}`),
     label: v3Text(`${value.toFixed(1)} months`),
-    note: v3Text(call),
   }
 }
 
@@ -35,7 +33,7 @@ function props(over: Partial<V3SeasonStripsProps> = {}): V3SeasonStripsProps {
   const y2025 = [2.2, 2.7, 3.2, 3.9, 4.5, 4.5, 4.2, 3.7, 3.3, 3.0, 2.7, 2.3]
   return {
     caption: v3Text('Central Oregon months of supply by month, January 2025 to August 2026'),
-    claim: v3Text("4.0 months of supply at the end of August 2026: a seller's market by our measure."),
+    claim: v3Text('4.0 months of supply at the end of August 2026.'),
     rows: [
       {
         name: v3Text('2026'),
@@ -45,7 +43,7 @@ function props(over: Partial<V3SeasonStripsProps> = {}): V3SeasonStripsProps {
     ],
     columns: ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'].map((c) => v3Text(c)),
     max: 6,
-    bands: [{ from: 4, to: 6, label: v3Text('Balanced: above 4 and under 6 months') }],
+    bands: [{ from: 4, to: 6, label: v3Text('4 to 6 months') }],
     threshold: 4,
     id: 'supply',
     ...over,
@@ -61,7 +59,7 @@ describe('V3SeasonStrips, served HTML', () => {
     const html = render(props())
     expect(html).toContain('v3-seasons__read-tick">Aug 2026<')
     expect(html).toContain('v3-seasons__read-value">4.0 months<')
-    expect(html).toContain('aria-live="polite">Aug 2026: 4.0 months, a seller&#x27;s market<')
+    expect(html).toContain('aria-live="polite">Aug 2026: 4.0 months<')
   })
 
   it('carries every month in time order for a reader who cannot see the columns', () => {
@@ -69,10 +67,10 @@ describe('V3SeasonStrips, served HTML', () => {
     const list = html.match(/<ol class="v3-seasons__data">([\s\S]*?)<\/ol>/)![1]!
     const items = [...list.matchAll(/<li>(.*?)<\/li>/g)].map((m) => m[1]!)
     expect(items).toHaveLength(20)
-    expect(items[0]).toBe('Jan 2025, 2.2 months, a seller&#x27;s market')
-    expect(items[11]).toBe('Dec 2025, 2.3 months, a seller&#x27;s market')
-    expect(items[12]).toBe('Jan 2026, 2.4 months, a seller&#x27;s market')
-    expect(items.at(-1)).toBe('Aug 2026, 4.0 months, a seller&#x27;s market')
+    expect(items[0]).toBe('Jan 2025, 2.2 months')
+    expect(items[11]).toBe('Dec 2025, 2.3 months')
+    expect(items[12]).toBe('Jan 2026, 2.4 months')
+    expect(items.at(-1)).toBe('Aug 2026, 4.0 months')
   })
 
   it('stands every column on zero and inks only the part past the threshold', () => {

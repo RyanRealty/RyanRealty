@@ -29,9 +29,9 @@ describe('buildMarketFaq', () => {
     expect(price?.answer).toContain('$894,750')
     expect(price?.answer).not.toContain('$895,000')
     expect(price?.answer).toContain('as of May 2026')
-    const mos = r.faqs.find((f) => f.question.includes("buyer's or seller's"))
+    const mos = r.faqs.find((f) => f.question.includes('months of supply'))
     expect(mos?.answer).toContain('3.3 months of supply') // 3.25 -> 1 decimal
-    expect(mos?.answer).toContain("seller's market") // <= 4 months
+    expect(mos?.answer).not.toMatch(/seller's market|buyer's market|balanced market/i)
   })
 
   // 2026-09-07: an answer engine quoted the list-only price sentence as Bend's
@@ -118,15 +118,10 @@ describe('buildMarketFaq', () => {
       monthsOfSupply: 4.02,
       refreshedAt: null,
     })
-    const over = justOverFour.faqs.find((f) => f.question.includes("buyer's or seller's"))
+    const over = justOverFour.faqs.find((f) => f.question.includes('months of supply'))
     expect(over?.answer).toContain('4.1 months of supply') // 4.02 never prints as 4.0
     expect(over?.answer).not.toContain('4 months of supply, which')
-    // Assert the VERDICT clause, not a bare substring: the shared threshold
-    // sentence appended to this answer names all three verdicts by design, so a
-    // substring check for "seller's market" now matches the explanation rather
-    // than the classification it is meant to protect.
-    expect(over?.answer).toContain('which is a balanced market') // classified raw: 4.02 > 4
-    expect(over?.answer).not.toContain("which is a seller's market")
+    expect(over?.answer).not.toMatch(/seller's market|buyer's market|balanced market/i)
     // The Dataset variable is the machine-readable copy of the sentence, so it
     // carries the number the sentence shows, not a second rounding of the raw value.
     expect(
@@ -138,11 +133,10 @@ describe('buildMarketFaq', () => {
       monthsOfSupply: 5.97,
       refreshedAt: null,
     })
-    const under = justUnderSix.faqs.find((f) => f.question.includes("buyer's or seller's"))
+    const under = justUnderSix.faqs.find((f) => f.question.includes('months of supply'))
     expect(under?.answer).toContain('5.9 months of supply') // 5.97 never prints as 6.0
     expect(under?.answer).not.toContain('6 months of supply, which')
-    expect(under?.answer).toContain('which is a balanced market') // classified raw: 5.97 < 6
-    expect(under?.answer).not.toContain("which is a buyer's market")
+    expect(under?.answer).not.toMatch(/seller's market|buyer's market|balanced market/i)
     expect(
       justUnderSix.datasetVariables.find((v) => v.name === 'Months of Supply')?.value,
     ).toBe(5.9)
@@ -358,9 +352,9 @@ describe('buildMarketFaq at an untrusted grain', () => {
       pulseActiveCount: 56,
       monthsOfSupply: 7.47,
     })
-    const mos = faqs.find((f) => f.question.includes("buyer's or seller's"))
+    const mos = faqs.find((f) => f.question.includes('months of supply'))
     expect(mos?.answer).toContain('7.5 months of supply')
-    expect(mos?.answer).toContain("which is a buyer's market")
+    expect(mos?.answer).not.toMatch(/seller's market|buyer's market|balanced market/i)
     expect(datasetVariables.find((v) => v.name === 'Months of Supply')?.value).toBe(7.5)
   })
 })
