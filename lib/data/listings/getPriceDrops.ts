@@ -94,6 +94,11 @@ export type PriceDrop = {
   lastPriceChangeDate: string | null
   /** Days on market. */
   dom: number | null
+  /**
+   * Price-drop events on this listing inside the requested window. Lifetime
+   * repeats come from getPriceDropFacts. Null when the window count is unknown.
+   */
+  windowCutCount: number | null
   /** Boundary city (for geo grouping). */
   boundaryCity: string | null
   boundaryNeighborhood: string | null
@@ -254,6 +259,7 @@ export function tileAndEventToDrop(
     daysSinceLastChange,
     lastPriceChangeDate: event.event_at,
     dom: tile.dom,
+    windowCutCount: 1,
     boundaryCity: tile.boundaryCity,
     boundaryNeighborhood: tile.boundaryNeighborhood,
     boundarySubdivision: tile.boundarySubdivision,
@@ -339,10 +345,13 @@ async function fetchQualifyingDrops(
 
   if (events.length === 0) return []
 
-  // Dedupe to the most recent event per ListingKey
+  // Dedupe to the most recent event per ListingKey, and count every
+  // in-window cut so repeat markdowns this week are a fact, not a guess.
   const latestByKey = new Map<string, ActivityEventRow>()
+  const windowCutCount = new Map<string, number>()
   for (const ev of events) {
     if (!ev.listing_key) continue
+    windowCutCount.set(ev.listing_key, (windowCutCount.get(ev.listing_key) ?? 0) + 1)
     if (!latestByKey.has(ev.listing_key)) {
       latestByKey.set(ev.listing_key, ev)
     }
@@ -415,6 +424,7 @@ async function fetchQualifyingDrops(
 
     const drop = tileAndEventToDrop(tile, event, nowMs)
     if (!drop) continue
+    drop.windowCutCount = windowCutCount.get(key) ?? 1
 
     joined.push(drop)
   }
@@ -558,7 +568,7 @@ export const getPriceDrops = (
     // `cap` and `degraded`. Evict entries built the old way.
     // v8 (2026-10-13): withhold cuts over 40% and ~10x decimal-shift typos
     // (Hunnell $16.49M → $1.649M); totals cover the qualifying set; list cap 500.
-    ['price-drops-v8', key],
+    ['price-drops-v9', key],
     { revalidate: 1800, tags: [cacheTag.listings] },
     {
       drops: [],

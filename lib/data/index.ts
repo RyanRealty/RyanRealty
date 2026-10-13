@@ -199,6 +199,10 @@ export { getPriceDropTiles, getBrokerageListingTiles, getBrokerageListings } fro
 export type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
 export { getPriceDrops, getPriceDropDigest } from '@/lib/data/listings/getPriceDrops'
 export type { PriceDrop, PriceDropDigest, GetPriceDropsInput, GetPriceDropsResult } from '@/lib/data/listings/getPriceDrops'
+export { getPriceDropFacts } from '@/lib/data/listings/getPriceDropFacts'
+export type { PriceDropListingFact, GetPriceDropFactsResult } from '@/lib/data/listings/getPriceDropFacts'
+export { getPriceDropCityContext } from '@/lib/data/listings/getPriceDropCityContext'
+export type { PriceDropCityContextResult } from '@/lib/data/listings/getPriceDropCityContext'
 export { getMotivatedListings } from '@/lib/data/listings/getMotivatedListings'
 export type {
   MotivatedListing,

@@ -56,6 +56,18 @@ describe('filterPriceDropCatalog', () => {
     ).toEqual(['redmond-4'])
   })
 
+  it('filters by a factual deal signal', () => {
+    const signaled = [
+      item({ id: 'repeat', signals: { repeatCuts: true } }),
+      item({ id: 'plain' }),
+    ]
+    expect(
+      filterPriceDropCatalog(signaled, { city: '', priceMax: null, bedsMin: null, signal: 'repeatCuts' }).map(
+        (row) => row.id,
+      ),
+    ).toEqual(['repeat'])
+  })
+
   it('drops a row with no price when a price ceiling is set', () => {
     expect(
       filterPriceDropCatalog([item({ id: 'missing', listPrice: undefined })], {
