@@ -21,7 +21,12 @@ import { siteOrigin } from '@/lib/site-origin'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { formatDate } from '@/lib/format/date'
-import { getPriceDropCityContext, getPriceDropFacts, getPriceDrops } from '@/lib/data'
+import {
+  getPriceDropCityContext,
+  getPriceDropFacts,
+  getPriceDrops,
+  type GetPriceDropFactsResult,
+} from '@/lib/data'
 import { refuseDegradedIsr } from '@/lib/site/degraded-isr'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { homesForSalePath } from '@/lib/slug'
@@ -81,6 +86,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { city: slug } = await params
   if (!DROPS_CITY_SLUGS.includes(slug)) notFound()
   const cityName = cityLabel(slug)
+  // @prerender-db-ok getPriceDrops is makeResilientCached: it never rejects, a failed read is `degraded`.
   const { total, degraded } = await getPriceDrops({
     city: cityName,
     limit: PRICE_DROPS_LIST_LIMIT,
@@ -110,8 +116,8 @@ export default async function PriceDropsCityPage({ params }: Props) {
   const path = `/price-drops/${citySlug}`
   const flags = priceDropFilterFlags()
 
-  // @prerender-db-ok getPriceDrops is makeResilientCached: it never rejects, a failed read is `degraded`.
   const [{ drops, total, cap, totalReduced, medianDropPct, fetchedAt, degraded }, context] =
+    // @prerender-db-ok getPriceDrops and getPriceDropCityContext never reject; a failed read is `degraded`.
     await Promise.all([
       getPriceDrops({
         city: cityName,
@@ -124,12 +130,16 @@ export default async function PriceDropsCityPage({ params }: Props) {
   // Unknown is not empty: this copy stands for a minute, not the whole window.
   if (degraded) await refuseDegradedIsr(`price-drops/${citySlug}`, ['getPriceDrops'])
 
-  const facts = degraded
-    ? { byKey: {}, degraded: true }
-    : await getPriceDropFacts(
-        drops.map((drop) => drop.listingKey),
-        flags,
-      )
+  let facts: GetPriceDropFactsResult
+  if (degraded) {
+    facts = { byKey: {}, degraded: true }
+  } else {
+    // @prerender-db-ok getPriceDropFacts is makeResilientCached with a degraded fallback.
+    facts = await getPriceDropFacts(
+      drops.map((drop) => drop.listingKey),
+      flags,
+    )
+  }
 
   const fieldItems = attachPriceDropSignals(priceDropFieldItems(drops), {
     facts: facts.byKey,
