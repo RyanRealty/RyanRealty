@@ -103,12 +103,41 @@ export function gate(brief, timeline, cfg) {
   for (const s of texts) { const m = s.match(NAMEISH); if (m) fail(`Looks like a person's name: "${m[0]}". No buyer or seller names.`); }
   for (const w of cfg.fair_housing_flags) if (new RegExp(`\\b${w}\\b`, 'i').test(low)) fail(`Fair housing flag "${w}": describe homes and places, never people.`);
 
+
+  // Spec rules (mandatory creation-time block, Matt 2026-10-13)
+  const sr = brief.spec_rules;
+  if (!sr) fail('Brief is missing "spec_rules" (the mandatory creation-time rules). Fill it before making anything.');
+  else {
+    const EC = ['logo', 'Quality / Local / Service', 'Call now 541.703.3095'];
+    if (!(typeof sr.hook_by_s === 'number' && sr.hook_by_s <= 2)) fail('spec_rules.hook_by_s must be 2s or less.');
+    if (JSON.stringify(sr.length_s_range) !== '[15,30]') fail('spec_rules.length_s_range must be [15,30].');
+    if (typeof brief.length_s === 'number' && (brief.length_s < 15 || brief.length_s > 30) && !overrides.has('length')) fail(`Length ${brief.length_s}s is outside 15 to 30s.`);
+    for (const k of ['real_footage', 'sound_off_readable', 'loopable', 'no_top_team_wording', 'no_price_closed_flash', 'same_process_any_tool']) if (sr[k] !== true) fail(`spec_rules.${k} must be true.`);
+    if (!(sr.real_numbers_count >= 1 && sr.real_numbers_count <= 2)) fail('spec_rules.real_numbers_count must be 1 or 2.');
+    if (sr.captions?.style !== 'tiktok_burned_in' || sr.captions?.synced_to_vo !== true) fail('Captions must be TikTok-style burned in and synced to the voiceover.');
+    const vo = sr.voiceover || {};
+    if (vo.voice !== 'female' || vo.tone !== 'warm_conversational') fail('Voiceover must be a female, warm, conversational voice.');
+    if (!['elevenlabs_v3', 'grok_tts'].includes(vo.engine)) fail('spec_rules.voiceover.engine must be elevenlabs_v3 or grok_tts.');
+    if (vo.script_follows_engine_rules !== true) fail('VO script must follow the engine\'s own best practices.');
+    if (vo.script) {
+      if (vo.engine === 'elevenlabs_v3') { if (/<break/i.test(vo.script)) fail('ElevenLabs v3 script uses break tags. Use ellipses and audio tags.'); if (/\d/.test(vo.script)) fail('ElevenLabs v3 script has digits. Spell numbers out.'); if (/\[(pause|breath)\]/i.test(vo.script)) fail('[pause]/[breath] are Grok TTS tags, not ElevenLabs v3.'); }
+      if (vo.engine === 'grok_tts' && /<break/i.test(vo.script)) fail('Grok TTS script uses break tags. Use [pause] / [breath].');
+    }
+    if (JSON.stringify(sr.end_card_sequence) !== JSON.stringify(EC)) fail('End card must be: logo, then Quality / Local / Service, then Call now 541.703.3095.');
+    if (sr.topic_cta?.text && sr.topic_cta.placement !== 'own_card_before_end_card') fail('A topic CTA gets its own card before the end card, never in place of it.');
+  }
+  // Technique library
+  let reg = {}; try { reg = JSON.parse(readFileSync(join(here, '..', 'techniques', 'registry.json'), 'utf8')).techniques || {}; } catch { fail('techniques/registry.json missing.'); }
+  if (!Array.isArray(brief.techniques) || !brief.techniques.length) fail('Brief needs "techniques": names from techniques/registry.json.');
+  else for (const n of brief.techniques) if (!reg[n]) fail(`Technique "${n}" is not in techniques/registry.json.`);
+
   // Type specifics
   if (t.requires_sources && !(brief.sources || []).length) fail('Civic piece needs sources (meeting, date, clip id, documents).');
   if (t.requires_special_ad_category && brief.special_ad_category !== t.requires_special_ad_category) fail('Buyer ad must declare special_ad_category "housing" (no age, gender or ZIP targeting).');
   if (t.requires_persona && !brief.persona) fail('Buyer ad needs a persona (relocator, first_time, move_up, second_home). The hook picks the buyer.');
+  if (/\btop[- ]team\b/i.test(all)) fail('"Top team" wording is banned.');
   if (/buyer'?s market/i.test(all)) warn('"Buyer\'s market" wording: only when months of supply is 6 or more for that geography. Bend is about 3; say "buyers have leverage".');
-  if (brief.video_type === 'closing' && dur <= 3) fail('Closings are never a 3 second price + closed clip.');
+  if (beats.some((b) => (b.end - b.start) <= 3 && /\$\s?\d/.test(b.text || '') && /closed|sold/i.test((b.text || '') + ' ' + beats.map((x) => x.text || '').join(' ')) && brief.video_type === 'closing') || (brief.video_type === 'closing' && dur <= 3)) fail('Closings are never a 3 second price + closed clip.');
   if (brief.music && brief.music.song && !brief.music.picker_start) warn('Music set but no IG picker start time (m:ss).');
   if (t.requires_loop && !timeline.loop_seam) warn('Timeline has no loop_seam note (last frame should flow back into frame 0).');
   return { fails, warns };

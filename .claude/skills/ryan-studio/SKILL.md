@@ -5,9 +5,26 @@ description: >-
   Grok CLI): Matt's locked rulebook, per-type video rule cards, the brief schema,
   and the video_gate that must pass before any render.
 ---
+## MANDATORY VIDEO RULES (read before making any video; Matt, locked 2026-10-13)
+These are the spec, not a review step. Every brief must fill `spec_rules` in `.claude/skills/ryan-studio/templates/brief.schema.json`; a brief without them is invalid.
+- [ ] Hook lands in the first 1-2 s.
+- [ ] 15-30 s long.
+- [ ] Real footage (plates and maps sit on real footage, never instead of it).
+- [ ] One or two real numbers, each sourced.
+- [ ] Readable with sound off: TikTok-style burned-in captions synced to a female, warm, conversational voiceover.
+- [ ] Loopable (last frame flows into frame 0).
+- [ ] Locked end card: logo, then Quality / Local / Service, then "Call now" 541.703.3095. A topic CTA gets its own card before the end card, never in place of it.
+- [ ] VO script follows the engine's own best practices. ElevenLabs v3: ellipses, audio tags, CAPS for emphasis, numbers spelled out, no break tags. Grok TTS: [pause] / [breath], with_timestamps.
+- [ ] Same process whatever tool runs it (Grok, Claude, Imagine, Cursor).
+- [ ] No "top team" wording. No 3 s clips of a price next to "closed".
+- [ ] Pick techniques by name from `.claude/skills/ryan-studio/techniques/registry.json` and list them in `brief.techniques`.
+`video_gate.mjs` is the backup check that confirms the brief, not the primary enforcement.
+
 # Ryan Studio (repo copy, shared by Claude Code and Grok CLI)
 
-**Every video must have a brief and pass video_gate before any render** (draft or final).
+Build to the mandatory rules above from the start. Then write the brief and run video_gate as the backup check before any render.
+
+Technique library: `techniques/` (one recipe per file) + `techniques/registry.json`. Choose by name; unknown names fail the gate.
 
 1. Read `references/RULEBOOK.md` (Matt's locked rules; wins over every other skill).
 2. Pick the type card in `rules/VIDEO_TYPES.md`: listing, market_update, news_civic, closing, neighborhood_spotlight, buyer_ad, brand_film, story_teaser. Every card = hook, intro, body, payoff, end card.

@@ -1,17 +1,90 @@
 {
-  "video_type": "market_update",
-  "title": "Bend under asking",
-  "hook": {"text": "7 IN 10 UNDER ASKING", "time_s": 1.2},
-  "length_s": 24,
-  "numbers": [
-    {"on_screen": "69%", "value": 0.69, "definition": "closed sales below final list price", "window": "2026-07-15 to 2026-10-12", "geography": "City of Bend", "property_type": "houses, townhomes, condos", "source": "data/bend_under_ask.sql", "hero": true},
-    {"on_screen": "1 IN 2", "value": 0.5, "definition": "September closings with a price cut", "window": "2026-09-01 to 2026-09-30", "geography": "City of Bend", "property_type": "houses, townhomes, condos", "source": "data/bend_cuts.sql", "hero": true}
+ "video_type": "market_update",
+ "title": "Bend under asking",
+ "hook": {
+  "text": "7 IN 10 UNDER ASKING",
+  "time_s": 1.2
+ },
+ "length_s": 24,
+ "numbers": [
+  {
+   "on_screen": "69%",
+   "value": 0.69,
+   "definition": "closed sales below final list price",
+   "window": "2026-07-15 to 2026-10-12",
+   "geography": "City of Bend",
+   "property_type": "houses, townhomes, condos",
+   "source": "data/bend_under_ask.sql",
+   "hero": true
+  },
+  {
+   "on_screen": "1 IN 2",
+   "value": 0.5,
+   "definition": "September closings with a price cut",
+   "window": "2026-09-01 to 2026-09-30",
+   "geography": "City of Bend",
+   "property_type": "houses, townhomes, condos",
+   "source": "data/bend_cuts.sql",
+   "hero": true
+  }
+ ],
+ "footage": [
+  {
+   "kind": "phone_footage",
+   "path": "footage/old_mill_walk.mp4",
+   "rights": "matt_owned"
+  },
+  {
+   "kind": "map_render",
+   "path": "render/bend_map.html",
+   "rights": "generated_own"
+  }
+ ],
+ "end_card": {
+  "spec": "templates/END_CARD_SPEC.md",
+  "phone": "541.703.3095"
+ },
+ "caption": "Most Bend homes sold under asking this summer. Room to negotiate.",
+ "music": {
+  "song": "TBD by Matt",
+  "picker_start": "1:04",
+  "cue_json": "cues/song.json",
+  "lyric_check": "clean"
+ },
+ "spec_rules": {
+  "hook_by_s": 1.2,
+  "length_s_range": [
+   15,
+   30
   ],
-  "footage": [
-    {"kind": "phone_footage", "path": "footage/old_mill_walk.mp4", "rights": "matt_owned"},
-    {"kind": "map_render", "path": "render/bend_map.html", "rights": "generated_own"}
+  "real_footage": true,
+  "real_numbers_count": 2,
+  "sound_off_readable": true,
+  "captions": {
+   "style": "tiktok_burned_in",
+   "synced_to_vo": true
+  },
+  "voiceover": {
+   "voice": "female",
+   "tone": "warm_conversational",
+   "engine": "elevenlabs_v3",
+   "script_follows_engine_rules": true,
+   "script": "Seven in ten Bend homes... sold UNDER asking."
+  },
+  "loopable": true,
+  "end_card_sequence": [
+   "logo",
+   "Quality / Local / Service",
+   "Call now 541.703.3095"
   ],
-  "end_card": {"spec": "templates/END_CARD_SPEC.md", "phone": "541.703.3095"},
-  "caption": "Most Bend homes sold under asking this summer. Room to negotiate.",
-  "music": {"song": "TBD by Matt", "picker_start": "1:04", "cue_json": "cues/song.json", "lyric_check": "clean"}
+  "topic_cta": {
+   "placement": "none"
+  },
+  "no_top_team_wording": true,
+  "no_price_closed_flash": true,
+  "same_process_any_tool": true
+ },
+ "techniques": [
+  "eased_number_reveal"
+ ]
 }
