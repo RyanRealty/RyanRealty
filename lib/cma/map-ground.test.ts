@@ -122,4 +122,33 @@ describe('subdivision and parent names stay on the map', () => {
       expect.arrayContaining(['Countryside', 'Northwest Crossing', 'River West', 'Bend', 'Redmond', 'Tumalo']),
     )
   })
+
+  it('wraps a long plat name so each painted line stays inside the map', () => {
+    const name = 'Deschutes River Recreation Homesites Unit 9 Part 2 Blocks 41-61'
+    const pins = [
+      { lat: 44.07, lng: -121.32 },
+      { lat: 44.1, lng: -121.25 },
+    ]
+    const view = fitStaticMapView(pins, { width: 640, height: 360, padding: 46, fractional: true })!
+    const ground = renderMapGroundSvg({
+      view,
+      basemap: null,
+      boundaryRings: [],
+      radius: null,
+      labels: [{ text: name, lat: pins[0]!.lat, lng: pins[0]!.lng, kind: 'subdivision', rank: 80 }],
+      pins,
+    })
+    const block = [...ground.svg.matchAll(/<text ([^>]*)>([\s\S]*?)<\/text>/g)].find((m) => m[2]!.includes('Deschutes'))
+    expect(block).toBeTruthy()
+    const spans = [...block![2]!.matchAll(/<tspan[^>]*>([^<]*)<\/tspan>/g)].map((m) => m[1]!)
+    expect(spans.length).toBeGreaterThan(1)
+    expect(spans.join(' ')).toBe(name)
+    const fs = Number(/font-size="([^"]*)"/.exec(block![1]!)?.[1])
+    const x = Number(/ x="([^"]*)"/.exec(` ${block![1]}`)?.[1] ?? /x="([^"]*)"/.exec(block![1]!)?.[1])
+    for (const line of spans) {
+      const w = line.length * fs * 0.58
+      expect(x - w / 2).toBeGreaterThanOrEqual(0)
+      expect(x + w / 2).toBeLessThanOrEqual(view.width)
+    }
+  })
 })

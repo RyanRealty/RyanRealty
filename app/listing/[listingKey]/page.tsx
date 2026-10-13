@@ -73,6 +73,8 @@ import { getPlaceDocumentsForListing } from '@/lib/data/places/getPlaceDocuments
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { buildListingAtlas } from './_v3/listing-atlas'
 import { listingAtlasHeadline } from '@/lib/listing/listing-place-market'
+import { outerRings } from '@/lib/geo/project-svg'
+import { getSubdivisionRing } from '@/lib/data/geo/subdivision-ring'
 import { ListingAroundHere } from '@/components/site/listing-detail/ListingAroundHere'
 import { SchoolsBlock } from '@/components/site/listing-detail/SchoolsBlock'
 import { ListingAskInstrument } from '@/components/site/listing-detail/ListingAskInstrument'
@@ -84,6 +86,7 @@ import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-left
 import { ListingSimilarStrip } from '@/components/site/listing-detail/ListingSimilarStrip'
 import {
   listingHeroMapPins,
+  listingHeroSubdivisionRings,
   listingSimilarActive,
   listingSimilarDedupe,
   listingSimilarInPlace,
@@ -562,18 +565,39 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
       : row,
   )
   const inventoryDoor = listingInventoryDoor(placeContext)
-  const placeBoundary = await (async () => {
-    for (const attempt of listingBoundaryAttempts(listing, placeContext)) {
-      const geometry = await withTimeoutFallback(
-        getBoundaryGeoJSON(attempt),
+  const [placeBoundary, subdivisionBoundary] = await Promise.all([
+    (async () => {
+      for (const attempt of listingBoundaryAttempts(listing, placeContext)) {
+        const geometry = await withTimeoutFallback(
+          getBoundaryGeoJSON(attempt),
+          null,
+          1800,
+          `listing:boundary:${attempt.geoType}`,
+        )
+        if (geometry) return geometry
+      }
+      return null
+    })(),
+    (async () => {
+      if (listing.lat == null || listing.lng == null) return null
+      const ring = await withTimeoutFallback(
+        getSubdivisionRing(listing.lat, listing.lng),
         null,
         1800,
-        `listing:boundary:${attempt.geoType}`,
+        'listing:hero-plat',
       )
-      if (geometry) return geometry
-    }
-    return null
-  })()
+      const slug = ring?.homeSlug
+      if (!slug) return null
+      return withTimeoutFallback(
+        getBoundaryGeoJSON({ geoType: 'subdivision', geoSlug: slug }),
+        null,
+        1800,
+        'listing:hero-subdivision',
+      )
+    })(),
+  ])
+  const heroRings = listingHeroSubdivisionRings(outerRings(subdivisionBoundary))
+  const heroBoundary = heroRings.length > 0 ? subdivisionBoundary : null
   const listingAtlas = await buildListingAtlas({
     city: listing.city ?? '',
     citySlug: listing.citySlug ?? null,
@@ -727,7 +751,13 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
       cityLine={listing.city}
       lat={listing.lat}
       lng={listing.lng}
-      nearby={listingHeroMapPins(relatedHomes.nearby)}
+      boundary={heroBoundary}
+      nearby={listingHeroMapPins(
+        relatedHomes.nearby,
+        listing.lat != null && listing.lng != null
+          ? { lat: listing.lat, lng: listing.lng, rings: heroRings }
+          : undefined,
+      )}
       openHouseLabel={
         openHouses[0]
           ? publishOpenHouseBadgeLabel(openHouses[0].event_date, openHouses[0].start_time)

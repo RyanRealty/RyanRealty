@@ -25,7 +25,12 @@ import {
   LEAD_TYPES,
   NON_LEAD_EVENTS,
 } from './lead-event'
-import { attributionParamsFromSearch, leadEventParams, type FireLeadParams } from '@/lib/lead-tracking'
+import {
+  attributionParamsFromSearch,
+  leadEventParams,
+  mergeLeadAttribution,
+  type FireLeadParams,
+} from '@/lib/lead-tracking'
 
 const ROOT = process.cwd()
 
@@ -142,6 +147,16 @@ describe('leadEventParams', () => {
       lp_medium: 'paid_social',
       gclid: 'G1',
       fbclid: 'F1',
+  it('lets client lpContext win over a bare referer so click-around still attributes', () => {
+    const merged = mergeLeadAttribution(
+      { lp_source: 'direct' },
+      { lp_source: 'facebook', lp_medium: 'paid_social', gclid: 'g-1', fbclid: 'f-1' },
+    )
+    expect(merged).toEqual({
+      lp_source: 'facebook',
+      lp_medium: 'paid_social',
+      gclid: 'g-1',
+      fbclid: 'f-1',
     })
   })
 
@@ -213,9 +228,20 @@ describe('generate_lead is server-only and sent in one place', () => {
         // ones it only compares against (`x === 'seller' ? ... : ...`).
         const lits = [...lt[1].matchAll(/(?<![=!]==?\s*)'([a-z_]+)'/g)].map((m) => m[1])
         // contactLeadType() returns LeadType and has its own test above.
-        if (lits.length === 0 && !/^\s*contactLeadType\(/.test(lt[1])) bad.push(`${f.rel}: lead_type is not a literal`)
+        if (
+          lits.length === 0 &&
+          !/^\s*contactLeadType\(/.test(lt[1]) &&
+          !/^\s*(?:input\.)?leadType/.test(lt[1])
+        ) {
+          bad.push(`${f.rel}: lead_type is not a literal`)
+        }
         for (const l of lits) if (!isLeadType(l)) bad.push(`${f.rel}: ${l}`)
-        if (!/form_id:\s*'[a-z_]+'/.test(call)) bad.push(`${f.rel}: no literal form_id`)
+        if (
+          !/form_id:\s*'[a-z_]+'/.test(call) &&
+          !/form_id:\s*(?:input\.)?formId(?:\s*\?\?\s*'[a-z_]+')?/.test(call)
+        ) {
+          bad.push(`${f.rel}: no literal form_id`)
+        }
       }
     }
     expect(bad).toEqual([])

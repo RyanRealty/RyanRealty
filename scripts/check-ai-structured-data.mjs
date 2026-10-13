@@ -180,6 +180,14 @@ const CHECKS = [
       '  and appreciation-calculator siblings.',
   },
   {
+    file: 'app/buy/leverage/page.tsx',
+    label: 'buyer leverage: FAQPage + WebPage + breadcrumb JSON-LD',
+    all: ["type: 'faqPage'", "type: 'webPage'", "type: 'breadcrumb'"],
+    why:
+      'The buyer leverage hub MUST emit FAQPage + WebPage + breadcrumb from the\n' +
+      '  same copy the page prints, so AI assistants can cite live MLS leverage numbers.',
+  },
+  {
     file: 'app/tools/seller-net-sheet/page.tsx',
     label: 'seller net sheet: SoftwareApplication + FAQPage JSON-LD',
     all: ['SoftwareApplication', "type: 'faqPage'"],

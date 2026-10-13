@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
   listingHeroMapPins,
+  listingHeroSubdivisionRings,
   listingSimilarActive,
   listingSimilarDedupe,
   listingSimilarInPlace,
@@ -76,6 +77,43 @@ describe('listingHeroMapPins', () => {
       tile({ listingKey: 'dup', lat: 44.07, lng: -121.31 }),
     ])
     expect(pins).toEqual([{ lat: 44.07, lng: -121.31 }])
+  })
+
+  it('drops a home in another town and keeps one in the subdivision', () => {
+    const square: ReadonlyArray<readonly [number, number]> = [
+      [-121.32, 44.06],
+      [-121.30, 44.06],
+      [-121.30, 44.08],
+      [-121.32, 44.08],
+      [-121.32, 44.06],
+    ]
+    const pins = listingHeroMapPins(
+      [
+        tile({ listingKey: 'in', lat: 44.07, lng: -121.31 }),
+        tile({ listingKey: 'out', lat: 43.68, lng: -121.5 }),
+      ],
+      { lat: 44.07, lng: -121.31, rings: [square] },
+    )
+    expect(pins).toEqual([{ lat: 44.07, lng: -121.31 }])
+  })
+
+  it('refuses a polygon the size of the region', () => {
+    const region: ReadonlyArray<readonly [number, number]> = [
+      [-121.7, 43.7],
+      [-121.1, 43.7],
+      [-121.1, 44.4],
+      [-121.7, 44.4],
+      [-121.7, 43.7],
+    ]
+    expect(listingHeroSubdivisionRings([region])).toEqual([])
+    const pins = listingHeroMapPins(
+      [
+        tile({ listingKey: 'near', lat: 44.071, lng: -121.311 }),
+        tile({ listingKey: 'lapine', lat: 43.68, lng: -121.5 }),
+      ],
+      { lat: 44.07, lng: -121.31, rings: [region] },
+    )
+    expect(pins).toEqual([{ lat: 44.071, lng: -121.311 }])
   })
 })
 

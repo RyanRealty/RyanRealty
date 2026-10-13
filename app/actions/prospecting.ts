@@ -58,6 +58,8 @@ import { ensureNativeLead, enrichNativeLead } from '@/lib/data/crm/ensureNativeL
 import { searchPeopleByName } from '@/lib/data/crm/searchPeople'
 import { attachCmaToPerson } from '@/lib/data/cma/crm'
 import { isSuppressed, isSuppressedByPhone, isSuppressedByEmail } from '@/lib/crm/suppressions'
+import { isIndustryContact } from '@/lib/crm/industry-contact'
+import { readPersonAudienceFields } from '@/lib/data/crm/getPeopleAudienceFields'
 import { smsWindowCloseAtFor } from '@/lib/crm/recipient-timezones'
 import { quietHoursRefusal } from '@/lib/comms/guards'
 import { renderCrmMerge, findUnresolvedMergeTokens, type MergePersonLike } from '@/lib/crm/merge'
@@ -258,6 +260,10 @@ export async function sendProspectingIntro(
     const sup = await isSuppressed(lead.personId, 'sms')
     if (sup.suppressed) {
       return { ok: false, error: `Suppressed for SMS: ${sup.reasons.join(', ') || 'opt-out on file'}.`, code: 'suppressed' }
+    }
+    const industrySms = await readPersonAudienceFields(lead.personId)
+    if (industrySms.error || (industrySms.fields && isIndustryContact(industrySms.fields))) {
+      return { ok: false, error: 'Industry contact — excluded from marketing outreach.', code: 'industry-contact' }
     }
     // F6: value-keyed SMS suppression (an opt-out attached to the number, not a
     // person, e.g. a manual/imported STOP before any person row existed).
@@ -592,6 +598,10 @@ export async function sendProspectingEmailIntro(
     const emailSup = await isSuppressedByEmail(toEmail, 'email')
     if (emailSup.suppressed) {
       return { ok: false, error: `Address suppressed for email: ${emailSup.reasons.join(', ') || 'opt-out on file'}.`, code: 'suppressed' }
+    }
+    const industryEmail = await readPersonAudienceFields(lead.personId)
+    if (industryEmail.error || (industryEmail.fields && isIndustryContact(industryEmail.fields))) {
+      return { ok: false, error: 'Industry contact — excluded from marketing outreach.', code: 'industry-contact' }
     }
 
     // 11. Broker overrides gate: fail-closed on any unresolved %token% (mirrors

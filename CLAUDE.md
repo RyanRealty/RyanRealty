@@ -22,6 +22,8 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
 
+**Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. video_gate is backup.
+
 ---
 
 # Ryan Realty — agent canon

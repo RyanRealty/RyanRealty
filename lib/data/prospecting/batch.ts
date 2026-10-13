@@ -15,6 +15,7 @@ import { emailBlockedByFlags, phoneBlockedByFlags } from '@/lib/prospecting/inta
 import { createServiceClient } from '@/lib/supabase/service'
 import { slugifyAddress } from '@/lib/cma/address-slug'
 import { TAG_CHANNEL } from '@/lib/crm/suppressions'
+import { isIndustryContact } from '@/lib/crm/industry-contact'
 import {
   EXPIRED_OUTREACH_LISTING_SELECT,
   EXPIRED_OUTREACH_STATUS_OR,
@@ -326,8 +327,9 @@ export async function resolveComplianceBatch(
         .from('crm_suppressions')
         .select('person_id, channel, reason')
         .in('person_id', personIds)
-        .in('channel', ['all', 'sms', 'email', 'call']),
-      sb.from('crm_people').select('id, tags').in('id', personIds),
+        .in('channel', ['all', 'sms', 'email', 'call'])
+        .is('cleared_at', null),
+      sb.from('crm_people').select('id, tags, stage').in('id', personIds),
     ])
     if (supRows.error || peopleRows.error) {
       // Fail-closed: every resolvable person is blocked on every channel.
@@ -345,6 +347,11 @@ export async function resolveComplianceBatch(
       for (const p of peopleRows.data ?? []) {
         const pid = Number(p.id)
         const tags = ((p.tags as string[] | undefined) ?? []).map((t) => t.toLowerCase())
+        if (isIndustryContact({ tags: p.tags, stage: (p.stage as string | null) ?? null })) {
+          for (const c of PROSPECT_CHANNELS) {
+            if (!blockedByChannel[c].has(pid)) blockedByChannel[c].set(pid, 'Industry contact')
+          }
+        }
         for (const c of PROSPECT_CHANNELS) {
           const hit = tags.find((t) => TAGS_BY_CHANNEL[c].has(t))
           if (hit && !blockedByChannel[c].has(pid)) blockedByChannel[c].set(pid, reasonForTag(hit))
@@ -381,6 +388,7 @@ export async function resolveComplianceBatch(
       .select('value, channel, reason')
       .in('value', valueKeys)
       .in('channel', ['all', 'sms', 'email', 'call'])
+      .is('cleared_at', null)
     if (valueErr) {
       console.error('[prospecting] resolveComplianceBatch value-keyed suppression failed:', valueErr.message)
       // Fail-closed only for addresses we could not verify — do not wipe the whole page.
