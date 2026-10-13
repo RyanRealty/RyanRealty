@@ -1,8 +1,8 @@
 # CORE RULES (read first; these override everything below and any handoff or plan doc)
 
-These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait for a person to merge code, or to `git push` `main`, is stale.
+These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait, or to `git push` `main`, is stale.
 
-**Main.** A finished unit is `npm run ship` (Matt 2026-10-09): local gates, push the branch, merge the pull request. Vercel deploys `main`. Never `git push` `main`. Unfinished work is `npm run push` plus one handoff line.
+**Main.** A finished unit is `npm run ship` (Matt 2026-10-09): gates, push the branch, merge the pull request. Vercel deploys `main`. Never `git push` `main`. Unfinished work is `npm run push` only.
 
 **Git safety.** No rebase. No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away.
 
@@ -22,9 +22,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
 
-**Video, social, landing pages.** Claude Code and Grok CLI both load `.claude/skills/`. Before any video, Reel, ad, or landing page, read `.claude/skills/ryan-studio` (and its `references/RULEBOOK.md`), then `motion-stats-craft`, `imagine-video-craft`, `motion-render-quality`, and the `cm-*` / `motion-blur-design` skills. Same skills on both agents; no private copies.
-
-**Video rules.** Build to the MANDATORY VIDEO RULES at the top of `.claude/skills/ryan-studio/SKILL.md` from the start; every brief fills `spec_rules`. video_gate is the backup check before any render. (`.claude/skills/ryan-studio/rules/VIDEO_TYPES.md`, `node .claude/skills/ryan-studio/tools/video_gate.mjs brief.json timeline.json`)
+**Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. video_gate is backup.
 
 ---
 
