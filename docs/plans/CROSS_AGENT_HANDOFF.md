@@ -1,6 +1,6 @@
 # Current — 2026-10-13 (Cursor, HTML payload budget)
 
-Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `9c66b81b0` (merged, not rebased). Land path is `npm run ship` after this PR's own CI. `ci:studio-rules` fail was already on main (Node 20 glob); #526 is now merged in. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `cf00abb47` (merged, not rebased). Land path is squash-merge after this PR's own CI. `ci:studio-rules` is green on GitHub Node 20 (#526). Nobody pushes main. Nothing sent.
 
 **What this branch does.** Caps public listing SSR grids at 24 cards (`SSR_GRID_PAGE`; home rails 36). Community homes past 24 load from `GET /api/place/homes`. Search SSR no longer reads cookies (`getSession` / saved / liked); viewer state hydrates after paint so `/homes-for-sale/bend` can use the public `s-maxage=60` header. Listing media flight capped at 24 photos. `ci:page-payload` shrink-only ratchet plus a 200 KB hard fail when serialized unique listing cards exceed one grid page. Community layout untouched (SEO A collision).
 
