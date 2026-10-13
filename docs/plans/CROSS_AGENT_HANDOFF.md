@@ -1,6 +1,6 @@
 # Current — 2026-10-13 (Cursor, HTML payload budget)
 
-Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `6f0b60010` (merged, not rebased). Land path is `npm run ship` after this PR's own CI. Prior CI run 38474087567 was cancelled by @RyanRealty, not a test fail. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `9c66b81b0` (merged, not rebased). Land path is `npm run ship` after this PR's own CI. `ci:studio-rules` fail was already on main (Node 20 glob); #526 is now merged in. Nobody pushes main. Nothing sent.
 
 **What this branch does.** Caps public listing SSR grids at 24 cards (`SSR_GRID_PAGE`; home rails 36). Community homes past 24 load from `GET /api/place/homes`. Search SSR no longer reads cookies (`getSession` / saved / liked); viewer state hydrates after paint so `/homes-for-sale/bend` can use the public `s-maxage=60` header. Listing media flight capped at 24 photos. `ci:page-payload` shrink-only ratchet plus a 200 KB hard fail when serialized unique listing cards exceed one grid page. Community layout untouched (SEO A collision).
 
@@ -11,6 +11,18 @@ Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main
 **Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool`. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `docs/RUN_LOOP.md` (this is payload plumbing, not a site-queue look change).
+
+## Earlier — 2026-10-13 (Cursor, off-market listing noindex + community door, landing)
+
+Surface: Cursor cloud. Branch `cursor/listing-offmarket-noindex-2c0f` rebased onto origin/main `6f0b60010` (#519 one-author JSON-LD; includes #504 Quick facts). PR #513. Matt approved merge. Do not `git push` main. Nothing sent.
+
+**What this branch does.** Closed / Expired / Canceled / Withdrawn listing pages ship `noindex, follow`. When the home belongs to a registry community the HTML canonical is that `/communities/<slug>` page. Pending stays indexed. Active listings keep `index, follow` and print a prominent "{Name} homes for sale" door to the community page. `listings.xml` already ships Active/AUC only; sitemap, nav, and llms.txt were not touched. Quick facts from #504 is kept.
+
+**Verified on Brasada.** Active MLS 220229872: `index, follow`, self-canonical, door "Brasada Ranch homes for sale" → `/communities/brasada-ranch`. Closed MLS 220224479: `noindex, follow`, canonical `https://ryan-realty.com/communities/brasada-ranch`, HTTP 200.
+
+**Not this change.** Do not send. Do not apply hosted SQL.
+
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §3a (registry communities), `AGENTS.md` CORE RULES.
 
 ## Earlier — 2026-10-13 (Cursor, one business + one author JSON-LD)
 

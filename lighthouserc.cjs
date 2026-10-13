@@ -125,7 +125,7 @@
 // failing on a stale URL.
 const LISTING_URL =
   process.env.LHCI_LISTING_URL ||
-  "http://127.0.0.1:3000/homes-for-sale/bend/tetherow/61281-mcroberts-220218727"
+  "http://127.0.0.1:3000/homes-for-sale/bend/tetherow/19345-roswell-220219277"
 
 // Shared across every tier — none of these showed the kind of route-by-route
 // spread that justifies per-tier numbers (see header comment for the
