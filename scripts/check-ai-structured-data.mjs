@@ -180,6 +180,14 @@ const CHECKS = [
       '  and appreciation-calculator siblings.',
   },
   {
+    file: 'app/buy/leverage/page.tsx',
+    label: 'buyer leverage: FAQPage + WebPage + breadcrumb JSON-LD',
+    all: ["type: 'faqPage'", "type: 'webPage'", "type: 'breadcrumb'"],
+    why:
+      'The buyer leverage hub MUST emit FAQPage + WebPage + breadcrumb from the\n' +
+      '  same copy the page prints, so AI assistants can cite live MLS leverage numbers.',
+  },
+  {
     file: 'app/tools/seller-net-sheet/page.tsx',
     label: 'seller net sheet: SoftwareApplication + FAQPage JSON-LD',
     all: ['SoftwareApplication', "type: 'faqPage'"],
@@ -352,6 +360,14 @@ const CHECKS = [
     why:
       'Weekly report pages MUST emit schema.org Report JSON-LD from live report data\n' +
       '  plus a BreadcrumbList, on the canonical /housing-market/reports/[slug] URL.',
+  },
+  {
+    file: 'app/buy/alerts/page.tsx',
+    label: 'buy alerts: WebPage + FAQPage + breadcrumb',
+    all: ["type: 'webPage'", "type: 'faqPage'", "type: 'breadcrumb'"],
+    why:
+      '/buy/alerts MUST emit WebPage + FAQPage + BreadcrumbList via MetadataBlock so\n' +
+      '  the signup is a citable, crawlable listing-alert page.',
   },
 ]
 

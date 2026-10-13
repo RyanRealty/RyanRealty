@@ -99,6 +99,36 @@ describe('placeTakeaways, community variant', () => {
     for (const s of t) expect(s).not.toMatch(/null|NaN|undefined|\$0\b/)
   })
 
+  it('prints Sunriver and Mountain High identity from facts already on those pages', () => {
+    expect(
+      placeTakeaways({
+        variant: 'community',
+        communitySlug: 'sunriver',
+        place: 'Sunriver',
+        asOfLabel: AS_OF,
+        saleMedian: { value: 800_000, when: 'over the last 12 months' },
+        medianList: 850_000,
+      }),
+    ).toEqual([
+      'Sunriver is a 3,300-acre planned resort community about 15 miles south of Bend, along the Deschutes River, with the first home sites sold in 1968.',
+      'Single-family homes there sold for a median $800,000 over the last 12 months, and the homes for sale on Oct 8, 2026 were asking a median $850,000.',
+      'Every property belongs to the Sunriver Owners Association, and the plan includes three 18-hole golf courses and 34 miles of paved paths.',
+    ])
+    expect(
+      placeTakeaways({
+        variant: 'community',
+        communitySlug: 'mountain-high',
+        place: 'Mountain High',
+        asOfLabel: AS_OF,
+        medianList: 650_000,
+      }),
+    ).toEqual([
+      'Mountain High is a gated south Bend neighborhood off China Hat Road, built around the public nine-hole Old Back Nine.',
+      'The homes for sale on Oct 8, 2026 were asking a median $650,000.',
+      'It is organized into three villages: Alpine, Aspen, and Willow Creek.',
+    ])
+  })
+
   it('writes no dash of any kind', () => {
     for (const s of [...placeTakeaways(BRASADA), ...placeTakeaways(BBR), ...placeTakeaways(TETHEROW), ...placeTakeaways(BROKEN)]) {
       expect(s).not.toMatch(/\u2014|\u2013| -- /)

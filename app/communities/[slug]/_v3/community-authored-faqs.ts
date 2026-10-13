@@ -1,6 +1,7 @@
 /**
  * Authored FAQs for the four resort community pages (SEO & AEO Desk brief
- * 2026-10-08). Same array that buildCommunitySchemas turns into FAQPage, so
+ * 2026-10-08) plus Sunriver and Mountain High (ChatGPT landing pages).
+ * Same array that buildCommunitySchemas turns into FAQPage, so
  * visible text and JSON-LD cannot drift. Bound figures come from the same
  * fields the generated FAQ already prints; a missing or zero value drops its
  * question or clause. Authored HOA questions replace "Does {place} have an HOA?".
@@ -11,7 +12,7 @@ import { formatPriceExact } from '@/lib/format/money'
 import { publicCountState } from '@/lib/listing-status-public'
 import { redirectsAwayFromSearch } from '@/lib/search/publish-place-browse-href'
 import { measuredHoaSentence } from './place-hoa-measured'
-import { isCommunityAnswerSlug } from './community-type-links'
+import { isCommunityLedeSlug } from './community-type-links'
 import type { CommunityFaqItem } from './community-figures'
 
 function money(n: number | null | undefined): string | null {
@@ -365,8 +366,124 @@ function brokenTopFaqs(input: CommunityAuthoredFaqInput): CommunityFaqItem[] {
   return out
 }
 
+function sunriverFaqs(input: CommunityAuthoredFaqInput): CommunityFaqItem[] {
+  const name = input.name
+  const asOf = input.asOfLabel?.trim() || null
+  const out: CommunityFaqItem[] = []
+  const ask = money(input.medianList)
+  const sale = money(input.medianSale12)
+  const closed = count(input.closedCount12)
+  const active = count(input.activeSfr)
+
+  out.push(
+    faq(
+      `Where is ${name}?`,
+      `${name} is a 3,300-acre planned resort community about 15 miles south of Bend, along the Deschutes River. The first home sites sold in 1968. Bend's Old Mill District is about 25 minutes north, and Mt. Bachelor is about 30 minutes via the Cascade Lakes Highway.`,
+    ),
+  )
+
+  const priceBits: string[] = []
+  if (active && ask) {
+    priceBits.push(
+      asOf
+        ? `On ${asOf}, ${active.toLocaleString('en-US')} single-family homes were for sale in ${name} at a median asking price of ${ask}`
+        : `${active.toLocaleString('en-US')} single-family homes were for sale in ${name} at a median asking price of ${ask}`,
+    )
+  } else if (ask) {
+    priceBits.push(
+      asOf
+        ? `On ${asOf}, single-family homes for sale in ${name} were asking a median ${ask}`
+        : `Single-family homes for sale in ${name} were asking a median ${ask}`,
+    )
+  }
+  if (priceBits.length > 0) {
+    let answer = `${priceBits[0]}.`
+    if (closed && sale) {
+      answer += ` Over the last 12 months ${closed.toLocaleString('en-US')} sold, at a median ${sale}.`
+    } else if (sale) {
+      answer += ` Over the last 12 months they sold at a median ${sale}.`
+    }
+    out.push(faq(`How much are ${name} homes for sale?`, answer, mlsSource(asOf)))
+  }
+
+  out.push(
+    faq(
+      `What are HOA dues in ${name}?`,
+      `Every ${name} property belongs to the Sunriver Owners Association. Membership is automatic. For 2026 the maintenance fee is $172.94 a month, or $2,075.28 a year, on every lot. Some condos and townhomes also pay a sub-association, and an invoice above that figure may still include a SHARC assessment or bulk fiber. Confirm the current amount with the association before you buy.`,
+    ),
+  )
+  return out
+}
+
+function mountainHighFaqs(input: CommunityAuthoredFaqInput): CommunityFaqItem[] {
+  const name = input.name
+  const asOf = input.asOfLabel?.trim() || null
+  const out: CommunityFaqItem[] = []
+  const ask = money(input.medianList)
+  const sale = money(input.medianSale12)
+  const closed = count(input.closedCount12)
+  const active = count(input.activeSfr)
+
+  out.push(
+    faq(
+      `Where is ${name}?`,
+      `${name} is a gated south Bend neighborhood off China Hat Road, built around the public nine-hole Old Back Nine. It is organized into three villages: Alpine, Aspen, and Willow Creek.`,
+    ),
+  )
+
+  const priceBits: string[] = []
+  if (active && ask) {
+    priceBits.push(
+      asOf
+        ? `On ${asOf}, ${active.toLocaleString('en-US')} single-family homes were for sale in ${name} at a median asking price of ${ask}`
+        : `${active.toLocaleString('en-US')} single-family homes were for sale in ${name} at a median asking price of ${ask}`,
+    )
+  } else if (ask) {
+    priceBits.push(
+      asOf
+        ? `On ${asOf}, single-family homes for sale in ${name} were asking a median ${ask}`
+        : `Single-family homes for sale in ${name} were asking a median ${ask}`,
+    )
+  } else if (active) {
+    priceBits.push(
+      asOf
+        ? `On ${asOf}, ${active.toLocaleString('en-US')} single-family homes were for sale in ${name}`
+        : `${active.toLocaleString('en-US')} single-family homes were for sale in ${name}`,
+    )
+  }
+  if (priceBits.length > 0) {
+    let answer = `${priceBits[0]}.`
+    if (closed && sale) {
+      answer += ` Over the last 12 months ${closed.toLocaleString('en-US')} sold, at a median ${sale}.`
+    } else if (closed) {
+      answer += ` Over the last 12 months ${closed.toLocaleString('en-US')} sold.`
+    } else if (sale) {
+      answer += ` Over the last 12 months they sold at a median ${sale}.`
+    }
+    out.push(faq(`How much are ${name} homes for sale?`, answer, mlsSource(asOf)))
+  }
+
+  if (input.hoaMonthly && input.hoaAnnual && input.hoaReported) {
+    out.push(
+      faq(
+        `What are HOA dues in ${name}?`,
+        measuredHoaSentence(name, input.hoaMonthly, input.hoaAnnual, input.hoaReported),
+        'regional MLS, detached listings that reported dues since October 2023',
+      ),
+    )
+  }
+
+  out.push(
+    faq(
+      `Is the golf course at ${name} open to the public?`,
+      `Yes. The Old Back Nine is a public nine-hole course inside the neighborhood. You do not need to own a home here or join a club to book a tee time, and owners do not have to golf to live here.`,
+    ),
+  )
+  return out
+}
+
 export function communityAuthoredFaqs(input: CommunityAuthoredFaqInput): CommunityFaqItem[] {
-  if (!isCommunityAnswerSlug(input.slug) || !input.name.trim()) return []
+  if (!isCommunityLedeSlug(input.slug) || !input.name.trim()) return []
   switch (input.slug) {
     case 'brasada-ranch':
       return brasadaFaqs(input)
@@ -376,6 +493,10 @@ export function communityAuthoredFaqs(input: CommunityAuthoredFaqInput): Communi
       return tetherowFaqs(input)
     case 'broken-top':
       return brokenTopFaqs(input)
+    case 'sunriver':
+      return sunriverFaqs(input)
+    case 'mountain-high':
+      return mountainHighFaqs(input)
     default:
       return []
   }

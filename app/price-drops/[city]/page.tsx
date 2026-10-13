@@ -173,6 +173,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
       body: `Active single-family homes in ${cityName} whose asking price fell in the last 7 days. Drop is previous list price to current list price.`,
     },
     { label: 'All Central Oregon price drops', href: '/price-drops' },
+    { label: 'Listing alerts', href: '/buy/alerts' },
     { label: `Homes for sale in ${cityName}`, href: homesForSalePath(cityName) },
     { label: `Open houses in ${cityName}`, href: `/open-houses/${citySlug}` },
     ...siblingItems,

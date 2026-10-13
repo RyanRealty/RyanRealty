@@ -73,6 +73,7 @@ Content is the point. **URLs** are what we cut.
 | Our listings | `/our-homes` | Broker inventory. |
 | Commercial space for lease | `/commercial-space-for-lease` | Every active commercial lease (MLS G) in Central Oregon, grouped by town, each rent with its unit or "Lease rate not published" (Matt 2026-09-23). A lease is not for sale, so it is never in Homes or a for-sale count. No menu slot: every place page's "Commercial space for lease" section links here, and the sitemap lists it. Unit rule: [`PLACE_PAGES.md`](PLACE_PAGES.md). |
 | Invest | `/invest` | Income property. Honest that Bend often does not cash-flow on LTR. |
+| Buyer leverage | `/buy/leverage` | Live MLS numbers: buyers have leverage in Bend on price cuts and first asks. Paid-ad destination. |
 | Market | `/housing-market`, `/housing-market/central-oregon`, `/housing-market/[city]`, `/how-we-get-our-numbers` | One knowledge engine. |
 | Reports | `/housing-market/reports` + published slugs | Only real reports. |
 | Blog | `/blog`, `/blog/[slug]` | Words. Attach to Market. |
