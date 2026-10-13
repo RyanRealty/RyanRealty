@@ -51,3 +51,10 @@ test('registry: every technique has a recipe file', () => {
   const reg = JSON.parse(readFileSync(join(here, '..', '..', 'techniques', 'registry.json'), 'utf8')).techniques;
   for (const [n, v] of Object.entries(reg)) assert.ok(readFileSync(join(here, '..', '..', 'techniques', v.file), 'utf8').includes('## Recipe'), n);
 });
+
+test('footage rights list: Snowdrift is cleared for ads, unknown sources fail', () => {
+  const b = pb(); b.special_ad_category = 'housing'; b.footage.push({ kind: 'stock_licensed', path: 'assets/Area Guide - Bend - 03.JPG', rights: 'licensed' });
+  assert.doesNotMatch(fails(b), /footage_rights|not cleared/);
+  const c = pb(); c.footage.push({ kind: 'stock_licensed', path: 'x.mp4', rights: 'licensed', source: 'random_vendor' });
+  assert.match(fails(c), /not in rights\/footage_rights.json/);
+});

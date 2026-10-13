@@ -126,6 +126,17 @@ export function gate(brief, timeline, cfg) {
     if (JSON.stringify(sr.end_card_sequence) !== JSON.stringify(EC)) fail('End card must be: logo, then Quality / Local / Service, then Call now 541.703.3095.');
     if (sr.topic_cta?.text && sr.topic_cta.placement !== 'own_card_before_end_card') fail('A topic CTA gets its own card before the end card, never in place of it.');
   }
+
+  // Footage rights list (rights/footage_rights.json)
+  let rl = {}; try { rl = JSON.parse(readFileSync(join(here, '..', 'rights', 'footage_rights.json'), 'utf8')).sources || {}; } catch { fail('rights/footage_rights.json missing.'); }
+  const use = brief.special_ad_category || brief.use === 'ads' ? 'ads' : 'organic';
+  for (const f of (brief.footage || [])) {
+    let src = f.source;
+    if (!src) for (const [k, v] of Object.entries(rl)) if ((v.match || []).some((m) => String(f.path || '').toLowerCase().includes(m))) src = k;
+    if (!src) continue;
+    if (!rl[src]) fail(`Footage ${f.path}: source "${src}" is not in rights/footage_rights.json.`);
+    else if (!(rl[src].cleared_for || []).includes(use)) fail(`Footage ${f.path}: ${rl[src].name} is not cleared for ${use}.`);
+  }
   // Technique library
   let reg = {}; try { reg = JSON.parse(readFileSync(join(here, '..', 'techniques', 'registry.json'), 'utf8')).techniques || {}; } catch { fail('techniques/registry.json missing.'); }
   if (!Array.isArray(brief.techniques) || !brief.techniques.length) fail('Brief needs "techniques": names from techniques/registry.json.');
