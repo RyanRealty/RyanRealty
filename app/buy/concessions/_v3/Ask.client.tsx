@@ -9,7 +9,7 @@ import { FormAdConsentNotice, FormAdCookieBox, useFormConsentRestricted } from '
 import { writeFormAdConsent } from '@/lib/identity/form-ad-consent'
 import { getLpContext, readRrSessionId } from '@/lib/tracking'
 import { submitConcessionsLead } from '../actions'
-import { ASK_CTA, TIMELINE_OPTIONS, TRAP } from './constants'
+import { ASK_CTA, ASK_LEDE, TIMELINE_OPTIONS, TRAP } from './constants'
 import './concessions-ask.css'
 
 const FIELDS: V3AskField[] = [
@@ -95,7 +95,7 @@ export function ConcessionsAsk() {
         eyebrow="Work with a broker"
         heading="Get a concession plan for your offer"
         headingLevel={2}
-        lede="Tell us where you are in your search. A broker will help you ask for a concession that fits your loan."
+        lede={ASK_LEDE}
         fields={FIELDS}
         consent={
           <>

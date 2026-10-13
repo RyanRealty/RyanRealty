@@ -11,7 +11,18 @@ export const DESCRIPTION =
 export const HERO_HEADLINE = 'Buyers have leverage in Bend.'
 
 export const HERO_LEDE =
-  'At least 1 in 2 Bend sales in the last 90 days came with a seller concession. Used to buy down your rate, that credit can lower your monthly payment more than the same dollars off the price.'
+  "So, here's the thing. At least 1 in 2 Bend sales in the last 90 days came with a seller concession. Put toward your rate, that money can lower your payment more than the same dollars off the price."
+
+// Static figures: checked against comparePriceCutVsConcession(DEFAULT_COMPARE, 7.40%):
+// price cut saves $55.39/mo, concession buydown saves $169.07/mo. Re-check if the
+// default scenario or the fallback PMMS rate changes.
+export const CALCULATOR_INTRO =
+  "Same $10,000, two ways. Off the price, it's about $55 a month. Toward your rate, it's about $169 a month (at 7.40%, Freddie Mac, Oct 8). Try your own numbers."
+
+export const CAPS_INTRO = 'Every loan has a cap on concessions. Your lender will know yours.'
+
+export const ASK_LEDE =
+  "Tell us where you are in your search. We'll help you ask for a concession that fits your loan."
 
 export const LENDER_LINE = 'Not lending advice. Talk to your lender.'
 

@@ -45,6 +45,8 @@ import {
   DESCRIPTION,
   HERO_HEADLINE,
   HERO_LEDE,
+  CALCULATOR_INTRO,
+  CAPS_INTRO,
   LENDER_LINE,
   PHONE_HREF,
   PHONE_LABEL,
@@ -184,6 +186,7 @@ export default async function BuyConcessionsPage() {
           headingId="calculator-heading"
           eyebrow="Payment"
           heading="Price cut vs the same dollars as a concession"
+          lede={CALCULATOR_INTRO}
         >
           <ConcessionsCalculator
             initialPrice={DEFAULT_COMPARE.price}
@@ -220,6 +223,7 @@ export default async function BuyConcessionsPage() {
             description: RULES_REQUIRED_LINE,
           }}
           items={capItems}
+          note={CAPS_INTRO}
           source="Fannie Mae Selling Guide B3-4.1-02 (fetched 2026-10-13). FHA HUD Handbook 4000.1, VA Lenders Handbook M26-7 ch.8, USDA HB-1-3555 ch.6, and RESPA 12 USC 2607 were not re-fetched this session; verify with your lender."
         />
 

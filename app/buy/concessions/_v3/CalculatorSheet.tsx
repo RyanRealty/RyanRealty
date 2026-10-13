@@ -12,10 +12,11 @@ type Props = {
   headingId: string
   eyebrow: string
   heading: string
+  lede?: string
   children: ReactNode
 }
 
-export function CalculatorSheet({ id, headingId, eyebrow, heading, children }: Props) {
+export function CalculatorSheet({ id, headingId, eyebrow, heading, lede, children }: Props) {
   return (
     <section
       id={id}
@@ -28,6 +29,7 @@ export function CalculatorSheet({ id, headingId, eyebrow, heading, children }: P
         <V3Heading id={headingId} level={2}>
           {heading}
         </V3Heading>
+        {lede ? <p className="concessions-calc__intro">{lede}</p> : null}
       </header>
       {children}
     </section>

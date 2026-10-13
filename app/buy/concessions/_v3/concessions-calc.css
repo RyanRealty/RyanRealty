@@ -94,3 +94,9 @@
   margin: 0;
   font-size: 1rem;
 }
+
+.concessions-calc__intro {
+  margin: var(--v3-space-2, 0.5rem) 0 0;
+  max-width: 60ch;
+  color: var(--v3-navy-70);
+}
