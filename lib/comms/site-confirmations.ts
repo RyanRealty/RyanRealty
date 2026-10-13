@@ -176,12 +176,17 @@ export async function sendAlertConfirmation(params: {
     // that begins const home, and the contract test anchors its
     // promises-no-feed slice on that exact line.
     const watched = what || 'that home'
+    const areaWatch = !params.listingUrl
     const bodyText = [
       greet(params.firstName),
       '',
-      `We are watching the price on ${watched}.`,
+      areaWatch
+        ? `We are watching the price on homes in ${watched}.`
+        : `We are watching the price on ${watched}.`,
       '',
-      'If the seller changes it, you get one email about that change. Nothing else, and you can stop it from any of them.',
+      areaWatch
+        ? 'If a seller changes the asking price, you get one email about that change. Nothing else, and you can stop it from any of them.'
+        : 'If the seller changes it, you get one email about that change. Nothing else, and you can stop it from any of them.',
       params.listingUrl ? `\nThe home: ${params.listingUrl}` : null,
       '',
       `${signer.firstName} can tell you what comparable homes actually closed at, and whether this one is priced to sit. Pick a time whenever you want one: ${signer.bookHref}`,

@@ -1,10 +1,11 @@
 'use client'
 
 /**
- * Price-drop pages' on-page ask. Same capture contract as KbCommunityAlerts
- * on these routes: submitSearchAlertSignup, field `email`, filters as passed.
- * Product is new matching listings, not a price-drop digest.
- * Trap `company` is the honeypot the action already checks.
+ * Price-drop pages' on-page ask. Same capture contract as the other listing
+ * alerts: submitSearchAlertSignup, field `email`, company trap. The row is a
+ * price-cut watch (price_change on, everything else off), not a new-listing
+ * feed. Ads consent and gclid/fbclid/utm ride the same path as /sell and
+ * /contact. generate_lead stays lead_type + form_id only.
  */
 
 import { useCallback, useMemo, useRef, useState } from 'react'
@@ -17,6 +18,9 @@ import {
   buildGuestWatchFromPlace,
   rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
+import { FormAdConsentNotice, FormAdCookieBox, useFormConsentRestricted } from '@/components/site/FormAdConsent'
+import { writeFormAdConsent } from '@/lib/identity/form-ad-consent'
+import { PRICE_DROP_ALERT_EVENTS } from './drops-constants'
 
 type Status = 'asking' | 'sending' | 'sent' | 'failed'
 
@@ -31,20 +35,27 @@ export function PriceDropAlertsSheet({
 }) {
   const [status, setStatus] = useState<Status>('asking')
   const [problem, setProblem] = useState<string>('')
+  const [adCookies, setAdCookies] = useState(false)
+  const [adMatch, setAdMatch] = useState(false)
   const answersRef = useRef<Record<string, string>>({})
   const filters = useMemo(() => extraFilters ?? {}, [extraFilters])
+  const restricted = useFormConsentRestricted()
 
   const send = useCallback(
     async (answers: Readonly<Record<string, string>>) => {
       setStatus('sending')
       const payloadFilters: Record<string, string> = { ...filters }
       if (city) payloadFilters.city = city
+      writeFormAdConsent(adCookies) // hydration-safe: submit handler, not render
       try {
         const result = await submitSearchAlertSignup({
           email: answers.email ?? '',
           filters: payloadFilters,
           company: answers.company ?? '',
           sessionId: readRrSessionId(), // hydration-safe
+          events: { ...PRICE_DROP_ALERT_EVENTS },
+          ...(restricted && adMatch ? { adMatchConsent: true } : {}),
+          landingSearch: typeof window !== 'undefined' ? window.location.search : '', // hydration-safe: submit handler, not render
         })
         if (result.ok) {
           rememberGuestWatch( // hydration-safe: event/effect storage only
@@ -65,7 +76,7 @@ export function PriceDropAlertsSheet({
         setStatus('failed')
       }
     },
-    [city, filters, placeLabel],
+    [adCookies, adMatch, city, filters, placeLabel, restricted],
   )
 
   const onAdvance = useCallback(
@@ -79,7 +90,7 @@ export function PriceDropAlertsSheet({
 
   const askStep: V3SheetStep = {
     id: 'email',
-    label: `Where should new ${placeLabel} listings go?`,
+    label: `Where should ${placeLabel} price cuts go?`,
     field: {
       kind: 'email',
       name: 'email',
@@ -91,8 +102,8 @@ export function PriceDropAlertsSheet({
       requiredMessage: 'An email is required so the alert has somewhere to land.',
       invalidMessage: 'That address does not look complete.',
     },
-    children: 'One email per new listing. Unsubscribe any time.',
-    advanceLabel: 'Get alerts',
+    children: 'One email per new listing that drops its price. Unsubscribe any time.',
+    advanceLabel: 'Watch price cuts',
   }
 
   const steps: readonly V3SheetStep[] =
@@ -100,12 +111,12 @@ export function PriceDropAlertsSheet({
       ? [
           {
             id: 'sent',
-            label: `Set. New ${placeLabel} listings land by email when they hit the market.`,
-            children: 'Pause from any alert email.',
+            label: `Set. We email you when a ${placeLabel} home drops its asking price.`,
+            children: 'Unsubscribe any time from any alert email.',
           },
         ]
       : status === 'sending'
-        ? [{ id: 'sending', label: 'Setting up your alert.' }]
+        ? [{ id: 'sending', label: 'Setting up your price-drop alert.' }]
         : status === 'failed'
           ? [askStep, { id: 'failed', label: problem, advanceLabel: 'Try again' }]
           : [askStep]
@@ -122,8 +133,8 @@ export function PriceDropAlertsSheet({
   return (
     <V3Sheet
       id="alerts"
-      eyebrow="New listings"
-      heading={`Get new ${placeLabel} listings by email`}
+      eyebrow="Price-drop alerts"
+      heading={`Email me when homes in ${placeLabel} drop their price`}
       trap={{ name: 'company', label: 'Company' }}
       steps={steps}
       currentStepId={currentStepId}
@@ -133,6 +144,18 @@ export function PriceDropAlertsSheet({
         if (id === 'email') setStatus('asking')
       }}
       onAdvance={onAdvance}
+      footer={
+        status === 'sent' || status === 'sending' ? null : (
+          <div className="flex flex-col gap-3">
+            <FormAdCookieBox checked={adCookies} onCheckedChange={setAdCookies} />
+            <FormAdConsentNotice
+              restricted={restricted}
+              adMatchChecked={adMatch}
+              onAdMatchCheckedChange={setAdMatch}
+            />
+          </div>
+        )
+      }
     />
   )
 }
