@@ -42,13 +42,14 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { PriceDropAlertsSheet } from '../_v3/PriceDropAlertsSheet.client'
+import { PriceDropCatalog } from '../_v3/PriceDropCatalog.client'
 import {
   DROPS_ALERT_FILTERS,
   DROPS_CITY_SLUGS,
+  PRICE_DROPS_LIST_LIMIT,
   cityLabel,
   dropsTrace,
   dropsUnavailable,
-  medianPositive,
 } from '../_v3/drops-constants'
 import { priceDropFieldItems } from '../_v3/drops-field-items'
 import { priceDropDistribution } from '../_v3/drops-drawing'
@@ -91,17 +92,14 @@ export default async function PriceDropsCityPage({ params }: Props) {
   const path = `/price-drops/${citySlug}`
 
   // @prerender-db-ok getPriceDrops is makeResilientCached: it never rejects, a failed read is `degraded`.
-  const { drops, total, cap, fetchedAt, degraded } = await getPriceDrops({
+  const { drops, total, cap, totalReduced, medianDropPct, fetchedAt, degraded } = await getPriceDrops({
     city: cityName,
-    limit: 48,
+    limit: PRICE_DROPS_LIST_LIMIT,
     days: 7,
   })
 
   // Unknown is not empty: this copy stands for a minute, not the whole window.
   if (degraded) await refuseDegradedIsr(`price-drops/${citySlug}`, ['getPriceDrops'])
-
-  const totalReduced = drops.reduce((sum, d) => sum + (d.lastDropAmount ?? 0), 0)
-  const medianDropPct = medianPositive(drops.map((d) => d.lastDropPct))
   const fieldItems = priceDropFieldItems(drops)
   const distribution = priceDropDistribution({
     drops,
@@ -237,6 +235,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
                   label={`${cityName} price cuts by how far the ask came down`}
                 />
               ) : null}
+              <PriceDropCatalog items={fieldItems} showCityFilter={false} />
             </div>
             <V3SourceLine
               className={`${V3_ROOT_CLASS} pd-source`}

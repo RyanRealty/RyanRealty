@@ -1,34 +1,40 @@
-# Current — 2026-10-13 (Cursor, make main CI green)
+# Current — 2026-10-13 (Cursor, rebase #512 onto main)
 
-Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` merged origin/main `6a9b37fb6` (#520, #521, #498, #531). PR #532. Fix the red required checks, then squash-merge. Nothing sent. Nobody pushes main.
+Surface: Cursor cloud. Branch `cursor/price-drops-accuracy-61bb` rebased onto origin/main `f1058b79d` (after #502, #516/#518, #499, #515, #519, #526, #513, #520, #521, #498, #531, #532, #505). Nothing sent. Production DB stayed read-only.
 
-**What this commit does.** `ci:studio-rules` names `video_gate.test.mjs` and `video_render_gate.test.mjs` so both run on Node 20 and Node 22 (directory form is MODULE_NOT_FOUND on 22; glob form is not found on 20). `ci:tests-wired` now sees those skill-local files and counts them wired. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150 `tetherow-golf-aerial.jpg`) instead of a 1920 `asset_library` pick, so content-floor heroImageNatural stays 3780 (reverts the 1728 floor #520 set). `ci:public-listing-status` and `ci:claude-canon` already pass on this tip.
+**What this branch does.** `/price-drops` counts only honest currently-active asking-price cuts. Cuts over 40% and ~10x decimal-shift typos are withheld (Hunnell 90%). #510's >50% typo guard, MLS-number dedupe, and `ci:private-remarks` / `ci:deals-copy` / `ci:imagine-no-paid-api` stay. Signup is a price-drop alert on the #502 listing-alert path (events + ads consent + landingSearch), through #505's `submit-alert-signup` wrapper, without dropping buy/alerts formId / lpContext. Studio-rules keeps main #532 named test files so Node 20 and Node 22 both run.
 
-**Not this change.** Do not send. Do not apply hosted SQL. Do not merge the phase-pool branch. Do not rebuild letters.
+**Not this change.** Do not send alerts. Do not apply SQL. Do not rebuild letters. Do not resend the 2026-10-11 letters.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `scripts/check-claude-canon.mjs`, `scripts/check-tests-wired.mjs`, `scripts/check-public-listing-status.mjs`, `docs/DATABASE_FOR_AI_AGENTS.md` (surface-image read only).
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES.
 
-## Earlier — 2026-10-13 (Cursor, community fold upgrade)
+## Earlier — 2026-10-13 (Cursor, rebase #512 onto main)
 
-Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688`. Landed on main via #521. Do not `git push` main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/price-drops-accuracy-61bb` rebased onto origin/main `9c66b81b0` (after #502, #516/#518, #499, #515, #519, #526, #513). Nothing sent. Production DB stayed read-only.
 
-**What this branch does.** Every `/communities/[slug]` page server-renders above the fold: H1 `{Community} Homes for Sale`, a 2-3 sentence live leftover answer (active count, median list, 12-month median sale, median days to contract) cited `Oregon Data Share MLS, as of <date>`, then the active listing grid, a recently-sold 6-month table, existing HOA/STR/amenities, FAQ, and a Your local broker block to `/team/matthew-ryan`. Title is `{Community} Homes for Sale | {registry city}, OR | Ryan Realty`. Missing or non-positive figures drop their clause. No invented numbers.
+**What this branch does.** `/price-drops` counts only honest currently-active asking-price cuts. Cuts over 40% and ~10x decimal-shift typos are withheld (Hunnell 90%). #510's >50% typo guard, MLS-number dedupe, and `ci:private-remarks` / `ci:deals-copy` / `ci:imagine-no-paid-api` stay. Signup is a price-drop alert on the #502 listing-alert path (events + ads consent + landingSearch), without dropping buy/alerts formId / lpContext. Studio-rules keeps main #526 (`node --test` on the tests directory) so GitHub Node 20 stays green.
 
-Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` (cache / leftover HUD, not raw listings aggregations).
+**Not this change.** Do not send alerts. Do not apply SQL. Do not rebuild letters. Do not resend the 2026-10-11 letters.
+
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES.
 
 ## Earlier — 2026-10-13 (Cursor, off-market listing noindex + community door, landing)
 
-Surface: Cursor cloud. Branch `cursor/listing-offmarket-noindex-2c0f`. Landed on main via #513. Do not `git push` main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/listing-offmarket-noindex-2c0f` merged as #513 onto origin/main after #526. Do not `git push` main. Nothing sent.
 
-**What this branch does.** Closed / Expired / Canceled / Withdrawn listing pages ship `noindex, follow`. When the home belongs to a registry community the HTML canonical is that `/communities/<slug>` page. Pending stays indexed. Active listings keep `index, follow` and print a prominent "{Name} homes for sale" door to the community page.
+**What that branch did.** Closed / Expired / Canceled / Withdrawn listing pages ship `noindex, follow`. When the home belongs to a registry community the HTML canonical is that `/communities/<slug>` page. Pending stays indexed. Active listings keep `index, follow` and print a prominent "{Name} homes for sale" door to the community page. `listings.xml` already ships Active/AUC only.
 
-Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §3a.
+**Verified on Brasada.** Active MLS 220229872: `index, follow`, self-canonical, door "Brasada Ranch homes for sale" → `/communities/brasada-ranch`. Closed MLS 220224479: `noindex, follow`, canonical `https://ryan-realty.com/communities/brasada-ranch`, HTTP 200.
+
+**Not this change.** Do not send. Do not apply hosted SQL.
+
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §3a (registry communities), `AGENTS.md` CORE RULES.
 
 ## Earlier — 2026-10-13 (Cursor, one business + one author JSON-LD)
 
-Surface: Cursor cloud. Branch `cursor/one-author-entity-118d` merged onto origin/main `7a17527a1`. Landed on main via #519. Do not `git push` main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/one-author-entity-118d` merged onto origin/main `7a17527a1` as #519 (`6f0b60010`). Nothing sent.
 
-**What this branch does.** Every BlogPosting author is `{@id: https://ryan-realty.com/team/matthew-ryan#person}`. Person sameAs adds verified Zillow, LinkedIn, Experience.com, YouTube, Instagram. Organization sameAs adds Zillow, Yelp, Experience.com. `/team/matthew-ryan` renders a 400-600 word bio from repo facts (LLC 2014, Bend office June 2023). Homepage title is `Ryan Realty | Bend, Oregon Real Estate Brokerage`. Realtor.com and Homes.com stay off: no verified live person URL.
+**What that branch did.** Every BlogPosting author is `{@id: https://ryan-realty.com/team/matthew-ryan#person}`. Person sameAs adds verified Zillow, LinkedIn, Experience.com, YouTube, Instagram. Organization sameAs adds Zillow, Yelp, Experience.com. `/team/matthew-ryan` renders a 400-600 word bio from repo facts (LLC 2014, Bend office June 2023). Homepage title is `Ryan Realty | Bend, Oregon Real Estate Brokerage`. Realtor.com and Homes.com stay off: no verified live person URL.
 
 **Still open.** Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill. Do not send. Lead-event parse error already landed on main via #516 / #518.
 
@@ -36,7 +42,7 @@ Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES, `CLAUDE.md`
 
 ## Earlier — 2026-10-13 (Cursor, ad copy / voiceover / caption process)
 
-Surface: Cursor cloud. Branch `cursor/ai-voiceover-scripts-8a9c`, merged latest origin/main. Docs only. Landed on main via #507. Nobody pushes main. Nothing rebuilt, nothing sent, nothing approved.
+Surface: Cursor cloud. Branch `cursor/ai-voiceover-scripts-8a9c`, merged latest origin/main. Docs only.
 
 **What this commit does.** Matt's 2026-10-13 ad, voiceover, and caption process now lives in the agent instruction files. New [`docs/ai-voiceover-scripts.md`](../ai-voiceover-scripts.md). AGENTS.md has the section "Ad copy, voiceover and captions" with the six locks. CLAUDE.md keeps main's Video CORE RULES (mandatory rules + `spec_rules`; video_gate is backup) and adds the ad/VO pointer on that same line. VOICE.md adds a spoken-ad note so written site/email/CMA voice stays that file.
 
