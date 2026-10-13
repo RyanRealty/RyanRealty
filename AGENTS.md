@@ -1,21 +1,5 @@
 # CORE RULES (read first; these override everything below and any handoff or plan doc)
 
-## MANDATORY VIDEO RULES (read before making any video; Matt, locked 2026-10-13)
-These are the spec, not a review step. Every brief must fill `spec_rules` in `.claude/skills/ryan-studio/templates/brief.schema.json`; a brief without them is invalid.
-- [ ] Hook lands in the first 1-2 s.
-- [ ] 15-30 s long.
-- [ ] Real footage (plates and maps sit on real footage, never instead of it).
-- [ ] One or two real numbers, each sourced.
-- [ ] Readable with sound off: TikTok-style burned-in captions synced to a female, warm, conversational voiceover.
-- [ ] Loopable (last frame flows into frame 0).
-- [ ] Locked end card: logo, then Quality / Local / Service, then "Call now" 541.703.3095. A topic CTA gets its own card before the end card, never in place of it.
-- [ ] VO script follows the engine's own best practices. ElevenLabs v3: ellipses, audio tags, CAPS for emphasis, numbers spelled out, no break tags. Grok TTS: [pause] / [breath], with_timestamps.
-- [ ] Same process whatever tool runs it (Grok, Claude, Imagine, Cursor).
-- [ ] No "top team" wording. No 3 s clips of a price next to "closed".
-- [ ] Pick techniques by name from `.claude/skills/ryan-studio/techniques/registry.json` and list them in `brief.techniques`.
-`video_gate.mjs` is the backup check that confirms the brief, not the primary enforcement.
-
-
 These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait for a person to merge code, or to `git push` `main`, is stale.
 
 **Main.** A finished unit is `npm run ship` (Matt 2026-10-09): local gates, push the branch, merge the pull request. Vercel deploys `main`. Never `git push` `main`. Unfinished work is `npm run push` plus one handoff line.
@@ -40,7 +24,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Video, social, landing pages.** Claude Code and Grok CLI both load `.claude/skills/`. Before any video, Reel, ad, or landing page, read `.claude/skills/ryan-studio` (and its `references/RULEBOOK.md`), then `motion-stats-craft`, `imagine-video-craft`, `motion-render-quality`, and the `cm-*` / `motion-blur-design` skills. Same skills on both agents; no private copies.
 
-**Video gate.** Every video must have a brief and pass video_gate before any render. (`.claude/skills/ryan-studio/rules/VIDEO_TYPES.md`, `node .claude/skills/ryan-studio/tools/video_gate.mjs brief.json timeline.json`)
+**Video rules.** Build to the MANDATORY VIDEO RULES at the top of `.claude/skills/ryan-studio/SKILL.md` from the start; every brief fills `spec_rules`. video_gate is the backup check before any render. (`.claude/skills/ryan-studio/rules/VIDEO_TYPES.md`, `node .claude/skills/ryan-studio/tools/video_gate.mjs brief.json timeline.json`)
 
 ---
 
