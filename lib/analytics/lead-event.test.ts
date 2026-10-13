@@ -147,6 +147,9 @@ describe('leadEventParams', () => {
       lp_medium: 'paid_social',
       gclid: 'G1',
       fbclid: 'F1',
+    })
+  })
+
   it('lets client lpContext win over a bare referer so click-around still attributes', () => {
     const merged = mergeLeadAttribution(
       { lp_source: 'direct' },
