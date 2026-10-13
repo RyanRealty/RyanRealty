@@ -85,21 +85,21 @@ export async function generateMetadata(): Promise<Metadata> {
       : 'Active homes for sale in '
   const description = `${liveLead}${D11_HOMEPAGE_LEAD} Photographed homes on this page show list price, address, beds, baths, and square feet. Closed comps from the regional MLS.`
   return {
-    title: { absolute: 'Ryan Realty | Bend Oregon Real Estate & Homes for Sale' },
+    title: { absolute: 'Ryan Realty | Bend, Oregon Real Estate Brokerage' },
     description,
     alternates: { canonical: siteUrl },
     openGraph: {
-      title: 'Ryan Realty | Bend Oregon Real Estate & Homes for Sale',
+      title: 'Ryan Realty | Bend, Oregon Real Estate Brokerage',
       description:
         'Active homes for sale in Bend, Redmond, Sisters, and Sunriver. List price, address, beds, baths, and square feet on photographed homes. Closed comps from the regional MLS.',
       url: siteUrl,
       siteName: 'Ryan Realty',
       type: 'website',
-      images: [{ url: ogImage, width: 1200, height: 630, alt: 'Ryan Realty | Bend Oregon Real Estate & Homes for Sale' }],
+      images: [{ url: ogImage, width: 1200, height: 630, alt: 'Ryan Realty | Bend, Oregon Real Estate Brokerage' }],
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'Ryan Realty | Bend Oregon Real Estate & Homes for Sale',
+      title: 'Ryan Realty | Bend, Oregon Real Estate Brokerage',
       description:
         'Active Central Oregon homes for sale. List price, address, beds, baths, and square feet on photographed homes.',
     },

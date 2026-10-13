@@ -1,6 +1,6 @@
 # Current — 2026-10-13 (Cursor, HTML payload budget)
 
-Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `f631e6aba` (merged, not rebased). Land path is `npm run ship` after this PR's own CI. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `6f0b60010` (merged, not rebased). Land path is `npm run ship` after this PR's own CI. Prior CI run 38474087567 was cancelled by @RyanRealty, not a test fail. Nobody pushes main. Nothing sent.
 
 **What this branch does.** Caps public listing SSR grids at 24 cards (`SSR_GRID_PAGE`; home rails 36). Community homes past 24 load from `GET /api/place/homes`. Search SSR no longer reads cookies (`getSession` / saved / liked); viewer state hydrates after paint so `/homes-for-sale/bend` can use the public `s-maxage=60` header. Listing media flight capped at 24 photos. `ci:page-payload` shrink-only ratchet plus a 200 KB hard fail when serialized unique listing cards exceed one grid page. Community layout untouched (SEO A collision).
 
@@ -11,6 +11,16 @@ Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main
 **Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool`. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `docs/RUN_LOOP.md` (this is payload plumbing, not a site-queue look change).
+
+## Earlier — 2026-10-13 (Cursor, one business + one author JSON-LD)
+
+Surface: Cursor cloud. Branch `cursor/one-author-entity-118d` merged onto origin/main `7a17527a1`. User asked squash-merge #519 after its own CI (main-also-fail does not count), then verify production. Do not `git push` main. Nothing sent.
+
+**What this branch does.** Every BlogPosting author is `{@id: https://ryan-realty.com/team/matthew-ryan#person}`. Person sameAs adds verified Zillow, LinkedIn, Experience.com, YouTube, Instagram. Organization sameAs adds Zillow, Yelp, Experience.com. `/team/matthew-ryan` renders a 400-600 word bio from repo facts (LLC 2014, Bend office June 2023). Homepage title is `Ryan Realty | Bend, Oregon Real Estate Brokerage`. Realtor.com and Homes.com stay off: no verified live person URL.
+
+**Still open.** Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill. Do not send. Lead-event parse error already landed on main via #516 / #518.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES, `CLAUDE.md` §0/§2/§7.
 
 ## Earlier — 2026-10-13 (Cursor, ad copy / voiceover / caption process)
 

@@ -383,7 +383,7 @@ describe('months of supply is stored raw, printed through one helper, and graded
     const html = renderInventoryBoardHtml(row)
     expect(html).toContain('an average of 50 sold each month')
     expect(html).toContain('it would take 4.1 months')
-    expect(html).toContain('balanced market territory')
+    expect(html).not.toMatch(/seller's market|buyer's market|balanced market/i)
   })
 
   it('no CMA or BPO sentence prints the figure without the helper', () => {
@@ -465,7 +465,7 @@ describe('one population on the Bend right now page (2026-10-08)', () => {
     const row = bend()
     const html = renderInventoryBoardHtml(row)
     expect(html).toContain(
-      '712 single-family homes are for sale in Bend right now. Over the last six months, an average of 204 sold each month. At that pace it would take 3.5 months to sell what is listed, which is seller&#39;s market territory.',
+      '712 single-family homes are for sale in Bend right now. Over the last six months, an average of 204 sold each month. At that pace it would take 3.5 months to sell what is listed.',
     )
     expect(html).not.toMatch(/712 homes are for sale/)
     expect(html).toContain('Single-family homes for sale in Bend right now')

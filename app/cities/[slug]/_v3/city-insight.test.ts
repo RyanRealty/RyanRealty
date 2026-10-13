@@ -20,10 +20,10 @@ describe('buildCityInsightBoard', () => {
     const board = buildCityInsightBoard({
       placeName: 'Bend',
       marketHref: '/housing-market/bend',
-      verdictProse: "A seller's market.",
+      verdictProse: '3.9 months of supply.',
       months: TWELVE,
     })
-    expect(board.supplyProse).toBe("A seller's market.")
+    expect(board.supplyProse).toBe('3.9 months of supply.')
     expect(board.supplyHref).toBe('/months-of-supply')
     expect(board.supplyHrefLabel).toMatch(/months of supply/i)
   })

@@ -72,10 +72,10 @@ function buildLeverageBullets(
   if (history.totalDeclineFromPeakPct != null && history.totalDeclineFromPeakPct <= -8) {
     out.push(`The asking price is down ${Math.abs(history.totalDeclineFromPeakPct)}% from its peak, a sign of a motivated seller.`)
   }
-  if (market?.marketVerdict) {
+  if (market?.monthsOfSupply != null) {
     out.push(
-      `${market.geoLabel} is a ${market.marketVerdict === 'seller' ? "seller's" : market.marketVerdict === 'buyer' ? "buyer's" : 'balanced'} market${market.monthsOfSupply != null ? ` at ${formatMonthsOfSupply(market.monthsOfSupply)} months of supply` : ''}${
-        market.saleToListRatio != null ? `, where homes close near ${Math.round(market.saleToListRatio * 100)}% of list` : ''
+      `${market.geoLabel} has ${formatMonthsOfSupply(market.monthsOfSupply)} months of supply${
+        market.saleToListRatio != null ? `, with homes closing near ${Math.round(market.saleToListRatio * 100)}% of list` : ''
       }.`,
     )
   }

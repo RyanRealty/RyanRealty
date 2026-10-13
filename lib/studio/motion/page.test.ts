@@ -37,6 +37,9 @@ describe('buildMotionPage', () => {
   it('has an element for every part the renderer drives', () => {
     for (const id of drivenIds(plan)) expect(html).toContain(`id="${id}"`)
     expect(html).toContain('id="lead1-marker"')
+    expect(html).toContain('id="lead1-verdict"')
+    expect(html).toContain('4.1 months of supply')
+    expect(html).not.toMatch(/seller.?s|buyer.?s|balanced market/i)
   })
 
   it('is self-contained: no network reference anywhere in the page', () => {
@@ -73,8 +76,11 @@ describe('buildMotionPage', () => {
       duration: 6,
     })
     const page = buildMotionPage({ plan: at4, width: 1080, height: 1920, assets })
-    expect(page).toMatch(/class="zone on"[^>]*>Seller\u2019s</)
-    expect(page).not.toMatch(/class="zone on"[^>]*>Balanced</)
+    expect(page).toContain('id="lead1-verdict"')
+    expect(page).toContain('4.0 months of supply')
+    expect(page).toMatch(/class="zone on"[^>]*>4 mo</)
+    expect(page).not.toMatch(/class="zone on"[^>]*>6 mo</)
+    expect(page).not.toMatch(/Seller|Buyer|Balanced market/i)
     // The bar fills to the value, not to the zone's edge.
     expect(page).toContain('id="lead1-fill"')
   })

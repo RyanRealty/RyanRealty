@@ -339,7 +339,6 @@ export default async function SellPage() {
       variableMeasured: [
         { name: 'Homes for sale', value: bend.activeCount },
         { name: 'Months of supply', value: bend.mosLabel, unitText: 'months' },
-        { name: 'Market verdict', value: bend.verdictLabel },
       ],
     })
   }
@@ -453,9 +452,9 @@ export default async function SellPage() {
             id="bend-market"
             level={2}
             eyebrow={v3Text('Bend, Oregon')}
-            headline={v3Text(`Bend housing market: a ${bend.verdictLabel}`)}
+            headline={v3Text(`Bend housing market: ${bend.mosLabel} months of supply`)}
             note={v3Text(
-              `${bend.activeCount.toLocaleString('en-US')} detached homes for sale. ${bend.mosLabel} months of supply is a ${bend.verdictLabel}.`,
+              `${bend.activeCount.toLocaleString('en-US')} detached homes for sale. ${bend.mosLabel} months of supply.`,
             )}
             figures={[firstBendFigure, ...restBendFigures]}
             source={v3Text(bendTrace)}

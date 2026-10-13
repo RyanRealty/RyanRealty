@@ -740,7 +740,7 @@ async function renderCommunityDetail({ params }: Props) {
     cityName,
     marketHref: cityReportHref,
     verdictProse:
-      placeMos && hud.monthsSupply != null ? `A ${marketVerdict(hud.monthsSupply).label}.` : null,
+      placeMos && hud.monthsSupply != null ? `${marketVerdict(hud.monthsSupply).label}.` : null,
     floor: supplyFloor
       ? {
           closedSixMonths: supplyFloor.closedSixMonths,

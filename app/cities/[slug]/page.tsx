@@ -651,7 +651,7 @@ async function renderCityDetail({ params }: Props) {
   // the MOS source line (MOS_THRESHOLD_CLAUSE, scripts/check-market-formula.mjs),
   // so the verdict and its rule stay one tap apart without being said twice.
   const foldVerdictProse =
-    mosRaw != null && face.verdict && face.verdict.kind !== 'unknown' ? `A ${face.verdict.label}.` : null
+    mosRaw != null && face.verdict && face.verdict.kind !== 'unknown' ? `${face.verdict.label}.` : null
   const insightBoard = buildCityInsightBoard({
     placeName: cityName,
     marketHref: `/housing-market/${slug}`,

@@ -145,10 +145,8 @@ export function deriveOpinion(
     )
   }
 
-  if (market?.marketVerdict) {
-    reasoning.push(
-      `${market.geoLabel} is a ${market.marketVerdict === 'seller' ? "seller's" : market.marketVerdict === 'buyer' ? "buyer's" : 'balanced'} market${market.monthsOfSupply != null ? ` at ${formatMonthsOfSupply(market.monthsOfSupply)} months of supply` : ''}.`,
-    )
+  if (market?.monthsOfSupply != null) {
+    reasoning.push(`${market.geoLabel} has ${formatMonthsOfSupply(market.monthsOfSupply)} months of supply.`)
   }
 
   return {

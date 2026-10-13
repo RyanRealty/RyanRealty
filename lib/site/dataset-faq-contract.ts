@@ -63,7 +63,7 @@ const RULES: Record<string, Rule> = {
   'Median List Price': { question: /median home price/i, format: price, match: 'any' },
   'Median Sale Price': { question: /median home price/i, format: price, match: 'any' },
   'Active Listings': { question: /are for sale in/i, format: count, match: 'lead' },
-  'Months of Supply': { question: /buyer's or seller's market/i, format: months, match: 'any' },
+  'Months of Supply': { question: /months of supply does .+ have/i, format: months, match: 'any' },
   'Median Days to Pending': { question: /take to sell/i, format: days, match: 'any' },
   'Median Days on Market': { question: /stay on the market/i, format: days, match: 'any' },
   'Homes Sold (12 months)': { question: /homes sold in .+ in the last year/i, format: count, match: 'lead' },

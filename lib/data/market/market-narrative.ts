@@ -129,11 +129,11 @@ export function buildMarketNarrative(s: NarrativeStats): MarketNarrative {
     `${s.geoLabel} closed ${sold} single-family sales ${s.periodLabel}, with a median sale price of ${median}. ` +
     `Prices are ${yoyArrow(s.yoyMedianPriceDeltaPct)}. ` +
     (verdict === 'seller'
-      ? `At ${mosStr} of supply this is a seller's market, so well-priced homes move quickly.`
+      ? `At ${mosStr} of supply, well-priced homes move quickly.`
       : verdict === 'balanced'
-        ? `At ${mosStr} of supply the market is balanced between buyers and sellers.`
+        ? `At ${mosStr} of supply the sales pace and the listings on the market are close.`
         : verdict === 'buyer'
-          ? `At ${mosStr} of supply this is a buyer's market, so buyers have room to negotiate.`
+          ? `At ${mosStr} of supply, buyers have leverage.`
           : `Inventory sits at ${inv} homes at period end.`)
 
   const priceAnalysis =
@@ -156,7 +156,7 @@ export function buildMarketNarrative(s: NarrativeStats): MarketNarrative {
     s.endOfPeriodInventory != null
       ? `There were ${inv} homes for sale at period end, ${yoyArrow(s.yoyInventoryChangePct)}. ` +
         (verdict != null
-          ? `Read against sales, that is ${mosStr} of supply, a ${verdict === 'seller' ? "seller's" : verdict === 'buyer' ? "buyer's" : 'balanced'} market.`
+          ? `Read against sales, that is ${mosStr} of supply.`
           : `A months-of-supply read was not available this period, so weigh that count against how fast homes are selling.`)
       : `End-of-period inventory was not available for ${where}.`
 
@@ -184,11 +184,11 @@ export function buildMarketNarrative(s: NarrativeStats): MarketNarrative {
       a: `The median single-family sale price ${s.periodLabel} was ${median}, ${yoyArrow(s.yoyMedianPriceDeltaPct)}.`,
     },
     {
-      q: `Is ${s.geoLabel} a buyer's or a seller's market?`,
+      q: `How many months of supply does ${s.geoLabel} have?`,
       a:
         verdict != null
-          ? `At ${mosStr} of supply, ${s.geoLabel} is a ${verdict === 'seller' ? "seller's" : verdict === 'buyer' ? "buyer's" : 'balanced'} market. Four months or less favors sellers, four to six is balanced, six or more favors buyers.`
-          : `Supply was close to balanced ${s.periodLabel}. Ask for a current read tailored to your price range.`,
+          ? `${s.geoLabel} has ${mosStr} of supply.`
+          : `A months-of-supply read was not available ${s.periodLabel}. Ask for a current read tailored to your price range.`,
     },
     {
       q: `How fast are homes selling in ${s.geoLabel}?`,
