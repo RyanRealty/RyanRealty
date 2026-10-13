@@ -95,6 +95,7 @@ async function fetchFacts(
     const { data, error } = await supabase
       .from('listing_search_mv')
       .select(columns.join(','))
+      // @canonical-key — listingKey values from getPriceDrops tiles / activity_events.
       .in('listing_key', chunk)
     if (error) throw new Error(`[getPriceDropFacts] listing_search_mv: ${error.message}`)
     for (const row of (data ?? []) as unknown as SearchRow[]) {
@@ -118,6 +119,7 @@ async function fetchFacts(
           .from('activity_events')
           .select('listing_key')
           .eq('event_type', 'price_drop')
+          // @canonical-key — same getPriceDrops listing keys as the MV read.
           .in('listing_key', chunk)
           .order('listing_key', { ascending: true })
           .range(from, to),
