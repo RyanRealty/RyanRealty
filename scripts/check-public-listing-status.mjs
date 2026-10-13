@@ -57,6 +57,13 @@ const ALLOWLIST = new Map([
   // for that classifier has to name the input it classifies. lib/agent/ has no
   // consumer importer — app/api/**, app/admin/** and server actions only.
   ['lib/agent/listing-state.test.ts', 'broker-agent state classifier test — asserts detection, never renders'],
+  // The listing Quick facts publisher refuses a Coming Soon row (the test
+  // asserts null); its implementation reads isPublicOffMarketStatus from the
+  // source of truth and never hardcodes the string.
+  [
+    'lib/listing/publish-listing-quick-facts.test.ts',
+    'quick-facts publisher test — names Coming Soon as an MLS input and asserts the refusal, never renders it',
+  ],
   ['app/actions/sync-spark.ts', 'MLS sync action — must ingest Coming Soon'],
   ['lib/video-tours-listing-videos-join.ts', 'shared row helper; callers apply the public predicate'],
   ['app/marketing/request/deliverables.ts', 'broker marketing-request menu (coming-soon teaser is a broker deliverable)'],
