@@ -304,7 +304,7 @@ describe('submitSearchAlertSignup price-drop watch', () => {
   })
 
   it('falls back to the referer when landingSearch is empty', async () => {
-    h.headerGet.mockImplementation((name: string) =>
+    h.headerGet.mockImplementation((name?: string) =>
       name === 'referer'
         ? 'https://ryan-realty.com/price-drops?gclid=FROMREF&utm_source=facebook'
         : null,
