@@ -18,11 +18,11 @@ vi.mock('next/headers', () => ({
   headers: () => Promise.resolve({ get: (n: string) => h.headers[n.toLowerCase()] ?? null }),
 }))
 vi.mock('@/lib/ga4-measurement-protocol', () => ({
-  fireGa4Event: (...args: unknown[]) => h.fireGa4Event(...args),
+  fireGa4Event: (args: unknown) => h.fireGa4Event(args),
   readGa4ClientIdFromCookies: () => '123.456',
 }))
 vi.mock('@/lib/data/analytics/gaClientId', () => ({
-  rememberGaClientId: (...args: unknown[]) => h.rememberGaClientId(...args),
+  rememberGaClientId: (personId: unknown, clientId: unknown) => h.rememberGaClientId(personId, clientId),
 }))
 
 import { fireLeadGenerated, fireNonLeadEvent } from '@/lib/lead-tracking'

@@ -6,10 +6,10 @@ const h = vi.hoisted(() => ({
 }))
 
 vi.mock('@/lib/ga4-measurement-protocol', () => ({
-  fireGa4Event: (...args: unknown[]) => h.fireGa4Event(...args),
+  fireGa4Event: (args: unknown) => h.fireGa4Event(args),
 }))
 vi.mock('@/lib/crm/idempotency', () => ({
-  withSendIdempotency: (...args: unknown[]) => h.withSendIdempotency(...args),
+  withSendIdempotency: (args: unknown, run: () => Promise<unknown>) => h.withSendIdempotency(args, run),
 }))
 
 import { sendOfflineGa4Conversion } from './send-offline-ga4'
