@@ -44,6 +44,7 @@ vi.mock('@/lib/visitor-backfill', () => ({
 vi.mock('@/lib/ga4-measurement-protocol', () => ({
   fireGa4Event: state.ga4,
   readGa4ClientIdFromCookies: () => null,
+  readGa4SessionFromCookies: () => null,
 }))
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({ auth: { getUser: async () => ({ data: { user: state.user } }) } }),
@@ -62,7 +63,7 @@ const TOKEN = signPersonLinkToken(PERSON, 'document')
 
 beforeEach(() => {
   state.cookies = { rr_vid: 'vid-A' }
-  state.headers = { 'user-agent': HUMAN_UA }
+  state.headers = { 'user-agent': HUMAN_UA, host: 'ryan-realty.com' }
   state.cookieSet.mockReset()
   state.backfill.mockReset()
   state.backfill.mockResolvedValue({ ok: true, sessionFound: true, alreadyIdentified: false, eventsBackfilled: 3, errors: [] })

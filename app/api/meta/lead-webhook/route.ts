@@ -683,6 +683,7 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
   // context has no browser cookies (Meta calls us directly), so the client_id
   // is a fresh uuid; the campaign attribution rides in `extra`. Never throws.
   void fireLeadGenerated({
+    serverToServer: true,
     lp_variant: 'meta-leadgen-form',
     lead_type:
       parsed.audience === 'buyer' ? 'buyer_question' : parsed.audience === 'seller' ? 'seller_listing' : 'contact_general',

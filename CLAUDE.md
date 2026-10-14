@@ -30,7 +30,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Cursor out.** When Cursor is out (usage, credit, spend, 402, or a 20-minute stall), switch to Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve`. Never use `XAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` to get past a limit.
 
-**Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
+**Keep moving.** Unfinished work: push the branch, write your note in `docs/plans/handoffs/`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
 
 **Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. Ad copy, VO, captions: [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). video_gate is backup.
 
@@ -48,7 +48,7 @@ your task touches.
 
 **Fleet start (mandatory before subject tunnels):** read
 [`docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md`](docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md)
-and the current block in [`docs/plans/CROSS_AGENT_HANDOFF.md`](docs/plans/CROSS_AGENT_HANDOFF.md).
+and the newest notes in [`docs/plans/handoffs/`](docs/plans/handoffs/README.md).
 The enterprise map (`docs/plans/ENTERPRISE_MAP/`) is the whole-system SoR for what exists,
 what is verified, and what is open. Subject work (admin, CRM, growth) still runs; it
 does not erase other planes from Sense.
@@ -516,9 +516,8 @@ Launch parallel subagents in one message when the work is independent.
 ## Persistent memory + handoff
 
 Durable cross-session notes live in **`.auto-memory/`**. **Hand off to Cursor / the other agent**
-by updating [`docs/plans/CROSS_AGENT_HANDOFF.md`](docs/plans/CROSS_AGENT_HANDOFF.md) (what
-shipped, what is next, commit SHA, skills you read) before Matt switches tools. The other side
-pulls `main` and reads that file first. See [`AGENTS.md`](AGENTS.md).
+with your own note in [`docs/plans/handoffs/`](docs/plans/handoffs/README.md) (what
+shipped, what is next, commit SHA, skills you read). The loop brief prints the newest. See [`AGENTS.md`](AGENTS.md).
 
 ---
 

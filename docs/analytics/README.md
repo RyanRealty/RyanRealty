@@ -4,6 +4,26 @@
 
 **Never put credentials here.** No API secrets, Measurement Protocol secrets, service-account keys, `.env` values, or access tokens. Public property / container / customer IDs are not secrets.
 
+
+## Start here: every analytics, SEO-measurement or tracking task
+
+1. Read this page to the end. It wins over every older analytics doc, skill and handoff.
+2. Run the live audit before you touch anything, and again after you ship:
+
+   ```bash
+   npm run analytics:audit            # GA4 config + data health, Search Console, GTM live vs code
+   npm run analytics:audit -- --days=7
+   ```
+
+   It is read-only, uses the service account, and prints no credentials. It is the
+   answer to "do we have access" and "is tracking working". Never sign in to Google
+   from a bot browser, and never write a new probe script.
+3. Find your file in the **Registry** below. Extend a registered file. A new file that
+   sends to GA4, or calls the GA4, Search Console or Tag Manager APIs, fails
+   `ci:analytics-registry` until it is added to the Registry with the reason it exists.
+4. Ship through `npm run ship`. Work is done when it is live on ryan-realty.com and the
+   audit shows it.
+
 ---
 
 ## Identifiers (live)
@@ -22,7 +42,8 @@ Env vars (names only): `NEXT_PUBLIC_GA4_MEASUREMENT_ID`, `NEXT_PUBLIC_GTM_CONTAI
 
 ## GA4 property settings (owner decisions)
 
-- **Custom dimensions registered:** `lead_type`, `form_id`, `lp_variant` (event-scoped). Register any new reportable param in GA4 Admin → Data display → Custom definitions before relying on it in Explorations.
+- **Custom dimensions registered:** 32 (30 event-scoped, 2 user-scoped: `assigned_broker`, `lead_status`). They include `lead_type`, `form_id` and `lp_variant`. `npm run analytics:audit` prints the full list. Register any new reportable param in GA4 Admin → Data display → Custom definitions before relying on it in Explorations.
+- **Key events (9):** `generate_lead`, `qualify_lead`, `close_convert_lead`, `call_initiated`, `email_agent`, `cma_anchor_click`, `cma_downloaded`, `tour_requested`, and GA4's built-in `purchase`. Matt removed four that nothing sent (`schedule_showing`, `listing_showing_click`, `listing_inquiry`, `home_valuation_cta_click`) on 2026-10-14; GA4 keeps their history. `scripts/ga4-admin-setup.mjs` holds this list (and `RETIRED_KEY_EVENTS`), so a run never re-adds them. A new key event needs a sender first, and it changes what Google Ads can import: Matt's call.
 - **Primary channel group:** `AI Assistants (Custom)` — includes an **AI Assistants** channel (ChatGPT / Perplexity / similar referral hosts). Do not delete the group.
 - **Google Signals: ON.** Owner decision. Do not disable. (`scripts/ga4-admin-setup.mjs` enables Signals + consented; the older consent doc that said to keep Signals off is stale.)
 - **Data retention:** 14 months (Standard-tier maximum).
@@ -125,6 +146,26 @@ import { pushDataLayerEvent } from '@/lib/analytics/ga4-browser-events'
 
 `lib/ga4-measurement-protocol.ts` → `fireGa4Event`. Used by lead tracking and the visitor-track mirror.
 
+
+### Server events join the visitor's GA4 session (2026-10-14)
+
+Every server sender that runs inside the visitor's request reads one context:
+`lib/analytics/ga4-server-context.ts` → `ga4ServerContext()`. It supplies:
+
+- `client_id` from the `_ga` cookie.
+- `session_id` and `session_number` from the `_ga_<stream>` cookie. `sessionFromGaStreamCookie` parses the GS1 and GS2 formats.
+- `page_location` from the Referer, with identity params stripped.
+- Consent: GPC or a decline means nothing is sent.
+- The same suppression rule the browser tag loader uses (`lib/analytics/ga-suppression.ts`): a broker's own browser, automation, `/admin` and non-production hosts send nothing.
+
+Without `session_id`, GA4 makes every server event a session of its own, with hostname (not set), source (not set) and channel Unassigned. All 117 `generate_lead` events from 2026-09-15 to 2026-10-13 landed that way. Source: GA4 Data API, property 527333348, `eventName = generate_lead` by `hostName`, read 2026-10-14. The fix shipped in #563.
+
+These senders use the context: `fireLeadGenerated` and `fireNonLeadEvent` (`lib/lead-tracking.ts`), `person_identified` (`app/actions/identity-bridge.ts`) and `valuation_requested` (`lib/cma-request.ts`).
+
+A provider webhook has no browser behind it. It passes `serverToServer: true` and sends without a session. Today that is only the Meta Lead webhook.
+
+A new server event must go through `ga4ServerContext()`. Never call `fireGa4Event` with only a `client_id`.
+
 ### `generate_lead` (server-only)
 
 One event per real submission. **Only** `fireLeadGenerated` in `lib/lead-tracking.ts` may send it. Never from the browser, never `fireGa4Event('generate_lead')` directly, never `trackEvent('generate_lead')`. Held by `lib/analytics/lead-event.test.ts`.
@@ -156,7 +197,7 @@ UTM on paid / organic buyer links (`lib/analytics/utm.ts`, `docs/analytics/buyer
 
 ### Server page-view mirror (kept on purpose)
 
-`app/api/visitors/track` still mirrors essential-tier `page_view` (and a few intent events) through Measurement Protocol (`lib/analytics/ga4-mirror.ts`, on since 2026-08-10). **That mirror stays.** Consequence: GA4 **geography is unreliable** (MP hits do not carry a real visitor geo), and sessions / source / medium / engagement are shaped by the mirror. Use first-party `visitor_sessions` / Search Console when geography or organic counts matter. `session_start` / `first_visit` still come only from the browser tag — those are the outage canary (`lib/analytics/ga4-tracking-health.ts`).
+`app/api/visitors/track` still mirrors essential-tier `page_view` (and a few intent events) through Measurement Protocol (`lib/analytics/ga4-mirror.ts`, on since 2026-08-10). **That mirror stays.** Since 2026-10-09 it skips views the browser tag already counts (analytics-tier visitors), so it now covers essential-tier visitors and `/cma` / `/bpo` client documents only. Unassigned sessions fell from hundreds a day to 3 on 2026-10-12 and 17 on 2026-10-13 (GA4 Data API, `sessionDefaultChannelGroup = Unassigned` by date, read 2026-10-14). A 28-day window still shows mostly Unassigned until the older days age out. Consequence: GA4 **geography is unreliable** (MP hits do not carry a real visitor geo), and sessions / source / medium / engagement are shaped by the mirror. Use first-party `visitor_sessions` / Search Console when geography or organic counts matter. `session_start` / `first_visit` still come only from the browser tag — those are the outage canary (`lib/analytics/ga4-tracking-health.ts`).
 
 ---
 
@@ -229,6 +270,115 @@ One set per URL, via `buildTrackedUrl` in `lib/analytics/utm.ts`. Existing `utm_
 - Trust GA4 geography, sessions, or source/medium as human truth while the MP page-view mirror is on.
 - Put API keys, tokens, or `.env` values in this file, a commit, or chat.
 - Use `ryanrealty.vercel.app` on any outward URL.
+- Write a new GA4, Search Console or GTM probe, script or scratch audit. Extend `scripts/analytics-audit.mjs` and the Registry.
+- Send a server GA4 event with only a `client_id`. Use `ga4ServerContext()`.
+- Run `scripts/ga4-admin.mjs apply`. Change GA4 Admin config only through `scripts/ga4-admin-setup.mjs` (dry-run first).
+
+---
+
+## Search Console
+
+- **Property:** `https://ryan-realty.com/`, a URL-prefix property. The service account is a site owner. No `sc-domain:` property is visible to it, and the domain has no Google TXT record. A Domain property would also cover `www.` and the `seller.` / `buyer.` subdomains. Verifying one needs a DNS TXT record, which is Matt's call.
+- **Sitemaps:** the index `/sitemap.xml` plus five children: `core`, `geo`, `listings`, `matrix`, `content`. All are submitted, with 0 errors and 0 warnings, read 2026-10-14. The Sitemaps API's `indexed` field always reads 0 because Google stopped reporting it. Never report that as "nothing indexed". Use URL Inspection (`lib/crawl-probe/gsc.ts`) for index state. Resubmit with `scripts/seo-gsc-sitemap-submit.mjs`.
+- **Daily data:** `/api/cron/snapshot-channels` (12:20 UTC) runs `marketing-snapshot-gsc`. It writes `marketing_channel_daily` with `channel = 'gsc'` and `source = 'gsc_search_analytics_api'`: account totals plus the top 25 queries and pages per day.
+- **Weekly data:** `/api/cron/loop-weekly-measure` (Mondays 13:00 UTC) writes the full page and query × page tables `gsc_page_daily` and `gsc_query_page_daily` (`lib/data/loop/gsc-api.ts`, `gsc-store.ts`).
+- **Crawl probe:** `/api/cron/crawl-probe` (11:55 UTC) checks the sitemaps against GSC and samples URL Inspection. It writes `marketing_channel_daily` with `channel = 'crawl_probe'`.
+- **Admin panel:** `app/actions/search-console-report.ts`.
+- **Freshness, read 2026-10-14:**
+  - `gsc_page_daily` latest date is 2026-10-09. That is expected, because the weekly job runs Mondays.
+  - `marketing_channel_daily` gsc clicks latest is 2026-10-11, fetched 2026-10-13 12:20 UTC.
+  - crawl_probe run is 2026-10-13.
+
+---
+
+## Corrections to the shared "Ryan Realty analytics guide" (2026-10-13)
+
+The claude.ai shared skill of that name was written before these live reads. Where it differs, this page wins.
+
+| Guide said | Live, read 2026-10-14 through the GTM and GA4 APIs |
+|---|---|
+| GTM version 6 had 34 variables, and 4 may need restoring | Version 6 had 29 variables and version 7 has 30. Version 7 added `DLV - ga4 lead_type` and dropped none. Nothing needs restoring. |
+| Custom dimensions registered: `lead_type`, `form_id`, `lp_variant` | 32 are registered. Those three are among them. |
+| Search Console is linked to GA4 | The API cannot read this link. Confirm it in GA4 Admin → Product links → Search Console. |
+| Server page views through the Measurement Protocol stay | They do, but only for essential-tier visitors and client documents since 2026-10-09 (see "Server page-view mirror"). |
+| (not in the guide) | Server lead events had no GA4 session, so every lead was Unassigned. Fixed by #563 (see "Server events join the visitor's GA4 session"). |
+
+---
+
+## Registry
+
+Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs, or lives in `lib/analytics/` is listed here. `ci:analytics-registry` (`scripts/check-analytics-registry.mjs`) fails on an unlisted file and on a row whose file is gone. **Extend a listed file. Do not add a parallel one.**
+
+### Sending to GA4 (server)
+
+| File | Role |
+|---|---|
+| `lib/ga4-measurement-protocol.ts` | The one Measurement Protocol client (`fireGa4Event`) and the cookie parsers (`_ga`, `_ga_<stream>`) |
+| `lib/analytics/ga4-server-context.ts` | The request context every in-request server sender reads |
+| `lib/lead-tracking.ts` | `generate_lead` (`fireLeadGenerated`) and the non-lead form events |
+| `app/actions/identity-bridge.ts` | `person_identified` on an email-click identify |
+| `lib/cma-request.ts` | `valuation_requested` for seller LP, FSBO LP and place-page submissions |
+| `app/api/visitors/track/route.ts` | The page-view mirror (essential tier and client documents) |
+| `lib/marketing/send-offline-ga4.ts` | `qualify_lead` / `close_convert_lead` from the daily offline cron |
+
+### Reading Google APIs (app and crons)
+
+| File | Role |
+|---|---|
+| `app/actions/ga4-report.ts` | GA4 Data API reports for admin and the daily GA4 snapshot |
+| `app/actions/ga4-demographics.ts` | GA4 demographics panel |
+| `lib/marketing-brain/ga4-health-counts.ts` | Exact daily `session_start` / `first_visit` counts (outage canary) |
+| `lib/analytics/ga4-internal-traffic-qa.ts` | Daily read-only check that internal and automated traffic stays out |
+| `app/actions/search-console-report.ts` | Search Console summary for the admin panel |
+| `lib/data/loop/gsc-api.ts` | Full Search Console page and query pulls for the weekly measurer |
+| `lib/crawl-probe/gsc.ts` | Sitemaps and URL Inspection for the daily crawl probe |
+
+### Scripts
+
+| File | Status |
+|---|---|
+| `scripts/analytics-audit.mjs` | **Canonical** live audit of GA4, Search Console and GTM. `npm run analytics:audit`. Extend this one. |
+| `scripts/measure-search-and-analytics.mjs` | Re-runs the 2026-08-02 measured-metrics snapshot for diffing. Keep it for that only. |
+| `scripts/seo-gsc-sitemap-submit.mjs` | Submits the sitemap index and its children to Search Console |
+| `scripts/gsc-listing-noindex-sweep.mjs` | URL Inspection sweep that fills `gsc_listing_index_flags` |
+| `scripts/ga4-404-report.mjs` | GA4 page views that land on a 404, for redirects |
+| `scripts/ga4-admin-setup.mjs` | **Canonical** GA4 Admin config: Signals, retention, lookback, custom dimensions, key events and retired key events. Matches the live property as of 2026-10-14. Run `--dry-run` first; change GA4 config by editing this file, then applying. |
+| `scripts/ga4-admin.mjs` | Older GA4 Admin config plus audiences. **Do not run `apply`.** Its 7 "locked" conversions disagree with the live property and with `ga4-admin-setup.mjs`, the canonical config. Use `npm run analytics:audit` to read config. |
+| `scripts/_gsc-by-class.mjs` | One-off (2026-08). Search Console clicks by route class. Superseded by `lib/data/loop/gsc-api.ts`. Do not extend. |
+| `scripts/_gsc-index-check.mjs` | One-off. Sites and sitemaps. Superseded by `npm run analytics:audit`. Do not extend. |
+| `scripts/_gsc-place-pages.mjs` | One-off (2026-09-22). Place-page query landings. Do not extend. |
+| `scripts/_gsc-sitemap-fix.mjs` | One-off. Superseded by `scripts/seo-gsc-sitemap-submit.mjs`. Do not extend. |
+
+### `lib/analytics/` modules
+
+| File | Role |
+|---|---|
+| `lib/analytics/ga4-browser-events.ts` | Browser event allowlist, `ga4_params`, `pushDataLayerEvent` |
+| `lib/analytics/lead-event.ts` | Fixed `lead_type` / `form_id` lists |
+| `lib/analytics/form-conversion.ts` | Browser `sign_up` for listing and search alert enrolls (the server still sends `generate_lead`) |
+| `lib/analytics/submit-alert-signup.ts` | Client wrappers for the alert-capture actions; push `sign_up` only on a counted submit |
+| `lib/analytics/ga-suppression.ts` | The one "may this reach GA4" rule, browser and server |
+| `lib/analytics/automation.ts` | Automation and crawler classifier |
+| `lib/analytics/internal-user-cookie.ts` | `rr_internal` cookie (broker browsers) |
+| `lib/analytics/non-production-build.ts` | No Google tag on dev or preview builds |
+| `lib/analytics/non-production-host.ts` | No GA4 hits from non-production hosts |
+| `lib/analytics/private-paths.ts` | Pages whose address is a secret never load a tag |
+| `lib/analytics/consent-defaults.ts` | Consent Mode v2 default script |
+| `lib/analytics/consent-regions.ts` | Restricted consent regions |
+| `lib/analytics/meta-pixel-consent.ts` | Meta Pixel waits for marketing consent |
+| `lib/analytics/gtm-bootstrap.ts` | The inline GTM loader |
+| `lib/analytics/inline-script-check.mjs` | Parses shipped inline scripts so a syntax error fails a test |
+| `lib/analytics/page-type.ts` | `page_type` taxonomy |
+| `lib/analytics/visit-broker.ts` | `assigned_broker` / `broker_slug` from `?agent=` and the cookie |
+| `lib/analytics/visitor-session.ts` | First-party visit session id and lifecycle |
+| `lib/analytics/ga4-visit.ts` | Mirror session params and `campaign_details` |
+| `lib/analytics/ga4-mirror.ts` | When the page-view mirror is on, and which stored figures it shapes |
+| `lib/analytics/ga4-tracking-health.ts` | Tracking-health verdict for the daily snapshot |
+| `lib/analytics/ga4-internal-traffic-qa.ts` | (above) |
+| `lib/analytics/utm.ts` | `buildTrackedUrl`, one UTM convention |
+| `lib/analytics/lp-variant.ts` | `lp_variant` from the path |
+| `lib/analytics/own-site-links.ts` | Finds ryan-realty.com links in a message so each can be decorated (tracked) |
+| `lib/analytics/web-vitals-sample.ts` | Validates one real-user Web Vitals sample before `public.web_vitals` stores it |
 
 ---
 

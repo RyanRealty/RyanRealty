@@ -31,12 +31,12 @@ from there, convert... as organically as possible."
 ## 2. Boot
 
 ```bash
-npx tsx scripts/loop-brief.ts                 # handoff Current block, graph, served class
+npx tsx scripts/loop-brief.ts                 # standing holds + newest handoff notes, graph, served class
 npx tsx scripts/site-queue-status.ts --json   # serve order, liveWorkers, maxWorkers
 ```
 
 Read this page, CLAUDE.md §0–§2, `marketing_brain_skills/brand-voice/VOICE.md`, and the
-Current block the brief prints. Everything else is reference for the node in hand. If
+standing holds and handoff notes the brief prints. Everything else is reference for the node in hand. If
 `liveWorkers` is at or above `maxWorkers`, print the owners in one line and stop.
 
 ## 3. Claim (the only path)
@@ -120,8 +120,8 @@ to make it fail; that becomes the default once in-flight lanes have landed.
 - **Nothing eligible:** run the measurer (`npx tsx scripts/seed-gsc-ranking-queue.ts
   --apply`, then `node scripts/_gsc-by-class.mjs`), claim what it opened, else end the
   fire in one line and keep the schedule.
-- **Context or a rate limit:** land what is green (§5), release what is not, replace the
-  ONE `# Current` block in `docs/plans/CROSS_AGENT_HANDOFF.md` (`ci:handoff-current`),
+- **Context or a rate limit:** land what is green (§5), release what is not, write your
+  own note in `docs/plans/handoffs/` (one file per session; `ci:handoff-current`),
   then schedule the wake (Claude `ScheduleWakeup`, a Grok durable task, or the routine).
 - **A question only Matt can answer:** one line in `blocked_reason`, take the next node.
 
