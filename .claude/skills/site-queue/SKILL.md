@@ -46,7 +46,10 @@ The dated incident history this file used to carry (2026-09-07 to 2026-09-22) is
    merge lane branches in order, resolve shared files (`components/site/v3/index.ts`,
    `package.json`, the handoff), ONE `npm run push`, ONE `npm run deploy:verify`, then open
    each shipped page on ryan-realty.com at 375 and desktop and compare with the lane's
-   shots. Evidence and the measurement window on each node.
+   shots. Evidence and the measurement window on each node. After those PRs merge, remove
+   each lane worktree (`npm run wt:cleanup`); never remove a dirty, unpushed, stashed, or
+   in-use checkout.
+
 5. **Next round immediately.** Boot again. There is no sleeping between rounds.
 
 ## Look work (when a node changes the look)

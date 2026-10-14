@@ -44,7 +44,7 @@ Listing with a video: full-bleed playing hero, price/facts overlay, Call/Tour/Sa
 
 ## Ship
 
-Public restyles: Grok Build on the bot computer, separate worktrees off main, one merge at a time. Not Cursor cloud unless Matt says so. Ping him only when the page is live on ryan-realty.com.
+Public restyles: Grok Build on the bot computer, separate worktrees off main, one merge at a time. After that PR merges or closes, remove your own worktree or clone (`npm run wt:cleanup`). Never remove a checkout with uncommitted changes, unpushed commits, stashes, or one another session is using. Not Cursor cloud unless Matt says so. Ping him only when the page is live on ryan-realty.com.
 
 THE LOOP is armed (2026-08-21). It may push and deploy. It must not send live client mail, book calls, or spend money. Disarm word is "disarm the loop".
 
