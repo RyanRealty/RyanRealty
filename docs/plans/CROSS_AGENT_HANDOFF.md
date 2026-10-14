@@ -1,10 +1,12 @@
-# Current — 2026-10-14 (Cursor, AGENTS.md single process source)
+# Current — 2026-10-14 (Cursor, revert #469 hold-for-matt)
 
-Surface: Cursor cloud. Branch `cursor/agents-md-single-source-6f1e` / PR #562 from origin/main `c7e237ccf` (#547 after #471 / #556 / #560). Folds and supersedes #544. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/revert-pr-469-6f1e` from origin/main `ef24a6b5f`. Reverts #469. Nobody pushes main. Nothing sent.
 
-**What this branch does.** `AGENTS.md` is the only process-rule file. CORE RULES add PRs only, auto-merge except `hold-for-matt`, stale PRs, Done = merged + production READY + live URL, payload caps, no sleep waits, new process rules in `AGENTS.md`, and DB writes when Matt's task needs them. Workflows enqueue auto-merge and close stale PRs. `merge-gate` is the required CI rollup (lint, gates, unit, and on app PRs build / e2e / a11y). Lighthouse and content-floor stay out of that rollup.
+**What this branch does.** #469 was labeled `hold-for-matt` and titled do-not-merge-without-Matt. A session token ran `gh pr merge --auto --squash` while Allow auto-merge is off, which immediately squash-merged a MERGEABLE PR (`ef24a6b5f`). This revert restores main. #544 closed as superseded by #562 (`1810a65f3`). #567 still open: wait for required checks before squash.
 
-**Also this session.** GitHub App token (`ghs_`, account `cursor`) 403s Administration: create label, PATCH `allow_auto_merge` / `delete_branch_on_merge`, POST ruleset, PUT branch protection. Did not push an empty commit to main because protection is not active. Squash-merged already-mergeable #559, #546, and #547. #550 and #514 stay CONFLICTING (`Auto merge is not allowed for this repository`). #545/#469/#473/#479 stay open (titles already hold for Matt).
+**Admin 403.** GitHub App token (`ghs_`, account `cursor`) still 403s Administration: PATCH `allow_auto_merge` / `delete_branch_on_merge`, POST ruleset, PUT/GET branch protection, `workflow_dispatch` Stale PRs. GET rulesets returns `[]`. Did not push an empty commit to main.
+
+**Also held.** Do not merge #545, #473, or #479.
 
 **Held.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
