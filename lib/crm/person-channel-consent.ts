@@ -266,8 +266,15 @@ export function planPersonChannelConsentEdit(input: {
   if (input.allowed && current[input.channel].lockedReason) {
     return {
       action: 'refuse',
-      ...empty,
+      channel: input.channel,
+      allowed: input.allowed,
       refuseReason: current[input.channel].lockedReason ?? 'locked',
+      nextTags: tags,
+      nextCmaConsent: cma,
+      suppressionIdsToClear: [],
+      addSuppression: null,
+      noteTitle: null,
+      noteBody: null,
     }
   }
 

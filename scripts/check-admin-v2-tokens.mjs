@@ -45,6 +45,7 @@ const SCAN_DIRS = [
   'app/admin/(protected)/people/[id]/PersonAddressEditor.tsx',
   'app/admin/(protected)/people/[id]/PersonRelationships.tsx',
   'app/admin/(protected)/people/[id]/PersonNotesAdd.tsx',
+  'app/admin/(protected)/people/[id]/PersonConsentEditor.tsx',
   'app/admin/(protected)/people/[id]/PersonWorkspace.tsx',
   // lead-page-v3 (2026-10-13): flag-gated person fold. BARE DIR so a new file
   // under it is covered the day it lands. PersonWorkspaceV3 is the route-local
@@ -57,6 +58,7 @@ const SCAN_DIRS = [
   'app/admin/(protected)/people/[id]/PersonAddressEditor.tsx',
   'app/admin/(protected)/people/[id]/PersonRelationships.tsx',
   'app/admin/(protected)/people/[id]/PersonNotesAdd.tsx',
+  'app/admin/(protected)/people/[id]/PersonConsentEditor.tsx',
   'app/admin/(protected)/people/[id]/PersonWorkspace.tsx',
   'app/admin/(protected)/people/[id]/FieldEditors.tsx',
   'app/admin/(protected)/people/[id]/TasksSection.tsx',
