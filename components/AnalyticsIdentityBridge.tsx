@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { rememberClarityUserId } from '@/lib/analytics/clarity'
 
 /**
  * Bridges identified-visitor state into GA4 and Meta Pixel.
@@ -13,6 +14,9 @@ import { useEffect, useRef } from 'react'
  *   2. Re-initializes Meta Pixel with advanced matching via
  *      fbq('init', PIXEL_ID, { em: <sha256> }) (strengthens Meta's
  *      person-stitch for ad attribution).
+ *   3. Hands the same hashed user_id to Microsoft Clarity's identify
+ *      (lib/analytics/clarity.ts), so Matt can filter recordings to a known
+ *      contact. Only the hash; Clarity is called only while it is recording.
  *
  * Waits up to 3s for window.gtag / window.fbq to be loaded by the
  * <GoogleAnalytics /> and <MetaPixel /> components (both of which gate on
@@ -69,6 +73,9 @@ async function fetchIdentity(): Promise<IdentityPayload | null> {
 
 async function applyIdentity(payload: IdentityPayload): Promise<void> {
   if (!payload.identified) return
+
+  // The same hashed id GA4 gets as user_id; never an email, name or phone.
+  rememberClarityUserId(payload.hashedUserId)
 
   if (GA4_ID && payload.hashedUserId) {
     const gtag = await waitForGlobal(() => window.gtag)

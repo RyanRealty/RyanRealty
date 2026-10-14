@@ -3,6 +3,7 @@ import GTMBody from '@/components/GTMBody'
 import GoogleAnalytics from '@/components/GoogleAnalytics'
 import MetaPixel from '@/components/MetaPixel'
 import PageViewTracker from '@/components/PageViewTracker'
+import ClarityRecorder from '@/components/ClarityRecorder'
 import { GoogleMapsBootstrap } from '@/components/GoogleMapsBootstrap'
 
 /**
@@ -22,6 +23,8 @@ import { GoogleMapsBootstrap } from '@/components/GoogleMapsBootstrap'
  *   - MetaPixel — Meta Pixel + CAPI advanced-matching prep (marketing consent gate)
  *   - GoogleMapsBootstrap — official Maps JS API loader (no consent gate, no PII)
  *   - PageViewTracker — useSearchParams island, must live in Suspense
+ *   - ClarityRecorder: Microsoft Clarity recordings and heatmaps (lib/analytics/clarity.ts);
+ *     reads useSearchParams, so it has its own Suspense; off until CLARITY_PROJECT_ID is set
  *
  * Used only by RootProvider; not exported from the primitives barrel.
  */
@@ -34,6 +37,9 @@ export function AnalyticsScripts() {
       <GoogleMapsBootstrap />
       <Suspense fallback={null}>
         <PageViewTracker />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ClarityRecorder />
       </Suspense>
     </>
   )
