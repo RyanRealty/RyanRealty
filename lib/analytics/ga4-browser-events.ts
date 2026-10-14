@@ -31,8 +31,14 @@
  *
  * PRIVACY. Only the parameters in GA4_EVENT_PARAMS go into ga4_params, so a
  * call that also carries phone_number, email_to, href or a page path for the
- * first-party store never hands those to GA4.
+ * first-party store never hands those to GA4. Their values go through
+ * ga4SafeParamValue too (an email address or phone number is dropped, a CMA
+ * document slug in lp_campaign becomes cma-letter), and every hit's
+ * page_location is the GA4-safe address (setGa4PageLocation below): no
+ * personal information reaches GA4 (Matt 2026-10-14).
  */
+
+import { ga4SafeParamValue, stripGa4UrlParams } from '@/app/api/visitors/track/strip-identity'
 
 export const GA4_MEASUREMENT_ID = 'G-ST40W4WM6T'
 
@@ -151,10 +157,11 @@ export const GA4_PAGE_VIEW_TRIGGER_NAME = 'CE page_view'
 /**
  * The "GA4 - page_view" tag's parameter table. All flat keys: the bootstrap
  * and PageViewTracker push them in the page_view message itself, so the Data
- * Layer Variable reads that message's value. page_location is identity-stripped
- * (GA4_STRIP_PARAMS); page_referrer is the previous page on a client-side
- * navigation and absent on first paint, where GA4 falls back to
- * document.referrer.
+ * Layer Variable reads that message's value. page_location is GA4-safe
+ * (stripGa4UrlParams: no contact id, typed address, inquiry or CMA slug);
+ * page_referrer is the previous page on a client-side navigation and absent
+ * on first paint, where the tag takes the safe document.referrer the
+ * bootstrap's `gtag('set')` gave every hit.
  */
 export const GA4_PAGE_VIEW_PARAMS = [
   { name: 'page_type', from: 'page_type' },
@@ -284,8 +291,8 @@ export function ga4ParamsFrom(params: Record<string, unknown> = {}): Record<stri
       return
     }
     if (typeof raw === 'string') {
-      const v = raw.trim()
-      if (v) out[name] = v.slice(0, GA4_PARAM_VALUE_MAX)
+      const safe = ga4SafeParamValue(name, raw.trim())
+      if (safe) out[name] = safe.slice(0, GA4_PARAM_VALUE_MAX)
     } else if (typeof raw === 'number') {
       if (Number.isFinite(raw)) out[name] = raw
     } else if (typeof raw === 'boolean') {
@@ -309,15 +316,62 @@ export function isGa4BrowserEvent(name: string): name is Ga4BrowserEvent {
   return (GA4_BROWSER_EVENTS as readonly string[]).includes(name)
 }
 
+/** The last page_location handed to `gtag('set')` from React (the inline bootstrap sets the first). */
+let lastGa4PageLocation: string | undefined
+
+/**
+ * `gtag('set', { page_location, page_referrer })`: from here on, EVERY GA4 hit
+ * on the page (both GTM GA4 Event tags and the Google tag's own events, such as
+ * form_start and user_engagement) carries this address instead of the
+ * browser's. Both values go through stripGa4UrlParams, so a person's typed
+ * address (`/sell?address=`), inquiry text, contact id or CMA slug never
+ * reaches GA4. The inline bootstrap sets the first page (gtm-bootstrap.ts);
+ * PageViewTracker calls this on every client-side navigation, and
+ * pushDataLayerEvent refreshes page_location when only the query changed.
+ * Pushed as a gtag command (an `arguments` object), the form GTM reads.
+ */
+export function setGa4PageLocation(href: string, referrer?: string): void {
+  if (typeof window === 'undefined') return
+  const location = stripGa4UrlParams(href)
+  if (!location) return
+  const fields: Record<string, string> = { page_location: location }
+  const ref = referrer ? stripGa4UrlParams(referrer) : undefined
+  if (ref) fields.page_referrer = ref
+  const w = window as Window & { dataLayer?: unknown[] }
+  w.dataLayer = w.dataLayer || []
+  gtagSet.call(w.dataLayer, 'set', fields)
+  lastGa4PageLocation = location
+}
+
+/**
+ * The inline bootstrap's `gtag()`: push the call's own `arguments` object,
+ * the only form GTM treats as a gtag command (an array is read as data).
+ * Called with the dataLayer as `this`.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- the arguments object is the payload
+function gtagSet(this: unknown[], _command: 'set', _fields: Record<string, string>): void {
+  // eslint-disable-next-line prefer-rest-params -- see above
+  this.push(arguments)
+}
+
 /**
  * Push one event for GTM: clear the previous event's ga4_params, then push
  * `{ event, ...params, ga4_params }`. The flat params stay for the existing
  * dataLayer readers; GA4 only ever sees ga4_params plus the page context.
+ * When the page's GA4-safe address changed since the last `gtag('set')` (a
+ * query-only change such as a map move), it is set again first, so the event
+ * names the page it happened on.
  */
 export function pushDataLayerEvent(eventName: string, params: Record<string, unknown> = {}): void {
   if (typeof window === 'undefined') return
   const w = window as Window & { dataLayer?: unknown[] }
   w.dataLayer = w.dataLayer || []
+  try {
+    const here = stripGa4UrlParams(window.location.href)
+    if (here && here !== lastGa4PageLocation) setGa4PageLocation(window.location.href)
+  } catch {
+    /* tracking never breaks a page */
+  }
   w.dataLayer.push({ [GA4_PARAMS_KEY]: null })
   // Undefined values are dropped: GTM's data model would store them and wipe a
   // sticky page-context key such as broker_slug.

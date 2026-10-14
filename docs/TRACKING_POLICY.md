@@ -557,6 +557,15 @@ document (`/cma`, `/bpo`, page category `client-document`) runs no gtag, so its 
 always mirrored, whatever the tier (`ga4-mirror.client-document.test.ts`). An ad-blocked
 visitor at the analytics tier is no longer mirrored; first-party Supabase still has them.
 
+**No personal information reaches GA4 (Matt 2026-10-14).** Google's GA4 terms forbid it. A
+client document's slug is the subject's street address, so the mirror sends `/cma/[document]`
+(or `/bpo/[document]`) with the row's opaque `cma_id` / `bpo_id` and a fixed page title; a typed
+`?address=` or `?inquiry=`, any email or phone value and the identity params never leave in a
+URL; and the browser's every hit carries the same safe address through `gtag('set')`. First-party
+`visitor_events` keep the full URL. One implementation, `stripGa4UrlParams`
+(`app/api/visitors/track/strip-identity.ts`); the rule, its gates and what GA4 already held are
+in docs/analytics/README.md "No personal information in GA4".
+
 ## Backlog — outward changes, ship only on Matt's go
 
 These change live ad/tracking behavior, so they are NOT auto-enforced. Each needs

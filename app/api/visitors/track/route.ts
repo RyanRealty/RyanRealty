@@ -43,7 +43,7 @@ import { recordGpcSuppression } from '@/lib/data/crm/recordGpcSuppression'
 // bridge, has to be the mechanism.
 import { AGENT_ATTRIB_COOKIE } from '@/lib/agent-attribution'
 import { resolveVisitBrokerSlug, visitBrokerGa4Fields } from '@/lib/analytics/visit-broker'
-import { stripGa4UrlParams, stripIdentityParams, visitorEventMetadata } from './strip-identity'
+import { ga4SafePagePath, ga4SafePageTitle, stripGa4UrlParams, stripIdentityParams, visitorEventMetadata } from './strip-identity'
 // P7 identity loop (2026-09-23, docs/TRACKING_POLICY.md "The known-contact
 // identity loop"): a SIGNED ?_pid= token on a link we sent identifies the visit
 // here, server-side, on the landing page view; the durable rr_vid and the
@@ -124,6 +124,36 @@ function jsonError(status: number, error: string, origin: string | null) {
 
 export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, { status: 204, headers: corsHeaders(request.headers.get('origin')) })
+}
+
+/**
+ * The opaque row id of the CMA or BPO a client-document view is on, as a GA4
+ * param (`cma_id` / `bpo_id`). GA4 sees the page as `/cma/[document]`
+ * (stripGa4UrlParams), because the slug is the subject's street address; the
+ * id keeps the view attributable to its document. Empty on any other page and
+ * on a failed read: the view is still counted.
+ */
+async function ga4DocumentIdParams(pageUrl: string): Promise<Record<string, string>> {
+  let path: string
+  try {
+    path = new URL(pageUrl).pathname
+  } catch {
+    return {}
+  }
+  const m = /^\/(cma|bpo)\/([a-z0-9-]{3,80})(?:\/|$)/i.exec(path)
+  if (!m) return {}
+  try {
+    if (m[1]!.toLowerCase() === 'cma') {
+      const { getCmaIdBySlug } = await import('@/lib/data/cma/documents')
+      const id = await getCmaIdBySlug(m[2]!)
+      return id ? { cma_id: id } : {}
+    }
+    const { getBpoIdBySlug } = await import('@/lib/data/bpo/reads')
+    const id = await getBpoIdBySlug(m[2]!)
+    return id ? { bpo_id: id } : {}
+  } catch {
+    return {}
+  }
 }
 
 // ─── Payload schema ─────────────────────────────────────────────────────────
@@ -738,6 +768,9 @@ export async function POST(request: NextRequest) {
         // draw sessions and attribute them.
         const visit = parseVisit(body.visit)
         const campaignDetails = visit?.start ? campaignDetailsParams(campaign ?? body.campaign) : null
+        // A CMA or BPO is counted as /cma/[document] with its opaque row id,
+        // never its address slug (Matt 2026-10-14).
+        const documentIds = body.pageCategory === 'client-document' ? await ga4DocumentIdParams(pageUrl) : {}
         void fireGa4Event({
           eventName: isView ? 'page_view' : eventType,
           clientId: fromCookie || clientIdFromSessionId(sessionId),
@@ -747,12 +780,15 @@ export async function POST(request: NextRequest) {
             ...(broker?.userProperties ?? {}),
           },
           eventParams: {
-            // Identity-stripped: GA4 is a third party and a contact id must not
-            // leave the building inside a URL (same rule as the stored row).
-            page_location: stripGa4UrlParams(pageUrl) ?? storedPageUrl,
-            page_title: body.pageTitle ?? undefined,
+            // GA4-safe (strip-identity.ts): GA4 is a third party, so no contact
+            // id, no address or text a person typed, and no CMA or BPO address
+            // slug or title leaves the building (Matt 2026-10-14). No fallback
+            // to the stored URL: an address GA4 may not see is sent as nothing.
+            page_location: stripGa4UrlParams(pageUrl),
+            page_title: ga4SafePageTitle(pageUrl, body.pageTitle),
             page_referrer: stripGa4UrlParams(body.referrer),
-            page_path: pagePath,
+            page_path: ga4SafePagePath(pagePath),
+            ...documentIds,
             page_type: pageType,
             ...ga4SessionParams(visit, sessionId),
             intent,

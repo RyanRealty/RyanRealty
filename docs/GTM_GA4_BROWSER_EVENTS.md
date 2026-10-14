@@ -56,8 +56,8 @@ not a new page.
 | `page_type` | `DLV - ga4 page_type` | `page_type` |
 | `broker_slug` | `DLV - ga4 broker_slug` | `broker_slug` |
 | `content_group` | `DLV - ga4 page_type` | `page_type` (GA4's built-in Content group, the same value) |
-| `page_location` | `DLV - ga4 page_location` | `page_location` (identity params `_pid`, `_fuid`, `rr_doc` stripped) |
-| `page_referrer` | `DLV - ga4 page_referrer` | `page_referrer` (the previous page on a client-side navigation; absent on first paint) |
+| `page_location` | `DLV - ga4 page_location` | `page_location` (GA4-safe: `stripGa4UrlParams`, no contact id, typed address, inquiry or CMA slug; see docs/analytics/README.md "No personal information in GA4") |
+| `page_referrer` | `DLV - ga4 page_referrer` | `page_referrer` (the previous page on a client-side navigation; absent on first paint, where the bootstrap's `gtag('set')` supplies the safe referrer) |
 
 It only works with both of these, or page views double:
 

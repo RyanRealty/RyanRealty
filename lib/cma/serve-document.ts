@@ -65,6 +65,9 @@ export const CMA_DOC_HEADERS = {
   'X-Robots-Tag': 'noindex, nofollow',
   'Cache-Control': 'private, no-store',
   'X-Frame-Options': 'SAMEORIGIN',
+  // The slug is the subject's street address: a link out sends only the origin
+  // as the referrer (next.config.ts sets the same; Matt 2026-10-14).
+  'Referrer-Policy': 'strict-origin',
 } as const
 
 export type CmaServeResult =

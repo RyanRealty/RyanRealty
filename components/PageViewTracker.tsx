@@ -12,7 +12,8 @@ import {
   visitorIntentDataLayerFields,
 } from '@/lib/analytics/visitor-intent'
 import { isPrivatePath } from '@/lib/analytics/private-paths'
-import { stripGa4UrlParams } from '@/app/api/visitors/track/strip-identity'
+import { ga4SafePagePath, stripGa4UrlParams } from '@/app/api/visitors/track/strip-identity'
+import { setGa4PageLocation } from '@/lib/analytics/ga4-browser-events'
 
 /**
  * Layout-owned page analytics, and the sender of every client-side page_view.
@@ -102,12 +103,18 @@ export default function PageViewTracker() {
     firstLoadRef.current = false
     lastPathRef.current = pathname
     stampPageType()
+    // GA4-safe (strip-identity.ts): no contact id, no `?address=` or
+    // `?inquiry=` a person typed, `/cma/[document]` for a CMA. Matt 2026-10-14.
     const location = stripGa4UrlParams(window.location.href)
-    // First paint: the bootstrap already pushed this page's page_view.
+    // First paint: the bootstrap already pushed this page's page_view and set
+    // the safe page_location for every hit.
     if (!first) {
+      // Every later hit on this page (other tags, the Google tag's own events)
+      // carries the safe address and referrer, not the browser's.
+      setGa4PageLocation(window.location.href, lastLocationRef.current)
       trackPageView(pageType, {
         page_location: location,
-        page_path: pathname,
+        page_path: ga4SafePagePath(pathname),
         page_title: document.title,
         page_referrer: lastLocationRef.current,
       })

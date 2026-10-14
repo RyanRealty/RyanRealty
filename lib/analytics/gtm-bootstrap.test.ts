@@ -265,6 +265,61 @@ describe('first-paint page_view', () => {
 })
 
 /**
+ * No personal information reaches GA4 (Matt 2026-10-14). The homepage "value
+ * your home" box lands on /sell?address=<what the person typed>; before this,
+ * GA4 got that as dl= on the page_view AND on every later hit, because the
+ * "GA4 - dataLayer events" tag and the Google tag's own events read the
+ * browser's location. The bootstrap now sets the safe address for every hit
+ * (`gtag('set')`, before gtm.js) and the page_view carries it too.
+ */
+describe('first paint sends GA4 no personal information', () => {
+  function run(href: string, referrer = ''): unknown[] {
+    const u = new URL(href)
+    const script = gtmBootstrapScript('sell', 'GTM-TEST123')
+    const fakeScript = { parentNode: { insertBefore: () => {} } }
+    const document = { cookie: '', referrer, getElementsByTagName: () => [fakeScript], createElement: () => ({}), head: { appendChild: () => {} } }
+    const window: { dataLayer?: unknown[] } = { dataLayer: [] }
+    new Function('window', 'document', 'location', 'navigator', 'dataLayer', script)(
+      window,
+      document,
+      { href, search: u.search, pathname: u.pathname, hostname: u.hostname },
+      { userAgent: VISITOR_UA, webdriver: false },
+      window.dataLayer,
+    )
+    return window.dataLayer ?? []
+  }
+  const isArgs = (row: unknown): row is ArrayLike<unknown> => Object.prototype.toString.call(row) === '[object Arguments]'
+  const setCommand = (rows: unknown[]) => rows.find((r) => isArgs(r) && r[0] === 'set' && typeof r[1] === 'object' && r[1] !== null && 'page_location' in (r[1] as object))
+
+  it('the page_view and every other hit get the address without the typed home address', () => {
+    const rows = run('https://ryan-realty.com/sell?from=%2F&address=123%20Test%20Ln%2C%20Bend%20OR#get-value', 'https://ryan-realty.com/')
+    const view = rows.find((r) => (r as { event?: string })?.event === 'page_view') as { page_location: string }
+    expect(view.page_location).toBe('https://ryan-realty.com/sell?from=%2F')
+    const set = setCommand(rows) as ArrayLike<unknown>
+    expect(set).toBeTruthy()
+    expect(set[1]).toEqual({ page_location: 'https://ryan-realty.com/sell?from=%2F', page_referrer: 'https://ryan-realty.com/' })
+    expect(JSON.stringify(rows.map((r) => (isArgs(r) ? Array.from(r) : r)))).not.toMatch(/Test Ln|Test%20Ln/)
+  })
+
+  it('sets the safe address BEFORE gtm.js, so the first hit already carries it', () => {
+    const rows = run('https://ryan-realty.com/contact?inquiry=We%20want%20to%20sell')
+    const setAt = rows.findIndex((r) => r === setCommand(rows))
+    const gtmAt = rows.findIndex((r) => (r as { event?: string })?.event === 'gtm.js')
+    expect(setAt).toBeGreaterThanOrEqual(0)
+    expect(setAt).toBeLessThan(gtmAt)
+    expect((setCommand(rows) as ArrayLike<unknown>)[1]).toEqual({ page_location: 'https://ryan-realty.com/contact' })
+  })
+
+  it('a referrer out of a CMA reaches GA4 as /cma/[document]', () => {
+    const rows = run('https://ryan-realty.com/homes-for-sale/bend?rr_doc=cma-828-florida', 'https://ryan-realty.com/cma/cma-828-florida?_pid=7.document.sig')
+    expect((setCommand(rows) as ArrayLike<unknown>)[1]).toEqual({
+      page_location: 'https://ryan-realty.com/homes-for-sale/bend',
+      page_referrer: 'https://ryan-realty.com/cma/[document]',
+    })
+  })
+})
+
+/**
  * Visitor intent (Matt 2026-10-14, GTM version 10): the first-paint page_view
  * carries the label and market this browser stored on an earlier page, read
  * inline before hydration, only when analytics consent holds.

@@ -19,7 +19,13 @@ vi.mock('@/components/CookieConsentBanner', () => ({
 import { trackEvent } from './tracking'
 
 const STORAGE_KEY = 'rr_visitor_intent_v1'
-const rows = () => (window.dataLayer ?? []) as Array<Record<string, unknown>>
+// Data pushes only: pushDataLayerEvent may first push a gtag('set') command (an
+// arguments object) with the GA4-safe page_location (no person data in GA4,
+// Matt 2026-10-14); that is not what these tests are about.
+const rows = () =>
+  ((window.dataLayer ?? []) as unknown[]).filter((r) => Object.prototype.toString.call(r) !== '[object Arguments]') as Array<
+    Record<string, unknown>
+  >
 
 beforeEach(() => {
   window.dataLayer = []

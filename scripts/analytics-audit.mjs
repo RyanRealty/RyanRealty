@@ -168,6 +168,101 @@ if (Array.isArray(cfg.keyEvents) && Array.isArray(events)) {
   if (dead.length) finding('INFO', 'ga4', `Key events with 0 events in ${DAYS} days: ${dead.join(', ')}.`)
 }
 
+// ── Personal information in GA4 (Matt 2026-10-14) ───────────────────────────
+// GA4's terms forbid personal information, and a mailing address is one. Until
+// 2026-10-14 GA4 received a CMA or BPO subject's address slug as the page path
+// (/cma/cma-828-florida), a typed home address or inquiry as a page_location
+// query (/sell?address=, /contact?inquiry=), the same through page_referrer,
+// and a legacy CMA link's slug as the campaign name. The code now sends
+// /cma/[document] and strips those params (app/api/visitors/track/strip-identity.ts,
+// the one implementation). This section COUNTS what GA4 holds, never prints a
+// value. Hits dated on or after PERSON_DATA_CHECK_FROM are a FAIL: something
+// started sending again. The week before it lets tabs opened on the old code age out.
+const PERSON_DATA_CHECK_FROM = '2026-10-21'
+const stripSrc = readFileSync('app/api/visitors/track/strip-identity.ts', 'utf8')
+const PERSON_PARAMS = [
+  ...['_pid', '_fuid', 'rr_doc'],
+  ...codeList('app/api/visitors/track/strip-identity.ts', 'PERSON_TEXT_PARAMS'),
+]
+const DOC_PREFIXES = (/export const GA4_PERSON_DOCUMENT_PREFIXES = \[([^\]]*)\]/.exec(stripSrc)?.[1] || '')
+  .split(',')
+  .map((x) => x.trim().replace(/'/g, ''))
+  .filter(Boolean)
+const docPathRe = `/(${DOC_PREFIXES.join('|')})/[^/?#\\[]`
+const personParamRe = `[?&](${PERSON_PARAMS.join('|')})=`
+const sf = (fieldName, matchType, value) => ({ filter: { fieldName, stringFilter: { matchType, value, caseSensitive: false } } })
+const PERSON_DATA_QUERIES = {
+  documentPaths: {
+    dimension: 'pagePath',
+    metric: 'eventCount',
+    filter: { andGroup: { expressions: [sf('pagePath', 'PARTIAL_REGEXP', `^${docPathRe}`), { notExpression: sf('pagePath', 'CONTAINS', '[document]') }] } },
+  },
+  personParamLocations: { dimension: 'pageLocation', metric: 'eventCount', filter: sf('pageLocation', 'PARTIAL_REGEXP', personParamRe) },
+  personReferrers: { dimension: 'pageReferrer', metric: 'eventCount', filter: sf('pageReferrer', 'PARTIAL_REGEXP', `ryan-realty\\.com(${docPathRe}|[^ ]*${personParamRe})`) },
+  cmaSlugCampaigns: {
+    dimension: 'sessionCampaignName',
+    metric: 'sessions',
+    filter: {
+      andGroup: {
+        expressions: [
+          sf('sessionCampaignName', 'FULL_REGEXP', '(test-)?cma-.+'),
+          { notExpression: { filter: { fieldName: 'sessionCampaignName', inListFilter: { values: ['cma-letter', 'test-cma-letter'] } } } },
+        ],
+      },
+    },
+  },
+}
+async function countPersonData(q, startDate, endDate) {
+  const { data: d } = await data.properties.runReport({
+    property: P,
+    requestBody: { dateRanges: [{ startDate, endDate }], dimensions: [{ name: q.dimension }], metrics: [{ name: q.metric }], dimensionFilter: q.filter, limit: 10000 },
+  })
+  const rows = d.rows || []
+  // Counts only: the values themselves are personal information and are never printed.
+  const out = { distinct: Number(d.rowCount || rows.length), [q.metric]: rows.reduce((a, r) => a + Number(r.metricValues?.[0]?.value || 0), 0) }
+  if (q.dimension === 'pageLocation' || q.dimension === 'pageReferrer') {
+    // Which param names (never values), so a deletion request can name them.
+    const byParam = {}
+    const byPage = {}
+    for (const r of rows) {
+      const v = String(r.dimensionValues?.[0]?.value || '')
+      for (const name of PERSON_PARAMS) if (new RegExp(`[?&]${name}=`, 'i').test(v)) byParam[name] = (byParam[name] || 0) + 1
+      if (new RegExp(docPathRe, 'i').test(v)) byParam['(document path)'] = (byParam['(document path)'] || 0) + 1
+      // The page each one is on: the path only, a document's slug masked.
+      let page = '(unparsed)'
+      try {
+        page = new URL(v, 'https://ryan-realty.com').pathname.replace(new RegExp(`^/(${DOC_PREFIXES.join('|')})/[^/]+`, 'i'), '/$1/[document]')
+      } catch {}
+      byPage[page] = (byPage[page] || 0) + 1
+    }
+    out.byParam = byParam
+    out.byPage = Object.fromEntries(Object.entries(byPage).sort((x, y) => y[1] - x[1]).slice(0, 12))
+  }
+  return out
+}
+const personData = { window: `${DAYS}daysAgo..today`, checkFrom: PERSON_DATA_CHECK_FROM, inWindow: {}, sinceCheck: {} }
+const checkStarted = new Date().toISOString().slice(0, 10) >= PERSON_DATA_CHECK_FROM
+for (const [k, q] of Object.entries(PERSON_DATA_QUERIES)) {
+  personData.inWindow[k] = await safe(() => countPersonData(q, `${DAYS}daysAgo`, 'today'))
+  personData.sinceCheck[k] = checkStarted ? await safe(() => countPersonData(q, PERSON_DATA_CHECK_FROM, 'today')) : { distinct: 0 }
+  if (isErr(personData.inWindow[k])) finding('ERROR', 'ga4', `Could not count ${k} in GA4: ${personData.inWindow[k].error}`)
+}
+personData.hitsSinceCheck = Object.values(personData.sinceCheck).some(isErr)
+  ? undefined
+  : Object.values(personData.sinceCheck).reduce((a, v) => a + (v.distinct || 0), 0)
+report.sections.personData = personData
+{
+  const held = Object.entries(personData.inWindow).filter(([, v]) => !isErr(v) && v.distinct > 0)
+  if (held.length)
+    finding(
+      'WARN',
+      'ga4',
+      `GA4 holds personal information from before the 2026-10-14 fix (last ${DAYS} days, counts only): ${held.map(([k, v]) => `${k} ${v.distinct} distinct`).join(', ')}. A GA4 data-deletion request is Matt's call (docs/analytics/README.md "No personal information in GA4").`,
+    )
+  if (personData.hitsSinceCheck > 0)
+    finding('FAIL', 'ga4', `Personal information reached GA4 on or after ${PERSON_DATA_CHECK_FROM}: ${JSON.stringify(personData.sinceCheck)}. Find the sender; every page_location goes through stripGa4UrlParams.`)
+}
+
 // ── Search Console ──────────────────────────────────────────────────────────
 const sc = {}
 sc.sites = await safe(async () => ((await gsc.sites.list()).data.siteEntry || []).map((s) => `${s.siteUrl} (${s.permissionLevel})`))
@@ -323,6 +418,7 @@ const facts = {
   'ga4.primaryChannelGroup': cfg.primaryChannelGroup,
   'ga4.googleAdsLinks': cfg.googleAdsLinks,
   'ga4.customDimensions': cfg.customDimensions,
+  'ga4.personDataHitsSinceFix': personData.hitsSinceCheck,
 }
 const canon = (v) => JSON.stringify(Array.isArray(v) ? [...v].sort() : v)
 const pinned = await safe(async () => JSON.parse(readFileSync('data/analytics/decisions.json', 'utf8')).decisions || [])
@@ -375,6 +471,10 @@ if (JSON_OUT) {
   line(`  hostnames ${JSON.stringify(health.hostnames)}`)
   line(`  generate_lead by hostname ${JSON.stringify(health.leadEventsByHost)}`)
   line(`  top events ${JSON.stringify(Object.entries(evCount).sort((a, b) => b[1] - a[1]).slice(0, 25))}`)
+  line()
+  line(`Personal information in GA4 (counts only; ${personData.window}; FAIL from ${personData.checkFrom})`)
+  for (const [k, v] of Object.entries(personData.inWindow)) line(`  ${k} ${JSON.stringify(v)}`)
+  line(`  since ${personData.checkFrom}: ${personData.hitsSinceCheck ?? '?'} distinct values`)
   line()
   line('Search Console')
   line(`  sites ${JSON.stringify(sc.sites)}`)

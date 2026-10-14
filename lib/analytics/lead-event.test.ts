@@ -19,6 +19,8 @@ vi.mock('next/headers', () => ({
 
 import {
   contactLeadType,
+  ga4InquiryType,
+  ga4LeadExtra,
   isLeadFormId,
   isLeadType,
   LEAD_FORM_IDS,
@@ -96,6 +98,56 @@ describe('the fixed lead_type list', () => {
   it('keeps non-leads off the list', () => {
     for (const n of NON_LEAD_EVENTS) expect(isLeadType(n)).toBe(false)
     expect([...NON_LEAD_EVENTS]).toEqual(['recruit_inquiry', 'newsletter_signup'])
+  })
+})
+
+/**
+ * No personal information in GA4 (Matt 2026-10-14). Found 2026-10-14: a
+ * housing-market inquiry sent `context` = "... from <name> - <their message>"
+ * on generate_lead, /contact sent free text the /about box carried as
+ * `inquiry_type`, and a referral sent its typed `area`. GA4's copy of `extra`
+ * is labels and ids only; the CRM keeps the full text.
+ */
+describe('ga4LeadExtra: labels and ids only', () => {
+  it('drops free text, person-named keys and contact values; keeps labels, ids and numbers', () => {
+    expect(
+      ga4LeadExtra({
+        context: 'Housing-market page inquiry — from Pat Smith — We want to sell 12 Elm St',
+        area: 'Near 12 Elm St',
+        address: '12 Elm St',
+        cma_slug: 'cma-12-elm',
+        email: 'pat@example.com',
+        referral: 'inbound',
+        intent: 'buyer-consult',
+        resort: 'tetherow',
+        person_id: 123,
+        possible_realtor: false,
+        listing_key: '20260714190234066850000000',
+        source: 'pat@example.com',
+      }),
+    ).toEqual({ referral: 'inbound', intent: 'buyer-consult', resort: 'tetherow', person_id: 123, possible_realtor: false, listing_key: '20260714190234066850000000' })
+  })
+
+  it('maps inquiry_type to the fixed list, Other for anything typed', () => {
+    expect(ga4InquiryType('Selling')).toBe('Selling')
+    expect(ga4InquiryType('join the team')).toBe('Join the team')
+    expect(ga4InquiryType('I want to sell 12 Elm St, call Pat')).toBe('Other')
+    expect(ga4LeadExtra({ inquiry_type: 'We are moving from 12 Elm St' })).toEqual({ inquiry_type: 'Other' })
+  })
+
+  it('keeps page_path, without a person document slug or query', () => {
+    expect(ga4LeadExtra({ page_path: '/buy/leverage?address=12%20Elm' })).toEqual({ page_path: '/buy/leverage' })
+    expect(ga4LeadExtra({ page_path: '/cma/cma-12-elm' })).toEqual({ page_path: '/cma/[document]' })
+  })
+
+  it('generate_lead carries none of a caller\'s free text', () => {
+    const p = leadEventParams({
+      lp_variant: 'page-cta-general',
+      lead_type: 'contact_general',
+      form_id: 'page_cta',
+      extra: { context: 'Housing-market page inquiry — from Pat Smith — call me' },
+    })
+    expect(JSON.stringify(p)).not.toMatch(/Pat|call me/)
   })
 })
 

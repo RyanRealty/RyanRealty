@@ -117,6 +117,24 @@ export async function getBpoAdminRowBySlug(slug: string): Promise<BpoAdminRow | 
   return (data ?? null) as BpoAdminRow | null
 }
 
+/**
+ * The BPO's opaque row id (a uuid) by slug, or null. GA4 gets this as `bpo_id`
+ * in place of the slug, which is built from the subject's street address
+ * (Matt 2026-10-14: no person addresses in GA4). A read failure is null.
+ */
+export async function getBpoIdBySlug(slug: string): Promise<string | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb
+    .from('broker_price_opinions')
+    .select('id')
+    .eq('slug', slug.trim().toLowerCase())
+    .maybeSingle()
+  if (error || !data) return null
+  const id = (data as { id?: unknown }).id
+  return typeof id === 'string' && id ? id : null
+}
+
 /** The serve read: only what the /bpo/<slug> route needs. */
 export async function getBpoHtmlBySlug(
   slug: string,

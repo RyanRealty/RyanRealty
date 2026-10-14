@@ -75,6 +75,23 @@ describe('PageViewTracker', () => {
     ])
   })
 
+  it('a navigation to a typed home address sends GA4 the page without it, on the page_view and on every later hit', async () => {
+    // No person addresses in GA4 (Matt 2026-10-14): the homepage box lands on /sell?address=<typed>.
+    await renderAt('/')
+    await renderAt('/sell?from=%2F&address=123%20Test%20Ln%2C%20Bend%20OR')
+    expect(pageViews()).toEqual([
+      expect.objectContaining({ page_type: 'sell', page_location: 'https://ryan-realty.com/sell?from=%2F', page_referrer: 'https://ryan-realty.com/' }),
+    ])
+    const sets = (window.dataLayer ?? []).filter((r) => Object.prototype.toString.call(r) === '[object Arguments]').map((r) => Array.from(r as ArrayLike<unknown>))
+    expect(sets).toEqual([['set', { page_location: 'https://ryan-realty.com/sell?from=%2F', page_referrer: 'https://ryan-realty.com/' }]])
+    // the set comes before the page_view, so every hit after it carries the safe address
+    const rows = window.dataLayer ?? []
+    expect(rows.findIndex((r) => Object.prototype.toString.call(r) === '[object Arguments]')).toBeLessThan(
+      rows.findIndex((r) => (r as Record<string, unknown>)?.event === 'page_view'),
+    )
+    expect(JSON.stringify(rows.map((r) => (Object.prototype.toString.call(r) === '[object Arguments]' ? Array.from(r as ArrayLike<unknown>) : r)))).not.toContain('Test')
+  })
+
   it('does not count a query-only change (a map move rewriting ?bbox=)', async () => {
     await renderAt('/')
     await renderAt('/homes-for-sale/sunriver')
