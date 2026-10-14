@@ -4,13 +4,20 @@
  * listing saves and price-drop watches are credited to the link that started
  * the visit they happen in). DAL boundary (G1): the raw .from() lives here.
  *
- * The tracker writes each session's first non-null utm_* (coalesce-on-update in
- * /api/visitors/track) at every consent tier except an explicit decline or GPC,
- * and starts a new session after VISIT_IDLE_MS idle or on a new campaign's
- * arrival (lib/analytics/visitor-session.ts decideSession), so a session row's
- * campaign IS the link that started that visit. A visitor who declined tracking
- * has no row, and their sign-up stays untagged unless the page itself carries
- * the link.
+ * The tracker records each session at every consent tier except an explicit
+ * decline or GPC, and starts a new session after VISIT_IDLE_MS idle or on a new
+ * campaign's arrival (lib/analytics/visitor-session.ts decideSession), so a
+ * session's landing page IS the link that started that visit. A visitor who
+ * declined tracking has no row, and their sign-up stays untagged unless the page
+ * itself carries the link.
+ *
+ * The campaign is read from that landing page's own utm_* query, never from the
+ * utm_* columns: captureSource fills those from the referrer when the link had
+ * no utm_source (facebook / social, google / organic, a referring host /
+ * referral) and writes direct / none when there was neither, so a column value
+ * does not mean the visit came from a tagged link. The landing page keeps its
+ * utm_* (stripIdentityParams removes only _pid and _fuid). No utm_source on it
+ * means no campaign, the same reading the other doors give a page's own URL.
  *
  * Never throws: attribution is best-effort and must not block a sign-up.
  */
@@ -26,23 +33,27 @@ export type VisitCampaign = {
   content: string | null
 }
 
-type CampaignRow = {
-  utm_source: string | null
-  utm_medium: string | null
-  utm_campaign: string | null
-  utm_content: string | null
-}
+type CampaignRow = { landing_page: string | null }
 
-const COLUMNS = 'utm_source, utm_medium, utm_campaign, utm_content'
+const COLUMNS = 'landing_page'
 
+/** The utm_* the visit's landing link carried, or null when it had no utm_source. Pure. */
 function toCampaign(row: CampaignRow | null | undefined): VisitCampaign | null {
-  const source = row?.utm_source?.trim()
+  const landingPage = row?.landing_page
+  if (!landingPage) return null
+  let query: URLSearchParams
+  try {
+    query = new URL(landingPage, 'https://ryan-realty.com').searchParams
+  } catch {
+    return null
+  }
+  const source = query.get('utm_source')?.trim()
   if (!source) return null
   return {
     source,
-    medium: row?.utm_medium?.trim() || null,
-    campaign: row?.utm_campaign?.trim() || null,
-    content: row?.utm_content?.trim() || null,
+    medium: query.get('utm_medium')?.trim() || null,
+    campaign: query.get('utm_campaign')?.trim() || null,
+    content: query.get('utm_content')?.trim() || null,
   }
 }
 
@@ -55,7 +66,7 @@ function toCampaign(row: CampaignRow | null | undefined): VisitCampaign | null {
  * campaign or not. The client keeps that id past the idle timeout (it names the
  * session holding the browsing history, for the stitch), so a stale or unknown
  * id falls through to the browser's (`rrVid` cookie) most recent live session.
- * null when no live session exists or it arrived with no campaign.
+ * null when no live session exists or its landing link carried no utm_source.
  */
 export async function readVisitCampaign(input: {
   sessionId?: string | null

@@ -70,14 +70,21 @@ const SID = '550e8400-e29b-41d4-a716-446655440000'
 const OTHER_SID = '6fa459ea-ee8a-4ca4-894e-db77e160355e'
 const RR_VID = '9b2d6c1e-3f4a-4b5c-8d7e-0a1b2c3d4e5f'
 
-function session(row: Row): Row {
+/**
+ * A visitor_sessions row the way the tracker writes it: `link` is the landing
+ * page's utm_* (null = an untagged arrival). The utm_* columns hold what
+ * captureSource recorded, which for an untagged arrival is a referrer guess or
+ * direct / none, so a test can prove those columns never tag a lead.
+ */
+function session(row: Row & { link?: Record<string, string> | null; columns?: Record<string, string> }): Row {
+  const { link, columns, ...rest } = row
+  const query = link ? `?${new URLSearchParams(link).toString()}` : ''
   return {
-    utm_source: null,
-    utm_medium: null,
-    utm_campaign: null,
-    utm_content: null,
     rr_vid: RR_VID,
-    ...row,
+    landing_page: `https://ryan-realty.com/homes-for-sale/bend${query}`,
+    utm_source: link?.utm_source ?? columns?.utm_source ?? 'direct',
+    utm_medium: link?.utm_medium ?? columns?.utm_medium ?? 'none',
+    ...rest,
   }
 }
 
@@ -93,10 +100,12 @@ describe('readVisitCampaign', () => {
       session({
         session_id: SID,
         last_seen_at: at(5),
-        utm_source: 'facebook',
-        utm_medium: 'paid_social',
-        utm_campaign: 'buyer-price-drops',
-        utm_content: 'reloc-h3-v1',
+        link: {
+          utm_source: 'facebook',
+          utm_medium: 'paid_social',
+          utm_campaign: 'buyer-price-drops',
+          utm_content: 'reloc-h3-v1',
+        },
       }),
     )
     await expect(readVisitCampaign({ sessionId: SID, now: NOW })).resolves.toEqual({
@@ -110,22 +119,26 @@ describe('readVisitCampaign', () => {
   it('a live session with no campaign answers null and does not borrow another session', async () => {
     db.visitor_sessions.push(
       session({ session_id: SID, last_seen_at: at(2) }),
-      session({ session_id: OTHER_SID, last_seen_at: at(1), utm_source: 'facebook', utm_medium: 'paid_social' }),
+      session({ session_id: OTHER_SID, last_seen_at: at(1), link: { utm_source: 'facebook', utm_medium: 'paid_social' } }),
     )
     await expect(readVisitCampaign({ sessionId: SID, rrVid: RR_VID, now: NOW })).resolves.toBeNull()
   })
 
   it('a session past the 30-minute idle window does not answer for today', async () => {
     db.visitor_sessions.push(
-      session({ session_id: SID, last_seen_at: at(31), utm_source: 'facebook', utm_medium: 'paid_social' }),
+      session({ session_id: SID, last_seen_at: at(31), link: { utm_source: 'facebook', utm_medium: 'paid_social' } }),
     )
     await expect(readVisitCampaign({ sessionId: SID, rrVid: RR_VID, now: NOW })).resolves.toBeNull()
   })
 
   it('a stale form session falls through to the browser’s live session', async () => {
     db.visitor_sessions.push(
-      session({ session_id: SID, last_seen_at: at(240), utm_source: 'newsletter', utm_medium: 'email' }),
-      session({ session_id: OTHER_SID, last_seen_at: at(3), utm_source: 'google', utm_medium: 'cpc', utm_campaign: 'bend-homes' }),
+      session({ session_id: SID, last_seen_at: at(240), link: { utm_source: 'newsletter', utm_medium: 'email' } }),
+      session({
+        session_id: OTHER_SID,
+        last_seen_at: at(3),
+        link: { utm_source: 'google', utm_medium: 'cpc', utm_campaign: 'bend-homes' },
+      }),
     )
     await expect(readVisitCampaign({ sessionId: SID, rrVid: RR_VID, now: NOW })).resolves.toEqual({
       source: 'google',
@@ -137,7 +150,7 @@ describe('readVisitCampaign', () => {
 
   it('by rr_vid alone, the most recent live session answers', async () => {
     db.visitor_sessions.push(
-      session({ session_id: SID, last_seen_at: at(20), utm_source: 'facebook', utm_medium: 'paid_social' }),
+      session({ session_id: SID, last_seen_at: at(20), link: { utm_source: 'facebook', utm_medium: 'paid_social' } }),
       session({ session_id: OTHER_SID, last_seen_at: at(4) }),
     )
     // The newest live session arrived with no campaign: no tags, even though an
@@ -147,7 +160,12 @@ describe('readVisitCampaign', () => {
 
   it('another browser’s session never answers', async () => {
     db.visitor_sessions.push(
-      session({ session_id: OTHER_SID, rr_vid: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', last_seen_at: at(1), utm_source: 'facebook' }),
+      session({
+        session_id: OTHER_SID,
+        rr_vid: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        last_seen_at: at(1),
+        link: { utm_source: 'facebook' },
+      }),
     )
     await expect(readVisitCampaign({ sessionId: SID, rrVid: RR_VID, now: NOW })).resolves.toBeNull()
   })
@@ -158,9 +176,41 @@ describe('readVisitCampaign', () => {
   })
 
   it('trims blank utm values and never throws', async () => {
-    db.visitor_sessions.push(session({ session_id: SID, last_seen_at: at(1), utm_source: '  ', utm_medium: 'cpc' }))
+    db.visitor_sessions.push(session({ session_id: SID, last_seen_at: at(1), link: { utm_source: '  ', utm_medium: 'cpc' } }))
     await expect(readVisitCampaign({ sessionId: SID, now: NOW })).resolves.toBeNull()
     calls.throwOnFrom = true
     await expect(readVisitCampaign({ sessionId: SID, now: NOW })).resolves.toBeNull()
+  })
+
+  it('an untagged arrival never tags, whatever captureSource guessed into the columns', async () => {
+    // direct / none: no referrer, no utm.
+    db.visitor_sessions.push(session({ session_id: SID, last_seen_at: at(1) }))
+    await expect(readVisitCampaign({ sessionId: SID, now: NOW })).resolves.toBeNull()
+    // A Google search result: captureSource writes google / organic from the referrer.
+    db.visitor_sessions = [
+      session({ session_id: SID, last_seen_at: at(1), referrer: 'https://www.google.com/', columns: { utm_source: 'google', utm_medium: 'organic' } }),
+    ]
+    await expect(readVisitCampaign({ sessionId: SID, now: NOW })).resolves.toBeNull()
+    // A Facebook post shared without tags: facebook / social from the referrer.
+    db.visitor_sessions = [
+      session({ session_id: SID, last_seen_at: at(1), referrer: 'https://m.facebook.com/', columns: { utm_source: 'facebook', utm_medium: 'social' } }),
+    ]
+    await expect(readVisitCampaign({ sessionId: SID, now: NOW })).resolves.toBeNull()
+  })
+
+  it('reads the link off a landing page that also carries other query params', async () => {
+    db.visitor_sessions.push(
+      session({
+        session_id: SID,
+        last_seen_at: at(1),
+        landing_page: 'https://ryan-realty.com/homes-for-sale/listing/220123456?fbclid=F1&utm_source=fb&utm_medium=paid_social&utm_content=tour%20reel',
+      }),
+    )
+    await expect(readVisitCampaign({ sessionId: SID, now: NOW })).resolves.toEqual({
+      source: 'fb',
+      medium: 'paid_social',
+      campaign: null,
+      content: 'tour reel',
+    })
   })
 })
