@@ -1,0 +1,251 @@
+# ryan-realty.com analytics
+
+**This file is the source of truth** for what ryan-realty.com measures, how events reach GA4 / Meta / Google Ads, and the rules agents must not break. Implementation lives in `lib/analytics/*`, `lib/lead-tracking.ts`, `lib/ga4-measurement-protocol.ts`, and `/api/cron/offline-conversions`. Older notes (`docs/GTM_ANALYTICS_SETUP.md`, `docs/ANALYTICS_LEAD_TRACKING.md`, `docs/GTM_CONSENT_REGION_DEFAULTS.md` on Google Signals) are secondary; if they disagree with this page, this page wins.
+
+**Never put credentials here.** No API secrets, Measurement Protocol secrets, service-account keys, `.env` values, or access tokens. Public property / container / customer IDs are not secrets.
+
+---
+
+## Identifiers (live)
+
+| Surface | ID |
+|---|---|
+| GA4 property | `527333348` (Ryan Realty) |
+| GA4 measurement ID | `G-ST40W4WM6T` | <!-- pragma: allowlist secret -->
+| GTM container | `GTM-WV6R4NZ5` | <!-- pragma: allowlist secret -->
+| Google Ads customer | `5881785778` (linked to this GA4 property) |
+| Search Console property | `https://ryan-realty.com/` (linked to this GA4 property) |
+
+Env vars (names only): `NEXT_PUBLIC_GA4_MEASUREMENT_ID`, `NEXT_PUBLIC_GTM_CONTAINER_ID`, `GA4_API_SECRET` (server Measurement Protocol). Read them from the environment; do not copy values into docs or chat.
+
+---
+
+## GA4 property settings (owner decisions)
+
+- **Custom dimensions registered:** `lead_type`, `form_id`, `lp_variant` (event-scoped). Register any new reportable param in GA4 Admin → Data display → Custom definitions before relying on it in Explorations.
+- **Primary channel group:** `AI Assistants (Custom)` — includes an **AI Assistants** channel (ChatGPT / Perplexity / similar referral hosts). Do not delete the group.
+- **Google Signals: ON.** Owner decision. Do not disable. (`scripts/ga4-admin-setup.mjs` enables Signals + consented; the older consent doc that said to keep Signals off is stale.)
+- **Data retention:** 14 months (Standard-tier maximum).
+- **Google Ads:** property linked to customer `5881785778`. Import GA4 key events (`generate_lead`, and once they accumulate, `qualify_lead` / `close_convert_lead`) as Ads conversions from the GA4 ↔ Ads link. Do not invent an `AW-` conversion tag in the page for those offline events.
+
+---
+
+## GTM container
+
+**Live version 7** — name `GA4 browser events via dataLayer (2026-10-13)`. Inventory: **2 tags, 4 triggers, 30 variables**.
+
+What that version holds:
+
+- The **base Google tag** for `G-ST40W4WM6T` (All Pages). This is the only `page_view` sender. **It is not in the repo import file.** <!-- pragma: allowlist secret -->
+- Tag **`GA4 - dataLayer events`** — GA4 Event tag, Event Name `{{Event}}`, parameters from `ga4_params.*` plus flat `page_type` / `broker_slug`. Trigger: **`CE - GA4 browser events`** (regex on the allowlist below).
+
+### Import rule (do not skip)
+
+GTM imports **MUST use Merge** (Admin → Import Container → **Merge** → Rename conflicting tags, triggers, and variables). **Never Overwrite.**
+
+`docs/gtm/ga4-browser-events.import.json` is a **partial** container: 1 tag (`GA4 - dataLayer events`), 1 trigger (`CE - GA4 browser events`), 29 Data Layer Variables (`DLV - ga4 …`). It **intentionally omits the base Google tag**. Overwrite deletes that Google tag and every other live tag/trigger/variable that is not in the file.
+
+Publish belongs to Matt. After a bad import, restore via **Versions → Set as latest** (prior published versions stay restorable).
+
+Rebuild the import after changing the allowlist:
+
+```bash
+npx tsx scripts/build-gtm-ga4-import.ts
+```
+
+`lib/analytics/ga4-browser-events.test.ts` keeps the TypeScript allowlist, this import file, and `docs/GTM_GA4_BROWSER_EVENTS.md` in step. Publish steps live in that GTM doc.
+
+---
+
+## Browser events (dataLayer → GTM → GA4)
+
+Browser events reach GA4 **only** through `dataLayer` → the **`GA4 - dataLayer events`** tag. The page never calls `gtag('event', …)` for GA4.
+
+```ts
+import { trackEvent } from '@/lib/tracking'           // preferred
+import { pushDataLayerEvent } from '@/lib/analytics/ga4-browser-events'
+```
+
+1. `pushDataLayerEvent` clears `ga4_params` (`{ ga4_params: null }`), then pushes `{ event, …flat, ga4_params }`.
+2. Only names in `GA4_BROWSER_EVENTS` match the Custom Event trigger.
+3. Only keys in `GA4_EVENT_PARAMS` enter `ga4_params`. Phone numbers, emails, hrefs, and paths are dropped.
+4. **`click_cta` is the CTA event.** Do not invent `cta_click` / `button_click`.
+5. Adding an event: add it to `GA4_BROWSER_EVENTS`, rebuild the import, update the GTM trigger regex, Matt publishes.
+
+### Allowlisted event names
+
+`tour_requested`, `schedule_tour_click`, `schedule_showing_click`, `ask_question_click`, `contact_agent_click`, `email_agent`, `call_initiated`, `text_initiated`, `cma_downloaded`, `cma_anchor_click`, `place_value_answer`, `address_submit`, `sign_up`, `open_house_rsvp`, `open_house_page_view`, `view_listing`, `save_listing`, `like_listing`, `share_listing`, `compare_listing`, `compare_add`, `compare_remove`, `compare_share`, `compare_pdf_download`, `share`, `view_photo_gallery`, `play_video`, `view_similar_listings`, `search`, `save_search`, `view_community`, `view_city`, `view_neighborhood`, `view_blog_post`, `view_market_report`, `download_report`, `scroll_depth`, `section_view`, `click_cta`, `calculator_used`, `calculator_interact`, `map_interaction`, `share_collection`, `ai_compare_used`, `return_visit`, `exit_intent_shown`, `homepage_view`, `hero_search`, `hero_impression`, `hero_city_chip`, `featured_impression`, `view_featured_listings`, `community_impression`, `newsletter_signup`, `community_cta_click`, `city_cta_click`, `broker_view`, `contact_agent`, `view_landing_page`, `pulse_feed_entry`, `pulse_card_view`, `pulse_card_like`, `pulse_card_share`, `pulse_cta_click`, `pulse_filter_change`, `nav_interact`, `dwell`, `module_interact`, `page_not_found`, `LCP`, `INP`, `CLS`, `FCP`, `TTFB`.
+
+### Allowlisted parameters
+
+| GA4 parameter | dataLayer key | Notes |
+|---|---|---|
+| `page_type` | `page_type` | Flat page context (every navigation) |
+| `broker_slug` | `broker_slug` | Flat page context |
+| `source` | `ga4_params.source` | |
+| `context` | `ga4_params.context` | |
+| `surface` | `ga4_params.surface` | |
+| `cta` | `ga4_params.cta` | CTA label (`cta_label` aliases here) |
+| `cta_location` | `ga4_params.cta_location` | `cta_context` aliases here |
+| `action` | `ga4_params.action` | |
+| `method` | `ga4_params.method` | |
+| `value` | `ga4_params.value` | **Not used on leads** |
+| `currency` | `ga4_params.currency` | **Not used on leads** |
+| `section` | `ga4_params.section` | `section_id` aliases here |
+| `depth` | `ga4_params.depth` | `percent` / `depth_percent` alias here |
+| `search_term` | `ga4_params.search_term` | |
+| `form` | `ga4_params.form` | |
+| `form_id` | `ga4_params.form_id` | |
+| `lead_type` | `ga4_params.lead_type` | Browser `sign_up` only; `generate_lead` is server |
+| `listing_key` | `ga4_params.listing_key` | GA4 copy is `lk_<key>` so a 26-digit MLS key stays text |
+| `city` | `ga4_params.city` | |
+| `city_slug` | `ga4_params.city_slug` | |
+| `community_slug` | `ga4_params.community_slug` | |
+| `place` | `ga4_params.place` | `place_slug` aliases here |
+| `lp_variant` | `ga4_params.lp_variant` | |
+| `lp_source` | `ga4_params.lp_source` | |
+| `lp_medium` | `ga4_params.lp_medium` | |
+| `lp_campaign` | `ga4_params.lp_campaign` | |
+| `lp_content` | `ga4_params.lp_content` | |
+| `metric_id` | `ga4_params.metric_id` | Web vitals |
+| `metric_rating` | `ga4_params.metric_rating` | Web vitals |
+
+### Deliberately not sent by the GTM tag
+
+| Name | Why |
+|---|---|
+| `generate_lead` | Server only (Measurement Protocol). A browser copy would double-count. |
+| `page_view` | The Google tag owns it. A second one doubles page views. |
+| `valuation_requested` | Server (`lib/cma-request.ts`) for the same submissions. |
+| `form_start` | Enhanced measurement already sends it. |
+
+---
+
+## Server events (Measurement Protocol)
+
+`lib/ga4-measurement-protocol.ts` → `fireGa4Event`. Used by lead tracking and the visitor-track mirror.
+
+### `generate_lead` (server-only)
+
+One event per real submission. **Only** `fireLeadGenerated` in `lib/lead-tracking.ts` may send it. Never from the browser, never `fireGa4Event('generate_lead')` directly, never `trackEvent('generate_lead')`. Held by `lib/analytics/lead-event.test.ts`.
+
+Leads are **counted by type**. No dollar values: `value` and `currency` are stripped. Meta Pixel / CAPI `Lead` events also send **no value / no currency** since #542.
+
+| Param | Source |
+|---|---|
+| `lead_type` | Fixed list in `LEAD_TYPES` |
+| `form_id` | Fixed list in `LEAD_FORM_IDS` |
+| `lp_variant` | Form / page variant (see buyer table below) |
+| `lp_source` / `lp_medium` / `lp_campaign` / `lp_content` | First-party UTM copy (`utm_*` → `lp_*`) |
+
+`lead_type` values: `seller_valuation`, `seller_listing`, `buyer_showing`, `buyer_question`, `buyer_alerts`, `listing_inquiry`, `contact_general`.
+
+Not leads (own events, never `generate_lead`): `recruit_inquiry`, `newsletter_signup` via `fireNonLeadEvent`.
+
+### Buyer landing pages
+
+| Page | `form_id` | `lp_variant` | `lead_type` |
+|---|---|---|---|
+| `/buy/alerts` | `buyer_alerts_lp` | `buy-alerts` | `buyer_alerts` |
+| `/buy/leverage` | `buyer_leverage_lp` | `buy-leverage` | `buyer_alerts` |
+
+UTM on paid / organic buyer links (`lib/analytics/utm.ts`, `docs/analytics/buyer-utm-spec.md`):
+
+- `utm_campaign` = `buyer-<angle>` (`buyer-leverage`, `buyer-price-drops`, `buyer-what-it-buys`, `buyer-relocate`, `buyer-first-home`, `buyer-deal-report`, or a later kebab `buyer-*`)
+- `utm_content` = **creative ID** (e.g. `reloc-h3-v1`, or the ad-platform macro in the ad URL template — never a street address)
+
+### Server page-view mirror (kept on purpose)
+
+`app/api/visitors/track` still mirrors essential-tier `page_view` (and a few intent events) through Measurement Protocol (`lib/analytics/ga4-mirror.ts`, on since 2026-08-10). **That mirror stays.** Consequence: GA4 **geography is unreliable** (MP hits do not carry a real visitor geo), and sessions / source / medium / engagement are shaped by the mirror. Use first-party `visitor_sessions` / Search Console when geography or organic counts matter. `session_start` / `first_visit` still come only from the browser tag — those are the outage canary (`lib/analytics/ga4-tracking-health.ts`).
+
+---
+
+## Offline conversions (daily 8 AM PT)
+
+Cron: `/api/cron/offline-conversions` — `vercel.json` schedule `0 15 * * *` (15:00 UTC = 8:00 AM Pacific). Code: `lib/marketing/offline-milestones.ts` (Meta), `lib/marketing/offline-ga4.ts` (GA4). Meta `/events` rejects `event_time` older than ~7 days; the upload window is 6 days. No backfill.
+
+| CRM stage | Meta event | GA4 event |
+|---|---|---|
+| Buyer Contract | `Lead` | `qualify_lead` (`lead_type=buyer_contract`) |
+| Pending | `StartTrial` | `qualify_lead` (`lead_type=pending`) |
+| Closed | `Purchase` | `close_convert_lead` (`lead_type=closed`) |
+| Listed (seller) | `Lead` | — (Meta only) |
+
+GA4 offline events shipped on `main` via #543. They use the stored `_ga` client_id on `crm_people.custom.gaClientId` (first-touch from `fireLeadGenerated`). A missing client_id is skipped, never minted. `lead_type` only — no dollars. Import `qualify_lead` / `close_convert_lead` as Google Ads conversions from the linked GA4 property.
+
+Meta Lead **form-fills** stay valueless (#542). Only a **Closed → Purchase** offline upload may carry a value, and that value is **our commission**, never sale price (`conversionValue` in `lib/marketing/offline-milestones.ts`).
+
+---
+
+## Consent
+
+Set in the page **before** `gtm.js` (`lib/analytics/consent-defaults.ts` + `lib/analytics/gtm-bootstrap.ts`). One restricted-region list: `lib/analytics/consent-regions.ts` (EEA + GB + CH).
+
+| Visitor | Default |
+|---|---|
+| US / rest of world, no banner answer, no GPC | `analytics_storage` **granted**; all `ad_*` **denied** |
+| EU / UK / CH, no banner answer | analytics **denied**; all `ad_*` **denied** |
+| Global Privacy Control on | all denied, including analytics (US included) |
+| Stored decline (`ryan_realty_cookie_consent`) | all denied |
+| Accept all | analytics + `ad_*` granted |
+
+Honor GPC and a stored decline everywhere. **Meta Pixel loads only after marketing accept** (`lib/analytics/meta-pixel-consent.ts`; `META_PIXEL_DEFAULT_FOLLOWS_ANALYTICS_STORAGE = false`). An ad click is not consent. Automation browsers set `rr_automation=1` / `rr_internal=1` and never grant analytics consent (`scripts/lib/marked-playwright.mjs`).
+
+---
+
+## Lead capture surfaces (server)
+
+Every real lead calls `fireLeadGenerated` after the CRM person exists. A new form adds a `form_id` to `LEAD_FORM_IDS` and a test in `lib/analytics/lead-event.test.ts`.
+
+| Door | Typical `form_id` |
+|---|---|
+| `app/actions/lead-capture.ts` | `page_cta`, listing / contact CTAs |
+| `app/actions/lead-landing.ts` | `lead_landing`, `buyer_leverage_lp` |
+| `app/actions/search-alert-capture.ts` | `search_alert`, `buyer_alerts_lp`, `buyer_leverage_lp` |
+| `app/contact/actions.ts` | `contact` (`contactLeadType` picks `lead_type`) |
+| `app/lp/seller-home-value/actions.ts` | `sell_value` |
+| `app/communities/[slug]/_v3/place-value-actions.ts` | `place_value` |
+| `app/buy/concessions/actions.ts` | `buy_concessions` |
+| `app/actions/cma-download.ts` | `listing_cma_download`, `listing_cma_request` |
+| `app/api/meta/lead-webhook/route.ts` | `meta_lead_ad` |
+| `app/actions/inbound-agent-referral.ts` / `out-of-area-referral.ts` | `inbound_agent_referral`, `out_of_area_referral` |
+| `app/actions/listing-payment-email.ts` | `listing_payment_email` |
+
+---
+
+## UTM (outbound links)
+
+One set per URL, via `buildTrackedUrl` in `lib/analytics/utm.ts`. Existing `utm_*` are replaced, never appended. No street addresses, person names, or per-property slugs in any `utm_*`. Test/preview sends use `test: true` → `utm_campaign=test-<campaign>`. CMA identity is `rr_doc=<cmas.slug>`, not a UTM. Vocab and buyer table: AGENTS.md rule 25, `.cursor/rules/utm-convention.mdc`, `docs/analytics/buyer-utm-spec.md`.
+
+---
+
+## Do not
+
+- Call `gtag('event', …)` for GA4 from the page.
+- Send `generate_lead` from the browser or a second server helper.
+- Put `value` / `currency` on `generate_lead`, Meta `Lead`, `qualify_lead`, or `close_convert_lead`.
+- Import a GTM container with **Overwrite**.
+- Disable Google Signals.
+- Trust GA4 geography, sessions, or source/medium as human truth while the MP page-view mirror is on.
+- Put API keys, tokens, or `.env` values in this file, a commit, or chat.
+- Use `ryanrealty.vercel.app` on any outward URL.
+
+---
+
+## Code map
+
+| Need | File |
+|---|---|
+| Browser allowlist + `pushDataLayerEvent` | `lib/analytics/ga4-browser-events.ts` |
+| Lead types / form IDs | `lib/analytics/lead-event.ts` |
+| Server `generate_lead` | `lib/lead-tracking.ts` |
+| Consent defaults / regions | `lib/analytics/consent-defaults.ts`, `consent-regions.ts` |
+| Meta Pixel consent | `lib/analytics/meta-pixel-consent.ts` |
+| UTM builder | `lib/analytics/utm.ts` |
+| LP variant from path | `lib/analytics/lp-variant.ts` |
+| MP page-view mirror | `lib/analytics/ga4-mirror.ts` |
+| GTM bootstrap | `lib/analytics/gtm-bootstrap.ts` |
+| Offline Meta + GA4 | `lib/meta-offline-conversions.ts`, `lib/marketing/offline-milestones.ts`, `lib/marketing/offline-ga4.ts`, `app/api/cron/offline-conversions/route.ts` |
+| GTM import | `docs/gtm/ga4-browser-events.import.json`, `docs/GTM_GA4_BROWSER_EVENTS.md` |
+| Buyer UTM table | `docs/analytics/buyer-utm-spec.md` |
+| Tracking invariants (gated) | `docs/TRACKING_POLICY.md`, `scripts/check-tracking-policy.mjs` |
