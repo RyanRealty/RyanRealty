@@ -1,8 +1,10 @@
 # AI voiceover scripts that sound human
 
-Last updated: 2026-10-13
+Last updated: 2026-10-14
 
 Ryan Realty binding: written voice stays [`marketing_brain_skills/brand-voice/VOICE.md`](../marketing_brain_skills/brand-voice/VOICE.md). Agent rules live in AGENTS.md "Ad copy, voiceover and captions." This file is the engine markup and caption process. Do not invent a second brand voice.
+
+Words before markup (Matt 2026-10-14): the ad-strategist ([`.claude/agents/ad-strategist.md`](../.claude/agents/ad-strategist.md)) writes the script on the whiteboard first, in plain English a 75-year-old follows on first hearing, context first, dollars not percentages (VOICE.md "Plain English, context first"). This file only decides how an engine says those words; it never rewrites them.
 
 Rule zero: find out which engine AND model will render the voice before you format anything. Markup that one engine follows gets read aloud or ignored by another. If the engine isn't confirmed, write a clean plain script (punctuation only) plus one marked-up version per likely engine, and label each.
 

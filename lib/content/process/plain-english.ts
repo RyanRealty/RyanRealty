@@ -364,14 +364,16 @@ export function parseWhiteboard(raw: unknown): { ok: true; value: Whiteboard } |
 
 /** A figure as typed, compared without its dollar sign, commas, spaces or percent sign. */
 const bare = (s: string): string => s.replace(/[$,\s%]/g, '').toLowerCase()
-const FIGURE_TOKEN = /\$?\d[\d,]*(?:\.\d+)?%?/g
+/** A typed figure: digits with commas only between them, so "2021," at a clause end is "2021". */
+const FIGURE_TOKEN = /\$?\d(?:[\d,]*\d)?(?:\.\d+)?%?/g
 const PHONE = /\b541[.\-\s]?703[.\-\s]?3095\b/g
 const YEAR = /^(19|20)\d{2}$/
 
 /**
  * R-187: every figure the whiteboard names is a figure ID with a row in brief.numbers, and every
  * figure typed in its script or contrast is the on_screen value of a row it names. A phone number
- * and a bare year are not figures. Problems start "whiteboard figure ".
+ * and a bare year are not figures (a year in the voice or a caption is not a hero number), with or
+ * without the punctuation after it. Problems start "whiteboard figure ".
  */
 export function whiteboardFigureProblems(wb: Whiteboard, rows: readonly FigureRow[]): string[] {
   const out: string[] = []
@@ -391,7 +393,8 @@ export function whiteboardFigureProblems(wb: Whiteboard, rows: readonly FigureRo
     if (typeof r.value === 'number' || typeof r.value === 'string') allowed.add(bare(String(r.value)))
   }
   const typed = (where: string, text: string) => {
-    for (const m of text.replace(PHONE, ' ').match(FIGURE_TOKEN) ?? []) {
+    for (const raw of text.replace(PHONE, ' ').match(FIGURE_TOKEN) ?? []) {
+      const m = raw.replace(/[^\d%]+$/, '')
       const b = bare(m)
       if (!b || YEAR.test(m)) continue
       if (!allowed.has(b)) out.push(`whiteboard figure "${m}" in ${where} is typed, not a figure the whiteboard names: a figure in the whiteboard is the on_screen value of a brief.numbers row listed in figures`)

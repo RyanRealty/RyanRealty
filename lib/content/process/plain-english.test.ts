@@ -218,6 +218,15 @@ describe('the whiteboard', () => {
     ])
   })
 
+  it('reads a year as a year with or without the comma after it: neither is a figure (bug report 2026-10-14)', () => {
+    for (const line of ['In 2021, prices rose.', 'In 2021 prices rose.']) {
+      expect(whiteboardFigureProblems(goodBoard({ script: [line] }), []), line).toEqual([])
+      expect(checkWhiteboard({ path: 'w', raw: goodBoard({ script: ['Are you thinking of buying in Central Oregon?', line] }) }, [], true).problems, line).toEqual([])
+    }
+    // A figure at a clause end is still the figure, and still has to be a named row.
+    expect(whiteboardFigureProblems(goodBoard({ script: ['Sellers gave $12,500, typically.'] }), [])).toEqual([expect.stringMatching(/^whiteboard figure "\$12,500" in script line 1 is typed/)])
+  })
+
   it("passes Matt's plain script as a whole, and holds the script to every plain-English rule", () => {
     expect(checkWhiteboard({ path: 'w', raw: goodBoard() }, [], true)).toEqual({ whiteboard: goodBoard(), problems: [] })
     const old = checkWhiteboard({ path: 'w', raw: goodBoard({ script: [...OLD_COPY, 'Seven in ten sellers cut.'] }) }, [], true).problems

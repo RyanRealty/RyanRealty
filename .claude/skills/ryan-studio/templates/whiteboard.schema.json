@@ -76,7 +76,7 @@
    "type": "array",
    "minItems": 1,
    "items": { "type": "string", "minLength": 1 },
-   "description": "The read-aloud lines, in order. Line 1 names the audience or the situation. Any figure typed here is the on_screen value of a brief.numbers row listed in figures (R-187)."
+   "description": "The read-aloud lines, in order. Line 1 names the audience or the situation. Any figure typed here is the on_screen value of a brief.numbers row listed in figures (R-187); a year or the phone number is not a figure."
   },
   "figures": {
    "type": "array",
