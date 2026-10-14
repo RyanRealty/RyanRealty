@@ -1,0 +1,12 @@
+{
+  "rule": "R-188",
+  "step": "brief",
+  "what": "The old eyebrow puts two insider terms on screen with no plain explanation: single-family and months of supply",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.1.scene.eyebrow",
+      "set": "Bend single-family · months of supply"
+    }
+  ]
+}

@@ -21,7 +21,8 @@
  *      that now holds another number, is a loosening. Updating the baseline to a looser value
  *      needs `Approved-by: matt` and `Rule-loosened: R-xxx` in the commit message
  *      (scripts/check-rule-loosening.mjs, commit-msg).
- *  R4  every number the factory holds (QA_THRESHOLDS, the job caps, video_types.json) belongs to
+ *  R4  every number the factory holds (QA_THRESHOLDS, the job caps, the whiteboard and plain-English
+ *      limits in lib/content/process/plain-english.ts, video_types.json) belongs to
  *      some rule's threshold, or is listed in rules.ts UNRATCHETED with the reason. A number no
  *      rule owns could loosen without the ratchet seeing it.
  *
@@ -196,13 +197,14 @@ async function loadReal(root) {
   // the same way, through the repo's tsx (tsImport), and Node 22 proves what Node 20 runs.
   const { tsImport } = await import('tsx/esm/api')
   const load = (rel) => tsImport(pathToFileURL(join(root, rel)).href, import.meta.url)
-  const [{ RULES, CAPS, UNRATCHETED }, tp, th] = await Promise.all([
+  const [{ RULES, CAPS, UNRATCHETED }, tp, th, pe] = await Promise.all([
     load('lib/content/process/rules.ts'),
     load('lib/content/process/threshold-path.ts'),
     load('lib/studio/qa/thresholds.ts'),
+    load('lib/content/process/plain-english.ts'),
   ])
   const vt = th.loadVideoTypes()
-  const data = tp.buildThresholdData({ qa: th.QA_THRESHOLDS, extraBannedPhrases: th.EXTRA_BANNED_PHRASES, requiredTechniqueCategories: th.REQUIRED_TECHNIQUE_CATEGORIES, caps: CAPS, videoTypes: vt })
+  const data = tp.buildThresholdData({ qa: th.QA_THRESHOLDS, extraBannedPhrases: th.EXTRA_BANNED_PHRASES, requiredTechniqueCategories: th.REQUIRED_TECHNIQUE_CATEGORIES, caps: CAPS, plainEnglish: pe.plainEnglishThresholds(), videoTypes: vt })
   const resolved = {}
   for (const rule of RULES) {
     tp.thresholdsOf(rule).forEach((spec, i) => {
