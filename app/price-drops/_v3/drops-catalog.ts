@@ -1,5 +1,13 @@
 import type { PriceDropFieldItem } from './drops-field-items'
 
+export type PriceDropSignalFilter =
+  | ''
+  | 'repeatCuts'
+  | 'longDom'
+  | 'ownerWillCarry'
+  | 'sellerCredit'
+  | 'bankOwned'
+
 export type PriceDropCatalogFilters = {
   /** Empty string means every city on the page. */
   city: string
@@ -7,6 +15,8 @@ export type PriceDropCatalogFilters = {
   priceMax: number | null
   /** Inclusive floor on bedrooms. Null means any bed count. */
   bedsMin: number | null
+  /** Factual deal signal. Empty means every home. */
+  signal?: PriceDropSignalFilter
 }
 
 export const PRICE_DROP_CATALOG_PAGE_SIZE = 24
@@ -41,8 +51,28 @@ export function filterPriceDropCatalog(
       const beds = item.beds
       if (beds == null || !Number.isFinite(beds) || beds < filters.bedsMin) return false
     }
+    if (filters.signal) {
+      if (!item.signals?.[filters.signal]) return false
+    }
     return true
   })
+}
+
+export const PRICE_DROP_SIGNAL_FILTERS: ReadonlyArray<{
+  key: PriceDropSignalFilter
+  label: string
+}> = [
+  { key: '', label: 'Any signal' },
+  { key: 'repeatCuts', label: 'Repeat cuts' },
+  { key: 'longDom', label: 'Long listed' },
+  { key: 'ownerWillCarry', label: 'Owner will carry' },
+]
+
+export function catalogSignalFilters(flags: { remarks: boolean; reo: boolean }) {
+  const filters = [...PRICE_DROP_SIGNAL_FILTERS]
+  if (flags.remarks) filters.push({ key: 'sellerCredit', label: 'Seller credit' })
+  if (flags.reo) filters.push({ key: 'bankOwned', label: 'Bank-owned or short sale' })
+  return filters
 }
 
 export function catalogCityOptions(items: readonly PriceDropFieldItem[]): string[] {

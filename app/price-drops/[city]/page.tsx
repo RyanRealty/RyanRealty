@@ -21,7 +21,12 @@ import { siteOrigin } from '@/lib/site-origin'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { formatDate } from '@/lib/format/date'
-import { getPriceDrops } from '@/lib/data'
+import {
+  getPriceDropCityContext,
+  getPriceDropFacts,
+  getPriceDrops,
+  type GetPriceDropFactsResult,
+} from '@/lib/data'
 import { refuseDegradedIsr } from '@/lib/site/degraded-isr'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { homesForSalePath } from '@/lib/slug'
@@ -29,6 +34,7 @@ import { formatPriceCompact } from '@/lib/format/money'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import {
   V3_ROOT_CLASS,
+  V3Answers,
   V3Breadcrumb,
   V3Drawing,
   V3Field,
@@ -51,10 +57,21 @@ import {
   dropsTrace,
   dropsUnavailable,
 } from '../_v3/drops-constants'
-import { priceDropFieldItems } from '../_v3/drops-field-items'
+import { attachPriceDropSignals, priceDropFieldItems } from '../_v3/drops-field-items'
 import { priceDropDistribution } from '../_v3/drops-drawing'
 import { priceDropDatasetSchemas } from '../_v3/drops-jsonld'
 import { PriceDropsFold, PriceDropsOpening } from '../_v3/PriceDropsField'
+import {
+  priceDropAnswerItems,
+  priceDropSanityNote,
+  priceDropSignalDefinitionItems,
+} from '../_v3/drops-answer'
+import { priceDropFaqAnswers, priceDropFaqSchema } from '../_v3/drops-faq'
+import { catalogSignalFilters } from '../_v3/drops-catalog'
+import { priceDropFilterFlags } from '@/lib/price-drops/flags'
+import { priceDropsCityDescription } from '@/lib/price-drops/copy'
+import { priceDropCityDoors } from '@/lib/price-drops/links'
+import type { PriceDropSignalKind } from '@/lib/price-drops/signals'
 
 export const revalidate = 1800
 export const dynamicParams = false
@@ -69,11 +86,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { city: slug } = await params
   if (!DROPS_CITY_SLUGS.includes(slug)) notFound()
   const cityName = cityLabel(slug)
+  // @prerender-db-ok getPriceDrops is makeResilientCached: it never rejects, a failed read is `degraded`.
+  const { total, degraded } = await getPriceDrops({
+    city: cityName,
+    limit: PRICE_DROPS_LIST_LIMIT,
+    days: 7,
+  })
   return pageMetadata({
     title: `Price Drops in ${cityName}, Oregon`,
-    description:
-      `Active homes in ${cityName}, Oregon where the seller reduced the asking price in the last 7 days. ` +
-      `Current list price, prior ask, drop percent, beds, baths, and sqft from the regional MLS.`,
+    description: priceDropsCityDescription({
+      cityName,
+      cutCount: degraded ? null : total,
+    }),
     path: `/price-drops/${slug}`,
     keywords: [
       `price reduced homes ${cityName} Oregon`,
@@ -90,17 +114,39 @@ export default async function PriceDropsCityPage({ params }: Props) {
   if (!DROPS_CITY_SLUGS.includes(citySlug)) notFound()
   const cityName = cityLabel(citySlug)
   const path = `/price-drops/${citySlug}`
+  const flags = priceDropFilterFlags()
 
-  // @prerender-db-ok getPriceDrops is makeResilientCached: it never rejects, a failed read is `degraded`.
-  const { drops, total, cap, totalReduced, medianDropPct, fetchedAt, degraded } = await getPriceDrops({
-    city: cityName,
-    limit: PRICE_DROPS_LIST_LIMIT,
-    days: 7,
-  })
+  const [{ drops, total, cap, totalReduced, medianDropPct, fetchedAt, degraded }, context] =
+    // @prerender-db-ok getPriceDrops and getPriceDropCityContext never reject; a failed read is `degraded`.
+    await Promise.all([
+      getPriceDrops({
+        city: cityName,
+        limit: PRICE_DROPS_LIST_LIMIT,
+        days: 7,
+      }),
+      getPriceDropCityContext(citySlug),
+    ])
 
   // Unknown is not empty: this copy stands for a minute, not the whole window.
   if (degraded) await refuseDegradedIsr(`price-drops/${citySlug}`, ['getPriceDrops'])
-  const fieldItems = priceDropFieldItems(drops)
+
+  let facts: GetPriceDropFactsResult
+  if (degraded) {
+    facts = { byKey: {}, degraded: true }
+  } else {
+    // @prerender-db-ok getPriceDropFacts is makeResilientCached with a degraded fallback.
+    facts = await getPriceDropFacts(
+      drops.map((drop) => drop.listingKey),
+      flags,
+    )
+  }
+
+  const fieldItems = attachPriceDropSignals(priceDropFieldItems(drops), {
+    facts: facts.byKey,
+    medianDaysToOffer: context.daysToPending,
+    remarksEnabled: flags.remarks,
+    reoEnabled: flags.reo,
+  })
   const distribution = priceDropDistribution({
     drops,
     total,
@@ -121,6 +167,34 @@ export default async function PriceDropsCityPage({ params }: Props) {
       : null
   const medianDropPctLabel =
     medianDropPct != null ? `${medianDropPct.toFixed(1)}%` : null
+
+  const signalKinds: PriceDropSignalKind[] = ['repeatCuts', 'longDom', 'ownerWillCarry']
+  if (flags.remarks) signalKinds.push('sellerCredit')
+  if (flags.reo) signalKinds.push('bankOwned')
+
+  const signalCounts: Partial<Record<PriceDropSignalKind, number>> = {
+    repeatCuts: fieldItems.filter((item) => item.signals?.repeatCuts).length,
+    longDom: fieldItems.filter((item) => item.signals?.longDom).length,
+    ownerWillCarry: fieldItems.filter((item) => item.signals?.ownerWillCarry).length,
+  }
+  if (flags.remarks) {
+    signalCounts.sellerCredit = fieldItems.filter((item) => item.signals?.sellerCredit).length
+  }
+  if (flags.reo) {
+    signalCounts.bankOwned = fieldItems.filter((item) => item.signals?.bankOwned).length
+  }
+
+  const faqAnswers = degraded
+    ? []
+    : priceDropFaqAnswers({
+        citySlug,
+        cityName,
+        weekCount: total,
+        context,
+        reoCount: flags.reo ? (signalCounts.bankOwned ?? 0) : null,
+        reoEnabled: flags.reo,
+      })
+  const faqSchema = priceDropFaqSchema(faqAnswers, degraded ? null : fetchedAt)
 
   const schemas: SchemaInput[] = [
     {
@@ -155,6 +229,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
           },
         ]
       : []),
+    ...(faqSchema ? [faqSchema] : []),
   ]
 
   const siblingItems: V3QuietItem[] = DROPS_CITY_SLUGS.filter((slug) => slug !== citySlug).map(
@@ -164,6 +239,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
     }),
   )
 
+  const cityDoors = priceDropCityDoors(citySlug)
   const edgeItems: V3QuietItem[] = [
     {
       kind: 'prose',
@@ -174,10 +250,27 @@ export default async function PriceDropsCityPage({ params }: Props) {
     { label: 'Listing alerts', href: '/buy/alerts' },
     { label: `Homes for sale in ${cityName}`, href: homesForSalePath(cityName) },
     { label: `Open houses in ${cityName}`, href: `/open-houses/${citySlug}` },
+    ...cityDoors
+      .filter((door) => door.href !== '/price-drops' && door.href !== homesForSalePath(cityName))
+      .map((door) => ({ label: door.label, href: door.href })),
     ...siblingItems,
   ]
 
   const captionCount = fieldItems.length
+  const answerItems = degraded
+    ? [{ kind: 'prose' as const, ...dropsUnavailable(cityName) }]
+    : [
+        ...priceDropAnswerItems({
+          citySlug,
+          cityName,
+          weekCount: total,
+          medianDropPct,
+          totalReducedLabel,
+          weekAsOf: fetchedAt,
+          context,
+        }),
+        priceDropSanityNote(),
+      ]
 
   return (
     <>
@@ -194,23 +287,25 @@ export default async function PriceDropsCityPage({ params }: Props) {
           ]}
         />
 
+        <PriceDropsOpening
+          heading={`Price drops in ${cityName}`}
+          headline={`Price drops in ${cityName}`}
+          captionValue={degraded ? '' : total.toLocaleString('en-US')}
+          captionLabel={
+            degraded
+              ? `price cuts in ${cityName} did not load`
+              : total === 1
+                ? `price cut in ${cityName}`
+                : total > captionCount
+                  ? `price cuts in ${cityName} · ${captionCount} shown below`
+                  : `price cuts in ${cityName}`
+          }
+        />
+
+        <V3Quiet id="this-week" heading="What the list shows" items={answerItems} />
+
         {!degraded && captionCount > 0 ? (
           <>
-            {/* The count is the city's whole window, as on the region page. It
-                printed the rendered cards, so a capped list read as the city's
-                total. When the list is capped, the label says so. */}
-            <PriceDropsOpening
-              heading={`Price drops in ${cityName}`}
-              headline={`Price drops in ${cityName}`}
-              captionValue={total.toLocaleString('en-US')}
-              captionLabel={
-                total === 1
-                  ? `price cut in ${cityName}`
-                  : total > captionCount
-                    ? `price cuts in ${cityName} · ${captionCount} shown below`
-                    : `price cuts in ${cityName}`
-              }
-            />
             <div className="pd-fold">
               <V3Field
                 id="cuts"
@@ -235,8 +330,21 @@ export default async function PriceDropsCityPage({ params }: Props) {
                   label={`${cityName} price cuts by how far the ask came down`}
                 />
               ) : null}
-              <PriceDropCatalog id="all-cuts" items={fieldItems} showCityFilter={false} />
+              <PriceDropCatalog
+                id="all-cuts"
+                items={fieldItems}
+                showCityFilter={false}
+                signalFilters={catalogSignalFilters(flags)}
+              />
             </div>
+            <V3Quiet
+              id="signals"
+              heading="How the signals are counted"
+              items={priceDropSignalDefinitionItems({
+                kinds: signalKinds,
+                counts: facts.degraded ? {} : signalCounts,
+              })}
+            />
             <V3SourceLine
               className={`${V3_ROOT_CLASS} pd-source`}
               sourceName="Oregon Data Share"
@@ -248,23 +356,25 @@ export default async function PriceDropsCityPage({ params }: Props) {
               }`}
             />
           </>
-        ) : (
+        ) : degraded ? (
           <V3Quiet
-            id="answer"
+            id="empty-week"
             heading={`Price drops in ${cityName}`}
-            headingLevel={1}
             items={[
-              degraded
-                ? { kind: 'prose', ...dropsUnavailable(cityName) }
-                : {
-                    kind: 'prose',
-                    term: `Nothing in ${cityName} this window`,
-                    body: `No active single-family home in ${cityName} has a documented asking-price cut in the last 7 days on this pull.`,
-                  },
+              { kind: 'prose', ...dropsUnavailable(cityName) },
               { label: 'All Central Oregon price drops', href: '/price-drops' },
             ]}
           />
-        )}
+        ) : null}
+
+        {faqAnswers.length > 0 ? (
+          <V3Answers
+            id="questions"
+            heading={`Questions about ${cityName} price drops`}
+            questions={faqAnswers}
+            doors={cityDoors}
+          />
+        ) : null}
 
         <PriceDropAlertsSheet
           placeLabel={cityName}

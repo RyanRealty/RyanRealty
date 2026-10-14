@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { PriceDrop } from '@/lib/data'
-import { priceDropFieldItems } from './drops-field-items'
+import { attachPriceDropSignals, priceDropFieldItems } from './drops-field-items'
 
 function drop(over: Partial<PriceDrop> = {}): PriceDrop {
   return {
@@ -29,6 +29,7 @@ function drop(over: Partial<PriceDrop> = {}): PriceDrop {
     priceDropCount: 1,
     daysSinceLastChange: 2,
     lastPriceChangeDate: '2026-08-10T00:00:00.000Z',
+    windowCutCount: 1,
     dom: 21,
     boundaryCity: 'Bend',
     boundaryNeighborhood: null,
@@ -50,6 +51,31 @@ describe('priceDropFieldItems photographs', () => {
     expect(items[0].cutPct).toBe(8.3)
     expect(items[0].meta).toContain('3 bd')
     expect(items[0].meta).toContain('was $599,000')
+  })
+
+  it('attaches factual signals without remarks text', () => {
+    const [row] = attachPriceDropSignals(priceDropFieldItems([drop({ listingKey: 'K1', windowCutCount: 1, dom: 80 })]), {
+      facts: {
+        K1: {
+          listingKey: 'K1',
+          ownerWillCarry: true,
+          lifetimeCutCount: 3,
+          sellerCreditPhrase: 'concession',
+          bankOwnedOrShortSale: true,
+        },
+      },
+      medianDaysToOffer: 30,
+      remarksEnabled: false,
+      reoEnabled: false,
+    })
+    expect(row.signals).toEqual({
+      repeatCuts: true,
+      longDom: true,
+      ownerWillCarry: true,
+      sellerCredit: false,
+      bankOwned: false,
+    })
+    expect(JSON.stringify(row)).not.toMatch(/concession|private remarks/i)
   })
 
   it('keeps the feed photograph so the fold can ask Spark for a field plate', () => {

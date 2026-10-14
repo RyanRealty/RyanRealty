@@ -1,5 +1,7 @@
 import type { V3FieldItem, V3ListingDialItem } from '@/components/site/v3'
 import type { PriceDrop } from '@/lib/data'
+import type { PriceDropListingFact } from '@/lib/data/listings/getPriceDropFacts'
+import { isRepeatCut, isLongDom } from '@/lib/price-drops/signals'
 import { formatPrice } from '@/lib/format/money'
 import { listingTileHref } from '@/lib/slug'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
@@ -28,6 +30,18 @@ export type PriceDropFieldItem = V3FieldItem & {
   listPrice?: number
   /** Bedroom count, for the catalog beds filter. */
   beds?: number | null
+  /** In-window or lifetime cut count, when known. */
+  cutCount?: number | null
+  /** Days on market, when the tile carried one. */
+  dom?: number | null
+  /** Factual deal signals. Never carries remarks text. */
+  signals?: {
+    repeatCuts?: boolean
+    longDom?: boolean
+    ownerWillCarry?: boolean
+    sellerCredit?: boolean
+    bankOwned?: boolean
+  }
   /**
    * The same home as the listing dial's row (Matt 2026-09-24: the fold's
    * carousel is V3ListingDial). Built here, from the same drop, in the same
@@ -151,6 +165,8 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
       ...(citySlug ? { citySlug } : {}),
       listPrice: drop.listPrice,
       beds: drop.beds,
+      cutCount: drop.windowCutCount,
+      dom: drop.dom,
       ...(meta ? { meta } : {}),
       // Keep the feed URL. The slide asks Spark for a field plate at render
       // so a 320×240 ledger thumb never opens the fold.
@@ -162,4 +178,27 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
   }
 
   return items
+}
+
+export function attachPriceDropSignals(
+  items: readonly PriceDropFieldItem[],
+  input: {
+    facts: Record<string, PriceDropListingFact>
+    medianDaysToOffer: number | null
+    remarksEnabled: boolean
+    reoEnabled: boolean
+  },
+): PriceDropFieldItem[] {
+  return items.map((item) => {
+    const fact = input.facts[item.id]
+    const cutCount = fact?.lifetimeCutCount ?? item.cutCount ?? null
+    const signals = {
+      repeatCuts: isRepeatCut(cutCount),
+      longDom: isLongDom(item.dom, input.medianDaysToOffer),
+      ownerWillCarry: Boolean(fact?.ownerWillCarry),
+      sellerCredit: Boolean(input.remarksEnabled && fact?.sellerCreditPhrase),
+      bankOwned: Boolean(input.reoEnabled && fact?.bankOwnedOrShortSale),
+    }
+    return { ...item, cutCount, signals }
+  })
 }

@@ -10,12 +10,15 @@ import Link from 'next/link'
 import { V3Button, V3Heading, V3_ROOT_CLASS } from '@/components/site/v3'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { cn } from '@/lib/utils'
+import { PRICE_DROP_SIGNAL_DEFINITIONS, type PriceDropSignalKind } from '@/lib/price-drops/signals'
 import {
   PRICE_DROP_BED_FILTERS,
   PRICE_DROP_CATALOG_PAGE_SIZE,
   PRICE_DROP_PRICE_FILTERS,
+  PRICE_DROP_SIGNAL_FILTERS,
   catalogCityOptions,
   filterPriceDropCatalog,
+  type PriceDropSignalFilter,
 } from './drops-catalog'
 import type { PriceDropFieldItem } from './drops-field-items'
 import './price-drops-field.css'
@@ -24,20 +27,23 @@ export function PriceDropCatalog({
   id = 'all-cuts',
   items,
   showCityFilter = true,
+  signalFilters = PRICE_DROP_SIGNAL_FILTERS,
 }: {
   id?: string
   items: readonly PriceDropFieldItem[]
   showCityFilter?: boolean
+  signalFilters?: ReadonlyArray<{ key: PriceDropSignalFilter; label: string }>
 }) {
   const [city, setCity] = useState('')
   const [priceMax, setPriceMax] = useState<number | null>(null)
   const [bedsMin, setBedsMin] = useState<number | null>(null)
+  const [signal, setSignal] = useState<PriceDropSignalFilter>('')
   const [shown, setShown] = useState(PRICE_DROP_CATALOG_PAGE_SIZE)
 
   const cities = useMemo(() => catalogCityOptions(items), [items])
   const filtered = useMemo(
-    () => filterPriceDropCatalog(items, { city, priceMax, bedsMin }),
-    [items, city, priceMax, bedsMin],
+    () => filterPriceDropCatalog(items, { city, priceMax, bedsMin, signal }),
+    [items, city, priceMax, bedsMin, signal],
   )
   const visible = filtered.slice(0, shown)
   const remaining = filtered.length - visible.length
@@ -115,13 +121,35 @@ export function PriceDropCatalog({
             </button>
           ))}
         </fieldset>
+
+        {signalFilters.length > 1 ? (
+          <fieldset className="pd-catalog__chips">
+            <legend>Signals</legend>
+            {signalFilters.map((option) => (
+              <button
+                key={option.key || 'any'}
+                type="button"
+                className={cn('pd-catalog__chip', signal === option.key && 'is-on')}
+                aria-pressed={signal === option.key}
+                onClick={() => {
+                  setSignal(option.key)
+                  setShown(PRICE_DROP_CATALOG_PAGE_SIZE)
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </fieldset>
+        ) : null}
       </div>
 
       {visible.length === 0 ? (
         <p className="pd-catalog__empty">No cut this week matches those filters.</p>
       ) : (
         <ul className="pd-catalog__list" role="list">
-          {visible.map((item) => (
+          {visible.map((item) => {
+            const signals = catalogRowSignals(item)
+            return (
             <li key={item.id}>
               <Link href={item.href} className="pd-catalog__row">
                 {item.photoSrc ? (
@@ -139,10 +167,14 @@ export function PriceDropCatalog({
                   <span className="pd-catalog__street">{item.title}</span>
                   {item.dropLine ? <span className="pd-catalog__drop">{item.dropLine}</span> : null}
                   {item.specs ? <span className="pd-catalog__specs">{item.specs}</span> : null}
+                  {signals.length > 0 ? (
+                    <span className="pd-catalog__signals">{signals.join(' · ')}</span>
+                  ) : null}
                 </span>
               </Link>
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
 
@@ -158,5 +190,19 @@ export function PriceDropCatalog({
         </div>
       ) : null}
     </section>
+  )
+}
+
+const ROW_SIGNAL_ORDER: PriceDropSignalKind[] = [
+  'repeatCuts',
+  'longDom',
+  'ownerWillCarry',
+  'sellerCredit',
+  'bankOwned',
+]
+
+function catalogRowSignals(item: PriceDropFieldItem): string[] {
+  return ROW_SIGNAL_ORDER.filter((kind) => item.signals?.[kind]).map(
+    (kind) => PRICE_DROP_SIGNAL_DEFINITIONS[kind].label,
   )
 }

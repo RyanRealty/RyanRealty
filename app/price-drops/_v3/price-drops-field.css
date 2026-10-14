@@ -383,7 +383,8 @@ main.v3 > details.v3-source.pd-source,
 
 .pd-catalog__street,
 .pd-catalog__drop,
-.pd-catalog__specs {
+.pd-catalog__specs,
+.pd-catalog__signals {
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-body-sm);
 }

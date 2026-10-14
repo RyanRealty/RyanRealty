@@ -40,6 +40,7 @@ function drop(over: Partial<PriceDrop> = {}): PriceDrop {
     priceDropCount: 1,
     daysSinceLastChange: 2,
     lastPriceChangeDate: '2026-08-10T00:00:00.000Z',
+    windowCutCount: 1,
     dom: 21,
     boundaryCity: 'Bend',
     boundaryNeighborhood: null,
@@ -245,8 +246,36 @@ describe('price-drops pages: a failed read is not an empty week', () => {
     })
 
     it(`${file} headlines the window's population, not the rendered cards`, () => {
-      expect(src).toMatch(/captionValue=\{total\.toLocaleString\('en-US'\)\}/)
+      expect(src).toMatch(/total\.toLocaleString\('en-US'\)/)
       expect(src).toMatch(/shown below/)
     })
   }
+})
+
+describe('city price-drops upgrade', () => {
+  const src = readFileSync(resolve(process.cwd(), 'app/price-drops/[city]/page.tsx'), 'utf8')
+
+  it('keeps the answer block, FAQPage, ItemList and BreadcrumbList on the city page', () => {
+    expect(src).toMatch(/id="this-week"/)
+    expect(src).toMatch(/priceDropFaqSchema/)
+    expect(src).toMatch(/type: 'itemList'/)
+    expect(src).toMatch(/type: 'breadcrumb'/)
+    expect(src).toMatch(/<V3Answers/)
+  })
+
+  it('does not add a /deals/bend redirect or motivated H1', () => {
+    expect(src).not.toMatch(/\/deals\/bend/)
+    expect(src).toMatch(/heading=\{`Price drops in \$\{cityName\}`\}/)
+    expect(src).not.toMatch(/motivated/i)
+    expect(src).not.toMatch(/buyer's market|buyers market/i)
+    expect(src).not.toContain('\u2014')
+  })
+
+  it('puts remarks and REO filters behind flags that default off', () => {
+    expect(src).toMatch(/priceDropFilterFlags\(/)
+    expect(src).toMatch(/flags\.remarks/)
+    expect(src).toMatch(/flags\.reo/)
+    expect(src).not.toMatch(/private_remarks|privateRemarks/)
+    expect(src).not.toMatch(/getMotivatedListings/)
+  })
 })

@@ -1,4 +1,18 @@
-# Current — 2026-10-14 (Cursor, buyer-answers batch 2)
+# Current — 2026-10-14 (Cursor, /price-drops city deals upgrade, merge-resolve PR only)
+
+Surface: Cursor cloud. Branch `cursor/price-drops-deals-10f2` (PR #514) now targets main after merge commits of origin/main. Do not merge. Do not `git push` main. Nothing sent. Production DB stayed read-only.
+
+**What this branch does.** Upgrades `/price-drops/bend`, `/redmond`, `/sisters`, `/la-pine` in place. Title and H1 stay "Price drops in {city}". Answer block at the top. Factual signals only: repeat cuts, long days on market, owner-will-carry. Remarks seller-credit and REO/short-sale filters exist behind flags that default OFF. Never renders, serializes, or logs private remarks. FAQPage + ItemList + BreadcrumbList. Keeps #512 sanity filter (over 40% and ~10x decimal-shift withheld; one card per MLS number) and #510 formId / lpContext / paid attribution. No `/deals/bend` redirect. No foreclosure doors (those pages do not exist). Under-$X doors only where those routes already exist.
+
+**This pass.** Merged origin/main again (main tip `63d924ee5`, #557 buyer-answers batch 2 and later landings). Kept city deal-upgrade features and main's listing-alert / catalog / sanity behavior.
+
+**Still open from main.** Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`). #452, #488, and #489 are on main.
+
+**Not this change.** Do not merge #514. Do not send alerts. Do not apply SQL. Do not turn the remarks or REO flags on. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/plans/CROSS_AGENT_HANDOFF.md` Current, `AGENTS.md` CORE RULES, `design_system/public/TASTE.md`.
+
+## Earlier — 2026-10-14 (Cursor, buyer-answers batch 2)
 
 Surface: Cursor cloud. Branch `cursor/buyer-answers-batch-2-41c4` from origin/main `a00d7c3ca` (merged #506, no rebase). Land path is `gh pr checks --watch` then `gh pr merge --squash`. Nobody pushes main. Nothing sent.
 
@@ -41,6 +55,16 @@ Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-41c4` landed on ma
 ## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
 
 Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, land CMA intake + ranking PRs)
+
+Surface: Cursor cloud. #485 merged to origin/main `fe948f648`. Now landing #488 then #489. Closed #524 because `/buy/alerts` is live via #536. Nothing sent. Nobody pushes main. No rebuild.
+
+**This pass.** #488 closer-lot/view ranking, then #489 same-vintage seating. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main).
+
+**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 
