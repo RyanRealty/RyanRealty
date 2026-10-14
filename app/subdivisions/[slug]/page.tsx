@@ -1943,8 +1943,8 @@ async function renderSubdivisionPage({ params }: Props) {
             {/* THE ALERT SIGNUP WHEN THERE IS NO MAP (Matt 2026-10-14). The
                 fold's SubdivisionAlertsStrip above lives inside the map's
                 figure column, so a plat with no map showed only door buttons
-                and no signup. Same filter the fold strip sends: this city plus
-                this subdivision, every property type. No city to scope to
+                and no signup. Same filter the fold strip sends: the plat's
+                city plus its MLS name, every property type. No city to scope to
                 (placeCity null) means no strip, never a guess. The doors above
                 carry the page's one filled button, so this one steps down. */}
             {placeCity ? (
