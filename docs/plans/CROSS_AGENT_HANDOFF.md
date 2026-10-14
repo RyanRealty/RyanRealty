@@ -1,12 +1,17 @@
-# Current — 2026-10-14 (Cursor, land CMA intake + ranking PRs)
+# Current — 2026-10-14 (Cursor, three send-gate draft PRs)
 
-Surface: Cursor cloud. Landing #485 then #488 then #489 onto origin/main. Closed #524 because `/buy/alerts` is live via #536. Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. Three open draft PRs off origin/main `fe948f648`. Do not merge. Nothing sent. Nobody pushes main. No rebuild.
 
-**This pass.** Merge main into #485 (intake safety gate), wait for checks, merge. Then the two ranking PRs. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale: merge would revert the rule-31 map cache, `cleared_at`, and industry exclusion).
+**This pass.** Send-gate bugs, each its own PR:
+- #546 `cursor/intake-mobile-sms-gate-3e28` — mobile-only intake skipped SMS suppression
+- #547 `cursor/skip-suppression-opt-out-3e28` — skipSuppression bypassed STOP/opt-outs
+- #548 `cursor/same-sync-relist-race-3e28` — same-sync Active relist missed by `>` compare
 
-**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+`EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true. CMA and email wording unchanged.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the SMS suppression branch / fix/cma-phase-match / PR 488 or 489. Hold #452 and #471 as before.
+
+Skills read: `.cursor/rules/git-commit.mdc`.
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 
