@@ -280,8 +280,9 @@ describe('homepage hero search uses the public search stack', () => {
   it('stamps the hero as the ask source so a home-started valuation is countable', () => {
     expect(SEARCH).toContain("markAskSource('hero')")
     expect(SEARCH).toContain("trackEvent('address_submit', { form: 'get-value', surface: 'home_hero' })")
-    expect(SEARCH).toContain("trackEvent('search'")
-    expect(SEARCH).toContain("surface: 'home_hero'")
+    // A hero search reaches GA4 and the first-party store through one helper.
+    expect(SEARCH).toContain("trackSiteSearch({ surface: 'home_hero'")
+    expect(SEARCH).not.toContain("trackEvent('search'")
   })
 
   it('empty submit opens the regional list, not a dead form', () => {
