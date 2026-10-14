@@ -1,28 +1,54 @@
 # CORE RULES (read first; these override everything below and any handoff or plan doc)
 
-These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait, or to `git push` `main`, is stale.
+These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait, or to `git push` `main`, is stale. Process rules live in `AGENTS.md` only. `CLAUDE.md` and `.cursor/rules` point here. New process rules land in `AGENTS.md` in the same PR.
 
-**Main.** Work isn't done until merged and live in production (Matt 2026-10-13). Agents merge their own PRs once checks pass; never ask. `npm run ship`: gates, push, merge, confirm the Vercel production deploy. Never `git push` `main`. Unfinished work is `npm run push` only.
+**PRs only.** Never push or fast-forward to `main`. Branch, open a PR, merge. Unfinished work is `npm run push` only.
 
-**Git safety.** No rebase. No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away.
+**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except PRs labeled `hold-for-matt`. Workflows enqueue that.
 
-**Do not send.** Emails, texts, CMAs, and social posts stay drafts until Matt asks to send that specific item. A rebuild does not send, enqueue, or approve.
+**Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason. The stale job keeps the branch.
+
+**Done.** Merged, Vercel production **READY**, and the live URL checked. `npm run ship` is the land path.
+
+**Git safety.** No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away. Rebase only to land a PR.
+
+**Do not send.** Emails, texts, CMAs, and social posts stay drafts until Matt asks to send that specific item. A rebuild does not send, enqueue, or approve. Do not change approved CMA or email wording.
 
 **Names.** Never put buyer or seller names in public copy (site, email, social, letters).
 
 **Invent nothing.** Never invent numbers, names, prices, stats, or people. If it is not in the source you just read, it does not ship.
 
-**Prod DB.** Bots may write to the Ryan Realty Supabase database when a task Matt asked for needs it (Matt 2026-10-13).
+**DB.** Bots may write to the Ryan Realty Supabase DB when a task Matt asked for needs it. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true.
 
 **Secrets.** Never print API keys, tokens, passwords, or `.env` values. Never put them in commits, logs, or chat.
 
-**Integrations.** Before saying a service is not connected, search this repo for the existing client, env var, and key. The wiring is usually already here.
+**Payload.** Cap grids and schema lists. Never send the same data twice.
+
+**Waits.** No sleep-based waits. Use `gh pr checks --watch` or CI waits.
+
+**Integrations.** Before saying a service is not connected, search this repo for the existing client, env var, and key.
 
 **Cursor out.** When Cursor is out (usage, credit, spend, 402, or a 20-minute stall), switch to Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve`. Never use `XAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` to get past a limit.
 
 **Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
 
 **Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. Ad copy, VO, captions: [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). video_gate is backup.
+
+---
+
+## Process land path (this file is the source)
+
+`CLAUDE.md` and `.cursor/rules` point here. Domain canon (data accuracy, voice, design, CMA rulings) stays in the file that owns the surface. Process does not.
+
+1. **PRs only.** Never `git push` `main`. Never fast-forward `main`. Branch from current `origin/main`, open a PR, merge that PR.
+2. **Auto-merge.** After opening a PR, run `gh pr merge --auto --squash --delete-branch` unless it is labeled `hold-for-matt`. Create that label if it is missing. Enable "Allow auto-merge" and "Automatically delete head branches" on the GitHub repo if they are off. `.github/workflows/pr-auto-merge.yml` queues the same command, drops auto-merge when `hold-for-matt` is added, and squash-merges after `merge-gate` + `security-scan` when the repo setting is still off.
+3. **Stale PRs.** A PR older than 3 days is rebased and merged, or closed with a written reason. `.github/workflows/pr-stale.yml` (daily + `workflow_dispatch`) labels `stale` at 3 days and closes after 2 more days, keeping the branch so the work is not lost. Skip `hold-for-matt`.
+4. **Done.** The PR is merged, the Vercel production deploy for that SHA is **READY**, and the live URL is checked. `npm run ship` is the land path. Unfinished work is `npm run push` plus a Current line in `docs/plans/CROSS_AGENT_HANDOFF.md`.
+5. **Payload.** Public pages respect the page payload budgets (`SSR_GRID_PAGE` in `lib/site/ssr-grid-page.ts`, `ci:page-payload`, Atlas props budget). Cap grids and schema lists. Never serialize the same listing or schema payload twice.
+6. **Waits.** No `sleep` polls. Use `gh pr checks --watch` or the CI wait the tool already has. R-221 still bans sitting on `gh run view` in a loop. **R-221:** do not poll GitHub Actions.
+7. **New process rules.** A standing process rule Matt issues lands in this file in the same PR as the work it governs.
+8. **DB writes.** Bots may write to the Ryan Realty Supabase DB when a task Matt asked for needs it. Sends stay drafts. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` in `lib/data/prospecting/drip-schedule.ts` stays `true`. Approved CMA and email wording do not change without Matt's sign-off.
+9. **merge-gate.** CI job `merge-gate` is the required land-path rollup: lint, gates, unit, and on app PRs build / e2e / a11y. Do not require Lighthouse or content-floor. A ruleset or branch protection on `main` should require `merge-gate` + `security-scan`, block direct pushes and force-pushes, require a PR, and let repository admins bypass in an emergency. This session's GitHub App token 403s Administration (`Resource not accessible by integration`); do not push an empty commit to `main` until the API shows protection is active.
 
 ---
 
@@ -124,15 +150,15 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 
 ### Start of every session (any tool)
 
-1. `git fetch origin` and branch from current `origin/main`. Do not rebase, force-push, or reset. A finished unit is `npm run ship`. Unfinished work is `npm run push` right away (rule 14).
+1. `git fetch origin` and branch from current `origin/main`. No force-push or reset. Rebase only to land a PR. A finished unit is `npm run ship`. Unfinished work is `npm run push` right away (rule 14).
 2. If you are picking up mid-thread from the other surface, read the newest `~/.claude/plans/HANDOFF-*.md` when one exists (narrative); otherwise **`git log origin/main -5`** is enough.
 3. What you can reach (Supabase, the Google service account, Gmail, Vercel, GitHub, the rest) is in [`docs/ACCESS_INVENTORY.md`](docs/ACCESS_INVENTORY.md). Never ask Matt what access you have (Matt 2026-10-07). A provider refusal is a scope or grant to name precisely, not a question.
 4. **The public origin is https://ryan-realty.com. Never use `ryanrealty.vercel.app` for anything outward** (a link, email, SMS, canonical, OG or sitemap URL, PDF, redirect, lead source, or a URL a script prints or posts; Matt 2026-10-07). `siteOrigin()` / `siteUrl()` / `siteHost()` in [`lib/site-origin.ts`](lib/site-origin.ts) (plain-node scripts: `scripts/lib/site-origin.mjs`) is the only way to build an outward URL; never read `NEXT_PUBLIC_SITE_URL` directly (production still holds the alias). Held by `ci:site-origin` (G81).
 
 ### Ship discipline (non-negotiable)
 
-1. **Production truth is `origin/main`.** A finished change is `npm run ship` (Matt 2026-10-09). Never `git push` `main`. No rebase, force-push, or reset. Unfinished work still gets a line in `docs/plans/CROSS_AGENT_HANDOFF.md`. Network failure is the only excuse for the branch not being on origin yet. Say that explicitly.
-2. **Production follows Git.** A merge onto `main` triggers Vercel production when the diff affects the Next app; “shipped” means `origin/main` moved and, when app code changed, the production deploy is **READY** (see `.cursor/rules/deploy-verify-before-done.mdc`). Docs/skills/changelog-only changes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
+1. **Production truth is `origin/main`.** Never push or fast-forward to `main`. A finished change is `npm run ship`: gates, push the branch, open the PR with auto-merge (`gh pr merge --auto --squash --delete-branch`, skip `hold-for-matt`), then confirm production **READY** and check the live URL. No force-push or reset. Rebase only to land a PR. Unfinished work still gets a line in `docs/plans/CROSS_AGENT_HANDOFF.md`. Network failure is the only excuse for the branch not being on origin yet. Say that explicitly.
+2. **Production follows Git.** A merge onto `main` triggers Vercel production when the diff affects the Next app; “shipped” means `origin/main` moved, the production deploy is **READY**, and the live URL is checked (CORE RULES **Done**). Docs/skills/changelog-only changes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
 3. **No hanging migrations.** New files under `supabase/migrations/` are not real until they run on **hosted** Supabase. Apply them in the **same delivery effort** as the code that needs them — never “commit now, migrate later” (`.cursor/rules/supabase-migrations-auto.mdc`, `.cursor/rules/production-parity.mdc`).
 4. **Branch, then push.** Day-to-day edits go on a branch from current `origin/main` and that branch is pushed to GitHub right away. Use linked worktrees for parallel agents, not as a silent parking lot. See **Worktrees** below.
 
@@ -144,7 +170,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 2. **Docs / skills / rules / plans / handoffs only** → **batch into one commit**, then push once. Local `npm run push` already skips `next build` for non-buildable diffs; Vercel skips the remote build via `ignoreCommand`. Do not drip many docs commits that each burn local `ci:gates`.
 3. **Do not push mid-thought.** Commit locally while iterating if you need a restore point; push when the unit of work is coherent.
 4. **Ship class (fleet / loop):** same-category bot findings share one isolated verify + one production deploy. `loop-brief` prints the class. Do not run `npm run push` after each finding.
-5. **R-221 — do not poll GitHub Actions.** One `ci:gates` per ship. After a green local stamp + push, stop. Do not `gh run view` in a loop. Do not rematch `origin/main` unless GitHub says CONFLICTING. Live-DB int tests are nightly (`test:int`), not a reason to sit idle.
+5. **R-221 — do not poll GitHub Actions.** One `ci:gates` per ship. Wait with `gh pr checks --watch`, not `sleep` and not `gh run view` in a loop. Do not rematch `origin/main` unless GitHub says CONFLICTING. Live-DB int tests are nightly (`test:int`), not a reason to sit idle.
 6. **Release / changelog:** GitHub Releases carry the notes. Do not recreate a `chore: update changelog` commit on `main` — that path burned hundreds of full production builds.
 7. **Worktree branches:** a finished unit is `npm run ship` from that checkout. Unfinished work is `npm run push` plus a handoff line. Do not keep the only copy local.
 
@@ -158,7 +184,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 
 1. Branch name: `wt/<topic>-YYYYMMDD` (or harness names like `claude/…`). Push the branch before stop, or write the handoff.
 2. Path: sibling dir such as `../RyanRealty-wt-<topic>` — not nested inside the primary tree.
-3. Session end: unfinished work is `npm run push` plus a handoff line (branch, absolute path, next step) in `docs/plans/CROSS_AGENT_HANDOFF.md`. A finished unit is `npm run ship`. No rebase, force-push, or reset.
+3. Session end: unfinished work is `npm run push` plus a handoff line (branch, absolute path, next step) in `docs/plans/CROSS_AGENT_HANDOFF.md`. A finished unit is `npm run ship`. No force-push or reset. Rebase only to land a PR.
 4. Cleanup when merged: delete branch, `git worktree remove <path>`, `git worktree prune`. Run `node scripts/worktree-hygiene.mjs` at session start/end.
 5. Never leave the only copy of valued commits in an unpushed worktree with no handoff line.
 
@@ -174,7 +200,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 | **Global skill index (Cursor + Claude)** | **`~/.claude/GLOBAL_SKILLS_REGISTRY.md`** — full path list of every `SKILL.md` on this machine (plugins, repo, TC, Cowork notes). **Git mirror:** `docs/plans/GLOBAL_SKILLS_REGISTRY.md`. **Cursor stub:** `~/.cursor/GLOBAL_SKILLS_REGISTRY.md`. |
 | **Database reference (required before ANY SQL or market-report work)** | **[`docs/DATABASE_FOR_AI_AGENTS.md`](docs/DATABASE_FOR_AI_AGENTS.md)** — every table grouped by purpose, the cache model (`market_pulse_live` 10-min freshness, `market_stats_cache` 6-hour freshness), 14 resort communities + 14 Bend neighborhoods + city/region levels, the `listings` 800-field reality with mixed-case quoting rules, methodology versioning, slug formats. Source-of-truth registry: **[`data/resort-communities.json`](data/resort-communities.json)**. Don't aggregate raw `listings` for market reports — use the cache. |
 
-**Cursor:** `.cursor/rules/` as usual. **Claude Code:** `CLAUDE.md` in this repo mirrors ship discipline; stay aligned with this section.
+**Cursor:** `.cursor/rules/` point here for process. **Claude Code:** `CLAUDE.md` points here for process; domain canon stays in that file.
 
 ### Cross-agent handoff (mandatory when work spans tools)
 
@@ -479,11 +505,12 @@ NODE_OPTIONS=--max-old-space-size=8192 npm run ship
 
 ## CRITICAL: A finished unit is `npm run ship`. Never `git push` `main`.
 
-**Production deploys from `main`. A finished change is `npm run ship` (Matt 2026-10-09): local gates, push the branch, merge the pull request, then `deploy:verify` when the app changed.** Never `git push` `main`. No rebase, force-push, or reset. Do not leave the only copy of valued work unpushed. Unfinished work is `npm run push` plus a line in `CROSS_AGENT_HANDOFF.md`. One `ci:gates` per ship; do not poll GitHub Actions.
+**Production deploys from `main`. A finished change is `npm run ship`: local gates, push the branch, open the PR with auto-merge (`gh pr merge --auto --squash --delete-branch`, skip `hold-for-matt`), then confirm the Vercel production deploy is READY and check the live URL.** Never push or fast-forward to `main`. No force-push or reset. Rebase only to land a PR. Do not leave the only copy of valued work unpushed. Unfinished work is `npm run push` plus a line in `CROSS_AGENT_HANDOFF.md`. One `ci:gates` per ship; do not poll GitHub Actions.
 
 ```bash
 # DEFAULT: finished work
 NODE_OPTIONS=--max-old-space-size=8192 npm run ship
+gh pr merge --auto --squash --delete-branch
 
 # WORKTREE: branch from current origin/main, then the same command from that checkout
 git fetch origin
@@ -492,8 +519,10 @@ git worktree add -b wt/crm-mobile-20260726 ../RyanRealty-wt-crm-mobile origin/ma
 # npm run ship from that checkout when the unit is finished
 
 # WRONG
-# git push main, rebase, force-push, or reset
+# git push main, or fast-forward main
+# force-push or reset
 # leave the only copy of the work unpushed, with no handoff
+# sleep-based waits instead of `gh pr checks --watch`
 ```
 
 ## Production parity (code + database + Vercel)
@@ -558,5 +587,5 @@ Always idempotent: use `IF NOT EXISTS`, `IF EXISTS`, `ON CONFLICT DO NOTHING`.
 - **Runtime photograph**: `docs/audits/RUNTIME_CROSSWALK_2026-08-18.md`
 - **DAL**: `docs/DATA_ACCESS_LAYER.md` + `docs/DATABASE_FOR_AI_AGENTS.md`
 - **Design System**: `CLAUDE.md` + `design_system/ryan-realty/`
-- **Cursor Rules**: `.cursor/rules/`
+- **Cursor Rules**: `.cursor/rules/` (process points at this file)
 - Fossils (do not execute): `docs/plans/task-registry.json`, `docs/plans/phase-N-brief.md` (deleted), `docs/EXECUTION_PLAN.md`, `docs/SITE_SPEC.md`

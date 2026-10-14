@@ -22,6 +22,11 @@ import { smsQuietZoneFor } from '@/lib/crm/recipient-timezones'
 import { formatZonedClock } from '@/lib/format/date'
 import { recordSendBlockEvent } from '@/lib/data/crm/recordSendBlockEvent'
 import type { GovernedFailure } from './types'
+import {
+  holdingSuppressionReasons,
+  maySkipSoftSuppression,
+  type SkipSuppressionContext,
+} from './skip-suppression'
 
 /**
  * The quiet-hours refusal shown to brokers (kept byte-identical to the
@@ -68,34 +73,39 @@ const HARD_STOP_REASON = 'tag:compliance:hard-stop'
 export async function checkSendGuards(
   personId: number,
   channel: SendChannel,
-  opts?: {
+  opts?: SkipSuppressionContext & {
     overrideQuietHours?: boolean
-    source?: string
-    skipSuppression?: boolean
+    /** Quiet-hours recheck after a full suppression pass. Clock only. */
+    quietHoursOnly?: boolean
     /** The number the text goes to. Its area-code zone holds the send too. */
     recipientPhone?: string | null
   },
 ): Promise<GovernedFailure | null> {
   // 1 + 2. Hard-stop tags, then channel suppression. One isSuppressed call is
   // the authoritative source for both (fail-closed on any read error).
-  // Broker manual compose (CRM Text Send / group start) sets skipSuppression:
-  // consent / TCPA soft opt-in / STOP-list rows are BULK-ONLY — direct 1:1 and
-  // group-thread start must still deliver. Quiet hours below still apply.
-  if (!opts?.skipSuppression) {
+  // skipSuppression may drop a soft consent row on a deliberate 1:1 admin
+  // compose. STOP / bounce / complaint / unsubscribe / GPC, hard-stop, and a
+  // failed read always hold. Bulk, marketing, drip, and system sends cannot
+  // skip. Quiet-hours rechecks set quietHoursOnly so only the clock moves.
+  if (!opts?.quietHoursOnly) {
     const gate = await isSuppressed(personId, channel)
     if (gate.suppressed) {
-      const error = `Blocked by suppression (${gate.reasons.join(', ')})`
-      const hardStop = gate.reasons.some((r) => r.toLowerCase() === HARD_STOP_REASON)
-      const stage = hardStop ? 'hard-stop' : 'suppression'
-      // Best-effort ledger — never blocks the refusal path.
-      void recordSendBlockEvent({
-        personId,
-        channel,
-        stage,
-        reasons: gate.reasons,
-        source: opts?.source,
-      })
-      return { ok: false, error, stage }
+      const held = maySkipSoftSuppression(opts)
+        ? holdingSuppressionReasons(gate.reasons)
+        : gate.reasons
+      if (held.length > 0) {
+        const error = `Blocked by suppression (${held.join(', ')})`
+        const hardStop = held.some((r) => r.toLowerCase() === HARD_STOP_REASON)
+        const stage = hardStop ? 'hard-stop' : 'suppression'
+        void recordSendBlockEvent({
+          personId,
+          channel,
+          stage,
+          reasons: held,
+          source: opts?.source,
+        })
+        return { ok: false, error, stage }
+      }
     }
   }
 

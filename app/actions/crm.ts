@@ -716,7 +716,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     access: access.access,
     explicitGroupThread,
     overrideQuietHours: override,
-    // Direct compose Send: consent / TCPA soft opt-in / STOP-list are BULK ONLY.
+    // Direct compose Send: a missing-consent row is bulk-only. STOP still holds.
     skipSuppression: true,
     requirePersonInScope,
     revalidate: revalidateCrm,
@@ -726,8 +726,9 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   if (groupAttempt.status === 'fallback') fallbackNotice = groupAttempt.notice
 
   // §A4: each 1:1 recipient routes through the governed chokepoint
-  // (lib/comms/sendGovernedSms). Manual compose skips suppression (bulk-only);
-  // quiet hours still apply unless the broker overrides.
+  // (lib/comms/sendGovernedSms). Manual compose may skip a soft consent row;
+  // STOP / bounce / complaint / unsubscribe / GPC still hold. Quiet hours
+  // still apply unless the broker overrides.
   const { sendGovernedSms } = await import('@/lib/comms/sendGovernedSms')
   for (const rid of recipientIds) {
     // Every recipient (including extras) must be in the broker's scope.

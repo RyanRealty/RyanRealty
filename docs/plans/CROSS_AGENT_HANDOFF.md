@@ -1,14 +1,26 @@
 # Current — 2026-10-14 (Cursor, agent rules: PR merge + DB writes)
 
-Surface: Cursor cloud. Branch `cursor/agent-rules-main-db-136e` from origin/main `637dbefcf` (merged, not rebased: #471, #556, #557, #506, #558, #546, #559, #548, #452). Matt approved merging #544 once checks pass. Known main flakes allowed: `/sell` content-floor, `/communities/tetherow` page-payload, Lighthouse JSON. Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. Branch `cursor/agent-rules-main-db-136e` from origin/main `1810a65f3` (merged, not rebased: #562, #547, #471, #556, #557, #506, #558). Matt approved merging #544 once checks pass. Known main flakes allowed: `/sell` content-floor, `/communities/tetherow` page-payload, Lighthouse JSON. Nothing sent. Nobody pushes main. No rebuild.
 
-**What this branch does.** Agent instruction files match Matt 2026-10-13: branch and PR only, never `git push` `main`; merge your own PR once CI checks pass, then verify the production deploy. Bots may write to Ryan Realty Supabase when a task Matt asked for needs it. That replaces the old production-DB read-only rule. Sends, the expired drip hard stop, and the other standing rules stay.
+**What this branch does.** Agent instruction files match Matt 2026-10-13: PRs only, never `git push` `main`; merge your own PR once CI checks pass (auto-merge except `hold-for-matt`), then verify the production deploy. Bots may write to Ryan Realty Supabase when a task Matt asked for needs it. #562 on main is now the process-rule source (`AGENTS.md`); this PR keeps that plus the Current block.
 
-**Still open.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. #471 landed on main (`637dbefcf`).
+**Still open.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
-# Earlier — 2026-10-14 (Cursor, PR hygiene + Zillow FSBO mapped parse)
+# Earlier — 2026-10-14 (Cursor, AGENTS.md single process source)
+
+Surface: Cursor cloud. Branch `cursor/agents-md-single-source-6f1e` / PR #562 from origin/main `c7e237ccf` (#547 after #471 / #556 / #560). Folds and supersedes #544. Nobody pushes main. Nothing sent.
+
+**What this branch does.** `AGENTS.md` is the only process-rule file. CORE RULES add PRs only, auto-merge except `hold-for-matt`, stale PRs, Done = merged + production READY + live URL, payload caps, no sleep waits, new process rules in `AGENTS.md`, and DB writes when Matt's task needs them. Workflows enqueue auto-merge and close stale PRs. `merge-gate` is the required CI rollup (lint, gates, unit, and on app PRs build / e2e / a11y). Lighthouse and content-floor stay out of that rollup.
+
+**Also this session.** GitHub App token (`ghs_`, account `cursor`) 403s Administration: create label, PATCH `allow_auto_merge` / `delete_branch_on_merge`, POST ruleset, PUT branch protection. Did not push an empty commit to main because protection is not active. Squash-merged already-mergeable #559, #546, and #547. #550 and #514 stay CONFLICTING (`Auto merge is not allowed for this repository`). #545/#469/#473/#479 stay open (titles already hold for Matt).
+
+**Held.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+
+## Earlier — 2026-10-14 (Cursor, PR hygiene + Zillow FSBO mapped parse)
 
 Surface: Cursor cloud. Branch `cursor/fsbo-zillow-mapped-output-66eb` from origin/main `482727cb7` (merged, not rebased). PR #556. Nobody pushes main. Nothing sent. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true. Approved CMA and email wording unchanged.
 
