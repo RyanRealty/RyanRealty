@@ -73,6 +73,10 @@ describe('classifyTip: the commit being verified, never the checkout HEAD', () =
       cwd: dir,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      // Pre-commit sets GIT_DIR / GIT_INDEX_FILE to this repo; a temp repo must not inherit them.
+      env: Object.fromEntries(
+        Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
+      ),
     }).trim()
   const commit = (file) => {
     mkdirSync(join(dir, file, '..'), { recursive: true })
