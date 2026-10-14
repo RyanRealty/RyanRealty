@@ -2,6 +2,7 @@
 
 import type { ListingTileRow } from './listings'
 import type { GetListingTilesFilter } from '@/lib/data/listings/getListingTiles'
+import type { ListingTile } from '@/lib/data/types/listing'
 
 const SELECT =
   'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, StandardStatus, ModificationTimestamp, OnMarketDate'
@@ -13,11 +14,11 @@ export async function getAdminListingsPage(
   pageSize = 50,
   search?: string,
   status?: string
-): Promise<{ rows: AdminListingRow[]; total: number }> {
+): Promise<{ rows: AdminListingRow[]; total: number; error: string | null }> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !serviceKey?.trim()) {
-    return { rows: [], total: 0 }
+    return { rows: [], total: 0, error: 'Database is not configured.' }
   }
   void SELECT
   // DAL: admin listings list via listing_tile_mv. Filters: status bucket +
@@ -43,10 +44,18 @@ export async function getAdminListingsPage(
     limit: pageSize,
     offset: from,
   }
-  const [tiles, total] = await Promise.all([
-    getListingTiles(filter),
-    getListingTilesCount(filter),
-  ])
+  let tiles: ListingTile[] = []
+  let total = 0
+  try {
+    ;[tiles, total] = await Promise.all([
+      getListingTiles(filter),
+      getListingTilesCount(filter),
+    ])
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Listings read failed'
+    console.error('[getAdminListingsPage]', message)
+    return { rows: [], total: 0, error: 'The listings database did not answer in time.' }
+  }
   const rows = tiles.map((t) => ({
     ListingKey: t.listingKey,
     ListNumber: t.listNumber,
@@ -67,7 +76,7 @@ export async function getAdminListingsPage(
     CloseDate: t.closeDate,
     PhotoURL: t.photoUrl,
   })) as unknown as AdminListingRow[]
-  return { rows, total }
+  return { rows, total, error: null }
 }
 
 
@@ -82,16 +91,24 @@ export async function searchAdminRemarksPage(
   query: string,
   page = 0,
   pageSize = 50
-): Promise<{ rows: AdminListingRow[]; total: number; privateOnlyKeys: string[] }> {
+): Promise<{ rows: AdminListingRow[]; total: number; privateOnlyKeys: string[]; error: string | null }> {
   const { getAdminContext } = await import('@/lib/auth/guards')
   const ctx = await getAdminContext()
-  if (!ctx) return { rows: [], total: 0, privateOnlyKeys: [] }
+  if (!ctx) return { rows: [], total: 0, privateOnlyKeys: [], error: 'Not signed in.' }
 
   const { searchAdminListingsRemarks } = await import('@/lib/data')
-  const { rows, totalCount } = await searchAdminListingsRemarks(query, {
-    limit: pageSize,
-    offset: page * pageSize,
-  })
+  let rows
+  let totalCount: number
+  try {
+    ;({ rows, totalCount } = await searchAdminListingsRemarks(query, {
+      limit: pageSize,
+      offset: page * pageSize,
+    }))
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Remarks search failed'
+    console.error('[searchAdminRemarksPage]', message)
+    return { rows: [], total: 0, privateOnlyKeys: [], error: 'The listings database did not answer in time.' }
+  }
   const mapped = rows.map((r) => ({
     ListingKey: r.listingKey,
     ListNumber: r.listNumber,
@@ -115,5 +132,6 @@ export async function searchAdminRemarksPage(
     privateOnlyKeys: rows
       .filter((r) => r.matchedIn.length === 1 && r.matchedIn[0] === 'private')
       .map((r) => r.listingKey),
+    error: null,
   }
 }

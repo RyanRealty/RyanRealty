@@ -14,12 +14,12 @@ const OPTIONS: Array<{ group: string; kind: 'expired' | 'fsbo' }> = [
 ]
 
 const BUCKETS: Array<{ status: string; label: string }> = [
-  { status: 'all', label: 'all' },
   { status: 'sendable', label: 'ready to send' },
   { status: 'needs-audit', label: 'needs audit' },
   { status: 'no-phone', label: 'no contact info' },
   { status: 'sent', label: 'sent' },
   { status: 'excluded', label: 'blocked' },
+  { status: 'all', label: 'all' },
 ]
 
 /** Emit city query the same way the page hrefFor does. */
@@ -57,7 +57,7 @@ export function ProspectFilterSelect({
         const [k, s] = e.target.value.split(':')
         const p = new URLSearchParams()
         if (k !== 'expired') p.set('kind', k)
-        if (s !== 'all') p.set('status', s)
+        if (s !== 'sendable') p.set('status', s)
         if (q) p.set('q', q)
         appendCity(p, k, city)
         const qs = p.toString()

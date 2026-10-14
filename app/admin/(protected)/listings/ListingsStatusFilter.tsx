@@ -23,22 +23,22 @@ export default function ListingsStatusFilter({
   return (
     <SelectField
       label="Status"
-      value={status ?? ''}
+      value={status ?? 'Active'}
       onChange={(e) => {
         const next = e.target.value
         const params = new URLSearchParams()
-        if (next) params.set('status', next)
+        if (next && next !== 'Active') params.set('status', next)
         if (search) params.set('search', search)
         const qs = params.toString()
         router.push(qs ? `/admin/listings?${qs}` : '/admin/listings')
       }}
     >
-      <option value="">All statuses</option>
       {options.map((s) => (
         <option key={s} value={s}>
           {s}
         </option>
       ))}
+      <option value="all">All statuses</option>
     </SelectField>
   )
 }

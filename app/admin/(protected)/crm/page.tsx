@@ -53,7 +53,7 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
-import { getCrmAccess, listCrmPeople, listCrmSequences, type CrmAccess } from '@/app/actions/crm'
+import { getCrmAccess, listCrmPeople, type CrmAccess } from '@/app/actions/crm'
 import { getCrmSavedViews } from '@/lib/data/crm/getCrmSavedViews'
 import { getPeopleListSignals } from '@/lib/data/crm/getPeopleListSignals'
 import { getCrmPonds } from '@/lib/data/crm/getCrmPonds'
@@ -62,9 +62,7 @@ import { CRM_STAGES } from '@/lib/crm/constants'
 import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 import { getCrmStages } from '@/lib/data/crm/getCrmStages'
 import { getCrmTags } from '@/lib/data/crm/getCrmTags'
-import { getCrmReportAreas } from '@/lib/data/crm/getCrmReportAreas'
 import { getCrmNeighborhoodOptions } from '@/lib/data/crm/getCrmNeighborhoodOptions'
-import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
 import { VerdictLine } from '@/components/admin/v2'
 import '@/components/admin/v2/admin-v2.css'
 import ResponseClockPanel from '@/components/admin/crm/ResponseClockPanel'
@@ -99,6 +97,7 @@ const BROKER_HEADSHOT: Record<string, string> = {
 type SearchParams = {
   q?: string; stage?: string; broker?: string; tag?: string; view?: string
   page?: string; ptab?: string; pond?: string; neighborhood?: string
+  clock?: string
 }
 
 function ResponseClockFallback() {
@@ -126,16 +125,11 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   const sp = await searchParams
   return (
     <div className="av2-scope" style={{ maxWidth: 1600, margin: '0 auto' }}>
-      {/* SITE-09 (Matt 2026-09-07): the response clock is the first thing on the
-          CRM, above the list, on every width. A site submit nobody has answered
-          is the most urgent thing in the book, and it was invisible until a
-          broker went looking. Streams on its own boundary so a slow 28-day read
-          never delays the people list. */}
-      <Suspense fallback={<ResponseClockFallback />}>
-        <ResponseClockPanel />
-      </Suspense>
       <Suspense fallback={<CrmListFallback />}>
         <CrmPeopleBody access={access} sp={sp} />
+      </Suspense>
+      <Suspense fallback={<ResponseClockFallback />}>
+        <ResponseClockPanel showMethodology={sp.clock === '28d'} />
       </Suspense>
     </div>
   )
@@ -151,14 +145,11 @@ async function CrmPeopleBody({ access, sp }: { access: CrmAccess; sp: SearchPara
   const requestedBroker = sp.broker === 'all' ? undefined : sp.broker || undefined
   const effectiveBroker = scope ?? requestedBroker
 
-  const [views, result, stageRows, tagRows, areaRows, templateRows, sequenceRows, ponds, stageCounts, neighborhoodOptions] = await Promise.all([
+  const [views, result, stageRows, tagRows, ponds, stageCounts, neighborhoodOptions] = await Promise.all([
     getCrmSavedViews(access, { includeCounts: false }),
     listCrmPeople({ q: sp.q, stage: sp.stage, broker: effectiveBroker, tag: sp.tag, view: sp.view, page, pond: sp.pond, neighborhood: sp.neighborhood }),
     getCrmStages(),
     getCrmTags(),
-    getCrmReportAreas(),
-    getCrmTemplatesAdmin(),
-    listCrmSequences(),
     getCrmPonds(),
     getCrmStageCounts(access),
     getCrmNeighborhoodOptions(),
@@ -253,13 +244,9 @@ async function CrmPeopleBody({ access, sp }: { access: CrmAccess; sp: SearchPara
   const tagOptions = tagRows
     .filter((t) => t.isActive && !t.isProtected)
     .map((t) => ({ key: t.key, label: t.label }))
-  const areaOptions = areaRows.filter((a) => a.isActive).map((a) => ({ key: a.key, label: a.label }))
-  const templateOptions = templateRows
-    .filter((t) => t.isActive)
-    .map((t) => ({ id: t.id, name: t.name, channel: t.channel }))
-  const sequenceOptions = sequenceRows
-    .filter((s) => s.status === 'active')
-    .map((s) => ({ id: s.id, name: s.name }))
+  const areaOptions: Array<{ key: string; label: string }> = []
+  const templateOptions: Array<{ id: number; name: string; channel: string }> = []
+  const sequenceOptions: Array<{ id: number; name: string }> = []
   const brokerPicker = activeBrokerSlugs().map((b) => ({ key: b, label: brokerDisplayName(b) }))
   const scopeBrokers = activeBrokerSlugs().map((slug) => ({
     slug, label: brokerDisplayName(slug), headshot: BROKER_HEADSHOT[slug] ?? null,
@@ -321,7 +308,9 @@ async function CrmPeopleBody({ access, sp }: { access: CrmAccess; sp: SearchPara
           <ContactsSearch initial={sp.q ?? ''} />
         </div>
         {(() => {
-          const mode: 'directory' | 'list' = sp.q || sp.stage || sp.tag || sp.view ? 'list' : 'directory'
+          const mode: 'directory' | 'list' = sp.ptab === 'lists' && !sp.q && !sp.stage && !sp.tag && !sp.view
+            ? 'directory'
+            : 'list'
           const listTitle =
             appliedView?.name ??
             (sp.stage ? sp.stage : sp.tag ? `#${sp.tag}` : sp.q ? `“${sp.q}”` : 'People')
