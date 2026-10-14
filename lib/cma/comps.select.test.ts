@@ -1083,7 +1083,7 @@ describe('selectComps — a sale with an ADU never prices a home without one (Ma
 
   it('keeps it for a subject whose MLS details say ADU while its remarks are silent (units.aduYn on the wall, 2026-10-14)', async () => {
     const sel = await selectComps(
-      subject({ subdivision: 'Kenwood', publicRemarks: null, units: { multiUnit: false, reasons: [], unitsTotal: null, aduYn: true, aduSqft: 520, aduType: 'Detached', priorMultiUnit: null } }),
+      subject({ subdivision: 'Kenwood', publicRemarks: null, units: { multiUnit: false, multiUnitTyped: false, reasons: [], unitsTotal: null, aduYn: true, aduSqft: 520, aduType: 'Detached', priorMultiUnit: null } }),
     )
     expect(keys(sel)).toContain('NORTON')
     expect(sel.diagnostics.excluded_totals.adu_sale).toBe(0)

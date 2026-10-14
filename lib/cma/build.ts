@@ -23,7 +23,7 @@ import {
 } from '@/lib/data'
 import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
 import { applySubjectFactOverrides, resolveCmaSubject } from '@/lib/cma/subject'
-import { multiUnitSubjectRefusal } from '@/lib/cma/subject-units'
+import { multiUnitSubjectRefusal, pricingMarketFor } from '@/lib/cma/subject-units'
 import { applyReconciledRoomCounts, reconcileSubjectRoomCounts } from '@/lib/cma/subject-room-conflict'
 import { pickCoverPhoto } from '@/lib/cma/cover-photo'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
@@ -745,7 +745,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // Bend documents walked the monthly index, and nothing in any of the three
     // said they were measured differently. The index is a fact about the CITY,
     // not about which ladder found the sales.
-    const marketIndex = await getPricingMarketIndex(citySlug(subject.city))
+    // A 2-4 UNIT HOME IS NOT MOVED BY THE SINGLE-FAMILY INDEX (review
+    // 2026-10-14). pricing_market_index and the market context's year-over-year
+    // figure are single-family series; a duplex sale is taken at its closed
+    // price and the time-adjustment record says why.
+    const marketIndex = subject.multiUnit ? [] : await getPricingMarketIndex(citySlug(subject.city))
     const asOf = new Date().toISOString().slice(0, 10)
     // The SELECTOR's classification, computed once with the same asOf year
     // lib/pricing/match.ts uses. Everything downstream that has to grade a comp
@@ -888,7 +892,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
                 pocketLocal,
               }).adjusted,
             )
-          : adjustComps(subject, set, market)
+          : adjustComps(subject, set, pricingMarketFor(subject, market))
       ).map((c) => {
         const factor = reviewWeightFactor(tierByKey.get(c.listingKey))
         return factor < 1 ? { ...c, weight: +(c.weight * factor).toFixed(4) } : c
@@ -896,14 +900,18 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       const p = priceCmaSet({
         subject,
         adjusted: adj,
-        market,
+        market: pricingMarketFor(subject, market),
         input,
         site,
         selection,
         marketIndex,
         asOf,
         indexUnavailableReason:
-          marketIndex.length > 0 ? null : `no monthly index rows for ${citySlug(subject.city) || 'this city'}`,
+          marketIndex.length > 0
+            ? null
+            : subject.multiUnit
+              ? 'the city index and the year-over-year figure measure single-family homes, so a 2-4 unit home\'s sales are not moved for their date'
+              : `no monthly index rows for ${citySlug(subject.city) || 'this city'}`,
         computePricing,
         // A failed-ask pull under every sale that set the price is held for
         // Matt after the pin (applyAskBelowBandHold), not failed here.

@@ -278,7 +278,9 @@ export function productClass(subType: string | null): ProductClass | null {
     s.includes('duplex') ||
     s.includes('triplex') ||
     s.includes('quadruplex') ||
+    s.includes('quadplex') ||
     s.includes('fourplex') ||
+    s.includes('4-plex') ||
     s.includes('multi family') ||
     s.includes('multi-family')
   ) {
@@ -400,6 +402,15 @@ export function unitsFromSubType(subType: string | null | undefined): number | n
   if (s.includes('quadruplex') || s.includes('fourplex') || s.includes('quadplex') || s.includes('4-plex')) return 4
   return null
 }
+
+/**
+ * The MLS sub types a letter's competition, came-off and listing-window reads
+ * admit for a 2-4 unit home: the ones that name their count. A Multi Family
+ * row names none, and in this MLS it is mostly an apartment building, so
+ * those reads leave it out (the comp ladder reads its NumberOfUnitsTotal
+ * instead, lib/cma/comps.ts).
+ */
+export const MULTI_UNIT_COMP_SUB_TYPES = ['Duplex', 'Triplex', 'Quadruplex'] as const
 
 /** The MLS 2-4 unit sub type for a unit count; Multi Family when the count is unknown. */
 export function multiUnitSubTypeFor(units: number | null | undefined): string {

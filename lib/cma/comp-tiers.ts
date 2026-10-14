@@ -209,12 +209,27 @@ function pocketMonths(months: readonly number[]): CompTier[] {
  * No recorded name (null): the distance ladder. Rings start at 0.25 miles.
  * Do not invent plats.
  */
-export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
+export function compTierLadder(
+  subdivisionIlike: string | null,
+  opts: {
+    /**
+     * A 2-4 UNIT HOME WALKS PAST ITS PLATS (Matt 2026-10-14, the multi-unit
+     * ladder). A named house stops at the touching plats because the facts
+     * ladder carries it from there; a duplex has no facts ladder, and its
+     * pool is a tenth the size, so after its own plat and the plats that
+     * touch it the walk goes on through the neighborhood, the community, the
+     * two- and five-mile rings and the disclosed widening, each named in the
+     * letter as it is for an unnamed house.
+     */
+    multiUnit?: boolean
+  } = {},
+): CompTier[] {
   const named = Boolean(subdivisionIlike?.trim())
   const band = LOCATION_SQFT_BAND
   const platMonths = [6, 12, 18, 24] as const
   if (named) {
-    const tiers = [...subdivisionMonths(subdivisionIlike, platMonths), ...adjacentMonths(platMonths)]
+    const platRungs = [...subdivisionMonths(subdivisionIlike, platMonths), ...adjacentMonths(platMonths)]
+    const tiers = opts.multiUnit ? [...platRungs, ...wideRungs(band)] : platRungs
     assertRungsClassified(tiers.map((tier) => tier.name))
     return tiers
   }
@@ -222,6 +237,15 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
     ...subdivisionMonths(null, platMonths),
     ...pocketMonths([6, 12, 24]),
     ...quarterMileCompRings(),
+    ...wideRungs(band),
+  ]
+  assertRungsClassified(tiers.map((tier) => tier.name))
+  return tiers
+}
+
+/** The neighborhood, community, ring and widening rungs, then the rural last resort. */
+function wideRungs(band: number): CompTier[] {
+  return [
     { name: 'neighborhood-6mo', monthsBack: 6, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
     { name: 'neighborhood-12mo', monthsBack: 12, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
     { name: 'neighborhood-18mo', monthsBack: 18, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
@@ -325,8 +349,6 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
         'The rural search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 25% of your home in size, up to 25 miles out, sales inside a nearby resort community your home is not part of, and sales across a highway or a river from it. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening for rural property when it is explained.',
     },
   ]
-  assertRungsClassified(tiers.map((tier) => tier.name))
-  return tiers
 }
 
 /**

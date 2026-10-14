@@ -26,7 +26,7 @@ import { aduSaleRefused, multiUnitFromRemarks } from '@/lib/pricing/classes'
 import { onOwnPlat } from '@/lib/pricing/plat-ground'
 import { roomOffPhrase } from '@/lib/pricing/room-counts'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
-import { isMultiUnitSubType, letterProductMatch, resolveMarketArea } from '@/lib/cma/market-area'
+import { isMultiUnitSubType, letterProductMatch, resolveMarketArea, unitsFromSubType } from '@/lib/cma/market-area'
 import { compAreaContains, salesAreaIsBounded, type CompArea } from '@/lib/pricing/comp-area'
 import type { CmaSubject } from '@/lib/cma/types'
 
@@ -213,6 +213,12 @@ export function sameAreaFit(
     if (!inside) return { ok: false, reason: 'area' }
   }
   if (!letterProductMatch(subject.propertySubType ?? null, c.propertySubType ?? null)) {
+    return { ok: false, reason: 'product' }
+  }
+  // A 2-4 unit home's tables hold typed 2-4 unit rows only: a blank sub type
+  // (a house on a city read) and a Multi Family row with no count fail closed
+  // (Matt 2026-10-14).
+  if (isMultiUnitSubType(subject.propertySubType) && unitsFromSubType(c.propertySubType) == null) {
     return { ok: false, reason: 'product' }
   }
   // Not a wall on a multi-unit subject: its product is the typed 2-4 unit

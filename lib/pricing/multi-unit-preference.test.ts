@@ -32,7 +32,7 @@ describe('unitsFirst', () => {
   })
 
   it('with no unit count on record the class run is the only one', async () => {
-    const run = vi.fn(async () => set(7, 'class'))
+    const run = vi.fn(async (_sameUnitsOnly: boolean) => set(7, 'class'))
     const { preference } = await unitsFirst({ propertySubType: 'Multi Family', units: null, run })
     expect(run.mock.calls.map(([only]) => only)).toEqual([false])
     expect(preference).toMatchObject({ outcome: 'class', fallback_reason: 'no-count', units: null, noun: 'multi-unit home', same_unit_sales_held: 0 })

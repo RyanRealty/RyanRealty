@@ -37,7 +37,7 @@ import {
   withRivalStretch,
 } from '@/lib/cma/band-rivals'
 import { roomNotedSentence, sameAreaFit, sameAreaSubject, type SameAreaCandidate } from '@/lib/cma/same-area-fit'
-import { compPoolPropertyType, distanceMiles } from '@/lib/cma/market-area'
+import { compPoolPropertySubType, compPoolPropertyType, distanceMiles } from '@/lib/cma/market-area'
 import { rankBestPool } from '@/lib/pricing/best-pool'
 import {
   POOL_CAP,
@@ -197,7 +197,9 @@ export async function assembleCompetition(args: {
       city: subject.city,
       lo: POOL_QUERY_LO,
       hi: POOL_QUERY_HI,
-      propertySubType: subject.propertySubType,
+      // The pool's sub type: a house pins its own, a 2-4 unit home reads the
+      // counted sub types on segment C (the ladder's own rule).
+      propertySubType: compPoolPropertySubType(subject.propertySubType),
       propertyType: compPoolPropertyType(subject.propertySubType),
     }).catch(() => null)
 
@@ -485,7 +487,7 @@ export async function assembleCompetition(args: {
     ? await getCmaAreaUnsoldCycles({
         area: unsoldArea,
         city: subject.city,
-        propertySubType: subject.propertySubType,
+        propertySubType: compPoolPropertySubType(subject.propertySubType),
         propertyType: compPoolPropertyType(subject.propertySubType),
         priceLo: POOL_QUERY_LO,
         priceHi: POOL_QUERY_HI,

@@ -6,6 +6,7 @@
  */
 
 import 'server-only'
+import { MULTI_UNIT_COMP_SUB_TYPES } from '@/lib/cma/market-area'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   compAreaBounds,
@@ -118,6 +119,7 @@ export async function getCmaBandInventory(
       .gte('ListPrice', lo)
       .lte('ListPrice', hi)
     if (subType) q = q.eq('property_sub_type', subType)
+    else if (segment === 'C') q = q.in('property_sub_type', [...MULTI_UNIT_COMP_SUB_TYPES])
     return q
   }
 
@@ -248,6 +250,7 @@ export async function getCmaAreaBandInventory(input: {
       .gte('ListPrice', input.lo)
       .lte('ListPrice', input.hi)
     if (subType) q = q.eq('property_sub_type', subType)
+    else if (segment === 'C') q = q.in('property_sub_type', [...MULTI_UNIT_COMP_SUB_TYPES])
     if (area.kind === 'subdivision' || area.kind === 'subdivisions') {
       if (!box) q = q.in('SubdivisionName', area.names)
       if (input.city.trim()) q = q.eq('City', input.city.trim())
@@ -312,7 +315,7 @@ export async function getCmaAreaBandInventory(input: {
     `PropertyType='${segment}'`,
     `StandardStatus IN (Active, Pending)`,
     `ListPrice ${input.lo}..${input.hi}`,
-    subType ? `property_sub_type='${subType}'` : segment === 'C' ? 'any 2-4 unit sub type' : 'any residential sub type',
+    subType ? `property_sub_type='${subType}'` : segment === 'C' ? `property_sub_type IN (${MULTI_UNIT_COMP_SUB_TYPES.join(', ')})` : 'any residential sub type',
     areaFilterTrace(area, outline),
   ].join(' AND ')
 

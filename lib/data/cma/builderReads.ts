@@ -8,6 +8,7 @@
  */
 
 import 'server-only'
+import { MULTI_UNIT_COMP_SUB_TYPES } from '@/lib/cma/market-area'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { LatLngBounds } from '@/lib/cma/market-area'
 import { getPlatGroundBounds } from '@/lib/data/cma/platGroundBounds'
@@ -518,6 +519,7 @@ export async function getCmaCityClosedDuring(
       .eq('PropertyType', propertyType?.trim() || 'A')
       .eq('StandardStatus', 'Closed')
     if (sub) q = q.eq('property_sub_type', sub)
+    else if (propertyType?.trim() === 'C') q = q.in('property_sub_type', [...MULTI_UNIT_COMP_SUB_TYPES])
     const { data, error } = await q
       .gte('CloseDate', fromIso)
       .lte('CloseDate', toIso)

@@ -46,11 +46,15 @@ export type SubjectUnitRecord = {
   closeDate: string | null
   /** Why this record reads multi-unit. Empty when it does not. */
   reasons: string[]
+  /** An MLS field types it (PropertyType C, a 2-4 unit sub type, NumberOfUnitsTotal 2-4), not the remarks alone. */
+  typed: boolean
 }
 
 export type SubjectUnitFacts = {
   /** The current record itself describes a multi-unit home. */
   multiUnit: boolean
+  /** ... and an MLS field types it, not the remarks alone (SubjectUnitRecord.typed). */
+  multiUnitTyped: boolean
   reasons: string[]
   unitsTotal: number | null
   /** MLS Accessory Dwelling Unit YN, else the remarks' ADU reading, else null. */
@@ -116,6 +120,10 @@ export function unitRecordOf(row: Row): SubjectUnitRecord {
   // record carries anything, so those never read as a multi-unit home.
   const countSpeaks = propertyType === 'C' || product === 'multi-unit' || (propertyType === 'A' && (product === 'detached' || product === 'unknown'))
   if (unitsTotal != null && unitsTotal >= 2 && unitsTotal <= 4 && countSpeaks) reasons.push(`NumberOfUnitsTotal ${unitsTotal}`)
+  // The typed signals are the ones above. The remarks reader is a flag for
+  // Matt, never a reason to retype a home for the ladder (review 2026-10-14:
+  // "next to a duplex" must not price a house from duplexes).
+  const typed = reasons.length > 0
   if (multiUnitFromRemarks(strOf(row['public_remarks']))) reasons.push('remarks that describe a multi-unit home')
   return {
     listingKey: strOf(row['ListingKey']),
@@ -128,6 +136,7 @@ export function unitRecordOf(row: Row): SubjectUnitRecord {
     status: strOf(row['StandardStatus']),
     closeDate: strOf(row['CloseDate'])?.slice(0, 10) ?? null,
     reasons,
+    typed,
   }
 }
 
@@ -160,13 +169,16 @@ export function subjectUnitFacts(best: Row, pool: readonly Row[]): SubjectUnitFa
   const d = detailsOf(best)
   const aduFromField = ynOf(d?.['Accessory Dwelling Unit YN'])
   const aduYn = aduFromField ?? (aduFromRemarks(strOf(best['public_remarks'])) ? true : null)
+  // An earlier record counts only when a field typed it: a remark on an old
+  // listing is not a reading of the structure.
   const prior = pool
     .filter((r) => strOf(r['ListingKey']) !== current.listingKey)
     .map(unitRecordOf)
-    .filter((r) => r.reasons.length > 0 && describesSameStructure(current, r))
+    .filter((r) => r.typed && describesSameStructure(current, r))
     .sort((a, b) => (b.closeDate ?? '').localeCompare(a.closeDate ?? ''))[0]
   return {
     multiUnit: current.reasons.length > 0,
+    multiUnitTyped: current.typed,
     reasons: current.reasons,
     unitsTotal: current.unitsTotal,
     aduYn,
@@ -216,6 +228,21 @@ export function subjectUnitsTrace(
 export const MULTI_UNIT_MAX_UNITS = 4
 
 /**
+ * THE MARKET CONTEXT A 2-4 UNIT HOME IS PRICED AGAINST (review 2026-10-14).
+ * pricing_market_index and the context's year-over-year figure are
+ * single-family series, and both the index path and the year-over-year path
+ * (adjustComps) would move a duplex sale by them. The pricing call gets the
+ * context with that figure withheld; the letter's market chapters keep the
+ * context as read.
+ */
+export function pricingMarketFor<T extends { yoyMedianPriceDeltaPct: number | null }>(
+  subject: { multiUnit?: MultiUnitProfile | null },
+  market: T | null,
+): T | null {
+  return subject.multiUnit && market ? { ...market, yoyMedianPriceDeltaPct: null } : market
+}
+
+/**
  * How a multi-unit subject is priced: its unit count, the MLS 2-4 unit sub
  * type the ladder matches on, and the whole building's living area.
  */
@@ -233,47 +260,73 @@ export type MultiUnitProfile = {
 }
 
 /**
- * The sub type the walls and the letter read: the count's own word when a
- * record states a count of two to four (a Multi Family record with
- * NumberOfUnitsTotal 3 is a triplex), else the record's 2-4 unit sub type,
- * else Multi Family.
+ * The unit count a typed record states: the sub type's own word first
+ * (Duplex is two whatever a stray NumberOfUnitsTotal says, the same order the
+ * ladder reads a sale), then the count field. Null when neither names one.
  */
-function profileSubType(recordSubType: string | null, units: number | null): string {
-  if (units != null && units >= 2 && units <= MULTI_UNIT_MAX_UNITS) return multiUnitSubTypeFor(units)
-  return isMultiUnitSubType(recordSubType) ? recordSubType! : multiUnitSubTypeFor(units)
+function recordUnits(subType: string | null, unitsTotal: number | null): number | null {
+  return unitsFromSubType(subType) ?? unitsTotal
+}
+
+/** The typed record that makes the home multi-unit: the current one when a field types it, else the earlier one. */
+function typedMultiUnitRecord(
+  facts: SubjectUnitFacts,
+  subject: { sqft: number | null; propertySubType: string | null },
+): { basis: 'current' | 'prior'; units: number | null; subType: string | null; sqft: number | null; mls: string | null } | null {
+  if (facts.multiUnit && facts.multiUnitTyped) {
+    return { basis: 'current', units: recordUnits(subject.propertySubType, facts.unitsTotal), subType: subject.propertySubType, sqft: subject.sqft, mls: null }
+  }
+  const prior = facts.priorMultiUnit
+  if (!prior) return null
+  return { basis: 'prior', units: recordUnits(prior.propertySubType, prior.unitsTotal), subType: prior.propertySubType, sqft: prior.sqft, mls: prior.mlsNumber ?? prior.listingKey }
 }
 
 /**
- * The profile a multi-unit subject is priced under, or null for a home that
- * is not multi-unit. On a current multi-unit record the record's own area is
- * the building's. On a prior-record reading (429 Irving) the current record
- * lists the main home alone, so the building is that area plus the recorded
- * ADU area when both are on record (1,629 + 520 = 2,149, the figure the owner
- * gave), else the earlier record's area.
+ * The whole building's living area on a prior-record reading, where the
+ * current record lists the main home alone: that area plus the recorded ADU
+ * area when the record states an ADU (1,629 + 520 = 2,149 for 429 Irving, the
+ * figure the owner gave); else the earlier record's area, and only when it is
+ * larger than the current one, because an income record may list one unit's
+ * area (review 2026-10-14: a 900 sq ft prior figure must never shrink an
+ * 1,800 sq ft home). Null when the building's area is not on record.
+ */
+function wholeBuildingArea(
+  facts: SubjectUnitFacts,
+  current: number | null,
+  prior: { sqft: number | null; subType: string | null; mls: string | null },
+): { sqft: number; basis: string } | null {
+  if (current != null && current > 0 && facts.aduYn === true && facts.aduSqft != null && facts.aduSqft > 0) {
+    return { sqft: current + facts.aduSqft, basis: `the current record's ${sqftWord(current)} main home plus its ${sqftWord(facts.aduSqft)} ADU` }
+  }
+  if (prior.sqft != null && prior.sqft > 0 && (current == null || current <= 0 || prior.sqft > current)) {
+    return { sqft: prior.sqft, basis: `the earlier ${prior.subType ?? 'multi-unit'} record (MLS ${prior.mls ?? 'unknown'})` }
+  }
+  return null
+}
+
+/**
+ * The profile a multi-unit subject is priced under, or null when the ladder
+ * cannot price it (multiUnitSubjectRefusal says why) or the home is not
+ * multi-unit. Only a typed record makes one: PropertyType C, a 2-4 unit sub
+ * type, or NumberOfUnitsTotal of two to four, on the current record or an
+ * earlier record of the same structure. The count has to be two to four, and
+ * the building's living area has to be on record.
  */
 export function multiUnitProfile(
   facts: SubjectUnitFacts | null | undefined,
   subject: { sqft: number | null; propertySubType: string | null },
 ): MultiUnitProfile | null {
   if (!facts) return null
-  if (facts.multiUnit) {
-    const units = facts.unitsTotal ?? unitsFromSubType(subject.propertySubType)
-    return { units, propertySubType: profileSubType(subject.propertySubType, units), sqft: subject.sqft, sqftBasis: null, basis: 'current' }
+  const record = typedMultiUnitRecord(facts, subject)
+  if (!record || record.units == null || record.units < 2 || record.units > MULTI_UNIT_MAX_UNITS) return null
+  const propertySubType = multiUnitSubTypeFor(record.units)
+  if (record.basis === 'current') {
+    if (subject.sqft == null || subject.sqft <= 0) return null
+    return { units: record.units, propertySubType, sqft: subject.sqft, sqftBasis: null, basis: 'current' }
   }
-  const prior = facts.priorMultiUnit
-  if (!prior) return null
-  const units = prior.unitsTotal ?? unitsFromSubType(prior.propertySubType)
-  const propertySubType = profileSubType(prior.propertySubType, units)
-  let sqft = subject.sqft
-  let sqftBasis: string | null = null
-  if (subject.sqft != null && subject.sqft > 0 && facts.aduSqft != null && facts.aduSqft > 0) {
-    sqft = subject.sqft + facts.aduSqft
-    sqftBasis = `the current record's ${sqftWord(subject.sqft)} main home plus its ${sqftWord(facts.aduSqft)} ADU`
-  } else if (prior.sqft != null) {
-    sqft = prior.sqft
-    sqftBasis = `the earlier ${prior.propertySubType ?? 'multi-unit'} record (MLS ${prior.mlsNumber ?? prior.listingKey ?? 'unknown'})`
-  }
-  return { units, propertySubType, sqft, sqftBasis, basis: 'prior' }
+  const area = wholeBuildingArea(facts, subject.sqft, record)
+  if (!area) return null
+  return { units: record.units, propertySubType, sqft: area.sqft, sqftBasis: area.basis, basis: 'prior' }
 }
 
 /**
@@ -311,10 +364,13 @@ export function multiUnitSubjectTrace(profile: MultiUnitProfile | null | undefin
 
 /**
  * The build refusal for a multi-unit subject the ladder cannot price, or null
- * when the home may be priced. Since 2026-10-14 a two- to four-unit home is
- * priced on the multi-unit ladder, so only a larger building is refused. The
+ * when the home may be priced (a profile was stamped) or is not multi-unit.
+ * Since 2026-10-14 a typed two- to four-unit home with its building's area
+ * on record prices on the multi-unit ladder; what is refused is a reading
+ * the remarks alone made, a record with no unit count, a building of more
+ * than four units, and a building whose living area is not on record. The
  * sentence opens "Multi-unit home:" so the queue files it under that reason
- * (lib/cma/queue-view.ts).
+ * for Matt (lib/cma/queue-view.ts).
  */
 export function multiUnitSubjectRefusal(subject: {
   streetAddress: string
@@ -325,14 +381,27 @@ export function multiUnitSubjectRefusal(subject: {
 }): string | null {
   const facts = subject.units
   if (!facts) return null
-  const profile = subject.multiUnit ?? multiUnitProfile(facts, subject)
-  if (!profile || profile.units == null || profile.units <= MULTI_UNIT_MAX_UNITS) return null
-  const close = `A building of ${profile.units} units is priced on its income, not on comparable sales, and this engine prices two- to four-unit homes only (rule 23). This letter is not built. Matt prices it by hand.`
-  if (facts.multiUnit) {
-    return `Multi-unit home: the MLS record for ${subject.streetAddress} describes a multi-unit home (${facts.reasons.join('; ')}). ${close}`
+  if (subject.multiUnit || multiUnitProfile(facts, subject)) return null
+  const byHand = 'This letter is not built. Matt prices it by hand.'
+  const record = typedMultiUnitRecord(facts, subject)
+  if (!record) {
+    if (!facts.multiUnit) return null
+    return `Multi-unit home: the remarks for ${subject.streetAddress} describe a multi-unit home, but no MLS field types it (PropertyType, sub type or NumberOfUnitsTotal), so the multi-unit ladder cannot read its unit count (rule 23). ${byHand}`
   }
-  if (facts.priorMultiUnit) {
-    return `Multi-unit home: ${priorSentence(facts.priorMultiUnit)}, the same structure as the current record. ${close}`
+  const opener =
+    record.basis === 'current'
+      ? `Multi-unit home: the MLS record for ${subject.streetAddress} describes a multi-unit home (${facts.reasons.join('; ')}).`
+      : `Multi-unit home: ${priorSentence(facts.priorMultiUnit!)}, the same structure as the current record.`
+  if (record.units == null) {
+    return `${opener} No MLS record states its unit count, so the multi-unit ladder cannot match it to two- to four-unit sales (rule 23). ${byHand}`
   }
-  return null
+  if (record.units > MULTI_UNIT_MAX_UNITS) {
+    return `${opener} A building of ${record.units} units is priced on its income, not on comparable sales, and this engine prices two- to four-unit homes only (rule 23). ${byHand}`
+  }
+  if (record.units < 2) {
+    return `${opener} Its record states ${record.units} unit, so it is not a two- to four-unit home for the ladder (rule 23). ${byHand}`
+  }
+  const current = subject.sqft != null && subject.sqft > 0 ? sqftWord(subject.sqft) : 'no living area'
+  const earlier = record.sqft != null ? sqftWord(record.sqft) : 'no living area'
+  return `${opener} The whole building's living area is not on record (the current record lists ${current} and the earlier record ${earlier}, with no recorded ADU area to add), so a price per square foot cannot be read (rule 23). ${byHand}`
 }

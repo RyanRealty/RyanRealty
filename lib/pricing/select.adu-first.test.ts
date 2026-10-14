@@ -179,7 +179,7 @@ describe('selectCompsPreferringFacts prices an ADU home from ADU sales first (Ma
     const sel = await selectCompsPreferringFacts(
       subject({
         publicRemarks: 'Well kept home close to the river trail.',
-        units: { multiUnit: false, reasons: [], unitsTotal: null, aduYn: true, aduSqft: 480, aduType: 'Detached', priorMultiUnit: null },
+        units: { multiUnit: false, multiUnitTyped: false, reasons: [], unitsTotal: null, aduYn: true, aduSqft: 480, aduType: 'Detached', priorMultiUnit: null },
       }),
       { asOf },
     )

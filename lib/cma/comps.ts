@@ -691,7 +691,7 @@ export async function selectComps(
     inferredPocket: { source: pocketSource, neighborNorms: pocketNeighborNorms },
     pocketSubdivisionNorms: pocketNeighborNorms,
   })
-  const tiers = compTierLadder(subdivisionIlike)
+  const tiers = compTierLadder(subdivisionIlike, { multiUnit: multiUnitSubject })
 
   // THE SUBJECT'S OWN GROUND (reader review 2026-10-08, lib/pricing/plat-ground.ts):
   // the recorded plat the home sits in, its phases and alias-map siblings
@@ -755,6 +755,8 @@ export async function selectComps(
    * still exempt (31 Benaiah), and so is the subject's own plat rung.
    */
   let priceLine: PriceTierLine | null = null
+  // Said once when a 2-4 unit home's walk leaves its neighborhood (below).
+  let multiUnitOpenedRings = false
   // Sales set aside for sitting across a river from an unmapped subject.
   let crossedFeature = 0
   // The community whose boundary contains the address. The MLS name is only
@@ -877,6 +879,9 @@ export async function selectComps(
       for (const row of rows) {
         const comp = rowToComp(row, 'price-anchor', false)
         if (!comp || gradedKeys.has(comp.listingKey)) continue
+        // A 2-4 unit home's line is read over 2-4 unit sales: an apartment
+        // building filed as Multi Family on segment C never grades it.
+        if (multiUnitSubject && !multiUnitSaleAdmitted(comp)) continue
         const rate = unitRate(comp, false)
         if (!(rate > 0)) continue
         gradedKeys.add(comp.listingKey)
@@ -1031,6 +1036,7 @@ export async function selectComps(
         : tier.sameArea && !subjectArea
           ? 'the subject sits outside every mapped neighborhood polygon'
           : (subjectArea || subjectCommunity) &&
+            !multiUnitSubject &&
             (isListingsGeographyWidenTier(tier) || tier.likeCommunity || tier.whenStarved)
           ? 'this home sits inside a neighborhood or community, so the search stays in the subdivisions there and does not open a distance ring'
         : tier.adjacentSubdivisions && adjacentSlugs.size === 0
@@ -1069,6 +1075,14 @@ export async function selectComps(
       comps_added: 0,
       running_total: byKey.size,
       excluded: emptyExclusions(),
+    }
+    // THE MULTI-UNIT WALK OPENS THE RINGS (Matt 2026-10-14): said once, on
+    // the first ring rung a 2-4 unit home inside a neighborhood reaches short.
+    if (!skip && multiUnitSubject && (subjectArea || subjectCommunity) && isListingsGeographyWidenTier(tier) && byKey.size < MIN_COMPS && !multiUnitOpenedRings) {
+      multiUnitOpenedRings = true
+      trace.push(
+        `Multi-unit home: the plats, the neighborhood and the community held ${byKey.size} price-setting two- to four-unit sale(s), under the ${MIN_COMPS} this letter needs, so the search opened the distance rings a house inside a neighborhood would not (the 2-4 unit pool is a tenth the size; Matt 2026-10-14). Every ring is named in the letter.`,
+      )
     }
     if (skip) {
       ladder.push(rung)
@@ -1946,13 +1960,16 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
   // ListingKey" — the same bucket as a key that does not exist. Each refusal
   // now carries its own reason to the trace.
   const refused: string[] = []
+  const multiUnitSubject = isMultiUnitSubType(subject.propertySubType)
   for (const row of rows) {
     const comp = rowToComp(row, 'broker-selected')
     if (!comp) continue
     if (subject.listingKey && comp.listingKey === subject.listingKey) continue
     if (
       !productTypeCompatible(subject.propertySubType, comp.propertySubType) ||
-      !keepSameProductType(subject.propertySubType, comp.propertySubType)
+      !keepSameProductType(subject.propertySubType, comp.propertySubType) ||
+      // A 2-4 unit home's set holds 2-4 unit sales that state their count.
+      (multiUnitSubject && !multiUnitSaleAdmitted(comp))
     ) {
       refused.push(`${comp.address} is ${comp.propertySubType ?? 'an unknown type'}, a different product`)
       continue
@@ -1979,7 +1996,7 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
   const comps = Array.from(byKey.values()).sort((a, b) => b.closeDate.localeCompare(a.closeDate))
   const found = new Set(comps.map((c) => c.listingKey))
   const missing = requested.filter((k) => !found.has(k))
-  const note = `Broker-selected comp set: ${comps.length} of ${requested.length} requested ListingKey(s) resolved as valid closed SFR${
+  const note = `Broker-selected comp set: ${comps.length} of ${requested.length} requested ListingKey(s) resolved as valid closed sales of the subject's product${
     missing.length ? ` (unresolved: ${missing.join(', ')})` : ''
   }.${refused.length ? ` Refused: ${refused.join('; ')}.` : ''}`
   const diagnostics: CompSelectionDiagnostics = {
