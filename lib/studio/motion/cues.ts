@@ -170,6 +170,12 @@ export type MotionCue =
       domainMax: number
       asOf: string | null
       figureKeys: string[]
+      /**
+       * false: no big value row; the marker carries the reading against the
+       * scale (a timeline film that has just shown the figure on its own card).
+       * Default true.
+       */
+      showValue?: boolean
     })
   | (CueTiming & {
       kind: 'chart'
@@ -736,7 +742,9 @@ export function cueTexts(cue: MotionCue): string[] {
     case 'figure':
       return [cue.eyebrow, cue.value, cue.detail ?? '', cue.asOf ?? '']
     case 'meter':
-      return [cue.eyebrow, cue.value, 'months of supply', cue.verdict, cue.asOf ?? '']
+      return cue.showValue === false
+        ? [cue.eyebrow, cue.verdict, cue.asOf ?? '']
+        : [cue.eyebrow, cue.value, 'months of supply', cue.verdict, cue.asOf ?? '']
     case 'chart':
       return [
         cue.eyebrow,

@@ -49,12 +49,12 @@ const byKind = <K extends MotionCue['kind']>(cues: MotionCue[], kind: K) =>
 describe('planFilm on the sample (Bend months of supply)', () => {
   const film = plan()
 
-  it('runs 489 frames: the end card at 13.2 s, out at 16.25 s, one frame past it for the loop', () => {
-    expect(film.endcard).toMatchObject({ start: 13.2, quality: 13.2, local: 13.6, service: 14, call: 14.45, out: 16.25 })
-    expect(film.frames).toBe(489)
-    expect(film.duration).toBeCloseTo(16.3, 9)
+  it('runs 459 frames: the end card at 12.2 s, out at 15.25 s, one frame past it for the loop', () => {
+    expect(film.endcard).toMatchObject({ start: 12.2, quality: 12.2, local: 12.6, service: 13, call: 13.45, out: 15.25 })
+    expect(film.frames).toBe(459)
+    expect(film.duration).toBeCloseTo(15.3, 9)
     expect(film.loop).toEqual({ seconds: 0.3 })
-    expect(film.plan.loopEcho).toEqual({ from: 15.95 })
+    expect(film.plan.loopEcho).toEqual({ from: 14.95 })
   })
 
   it('draws the hook figure first, the meter, the payoff line, the share card, the captions, then the locked card on top', () => {
@@ -66,7 +66,10 @@ describe('planFilm on the sample (Bend months of supply)', () => {
     expect(number).toMatchObject({ start: 0.1, value: '3.5', unit: 'months of homes for sale', asOf: 'As of Oct 13, 2026' })
     expect(number.eyebrow).toBe('City of Bend · single-family homes')
     const [meter] = byKind(film.plan.cues, 'meter')
-    expect(meter).toMatchObject({ value: '3.5', mos: 3.5, verdictKind: 'sellers', thresholds: [4, 6], domainMax: 10 })
+    expect(meter).toMatchObject({ value: '3.5', mos: 3.5, verdictKind: 'sellers', thresholds: [4, 6], domainMax: 10, showValue: false })
+    // The meter carries the reading on its marker; the hook card already said 3.5.
+    expect(meter.eyebrow).toBe('Bend single-family · months of supply')
+    expect(byKind(film.plan.cues, 'text')[0]).toMatchObject({ tone: 'payoff', line: 'Go in with a plan' })
     expect(film.plan.layout).toBe('captioned')
     expect(film.plan.holdDriftPx).toBe(8)
   })
@@ -81,20 +84,33 @@ describe('planFilm on the sample (Bend months of supply)', () => {
 
   it('no caption runs into the end card, and captions show the brief figure for "three and a half"', () => {
     const caps = byKind(film.plan.cues, 'caption')
-    for (const c of caps) expect(c.end).toBeLessThanOrEqual(13.2)
-    expect(caps.some((c) => c.text.includes('3.5 months'))).toBe(true)
+    for (const c of caps) expect(c.end).toBeLessThanOrEqual(12.2)
+    expect(caps.map((c) => c.text)).toEqual([
+      'So Bend',
+      'has 3.5 months',
+      'of homes for sale',
+      'right now.',
+      'Under four months,',
+      'sellers still have',
+      'the edge',
+      'so go',
+      'in with a plan.',
+      'Send this to whoever',
+      "you're house hunting with.",
+    ])
   })
 
   it('cuts the plate per beat, frame exact, and holds frame 0 under the end card', () => {
     expect(film.segments.map((s) => s.kind)).toEqual(['footage', 'footage', 'footage', 'footage', 'opening'])
     const frames = film.segments.map((s) => Math.round(s.seconds * 30))
-    expect(frames.reduce((a, b) => a + b, 0)).toBe(489)
+    expect(frames).toEqual([99, 81, 81, 105, 93])
+    expect(frames.reduce((a, b) => a + b, 0)).toBe(459)
     expect(film.segments[0]).toMatchObject({ kind: 'footage', in: 0.5 })
   })
 
   it('writes the manifest beats in role order, the share line as the cta beat', () => {
     expect(film.beats.map((b) => b.role)).toEqual(['hook', 'body', 'payoff', 'cta', 'endcard'])
-    expect(film.beats.at(-1)).toMatchObject({ start: 13.2, end: 16.25 })
+    expect(film.beats.at(-1)).toMatchObject({ start: 12.2, end: 15.25 })
   })
 
   it('plans every brief technique with its proof', () => {
@@ -146,7 +162,7 @@ describe('planFilm refuses what it cannot draw honestly', () => {
   })
 
   it('an end card beat that does not run the locked 3.05 s', () => {
-    expect(problems((_b, t) => (t.beats[3].end = 18.2))).toContainEqual(expect.stringMatching(/set the end card beat's end to 16.25s/))
+    expect(problems((_b, t) => (t.beats[3].end = 18.2))).toContainEqual(expect.stringMatching(/set the end card beat's end to 15.25s/))
   })
 
   it('a meter on a figure that is not months of supply', () => {

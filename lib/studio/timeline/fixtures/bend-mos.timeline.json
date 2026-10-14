@@ -1,10 +1,10 @@
 {
- "duration_s": 16.3,
+ "duration_s": 15.3,
  "fps": 30,
  "loop_seam": "the end card irises open onto frame 0 (loop_seam_edit)",
  "score": "measured",
  "voice": {
-  "script": "[warm] So... Bend has three and a half months of homes for sale right now. You can look, compare... and actually NEGOTIATE. Honestly? Buyers have leverage this fall... Send this to whoever you're house hunting with.",
+  "script": "[warm] So... Bend has three and a half months of homes for sale right now. Under four months, sellers still have the edge... so go in with a plan. [long pause] Send this to whoever you're house hunting with.",
   "voice": "ellen",
   "start": 0.25,
   "seed": 1013,
@@ -17,7 +17,7 @@
    "id": "hook",
    "role": "hook",
    "start": 0,
-   "end": 3.75,
+   "end": 3.3,
    "text": "3.5 months of homes for sale",
    "number": "3.5",
    "footage": {
@@ -36,9 +36,9 @@
   {
    "id": "supply",
    "role": "body",
-   "start": 3.75,
-   "end": 7.15,
-   "text": "3.5 months of supply",
+   "start": 3.3,
+   "end": 6.0,
+   "text": "Under four months, sellers still have the edge",
    "number": "3.5",
    "footage": {
     "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/videos/curated/ab884521-161f-4fbf-adf8-f8b2850ae0ea.mp4",
@@ -46,15 +46,17 @@
    },
    "scene": {
     "kind": "meter_fill_verdict",
-    "number": "bend_sfr_mos"
+    "number": "bend_sfr_mos",
+    "eyebrow": "Bend single-family · months of supply",
+    "show_value": false
    }
   },
   {
-   "id": "leverage",
+   "id": "plan",
    "role": "payoff",
-   "start": 7.15,
-   "end": 9.9,
-   "text": "Buyers have leverage",
+   "start": 6.0,
+   "end": 8.7,
+   "text": "Go in with a plan",
    "footage": {
     "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/videos/curated/ab884521-161f-4fbf-adf8-f8b2850ae0ea.mp4",
     "in": 6.6
@@ -62,7 +64,7 @@
    "cards": [
     {
      "kind": "text",
-     "text": "Buyers have leverage",
+     "text": "Go in with a plan",
      "tone": "payoff"
     }
    ]
@@ -70,15 +72,15 @@
   {
    "id": "end",
    "role": "endcard",
-   "start": 13.2,
-   "end": 16.25,
+   "start": 12.2,
+   "end": 15.25,
    "text": "Quality Local Service Call now 541.703.3095"
   }
  ],
  "cta": {
   "text": "Send this to whoever you're house hunting with.",
-  "start": 9.9,
-  "end": 13.2,
+  "start": 8.7,
+  "end": 12.2,
   "kind": "send_invite",
   "footage": {
    "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/videos/curated/a9bddb1c-ac97-46b9-a426-7a899c5cb5b4.mp4",

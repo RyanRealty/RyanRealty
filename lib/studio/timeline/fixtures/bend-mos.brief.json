@@ -1,11 +1,11 @@
 {
  "video_type": "buyer_ad",
- "title": "Bend buyers have leverage",
+ "title": "Bend: go in with a plan",
  "hook": {
   "text": "3.5 months of homes for sale",
   "time_s": 0.5
  },
- "length_s": 16.3,
+ "length_s": 15.3,
  "numbers": [
   {
    "key": "bend_sfr_mos",
@@ -46,7 +46,7 @@
   "spec": "templates/END_CARD_SPEC.md",
   "phone": "541.703.3095"
  },
- "caption": "Bend has 3.5 months of single-family homes for sale right now. Buyers have leverage this fall. Send this to whoever you're house hunting with.",
+ "caption": "Bend has 3.5 months of single-family homes for sale right now. Under four months, sellers still have the edge, so go in with a plan. Send this to whoever you're house hunting with.",
  "sources": [
   "getMarketPulse({ geoType: 'city', geoSlug: 'bend' }) read 2026-10-13T23:59:44Z (lib/data/market/getMarketPulse.ts, Market Truth overlay)",
   "market_metric row: stat_id months_of_supply, city bend, segment detached, mt-v1, value 3.53465346534653, sample_n 1212, complete_through 2026-10-12, period_end 2026-10-13, window_months 6, computed_at 2026-10-13T18:22:17Z (audit row read)"
@@ -71,7 +71,7 @@
    "tone": "warm_conversational",
    "engine": "elevenlabs_v3",
    "script_follows_engine_rules": true,
-   "script": "[warm] So... Bend has three and a half months of homes for sale right now. You can look, compare... and actually NEGOTIATE. Honestly? Buyers have leverage this fall... Send this to whoever you're house hunting with."
+   "script": "[warm] So... Bend has three and a half months of homes for sale right now. Under four months, sellers still have the edge... so go in with a plan. [long pause] Send this to whoever you're house hunting with."
   },
   "loopable": true,
   "end_card_sequence": [

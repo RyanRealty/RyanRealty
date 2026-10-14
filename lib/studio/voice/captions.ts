@@ -6,7 +6,8 @@
  *
  *  - 1 to 4 words per card, broken where a person pauses: after sentence
  *    punctuation, after a pause between words of 0.25 s or more, preferably
- *    after a comma. A number is never split from its unit ("a hundred
+ *    after a comma, and not after a word that leans on the next one ("of",
+ *    "for", "the"). A number is never split from its unit ("a hundred
  *    sixty-nine dollars", "$169 a month", "63%"), where the card size allows.
  *  - A card starts at its first word's start, exactly: the engine's timestamp
  *    of the FINAL audio, never an estimate.
@@ -261,6 +262,17 @@ function joinPenalty(words: SpokenWord[], units: Unit[], k: number, pauseBreak: 
 }
 
 const SIZE_COST = [Infinity, 1.5, 0.4, 0, 0.3]
+/**
+ * Words that lean on the word after them: a card that ends on one leaves the
+ * reader hanging ("3.5 months of" / "homes for"). Breaking after one costs
+ * this much, so the cards break at the phrase instead.
+ */
+const LEANING_WORDS = new Set('a an the of for to in on at by with from into and or but'.split(' '))
+const LEANING_BREAK_COST = 2
+
+function leansForward(u: Unit): boolean {
+  return !u.mapped && u.core.length === 1 && LEANING_WORDS.has(u.core[0])
+}
 /** Past this much speech on one card it is a held slide, not a caption. */
 const LONG_CARD_SECONDS = 1.5
 /** A card that cannot stay up its minimum: nearly forbidden, never impossible (so a plan always exists). */
@@ -285,6 +297,7 @@ function planUnits(words: SpokenWord[], units: Unit[], maxWords: number, minCard
       let cost = best[i] + size + joins
       if (j < n) {
         cost += split[j - 1]
+        if (leansForward(units[j - 1])) cost += LEANING_BREAK_COST
         const available = units[j].start - units[i].start
         if (available < minCard - 1e-9) cost += SHORT_CARD_PENALTY + (minCard - available) * 1000
       }

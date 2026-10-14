@@ -257,7 +257,7 @@ function cardHtml(cue: MotionCue, assets: MotionAssets, paper: boolean, s = 1): 
     case 'figure':
       return `<section class="card lead figure" id="${id}" data-cue="${cue.id}"${placeAttrs(cue, s)}>${textEl('p', 'eyebrow', cue.eyebrow)}${textEl('p', 'value', cue.value)}${textEl('p', 'detail', cue.detail)}${textEl('p', 'asof', cue.asOf)}</section>`
     case 'meter':
-      return `<section class="card lead meter" id="${id}" data-cue="${cue.id}"${placeAttrs(cue, s)}>${textEl('p', 'eyebrow', cue.eyebrow)}<div class="valuerow">${textEl('span', 'value', cue.value)}${textEl('span', 'unit', 'months of supply')}</div>${meterSvg(cue, ink, ground)}${textEl('p', 'verdict', cue.verdict, `${cue.id}-verdict`)}${textEl('p', 'asof', cue.asOf)}</section>`
+      return `<section class="card lead meter" id="${id}" data-cue="${cue.id}"${placeAttrs(cue, s)}>${textEl('p', 'eyebrow', cue.eyebrow)}${cue.showValue === false ? '' : `<div class="valuerow">${textEl('span', 'value', cue.value)}${textEl('span', 'unit', 'months of supply')}</div>`}${meterSvg(cue, ink, ground)}${textEl('p', 'verdict', cue.verdict, `${cue.id}-verdict`)}${textEl('p', 'asof', cue.asOf)}</section>`
     case 'closer': {
       const mark = `<img class="mark" id="${cue.id}-mark" src="${assets.wordmark}" alt="Ryan Realty"/>`
       const cta = textEl('p', 'cta', cue.cta, `${cue.id}-cta`)
@@ -405,12 +405,20 @@ window.__rrPrepare = function () {
  * wide from x 90, so their right edge (930) stays inside the safe line at 960.
  * Captions take their whole look from CAPTION_STYLE (data only).
  */
+/**
+ * The timeline cards' navy panel. Denser than the site's 78% scrim
+ * (--v3-scrim-strong): a drone plate keeps moving under a card for seconds,
+ * and at 78% a bright structure behind the panel (the Old Mill stacks) reads
+ * through the type. At 90% the footage is a texture, not a second picture.
+ */
+export const TIMELINE_SCRIM = 0.9
+
 function timelineCardCss(px: (n: number) => string): string {
   const c = CAPTION_STYLE
   const b = c.box
   const family = [c.font.family, ...c.font.fallbacks].join(',')
   return `
-.tcard{position:absolute;left:${px(90)};width:${px(840)};padding:${px(40)} ${px(48)} ${px(44)};background:rgba(16,39,66,0.78);border-radius:${px(14)};color:${CREAM};box-shadow:0 ${px(2)} ${px(24)} rgba(16,39,66,0.55);opacity:0;transform-origin:50% 50%;will-change:transform,opacity}
+.tcard{position:absolute;left:${px(90)};width:${px(840)};padding:${px(40)} ${px(48)} ${px(44)};background:rgba(16,39,66,${TIMELINE_SCRIM});border-radius:${px(14)};color:${CREAM};box-shadow:0 ${px(2)} ${px(24)} rgba(16,39,66,0.55);opacity:0;transform-origin:50% 50%;will-change:transform,opacity}
 .tcard .eyebrow{margin-bottom:${px(14)}}
 .tcard .tline{font:400 ${px(84)}/1.04 'RR Amboqia I','RR Amboqia',serif;letter-spacing:-0.01em;font-synthesis:none;text-wrap:balance}
 .tcard.tone-plain,.tcard.tone-payoff,.tcard.tone-question,.tcard.tone-turn,.tcard.ccard{width:auto;max-width:${px(840)}}
@@ -428,7 +436,8 @@ function timelineCardCss(px: (n: number) => string): string {
 .tcard.on-paper .nfoot{border-top-color:rgba(16,39,66,0.2)}
 .tcard.on-paper .nscope{color:rgba(16,39,66,0.86)}
 .tcard.on-paper .nasof{color:rgba(16,39,66,0.62)}
-.layout-captioned .card{left:${px(90)};width:${px(840)};padding:${px(44)} ${px(34)}}
+.layout-captioned .card{left:${px(90)};width:${px(840)};padding:${px(44)} ${px(34)};background:rgba(16,39,66,${TIMELINE_SCRIM})}
+.layout-captioned .card .meter-track{margin-top:${px(22)}}
 .layout-captioned .card .verdict{font-size:${px(46)};text-wrap:balance}
 .caption{position:absolute;left:${px(b.x)};top:${px(b.y)};width:${px(b.w)};height:${px(b.h)};display:flex;align-items:center;justify-content:center;opacity:0;margin:0;font-family:${family};font-weight:${c.font.weight};font-size:${px(c.sizePx)};line-height:${c.lineHeight};letter-spacing:${c.letterSpacingEm}em;text-transform:${c.textTransform};text-align:${c.align};color:${c.color.fill};-webkit-text-stroke:${px(c.outlinePx * 2)} ${c.color.outline};paint-order:stroke fill;text-shadow:0 ${px(c.shadow.offsetYPx)} ${px(c.shadow.blurPx)} ${c.color.shadow};font-synthesis:none}
 `

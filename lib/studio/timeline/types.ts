@@ -48,6 +48,12 @@ export type TimelineScene = {
   /** The brief.numbers key of a months-of-supply figure. */
   number: string
   eyebrow?: string
+  /**
+   * false: the meter drops its big value row and the marker carries the
+   * reading against the 4 and 6 month marks (use it when the hook card has
+   * just shown the figure). Default true.
+   */
+  show_value?: boolean
 }
 
 export type TimelineBeat = {

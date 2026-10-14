@@ -163,11 +163,16 @@ function readScene(r: Reader, raw: unknown, path: string): TimelineScene | undef
   }
   const kind = r.oneOf(raw, 'kind', path, ['meter_fill_verdict'] as const)
   if (kind !== 'meter_fill_verdict') return undefined
-  r.exact(raw, path, ['kind', 'number', 'eyebrow'])
+  r.exact(raw, path, ['kind', 'number', 'eyebrow', 'show_value'])
   const number = r.str(raw, 'number', path)
-  const eyebrow = r.str(raw, 'eyebrow', path, { optional: true, copy: true })
+  const eyebrow = r.str(raw, 'eyebrow', path, { optional: true, copy: true, words: true })
+  let showValue: boolean | undefined
+  if (raw.show_value !== undefined) {
+    if (typeof raw.show_value !== 'boolean') r.add(join(path, 'show_value'), 'must be true or false')
+    else showValue = raw.show_value
+  }
   if (!number) return undefined
-  return { kind, number, ...(eyebrow ? { eyebrow } : {}) }
+  return { kind, number, ...(eyebrow ? { eyebrow } : {}), ...(showValue !== undefined ? { show_value: showValue } : {}) }
 }
 
 function readBeat(r: Reader, raw: unknown, path: string): TimelineBeat | undefined {

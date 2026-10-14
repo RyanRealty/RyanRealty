@@ -30,9 +30,10 @@ describe('parseTimeline', () => {
     if (!r.ok) return
     expect(r.value.beats[0].footage?.src).toMatch(/^https:\/\//)
     expect(r.value.beats[0].cards?.[0]).toMatchObject({ kind: 'number', number: 'bend_sfr_mos' })
-    expect(r.value.beats[1].scene).toEqual({ kind: 'meter_fill_verdict', number: 'bend_sfr_mos' })
+    expect(r.value.beats[1].scene).toMatchObject({ kind: 'meter_fill_verdict', number: 'bend_sfr_mos' })
     expect(r.value.voice).toMatchObject({ voice: 'ellen', start: 0.25, display: { 'three and a half': '3.5' } })
-    expect(r.value.cta).toMatchObject({ kind: 'send_invite', start: 9.9, end: 13.2 })
+    expect(r.value.cta).toMatchObject({ kind: 'send_invite', start: 8.7, end: 12.2 })
+    expect(r.value.beats[1].scene?.show_value).toBe(false)
     expect(r.value.score).toBe('measured')
   })
 
@@ -70,13 +71,13 @@ describe('parseTimeline', () => {
 
   it('refuses overlapping beats, a hook that is not first, and an end card that is not last', () => {
     const t = sampleTimeline()
-    t.beats[2].start = 7.0
-    expect(issuesOf(t)).toContainEqual(expect.stringMatching(/starts at 7s, before "supply" ends/))
+    t.beats[2].start = 5.5
+    expect(issuesOf(t)).toContainEqual(expect.stringMatching(/starts at 5.5s, before "supply" ends/))
     const u = sampleTimeline()
     u.beats = [u.beats[1], u.beats[0], ...u.beats.slice(2)]
     expect(issuesOf(u)).toContainEqual(expect.stringMatching(/^beats\[0\]\.role: the first beat is the hook/))
     const v = sampleTimeline()
-    v.beats.push({ id: 'after', role: 'payoff', start: 16.25, end: 19 })
+    v.beats.push({ id: 'after', role: 'payoff', start: 15.25, end: 19 })
     expect(issuesOf(v)).toContainEqual(expect.stringMatching(/the end card is the last beat/))
   })
 

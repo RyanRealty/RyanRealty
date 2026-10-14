@@ -120,6 +120,14 @@ describe('buildMotionPage', () => {
     expect(card).not.toMatch(/[·•]/)
   })
 
+  it('drops the big value row when the meter carries the reading on its marker', () => {
+    const quiet = { ...plan, cues: plan.cues.map((c) => (c.kind === 'meter' ? { ...c, showValue: false } : c)) }
+    const page = buildMotionPage({ plan: quiet, width: 1080, height: 1920, assets })
+    expect(page).not.toContain('class="valuerow"')
+    expect(page).toContain('id="lead1-marker"')
+    expect(html).toContain('class="valuerow"')
+  })
+
   it('marks every card with its cue so the renderer can read back what it drew', () => {
     expect(html).toContain('id="lead1-card" data-cue="lead1"')
     expect(html).toContain('window.__rrTextBoxes')
@@ -171,7 +179,7 @@ describe('buildMotionPage: timeline cards and captions', () => {
     expect([...hexes].sort()).toEqual(['#102742', '#faf8f4'])
     for (const value of page.match(/rgba\((\d+),(\d+),(\d+),[\d.]+\)/g) ?? []) expect(value).toMatch(/^rgba\((16,39,66|250,248,244),/)
     // Cards are 840 wide from x 90: their right edge is 930, inside x 960.
-    expect(page).toMatch(/\.tcard\{position:absolute;left:90px;width:840px;/)
+    expect(page).toMatch(/\.tcard\{position:absolute;left:90px;width:840px;[^}]*background:rgba\(16,39,66,0\.9\)/)
     expect(page).toMatch(/\.caption\{position:absolute;left:120px;top:1160px;width:840px;height:200px;/)
   })
 })

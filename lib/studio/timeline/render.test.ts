@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { stillTimes } from '../motion/cues'
+import { cueTexts, stillTimes } from '../motion/cues'
 import type { DrawnText } from '../motion/render'
 import { buildCaptions } from '../voice/captions'
 import type { SpokenWord } from '../voice/types'
@@ -34,11 +34,7 @@ function fakeProbes(film: FilmPlan, drop?: (cue: string) => boolean): Array<{ t:
     texts: film.plan.cues
       .filter((c) => c.kind !== 'caption' || (t >= c.start && t < c.end))
       .filter((c) => !drop?.(c.id))
-      .flatMap((c) => {
-        const words =
-          c.kind === 'number' ? [c.value, c.unit ?? ''] : c.kind === 'meter' ? [c.value, 'months of supply'] : c.kind === 'caption' ? [c.text] : c.kind === 'text' || c.kind === 'cta' ? [c.line] : c.kind === 'endcard' ? [...c.words, c.cta, c.phone] : []
-        return words.filter(Boolean).map((text) => ({ cue: c.id, text, x: 120, y: 400, w: 600, h: 100, opacity: 1 }))
-      }),
+      .flatMap((c) => cueTexts(c).filter(Boolean).map((text) => ({ cue: c.id, text, x: 120, y: 400, w: 600, h: 100, opacity: 1 }))),
   }))
 }
 
@@ -49,8 +45,8 @@ describe('visibleSpans', () => {
     expect(span.start).toBeGreaterThan(0.1)
     expect(span.start).toBeLessThan(0.4)
     // The exit fade crosses half opacity a little before the card's end.
-    expect(span.end).toBeGreaterThanOrEqual(3.5)
-    expect(span.end).toBeLessThanOrEqual(3.75)
+    expect(span.end).toBeGreaterThanOrEqual(3)
+    expect(span.end).toBeLessThanOrEqual(3.3)
   })
 })
 
@@ -63,12 +59,12 @@ describe('textsFromProbes', () => {
     expect(texts.filter((t) => t.kind === 'caption').length).toBe(film.plan.cues.filter((c) => c.kind === 'caption').length)
     expect(texts.find((t) => t.kind === 'cta')?.text).toBe("Send this to whoever you're house hunting with.")
     const call = texts.find((t) => t.text === 'Call now')!
-    expect(call).toMatchObject({ kind: 'endcard', start: 14.45, end: 16.25 })
+    expect(call).toMatchObject({ kind: 'endcard', start: 13.45, end: 15.25 })
   })
 
   it('names a cue the page never drew', () => {
-    const { missing } = textsFromProbes(film, fakeProbes(film, (id) => id === 'leverage-text'))
-    expect(missing).toEqual([expect.stringMatching(/^leverage-text \(text\) drew no text/)])
+    const { missing } = textsFromProbes(film, fakeProbes(film, (id) => id === 'plan-text'))
+    expect(missing).toEqual([expect.stringMatching(/^plan-text \(text\) drew no text/)])
   })
 })
 

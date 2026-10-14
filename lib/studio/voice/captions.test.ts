@@ -161,6 +161,17 @@ describe('buildCaptions: the rules', () => {
   })
 })
 
+describe('buildCaptions: a card never ends on a word that leans on the next', () => {
+  it('breaks at the phrase, not after "of" or "for" (the 2026-10-13 Bend sample)', () => {
+    const words = speak('Bend has three and a half months of homes for sale right now.', { dur: 0.2, gap: 0.03 })
+    const cards = buildCaptions(words, { display: { 'three and a half': '3.5' } })
+    // Before the rule this line came out "3.5 months of" / "homes for" / "sale right now.".
+    for (const c of cards.slice(0, -1)) expect(c.text).not.toMatch(/\b(of|for|the|a)$/)
+    expect(texts(cards)).toContain('3.5 months')
+    expectRulesHold(cards, words)
+  })
+})
+
 describe('buildCaptions: numbers stay with their units', () => {
   it('does not split spoken number words from the unit that follows them', () => {
     const words = speak('it costs about a hundred sixty-nine dollars a month')

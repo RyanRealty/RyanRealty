@@ -512,12 +512,15 @@ function beatCards(
     const cardEnd = r3(end - CARD_CUT_MARGIN_SECONDS)
     if (cardEnd - cardStart < MIN_CARD_SECONDS - 1e-9) problems.push(`beat "${beat.id}": the meter holds ${r3(cardEnd - cardStart)}s; it needs ${MIN_CARD_SECONDS}s`)
     const scoped = figureScope(subject, key)
+    const showValue = beat.scene.show_value !== false
+    const place = scoped ? `${row.geography} · single-family homes` : row.geography
     const cue: MotionCue = {
       kind: 'meter',
       id: `${beat.id}-meter`,
       start: cardStart,
       end: cardEnd,
-      eyebrow: beat.scene.eyebrow ?? (scoped ? `${row.geography} · single-family homes` : row.geography),
+      // With no value row the eyebrow says what the meter measures.
+      eyebrow: beat.scene.eyebrow ?? (showValue ? place : `${place} · months of supply`),
       value: row.on_screen,
       mos,
       // The zone the meter lights is marketVerdict's kind. Under it, the plain
@@ -529,10 +532,13 @@ function beatCards(
       domainMax: Math.max(10, Math.ceil(mos + 1)),
       asOf: figureAsOf(subject, key),
       figureKeys: [key],
+      showValue,
       place: { top: CARD_TOPS[0] + 60, paper },
     }
     const still = r3(cardStart + 1.3)
-    out.push({ cue, row, proofs: { meter_fill_verdict: [{ t: still, cue: cue.id, text: row.on_screen }] } })
+    // The proof is the figure when the meter prints it, else the line that names what it measures.
+    const proof = showValue ? row.on_screen : MOS_PLAIN_LABEL
+    out.push({ cue, row, proofs: { meter_fill_verdict: [{ t: still, cue: cue.id, text: proof }] } })
     return out
   }
 
