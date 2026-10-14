@@ -82,10 +82,11 @@ describe.skipIf(!hasChrome)('composeMotion with real Chromium and ffmpeg', () =>
 
       const out = join(dir, 'final.mp4')
       writeFileSync(out, result.body)
-      expect(result.record.frames).toBeGreaterThanOrEqual(179)
+      // The 6 s clip, then the 3.05 s locked end card after it: 272 frames.
+      expect(result.record.frames).toBe(272)
       expect(result.record.captured).toBeLessThan(result.record.frames)
       expect(result.record.fonts).toHaveLength(6)
-      expect(result.stills.map((s) => s.cueId)).toEqual(['lead1', 'closer'])
+      expect(result.stills.map((s) => s.cueId)).toEqual(['lead1', 'endcard'])
 
       // Inside the lead card's padding, mid-hold: scrim navy over the plate.
       // The plate as it decodes, which is the reference: synthesising it from
@@ -102,6 +103,29 @@ describe.skipIf(!hasChrome)('composeMotion with real Chromium and ffmpeg', () =>
       // Before the first card: nothing drawn at all.
       const before = pixel(ffmpeg!, out, 0.1, 110, 1460)
       before.forEach((v, i) => expect(Math.abs(v - plate[i])).toBeLessThanOrEqual(3))
+
+      // Past the clip, the end card covers the held plate: cream paper at its
+      // code values, and the Call now pill in brand navy.
+      const paper = pixel(ffmpeg!, out, 8.0, 540, 200)
+      paper.forEach((v, i) => expect(Math.abs(v - [250, 248, 244][i])).toBeLessThanOrEqual(3))
+      // And from the very first frame after the clip: no black frames while
+      // the overlay stream turns opaque (the first cut showed two).
+      for (const f of [180, 181, 182, 183, 184]) {
+        const cream = pixel(ffmpeg!, out, f / 30, 540, 200)
+        cream.forEach((v, i) => expect(Math.abs(v - [250, 248, 244][i]), `frame ${f}`).toBeLessThanOrEqual(3))
+      }
+      // The field never shrinks with the stage's breathe: at 8.0 s the stage
+      // is under scale 1, and the frame's corners are still cream, not plate.
+      for (const [x, y] of [[4, 4], [1076, 4], [4, 1916], [1076, 1916]] as const) {
+        const corner = pixel(ffmpeg!, out, 8.0, x, y)
+        corner.forEach((v, i) => expect(Math.abs(v - [250, 248, 244][i]), `corner ${x},${y}`).toBeLessThanOrEqual(3))
+      }
+      // The last frame of the clip is still the clip. (-ss is printed to the
+      // millisecond, so seek a little inside frame 179, not onto frame 180.)
+      const lastClip = pixel(ffmpeg!, out, 178.7 / 30, 540, 200)
+      lastClip.forEach((v, i) => expect(Math.abs(v - plate[i])).toBeLessThanOrEqual(3))
+      const pill = blockMean(ffmpeg!, out, 8.0, 240, 1210)
+      pill.forEach((v, i) => expect(Math.abs(v - NAVY[i])).toBeLessThanOrEqual(4))
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

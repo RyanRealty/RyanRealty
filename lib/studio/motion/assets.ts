@@ -7,13 +7,16 @@
  * Sources, read from disk. next.config.ts traces MOTION_ASSET_FILES into the
  * two functions that run the Studio (the /admin/studio page and the
  * studio-slate cron), the way the market report traces its own list.
- *   Geist               node_modules/geist (the site's font package)
+ *   Geist               node_modules/geist (the site's font package); Bold for captions
  *   Amboqia Boriango    public/fonts, plus the capital-I patch: the face draws
  *                       "I" as a "1", and app/globals.css routes U+0049 to a
  *                       548-byte patch face (amboqia-i-patch.woff2)
  *   Azo Sans Medium     public/fonts, eyebrows only
  *   wordmark            public/brand/logo-horizontal-navy.png (navy ink,
- *                       transparent), never re-typeset
+ *                       transparent), never re-typeset: the agent card
+ *   endcardLogo         public/brand/wordmark-stacked-navy.png, the real stacked
+ *                       logo the locked end card carries (byte-identical to
+ *                       design_system/ryan-realty/assets/brand/logo-blue.png)
  *
  * Broker headshots live under public/images, which every function excludes,
  * so on Vercel they come from the live site instead of the disk.
@@ -29,14 +32,22 @@ export const MOTION_ASSET_FILES = {
   geist400: 'node_modules/geist/dist/fonts/geist-sans/Geist-Regular.woff2',
   geist500: 'node_modules/geist/dist/fonts/geist-sans/Geist-Medium.woff2',
   geist600: 'node_modules/geist/dist/fonts/geist-sans/Geist-SemiBold.woff2',
+  /** Geist Bold: the burned-in captions (lib/studio/voice/captionStyle.ts). */
+  geist700: 'node_modules/geist/dist/fonts/geist-sans/Geist-Bold.woff2',
   wordmark: 'public/brand/logo-horizontal-navy.png',
+  endcardLogo: 'public/brand/wordmark-stacked-navy.png',
 } as const
 
-export type MotionFonts = Record<'amboqia' | 'amboqiaI' | 'azo' | 'geist400' | 'geist500' | 'geist600', string>
+export type MotionFonts = Record<'amboqia' | 'amboqiaI' | 'azo' | 'geist400' | 'geist500' | 'geist600', string> & {
+  /** Geist Bold, for burned-in captions. Optional for a plan with none; page.ts refuses captions without it. */
+  geist700?: string
+}
 
 export type MotionAssets = {
   fonts: MotionFonts
   wordmark: string
+  /** The stacked logo at the top of the locked end card. */
+  endcardLogo: string
   /** Data URI per site-relative headshot path the plan asked for. */
   headshots: Record<string, string>
 }
@@ -78,7 +89,7 @@ async function dataUri(file: string): Promise<string> {
   return `data:${mimeFor(file)};base64,${bytes.toString('base64')}`
 }
 
-let fontsAndMark: Promise<{ fonts: MotionFonts; wordmark: string }> | null = null
+let fontsAndMark: Promise<{ fonts: MotionFonts; wordmark: string; endcardLogo: string }> | null = null
 
 /** Load everything a plan needs. Fonts and the wordmark load once per instance. */
 export async function loadMotionAssets(headshotPaths: string[] = []): Promise<MotionAssets> {
@@ -91,10 +102,13 @@ export async function loadMotionAssets(headshotPaths: string[] = []): Promise<Mo
       dataUri(f.geist400),
       dataUri(f.geist500),
       dataUri(f.geist600),
+      dataUri(f.geist700),
       dataUri(f.wordmark),
-    ]).then(([amboqia, amboqiaI, azo, geist400, geist500, geist600, wordmark]) => ({
-      fonts: { amboqia, amboqiaI, azo, geist400, geist500, geist600 },
+      dataUri(f.endcardLogo),
+    ]).then(([amboqia, amboqiaI, azo, geist400, geist500, geist600, geist700, wordmark, endcardLogo]) => ({
+      fonts: { amboqia, amboqiaI, azo, geist400, geist500, geist600, geist700 },
       wordmark,
+      endcardLogo,
     }))
     // A failed load should be retried next time, not cached forever.
     fontsAndMark.catch(() => {

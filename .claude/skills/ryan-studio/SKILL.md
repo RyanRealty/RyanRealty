@@ -17,10 +17,13 @@ These are the spec, not a review step. Every brief must fill `spec_rules` in `.c
 - [ ] VO script follows the engine's own best practices. ElevenLabs v3: ellipses, audio tags, CAPS for emphasis, numbers spelled out, no break tags. Grok TTS: [pause] / [breath], with_timestamps.
 - [ ] Same process whatever tool runs it (Grok, Claude, Imagine, Cursor).
 - [ ] No "top team" wording. No 3 s clips of a price next to "closed".
-- [ ] Pick techniques by name from `.claude/skills/ryan-studio/techniques/registry.json` and list them in `brief.techniques`.
+- [ ] Pick techniques by name from `.claude/skills/ryan-studio/techniques/registry.json` and list them in `brief.techniques`. A base technique must be `ready` or `approved`; a signature technique must be `approved` (Matt saw its reel). Every film runs at least one approved signature technique (a floor, not a target). Nothing is approved by an agent: an approval holds only with `approved_by: "matt"`, an ISO `approved_on` and a `reel` that exists, and a commit that adds one needs `Approved-by: matt` naming it.
+- [ ] Fill `brief.creative` before the story: `feel`, `constraint`, `lineage`, `one_sentence` (`.claude/skills/creative-brain`), each at most 200 characters.
 - [ ] **RENDER GATE (hard fail, mandatory):** run `python3 .claude/skills/ryan-studio/tools/video_render_gate.py <final.mp4> [--silent]` on the FINAL mp4. It OCRs the frames and HARD-FAILS (exit 1) on: end sequence not logo -> Quality/Local/Service -> "Call now" + 541.703.3095 in the last 4 s (or any other CTA there), non-loopable ending (first vs last frame mean diff > 0.20 or SSIM < 0.35), length outside 15-30 s, no hook text by 2 s, missing burned-in captions on a voiced cut (buyer_ad silent cut needs `--silent`), "top team" anywhere, any <= 3 s price + closed/sold segment. No warnings, no overrides.
 - [ ] **Delivery only through `tools/deliver_video.sh <final.mp4> <dest>`** (Ryan Reels, Desktop, Drive, chat). It refuses unless the render gate wrote a passing `<file>.gate.json` stamp for that exact sha256. Never cp/AirDrop/upload a video any other way.
-`video_gate.mjs` checks the brief/timeline before render; `video_render_gate.py` checks the actual render and is mandatory before anything leaves the box.
+`video_gate.mjs` is the backup check that confirms the brief, not the primary enforcement. `video_render_gate.py` checks the actual render (`video:check` check 17 runs it) and is mandatory before anything leaves the box.
+
+**Rules refuse before render; video:check is proof, not discovery** (Matt 2026-10-14). `studio:render` refuses before the paid voice (text rules: checks 7, 8, 9, 10, 15, 16), before any frame (the planned manifest: 3, 4, 5, 7, 8, 9, 10, 12, 13, 15, 16) and before the full render (the layout probe: 9, 11). Only 1 Provenance, 2 Format, 6 Motion, 14 Review and 17 Pixels wait for the MP4. The table is `CHECK_PHASES` in `lib/studio/qa/phases.ts`.
 
 # Ryan Studio (repo copy, shared by Claude Code and Grok CLI)
 
@@ -32,6 +35,7 @@ Technique library: `techniques/` (one recipe per file) + `techniques/registry.js
 2. Pick the type card in `rules/VIDEO_TYPES.md`: listing, market_update, news_civic, closing, neighborhood_spotlight, buyer_ad, brand_film, story_teaser. Every card = hook, intro, body, payoff, end card.
 3. Write `brief.json` to `templates/brief.schema.json` (video_type, hook text + time, length, every number with source and exact window, footage with rights, end card) and `timeline.json` (beats with role, start, end, text, number, optional text boxes).
 4. Run `node .claude/skills/ryan-studio/tools/video_gate.mjs brief.json timeline.json`. Non-zero exit = fix it; do not render. Tests: `node --test .claude/skills/ryan-studio/tools/tests/`.
-5. Then follow `motion-stats-craft`, `imagine-video-craft`, `motion-render-quality`. Creative Desk watches every render with audio. Matt posts himself; never publish.
+5. Render through the one factory: `npm run studio:render -- brief.json timeline.json` (runs video_gate, the preflight steps b, c and d, renders to `out/studio/<slug>/final.mp4` with its manifest, then `video:check`, which proves on the file what the preflight already decided). The slug names the film (never `film`, `test-2`); the builder is `STUDIO_BUILDER` (default claude), and the reviewer may not share a word with it. Sample: `lib/studio/timeline/fixtures/bend-mos.*.json` (refused at the signature floor until Matt approves a signature technique). Contract: `docs/plans/STUDIO_ONE_FACTORY.md`.
+6. Then follow `motion-stats-craft`, `imagine-video-craft`, `motion-render-quality`. Creative Desk watches every render with audio. Matt posts himself; never publish.
 
 Items marked PROPOSED in VIDEO_TYPES.md are not rules until Matt says yes. Box source of truth: `/workspace/studio/` (keep both in sync).

@@ -1,0 +1,105 @@
+{
+ "video_type": "buyer_ad",
+ "title": "Bend: go in with a plan",
+ "creative": {
+  "feel": "satisfying",
+  "constraint": "one figure per beat, navy and cream only, every move eased on the brand curve",
+  "lineage": "Swiss International Typographic Style posters (Josef Muller-Brockmann)",
+  "one_sentence": "Bend's 3.5 months of supply, read on a ruler, tells a buyer to go in with a plan."
+ },
+ "hook": {
+  "text": "3.5 months of homes for sale",
+  "time_s": 0.5
+ },
+ "length_s": 15.3,
+ "numbers": [
+  {
+   "key": "bend_sfr_mos",
+   "on_screen": "3.5",
+   "value": 3.53465346534653,
+   "definition": "Months of supply: active listings divided by closings over the last 180 days divided by six (Market Truth mt-v1 formula 'active / (closed_180d / 6)'; 714 active / (1,212 closed / 6) = 3.5347, shown as 3.5 by formatMonthsOfSupply)",
+   "window": "Active listings counted 2026-10-13; closings 2026-04-17 to 2026-10-13 (180 days, sale data complete through 2026-10-12); computed 2026-10-13T18:22:17Z",
+   "geography": "City of Bend",
+   "property_type": "single-family homes (Market Truth segment detached)",
+   "source": "getMarketPulse({ geoType: 'city', geoSlug: 'bend' }) via figuresFromPulse: Supabase market_metric (Market Truth overlay), stat_id='months_of_supply', geo_type='city', geo_slug='bend', segment='detached', definition_id='mt-v1', period_end 2026-10-13, window_months 6, sample_n 1212",
+   "hero": true,
+   "citation": {
+    "figure": "3.5",
+    "source": "Supabase",
+    "table": "market_metric (via getMarketPulse overlay)",
+    "column": "value",
+    "filter": "stat_id='months_of_supply', geo_type='city', geo_slug='bend', segment='detached', definition_id='mt-v1'",
+    "fetched_at": "2026-10-13T23:59:44.654Z",
+    "computed_at": "2026-10-13T18:22:17.097625+00:00"
+   }
+  }
+ ],
+ "footage": [
+  {
+   "kind": "other",
+   "path": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/videos/curated/a9bddb1c-ac97-46b9-a426-7a899c5cb5b4.mp4",
+   "rights": "matt_owned",
+   "source": "snowdrift"
+  },
+  {
+   "kind": "other",
+   "path": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/videos/curated/ab884521-161f-4fbf-adf8-f8b2850ae0ea.mp4",
+   "rights": "matt_owned",
+   "source": "snowdrift"
+  }
+ ],
+ "end_card": {
+  "spec": "templates/END_CARD_SPEC.md",
+  "phone": "541.703.3095"
+ },
+ "caption": "Bend has 3.5 months of single-family homes for sale right now. Sellers still have the edge, so go in with a plan. Send this to whoever you're house hunting with.",
+ "sources": [
+  "getMarketPulse({ geoType: 'city', geoSlug: 'bend' }) read 2026-10-13T23:59:44Z (lib/data/market/getMarketPulse.ts, Market Truth overlay)",
+  "market_metric row: stat_id months_of_supply, city bend, segment detached, mt-v1, value 3.53465346534653, sample_n 1212, complete_through 2026-10-12, period_end 2026-10-13, window_months 6, computed_at 2026-10-13T18:22:17Z (audit row read)"
+ ],
+ "persona": "relocator",
+ "special_ad_category": "housing",
+ "spec_rules": {
+  "hook_by_s": 0.5,
+  "length_s_range": [
+   15,
+   30
+  ],
+  "real_footage": true,
+  "real_numbers_count": 1,
+  "sound_off_readable": true,
+  "captions": {
+   "style": "tiktok_burned_in",
+   "synced_to_vo": true
+  },
+  "voiceover": {
+   "voice": "female",
+   "tone": "warm_conversational",
+   "engine": "elevenlabs_v3",
+   "script_follows_engine_rules": true,
+   "script": "[warm] So... Bend has three and a half months of homes for sale right now. Sellers still have the edge... so go in with a plan. [long pause] Send this to whoever you're house hunting with."
+  },
+  "loopable": true,
+  "end_card_sequence": [
+   "logo",
+   "Quality / Local / Service",
+   "Call now 541.703.3095"
+  ],
+  "topic_cta": {
+   "text": "Send this to whoever you're house hunting with.",
+   "placement": "own_card_before_end_card"
+  },
+  "no_top_team_wording": true,
+  "no_price_closed_flash": true,
+  "same_process_any_tool": true
+ },
+ "techniques": [
+  "dollar_first_hook",
+  "eased_number_reveal",
+  "meter_fill_verdict",
+  "tiktok_caption_burn",
+  "send_invite_hook",
+  "loop_seam_edit",
+  "composed_score"
+ ]
+}
