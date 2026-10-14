@@ -97,18 +97,25 @@ export function expiredOutreachListingHits(opts: {
 
   const status = (opts.listing.StandardStatus as string | null) ?? null
   // Active / Pending / Coming Soon at the address or parcel — block for both
-  // kinds. Expired still requires the on-market event to be newer than expire
-  // when a comparator is present; FSBO was never in MLS, so any current
-  // on-market match is new brokerage activity and hard-skips.
+  // kinds. Expired requires the on-market event on or after expire (same-sync
+  // equal timestamps count). FSBO was never in MLS, so any current on-market
+  // match is new brokerage activity and hard-skips.
   if ((EXPIRED_OUTREACH_ON_MARKET as readonly string[]).includes(String(status ?? ''))) {
     if (opts.kind === 'fsbo') return true
-    return opts.expiryComparator == null || String(opts.listing.status_change_timestamp ?? '') > opts.expiryComparator
+    // Same-sync relist: the new Active row can share the expire timestamp, or
+    // land before the stamp is written. A live listing at the address is a
+    // relist. Strict `>` missed that race.
+    if (opts.expiryComparator == null) return true
+    const changed = String(opts.listing.status_change_timestamp ?? '')
+    if (!changed) return true
+    return changed >= opts.expiryComparator
   }
 
-  // Closed after expire (expired) OR after FSBO detect (fsbo) — same hard-skip.
+  // Closed on or after expire (expired) OR after FSBO detect (fsbo).
+  // `>=` so a same-sync close is not treated as older than the expire event.
   if (!isClosedStatus(status) || opts.expiryComparator == null) return false
   const soldAt = String(opts.listing.CloseDate ?? opts.listing.status_change_timestamp ?? '')
-  return soldAt !== '' && soldAt > opts.expiryComparator
+  return soldAt !== '' && soldAt >= opts.expiryComparator
 }
 
 // ── Hard stop ────────────────────────────────────────────────────────────────

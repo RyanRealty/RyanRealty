@@ -531,8 +531,8 @@ export async function resolveComplianceBatch(
  * send must fail CLOSED — a read error must BLOCK, never silently solicit a
  * property that may be back on the market. Returns `verifyFailed:true` on any
  * read error so the caller refuses. `expiryComparator` is the prospect's
- * off-market / detect timestamp: for expired, on-market newer than expire AND
- * Closed sales whose CloseDate (else status_change_timestamp) is newer than expire; for FSBO, any current on-market match AND Closed after
+ * off-market / detect timestamp: for expired, on-market on or after expire AND
+ * Closed sales whose CloseDate (else status_change_timestamp) is on or after expire; for FSBO, any current on-market match AND Closed after
  * `detected_at`. Prefer `parcel_number` when present (expired: via listing_key;
  * FSBO: explicit parcel or taxlot from enrichment_notes).
  */
