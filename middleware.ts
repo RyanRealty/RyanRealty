@@ -124,6 +124,10 @@ function getIp(request: NextRequest): string {
 }
 
 function pickLimiter(pathname: string): MemoryWindowLimiter | null {
+  // Social unfurlers fetch /api/og once per shared URL. A 60/min general cap
+  // from a Facebook or Slack crawl IP 429s the share card. The route is
+  // public, cacheable, and cheap.
+  if (pathname === '/api/og' || pathname.startsWith('/api/og/')) return null
   if (pathname.startsWith('/api/ai/')) return strict
   if (pathname.startsWith('/api/pdf/')) return strict
   if (pathname.startsWith('/api/cma/')) return strict

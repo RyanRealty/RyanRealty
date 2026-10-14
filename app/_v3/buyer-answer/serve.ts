@@ -7,6 +7,7 @@ import {
   getMarketPulse,
 } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { ogImageForPlace } from '@/lib/og/share-image-url'
 import { loadBuyerAnswerForSlugs, type BuyerAnswerKind, type BuyerAnswerPlaceKind } from '@/lib/buyer-answers'
 import { V3Footer } from '@/components/site/v3'
 import { BuyerAnswerPage } from './BuyerAnswerPage'
@@ -36,6 +37,12 @@ export async function buyerAnswerMetadataInput(input: {
     title: model.def.title,
     description: model.answer,
     path: model.def.path,
+    ogImage: ogImageForPlace({
+      placeKind: input.placeKind,
+      slug: input.slug,
+      title: model.def.title,
+      citySlug: model.def.citySlug,
+    }),
   }
 }
 

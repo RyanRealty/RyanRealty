@@ -29,6 +29,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getGeoSnapshot, getListingTiles, getListingTilesCount } from '@/lib/data'
 import { fitTitle, pageMetadata } from '@/lib/site/page-metadata'
+import { shareOgImagePath } from '@/lib/og/share-image-url'
 import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { PRIMARY_CITIES } from '@/lib/cities'
@@ -113,6 +114,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title,
     description: copy.description,
     path: `/cities/${slug}/types/${spec.slug}`,
+    ogImage: shareOgImagePath({ type: 'city', slug, title: cityName }),
   })
 }
 

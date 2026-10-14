@@ -70,11 +70,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     post.excerpt?.trim() ||
     'Central Oregon housing market writing from Ryan Realty.'
   const canonical = `${siteUrl}/blog/${encodeURIComponent(post.slug)}`
-  const ogImageUrl = post.hero_image_url
-    ? post.hero_image_url.includes('.supabase.co/storage/')
-      ? post.hero_image_url
-      : `${siteUrl}/api/og?type=blog&id=${encodeURIComponent(post.slug)}`
-    : `${siteUrl}/api/og?type=default`
+  const ogImageUrl = `${siteUrl}/api/og?type=blog&id=${encodeURIComponent(post.slug)}`
   return {
     title,
     description,
