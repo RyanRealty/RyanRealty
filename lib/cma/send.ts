@@ -151,6 +151,9 @@ async function resolveSendContext(
     brokerName: brokerRow.displayName,
     lastListPrice,
     brokerSlug: cmaSendBrokerSlug(brokerRow.email),
+    // The greeting is checked against the address this send goes to, not
+    // the column it was built from (Matt 2026-10-14, 429 Irving).
+    greetingEmail: clientEmail,
   })
   await attachCitySupply(facts)
   const listingKey = (row.subject_listing_key as string | null) ?? null

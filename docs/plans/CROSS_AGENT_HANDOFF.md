@@ -1,4 +1,17 @@
-# Current — 2026-10-14 (Cursor, land CMA intake + ranking PRs)
+# Current — 2026-10-14 (Claude, CMA multi-unit subject guard + greeting names the person at the address)
+
+Surface: Claude Code cloud. Branch `claude/lucid-galileo-rcafq4`. Nothing sent. No rebuild. Nobody pushes main. Prod DB read-only (audit reads only).
+
+**What this change does (Matt 2026-10-14, 429 Irving, Dave Kremers' reply).**
+
+1. **Multi-unit subject guard (rule 23 extended).** `lib/cma/subject-units.ts` reads every MLS row at the subject's address (the subject finders now project `details`): PropertyType C, a Duplex/Triplex/Quadruplex/Multi Family sub type, `NumberOfUnitsTotal` of 2+, duplex remarks, or an earlier record of the same structure (same year built, or an earlier living area between 1x and 4x the current) that says so. The build refuses before a comp is read ("Multi-unit home: ..."), the queue files it as "Multi-unit home". 429 Irving: the 2026 record is SFR 1,629 sq ft with a 520 sq ft ADU; the 2005 close at the same address is PropertyType C, Duplex, 2 units, 2,300 sq ft, built 2003. `classifyProduct` now reads Duplex etc. as `multi-unit`, not `unknown`. The subject carries `units` (multi-unit reasons, ADU YN/sqft/type, prior record) and the trace states it.
+2. **Greeting names the person at the address (rule 34).** `lib/crm/household-names.ts` parses the county owner string into its people and matches the email's local part. The lookup files the lead under the person the email belongs to (`ownerNameForEmail`, notes say so) and writes "Owner of record: ..." on every county hit. Compose time (`cmaFirstContactFactsForSend`, Review preview and every send) runs `chooseGreetingForEmail` against the address the send goes to; rows without the marker ask the county once, live (`lib/cma/owner-of-record.ts`). 429 Irving: county "DAVID & MARGO KREMERS TRUST", skip trace returned Margo's record carrying dkremers@hotmail.com, letter said "Hi Margo," to David. Under the rule: David. Wagon Master (aletakatra@, "Hi Jason,") would be Aleta; Starview (roopal74@, "Hi James,") would be Roopal; a two-party record and a handle that names nobody is "Hi there,".
+
+**Not this change.** The CRM person for 429 Irving (crm_people 63709) still reads Margo; the cmas row still says Margo. Prod stays read-only; Matt decides whether to correct the row. The sent letters are sent. Whether a house with an ADU should be priced only from ADU sales (today: either, Matt 2026-10-08) is a question to Matt, not changed here. Do not send. Do not rebuild letters.
+
+Skills read: `marketing_brain_skills/producers/cma/SKILL.md` §0.3, `docs/DATABASE_FOR_AI_AGENTS.md` §2f, `.cursor/rules/git-commit.mdc`.
+
+## Earlier — 2026-10-14 (Cursor, land CMA intake + ranking PRs)
 
 Surface: Cursor cloud. Landing #485 then #488 then #489 onto origin/main. Closed #524 because `/buy/alerts` is live via #536. Nothing sent. Nobody pushes main. No rebuild.
 
