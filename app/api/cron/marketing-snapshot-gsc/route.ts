@@ -12,17 +12,22 @@
  *
  * Auth: requires Authorization: Bearer $CRON_SECRET.
  *
- * GSC data freshness note: Search Console data has a 2–3 day processing
- * delay. Running this ingestor for very recent dates (yesterday, 2 days ago)
- * may return zeros or partial data; those rows will be overwritten on
- * subsequent runs once GSC has finished processing. The ingestor is idempotent
- * so backfilling the same date range after the delay clears is safe.
+ * GSC data freshness: Search Console runs 2-3 days behind, and for a day it
+ * has not finished the API returns no rows at all. This ingestor used to store
+ * that empty answer as a zero day (clicks, impressions, CTR and position all 0;
+ * 2026-10-12 was written that way on 2026-10-14), which read as a traffic drop
+ * until the next run overwrote it. Now each run first asks Google for the
+ * latest date it has final data for (getSearchConsoleReportedThrough) and
+ * writes only days on or before it; later days are reported as `pending` and
+ * picked up by the next run's rolling re-pull. If that probe fails, the run
+ * writes nothing. Rule and tests: lib/marketing-brain/gsc-reported-days.ts.
  *
  * Site URL comes from GOOGLE_SEARCH_CONSOLE_SITE_URL env var
  * (e.g. "sc-domain:ryan-realty.com" or "https://ryan-realty.com/").
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getSearchConsoleSummary } from '@/app/actions/search-console-report'
+import { getSearchConsoleReportedThrough, getSearchConsoleSummary } from '@/app/actions/search-console-report'
+import { splitReportedDays } from '@/lib/marketing-brain/gsc-reported-days'
 import {
   IngestorResult,
   MetricRow,
@@ -158,6 +163,8 @@ export async function GET(request: NextRequest) {
     // never re-pulled, so the whole Search channel read as 0 (and the health
     // check graded it "green" on recency). Roll a [today-9 .. today-2] re-pull;
     // upsertMetricRows is idempotent, so settled dates are corrected in place.
+    // Days inside this window that Google has not reported yet are skipped
+    // below (reportedThrough), never written as zeros.
     const isoDaysAgo = (n: number) => {
       const x = new Date()
       x.setUTCDate(x.getUTCDate() - n)
@@ -175,7 +182,15 @@ export async function GET(request: NextRequest) {
   const metricsCovered = new Set<string>()
   let totalRows = 0
 
-  for (const day of dateIter(startDate, endDate)) {
+  // Ask Google how far its final data runs before writing anything. A day
+  // after that date has no rows yet, and storing it would store false zeros.
+  // A failed probe writes nothing: no data beats a fake zero (CLAUDE.md §0).
+  const probe = await getSearchConsoleReportedThrough(siteOverride)
+  const reportedThrough = probe.ok ? probe.reportedThrough : null
+  if (!probe.ok) errors.push(`reported-through probe: ${probe.error}`)
+  const { reported, pending } = splitReportedDays([...dateIter(startDate, endDate)], reportedThrough)
+
+  for (const day of reported) {
     try {
       const summary = await getSearchConsoleSummary(day, day, siteOverride)
       if (!summary.ok) {
@@ -191,7 +206,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const result: IngestorResult = {
+  const result: IngestorResult & { reportedThrough: string | null; pending: string[] } = {
     channel: 'gsc',
     startDate,
     endDate,
@@ -199,6 +214,9 @@ export async function GET(request: NextRequest) {
     metricsCovered: [...metricsCovered],
     errors,
     fetchedAt: new Date().toISOString(),
+    // Latest date Google has final data for; days after it were not written.
+    reportedThrough,
+    pending,
   }
 
   return NextResponse.json(result)
