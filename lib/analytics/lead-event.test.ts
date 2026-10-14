@@ -251,6 +251,12 @@ describe('generate_lead is server-only and sent in one place', () => {
     expect(calls).toBeGreaterThan(15)
   })
 
+  it('persists the _ga client_id so offline qualify_lead / close_convert_lead can stitch', () => {
+    const src = readFileSync(join(ROOT, 'lib/lead-tracking.ts'), 'utf8')
+    expect(src).toContain('rememberGaClientId')
+    expect(src).toMatch(/rememberGaClientId\(params\.crm_person_id \?\? params\.fub_person_id, clientId\)/)
+  })
+
   it('puts no dollar value on generate_lead (Matt 2026-10-08)', () => {
     const bannedToken = ['LEAD', 'VALUE', 'USD'].join('_')
     for (const rel of ['lib/analytics/lead-event.ts', 'lib/lead-tracking.ts']) {

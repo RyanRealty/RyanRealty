@@ -10,6 +10,7 @@ const h = vi.hoisted(() => ({
   cookies: {} as Record<string, string>,
   headers: {} as Record<string, string>,
   fireGa4Event: vi.fn(),
+  rememberGaClientId: vi.fn(),
 }))
 
 vi.mock('next/headers', () => ({
@@ -19,6 +20,9 @@ vi.mock('next/headers', () => ({
 vi.mock('@/lib/ga4-measurement-protocol', () => ({
   fireGa4Event: (...args: unknown[]) => h.fireGa4Event(...args),
   readGa4ClientIdFromCookies: () => '123.456',
+}))
+vi.mock('@/lib/data/analytics/gaClientId', () => ({
+  rememberGaClientId: (...args: unknown[]) => h.rememberGaClientId(...args),
 }))
 
 import { fireLeadGenerated, fireNonLeadEvent } from '@/lib/lead-tracking'
@@ -31,6 +35,7 @@ beforeEach(() => {
   h.headers = { referer: 'https://ryan-realty.com/sell?utm_source=fb&gclid=G1&fbclid=F1' }
   h.fireGa4Event.mockReset()
   h.fireGa4Event.mockResolvedValue(undefined)
+  h.rememberGaClientId.mockReset()
 })
 
 describe('server generate_lead honors GPC and a decline', () => {
@@ -53,5 +58,16 @@ describe('server generate_lead honors GPC and a decline', () => {
     h.cookies[CONSENT_COOKIE] = encodeURIComponent(JSON.stringify({ analytics: false, marketing: false }))
     await fireLeadGenerated(LEAD as never)
     expect(h.fireGa4Event).not.toHaveBeenCalled()
+  })
+
+  it('persists the _ga client_id on the contact so later offline conversions can stitch', async () => {
+    await fireLeadGenerated({ ...LEAD, crm_person_id: 64115 } as never)
+    expect(h.rememberGaClientId).toHaveBeenCalledWith(64115, '123.456')
+  })
+
+  it('does not persist a client_id when analytics is declined', async () => {
+    h.cookies[CONSENT_COOKIE] = encodeURIComponent(JSON.stringify({ analytics: false, marketing: false }))
+    await fireLeadGenerated({ ...LEAD, crm_person_id: 64115 } as never)
+    expect(h.rememberGaClientId).not.toHaveBeenCalled()
   })
 })

@@ -1,10 +1,10 @@
-# Current — 2026-10-14 (Cursor, land CMA intake + ranking PRs)
+# Current — 2026-10-14 (Cursor, GA4 offline conversions)
 
-Surface: Cursor cloud. Landing #485 then #488 then #489 onto origin/main. Closed #524 because `/buy/alerts` is live via #536. Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-3b48` from origin/main `fe948f648`. Nothing sent. Nobody pushes main. No rebuild.
 
-**This pass.** Merge main into #485 (intake safety gate), wait for checks, merge. Then the two ranking PRs. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale: merge would revert the rule-31 map cache, `cleared_at`, and industry exclusion).
+**This pass.** Daily `/api/cron/offline-conversions` now also sends GA4 MP `qualify_lead` (Buyer Contract, Pending) and `close_convert_lead` (Closed) through `fireGa4Event`. `lead_type` only, no dollar amount. Stored `_ga` client_id on `crm_people.custom.gaClientId` (first-touch from `fireLeadGenerated`). Skip + log when missing. Idempotent `ga4_offline_conversion` / `person:<id>:<stageKey>`. Live audit 2026-10-14: **0 of 23,909** contacts have a usable client_id. Land this PR, then `gh pr checks --watch` and `gh pr merge --squash`.
 
-**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+**Still open from prior Current.** Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale: merge would revert the rule-31 map cache, `cleared_at`, and industry exclusion). Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
