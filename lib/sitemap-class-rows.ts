@@ -87,10 +87,6 @@ export const getClassRows = unstable_cache(
   // an hour after the deploy, so the key moves and the next read builds fresh.
   // Bump it again whenever buildAllUrls changes WHICH urls it emits.
   // v5 (2026-10-04): listing rows carry a third element, the lead photo URL.
-  // v6 (2026-10-14): /open-houses/{city} is emitted only when the city's page is
-  // indexable (it was every site city and every city with an active listing, 2
-  // of which deploy:verify 9fa63fa7a found noindex), so the v5 entries kept
-  // serving noindex URLs for up to an hour after the deploy.
-  ['sitemap-class-urls-v6'],
+  ['sitemap-class-urls-v5'],
   { revalidate: 3600 },
 )

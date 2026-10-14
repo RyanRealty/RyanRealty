@@ -45,9 +45,10 @@ import {
   OH_CITY_SLUGS,
   OH_FIELD_TRACE,
   OH_TRACE,
+  addIsoDays,
   cityLabel,
+  pacificTodayIso,
 } from '../_v3/oh-constants'
-import { canonicalOpenHouseWindow, openHouseCityDecision } from '../_v3/oh-city-indexable'
 import { assembleOpenHouses, medianPositive } from '../_v3/oh-listings'
 import { openHouseFieldItems } from '../_v3/oh-field-items'
 import { openHouseEventSchemas } from '../_v3/oh-jsonld'
@@ -90,11 +91,7 @@ const loadOpenHouseWindow = cache(
  *
  * The decision reads the CANONICAL window (today through six days out, Pacific,
  * no narrowing searchParams) through the same cached reads the body renders, so
- * the count behind the robots value is the count on the page. It is made by
- * openHouseCityDecision (../_v3/oh-city-indexable), the same function
- * app/sitemap.ts asks, so a URL the sitemap submits is a URL this page indexes
- * (2026-10-14: /open-houses/brothers and /open-houses/black-butte-ranch sat in
- * the sitemap while this page noindexed them).
+ * the count behind the robots value is the count on the page.
  *
  * pageMetadata's `noindex` emits "noindex, nofollow" — it has no noindex,follow
  * form today. Taken as it is; lib/site/page-metadata.ts is owned by SITE-25.
@@ -110,15 +107,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       noindex: true,
     })
   }
-  const canonical = canonicalOpenHouseWindow()
+  const todayIso = pacificTodayIso()
   const { rows, tiles, heroes } = await loadOpenHouseWindow(
-    canonical.dateFromIso,
-    canonical.dateToIso,
-    canonical.todayIso,
+    todayIso,
+    addIsoDays(todayIso, 6),
+    todayIso,
     cityName,
   )
-  const { count, indexable } = openHouseCityDecision(rows, tiles, heroes, cityName)
-  if (!indexable) {
+  const count = assembleOpenHouses(rows, tiles, heroes, { city: cityName }).length
+  if (count === 0) {
     return pageMetadata({
       title: `Open Houses in ${cityName}, Oregon`,
       description: `No open house is on the ${cityName}, Oregon calendar in the next seven days. The Central Oregon calendar has the rest of the week.`,
@@ -156,10 +153,9 @@ export default async function OpenHousesCityPage({
   if (!cityName) notFound()
 
   const sp = await searchParams
-  const canonicalWindow = canonicalOpenHouseWindow()
-  const todayIso = canonicalWindow.todayIso
-  const dateFrom = sp.dateFrom?.trim() || canonicalWindow.dateFromIso
-  const dateTo = sp.dateTo?.trim() || canonicalWindow.dateToIso
+  const todayIso = pacificTodayIso()
+  const dateFrom = sp.dateFrom?.trim() || todayIso
+  const dateTo = sp.dateTo?.trim() || addIsoDays(todayIso, 6)
   const community = sp.community
     ? sp.community.split(',').map((s) => s.trim()).filter(Boolean)
     : undefined
