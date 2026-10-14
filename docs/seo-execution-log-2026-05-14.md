@@ -1,3 +1,5 @@
+> **History (2026-05).** Current SEO canon: [`docs/SEO.md`](SEO.md) and Matt's pinned calls in [`data/seo/decisions.json`](../data/seo/decisions.json). Where this file disagrees, those win.
+
 # SEO Execution Log — 2026-05-14
 
 **Operator:** Claude (SEO Execution Agent)

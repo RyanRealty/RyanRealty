@@ -8,6 +8,8 @@
 ## Start here: every analytics, SEO-measurement or tracking task
 
 1. Read this page to the end. It wins over every older analytics doc, skill and handoff.
+   For SEO changes (titles, URLs, redirects, canonicals, robots, schema) also read
+   [`docs/SEO.md`](../SEO.md) and the pinned calls in [`data/seo/decisions.json`](../../data/seo/decisions.json).
 2. Run the live audit before you touch anything, and again after you ship:
 
    ```bash

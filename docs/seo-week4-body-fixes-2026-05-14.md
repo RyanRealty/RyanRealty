@@ -1,3 +1,5 @@
+> **History (2026-05).** Current SEO canon: [`docs/SEO.md`](SEO.md) and Matt's pinned calls in [`data/seo/decisions.json`](../data/seo/decisions.json). Where this file disagrees, those win.
+
 # Week 4 — Body Content Fixes (6 pages, all need Matt sign-off before edit)
 
 **Date drafted:** 2026-05-14

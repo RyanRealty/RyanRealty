@@ -6,6 +6,8 @@ alwaysApply: false
 
 # SEO URL Guardrails (Canonical Navigation)
 
+Start at `docs/SEO.md`. Matt's pinned SEO calls are in `data/seo/decisions.json` and production is checked against them on every deploy: read them before changing any title, URL, redirect, canonical, robots rule or schema.
+
 When editing routes, links, metadata, sitemap, or structured data, follow these rules.
 
 ## Canonical URL contracts

@@ -11,16 +11,31 @@
  * neighborhood slug it is dropped before the sitemap is served.
  *
  * The /cities/[slug]/[neighborhoodSlug] route resolves ONLY neighborhoods-table
- * slugs; any other second segment 404s. One-segment /cities/{city} hubs and
- * deeper paths are untouched. Dropping (not throwing) keeps sitemap generation
+ * slugs; any other second segment 404s, except the city buyer answers the App
+ * Router owns (CITY_CHILD_PAGES). One-segment /cities/{city} hubs and deeper
+ * paths are untouched. Dropping (not throwing) keeps sitemap generation
  * resilient — a drift bug degrades to "URL silently omitted", never a 500 or a
  * submitted 404.
  */
 
 import legacyRedirects from '@/data/legacy-redirects.json'
+import { buyerAnswerSitemapPaths } from '@/lib/buyer-answers/registry'
 
 /** Exactly two path segments under /cities (trailing slash already stripped). */
 const TWO_SEGMENT_CITIES = /^\/cities\/[^/]+\/[^/]+$/
+
+/**
+ * The two-segment /cities pages that are not neighborhoods: each registered
+ * city buyer answer, such as /cities/bend/cost or /cities/redmond/buying
+ * (#528). The App Router owns these child routes (CITY_CHILD_RESERVED in
+ * lib/routing/geo-path-guard.ts). The rogue backstop dropped all seven from
+ * every sitemap file until 2026-10-14, though each is live, indexable and
+ * self-canonical. Only registered pages pass, so an unregistered
+ * /cities/madras/cost is still dropped.
+ */
+const CITY_CHILD_PAGES: ReadonlySet<string> = new Set(
+  buyerAnswerSitemapPaths().filter((path) => TWO_SEGMENT_CITIES.test(path)),
+)
 
 /** Exactly two path segments under /homes-for-sale: the subdivision browse family. */
 const TWO_SEGMENT_BROWSE = /^\/homes-for-sale\/([^/]+)\/([^/]+)$/
@@ -70,18 +85,28 @@ function pathOf(url: string): string | null {
  * `withEvents` holds the city slugs that have an open house in the page's
  * window, or is null when that read failed. Then nothing is dropped, because
  * an unknown calendar is not an empty one.
+ *
+ * An empty week is normal, not a defect, so this logs one info line per call
+ * naming the cities left out. It does not log an error per URL: on
+ * 2026-10-14 production logged ten error lines for each of core, content, geo
+ * and matrix.xml, nine cities with powell-butte twice.
  */
 export function dropEmptyOpenHouseCities<T extends { url: string }>(
   entries: T[],
   withEvents: ReadonlySet<string> | null,
 ): T[] {
   if (!withEvents) return entries
-  return entries.filter((entry) => {
+  const dropped = new Set<string>()
+  const kept = entries.filter((entry) => {
     const city = /^\/open-houses\/([^/]+)$/.exec(pathOf(entry.url) ?? '')?.[1]
     if (!city || withEvents.has(city)) return true
-    console.error(`[sitemap] dropped an open-house city page with no open house this week (it renders noindex): ${entry.url}`)
+    dropped.add(city)
     return false
   })
+  if (dropped.size > 0) {
+    console.log(`[sitemap] left out open-house city pages with no open house this week (they render noindex): ${[...dropped].sort().join(', ')}`)
+  }
+  return kept
 }
 
 export function finalizeSitemapEntries<T extends { url: string }>(
@@ -121,8 +146,8 @@ export function finalizeSitemapEntries<T extends { url: string }>(
 const NORMALIZE_BASE = 'https://sitemap-guard.invalid/'
 
 /**
- * Drop any 2-segment /cities/{a}/{b} entry whose PATH is not in the sanctioned
- * neighborhood set. `allowedNeighborhoodPaths` holds paths like `/cities/bend/larkspur`
+ * Drop any 2-segment /cities/{a}/{b} entry whose PATH is neither in the
+ * sanctioned neighborhood set nor a registered city buyer answer. `allowedNeighborhoodPaths` holds paths like `/cities/bend/larkspur`
  * (no origin, no trailing slash) — build it from the same neighborhoods-table
  * rows the sitemap emits. Returns the safe list; console.errors each drop so a
  * regression is visible in logs.
@@ -143,7 +168,7 @@ export function filterRogueCityUrls<T extends { url: string }>(
       return true // unparseable even against a base — no crawler resolves it to a page
     }
     path = path.replace(/\/$/, '')
-    if (TWO_SEGMENT_CITIES.test(path) && !allowedNeighborhoodPaths.has(path)) {
+    if (TWO_SEGMENT_CITIES.test(path) && !allowedNeighborhoodPaths.has(path) && !CITY_CHILD_PAGES.has(path)) {
       // eslint-disable-next-line no-console
       console.error(`[sitemap] dropped rogue 2-segment /cities URL (not a sanctioned neighborhood): ${entry.url}`)
       return false
