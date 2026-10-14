@@ -833,6 +833,18 @@ export interface CmaBuildInput {
   subjectFacts?: { beds?: number | null; baths?: number | null; sqft?: number | null } | null
   /** Rent-vs-sell. Stored on client_notes as `Intent: sell|rent|both`. */
   clientIntent?: 'sell' | 'rent' | 'both' | null
+  /**
+   * Skip-trace phones with line type. An untyped number is not a cell.
+   * Expired and FSBO intake pass the list they already checked. A rebuild
+   * that only has a stored number leaves this empty and does not treat that
+   * number as a cell.
+   */
+  ownerPhones?: Array<{
+    number?: string | null
+    value?: string | null
+    type?: string | null
+    dnc?: boolean | null
+  }> | null
 }
 
 export interface CmaBuildResult {
