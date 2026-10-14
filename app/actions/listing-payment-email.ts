@@ -37,7 +37,7 @@ import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { sendEvent } from '@/lib/crm/send-event'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { nativeCrmPersonId } from '@/lib/alerts/enroll-identity'
-import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { fireLeadGenerated, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 import { listingByKeyPath } from '@/lib/slug'
 import { listingMlsStreetLine } from '@/lib/listing/publish-street-line'
 import { formatPriceExact } from '@/lib/format/money'
@@ -200,12 +200,13 @@ export async function submitListingPaymentEmail(input: {
     `[response-clock] payment estimate person ${crmPersonId}: ${ack.ok ? 'sent' : 'not sent'} (${ack.via}${ack.error ? ` — ${ack.error}` : ''})`,
   )
 
+  await persistGaClientIdFromCookies(crmPersonId)
   try {
     await fireLeadGenerated({
       lp_variant: 'listing-payment-email',
       lead_type: 'listing_inquiry',
       form_id: 'listing_payment_email',
-      fub_person_id: crmPersonId,
+      crm_person_id: crmPersonId,
     })
   } catch {
     // best-effort

@@ -152,22 +152,38 @@ export type FsboListing = {
  * Raw item shape from the Apify Zillow actor. The actor returns slightly
  * different keys across runs; we tolerate camelCase + snake_case + nested
  * objects and pull what we need defensively.
+ *
+ * maxcopell~zillow-scraper 2026-09-01: output is mapped fields only
+ * (propertyUrl, listingAddress, listingPrice, coordinates, mainImage,
+ * lotArea, listingType, broker). Pre-change raw keys stay as fallbacks
+ * so older fixtures and cached runs still parse.
  */
+type ZillowListingAddress = {
+  street?: string
+  city?: string
+  state?: string
+  zipCode?: string
+  zipcode?: string
+  full?: string
+}
+
 type ZillowRawItem = {
   address?: string | { streetAddress?: string; city?: string; state?: string; zipcode?: string }
+  listingAddress?: ZillowListingAddress
   streetAddress?: string
   addressStreet?: string
   city?: string
   state?: string
   zipcode?: string
   postalCode?: string
+  propertyUrl?: string
   detailUrl?: string
   url?: string
   hdpUrl?: string
   zpid?: string | number
   price?: number | string
   unformattedPrice?: number
-  listingPrice?: number
+  listingPrice?: number | { amount?: number | string }
   beds?: number
   bedrooms?: number
   baths?: number
@@ -175,8 +191,10 @@ type ZillowRawItem = {
   area?: number
   livingArea?: number
   livingAreaValue?: number
+  lotArea?: { value?: number | string; unit?: string }
   lotAreaValue?: number
   lotSize?: number | string
+  coordinates?: { latitude?: number; longitude?: number }
   latLong?: { latitude?: number; longitude?: number }
   latitude?: number
   longitude?: number
@@ -186,9 +204,12 @@ type ZillowRawItem = {
   yearBuilt?: number
   daysOnZillow?: number
   daysListed?: number
+  mainImage?: string
   imgSrc?: string
   photo?: string
   description?: string
+  listingType?: { isFSBO?: boolean; isFSBA?: boolean }
+  broker?: { name?: string; phoneNumber?: string }
   listingProvidedBy?: { name?: string; phoneNumber?: string }
   listing_provided_by?: { name?: string; phone?: string }
   attributionInfo?: {
@@ -243,7 +264,7 @@ function classifyPropertyType(raw: string | undefined | null): string | null {
  * stripped so dedupe by URL is invariant to format differences.
  */
 function canonicalUrl(item: ZillowRawItem): string | null {
-  const raw = item.detailUrl ?? item.url ?? item.hdpUrl ?? null
+  const raw = item.propertyUrl ?? item.detailUrl ?? item.url ?? item.hdpUrl ?? null
   if (!raw) return null
   let abs = raw
   if (raw.startsWith('/')) abs = 'https://www.zillow.com' + raw
@@ -257,6 +278,25 @@ function canonicalUrl(item: ZillowRawItem): string | null {
  * Parse address — Zillow returns either a flat `streetAddress` + `city` +
  * `state` + `zipcode` set or an object under `address`. Tolerate both.
  */
+const SQFT_PER_ACRE = 43560
+
+function listingPriceAmount(item: ZillowRawItem): number | null {
+  const mapped = item.listingPrice
+  if (mapped && typeof mapped === 'object') return toNumber(mapped.amount)
+  return toNumber(item.unformattedPrice ?? (typeof mapped === 'number' ? mapped : null) ?? item.price)
+}
+
+function lotSizeSqft(item: ZillowRawItem): number | null {
+  if (item.lotArea?.value != null) {
+    const value = toNumber(item.lotArea.value)
+    if (value == null) return null
+    const unit = (item.lotArea.unit ?? '').toLowerCase()
+    if (unit.startsWith('acre')) return toInt(value * SQFT_PER_ACRE)
+    return toInt(value)
+  }
+  return toInt(item.lotAreaValue ?? item.lotSize)
+}
+
 function parseAddress(item: ZillowRawItem): {
   streetAddress: string
   city: string
@@ -269,7 +309,22 @@ function parseAddress(item: ZillowRawItem): {
   let state = ''
   let zip: string | null = null
 
-  if (typeof item.address === 'string') {
+  if (item.listingAddress && typeof item.listingAddress === 'object') {
+    street = item.listingAddress.street ?? ''
+    city = item.listingAddress.city ?? ''
+    state = item.listingAddress.state ?? ''
+    zip = item.listingAddress.zipCode ?? item.listingAddress.zipcode ?? null
+    if ((!street || !city) && item.listingAddress.full) {
+      const parts = item.listingAddress.full.split(',').map((p) => p.trim())
+      if (parts.length >= 3) {
+        street = street || (parts[0] ?? '')
+        city = city || (parts[1] ?? '')
+        const stateZip = (parts[2] ?? '').split(/\s+/)
+        state = state || (stateZip[0] ?? '')
+        zip = zip ?? stateZip[1] ?? null
+      }
+    }
+  } else if (typeof item.address === 'string') {
     // Format: "123 Main St, Bend, OR 97701"
     const parts = item.address.split(',').map((p) => p.trim())
     if (parts.length >= 3) {
@@ -322,6 +377,10 @@ function normalizeCity(city: string, postalCode: string | null): string {
  * Returns null if the listing fails our floor checks (price, type, address).
  */
 export function parseZillowItem(item: ZillowRawItem): FsboListing | null {
+  // Mapped output since 2026-09-01: drop agent-listed rows. Missing
+  // listingType keeps the old raw-shape path (FSBO search URLs already filter).
+  if (item.listingType?.isFSBO === false) return null
+
   const url = canonicalUrl(item)
   if (!url) return null
 
@@ -341,7 +400,7 @@ export function parseZillowItem(item: ZillowRawItem): FsboListing | null {
     return null
   }
 
-  const price = toNumber(item.unformattedPrice ?? item.listingPrice ?? item.price)
+  const price = listingPriceAmount(item)
   if (price == null || price < FSBO_MIN_LIST_PRICE) return null
 
   const zpid = item.zpid != null ? String(item.zpid) : null
@@ -349,24 +408,26 @@ export function parseZillowItem(item: ZillowRawItem): FsboListing | null {
   const beds = toNumber(item.beds ?? item.bedrooms)
   const baths = toNumber(item.baths ?? item.bathrooms)
   const sqft = toInt(item.area ?? item.livingArea ?? item.livingAreaValue)
-  const lot = toInt(item.lotAreaValue ?? item.lotSize)
-  const lat = toNumber(item.latLong?.latitude ?? item.latitude)
-  const lon = toNumber(item.latLong?.longitude ?? item.longitude)
+  const lot = lotSizeSqft(item)
+  const lat = toNumber(item.coordinates?.latitude ?? item.latLong?.latitude ?? item.latitude)
+  const lon = toNumber(item.coordinates?.longitude ?? item.latLong?.longitude ?? item.longitude)
   const yearBuilt = toInt(item.yearBuilt)
   const daysListed = toInt(item.daysOnZillow ?? item.daysListed)
 
   // Owner contact extraction — Zillow's FSBO listings often include the
   // poster's name + phone under `listingProvidedBy` or `attributionInfo`.
-  // Fall through every shape we've seen.
+  // Mapped output uses `broker`. Fall through every shape we've seen.
   const ownerName =
     item.listingProvidedBy?.name ??
     item.listing_provided_by?.name ??
+    item.broker?.name ??
     item.attributionInfo?.agentName ??
     item.contactName ??
     null
   const contactPhone =
     item.listingProvidedBy?.phoneNumber ??
     item.listing_provided_by?.phone ??
+    item.broker?.phoneNumber ??
     item.attributionInfo?.agentPhoneNumber ??
     item.contactPhone ??
     null
@@ -391,7 +452,7 @@ export function parseZillowItem(item: ZillowRawItem): FsboListing | null {
     propertyType,
     yearBuilt,
     daysListed,
-    photoUrl: item.imgSrc ?? item.photo ?? null,
+    photoUrl: item.mainImage ?? item.imgSrc ?? item.photo ?? null,
     description: item.description ?? null,
     ownerName,
     contactPhone: contactPhone ? contactPhone.replace(/\D/g, '') : null,

@@ -16,6 +16,7 @@ const h = vi.hoisted(() => ({
   stitchFormSubmitIdentity: vi.fn(),
   fireLeadGenerated: vi.fn(),
   fireNonLeadEvent: vi.fn(),
+  persistGaClientIdFromCookies: vi.fn(),
   recordJoinConversion: vi.fn(),
   tagRecruitJoin: vi.fn(),
   fetch: vi.fn(),
@@ -36,6 +37,7 @@ vi.mock('@/lib/visitor-backfill', () => ({ stitchFormSubmitIdentity: (...a: unkn
 vi.mock('@/lib/lead-tracking', () => ({
   fireLeadGenerated: (...a: unknown[]) => h.fireLeadGenerated(...a),
   fireNonLeadEvent: (...a: unknown[]) => h.fireNonLeadEvent(...a),
+  persistGaClientIdFromCookies: (...a: unknown[]) => h.persistGaClientIdFromCookies(...a),
 }))
 vi.mock('@/lib/crm/enroll', () => ({ autoEnrollByPersonId: (...a: unknown[]) => h.autoEnrollByPersonId(...a) }))
 vi.mock('@/lib/comms/site-confirmations', () => ({
@@ -74,6 +76,7 @@ beforeEach(() => {
     h.stitchFormSubmitIdentity,
     h.fireLeadGenerated,
     h.fireNonLeadEvent,
+    h.persistGaClientIdFromCookies,
     h.recordJoinConversion,
     h.tagRecruitJoin,
     h.fetch,
@@ -97,8 +100,9 @@ describe('contact form intake', () => {
     expect(h.canonicallyTagLead).toHaveBeenCalledTimes(1)
     expect(h.autoEnrollByPersonId).toHaveBeenCalledWith(77, { smsConsent: false })
     expect(h.sendContactConfirmation).toHaveBeenCalledTimes(1)
+    expect(h.persistGaClientIdFromCookies).toHaveBeenCalledWith(77)
     expect(h.fireLeadGenerated).toHaveBeenCalledTimes(1)
-    expect(h.fireLeadGenerated.mock.calls[0][0]).toMatchObject({ form_id: 'contact' })
+    expect(h.fireLeadGenerated.mock.calls[0][0]).toMatchObject({ form_id: 'contact', crm_person_id: 77 })
     expect(h.fireNonLeadEvent).not.toHaveBeenCalled()
   })
 

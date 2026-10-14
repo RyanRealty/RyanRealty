@@ -131,6 +131,10 @@ export type WebPageInput = {
   aboutOrganization?: boolean
   /** ISO 8601 last-modified time of the page's own data (AEO freshness). Omitted when unknown. */
   dateModified?: string
+  /** Visible byline name. Buyer-answer pages set this to Matt Ryan. */
+  authorName?: string
+  /** Relative or absolute URL for the author Person node. */
+  authorUrl?: string
   /**
    * Facts about the Organization that THIS page states in its visible copy,
    * added to the mainEntity reference (same @id, so a parser merges them into
@@ -518,6 +522,13 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
         description: input.description,
         url: absoluteUrl(input.url),
         dateModified: input.dateModified,
+        author: input.authorName
+          ? prune({
+              '@type': 'Person',
+              name: input.authorName,
+              url: absoluteUrl(input.authorUrl),
+            })
+          : undefined,
         // Every page belongs to the one WebSite node the root layout emits
         // (components/JsonLd.tsx), whose publisher is #organization. The
         // reference is what ties a page to the brand entity without a second

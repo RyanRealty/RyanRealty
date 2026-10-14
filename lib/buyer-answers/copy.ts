@@ -51,7 +51,9 @@ export function livingAnswer(place: BuyerAnswerFigures, asOf: string | null): st
   if (days) optional.push(`Homes have taken a median of ${days} days to go pending.`)
   if (mos) optional.push(`Months of supply is ${mos}.`)
   optional.push('Those figures describe the housing market, not who should live there.')
-  optional.push(`See the ${place.name} listings below and the community hub for the full place page.`)
+  const hubNoun =
+    place.placeKind === 'city' ? 'city' : place.placeKind === 'neighborhood' ? 'neighborhood' : 'community'
+  optional.push(`See the ${place.name} listings below and the ${hubNoun} hub for the full place page.`)
   return fitAnswer(required, optional)
 }
 
@@ -162,6 +164,69 @@ export function vsAnswer(
   )
 }
 
+export function fromOutOfStateAnswer(place: BuyerAnswerFigures, asOf: string | null): string {
+  const count = place.activeCount ?? (place.listingCount > 0 ? place.listingCount : null)
+  const price = priceClause(place.medianListPrice)
+  const cite = mlsCitation(asOf)
+  const days = formatDays(place.medianDaysToPending)
+  const lead =
+    count == null
+      ? `Matt Ryan founded Ryan Realty in 2014. Buying a house in ${place.name} from out of state starts with the live MLS list.`
+      : count === 0
+        ? `Matt Ryan founded Ryan Realty in 2014. Buying a house in ${place.name} from out of state starts with the live list: none are for sale right now.`
+        : `Matt Ryan founded Ryan Realty in 2014. Buying a house in ${place.name} from out of state starts with the live list: ${formatCount(count)} single-family home${count === 1 ? '' : 's'}${price ? ` ${price}` : ''}.`
+  return fitAnswer(
+    [`${lead} ${cite}.`],
+    [
+      days ? `Homes have taken a median of ${days} days to go pending.` : null,
+      'We run that search by phone or in town.',
+    ].filter((s): s is string => Boolean(s)),
+  )
+}
+
+export function secondHomeAnswer(place: BuyerAnswerFigures, asOf: string | null): string {
+  const count = place.activeCount ?? (place.listingCount > 0 ? place.listingCount : null)
+  const price = priceClause(place.medianListPrice)
+  const cite = mlsCitation(asOf)
+  const days = formatDays(place.medianDaysToPending)
+  const inv =
+    count == null
+      ? `${place.name} inventory is on the live MLS list`
+      : count === 0
+        ? `${place.name} has no single-family homes for sale right now`
+        : `${homesClause(count, place.name)}${price ? ` ${price}` : ''}`
+  return fitAnswer(
+    [`A second home in ${place.name} is a house you keep and use. ${inv}. ${cite}.`],
+    [
+      days ? `Homes have taken a median of ${days} days to go pending.` : null,
+      'Short-term rental rules are not a single sourced figure here.',
+      'Confirm use with the association before you buy.',
+    ].filter((s): s is string => Boolean(s)),
+  )
+}
+
+export function buyingAnswer(place: BuyerAnswerFigures, asOf: string | null): string {
+  const count = place.activeCount ?? (place.listingCount > 0 ? place.listingCount : null)
+  const price = priceClause(place.medianListPrice)
+  const cite = mlsCitation(asOf)
+  const days = formatDays(place.medianDaysToPending)
+  const mos = formatMos(place.monthsOfSupply)
+  const lead =
+    count == null
+      ? `Buying a home in ${place.name} starts with the live MLS list.`
+      : count === 0
+        ? `Buying a home in ${place.name} starts with the live list: none are for sale right now.`
+        : `Buying a home in ${place.name} starts with the live list: ${formatCount(count)} single-family home${count === 1 ? '' : 's'}${price ? ` ${price}` : ''}.`
+  return fitAnswer(
+    [`${lead} ${cite}.`],
+    [
+      days ? `Homes have taken a median of ${days} days to go pending.` : null,
+      mos ? `Months of supply is ${mos}.` : null,
+      `See the ${place.name} listings below and the city page.`,
+    ].filter((s): s is string => Boolean(s)),
+  )
+}
+
 export function presetAnswer(input: {
   city: string
   plural: string
@@ -213,6 +278,12 @@ export function buildAnswer(input: {
       return input.other
         ? vsAnswer(input.place, input.other, input.asOf)
         : livingAnswer(input.place, input.asOf)
+    case 'from-out-of-state':
+      return fromOutOfStateAnswer(input.place, input.asOf)
+    case 'second-home':
+      return secondHomeAnswer(input.place, input.asOf)
+    case 'buying':
+      return buyingAnswer(input.place, input.asOf)
     case 'preset':
     case 'new-construction':
       return livingAnswer(input.place, input.asOf)

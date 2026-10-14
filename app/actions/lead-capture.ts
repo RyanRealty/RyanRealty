@@ -7,7 +7,7 @@ import { cookies } from 'next/headers'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger'
-import { fireLeadGenerated, fireNonLeadEvent } from '@/lib/lead-tracking'
+import { fireLeadGenerated, fireNonLeadEvent, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 
 const SITE_URL = siteOrigin()
 
@@ -153,6 +153,7 @@ export async function submitPageCTA(input: {
     }
 
     await stitchCapturedLead(result.ok ? result.personId : null, email)
+    await persistGaClientIdFromCookies(result.ok ? result.personId : null)
 
     // GA4 Measurement Protocol mirror. A newsletter signup is not a lead
     // (lib/analytics/lead-event.ts): its own event, never generate_lead.
@@ -169,6 +170,7 @@ export async function submitPageCTA(input: {
         lp_variant: pageCtaVariant,
         lead_type: input.leadType === 'seller' ? 'seller_listing' : input.leadType === 'buyer' ? 'buyer_question' : 'contact_general',
         form_id: 'page_cta',
+        crm_person_id: result.ok ? result.personId : null,
         extra: {
           area: input.area,
           context: input.context,
@@ -279,11 +281,13 @@ export async function submitRentalLead(input: {
     }
 
     await stitchCapturedLead(result.ok ? result.personId : null, email)
+    await persistGaClientIdFromCookies(result.ok ? result.personId : null)
 
     await fireLeadGenerated({
       lp_variant: 'rental-calculator',
       lead_type: 'buyer_question',
       form_id: 'rental_calculator',
+      crm_person_id: result.ok ? result.personId : null,
       extra: { listing_key: input.listingKey, property: input.propertyLabel },
     })
 
@@ -409,11 +413,13 @@ export async function submitTetherowLead(input: {
     }
 
     await stitchCapturedLead(result.ok ? result.personId : null, email)
+    await persistGaClientIdFromCookies(result.ok ? result.personId : null)
 
     await fireLeadGenerated({
       lp_variant: 'tetherow-landing-v1',
       lead_type: isSeller ? 'seller_listing' : 'buyer_question',
       form_id: 'tetherow_lp',
+      crm_person_id: result.ok ? result.personId : null,
       extra: { resort: input.resort ?? 'tetherow', campaign: input.campaign, intent: input.intent },
     })
 
