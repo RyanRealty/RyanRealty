@@ -468,6 +468,17 @@ describe('the city map/split view (MapSearchView via MapSplitView) subtracts hid
   const src = readSrc('components/search/MapSearchView.tsx')
   const mapSplit = readSrc('app/search/[...slug]/sections/MapSplitView.tsx')
 
+  it('MapSplitView server-renders the Bend leftover intro after the city H1', () => {
+    const mapSplit = readSrc('app/search/[...slug]/sections/MapSplitView.tsx')
+    expect(mapSplit).toMatch(/publishBendSearchAnswer/)
+    expect(mapSplit).toMatch(/relatedCitySlug === 'bend'/)
+    expect(mapSplit).toMatch(/<V3TakeawaysLead/)
+    expect(mapSplit).toMatch(/cityFaqInput/)
+    const afterH1 = mapSplit.slice(mapSplit.indexOf('{headline}'))
+    expect(afterH1.indexOf('<V3TakeawaysLead')).toBeGreaterThan(-1)
+    expect(afterH1.indexOf('<V3TakeawaysLead')).toBeLessThan(afterH1.indexOf('<SearchFilters'))
+  })
+
   it('MapSplitView mounts MapSearchView (not UnifiedMapListingsView)', () => {
     expect(mapSplit).toMatch(/import MapSearchView from '@\/components\/search\/MapSearchView'/)
     expect(mapSplit).toMatch(/<MapSearchView/)

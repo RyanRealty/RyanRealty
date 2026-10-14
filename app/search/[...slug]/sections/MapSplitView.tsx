@@ -33,7 +33,9 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
+  V3TakeawaysLead,
 } from '@/components/site/v3'
+import { publishBendSearchAnswer } from '@/lib/search/bend-search-answer'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
 import SearchPageJsonLd from '../SearchPageJsonLd'
 import { splitLeadImageUrl } from '@/lib/search/split-lead-image'
@@ -326,8 +328,21 @@ export async function renderMapSplitView(props: {
   // publishes no ItemList (unknown is not a list of ten homes, §0).
   const citySeo = props.citySeo ?? null
   const cityDepth = citySeo
-    ? await withTimeout(citySeo.cityDepth, null, SPLIT_CITY_DEPTH_GRACE_MS)
+    ? await withTimeout(
+        citySeo.cityDepth,
+        null,
+        citySeo.relatedCitySlug === 'bend' ? 8000 : SPLIT_CITY_DEPTH_GRACE_MS,
+      )
     : null
+  // Intro counts come from leftoverHudKpis via cityFaqInput
+  // (search-city-sfr-publish). Omit when leftover cannot make two sentences.
+  const bendAnswer =
+    citySeo?.relatedCitySlug === 'bend'
+      ? publishBendSearchAnswer({
+          faq: cityDepth?.market.cityFaqInput,
+          pace: cityDepth?.market.publicPace,
+        })
+      : null
   const jsonLdListings = viewportDegraded ? [] : viewport.listings.slice(0, 20)
   const seedListings = slimViewportListings(viewport.listings.slice(0, SPLIT_CARD_PAGE))
   const slimBoundary =
@@ -428,6 +443,13 @@ export async function renderMapSplitView(props: {
         <h1 className="truncate px-4 pt-2 font-display text-sm font-medium leading-5 text-foreground sm:px-6">
           {headline}
         </h1>
+        {bendAnswer ? (
+          <V3TakeawaysLead
+            items={bendAnswer.items}
+            source={bendAnswer.source}
+            className="px-4 pb-2 sm:px-6"
+          />
+        ) : null}
         <SearchFilters initialFilters={filters} signedIn={!!session?.user} hideViewToggle />
       </div>
       <div className="flex min-h-0 flex-1 flex-col">

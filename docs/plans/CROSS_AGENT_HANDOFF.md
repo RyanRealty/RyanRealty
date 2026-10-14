@@ -1,10 +1,8 @@
 # Current — 2026-10-14 (Cursor, HTML payload budget)
 
-Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `ab4342b1d` (merged, not rebased: #511 listings-failure no-cache, #539 main-CI reds, #536, #538, #528, #533, #521). Land path is `gh pr merge 527 --squash` after this PR's own CI. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `a4b308804` (merged, not rebased: #525 by-area links, #511 listings-failure, #539 CI reds, #536, #538, #528, #533, #521). Land path is `gh pr merge 527 --squash` after this PR's own CI. Nobody pushes main. Nothing sent.
 
-**What this branch does.** Caps public listing SSR grids at 24 cards (`SSR_GRID_PAGE`; home rails 36). Community fold grid and map homes past 24 load from `GET /api/place/homes`. Search SSR no longer reads cookies (`getSession` / saved / liked); viewer state hydrates after paint so `/homes-for-sale/bend` can use the public `s-maxage=60` header. Listing media flight capped at 24 photos. `ci:page-payload` shrink-only ratchet plus a 200 KB hard fail when serialized unique listing cards exceed one grid page. `/search` content-floor words lowered 819 → 750 because the 24-card seed has fewer address words (CI measured 763). Community fold from #521 and #511 `readOrRefuseListings` stay; only the card cap is ours.
-
-**Measured (identity, 2026-10-13).** Production before → local after (`next start`): `/` 493347 → 472180 B (36 cards, TTFB ~127 ms); `/communities/tetherow` 710608 → 676659 B (22 cards, TTFB 8–38 ms); `/homes-for-sale/bend` 415747 → 301396 B (24 cards, TTFB 32–139 ms, was ~2.0 s); `/homes-for-sale` 437386 → 324569 B; `/listing/22054302` 208030 → 188557 B. Gzip already under 150 KB on the named routes.
+**What this branch does.** Caps public listing SSR grids at 24 cards (`SSR_GRID_PAGE`; home rails 36). Community fold grid and map homes past 24 load from `GET /api/place/homes`. Search SSR no longer reads cookies (`getSession` / saved / liked); viewer state hydrates after paint so `/homes-for-sale/bend` can use the public `s-maxage=60` header. Listing media flight capped at 24 photos. `ci:page-payload` shrink-only ratchet plus a 200 KB hard fail when serialized unique listing cards exceed one grid page. `/search` content-floor words lowered 819 → 750 because the 24-card seed has fewer address words (CI measured 763). #525 Bend leftover intro and footer by-area column stay from main.
 
 **Not this change.** Do not merge `cursor/ai-voiceover-scripts-8a9c` unless Matt asks. Do not merge the SMS suppression branch. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill. Do not send. Do not merge `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters.
 
@@ -12,27 +10,23 @@ Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `docs/RUN_LOOP.md` (this is payload plumbing, not a site-queue look change).
 
+## Earlier — 2026-10-14 (Cursor, homes-for-sale-by-area internal links)
+
+Surface: Cursor cloud. Branch `cursor/homes-for-sale-by-area-f550` landed on main via #525. Nobody pushes main. Nothing sent.
+
+**What that branch did.** Sitewide footer column "Homes for sale by area" with exact-match anchors to `/homes-for-sale/{bend,redmond,sisters,sunriver,la-pine}` plus the top eight community hubs. `/homes-for-sale/bend` server-renders live inventory takeaways after the H1.
+
+## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
+
+Surface: Cursor cloud. Landed on main via #511 at `ab4342b1d`. Community and resort pages throw `ListingsUnavailableError` after one retry when the listings or community read does not answer.
+
 ## Earlier — 2026-10-14 (Cursor, make main CI green)
 
-Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` landed on main via #539. Nobody pushes main. Nothing sent.
-
-**What that commit did.** `ci:studio-rules` names both studio node tests. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150) so content-floor stays 3780. After #521, type links jump to `#homes-dial-<group>`. After #528, `serve.ts` re-exports `V3Footer`. After #498, `/buy/concessions` takes the 30-yr rate from `getLiveMortgageRate` / `getCalculatorDefaults` and points are `dollars / loan * 100` so `ci:stat-source` stays one engine.
+Surface: Cursor cloud. Landed on main via #539 at `5293aa46c`. `ci:stat-source` one engine; `#homes-dial-` type links; `V3Footer` re-export.
 
 ## Earlier — 2026-10-14 (Cursor, city buyer-answer geo-guard)
 
-Surface: Cursor cloud. Branch `cursor/city-buyer-answer-geo-guard-cde8` landed on main via #538. Nobody pushes main. Nothing sent.
-
-**What that commit did.** `resolveCityNeighborhoodPath` treated `/cities/<city>/living` and `/cost` as unknown neighborhoods and hard-404ed them at the edge. Reserved child segments (`living`, `cost`, `vs`, `types`) now pass through to the App Router. Out-of-market towns still 308 to `/oregon/<town>`. Unknown hoods still 404.
-
-## Earlier — 2026-10-13 (Cursor, buyer answer pages)
-
-Surface: Cursor cloud. Branch `cursor/buyer-answer-pages-cde8` landed on main via #528. 36 long-tail buyer-answer pages. Nobody pushes main. Nothing sent.
-
-**What that branch did.** Child routes under community and city hubs (`/living`, `/cost`, `/hoa`, `/short-term-rentals`, `/vs/[other]`) plus extras on existing price-band, acreage, and new-construction search routes. Each child page opens with a 40-60 word live MLS answer cited as Oregon Data Share MLS, a figures table, listing dial, FAQ + FAQPage, hub and `/buy/*` links, and a `/team/matthew-ryan` byline. HOA only where master assessments are sourced (Tetherow, Sunriver, Caldera Springs). STR only Tetherow and Juniper Preserve. Sitemap and llms.txt list them. Registry: `lib/buyer-answers`.
-
-**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool` in the primary checkout. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
-
-Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md`, `lib/buyer-answers/*`.
+Surface: Cursor cloud. Landed on main via #538. Reserved child segments (`living`, `cost`, `vs`, `types`) pass through to the App Router.
 
 ## Earlier — 2026-10-13 (Cursor, sitemap + listing index hygiene)
 
