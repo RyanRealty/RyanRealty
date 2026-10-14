@@ -147,6 +147,7 @@
     "report:geo-coverage": "node scripts/report-geo-coverage.mjs",
     "ci:crm-fail-closed": "node scripts/check-crm-fail-closed.mjs",
     "ci:inbound-message-enrich": "node scripts/check-inbound-message-enrich.mjs",
+    "ci:inbound-consent-clear": "node scripts/check-inbound-consent-clear.mjs && vitest run --project unit lib/crm/inbound-consent-clear.test.ts lib/data/crm/applyInboundConsentClear.test.ts",
     "ci:person-identity-edit": "node scripts/check-person-identity-edit.mjs",
     "ci:crm-add-person": "node scripts/check-crm-add-person.mjs",
     "ci:currency-format": "node scripts/check-currency-format.mjs",
@@ -541,6 +542,7 @@
     "@supabase/supabase-js": "2.98.0",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-virtual": "^3.14.13",
+    "@types/ws": "^8.18.2",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.37.0",
     "3d-tiles-renderer": "^0.4.28",
@@ -579,6 +581,7 @@
     "three": "^0.170.0",
     "tw-animate-css": "^1.4.0",
     "vaul": "^1.1.2",
+    "ws": "^8.22.0",
     "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },

@@ -460,6 +460,17 @@ export async function syncMailboxWindow(params: {
     const freshAfter = new Date(Date.now() - CMA_REPLY_ALERT_WINDOW_DAYS * 86_400_000).toISOString()
     for (const r of inboundEmailRepliesToAdvance(inboundForIntent, freshAfter)) {
       await handleInboundReply({ personId: r.personId, broker: brokerSlug, channel: 'email', preview: r.preview })
+      try {
+        const { applyInboundConsentClear } = await import('@/lib/data/crm/applyInboundConsentClear')
+        await applyInboundConsentClear({
+          personId: r.personId,
+          event: 'email',
+          eventId: r.messageKey,
+          broker: brokerSlug,
+        })
+      } catch (clearErr) {
+        console.warn('[gmail-sync] inbound consent clear failed (fail-open)', clearErr)
+      }
     }
   } catch (err) {
     console.warn('[gmail-sync] inbound-reply advance failed (fail-open)', err)

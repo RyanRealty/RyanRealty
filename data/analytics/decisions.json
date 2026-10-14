@@ -71,6 +71,12 @@
       "code": "components/AnalyticsIdentityBridge.tsx"
     },
     {
+      "id": "known-contact-user-id-server-events",
+      "decided": "Matt 2026-10-14 (crm-contacts-tagged-in-ga4), carried to server events 2026-10-14; the tier rule is the consent tier table in docs/TRACKING_POLICY.md",
+      "why": "A known contact is one GA4 user wherever the hit comes from. The page-view mirror, generate_lead, person_identified and valuation_requested send the same hashed CRM id the browser tag gets (lib/analytics/ga4-user-id.ts), and only at the analytics tier: an essential-tier visit reaches GA4 under an anonymous client id and nothing else. A client document (/cma, /bpo) runs no Google tag, so before this a recipient reading their report was never counted as known (GA4 read 2026-10-14: 12 users with a user id against 113 contacts on the site in 30 days).",
+      "code": "lib/analytics/ga4-user-id.test.ts"
+    },
+    {
       "id": "business-profile-linked",
       "decided": "Matt 2026-10-14",
       "why": "Google Business Profile (Ryan Realty, 115 NW Oregon Ave Suite #2) is linked to the GA4 property.",
