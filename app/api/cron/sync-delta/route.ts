@@ -77,6 +77,8 @@ export async function GET(request: Request) {
       pages: r.pages,
       sinceIso: r.sinceIso,
       expired: r.expired,
+      // Changed listing pages told to Bing and the engines behind it (lib/seo/indexnow.ts).
+      indexNow: r.indexNow,
     })
   } catch (err) {
     console.error('[sync-delta] Fatal error:', err)

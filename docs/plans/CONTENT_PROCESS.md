@@ -80,7 +80,7 @@
 6. **Verdict words must agree with the numbers.** No "buyers have leverage" beside 3.5 months of supply.
 7. **New database tables: yes.** Job claims and limits, approvals, signatures, rule-change approvals and the approved-video list. New tables only; nothing existing changes.
 8. **Posting keys:** production must hold every one so the doors can post, checked by `lib/social/token-heartbeat.ts`. No rotation now, so copies on bot machines remain a known gap.
-9. **LinkedIn and Threads are removed as posting platforms.** Their profile links stay on the footer and About page.
+9. **Content-queue drafts that pass `ci:content-queue` are publishable** (Matt 2026-10-14 11:59 PT). There is no `approved: true` door. LinkedIn is on for Matt's profile and the company page via `content-queue/` (`w_organization_social` on the company page). Threads stays off the old `/api/social/publish` door. Profile links stay on the footer and About page.
 10. **A strategist whiteboards first.** "There just needs to be someone who has those skills, because you're jumping right in." Step 0 above; the ad-strategist writes it, a builder never does.
 11. **Plain English a 75-year-old understands.** "It needs to be explained so that a 75-year-old person can understand it. We're not going to pander, but we need to explain it in simple, plain English." Explain before you shorten: "You jump right into the middle of a concept when you really don't explain it." "Sellers are paying to close" is retired.
 12. **Context first.** "We need to start with a bigger context: 'Are you thinking of buying in Central Oregon? You need to know what's happening in the market. Here's what we're seeing in the market.'"

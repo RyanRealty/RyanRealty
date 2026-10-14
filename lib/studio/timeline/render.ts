@@ -152,7 +152,9 @@ export function checkoutRoots(repoRoot: string = REPO_ROOT): string[] {
 export function assertNotPublic(path: string, roots: readonly string[] = checkoutRoots()): void {
   const real = realPathOf(path).toLowerCase()
   for (const root of roots) {
-    const rel = relative(root.toLowerCase(), real)
+    // The root is resolved the same way as the path: on macOS /var is /private/var,
+    // so an unresolved root never contains the resolved path and the guard let it through.
+    const rel = relative(realPathOf(root).toLowerCase(), real)
     if (rel === '' || rel.startsWith('..') || isAbsolute(rel)) continue
     if (rel.split(sep).includes('public')) {
       throw new RenderError(`refusing to write a render under a public/ folder of the repo (${path}); drafts go to out/`)

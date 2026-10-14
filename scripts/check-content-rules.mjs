@@ -32,7 +32,7 @@
  *   --write-baseline  record today's numbers (IDs only ever grow); a looser number written here
  *                     still needs the commit trailers
  */
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import ts from 'typescript'
@@ -278,4 +278,6 @@ async function main() {
   if (problems.length && !args.includes('--report')) process.exit(1)
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) main()
+// Compare real paths: Node resolves import.meta.url through symlinks (macOS /var is
+// /private/var), so a plain resolve() of argv[1] missed and the gate exited 0 unrun.
+if (process.argv[1] && fileURLToPath(import.meta.url) === realpathSync(resolve(process.argv[1]))) main()

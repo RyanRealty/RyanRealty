@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-10-14T15:25:52.862Z
+**Generated:** 2026-10-14T19:38:08.410Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -4528,7 +4528,7 @@ Companion files:
 
 ### `lib/data/prospecting/expired-outreach-hit.test.ts`
 
-**Exports:** `verifyNotRelisted`, `sendProspectingIntro`, `sendProspectingEmailIntro`
+**Exports:** `verifyNotRelisted`, `sendProspectingIntro`, `sendProspectingEmailIntro`, `sendCmaToLead`, `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP`
 
 ---
 
@@ -4986,7 +4986,7 @@ Companion files:
 
 **Tables:** `sync_state`, `listings`, `listing_history`, `price_history`, `status_history`, `activity_events`, `expired_listings`, `listing_videos`, `open_houses`, `open_house_rsvps`, `notification_queue`, `strict_verify_runs`, `properties`, `valuation_requests`, `cmas`, `boundaries`, `video_tours_cache`, `sync_cursor`, `market_pulse_live`, `listing_inquiries`, `listing_alerts`, `optimization_runs`
 
-**Selected columns:** `last_delta_sync_at`, `ListNumber`, `ListingKey`, `StandardStatus`, `ListPrice`, `is_finalized`, `City`, `CloseDate`, `ClosePrice`, `property_sub_type`, `TotalLivingAreaSqFt`, `media_finalized`, `overrides:details->admin_overrides`, `PhotoURL`, `has_virtual_tour`, `OpenHouses`, `Photos:details->Photos`, `FloorPlans:details->FloorPlans`, `Videos:details->Videos`, `VirtualTours:details->VirtualTours`, `Documents:details->Documents`, `DetailOpenHouses:details->OpenHouses`, `id`, `listing_key`, `event_type`, `event_at`, `payload`, `event_date`, `start_time`, `end_time`, `rsvp_count`, `owner_lookup_attempts`, `unparsed_address`, `city`, `state`, `postal_code`, `street_number`, `StreetNumber`, `StreetName`, `BedroomsTotal` (+50 more)
+**Selected columns:** `last_delta_sync_at`, `ListNumber`, `ListingKey`, `StandardStatus`, `ListPrice`, `is_finalized`, `City`, `CloseDate`, `ClosePrice`, `property_sub_type`, `TotalLivingAreaSqFt`, `media_finalized`, `PhotoURL`, `photos_count`, `media_suppressed`, `overrides:details->admin_overrides`, `has_virtual_tour`, `OpenHouses`, `Photos:details->Photos`, `FloorPlans:details->FloorPlans`, `Videos:details->Videos`, `VirtualTours:details->VirtualTours`, `Documents:details->Documents`, `DetailOpenHouses:details->OpenHouses`, `id`, `listing_key`, `event_type`, `event_at`, `payload`, `event_date`, `start_time`, `end_time`, `rsvp_count`, `owner_lookup_attempts`, `unparsed_address`, `city`, `state`, `postal_code`, `street_number`, `StreetNumber` (+52 more)
 
 ---
 

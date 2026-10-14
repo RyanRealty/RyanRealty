@@ -7,6 +7,7 @@ import {
   classifyTip,
   isSkippableTip,
   findSupersedingDeploy,
+  concurrentBuilds,
   DEFAULT_TIMEOUT_MS,
   DEFAULT_SKIP_WAIT_MS,
 } from './deploy-verify-policy.mjs'
@@ -105,5 +106,39 @@ describe('classifyTip: the commit being verified, never the checkout HEAD', () =
 
   it('the docs commit itself is still skippable', () => {
     expect(isSkippableTip(classifyTip(docsSha, { cwd: dir, prev: '' }).status)).toBe(true)
+  })
+})
+
+describe('concurrentBuilds', () => {
+  const ours = { uid: 'dpl_ours', buildingAt: 1_000, ready: 2_000, state: 'READY', sha: 'aaaaaaa1' }
+
+  it('names the builds whose window overlapped ours, and never ourselves', () => {
+    const others = [
+      ours,
+      { uid: 'dpl_before', buildingAt: 100, ready: 999, state: 'READY', sha: 'bbbbbbb2' },
+      { uid: 'dpl_during', buildingAt: 1_500, ready: 2_500, state: 'READY', meta: { githubCommitSha: 'ccccccc3dddd' } },
+      { uid: 'dpl_errored', buildingAt: 900, ready: 1_100, state: 'ERROR', sha: 'eeeeeee5' },
+      { uid: 'dpl_after', buildingAt: 2_000, ready: 3_000, state: 'READY', sha: 'fffffff6' },
+    ]
+    expect(concurrentBuilds(ours, others, 5_000)).toEqual([
+      { id: 'dpl_during', sha: 'ccccccc', state: 'READY' },
+      { id: 'dpl_errored', sha: 'eeeeeee', state: 'ERROR' },
+    ])
+  })
+
+  it('a deployment that never built (ignoreCommand canceled it) is not a concurrent build', () => {
+    const others = [{ uid: 'dpl_docs', state: 'CANCELED', created: 1_200, sha: 'ddddddd4' }]
+    expect(concurrentBuilds(ours, others, 5_000)).toEqual([])
+  })
+
+  it('a deployment still building ends at now', () => {
+    const others = [{ uid: 'dpl_live', buildingAt: 1_900, state: 'BUILDING', sha: 'ggggggg7' }]
+    expect(concurrentBuilds(ours, others, 5_000)).toEqual([{ id: 'dpl_live', sha: 'ggggggg', state: 'BUILDING' }])
+    expect(concurrentBuilds(ours, [{ uid: 'dpl_live', buildingAt: 2_100, state: 'BUILDING' }], 5_000)).toEqual([])
+  })
+
+  it('without a build window of our own there is nothing to compare', () => {
+    expect(concurrentBuilds({ uid: 'dpl_ours', state: 'READY' }, [{ uid: 'x', buildingAt: 1, ready: 2, state: 'READY' }])).toEqual([])
+    expect(concurrentBuilds(ours, null)).toEqual([])
   })
 })
