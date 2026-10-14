@@ -26,8 +26,17 @@ export function isoDuration(seconds: number | null | undefined): string | undefi
 }
 
 /**
- * The VideoObject for a place's area guide, or null when there is no guide.
- * `pageUrl` is the place page (relative is fine; buildJsonLd absolutizes).
+ * The VideoObject for a place's area guide, or null when there is no guide or
+ * the node would be incomplete. `pageUrl` is the place page (relative is fine;
+ * buildJsonLd absolutizes).
+ *
+ * COMPLETE OR NOTHING (2026-10-14). Google requires name, thumbnailUrl and
+ * uploadDate; a VideoObject missing either is an invalid item in Search
+ * Console's video report, not a weaker one. Both come only from the channel
+ * upload (the YouTube usage stamp on the asset), so a cut that is not on the
+ * channel (ranch-at-the-canyons and shevlin, 2026-10-14) still plays on its
+ * page but carries no VideoObject. Every place page (city, neighborhood,
+ * community, subdivision) shares this one builder.
  */
 export function areaGuideVideoSchema(
   placeName: string,
@@ -37,6 +46,7 @@ export function areaGuideVideoSchema(
   const contentUrl = guide?.url?.trim()
   if (!contentUrl) return null
   const yt = guide?.youtube ?? null
+  if (!yt?.thumbnailUrl || !yt.publishedAt) return null
   return {
     type: 'video',
     name: yt?.title?.trim() || `${placeName} area guide`,

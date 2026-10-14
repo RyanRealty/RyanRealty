@@ -555,8 +555,12 @@ async function renderCommunityDetail({ params }: Props) {
   const libraryHero = await withTimeoutFallback(communityLibraryHero(slug), null, 3000, 'comm:libraryHero')
   // The approved area guide for THIS community, exact slug only (a Bend guide
   // on a Tetherow page is wrong). A door in a ledger below the fold, never a
-  // looping hero: the first fold stays Split + leftover face.
-  const areaGuideVideo = await withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'comm:areaGuide')
+  // looping hero: the first fold stays Split + leftover face. The registry's
+  // durable key is the same place under its MLS name: Juniper Preserve's
+  // guide is tagged 'pronghorn' and its page is /communities/juniper-preserve,
+  // which found no guide and emitted no VideoObject until 2026-10-14.
+  const areaGuideSlugs = registryEntry && registryEntry.slug !== slug ? [slug, registryEntry.slug] : slug
+  const areaGuideVideo = await withTimeoutFallback(getAreaGuideVideo(areaGuideSlugs), null, 3000, 'comm:areaGuide')
   // SITE-52: this Ledger's own heading is "{publicName} area guide", so the
   // row's 'Area guide' when would repeat it — drop it, unlike the mixed
   // guides-and-news Ledger on the city and neighborhood nodes where the same
