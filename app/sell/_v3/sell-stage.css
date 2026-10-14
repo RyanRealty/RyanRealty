@@ -630,5 +630,8 @@
     color: var(--v3-ink);
     text-decoration: underline;
     text-underline-offset: 0.2em;
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--v3-tap);
   }
 }
