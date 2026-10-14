@@ -12,11 +12,15 @@ Skills read: `design_system/public/PUBLIC_UI.md`, `design_system/public/TASTE.md
 
 ## Earlier — 2026-10-14 (Cursor, Meta Lead no dollar values)
 
-Surface: Cursor cloud. #542 landed on main at `99b50558f`. Vercel production `dpl_9TWvoucwshSZUsVD8hoWokVpLJMn` READY for that SHA. Nobody pushes main. Nothing sent.
+## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
 
-**What #542 did.** Meta CAPI and pixel Lead events keep `lead_type` and `content_name` and no longer send `value` or `currency`. Offline conversions stay optional.
+Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489), which includes #485 (`fe948f648`) and #488 (`2167f8f71`). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
 
-**Still open from prior Current.** Land #489 if still open. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main). Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+**What landed.** #485 refuses an expired/FSBO CMA build when the home is on the market or has no sendable email. #488 ranks closer lots and matching views ahead of a mismatched sale. #489 seats a same-generation half-mile sale ahead of a stale neighbor.
+
+**Held.** #452 stays open: the body requires a rule-25 fleet score before merge (stretch clocks). #471 stays open: merge conflicts with later main and would drop `loadCmaMapTile` / `CMA_MAP_MS`; lint-and-build is already red. The unique `idx_listings_parcel_number` migration is not on main.
+
+**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
