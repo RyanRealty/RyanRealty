@@ -7,9 +7,11 @@
 
 ## Start here: every analytics, SEO-measurement or tracking task
 
-1. Read this page to the end. It wins over every older analytics doc, skill and handoff.
-   For SEO changes (titles, URLs, redirects, canonicals, robots, schema) also read
-   [`docs/SEO.md`](../SEO.md) and the pinned calls in [`data/seo/decisions.json`](../../data/seo/decisions.json).
+1. Read Matt's pinned calls first: tracking in [`data/analytics/decisions.json`](../../data/analytics/decisions.json),
+   SEO and AEO in [`data/seo/decisions.json`](../../data/seo/decisions.json). Build on them; never re-decide one
+   in chat. When Matt makes a new call, add an entry in the same session (see "Pinned decisions" below).
+   Then read this page to the end. It wins over every older analytics doc, skill and handoff.
+   For SEO changes (titles, URLs, redirects, canonicals, robots, schema) also read [`docs/SEO.md`](../SEO.md).
 2. Run the live audit before you touch anything, and again after you ship:
 
    ```bash
@@ -25,6 +27,19 @@
    `ci:analytics-registry` until it is added to the Registry with the reason it exists.
 4. Ship through `npm run ship`. Work is done when it is live on ryan-realty.com and the
    audit shows it.
+
+---
+
+## Pinned decisions (Matt 2026-10-14)
+
+> "This all needs to be written someplace so that we're always moving our tracking, our SEO, our AEO ... forward and not one-offing things, breaking things." (Matt, 2026-10-14)
+
+Every tracking and measurement call Matt has made is an entry in [`data/analytics/decisions.json`](../../data/analytics/decisions.json): who decided, when, why, and how it is held.
+
+- **`check`** entries are compared with live GA4 and GTM by `npm run analytics:audit` (the "Pinned tracking decisions" section). A FAIL means the setup drifted: fix GA4 or GTM, not the entry.
+- **`code`** entries name the test or file that holds the rule.
+- **`manual`** entries say where to look; no read-only API exposes them (the Business Profile link, GTM user permissions, Google tag settings).
+- **Adding** an entry is free and expected the moment Matt decides something. **Removing or changing** one needs a `Tracking-decision: <who, when, why>` commit trailer (`scripts/check-tracking-decisions.mjs`, run by the commit-msg hook on every commit). SEO and AEO work the same way through `data/seo/decisions.json` and `SEO-decision:`.
 
 ---
 
@@ -44,7 +59,7 @@ Env vars (names only): `NEXT_PUBLIC_GA4_MEASUREMENT_ID`, `NEXT_PUBLIC_GTM_CONTAI
 
 ## GA4 property settings (owner decisions)
 
-- **Custom dimensions registered:** 32 (30 event-scoped, 2 user-scoped: `assigned_broker`, `lead_status`). They include `lead_type`, `form_id` and `lp_variant`. `npm run analytics:audit` prints the full list. Register any new reportable param in GA4 Admin → Data display → Custom definitions before relying on it in Explorations.
+- **Custom dimensions registered:** 33 (31 event-scoped, 2 user-scoped: `assigned_broker`, `lead_status`). `seconds` ("Dwell seconds") was added 2026-10-14. They include `lead_type`, `form_id` and `lp_variant`. `npm run analytics:audit` prints the full list. Register any new reportable param in GA4 Admin → Data display → Custom definitions before relying on it in Explorations.
 - **Key events (9):** `generate_lead`, `qualify_lead`, `close_convert_lead`, `call_initiated`, `email_agent`, `cma_anchor_click`, `cma_downloaded`, `tour_requested`, and GA4's built-in `purchase`. Matt removed four that nothing sent (`schedule_showing`, `listing_showing_click`, `listing_inquiry`, `home_valuation_cta_click`) on 2026-10-14; GA4 keeps their history. `scripts/ga4-admin-setup.mjs` holds this list (and `RETIRED_KEY_EVENTS`), so a run never re-adds them. A new key event needs a sender first, and it changes what Google Ads can import: Matt's call.
 - **Primary channel group:** `AI Assistants (Custom)` — includes an **AI Assistants** channel (ChatGPT / Perplexity / similar referral hosts). Do not delete the group.
 - **Google Signals: ON.** Owner decision. Do not disable. (`scripts/ga4-admin-setup.mjs` enables Signals + consented; the older consent doc that said to keep Signals off is stale.)
@@ -314,7 +329,7 @@ The claude.ai shared skill of that name was written before these live reads. Whe
 | Guide said | Live, read 2026-10-14 through the GTM and GA4 APIs |
 |---|---|
 | GTM version 6 had 34 variables, and 4 may need restoring | Version 6 had 29 variables and version 7 has 30. Version 7 added `DLV - ga4 lead_type` and dropped none. Nothing needs restoring. |
-| Custom dimensions registered: `lead_type`, `form_id`, `lp_variant` | 32 are registered. Those three are among them. |
+| Custom dimensions registered: `lead_type`, `form_id`, `lp_variant` | 33 are registered. Those three are among them. |
 | Search Console is linked to GA4 | The API cannot read this link. Confirm it in GA4 Admin → Product links → Search Console. |
 | Server page views through the Measurement Protocol stay | They do, but only for essential-tier visitors and client documents since 2026-10-09 (see "Server page-view mirror"). |
 | (not in the guide) | Server lead events had no GA4 session, so every lead was Unassigned. Fixed by #563 (see "Server events join the visitor's GA4 session"). |

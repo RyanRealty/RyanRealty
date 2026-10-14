@@ -5,7 +5,7 @@
 
 This doc summarizes what's in place so the site can compete for real estate searches and be a strong source for users and LLMs.
 
-**Every agent (Claude, Cursor, Grok) starts SEO work here.** Matt's calls are in `data/seo/decisions.json`; read it before planning, not after a deploy fails. Measurement (GA4, Search Console, GTM) is [`docs/analytics/README.md`](analytics/README.md). The dated `docs/seo-*-2026-05-1x.md` files are history: where they disagree with this page or a pin, the pin wins.
+**Every agent (Claude, Cursor, Grok) starts SEO work here.** Matt's calls are in `data/seo/decisions.json`; read it before planning, not after a deploy fails. Measurement (GA4, Search Console, GTM) is [`docs/analytics/README.md`](analytics/README.md), and Matt's tracking calls are pinned the same way in [`data/analytics/decisions.json`](../data/analytics/decisions.json) (checked live by `npm run analytics:audit`). A new call from Matt becomes a new entry in the matching file in the same session, so SEO, AEO and tracking only move forward. The dated `docs/seo-*-2026-05-1x.md` files are history: where they disagree with this page or a pin, the pin wins.
 
 ## How SEO is kept from regressing (2026-10-04)
 

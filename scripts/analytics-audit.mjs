@@ -227,8 +227,11 @@ if (!container) {
         : !configRows(googleTag).some((r) => r.parameter === 'send_page_view' && String(r.parameterValue).toLowerCase() === 'false')
     const pageViewTags = (live.tag || []).filter((t) => t.type === 'gaawe' && param(t, 'eventName')?.value === 'page_view')
     const stream = Array.isArray(cfg.streams) ? cfg.streams.find((s) => s.measurementId === 'G-ST40W4WM6T') : null
-    const pageChanges = stream && !isErr(stream.enhancedMeasurement) ? stream.enhancedMeasurement?.pageChangesEnabled : undefined
-    const historyPageViews = typeof pageChanges === 'boolean' ? pageChanges : null
+    // The Admin API omits a false boolean, so a readable settings object without
+    // pageChangesEnabled means the setting is off (verified 2026-10-14 after it was turned off).
+    const em = stream && !isErr(stream.enhancedMeasurement) ? stream.enhancedMeasurement : null
+    const historyPageViews = em ? em.pageChangesEnabled === true : null
+    gtm.googleTagTriggerIds = googleTag?.firingTriggerId || []
     gtm.pageViewOwner = googleTagSendsPageView ? 'google tag' : pageViewTags.length ? pageViewTags.map((t) => t.name).join(', ') : 'none'
     gtm.historyPageViews = historyPageViews
     if (googleTagSendsPageView && pageViewTags.length)
@@ -264,6 +267,53 @@ if (!container) {
 }
 report.sections.gtm = gtm
 
+// ── Pinned tracking decisions ───────────────────────────────────────────────
+// data/analytics/decisions.json holds Matt's tracking calls. A `check` entry is
+// compared with the live setup read above; a mismatch is a FAIL because GA4 or
+// GTM drifted from a decision (fix the setting, never the entry:
+// scripts/check-tracking-decisions.mjs guards the file).
+const GTM_INITIALIZATION_TRIGGER = '2147479573' // built-in "Initialization - All Pages" (read from version 8, 2026-10-14)
+const facts = {
+  'gtm.pageViewOwner': gtm.pageViewOwner,
+  'gtm.googleTagOnInitialization': Array.isArray(gtm.googleTagTriggerIds) ? gtm.googleTagTriggerIds.includes(GTM_INITIALIZATION_TRIGGER) : undefined,
+  'ga4.historyPageViews': gtm.historyPageViews ?? undefined,
+  'ga4.signals': cfg.signals,
+  'ga4.retention': cfg.retention,
+  'ga4.keyEvents': cfg.keyEvents,
+  'ga4.primaryChannelGroup': cfg.primaryChannelGroup,
+  'ga4.googleAdsLinks': cfg.googleAdsLinks,
+  'ga4.customDimensions': cfg.customDimensions,
+}
+const canon = (v) => JSON.stringify(Array.isArray(v) ? [...v].sort() : v)
+const pinned = await safe(async () => JSON.parse(readFileSync('data/analytics/decisions.json', 'utf8')).decisions || [])
+const decisions = { pinned: 0, checkedLive: 0, held: [], code: 0, manual: 0 }
+if (isErr(pinned)) finding('ERROR', 'decisions', `Could not read data/analytics/decisions.json: ${pinned.error}`)
+else {
+  decisions.pinned = pinned.length
+  for (const d of pinned) {
+    if (d.code) decisions.code += 1
+    if (d.manual) decisions.manual += 1
+    if (!d.check) continue
+    const actual = facts[d.check.fact]
+    if (!(d.check.fact in facts)) {
+      finding('FAIL', 'decisions', `${d.id}: the audit has no fact named ${d.check.fact}.`)
+      continue
+    }
+    if (actual === undefined || isErr(actual)) {
+      finding('ERROR', 'decisions', `${d.id}: could not read ${d.check.fact} to check it.`)
+      continue
+    }
+    decisions.checkedLive += 1
+    const ok =
+      'equals' in d.check
+        ? canon(actual) === canon(d.check.equals)
+        : Array.isArray(actual) && (d.check.includes || []).every((v) => actual.includes(v))
+    if (ok) decisions.held.push(d.id)
+    else finding('FAIL', 'decisions', `${d.id} (${d.decided}): live ${d.check.fact} is ${JSON.stringify(actual)}, decided ${JSON.stringify(d.check.equals ?? d.check.includes)}. ${d.why}`)
+  }
+}
+report.sections.decisions = decisions
+
 // ── Output ──────────────────────────────────────────────────────────────────
 const failed = report.findings.some((f) => f.level === 'FAIL' || f.level === 'ERROR')
 if (JSON_OUT) {
@@ -294,6 +344,9 @@ if (JSON_OUT) {
   line()
   line('Google Tag Manager')
   line(`  ${JSON.stringify(gtm)}`)
+  line()
+  line('Pinned tracking decisions (data/analytics/decisions.json)')
+  line(`  ${decisions.pinned} pinned · ${decisions.checkedLive} checked live, ${decisions.held.length} held · ${decisions.code} held by code · ${decisions.manual} manual`)
   line()
   line(`Findings (${report.findings.length})`)
   for (const f of report.findings) line(`  ${f.level.padEnd(5)} [${f.area}] ${f.text}`)
