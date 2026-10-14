@@ -57,7 +57,11 @@ export default function PageViewTracker() {
   }
 
   useEffect(() => {
-    if (privatePage) return
+    if (privatePage) {
+      // Remember it, so coming back to the page before it counts as a new view.
+      lastPathRef.current = pathname
+      return
+    }
     if (lastPathRef.current === pathname) return
     const first = firstLoadRef.current
     firstLoadRef.current = false

@@ -47,14 +47,26 @@ type ReturnValue = {
  * after a visitor left /subdivisions client-side they kept firing on every later
  * page, stamped page_type 'subdivision'.
  */
+// What already fired on this page, kept across a full unmount and remount of
+// the page's sections (a filter that empties and refills the list) so one page
+// view never sends the same dwell or scroll milestone twice.
+let firedFor: { path: string; scroll: Set<number>; dwell: Set<number> } | null = null
+
+function firedOnThisPage() {
+  const path = window.location.pathname
+  if (!firedFor || firedFor.path !== path) firedFor = { path, scroll: new Set(), dwell: new Set() }
+  return firedFor
+}
+
 function installPageLevel(pageType: string): () => void {
   const timers: ReturnType<typeof setTimeout>[] = []
+  const fired = firedOnThisPage()
 
   // Scroll depth: first-party only. GA4's scroll_depth comes from
   // V3SectionTracker, which runs on every public page; a second push here sent
   // two per quartile (2026-10-14 audit).
   const QUARTILES = [25, 50, 75, 100]
-  const scrollFired = new Set<number>()
+  const scrollFired = fired.scroll
   const onScroll = () => {
     const docHeight = document.documentElement.scrollHeight - window.innerHeight
     if (docHeight <= 0) return
@@ -72,8 +84,10 @@ function installPageLevel(pageType: string): () => void {
   // Dwell at 15s / 45s / 120s on this page.
   const start = Date.now()
   for (const t of [15, 45, 120]) {
+    if (fired.dwell.has(t)) continue
     timers.push(
       setTimeout(() => {
+        fired.dwell.add(t)
         trackEvent('dwell', { seconds: t, page_type: pageType, elapsed: Math.round((Date.now() - start) / 1000) })
       }, t * 1000),
     )

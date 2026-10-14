@@ -94,3 +94,13 @@ describe('PageViewTracker', () => {
     expect(pageViews()).toEqual([])
   })
 })
+
+describe('PageViewTracker private-path round trip', () => {
+  it('counts the return to the page left for a private path', async () => {
+    await renderAt('/')
+    await renderAt('/cities/bend')
+    await renderAt('/sign/abc123')
+    await renderAt('/cities/bend')
+    expect(pageViews().map((v) => v.page_path)).toEqual(['/cities/bend', '/cities/bend'])
+  })
+})

@@ -219,9 +219,12 @@ if (!container) {
     const configRows = (t) =>
       (param(t, 'configSettingsTable')?.list || []).map((row) => Object.fromEntries((row.map || []).map((m) => [m.key, m.value])))
     const googleTag = ga4Tags[0]
-    const googleTagSendsPageView = googleTag
-      ? !configRows(googleTag).some((r) => r.parameter === 'send_page_view' && String(r.parameterValue).toLowerCase() === 'false')
-      : false
+    // googtag: configSettingsTable row send_page_view=false. Legacy gaawc: the sendPageView checkbox.
+    const googleTagSendsPageView = !googleTag
+      ? false
+      : googleTag.type === 'gaawc'
+        ? String(param(googleTag, 'sendPageView')?.value ?? 'true').toLowerCase() !== 'false'
+        : !configRows(googleTag).some((r) => r.parameter === 'send_page_view' && String(r.parameterValue).toLowerCase() === 'false')
     const pageViewTags = (live.tag || []).filter((t) => t.type === 'gaawe' && param(t, 'eventName')?.value === 'page_view')
     const stream = Array.isArray(cfg.streams) ? cfg.streams.find((s) => s.measurementId === 'G-ST40W4WM6T') : null
     const pageChanges = stream && !isErr(stream.enhancedMeasurement) ? stream.enhancedMeasurement?.pageChangesEnabled : undefined

@@ -45,7 +45,11 @@ function scrollTo(pct: number) {
   window.dispatchEvent(new Event('scroll'))
 }
 
+let run = 0
 beforeEach(() => {
+  // A fresh page per test: what fired is remembered per pathname.
+  run += 1
+  window.history.replaceState({}, '', `/subdivisions/test-${run}`)
   vi.useFakeTimers()
   spies.trackEvent.mockReset()
   spies.fireFirstPartyEvent.mockReset()
@@ -82,5 +86,19 @@ describe('useEngagementTracking page-level listeners', () => {
     document.dispatchEvent(new MouseEvent('mouseleave', { clientY: 0 }))
     expect(spies.trackEvent).not.toHaveBeenCalled()
     expect(spies.fireFirstPartyEvent).not.toHaveBeenCalled()
+  })
+
+  it('a remount of the same page does not resend a dwell it already sent', async () => {
+    await mount(['a'])
+    await act(async () => {
+      vi.advanceTimersByTime(15_000)
+    })
+    await act(async () => root!.unmount())
+    root = null
+    await mount(['a'])
+    await act(async () => {
+      vi.advanceTimersByTime(15_000)
+    })
+    expect(spies.trackEvent.mock.calls.filter(([name, p]) => name === 'dwell' && (p as { seconds: number }).seconds === 15)).toHaveLength(1)
   })
 })
