@@ -8,8 +8,8 @@ import {
 } from '@/lib/search/url-search-params.client'
 import { mergeUrlSearchFilters } from '@/components/search/merge-url-search-filters'
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
-import { trackEvent } from '@/lib/tracking'
-import { fireFirstPartyEvent } from '@/components/VisitTracker'
+import { trackSiteSearch } from '@/components/search/track-site-search'
+import { citySeedRows, searchFieldItems, searchFieldRows } from '@/components/search/search-field-rows'
 import { buildFilterApplyPayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
 import {
@@ -349,7 +349,12 @@ export default function SearchFilters({
   const locationInputRef = useRef<HTMLInputElement>(null)
   const { suggestions, loading: suggestLoading } = useSearchSuggest(locationQuery)
   const suggestItems = flattenSuggestions(suggestions)
+  // The no-JS fallback's results panel opens only with something to show. The
+  // live morph field opens on focus instead (search-field-rows.ts says why).
   const morphOpen = locationOpen && (suggestItems.length > 0 || suggestLoading)
+  const citySeeds = useMemo(() => citySeedRows(REPORT_CITY_LABELS), [])
+  const fieldRows = searchFieldRows(suggestItems, citySeeds)
+  const fieldItems = searchFieldItems(fieldRows, locationQuery, { fromServer: suggestItems.length > 0 })
 
   const urlPrice = useMemo(
     () => urlToRange(initialFilters.minPrice, initialFilters.maxPrice, V3_PRICE_STOPS),
@@ -496,8 +501,14 @@ export default function SearchFilters({
         setLocationQuery(subdivision || city)
       }
       setLocationOpen(false)
-      trackEvent('search', { city: type === 'city' ? city : undefined, subdivision: subdivision ?? undefined, search_term: locationQuery })
-      fireFirstPartyEvent('search', { metadata: { query: subdivision || city, term: locationQuery || undefined, city: type === 'city' ? city : undefined, subdivision, source: 'typeahead' } })
+      trackSiteSearch({
+        surface: 'search_page',
+        source: 'typeahead',
+        query: subdivision || city,
+        term: locationQuery,
+        city: type === 'city' ? city : undefined,
+        subdivision,
+      })
     },
     [updateUrl, locationQuery]
   )
@@ -507,8 +518,7 @@ export default function SearchFilters({
       updateUrl({ postalCode, city: undefined, subdivision: undefined })
       setLocationQuery(postalCode)
       setLocationOpen(false)
-      trackEvent('search', { postalCode, search_term: locationQuery })
-      fireFirstPartyEvent('search', { metadata: { query: postalCode, term: locationQuery || undefined, postalCode, source: 'typeahead' } })
+      trackSiteSearch({ surface: 'search_page', source: 'typeahead', query: postalCode, term: locationQuery, postalCode })
     },
     [updateUrl, locationQuery]
   )
@@ -517,8 +527,7 @@ export default function SearchFilters({
     (href: string, label?: string) => {
       setLocationOpen(false)
       if (label) {
-        trackEvent('search', { search_term: locationQuery })
-        fireFirstPartyEvent('search', { metadata: { query: label, term: locationQuery || undefined, source: 'typeahead' } })
+        trackSiteSearch({ surface: 'search_page', source: 'typeahead', query: label, term: locationQuery })
       }
       router.push(href)
     },
@@ -598,8 +607,7 @@ export default function SearchFilters({
       showParsedChips(parsed)
       setLocationOpen(false)
       setLocationQuery(parsed.subdivision ?? parsed.city ?? '')
-      trackEvent('search', { search_term: text, ...(parsed.city ? { city: parsed.city } : {}) })
-      fireFirstPartyEvent('search', { metadata: { query: text, city: parsed.city, source: 'natural_language' } })
+      trackSiteSearch({ surface: 'search_page', source: 'natural_language', query: text, city: parsed.city })
     },
     [updateUrl, showParsedChips]
   )
@@ -644,21 +652,16 @@ export default function SearchFilters({
               the dock does not shove the map. */}
           <V3MorphSearch
             className="srch-morph"
-            open={morphOpen}
+            open={locationOpen}
             onOpenChange={(next) => setLocationOpen(next)}
             placeholder={locationPlaceholder}
-            items={suggestItems.map((item) => ({
-              id: item.href,
-              title: item.label,
-              description: item.sublabel,
-              onSelect: () => handleSuggestPick(item),
-            }))}
+            items={fieldItems}
             onQueryChange={(next) => {
               setLocationQuery(next)
               setHighlight(-1)
             }}
             onSelect={(item) => {
-              const picked = suggestItems.find((row) => row.href === item.id)
+              const picked = fieldRows.find((row) => row.href === item.id)
               if (picked) handleSuggestPick(picked)
               else applyNaturalQuery(item.title)
             }}
@@ -836,14 +839,12 @@ export default function SearchFilters({
                                   postalCode: undefined,
                                 })
                                 setLocationQuery(next?.split(',')[0]?.trim() || '')
-                                trackEvent('search', { city: next, search_term: locationQuery })
-                                fireFirstPartyEvent('search', {
-                                  metadata: {
-                                    query: next ?? city,
-                                    term: locationQuery || undefined,
-                                    city: next,
-                                    source: 'places_multi',
-                                  },
+                                trackSiteSearch({
+                                  surface: 'search_page',
+                                  source: 'places_multi',
+                                  query: next ?? city,
+                                  term: locationQuery,
+                                  city: next,
                                 })
                               }}
                               className="justify-start"

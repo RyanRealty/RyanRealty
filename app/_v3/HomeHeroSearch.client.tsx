@@ -23,6 +23,7 @@ import { searchHrefForQuery } from '@/lib/parse-search-query'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { markAskSource } from '@/lib/ask-source'
 import { trackEvent } from '@/lib/tracking'
+import { trackSiteSearch } from '@/components/search/track-site-search'
 import type { HomeHeroLive } from './home-hero-inventory'
 import { homeHeroTypedItem } from './home-hero-search-items'
 import './home-hero-search.css'
@@ -134,11 +135,8 @@ export function HomeHeroSearch({
 
   const onBuySubmit = useCallback(() => {
     const text = query.trim()
-    try {
-      trackEvent('search', { surface: 'home_hero', ...(text ? { search_term: text } : {}) })
-    } catch {
-      // tracking helper missing in some envs
-    }
+    // An empty submit opens the regional list and still counts as a search.
+    trackSiteSearch({ surface: 'home_hero', source: 'submit', query: text })
     if (!text) {
       go(publishRegionalSearchHref())
       return
@@ -246,11 +244,7 @@ export function HomeHeroSearch({
           onSelect={(item) => {
             // Picking a suggestion is a search too (V3ChromeSearch does the same);
             // only a typed-and-submitted query reached onBuySubmit's event.
-            try {
-              trackEvent('search', { surface: 'home_hero', search_term: item.title })
-            } catch {
-              // tracking optional
-            }
+            trackSiteSearch({ surface: 'home_hero', source: 'typeahead', query: item.title, term: query })
             go(item.id)
           }}
           {...(wide

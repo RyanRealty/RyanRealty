@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { mergeSentenceParams, sentenceToParams } from '@/lib/search/sentence-to-params'
+import { trackSiteSearch } from '@/components/search/track-site-search'
 import './search-ledger.css'
 
 /**
@@ -27,6 +28,14 @@ export function useApplySentenceSearch() {
       const next = mergeSentenceParams(searchParams ?? new URLSearchParams(), text)
       const qs = next.toString()
       const path = pathname || '/homes-for-sale'
+      // Recorded only when the words became filters, the same rule as the dock
+      // field's sentence search. Before 2026-10-14 this box recorded nothing.
+      trackSiteSearch({
+        surface: 'search_page',
+        source: 'sentence',
+        query: text,
+        city: parsed.get('city') ?? undefined,
+      })
       router.replace(qs ? `${path}?${qs}` : path, { scroll: false })
     },
     [pathname, router, searchParams],
