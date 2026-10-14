@@ -28,6 +28,8 @@ const SignInPromptWithSession = dynamic(() => import('./SignInPromptWithSession'
 const InstallPrompt = dynamic(() => import('@/components/pwa/InstallPrompt'), { ssr: false })
 const VisitTrackerWithSession = dynamic(() => import('./VisitTrackerWithSession'), { ssr: false })
 const GlobalIntentTracker = dynamic(() => import('@/components/GlobalIntentTracker'), { ssr: false })
+// view_landing_page on /sell and /buy landing pages (the GA4 "LP visitors" audiences).
+const LandingPageViewTracker = dynamic(() => import('@/components/tracking/LandingPageViewTracker'), { ssr: false })
 const AuthCodeRedirect = dynamic(() => import('@/components/AuthCodeRedirect'), { ssr: false })
 const AuthErrorRedirect = dynamic(() => import('@/components/AuthErrorRedirect'), { ssr: false })
 const SignUpTracker = dynamic(() => import('@/components/tracking/SignUpTracker'), { ssr: false })
@@ -60,6 +62,7 @@ export default function PublicClientLayer({
           admin gate above is what keeps them off /admin. */}
       <VisitTrackerWithSession />
       <GlobalIntentTracker />
+      <LandingPageViewTracker />
       <Suspense fallback={null}>
         <HideOnLP>
           <AuthCodeRedirect />

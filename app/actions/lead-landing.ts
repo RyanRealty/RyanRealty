@@ -6,7 +6,7 @@ import { sendContactNotification } from '@/lib/resend'
 import type { LeadLandingAudience } from '@/lib/lead-landing-content'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
-import { resolvePaidAttributionTags } from '@/lib/crm/lead-source'
+import { signupAttribution } from '@/lib/crm/visit-attribution'
 import {
   attributionParamsFromSearch,
   attributionQueryString,
@@ -51,9 +51,10 @@ type SubmitLeadLandingInput = {
   phone?: string
   timeframe?: string
   message?: string
-  /** Attribution captured client-side: utm_* / gclid / fbclid from the URL
-   *  the visitor arrived on (getLpContext + sessionStorage after
-   *  trackLandingPageView). Survives clicking around before submit. */
+  /** The page's own link: utm_* / gclid / fbclid on the address the form is
+   *  submitted from (getLpContext). A visitor who clicked around first is
+   *  credited to the visit's landing link on the server instead
+   *  (lib/crm/visit-attribution.ts). */
   lpContext?: LpContextInput
   /** Anonymous visitor session id (uuid v4) from localStorage. When present,
    *  we stitch this lead's prior browsing history to the CRM person and mark
@@ -102,17 +103,23 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
       ...(phone ? { phones: [{ value: phone }] } : {}),
     }
 
-    // Paid-channel attribution, the seller LP's rule: channel:*, campaign:* and
-    // ad-content:* from the URL utm. buyer- and seller-lead-attribution match a
-    // lead to the post or ad that sent it by these tags and nothing else, and
-    // this form is the live buyer LP (/buy/[intent]) since /lp/buyer-listing-alerts
-    // became a redirect. Empty when the visit carried no utm_source.
-    const paidTags = resolvePaidAttributionTags({
-      utmSource: input.lpContext?.lp_source,
-      utmMedium: input.lpContext?.lp_medium,
-      utmCampaign: input.lpContext?.lp_campaign,
-      utmContent: input.lpContext?.lp_content,
+    // Paid-channel attribution: channel:*, campaign:* and ad-content:* from the
+    // page's utm, else from the link that started the visit the submit happens
+    // in (Matt 2026-10-09, "Visit they signed up in"). buyer- and
+    // seller-lead-attribution match a lead to the post or ad that sent it by
+    // these tags and nothing else, and this form is the live buyer LP
+    // (/buy/<intent>, /buy/leverage; no page renders a seller config). Empty
+    // when neither carried a utm_source.
+    const signup = await signupAttribution({
+      page: {
+        source: input.lpContext?.lp_source,
+        medium: input.lpContext?.lp_medium,
+        campaign: input.lpContext?.lp_campaign,
+        content: input.lpContext?.lp_content,
+      },
+      sessionId: input.sessionId,
     })
+    const paidTags = signup.tags
 
     let refererAttr: LeadAttributionParams = {}
     try {

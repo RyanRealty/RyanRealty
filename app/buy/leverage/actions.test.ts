@@ -41,6 +41,8 @@ vi.mock('next/headers', () => ({
   cookies: async () => ({ get: () => undefined }),
   headers: async () => new Headers(),
 }))
+// The visit's landing link (visitor_sessions). Never read production.
+vi.mock('@/lib/data/identity/visitCampaign', () => ({ readVisitCampaign: vi.fn(async () => null) }))
 
 import { submitLeverageLead } from './actions'
 import { LEVERAGE_FORM_ID, LEVERAGE_LEAD_TYPE, LEVERAGE_LP_VARIANT } from './_v3/leverage-constants'

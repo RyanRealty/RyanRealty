@@ -45,6 +45,11 @@ vi.mock('next/headers', () => ({
   cookies: async () => ({ get: () => undefined }),
   headers: async () => new Headers(),
 }))
+// The visit's landing link (visitor_sessions). Never read production.
+const readVisitCampaign = vi.fn()
+vi.mock('@/lib/data/identity/visitCampaign', () => ({
+  readVisitCampaign: (...args: unknown[]) => readVisitCampaign(...args),
+}))
 
 import { submitLeadLandingForm } from './lead-landing'
 
@@ -68,6 +73,7 @@ beforeEach(() => {
   ensureNativeLead.mockReset().mockResolvedValue({ personId: PERSON_ID, created: true })
   enrichNativeLead.mockReset().mockResolvedValue(undefined)
   fireLeadGenerated.mockReset().mockResolvedValue(undefined)
+  readVisitCampaign.mockReset().mockResolvedValue(null)
   vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200 })))
 })
 
@@ -166,5 +172,39 @@ describe('submitLeadLandingForm paid attribution', () => {
     })
     expect(body.customData).not.toHaveProperty('value')
     expect(body.customData).not.toHaveProperty('currency')
+  })
+})
+
+// Matt 2026-10-09, "Visit they signed up in": a buyer who clicked around before
+// submitting is credited to the link that started that visit, read on the
+// server. Until 2026-10-14 the page carried it in a tab-lifetime sessionStorage
+// copy, which credited a submit days later to the old ad.
+describe('submitLeadLandingForm visit attribution', () => {
+  const SESSION_ID = '550e8400-e29b-41d4-a716-446655440000'
+
+  it('a page with no utm is credited to the visit’s landing link', async () => {
+    readVisitCampaign.mockResolvedValue({ source: 'facebook', medium: 'paid_social', campaign: 'spring-buyers', content: 'act-9' })
+
+    const res = await submitLeadLandingForm({ ...input(), sessionId: SESSION_ID })
+
+    expect(res).toEqual({ error: null })
+    expect(readVisitCampaign).toHaveBeenCalledWith({ sessionId: SESSION_ID, rrVid: null })
+    expect(canonicallyTagLead).toHaveBeenCalledWith(
+      expect.objectContaining({ extraTags: ['channel:fb-ads', 'campaign:spring-buyers', 'ad-content:act-9'] }),
+    )
+  })
+
+  it('the page’s own utm wins and the visit is never read', async () => {
+    readVisitCampaign.mockResolvedValue({ source: 'facebook', medium: 'paid_social', campaign: null, content: null })
+
+    await submitLeadLandingForm({ ...input({ lp_source: 'google', lp_medium: 'cpc' }), sessionId: SESSION_ID })
+
+    expect(readVisitCampaign).not.toHaveBeenCalled()
+    expect(canonicallyTagLead).toHaveBeenCalledWith(expect.objectContaining({ extraTags: ['channel:google-ads'] }))
+  })
+
+  it('no link on the page or the visit: no paid tag', async () => {
+    await submitLeadLandingForm({ ...input(), sessionId: SESSION_ID })
+    expect(canonicallyTagLead).toHaveBeenCalledWith(expect.objectContaining({ extraTags: [] }))
   })
 })

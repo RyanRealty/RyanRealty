@@ -7,7 +7,7 @@ import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { sendEvent } from '@/lib/crm/send-event'
 import { sendContactNotification } from '@/lib/resend'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
-import { resolvePaidAttributionTags } from '@/lib/crm/lead-source'
+import { signupAttribution } from '@/lib/crm/visit-attribution'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
@@ -50,14 +50,14 @@ export async function submitConcessionsLead(formData: FormData): Promise<Concess
   if (!name) return { error: 'Please enter your name' }
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Please enter a valid email address' }
 
-  const paidTags = resolvePaidAttributionTags({
-    utmSource: lpSource,
-    utmMedium: lpMedium,
-    utmCampaign: lpCampaign,
-    utmContent: lpContent,
+  // The page's link, else the link that started the visit the submit happens
+  // in (Matt 2026-10-09, "Visit they signed up in"; lib/crm/visit-attribution.ts).
+  const signup = await signupAttribution({
+    page: { source: lpSource, medium: lpMedium, campaign: lpCampaign, content: lpContent },
+    sessionId,
   })
   const creative = creativeTag(cr)
-  const extraTags = [...paidTags, ...(creative ? [creative] : [])]
+  const extraTags = [...signup.tags, ...(creative ? [creative] : [])]
   const details = [
     'intent=buy-concessions',
     timeline ? `timeline=${timeline}` : null,
@@ -151,10 +151,10 @@ export async function submitConcessionsLead(formData: FormData): Promise<Concess
             sourceLabel: 'Buy concessions',
             landingPage: SOURCE_URL,
             audience: 'buyer',
-            utmSource: lpSource,
-            utmMedium: lpMedium,
-            utmCampaign: lpCampaign,
-            utmContent: lpContent,
+            utmSource: signup.utm?.source,
+            utmMedium: signup.utm?.medium,
+            utmCampaign: signup.utm?.campaign,
+            utmContent: signup.utm?.content,
             want: timeline ? `timeline=${timeline}` : undefined,
             extra: [cr && `cr=${cr}`, gclid && `gclid=${gclid}`, fbclid && `fbclid=${fbclid}`]
               .filter(Boolean)
