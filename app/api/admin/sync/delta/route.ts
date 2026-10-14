@@ -67,6 +67,8 @@ export async function POST() {
       pages: r.pages,
       sinceIso: r.sinceIso,
       expired: r.expired,
+      // Changed listing pages told to Bing and the engines behind it (lib/seo/indexnow.ts).
+      indexNow: r.indexNow,
     })
   } catch (e) {
     console.error('POST /api/admin/sync/delta', e)

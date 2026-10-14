@@ -1,4 +1,5 @@
-// Removed as a platform (Matt 2026-10-14); not called by the publish door or the heartbeat.
+// Content-queue posts to Matt's profile and the company page (Matt 2026-10-14 11:59 PT).
+// The old /api/social/publish door still refuses LinkedIn; Threads stays off.
 import { createClient } from '@supabase/supabase-js'
 
 const LINKEDIN_OAUTH_AUTH_URL = 'https://www.linkedin.com/oauth/v2/authorization'
@@ -15,10 +16,12 @@ const LINKEDIN_REST_VERSION = '202602'
 // w_member_social: publish posts as the authenticated person.
 // rw_organization_admin: read + manage Company Page admin (Ryan Realty LLC).
 // r_organization_social: read posts on the Company Page (analytics).
-// Note: rw_organization_admin and r_organization_social require the
-// "Community Management API" product to be enabled on the LinkedIn
-// Developer App at developer.linkedin.com → app → Products.
-const LINKEDIN_OAUTH_SCOPES = 'openid profile email w_member_social rw_organization_admin r_organization_social'
+// w_organization_social: create, modify, and delete posts as the company page.
+// Note: rw_organization_admin, r_organization_social, and w_organization_social
+// require the "Community Management API" product on the LinkedIn Developer App
+// (developer.linkedin.com → app → Products). Share on LinkedIn covers
+// w_member_social only. Matt reconnects at https://ryan-realty.com/api/linkedin/authorize
+export const LINKEDIN_OAUTH_SCOPES = 'openid profile email w_member_social rw_organization_admin r_organization_social w_organization_social'
 
 interface RegisterUploadResponse {
   value?: {

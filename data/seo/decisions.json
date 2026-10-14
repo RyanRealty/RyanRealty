@@ -262,6 +262,18 @@
       "why": "Undo SITE-33's out-of-area noindex: Search Console showed it cost ~36% of the impression drop since Sep 12 (~2,500 impressions, ~30 clicks a week). Out-of-area listings are index, follow with a self canonical, in /sitemaps/listings.xml, and keep the honesty block. Sample: an Active Medford listing on the feed since 2020."
     },
     {
+      "id": "indexnow-key-file",
+      "path": "/57e3ce8d73feb1a7a4cc377fca754c46.txt",
+      "expect": {
+        "status": 200,
+        "html": [
+          "^57e3ce8d73feb1a7a4cc377fca754c46\\s*$"
+        ]
+      },
+      "decided": "Matt 2026-10-14",
+      "why": "IndexNow tells Bing, and the answer engines that search through it (ChatGPT search, Copilot), about changed pages only: listings the MLS delta sync inserted or whose status, price or photos changed, and a blog post when it is published or updated. Production only (VERCEL_ENV). Never submit unchanged URLs in bulk. The key is public by protocol (lib/seo/indexnow.ts); this file at the site root proves it, and if it stops serving the key every submission fails with 403."
+    },
+    {
       "id": "sitemap-index-lists-listing-media",
       "path": "/sitemap.xml",
       "expect": {

@@ -59,7 +59,7 @@ Env vars (names only): `NEXT_PUBLIC_GA4_MEASUREMENT_ID`, `NEXT_PUBLIC_GTM_CONTAI
 
 ## GA4 property settings (owner decisions)
 
-- **Custom dimensions registered:** 33 (31 event-scoped, 2 user-scoped: `assigned_broker`, `lead_status`). `seconds` ("Dwell seconds") was added 2026-10-14. They include `lead_type`, `form_id` and `lp_variant`. `npm run analytics:audit` prints the full list. Register any new reportable param in GA4 Admin → Data display → Custom definitions before relying on it in Explorations.
+- **Custom dimensions registered:** 33 (31 event-scoped, 2 user-scoped: `assigned_broker`, `lead_status`). `seconds` ("Dwell seconds") was added 2026-10-14. They include `lead_type`, `form_id` and `lp_variant`. `scripts/ga4-admin-setup.mjs` also registers the user-scoped `visitor_intent` ("Visitor intent") and `primary_market` ("Primary market"), added 2026-10-14 (see "Visitor intent and market"); the audit's custom dimension list shows whether they are live. `npm run analytics:audit` prints the full list. Register any new reportable param in GA4 Admin → Data display → Custom definitions before relying on it in Explorations.
 - **Key events (9):** `generate_lead`, `qualify_lead`, `close_convert_lead`, `call_initiated`, `email_agent`, `cma_anchor_click`, `cma_downloaded`, `tour_requested`, and GA4's built-in `purchase`. Matt removed four that nothing sent (`schedule_showing`, `listing_showing_click`, `listing_inquiry`, `home_valuation_cta_click`) on 2026-10-14; GA4 keeps their history. `scripts/ga4-admin-setup.mjs` holds this list (and `RETIRED_KEY_EVENTS`), so a run never re-adds them. A new key event needs a sender first, and it changes what Google Ads can import: Matt's call.
 - **Primary channel group:** `AI Assistants (Custom)` — includes an **AI Assistants** channel (ChatGPT / Perplexity / similar referral hosts). Do not delete the group.
 - **Google Signals: ON.** Owner decision. Do not disable. (`scripts/ga4-admin-setup.mjs` enables Signals + consented; the older consent doc that said to keep Signals off is stale.)
@@ -70,13 +70,13 @@ Env vars (names only): `NEXT_PUBLIC_GA4_MEASUREMENT_ID`, `NEXT_PUBLIC_GTM_CONTAI
 
 ## GTM container
 
-**Version 8** (2026-10-14, `Audit cleanup: Google tag on Initialization`): the Google tag moved to **Initialization - All Pages**; unused trigger `CE generate_lead` and duplicate variable `DLV page_type` deleted. **Version 9** (2026-10-14) makes the dataLayer the one `page_view` sender (below). `npm run analytics:audit` prints the live version.
+**Version 8** (2026-10-14, `Audit cleanup: Google tag on Initialization`): the Google tag moved to **Initialization - All Pages**; unused trigger `CE generate_lead` and duplicate variable `DLV page_type` deleted. **Version 9** (2026-10-14) makes the dataLayer the one `page_view` sender (below). **Version 10** (2026-10-14, live, `Content group + visitor intent/market user properties (2026-10-14)`) adds `content_group` (= `page_type`) and the user properties `visitor_intent` / `primary_market` to both GA4 Event tags. `npm run analytics:audit` prints the live version and fails if either tag stops mapping them.
 
 What the container holds:
 
 - The **base Google tag** for `G-ST40W4WM6T` (Initialization - All Pages), configuration parameter `send_page_view` = `false`. **It is not in the repo import file.** <!-- pragma: allowlist secret -->
-- Tag **`GA4 - dataLayer events`** — GA4 Event tag, Event Name `{{Event}}`, parameters from `ga4_params.*` plus flat `page_type` / `broker_slug`. Trigger: **`CE - GA4 browser events`** (regex on the allowlist below).
-- Tag **`GA4 - page_view`** — GA4 Event tag, Event Name `page_view`, parameters `page_type`, `broker_slug`, `page_location`, `page_referrer` (flat keys, `GA4_PAGE_VIEW_PARAMS`). Trigger: **`CE page_view`** (event equals `page_view`).
+- Tag **`GA4 - dataLayer events`** — GA4 Event tag, Event Name `{{Event}}`, parameters from `ga4_params.*` plus flat `page_type` / `broker_slug` / `content_group`, user properties `visitor_intent` / `primary_market`. Trigger: **`CE - GA4 browser events`** (regex on the allowlist below).
+- Tag **`GA4 - page_view`** — GA4 Event tag, Event Name `page_view`, parameters `page_type`, `broker_slug`, `content_group`, `page_location`, `page_referrer` (flat keys, `GA4_PAGE_VIEW_PARAMS`), the same two user properties (`GA4_USER_PROPERTIES`). Trigger: **`CE page_view`** (event equals `page_view`).
 
 ### page_view: one sender
 
@@ -88,7 +88,7 @@ It depends on two settings outside the code, both set 2026-10-14: the Google tag
 
 GTM imports **MUST use Merge** (Admin → Import Container → **Merge** → Rename conflicting tags, triggers, and variables). **Never Overwrite.**
 
-`docs/gtm/ga4-browser-events.import.json` is a **partial** container: 2 tags (`GA4 - dataLayer events`, `GA4 - page_view`), 2 triggers (`CE - GA4 browser events`, `CE page_view`), 32 Data Layer Variables (`DLV - ga4 …`). It **intentionally omits the base Google tag**. Overwrite deletes that Google tag and every other live tag/trigger/variable that is not in the file.
+`docs/gtm/ga4-browser-events.import.json` is a **partial** container: 2 tags (`GA4 - dataLayer events`, `GA4 - page_view`), 2 triggers (`CE - GA4 browser events`, `CE page_view`), 34 Data Layer Variables (`DLV - ga4 …`; `content_group` reuses `DLV - ga4 page_type`). It **intentionally omits the base Google tag**. Overwrite deletes that Google tag and every other live tag/trigger/variable that is not in the file.
 
 Publish belongs to Matt. After a bad import, restore via **Versions → Set as latest** (prior published versions stay restorable).
 
@@ -127,6 +127,7 @@ import { pushDataLayerEvent } from '@/lib/analytics/ga4-browser-events'
 |---|---|---|
 | `page_type` | `page_type` | Flat page context (every navigation) |
 | `broker_slug` | `broker_slug` | Flat page context |
+| `content_group` | `page_type` | GA4's built-in Content group, the same value as `page_type` (GTM version 10, both tags) |
 | `source` | `ga4_params.source` | |
 | `context` | `ga4_params.context` | |
 | `surface` | `ga4_params.surface` | |
@@ -155,6 +156,51 @@ import { pushDataLayerEvent } from '@/lib/analytics/ga4-browser-events'
 | `metric_id` | `ga4_params.metric_id` | Web vitals |
 | `metric_rating` | `ga4_params.metric_rating` | Web vitals |
 | `seconds` | `ga4_params.seconds` | `dwell` threshold reached (listing pages 30/60/120/300, `/subdivisions` 15/45/120) |
+
+### User properties (both GA4 Event tags, GTM version 10)
+
+| GA4 user property | dataLayer key | Notes |
+|---|---|---|
+| `visitor_intent` | `visitor_intent` | `buyer`, `seller`, `both` or `browsing` (see "Visitor intent and market"). User-scoped custom dimension "Visitor intent" |
+| `primary_market` | `primary_market` | Most-viewed Central Oregon city or community slug (`bend`, `tetherow`). User-scoped custom dimension "Primary market" |
+
+`assigned_broker` is also a user property, set through `gtag('set', 'user_properties', …)` by `applyVisitBrokerToGtag` (`lib/tracking.ts`), not by these tables.
+
+### Visitor intent and market
+
+**One definition** (Matt 2026-10-14): `lib/analytics/visitor-intent.ts` reads `visitorPageCategoryFromPath` (`lib/analytics/page-type.ts`), the same page categories `visitor_events.page_category`, the CRM and the sales funnel use. Never classify buyers or sellers a second way.
+
+| Label | Rule (constants in the module) |
+|---|---|
+| `seller` | Any `seller_intent` page, or a seller event: `address_submit`, `place_value_answer` |
+| `buyer` | 3 or more `listing_detail` page views in the last 30 days (`BUYER_LISTING_VIEW_THRESHOLD`, `LISTING_VIEW_WINDOW_DAYS`), or any `buyer_intent` page, or a buyer event: `save_listing`, `schedule_tour_click`, `ask_question_click`, `tour_requested` |
+| `both` | Buyer and seller |
+| `browsing` | Neither |
+
+A page or event flag never expires; only the listing-view count has a window. `save_listing` and `tour_requested` are in the rule but no browser code sends them yet (2026-10-14), so today a buyer comes from listing views, buyer pages, `schedule_tour_click` and `ask_question_click`.
+
+**Market** (`marketSlugFromPath`): the service-area city in `/homes-for-sale/<city>/…` (listing detail pages included), `/cities/<city>/…`, `/open-houses/<city>`, `/price-drops/<city>` and `/housing-market/<city>/…`, only when it is in `CENTRAL_OREGON_CITY_SLUGS`; the slug in `/communities/<slug>/…`. Everything else, `/subdivisions/<slug>` included (a plat slug carries no city), counts no market. `primary_market` is the most-viewed market; a tie keeps the one reported before.
+
+**Storage:** localStorage `rr_visitor_intent_v1`: listing-view timestamps (30 days, at most 50), the four flags as timestamps, view counts per market (at most 30), and the last label and market. No identifier. Written only when `hasAnalyticsConsent()` is true; without it nothing is recorded, `PageViewTracker` removes the key and pushes both dataLayer keys as `undefined` (so GTM stops sending values pushed earlier on the page), and it does the same the moment the banner turns analytics off. Every read and write is wrapped, so blocked storage only forgets. Listed on `/cookies`.
+
+**Where it shows:**
+
+- `PageViewTracker` records each counted page and pushes `visitor_intent` / `primary_market` in the page-context push, before the `page_view` push.
+- The inline bootstrap (`lib/analytics/gtm-bootstrap.ts`) adds the STORED values to the first-paint `page_view`, after the same consent test, since it runs before hydration.
+- `trackEvent` (`lib/tracking.ts`) records a buyer or seller event and, when the label changes, pushes the new `visitor_intent` just before that event, so the event's own hit carries it.
+- GA4: user properties `visitor_intent` / `primary_market` on every hit (GTM version 10), user-scoped custom dimensions from `scripts/ga4-admin-setup.mjs`, and the audiences below.
+
+**Audiences** (`scripts/ga4-admin.mjs`, group `visitor-intent`). Behavior only, for fair housing: no age, gender, interest, ZIP, city or other geography condition, because these audiences can feed housing ads. The payload builder throws if one of them names such a field (`FAIR_HOUSING_BANNED_FIELDS`), `primary_market` and the site's own place parameters included. All 30-day membership.
+
+| Audience | Condition |
+|---|---|
+| Buyers - active | `view_listing` count over 2, or `save_listing` (GA4 allows no day window on an event count; the 30-day membership drops a buyer who stops returning) |
+| Buyers - hot | `schedule_tour_click`, `ask_question_click` or `call_initiated` |
+| Sellers - interested | `page_view` with `page_type` = `sell`, or `address_submit`, or `place_value_answer` |
+| Sellers - started valuation | `address_submit`, excluding users with `generate_lead` |
+| Visitor intent: buyer / seller / both | user property `visitor_intent` equals that label |
+
+Dry run first: `node scripts/ga4-admin.mjs apply-audiences --dry-run --group=visitor-intent` prints every request body. Register the dimensions (`node scripts/ga4-admin-setup.mjs --dry-run`, then without it) before creating the `Visitor intent:` audiences.
 
 ### Deliberately not sent by the GTM tag
 
@@ -374,7 +420,7 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | `scripts/gsc-listing-noindex-sweep.mjs` | URL Inspection sweep that fills `gsc_listing_index_flags` |
 | `scripts/ga4-404-report.mjs` | GA4 page views that land on a 404, for redirects |
 | `scripts/ga4-admin-setup.mjs` | **Canonical** GA4 Admin config: Signals, retention, lookback, custom dimensions, key events and retired key events. Matches the live property as of 2026-10-14. Run `--dry-run` first; change GA4 config by editing this file, then applying. |
-| `scripts/ga4-admin.mjs` | Older GA4 Admin config plus audiences. **Do not run `apply`.** Its 7 "locked" conversions disagree with the live property and with `ga4-admin-setup.mjs`, the canonical config. Use `npm run analytics:audit` to read config. |
+| `scripts/ga4-admin.mjs` | Older GA4 Admin config plus audiences, the audience owner. `apply-audiences --dry-run [--group=visitor-intent]` prints what it would create. **Do not run `apply`.** Its 7 "locked" conversions disagree with the live property and with `ga4-admin-setup.mjs`, the canonical config. Use `npm run analytics:audit` to read config. |
 | `scripts/_gsc-by-class.mjs` | One-off (2026-08). Search Console clicks by route class. Superseded by `lib/data/loop/gsc-api.ts`. Do not extend. |
 | `scripts/_gsc-index-check.mjs` | One-off. Sites and sitemaps. Superseded by `npm run analytics:audit`. Do not extend. |
 | `scripts/_gsc-place-pages.mjs` | One-off (2026-09-22). Place-page query landings. Do not extend. |
@@ -410,6 +456,7 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | `lib/analytics/lp-variant.ts` | `lp_variant` from the path |
 | `lib/analytics/own-site-links.ts` | Finds ryan-realty.com links in a message so each can be decorated (tracked) |
 | `lib/analytics/web-vitals-sample.ts` | Validates one real-user Web Vitals sample before `public.web_vitals` stores it |
+| `lib/analytics/visitor-intent.ts` | Visitor intent (buyer / seller / both / browsing) and primary market, from the shared page categories; the `rr_visitor_intent_v1` memory behind the GA4 user properties |
 
 ---
 
@@ -426,7 +473,8 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | LP variant from path | `lib/analytics/lp-variant.ts` |
 | Landing-page view (`view_landing_page`) | `components/tracking/LandingPageViewTracker.tsx` |
 | Buyer lead credit (visit, else page) | `lib/crm/visit-attribution.ts`, `lib/data/identity/visitCampaign.ts` |
-| GA4 audiences | `scripts/ga4-admin.mjs` (`apply-audiences`) |
+| GA4 audiences | `scripts/ga4-admin.mjs` (`apply-audiences`, `--dry-run`, `--group=visitor-intent`) |
+| Visitor intent and market | `lib/analytics/visitor-intent.ts` |
 | MP page-view mirror | `lib/analytics/ga4-mirror.ts` |
 | GTM bootstrap | `lib/analytics/gtm-bootstrap.ts` |
 | Offline Meta + GA4 | `lib/meta-offline-conversions.ts`, `lib/marketing/offline-milestones.ts`, `lib/marketing/offline-ga4.ts`, `app/api/cron/offline-conversions/route.ts` |

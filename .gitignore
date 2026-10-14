@@ -245,3 +245,4 @@ design_system/public/taste-table.json.lock/
 # (so its imports resolve through node_modules) and deletes it. Ignored so a
 # concurrent `git ls-files --others` never opens it mid-delete (CI 2026-10-07).
 /.perf-budget-gate-sandbox-*/
+.content-queue-out/

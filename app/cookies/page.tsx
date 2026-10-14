@@ -95,6 +95,14 @@ const COOKIES: CookieRow[] = [
     purpose: 'Groups the pages and listings you view in a single browsing session.',
   },
   {
+    name: 'rr_visitor_intent_v1',
+    provider: 'Ryan Realty (first-party)',
+    type: 'Analytics',
+    duration: 'Stored in your browser until cleared',
+    purpose:
+      'Remembers whether your visits look like buying, selling or both, and which Central Oregon area you look at most, so our analytics can tell buyers from sellers. Kept only when analytics is allowed, and removed if you turn it off.',
+  },
+  {
     name: 'ryan_realty_visit_id',
     provider: 'Ryan Realty (first-party)',
     type: 'Analytics',
