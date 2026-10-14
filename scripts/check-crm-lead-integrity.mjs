@@ -33,6 +33,18 @@ const AUDIENCE_TAG_ALLOW = new Set([
   'app/actions/home.ts', // subscribeNewsletter — audience unknown at signup
 ])
 
+/**
+ * sendEvent callers allowed to write the site host as source, with the reason.
+ * A door never is (FUNNEL-4): the host names no door.
+ */
+export const HOST_SOURCE_ALLOWED = {
+  // A CTA click by an already identified person ('Visited Website'), not a
+  // door. The host is the value reuseSourcePatch treats as no door, so the
+  // person's first real door still fills an empty source; a made-up label here
+  // would block it.
+  'app/actions/track-cta-click.ts': 'CTA click activity, not a door',
+}
+
 /** Balanced-paren argument text of every `sendEvent(` call in a file. */
 export function sendEventCalls(src) {
   const calls = []
@@ -77,6 +89,11 @@ export function topLevelSource(arg) {
         expr += c
       }
       return expr.trim()
+    } else if (depth === 1 && arg.startsWith('source', i) && !/[\w$.]/.test(arg[i - 1] ?? '')) {
+      // Shorthand `{ source, ... }`: a variable whose value this parse cannot see.
+      // The CMA PDF route hid the host this way until 2026-10-14.
+      const rest = arg.slice(i + 'source'.length).trimStart()
+      if (rest === '' || rest.startsWith(',') || rest.startsWith('}')) return 'source'
     }
   }
   return null
@@ -89,6 +106,22 @@ export function isHostDerivedSource(expr) {
     /replace\(|NEXT_PUBLIC_SITE_URL|siteUrl|\bbase\b|'ryan-realty\.com'|\bsite(?:Host|Origin)\(|\bwebsiteSource\(/.test(expr) ||
     expr.trim() === 'source'
   )
+}
+
+/**
+ * The expressions a file assigns to a local `source` (`const source = …`), for a
+ * sendEvent that passes `source` by name or shorthand. Empty when the file never
+ * assigns one (a parameter, say), which the caller treats as unverifiable.
+ */
+export function localSourceAssignments(src) {
+  return [...src.matchAll(/\b(?:const|let|var)\s+source\s*(?::[^=\n]+)?=\s*([^\n;]+)/g)].map((m) => m[1].trim())
+}
+
+/** Is this sendEvent source, read in its file, the site host (or a name this check cannot resolve)? */
+export function sourceDerivesHost(expr, fileSrc) {
+  if (expr.trim() !== 'source') return isHostDerivedSource(expr)
+  const assigned = localSourceAssignments(fileSrc)
+  return assigned.length === 0 || assigned.some(isHostDerivedSource)
 }
 
 const SCAN = ['lib', 'app']
@@ -150,24 +183,21 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   // 76 of 88 site leads in 30 days), so no report could tell a contact-form note from
   // an alerts signup, and the reuse path overwrote the column with the latest door.
 
-  const DOOR_FILES = [
-    'app/contact/actions.ts',
-    'app/actions/search-alert-capture.ts',
-    'app/lp/seller-home-value/actions.ts',
-    'app/communities/[slug]/_v3/place-value-actions.ts',
-  ]
-  for (const rel of DOOR_FILES) {
-    if (!existsSync(join(ROOT, rel))) {
-      fails.push(`${rel}: door file missing — update DOOR_FILES in scripts/check-crm-lead-integrity.mjs.`)
-      continue
-    }
+  // Every sendEvent call in app/ and lib/, not a list of four files: until
+  // 2026-10-14 six more doors (CMA download and pricing read, the signed-in saved
+  // search, the listing payment email, the /buy lead form, the page CTA, rental
+  // calculator and Tetherow forms, the CMA PDF route) still wrote the host
+  // because the check named only the first four.
+  for (const rel of files) {
+    if (HOST_SOURCE_ALLOWED[rel]) continue
     const src = readFileSync(join(ROOT, rel), 'utf8')
+    if (!src.includes('sendEvent(')) continue
     for (const call of sendEventCalls(src)) {
       const expr = topLevelSource(call)
       if (expr === null) continue
-      if (isHostDerivedSource(expr)) {
+      if (sourceDerivesHost(expr, src)) {
         fails.push(
-          `${rel}: sendEvent source is \`${expr}\`, the site host. Write the door label ('contact-form', 'join', 'idx-registration', 'seller-lp', 'place-page') so crm_people.source says which form it was (FUNNEL-4).`,
+          `${rel}: sendEvent source is \`${expr}\`, the site host. Write the door label ('contact-form', 'idx-registration', 'seller-lp', 'buyer-lp', 'place-page', 'published-cma', ...) so crm_people.source says which form it was (FUNNEL-4), or add the file to HOST_SOURCE_ALLOWED with the reason it is not a door.`,
         )
       }
     }

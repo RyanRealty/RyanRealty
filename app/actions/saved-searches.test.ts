@@ -112,6 +112,11 @@ describe('createSavedSearch attribution', () => {
     expect(h.upsertListingAlert).toHaveBeenCalledWith(expect.objectContaining({ email: 'buyer@example.com', crmPersonId: PERSON_ID }))
   })
 
+  it('writes the alerts door as source, never the site host (FUNNEL-4)', async () => {
+    await createSavedSearch('Bend', { city: 'Bend' })
+    expect(h.sendEvent).toHaveBeenCalledWith(expect.objectContaining({ source: 'idx-registration' }))
+  })
+
   it('signed out: nothing is read or written', async () => {
     h.getSession.mockResolvedValue(null)
 

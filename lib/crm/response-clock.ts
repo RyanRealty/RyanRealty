@@ -128,10 +128,13 @@ export function firstHumanTouchRow<T extends TimelineRowLike>(rows: readonly T[]
 /**
  * The literal `crm_people.source` values the site's own submit actions write.
  *
- * NOT included: the bare site domain (`ryan-realty.com`). sendEvent stamps it
- * for the contact form AND for a plain website sign-in, which asked us for
- * nothing — lib/crm/enroll.ts draws the same distinction (isSiteSignin). A
- * contact-form submit still qualifies through its `source:contact-form` tag.
+ * NOT included: the bare site domain (`ryan-realty.com`). It names no door: no
+ * site form writes it since FUNNEL-4 (the last nine on 2026-10-14), and older
+ * rows that carry it, sign-ins among them, asked us for nothing on its own
+ * account. lib/crm/enroll.ts draws the same distinction (isSiteSignin). A
+ * person whose first door is not listed still qualifies through the
+ * `source:<door>` tag of a listed door (the rental calculator's
+ * source:contact-form, the payment email's source:idx-registration).
  *
  * Pinned against the action files by response-clock.test.ts: rename a source in
  * an action without editing this list and the test fails.

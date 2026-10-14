@@ -43,6 +43,12 @@ const CASES: Array<[string, LeadChannel, boolean]> = [
   ['idx-registration', 'web', true],
   ['place-page', 'web', true],
   ['join', 'web', true],
+  // The doors that wrote the host until 2026-10-14 (FUNNEL-4 leftovers).
+  ['published-cma', 'web', true],
+  ['listing-pricing-read', 'web', true],
+  ['listing-payment-email', 'web', true],
+  ['homepage-cta', 'web', true],
+  ['blog-email', 'web', true],
   ['Google', 'web', true],
   ['Realtor.com', 'portal', true],
   ['realtor.com', 'portal', true],

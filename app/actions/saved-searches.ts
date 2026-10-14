@@ -154,7 +154,8 @@ export async function createSavedSearch(
     const result = await sendEvent({
       type: 'Saved Property Search',
       person: { emails: [{ value: email }] },
-      source: base.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com',
+      // The alerts door, as the guest alert signup writes it (FUNNEL-4), never the site host.
+      source: 'idx-registration',
       system: 'Ryan Realty Website',
       sourceUrl: searchUrl,
       message: `Saved search: ${searchName}${summary ? `, ${summary}` : ''}${count}`,

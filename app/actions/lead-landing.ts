@@ -1,6 +1,6 @@
 'use server'
 
-import { siteHost, siteOrigin } from '@/lib/site-origin'
+import { siteOrigin } from '@/lib/site-origin'
 import { sendEvent, type LeadEventPerson } from '@/lib/crm/send-event'
 import { sendContactNotification } from '@/lib/resend'
 import type { LeadLandingAudience } from '@/lib/lead-landing-content'
@@ -25,11 +25,6 @@ import { cookies, headers } from 'next/headers'
 const SITE_URL = siteOrigin()
 
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
-/** The site's own host as the lead source: 'ryan-realty.com' in production, never the Vercel alias. */
-function websiteSource(): string {
-  return siteHost()
-}
 
 type LpContextInput = {
   lp_variant?: string
@@ -152,10 +147,13 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
       .filter(Boolean)
       .join(' | ')
 
+    // crm_people.source is the door, not the site host (FUNNEL-4, 2026-09-23).
+    const leadDoor = input.audience === 'seller' ? 'seller-lp' : 'buyer-lp'
     const result = await sendEvent({
       type: eventType,
       person,
-      source: websiteSource(),
+      // The door (FUNNEL-4), the same label the fallback and the canonical tag write.
+      source: leadDoor,
       sourceUrl,
       pageUrl: sourceUrl,
       pageTitle: input.pageTitle,
@@ -175,14 +173,13 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
       // buyer/seller LP lead would be dropped entirely. Capture it in crm_people
       // + crm_contact_points so the lead is tracked, then still surface the error
       // so the visitor is prompted to retry (the native row dedupes on retry).
-      const lpSource = input.audience === 'seller' ? 'seller-lp' : 'buyer-lp'
       try {
         const native = await ensureNativeLead({
           name,
           email,
           phone,
-          source: lpSource,
-          tags: [`audience:${input.audience}`, `source:${lpSource}`, 'fub-fallback', ...paidTags],
+          source: leadDoor,
+          tags: [`audience:${input.audience}`, `source:${leadDoor}`, 'fub-fallback', ...paidTags],
         })
         if (native.created || native.personId > 0) {
           console.warn(
@@ -244,7 +241,7 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
         await canonicallyTagLead({
           fubPersonId: result.personId,
           audience: input.audience === 'seller' ? 'seller' : 'buyer',
-          source: input.audience === 'seller' ? 'seller-lp' : 'buyer-lp',
+          source: leadDoor,
           extraTags: paidTags,
         })
 

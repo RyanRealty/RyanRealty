@@ -219,3 +219,12 @@ describe('submitLeadLandingForm visit attribution', () => {
     expect(canonicallyTagLead).toHaveBeenCalledWith(expect.objectContaining({ extraTags: [] }))
   })
 })
+
+// FUNNEL-4: crm_people.source is the door. This form wrote the site host until
+// 2026-10-14, so the lead-flow report could not count /buy leads.
+describe('submitLeadLandingForm door label', () => {
+  it('writes buyer-lp, never the site host', async () => {
+    await submitLeadLandingForm(input())
+    expect(sendEvent).toHaveBeenCalledWith(expect.objectContaining({ source: 'buyer-lp' }))
+  })
+})

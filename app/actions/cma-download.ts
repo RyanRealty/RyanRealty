@@ -125,7 +125,8 @@ export async function registerForCmaDocumentAction(input: CmaDownloadInput): Pro
         emails: [{ value: email }],
         phones: phone ? [{ value: phone }] : undefined,
       },
-      source: base.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com',
+      // The door, as the fallback below writes it (FUNNEL-4), never the site host.
+      source: 'published-cma',
       system: 'Ryan Realty Website',
       sourceUrl,
       message: `Downloaded the published market analysis for listing ${listingKey}`,
@@ -270,7 +271,8 @@ export async function requestListingCmaAction(input: CmaDownloadInput): Promise<
         emails: [{ value: email }],
         phones: phone ? [{ value: phone }] : undefined,
       },
-      source: base.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com',
+      // The door, as the fallback below writes it (FUNNEL-4), never the site host.
+      source: 'listing-pricing-read',
       system: 'Ryan Realty Website',
       sourceUrl,
       message: `Requested a market analysis from the listing-page read for listing ${listingKey}`,

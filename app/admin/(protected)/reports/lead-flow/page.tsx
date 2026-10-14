@@ -100,9 +100,11 @@ const CODE = { fontFamily: 'var(--a-font-mono)', overflowWrap: 'anywhere' as con
 //
 // `lp_variants` are the values the door's server-side fireLeadGenerated writes
 // to the GA4 event param lp_variant (summed). `assignment_source` is the exact
-// crm_people.source the door writes on create, or null when that string cannot
-// be counted per door (the bare site host, shared by several doors, or one
-// string per Meta campaign). `path_prefixes` are the visitor_events paths that
+// crm_people.source the door writes on create (first touch: a person who came
+// through another door first is counted there), or null when no one string
+// counts the door (one string per Meta campaign). Every site door writes its own
+// label since 2026-10-14; until then nine wrote the site host and read 0 here
+// (FUNNEL-4, scripts/check-crm-lead-integrity.mjs). `path_prefixes` are the visitor_events paths that
 // count landings on the door's own pages (summed); empty for a door with no
 // page of its own, so it never reads Silent just because the site has traffic.
 
@@ -128,11 +130,11 @@ const LEAD_SURFACES: LeadSurface[] = [
     notes: 'One form on /sell, /sell/valuation, /sell/expired-listings and /sell/for-sale-by-owner. A submit whose visit carried a utm_source records the platform (e.g. Facebook) as its source, so it is not in the CRM count.',
   },
   {
-    label: 'Buyer landing (/buy/<intent>)',
-    lp_variants: ['lead-landing-buyer'],
-    assignment_source: null,
+    label: 'Buyer landing pages (/buy)',
+    lp_variants: ['lead-landing-buyer', 'buy-leverage', 'buy-concessions'],
+    assignment_source: 'buyer-lp',
     path_prefixes: ['/buy/'],
-    notes: 'Source is the site host, shared by other doors, so no CRM count; the person carries source:buyer-lp.',
+    notes: 'The /buy/<intent> form, /buy/leverage and /buy/concessions. /buy/alerts signups count under Listing alerts and saves, though its visits count here.',
   },
   {
     label: 'Contact form',
@@ -149,11 +151,25 @@ const LEAD_SURFACES: LeadSurface[] = [
     notes: 'Search alerts (place pages, search), save home and price-drop watch (listing pages). One CRM source, so one row; no single page.',
   },
   {
-    label: 'Listing page asks (payment, CMA, pricing)',
-    lp_variants: ['listing-payment-email', 'published-cma', 'listing-pricing-read'],
-    assignment_source: null,
+    label: 'Listing market analysis',
+    lp_variants: ['published-cma'],
+    assignment_source: 'published-cma',
     path_prefixes: [],
-    notes: 'Source is the site host, so no CRM count.',
+    notes: 'Registered for a published CMA on a listing page.',
+  },
+  {
+    label: 'Listing pricing read',
+    lp_variants: ['listing-pricing-read'],
+    assignment_source: 'listing-pricing-read',
+    path_prefixes: [],
+    notes: 'Asked for a pricing read on a live listing.',
+  },
+  {
+    label: 'Listing payment email',
+    lp_variants: ['listing-payment-email'],
+    assignment_source: 'listing-payment-email',
+    path_prefixes: [],
+    notes: 'Asked for the payment estimate by email.',
   },
   {
     label: 'Community value ask',
@@ -164,16 +180,15 @@ const LEAD_SURFACES: LeadSurface[] = [
   {
     label: 'Market and FAQ inquiry',
     lp_variants: ['page-cta-general'],
-    assignment_source: null,
+    assignment_source: 'homepage-cta',
     path_prefixes: ['/housing-market', '/faq'],
-    notes: 'Source is the site host, so no CRM count.',
+    notes: 'The inquiry sheets on the market reports and the FAQ (submitPageCTA).',
   },
   {
     label: 'Rental calculator',
     lp_variants: ['rental-calculator'],
-    assignment_source: null,
+    assignment_source: 'rental-calculator',
     path_prefixes: ['/tools/rental-property-calculator'],
-    notes: 'Source is the site host, so no CRM count.',
   },
   { label: 'Out-of-area referral', lp_variants: ['out-of-area-city'], assignment_source: 'out-of-area-lp', path_prefixes: ['/oregon/'] },
   { label: 'Agent referral', lp_variants: ['inbound-agent-referral'], assignment_source: 'agent-referral', path_prefixes: ['/refer-a-client'] },
