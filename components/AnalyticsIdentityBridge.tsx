@@ -49,8 +49,8 @@ const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim()
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()
 
 async function waitForGlobal<T>(getter: () => T | undefined, maxMs = 3000, stepMs = 250): Promise<T | undefined> {
-  const start = Date.now()
-  while (Date.now() - start < maxMs) {
+  const start = Date.now() // hydration-safe: called only from the mount effect's async identity sync
+  while (Date.now() - start < maxMs) { // hydration-safe: same, never during render
     const v = getter()
     if (v) return v
     await new Promise((r) => setTimeout(r, stepMs))
