@@ -77,7 +77,7 @@ export type GatedPricingSet = {
 export type ReviewRefillArgs = {
   subject: Pick<
     CmaSubject,
-    'propertySubType' | 'yearBuilt' | 'newConstructionYn' | 'publicRemarks' | 'subdivision' | 'seniorCommunityYn'
+    'propertySubType' | 'yearBuilt' | 'newConstructionYn' | 'publicRemarks' | 'subdivision' | 'seniorCommunityYn' | 'units'
   >
   selection: {
     comps: CmaComp[]
@@ -138,6 +138,7 @@ export async function reviewWithRefill(args: ReviewRefillArgs): Promise<ReviewRe
     publicRemarks: args.subject.publicRemarks,
     subdivision: args.subject.subdivision,
     seniorCommunityYn: args.subject.seniorCommunityYn,
+    units: args.subject.units ?? null,
   }
   const gate = (judged: CmaComp[], vetted: CmaComp[], verdicts: CompVerdict[]): GatedPricingSet =>
     pricingCompsAfterJudgment({

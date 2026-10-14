@@ -1,0 +1,15 @@
+# 2026-10-14 (Claude Code cloud, CMA multi-unit guard, greeting rule, ADU-first pricing)
+
+Branch `claude/lucid-galileo-rcafq4`. Landed: #561 (`9f788f38`, the multi-unit subject refusal and the greeting that names the person at the address) and #570 (`eb2c14ad`, the frozen handoff's Earlier entry). Open: #578 (ADU-first pricing, this branch). Nothing sent. No rebuild.
+
+**What landed in #561.** `lib/cma/subject-units.ts` reads every MLS row at the subject's address and `resolveCmaSubject` refuses a multi-unit home before a comp is read (CMA SKILL rule 23 extended; queue bucket "Multi-unit home"). `lib/crm/household-names.ts` parses the county owner string and matches the email's local part; the lookup files the lead under the person the email belongs to, and compose time runs the same rule against the address the send goes to (rule 34). Carried in: the #553 Tetherow page-payload baseline and a route-smoke serial retry for a 503 marked `x-listing-lookup: unavailable`.
+
+**Matt's answers this session (2026-10-14).** (1) An ADU home prices from ADU sales first: five or more price-setting ADU sales are the set; fewer, before or after the comparability review, hand the home to the ordinary set and the letter says so. Recorded in AGENTS.md rule 2 and SKILL §0.3 rules 2 and 23. (2) Correct the two 429 Irving rows to the recipient's first name: done in production, `crm_people` 63709 and `cmas` `cma-429-irving` now read David Kremers (surname from the county record; audit line in `background` and `build_summary.name_correction`).
+
+**What the open PR does.** `lib/pricing/adu-preference.ts` (the decision, the sentences, the review fallback). The facts walk admits ADU sales alone on the first pass (`walkPricingLadder` `aduSalesOnly`, skipped before any wall counts them; the price anchor still reads the whole pool), the listings ladder runs the same pass (`selectComps` `aduSalesOnly`), and `selectCompsPreferringFacts` stamps `adu_preference` on the diagnostics. The letter prints the sentence after the search story (`CompSearch.aduSentence`). A review drop under five re-enters the build once on the ordinary pass (`CmaBuildInput.aduFallback`, `BpoBuildInput.aduFallback`). Every wall reads the subject's MLS ADU field (`units.aduYn`, `aduSaleRefused`'s third argument), so a home whose ADU is a field and not a remark is an ADU home on both ladders, in the review and in the competition tables. Tests: `adu-preference.test.ts`, `select.adu-first.test.ts`, cases in `match.test.ts`, `comps.select.test.ts`, `judgment-prune.test.ts`, `comp-search.test.ts`.
+
+**Next.** Merge when green (the auto-merge workflow squashes after merge-gate + security-scan), confirm the Vercel production deploy. The owner's reply on 429 Irving left a phone number and is a warm lead; nothing drafted.
+
+**Held.** Do not send. Do not rebuild letters. Prod DB writes this session were the two approved name corrections only.
+
+Skills read: `marketing_brain_skills/producers/cma/SKILL.md`, built-in `code-review`.

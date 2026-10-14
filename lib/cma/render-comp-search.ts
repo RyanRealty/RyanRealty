@@ -223,5 +223,7 @@ export function compSearchSentence(input: Parameters<typeof baseCompSearchSenten
   const stored = readCompSearch(input.args)
   const base = rewriteZeroSaleMatch(baseCompSearchSentence(input), stored?.ownGroundSold)
   const rural = cleanText(stored?.ruralSentence ?? null)
-  return rural ? `${base} ${rural}` : base
+  // An ADU home says which sales set its price (Matt 2026-10-14, lib/pricing/adu-preference.ts).
+  const adu = cleanText(stored?.aduSentence ?? null)
+  return [base, rural, adu].filter((s): s is string => Boolean(s)).join(' ')
 }

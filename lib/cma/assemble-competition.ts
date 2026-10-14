@@ -110,6 +110,8 @@ export function salesSearchAndArea(args: {
       args.diagnostics.own_ground_sold != null && args.diagnostics.own_ground_sold.n >= 0
         ? args.diagnostics.own_ground_sold.n
         : null,
+    // An ADU home's pass (Matt 2026-10-14): the sentence prints after the search story.
+    aduSentence: args.diagnostics.adu_preference?.sentence ?? null,
   })
   const compArea = buildCompArea({
     subject: {

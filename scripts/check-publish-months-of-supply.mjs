@@ -84,14 +84,6 @@ const leftoverHudSurfaces = [
     path: 'app/listing/[listingKey]/page.tsx',
     label: 'listing page gates MOS through leftoverHudKpis',
   },
-  {
-    path: 'app/search/og/[...slug]/route.tsx',
-    label: 'search OG gates MOS through leftoverHudKpis',
-  },
-  {
-    path: 'app/housing-market/og/[...slug]/route.tsx',
-    label: 'housing-market OG gates MOS through leftoverHudKpis',
-  },
   // SiteHeader was deleted 2026-08-27 with the legacy chrome (V3Chrome is the one
   // public header, and it publishes no MOS figure of its own). Its arm's rule --
   // a months-of-supply figure in the CHROME comes through leftoverHudKpis --

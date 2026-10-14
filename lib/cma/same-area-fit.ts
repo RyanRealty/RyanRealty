@@ -68,6 +68,8 @@ export function sameAreaAgeYears(area: CompArea | null): number | null {
 export const SAME_AREA_SQFT_BAND = PRICE_SET_SQFT_BAND
 
 export type SameAreaSubject = {
+  /** The subject's MLS ADU reading (CmaSubject.units), for the ADU wall. */
+  units?: { aduYn?: boolean | null } | null
   streetAddress: string | null
   city: string | null
   subdivision: string | null
@@ -150,6 +152,9 @@ export function sameAreaSubject(s: CmaSubject): SameAreaSubject {
     propertySubType: s.propertySubType,
     marketArea: resolveMarketArea(s.latitude, s.longitude),
     publicRemarks: s.publicRemarks ?? null,
+    // The MLS ADU reading rides along, so the wall here never disagrees with
+    // the sales ladder for a home whose ADU is a field and not a remark.
+    units: s.units ?? null,
   }
 }
 
@@ -213,7 +218,7 @@ export function sameAreaFit(
   if (c.publicRemarks != null && multiUnitFromRemarks(c.publicRemarks) !== multiUnitFromRemarks(subject.publicRemarks)) {
     return { ok: false, reason: 'product' }
   }
-  if (aduSaleRefused(subject.publicRemarks, c.publicRemarks)) {
+  if (aduSaleRefused(subject.publicRemarks, c.publicRemarks, subject.units?.aduYn)) {
     return { ok: false, reason: 'adu' }
   }
   const subjectSqft = subject.sqft ?? null
