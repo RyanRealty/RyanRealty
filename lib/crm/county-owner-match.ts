@@ -319,8 +319,15 @@ export type ContactPerson = {
 export type ContactIdentity = {
   /** The people a contact name carries ("John & Jane Smith" is two). */
   people: ContactPerson[]
-  /** Set when the contact itself is an organization: its comparable key. */
+  /** Set when the contact itself is an organization or a trust: its comparable key. */
   entityKey: string | null
+  /**
+   * The same two-word names read the other way round. Imported farm lists put
+   * "FAERBER SUSAN" into first_name/last_name in county order. A reversed
+   * reading may only corroborate a parcel that is also one of their addresses;
+   * on its own it is never a match (classifyParcel).
+   */
+  reversed: ContactPerson[]
 }
 
 function contactPerson(givenTokens: string[], lastTokens: string[], suffix: string | null): ContactPerson | null {
@@ -365,24 +372,42 @@ export function parseContactName(input: {
   const lastField = foldText(input.last_name)
   const full = foldText(input.name) || [firstField, lastField].filter(Boolean).join(' ')
   if (full && (isCompanyOwnedEntity(full) || ENTITY_EXTRA_RE.test(full))) {
-    return { people: [], entityKey: entityKeyOf(full) }
+    return { people: [], entityKey: entityKeyOf(full), reversed: [] }
+  }
+  if (full && TRUST_RE.test(full)) {
+    // A contact that is a trust: its whole title, plus the people the title names.
+    const people = parseOwnerOfRecord(full, 'comma')
+      .parties.map((p) => ({ first: p.first, middles: p.middles, last: p.surnames[0]!, suffix: p.suffix, display: '' }))
+      .filter((p) => p.last)
+    return { people: withDisplay(people, input), entityKey: entityKeyOf(full), reversed: [] }
   }
   const people: ContactPerson[] = []
   const add = (p: ContactPerson | null) => {
     if (p && !people.some((q) => q.first === p.first && q.last === p.last)) people.push(p)
   }
+  const reversedOf = (given: string[], last: string[]): ContactPerson[] => {
+    if (given.length !== 1 || last.length !== 1) return []
+    const r = contactPerson(last, given, null)
+    return r ? withDisplay([r], input) : []
+  }
 
   if (firstField && lastField) {
     const last = stripAffixes(words(lastField))
+    const segs = splitSegments(firstField)
     // "John & Jane" in the first-name field: each given name shares the last name.
-    for (const seg of splitSegments(firstField)) {
+    for (const seg of segs) {
       const given = stripAffixes(words(seg))
       add(contactPerson(given.tokens, last.tokens, given.suffix ?? last.suffix))
     }
-    return { people: withDisplay(people, input), entityKey: null }
+    const one = segs.length === 1 ? stripAffixes(words(segs[0]!)) : null
+    return {
+      people: withDisplay(people, input),
+      entityKey: null,
+      reversed: one && !one.suffix && !last.suffix ? reversedOf(one.tokens, last.tokens) : [],
+    }
   }
 
-  if (!full) return { people, entityKey: null }
+  if (!full) return { people, entityKey: null, reversed: [] }
   // Name only: "John A Smith", "John & Jane Smith", "John Smith & Jane Doe".
   const segs = splitSegments(full).map((s) => stripAffixes(words(s)))
   const multi = segs.filter((s) => s.tokens.length >= 2)
@@ -397,7 +422,12 @@ export function parseContactName(input: {
       add(contactPerson(seg.tokens, [sharedLast], seg.suffix))
     }
   }
-  return { people: withDisplay(people, input), entityKey: null }
+  const only = segs.length === 1 && segs[0]!.tokens.length === 2 && !segs[0]!.suffix ? segs[0]!.tokens : null
+  return {
+    people: withDisplay(people, input),
+    entityKey: null,
+    reversed: only ? reversedOf([only[0]!], [only[1]!]) : [],
+  }
 }
 
 function withDisplay(
@@ -419,11 +449,13 @@ export function partyIsPerson(party: OwnerParty, person: ContactPerson): boolean
 }
 
 /** The first contact person the owner record names, or null. */
-export function ownerNamesContact(owner: ParsedOwner, contact: ContactIdentity): ContactPerson | 'entity' | null {
-  if (owner.kind === 'entity') {
-    if (contact.entityKey && contact.entityKey.length >= 4 && entityKeyOf(owner.raw) === contact.entityKey) return 'entity'
-    return null
-  }
+export function ownerNamesContact(
+  owner: ParsedOwner,
+  contact: Pick<ContactIdentity, 'people' | 'entityKey'>,
+): ContactPerson | 'entity' | null {
+  // A company or trust contact is named by its own title, word for word.
+  if (contact.entityKey && contact.entityKey.length >= 4 && entityKeyOf(owner.raw) === contact.entityKey) return 'entity'
+  if (owner.kind === 'entity') return null
   for (const person of contact.people) {
     if (owner.parties.some((p) => partyIsPerson(p, person))) return person
   }
@@ -500,7 +532,17 @@ export function parseStreetLine(
     unit = unit || hash[1]!.replace(/[^A-Z0-9]/g, '')
     s = s.replace(hash[0], ' ').trim()
   }
-  const toks = words(s)
+  let toks = words(s)
+  // "2439 NW Drouillard Ave 5": a bare number after the street type is the unit.
+  const tail = toks[toks.length - 1]
+  if (!unit && toks.length >= 4 && tail && /^(?:\d+[A-Z]?|[A-Z]\d+)$/.test(tail)) {
+    const before = toks[toks.length - 2]!.toLowerCase()
+    // Not after a road or highway word: "County Road 5" and "Old Hwy 20" are road names.
+    if (SUFFIX_CANON[before] && !['rd', 'road', 'hwy', 'highway'].includes(before)) {
+      unit = tail
+      toks = toks.slice(0, -1)
+    }
+  }
   const num = toks[0]
   if (!num || !/^\d+[A-Z]?$/.test(num)) return null
   let rest = toks.slice(1).filter((t) => !/^\d+\/\d+$/.test(t))
@@ -607,6 +649,8 @@ export type ParcelClassification = {
   sharesFamilyName: boolean
   /** resident only: the owner record names a contact linked to them. */
   namesRelated: { label: string; name: string } | null
+  /** high only: the name matched with the contact record's first and last name reversed. */
+  nameReversed: boolean
 }
 
 function addressHit(
@@ -639,6 +683,22 @@ export function classifyParcel(
       mailingAddressLabel,
       sharesFamilyName: false,
       namesRelated: null,
+      nameReversed: false,
+    }
+  }
+  // A reversed reading counts only with the address agreeing too, and only as itself.
+  if (siteAddressLabel || mailingAddressLabel) {
+    const reversed = ownerNamesContact(parcel.owner, { people: contact.reversed, entityKey: null })
+    if (reversed) {
+      return {
+        strength: 'high',
+        named: reversed,
+        siteAddressLabel,
+        mailingAddressLabel,
+        sharesFamilyName: false,
+        namesRelated: null,
+        nameReversed: true,
+      }
     }
   }
   if (!siteAddressLabel) return null
@@ -653,7 +713,7 @@ export function classifyParcel(
       break
     }
   }
-  return { strength: 'resident', named: null, siteAddressLabel, mailingAddressLabel, sharesFamilyName, namesRelated }
+  return { strength: 'resident', named: null, siteAddressLabel, mailingAddressLabel, sharesFamilyName, namesRelated, nameReversed: false }
 }
 
 /**
@@ -693,7 +753,8 @@ export function describeMatch(c: ParcelClassification, ownerRaw: string, ownerKi
       const where = c.siteAddressLabel
         ? `this property is the ${c.siteAddressLabel}`
         : `the county mails its tax statement to the ${c.mailingAddressLabel}`
-      return `Owner of record: ${owner}${via}. The name matches ${who}, and ${where}.`
+      const reversed = c.nameReversed ? ' (first and last name are reversed on the contact record)' : ''
+      return `Owner of record: ${owner}${via}. The name matches ${who}${reversed}, and ${where}.`
     }
     return `Owner of record: ${owner}${via}. The name matches ${who}, but no address we hold for them is this property or its tax mailing address, so it could be someone else with the same name.`
   }

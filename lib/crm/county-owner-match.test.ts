@@ -156,6 +156,21 @@ describe('parseContactName', () => {
     expect(parseContactName({ first_name: 'marta', last_name: 'van doren' }).people[0]!.display).toBe('Marta Van Doren')
   })
 
+  it('a trust contact carries its title and the people it names', () => {
+    const c = parseContactName({ name: 'Susan Quillfeld Trust' })
+    expect(c.entityKey).toBe('SUSANQUILLFELDTRUST')
+    expect(c.people.map((p) => `${p.first} ${p.last}`)).toEqual(['SUSAN QUILLFELD'])
+    expect(named('AUDRAIN-QUILLFELD TRUST', 'comma', { name: 'Audrain-quillfeld Trust' })).toBe(true)
+    expect(named('QUILLFELD LIVING TRUST', 'comma', { name: 'Quillfeld Family Trust' })).toBe(false)
+  })
+
+  it('offers a reversed reading of a two-word name, and only that', () => {
+    expect(parseContactName({ first_name: 'Faerwell', last_name: 'Susan' }).reversed.map((p) => `${p.first} ${p.last}`)).toEqual(['SUSAN FAERWELL'])
+    expect(parseContactName({ name: 'Faerwell Susan' }).reversed).toHaveLength(1)
+    expect(parseContactName({ first_name: 'John A', last_name: 'Pellworth' }).reversed).toEqual([])
+    expect(parseContactName({ first_name: 'John & Jane', last_name: 'Pellworth' }).reversed).toEqual([])
+  })
+
   it('a single word names nobody', () => {
     expect(parseContactName({ name: 'Pellworth' }).people).toEqual([])
     expect(parseContactName({}).people).toEqual([])
@@ -217,6 +232,8 @@ describe('street addresses', () => {
     expect(sameStreet(p('900 Wall St #4'), p('900 WALL ST', { unit: '4' }))).toBe(true)
     expect(sameStreet(p('900 Wall St Apt 5'), p('900 WALL ST', { unit: '4' }))).toBe(false)
     expect(sameStreet(p('900 Wall St Unit 4'), p('900 WALL ST'))).toBe(true)
+    expect(sameStreet(p('2439 NW Larkspur Ave 5'), p('2439 NW LARKSPUR AVE', { unit: '5' }))).toBe(true)
+    expect(p('15 County Road 5').core).toEqual(['COUNTY', 'RD', '5'])
   })
 
   it('does not read a street word as a unit, and a PO box is not a street address', () => {
@@ -299,6 +316,18 @@ describe('classifyParcel', () => {
 
   it('nothing: not named and not their address', () => {
     expect(classifyParcel(contact, [home], { owner: parseOwnerOfRecord('ODERMATT, MARTA', 'comma'), situs: elsewhere, mailing: elsewhere })).toBeNull()
+  })
+
+  it('reversed first and last name: high only when the address agrees, and it says so', () => {
+    const reversedContact = parseContactName({ first_name: 'Pellworth', last_name: 'Jane' })
+    const owner = parseOwnerOfRecord('JANE PELLWORTH REVOCABLE TRUST', 'comma')
+    const c = classifyParcel(reversedContact, [home], { owner, situs, mailing: situs })
+    expect(c?.strength).toBe('high')
+    expect(c?.nameReversed).toBe(true)
+    expect(describeMatch(c!, 'JANE PELLWORTH REVOCABLE TRUST', 'trust')).toContain(
+      'The name matches Jane Pellworth (first and last name are reversed on the contact record), and this property is the mailing address on their record.',
+    )
+    expect(classifyParcel(reversedContact, [home], { owner, situs: elsewhere, mailing: elsewhere })).toBeNull()
   })
 
   it('a trust that names them is ownership', () => {

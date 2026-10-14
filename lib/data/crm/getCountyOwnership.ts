@@ -83,6 +83,8 @@ export type CountyOwnershipRow = {
   county: CountyKey
   countyLabel: string
   account: string
+  /** More accounts at the same site with the same owner (a land account and a home account). */
+  otherAccounts: string[]
   taxlot: string | null
   /** Site address as the county records it, unit and city included when it has them. */
   situsAddress: string | null
@@ -361,17 +363,26 @@ export function buildOwnershipRows(
 ): CountyOwnershipRow[] {
   const rows: CountyOwnershipRow[] = []
   const seen = new Set<string>()
+  const bySite = new Map<string, CountyOwnershipRow>()
   for (const c of candidates) {
     const key = `${c.county}:${c.account}`
     if (seen.has(key)) continue
     const cls = classifyParcel(identity, addresses, { owner: c.owner, situs: c.situs, mailing: c.mailing, situsPlaces: c.situsPlaces }, related)
     if (!cls) continue
     seen.add(key)
-    rows.push({
+    // One owner, one site, two accounts (land and a manufactured home): one row.
+    const siteKey = c.situsDisplay ? `${c.county}|${c.owner.raw}|${c.situsDisplay.toUpperCase()}` : null
+    const same = siteKey ? bySite.get(siteKey) : undefined
+    if (same) {
+      same.otherAccounts.push(c.account)
+      continue
+    }
+    const row: CountyOwnershipRow = {
       key,
       county: c.county,
       countyLabel: COUNTY_LABEL[c.county],
       account: c.account,
+      otherAccounts: [],
       taxlot: c.taxlot,
       situsAddress: c.situsDisplay,
       ownerOfRecord: c.ownerRaw,
@@ -385,7 +396,9 @@ export function buildOwnershipRows(
       sourceAsOf: c.sourceAsOf,
       sourceIsLive: c.sourceIsLive,
       figures: figuresFor(c),
-    })
+    }
+    rows.push(row)
+    if (siteKey) bySite.set(siteKey, row)
   }
   return rows.sort(
     (a, b) => STRENGTH_ORDER[a.strength] - STRENGTH_ORDER[b.strength] || String(a.situsAddress).localeCompare(String(b.situsAddress)),
