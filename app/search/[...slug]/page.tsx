@@ -4,7 +4,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { getListingsWithAdvanced } from '../../actions/listings'
-import { getRecentPriceDropEntries, type ListingCardPriceDrop } from '@/lib/data'
+import { getRecentPriceDropEntries, getRegionPulse, type ListingCardPriceDrop } from '@/lib/data'
+import { isBuyerAnswerPreset } from '@/lib/buyer-answers'
 import { SearchAlertCapture } from '../../../components/search/SearchAlertCapture'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
 import { cityEntityKey, homesForSalePath, listingTileHref } from '../../../lib/slug'
@@ -162,7 +163,7 @@ export default async function SearchPage({
   // real golf homes + FAQ). `?all=1` falls through to the standard filterable
   // list+map view of the same golf-filtered homes.
   if (preset?.landing === 'golf' && city && sp.all !== '1') {
-    return renderGolfLanding(city)
+    return renderGolfLanding(city, preset.shortLabel)
   }
 
   const effectiveStatusFilter = (filterOpts.statusFilter && ['active', 'active_and_pending', 'pending', 'closed', 'all'].includes(filterOpts.statusFilter))
@@ -412,18 +413,21 @@ export default async function SearchPage({
   // buildMarketFaq so the visible numbers and the markup never diverge. Every
   // figure is null-guarded (no invented stats, CLAUDE.md §0).
   const isPlainCityPage = !!(city && !subdivision && !preset)
-  // Preset-page SEO depth (Family 3 / W3.2): city AND {city}/{area}/{preset} pages.
-  // Clean canonical only — no sort-only, no noindex variants, no degraded counts.
+  const isRegionBuyerPreset = !city && !!preset && isBuyerAnswerPreset('central-oregon', preset.slug)
+  // Preset-page SEO depth (Family 3 / W3.2): city AND {city}/{area}/{preset}
+  // pages, plus region buyer-answer presets (/homes-for-sale/acreage,
+  // /homes-for-sale/under-500k). Clean canonical only — no sort-only, no
+  // noindex variants, no degraded counts.
   const isPresetDepthPage = !!(
-    city &&
     preset &&
     !isSortOnlyPreset(preset) &&
-    !shouldNoIndexSearchVariant(sp)
+    !shouldNoIndexSearchVariant(sp) &&
+    (city || isRegionBuyerPreset)
   )
   // §0: area-scoped totalCount must name the area, not the city.
   const presetAreaLabel = subdivision ? placeName : null
   const {
-    cityFaqInput,
+    cityFaqInput: cityLayerFaqInput,
     publishedCityInventory,
     cityMarketFaq,
     priceLadder,
@@ -436,9 +440,22 @@ export default async function SearchPage({
     isPresetDepthPage,
     citySfrTiles,
   })
+  const regionPulse = isRegionBuyerPreset ? await getRegionPulse().catch(() => null) : null
+  const cityFaqInput =
+    isRegionBuyerPreset && regionPulse
+      ? {
+          grain: 'region' as const,
+          source: 'pulse' as const,
+          activeCount: regionPulse.activeCount,
+          medianListPrice: regionPulse.medianListPrice,
+          medianDaysToPending: regionPulse.medianDaysToPending,
+          monthsOfSupply: regionPulse.monthsOfSupply,
+          refreshedAt: regionPulse.updatedAt || null,
+        }
+      : cityLayerFaqInput
   const presetDepth =
-    isPresetDepthPage && city && preset && !listingsResult.degraded
-      ? buildPresetFaq(city, preset, totalCount, cityFaqInput, presetAreaLabel)
+    isPresetDepthPage && preset && !listingsResult.degraded && (city || isRegionBuyerPreset)
+      ? buildPresetFaq(city ?? 'Central Oregon', preset, totalCount, cityFaqInput, presetAreaLabel)
       : null
   const presetBandLinks =
     isPresetDepthPage && city && preset

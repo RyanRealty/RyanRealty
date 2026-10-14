@@ -14,7 +14,8 @@
  */
 
 import { cookies, headers } from 'next/headers'
-import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-protocol'
+import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
+import { ga4ServerEventParams, ga4ServerSend } from '@/lib/analytics/ga4-server-context'
 import {
   backfillSessionToFub,
   isAutomatedSession,
@@ -159,17 +160,21 @@ async function bridgeIdentifiedPerson(
   // GA4 Measurement Protocol — record that this browser was just bridged to
   // a known person. Helps count email-click identifications in the analytics
   // funnel and ties future events on this browser to a known id.
-  const ga4ClientId = readGa4ClientIdFromCookies(cookieStore) ?? undefined
-  void fireGa4Event({
-    eventName: 'person_identified',
-    clientId: ga4ClientId,
-    eventParams: {
-      person_id: id,
-      identify_source: 'email-click',
-      source: 'crm',
-      medium: 'email',
-    },
-  }).catch((e) => console.warn('[identity-bridge] GA4 event failed:', e))
+  // The browser's own GA4 session (lib/analytics/ga4-server-context.ts), and
+  // nothing at all under GPC, a decline, or a request GA4 does not count.
+  const ga4 = await ga4ServerSend()
+  if (ga4) {
+    void fireGa4Event({
+      eventName: 'person_identified',
+      clientId: ga4.clientId,
+      eventParams: ga4ServerEventParams(ga4.ctx, {
+        person_id: id,
+        identify_source: 'email-click',
+        source: 'crm',
+        medium: 'email',
+      }),
+    }).catch((e) => console.warn('[identity-bridge] GA4 event failed:', e))
+  }
 
   // rr_vid stitch even when the client omitted session_id — otherwise an
   // email-click identify never writes visitor_identity_map.crm_person_id.

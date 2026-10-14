@@ -9,7 +9,7 @@ import { sendContactNotification } from '@/lib/resend'
 import { canonicallyTagLead, type LeadAudience } from '@/lib/canonical-lead-tagger'
 import { classifyPropertyGeo, referralIntakeTags } from '@/lib/referral-geo'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
-import { fireLeadGenerated, fireNonLeadEvent } from '@/lib/lead-tracking'
+import { fireLeadGenerated, fireNonLeadEvent, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { contactLeadType } from '@/lib/analytics/lead-event'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
@@ -309,6 +309,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   // recruit inquiry is not a lead: its own recruit_inquiry event. "general" is
   // gone: a tour is buyer_showing, a home named is listing_inquiry, a selling or
   // buying inquiry says so, and only the rest is contact_general.
+  await persistGaClientIdFromCookies(capturedPersonId)
   if (recruit) {
     await fireNonLeadEvent({
       event_name: 'recruit_inquiry',
@@ -322,6 +323,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
       lead_type: contactLeadType({ isTour, listingKey, inquiryType }),
       form_id: 'contact',
       event_id: eventId,
+      crm_person_id: capturedPersonId,
       extra: { inquiry_type: inquiryType },
     })
   }

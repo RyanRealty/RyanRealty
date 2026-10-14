@@ -13,7 +13,8 @@
   "numbers",
   "footage",
   "end_card",
-  "caption"
+  "caption",
+  "creative"
  ],
  "properties": {
   "video_type": {
@@ -30,6 +31,43 @@
   },
   "title": {
    "type": "string"
+  },
+  "creative": {
+   "type": "object",
+   "description": "The creative-brain piece brief (.claude/skills/creative-brain), chosen before the story and carried into the manifest for the reviewer (Matt 2026-10-14).",
+   "required": [
+    "feel",
+    "constraint",
+    "lineage",
+    "one_sentence"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "feel": {
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 200,
+     "description": "One target emotion, chosen first (awe, chills, being-moved, satisfying, delight, humor)."
+    },
+    "constraint": {
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 200,
+     "description": "One formal constraint chosen before the story."
+    },
+    "lineage": {
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 200,
+     "description": "The non-AI artistic lineage it borrows from."
+    },
+    "one_sentence": {
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 200,
+     "description": "The idea in one sentence."
+    }
+   }
   },
   "hook": {
    "type": "object",
@@ -91,6 +129,64 @@
      },
      "hero": {
       "type": "boolean"
+     }
+    }
+   }
+  },
+  "outlines": {
+   "type": "array",
+   "description": "Outlines an outline_draw_zoom scene draws, read from the boundaries table at render time (never drawn by hand).",
+   "items": {
+    "type": "object",
+    "required": [
+     "key",
+     "geo_type",
+     "geo_slug",
+     "source"
+    ],
+    "properties": {
+     "key": {
+      "type": "string"
+     },
+     "geo_type": {
+      "enum": [
+       "city",
+       "neighborhood",
+       "subdivision",
+       "park",
+       "school",
+       "school_district",
+       "zip"
+      ]
+     },
+     "geo_slug": {
+      "type": "string"
+     },
+     "context": {
+      "type": "object",
+      "required": [
+       "geo_type",
+       "geo_slug"
+      ],
+      "properties": {
+       "geo_type": {
+        "enum": [
+         "city",
+         "neighborhood",
+         "subdivision",
+         "park",
+         "school",
+         "school_district",
+         "zip"
+        ]
+       },
+       "geo_slug": {
+        "type": "string"
+       }
+      }
+     },
+     "source": {
+      "type": "string"
      }
     }
    }

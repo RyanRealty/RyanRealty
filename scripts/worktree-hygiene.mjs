@@ -61,7 +61,7 @@ for (const block of blocks) {
     warnings++
   }
   if (unpushed) {
-    flags.push('local-only commits (ok if intentional; record in CROSS_AGENT_HANDOFF)')
+    flags.push('local-only commits (ok if intentional; record in your docs/plans/handoffs/ note)')
   }
 
   console.log(`\n· ${path}`)
@@ -71,5 +71,5 @@ for (const block of blocks) {
 if (warnings === 0) {
   console.log('\n✓ No stranded-work signals.')
 } else {
-  console.log(`\n⚠ ${warnings} signal(s). Default: merge to main + push, or document in docs/plans/CROSS_AGENT_HANDOFF.md.`)
+  console.log(`\n⚠ ${warnings} signal(s). Default: merge to main + push, or document in your note in docs/plans/handoffs/.`)
 }

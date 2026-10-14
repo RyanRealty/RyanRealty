@@ -1,12 +1,114 @@
-# Current — 2026-10-14 (Cursor, land CMA intake + ranking PRs)
+# Cross-agent handoff (frozen 2026-10-14)
 
-Surface: Cursor cloud. #485 merged to origin/main `fe948f648`. Now landing #488 then #489. Closed #524 because `/buy/alerts` is live via #536. Nothing sent. Nobody pushes main. No rebuild.
+History only. New handoffs are one file per session in [`handoffs/`](handoffs/README.md). Do not add a Current block here.
 
-**This pass.** #488 closer-lot/view ranking, then #489 same-vintage seating. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main).
+## Last shared block — 2026-10-14 (Cursor, Lighthouse artifact-poll retry)
 
-**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+Surface: Cursor cloud. Branch `cursor/lhci-artifact-poll-4396` from origin/main `83d4fdf40` (#529 just merged). Nobody pushes main. Nothing sent. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true. CMA and email wording unchanged.
+
+**Done this session.** #452 merged `608fd879b`, deploy READY. #471 merged `637dbefcf`, deploy READY. #529 merged `83d4fdf40`, deploy verify in flight.
+
+**This branch.** `use-build` retries `gh api .../artifacts` until the body is valid JSON (12 tries) so Lighthouse no longer dies on `unexpected end of JSON input`. Helper `scripts/lib/valid-json.mjs`. Merge when green.
+
+**Still open.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `new-branch-and-pr`, `make-pr-easy-to-review`.
+
+## Earlier — 2026-10-14 (Claude, CMA multi-unit guard + greeting names the person at the address)
+
+Surface: Claude Code cloud. Branch `claude/lucid-galileo-rcafq4` landed on main via #561 at `9f788f38` (squash by the auto-merge workflow). Nothing sent. No rebuild. Prod Supabase read-only this session.
+
+**What landed.** The 429 Irving letter priced a duplex on single-family sales and opened with the co-owner's first name instead of the recipient's. `lib/cma/subject-units.ts` reads every MLS row at the subject's address (PropertyType C, duplex and multi-family sub types, `NumberOfUnitsTotal` 2 to 4 on a house or income record, duplex remarks, an earlier record of the same structure) and `resolveCmaSubject` returns a refusal that stops the CMA build, the BPO build, the fleet dry run, the `/sell` answer and the place comps count; the queue files it as "Multi-unit home" (CMA SKILL rule 23 extended). `lib/crm/household-names.ts` parses the county owner string into its people and matches the email's local part: the lookup files the lead under the person the email belongs to and writes `Owner of record:` into the notes; compose time (`cmaFirstContactFactsForSend`, the Review preview, every send) runs the same rule against the address the send goes to; a multi-party record whose email names nobody greets "Hi there," (CMA SKILL rule 34). Carried in while driving the PR green: the #553 Tetherow page-payload baseline, and `scripts/check-route-smoke.mjs` gives a listing probe that answers 503 with `x-listing-lookup: unavailable` the one serial retry a timed-out page already gets.
+
+**Open for Matt.** Whether a house with an ADU and no multi-unit record prices only from ADU sales (today it stays a detached home, rule 23 as ruled 2026-10-08). The CRM person and the `cmas` row for 429 Irving still carry the co-owner's first name. The owner's reply left a phone number and is a warm lead; nothing drafted or sent.
+
+Skills read: `marketing_brain_skills/producers/cma/SKILL.md`, built-in `code-review`.
+
+## Earlier — 2026-10-14 (Claude, CMA multi-unit guard + greeting names the person at the address)
+
+Surface: Claude Code cloud. Branch `claude/lucid-galileo-rcafq4` landed on main via #561 at `9f788f38` (squash by the auto-merge workflow). Nothing sent. No rebuild. Prod Supabase read-only this session.
+
+**What landed.** The 429 Irving letter priced a duplex on single-family sales and opened with the co-owner's first name instead of the recipient's. `lib/cma/subject-units.ts` reads every MLS row at the subject's address (PropertyType C, duplex and multi-family sub types, `NumberOfUnitsTotal` 2 to 4 on a house or income record, duplex remarks, an earlier record of the same structure) and `resolveCmaSubject` returns a refusal that stops the CMA build, the BPO build, the fleet dry run, the `/sell` answer and the place comps count; the queue files it as "Multi-unit home" (CMA SKILL rule 23 extended). `lib/crm/household-names.ts` parses the county owner string into its people and matches the email's local part: the lookup files the lead under the person the email belongs to and writes `Owner of record:` into the notes; compose time (`cmaFirstContactFactsForSend`, the Review preview, every send) runs the same rule against the address the send goes to; a multi-party record whose email names nobody greets "Hi there," (CMA SKILL rule 34). Carried in while driving the PR green: the #553 Tetherow page-payload baseline, and `scripts/check-route-smoke.mjs` gives a listing probe that answers 503 with `x-listing-lookup: unavailable` the one serial retry a timed-out page already gets.
+
+**Open for Matt.** Whether a house with an ADU and no multi-unit record prices only from ADU sales (today it stays a detached home, rule 23 as ruled 2026-10-08). The CRM person and the `cmas` row for 429 Irving still carry the co-owner's first name. The owner's reply left a phone number and is a warm lead; nothing drafted or sent.
+
+Skills read: `marketing_brain_skills/producers/cma/SKILL.md`, built-in `code-review`.
+
+## Earlier — 2026-10-14 (Cursor, revert #469 hold-for-matt)
+
+Surface: Cursor cloud. Branch `cursor/revert-pr-469-6f1e` from origin/main `ef24a6b5f`. Reverts #469. Nobody pushes main. Nothing sent.
+
+**What this branch does.** #469 was labeled `hold-for-matt` and titled do-not-merge-without-Matt. A session token ran `gh pr merge --auto --squash` while Allow auto-merge is off, which immediately squash-merged a MERGEABLE PR (`ef24a6b5f`). This revert restores main. #567 still open: wait for required checks before squash.
+
+**Admin 403.** GitHub App token (`ghs_`, account `cursor`) still 403s Administration: PATCH `allow_auto_merge` / `delete_branch_on_merge`, POST ruleset, PUT/GET branch protection, `workflow_dispatch` Stale PRs. GET rulesets returns `[]`. Did not push an empty commit to main.
+
+**Also held.** Do not merge #545, #473, or #479.
+
+**Held.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+
+## Earlier — 2026-10-14 (Cursor, PR hygiene + Zillow FSBO mapped parse)
+
+Surface: Cursor cloud. Branch `cursor/fsbo-zillow-mapped-output-66eb` from origin/main `482727cb7` (merged, not rebased). PR #556. Nobody pushes main. Nothing sent. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true. Approved CMA and email wording unchanged.
+
+**This session.** Closed #404 (market-report subscriptions): 625 commits behind main, 11 content conflicts in send/email/middleware/suppressions. Branch `claude/market-report-subscription` kept. Zillow FSBO `parseZillowItem` accepts the 2026-09-01 Apify mapped fields; Craigslist owner lookup left out. #475 closed as the docs-only WIP. Closed-PR branches #509 #510 #522 #523 #530 #534 #535 #540 deleted (content already on main or superseded Current snapshots). September `wt/*` `mini/*` `eval/*` tips whose added files already exist on main were deleted; branches with unique files were kept.
+
+**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. Do not delete `fix/reader-5-engine-full`, `fix/cma-recency-market-20261004`, `claude/cma-send-floor`, `claude/mls-relist-sync`, `tip/cma-agent-rules`.
+
+**Held.** #471 stays open: merge conflicts with later main and would drop `loadCmaMapTile` / `CMA_MAP_MS`.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+
+## Earlier — 2026-10-14 (Cursor, persist GA client id on lead forms)
+
+Surface: Cursor cloud. Branch `cursor/persist-ga-client-id-3b48` landed via #560 at `482727cb7`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, G46 commit-compiles process tree)
+
+Surface: Cursor cloud. Branch `cursor/commit-compiles-heavy-timeout-84fb` landed on main via #541 at `63f24f16a`. G46 tsc spawn is process-tree killed. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, buyer-answers batch 2)
+
+Surface: Cursor cloud. Branch `cursor/buyer-answers-batch-2-41c4` landed on main via #557 at `63d924ee5`. Living+cost buyer-answer pages, luxury/acreage/under-500k presets. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, lead page v3)
+
+Surface: Cursor cloud. Branch `cursor/lead-page-v3-d7f6` landed on main via #506 at `a00d7c3ca`. Admin person page v3 behind `lead-page-v3`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, analytics SoT)
+
+Surface: Cursor cloud. Branch `cursor/analytics-sot-readme-5e14` landed on main via #558 at `ee189e044`. `docs/analytics/README.md` is the analytics source of truth. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, STOP cell intake)
+
+Surface: Cursor cloud. PR #546 landed. Skip a STOP'd cell on the mobile-only intake path. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, reader-5 leftover reads)
+
+Surface: Cursor cloud. PR #559 landed. Thin-window own-listing-unsold and own-ground sold count. Closed stale #552. Nothing sent.
+
+## Earlier — 2026-10-14 (Claude, buyer landing pages)
+
+Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b` landed on main via #548 at `befee8c88`. `/buy/concessions` and `/buy/alerts` now open with a `V3Stage` photograph. Nothing sent. Nobody pushes main.
+
+## Earlier — 2026-10-14 (Cursor, relist blip)
+
+Surface: Cursor cloud. Branch `fix/relist-blip` landed on main via #452 at `608fd879b`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, offline GA4 conversions live)
+
+Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-41c4` landed on main via #543. Offline conversions cron reads `ga_client_id` and posts GA4 Measurement Protocol hits. Live audit: 0 of 23,909 contacts had a usable client_id — that is why the persist pass exists. Production SHA `e532597d8`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
+
+Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
+
+Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
+
+**What landed.** #485 refuses an expired/FSBO CMA build when the home is on the market or has no sendable email. #488 ranks closer lots and matching views ahead of a mismatched sale. #489 seats a same-generation half-mile sale ahead of a stale neighbor.
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 

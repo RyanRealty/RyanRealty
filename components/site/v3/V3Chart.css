@@ -688,6 +688,20 @@
   white-space: nowrap;
 }
 
+/* On a phone the plot runs to the viewport edge, so a centred last label
+   ("Sep 2026") hung 13px past it and the whole page scrolled sideways
+   (/buy/concessions, separate evaluator 2026-10-14). The end labels sit
+   inside their point instead; the bar form (x--all) keeps its own transform. */
+@media (max-width: 40rem) {
+  .v3 .v3-chart__x--ticks:not(.v3-chart__x--all) .v3-chart__xtick:last-child {
+    transform: translateX(-100%);
+  }
+
+  .v3 .v3-chart__x--ticks:not(.v3-chart__x--all) .v3-chart__xtick:first-child {
+    transform: translateX(0);
+  }
+}
+
 /* Every tick is centred on the thing it names. The ends used to be shoved
    fully inside the plot, which put the first and last year 18px — a third of
    the bar pitch at 375 — off the bars they label (evaluator round five,

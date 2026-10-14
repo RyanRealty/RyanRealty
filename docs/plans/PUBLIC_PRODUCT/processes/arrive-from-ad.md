@@ -59,11 +59,14 @@ The nine `/lp/*` routes split three ways (the registry's "8-route hint" was wron
   `/lp/central-oregon-golf` (`app/sitemap.ts:140`) are indexable SEO content pages whose
   job is a place/lifestyle answer; they ENTER this process via the CTAs above.
 
-On arrival, `LandingPageTracker` fires `view_landing_page` with UTM context, persists it
-to sessionStorage for the form, and wires 25/50/75/100% scroll-depth events — present on
-all nine LP pages (`components/LandingPageTracker.tsx:34-93`; e.g.
-`app/lp/seller-home-value/page.tsx:188`, `app/lp/buyer-listing-alerts/page.tsx:168`,
-`app/lp/tetherow/heath/page.tsx:378`).
+On arrival, `components/tracking/LandingPageViewTracker.tsx` (mounted once in
+`components/layout/PublicClientLayer.tsx`) fires `view_landing_page` with the page's
+`lp_variant` and its own `utm_*`, once per view of a page `lpVariantFromPath` names: /sell,
+/sell/valuation, /sell/expired-listings, /sell/for-sale-by-owner and /buy/<intent> (the
+/lp pages 308 there since 2026-09-06). Scroll depth is `V3SectionTracker`'s
+25/50/75/100 `scroll_depth` (GA4 parameter `depth`). Nothing is persisted in the browser
+since 2026-10-14: a form on a page with no `utm_*` is credited, on the server, to the
+landing link of the visit it is submitted in (`lib/crm/visit-attribution.ts`).
 
 Preconditions: JavaScript (client forms + tracker); no auth. Paid entries usually carry
 `utm_*` + `fbclid`; both are optional — a bare direct hit still captures.
@@ -105,13 +108,14 @@ Preconditions: JavaScript (client forms + tracker); no auth. Paid entries usuall
 | Buyer deliverable | `public.listing_alerts` (deduped by email+filters_hash), consumed by the hourly alert cron | buyer `actions.ts:352-366`; `app/api/cron/saved-search-alerts/route.ts:7` |
 | Hot-lead follow-up | `crm_tasks` (5-min call task) | seller `actions.ts:580-589`; fsbo `actions.ts:309-318`; expired `actions.ts:300-308`; buyer `actions.ts:375-383`; heath `actions.ts:153` |
 | Pre-contact partials | `visitor_events` (anonymous, session-keyed) | seller `actions.ts:115-122` |
-| Arrival/engagement telemetry | GA4 (`view_landing_page`, `scroll_depth`) + first-party visitor store dual-write | `components/LandingPageTracker.tsx:53,76-88` |
+| Arrival/engagement telemetry | GA4 (`view_landing_page`, `scroll_depth`) + first-party visitor store dual-write | `components/tracking/LandingPageViewTracker.tsx`; `components/site/v3/V3SectionTracker.client.tsx` |
 
 Explicitly NOT a SoR: `valuation_requests` (best-effort analytics mirror, warn-only —
 seller `actions.ts:341-361`); GA4 and Meta CAPI (attribution mirrors); the in-house CRM
 (decommissioned — `fubPersonId` variables carry native `crm_people.id`,
-`lib/crm/enroll.ts:274-287`); sessionStorage LP context (client-side convenience only,
-`lib/tracking.ts:204-221`).
+`lib/crm/enroll.ts:274-287`). The visit's landing link is read from
+`visitor_sessions.landing_page` (`lib/data/identity/visitCampaign.ts`); the browser keeps
+no LP context since 2026-10-14.
 
 ## 5. End-to-end path (inception → completion)
 
@@ -128,11 +132,11 @@ seller `actions.ts:341-361`); GA4 and Meta CAPI (attribution mirrors); the in-ho
    known-visitor detection via the identity cookie (`page.tsx:99-100`), live §0-clean
    stats or em-dash placeholders (`page.tsx:102-110`) · failure: slow hero pushes the
    ask below the fold.
-4. **Arrival telemetry** — machine · `LandingPageTracker` fires `view_landing_page`
-   (consent-gated, retry-on-consent, sessionStorage single-fire guard) and persists UTM
-   context for the form; scroll-depth listeners armed
-   (`components/LandingPageTracker.tsx:40-99`) · failure: gtag blocked → GA4 blind, but
-   capture is unaffected (server mirrors exist).
+4. **Arrival telemetry** — machine · `LandingPageViewTracker` pushes `view_landing_page`
+   once per landing-page view; GTM sends it under Consent Mode v2, so no consent re-fire
+   (one would double count); `V3SectionTracker` arms the scroll-depth milestones
+   (`components/tracking/LandingPageViewTracker.tsx`) · failure: gtag blocked → GA4 blind,
+   but capture is unaffected (server mirrors exist).
 5. **Broker attribution cookie** — machine · site-wide bridge writes
    `rr_agent_attribution` when `?agent=` present (`components/AgentAttributionBridge.tsx:12-17`).
 6. **Form engagement** — visitor · fills the LP's form. Seller family: 2-step

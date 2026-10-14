@@ -177,14 +177,67 @@ describe('sendGovernedSms — guard order', () => {
     expect(h.inserts.filter((i) => i.table !== 'admin_actions')).toHaveLength(0)
   })
 
-  it('broker manual compose skipSuppression sends despite STOP/consent suppression (bulk-only gate)', async () => {
+  it('broker 1:1 skipSuppression may skip a missing-consent row, not STOP', async () => {
     h.isSuppressed.mockResolvedValue({ suppressed: true, reasons: ['sms:no-sms-consent'] })
     h.inSmsQuietHours.mockReturnValue(false)
     wireHappySmsPath()
     const res = await sendGovernedSms({ ...baseReq, skipSuppression: true })
     expect(res).toEqual({ ok: true, sid: 'SM123', to: '+15415551234' })
-    expect(h.isSuppressed).not.toHaveBeenCalled()
+    expect(h.isSuppressed).toHaveBeenCalled()
     expect(h.sendSms).toHaveBeenCalledTimes(1)
+  })
+
+  it('broker 1:1 skipSuppression still holds STOP, bounce, complaint, unsubscribe, and GPC', async () => {
+    h.inSmsQuietHours.mockReturnValue(false)
+    wireHappySmsPath()
+    for (const reason of [
+      'sms:stop-keyword',
+      'email:bounce',
+      'email:complaint',
+      'email:unsubscribe',
+      'all:gpc-opt-out',
+    ]) {
+      h.isSuppressed.mockResolvedValue({ suppressed: true, reasons: [reason] })
+      const res = await sendGovernedSms({ ...baseReq, skipSuppression: true })
+      expect(res).toEqual({
+        ok: false,
+        stage: 'suppression',
+        error: `Blocked by suppression (${reason})`,
+      })
+      expect(h.sendSms).not.toHaveBeenCalled()
+    }
+  })
+
+  it('broker 1:1 skipSuppression still holds a hard-stop and a failed read', async () => {
+    h.isSuppressed.mockResolvedValue({ suppressed: true, reasons: ['tag:compliance:hard-stop'] })
+    const hard = await sendGovernedSms({ ...baseReq, skipSuppression: true })
+    expect(hard).toEqual({
+      ok: false,
+      stage: 'hard-stop',
+      error: 'Blocked by suppression (tag:compliance:hard-stop)',
+    })
+
+    h.isSuppressed.mockResolvedValue({ suppressed: true, reasons: ['suppression-check-failed: boom'] })
+    const failed = await sendGovernedSms({ ...baseReq, skipSuppression: true })
+    expect(failed.ok).toBe(false)
+    if (!failed.ok) expect(failed.stage).toBe('suppression')
+    expect(h.sendSms).not.toHaveBeenCalled()
+  })
+
+  it('a drip or system send cannot skip suppressions even when the flag is set', async () => {
+    h.isSuppressed.mockResolvedValue({ suppressed: true, reasons: ['sms:no-sms-consent'] })
+    const drip = await sendGovernedSms({
+      ...baseReq,
+      skipSuppression: true,
+      purpose: 'prospecting:drip',
+      initiator: { kind: 'system', source: 'prospecting-drip' },
+    })
+    expect(drip).toEqual({
+      ok: false,
+      stage: 'suppression',
+      error: 'Blocked by suppression (sms:no-sms-consent)',
+    })
+    expect(h.sendSms).not.toHaveBeenCalled()
   })
 
   it('fails CLOSED when the suppression read errors (reason string propagated)', async () => {
@@ -492,6 +545,19 @@ describe('sendGovernedGroupMms — one thread, same guards', () => {
     purpose: 'crm:manual-group-sms',
     initiator: { kind: 'broker' as const, broker: 'matt' },
   }
+
+  it('a STOP on any member holds the group even when skipSuppression is set', async () => {
+    passAllGuards()
+    h.isSuppressed.mockImplementation(async (personId: number) =>
+      personId === 43
+        ? { suppressed: true, reasons: ['sms:stop-keyword'] }
+        : { suppressed: false, reasons: [] },
+    )
+    const res = await sendGovernedGroupMms({ ...groupReq, skipSuppression: true })
+    expect(res.ok).toBe(false)
+    if (res.ok === false) expect(res.stage).toBe('suppression')
+    expect(h.sendGroupMms).not.toHaveBeenCalled()
+  })
 
   it('a suppressed member blocks the whole group and never calls Twilio', async () => {
     passAllGuards()

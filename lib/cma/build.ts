@@ -23,6 +23,7 @@ import {
 } from '@/lib/data'
 import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
 import { applySubjectFactOverrides, resolveCmaSubject } from '@/lib/cma/subject'
+import { multiUnitSubjectRefusal } from '@/lib/cma/subject-units'
 import { applyReconciledRoomCounts, reconcileSubjectRoomCounts } from '@/lib/cma/subject-room-conflict'
 import { pickCoverPhoto } from '@/lib/cma/cover-photo'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
@@ -316,6 +317,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       },
       input.subjectFacts,
     )
+    // A duplex or other multi-unit home is refused before a single comp is
+    // read (Matt 2026-10-14, 429 Irving: a duplex by its own listing history,
+    // priced on five single-family sales). Rule 23 prices like from like, and
+    // the pool holds no multi-unit sales, so the queue files it for Matt. The
+    // resolver decides (every pricing build reads the same field); the
+    // overrides above never change a unit count.
+    const unitRefusal = resolved.refusal ?? multiUnitSubjectRefusal(subject)
+    if (unitRefusal) {
+      await recordBuildFailure(slug, unitRefusal, { stage: 'subject', docType, trace: [resolved.trace] })
+      return { ok: false, error: unitRefusal, slug }
+    }
     // The cover (Matt 2026-09-09): the best exterior among the listing's own
     // photos, graded once each, the MLS hero kept when it already is one.
     const coverPhoto = await pickCoverPhoto({ listingKey: subject.listingKey, heroUrl: subject.photoUrl })
@@ -438,6 +450,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             subjectIrrigation,
             subjectZoning: site.zone,
             asOf: generatedAtIso.slice(0, 10),
+            // The re-entry after a review drop (CmaBuildInput.aduFallback).
+            aduPass: input.aduFallback ? 'ordinary' : 'first',
+            aduSalesHeld: input.aduFallback?.heldAfterReview,
           }),
       marketPromise,
     ])
@@ -642,6 +657,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       judgment = review.judgment
       const gated = review.gated
       if (gated.shortage) {
+        // AN ADU HOME FALLS BACK AFTER THE REVIEW TOO (Matt 2026-10-14,
+        // lib/pricing/adu-preference.ts). The ADU-first set is decided on the
+        // picker's count; a review drop with no ADU bench leaves it short, and
+        // the rule says the ordinary set then prices the home. Re-enter once
+        // on the ordinary pass. Nothing has been recorded for this attempt.
+        if (!input.aduFallback && selection.diagnostics.adu_preference?.outcome === 'adu-sales') {
+          console.log(
+            `[cma/build] ${slug}: the ADU-first set held ${gated.comps.length} of ${MIN_COMPS} after the review; rebuilding on the ordinary set`,
+          )
+          return buildCma({ ...input, aduFallback: { heldAfterReview: gated.comps.length } })
+        }
         const err =
           gated.droppedProduct > 0
             ? `Not enough sales of the same product type to price this home. ${gated.comps.length} of ${selection.comps.length} candidates matched, and this home needs ${MIN_COMPS}.`

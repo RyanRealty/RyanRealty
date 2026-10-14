@@ -35,6 +35,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { videoFreezeRefusal } from '../lib/content/video-freeze.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..')
@@ -88,6 +89,17 @@ if (!slug || !period) {
 
 const isPublish = !!args.publish
 const isDryRun  = !!args['dry-run']
+
+// Video freeze (Matt 2026-10-14, lib/content/video-freeze.ts): this script
+// uploads an MP4 to the YouTube channel. A private upload is still a channel
+// door, so every upload is refused until the server-signed certificate check
+// replaces the freeze. --dry-run uploads nothing and still runs.
+const frozen = isDryRun ? null : videoFreezeRefusal({ kind: 'video', mimeType: 'video/mp4' })
+if (frozen) {
+  console.error(`\n${frozen}`)
+  console.error('Nothing was uploaded, private or public.')
+  process.exit(1)
+}
 
 // ─── File paths ────────────────────────────────────────────────────────────────
 

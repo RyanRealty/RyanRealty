@@ -16,9 +16,16 @@ import { reviewWeightFactor } from '@/lib/cma/review-weight'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
 
-export async function loadBpoEngineInputs(subject: CmaSubject) {
+export async function loadBpoEngineInputs(
+  subject: CmaSubject,
+  opts: { aduFallback?: { heldAfterReview: number } | null } = {},
+) {
   const [selection, market, site, marketIndex] = await Promise.all([
-    selectCompsPreferringFacts(subject),
+    selectCompsPreferringFacts(subject, {
+      // The re-entry after a review drop on an ADU-first set (BpoBuildInput.aduFallback).
+      aduPass: opts.aduFallback ? 'ordinary' : 'first',
+      aduSalesHeld: opts.aduFallback?.heldAfterReview,
+    }),
     getCmaMarketContext(subject),
     resolveCmaSiteData(subject),
     getPricingMarketIndex(citySlug(subject.city)),

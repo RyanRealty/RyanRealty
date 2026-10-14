@@ -27,6 +27,7 @@ export type CaptureDoorId =
   | 'listing-alert'
   | 'open-house'
   | 'cma-download'
+  | 'listing-ask'
   | 'meta-lead'
   | 'inbound-call'
   | 'inbound-sms'
@@ -61,6 +62,7 @@ const DOORS: Record<CaptureDoorId, CaptureDoor> = {
   'listing-alert': { id: 'listing-alert', label: 'Listing alert / saved search', audience: 'buyer' },
   'open-house': { id: 'open-house', label: 'Open house RSVP', audience: 'buyer' },
   'cma-download': { id: 'cma-download', label: 'CMA download', audience: 'seller' },
+  'listing-ask': { id: 'listing-ask', label: 'Listing page ask (analysis, pricing read, payment)', audience: 'buyer' },
   'meta-lead': { id: 'meta-lead', label: 'Meta / social', audience: 'either' },
   'inbound-call': { id: 'inbound-call', label: 'Inbound call', audience: 'either' },
   'inbound-sms': { id: 'inbound-sms', label: 'Inbound text', audience: 'either' },
@@ -92,9 +94,14 @@ const RULES: Array<{ test: (s: string) => boolean; id: CaptureDoorId }> = [
   // stops classifying those historical leads.
   { id: 'outreach', test: (s) => /\bimport\b|migration|follow up boss|followupboss|\bfub\b|\bsphere\b/.test(s) }, // canon-allow: vendor-literal legacy lead_source values
   { id: 'join-team', test: (s) => /\bjoin\b|\brecruit\b|\bcareer\b|\bagent application\b/.test(s) },
+  // A buyer's ask on a listing page: the published market analysis, a pricing
+  // read, the payment estimate (sources 'published-cma', 'listing-pricing-read',
+  // 'listing-payment-email' since 2026-10-14; the site host before).
+  { id: 'listing-ask', test: (s) => /published cma|pricing read|payment email/.test(s) },
   { id: 'home-valuation', test: (s) => /home valuation|cma request|cma-request|valuation/.test(s) },
   { id: 'cma-download', test: (s) => /\bcma download\b|\bcma-download\b/.test(s) },
-  { id: 'seller-lp', test: (s) => /seller lp|seller-lp|fb ads seller|tetherow/.test(s) },
+  // tetherow-seller-lp / tetherow-buyer-lp since 2026-10-14; a bare tetherow is the old seller CMA campaign.
+  { id: 'seller-lp', test: (s) => /seller lp|seller-lp|fb ads seller|tetherow(?! buyer)/.test(s) },
   { id: 'buyer-lp', test: (s) => /buyer lp|buyer-lp|fb ads buyer/.test(s) },
   { id: 'listing-alert', test: (s) => /listing alert|saved search|idx registration|idx-registration|buyer listing/.test(s) },
   { id: 'contact-form', test: (s) => /contact form|contact-form/.test(s) },

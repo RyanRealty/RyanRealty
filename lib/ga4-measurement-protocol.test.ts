@@ -1,6 +1,27 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fireGa4Event, isNonProductionPageLocation } from './ga4-measurement-protocol'
+import { clientIdFromGaCookie, fireGa4Event, isNonProductionPageLocation } from './ga4-measurement-protocol'
 import { isNonProductionRequestHost } from './analytics/non-production-host'
+
+describe('clientIdFromGaCookie — last two numeric dot parts', () => {
+  it('reads the standard GA1.x.random.timestamp cookie', () => {
+    expect(clientIdFromGaCookie('GA1.1.1234567890.1700000000')).toBe('1234567890.1700000000')
+    expect(clientIdFromGaCookie('GA1.2.123.456')).toBe('123.456')
+  })
+
+  it('accepts a bare digits.digits value and extra prefixes', () => {
+    expect(clientIdFromGaCookie('123.456')).toBe('123.456')
+    expect(clientIdFromGaCookie('  GS1.1.99.88  ')).toBe('99.88')
+    expect(clientIdFromGaCookie('foo.bar.111.222')).toBe('111.222')
+  })
+
+  it('rejects missing, minted-uuid, and non-numeric tails', () => {
+    expect(clientIdFromGaCookie(null)).toBeNull()
+    expect(clientIdFromGaCookie('')).toBeNull()
+    expect(clientIdFromGaCookie('GA1.1')).toBeNull()
+    expect(clientIdFromGaCookie('6b1c2d4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f')).toBeNull()
+    expect(clientIdFromGaCookie('GA1.1.abc.def')).toBeNull()
+  })
+})
 
 describe('isNonProductionPageLocation — our own browsing is not analytics', () => {
   // Measured 2026-08-26: 43 sessions reached the production GA4 property as a
@@ -112,5 +133,27 @@ describe('fireGa4Event — per-visit session + campaign_details (TRACK-1, P7)', 
     await fireGa4Event({ eventName: 'page_view', clientId: '1.2', eventParams: { page_location: 'https://ryan-realty.com/' } })
     const body = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body))
     expect(body.events).toHaveLength(1)
+  })
+})
+
+describe('sessionFromGaStreamCookie (the _ga_<stream> cookie)', () => {
+  it('reads the GS1 format', async () => {
+    const { sessionFromGaStreamCookie } = await import('./ga4-measurement-protocol')
+    expect(sessionFromGaStreamCookie('GS1.1.1760400000.4.1.1760400123.0.0.0')).toEqual({ sessionId: '1760400000', sessionNumber: 4 })
+  })
+  it('reads the GS2 format', async () => {
+    const { sessionFromGaStreamCookie } = await import('./ga4-measurement-protocol')
+    expect(sessionFromGaStreamCookie('GS2.1.s1760400000$o12$g1$t1760400123$j60$l0$h0')).toEqual({ sessionId: '1760400000', sessionNumber: 12 })
+  })
+  it('returns null for a missing or malformed cookie', async () => {
+    const { sessionFromGaStreamCookie } = await import('./ga4-measurement-protocol')
+    expect(sessionFromGaStreamCookie(undefined)).toBeNull()
+    expect(sessionFromGaStreamCookie('')).toBeNull()
+    expect(sessionFromGaStreamCookie('GA1.1.123.456')).toBeNull()
+    expect(sessionFromGaStreamCookie('GS2.1.o3$g1')).toBeNull()
+  })
+  it('names the stream cookie from the measurement id', async () => {
+    const { gaStreamCookieName } = await import('./ga4-measurement-protocol')
+    expect(gaStreamCookieName('G-ST40W4WM6T')).toBe('_ga_ST40W4WM6T')
   })
 })

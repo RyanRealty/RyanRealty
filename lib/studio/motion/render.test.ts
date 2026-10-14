@@ -1,5 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { MOTION_ENCODE_ARGS, SCORE_ENCODE_ARGS, paperGraph, overlayGraph, parseProbe } from './render'
+import { MOTION_ENCODE_ARGS, SCORE_ENCODE_ARGS, paperGraph, overlayGraph, parseProbe, pngColourType } from './render'
+
+describe('pngColourType', () => {
+  const ihdr = (type: number) => {
+    const b = Buffer.alloc(33)
+    b.writeUInt32BE(0x89504e47, 0)
+    b.write('IHDR', 12, 'ascii')
+    b[25] = type
+    return b
+  }
+  it('reads RGB (2) and RGBA (6) from the IHDR, and refuses what is not a PNG', () => {
+    expect(pngColourType(ihdr(2))).toBe(2)
+    expect(pngColourType(ihdr(6))).toBe(6)
+    expect(pngColourType(Buffer.from('not a png at all, not even close'))).toBe(-1)
+  })
+})
 
 describe('parseProbe', () => {
   it("reads duration and frame size from ffmpeg's banner", () => {
@@ -29,6 +44,14 @@ describe('overlayGraph', () => {
   it('fills the frame from the footage at the film rate', () => {
     expect(graph).toContain('[1:v]fps=30,scale=1080:1920:force_original_aspect_ratio=increase')
     expect(graph).toContain('crop=1080:1920')
+  })
+
+  it('holds the clip on its last frame under an appended end card, without tpad (absent from ffmpeg 4.1)', () => {
+    const held = overlayGraph(1080, 1920, 30, 10.07)
+    expect(held).toContain('color=c=black:s=1080x1920:r=30:d=10.070')
+    expect(held).toContain('[base][clip]overlay=0:0:format=auto:eof_action=repeat[bg]')
+    expect(held).not.toContain('tpad')
+    expect(graph).not.toContain('[base]')
   })
 })
 

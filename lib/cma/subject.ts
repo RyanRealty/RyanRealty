@@ -21,6 +21,7 @@ import { statusIsOnMarket } from '@/lib/cma/subject-on-market'
 import { STREET_DIRECTIONALS as DIRECTIONALS, STREET_SUFFIXES } from '@/lib/cma/street-words'
 
 import { assessorTrace, propertySubTypeFromStatClass, resolveAssessorFacts, type AssessorFacts } from '@/lib/cma/assessor'
+import { multiUnitSubjectRefusal, subjectUnitFacts, subjectUnitsTrace } from '@/lib/cma/subject-units'
 
 export interface ParsedAddress {
   streetNumber: string
@@ -220,6 +221,7 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     sqft: num(row['TotalLivingAreaSqFt']),
     lotAcres: num(row['lot_size_acres']),
     propertySubType: str(row['property_sub_type']),
+    propertyType: str(row['PropertyType']),
     yearBuilt: saneYearBuilt(num(row['year_built'])),
     garageSpaces: num(row['garage_spaces']),
     photoUrl: str(row['PhotoURL']),
@@ -325,6 +327,14 @@ export interface ResolveSubjectResult {
   subject: CmaSubject | null
   /** Human-readable trace of how the subject was resolved (citations). */
   trace: string
+  /**
+   * Set when the subject resolved but must not be priced from the single-family
+   * pool: a duplex or other multi-unit home (lib/cma/subject-units.ts, Matt
+   * 2026-10-14). The subject is still returned for reads that do not price
+   * (coordinates, the place a /sell answer names). Every build that prices
+   * stops on it.
+   */
+  refusal?: string | null
 }
 
 /**
@@ -428,7 +438,15 @@ export async function resolveCmaSubject(opts: {
         const parsed = parseCmaAddress(opts.rawAddress, opts.city, opts.postalCode)
         if (parsed) subject.streetAddress = applyEnteredStreetDirectional(subject.streetAddress, parsed)
       }
-      return { subject, trace: subjectTrace(`Entered by MLS ${opts.mlsNumber.trim()}.`, best, pool.length) }
+      // Every row at the address is read for units before the pool is dropped
+      // (Matt 2026-10-14, 429 Irving: the duplex record was the one not chosen).
+      subject.units = subjectUnitFacts(best, pool)
+      const unitsLine = subjectUnitsTrace(subject.units, subject)
+      return {
+        subject,
+        trace: `${subjectTrace(`Entered by MLS ${opts.mlsNumber.trim()}.`, best, pool.length)}${unitsLine ? ` ${unitsLine}` : ''}`,
+        refusal: multiUnitSubjectRefusal(subject),
+      }
     }
   }
   const raw = opts.rawAddress?.trim()
@@ -473,6 +491,12 @@ export async function resolveCmaSubject(opts: {
         best,
         rows.length,
       )
+      // Every row at the address is read for units before the pool is dropped
+      // (Matt 2026-10-14, 429 Irving: the duplex record was the one not chosen).
+      subject.units = subjectUnitFacts(best, rows)
+      const unitsLine = subjectUnitsTrace(subject.units, subject)
+      if (unitsLine) trace += ` ${unitsLine}`
+      const refusal = multiUnitSubjectRefusal(subject)
       // An MLS row with no living area cannot form a price-per-sqft comp set,
       // so the build dies at zero comps with a row in hand. Backfill the ONE
       // missing measurement from the assessor and say where it came from.
@@ -487,7 +511,7 @@ export async function resolveCmaSubject(opts: {
           trace += ` MLS row carried no living area; ${assessor.sqft} sqft taken from the Deschutes County assessor (taxlot ${assessor.taxlot}).`
         }
       }
-      return { subject, trace }
+      return { subject, trace, refusal }
     }
   }
   // No MLS row. Most people asking what their home is worth have never listed

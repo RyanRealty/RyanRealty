@@ -1,3 +1,4 @@
+import type { SubjectUnitFacts } from '@/lib/cma/subject-units'
 /**
  * Shared types for the deterministic CMA builder (lib/cma/**).
  *
@@ -39,6 +40,13 @@ export interface CmaSubject {
   lotAcres: number | null
   /** MLS property_sub_type — drives product-class comparability. */
   propertySubType: string | null
+  /** MLS PropertyType: A residential, C residential income, D land. Absent on rows built before. */
+  propertyType?: string | null
+  /**
+   * The home's unit and ADU reading off its own MLS records (lib/cma/subject-units.ts,
+   * Matt 2026-10-14). A multi-unit reading refuses the build before comps.
+   */
+  units?: SubjectUnitFacts | null
   yearBuilt: number | null
   garageSpaces: number | null
   photoUrl: string | null
@@ -815,6 +823,14 @@ export interface CmaBuildInput {
    * pipeline (judge, adjustments, audit, contract, render) is unchanged.
    */
   compKeys?: string[] | null
+  /**
+   * AN ADU HOME FALLS BACK AFTER THE REVIEW TOO (Matt 2026-10-14,
+   * lib/pricing/adu-preference.ts). buildCma sets this on itself when the
+   * ADU-first set lost a sale in the comparability review and fell under
+   * five: the re-entered build selects on the ordinary pass (sales with or
+   * without an ADU) and the letter says so. Never set by a caller.
+   */
+  aduFallback?: { heldAfterReview: number } | null
   /**
    * Broker-confirmed site facts that override the GIS-resolved values. §0 allows
    * a seller/broker-confirmed water source (e.g. a parcel converted off a private

@@ -19,10 +19,10 @@ import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { upsertListingAlert } from '@/lib/data/leads/listingAlerts'
 import { nativeCrmPersonId } from '@/lib/alerts/enroll-identity'
-import { attributionParamsFromSearch, fireLeadGenerated } from '@/lib/lead-tracking'
+import { attributionParamsFromSearch, fireLeadGenerated, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { isLeadFormId, type LeadFormId } from '@/lib/analytics/lead-event'
-import { resolvePaidAttributionTags } from '@/lib/crm/lead-source'
+import { pageLinkFromReferer, signupAttribution } from '@/lib/crm/visit-attribution'
 import {
   appendListingAlertAttribution,
   listingAlertAttributionFromContext,
@@ -185,12 +185,6 @@ export async function submitSearchAlertSignup(input: {
     listingAlertAttributionFromContext(input.lpContext),
     mergeLeadAttribution(attributionParamsFromSearch(input.landingSearch ?? ''), fromReferer),
   )
-  const paidTags = resolvePaidAttributionTags({
-    utmSource: attr.lp_source,
-    utmMedium: attr.lp_medium,
-    utmCampaign: attr.lp_campaign,
-    utmContent: attr.lp_content,
-  })
   const attributedUrl = appendListingAlertAttribution(searchUrl, attr)
   const campaign = listingAlertCampaign(attr)
 
@@ -227,12 +221,25 @@ export async function submitSearchAlertSignup(input: {
     suspect = result.ok && result.suspect
     if (nativeId && !suspect) {
       try {
+        // The link that started the visit, else the page's own (Matt
+        // 2026-10-09, "Visit they signed up in"; lib/crm/visit-attribution.ts).
+        // The origin note keeps the page's utm when neither earned credit.
+        const signup = await signupAttribution({
+          page: { source: attr.lp_source, medium: attr.lp_medium, campaign: attr.lp_campaign, content: attr.lp_content },
+          sessionId: input.sessionId,
+        })
+        const noteUtm = signup.utm ?? {
+          source: attr.lp_source,
+          medium: attr.lp_medium,
+          campaign: attr.lp_campaign,
+          content: attr.lp_content,
+        }
         await canonicallyTagLead({
           fubPersonId: nativeId,
           audience: 'buyer',
           source: 'idx-registration',
           tier: 'warm',
-          extraTags: paidTags,
+          extraTags: signup.tags,
           originContext: {
             source: isPriceDropAlert ? 'price-drop-alert' : 'saved-search',
             sourceLabel: isPriceDropAlert ? 'Price-drop alert signup' : 'Listing-alert signup',
@@ -242,10 +249,10 @@ export async function submitSearchAlertSignup(input: {
             want: isPriceDropAlert
               ? `Price-drop alerts for ${name}${summary ? `, ${summary}` : ''}`
               : `Listing alerts for ${name}${summary ? `, ${summary}` : ''}`,
-            utmSource: attr.lp_source,
-            utmMedium: attr.lp_medium,
-            utmCampaign: attr.lp_campaign,
-            utmContent: attr.lp_content,
+            utmSource: noteUtm.source,
+            utmMedium: noteUtm.medium,
+            utmCampaign: noteUtm.campaign,
+            utmContent: noteUtm.content,
           },
         })
         // Notify the assigned broker so a signup is never missed — a native
@@ -341,8 +348,9 @@ export async function submitSearchAlertSignup(input: {
     }
   }
 
-  // 7. GA4 conversion mirror (best-effort, zero value: this is a free capture).
+  // 7. First-touch `_ga` on the contact, then the GA4 conversion mirror.
   // form_id must be a string literal in each call object (lead-event.test.ts).
+  await persistGaClientIdFromCookies(crmPersonId ?? fubPersonId)
   if (!suspect) {
     try {
       if (formId === 'buyer_alerts_lp') {
@@ -350,7 +358,7 @@ export async function submitSearchAlertSignup(input: {
           lp_variant: lpVariant,
           lead_type: 'buyer_alerts',
           form_id: 'buyer_alerts_lp',
-          fub_person_id: fubPersonId ?? undefined,
+          crm_person_id: crmPersonId ?? fubPersonId,
           attribution: attr,
         })
       } else if (formId === 'buyer_leverage_lp') {
@@ -358,7 +366,7 @@ export async function submitSearchAlertSignup(input: {
           lp_variant: lpVariant,
           lead_type: 'buyer_alerts',
           form_id: 'buyer_leverage_lp',
-          fub_person_id: fubPersonId ?? undefined,
+          crm_person_id: crmPersonId ?? fubPersonId,
           attribution: attr,
         })
       } else {
@@ -366,7 +374,7 @@ export async function submitSearchAlertSignup(input: {
           lp_variant: lpVariant,
           lead_type: 'buyer_alerts',
           form_id: 'search_alert',
-          fub_person_id: fubPersonId ?? undefined,
+          crm_person_id: crmPersonId ?? fubPersonId,
           attribution: attr,
         })
       }
@@ -436,6 +444,7 @@ export async function submitListingSaveCapture(input: {
   const listingUrl = `${base}/homes-for-sale/listing/${encodeURIComponent(listingKey)}`
 
   let suspect = false
+  let capturedSavePersonId: number | null = null
   try {
     // Same per-broker attribution rule as the alert signup above.
     const attributed = await readAttributedAgentServer()
@@ -449,14 +458,19 @@ export async function submitListingSaveCapture(input: {
       brokerAttribution: attributed ? { brokerSlug: attributed.broker } : undefined,
     })
     const nativeId = result.ok ? nativeCrmPersonId(result.personId) : null
+    capturedSavePersonId = nativeId
     suspect = result.ok && result.suspect
     if (nativeId && !suspect) {
       try {
+        // The link that started the visit, else the listing page's own (Matt
+        // 2026-10-09, "Visit they signed up in"; lib/crm/visit-attribution.ts).
+        const signup = await signupAttribution({ page: await pageLinkFromReferer(), sessionId: input.sessionId })
         await canonicallyTagLead({
           fubPersonId: nativeId,
           audience: 'buyer',
           source: 'idx-registration',
           tier: 'warm',
+          extraTags: signup.tags,
           originContext: {
             source: 'listing-save',
             sourceLabel: 'Saved a home (guest)',
@@ -464,6 +478,10 @@ export async function submitListingSaveCapture(input: {
             audience: 'buyer',
             tier: 'warm',
             want: `Saved ${homeLabel}`,
+            utmSource: signup.utm?.source,
+            utmMedium: signup.utm?.medium,
+            utmCampaign: signup.utm?.campaign,
+            utmContent: signup.utm?.content,
           },
         })
         await createNativeTask({
@@ -512,12 +530,14 @@ export async function submitListingSaveCapture(input: {
     // Best-effort. Never block the visitor's confirmation on a capture blip.
   }
 
+  await persistGaClientIdFromCookies(capturedSavePersonId)
   if (!suspect) {
     try {
       await fireLeadGenerated({
         lp_variant: 'listing-save',
         lead_type: 'buyer_alerts',
         form_id: 'listing_save',
+        crm_person_id: capturedSavePersonId,
       })
     } catch {
       // best-effort
@@ -631,11 +651,15 @@ export async function submitListingPriceDropWatch(input: {
     suspect = result.ok && result.suspect
     if (crmPersonId && !suspect) {
       try {
+        // The link that started the visit, else the listing page's own (Matt
+        // 2026-10-09, "Visit they signed up in"; lib/crm/visit-attribution.ts).
+        const signup = await signupAttribution({ page: await pageLinkFromReferer(), sessionId: input.sessionId })
         await canonicallyTagLead({
           fubPersonId: crmPersonId,
           audience: 'buyer',
           source: 'idx-registration',
           tier: 'warm',
+          extraTags: signup.tags,
           originContext: {
             source: 'listing-price-watch',
             sourceLabel: 'Price-drop watch (guest)',
@@ -643,6 +667,10 @@ export async function submitListingPriceDropWatch(input: {
             audience: 'buyer',
             tier: 'warm',
             want: `Price changes on ${homeLabel} (listingKey ${listingKey})`,
+            utmSource: signup.utm?.source,
+            utmMedium: signup.utm?.medium,
+            utmCampaign: signup.utm?.campaign,
+            utmContent: signup.utm?.content,
           },
         })
         await createNativeTask({
@@ -715,13 +743,14 @@ export async function submitListingPriceDropWatch(input: {
     }
   }
 
+  await persistGaClientIdFromCookies(crmPersonId)
   if (!suspect) {
     try {
       await fireLeadGenerated({
         lp_variant: 'listing-price-watch',
         lead_type: 'buyer_alerts',
         form_id: 'listing_price_watch',
-        fub_person_id: crmPersonId ?? undefined,
+        crm_person_id: crmPersonId,
       })
     } catch {
       // best-effort

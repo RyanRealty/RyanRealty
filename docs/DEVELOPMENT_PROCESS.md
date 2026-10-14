@@ -80,7 +80,7 @@ never objectives.
 | `loop_work_nodes` (Supabase) | In-flight work: nodes with contracts (objective · output · accept), dependencies, state (`open → in_progress → blocked/done/killed`), evidence. DAL `lib/data/loop/work-graph.ts` | Never |
 | `site_improvement_ledger` | Hypotheses + measured verdicts (the Learn edge) | Never |
 | `VERSION-1.md` + Enterprise Map | The floor, the gap list, the closed universe | Never |
-| `CROSS_AGENT_HANDOFF.md` | Narrative continuity between tools/sessions | Never (Current block replaced, history kept) |
+| `handoffs/` (one note per session) | Narrative continuity between tools/sessions | Never (each session owns its note; `CROSS_AGENT_HANDOFF.md` frozen 2026-10-14) |
 | codebase-memory graph + ADRs | Code structure + standing decisions, queryable | Refreshed via `detect_changes` |
 
 **The boot ritual is a command, not a convention:** `npx tsx scripts/loop-brief.ts`
@@ -175,7 +175,11 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 
 | Doc | Status |
 |---|---|
+| `handoffs/` | **live** — one handoff note per session (Matt 2026-10-14): `<YYYY-MM-DDTHHMMZ>-<branch-slug>.md`, plus `README.md` (format + standing holds). Replaces the shared `# Current` block in `CROSS_AGENT_HANDOFF.md` (frozen). Held by `ci:handoff-current`. Every file within is covered by this row. |
 | `ENTERPRISE_MAP/` | **live** — whole-system enterprise map (inventories, plan dispositions, CAP/INT/FAC matrices, evidence log, advancement plan, session handoff). Covers product + integrations + dev factory + plan ghosts. Bootstrap: `docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md`. Every file within is covered by this row. |
+| `STUDIO_ONE_FACTORY.md` | **live** — Matt 2026-10-13: one video factory (`lib/studio`) and the measured-output contract (render manifest, the 17 checks `npm run video:check` runs, each classed preflight or file-only, the reviewer verdict). Every video, every bot. |
+| `CONTENT_PROCESS.md` | **live** — Matt 2026-10-14: one content process for every video, ad and social post (brief with figure IDs, board, animatic, master, server signature, Matt's click in /admin; one publish door per channel), his rulings, and the build order. |
+| `BUYER_AD.md` | **paused** — Matt 2026-10-14: the buyer ad's calls ($10,000 credit hook, Bend single-family, "Sellers are paying to close", map close), the verified figures and the claims that failed verification. Waits on the content process and Matt-approved techniques. |
 | `PROGRAM_2026-07-21/` | **live** — the RR-PLATFORM-DECISIONS completion program package (master spec, recorded decisions, audits, completion ledger, preserved skills). One of the two sanctioned plan homes; every file within it is covered by this row. |
 | `ADMIN_REBUILD/` | **live** — the admin/CRM rebuild package (specs, audit reports). The second sanctioned plan home; every file within it is covered by this row. |
 | `ADMIN_PRODUCT/` | **live** — Admin Product OS memory root **and** the Broker OS plan of record (`BROKER-OPERATING-SYSTEM-PLAN.md`). Live board (where we are): `EXECUTION.md`. Every file within is covered by this row. |

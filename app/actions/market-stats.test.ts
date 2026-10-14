@@ -14,13 +14,11 @@ describe('overlaid live pulse readers', () => {
     expect(fn).not.toMatch(/getMarketPulseRowForGeo/)
   })
 
-  it('search and housing-market OG cards read leftover HUD, not pulse', () => {
+  it('search and housing-market OG cards are branded photo cards, not pulse snapshots', () => {
     const search = readFileSync(resolve('app/search/og/[...slug]/route.tsx'), 'utf8')
     const housing = readFileSync(resolve('app/housing-market/og/[...slug]/route.tsx'), 'utf8')
-    expect(search).toMatch(/leftoverHudKpis/)
-    expect(housing).toMatch(/leftoverHudKpis/)
-    expect(search).toMatch(/getDetachedOverlays/)
-    expect(housing).toMatch(/getDetachedOverlays/)
+    expect(search).toMatch(/renderShareCard/)
+    expect(housing).toMatch(/renderShareCard/)
     expect(search).not.toMatch(/getLiveMarketPulse/)
     expect(housing).not.toMatch(/getLiveMarketPulse/)
     expect(search).not.toMatch(/getMarketPulseRowForGeo/)

@@ -35,6 +35,9 @@ export async function sendGovernedSms(req: GovernedSmsRequest): Promise<Governed
   const refused = await checkSendGuards(req.personId, 'sms', {
     overrideQuietHours: req.overrideQuietHours,
     skipSuppression: req.skipSuppression,
+    initiatorKind: req.initiator.kind,
+    source: req.purpose,
+    purpose: req.purpose,
   })
   if (refused) return refused
 
@@ -50,7 +53,7 @@ export async function sendGovernedSms(req: GovernedSmsRequest): Promise<Governed
     // check below is for the 7:59pm race.
     const zoneHold = await checkSendGuards(req.personId, 'sms', {
       overrideQuietHours: req.overrideQuietHours,
-      skipSuppression: true,
+      quietHoursOnly: true,
       recipientPhone: to,
     })
     if (zoneHold) return zoneHold
@@ -77,7 +80,7 @@ export async function sendGovernedSms(req: GovernedSmsRequest): Promise<Governed
     // at stage 2; only the clock moves.
     const late = await checkSendGuards(req.personId, 'sms', {
       overrideQuietHours: req.overrideQuietHours,
-      skipSuppression: true,
+      quietHoursOnly: true,
       recipientPhone: to,
     })
     if (late) return late

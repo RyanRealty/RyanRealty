@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireAdminRoute } from '@/lib/admin/require-admin'
+import { readActionMediaFacts } from '@/lib/data/agent/actions'
+import { rowVideoFreezeRefusal } from '@/lib/content/video-freeze'
 
 type ActionBody =
   | { action: 'approve_now' }
@@ -13,6 +15,8 @@ type ActionBody =
  * POST /api/admin/approval-queue/[id]/action
  *
  * Accepts one of five action verbs and mutates the marketing_brain_actions row.
+ * Both approve verbs refuse a row that would post video, 423 Locked, while
+ * video publishing is frozen (Matt 2026-10-14, lib/content/video-freeze.ts).
  */
 export async function POST(
   request: NextRequest,
@@ -49,6 +53,10 @@ export async function POST(
 
     switch (body.action) {
       case 'approve_now': {
+        const facts = await readActionMediaFacts([id])
+        if (!facts.ok) throw new Error(facts.error)
+        const frozen = rowVideoFreezeRefusal(facts.rows[0] ?? {})
+        if (frozen) return NextResponse.json({ error: frozen }, { status: 423 })
         const { error } = await service
           .from('marketing_brain_actions')
           .update({
@@ -66,6 +74,10 @@ export async function POST(
         if (!body.scheduled_for) {
           return NextResponse.json({ error: 'scheduled_for is required' }, { status: 400 })
         }
+        const facts = await readActionMediaFacts([id])
+        if (!facts.ok) throw new Error(facts.error)
+        const frozen = rowVideoFreezeRefusal(facts.rows[0] ?? {})
+        if (frozen) return NextResponse.json({ error: frozen }, { status: 423 })
         const { error } = await service
           .from('marketing_brain_actions')
           .update({

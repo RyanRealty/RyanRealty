@@ -124,7 +124,12 @@ export async function getSavedSearches(): Promise<SavedSearchRow[]> {
 export async function createSavedSearch(
   name: string,
   filters: SavedSearchFilters,
-  options?: { isPublic?: boolean; publicTitle?: string }
+  options?: {
+    isPublic?: boolean
+    publicTitle?: string
+    /** VisitTracker session id. READ on the client, never minted here. */
+    sessionId?: string
+  }
 ): Promise<{ error: string | null }> {
   const session = await getSession()
   if (!session) return { error: 'Not signed in' }
@@ -149,7 +154,8 @@ export async function createSavedSearch(
     const result = await sendEvent({
       type: 'Saved Property Search',
       person: { emails: [{ value: email }] },
-      source: base.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com',
+      // The alerts door, as the guest alert signup writes it (FUNNEL-4), never the site host.
+      source: 'idx-registration',
       system: 'Ryan Realty Website',
       sourceUrl: searchUrl,
       message: `Saved search: ${searchName}${summary ? `, ${summary}` : ''}${count}`,
@@ -157,11 +163,16 @@ export async function createSavedSearch(
     crmPersonId = result.ok ? nativeCrmPersonId(result.personId) : null
     if (crmPersonId) {
       const { canonicallyTagLead } = await import('@/lib/canonical-lead-tagger')
+      const { pageLinkFromReferer, signupAttribution } = await import('@/lib/crm/visit-attribution')
+      // The link that started the visit, else the search page's own (Matt
+      // 2026-10-09, "Visit they signed up in"; lib/crm/visit-attribution.ts).
+      const signup = await signupAttribution({ page: await pageLinkFromReferer(), sessionId: options?.sessionId })
       await canonicallyTagLead({
         fubPersonId: crmPersonId,
         audience: 'buyer',
         source: 'idx-registration',
         tier: 'warm',
+        extraTags: signup.tags,
         originContext: {
           source: 'saved-search',
           sourceLabel: 'Saved property search',
@@ -169,6 +180,10 @@ export async function createSavedSearch(
           audience: 'buyer',
           tier: 'warm',
           want: `Listing alerts for ${searchName}${summary ? `, ${summary}` : ''}`,
+          utmSource: signup.utm?.source,
+          utmMedium: signup.utm?.medium,
+          utmCampaign: signup.utm?.campaign,
+          utmContent: signup.utm?.content,
         },
       })
     }

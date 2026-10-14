@@ -1,108 +1,213 @@
-/* /buy/alerts: editorial signup. Tokens only. Color on elements sits in
-   @layer base so Tailwind utilities keep winning (ci:css-layers). */
+/* /buy/alerts: the signup slab on the Stage, the newest-homes dial, the
+   sources. Tokens only. Color on bare links sits in @layer base so Tailwind
+   utilities keep winning (ci:css-layers). */
 
 @layer base {
-  .v3 .buy-alerts-lede,
-  .v3 .buy-alerts-proof,
-  .v3 .buy-alerts-inbox,
-  .v3 .buy-alerts-town-links,
-  .v3 .buy-alerts-faq dd,
-  .v3 .buy-alerts-sources {
+  .v3 .buy-alerts-slab a,
+  .v3 .buy-alerts-dial__why a {
     color: var(--v3-ink);
   }
+}
 
-  .v3 .buy-alerts-source,
-  .v3 .buy-alerts-hint,
-  .v3 .buy-alerts-cadence,
-  .v3 .buy-alerts-status {
-    color: var(--v3-ink-muted);
+/* The slab ---------------------------------------------------------------
+   One cream column on the photograph, the way /sell's address field sits:
+   the eyebrow and the heading, the chips, the one field, the one ask. */
+.v3.v3-stage .buy-alerts-slab {
+  width: min(100%, 32rem);
+  padding: var(--v3-space-md);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  display: grid;
+  gap: var(--v3-space-sm);
+}
+
+@media (max-width: 47.99rem) {
+  .v3.v3-stage .buy-alerts-slab {
+    margin-block-end: var(--v3-space-md);
   }
 }
 
-.v3 .buy-alerts-section {
-  max-width: var(--v3-measure);
-  margin: 0 auto;
-  padding: var(--v3-section-pad) var(--v3-gutter);
-  border-top: var(--v3-rule-section);
+.v3.v3-stage .buy-alerts-slab__head {
+  display: grid;
+  gap: var(--v3-space-3xs);
 }
 
-.v3 .buy-alerts-section--lead {
-  border-top: 0;
+.v3.v3-stage .buy-alerts-slab .v3-heading {
+  color: var(--v3-ink);
+  text-shadow: none;
 }
 
-.v3 .buy-alerts-lede,
-.v3 .buy-alerts-proof,
-.v3 .buy-alerts-town-links {
-  max-width: var(--v3-measure-text);
-  margin: var(--v3-space-sm) 0 0;
-  font-size: var(--v3-size-body-lg);
-  line-height: var(--v3-leading-body);
+.v3.v3-stage .buy-alerts-slab .v3-eyebrow {
+  color: var(--v3-ink-muted);
 }
 
-.v3 .buy-alerts-inbox {
-  max-width: var(--v3-measure-text);
-  margin: var(--v3-space-sm) 0 0;
-  padding-left: var(--v3-space-md);
-  font-size: var(--v3-size-body-lg);
-  line-height: var(--v3-leading-body);
+.v3 .buy-alerts-form {
+  position: relative;
+  display: grid;
+  gap: var(--v3-space-sm);
 }
 
-.v3 .buy-alerts-source {
-  max-width: var(--v3-measure-text);
-  margin: var(--v3-space-sm) 0 0;
-  font-size: var(--v3-size-source);
-  line-height: var(--v3-leading-note);
+.v3 .buy-alerts-towns-set {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
 }
 
+.v3 .buy-alerts-label {
+  padding: 0;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+/* Town chips: a checkbox each, drawn as a pill that fills navy when checked.
+   The native control stays in the tree (keyboard, screen reader) and is only
+   visually hidden under its label. */
 .v3 .buy-alerts-towns {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--v3-space-sm) var(--v3-space-md);
-  margin-top: var(--v3-space-2xs);
+  gap: var(--v3-space-2xs);
 }
 
 .v3 .buy-alerts-town {
-  display: flex;
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  gap: var(--v3-space-2xs);
-  font-size: var(--v3-size-body);
-  line-height: var(--v3-leading-body);
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-pill);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
   cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out),
+    border-color var(--v3-dur-state) var(--v3-ease-out);
 }
 
 .v3 .buy-alerts-town input {
-  width: 1.1em;
-  height: 1.1em;
-  accent-color: var(--v3-navy);
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.v3 .buy-alerts-town:hover {
+  border-color: var(--v3-ink-muted);
+}
+
+.v3 .buy-alerts-town:has(input:checked) {
+  background: var(--v3-navy);
+  border-color: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+}
+
+.v3 .buy-alerts-town:has(input:focus-visible) {
+  outline: var(--v3-focus-width) solid var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
 }
 
 .v3 .buy-alerts-hint {
-  margin: var(--v3-space-3xs) 0 0;
+  margin: 0;
   font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+/* Price and bedrooms fold under one line so the slab carries the ask. */
+.v3 .buy-alerts-more {
+  border-top: var(--v3-rule-hairline);
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.v3 .buy-alerts-more__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+  min-height: var(--v3-tap);
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink);
+}
+
+.v3 .buy-alerts-more__summary::-webkit-details-marker {
+  display: none;
+}
+
+.v3 .buy-alerts-more__summary::before {
+  content: '';
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .buy-alerts-more[open] .buy-alerts-more__summary::before {
+  transform: rotate(45deg);
+}
+
+.v3 .buy-alerts-more__summary:focus-visible {
+  outline: var(--v3-focus-width) solid var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3 .buy-alerts-more__fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--v3-space-xs);
+  padding-block: var(--v3-space-xs) var(--v3-space-sm);
+}
+
+@media (max-width: 30rem) {
+  .v3 .buy-alerts-more__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.v3 .buy-alerts-consent {
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3 .buy-alerts-actions {
+  margin-top: var(--v3-space-3xs);
 }
 
 .v3 .buy-alerts-cadence,
 .v3 .buy-alerts-status {
-  margin: var(--v3-space-sm) 0 0;
+  margin: 0;
   font-size: var(--v3-size-body-sm);
   line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
 }
 
-.v3 .buy-alerts-faq dt {
-  font-weight: var(--v3-weight-strong);
-  margin-top: var(--v3-space-md);
+.v3 .buy-alerts-status--sent {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
 }
 
-.v3 .buy-alerts-faq dd {
-  margin: var(--v3-space-2xs) 0 0;
-  max-width: var(--v3-measure-text);
-  line-height: var(--v3-leading-body);
-}
-
-.v3 .buy-alerts-sources {
-  padding-left: var(--v3-space-md);
-  font-size: var(--v3-size-body-sm);
-  max-width: var(--v3-measure-text);
+.v3 .buy-alerts-status--sent p {
+  margin: 0;
 }
 
 .v3 .buy-alerts-trap {
@@ -117,6 +222,46 @@
   white-space: nowrap;
 }
 
-.v3 .buy-alerts-form {
-  position: relative;
+/* The dial section ---------------------------------------------------------
+   The newest listings in Bend, the set the alert sends, on the page's measure
+   with its why-now sentences and one door under it. */
+.v3 .buy-alerts-dial {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+  border-top: var(--v3-rule-section);
+  display: grid;
+  gap: var(--v3-space-lg);
+}
+
+.v3 .buy-alerts-dial__lede {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+  text-wrap: pretty;
+}
+
+.v3.v3-dial.buy-alerts-dial__dial {
+  max-width: none;
+}
+
+.v3 .buy-alerts-dial__why {
+  display: grid;
+  gap: var(--v3-space-xs);
+  max-width: var(--v3-measure-text);
+  padding-top: var(--v3-space-md);
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3 .buy-alerts-dial__why p {
+  margin: 0;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+.v3 .buy-alerts-dial__more {
+  margin: 0;
 }

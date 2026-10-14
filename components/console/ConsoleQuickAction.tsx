@@ -27,6 +27,7 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { getNextRecommendation, type CrmNextRec } from '@/app/actions/crm-next-rec'
 import { cn } from '@/lib/utils'
+import { isLeadPageV3Enabled } from '@/lib/admin/lead-page-v3'
 
 type Item = { label: string; href: string; icon: React.ComponentType<{ className?: string }> }
 
@@ -90,6 +91,26 @@ export default function ConsoleQuickAction() {
   const [open, setOpen] = useState(false)
   const [rec, setRec] = useState<CrmNextRec | null>(null)
   const [recLoading, setRecLoading] = useState(false)
+  const [hideOnLeadV3, setHideOnLeadV3] = useState(false)
+
+  useEffect(() => {
+    const personOnly = /^\/admin\/(?:people|crm)\/\d+$/.test(pathname)
+    if (!personOnly || typeof document === 'undefined') {
+      setHideOnLeadV3(false)
+      return
+    }
+    const q = new URLSearchParams(window.location.search)
+    const cookie = document.cookie
+      .split(';')
+      .map((part) => part.trim())
+      .find((part) => part.startsWith('rr_lead_page_v3='))
+    setHideOnLeadV3(
+      isLeadPageV3Enabled({
+        searchParams: { v: q.get('v'), 'lead-page-v3': q.get('lead-page-v3') },
+        cookie: cookie ? cookie.slice('rr_lead_page_v3='.length) : null,
+      }),
+    )
+  }, [pathname])
 
   // Lazy-load the recommended next action only when the sheet opens on a lead.
   useEffect(() => {
@@ -134,7 +155,7 @@ export default function ConsoleQuickAction() {
       ]
     : []
 
-  if (suppressed) return null
+  if (suppressed || hideOnLeadV3) return null
   // Mobile person detail: phone/text live on Info rows + Comms composer. The
   // global + FAB stacked on those circles (overlapping +/chat/phone). Hide at
   // < md on a lead; desktop keeps the sheet.

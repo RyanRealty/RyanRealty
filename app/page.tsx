@@ -102,6 +102,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title: 'Ryan Realty | Bend, Oregon Real Estate Brokerage',
       description:
         'Active Central Oregon homes for sale. List price, address, beds, baths, and square feet on photographed homes.',
+      images: [ogImage],
     },
   }
 }

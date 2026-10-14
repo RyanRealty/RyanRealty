@@ -40,7 +40,7 @@
  *    surface to one column.
  */
 
-import { useMemo, useRef, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { Collapsible as CollapsiblePrimitive, Tabs as TabsPrimitive } from 'radix-ui'
 import { ChevronDown, Send } from 'lucide-react'
 import { toast } from 'sonner'
@@ -142,9 +142,22 @@ export function ContactSendCenter(props: {
    *  speaks the admin language. Omitted everywhere else, which is what
    *  keeps the trigger primary there. Never affects the send path. */
   triggerClassName?: string
+  /** Person-page v3: hide the "Send to contact" trigger; Attach opens a tab. */
+  hideTrigger?: boolean
+  /** Person-page v3: open this tab (cma/bpo/report/newsletter/alerts). */
+  launchTab?: string | null
+  onLaunchConsumed?: () => void
 }) {
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<string>('cma')
+  const launchTab = props.launchTab
+  const onLaunchConsumed = props.onLaunchConsumed
+  useEffect(() => {
+    if (!launchTab) return
+    setTab(launchTab)
+    setOpen(true)
+    onLaunchConsumed?.()
+  }, [launchTab, onLaunchConsumed])
   const [pending, startTransition] = useTransition()
   /** Per-flow idempotency keys — stable across retries of THIS attempt; cleared on success. */
   const nlKeyRef = useRef('')
@@ -376,6 +389,7 @@ export function ContactSendCenter(props: {
 
   return (
     <>
+      {props.hideTrigger ? null : (
       <Button
         type="button"
         touch
@@ -389,6 +403,7 @@ export function ContactSendCenter(props: {
         <Send className="h-4 w-4" aria-hidden />
         Send to contact
       </Button>
+      )}
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
