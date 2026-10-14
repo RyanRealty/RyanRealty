@@ -443,6 +443,7 @@ export async function processNewExpiredListings(
               leadEmail: clientEmail,
               leadName: owner.ownerName ?? null,
               leadPhone,
+              ownerPhones: owner.allPhones ?? [],
               leadTimeline: 'ready-now',
               leadClassification: 'hot',
               crmPersonId,

@@ -2091,7 +2091,7 @@ async function renderSubdivisionPage({ params }: Props) {
                       ? {
                           figure: {
                             value: widerOverlay.headlines.mosLabel,
-                            unit: `months of supply · ${widerOverlay.headlines.verdictLabel.toLowerCase()}`,
+                            unit: 'months of supply',
                             source:
                               `Market Truth region row for ${widerPlace.label} (market_metric, detached segment): ` +
                               `${widerOverlay.headlines.activeCount.toLocaleString('en-US')} active against the closed pace, ` +

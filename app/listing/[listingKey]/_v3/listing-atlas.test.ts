@@ -10,6 +10,8 @@ import type { CommunitySubdivision } from '@/lib/data/geo/getCommunitySubdivisio
 const h = vi.hoisted(() => ({
   plats: [] as CommunitySubdivision[],
   platCalls: [] as Array<{ geoType: string; geoSlug: string }>,
+  boundary: ((_input: { geoType: string; geoSlug: string }): GeoJSON.Polygon | GeoJSON.MultiPolygon | null =>
+    null) as (input: { geoType: string; geoSlug: string }) => GeoJSON.Polygon | GeoJSON.MultiPolygon | null,
   population: {
     dots: [],
     types: [],
@@ -21,7 +23,7 @@ const h = vi.hoisted(() => ({
 }))
 
 vi.mock('@/lib/data', () => ({
-  getBoundaryGeoJSON: vi.fn(async () => null),
+  getBoundaryGeoJSON: vi.fn(async (input: { geoType: string; geoSlug: string }) => h.boundary(input)),
   getResortBoundaryGeoJSON: vi.fn(async () => null),
   getTaxlotsNear: vi.fn(async () => []),
   getCommunitySubdivisions: vi.fn(async (input: { geoType: string; geoSlug: string }) => {
@@ -91,6 +93,7 @@ function cityScope(): ListingAtlasScope {
 beforeEach(() => {
   h.plats = platsWithTargetAt(TARGET_INDEX)
   h.platCalls.length = 0
+  h.boundary = () => null
 })
 
 describe('buildListingAtlas at city scope (SITE-209)', () => {
@@ -111,6 +114,28 @@ describe('buildListingAtlas at city scope (SITE-209)', () => {
     expect(atlas!.outlinedOf).toBe(1 + TARGET_INDEX + 1)
     // A city frame never dumps siblings.
     expect(atlas!.otherSubdivs).toEqual([])
+  })
+
+  it('names the stored neighborhood boundary, not the public door slug', async () => {
+    const awbrey: GeoJSON.Polygon = {
+      type: 'Polygon',
+      coordinates: [[[-121.36, 44.06], [-121.30, 44.06], [-121.30, 44.10], [-121.36, 44.10], [-121.36, 44.06]]],
+    }
+    h.boundary = (input) =>
+      input.geoType === 'neighborhood' && input.geoSlug === 'bend-awbrey-butte' ? awbrey : null
+    h.plats = []
+    const atlas = await buildListingAtlas({
+      ...cityScope(),
+      neighborhoodSlug: 'awbrey-butte',
+      neighborhoodName: 'Awbrey Butte',
+    })
+    expect(atlas!.frameName).toBe('Awbrey Butte')
+    expect(atlas!.boundaryRef).toEqual({
+      kind: 'geo',
+      geoType: 'neighborhood',
+      geoSlug: 'bend-awbrey-butte',
+    })
+    expect(h.platCalls).toEqual([{ geoType: 'neighborhood', geoSlug: 'bend-awbrey-butte' }])
   })
 
   it('(control) the same plat is lost when the list stops at the old 1,000-row cap', async () => {

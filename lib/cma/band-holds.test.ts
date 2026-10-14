@@ -586,16 +586,12 @@ describe('rule 26: the held letter says both, once (Matt 2026-10-07, "Hold, lett
   })
 })
 
-describe('rule 22: a letter held because the ask sat inside the range tells one story (2382 Jackson, reader review 2026-10-08)', () => {
-  // cma-2382-jackson as stored on b3132caf5: three price-setting sales
-  // adjusted to $598,620 to $648,772, the last ask $639,000 inside that range
-  // after 227 days, the failed-ask clamp $649,000 to $624,000. The opening
-  // says the ask was inside the range and the days point at something other
-  // than the number. The opinion chapter then said "List in that range" and
-  // "The sales support a value of $649,000. Because $639,000 already failed
-  // to sell, we recommend the price on the cover, which stays under that
-  // ask": two stories and a figure printed nowhere else.
-  const FORBIDDEN = ['List in that range', 'support a value of', '$649,000', 'already failed to sell', 'stays under that ask']
+describe('rule 22: an ask inside the range and within 15% is the sendable letter (2382 Jackson)', () => {
+  // cma-2382-jackson: three price-setting sales adjusted to $598,620 to
+  // $648,772, last ask $639,000, recommendation $624,000. $624,000 is under
+  // that ask and within 15% (85% of $639,000 is $543,150), so the build
+  // measures the ask and does not write a hold. The cover is the
+  // recommendation. The lead is the three sales. It does not invent days.
   const subject = subjectOf({
     streetAddress: '2382 Jackson',
     subdivision: 'Holliday Park',
@@ -640,45 +636,50 @@ describe('rule 22: a letter held because the ask sat inside the range tells one 
       hold: null,
     } as unknown as CmaPricing
     applyAskInBandHold(p, { lastCycleFailed: true, lastListPrice: 639_000, auditVerdict: 'pass' })
-    expect(p.hold?.kind).toBe('ask-in-band')
-    expect(p.hold?.ask).toBe(639_000)
+    expect(p.hold ?? null).toBeNull()
+    expect(p.askInBandMeasured).toBe(true)
+    expect(p.needsReview).toBe(false)
     return p
   }
 
-  it('the chapter prints the range once and no list instruction', () => {
+  it('the chapter states the three sales, and does not invent days or a false ask story', () => {
     const lead = whatItsWorthLead(subject, jackson(), { asOfIso: '2026-10-07', hasFinalCycle: true }, comps, finalCycle)
-    // Rule 22 says rule 26's two facts in rule 26's shape (reader review
-    // 2026-10-08): the band the sales support, then the last ask, that it sat
-    // inside that band and did not sell, and how the listing came off. The
-    // failed-ask ceiling set this $624,000 cover, and a held letter prints no
-    // clamp sentence, so the sales set the range (lib/cma/sales-role.ts,
-    // reader review 2026-10-08, 62475 Woodsman).
-    expect(lead).toBe(
-      'The three sales that set the range support $598,620 to $648,772. The last ask of $639,000 was inside that range and did not sell. The listing expired after 227 days.',
-    )
-    for (const bad of FORBIDDEN) expect(lead).not.toContain(bad)
+    expect(lead).toBe('The three sales run from $598,620 to $648,772.')
     expect(lead).not.toMatch(/[—–]/)
+    expect(lead).not.toMatch(/\bthe \d+ of the \d+\b/i)
+    expect(lead).not.toMatch(/\d+ days/)
+    expect(lead).not.toContain('List in that range')
+    expect(lead).not.toContain('inside that range')
+    expect(lead).not.toContain('already failed to sell')
+    expect(lead).not.toContain('The price Matt is reviewing')
   })
 
-  it('the page prints no clamp sentence, and every dollar on the lead is a table figure', () => {
+  it('every dollar on the lead is a sale in the table, and the stored clamp note prints under it', () => {
     const p = jackson()
     const page = pricingPage({ subject, comps, market: null, pricing: p, finalCycle, askCtx: { asOfIso: '2026-10-07', hasFinalCycle: true } })
-    for (const bad of FORBIDDEN) expect(page.body).not.toContain(bad)
-    expect(page.body.match(/support \$598,620 to \$648,772/g)?.length).toBe(1)
+    expect(page.body.match(/run from \$598,620 to \$648,772/g)?.length).toBe(1)
+    expect(page.body).toContain(
+      'The sales support a value of $649,000. Because $639,000 already failed to sell, we recommend the price on the cover, which stays under that ask.',
+    )
     const lead = whatItsWorthLead(subject, p, { asOfIso: '2026-10-07', hasFinalCycle: true }, comps, finalCycle)
     const dollars = lead.match(/\$\d[\d,]*\d/g) ?? []
-    const table = new Set(['$598,620', '$624,000', '$648,772', '$639,000'])
+    const table = new Set(['$598,620', '$648,772'])
+    expect(dollars.length).toBeGreaterThan(0)
     for (const d of dollars) expect(table.has(d)).toBe(true)
+    expect(lead).not.toContain('$649,000')
+    expect(lead).not.toMatch(/\d+ days/)
   })
 
-  it('the cover labels the price as the one Matt is reviewing and gives no list instruction', () => {
+  it('the cover uses the recommendation voice and states the list range', () => {
     const p = jackson()
     const cover = letterCoverPayoffHtml(p, comps)
-    expect(cover).toContain(HELD_PRICE_HEADLINE)
-    expect(cover).not.toContain('Our Recommended List Price')
+    expect(cover).toContain('Our Recommended List Price for your home')
+    expect(cover).not.toContain(HELD_PRICE_HEADLINE)
     const block = coverValueBlockHtml({ pricing: p, subject, comps, tiersUsed: [], market: null } as never)
-    expect(block).toContain(HELD_PRICE_HEADLINE)
-    expect(block).not.toMatch(/\bList \$/)
+    expect(block).toContain('Our Recommended List Price for your home')
+    expect(block).not.toContain(HELD_PRICE_HEADLINE)
+    expect(block).toContain('List $598,620 to $648,772.')
+    expect(block).not.toMatch(/[—–]/)
   })
 
   it('an expired home whose ask sat above the range keeps the clamp sentence and the recommend label', () => {

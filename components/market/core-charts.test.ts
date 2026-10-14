@@ -275,11 +275,11 @@ describe('buildCoreChartTabs', () => {
 
   it('computes the months-of-supply verdict FROM the latest value (§0 thresholds)', () => {
     const seller = buildCoreChartTabs(seriesFixture({ monthsOfSupply: [3.0, 3.4] }))
-    expect(seller.find((t) => t.metric === 'monthsOfSupply')!.verdictLabel).toBe("Seller's market")
+    expect(seller.find((t) => t.metric === 'monthsOfSupply')!.verdictLabel).toBe('3.4 months of supply')
     const balanced = buildCoreChartTabs(seriesFixture({ monthsOfSupply: [3.9, 4.6] }))
-    expect(balanced.find((t) => t.metric === 'monthsOfSupply')!.verdictLabel).toBe('Balanced market')
+    expect(balanced.find((t) => t.metric === 'monthsOfSupply')!.verdictLabel).toBe('4.6 months of supply')
     const buyer = buildCoreChartTabs(seriesFixture({ monthsOfSupply: [5.8, 6.4] }))
-    expect(buyer.find((t) => t.metric === 'monthsOfSupply')!.verdictLabel).toBe("Buyer's market")
+    expect(buyer.find((t) => t.metric === 'monthsOfSupply')!.verdictLabel).toBe('6.4 months of supply')
     // Non-MoS tabs never carry a verdict.
     expect(seller.find((t) => t.metric === 'medianClosePrice')!.verdictLabel).toBeNull()
   })

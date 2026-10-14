@@ -291,7 +291,7 @@ export function citySupplySentence(city: string | null | undefined, months: numb
   if (!place || months == null || !Number.isFinite(months) || months <= 0) return null
   const verdict = marketVerdict(months)
   if (verdict.kind === 'unknown') return null
-  return `${place} has ${formatMonthsOfSupply(months)} months of supply right now. That is a ${verdict.label}.`
+  return `${place} has ${formatMonthsOfSupply(months)} months of supply right now.`
 }
 
 export type CmaFirstContactCopy = InboundValuationCopy & {

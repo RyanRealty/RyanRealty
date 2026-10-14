@@ -164,6 +164,7 @@ export const GA4_EVENT_PARAMS = [
   { name: 'search_term', from: 'ga4_params.search_term' },
   { name: 'form', from: 'ga4_params.form' },
   { name: 'form_id', from: 'ga4_params.form_id' },
+  { name: 'lead_type', from: 'ga4_params.lead_type' },
   { name: 'listing_key', from: 'ga4_params.listing_key' },
   { name: 'city', from: 'ga4_params.city' },
   { name: 'city_slug', from: 'ga4_params.city_slug' },

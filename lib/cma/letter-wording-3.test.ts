@@ -3,8 +3,10 @@
  * letters, 2026-10-08: 62475 Woodsman, 20676 Wild Rose, 3062 NW Kelly Hill,
  * 1355 Jacksonville, 2382 Jackson, 2745 Aldrich).
  *
- *  1. A cover the failed-ask ceiling moved, on a held letter (no clamp
- *     sentence, rule 26), is not the weights' number: the sales set the range.
+ *  1. A cover the failed-ask ceiling moved is the weights' number in the
+ *     letter only when the letter is still held, or it prints no clamp
+ *     sentence. Woodsman's $1,576,000 is within 15% under the $1,600,000 ask,
+ *     so that ask-in-band row is the recommendation and keeps "in this price".
  *  2. A set-aside pin says what the legend says ("did not set the range").
  *  3. "Sold N months ago" counts whole months by the day.
  *  4. A held letter's net page title names the price its column names.
@@ -28,8 +30,6 @@ import {
   weightRowLabel,
 } from '@/lib/cma/sales-role'
 import {
-  HELD_SALES_HEADING,
-  RANGE_SALES_HEADING,
   SALES_THAT_SET_IT_HEADING,
   pricingPage,
   salesThatSetItHeading,
@@ -172,45 +172,53 @@ const WOODSMAN = {
   lastListPrice: 1_600_000,
 } as unknown as CmaSubject
 
-describe('1. a cover the ceiling moved on a held letter: the sales set the range (62475 Woodsman)', () => {
+describe('1. a cover the ceiling moved, within 15% of the ask: the recommendation (62475 Woodsman)', () => {
   it('reads the cover off the weights: $1,576,000 against the $1,584,134 they blend to', () => {
     const p = woodsmanPricing()
     expect(Math.abs(p.recommended - 1_584_134)).toBeGreaterThanOrEqual(COVER_ROUNDING_STEP)
     expect(clampMovedCoverOffTheWeights(p)).toBe(true)
-    expect(salesSetOnlyTheRange(p, WOODSMAN_COMPS)).toBe(true)
-    expect(weightRowLabel(p, WOODSMAN_COMPS)).toBe(WEIGHT_AMONG_SALES_ROW_LABEL)
-    expect(salesThatSetItHeading(p, WOODSMAN_COMPS)).toBe(RANGE_SALES_HEADING)
+    // $1,576,000 is under the $1,600,000 ask and within 15%. The clamp sentence
+    // prints, so the sales set this price rather than only the range.
+    expect(salesSetOnlyTheRange(p, WOODSMAN_COMPS)).toBe(false)
+    expect(weightRowLabel(p, WOODSMAN_COMPS)).toBe(WEIGHT_IN_PRICE_ROW_LABEL)
+    expect(salesThatSetItHeading(p, WOODSMAN_COMPS)).toBe(SALES_THAT_SET_IT_HEADING)
     expect(weightMeaningSentence(p, WOODSMAN_COMPS)).toBe(
-      'Weight is how much each sale counts beside the others in this chapter. It does not set the price on the cover.',
+      'Weight is how much each sale moved the number, over the sales in this chapter.',
     )
     expect(reconciliationSentenceFor(p.reconciliation!.sentence!, p, WOODSMAN_COMPS)).toMatch(
-      /^62531 Woodsman carries the most weight of the four sales that set the range, at 32\.4 percent/,
+      /^62531 Woodsman carries the most weight of the four sales behind this price, at 32\.4 percent/,
     )
   })
 
-  it('the sales chapter calls the weights what they are and says nothing about the clamp', () => {
+  it('the sales chapter calls the weights what they are, and the price chapter says what moved the cover', () => {
     const input = { subject: WOODSMAN, comps: WOODSMAN_COMPS, market: null, pricing: woodsmanPricing(), tiersUsed: [] }
     const text = visible(salesThatSetItPage(input)!.body)
-    expect(text).toContain('The sales that set the range.')
-    expect(text).toContain(WEIGHT_AMONG_SALES_ROW_LABEL)
-    expect(text).not.toContain(WEIGHT_IN_PRICE_ROW_LABEL)
-    expect(text).toContain('the most weight of the four sales that set the range, at 32.4 percent')
-    expect(text).toContain('It does not set the price on the cover.')
-    expect(text).not.toMatch(/moved the number|sales behind this price|behind this number/)
-    // Rule 26: a held letter prints no clamp sentence, and none is added here.
+    expect(text).toContain('The sales that set this price.')
+    expect(text).not.toContain('The sales that set the range.')
+    expect(text).toContain(WEIGHT_IN_PRICE_ROW_LABEL)
+    expect(text).not.toContain(WEIGHT_AMONG_SALES_ROW_LABEL)
+    expect(text).toContain('the most weight of the four sales behind this price, at 32.4 percent')
+    expect(text).toContain('Weight is how much each sale moved the number, over the sales in this chapter.')
+    expect(text).not.toContain('It does not set the price on the cover.')
+    expect(text).not.toMatch(/already failed to sell|support a value of|capped/)
+    expect(text).not.toContain(EM_DASH)
     const price = visible(pricingPage(input).body)
-    expect(price).toContain('The four sales that set the range support $1,554,207 to $1,618,053.')
-    for (const t of [text, price]) {
-      expect(t).not.toMatch(/already failed to sell|support a value of|capped/)
-      expect(t).not.toContain(EM_DASH)
-    }
+    expect(price).toContain(
+      "The four sales, after seller concessions and adjusted to your home's size, run from $1,554,207 to $1,618,053.",
+    )
+    expect(price).toContain('The highest and the lowest sale are set aside, so the range runs between the rest.')
+    expect(price).toContain(
+      'The sales support a value near $1,584,000 once each is weighted by how closely it matches your home. Because $1,600,000 already failed to sell, we recommend the price on the cover, which stays under that ask.',
+    )
+    expect(price).not.toContain('The four sales that set the range support')
+    expect(price).not.toContain(EM_DASH)
   })
 
   it('keeps "in this price" where the weights do reach the cover, or the letter says what moved it', () => {
-    // A held letter the ceiling did not move.
+    // The ceiling did not move, and $1,576,000 is within 15% under the ask.
     const noClamp = woodsmanPricing({ clamp: null })
     expect(salesSetOnlyTheRange(noClamp, WOODSMAN_COMPS)).toBe(false)
-    expect(salesThatSetItHeading(noClamp, WOODSMAN_COMPS)).toBe(HELD_SALES_HEADING)
+    expect(salesThatSetItHeading(noClamp, WOODSMAN_COMPS)).toBe(SALES_THAT_SET_IT_HEADING)
     // A cover the ceiling put inside one $1,000 step of the weighted price.
     const atWeights = woodsmanPricing({
       recommended: 1_584_000,
@@ -227,10 +235,12 @@ describe('1. a cover the ceiling moved on a held letter: the sales set the range
     expect(salesSetOnlyTheRange(silent, WOODSMAN_COMPS)).toBe(true)
   })
 
-  it('a row with no stored weighted price is read off the clamp alone', () => {
+  it('a row with no stored weighted price still keeps "in this price" when the clamp sentence prints', () => {
     const p = woodsmanPricing()
     const bare = { ...p, reconciliation: { ...p.reconciliation!, weightedPrice: null } } as CmaPricing
-    expect(salesSetOnlyTheRange(bare, WOODSMAN_COMPS)).toBe(true)
+    // Within 15% under the ask, so the letter is not held and the stored
+    // clamp sentence is what joins the cover to the sales.
+    expect(salesSetOnlyTheRange(bare, WOODSMAN_COMPS)).toBe(false)
   })
 })
 
@@ -373,11 +383,15 @@ function heldInBand(): RenderCmaArgs {
 }
 
 describe('4. a held letter titles its net page by the price its column names', () => {
-  it('held: "Net at the price on the cover" over "At the price on the cover"', () => {
+  it('an ask inside the band and within 15% uses the recommendation net page', () => {
+    // Purcell's $402,000 is under the $429,000 ask and within 15%. Not held.
     const text = visible(renderCmaHtml(heldInBand()).html)
-    expect(text).toContain('Net at the price on the cover')
-    expect(text).toContain('At the price on the cover')
-    expect(text).not.toContain('Net at list')
+    expect(text).toContain('Our Recommended List Price for your home')
+    expect(text).not.toContain('The price Matt is reviewing')
+    expect(text).toContain('Net at list')
+    expect(text).toContain('At the list price')
+    expect(text).not.toContain('Net at the price on the cover')
+    expect(text).not.toContain('At the price on the cover')
   })
 
   it('unheld: "Net at list" stays', () => {
@@ -389,15 +403,26 @@ describe('4. a held letter titles its net page by the price its column names', (
 
 describe('5. Basis and limits names the grid by its chapter heading', () => {
   it('names the heading in a sentence, for each of the three headings', () => {
-    expect(salesThatSetItPhrase(woodsmanPricing(), WOODSMAN_COMPS)).toBe('the sales that set the range')
-    expect(salesThatSetItPhrase(woodsmanPricing({ clamp: null }), WOODSMAN_COMPS)).toBe('the sales behind this price')
-    expect(salesThatSetItPhrase(woodsmanPricing({ hold: null }), WOODSMAN_COMPS)).toBe('the sales that set this price')
+    // $1,576,000 under the $1,600,000 ask, within 15%: the recommendation.
+    expect(salesThatSetItPhrase(woodsmanPricing(), WOODSMAN_COMPS)).toBe('the sales that set this price')
+    // A missing recommendation stays held. No clamp move, so the sales sit behind that price.
+    expect(salesThatSetItPhrase(woodsmanPricing({ recommended: null, clamp: null }), WOODSMAN_COMPS)).toBe(
+      'the sales behind this price',
+    )
+    // Ask-below-band stays held, and the sales set only the range.
+    expect(
+      salesThatSetItPhrase(
+        woodsmanPricing({ hold: { kind: 'ask-below-band', ask: 1_600_000, reason: 'test' } }),
+        WOODSMAN_COMPS,
+      ),
+    ).toBe('the sales that set the range')
   })
 
-  it('a range-only letter says "the grid of the sales that set the range", never "the price chapter"', () => {
+  it('an ask inside the band and within 15% names the sales that set this price, never "the price chapter"', () => {
     const text = visible(renderCmaHtml(heldInBand()).html)
-    expect(text).toContain('The sales that set the range.')
-    expect(text).toContain('The grid of the sales that set the range moves each sale')
+    expect(text).toContain('The sales that set this price.')
+    expect(text).toContain('The grid of the sales that set this price moves each sale')
+    expect(text).not.toContain('The sales that set the range.')
     expect(text).not.toContain('price chapter')
   })
 
@@ -442,9 +467,14 @@ describe('7. a tie at the printed weight names both sales (1355 Jacksonville)', 
     expect(out.mostWeighted).toBe('J1')
   })
 
-  it('reads as the range on a range-only letter', () => {
+  it('reads as the range only when the sales set the range', () => {
     const out = reconcileAdjustedSales({ sales: jacksonville, subjectSqft: 1_750, asOf: '2026-10-08' })
+    // Woodsman within 15% keeps the stored "behind this price".
     expect(reconciliationSentenceFor(out.sentence!, woodsmanPricing(), WOODSMAN_COMPS)).toBe(
+      '1340 Cumberland and 1613 Ithaca carry the most weight of the three sales behind this price, at 33.4 percent each.',
+    )
+    const below = woodsmanPricing({ hold: { kind: 'ask-below-band', ask: 1_600_000, reason: 'test' } })
+    expect(reconciliationSentenceFor(out.sentence!, below, WOODSMAN_COMPS)).toBe(
       '1340 Cumberland and 1613 Ithaca carry the most weight of the three sales that set the range, at 33.4 percent each.',
     )
   })
@@ -514,7 +544,7 @@ describe('8. a gap measured on the last ask says so (2382 Jackson, 2745 Aldrich)
       'You were asking 0.6 percent above the top of the range the sales support.',
     )
     expect(askAgainstRangeSentence(620_000, 598_620, 635_458, { lastOfSeveral: true })).toBe(
-      'Your last ask was inside the range the sales support.',
+      'Your last ask was inside the range the sales support. One of the sales that set this price is above that ask.',
     )
     expect(askAgainstRangeSentence(580_000, 598_620, 635_458, { lastOfSeveral: true })).toBe(
       'Your last ask was 3.1 percent below the bottom of the range the sales support.',

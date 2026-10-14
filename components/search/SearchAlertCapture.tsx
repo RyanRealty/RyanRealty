@@ -10,12 +10,13 @@ import { V3Icon } from '@/components/site/v3'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getFiltersSummary } from '@/lib/search-filters'
-import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
+import { submitSearchAlertSignup } from '@/lib/analytics/submit-alert-signup'
 import { readRrSessionId } from '@/lib/tracking'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
 import { cn } from '@/lib/utils'
 import '@/components/search/search-ledger.css'
+import { useViewerListingState } from '@/components/search/use-viewer-listing-state'
 import {
   buildGuestWatchFromFilters,
   clearGuestWatch, // hydration-safe: event/effect storage only
@@ -135,6 +136,7 @@ export function SearchAlertCapture({
   variant?: 'sticky' | 'inline'
 }) {
   const searchParams = useUrlSearchParams()
+  const viewerState = useViewerListingState({ signedIn })
   const [email, setEmail] = useState('')
   const [company, setCompany] = useState('') // honeypot, humans never see this
   const [state, setState] = useState<'idle' | 'done' | 'error'>('idle')
@@ -186,9 +188,9 @@ export function SearchAlertCapture({
   }, [searchParams, defaultCity, defaultSubdivision, defaultFiltersSnapshot])
 
   useEffect(() => {
-    if (signedIn) return
+    if (viewerState.signedIn) return
     setPriorWatch(readGuestWatch()) // hydration-safe: event/effect storage only
-  }, [signedIn])
+  }, [viewerState.signedIn])
 
   useEffect(() => {
     if (!expanded) return
@@ -212,7 +214,8 @@ export function SearchAlertCapture({
   }, [expanded])
 
   // Signed-in users already have the save-search affordance. This is for guests.
-  if (signedIn || dismissed) return null
+  // Seed is the signed-out shell so search HTML stays visitor-independent.
+  if (viewerState.signedIn || dismissed) return null
 
   if (state === 'done') {
     return (

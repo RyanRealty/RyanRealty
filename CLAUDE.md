@@ -2,7 +2,7 @@
 
 These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait, or to `git push` `main`, is stale.
 
-**Main.** A finished unit is `npm run ship` (Matt 2026-10-09): gates, push the branch, merge the pull request. Vercel deploys `main`. Never `git push` `main`. Unfinished work is `npm run push` only.
+**Main.** Work isn't done until merged and live in production (Matt 2026-10-13). Agents merge their own PRs once checks pass; never ask. `npm run ship`: gates, push, merge, confirm the Vercel production deploy. Never `git push` `main`. Unfinished work is `npm run push` only.
 
 **Git safety.** No rebase. No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away.
 
@@ -21,6 +21,8 @@ These outrank every later line in this file, every skill, and every handoff or p
 **Cursor out.** When Cursor is out (usage, credit, spend, 402, or a 20-minute stall), switch to Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve`. Never use `XAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` to get past a limit.
 
 **Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
+
+**Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. Ad copy, VO, captions: [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). video_gate is backup.
 
 ---
 
@@ -543,7 +545,7 @@ else fires on trigger match.
 | Facebook lead-gen ad | the two docs above for live wiring, then `social_media_skills/facebook-lead-gen-ad/SKILL.md` |
 | Seller LP follow-up workflow | **The in-house CRM sequence engine.** `app/lp/seller-home-value/actions.ts` → `autoEnrollByPersonId()` in [`lib/crm/enroll.ts`](lib/crm/enroll.ts); `/api/cron/crm-auto-enroll` sweeps misses; `/api/cron/crm-sequence-engine` fires touches (pause-on-reply lives inside it); `/api/cron/crm-scheduled-sends` delivers. Sequences edited at `/admin/crm/sequences`. |
 | Expired / Canceled / Withdrawn listing workflow | `/lp/expired-listing` · `public.expired_listings`. Detection runs inside the delta sync. |
-| Off-market listing URL — indexing | Stays INDEXED, `index, follow`, with the honest state (Matt 2026-09-08). One policy: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md) §4.9. Held by `ci:listing-offmarket-index`. |
+| Off-market listing URL — indexing | One policy: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md) §4.9. Held by `ci:listing-offmarket-index`. |
 | Per-broker agent attribution | `?agent=<slug>` (`matt`, `rebecca`, `paul`, or full-name variants) → `components/AgentAttributionBridge.tsx` writes the `rr_agent_attribution` cookie (90-day). Server: `readAttributedAgentServer()` in `app/actions/agent-attribution-read.ts`. Both LP forms call it and override the default Matt-routing when set. |
 | Broker texts the marketing line (SMS agent) | [`docs/plans/BROKER_SMS_AGENT_2026-07-31.md`](docs/plans/BROKER_SMS_AGENT_2026-07-31.md) · `lib/agent/` |
 | Any PDF a person receives | [`docs/PAGE_CONTRACT.md`](docs/PAGE_CONTRACT.md) |

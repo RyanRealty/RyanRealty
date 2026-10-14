@@ -6,6 +6,8 @@ import { priceDropFieldItems } from '@/app/price-drops/_v3/drops-field-items'
 import { priceDropDatasetSchemas } from '@/app/price-drops/_v3/drops-jsonld'
 import {
   DROPS_ALERT_FILTERS,
+  PRICE_DROP_ALERT_EVENTS,
+  PRICE_DROPS_LIST_LIMIT,
   dropsUnavailable,
   medianPositive,
 } from '@/app/price-drops/_v3/drops-constants'
@@ -104,15 +106,12 @@ describe('priceDropDatasetSchemas', () => {
     expect(JSON.stringify(schemas)).not.toContain('\u2014')
   })
 
-  // SITE-108 (§0): `total` is the whole window; the dollar sum and the median
-  // are computed from the rendered rows only. When those differ, every figure
-  // says which set it covers so a 48-row sum cannot read as the 262-row total.
-  it('names the rendered scope when the page shows fewer than the window holds', () => {
+  it('names the window totals, not a capped-list slice', () => {
     const [dataset] = priceDropDatasetSchemas({
       pageUrl: 'https://ryan-realty.com/price-drops',
       placeName: 'Central Oregon',
-      total: 262,
-      shownCount: 48,
+      total: 91,
+      shownCount: 91,
       totalReducedLabel: '$1.2M',
       medianDropPctLabel: '6.8%',
       fetchedAt: '2026-09-15T17:00:00.000Z',
@@ -120,9 +119,9 @@ describe('priceDropDatasetSchemas', () => {
     const named = (dataset as unknown as {
       variableMeasured: Array<{ name: string; value: unknown }>
     }).variableMeasured
-    expect(named[0]).toMatchObject({ name: 'Price reductions (7-day window)', value: 262 })
-    expect(named[1].name).toBe('Total asking-price cuts (48 shown)')
-    expect(named[2].name).toBe('Median drop (48 shown)')
+    expect(named[0]).toMatchObject({ name: 'Price reductions (7-day window)', value: 91 })
+    expect(named[1].name).toBe('Total asking-price cuts')
+    expect(named[2].name).toBe('Median drop')
   })
 
   it('leaves the scope unsaid when the page renders the whole window', () => {
@@ -157,6 +156,42 @@ describe('dropsUnavailable', () => {
     expect(`${copy.term} ${copy.body}`).not.toMatch(/\bnothing\b|\bno (active )?(single-family )?home/i)
     expect(copy.body).toContain('Bend')
     expect(JSON.stringify(copy)).not.toMatch(/[\u2013\u2014]| -- /)
+  })
+})
+
+describe('PRICE_DROPS_LIST_LIMIT', () => {
+  it('is high enough to list a full week, not the old 48-card preview', () => {
+    expect(PRICE_DROPS_LIST_LIMIT).toBe(500)
+  })
+})
+
+describe('PRICE_DROP_ALERT_EVENTS', () => {
+  it('fires only on a price change', () => {
+    expect(PRICE_DROP_ALERT_EVENTS).toEqual({
+      new: false,
+      price_change: true,
+      status_change: false,
+      back_on_market: false,
+      sold: false,
+      open_house: false,
+    })
+  })
+})
+
+describe('PriceDropAlertsSheet is a price-cut watch', () => {
+  const src = readFileSync(resolve(process.cwd(), 'app/price-drops/_v3/PriceDropAlertsSheet.client.tsx'), 'utf8')
+
+  it('reuses submitSearchAlertSignup with the price-change events map', () => {
+    expect(src).toMatch(/submitSearchAlertSignup/)
+    expect(src).toMatch(/events: \{ \.\.\.PRICE_DROP_ALERT_EVENTS \}/)
+    expect(src).toMatch(/landingSearch/)
+    expect(src).toMatch(/FormAdCookieBox/)
+    expect(src).toMatch(/writeFormAdConsent\(adCookies\)/)
+    expect(src).toMatch(/One email per new listing/)
+    expect(src).toMatch(/Unsubscribe any time/)
+    expect(src).not.toMatch(/Get new .* listings by email/)
+    expect(src).not.toMatch(/buyer's market|buyers market/i)
+    expect(src).not.toContain('\u2014')
   })
 })
 
@@ -201,6 +236,12 @@ describe('price-drops pages: a failed read is not an empty week', () => {
 
     it(`${file} alerts on the single-family population it lists`, () => {
       expect(src).toMatch(/extraFilters=\{DROPS_ALERT_FILTERS\}/)
+    })
+
+    it(`${file} asks the DAL for every qualifying cut and lists them in the catalog`, () => {
+      expect(src).toMatch(/limit: PRICE_DROPS_LIST_LIMIT/)
+      expect(src).toMatch(/<PriceDropCatalog/)
+      expect(src).not.toMatch(/buyer's market|buyers market/i)
     })
 
     it(`${file} headlines the window's population, not the rendered cards`, () => {

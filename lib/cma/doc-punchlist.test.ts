@@ -795,7 +795,7 @@ describe('F7 / tasteReview 2 — this market is sentences and two bars, not a KP
     // A monthly average over the window months of supply divides by.
     expect(block).toMatch(/Over the last six months, an average of 13 sold each month/)
     expect(block).toMatch(/3\.2 months to sell what is listed/)
-    expect(block).toMatch(/seller(&#39;|')s market territory/)
+    expect(block).not.toMatch(/seller(&#39;|')s market|buyer(&#39;|')s market|balanced market/)
   })
 
   it('names what each number actually is, in words', () => {

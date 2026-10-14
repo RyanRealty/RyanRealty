@@ -61,13 +61,23 @@ function makeSb() {
         // suppression rows, honoring the channel filter the real query applies.
         // isSuppressedByEmail email read: .in resolves the email-keyed rows.
         chain.in = (_col: string, channels: string[]) => {
-          if (mode === 'person') {
-            const allowed = new Set(channels)
-            const rows = (perPersonSuppression[pid] ?? []).filter((r) => allowed.has(r.channel))
-            return Promise.resolve({ data: rows, error: null })
+          chain.is = (col: string, val: null) => {
+            if (col !== 'cleared_at' || val !== null) return Promise.resolve({ data: [], error: null })
+            if (mode === 'person') {
+              const allowed = new Set(channels)
+              const rows = (perPersonSuppression[pid] ?? []).filter(
+                (r) => allowed.has(r.channel) && !(r as { cleared_at?: string | null }).cleared_at,
+              )
+              return Promise.resolve({ data: rows, error: null })
+            }
+            const emailRows = (emailSuppressionRows.data ?? []).filter(
+              (r) => !(r as { cleared_at?: string | null }).cleared_at,
+            )
+            return Promise.resolve({ ...emailSuppressionRows, data: emailRows })
           }
-          return Promise.resolve(emailSuppressionRows)
+          return chain
         }
+        chain.is = () => chain
         return chain
       }
       return { select: () => ({}) }
@@ -78,7 +88,7 @@ function makeSb() {
 vi.mock('@/lib/supabase/service', () => ({ createServiceClient: () => makeSb() }))
 // enqueueAudienceRemoval is dynamically imported by addSuppression only; never hit here.
 
-import { isSuppressedByEmail } from '@/lib/crm/suppressions'
+import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 
 beforeEach(() => {
   peopleResult = { data: [], error: null }
@@ -201,5 +211,23 @@ describe('isSuppressedByEmail', () => {
     const r = await isSuppressedByEmail('bounced@x.com', 'email')
     expect(r.suppressed).toBe(true)
     expect(r.reasons).toContain('email:all:bounced')
+  })
+
+  it('ignores a cleared import hard-stop', async () => {
+    peopleResult = { data: [{ id: 22, tags: [] }], error: null }
+    perPersonSuppression[22] = [
+      { channel: 'all', reason: 'tcpa-hard-stop', cleared_at: '2026-10-13T00:00:00Z' } as { channel: string; reason: string },
+    ]
+    const r = await isSuppressedByEmail('cleared@x.com', 'email')
+    expect(r.suppressed).toBe(false)
+  })
+
+  it('does not treat industry:contact as a 1:1 suppression', async () => {
+    peopleResult = { data: [{ id: 33, tags: ['industry:contact'] }], error: null }
+    perPersonTags[33] = ['industry:contact']
+    const email = await isSuppressedByEmail('broker@office.com', 'email')
+    expect(email.suppressed).toBe(false)
+    const oneToOne = await isSuppressed(33, 'sms')
+    expect(oneToOne.suppressed).toBe(false)
   })
 })

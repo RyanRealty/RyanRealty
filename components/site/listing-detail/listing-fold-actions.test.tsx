@@ -75,7 +75,7 @@ describe('listing fold actions (mobile, near the price)', () => {
 
   it('the watch sheet posts through submitListingPriceDropWatch', () => {
     const src = readFileSync(resolve('components/site/listing-detail/ListingFoldActions.tsx'), 'utf8')
-    expect(src).toContain("from '@/app/actions/search-alert-capture'")
+    expect(src).toContain("from '@/lib/analytics/submit-alert-signup'")
     expect(src).toContain('submitListingPriceDropWatch')
     expect(src).toContain("name=\"company\"")
     expect(src).not.toMatch(/position:\s*fixed/)
