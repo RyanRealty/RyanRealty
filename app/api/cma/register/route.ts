@@ -43,21 +43,22 @@ export async function POST(request: Request) {
 
   const session = await getSession()
   let viewerEmail = session?.user?.email?.trim().toLowerCase() || null
+  // Is this browser PROVEN to be the document's person? Only a VERIFIED rr_pid
+  // counts. A bare id is something any visitor can type into their own browser
+  // (P7, 2026-09-23). A claimed one names whoever's email was typed into a form
+  // on this browser, and anyone can type anyone's email, so it is no proof that
+  // the person consenting is this contact (consent integrity, 2026-10-14). The
+  // tracked link in the email we sent them mints a verified cookie on arrival.
+  const verifiedCookiePid = verifiedPersonIdFromCookie((await cookies()).get(PERSON_COOKIE)?.value)
+  const recipientProven = identity.personId != null && verifiedCookiePid === identity.personId
   // The consent bar inside the report (Matt 2026-09-09): no Google session,
   // the form carries the person id, and it must match BOTH the document's
-  // person and the rr_pid cookie the tracked link set. Anything else goes back
-  // to the document, which shows the door or the bar again.
+  // person and the verified rr_pid cookie the tracked link set. Anything else
+  // goes back to the document, which shows the bar again or nothing.
   let barPersonId: number | null = null
   if (!viewerEmail) {
     const pid = Number.parseInt(String(form.get('pid') ?? ''), 10)
-    // Only a VERIFIED rr_pid counts. A bare id is something any visitor can type
-    // into their own browser (P7, 2026-09-23). A claimed one names whoever's
-    // email was typed into a form on this browser, and anyone can type anyone's
-    // email, so it is no proof that the person consenting is this contact
-    // (consent integrity, 2026-10-14). The tracked link in the email we sent
-    // them mints a verified cookie when they arrive.
-    const cookiePid = verifiedPersonIdFromCookie((await cookies()).get(PERSON_COOKIE)?.value)
-    if (Number.isFinite(pid) && pid > 0 && identity.personId === pid && cookiePid === pid) {
+    if (Number.isFinite(pid) && pid > 0 && identity.personId === pid && recipientProven) {
       barPersonId = pid
     } else {
       return NextResponse.redirect(new URL(`/cma/${slug}`, request.url))
@@ -75,6 +76,14 @@ export async function POST(request: Request) {
       })
     : ({ kind: 'serve', via: 'recipient' } as const)
   if (decision.kind === 'wrong-person') {
+    return NextResponse.redirect(new URL(`/cma/${slug}`, request.url))
+  }
+  // Bind-on-first-register: a phone-only lead (no email on file) takes the
+  // signer's email. A sign-in proves the signer controls THAT email, not that
+  // they are this lead, whose slug is a street address anyone can type. So the
+  // claim, and the SMS consent it records against the lead's phone, needs the
+  // verified cookie the tracked link set too (consent integrity, 2026-10-14).
+  if (decision.kind === 'claim-and-consent' && !recipientProven) {
     return NextResponse.redirect(new URL(`/cma/${slug}`, request.url))
   }
   // A bar answer is written under the person's own email, or their id.

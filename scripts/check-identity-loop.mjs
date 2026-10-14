@@ -181,8 +181,6 @@ export function missingWiring(read) {
     ['lib/data/crm/shortLinks.ts', /decorateOutboundUrl\(/, 'the SMS short-link redirect no longer re-signs our-domain destinations'],
     ['lib/cma/doc-links.ts', /signPersonLinkToken\(/, 'CMA document links no longer carry a signed token'],
     ['lib/cma/serve-document.ts', /verifyPersonLinkToken\(/, 'the CMA gate no longer requires a signed ?_pid='],
-    ['lib/cma/serve-document.ts', /verifiedPersonIdFromCookie\(/, 'the CMA consent bar no longer requires a VERIFIED rr_pid cookie'],
-    ['app/api/cma/register/route.ts', /verifiedPersonIdFromCookie\(/, 'the CMA consent POST no longer requires a VERIFIED rr_pid cookie'],
     ['app/admin/(protected)/visitors/live/page.tsx', /<KnownPeople\b/, '/admin/visitors/live lost the Known people view'],
     ['app/admin/(protected)/visitors/live/KnownPeople.tsx', /getActiveKnownPeople\(/, 'Known people no longer reads getActiveKnownPeople'],
     ['lib/data/crm/getSiteActivity.ts', /from\('visitor_sessions'\)[\s\S]{0,200}\.not\('crm_person_id',\s*'is',\s*null\)/, 'the activity query no longer reads identified sessions'],
@@ -247,6 +245,22 @@ export function missingWiring(read) {
     ['lib/analytics/visitor-session.ts', /if \(typeof window !== 'undefined'\) memory\.arrival = readPageArrival\(\)/, 'the session module no longer records the page\'s arrival when it loads (a tap before the tracker mounts would be judged instead)', CODE],
     ['lib/analytics/visitor-session.ts', /const campaign = campaignKeyFromSearch\(opts\.search \?\? \(firstOfPageLoad \? loaded\.search : window\.location\.search\)\)/, 'the session rule judges the first event of a page load on the current address, not the one the page loaded at', CODE],
     ['public/rr-doc-tracker.js', /var campaign = campaignKeyFromSearch\(firstOfPageLoad \? loaded\.search : location\.search\)/, 'the client-document tracker judges the first event of a page load on the current address, not the one the page loaded at', CODE],
+    // Rule 12 (consent integrity, 2026-10-14): consent capture reads only an identity
+    // a channel the person controls proved. A form submit maps the browser to whatever
+    // email was typed, and the next session is born identified from it (rr_vid
+    // carryover): that cookie is CLAIMED. Recording consent on it let a stranger opt
+    // someone else in. The cookie carries its provenance (lib/identity/person-cookie.ts).
+    ['lib/identity/link-token.ts', /export function verifyPersonLinkToken\(value: unknown\): VerifiedPersonToken \| null \{\s*const v = verifyToken\(value, CHANNEL_SET\)/, 'a ?_pid= link accepts a cookie value (a visitor could paste their own claimed rr_pid into a URL and come back verified)', CODE],
+    ['app/api/visitors/track/route.ts', /if \(res\.sessionStamped\) personCookie = \{ personId: known\.personId, provenance: 'claimed' \}/, 'the rr_vid carryover no longer mints a CLAIMED cookie (a typed email would read as proof)', CODE],
+    ['app/api/visitors/track/route.ts', /personCookieWrite\(currentPersonCookie, personCookie\.personId, personCookie\.provenance\)/, 'the track route rewrites the rr_pid cookie without the provenance rule (a claim could downgrade, or nothing upgrades)', CODE],
+    ['lib/cma/serve-document.ts', /verifiedPersonIdFromCookie\(jar\.get\(PERSON_COOKIE\)\?\.value\)/, 'the CMA consent bar no longer requires a VERIFIED rr_pid cookie', CODE],
+    ['lib/cma/serve-document.ts', /^(?![\s\S]*\b(?:signedPersonIdFromCookie|getPersonIdFromCookie|readPersonCookie)\()/, 'the CMA consent bar reads an rr_pid cookie of any provenance', CODE],
+    ['app/api/cma/register/route.ts', /const verifiedCookiePid = verifiedPersonIdFromCookie\(/, 'the CMA consent POST no longer requires a VERIFIED rr_pid cookie', CODE],
+    ['app/api/cma/register/route.ts', /^(?![\s\S]*\b(?:signedPersonIdFromCookie|getPersonIdFromCookie|readPersonCookie)\()/, 'the CMA consent POST reads an rr_pid cookie of any provenance', CODE],
+    ['app/api/cma/register/route.ts', /if \(decision\.kind === 'claim-and-consent' && !recipientProven\)/, 'a sign-in alone can claim a phone-only lead and record SMS consent against their phone', CODE],
+    ['app/auth/callback/route.ts', /opts\.verifiedCookiePersonId === identity\.personId/, "signing in with ?next=/cma/<slug> marks another person's consent answered without proof", CODE],
+    ['app/auth/callback/route.ts', /res\.cookies\.delete\(GOOGLE_COMMS_COOKIE\)[\s\S]*res\.cookies\.delete\(GOOGLE_COMMS_COOKIE\)/, 'the comms-door choices outlive the sign-in they were made for (a second account on the browser inherits them)', CODE],
+    ['app/lp/seller-home-value/actions.ts', /smsConsent: smsConsentCounts && submission\.smsConsent === true/, "the seller form records a no-email submit's SMS box for an unverified cookie person", CODE],
   ]
   const out = []
   for (const [file, re, why, mode] of need) {

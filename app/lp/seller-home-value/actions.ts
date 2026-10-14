@@ -7,7 +7,6 @@ import {
   sendEvent,
   type LeadEventPerson,
 } from '@/lib/crm/send-event'
-import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
 import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/lead-origin-note'
@@ -23,7 +22,8 @@ import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-so
 import { leadOriginPath } from '@/lib/crm/lead-origin-path'
 import { cookies, headers } from 'next/headers'
 import { findCrmPersonIdByEmail } from '@/lib/data/cma/crm'
-import { resolveSubmittedIdentity } from '@/lib/crm/submitted-identity'
+import { resolveSubmittedIdentity, submittedConsentCounts } from '@/lib/crm/submitted-identity'
+import { PERSON_COOKIE, readPersonCookie } from '@/lib/identity/person-cookie'
 import { adMatchConsentCustom } from '@/lib/identity/form-ad-consent'
 
 const siteUrl = siteOrigin()
@@ -287,9 +287,14 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // dedupe email-first and create the lead that actually submitted.
     let fubPersonId: number | null = null
     let alreadyKnown = false
+    // Whether the SMS box ticked in this submit may be recorded for that person:
+    // always for the typed email's person; for a cookie-only (no email) submit,
+    // only when the cookie's identity was verified (lib/crm/submitted-identity.ts).
+    let smsConsentCounts = false
 
     {
-      const cookiePersonId = await getPersonIdFromCookie()
+      const personCookie = readPersonCookie((await cookies()).get(PERSON_COOKIE)?.value)
+      const cookiePersonId = personCookie?.personId ?? null
       const emailPersonId = email ? await findCrmPersonIdByEmail(email) : null
       const resolved = resolveSubmittedIdentity({
         cookiePersonId,
@@ -298,6 +303,10 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       })
       fubPersonId = resolved.personId
       alreadyKnown = resolved.alreadyKnown
+      smsConsentCounts = submittedConsentCounts({
+        hasEmail: Boolean(email),
+        cookieProvenance: personCookie?.provenance ?? null,
+      })
     }
 
     if (!email && !fubPersonId) {
@@ -590,7 +599,11 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // person for sequence merge fields.
     if (fubPersonId) {
       const { autoEnrollByPersonId } = await import('@/lib/crm/enroll')
-      await autoEnrollByPersonId(fubPersonId, { smsConsent: submission.smsConsent }).catch((e: unknown) =>
+      // An unproven identity's ticked box is not that person's consent, so it
+      // records as not given (fail closed), never as an opt-in.
+      await autoEnrollByPersonId(fubPersonId, {
+        smsConsent: smsConsentCounts && submission.smsConsent === true,
+      }).catch((e: unknown) =>
         console.warn('[seller-lp] instant auto-enroll failed:', e),
       )
     }

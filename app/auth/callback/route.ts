@@ -14,6 +14,7 @@ import {
   personCookieWrite,
   readPersonCookie,
   signInProvenance,
+  verifiedPersonIdFromCookie,
   type IdentityProvenance,
 } from '@/lib/identity/person-cookie'
 import type { User } from '@supabase/supabase-js'
@@ -146,6 +147,8 @@ async function applyGoogleCommsConsent(opts: {
   name?: string
   consent: GoogleCommsConsent
   nextPath: string
+  /** crm_people.id of a VERIFIED rr_pid cookie on this browser, else null. */
+  verifiedCookiePersonId: number | null
 }): Promise<void> {
   const email = opts.email.trim().toLowerCase()
   if (!email) return
@@ -202,7 +205,17 @@ async function applyGoogleCommsConsent(opts: {
     if (cmaSlug) {
       const { getCmaAccessIdentity } = await import('@/lib/data')
       const identity = await getCmaAccessIdentity(cmaSlug)
-      if (identity?.personId && identity.personId !== personId) {
+      // The document's person is someone else (a phone-only lead the signer's
+      // email does not match). Marking THEIR consent answered, and binding the
+      // signer's email to them, needs proof this browser is that person: the
+      // verified cookie the tracked link in our email set. A sign-in proves
+      // the signer's own email only, and the slug is a street address anyone
+      // can put in ?next= (consent integrity, 2026-10-14).
+      if (
+        identity?.personId &&
+        identity.personId !== personId &&
+        opts.verifiedCookiePersonId === identity.personId
+      ) {
         const claiming = !identity.clientEmail && identity.personEmails.length === 0 && !identity.claimedBy
         await enrichNativeLead({
           personId: identity.personId,
@@ -241,6 +254,7 @@ export async function GET(request: Request) {
   // can stitch this browser's anonymous history to the now-known person.
   const rrVid = cookieStore.get('rr_vid')?.value
   const googleComms = parseGoogleCommsConsent(cookieStore.get(GOOGLE_COMMS_COOKIE)?.value)
+  const verifiedCookiePersonId = verifiedPersonIdFromCookie(cookieStore.get(PERSON_COOKIE)?.value)
 
   const errorParam = searchParams.get('error')
   const errorDesc = searchParams.get('error_description')
@@ -289,11 +303,16 @@ export async function GET(request: Request) {
           name: typeof name === 'string' ? name : undefined,
           consent: googleComms,
           nextPath: safeNext,
+          verifiedCookiePersonId,
         })
       }
       const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
+      // One sign-in, one answer: the choices were ticked for THIS sign-in. Left
+      // in place for its 10 minutes, a second account signing in on the same
+      // browser was given the first person's email and SMS consent.
+      res.cookies.delete(GOOGLE_COMMS_COOKIE)
       await stampPersonIdFromEmail(
         res,
         data.user.email ?? '',
@@ -332,11 +351,16 @@ export async function GET(request: Request) {
           name: data.user.user_metadata?.full_name ?? data.user.user_metadata?.name,
           consent: googleComms,
           nextPath: safeNext,
+          verifiedCookiePersonId,
         })
       }
       const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
+      // One sign-in, one answer: the choices were ticked for THIS sign-in. Left
+      // in place for its 10 minutes, a second account signing in on the same
+      // browser was given the first person's email and SMS consent.
+      res.cookies.delete(GOOGLE_COMMS_COOKIE)
       await stampPersonIdFromEmail(
         res,
         data.user.email ?? '',
