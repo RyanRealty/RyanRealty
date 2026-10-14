@@ -6,6 +6,11 @@ import {
   getMarketPulse,
   getResortCommunityBySlug,
 } from '@/lib/data'
+import {
+  BEND_NEIGHBORHOOD_DISTRICTS,
+  getNeighborhoodPublicInventory,
+  neighborhoodGeoSlug,
+} from '@/lib/data/geo/neighborhood-public-inventory'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { measuredPlaceHoaInput } from '@/app/communities/[slug]/_v3/place-hoa-measured'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
@@ -156,8 +161,59 @@ async function loadCityFigures(citySlug: string): Promise<PlaceBundle | null> {
   }
 }
 
-async function loadPlace(kind: 'community' | 'city', slug: string): Promise<PlaceBundle | null> {
-  return kind === 'community' ? loadCommunityFigures(slug) : loadCityFigures(slug)
+async function loadNeighborhoodFigures(hoodSlug: string): Promise<PlaceBundle | null> {
+  const district = BEND_NEIGHBORHOOD_DISTRICTS.find((row) => row.slug === hoodSlug)
+  if (!district) return null
+  const geoSlug = neighborhoodGeoSlug('bend', hoodSlug)
+  const [inventory, pulse] = await Promise.all([
+    getNeighborhoodPublicInventory(geoSlug).catch(() => null),
+    readPulse('neighborhood', geoSlug),
+  ])
+  // Public inventory SoR is listing_boundary_xref_mv. Pulse active_count
+  // includes Coming Soon and is not this figure. A silent inventory read
+  // does not fall back to pulse.
+  if (!inventory) return null
+  const keys = inventory.listingKeys.filter(Boolean)
+  const tiles =
+    keys.length > 0
+      ? await getListingTiles({
+          listingKeys: keys.slice(0, 500),
+          status: 'active',
+          sort: 'newest',
+          limit: LISTING_LIMIT,
+        }).catch(() => [])
+      : []
+  return {
+    figures: {
+      name: district.label,
+      publicSlug: hoodSlug,
+      durableSlug: geoSlug,
+      placeKind: 'neighborhood',
+      cityName: 'Bend',
+      citySlug: 'bend',
+      hubHref: `/cities/bend/${hoodSlug}`,
+      activeCount: inventory.activeCount,
+      medianListPrice: inventory.medianListPrice ?? pulse?.medianListPrice ?? null,
+      monthsOfSupply: pulse?.monthsOfSupply ?? null,
+      medianDaysToPending: pulse?.medianDaysToPending ?? null,
+      closedLast30Days: pulse?.closedLast30Days ?? null,
+      refreshedAt: pulse?.refreshedAt ?? null,
+      hoaAnnual: null,
+      hoaKind: null,
+      hoaBasis: null,
+      listingCount: tiles.length,
+    },
+    tiles,
+  }
+}
+
+async function loadPlace(
+  kind: 'community' | 'city' | 'neighborhood',
+  slug: string,
+): Promise<PlaceBundle | null> {
+  if (kind === 'community') return loadCommunityFigures(slug)
+  if (kind === 'neighborhood') return loadNeighborhoodFigures(slug)
+  return loadCityFigures(slug)
 }
 
 function tableRows(place: BuyerAnswerFigures, other?: BuyerAnswerFigures | null) {
@@ -226,7 +282,8 @@ export async function loadBuyerAnswer(path: string): Promise<BuyerAnswerModel | 
   const rows = tableRows(place, other)
   if (rows.length === 0) return null
 
-  const hubNoun = place.placeKind === 'city' ? 'city page' : 'community page'
+  const hubNoun =
+    place.placeKind === 'city' ? 'city page' : place.placeKind === 'neighborhood' ? 'neighborhood page' : 'community page'
   const listingsPlace = other ? `${place.name} and ${other.name}` : place.name
 
   return {
@@ -268,8 +325,10 @@ export async function loadBuyerAnswerForSlugs(input: {
         : `${communityPath(input.slug)}/vs/${input.other}`
       : input.kind === 'str'
         ? `${communityPath(input.slug)}/short-term-rentals`
-        : input.placeKind === 'city'
-          ? `/cities/${input.slug}/${input.kind}`
-          : `${communityPath(input.slug)}/${input.kind}`
+        : input.placeKind === 'neighborhood'
+          ? `/cities/bend/${input.slug}/${input.kind}`
+          : input.placeKind === 'city'
+            ? `/cities/${input.slug}/${input.kind}`
+            : `${communityPath(input.slug)}/${input.kind}`
   return loadBuyerAnswer(path)
 }

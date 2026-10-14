@@ -25,9 +25,11 @@ function dayLabel(iso: string): string {
 export async function HomesSection({
   personId,
   personEmails,
+  hideHeading = false,
 }: {
   personId: number
   personEmails: string[]
+  hideHeading?: boolean
 }) {
   const identity = await resolvePersonIdentity(personId)
   const [viewed, saved] = await Promise.all([
@@ -46,7 +48,7 @@ export async function HomesSection({
 
   return (
     <section aria-label="Homes">
-      <SectionHead>Homes</SectionHead>
+      {hideHeading ? null : <SectionHead>Homes</SectionHead>}
       <ul className="av2-quietlist">
         {homes.map((h) => (
           <li key={h.listingKey} className="av2-quiet" style={{ alignItems: 'center' }}>

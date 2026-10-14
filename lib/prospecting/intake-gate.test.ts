@@ -172,6 +172,26 @@ describe('decideProspectIntake', () => {
     expect(intakeBuildsCma(decision)).toBe(false)
   })
 
+  it('does not text a STOP or other SMS-suppressed cell when there is no email', () => {
+    const decision = decideProspectIntake(clean({
+      email: null,
+      smsSuppressed: true,
+      phones: [{ value: '5415550108', type: 'Mobile', dnc: false }],
+    }))
+    expect(decision).toMatchObject({ action: 'skip', reason: 'sms-blocked' })
+    expect(intakeBuildsCma(decision)).toBe(false)
+  })
+
+  it('does not fall through to SMS when the email is suppressed and the cell is STOP’d', () => {
+    const decision = decideProspectIntake(clean({
+      emailSuppressed: true,
+      smsSuppressed: true,
+      phones: [{ value: '5415550109', type: 'Wireless', dnc: false }],
+    }))
+    expect(decision).toMatchObject({ action: 'skip', reason: 'email-suppressed' })
+    expect(intakeBuildsCma(decision)).toBe(false)
+  })
+
   it('texts a clean cell when the email is suppressed', () => {
     const decision = decideProspectIntake(clean({
       emailSuppressed: true,
@@ -342,6 +362,17 @@ describe('intake is wired in front of person and CMA creation', () => {
     expect(resolved.indexOf('!resolved.bestEmail')).toBeLessThan(resolved.indexOf('enrichOwnerContact'))
     expect(resolved.indexOf('enrichOwnerContact')).toBeLessThan(resolved.lastIndexOf('return result'))
     expect(resolved).toContain('fallback?.allPhones')
+  })
+
+  it('checks SMS suppression on the cell before a mobile-only person or CMA', () => {
+    expect(expired).toContain('isSuppressedByPhone')
+    expect(fsbo).toContain('isSuppressedByPhone')
+    const expiredBody = expired.slice(expired.search(/export async function process/))
+    const fsboBody = fsbo.slice(fsbo.search(/export async function process/))
+    expect(expiredBody.indexOf('isSuppressedByPhone')).toBeGreaterThan(-1)
+    expect(expiredBody.indexOf('isSuppressedByPhone')).toBeLessThan(expiredBody.indexOf('decideProspectIntake'))
+    expect(fsboBody.indexOf('isSuppressedByPhone')).toBeGreaterThan(-1)
+    expect(fsboBody.indexOf('isSuppressedByPhone')).toBeLessThan(fsboBody.indexOf('decideProspectIntake'))
   })
 
   it('shares one email-hard-stop flag set with the prospect send path', () => {
