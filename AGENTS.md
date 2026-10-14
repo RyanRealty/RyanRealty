@@ -1,12 +1,12 @@
 # CORE RULES (read first; these override everything below and any handoff or plan doc)
 
-These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait, or to `git push` `main`, is stale. Process rules live in `AGENTS.md` only. `CLAUDE.md` and `.cursor/rules` point here. New process rules land in `AGENTS.md` in the same PR.
+These outrank every later line, skill, and plan. Process rules live in `AGENTS.md` only. New ones land there in the same PR.
 
 **PRs only.** Never push or fast-forward to `main`. Branch, open a PR, merge. Unfinished work is `npm run push` only.
 
-**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except `hold-for-matt` without `approved-by-matt`. Approval (label or `.github/approved-prs`) unholds and merges when `merge-gate` is green.
+**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except `hold-for-matt` without `approved-by-matt`.
 
-**Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason. The stale job keeps the branch for 7 days; the daily head-branch cleanup then deletes it unless labeled `keep-branch` or `hold-for-matt`. Merged PR head branches delete the same day. Never `main`. Never a branch that still has an open PR.
+**Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason.
 
 **Done.** Merged, Vercel production **READY**, and the live URL checked. `npm run ship` is the land path.
 
@@ -34,7 +34,9 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Video.** One factory (Matt 2026-10-13): every video, any bot or machine, renders via `npm run studio:render`; Imagine makes footage only. Nothing reaches Matt until `npm run video:check -- <mp4> --final` passes. Rules: `.claude/skills/ryan-studio/SKILL.md`.
 
-**Social queue.** Every GBP, LinkedIn and X post is a draft in `content-queue/<slug>/<platform>.md` that passes `npm run ci:content-queue` (required via `merge-gate`). It posts only from `.github/workflows/content-queue-publish.yml` when `CONTENT_QUEUE_LIVE=true`. A draft that passes the gate is publishable (no `approved: true` door; Matt 2026-10-14 11:59 PT). LinkedIn is on for Matt's profile and the company page. Threads stays off the old `/api/social/publish` door. Rules: section "Social content queue" below.
+**Social queue.** Drafts in `content-queue/` must pass `npm run ci:content-queue`. No `approved: true` door. Details in AGENTS.md.
+
+**Worktrees.** After your PR merges or closes, remove your own worktree or clone (`npm run wt:cleanup`). Never remove a checkout with uncommitted changes, unpushed commits, stashes, or one another session is using.
 
 ---
 
@@ -199,7 +201,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 1. Branch name: `wt/<topic>-YYYYMMDD` (or harness names like `claude/…`). Push the branch before stop, or write the handoff.
 2. Path: sibling dir such as `../RyanRealty-wt-<topic>` — not nested inside the primary tree.
 3. Session end: unfinished work is `npm run push` plus a handoff note (branch, absolute path, next step) in `docs/plans/handoffs/`. A finished unit is `npm run ship`. No force-push or reset. Rebase only to land a PR.
-4. Cleanup when merged: delete branch, `git worktree remove <path>`, `git worktree prune`. Run `node scripts/worktree-hygiene.mjs` at session start/end.
+4. **Cleanup after your PR merges or closes.** Remove your own worktree or clone: `git worktree remove <path>`, then `git worktree prune`, then delete the local branch. Or run `npm run wt:cleanup` (live) / `npm run wt:cleanup:dry` (print only). Never remove a checkout with uncommitted changes, unpushed commits, stashes, or one another session is using. The script refuses those. `npm run ship` and the post-merge / post-checkout hooks call it; a launchd job on the Mini (`scripts/install-cleanup-launchd.sh`, once) catches leftovers. Run `node scripts/worktree-hygiene.mjs` at session start if you want a status list.
 5. Never leave the only copy of valued commits in an unpushed worktree with no handoff line.
 
 ### What the other environment should read

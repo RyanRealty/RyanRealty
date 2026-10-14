@@ -106,6 +106,12 @@ fi
 
 echo "ship: origin/main is $(git rev-parse --short origin/main)"
 
+# Finished worktrees (this one included, after the 3-hour idle window) can go.
+# Never fail the ship. The hook form exits 0 even when a candidate is skipped.
+if [ -f scripts/cleanup-merged-worktrees.sh ]; then
+  sh scripts/cleanup-merged-worktrees.sh --hook || true
+fi
+
 kind=$(node --input-type=module -e '
 import { listChangedFiles, classifyDiff, isVercelSkippable } from "./scripts/lib/product-diff.mjs"
 const files = listChangedFiles({ prev: process.argv[1], head: "origin/main" })

@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# $3 is 1 when this checkout changed branches (not a file checkout).
+# A switch onto main often means a sibling worktree just landed.
+[ "${3:-0}" = "1" ] || exit 0
+sh scripts/cleanup-merged-worktrees.sh --hook || true
