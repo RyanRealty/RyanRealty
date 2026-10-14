@@ -49,11 +49,27 @@ describe('page-payload budget (200 KB hard ceiling)', () => {
   it('does not hard-fail a 700 KB community whose map seeded 22 homes', () => {
     const failures = evaluatePayloadBudget(
       { '/communities/tetherow': 700_000 },
-      { pages: { '/communities/tetherow': 710_608 } },
+      { pages: { '/communities/tetherow': 841_616 } },
       { cardCounts: { '/communities/tetherow': 22 } },
     )
     expect(failures.filter((m) => m.includes('hard ceiling'))).toEqual([])
     expect(failures.filter((m) => m.includes('grew'))).toEqual([])
+  })
+
+  it('clears the live 21-home Tetherow page and one extra listing, not a 20 KB jump', () => {
+    const baseline = { pages: { '/communities/tetherow': 841_616 } }
+    const cards = { cardCounts: { '/communities/tetherow': 22 } }
+    expect(
+      evaluatePayloadBudget({ '/communities/tetherow': 825_232 }, baseline, cards),
+    ).toEqual([])
+    expect(
+      evaluatePayloadBudget({ '/communities/tetherow': 825_232 + 16_384 }, baseline, cards),
+    ).toEqual([])
+    expect(
+      evaluatePayloadBudget({ '/communities/tetherow': 841_617 }, baseline, cards).some((m) =>
+        m.includes('grew'),
+      ),
+    ).toBe(true)
   })
 
   it('fails a page that grew, even under the ceiling', () => {
