@@ -276,17 +276,9 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   })
 
   // Send to Meta CAPI for deduplication with browser pixel.
-  // Every Lead carries an estimated value so Meta's bid algorithm can
-  // optimize for higher-value conversions. Property inquiries are higher
-  // intent than general inquiries; fold that into the value tier.
+  // Leads are counted by type. Do not send value or currency.
   const eventId = generateEventId()
-  const inquiryLower = inquiryType.toLowerCase()
   const recruit = isJoinInquiry(inquiryType)
-  const leadValue = listingKey || inquiryLower.includes('property') || inquiryLower.includes('listing')
-    ? 300
-    : inquiryLower.includes('seller') || inquiryLower.includes('valuation')
-      ? 500
-      : 200
   if (!recruit) {
     const sharing = await visitorCapiConsent()
     if (sharing.allowed) {
@@ -304,8 +296,6 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
           secGpc: sharing.secGpc,
           customData: {
             inquiry_type: inquiryType,
-            value: leadValue,
-            currency: 'USD',
           },
           eventSourceUrl: `${siteOrigin()}/contact`,
         }),

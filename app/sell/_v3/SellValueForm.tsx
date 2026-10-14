@@ -396,8 +396,6 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
             'Lead',
             {
               content_name: 'seller_lp_home_value',
-              value: 500,
-              currency: 'USD',
             },
             { eventID: result.eventId },
           )
