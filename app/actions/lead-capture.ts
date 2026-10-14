@@ -368,8 +368,9 @@ export async function submitTetherowLead(input: {
     const result = await sendEvent({
       type: eventType,
       person,
-      // The door (FUNNEL-4), the same label the canonical tag below writes.
-      source: isSeller ? 'seller-lp' : 'buyer-lp',
+      // The door (FUNNEL-4): this endpoint, not /sell or /buy, whose report rows
+      // count seller-lp and buyer-lp. The canonical tag below keeps the LP audience.
+      source: isSeller ? 'tetherow-seller-lp' : 'tetherow-buyer-lp',
       sourceUrl: pageUrl,
       pageUrl,
       pageTitle: 'Tetherow Landing Page',

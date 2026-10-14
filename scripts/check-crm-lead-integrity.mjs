@@ -9,7 +9,7 @@
  *     third-party textMessages POST
  *   - source is required on every event so marketing attribution survives
  *   - lead-type events tag audience:buyer or audience:seller
- *   - the site's doors write the DOOR label as source, never the host, and the
+ *   - every write of crm_people.source names the DOOR, never the host, and the
  *     reuse path keeps source first-touch (FUNNEL-4, 2026-09-23)
  *   - the public intake screen (quality:suspect) is wired from the contact-form
  *     honeypot through sendEvent/ensureNativeLead to every machine that acts on
@@ -19,8 +19,9 @@
  * Usage: node scripts/check-crm-lead-integrity.mjs
  */
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, posix } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import ts from 'typescript'
 
 const ROOT = process.cwd()
 const BT = String.fromCharCode(96)
@@ -33,95 +34,14 @@ const AUDIENCE_TAG_ALLOW = new Set([
   'app/actions/home.ts', // subscribeNewsletter — audience unknown at signup
 ])
 
-/**
- * sendEvent callers allowed to write the site host as source, with the reason.
- * A door never is (FUNNEL-4): the host names no door.
- */
-export const HOST_SOURCE_ALLOWED = {
-  // A CTA click by an already identified person ('Visited Website'), not a
-  // door. The host is the value reuseSourcePatch treats as no door, so the
-  // person's first real door still fills an empty source; a made-up label here
-  // would block it.
-  'app/actions/track-cta-click.ts': 'CTA click activity, not a door',
-}
-
-/** Balanced-paren argument text of every `sendEvent(` call in a file. */
-export function sendEventCalls(src) {
-  const calls = []
-  let from = 0
-  for (;;) {
-    const at = src.indexOf('sendEvent(', from)
-    if (at === -1) break
-    let depth = 0
-    let end = at + 'sendEvent'.length
-    for (; end < src.length; end++) {
-      const ch = src[end]
-      if (ch === '(' || ch === '{' || ch === '[') depth++
-      else if (ch === ')' || ch === '}' || ch === ']') {
-        depth--
-        if (depth === 0) break
-      }
-    }
-    calls.push(src.slice(at + 'sendEvent('.length, end))
-    from = end
+const textCache = new Map()
+/** A repo file's text, read once per run; null when it does not exist. */
+export function readRepoFile(rel) {
+  if (!textCache.has(rel)) {
+    const abs = join(ROOT, rel)
+    textCache.set(rel, existsSync(abs) && statSync(abs).isFile() ? readFileSync(abs, 'utf8') : null)
   }
-  return calls
-}
-
-/** The value expression of the object literal's own (depth-1) `source:` key. */
-export function topLevelSource(arg) {
-  let depth = 0
-  for (let i = 0; i < arg.length; i++) {
-    const ch = arg[i]
-    if (ch === '(' || ch === '{' || ch === '[') depth++
-    else if (ch === ')' || ch === '}' || ch === ']') depth--
-    else if (depth === 1 && arg.startsWith('source:', i) && !/[\w$]/.test(arg[i - 1] ?? '')) {
-      let j = i + 'source:'.length
-      let d = 0
-      let expr = ''
-      for (; j < arg.length; j++) {
-        const c = arg[j]
-        if (c === '(' || c === '{' || c === '[') d++
-        else if (c === ')' || c === '}' || c === ']') {
-          if (d === 0) break
-          d--
-        } else if (c === ',' && d === 0) break
-        expr += c
-      }
-      return expr.trim()
-    } else if (depth === 1 && arg.startsWith('source', i) && !/[\w$.]/.test(arg[i - 1] ?? '')) {
-      // Shorthand `{ source, ... }`: a variable whose value this parse cannot see.
-      // The CMA PDF route hid the host this way until 2026-10-14.
-      const rest = arg.slice(i + 'source'.length).trimStart()
-      if (rest === '' || rest.startsWith(',') || rest.startsWith('}')) return 'source'
-    }
-  }
-  return null
-}
-
-/** A sendEvent `source:` expression that derives the site host instead of naming the door. */
-export function isHostDerivedSource(expr) {
-  // siteHost() / siteOrigin() / siteUrl() are lib/site-origin.ts, the one place the host comes from (2026-10-07).
-  return (
-    /replace\(|NEXT_PUBLIC_SITE_URL|siteUrl|\bbase\b|'ryan-realty\.com'|\bsite(?:Host|Origin)\(|\bwebsiteSource\(/.test(expr) ||
-    expr.trim() === 'source'
-  )
-}
-
-/**
- * The expressions a file assigns to a local `source` (`const source = …`), for a
- * sendEvent that passes `source` by name or shorthand. Empty when the file never
- * assigns one (a parameter, say), which the caller treats as unverifiable.
- */
-export function localSourceAssignments(src) {
-  return [...src.matchAll(/\b(?:const|let|var)\s+source\s*(?::[^=\n]+)?=\s*([^\n;]+)/g)].map((m) => m[1].trim())
-}
-
-/** Is this sendEvent source, read in its file, the site host (or a name this check cannot resolve)? */
-export function sourceDerivesHost(expr, fileSrc) {
-  if (expr.trim() !== 'source') return isHostDerivedSource(expr)
-  const assigned = localSourceAssignments(fileSrc)
-  return assigned.length === 0 || assigned.some(isHostDerivedSource)
+  return textCache.get(rel)
 }
 
 const SCAN = ['lib', 'app']
@@ -137,12 +57,255 @@ function walk(dir, out = []) {
   return out
 }
 
+/** Every non-test .ts/.tsx file under app/ and lib/, the files this gate reads. */
+export function scannedFiles() {
+  return SCAN.flatMap((d) => walk(d))
+}
+
+// ── FUNNEL-4: crm_people.source is the door ─────────────────────────────────
+
+/**
+ * The calls that write crm_people.source: sendEvent, and ensureNativeLead (the
+ * native write under it, which some doors also call directly as a fallback).
+ */
+const SOURCE_WRITERS = new Set(['sendEvent', 'ensureNativeLead'])
+
+/** Text that names the site's host or origin. lib/site-origin.ts is the one place the host comes from (2026-10-07). */
+const HOST_TEXT = /NEXT_PUBLIC_SITE_URL|ryan-realty\.com|https?:\/\/|\bsite(?:Host|Origin|Url)\b|\bwebsiteSource\b/
+
+/**
+ * Writes whose source is not a door label this gate can read, each scoped to
+ * its file and to its source expression as written, with the reason. Kind
+ * 'host': the write may carry the site host. Kind 'opaque': the value is not
+ * readable here, and the reason says why it still names a door. An entry that
+ * matches no write needing it fails, so the list only describes code that exists.
+ */
+export const SOURCE_ALLOWED = {
+  'lib/crm/send-event.ts': {
+    'params.source': { kind: 'opaque', reason: "The spine: it writes its caller's source, and every caller is read here." },
+  },
+  'app/actions/track-cta-click.ts': {
+    // reuseSourcePatch reads the host as no door, so the person's first real
+    // door still fills an empty source; a made-up label here would block it.
+    source: { kind: 'host', reason: 'A CTA click by a person already known (Visited Website), not a door.' },
+  },
+  'app/api/cron/crm-portal-lead-intake/route.ts': {
+    portal: { kind: 'opaque', reason: 'The portal the lead email came from (Portal in lib/crm/portal-lead-parser.ts).' },
+  },
+  'app/lp/seller-home-value/actions.ts': {
+    'resolveLeadSource(originUtmSource, lpSource)': {
+      kind: 'opaque',
+      reason: "The ad platform of a paid visit, else the form's LP door (resolveLeadSource in lib/crm/lead-source.ts).",
+    },
+  },
+}
+
+function resolveModule(spec, fromRel, read) {
+  let base
+  if (spec.startsWith('@/')) base = spec.slice(2)
+  else if (spec.startsWith('.')) base = posix.join(posix.dirname(fromRel), spec)
+  else return null
+  for (const rel of [base, `${base}.ts`, `${base}.tsx`, `${base}/index.ts`, `${base}/index.tsx`]) {
+    if (/\.(ts|tsx)$/.test(rel) && read(rel) != null) return rel
+  }
+  return null
+}
+
+function propertyName(p) {
+  return p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)) ? p.name.text : null
+}
+
+/** Does a binding name (an identifier or a destructuring pattern) bind `text`? */
+function bindsName(name, text) {
+  if (ts.isIdentifier(name)) return name.text === text
+  return name.elements.some((el) => !ts.isOmittedExpression(el) && bindsName(el.name, text))
+}
+
+function calleeName(expr) {
+  if (ts.isIdentifier(expr)) return expr.text
+  if (ts.isPropertyAccessExpression(expr)) return expr.name.text
+  return null
+}
+
+/**
+ * Parses files on demand (one parse per file) and reads each write's source on
+ * the syntax tree, so a comment, a nested campaign.source or a `message: source`
+ * value is never taken for the key.
+ */
+function sourceProject(read) {
+  const modules = new Map()
+
+  function load(rel) {
+    if (modules.has(rel)) return modules.get(rel)
+    const text = read(rel)
+    let mod = null
+    if (text != null) {
+      const sf = ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true, rel.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
+      mod = { rel, sf, values: new Map(), imports: new Map(), writes: [] }
+      const assign = (name, node) => mod.values.set(name, [...(mod.values.get(name) ?? []), node])
+      const visit = (node) => {
+        if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) assign(node.name.text, node.initializer)
+        else if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(node.left)) assign(node.left.text, node.right)
+        else if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+          const bindings = node.importClause?.namedBindings
+          if (bindings && ts.isNamedImports(bindings)) {
+            for (const el of bindings.elements) mod.imports.set(el.name.text, { from: node.moduleSpecifier.text, name: (el.propertyName ?? el.name).text })
+          }
+        } else if (ts.isCallExpression(node) && SOURCE_WRITERS.has(calleeName(node.expression))) {
+          const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1
+          const write = { callee: calleeName(node.expression), line, expr: null, node: null }
+          const arg = node.arguments[0]
+          if (arg && ts.isObjectLiteralExpression(arg)) {
+            const prop = arg.properties.find(
+              (p) => (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) && propertyName(p) === 'source',
+            )
+            if (prop) write.node = ts.isShorthandPropertyAssignment(prop) ? prop.name : prop.initializer
+            else if (arg.properties.some((p) => ts.isSpreadAssignment(p))) write.expr = arg.getText(sf)
+          } else if (arg) {
+            write.expr = arg.getText(sf)
+          }
+          if (write.node) write.expr = write.node.getText(sf)
+          if (write.expr !== null) mod.writes.push(write)
+        }
+        ts.forEachChild(node, visit)
+      }
+      visit(sf)
+    }
+    modules.set(rel, mod)
+    return mod
+  }
+
+  const hasHost = (leaves) => leaves.some((l) => l.kind === 'host')
+
+  /**
+   * What an identifier can hold: opaque when a parameter of an enclosing function
+   * binds it (whatever the caller passes), else what the file assigns it, else
+   * the const it imports, else opaque.
+   */
+  function nameLeaves(id, mod, seen) {
+    const name = id.text
+    if (name === 'undefined') return []
+    for (let n = id.parent; n; n = n.parent) {
+      if (ts.isFunctionLike(n) && n.parameters?.some((p) => bindsName(p.name, name))) return [{ kind: 'opaque', text: name }]
+    }
+    const local = mod.values.get(name)
+    if (local) return local.flatMap((n) => leaves(n, mod, seen))
+    const imp = mod.imports.get(name)
+    const target = imp && resolveModule(imp.from, mod.rel, read)
+    const other = target && load(target)
+    const exported = other?.values.get(imp.name)
+    if (exported) return exported.flatMap((n) => leaves(n, other, seen))
+    return [{ kind: 'opaque', text: name }]
+  }
+
+  /**
+   * What a source expression can evaluate to: 'label' (a door name), 'host' (the
+   * site's host or origin) or 'opaque' (a parameter, a call, a property).
+   */
+  function leaves(node, mod, seen = new Set()) {
+    if (seen.has(node)) return []
+    seen.add(node)
+    if (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node) || ts.isSatisfiesExpression(node) || ts.isTypeAssertionExpression(node)) {
+      return leaves(node.expression, mod, seen)
+    }
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+      return [{ kind: HOST_TEXT.test(node.text) ? 'host' : 'label', text: node.text }]
+    }
+    if (ts.isConditionalExpression(node)) return [...leaves(node.whenTrue, mod, seen), ...leaves(node.whenFalse, mod, seen)]
+    if (
+      ts.isBinaryExpression(node) &&
+      (node.operatorToken.kind === ts.SyntaxKind.BarBarToken || node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken)
+    ) {
+      return [...leaves(node.left, mod, seen), ...leaves(node.right, mod, seen)]
+    }
+    if (ts.isIdentifier(node)) return nameLeaves(node, mod, seen)
+    const text = node.getText(mod.sf)
+    if (ts.isTemplateExpression(node)) {
+      // A fixed lead-in names the door (`Facebook Lead Ad — ${campaign}`).
+      if (HOST_TEXT.test(node.head.text) || node.templateSpans.some((s) => hasHost(leaves(s.expression, mod, seen)))) return [{ kind: 'host', text }]
+      return [{ kind: node.head.text.trim() ? 'label' : 'opaque', text }]
+    }
+    let host = HOST_TEXT.test(text)
+    if (!host && (ts.isCallExpression(node) || ts.isPropertyAccessExpression(node))) {
+      // `base.replace(…)`, `new URL(origin).host`, `pick(utm, siteHost())`: the host passed through.
+      const receiver = ts.isCallExpression(node) ? node.expression : node
+      if (ts.isPropertyAccessExpression(receiver)) host = hasHost(leaves(receiver.expression, mod, seen))
+      if (!host && ts.isCallExpression(node)) host = node.arguments.some((a) => hasHost(leaves(a, mod, seen)))
+    }
+    return [{ kind: host ? 'host' : 'opaque', text }]
+  }
+
+  /** Each crm_people.source write in a file, with what its source can hold. */
+  function writes(rel) {
+    const mod = load(rel)
+    if (!mod) return []
+    return mod.writes.map((w) => ({
+      callee: w.callee,
+      line: w.line,
+      expr: w.expr.replace(/\s+/g, ' '),
+      leaves: w.node ? leaves(w.node, mod) : [{ kind: 'opaque', text: w.expr }],
+    }))
+  }
+
+  return { writes }
+}
+
+/** Each sendEvent / ensureNativeLead in one file, with the source expression and what it can hold. */
+export function sourceWrites(rel, read = readRepoFile) {
+  return sourceProject(read).writes(rel)
+}
+
+/**
+ * The FUNNEL-4 failures across `files`: a write whose source is the site host or
+ * cannot be read down to a door label, unless `allowed` names that file and
+ * expression with the matching kind; and an allowance no write needs.
+ */
+export function sourceWriteFailures(files, { read = readRepoFile, allowed = SOURCE_ALLOWED } = {}) {
+  const project = sourceProject(read)
+  const fails = []
+  const used = new Set()
+  const scanned = new Set(files)
+  for (const rel of files) {
+    const text = read(rel)
+    if (text == null || !/\b(?:sendEvent|ensureNativeLead)\s*\(/.test(text)) continue
+    for (const w of project.writes(rel)) {
+      const need = w.leaves.some((l) => l.kind === 'host') ? 'host' : w.leaves.some((l) => l.kind === 'opaque') ? 'opaque' : null
+      if (need === null) continue
+      const allowance = allowed[rel]?.[w.expr]
+      if (allowance?.kind === need) {
+        used.add(`${rel}\n${w.expr}`)
+        continue
+      }
+      if (need === 'host') {
+        fails.push(
+          `${rel}:${w.line}: ${w.callee} source \`${w.expr}\` is the site host. Write the door label ('contact-form', 'idx-registration', 'seller-lp', 'buyer-lp', 'place-page', 'published-cma', ...) so crm_people.source says which form it was (FUNNEL-4), or allow it in SOURCE_ALLOWED with the reason it is not a door.`,
+        )
+      } else {
+        const unread = w.leaves.filter((l) => l.kind === 'opaque').map((l) => l.text.replace(/\s+/g, ' '))
+        fails.push(
+          `${rel}:${w.line}: ${w.callee} source \`${w.expr}\` does not read down to a door label (${unread.join(', ')}). Name the door with a string or a const, or allow it in SOURCE_ALLOWED with the reason it names a door (FUNNEL-4).`,
+        )
+      }
+    }
+  }
+  for (const [rel, entries] of Object.entries(allowed)) {
+    for (const [expr, { kind }] of Object.entries(entries)) {
+      if (!used.has(`${rel}\n${expr}`)) {
+        fails.push(
+          `${rel}: SOURCE_ALLOWED allows \`${expr}\` (${kind}), but ${scanned.has(rel) ? `no write there needs a ${kind} allowance` : 'the file is not scanned'}. Remove the entry.`,
+        )
+      }
+    }
+  }
+  return fails
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const files = SCAN.flatMap((d) => walk(d))
+  const files = scannedFiles()
   const fails = []
 
   for (const rel of files) {
-    const src = readFileSync(join(ROOT, rel), 'utf8')
+    const src = readRepoFile(rel)
     const postsToBarePeople = src.includes('/people' + BT) && /method:\s*['"]POST['"]/.test(src)
     if (postsToBarePeople && !KNOWN_PEOPLE_POST.has(rel)) {
       fails.push(
@@ -167,9 +330,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     }
   }
 
-  const sendEventSrc = existsSync(join(ROOT, 'lib/crm/send-event.ts'))
-    ? readFileSync(join(ROOT, 'lib/crm/send-event.ts'), 'utf8')
-    : ''
+  const sendEventSrc = readRepoFile('lib/crm/send-event.ts') ?? ''
   if (!sendEventSrc) {
     fails.push('lib/crm/send-event.ts missing — native lead capture is the CRM spine.')
   } else if (!/\bsource:\s*string\b/.test(sendEventSrc)) {
@@ -182,30 +343,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   // Every site door stamped crm_people.source with the site host ('ryan-realty.com',
   // 76 of 88 site leads in 30 days), so no report could tell a contact-form note from
   // an alerts signup, and the reuse path overwrote the column with the latest door.
+  //
+  // Every sendEvent and ensureNativeLead in app/ and lib/, read on the syntax tree.
+  // Until 2026-10-14 the check named four door files and matched text, so nine more
+  // doors still wrote the host: the CMA download and pricing read, the signed-in
+  // saved search, the listing payment email, the /buy lead form, the page CTA, the
+  // rental calculator, the Tetherow endpoint and the CMA PDF route.
+  fails.push(...sourceWriteFailures(files))
 
-  // Every sendEvent call in app/ and lib/, not a list of four files: until
-  // 2026-10-14 six more doors (CMA download and pricing read, the signed-in saved
-  // search, the listing payment email, the /buy lead form, the page CTA, rental
-  // calculator and Tetherow forms, the CMA PDF route) still wrote the host
-  // because the check named only the first four.
-  for (const rel of files) {
-    if (HOST_SOURCE_ALLOWED[rel]) continue
-    const src = readFileSync(join(ROOT, rel), 'utf8')
-    if (!src.includes('sendEvent(')) continue
-    for (const call of sendEventCalls(src)) {
-      const expr = topLevelSource(call)
-      if (expr === null) continue
-      if (sourceDerivesHost(expr, src)) {
-        fails.push(
-          `${rel}: sendEvent source is \`${expr}\`, the site host. Write the door label ('contact-form', 'idx-registration', 'seller-lp', 'buyer-lp', 'place-page', 'published-cma', ...) so crm_people.source says which form it was (FUNNEL-4), or add the file to HOST_SOURCE_ALLOWED with the reason it is not a door.`,
-        )
-      }
-    }
-  }
-
-  const ensureSrc = existsSync(join(ROOT, 'lib/data/crm/ensureNativeLead.ts'))
-    ? readFileSync(join(ROOT, 'lib/data/crm/ensureNativeLead.ts'), 'utf8')
-    : ''
+  const ensureSrc = readRepoFile('lib/data/crm/ensureNativeLead.ts') ?? ''
   if (/update\.source\s*=\s*input\.source/.test(ensureSrc) || !/reuseSourcePatch\(/.test(ensureSrc)) {
     fails.push(
       'lib/data/crm/ensureNativeLead.ts: the REUSE path must keep crm_people.source first-touch through reuseSourcePatch (a later door lands as a source:<door> tag), never overwrite it with the latest door (FUNNEL-4).',
@@ -230,7 +376,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     ['app/api/cron/visitor-hot-lead-escalation/route.ts', /person\?\.suspect/, 'hot-lead escalation skips a quality:suspect person'],
   ]
   for (const [rel, re, what] of SCREEN_WIRING) {
-    const src = existsSync(join(ROOT, rel)) ? readFileSync(join(ROOT, rel), 'utf8') : ''
+    const src = readRepoFile(rel) ?? ''
     if (!re.test(src)) {
       fails.push(`${rel}: no longer ${what} (FUNNEL-1 intake screen, lib/crm/lead-quality.ts).`)
     }
@@ -243,7 +389,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   }
   const tracked = KNOWN_PEOPLE_POST.size
   console.log(
-    `✓ crm-lead-integrity: leads use sendEvent → crm_people, source is required, every lead-creation path tags an audience.` +
+    `✓ crm-lead-integrity: leads use sendEvent → crm_people, source is required and names the door, every lead-creation path tags an audience.` +
       (tracked ? ` ${tracked} file keeps a documented /people fallback.` : ''),
   )
 }

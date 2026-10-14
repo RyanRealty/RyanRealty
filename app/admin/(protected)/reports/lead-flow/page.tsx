@@ -54,7 +54,7 @@ import {
   type ReportGridRow,
   type ReportNumberItem,
 } from '@/components/admin/v2'
-import { CAP_SOURCES, CAP_WIRING, CAP_SPLIT, CAP_EVENTS, CAP_DAYS, funnelColumns, wiringColumns, splitColumns, topLeadSourcesColumns, topLeadEventColumns } from './_columns'
+import { CAP_SOURCES, CAP_SPLIT, CAP_EVENTS, CAP_DAYS, funnelColumns, wiringColumns, splitColumns, topLeadSourcesColumns, topLeadEventColumns } from './_columns'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -103,10 +103,15 @@ const CODE = { fontFamily: 'var(--a-font-mono)', overflowWrap: 'anywhere' as con
 // crm_people.source the door writes on create (first touch: a person who came
 // through another door first is counted there), or null when no one string
 // counts the door (one string per Meta campaign). Every site door writes its own
-// label since 2026-10-14; until then nine wrote the site host and read 0 here
-// (FUNNEL-4, scripts/check-crm-lead-integrity.mjs). `path_prefixes` are the visitor_events paths that
-// count landings on the door's own pages (summed); empty for a door with no
-// page of its own, so it never reads Silent just because the site has traffic.
+// label since 2026-10-14 (FUNNEL-4, held by scripts/check-crm-lead-integrity.mjs).
+// Until then nine wrote the site host, so the /buy form, the listing-page asks,
+// the market and FAQ sheets and the rental calculator had no CRM count here.
+// Doors no live page reaches have no row: the CMA PDF route (cma-request), the
+// page CTA's newsletter option (blog-email) and the Tetherow endpoint
+// (tetherow-seller-lp, tetherow-buyer-lp; its pages 308 since 2026-09-06).
+// `path_prefixes` are the visitor_events paths that count landings on the door's
+// own pages (summed); empty for a door with no page of its own, so it never reads
+// Silent just because the site has traffic.
 
 type LeadSurface = {
   /** Short human label for the row, also the row key. */
@@ -134,7 +139,7 @@ const LEAD_SURFACES: LeadSurface[] = [
     lp_variants: ['lead-landing-buyer', 'buy-leverage', 'buy-concessions'],
     assignment_source: 'buyer-lp',
     path_prefixes: ['/buy/'],
-    notes: 'The /buy/<intent> form, /buy/leverage and /buy/concessions. /buy/alerts signups count under Listing alerts and saves, though its visits count here.',
+    notes: 'The /buy/<intent> form, /buy/leverage and /buy/concessions. /buy/alerts signups (GA4 and CRM) count under Listing alerts and saves, though its visits count here.',
   },
   {
     label: 'Contact form',
@@ -145,10 +150,10 @@ const LEAD_SURFACES: LeadSurface[] = [
   },
   {
     label: 'Listing alerts and saves',
-    lp_variants: ['search-alert', 'listing-save', 'listing-price-watch'],
+    lp_variants: ['search-alert', 'buy-alerts', 'listing-save', 'listing-price-watch'],
     assignment_source: 'idx-registration',
     path_prefixes: [],
-    notes: 'Search alerts (place pages, search), save home and price-drop watch (listing pages). One CRM source, so one row; no single page.',
+    notes: 'Search alerts (place pages, search, /buy, /buy/alerts), save home and price-drop watch (listing pages), and a signed-in saved search, which sends no GA4 lead event. One CRM source, so one row; no single page.',
   },
   {
     label: 'Listing market analysis',
@@ -468,7 +473,7 @@ async function LeadFlowContent({
     ],
   }))
 
-  const wiringGrid: ReportGridRow[] = wiringRows.slice(0, CAP_WIRING).map((row) => ({
+  const wiringGrid: ReportGridRow[] = wiringRows.map((row) => ({
     key: row.surface.label,
     cells: [
       row.surface.label,

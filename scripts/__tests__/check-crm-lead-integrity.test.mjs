@@ -1,106 +1,158 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
-import { sendEventCalls, topLevelSource, isHostDerivedSource, sourceDerivesHost, HOST_SOURCE_ALLOWED } from '../check-crm-lead-integrity.mjs'
+import { scannedFiles, sourceWrites, sourceWriteFailures, SOURCE_ALLOWED } from '../check-crm-lead-integrity.mjs'
 
-// FUNNEL-4 (2026-09-23): the gate must find the sendEvent object's OWN `source:`
-// (not campaign.source) and tell a door label from the site host.
-describe('check-crm-lead-integrity door-source parsing', () => {
-  const src = `
-    const res = await sendEvent({
-      type: 'General Inquiry',
-      person: { emails: [{ value: email }] },
-      source: isJoinInquiry(inquiryType) ? 'join' : 'contact-form',
-      campaign: originUtmSource ? { source: originUtmSource, medium: 'x' } : undefined,
-    })
-    await sendEvent({ type: 'Saved Property', source: base.replace(/^https?:\\/\\//, '').toLowerCase() || 'ryan-realty.com' })
-  `
+/** An in-memory repo: repo-relative path → file text. */
+const repo = (files) => (rel) => files[rel] ?? null
+/** kind:text of what each write's source can hold, one array per write. */
+const read = (src, files = {}) =>
+  sourceWrites('app/x.ts', repo({ ...files, 'app/x.ts': src })).map((w) => w.leaves.map((l) => `${l.kind}:${l.text}`))
 
-  it('extracts every call and its top-level source expression', () => {
-    const calls = sendEventCalls(src)
-    expect(calls).toHaveLength(2)
-    expect(topLevelSource(calls[0])).toBe("isJoinInquiry(inquiryType) ? 'join' : 'contact-form'")
-    expect(topLevelSource(calls[1])).toContain('base.replace(')
+// FUNNEL-4 (2026-09-23): crm_people.source names the door, never the site host.
+describe('check-crm-lead-integrity reads each source write on the syntax tree', () => {
+  it("reads the object's own source, not a nested campaign.source, a message value or a comment", () => {
+    const src = `
+      // crm_people.source: was the host
+      const source = siteHost()
+      await sendEvent({
+        type: 'General Inquiry',
+        message: source,
+        campaign: { source: 'fb', medium: 'x' },
+        /* source: siteHost() */
+        source: isJoinInquiry(t) ? 'join' : 'contact-form',
+      })`
+    expect(read(src)).toEqual([['label:join', 'label:contact-form']])
   })
 
-  it('reads a shorthand source as the unverifiable `source`', () => {
-    expect(topLevelSource(sendEventCalls(`sendEvent({ type: 'Visited Website', source, sourceUrl: url })`)[0])).toBe('source')
-    expect(topLevelSource(sendEventCalls(`sendEvent({ type: 'x', sourceUrl: url, source })`)[0])).toBe('source')
-    expect(topLevelSource(sendEventCalls(`sendEvent({ type: 'x', sourceUrl: url })`)[0])).toBe(null)
+  it('reads ensureNativeLead writes as well as sendEvent', () => {
+    expect(read(`await ensureNativeLead({ email, source: 'place-page' })`)).toEqual([['label:place-page']])
   })
 
-  it('resolves a source passed by name to what the file assigns it', () => {
-    expect(sourceDerivesHost('source', 'const source = siteHost()')).toBe(true)
-    expect(sourceDerivesHost('source', "const source = siteUrl.replace(/^https?:\\/\\//, '')")).toBe(true)
-    expect(sourceDerivesHost('source', 'const source = lead.campaignName')).toBe(false)
-    expect(sourceDerivesHost('source', 'function f(source: string) {}')).toBe(true)
-    expect(sourceDerivesHost("'cma-request'", '')).toBe(false)
+  it('follows a name to what the file assigns it, across lines and through satisfies', () => {
+    const src = `
+      const NEWSLETTER = 'blog-email' satisfies LeadSource
+      const door =
+        input.kind === 'newsletter'
+          ? NEWSLETTER
+          : 'homepage-cta'
+      sendEvent({ source: door })`
+    expect(read(src)).toEqual([['label:blog-email', 'label:homepage-cta']])
   })
 
-  it('ignores a nested campaign.source', () => {
-    const call = sendEventCalls(`sendEvent({ campaign: { source: 'fb' }, source: door })`)[0]
-    expect(topLevelSource(call)).toBe('door')
+  it('reads a shorthand source', () => {
+    expect(read(`const source = siteHost()\nsendEvent({ type: 'Visited Website', source })`)).toEqual([['host:siteHost()']])
   })
 
-  it('flags a host-derived source and passes a door label', () => {
-    expect(isHostDerivedSource("base.replace(/^https?:\\/\\//, '').toLowerCase() || 'ryan-realty.com'")).toBe(true)
-    expect(isHostDerivedSource('source')).toBe(true)
-    expect(isHostDerivedSource("resolveLeadSource(originUtmSource, siteUrl)")).toBe(true)
-    expect(isHostDerivedSource('siteHost()')).toBe(true)
-    expect(isHostDerivedSource('websiteSource()')).toBe(true)
-    expect(isHostDerivedSource("new URL(siteOrigin()).host")).toBe(true)
-    expect(isHostDerivedSource("'idx-registration'")).toBe(false)
-    expect(isHostDerivedSource('ALERTS_DOOR')).toBe(false)
-    expect(isHostDerivedSource('resolveLeadSource(originUtmSource, lpSource)')).toBe(false)
-    expect(isHostDerivedSource("isJoinInquiry(inquiryType) ? 'join' : 'contact-form'")).toBe(false)
+  it('follows an imported const to its module, by alias or relative path', () => {
+    const lib = { 'lib/doors.ts': "export const DOOR = 'agent-referral'" }
+    expect(read(`import { DOOR as D } from '@/lib/doors'\nensureNativeLead({ source: D })`, lib)).toEqual([['label:agent-referral']])
+    expect(read(`import { DOOR } from '../lib/doors'\nensureNativeLead({ source: DOOR })`, lib)).toEqual([['label:agent-referral']])
+  })
+
+  it('reads the host through a variable, a replace, a URL, a call argument and a template', () => {
+    const src = `
+      const base = process.env.NEXT_PUBLIC_SITE_URL ?? ''
+      sendEvent({ source: base.replace(/^https?:\\/\\//, '') })
+      sendEvent({ source: new URL(siteOrigin()).host })
+      sendEvent({ source: pick(utm, siteHost()) })
+      sendEvent({ source: \`\${base}\` })
+      sendEvent({ source: 'https://ryan-realty.com' })`
+    expect(read(src).map((leaves) => leaves.some((l) => l.startsWith('host:')))).toEqual([true, true, true, true, true])
+  })
+
+  it('reads what it cannot see as opaque: a parameter, a property, a spread, a passed object', () => {
+    const src = `
+      const door = 'contact-form'
+      function f(door: string) { return sendEvent({ source: door }) }
+      function g({ source }: Input) { return sendEvent({ source }) }
+      sendEvent({ source: params.source })
+      sendEvent({ type: 'x', ...rest })
+      sendEvent(input)`
+    expect(read(src).map((leaves) => leaves.every((l) => l.startsWith('opaque:')))).toEqual([true, true, true, true, true])
+  })
+
+  it('reads a template with a fixed lead-in as the door it names', () => {
+    expect(read('sendEvent({ source: `Facebook Lead Ad — ${lead.campaignName}` })')).toEqual([
+      ['label:`Facebook Lead Ad — ${lead.campaignName}`'],
+    ])
   })
 })
 
-// FUNNEL-4 leftovers (2026-10-14): the check named four door files, and nine
-// more doors still wrote the host. It now reads every sendEvent in app/ and lib/.
-describe('every sendEvent in the tree writes a door label', () => {
-  function tsFiles(dir) {
-    const out = []
-    for (const name of readdirSync(dir)) {
-      if (name === 'node_modules' || name === '.next') continue
-      const p = join(dir, name)
-      if (statSync(p).isDirectory()) out.push(...tsFiles(p))
-      else if (/\.(ts|tsx)$/.test(name) && !/\.(test|spec)\.(ts|tsx)$/.test(name)) out.push(p)
-    }
-    return out
+describe('sourceWriteFailures', () => {
+  const files = {
+    'app/a.ts': `const source = siteHost()\nsendEvent({ type: 'x', source })`,
+    'app/b.ts': `export function f(p: P) {\n  return ensureNativeLead({ source: p.source })\n}`,
+    'app/c.ts': `sendEvent({ source: 'contact-form' })`,
   }
-  const sources = new Map()
-  const texts = new Map()
-  for (const rel of [...tsFiles('app'), ...tsFiles('lib')]) {
-    const src = readFileSync(rel, 'utf8')
-    if (!src.includes('sendEvent(')) continue
-    texts.set(rel, src)
-    sources.set(rel, sendEventCalls(src).map(topLevelSource).filter((e) => e !== null))
-  }
+  const run = (allowed) => sourceWriteFailures(Object.keys(files), { read: repo(files), allowed })
 
-  it('no caller outside HOST_SOURCE_ALLOWED derives the host', () => {
-    const offenders = [...sources].flatMap(([rel, exprs]) =>
-      HOST_SOURCE_ALLOWED[rel] ? [] : exprs.filter((e) => sourceDerivesHost(e, texts.get(rel))).map((e) => `${rel}: ${e}`),
-    )
-    expect(offenders).toEqual([])
+  it('fails a host source and an unreadable one, naming the file and line', () => {
+    const fails = run({})
+    expect(fails).toHaveLength(2)
+    expect(fails[0]).toMatch(/^app\/a\.ts:2: sendEvent source `source` is the site host/)
+    expect(fails[1]).toMatch(/^app\/b\.ts:2: ensureNativeLead source `p\.source` does not read down to a door label \(p\.source\)/)
+  })
+
+  it('passes an allowance scoped to the file and expression, of the matching kind', () => {
+    expect(
+      run({
+        'app/a.ts': { source: { kind: 'host', reason: 'not a door' } },
+        'app/b.ts': { 'p.source': { kind: 'opaque', reason: 'the caller names the door' } },
+      }),
+    ).toEqual([])
+  })
+
+  it('fails an allowance of the wrong kind, one no write needs, and one for a file not scanned', () => {
+    const fails = run({
+      'app/a.ts': { source: { kind: 'opaque', reason: 'wrong kind' } },
+      'app/b.ts': { 'p.source': { kind: 'opaque', reason: 'ok' } },
+      'app/c.ts': { "'contact-form'": { kind: 'opaque', reason: 'a label needs nothing' } },
+      'app/gone.ts': { source: { kind: 'host', reason: 'deleted' } },
+    })
+    expect(fails.some((f) => f.startsWith('app/a.ts:2: sendEvent source `source` is the site host'))).toBe(true)
+    expect(fails.some((f) => f.startsWith('app/a.ts: SOURCE_ALLOWED allows `source` (opaque), but no write there needs'))).toBe(true)
+    expect(fails.some((f) => f.startsWith("app/c.ts: SOURCE_ALLOWED allows `'contact-form'` (opaque)"))).toBe(true)
+    expect(fails.some((f) => f.startsWith('app/gone.ts: SOURCE_ALLOWED allows `source` (host), but the file is not scanned'))).toBe(true)
+    expect(fails.some((f) => f.startsWith('app/b.ts'))).toBe(false)
+  })
+})
+
+// FUNNEL-4 leftovers (2026-10-14): the check named four door files and matched
+// text, and nine more doors still wrote the host. It now reads every sendEvent and
+// ensureNativeLead in app/ and lib/.
+describe('every crm_people.source write in the tree names a door', () => {
+  const labels = (rel) => sourceWrites(rel).map((w) => w.leaves.map((l) => `${l.kind}:${l.text}`))
+
+  it('no write outside SOURCE_ALLOWED is the host or unreadable, and every allowance is still needed', () => {
+    expect(sourceWriteFailures(scannedFiles())).toEqual([])
   })
 
   it('the doors that wrote the host until 2026-10-14 write their own label', () => {
-    expect(sources.get('app/actions/cma-download.ts')).toEqual(["'published-cma'", "'listing-pricing-read'"])
-    expect(sources.get('app/actions/saved-searches.ts')).toEqual(["'idx-registration'"])
-    expect(sources.get('app/actions/listing-payment-email.ts')).toEqual(["'listing-payment-email'"])
-    expect(sources.get('app/api/pdf/cma/route.ts')).toEqual(["'cma-request'"])
-    expect(sources.get('app/actions/lead-landing.ts')).toEqual(['leadDoor'])
-    expect(sources.get('app/actions/lead-capture.ts')).toEqual([
-      'pageCtaDoor',
-      "'rental-calculator'",
-      "isSeller ? 'seller-lp' : 'buyer-lp'",
+    expect(labels('app/actions/cma-download.ts')).toEqual([
+      ['label:published-cma'],
+      ['label:published-cma'],
+      ['label:listing-pricing-read'],
+      ['label:listing-pricing-read'],
+    ])
+    expect(labels('app/actions/saved-searches.ts')).toEqual([['label:idx-registration']])
+    expect(labels('app/actions/listing-payment-email.ts')).toEqual([['label:listing-payment-email']])
+    expect(labels('app/api/pdf/cma/route.ts')).toEqual([['label:cma-request']])
+    expect(labels('app/actions/lead-landing.ts')).toEqual([
+      ['label:seller-lp', 'label:buyer-lp'],
+      ['label:seller-lp', 'label:buyer-lp'],
+    ])
+    expect(labels('app/actions/lead-capture.ts')).toEqual([
+      ['label:blog-email', 'label:homepage-cta'],
+      ['label:rental-calculator'],
+      ['label:tetherow-seller-lp', 'label:tetherow-buyer-lp'],
     ])
   })
 
-  it('every allowed host writer still exists and still needs the allowance', () => {
-    for (const rel of Object.keys(HOST_SOURCE_ALLOWED)) {
-      expect(sources.get(rel)?.some((e) => sourceDerivesHost(e, texts.get(rel)))).toBe(true)
+  it('every allowance says why', () => {
+    for (const entries of Object.values(SOURCE_ALLOWED)) {
+      for (const { kind, reason } of Object.values(entries)) {
+        expect(['host', 'opaque']).toContain(kind)
+        expect(reason.length).toBeGreaterThan(20)
+      }
     }
   })
 })

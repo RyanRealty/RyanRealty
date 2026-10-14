@@ -38,6 +38,7 @@ const TEMPLATED = {
   'lead-landing-buyer': 'lead-landing-${input.audience}',
   'page-cta-general': "page-cta-${input.leadType ?? 'general'}",
   'buy-leverage': "LEVERAGE_LP_VARIANT = 'buy-leverage'",
+  'buy-alerts': "BUY_ALERTS_LP_VARIANT = 'buy-alerts'",
 }
 
 // next.config.ts redirects() (not headers(), whose sources carry cache rules) plus

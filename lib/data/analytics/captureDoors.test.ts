@@ -18,6 +18,8 @@ describe('classifyCaptureDoor', () => {
     ['seller-lp', 'seller-lp'],
     ['seller_lp', 'seller-lp'],
     ['tetherow_heath_cma', 'seller-lp'],
+    ['tetherow-seller-lp', 'seller-lp'],
+    ['tetherow-buyer-lp', 'buyer-lp'],
     ['buyer-lp', 'buyer-lp'],
     ['expired-lp', 'expired-lp'],
     ['fsbo-lp', 'fsbo-lp'],

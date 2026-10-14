@@ -49,6 +49,8 @@ const CASES: Array<[string, LeadChannel, boolean]> = [
   ['listing-payment-email', 'web', true],
   ['homepage-cta', 'web', true],
   ['blog-email', 'web', true],
+  ['tetherow-seller-lp', 'web', true],
+  ['tetherow-buyer-lp', 'web', true],
   ['Google', 'web', true],
   ['Realtor.com', 'portal', true],
   ['realtor.com', 'portal', true],

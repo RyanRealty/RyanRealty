@@ -100,7 +100,8 @@ const RULES: Array<{ test: (s: string) => boolean; id: CaptureDoorId }> = [
   { id: 'listing-ask', test: (s) => /published cma|pricing read|payment email/.test(s) },
   { id: 'home-valuation', test: (s) => /home valuation|cma request|cma-request|valuation/.test(s) },
   { id: 'cma-download', test: (s) => /\bcma download\b|\bcma-download\b/.test(s) },
-  { id: 'seller-lp', test: (s) => /seller lp|seller-lp|fb ads seller|tetherow/.test(s) },
+  // tetherow-seller-lp / tetherow-buyer-lp since 2026-10-14; a bare tetherow is the old seller CMA campaign.
+  { id: 'seller-lp', test: (s) => /seller lp|seller-lp|fb ads seller|tetherow(?! buyer)/.test(s) },
   { id: 'buyer-lp', test: (s) => /buyer lp|buyer-lp|fb ads buyer/.test(s) },
   { id: 'listing-alert', test: (s) => /listing alert|saved search|idx registration|idx-registration|buyer listing/.test(s) },
   { id: 'contact-form', test: (s) => /contact form|contact-form/.test(s) },
