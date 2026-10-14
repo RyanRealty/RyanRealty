@@ -303,7 +303,12 @@ describe('3062 NW Kelly Hill: one sale a half, so the unsold listing is the loca
     // The same walk under the old gate leaves every sale at its sold price.
     const old = walk(missingPocketLocalRead('no-listing-window'))
     expect(old.adj.every((c) => c.timeAdjustment === 0)).toBe(true)
-    expect(old.pricing.reconciliation?.weightedPrice).toBeGreaterThan(pricing.reconciliation!.weightedPrice)
+    const oldWeighted = old.pricing.reconciliation?.weightedPrice
+    const newWeighted = pricing.reconciliation?.weightedPrice
+    if (oldWeighted == null || newWeighted == null) {
+      throw new Error('both walks must return a weighted price')
+    }
+    expect(oldWeighted).toBeGreaterThan(newWeighted)
     expect(old.opinion!.value).toBeGreaterThan(opinion!.value)
   })
 
