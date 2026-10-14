@@ -20,7 +20,9 @@ Checks (all hard-fail):
                  absolute difference > 0.20 (0..1 scale) OR SSIM < 0.35. Calibrated so a solid
                  off-white card vs a dark photo (diff ~0.5+) fails, while a blurred/darkened
                  version of the opening photo behind the end card passes.
- 3 LENGTH        15.0 <= duration <= 30.0 s.
+ 3 LENGTH        min_s <= duration <= max_s for --type, read from video_types.json (defaults
+                 merged with the type; 15 to 30 s for most types). Matt 2026-10-14: each
+                 video type keeps its own length window.
  4 HOOK          OCR finds >= 2 words of on-screen text in a frame at or before 2.0 s.
  5 CAPTIONS      Voiced render: OCR text in >= 70% of frames sampled every 0.5 s across the VO
                  span (default 0.5 s .. duration-4 s, or --vo-start/--vo-end). buyer_ad with no
@@ -116,12 +118,20 @@ def endcard_ocr(img):
 
 def norm_phone(s): return re.sub(r"[^0-9]", "", s)
 
+def length_window(vtype):
+    """(min_s, max_s) for a video type: video_types.json defaults merged with the type."""
+    cfg = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "video_types.json")))
+    if vtype not in cfg["types"]: raise ValueError(f"unknown video type {vtype!r}; use one of {', '.join(cfg['types'])}")
+    t = {**cfg["defaults"], **cfg["types"][vtype]}
+    return float(t["min_s"]), float(t["max_s"])
+
 def run(path, vtype, silent, vo_start, vo_end):
     fails = []; info = {}
     dur, has_audio = probe(path); info["duration_s"] = round(dur, 2); info["audio"] = has_audio
     v = Video(path)
-    # 3 length
-    if not (15.0 <= dur <= 30.0): fails.append(f"LENGTH: runs {dur:.2f}s; must be 15-30 s.")
+    # 3 length: the type's own window, from the file video_gate.mjs and video:check read
+    lo, hi = length_window(vtype)
+    if not (lo <= dur <= hi): fails.append(f"LENGTH: runs {dur:.2f}s; {vtype} must be {lo:g}-{hi:g} s.")
     # OCR every 0.5 s across the whole video
     samples = {}
     t = 0.0

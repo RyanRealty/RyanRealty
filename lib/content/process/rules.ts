@@ -258,14 +258,14 @@ export const RULES: readonly Rule[] = [
   },
   {
     id: 'R-016',
-    title: 'The brief\'s spec_rules fix the length window at 15 to 30 s for every type (code behaviour: the gate holds no per-type window here)',
-    source: 'video_gate.mjs; Matt 2026-10-13 spec rules',
+    title: 'The brief\'s spec_rules length range is the video type\'s own window, never a fixed 15 to 30 s',
+    source: 'video_gate.mjs; Matt 2026-10-13 spec rules; Matt 2026-10-14 each type keeps its own length window',
     appliesTo: ['video'],
     step: 'brief',
     status: 'enforced',
     enforcer: { module: '.claude/skills/ryan-studio/tools/video_gate.mjs', export: 'gate' },
     fixture: 'lib/content/process/fixtures/R-016.json',
-    fixtureMatch: 'spec_rules\\.length_s_range must be \\[15,30\\]|outside 15 to 30s',
+    fixtureMatch: 'spec_rules\\.length_s_range must be \\[15,30\\], the \\w+ window',
   },
   {
     id: 'R-017',
@@ -1807,13 +1807,12 @@ export const RULES: readonly Rule[] = [
   },
   {
     id: 'R-147',
-    title: 'The per-type length window replaces the fixed 15 to 30 s the gate and the render gate still hold',
+    title: 'Retired 2026-10-14: the per-type length window now holds in video_gate (R-016) and in the render gate (check 17); nothing holds a fixed 15 to 30 s',
     source: 'CONTENT_PROCESS "Contradictions settled"; video_types.json',
     appliesTo: ['video'],
     step: 'brief',
     check: 3,
-    status: 'planned',
-    plannedIn: 'process core',
+    status: 'retired',
   },
   {
     id: 'R-148',
