@@ -26,7 +26,7 @@ import {
   firstVisitorPlaceLabel,
   firstVisitorPlaceSlug,
 } from '@/lib/site/visitor-place-noise'
-import { listingShareSummary, shareDescription } from '@/lib/share-metadata'
+import { listingMetaDescription } from '@/lib/listing/listing-meta-description'
 import { publishListingDrop } from '@/lib/listing/publish-listing-ask'
 import {
   publishListingPublishedPrice,
@@ -204,14 +204,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // uses, so the SERP snippet and the H1 cannot disagree again.
   const statusWord = publishListingStatusWord(listing.status)
   // The SERP snippet (Matt 2026-10-04): the facts, where it is, then the
-  // listing's own MLS description to fill Google's ~155 characters. The street
-  // address is already in the title, so the snippet names the plat and town
-  // instead and spends the rest on the agent's words, shown as written (VOICE:
-  // MLS remarks as written; only whitespace is normalised and the tail is cut
-  // at a word). A land listing used to read "$299,000 · <street, city, zip>"
-  // and nothing else. No remarks: the facts line plus what the page holds.
-  const plat = listing.subdivisionName?.trim()
-  const where = [plat, listing.city?.trim()].filter(Boolean).join(', ')
+  // listing's own MLS description to fill Google's ~155 characters, shown as
+  // written (VOICE: MLS remarks as written; only whitespace is normalised and
+  // the tail is cut at a word). 2026-10-14: the facts now carry the street
+  // address (and the lot on land), and every fact comes BEFORE the remarks, so
+  // sibling lots and same-building parcels that share price, plat and remarks
+  // no longer share a description: deploy:verify failed on five such pages.
+  // Held by lib/listing/listing-meta-description.test.ts. No remarks: the facts
+  // line plus what the page holds.
   const publishedPrice = publishListingPublishedWholePropertyPrice({
     status: listing.status,
     listPrice: listing.listPrice,
@@ -222,18 +222,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     city: listing.city,
     listNumber: listing.listNumber,
   })
-  const snippetLead = listingShareSummary({
-    price: publishedPrice,
+  const metaDescription = listingMetaDescription({
     statusWord,
+    price: publishedPrice,
     beds: listing.beds,
     baths: listing.baths,
     sqft: listing.sqft ?? listing.totalLivingAreaSqFt,
-    city: where || undefined,
+    lotSizeAcres: listing.lotSizeAcres,
+    lotSizeSqft: listing.lotSizeSqft,
+    streetNumber: listing.streetNumber,
+    streetDirPrefix: listing.streetDirPrefix,
+    streetName: listing.streetName,
+    streetSuffix: listing.streetSuffix,
+    streetDirSuffix: listing.streetDirSuffix,
+    subdivisionName: listing.subdivisionName,
+    city: listing.city,
+    listNumber: listing.listNumber,
+    publicRemarks: listing.publicRemarks,
   })
-  const remarks = (listing.publicRemarks ?? '').replace(/\s+/g, ' ').trim()
-  const metaDescription = shareDescription(
-    remarks ? `${snippetLead}. ${remarks}` : `${snippetLead}. Photos, map, and nearby sales.`,
-  )
   const addressTitle = addressFull ? addressFull : `Listing ${listing.listingKey}`
   const title = listingDocumentTitle({
     statusWord,
