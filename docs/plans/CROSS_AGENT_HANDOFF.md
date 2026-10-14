@@ -2,7 +2,7 @@
 
 Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` merged origin/main `6a9b37fb6` (#520, #521, #498, #531). PR #532. Fix the red required checks, then squash-merge. Nothing sent. Nobody pushes main.
 
-**What this commit does.** `ci:studio-rules` names `video_gate.test.mjs` and `video_render_gate.test.mjs` so both run on Node 20 and Node 22 (directory form is MODULE_NOT_FOUND on 22; glob form is not found on 20). `ci:tests-wired` now sees those skill-local files and counts them wired. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150 `tetherow-golf-aerial.jpg`) instead of a 1920 `asset_library` pick, so content-floor heroImageNatural stays 3780 (reverts the 1728 floor #520 set). `ci:public-listing-status` and `ci:claude-canon` already pass on this tip.
+**What this commit does.** `ci:studio-rules` names `video_gate.test.mjs` and `video_render_gate.test.mjs` so both run on Node 20 and Node 22 (directory form is MODULE_NOT_FOUND on 22; glob form is not found on 20). `ci:tests-wired` now sees those skill-local files and counts them wired. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150 `tetherow-golf-aerial.jpg`) instead of a 1920 `asset_library` pick, so content-floor heroImageNatural stays 3780 (reverts the 1728 floor #520 set). After merging #521, `communitySoldWindowStart` uses `zonedDateKey` (ci:date-format) and type links jump to `#homes-dial-<group>` so pa11y on /communities/tetherow is green. `ci:public-listing-status` and `ci:claude-canon` already pass on this tip.
 
 **Not this change.** Do not send. Do not apply hosted SQL. Do not merge the phase-pool branch. Do not rebuild letters.
 
