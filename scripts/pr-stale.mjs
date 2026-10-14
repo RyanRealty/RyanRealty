@@ -2,7 +2,8 @@
 /**
  * pr-stale.mjs — label open PRs older than 3 days, close after 2 more.
  *
- * Skips hold-for-matt. Closing keeps the branch. Used by
+ * Skips hold-for-matt. Closing keeps the branch for 7 days; the daily
+ * head-branch cleanup then deletes it unless labeled keep-branch. Used by
  * .github/workflows/pr-stale.yml (daily + workflow_dispatch).
  *
  * Usage: node scripts/pr-stale.mjs

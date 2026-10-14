@@ -1,15 +1,25 @@
 /**
- * pr-housekeeping.mjs — auto-merge and stale-PR decisions (Matt 2026-10-14).
+ * pr-housekeeping.mjs — auto-merge, stale-PR, and head-branch cleanup decisions
+ * (Matt 2026-10-14).
  *
- * Pure functions. Workflows call scripts/pr-auto-merge.mjs and
- * scripts/pr-stale.mjs, which import these. Tests import them directly.
+ * Pure functions. Workflows call scripts/pr-auto-merge.mjs,
+ * scripts/pr-stale.mjs, and scripts/pr-head-branch-cleanup.mjs, which import
+ * these. Tests import them directly.
  */
 
 export const HOLD_LABEL = 'hold-for-matt'
 export const STALE_LABEL = 'stale'
+export const KEEP_BRANCH_LABEL = 'keep-branch'
 
 export const STALE_AFTER_MS = 3 * 24 * 60 * 60 * 1000
 export const CLOSE_AFTER_STALE_MS = 2 * 24 * 60 * 60 * 1000
+export const CLOSED_BRANCH_GRACE_MS = 7 * 24 * 60 * 60 * 1000
+export const PROTECTED_HEAD_BRANCHES = Object.freeze(['main', 'master'])
+/** Closed-unmerged heads the earlier cleanup kept with a written reason. */
+export const KEEP_HEAD_BRANCHES = Object.freeze([
+  'claude/market-report-subscription',
+  'fix/fsbo-zillow-mapped-output',
+])
 
 /** Checks that may block a merge. Lighthouse and content-floor stay out. */
 export const REQUIRED_CHECK_NAMES = Object.freeze([
@@ -26,7 +36,10 @@ export const HOLD_LABEL_COLOR = '8B1E1E'
 export const HOLD_LABEL_DESCRIPTION = 'Do not auto-merge. Wait for Matt.'
 export const STALE_LABEL_COLOR = 'BDBDBD'
 export const STALE_LABEL_DESCRIPTION =
-  'Open PR older than 3 days. Rebase and merge, or it will close and keep the branch.'
+  'Open PR older than 3 days. Rebase and merge, or it will close and keep the branch for 7 days.'
+export const KEEP_BRANCH_LABEL_COLOR = '0E4429'
+export const KEEP_BRANCH_LABEL_DESCRIPTION =
+  'Keep this closed or merged PR head branch. The daily cleanup will not delete it.'
 
 /** @param {unknown} labels */
 export function normalizeLabels(labels) {
@@ -136,4 +149,41 @@ export function requiredChecksStatus(checks) {
     return 'failed'
   }
   return pending ? 'pending' : 'ready'
+}
+
+/**
+ * Whether a daily cleanup may delete a remote head branch.
+ *
+ * Never main. Never a branch that still has an open PR. Merged PR heads delete
+ * the same day. Closed-unmerged heads wait 7 days, then delete unless labeled
+ * keep-branch or hold-for-matt. A branch with no PR is out of scope.
+ *
+ * @param {{
+ *   branchName: string,
+ *   hasOpenPr: boolean,
+ *   latestClosedPr?: {
+ *     merged?: boolean,
+ *     closedAt?: string | number | Date | null,
+ *     labels?: unknown,
+ *   } | null,
+ *   now?: number,
+ * }} input
+ * @returns {'delete-merged' | 'delete-closed' | 'keep-protected' | 'keep-open-pr' | 'keep-named' | 'keep-label' | 'keep-recent-closed' | 'keep-no-pr'}
+ */
+export function headBranchCleanupDecision(input) {
+  const name = String(input?.branchName ?? '').trim()
+  if (!name || PROTECTED_HEAD_BRANCHES.includes(name)) return 'keep-protected'
+  if (KEEP_HEAD_BRANCHES.includes(name)) return 'keep-named'
+  if (input?.hasOpenPr) return 'keep-open-pr'
+  const pr = input?.latestClosedPr
+  if (!pr) return 'keep-no-pr'
+  if (hasLabel(pr.labels, KEEP_BRANCH_LABEL) || hasLabel(pr.labels, HOLD_LABEL)) {
+    return 'keep-label'
+  }
+  if (pr.merged) return 'delete-merged'
+  const now = input?.now ?? Date.now()
+  const closed = new Date(pr.closedAt ?? '').getTime()
+  if (!Number.isFinite(closed)) return 'keep-recent-closed'
+  if (now - closed < CLOSED_BRANCH_GRACE_MS) return 'keep-recent-closed'
+  return 'delete-closed'
 }

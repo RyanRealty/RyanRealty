@@ -1,0 +1,26 @@
+name: PR head branch cleanup
+
+on:
+  schedule:
+    # Daily, offset from pr-stale.yml (17 7) and the monthly 30-day cleanup.
+    - cron: '41 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Delete merged and aged-closed PR head branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/pr-head-branch-cleanup.mjs

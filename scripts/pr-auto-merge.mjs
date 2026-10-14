@@ -14,6 +14,9 @@ import {
   HOLD_LABEL,
   HOLD_LABEL_COLOR,
   HOLD_LABEL_DESCRIPTION,
+  KEEP_BRANCH_LABEL,
+  KEEP_BRANCH_LABEL_COLOR,
+  KEEP_BRANCH_LABEL_DESCRIPTION,
   STALE_LABEL,
   STALE_LABEL_COLOR,
   STALE_LABEL_DESCRIPTION,
@@ -146,6 +149,7 @@ const args = parseArgs(process.argv.slice(2))
 if (args.ensureLabels || args.applyTitleHolds || args.pr) {
   ensureLabel(HOLD_LABEL, HOLD_LABEL_COLOR, HOLD_LABEL_DESCRIPTION)
   ensureLabel(STALE_LABEL, STALE_LABEL_COLOR, STALE_LABEL_DESCRIPTION)
+  ensureLabel(KEEP_BRANCH_LABEL, KEEP_BRANCH_LABEL_COLOR, KEEP_BRANCH_LABEL_DESCRIPTION)
 }
 if (args.applyTitleHolds) applyTitleHolds()
 if (args.pr) handlePr(args.pr)

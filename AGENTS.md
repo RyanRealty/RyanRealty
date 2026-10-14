@@ -6,7 +6,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except PRs labeled `hold-for-matt`. Workflows enqueue that.
 
-**Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason. The stale job keeps the branch.
+**Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason. The stale job keeps the branch for 7 days; the daily head-branch cleanup then deletes it unless labeled `keep-branch` or `hold-for-matt`. Merged PR head branches delete the same day. Never `main`. Never a branch that still has an open PR.
 
 **Done.** Merged, Vercel production **READY**, and the live URL checked. `npm run ship` is the land path.
 
@@ -42,7 +42,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 1. **PRs only.** Never `git push` `main`. Never fast-forward `main`. Branch from current `origin/main`, open a PR, merge that PR.
 2. **Auto-merge.** After opening a PR, run `gh pr merge --auto --squash --delete-branch` unless it is labeled `hold-for-matt`. Never run `gh pr merge` on a `hold-for-matt` PR, including `--auto`. `--auto` squash-merges immediately when Allow auto-merge is off and the PR is MERGEABLE. Create that label if it is missing. Enable "Allow auto-merge" and "Automatically delete head branches" on the GitHub repo if they are off. `.github/workflows/pr-auto-merge.yml` queues the same command, drops auto-merge when `hold-for-matt` is added, and squash-merges after `merge-gate` + `security-scan` when the repo setting is still off.
-3. **Stale PRs.** A PR older than 3 days is rebased and merged, or closed with a written reason. `.github/workflows/pr-stale.yml` (daily + `workflow_dispatch`) labels `stale` at 3 days and closes after 2 more days, keeping the branch so the work is not lost. Skip `hold-for-matt`.
+3. **Stale PRs.** A PR older than 3 days is rebased and merged, or closed with a written reason. `.github/workflows/pr-stale.yml` (daily + `workflow_dispatch`) labels `stale` at 3 days and closes after 2 more days. Closing keeps the branch for 7 days. `.github/workflows/pr-head-branch-cleanup.yml` (daily + `workflow_dispatch`) then deletes head branches of merged PRs, and of closed PRs older than 7 days, unless labeled `keep-branch` or `hold-for-matt`. Never `main`. Never a branch that still has an open PR. Skip `hold-for-matt`.
 4. **Done.** The PR is merged, the Vercel production deploy for that SHA is **READY**, and the live URL is checked. `npm run ship` is the land path. Unfinished work is `npm run push` plus your note in `docs/plans/handoffs/`.
 5. **Payload.** Public pages respect the page payload budgets (`SSR_GRID_PAGE` in `lib/site/ssr-grid-page.ts`, `ci:page-payload`, Atlas props budget). Cap grids and schema lists. Never serialize the same listing or schema payload twice.
 6. **Waits.** No `sleep` polls. Use `gh pr checks --watch` or the CI wait the tool already has. R-221 still bans sitting on `gh run view` in a loop. **R-221:** do not poll GitHub Actions.
@@ -478,7 +478,7 @@ Scheduled:
 18. **Dependency updates** — GHA `dependency-updates.yml` Monday 09:00 UTC
 19. **Security scan** — GHA `security.yml` Tuesday 08:00 UTC
 20. **Marketing optimization report** — Vercel `/api/cron/marketing-optimization-report` Monday 06:30 UTC (not a GHA “optimization loop”)
-21. **Stale branch cleanup** — GHA `cleanup-branches.yml` 1st of month
+21. **Stale branch cleanup** — GHA `pr-head-branch-cleanup.yml` daily (merged PR heads, and closed PR heads older than 7 days unless `keep-branch` / `hold-for-matt`); `cleanup-branches.yml` 1st of month (30-day last-commit)
 22. **Saved search alerts** — Vercel `/api/cron/saved-search-alerts` **hourly**, not daily 2pm GHA
 23. **Market report** — Vercel `/api/cron/market-report` **Sunday** 14:00 UTC, not Saturday GHA
 
