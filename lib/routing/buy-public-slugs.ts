@@ -11,7 +11,7 @@
  */
 export const BUY_INTENT_SLUGS = ['first-time-home-buyer', 'relocation', 'investment'] as const
 
-export const BUY_STATIC_SLUGS = ['alerts', 'concessions', 'leverage'] as const
+export const BUY_STATIC_SLUGS = ['alerts', 'concessions', 'homes-under-500k-central-oregon', 'leverage'] as const
 
 export const BUY_PUBLIC_SLUGS = [...BUY_INTENT_SLUGS, ...BUY_STATIC_SLUGS] as const
 

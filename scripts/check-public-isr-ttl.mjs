@@ -77,6 +77,7 @@ export const PUBLIC_ISR_TTLS = [
   ['app/buy/concessions/page.tsx', 3600],
   ['app/buy/alerts/page.tsx', 3600],
   ['app/buy/leverage/page.tsx', 3600],
+  ['app/buy/homes-under-500k-central-oregon/page.tsx', 3600],
   ['app/invest/page.tsx', 3600],
   ['app/cities/page.tsx', 3600],
   ['app/communities/page.tsx', 3600],

@@ -134,6 +134,19 @@ export type {
 export { getSearchFacetCounts } from '@/lib/data/listings/searchFacets'
 export type { SearchFacetCountRow } from '@/lib/data/listings/searchFacets'
 
+// Listings — Active PropertyType A under $500K by town, plus town SFR medians
+// (Query A / Query B on /buy/homes-under-500k-central-oregon).
+export { getUnder500kCityInventory } from '@/lib/data/listings/getUnder500kCityInventory'
+export type { Under500kCityInventory } from '@/lib/data/listings/getUnder500kCityInventory'
+export {
+  UNDER_500K_HEADLINE_TOWNS,
+  UNDER_500K_FOOTNOTE_TOWNS,
+  UNDER_500K_PRICE_CAP,
+  UNDER_500K_HUB_HREF,
+  UNDER_500K_HUB_ANCHOR,
+} from '@/lib/data/listings/under-500k-classify'
+export type { Under500kTownCounts } from '@/lib/data/listings/under-500k-classify'
+
 // Listings — Central Oregon service-area guard (audit P0-3 2026-06-10).
 // ONE source of truth for the city allowlist that keeps the statewide MLS
 // feed off "Central Oregon" surfaces. Derived from lib/central-oregon.ts.

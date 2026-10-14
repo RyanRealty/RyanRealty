@@ -29,6 +29,7 @@ describe('buy public slugs', () => {
       'investment',
       'alerts',
       'concessions',
+      'homes-under-500k-central-oregon',
       'leverage',
     ])
     expect(isUnknownBuyPublicPath('/buy')).toBe(false)
@@ -36,6 +37,7 @@ describe('buy public slugs', () => {
     expect(isUnknownBuyPublicPath('/buy/leverage')).toBe(false)
     expect(isUnknownBuyPublicPath('/buy/alerts')).toBe(false)
     expect(isUnknownBuyPublicPath('/buy/concessions')).toBe(false)
+    expect(isUnknownBuyPublicPath('/buy/homes-under-500k-central-oregon')).toBe(false)
     expect(isUnknownBuyPublicPath('/buy/first-time-home-buyer')).toBe(false)
     expect(isUnknownBuyPublicPath('/buy/relocation')).toBe(false)
     expect(isUnknownBuyPublicPath('/buy/investment')).toBe(false)
@@ -58,6 +60,7 @@ describe('buy public slugs', () => {
     expect(isKnownBuyPublicSlug('leverage')).toBe(true)
     expect(isKnownBuyPublicSlug('alerts')).toBe(true)
     expect(isKnownBuyPublicSlug('concessions')).toBe(true)
+    expect(isKnownBuyPublicSlug('homes-under-500k-central-oregon')).toBe(true)
     expect(isKnownBuyPublicSlug('not-a-real-page')).toBe(false)
   })
 })

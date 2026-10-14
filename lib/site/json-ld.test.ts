@@ -206,6 +206,18 @@ describe('buildJsonLd', () => {
     expect(rec(r.mainEntity)?.['@id']).toMatch(/#organization$/)
   })
 
+  it('CollectionPage can name the Place it is about', () => {
+    const r = buildJsonLd({
+      type: 'webPage',
+      pageType: 'CollectionPage',
+      name: 'Homes under $500,000 in Central Oregon, town by town',
+      url: '/buy/homes-under-500k-central-oregon',
+      aboutPlace: 'Central Oregon',
+    })
+    expect(r['@type']).toBe('CollectionPage')
+    expect(rec(r.about)).toMatchObject({ '@type': 'Place', name: 'Central Oregon' })
+  })
+
   it('already-absolute URLs pass through unchanged', () => {
     const r = buildJsonLd({ type: 'article', headline: 'H', url: 'https://example.com/x' })
     expect(r.url).toBe('https://example.com/x')

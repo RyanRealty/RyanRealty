@@ -4,7 +4,12 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { getListingsWithAdvanced } from '../../actions/listings'
-import { getRecentPriceDropEntries, type ListingCardPriceDrop } from '@/lib/data'
+import {
+  getRecentPriceDropEntries,
+  UNDER_500K_HUB_ANCHOR,
+  UNDER_500K_HUB_HREF,
+  type ListingCardPriceDrop,
+} from '@/lib/data'
 import { SearchAlertCapture } from '../../../components/search/SearchAlertCapture'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
 import { cityEntityKey, homesForSalePath, listingTileHref } from '../../../lib/slug'
@@ -454,6 +459,10 @@ export default async function SearchPage({
         ? [getParentCityPresetLink(city, preset)]
         : getSamePresetCityLinks(preset, relatedCitySlug)
       : []
+  const regionalHubLinks =
+    isPresetDepthPage && preset?.slug === 'under-500k' && !subdivision
+      ? [{ href: UNDER_500K_HUB_HREF, label: UNDER_500K_HUB_ANCHOR }]
+      : []
 
   // Path-derived filters for the guest listing-alert capture. On this route the
   // city/subdivision/preset live in the slug (not the query string), so the
@@ -714,6 +723,7 @@ export default async function SearchPage({
         presetDepth={presetDepth}
         presetBandLinks={presetBandLinks}
         presetCityLinks={presetCityLinks}
+        regionalHubLinks={regionalHubLinks}
         relatedAllHomes={relatedAllHomes}
         relatedSearches={relatedSearches}
         // The related searches are CITY-scoped links; on an area page they were

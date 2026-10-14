@@ -52,6 +52,7 @@ export function SearchSeoTail({
   presetDepth,
   presetBandLinks,
   presetCityLinks,
+  regionalHubLinks = [],
   relatedAllHomes,
   relatedSearches,
   placeName,
@@ -74,6 +75,8 @@ export function SearchSeoTail({
   presetDepth: ReturnType<typeof buildPresetFaq> | null
   presetBandLinks: { href: string; label: string }[]
   presetCityLinks: { href: string; label: string }[]
+  /** Exact-anchor doors such as the under-$500K regional compare page. */
+  regionalHubLinks?: { href: string; label: string }[]
   relatedAllHomes: ReturnType<typeof getAllCityHomesLink> | null
   relatedSearches: { href: string; label: string }[]
   placeName: string
@@ -121,6 +124,15 @@ export function SearchSeoTail({
       when: v3Text(relatedSearchWhenLabel(link.href)),
       what: v3Text(label),
       id: link.href,
+    })
+  }
+  for (const link of regionalHubLinks) {
+    if (!link.href || !link.label.trim()) continue
+    relatedRows.push({
+      href: link.href,
+      when: v3Text('Central Oregon'),
+      what: v3Text(link.label),
+      id: `hub-${link.href}`,
     })
   }
   for (const link of presetBandLinks) {

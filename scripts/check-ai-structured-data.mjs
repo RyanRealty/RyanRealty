@@ -196,6 +196,15 @@ const CHECKS = [
       '  same copy the page prints, so AI assistants can cite live MLS leverage numbers.',
   },
   {
+    file: 'app/buy/homes-under-500k-central-oregon/page.tsx',
+    label: 'under $500K hub: CollectionPage + FAQPage + ItemList + breadcrumb',
+    all: ["type: 'faqPage'", "type: 'webPage'", "type: 'breadcrumb'", "type: 'itemList'", "pageType: 'CollectionPage'", 'aboutPlace'],
+    why:
+      'The under-$500K hub MUST emit CollectionPage (about Central Oregon),\n' +
+      '  FAQPage from the printed FAQs, ItemList of the four town pages, and\n' +
+      '  BreadcrumbList Home > Homes for sale > this page.',
+  },
+  {
     file: 'app/tools/seller-net-sheet/page.tsx',
     label: 'seller net sheet: SoftwareApplication + FAQPage JSON-LD',
     all: ['SoftwareApplication', "type: 'faqPage'"],

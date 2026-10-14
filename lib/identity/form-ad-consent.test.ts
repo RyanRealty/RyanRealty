@@ -85,6 +85,7 @@ describe('form wiring', () => {
   const contactAction = read('app/contact/actions.ts')
   const leverageForms = read('app/buy/leverage/_v3/LeverageForms.client.tsx')
   const leverageAction = read('app/buy/leverage/actions.ts')
+  const under500kSignup = read('app/buy/homes-under-500k-central-oregon/_v3/Signup.client.tsx')
   const leadLanding = read('app/actions/lead-landing.ts')
   const alertAction = read('app/actions/search-alert-capture.ts')
 
@@ -123,6 +124,17 @@ describe('form wiring', () => {
       expect(block).not.toContain('email')
       expect(block).not.toContain('phone')
     }
+  })
+
+  it('wires /buy/homes-under-500k-central-oregon ads consent without SMS signup', () => {
+    expect(under500kSignup).toContain('writeFormAdConsent(adCookies) // hydration-safe: submit handler, not render')
+    expect(under500kSignup).toContain('<FormAdCookieBox')
+    expect(under500kSignup).toContain('<FormAdConsentNotice')
+    expect(under500kSignup).not.toContain('SmsConsentDisclosure')
+    expect(under500kSignup).toContain('submitSearchAlertSignup')
+    expect(under500kSignup).toContain("formId: FORM_ID")
+    expect(under500kSignup).toContain('lpContext')
+    expect(under500kSignup).toContain('landingSearch')
   })
 
   it('wires /buy/leverage ads consent without SMS signup', () => {

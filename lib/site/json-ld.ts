@@ -131,6 +131,8 @@ export type WebPageInput = {
   aboutOrganization?: boolean
   /** ISO 8601 last-modified time of the page's own data (AEO freshness). Omitted when unknown. */
   dateModified?: string
+  /** Place this CollectionPage / WebPage is about. Emitted as schema.org Place. */
+  aboutPlace?: string
   /**
    * Facts about the Organization that THIS page states in its visible copy,
    * added to the mainEntity reference (same @id, so a parser merges them into
@@ -523,6 +525,9 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
         // reference is what ties a page to the brand entity without a second
         // Organization node (SITE-198: brand query split across pages).
         isPartOf: { '@id': `${site}#website` },
+        about: input.aboutPlace?.trim()
+          ? { '@type': 'Place', name: input.aboutPlace.trim() }
+          : undefined,
         mainEntity: input.aboutOrganization
           ? organizationReference(site, input.organizationFacts, absoluteUrl)
           : undefined,

@@ -1,0 +1,177 @@
+/* /buy/homes-under-500k-central-oregon. Tokens only. Color on elements
+   sits in @layer base so Tailwind utilities keep winning (ci:css-layers). */
+
+.v3 .v3-net-answer {
+  max-width: var(--v3-measure-text);
+  margin: 0 0 var(--v3-space-lg);
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-body);
+}
+
+.v3 .v3-net-answer-source {
+  max-width: var(--v3-measure-text);
+  margin: 0;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+}
+
+.v3 .v3-net-section {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+  border-top: var(--v3-rule-section);
+}
+
+.v3 .v3-net-section--lead {
+  border-top: 0;
+}
+
+.v3 .v3-net-section > p,
+.v3 .v3-net-section > ul,
+.v3 .v3-net-section > dl {
+  max-width: var(--v3-measure-text);
+  line-height: var(--v3-leading-body);
+  margin: 0 0 var(--v3-space-md);
+}
+
+.v3 .v3-net-section > h2 {
+  margin-bottom: var(--v3-space-md);
+}
+
+.v3 .v3-net-faq dt {
+  font-weight: var(--v3-weight-strong);
+  margin-top: var(--v3-space-md);
+}
+
+.v3 .v3-net-faq dd {
+  margin: var(--v3-space-2xs) 0 0;
+}
+
+.v3 .v3-net-sources {
+  padding-left: var(--v3-space-md);
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3 .v3-net-table {
+  width: 100%;
+  max-width: var(--v3-measure);
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  margin: 0 0 var(--v3-space-lg);
+}
+
+.v3 .v3-net-table caption {
+  caption-side: top;
+  text-align: left;
+  font-size: var(--v3-size-source);
+  margin-bottom: var(--v3-space-xs);
+}
+
+.v3 .v3-net-table th,
+.v3 .v3-net-table td {
+  padding: var(--v3-space-xs) var(--v3-space-sm) var(--v3-space-xs) 0;
+  border-bottom: var(--v3-rule-hairline);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.v3 .v3-net-table thead th {
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  text-align: left;
+}
+
+.v3 .v3-net-table tbody th,
+.v3 .v3-net-table tfoot th {
+  font-weight: var(--v3-weight-body);
+  text-align: left;
+}
+
+.v3 .v3-net-table td {
+  text-align: right;
+}
+
+.v3 .v3-under500-table-wrap {
+  overflow-x: auto;
+}
+
+.v3 .v3-under500-sort {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+  cursor: pointer;
+}
+
+.v3 .v3-under500-footnote-row th,
+.v3 .v3-under500-footnote-row td {
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3 .v3-under500-unpublished,
+.v3 .v3-under500-hint,
+.v3 .v3-under500-cadence,
+.v3 .v3-under500-status {
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+}
+
+.v3 .v3-under500-towns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-sm) var(--v3-space-md);
+  margin-top: var(--v3-space-2xs);
+}
+
+.v3 .v3-under500-town {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+  font-size: var(--v3-size-body);
+  cursor: pointer;
+}
+
+.v3 .v3-under500-town input {
+  width: 1.1em;
+  height: 1.1em;
+  accent-color: var(--v3-navy);
+}
+
+.v3-under500-trap {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@layer base {
+  .v3 .v3-net-table caption,
+  .v3 .v3-net-answer-source,
+  .v3 .v3-under500-unpublished,
+  .v3 .v3-under500-hint,
+  .v3 .v3-under500-cadence,
+  .v3 .v3-under500-status,
+  .v3 .v3-under500-footnote-row th,
+  .v3 .v3-under500-footnote-row td {
+    color: var(--v3-ink-muted);
+  }
+
+  .v3 .v3-net-section a,
+  .v3 .v3-net-answer-source a,
+  .v3 .v3-net-faq a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: var(--v3-underline-offset);
+  }
+}

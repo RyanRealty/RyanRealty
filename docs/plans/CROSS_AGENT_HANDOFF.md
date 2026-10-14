@@ -1,12 +1,12 @@
-# Current — 2026-10-14 (Cursor, land CMA intake + ranking PRs)
+# Current — 2026-10-14 (Cursor, /buy/homes-under-500k-central-oregon)
 
-Surface: Cursor cloud. #485 merged to origin/main `fe948f648`. Now landing #488 then #489. Closed #524 because `/buy/alerts` is live via #536. Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. Branch `cursor/homes-under-500k-central-oregon-6180` from origin/main. New page is in progress. Leave the PR open and unmerged for review. Nothing sent. Nobody pushes main.
 
-**This pass.** #488 closer-lot/view ranking, then #489 same-vintage seating. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main).
+**This pass.** Build `/buy/homes-under-500k-central-oregon` from the 2026-10-13 brief. Live residential under-$500K counts from `getUnder500kCityInventory` (listing_search_mv). Sisters/Sunriver are footnote rows. Do not link `/buy/alerts`, `/buy/leverage`, or `/buy/first-time`. Bend SFR median is the Query B figure, never pulse $745K.
 
-**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+**Not this change.** Do not send. Do not merge this PR. Do not fix the on-main CLAUDE.md budget, unit (2), or `/sell` content-floor (3). Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Hold #452 and #471.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `docs/DATABASE_FOR_AI_AGENTS.md` (via the DAL comment on the inventory helper).
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 
