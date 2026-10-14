@@ -227,7 +227,12 @@ export function parseOwnerResponse(
   return { records: [...byAccount.values()], truncated: json.exceededTransferLimit === true }
 }
 
-/** Read one county with a where clause built by buildOwnerWhere. Throws on a failed read. */
+/**
+ * Read one county with a where clause built by buildOwnerWhere. Throws on a
+ * failed read. Deschutes answers a name read in about 3.5 s (measured
+ * 2026-10-14); 15 s leaves room for a loaded machine, and the section streams,
+ * so a slow county holds back only its own rows.
+ */
 export async function fetchOwnerRecordsByWhere(
   county: CountyKey,
   where: string,
@@ -242,7 +247,7 @@ export async function fetchOwnerRecordsByWhere(
   })
   const res = await fetch(`${QUERY_URL[county]}?${params.toString()}`, {
     headers: { Accept: 'application/json' },
-    signal: AbortSignal.timeout(opts.timeoutMs ?? 9000),
+    signal: AbortSignal.timeout(opts.timeoutMs ?? 15000),
   })
   if (!res.ok) throw new Error(`${county} query HTTP ${res.status}`)
   return parseOwnerResponse(county, (await res.json()) as ArcgisResponse)
