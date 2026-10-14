@@ -109,8 +109,12 @@ const HOP_ROUTES = new Map([
   ['/luxury-homes-bend-oregon', { status: 301, pathname: '/homes-for-sale/bend/luxury' }],
 ])
 
+const HEAVY_PUBLIC = new Set(['/sell', '/housing-market/reports', '/housing-market/history'])
+
 function timeoutFor(path) {
-  return path.startsWith('/admin/') ? Math.max(TIMEOUT_MS, ADMIN_TIMEOUT_MS) : TIMEOUT_MS
+  if (path.startsWith('/admin/')) return Math.max(TIMEOUT_MS, ADMIN_TIMEOUT_MS)
+  if (HEAVY_PUBLIC.has(path) || path.startsWith('/sell/')) return Math.max(TIMEOUT_MS, 30_000)
+  return TIMEOUT_MS
 }
 // CONCURRENCY caps parallel HTTP requests so the smoke covers the
 // full canonical set without overwhelming the dev/start:ci server.
@@ -373,6 +377,19 @@ async function checkHop(route, url, hop) {
  * hardcoded. Failing to obtain one is a FAILURE, not a skip — silence here is
  * exactly how this defect survived.
  */
+async function discoverResolvingListingKeyFromBrowse() {
+  try {
+    const { status, body } = await fetchWithTimeout(`${BASE}/homes-for-sale`, Math.max(TIMEOUT_MS, 30_000))
+    if (status !== 200 || !body) return null
+    const m = body.match(/\/homes-for-sale\/[^"'<\s]+?-(\d{5,})/)
+    if (!m) return null
+    console.warn(`  sitemaps/listings.xml never answered 200; discovered ${m[0]} from /homes-for-sale`)
+    return { key: m[1], path: m[0], why: null }
+  } catch {
+    return null
+  }
+}
+
 async function discoverResolvingListingKey() {
   // The sitemap is the heaviest read this gate makes: ~7,500 active rows paged
   // out of a ~600,000-row MV. On 2026-09-16 it answered 500 ("canceling
@@ -390,8 +407,8 @@ async function discoverResolvingListingKey() {
   // Every attempt's throw is caught here and counted like a bad status. The
   // sitemap also gets its own, longer ceiling: fifteen seconds is right for a
   // page, not for the one read that pages 7,500 rows on a cold server.
-  const DISCOVERY_ATTEMPTS = 3
-  const DISCOVERY_BACKOFF_MS = [1000, 3000]
+  const DISCOVERY_ATTEMPTS = 5
+  const DISCOVERY_BACKOFF_MS = [5_000, 10_000, 15_000, 20_000]
   let status = 0
   let body = ''
   let why = ''
@@ -411,7 +428,11 @@ async function discoverResolvingListingKey() {
       await new Promise((r) => setTimeout(r, wait))
     }
   }
-  if (status !== 200) return { key: null, path: null, why: `sitemaps/listings.xml answered ${why} on ${DISCOVERY_ATTEMPTS} attempts` }
+  if (status !== 200) {
+    const fallback = await discoverResolvingListingKeyFromBrowse()
+    if (fallback) return fallback
+    return { key: null, path: null, why: `sitemaps/listings.xml answered ${why} on ${DISCOVERY_ATTEMPTS} attempts` }
+  }
   // Canonical detail URLs end in -<mlsNumber>; getListingCanonicalPathFields
   // accepts an MLS number as well as a ListingKey.
   const m = body.match(/<loc>([^<]*\/homes-for-sale\/[^<]*?-(\d{5,}))<\/loc>/)
