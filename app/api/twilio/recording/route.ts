@@ -5,11 +5,12 @@
  * transcript to the assigned broker.
  */
 
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { TWILIO_PUBLIC_ORIGIN, verifiedTwilioParams } from '@/lib/crm/twilio'
 import { sendCrmEmail } from '@/lib/crm/gmail'
 import { mailboxForSlug } from '@/lib/data/brokers/directory'
+import { applyInboundMessageEnrichment } from '@/lib/data/crm/applyInboundMessageEnrichment'
 
 /** Twilio CallSid / RecordingSid shape — validate before using inside a PostgREST
  *  .or() filter so a crafted value can never inject filter syntax. */
@@ -104,6 +105,31 @@ export async function POST(request: Request) {
   }
   if (transcript) update.body = transcript
   await sb.from('crm_timeline').update(update).eq('id', row.id)
+
+  // Voicemail only (a live-call recording can be our own greeting). Never a
+  // reply to the caller. Fail-soft: a Claude miss still writes the note.
+  if (transcript && row.kind === 'voicemail') {
+    const payload = (row.payload as Record<string, unknown> | null) ?? {}
+    const fromNumber = typeof payload.fromNumber === 'string' ? payload.fromNumber : null
+    const runEnrich = () =>
+      applyInboundMessageEnrichment({
+        personId: row.person_id,
+        body: transcript,
+        channel: 'voicemail',
+        fromNumber,
+        messageSid: callSid,
+        broker: row.broker,
+      }).catch((e) => {
+        console.warn('[recording] inbound enrich failed', e)
+      })
+    try {
+      after(() => {
+        void runEnrich()
+      })
+    } catch {
+      void runEnrich()
+    }
+  }
 
   // Alert the broker with the transcript. AWAITED (not a bare `void`, which
   // Vercel kills when it freezes the invocation on response — silently dropping

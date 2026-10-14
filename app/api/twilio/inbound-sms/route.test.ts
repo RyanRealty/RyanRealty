@@ -70,6 +70,9 @@ vi.mock('@/lib/crm/record-message', () => ({ recordConversationMessage: async ()
 vi.mock('@/lib/crm/on-reply', () => ({ handleInboundReply: async () => {} }))
 vi.mock('@/lib/tc/file-comms', () => ({ pdfMmsParts: () => [] }))
 vi.mock('@/lib/tc/file-comms-write', () => ({ fileCommsToVault: async () => {} }))
+vi.mock('@/lib/data/crm/applyInboundMessageEnrichment', () => ({
+  applyInboundMessageEnrichment: async () => ({ ok: true, applied: false, personId: 7 }),
+}))
 vi.mock('@/lib/supabase/service', () => {
   const chain: Record<string, unknown> = {}
   const resolved = Promise.resolve({ data: null, error: null })
