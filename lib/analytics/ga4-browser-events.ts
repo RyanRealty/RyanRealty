@@ -138,8 +138,29 @@ export const GA4_BROWSER_EVENTS_NOT_SENT: Readonly<Record<string, string>> = {
     "GA4 enhanced measurement's Form interactions already sends form_start. Add it here to the sent list only after Matt turns that toggle off.",
   valuation_requested:
     'Sent from the server by lib/cma-request.ts for the same seller-LP, FSBO and place-page submissions. A browser copy would count each one twice.',
-  page_view: "GTM's Google tag owns page_view (first paint plus enhanced measurement's history changes). A second one doubles page views.",
+  page_view:
+    'Sent by its own GTM tag, "GA4 - page_view" on trigger "CE page_view" (GA4_PAGE_VIEW_PARAMS), never by this shared tag. The bootstrap pushes the first paint, PageViewTracker one per pathname change.',
 }
+
+/** The GTM tag that is the only page_view sender (GTM version 9, 2026-10-14). */
+export const GA4_PAGE_VIEW_TAG_NAME = 'GA4 - page_view'
+/** Its trigger: Custom Event, event name equals `page_view`. */
+export const GA4_PAGE_VIEW_TRIGGER_NAME = 'CE page_view'
+
+/**
+ * The "GA4 - page_view" tag's parameter table. All flat keys: the bootstrap
+ * and PageViewTracker push them in the page_view message itself, so the Data
+ * Layer Variable reads that message's value. page_location is identity-stripped
+ * (GA4_STRIP_PARAMS); page_referrer is the previous page on a client-side
+ * navigation and absent on first paint, where GA4 falls back to
+ * document.referrer.
+ */
+export const GA4_PAGE_VIEW_PARAMS = [
+  { name: 'page_type', from: 'page_type' },
+  { name: 'broker_slug', from: 'broker_slug' },
+  { name: 'page_location', from: 'page_location' },
+  { name: 'page_referrer', from: 'page_referrer' },
+] as const
 
 /**
  * The GA4 Event tag's parameter table, in GTM order. `from` is the dataLayer
@@ -177,6 +198,8 @@ export const GA4_EVENT_PARAMS = [
   { name: 'lp_content', from: 'ga4_params.lp_content' },
   { name: 'metric_id', from: 'ga4_params.metric_id' },
   { name: 'metric_rating', from: 'ga4_params.metric_rating' },
+  // dwell: the threshold reached (15, 30, 45, 60, 120, 300 seconds).
+  { name: 'seconds', from: 'ga4_params.seconds' },
 ] as const
 
 const PER_EVENT_PARAMS: ReadonlySet<string> = new Set(
