@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyMultiUnitSubject,
   describesSameStructure,
+  multiUnitProfile,
   multiUnitSubjectRefusal,
+  multiUnitSubjectTrace,
   subjectUnitFacts,
   subjectUnitsTrace,
   unitRecordOf,
+  type MultiUnitProfile,
 } from '@/lib/cma/subject-units'
 
 // 429 Irving as the listings table holds it (audit 2026-10-14).
@@ -114,22 +118,27 @@ describe('subjectUnitFacts', () => {
   })
 })
 
-describe('multiUnitSubjectRefusal', () => {
+describe('multiUnitSubjectRefusal (the multi-unit ladder prices two to four units, Matt 2026-10-14)', () => {
   const subject = { streetAddress: '429 Irving', sqft: 1629, propertySubType: 'Single Family Residence' }
 
-  it('refuses 429 Irving by its prior duplex record, and the sentence files under Multi-unit home', () => {
+  it('no longer refuses 429 Irving: a duplex by its prior record prices on the ladder', () => {
     const units = subjectUnitFacts(IRVING_2026, [IRVING_2026, IRVING_2005])
-    const reason = multiUnitSubjectRefusal({ ...subject, units })
-    expect(reason).toMatch(/^Multi-unit home: an earlier MLS record at this address \(MLS 2005001, closed 2005-07-07\) is typed Duplex, 2 units, 2,300 sq ft, built 2003, the same structure the current record lists as Single Family Residence at 1,629 sq ft with a 520 sq ft ADU\./)
-    expect(reason).toContain('priced from multi-unit sales only (rule 23)')
-    expect(reason).not.toMatch(/[—–]/)
+    expect(multiUnitSubjectRefusal({ ...subject, units })).toBeNull()
   })
 
-  it('refuses a record that is itself a duplex', () => {
+  it('no longer refuses a record that is itself a duplex', () => {
     const units = subjectUnitFacts(IRVING_2005, [IRVING_2005])
-    expect(multiUnitSubjectRefusal({ ...subject, propertySubType: 'Duplex', sqft: 2300, units })).toMatch(
-      /^Multi-unit home: the MLS record for 429 Irving describes a multi-unit home \(PropertyType C \(Residential Income\); sub type Duplex; NumberOfUnitsTotal 2; remarks that describe a multi-unit home\)\./,
-    )
+    expect(multiUnitSubjectRefusal({ ...subject, propertySubType: 'Duplex', sqft: 2300, units })).toBeNull()
+  })
+
+  it('still refuses a building of more than four units, and the sentence files under Multi-unit home', () => {
+    const complex = { ListingKey: 'mf', PropertyType: 'C', property_sub_type: 'Multi Family', TotalLivingAreaSqFt: '9800', year_built: 1988, details: { NumberOfUnitsTotal: 12, PropertyTypeLabel: 'Residential Income' } }
+    const units = subjectUnitFacts(complex, [complex])
+    const reason = multiUnitSubjectRefusal({ streetAddress: '100 Bond', sqft: 9800, propertySubType: 'Multi Family', units })
+    expect(reason).toMatch(/^Multi-unit home: the MLS record for 100 Bond describes a multi-unit home \(PropertyType C \(Residential Income\); sub type Multi Family\)\./)
+    expect(reason).toContain('A building of 12 units is priced on its income')
+    expect(reason).toContain('Matt prices it by hand.')
+    expect(reason).not.toMatch(/[—–]/)
   })
 
   it('a house with an ADU and no multi-unit record is not refused (rule 23: an ADU is not a multi-unit)', () => {
@@ -138,6 +147,77 @@ describe('multiUnitSubjectRefusal', () => {
     expect(multiUnitSubjectRefusal({ ...subject, units })).toBeNull()
     expect(multiUnitSubjectRefusal({ ...subject, units: null })).toBeNull()
     expect(multiUnitSubjectRefusal(subject)).toBeNull()
+  })
+})
+
+describe('multiUnitProfile and applyMultiUnitSubject (the multi-unit ladder, Matt 2026-10-14)', () => {
+  it('429 Irving: a duplex of 2,149 sq ft, the main home plus its recorded ADU, from the prior record', () => {
+    const units = subjectUnitFacts(IRVING_2026, [IRVING_2026, IRVING_2005])
+    const profile = multiUnitProfile(units, { sqft: 1629, propertySubType: 'Single Family Residence' })
+    expect(profile).toEqual({
+      units: 2,
+      propertySubType: 'Duplex',
+      sqft: 2149,
+      sqftBasis: "the current record's 1,629 sq ft main home plus its 520 sq ft ADU",
+      basis: 'prior',
+    })
+  })
+
+  it('without an ADU area on the current record the earlier record\'s area is the building', () => {
+    const current = { ...IRVING_2026, details: { 'Accessory Dwelling Unit YN': 'Yes' } }
+    const units = subjectUnitFacts(current, [current, IRVING_2005])
+    const profile = multiUnitProfile(units, { sqft: 1629, propertySubType: 'Single Family Residence' })
+    expect(profile?.sqft).toBe(2300)
+    expect(profile?.sqftBasis).toBe('the earlier Duplex record (MLS 2005001)')
+  })
+
+  it('a current duplex record keeps its own area and sub type', () => {
+    const units = subjectUnitFacts(IRVING_2005, [IRVING_2005])
+    expect(multiUnitProfile(units, { sqft: 2300, propertySubType: 'Duplex' })).toEqual({
+      units: 2,
+      propertySubType: 'Duplex',
+      sqft: 2300,
+      sqftBasis: null,
+      basis: 'current',
+    })
+  })
+
+  it('a Multi Family record with a count of three types as a triplex; with no count it stays Multi Family', () => {
+    const three = { ListingKey: 't', PropertyType: 'C', property_sub_type: 'Multi Family', TotalLivingAreaSqFt: '3000', details: { NumberOfUnitsTotal: 3 } }
+    expect(multiUnitProfile(subjectUnitFacts(three, [three]), { sqft: 3000, propertySubType: 'Multi Family' })?.propertySubType).toBe('Triplex')
+    const bare = { ...three, details: {} }
+    const p = multiUnitProfile(subjectUnitFacts(bare, [bare]), { sqft: 3000, propertySubType: 'Multi Family' })
+    expect(p?.units).toBeNull()
+    expect(p?.propertySubType).toBe('Multi Family')
+  })
+
+  it('applies the profile to the subject and leaves a house alone', () => {
+    const units = subjectUnitFacts(IRVING_2026, [IRVING_2026, IRVING_2005])
+    const duplex: { sqft: number | null; propertySubType: string | null; propertyType?: string | null; units?: typeof units; multiUnit?: MultiUnitProfile | null } = {
+      sqft: 1629,
+      propertySubType: 'Single Family Residence',
+      propertyType: 'A',
+      units,
+    }
+    const profile = applyMultiUnitSubject(duplex)
+    expect(profile?.units).toBe(2)
+    expect(duplex.propertySubType).toBe('Duplex')
+    expect(duplex.propertyType).toBe('C')
+    expect(duplex.sqft).toBe(2149)
+    expect(duplex.multiUnit).toBe(profile)
+
+    const house = { sqft: 1629, propertySubType: 'Single Family Residence', propertyType: 'A', units: subjectUnitFacts(IRVING_2026, [IRVING_2026]) }
+    expect(applyMultiUnitSubject(house)).toBeNull()
+    expect(house).toMatchObject({ sqft: 1629, propertySubType: 'Single Family Residence', propertyType: 'A' })
+  })
+
+  it('writes the ladder sentence for the trace', () => {
+    const units = subjectUnitFacts(IRVING_2026, [IRVING_2026, IRVING_2005])
+    const profile = multiUnitProfile(units, { sqft: 1629, propertySubType: 'Single Family Residence' })
+    expect(multiUnitSubjectTrace(profile)).toBe(
+      "Priced as a duplex (2 units, 2,149 sq ft: the current record's 1,629 sq ft main home plus its 520 sq ft ADU) from closed duplex sales on the multi-unit ladder, never from single-family sales (rule 23, Matt 2026-10-14).",
+    )
+    expect(multiUnitSubjectTrace(null)).toBe('')
   })
 })
 

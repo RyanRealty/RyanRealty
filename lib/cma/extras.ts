@@ -28,7 +28,7 @@ import {
 } from '@/lib/cma/band-rivals'
 import { compAreaContains, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
-import { bathCountCompatible, keepSameProductType } from '@/lib/cma/market-area'
+import { bathCountCompatible, compPoolPropertyType, keepSameProductType } from '@/lib/cma/market-area'
 import { realSubdivision } from '@/lib/cma/comp-tiers'
 import type { CmaAdjustedComp, CmaSubject, CmaPricing } from '@/lib/cma/types'
 import { getCmaMarketAreaRows, type CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
@@ -559,8 +559,15 @@ export async function buildCmaExtras(args: {
             lo,
             hi,
             propertySubType: args.subject.propertySubType,
+            propertyType: compPoolPropertyType(args.subject.propertySubType),
           }).catch(() => null)
-        : getCmaBandInventory(args.subject.city, lo, hi, args.subject.propertySubType).catch(() => null),
+        : getCmaBandInventory(
+            args.subject.city,
+            lo,
+            hi,
+            args.subject.propertySubType,
+            compPoolPropertyType(args.subject.propertySubType),
+          ).catch(() => null),
     subdivision
       ? getCmaSubdivisionClosed(subdivision, since12, {
           ground: subjectPlatGround(args.subject),

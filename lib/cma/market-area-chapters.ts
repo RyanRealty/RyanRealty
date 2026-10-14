@@ -5,6 +5,7 @@
 import { cleanText, countWord, dec, escapeHtml, int, propertyIntelligenceBlock, usd } from '@/lib/cma/render-blocks'
 import { clientAreaLabel, clientSourceLine } from '@/lib/cma/client-facing'
 import { printedBaths } from '@/lib/pricing/bath-count'
+import { isMultiUnitSubType } from '@/lib/cma/market-area'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import {
   askOutcomeBarsPhoneSvg,
@@ -204,6 +205,9 @@ function monthLineAgainstPriceHtml(
   const rec = against?.recommended ?? null
   const s = against?.subject ?? null
   if (!s || rec == null || !(rec > 0)) return ''
+  // The line is the city's single-family median; a duplex is not priced
+  // against it (Matt 2026-10-14), so the sentence stays off that letter.
+  if (isMultiUnitSubType(s.propertySubType)) return ''
   const months = trend
     .map((t) => t.medianSalePrice)
     .filter((v): v is number => v != null && Number.isFinite(v) && v > 0)

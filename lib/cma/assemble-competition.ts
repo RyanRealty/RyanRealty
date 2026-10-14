@@ -37,7 +37,7 @@ import {
   withRivalStretch,
 } from '@/lib/cma/band-rivals'
 import { roomNotedSentence, sameAreaFit, sameAreaSubject, type SameAreaCandidate } from '@/lib/cma/same-area-fit'
-import { distanceMiles } from '@/lib/cma/market-area'
+import { compPoolPropertyType, distanceMiles } from '@/lib/cma/market-area'
 import { rankBestPool } from '@/lib/pricing/best-pool'
 import {
   POOL_CAP,
@@ -112,6 +112,7 @@ export function salesSearchAndArea(args: {
         : null,
     // An ADU home's pass (Matt 2026-10-14): the sentence prints after the search story.
     aduSentence: args.diagnostics.adu_preference?.sentence ?? null,
+    multiUnitSentence: args.diagnostics.multi_unit?.sentence ?? null,
   })
   const compArea = buildCompArea({
     subject: {
@@ -197,6 +198,7 @@ export async function assembleCompetition(args: {
       lo: POOL_QUERY_LO,
       hi: POOL_QUERY_HI,
       propertySubType: subject.propertySubType,
+      propertyType: compPoolPropertyType(subject.propertySubType),
     }).catch(() => null)
 
   if (!ring || !centre) {
@@ -484,6 +486,7 @@ export async function assembleCompetition(args: {
         area: unsoldArea,
         city: subject.city,
         propertySubType: subject.propertySubType,
+        propertyType: compPoolPropertyType(subject.propertySubType),
         priceLo: POOL_QUERY_LO,
         priceHi: POOL_QUERY_HI,
         months: POOL_EXPIRED_MONTHS,

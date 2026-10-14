@@ -1,4 +1,4 @@
-import type { SubjectUnitFacts } from '@/lib/cma/subject-units'
+import type { MultiUnitProfile, SubjectUnitFacts } from '@/lib/cma/subject-units'
 /**
  * Shared types for the deterministic CMA builder (lib/cma/**).
  *
@@ -44,9 +44,17 @@ export interface CmaSubject {
   propertyType?: string | null
   /**
    * The home's unit and ADU reading off its own MLS records (lib/cma/subject-units.ts,
-   * Matt 2026-10-14). A multi-unit reading refuses the build before comps.
+   * Matt 2026-10-14). A multi-unit reading prices the home on the multi-unit
+   * ladder (`multiUnit` below); a building of more than four units is refused.
    */
   units?: SubjectUnitFacts | null
+  /**
+   * Set by the resolver on a multi-unit home (applyMultiUnitSubject): the unit
+   * count, the 2-4 unit sub type the walls match on, and the whole building's
+   * living area. `propertySubType`, `propertyType` and `sqft` already carry
+   * those values when this is set. Absent on every other home.
+   */
+  multiUnit?: MultiUnitProfile | null
   yearBuilt: number | null
   garageSpaces: number | null
   photoUrl: string | null
@@ -144,6 +152,11 @@ export interface CmaComp {
   lotAcres: number | null
   /** MLS property_sub_type — drives product-class comparability. */
   propertySubType: string | null
+  /**
+   * MLS NumberOfUnitsTotal (details), read for the multi-unit ladder: a duplex
+   * subject prices from two-unit sales first. Absent on rows stored before.
+   */
+  unitsTotal?: number | null
   yearBuilt: number | null
   /** MLS NewConstructionYN. True is never-owned new construction. Null means the feed did not say. */
   newConstructionYn?: boolean | null
@@ -831,6 +844,14 @@ export interface CmaBuildInput {
    * without an ADU) and the letter says so. Never set by a caller.
    */
   aduFallback?: { heldAfterReview: number } | null
+  /**
+   * A MULTI-UNIT HOME FALLS BACK AFTER THE REVIEW TOO (Matt 2026-10-14,
+   * lib/pricing/multi-unit-preference.ts). buildCma sets this on itself when
+   * the same-unit-count set (duplex from duplexes) lost a sale in the
+   * comparability review and fell under five: the re-entered build selects
+   * from every two- to four-unit sale and the letter says so. Never set by a caller.
+   */
+  unitsFallback?: { heldAfterReview: number } | null
   /**
    * Broker-confirmed site facts that override the GIS-resolved values. §0 allows
    * a seller/broker-confirmed water source (e.g. a parcel converted off a private

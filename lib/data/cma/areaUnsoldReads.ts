@@ -318,6 +318,8 @@ export async function getCmaAreaUnsoldCycles(input: {
   /** The subject's city — the bound on a subdivision-scoped read, since names repeat between towns. */
   city: string
   propertySubType: string | null
+  /** MLS segment: A (the default) or C for a 2-4 unit home (lib/cma/market-area.ts compPoolPropertyType). */
+  propertyType?: string | null
   priceLo: number
   priceHi: number
   months?: number
@@ -328,6 +330,7 @@ export async function getCmaAreaUnsoldCycles(input: {
   const sinceIso = monthsAgoIso(months, asOf)
   const area = input.area
   const subType = input.propertySubType?.trim() || null
+  const segment = input.propertyType?.trim() || 'A'
   const empty: CmaAreaUnsoldRead = {
     rows: [],
     laterCycles: [],
@@ -355,7 +358,7 @@ export async function getCmaAreaUnsoldCycles(input: {
     let q = sb
       .from('listings')
       .select(COLS)
-      .eq('PropertyType', 'A')
+      .eq('PropertyType', segment)
       .in('StandardStatus', UNSOLD_STATUSES as unknown as string[])
       .gte('status_change_timestamp', sinceIso)
       .gte('ListPrice', input.priceLo)
@@ -379,11 +382,11 @@ export async function getCmaAreaUnsoldCycles(input: {
   }
 
   const filter = [
-    `PropertyType='A'`,
+    `PropertyType='${segment}'`,
     `StandardStatus IN (${UNSOLD_STATUSES.join(', ')})`,
     `status_change_timestamp >= ${sinceIso}`,
     `ListPrice ${input.priceLo}..${input.priceHi}`,
-    subType ? `property_sub_type='${subType}'` : 'any residential sub type',
+    subType ? `property_sub_type='${subType}'` : segment === 'C' ? 'any 2-4 unit sub type' : 'any residential sub type',
     areaFilterTrace(area, outline),
   ].join(' AND ')
 

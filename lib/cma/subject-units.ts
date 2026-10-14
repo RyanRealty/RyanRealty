@@ -1,5 +1,6 @@
 /**
- * How many living units the subject has, read from its own MLS records.
+ * How many living units the subject has, read from its own MLS records, and
+ * the profile a multi-unit home is priced under.
  *
  * WHY (Matt 2026-10-14, 429 Irving). The current MLS record was typed Single
  * Family Residence at 1,629 sq ft with "a 520 sq ft ADU" in the remarks, and
@@ -14,17 +15,22 @@
  * so (PropertyType C, a Duplex / Triplex / Fourplex / Multi Family sub type,
  * NumberOfUnitsTotal of two or more, or remarks that describe the home as a
  * duplex), or when an earlier MLS record of the same structure at the address
- * says so. A multi-unit home is never priced from single-family sales, and the
- * comp pool (sale_pricing_facts, PropertyType A only) holds no multi-unit
- * sales, so the build refuses with a named reason and the queue shows it as
- * "Multi-unit home" for Matt. A house with an ADU and no multi-unit record
- * stays a detached home (rule 23); its ADU is read here so the trace and the
- * letter can state it.
+ * says so. A multi-unit home is never priced from single-family sales. Since
+ * 2026-10-14 it is priced on the multi-unit ladder instead (Matt: "build a
+ * multi-unit ladder"): the resolver stamps the profile below on the subject
+ * (`applyMultiUnitSubject`), which types it Duplex / Triplex / Quadruplex,
+ * carries the whole building's living area, and sends every listings read to
+ * PropertyType C closes (lib/cma/comps.ts, lib/pricing/select.ts). Only a
+ * building of more than four units is still refused: that is income property,
+ * priced on its rents, and the queue shows it as "Multi-unit home" for Matt.
+ * A house with an ADU and no multi-unit record stays a detached home (rule
+ * 23); its ADU is read here so the trace and the letter can state it.
  *
  * Pure. The rows are the builder's own subject rows (lib/data/cma/builderReads
  * SUBJECT_CMA_COLUMNS, which adds `details`).
  */
 
+import { isMultiUnitSubType, multiUnitNoun, multiUnitSubTypeFor, unitsFromSubType } from '@/lib/cma/market-area'
 import { aduFromRemarks, classifyProduct, multiUnitFromRemarks } from '@/lib/pricing/classes'
 
 /** One MLS record's unit reading. */
@@ -206,27 +212,127 @@ export function subjectUnitsTrace(
   return lines.join(' ')
 }
 
+/** The most units the comparable-sales engine prices. Above it a building is priced on its income. */
+export const MULTI_UNIT_MAX_UNITS = 4
+
 /**
- * The build refusal for a multi-unit subject, or null when the home may be
- * priced. The sentence opens "Multi-unit home:" so the queue files it under
- * that reason (lib/cma/queue-view.ts).
+ * How a multi-unit subject is priced: its unit count, the MLS 2-4 unit sub
+ * type the ladder matches on, and the whole building's living area.
+ */
+export type MultiUnitProfile = {
+  /** Two to four, or null when no record states a count (a bare Multi Family record). */
+  units: number | null
+  /** Duplex, Triplex, Quadruplex or Multi Family: the sub type the product walls read. */
+  propertySubType: string
+  /** The whole building's living area, the number the price per square foot is read over. */
+  sqft: number | null
+  /** Where that area came from when it is not the current record's own figure. */
+  sqftBasis: string | null
+  /** Which record made the home multi-unit. */
+  basis: 'current' | 'prior'
+}
+
+/**
+ * The sub type the walls and the letter read: the count's own word when a
+ * record states a count of two to four (a Multi Family record with
+ * NumberOfUnitsTotal 3 is a triplex), else the record's 2-4 unit sub type,
+ * else Multi Family.
+ */
+function profileSubType(recordSubType: string | null, units: number | null): string {
+  if (units != null && units >= 2 && units <= MULTI_UNIT_MAX_UNITS) return multiUnitSubTypeFor(units)
+  return isMultiUnitSubType(recordSubType) ? recordSubType! : multiUnitSubTypeFor(units)
+}
+
+/**
+ * The profile a multi-unit subject is priced under, or null for a home that
+ * is not multi-unit. On a current multi-unit record the record's own area is
+ * the building's. On a prior-record reading (429 Irving) the current record
+ * lists the main home alone, so the building is that area plus the recorded
+ * ADU area when both are on record (1,629 + 520 = 2,149, the figure the owner
+ * gave), else the earlier record's area.
+ */
+export function multiUnitProfile(
+  facts: SubjectUnitFacts | null | undefined,
+  subject: { sqft: number | null; propertySubType: string | null },
+): MultiUnitProfile | null {
+  if (!facts) return null
+  if (facts.multiUnit) {
+    const units = facts.unitsTotal ?? unitsFromSubType(subject.propertySubType)
+    return { units, propertySubType: profileSubType(subject.propertySubType, units), sqft: subject.sqft, sqftBasis: null, basis: 'current' }
+  }
+  const prior = facts.priorMultiUnit
+  if (!prior) return null
+  const units = prior.unitsTotal ?? unitsFromSubType(prior.propertySubType)
+  const propertySubType = profileSubType(prior.propertySubType, units)
+  let sqft = subject.sqft
+  let sqftBasis: string | null = null
+  if (subject.sqft != null && subject.sqft > 0 && facts.aduSqft != null && facts.aduSqft > 0) {
+    sqft = subject.sqft + facts.aduSqft
+    sqftBasis = `the current record's ${sqftWord(subject.sqft)} main home plus its ${sqftWord(facts.aduSqft)} ADU`
+  } else if (prior.sqft != null) {
+    sqft = prior.sqft
+    sqftBasis = `the earlier ${prior.propertySubType ?? 'multi-unit'} record (MLS ${prior.mlsNumber ?? prior.listingKey ?? 'unknown'})`
+  }
+  return { units, propertySubType, sqft, sqftBasis, basis: 'prior' }
+}
+
+/**
+ * Stamp the profile on the subject so every pricing build reads one field:
+ * the sub type becomes the 2-4 unit product, the segment C, and the living
+ * area the whole building's. Returns the profile, or null when the home is
+ * not multi-unit (the subject is untouched then). A broker's own facts
+ * (applySubjectFactOverrides) still win afterwards.
+ */
+export function applyMultiUnitSubject(subject: {
+  sqft: number | null
+  propertySubType: string | null
+  propertyType?: string | null
+  units?: SubjectUnitFacts | null
+  multiUnit?: MultiUnitProfile | null
+}): MultiUnitProfile | null {
+  const profile = multiUnitProfile(subject.units, subject)
+  if (!profile) return null
+  subject.multiUnit = profile
+  subject.propertySubType = profile.propertySubType
+  subject.propertyType = 'C'
+  if (profile.sqft != null && profile.sqft > 0) subject.sqft = profile.sqft
+  return profile
+}
+
+/** One sentence for the subject trace: how a multi-unit home is priced. Empty for any other home. */
+export function multiUnitSubjectTrace(profile: MultiUnitProfile | null | undefined): string {
+  if (!profile) return ''
+  const noun = multiUnitNoun(profile.propertySubType) ?? 'multi-unit home'
+  const count = profile.units != null ? `${profile.units} units, ` : ''
+  const area = profile.sqft != null ? `${sqftWord(profile.sqft)}${profile.sqftBasis ? `: ${profile.sqftBasis}` : ''}` : 'no living area on record'
+  const from = profile.units != null ? `closed ${noun} sales` : 'closed two- to four-unit sales'
+  return `Priced as a ${noun} (${count}${area}) from ${from} on the multi-unit ladder, never from single-family sales (rule 23, Matt 2026-10-14).`
+}
+
+/**
+ * The build refusal for a multi-unit subject the ladder cannot price, or null
+ * when the home may be priced. Since 2026-10-14 a two- to four-unit home is
+ * priced on the multi-unit ladder, so only a larger building is refused. The
+ * sentence opens "Multi-unit home:" so the queue files it under that reason
+ * (lib/cma/queue-view.ts).
  */
 export function multiUnitSubjectRefusal(subject: {
   streetAddress: string
   sqft: number | null
   propertySubType: string | null
   units?: SubjectUnitFacts | null
+  multiUnit?: MultiUnitProfile | null
 }): string | null {
   const facts = subject.units
   if (!facts) return null
-  const close =
-    'A multi-unit home is priced from multi-unit sales only (rule 23), and the comp pool holds single-family sales, so this letter is not built. Matt prices it by hand.'
+  const profile = subject.multiUnit ?? multiUnitProfile(facts, subject)
+  if (!profile || profile.units == null || profile.units <= MULTI_UNIT_MAX_UNITS) return null
+  const close = `A building of ${profile.units} units is priced on its income, not on comparable sales, and this engine prices two- to four-unit homes only (rule 23). This letter is not built. Matt prices it by hand.`
   if (facts.multiUnit) {
     return `Multi-unit home: the MLS record for ${subject.streetAddress} describes a multi-unit home (${facts.reasons.join('; ')}). ${close}`
   }
   if (facts.priorMultiUnit) {
-    const cur = `${subject.propertySubType ?? 'untyped'} at ${sqftWord(subject.sqft)}${facts.aduYn && facts.aduSqft ? ` with a ${sqftWord(facts.aduSqft)} ADU` : ''}`
-    return `Multi-unit home: ${priorSentence(facts.priorMultiUnit)}, the same structure the current record lists as ${cur}. ${close}`
+    return `Multi-unit home: ${priorSentence(facts.priorMultiUnit)}, the same structure as the current record. ${close}`
   }
   return null
 }

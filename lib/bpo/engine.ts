@@ -18,13 +18,16 @@ import type { MarketIndexPoint } from '@/lib/pricing/market-path'
 
 export async function loadBpoEngineInputs(
   subject: CmaSubject,
-  opts: { aduFallback?: { heldAfterReview: number } | null } = {},
+  opts: { aduFallback?: { heldAfterReview: number } | null; unitsFallback?: { heldAfterReview: number } | null } = {},
 ) {
   const [selection, market, site, marketIndex] = await Promise.all([
     selectCompsPreferringFacts(subject, {
       // The re-entry after a review drop on an ADU-first set (BpoBuildInput.aduFallback).
       aduPass: opts.aduFallback ? 'ordinary' : 'first',
       aduSalesHeld: opts.aduFallback?.heldAfterReview,
+      // The multi-unit ladder's re-entry (BpoBuildInput.unitsFallback).
+      unitsPass: opts.unitsFallback ? 'class' : 'first',
+      unitSalesHeld: opts.unitsFallback?.heldAfterReview,
     }),
     getCmaMarketContext(subject),
     resolveCmaSiteData(subject),

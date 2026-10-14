@@ -289,6 +289,9 @@ const SYSTEM =
   'any comp whose remarks indicate more than one dwelling unit, a shared wall, or a purpose-built income ' +
   'configuration, no matter what its sub-type says or how close or recent the sale is. A duplex sells to an ' +
   'investor on a rent roll, not to the subject\'s buyer. Say which remarks phrase gave it away. ' +
+  'When the subject line says it is a duplex, triplex, fourplex or other 2-4 unit building, the comps are the ' +
+  'same kind of building on purpose: never exclude one for having more than one unit. A different unit count is ' +
+  'something to weigh, not grounds to exclude. ' +
   'tier=strong means directly comparable (full weight in the reconciliation); tier=weak means ' +
   'usable with reservations (half weight — bracketing only); tier=exclude means a different market segment (dropped ' +
   'before any math). Prefer excluding a genuinely non-comparable sale over keeping it to hit a count. Keep at least ' +
@@ -469,6 +472,10 @@ export function buildJudgeUserPrompt(
 ): string {
   const subjectParts = [
     `${subject.streetAddress}, ${subject.city}`,
+    // A multi-unit subject says so first (the multi-unit ladder, Matt 2026-10-14).
+    subject.multiUnit
+      ? `${subject.multiUnit.units != null ? `${subject.multiUnit.units}-unit ` : ''}${subject.propertySubType ?? 'multi-unit'} (2-4 unit building; comps are the same kind of building)`
+      : null,
     subject.subdivision ? `subdivision=${subject.subdivision}` : null,
     `${subject.beds ?? '?'}bd/${subject.baths ?? '?'}ba`,
     `${subject.sqft ?? '?'}sqft`,

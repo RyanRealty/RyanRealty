@@ -317,12 +317,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       },
       input.subjectFacts,
     )
-    // A duplex or other multi-unit home is refused before a single comp is
-    // read (Matt 2026-10-14, 429 Irving: a duplex by its own listing history,
-    // priced on five single-family sales). Rule 23 prices like from like, and
-    // the pool holds no multi-unit sales, so the queue files it for Matt. The
-    // resolver decides (every pricing build reads the same field); the
-    // overrides above never change a unit count.
+    // A multi-unit home the ladder cannot price is refused before a single
+    // comp is read (Matt 2026-10-14, 429 Irving: a duplex by its own listing
+    // history, priced on five single-family sales). A two- to four-unit home
+    // now prices on the multi-unit ladder (the resolver stamped its profile,
+    // lib/cma/subject-units.ts); a larger building is income property and the
+    // queue files it for Matt. The resolver decides (every pricing build
+    // reads the same field); the overrides above never change a unit count.
     const unitRefusal = resolved.refusal ?? multiUnitSubjectRefusal(subject)
     if (unitRefusal) {
       await recordBuildFailure(slug, unitRefusal, { stage: 'subject', docType, trace: [resolved.trace] })
@@ -453,6 +454,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             // The re-entry after a review drop (CmaBuildInput.aduFallback).
             aduPass: input.aduFallback ? 'ordinary' : 'first',
             aduSalesHeld: input.aduFallback?.heldAfterReview,
+            // The multi-unit ladder's re-entry (CmaBuildInput.unitsFallback).
+            unitsPass: input.unitsFallback ? 'class' : 'first',
+            unitSalesHeld: input.unitsFallback?.heldAfterReview,
           }),
       marketPromise,
     ])
@@ -667,6 +671,15 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             `[cma/build] ${slug}: the ADU-first set held ${gated.comps.length} of ${MIN_COMPS} after the review; rebuilding on the ordinary set`,
           )
           return buildCma({ ...input, aduFallback: { heldAfterReview: gated.comps.length } })
+        }
+        // A MULTI-UNIT HOME FALLS BACK AFTER THE REVIEW TOO (Matt 2026-10-14,
+        // lib/pricing/multi-unit-preference.ts): a same-unit-count set that
+        // lost a sale in the review re-enters once on the whole 2-4 unit class.
+        if (!input.unitsFallback && selection.diagnostics.multi_unit?.outcome === 'same-units') {
+          console.log(
+            `[cma/build] ${slug}: the same-unit-count set held ${gated.comps.length} of ${MIN_COMPS} after the review; rebuilding on every 2-4 unit sale`,
+          )
+          return buildCma({ ...input, unitsFallback: { heldAfterReview: gated.comps.length } })
         }
         const err =
           gated.droppedProduct > 0

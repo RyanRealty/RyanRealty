@@ -26,7 +26,7 @@ import { aduSaleRefused, multiUnitFromRemarks } from '@/lib/pricing/classes'
 import { onOwnPlat } from '@/lib/pricing/plat-ground'
 import { roomOffPhrase } from '@/lib/pricing/room-counts'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
-import { letterProductMatch, resolveMarketArea } from '@/lib/cma/market-area'
+import { isMultiUnitSubType, letterProductMatch, resolveMarketArea } from '@/lib/cma/market-area'
 import { compAreaContains, salesAreaIsBounded, type CompArea } from '@/lib/pricing/comp-area'
 import type { CmaSubject } from '@/lib/cma/types'
 
@@ -215,7 +215,13 @@ export function sameAreaFit(
   if (!letterProductMatch(subject.propertySubType ?? null, c.propertySubType ?? null)) {
     return { ok: false, reason: 'product' }
   }
-  if (c.publicRemarks != null && multiUnitFromRemarks(c.publicRemarks) !== multiUnitFromRemarks(subject.publicRemarks)) {
+  // Not a wall on a multi-unit subject: its product is the typed 2-4 unit
+  // class letterProductMatch held above (Matt 2026-10-14).
+  if (
+    !isMultiUnitSubType(subject.propertySubType) &&
+    c.publicRemarks != null &&
+    multiUnitFromRemarks(c.publicRemarks) !== multiUnitFromRemarks(subject.publicRemarks)
+  ) {
     return { ok: false, reason: 'product' }
   }
   if (aduSaleRefused(subject.publicRemarks, c.publicRemarks, subject.units?.aduYn)) {
