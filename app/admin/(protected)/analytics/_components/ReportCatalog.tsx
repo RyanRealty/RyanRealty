@@ -98,13 +98,13 @@ const REPORT_GROUPS: ReportGroup[] = [
         href: '/admin/reports/lead-flow',
         icon: '🔀',
         title: 'Lead-flow report',
-        desc: 'GA4 sessions to form submits to broker assignments to CMAs, with wiring health per LP.',
+        desc: 'From visits to form sends to broker assignment to CMAs, with a check that each landing page is wired up.',
       },
       {
         href: '/admin/reports/traffic-sources',
         icon: '🌐',
         title: 'Traffic sources',
-        desc: 'Where every visitor came from — GBP attribution gap and channels to tag.',
+        desc: 'Where every visitor came from, and which links still need tagging.',
       },
       {
         href: '/admin/analytics/funnel-breakdown',
@@ -115,7 +115,7 @@ const REPORT_GROUPS: ReportGroup[] = [
       {
         href: '/admin/analytics/lp-leaderboard',
         icon: '🏁',
-        title: 'LP leaderboard',
+        title: 'Landing page leaderboard',
         desc: 'Landing pages ranked by sessions, leads, and conversion rate.',
       },
       {
@@ -209,9 +209,7 @@ export default function ReportCatalog({ cities }: { cities: string[] }) {
         <SectionHead>Weekly market report</SectionHead>
         <p className="av2-note">
           Generate the weekly report (last Sunday–Saturday). Lists homes that went pending and
-          closed, by city, with an AI image and a shareable link. Cron can call{' '}
-          <code>GET /api/cron/market-report</code> with{' '}
-          <code>Authorization: Bearer CRON_SECRET</code>.
+          closed, by city, with an AI image and a shareable link. It also runs on its own every Sunday.
         </p>
         <GenerateReportButton generateAction={generateWeeklyMarketReport} />
       </section>

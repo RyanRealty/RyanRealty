@@ -4,7 +4,8 @@
  * Each function returns a typed, predictable shape. The page composes them in
  * parallel via Promise.all. All numbers trace to either:
  *   - the GA4 Data API (via getGA4SummaryCached)
- *   - public.marketing_channel_daily (Supabase service-role query)
+ *   - public.marketing_channel_daily (GA4 daily sessions here; Meta spend via
+ *     getMetaAdSpend in lib/data)
  *   - public.valuation_requests / cmas / marketing_assignments (Supabase)
  *
  * Each numeric figure rendered on the dashboard comes from exactly one of
@@ -14,6 +15,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getGA4SummaryCached } from '@/lib/ga4-cache'
 import { getLeadIntake } from '@/lib/data'
+import { getMetaAdSpend } from '@/lib/data/analytics/getMetaAdSpend'
 
 /** Range dates (YYYY-MM-DD) → inclusive ISO bounds for a crm_people query. */
 function rangeToIso(range: DateRange): { startIso: string; endIso: string } {
@@ -80,28 +82,21 @@ export type OverviewData = {
   topSources: { sourceMedium: string; sessions: number }[]
   topLandingPages: { pagePath: string; sessions: number }[]
   paidSpendUsd: number | null
+  /** True when the Meta spend read failed (paidSpendUsd is then null for that reason, not "no spend"). */
+  paidSpendUnreadable: boolean
   /** Sessions referred by AI assistants (lib/ai-referrers.ts host roster), most first. */
   aiReferrers: { engine: string; sessions: number; users: number }[]
 }
 
 export async function fetchOverview(range: DateRange): Promise<OverviewData> {
   const summaryRes = await getGA4SummaryCached(range.startDate, range.endDate)
-  const supabase = createServiceClient()
   const { startIso, endIso } = rangeToIso(range)
   const intake = await getLeadIntake({ startIso, endIso })
   const crmLeadCount = intake.inboundLeads
 
-  const { data: spendRows } = await supabase
-    .from('marketing_channel_daily')
-    .select('value, metric, channel')
-    .eq('channel', 'meta_ads')
-    .eq('metric', 'spend_usd')
-    .gte('date', range.startDate)
-    .lte('date', range.endDate)
-
-  const paidSpendUsd = Array.isArray(spendRows) && spendRows.length > 0
-    ? spendRows.reduce((sum, r) => sum + (Number(r.value) || 0), 0)
-    : null
+  // Meta writes metric 'spend' at account AND campaign scope; getMetaAdSpend
+  // reads the account rows only (the old 'spend_usd' read never matched a row).
+  const { spendUsd: paidSpendUsd, unreadable: paidSpendUnreadable } = await getMetaAdSpend(range.startDate, range.endDate)
 
   if (!summaryRes.ok) {
     return {
@@ -117,6 +112,7 @@ export async function fetchOverview(range: DateRange): Promise<OverviewData> {
       topSources: [],
       topLandingPages: [],
       paidSpendUsd,
+      paidSpendUnreadable,
       aiReferrers: [],
     }
   }
@@ -139,6 +135,7 @@ export async function fetchOverview(range: DateRange): Promise<OverviewData> {
     topSources: d.topSources.slice(0, 3).map((s) => ({ sourceMedium: s.sourceMedium, sessions: s.sessions })),
     topLandingPages: d.topPages.slice(0, 3).map((p) => ({ pagePath: p.pagePath, sessions: p.views })),
     paidSpendUsd,
+    paidSpendUnreadable,
     aiReferrers: [...d.aiReferrers]
       .sort((a, b) => b.sessions - a.sessions)
       .map((r) => ({ engine: r.engine, sessions: r.sessions, users: r.users })),
@@ -247,13 +244,15 @@ export type FunnelData = {
   availableVariants: string[]
 }
 
+// Plain words (2026-10-14). The scroll step counts every scroll milestone the
+// landing pages sent (25/50/75/100), not only half-way, so it says "any depth".
 const FUNNEL_LABELS = [
-  'Ad click / Organic landing (sessions)',
-  'LP view (view_landing_page)',
-  'Scroll 50%+ (scroll_depth)',
-  'Form start (form_start)',
-  'Form submit (generate_lead)',
-  'Lead captured (CRM)',
+  'Visits (Google Analytics)',
+  'Landing page viewed',
+  'Scrolled the page (any depth)',
+  'Started a form',
+  'Sent a form',
+  'Lead in the CRM',
   'CMA delivered',
 ] as const
 
@@ -339,11 +338,13 @@ export async function fetchFunnel(range: DateRange, lpVariant?: string): Promise
 }
 
 export type ConversionsData = {
-  leadsBySource: { sourceMedium: string; leadEvents: number; users: number }[]
+  leadsBySource: { sourceMedium: string; leadEvents: number }[]
   brokerSplit: { broker: string; count: number }[]
   classificationMix: { classification: string; count: number }[]
   timeSeries: { date: string; leads: number; sessions: number }[]
   costPerLeadUsd: number | null
+  /** True when the Meta spend read failed, so cost per lead could not be worked out. */
+  spendUnreadable: boolean
 }
 
 export async function fetchConversions(range: DateRange): Promise<ConversionsData> {
@@ -365,7 +366,6 @@ export async function fetchConversions(range: DateRange): Promise<ConversionsDat
   const leadsBySource = intake.bySource.map((s) => ({
     sourceMedium: s.source,
     leadEvents: s.count,
-    users: s.count,
   }))
 
   // Per-day sessions from GA4 daily snapshots; per-day leads from CRM intake.
@@ -397,18 +397,9 @@ export async function fetchConversions(range: DateRange): Promise<ConversionsDat
     }))
 
   // Cost per lead — Meta spend / real CRM leads captured.
-  const { data: spendRows } = await supabase
-    .from('marketing_channel_daily')
-    .select('value')
-    .eq('channel', 'meta_ads')
-    .eq('metric', 'spend_usd')
-    .gte('date', range.startDate)
-    .lte('date', range.endDate)
-  const totalSpend = Array.isArray(spendRows)
-    ? (spendRows as Array<{ value: number }>).reduce((sum, r) => sum + (Number(r.value) || 0), 0)
-    : 0
+  const { spendUsd, unreadable: spendUnreadable } = await getMetaAdSpend(range.startDate, range.endDate)
   const costPerLeadUsd =
-    totalSpend > 0 && intake.inboundLeads > 0 ? totalSpend / intake.inboundLeads : null
+    spendUsd !== null && spendUsd > 0 && intake.inboundLeads > 0 ? spendUsd / intake.inboundLeads : null
 
   return {
     leadsBySource,
@@ -416,5 +407,6 @@ export async function fetchConversions(range: DateRange): Promise<ConversionsDat
     classificationMix,
     timeSeries,
     costPerLeadUsd,
+    spendUnreadable,
   }
 }

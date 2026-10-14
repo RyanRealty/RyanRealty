@@ -78,11 +78,10 @@ resolve_dir() {
   (CDPATH= cd -- "$1" && pwd -P) 2>/dev/null || return 1
 }
 
-# Compare like with like: every candidate path below is physical (pwd -P), so
-# the scan root must be too. On macOS the temp dir /var/folders is a symlink to
-# /private/var/folders, and an unresolved root skipped every clone as "not under
-# RR_CLEANUP_HOME".
-HOME_SCAN="$(resolve_dir "$HOME_SCAN" || printf '%s' "$HOME_SCAN")"
+# Compare in physical paths: git reports worktree paths resolved, so a home
+# reached through a symlink (macOS /var is /private/var) never contained them
+# and every sibling clone was skipped as "not under RR_CLEANUP_HOME".
+HOME_SCAN=$(resolve_dir "$HOME_SCAN" || printf '%s' "$HOME_SCAN")
 
 die() {
   echo "cleanup-merged-worktrees: $*" >&2
