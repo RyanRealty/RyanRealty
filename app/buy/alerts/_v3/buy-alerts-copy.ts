@@ -33,11 +33,11 @@ export type BuyAlertsCopy = {
   links: typeof BUY_ALERTS_LINKS
 }
 
-function fill(template: string, vars: Record<string, string>): string {
+export function fill(template: string, vars: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => vars[key] ?? '')
 }
 
-function countLabel(n: number): string {
+export function countLabel(n: number): string {
   return new Intl.NumberFormat('en-US').format(n)
 }
 
