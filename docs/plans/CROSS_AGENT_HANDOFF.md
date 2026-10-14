@@ -1,6 +1,6 @@
 # Current — 2026-10-14 (Cursor, AGENTS.md single process source)
 
-Surface: Cursor cloud. Branch `cursor/agents-md-single-source-6f1e` from origin/main `befee8c88` (#548). Folds and supersedes #544 (agent rules: PR plus self-merge, DB writes). Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/agents-md-single-source-6f1e` / PR #562 from origin/main `a0030cbdc` (#546 after #559). Folds and supersedes #544 (agent rules: PR plus self-merge, DB writes). Nobody pushes main. Nothing sent.
 
 **What this branch does.** `AGENTS.md` is the only process-rule file. CORE RULES (identical prefix in `CLAUDE.md` for Grok's 10k cutoff) add: PRs only / no fast-forward; auto-merge except `hold-for-matt`; no PR older than 3 days; Done = merged + production READY + live URL; payload caps; no sleep waits; new process rules land in `AGENTS.md`; bots may write the Ryan Realty Supabase DB when Matt's task needs it. `CLAUDE.md` and `.cursor/rules` process files point here. Sends, expired drip hard stop, no force-push, no secrets, no approved-CMA wording changes stay.
 
@@ -9,6 +9,16 @@ Surface: Cursor cloud. Branch `cursor/agents-md-single-source-6f1e` from origin/
 **Held.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+
+## Earlier — 2026-10-14 (Cursor, reader-5 leftover reads)
+
+Surface: Cursor cloud. Branch `cursor/reader-5-leftover-reads-52cc` / PR #559, merged onto `origin/main` (`5ebc1c030`). Closed stale #552. Nobody pushes main. Nothing sent. No CMA rows written.
+
+**What that branch did.** (1) Thin-window own-listing-unsold: an Active home whose ask was cut, with no per-foot local verdict, stands in as its own local read so own-ground sales move down with the city index. (2) Own-ground sold count: when own-subdivision rungs find nothing, one any-size read of the subject's ground; the letter says "No home sold" only on a real zero.
+
+## Earlier — 2026-10-14 (Claude, the two buyer landing pages look like landing pages)
+
+Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b` from origin/main `5293aa46`. PR #548 landed on main. Nothing sent. Nobody pushes main.
 
 ## Earlier — 2026-10-14 (Cursor, Meta Lead no dollar values)
 
