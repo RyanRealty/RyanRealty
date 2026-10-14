@@ -23,6 +23,7 @@
 export type ChannelGroup =
   | 'Paid Search'
   | 'Paid Social'
+  | 'Google Business Profile'
   | 'Organic Search'
   | 'Organic Social'
   | 'Email'
@@ -49,6 +50,13 @@ const SEARCH_HOSTS =
 /** Assistants send real referral traffic now and are worth their own bucket. */
 const AI_HOSTS = /(^|\.)(chatgpt|openai|perplexity|claude|gemini|copilot)\.[a-z.]+$/i
 
+/**
+ * Our Google Business Profile links carry utm_source=gbp (lib/analytics/utm.ts,
+ * medium organic). A profile click is local search, but it is the one search
+ * door we own, so it gets its own group instead of hiding inside Organic Search.
+ */
+const GBP_SOURCE = /^(gbp|gmb|google_business_profile|google-business-profile|googlebusinessprofile)$/i
+
 const PAID_MEDIUM = /^(cpc|ppc|paid|paidsearch|paid_search|paid_social|paidsocial|display|banner|retargeting)$/i
 const EMAIL_MEDIUM = /^(email|e-mail|newsletter)$/i
 const SMS_MEDIUM = /^(sms|text|mms)$/i
@@ -68,10 +76,40 @@ function isSelfReferral(host: string | null): boolean {
   return !!host && /(^|\.)ryan-realty\.com$/i.test(host)
 }
 
+/**
+ * The browser tracker stamps a visit that arrived with no tag and no referrer
+ * as utm_source=direct, utm_medium=none (lib/analytics/visitor-session.ts), so
+ * the row always has a source. That stamp says "we saw nothing", not "a
+ * campaign": read as a tag, it filed every direct visit under Other Campaign
+ * and the Direct share read 0% (measured 2026-10-14, 7 days: 2,264 of 2,447
+ * sessions). It is treated as no tag at all.
+ */
+function isNoSourceStamp(source: string, medium: string, campaign: string): boolean {
+  return source === 'direct' && (medium === '' || medium === 'none' || medium === '(none)') && campaign === ''
+}
+
+/**
+ * The tracker also copies the referring site into utm_source when the link
+ * carried no tag (medium referral, or portal for Zillow / Realtor.com /
+ * Trulia). That is the referrer again, not a campaign we ran.
+ */
+function isInferredFromReferrer(source: string, medium: string, host: string): boolean {
+  if (medium === 'referral' || medium === 'portal') return true
+  const bare = host.replace(/^www\./, '')
+  return source === host || source === bare || source === bare.split('.')[0]
+}
+
 export function classifyChannel(s: SessionSignals): ChannelGroup {
   const host = hostOf(s.referrer)
-  const source = (s.utmSource ?? '').trim().toLowerCase()
-  const medium = (s.utmMedium ?? '').trim().toLowerCase()
+  let source = (s.utmSource ?? '').trim().toLowerCase()
+  let medium = (s.utmMedium ?? '').trim().toLowerCase()
+  const campaign = (s.utmCampaign ?? '').trim()
+
+  // 0. The tracker's "no source" stamp is not a tag.
+  if (isNoSourceStamp(source, medium, campaign)) {
+    source = ''
+    medium = ''
+  }
 
   // 1. PAID always wins. A click id or a paid medium means money bought this
   //    visit, whatever else is attached to it.
@@ -82,7 +120,8 @@ export function classifyChannel(s: SessionSignals): ChannelGroup {
     return 'Paid Search'
   }
 
-  // 2. An explicit medium we set ourselves.
+  // 2. Our Business Profile links, then an explicit medium we set ourselves.
+  if (GBP_SOURCE.test(source)) return 'Google Business Profile'
   if (EMAIL_MEDIUM.test(medium)) return 'Email'
   if (SMS_MEDIUM.test(medium)) return 'SMS'
   if (SOCIAL_MEDIUM.test(medium)) return 'Organic Social'
@@ -92,15 +131,23 @@ export function classifyChannel(s: SessionSignals): ChannelGroup {
     if (AI_HOSTS.test(host)) return 'AI Assistant'
     if (SOCIAL_HOSTS.test(host)) return 'Organic Social'
     if (SEARCH_HOSTS.test(host)) return 'Organic Search'
+    // The tracker's copy of the referrer is still just the referrer.
+    if (!source || isInferredFromReferrer(source, medium, host)) return 'Referral'
     // A tagged link from a site we do not otherwise recognise is still a campaign.
-    if (source) return 'Other Campaign'
-    return 'Referral'
+    return 'Other Campaign'
   }
 
-  // 4. Tagged, but nothing above matched — our own campaign, unclassified.
-  if (source || medium || s.utmCampaign) return 'Other Campaign'
+  // 4. No usable referrer, but the tag names an AI assistant (ChatGPT adds
+  //    utm_source=chatgpt.com to the links it shows) or a search engine.
+  if (source && AI_HOSTS.test(source.includes('.') ? source : `${source}.com`)) return 'AI Assistant'
+  if (source && medium === 'organic' && SEARCH_HOSTS.test(source.includes('.') ? source : `${source}.com`)) {
+    return 'Organic Search'
+  }
 
-  // 5. Nothing at all. Genuinely direct, OR a referrer the browser withheld.
+  // 5. Tagged, but nothing above matched — our own campaign, unclassified.
+  if (source || medium || campaign) return 'Other Campaign'
+
+  // 6. Nothing at all. Genuinely direct, OR a referrer the browser withheld.
   //    Both look identical here and neither can be recovered.
   return 'Direct'
 }
@@ -111,8 +158,10 @@ export function classifyChannel(s: SessionSignals): ChannelGroup {
  * network, and a campaign can be traced to the post that carried it.
  */
 export function originLabel(s: SessionSignals): string {
-  const source = (s.utmSource ?? '').trim()
   const campaign = (s.utmCampaign ?? '').trim()
+  const rawSource = (s.utmSource ?? '').trim()
+  const medium = (s.utmMedium ?? '').trim().toLowerCase()
+  const source = isNoSourceStamp(rawSource.toLowerCase(), medium, campaign) ? '' : rawSource
   if (source && campaign) return `${source} / ${campaign}`
   if (source) return source
   const host = hostOf(s.referrer)

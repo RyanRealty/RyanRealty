@@ -59,8 +59,8 @@ export default async function DashboardGA4Panel() {
     const d = result.data
     return (
       <div className="space-y-4">
-        {/* TRACK-1: sessions/users/engagement/bounce/sources below are mirror-shaped. */}
-        <Ga4MirrorNotice />
+        {/* Shows only while this 30-day window reaches back before GA4 sources were reliable. */}
+        <Ga4MirrorNotice startDate={startDate} />
         <p style={bodySm}>
           Last 30 days with acquisition, social channel performance, and lead-event tracking so you can optimize for more seller leads.
           {' '}GA4 is consent-gated and undercounts vs first-party — use <code style={codeChip}>visitor_sessions</code> / live visitors as primary traffic (see docs/plans/seo-voice/MEASUREMENT_DUAL_SOURCE.md).

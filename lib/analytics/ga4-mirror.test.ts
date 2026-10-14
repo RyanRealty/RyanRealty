@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { GA4_MP_PAGE_VIEW_MIRROR_SINCE, isGa4PageViewMirrorOn, isMirrorShapedRow, stampMirrorInflated } from './ga4-mirror'
+import {
+  GA4_MP_PAGE_VIEW_MIRROR_SINCE,
+  GA4_TRAFFIC_RELIABLE_FROM,
+  ga4LastDaysNeedTrafficCaveat,
+  ga4WindowNeedsTrafficCaveat,
+  isGa4PageViewMirrorOn,
+  isMirrorShapedRow,
+  stampMirrorInflated,
+} from './ga4-mirror'
 
 const ENV_ON = { GA4_API_SECRET: 'secret', NEXT_PUBLIC_GA4_MEASUREMENT_ID: 'G-ST40W4WM6T' }
 
@@ -69,5 +77,21 @@ describe('stampMirrorInflated', () => {
 
   it('passes everything through when the mirror was off', () => {
     expect(stampMirrorInflated(rows, false)).toBe(rows)
+  })
+})
+
+describe('ga4WindowNeedsTrafficCaveat — say it only where it applies', () => {
+  it('a window that starts before GA4 sources were reliable needs the caveat', () => {
+    expect(GA4_TRAFFIC_RELIABLE_FROM).toBe('2026-10-12')
+    expect(ga4WindowNeedsTrafficCaveat('2026-09-14')).toBe(true)
+    expect(ga4WindowNeedsTrafficCaveat('2026-10-11')).toBe(true)
+  })
+  it('a window that starts on or after that day does not', () => {
+    expect(ga4WindowNeedsTrafficCaveat('2026-10-12')).toBe(false)
+    expect(ga4WindowNeedsTrafficCaveat('2026-11-01')).toBe(false)
+  })
+  it('the last N days, from a fixed now', () => {
+    expect(ga4LastDaysNeedTrafficCaveat(30, Date.parse('2026-10-14T12:00:00Z'))).toBe(true)
+    expect(ga4LastDaysNeedTrafficCaveat(30, Date.parse('2026-11-12T12:00:00Z'))).toBe(false)
   })
 })

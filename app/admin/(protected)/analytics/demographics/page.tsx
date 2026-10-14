@@ -19,6 +19,7 @@
  * the ?range/?startDate/?endDate handling are carried over verbatim.
  */
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import { getGA4DemographicsCached as getGA4Demographics } from '@/lib/ga4-cache'
 import { DataGrid, GridSkeleton, LaneNote, Stamp, StatePanel, NumberStrip } from '../_components/v2/DataGrid'
@@ -94,10 +95,14 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
   if (!data.ok) {
     return (
       <StatePanel tone="error">
-        <p style={{ margin: 0 }}>Demographics report unavailable: {data.error}.</p>
+        <p style={{ margin: 0 }}>Google Analytics did not return the audience report for this range.</p>
         <p style={{ margin: 'var(--a-s2) 0 0' }}>
-          If GA4_NOT_CONFIGURED: set GOOGLE_GA4_PROPERTY_ID + service-account env vars. If a runtime error: Google
-          Signals may not have synced demographic data for this range yet (24-48h delay after first install).
+          Google also withholds age and gender at this site&apos;s traffic level, so this report is often empty. For where
+          visitors are, use the{' '}
+          <Link href="/admin/analytics" style={{ color: 'var(--a-accent)' }}>
+            Website page
+          </Link>
+          , which covers every visitor. Google&apos;s message: {data.error}.
         </p>
       </StatePanel>
     )
@@ -229,7 +234,16 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
 
       {/* 4. Geography (top cities) */}
       <section aria-label="Top cities">
-        <SectionHead>Top cities</SectionHead>
+        <SectionHead>Top cities (Google Analytics)</SectionHead>
+        <LaneNote>
+          Google Analytics only sees visitors who allow analytics cookies, and before Oct 12, 2026 the extra page views our
+          server sent it carried no real visitor location, so cities from before then are not reliable. For every visitor,
+          use Where visitors are on the{' '}
+          <Link href="/admin/analytics" style={{ color: 'var(--a-accent)' }}>
+            Website page
+          </Link>
+          .
+        </LaneNote>
         <DataGrid
           label="Top cities"
           rows={data.topCities}
@@ -295,9 +309,9 @@ export default async function DemographicsPage({
       </Suspense>
 
       <Stamp>
-        GA4 Data API with Google Signals (on; briefly off on 2026-10-08, back on that evening, so that day may show
-        gaps). Demographic coverage is typically 30 to 60 percent of total traffic. Range{' '}
-        {range.startDate} to {range.endDate}.
+        Google Analytics with Google Signals (on; briefly off on 2026-10-08, back on that evening, so that day may show
+        gaps). Google withholds age and gender when a site has this little traffic, so those sections can be empty.
+        Range {range.startDate} to {range.endDate}.
       </Stamp>
     </div>
   )

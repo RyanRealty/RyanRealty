@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-10-14T15:25:52.862Z
+**Generated:** 2026-10-14T19:36:24.547Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -282,13 +282,23 @@ Companion files:
 
 ---
 
-### `lib/data/analytics/getGscMetrics.ts`
+### `lib/data/analytics/getGbpMetrics.ts`
 
-**Exports:** `getGscScopeAggregate`, `getGscAccountTotals`
+**Exports:** `GBP_IMPRESSION_METRICS`, `GBP_ACTION_METRICS`, `getGbpDaily`, `summarizeGbp`, `latestGbpDate`
 
 **Tables:** `marketing_channel_daily`
 
-**Selected columns:** `scope_id`, `metric`, `value`
+**Selected columns:** `date`, `metric`, `value`
+
+---
+
+### `lib/data/analytics/getGscMetrics.ts`
+
+**Exports:** `getGscScopeAggregate`, `getGscAccountTotals`, `getGscDaily`
+
+**Tables:** `marketing_channel_daily`
+
+**Selected columns:** `scope_id`, `metric`, `value`, `date`
 
 ---
 
@@ -298,7 +308,7 @@ Companion files:
 
 **Tables:** `visitor_events`, `visitor_sessions`
 
-**Selected columns:** `session_id`, `listing_mls`, `listing_street`, `listing_city`, `listing_state`, `listing_price`, `page_url`, `event_at`, `source_domain`, `identified_at`, `hot_lead_fired_at`, `utm_source`, `ip_city`
+**Selected columns:** `${cols}`, `visitor_sessions!inner(is_automated)`, `session_id`, `identified_at`, `hot_lead_fired_at`, `utm_source`, `ip_city`
 
 ---
 
@@ -309,6 +319,16 @@ Companion files:
 **Tables:** `visitor_sessions`
 
 **Selected columns:** `session_id`, `landing_page`, `utm_source`, `utm_medium`, `utm_campaign`, `identified_at`, `hot_lead_fired_at`, `engagement_score`, `ip_city`
+
+---
+
+### `lib/data/analytics/getMetaAdSpend.ts`
+
+**Exports:** `getMetaAdSpend`
+
+**Tables:** `marketing_channel_daily`
+
+**Selected columns:** `date`, `value`
 
 ---
 
@@ -366,6 +386,36 @@ Companion files:
 
 ---
 
+### `lib/data/analytics/getWebsiteMarkets.ts`
+
+**Exports:** `summarizeMarkets`, `summarizeSearches`, `getWebsiteMarkets`
+
+**Tables:** `visitor_events`
+
+**Selected columns:** `session_id`, `page_url`, `visitor_sessions!inner(is_automated)`, `metadata`
+
+**Cache tags:** `'website-dashboard'`
+
+---
+
+### `lib/data/analytics/getWebsiteVisitors.ts`
+
+**Exports:** `isEngaged`, `summarizePeriod`, `summarizeAudience`, `getWebsiteVisitors`
+
+**Tables:** `visitor_sessions`
+
+**Selected columns:** `session_id`
+
+**Cache tags:** `'website-dashboard'`
+
+---
+
+### `lib/data/analytics/intentSplit.ts`
+
+**Exports:** `classifyIntent`, `INTENT_ORDER`, `INTENT_PLAIN_LABEL`, `INTENT_PLAIN_MEANING`
+
+---
+
 ### `lib/data/analytics/leadSources.ts`
 
 **Exports:** `getLeadSources`
@@ -373,6 +423,8 @@ Companion files:
 **Tables:** `visitor_sessions`, `crm_people`
 
 **Selected columns:** `session_id`, `crm_person_id`, `referrer`, `utm_source`, `utm_medium`, `utm_campaign`, `fbclid`, `first_seen_at`
+
+**Cache tags:** `'crm-reporting', 'website-dashboard'`
 
 ---
 
@@ -413,6 +465,18 @@ Companion files:
 **Exports:** `ACTIVE_INVENTORY_CITIES`, `ACTIVE_INVENTORY_METHODOLOGY`, `ACTIVE_INVENTORY_GEO`, `activeInventoryCitySlug`, `inventorySnapshotHttpStatus`, `snapshotActiveInventory`
 
 **Tables:** `listings`, `analytics_inventory_snapshot`
+
+---
+
+### `lib/data/analytics/websiteGeo.ts`
+
+**Exports:** `GEO_BUCKET_ORDER`, `GEO_BUCKET_LABEL`, `normalizeCountry`, `usStateCode`, `usStateName`, `countryName`, `geoBucketOf`, `cityKeyAndLabel`
+
+---
+
+### `lib/data/analytics/websiteMarkets.ts`
+
+**Exports:** `marketFromUrl`, `cityNameFromSlug`, `isLocalMarket`, `listingLabelFromUrl`
 
 ---
 
@@ -1892,9 +1956,9 @@ Companion files:
 
 **Tables:** `crm_people`
 
-**Selected columns:** `source`, `assigned_broker`, `created_at`
+**Selected columns:** `id`, `name`, `source`, `assigned_broker`, `created_at`
 
-**Cache keys:** `crm-lead-intake-v1`
+**Cache keys:** `crm-lead-intake-v2`
 
 **Cache tags:** `'crm-lead-intake', 'crm-reporting'`
 
@@ -4528,7 +4592,7 @@ Companion files:
 
 ### `lib/data/prospecting/expired-outreach-hit.test.ts`
 
-**Exports:** `verifyNotRelisted`, `sendProspectingIntro`, `sendProspectingEmailIntro`
+**Exports:** `verifyNotRelisted`, `sendProspectingIntro`, `sendProspectingEmailIntro`, `sendCmaToLead`, `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP`
 
 ---
 
@@ -5616,7 +5680,7 @@ Companion files:
 | `market_stats_cache` | `findCmaSubjectByMls()`, `findCmaSubjectByAddress()`, `getListingPhotosCount()`, `selectCmaCompsPool()`, `selectCmaCompsByKeys()`, `getCmaMarketStatsRow()`, `getCmaMarketPulseRow()`, `CMA_MARKET_TREND_MEASURE()`, `getCmaBrokerBySlugOrEmail()`, `listActiveBrokersForCma()`, `getCmaCityClosedSkinny()`, `getCmaCityClosedDuring()`, `getLikeHomeSales()`, `getCmaSubdivisionClosed()`, `getCmaSubdivisionHistory()`, `getCmaPriorSaleAtAddress()`, `getCityMarketDetail()`, `getCityMarketDetailByTimeframe()`, `getCompleteMonthlyMarketDetail()`, `getMarketStats()`, `getMarketStatsCacheRowForGeo()`, `getReportingCacheMonthlyRows()`, `getMarketStatsCacheRowsByGeoType()`, `getMarketStatsCacheRowForPeriod()`, `getMarketPulseRowsByGeoType()`, `upsertMarketPulseLiveRow()`, `getMarketPulseRowForGeo()`, `getMarketStatsCacheRowsForGeos()`, `isCurrentMonth()`, `getMarketTrend()`, `getPriceHistory()`, `generateAndStoreMarketNarrative()`, `generateNarrativesForReportGeos()` <br /> `lib/data/cma/builderReads.ts` · `lib/data/market/city-archive-depth.int.test.ts` · `lib/data/market/getCityMarketDetail.ts` · `lib/data/market/getMarketStats.ts` · `lib/data/market/getMarketStatsCacheRows.ts` · `lib/data/market/getMarketTrend.ts` · `lib/data/market/getPriceHistory.ts` · `lib/data/market/market-history-depth.int.test.ts` · `lib/data/market/marketNarrativeWrites.int.test.ts` · `lib/data/market/marketNarrativeWrites.ts` · `lib/data/market/subdivision-stats.int.test.ts` |
 | `marketing_assignments` | `MARKETING_ASSIGNMENT_CONFLICT_TARGET()`, `buildMarketingAssignmentRow()`, `recordMarketingAssignment()` <br /> `lib/data/crm/recordMarketingAssignment.ts` |
 | `marketing_brain_actions` | `BROKER_ACTIVE_STATUSES()`, `createActionRow()`, `listBrokerJobs()`, `getActionForBroker()`, `appendChangeRequest()`, `readActionMediaFacts()`, `approveAction()`, `unapproveAction()`, `setInProduction()`, `getBrokerAgentDigest()`, `listOpenCmaActions()`, `listOpenCmaActionsForSlug()`, `claimCmaAction()`, `findOpenCmaActionBySlug()`, `appendCmaActionNotify()`, `mergeCmaActionContact()`, `getCmaActionPayload()`, `updateCmaActionRow()`, `collectCompanyScoreboardSignals()`, `resolveDocsBatch()`, `resolveComplianceBatch()`, `verifyNotRelisted()`, `verifyFsboStillActive()`, `getBuiltDocForProspect()`, `findLiveListingForImagine()`, `insertImagineDraftPending()`, `storeImagineMedia()`, `markImagineDraftReady()`, `killImagineDraft()`, `insertStudioDraft()`, `storeStudioMedia()`, `markStudioDraftReady()`, `killStudioDraft()`, `approveStudioDraft()`, `listStudioDrafts()`, `countStudioDraftsByStatus()`, `countStudioDraftsSince()` <br /> `lib/data/agent/actions.ts` · `lib/data/agent/digest.ts` · `lib/data/cma/queue.ts` · `lib/data/loop/signals.ts` · `lib/data/prospecting/batch.ts` · `lib/data/prospecting/docs.ts` · `lib/data/social/imagine-drafts.ts` · `lib/data/studio/drafts.ts` |
-| `marketing_channel_daily` | `getGscScopeAggregate()`, `getGscAccountTotals()`, `rangeToIso()`, `personName()`, `personHref()`, `readPeople()`, `readSessions()`, `countAudienceSessions()`, `readAccountSnapshots()`, `readDeals()`, `readWorkingPersonIds()`, `sellerClientPersonIds()`, `readActiveBrokers()`, `readJoinConverts()`, `namesForIds()`, `CRAWL_PROBE_CHANNEL()`, `CRAWL_PROBE_SCOPE()`, `CRAWL_PROBE_SOURCE()`, `CRAWL_PROBE_STALE_HOURS()`, `upsertCrawlProbeRows()`, `readCrawlProbeBaseline()`, `readCrawlProbeStatus()`, `formatCrawlProbeLine()` <br /> `lib/data/analytics/getGscMetrics.ts` · `lib/data/analytics/salesFunnelRead.ts` · `lib/data/crawl-probe/rows.ts` |
+| `marketing_channel_daily` | `GBP_IMPRESSION_METRICS()`, `GBP_ACTION_METRICS()`, `getGbpDaily()`, `summarizeGbp()`, `latestGbpDate()`, `getGscScopeAggregate()`, `getGscAccountTotals()`, `getGscDaily()`, `getMetaAdSpend()`, `rangeToIso()`, `personName()`, `personHref()`, `readPeople()`, `readSessions()`, `countAudienceSessions()`, `readAccountSnapshots()`, `readDeals()`, `readWorkingPersonIds()`, `sellerClientPersonIds()`, `readActiveBrokers()`, `readJoinConverts()`, `namesForIds()`, `CRAWL_PROBE_CHANNEL()`, `CRAWL_PROBE_SCOPE()`, `CRAWL_PROBE_SOURCE()`, `CRAWL_PROBE_STALE_HOURS()`, `upsertCrawlProbeRows()`, `readCrawlProbeBaseline()`, `readCrawlProbeStatus()`, `formatCrawlProbeLine()` <br /> `lib/data/analytics/getGbpMetrics.ts` · `lib/data/analytics/getGscMetrics.ts` · `lib/data/analytics/getMetaAdSpend.ts` · `lib/data/analytics/salesFunnelRead.ts` · `lib/data/crawl-probe/rows.ts` |
 | `marketing_cost_ledger` | `recordAgentCost()`, `laDayWindowUtc()`, `brokerSpendTodayUsd()` <br /> `lib/data/agent/cost-ledger.ts` |
 | `meta_audience_log` | `writeAudienceLedger()`, `CRM_AUDIENCE_ID()`, `WESTSIDE_AUDIENCE_ID()`, `META_AUDIENCE_HOLD_START()`, `META_AUDIENCE_HOLD_END()`, `META_AUDIENCE_HOLD_DAYS()`, `META_AUDIENCE_CURRENT_HOURS()`, `utcDay()`, `ageHoursSince()`, `isMetaAudienceCurrent()`, `computeAudienceHold()`, `readMetaAudienceHold()` <br /> `lib/data/crm/writeAudienceLedger.ts` · `lib/data/loop/meta-audience-hold.ts` |
 | `meta_audience_removal_queue` | `enqueueAudienceRemoval()`, `getPendingAudienceRemovals()`, `resolvePeopleForRemoval()`, `markAudienceRemovalsProcessed()` <br /> `lib/data/crm/enqueueAudienceRemoval.ts` · `lib/data/crm/metaAudienceQueue.ts` |
@@ -5696,9 +5760,9 @@ Companion files:
 | `user_events` | `filtersToParamMap()`, `otherFilterChips()`, `enabledEventTypes()`, `summarizeAreaShapes()`, `activityLabel()`, `toClientPortalAlert()`, `collectAreaIds()`, `getClientPortalView()` <br /> `lib/data/crm/getClientPortalView.ts` |
 | `valuation_requests` | `getDeltaSyncCursor()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `setListingFreezeFlags()`, `getAdminOverrideFlags()`, `getHeldMediaByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()` <br /> `lib/data/sync/syncWrites.ts` |
 | `video_tours_cache` | `getDeltaSyncCursor()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `setListingFreezeFlags()`, `getAdminOverrideFlags()`, `getHeldMediaByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()`, `getRecentListingVideoRows()`, `getVideoToursCacheListings()`, `getAnyListingVideoRows()`, `fetchListingVideosUncached()`, `getListingVideos()` <br /> `lib/data/sync/syncWrites.ts` · `lib/data/videos/getListingVideoRows.ts` · `lib/data/videos/getListingVideos.ts` |
-| `visitor_events` | `getListingPerformance()`, `getPlacePopularity()`, `rangeToIso()`, `personName()`, `personHref()`, `readPeople()`, `readSessions()`, `countAudienceSessions()`, `readAccountSnapshots()`, `readDeals()`, `readWorkingPersonIds()`, `sellerClientPersonIds()`, `readActiveBrokers()`, `readJoinConverts()`, `namesForIds()`, `REPLY_TIMELINE_KINDS()`, `emptyCmaOutcome()`, `getCmaOutcomes()`, `getCmaLaneFunnel()`, `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `topByCount()`, `pickLatestListingView()`, `deriveIntentSignals()`, `getContactBehaviorSummary()`, `getLookingAtNow()`, `getPersonGlance()`, `getPropertiesReport()`, `ACTIVITY_WINDOWS()`, `readListingFacts()`, `getActiveKnownPeople()`, `getPersonSiteActivity()`, `buildSessionOrFilter()`, `resolveLeadSessionIds()`, `getViewedListingsForLead()`, `recordSaveListingEvent()`, `JOIN_CONVERT_EVENT()`, `JOIN_PAGE_CATEGORY()`, `RECRUIT_JOIN_TAG()`, `JOIN_CONVERSION_SOURCE()`, `isJoinInquiry()`, `isJoinPageUrl()`, `summarizeJoinEvents()`, `readJoinConversionStats()`, `getJoinConversionStats()`, `recordJoinConversion()`, `tagRecruitJoin()`, `collectCompanyScoreboardSignals()`, `EMPTY_DOC_ENGAGEMENT_DETAIL()`, `projectEngagement()`, `getDocEngagementDetail()`, `getDocEngagement()`, `getProspectEngagement()` <br /> `lib/data/analytics/getListingPerformance.ts` · `lib/data/analytics/getPlacePopularity.ts` · `lib/data/analytics/salesFunnelRead.ts` · `lib/data/cma/outcomes.ts` · `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/getContactBehaviorSummary.ts` · `lib/data/crm/getLookingAtNow.ts` · `lib/data/crm/getPersonGlance.ts` · `lib/data/crm/getPropertiesReport.ts` · `lib/data/crm/getSiteActivity.ts` · `lib/data/crm/getViewedListings.ts` · `lib/data/crm/recordSaveListingEvent.ts` · `lib/data/loop/join-conversion.ts` · `lib/data/loop/signals.ts` · `lib/data/prospecting/engagement.ts` |
+| `visitor_events` | `getListingPerformance()`, `getPlacePopularity()`, `summarizeMarkets()`, `summarizeSearches()`, `getWebsiteMarkets()`, `rangeToIso()`, `personName()`, `personHref()`, `readPeople()`, `readSessions()`, `countAudienceSessions()`, `readAccountSnapshots()`, `readDeals()`, `readWorkingPersonIds()`, `sellerClientPersonIds()`, `readActiveBrokers()`, `readJoinConverts()`, `namesForIds()`, `REPLY_TIMELINE_KINDS()`, `emptyCmaOutcome()`, `getCmaOutcomes()`, `getCmaLaneFunnel()`, `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `topByCount()`, `pickLatestListingView()`, `deriveIntentSignals()`, `getContactBehaviorSummary()`, `getLookingAtNow()`, `getPersonGlance()`, `getPropertiesReport()`, `ACTIVITY_WINDOWS()`, `readListingFacts()`, `getActiveKnownPeople()`, `getPersonSiteActivity()`, `buildSessionOrFilter()`, `resolveLeadSessionIds()`, `getViewedListingsForLead()`, `recordSaveListingEvent()`, `JOIN_CONVERT_EVENT()`, `JOIN_PAGE_CATEGORY()`, `RECRUIT_JOIN_TAG()`, `JOIN_CONVERSION_SOURCE()`, `isJoinInquiry()`, `isJoinPageUrl()`, `summarizeJoinEvents()`, `readJoinConversionStats()`, `getJoinConversionStats()`, `recordJoinConversion()`, `tagRecruitJoin()`, `collectCompanyScoreboardSignals()`, `EMPTY_DOC_ENGAGEMENT_DETAIL()`, `projectEngagement()`, `getDocEngagementDetail()`, `getDocEngagement()`, `getProspectEngagement()` <br /> `lib/data/analytics/getListingPerformance.ts` · `lib/data/analytics/getPlacePopularity.ts` · `lib/data/analytics/getWebsiteMarkets.ts` · `lib/data/analytics/salesFunnelRead.ts` · `lib/data/cma/outcomes.ts` · `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/getContactBehaviorSummary.ts` · `lib/data/crm/getLookingAtNow.ts` · `lib/data/crm/getPersonGlance.ts` · `lib/data/crm/getPropertiesReport.ts` · `lib/data/crm/getSiteActivity.ts` · `lib/data/crm/getViewedListings.ts` · `lib/data/crm/recordSaveListingEvent.ts` · `lib/data/loop/join-conversion.ts` · `lib/data/loop/signals.ts` · `lib/data/prospecting/engagement.ts` |
 | `visitor_identity_map` | `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `filtersToParamMap()`, `otherFilterChips()`, `enabledEventTypes()`, `summarizeAreaShapes()`, `activityLabel()`, `toClientPortalAlert()`, `collectAreaIds()`, `getClientPortalView()`, `rollupSavedHomeRows()`, `buildHomesPanelUnion()`, `buildSavedHomesIdentityOrFilter()`, `getContactSavedHomes()`, `getLookingAtNow()`, `getStitchedCrmPersonId()`, `buildSessionOrFilter()`, `resolveLeadSessionIds()`, `getViewedListingsForLead()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()`, `readSessionIdentity()`, `isMissingColumnError()`, `insertVisitorSession()`, `identifySessionAndBrowser()`, `clearProvisionalAutomation()`, `readIdentityMapForVid()`, `stampSessionEmailOnly()`, `collectCompanyScoreboardSignals()` <br /> `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/getClientPortalView.ts` · `lib/data/crm/getContactSavedHomes.ts` · `lib/data/crm/getLookingAtNow.ts` · `lib/data/crm/getStitchedCrmPersonId.ts` · `lib/data/crm/getViewedListings.ts` · `lib/data/crm/resolvePersonIdentity.ts` · `lib/data/identity/sessionIdentity.ts` · `lib/data/loop/signals.ts` |
-| `visitor_sessions` | `getListingPerformance()`, `getLpLeaderboard()`, `classifySocial()`, `getSocialHeadlineSummary()`, `getSocialChannelBreakdown()`, `getSocialLiveFeed()`, `getLeadSources()`, `rangeToIso()`, `personName()`, `personHref()`, `readPeople()`, `readSessions()`, `countAudienceSessions()`, `readAccountSnapshots()`, `readDeals()`, `readWorkingPersonIds()`, `sellerClientPersonIds()`, `readActiveBrokers()`, `readJoinConverts()`, `namesForIds()`, `REPLY_TIMELINE_KINDS()`, `emptyCmaOutcome()`, `getCmaOutcomes()`, `getCmaLaneFunnel()`, `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `topByCount()`, `pickLatestListingView()`, `deriveIntentSignals()`, `getContactBehaviorSummary()`, `pickFirstTouch()`, `getFirstTouchAttribution()`, `TRIAGE_WEIGHTS()`, `TRIAGE_HALF_LIFE_HOURS()`, `SEQUENCE_RANK()`, `triageRank()`, `rankTriageItems()`, `mergeNeedsAction()`, `replySignal()`, `classifyDocEvent()`, `docSignal()`, `visitSignal()`, `isTriageTaskCandidate()`, `taskSignal()`, `formatTriageAge()`, `isSuppressedByStateTouch()`, `isUnreadStatus()`, `TRIAGE_WINDOW_HOURS()`, `getInboundTriage()`, `getLookingAtNow()`, `getMarketingUtmReport()`, `getPeopleListSignals()`, `ACTIVITY_WINDOWS()`, `readListingFacts()`, `getActiveKnownPeople()`, `getPersonSiteActivity()`, `buildSessionOrFilter()`, `resolveLeadSessionIds()`, `getViewedListingsForLead()`, `readLastSiteByPerson()`, `ACTIVITY_WEIGHTS()`, `clampSinceDays()`, `rankCohortActivity()`, `getWestsideCohortActivity()`, `recordSaveListingEvent()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()`, `readSessionIdentity()`, `isMissingColumnError()`, `insertVisitorSession()`, `identifySessionAndBrowser()`, `clearProvisionalAutomation()`, `readIdentityMapForVid()`, `stampSessionEmailOnly()`, `readLiveVisit()`, `JOIN_CONVERT_EVENT()`, `JOIN_PAGE_CATEGORY()`, `RECRUIT_JOIN_TAG()`, `JOIN_CONVERSION_SOURCE()`, `isJoinInquiry()`, `isJoinPageUrl()`, `summarizeJoinEvents()`, `readJoinConversionStats()`, `getJoinConversionStats()`, `recordJoinConversion()`, `tagRecruitJoin()` <br /> `lib/data/analytics/getListingPerformance.ts` · `lib/data/analytics/getLpLeaderboard.ts` · `lib/data/analytics/getSocialChannels.ts` · `lib/data/analytics/leadSources.ts` · `lib/data/analytics/salesFunnelRead.ts` · `lib/data/cma/outcomes.ts` · `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/getContactBehaviorSummary.ts` · `lib/data/crm/getFirstTouchAttribution.ts` · `lib/data/crm/getInboundTriage.ts` · `lib/data/crm/getLookingAtNow.ts` · `lib/data/crm/getMarketingUtmReport.ts` · `lib/data/crm/getPeopleListSignals.ts` · `lib/data/crm/getSiteActivity.ts` · `lib/data/crm/getViewedListings.ts` · `lib/data/crm/getVisitorLastSeen.ts` · `lib/data/crm/getWestsideCohortActivity.ts` · `lib/data/crm/recordSaveListingEvent.ts` · `lib/data/crm/resolvePersonIdentity.ts` · `lib/data/identity/sessionIdentity.ts` · `lib/data/identity/visitCampaign.ts` · `lib/data/loop/join-conversion.ts` |
+| `visitor_sessions` | `getListingPerformance()`, `getLpLeaderboard()`, `classifySocial()`, `getSocialHeadlineSummary()`, `getSocialChannelBreakdown()`, `getSocialLiveFeed()`, `isEngaged()`, `summarizePeriod()`, `summarizeAudience()`, `getWebsiteVisitors()`, `getLeadSources()`, `rangeToIso()`, `personName()`, `personHref()`, `readPeople()`, `readSessions()`, `countAudienceSessions()`, `readAccountSnapshots()`, `readDeals()`, `readWorkingPersonIds()`, `sellerClientPersonIds()`, `readActiveBrokers()`, `readJoinConverts()`, `namesForIds()`, `REPLY_TIMELINE_KINDS()`, `emptyCmaOutcome()`, `getCmaOutcomes()`, `getCmaLaneFunnel()`, `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `topByCount()`, `pickLatestListingView()`, `deriveIntentSignals()`, `getContactBehaviorSummary()`, `pickFirstTouch()`, `getFirstTouchAttribution()`, `TRIAGE_WEIGHTS()`, `TRIAGE_HALF_LIFE_HOURS()`, `SEQUENCE_RANK()`, `triageRank()`, `rankTriageItems()`, `mergeNeedsAction()`, `replySignal()`, `classifyDocEvent()`, `docSignal()`, `visitSignal()`, `isTriageTaskCandidate()`, `taskSignal()`, `formatTriageAge()`, `isSuppressedByStateTouch()`, `isUnreadStatus()`, `TRIAGE_WINDOW_HOURS()`, `getInboundTriage()`, `getLookingAtNow()`, `getMarketingUtmReport()`, `getPeopleListSignals()`, `ACTIVITY_WINDOWS()`, `readListingFacts()`, `getActiveKnownPeople()`, `getPersonSiteActivity()`, `buildSessionOrFilter()`, `resolveLeadSessionIds()`, `getViewedListingsForLead()`, `readLastSiteByPerson()`, `ACTIVITY_WEIGHTS()`, `clampSinceDays()`, `rankCohortActivity()`, `getWestsideCohortActivity()`, `recordSaveListingEvent()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()`, `readSessionIdentity()`, `isMissingColumnError()`, `insertVisitorSession()`, `identifySessionAndBrowser()`, `clearProvisionalAutomation()`, `readIdentityMapForVid()`, `stampSessionEmailOnly()`, `readLiveVisit()`, `JOIN_CONVERT_EVENT()`, `JOIN_PAGE_CATEGORY()`, `RECRUIT_JOIN_TAG()`, `JOIN_CONVERSION_SOURCE()`, `isJoinInquiry()`, `isJoinPageUrl()`, `summarizeJoinEvents()`, `readJoinConversionStats()`, `getJoinConversionStats()`, `recordJoinConversion()`, `tagRecruitJoin()` <br /> `lib/data/analytics/getListingPerformance.ts` · `lib/data/analytics/getLpLeaderboard.ts` · `lib/data/analytics/getSocialChannels.ts` · `lib/data/analytics/getWebsiteVisitors.ts` · `lib/data/analytics/leadSources.ts` · `lib/data/analytics/salesFunnelRead.ts` · `lib/data/cma/outcomes.ts` · `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/getContactBehaviorSummary.ts` · `lib/data/crm/getFirstTouchAttribution.ts` · `lib/data/crm/getInboundTriage.ts` · `lib/data/crm/getLookingAtNow.ts` · `lib/data/crm/getMarketingUtmReport.ts` · `lib/data/crm/getPeopleListSignals.ts` · `lib/data/crm/getSiteActivity.ts` · `lib/data/crm/getViewedListings.ts` · `lib/data/crm/getVisitorLastSeen.ts` · `lib/data/crm/getWestsideCohortActivity.ts` · `lib/data/crm/recordSaveListingEvent.ts` · `lib/data/crm/resolvePersonIdentity.ts` · `lib/data/identity/sessionIdentity.ts` · `lib/data/identity/visitCampaign.ts` · `lib/data/loop/join-conversion.ts` |
 | `web_vitals` | `GSC_SNAPSHOT_SOURCE()`, `learnWindow()`, `isWindowSettled()`, `surfacePaths()`, `surfaceUrlVariants()`, `verdictFor()`, `measureLedgerRow()`, `closeLedgerRowWith()`, `liveGscPageTotals()`, `learnDueWindows()` <br /> `lib/data/loop/learn-close.ts` |
 | `westside_parcels` | `ACTIVITY_WEIGHTS()`, `clampSinceDays()`, `rankCohortActivity()`, `getWestsideCohortActivity()`, `getNewsletterHistoryForPerson()`, `getSubscriberForUserEmail()`, `getEmailKeyedSuppressionSignals()`, `removeSoftEmailUnsubscribeByEmailValue()`, `collectEmailChannelSignals()`, `getNewsletterMembershipForUserEmail()`, `canUserResubscribe()`, `getEngagedLeadEmailsSince()`, `getWestsideLinkedPersonIds()`, `getPeopleForEnrollment()`, `dedupeCandidatesByEmail()`, `computeEnrollmentPlan()` <br /> `lib/data/crm/getWestsideCohortActivity.ts` · `lib/data/newsletter/perLead.ts` |
 | `workspace_directory` | `listWorkspaceUsers()`, `runWorkspaceBrokerSync()`, `recordTeamPageDecision()` <br /> `lib/data/brokers/workspace-sync.ts` |

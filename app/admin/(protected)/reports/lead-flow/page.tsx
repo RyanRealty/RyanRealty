@@ -544,7 +544,7 @@ async function LeadFlowContent({
       </div>
 
       {/* TRACK-1: the GA4 session count above (the funnel's denominator) is mirror-shaped. */}
-      {ga4Ok ? <Ga4MirrorNotice /> : null}
+      {ga4Ok ? <Ga4MirrorNotice startDate={range.startDate} /> : null}
 
       {!ga4Ok ? (
         <>

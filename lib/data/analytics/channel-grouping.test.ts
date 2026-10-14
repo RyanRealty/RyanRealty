@@ -102,3 +102,52 @@ describe('originLabel — the specific origin inside a group', () => {
     expect(originLabel(s({ referrer: 'https://ryan-realty.com/' }))).toBe('(none)')
   })
 })
+
+describe("classifyChannel — the tracker's own stamps are not campaigns (2026-10-14)", () => {
+  it('the no-source stamp (utm_source=direct, medium none) is Direct', () => {
+    expect(classifyChannel(s({ utmSource: 'direct', utmMedium: 'none' }))).toBe('Direct')
+    expect(classifyChannel(s({ utmSource: 'direct' }))).toBe('Direct')
+    expect(originLabel(s({ utmSource: 'direct', utmMedium: 'none' }))).toBe('(none)')
+  })
+
+  it('a real campaign called direct is still a campaign', () => {
+    expect(classifyChannel(s({ utmSource: 'direct', utmMedium: 'none', utmCampaign: 'mailer' }))).toBe('Other Campaign')
+  })
+
+  it('the referrer copied into utm_source is a Referral, not a campaign', () => {
+    expect(classifyChannel(s({ referrer: 'https://www.aocr.org/x', utmSource: 'www.aocr.org', utmMedium: 'referral' }))).toBe(
+      'Referral',
+    )
+    expect(classifyChannel(s({ referrer: 'https://www.zillow.com/homedetails', utmSource: 'zillow', utmMedium: 'portal' }))).toBe(
+      'Referral',
+    )
+  })
+
+  it('a tagged link from an unknown site is still a campaign', () => {
+    expect(classifyChannel(s({ referrer: 'https://partner.example/x', utmSource: 'spring-mailer', utmMedium: 'print' }))).toBe(
+      'Other Campaign',
+    )
+  })
+
+  it('names an AI assistant from its tag when the referrer is gone', () => {
+    expect(classifyChannel(s({ utmSource: 'chatgpt.com' }))).toBe('AI Assistant')
+    expect(classifyChannel(s({ utmSource: 'perplexity' }))).toBe('AI Assistant')
+  })
+
+  it('reads a search engine tag with an organic medium', () => {
+    expect(classifyChannel(s({ utmSource: 'google', utmMedium: 'organic' }))).toBe('Organic Search')
+  })
+})
+
+describe('classifyChannel — Google Business Profile gets its own group', () => {
+  it('reads our profile links (utm_source=gbp)', () => {
+    expect(classifyChannel(s({ utmSource: 'gbp', utmMedium: 'organic', utmCampaign: 'gbp-profile' }))).toBe(
+      'Google Business Profile',
+    )
+    expect(classifyChannel(s({ utmSource: 'gbp', referrer: 'https://www.google.com/' }))).toBe('Google Business Profile')
+  })
+
+  it('a paid click still outranks it', () => {
+    expect(classifyChannel(s({ utmSource: 'gbp', utmMedium: 'cpc' }))).toBe('Paid Search')
+  })
+})

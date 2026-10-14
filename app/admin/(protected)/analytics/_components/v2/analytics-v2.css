@@ -180,3 +180,42 @@ a.av2-step.is-on {
   color: var(--a-text-2);
   font-weight: 400;
 }
+
+/* ---- Website view (2026-10-14): one column of cards on a phone, two on a
+   wide screen. Each card is a v2 Panel; these are the pieces inside it. ---- */
+.av2-web {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--a-s4);
+  align-items: start;
+  margin: 0 0 var(--a-s6);
+}
+@media (min-width: 1100px) {
+  .av2-web { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.av2-web .av2-figs { margin-bottom: var(--a-s4); grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); }
+.av2-web__sub {
+  font-size: var(--a-text-sm);
+  font-weight: 600;
+  color: var(--a-text);
+  margin: var(--a-s4) 0 var(--a-s2);
+}
+.av2-web__hint {
+  display: block;
+  font-size: var(--a-text-xs);
+  font-weight: 400;
+  color: var(--a-text-2);
+}
+.av2-web__defs {
+  margin: 0 0 var(--a-s3);
+  padding-left: var(--a-s4);
+  font-size: var(--a-text-sm);
+  color: var(--a-text-2);
+}
+.av2-web__defs li { margin: 0 0 var(--a-s1); }
+.av2-web__defs b { color: var(--a-text); font-weight: 600; }
+.av2-web__source { margin: var(--a-s3) 0 var(--a-s2); }
+.av2-web__more { font-size: var(--a-text-sm); color: var(--a-text-2); margin: 0; }
+.av2-web__more a,
+.av2-web a { color: var(--a-accent); }
+.av2-web__more a { display: inline-flex; align-items: center; min-height: 44px; }

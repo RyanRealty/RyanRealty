@@ -91,3 +91,35 @@ export function stampMirrorInflated<T extends RowKey & { metadata?: Record<strin
       : r,
   )
 }
+
+/**
+ * Since this day the mirror skips views the browser tag already counts
+ * (analytics-tier visitors), so it covers only visitors who have not allowed
+ * analytics cookies, plus /cma and /bpo client documents (docs/analytics/README.md
+ * "Server page-view mirror").
+ */
+export const GA4_MIRROR_ESSENTIAL_ONLY_SINCE = '2026-10-09'
+
+/**
+ * First day GA4 sessions and traffic sources read as reliable: Unassigned
+ * sessions fell from hundreds a day to 3 on 2026-10-12 (GA4 Data API,
+ * sessionDefaultChannelGroup by date, read 2026-10-14).
+ */
+export const GA4_TRAFFIC_RELIABLE_FROM = '2026-10-12'
+
+/** First day GA4 lead events carry the visit's source (server events join the GA4 session, #563). */
+export const GA4_LEAD_SOURCE_RELIABLE_FROM = '2026-10-14'
+
+/**
+ * True when a GA4 window starting on `startDate` (YYYY-MM-DD) includes days
+ * whose sessions, sources and engagement the mirror inflated. A window that
+ * starts on or after GA4_TRAFFIC_RELIABLE_FROM needs no caveat.
+ */
+export function ga4WindowNeedsTrafficCaveat(startDate: string): boolean {
+  return startDate < GA4_TRAFFIC_RELIABLE_FROM
+}
+
+/** ga4WindowNeedsTrafficCaveat for a window of the last `days` days ending now. */
+export function ga4LastDaysNeedTrafficCaveat(days: number, nowMs: number = Date.now()): boolean {
+  return ga4WindowNeedsTrafficCaveat(new Date(nowMs - days * 86_400_000).toISOString().slice(0, 10))
+}
