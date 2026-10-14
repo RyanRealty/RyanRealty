@@ -266,20 +266,32 @@ export async function GET(request: NextRequest) {
   // One text per failing platform + state + UTC date (dedupe lives in
   // queueBrokerHealthAlert's `[crm-health:<key>]` marker). Loaded only when
   // there is something to say, so a healthy run never touches the alert module.
+  // A broken alert module must not cost the audit trail: the sync_logs rows
+  // and the run row are still written below, and the run still returns 500.
   const failing = results.filter((r) => r.severity === 'failure')
+  let alertError: string | null = null
   if (notify && failing.length > 0) {
-    const { queueBrokerHealthAlert } = await import('@/lib/crm/broker-alerts')
-    for (const r of failing) {
-      r.alertQueued = await queueBrokerHealthAlert({
-        key: alertKey(r.platform, r.state, date),
-        body: redactSecrets(alertBody(r), secrets),
-        cooldownMinutes: ALERT_COOLDOWN_MINUTES,
-      })
+    try {
+      const { queueBrokerHealthAlert } = await import('@/lib/crm/broker-alerts')
+      for (const r of failing) {
+        r.alertQueued = await queueBrokerHealthAlert({
+          key: alertKey(r.platform, r.state, date),
+          body: redactSecrets(alertBody(r), secrets),
+          cooldownMinutes: ALERT_COOLDOWN_MINUTES,
+        })
+      }
+    } catch (err) {
+      alertError = errorDetail(err, secrets)
     }
   }
 
   const environment = process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? 'development'
   const syncRows = toSyncLogRows(results, cycleId, environment, Date.now() - started.getTime())
+  if (alertError) {
+    const runRow = syncRows[syncRows.length - 1]
+    runRow.response_status = 500
+    runRow.error_message = [runRow.error_message, `alert queue failed: ${alertError}`].filter(Boolean).join(' | ')
+  }
   const syncLogError = await writeSyncLogs(syncRows)
 
   const summary = summarize(results)
@@ -287,11 +299,12 @@ export async function GET(request: NextRequest) {
     console.log(`[token-heartbeat] ${r.platform} ${r.state} (${r.severity}): ${r.message}`)
   }
   if (syncLogError) console.warn(`[token-heartbeat] sync_logs write failed: ${redactSecrets(syncLogError, secrets)}`)
+  if (alertError) console.error(`[token-heartbeat] alert queue failed: ${alertError}`)
 
   const anyFailed = summary.failure > 0
   return NextResponse.json(
     {
-      ok: !anyFailed && !syncLogError,
+      ok: !anyFailed && !syncLogError && !alertError,
       startedAt: started.toISOString(),
       finishedAt: new Date().toISOString(),
       cycleId,
@@ -303,9 +316,10 @@ export async function GET(request: NextRequest) {
       // Not checked: removed by Matt, listed so a reader knows they are gone on purpose.
       removed: REMOVED_PLATFORMS.map((r) => ({ platform: r.platform, reason: r.reason })),
       syncLogs: { written: syncLogError ? 0 : syncRows.length, error: syncLogError },
+      alertError,
     },
     // A dead platform fails the cron. A heartbeat that cannot write its own
     // audit trail is a broken monitor, so that fails it too.
-    { status: anyFailed || syncLogError ? 500 : 200, headers: { 'cache-control': 'no-store' } },
+    { status: anyFailed || syncLogError || alertError ? 500 : 200, headers: { 'cache-control': 'no-store' } },
   )
 }

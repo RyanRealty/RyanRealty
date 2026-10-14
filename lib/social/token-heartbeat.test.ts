@@ -1,11 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  alertBody,
   alertKey,
   checkFailed,
   classifyMeta,
   classifyToken,
   DISABLED_PLATFORMS,
   disabledReason,
+  fixLink,
   isRemovedPlatform,
   missingEnv,
   PLATFORM_SPECS,
@@ -21,6 +23,14 @@ import { isPublishDoorPlatform, PUBLISH_DOOR_PLATFORMS, REMOVED_PLATFORMS_MESSAG
 
 const NOW = Date.parse('2026-10-14T12:00:00.000Z')
 const DAY = 24 * 60 * 60 * 1000
+
+// Fix links are built on the site origin; blank env means the canonical origin.
+beforeEach(() => {
+  vi.stubEnv('NEXT_PUBLIC_SITE_URL', '')
+})
+afterEach(() => {
+  vi.unstubAllEnvs()
+})
 
 function obs(over: Partial<TokenObservation> = {}): TokenObservation {
   return { envMissing: [], row: null, readError: null, refreshError: null, refreshed: false, ...over }
@@ -44,7 +54,7 @@ describe('token heartbeat state model', () => {
       NOW,
     )
     expect(r).toMatchObject({ state: 'ok', severity: 'ok' })
-    expect(r.message).toContain('no refresh token: reconnect before then at /api/pinterest/authorize')
+    expect(r.message).toContain('no refresh token: reconnect before then at https://ryan-realty.com/api/pinterest/authorize')
   })
 
   it('expiring: under 14 days and no refresh path is a failure', () => {
@@ -55,7 +65,7 @@ describe('token heartbeat state model', () => {
     )
     expect(r).toMatchObject({ state: 'expiring', severity: 'failure' })
     expect(r.message).toBe(
-      'Pinterest token expires 2026-10-20 (6 days left) with no refresh token: reconnect at /api/pinterest/authorize',
+      'Pinterest token expires 2026-10-20 (6 days left) with no refresh token: reconnect at https://ryan-realty.com/api/pinterest/authorize',
     )
   })
 
@@ -70,7 +80,7 @@ describe('token heartbeat state model', () => {
     )
     expect(r).toMatchObject({ state: 'expiring', severity: 'failure' })
     expect(r.message).toBe(
-      'X token expires 2026-10-14 (under 1 day left) and the refresh failed (X token refresh failed: 400 Bad Request): reconnect at /api/x/authorize',
+      'X token expires 2026-10-14 (under 1 day left) and the refresh failed (X token refresh failed: 400 Bad Request): reconnect at https://ryan-realty.com/api/x/authorize',
     )
   })
 
@@ -82,7 +92,7 @@ describe('token heartbeat state model', () => {
     )
     expect(r).toMatchObject({ state: 'expired', severity: 'failure', hasRefreshToken: false })
     expect(r.message).toBe(
-      'Pinterest token expired 2026-07-09 with no refresh token: reconnect at /api/pinterest/authorize',
+      'Pinterest token expired 2026-07-09 with no refresh token: reconnect at https://ryan-realty.com/api/pinterest/authorize',
     )
   })
 
@@ -97,7 +107,7 @@ describe('token heartbeat state model', () => {
     )
     expect(r).toMatchObject({ state: 'expired', severity: 'failure' })
     expect(r.message).toBe(
-      'X token expired 2026-08-29 and the refresh failed (X token refresh failed: 400 Bad Request): reconnect at /api/x/authorize',
+      'X token expired 2026-08-29 and the refresh failed (X token refresh failed: 400 Bad Request): reconnect at https://ryan-realty.com/api/x/authorize',
     )
   })
 
@@ -117,7 +127,7 @@ describe('token heartbeat state model', () => {
   it('not_connected: client env present, no row, on a publish-door target is a failure', () => {
     const r = classifyToken(specFor('pinterest'), obs(), NOW)
     expect(r).toMatchObject({ state: 'not_connected', severity: 'failure' })
-    expect(r.message).toBe('Pinterest is not connected (no pinterest_auth row): connect at /api/pinterest/authorize')
+    expect(r.message).toBe('Pinterest is not connected (no pinterest_auth row): connect at https://ryan-realty.com/api/pinterest/authorize')
   })
 
   it('not_configured: no client env is a warning, naming the missing env (names only)', () => {
@@ -126,7 +136,7 @@ describe('token heartbeat state model', () => {
     const r = classifyToken(spec, obs({ envMissing: env }), NOW)
     expect(r).toMatchObject({ state: 'not_configured', severity: 'warning' })
     expect(r.message).toBe(
-      'Pinterest is not configured (PINTEREST_CLIENT_ID, PINTEREST_CLIENT_SECRET, PINTEREST_REDIRECT_URI unset): set the client env, then connect at /api/pinterest/authorize',
+      'Pinterest is not configured (PINTEREST_CLIENT_ID, PINTEREST_CLIENT_SECRET, PINTEREST_REDIRECT_URI unset): set the client env, then connect at https://ryan-realty.com/api/pinterest/authorize',
     )
   })
 
@@ -159,8 +169,12 @@ describe('token heartbeat state model', () => {
     expect(checkFailed(specFor('meta'), 'boom')).toMatchObject({ state: 'error', severity: 'failure' })
   })
 
-  it('meta: missing token is not_configured, 190 is expired, anything else is error', () => {
-    expect(classifyMeta({ tokenPresent: false })).toMatchObject({ state: 'not_configured', severity: 'warning' })
+  it('meta: a missing token is not_connected (a failure: it IS the Instagram and Facebook connection), 190 is expired, anything else is error', () => {
+    const missing = classifyMeta({ tokenPresent: false })
+    expect(missing).toMatchObject({ state: 'not_connected', severity: 'failure' })
+    expect(missing.message).toBe(
+      'Meta is not connected (META_PAGE_ACCESS_TOKEN and META_PAGE_TOKEN unset), so Instagram and Facebook cannot post: set a Page token in META_PAGE_ACCESS_TOKEN',
+    )
     expect(classifyMeta({ tokenPresent: true, ok: true, pageId: '42' })).toMatchObject({ state: 'ok' })
     expect(
       classifyMeta({ tokenPresent: true, ok: false, code: 190, detail: 'Session has expired' }),
@@ -238,6 +252,16 @@ describe('redaction, alerts, sync_logs', () => {
     expect(out).not.toContain('ya29.tokenvalue')
     expect(out).not.toContain('dXNlcjpwYXNz')
     expect(out).toContain('access_token=[redacted]')
+  })
+
+  it('the fix in a message is a full, tappable https URL on the site origin', () => {
+    expect(fixLink(specFor('x'))).toBe('https://ryan-realty.com/api/x/authorize')
+    // Meta's fix is an env name, not a link.
+    expect(fixLink(specFor('meta'))).toBe('META_PAGE_ACCESS_TOKEN')
+    const r = classifyToken(specFor('pinterest'), obs(), NOW)
+    expect(alertBody(r)).toBe(
+      'Token heartbeat: Pinterest is not connected (no pinterest_auth row): connect at https://ryan-realty.com/api/pinterest/authorize',
+    )
   })
 
   it('dedupe key is platform + state + UTC date', () => {

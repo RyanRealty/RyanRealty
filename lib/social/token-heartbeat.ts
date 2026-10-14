@@ -35,6 +35,7 @@ import {
   REMOVED_PLATFORMS,
   type PublishDoorPlatform,
 } from '@/lib/social/publish-door'
+import { siteUrl } from '@/lib/site-origin'
 
 /** Removed platforms (Matt 2026-10-14). The heartbeat holds no spec for them. */
 export { REMOVED_PLATFORMS, isRemovedPlatform }
@@ -72,7 +73,7 @@ export type PlatformSpec = {
   /** Client env the platform's lib requires; each inner list is any-of. Names only, never values. */
   env: string[][]
   refreshMode: RefreshMode
-  /** Where Matt reconnects. */
+  /** Where Matt reconnects: a site path (sent as a full, tappable URL) or, for Meta, the env name. */
   fixPath: string
   /** The publish-door targets this token powers. */
   doorTargets: PublishDoorPlatform[]
@@ -309,9 +310,15 @@ function result(
   }
 }
 
+/** The fix as it appears in a message: a full https URL on the site origin, so the text is tappable. */
+export function fixLink(spec: PlatformSpec): string {
+  return spec.fixPath.startsWith('/') ? siteUrl(spec.fixPath) : spec.fixPath
+}
+
 /** Classify one OAuth-table platform. `nowMs` is the run clock. */
 export function classifyToken(spec: PlatformSpec, obs: TokenObservation, nowMs: number): HeartbeatResult {
-  const { label, table, fixPath } = spec
+  const { label, table } = spec
+  const fixPath = fixLink(spec)
 
   if (obs.readError) {
     return result(spec, 'error', `${label} token check failed: could not read ${table} (${obs.readError}); see the token-heartbeat run`)
@@ -390,11 +397,15 @@ export function checkFailed(spec: PlatformSpec, detail: string): HeartbeatResult
 /** Meta: the Page token lives in env; Graph error 190 means it no longer authorizes. */
 export function classifyMeta(obs: MetaObservation): HeartbeatResult {
   const spec = specFor('meta')
+  // For Meta the env token IS the connection (there is no separate client env
+  // and no token row), and it powers Instagram and Facebook, the two main door
+  // targets. A missing token is therefore not_connected, a failure that texts,
+  // never a not_configured warning.
   if (!obs.tokenPresent) {
     return result(
       spec,
-      'not_configured',
-      'Meta is not configured (META_PAGE_ACCESS_TOKEN or META_PAGE_TOKEN unset): set a Page token in META_PAGE_ACCESS_TOKEN',
+      'not_connected',
+      'Meta is not connected (META_PAGE_ACCESS_TOKEN and META_PAGE_TOKEN unset), so Instagram and Facebook cannot post: set a Page token in META_PAGE_ACCESS_TOKEN',
     )
   }
   if (obs.ok) return result(spec, 'ok', `Meta Page token valid (page ${obs.pageId})`)

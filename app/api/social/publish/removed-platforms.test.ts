@@ -39,8 +39,10 @@ const post = (body: unknown) =>
 
 const base = {
   approved: true,
-  mediaType: 'video',
-  mediaUrl: 'https://example.com/v.mp4',
+  // An image, so the removed-platform refusal is what answers. A video body is
+  // refused earlier by the video freeze (423) once that branch is merged.
+  mediaType: 'image',
+  mediaUrl: 'https://example.com/a.jpg',
   caption: 'Test',
   approvalRef: { actionId: '00000000-0000-0000-0000-000000000000' },
 }

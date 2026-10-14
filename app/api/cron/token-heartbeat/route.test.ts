@@ -195,6 +195,7 @@ describe('/api/cron/token-heartbeat', () => {
     vi.setSystemTime(new Date(NOW))
     vi.stubEnv('CRON_SECRET', 'test-secret')
     vi.stubEnv('TWILIO_FORWARD_MATT', '+15415550100')
+    vi.stubEnv('NEXT_PUBLIC_SITE_URL', '') // fix links on the canonical origin
     vi.stubGlobal('fetch', fetchMock)
     db.readErrors = new Set()
     db.reads = []
@@ -231,7 +232,7 @@ describe('/api/cron/token-heartbeat', () => {
       state: 'not_configured',
       severity: 'warning',
       message:
-        'Pinterest is not configured (PINTEREST_CLIENT_ID, PINTEREST_CLIENT_SECRET, PINTEREST_REDIRECT_URI unset): set the client env, then connect at /api/pinterest/authorize',
+        'Pinterest is not configured (PINTEREST_CLIENT_ID, PINTEREST_CLIENT_SECRET, PINTEREST_REDIRECT_URI unset): set the client env, then connect at https://ryan-realty.com/api/pinterest/authorize',
     })
     expect(byPlatform(body, 'nextdoor')).toMatchObject({ state: 'not_configured', severity: 'off' })
     for (const p of ['meta', 'youtube', 'x', 'google_business_profile', 'tiktok']) {
@@ -317,7 +318,7 @@ describe('/api/cron/token-heartbeat', () => {
       state: 'expiring',
       alertQueued: true,
       message:
-        'Pinterest token expires 2026-10-14 (under 1 day left) with no refresh token: reconnect at /api/pinterest/authorize',
+        'Pinterest token expires 2026-10-14 (under 1 day left) with no refresh token: reconnect at https://ryan-realty.com/api/pinterest/authorize',
     })
 
     vi.setSystemTime(new Date(Date.parse(NOW) + 3 * HOUR))
@@ -348,7 +349,7 @@ describe('/api/cron/token-heartbeat', () => {
     expect(byPlatform(body, 'pinterest')).toMatchObject({
       state: 'expiring',
       severity: 'failure',
-      message: 'Pinterest token expires 2026-10-20 (6 days left) with no refresh token: reconnect at /api/pinterest/authorize',
+      message: 'Pinterest token expires 2026-10-20 (6 days left) with no refresh token: reconnect at https://ryan-realty.com/api/pinterest/authorize',
     })
   })
 
@@ -360,10 +361,26 @@ describe('/api/cron/token-heartbeat', () => {
     expect(byPlatform(body, 'pinterest')).toMatchObject({
       state: 'expired',
       severity: 'failure',
-      message: 'Pinterest token expired 2026-07-09 with no refresh token: reconnect at /api/pinterest/authorize',
+      message: 'Pinterest token expired 2026-07-09 with no refresh token: reconnect at https://ryan-realty.com/api/pinterest/authorize',
       alertQueued: true,
     })
     expect(getters.pinterest).not.toHaveBeenCalled() // nothing can renew it
+    // The text carries a full, tappable link.
+    expect(alerts.map((a) => a.body)).toEqual([
+      '[crm-health:token-heartbeat:pinterest:expired:2026-10-14] Token heartbeat: Pinterest token expired 2026-07-09 with no refresh token: reconnect at https://ryan-realty.com/api/pinterest/authorize',
+    ])
+  })
+
+  it('meta: a missing Page token is not_connected, a failure that texts (it IS the Instagram and Facebook connection)', async () => {
+    healthyData()
+    vi.stubEnv('META_PAGE_ACCESS_TOKEN', '')
+    vi.stubEnv('META_PAGE_TOKEN', '')
+    const { status, body } = await run()
+    expect(status).toBe(500)
+    expect(byPlatform(body, 'meta')).toMatchObject({ state: 'not_connected', severity: 'failure', alertQueued: true })
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(markers()).toEqual(['[crm-health:token-heartbeat:meta:not_connected:2026-10-14]'])
+    expect(db.syncLogs[0].find((r) => r.endpoint === 'token_heartbeat:meta')).toMatchObject({ response_status: 500 })
   })
 
   it('expired: a refresh that fails on a dead token is a failure, not "auto-refresh"', async () => {
@@ -375,7 +392,7 @@ describe('/api/cron/token-heartbeat', () => {
       state: 'expired',
       severity: 'failure',
       message:
-        'X token expired 2026-10-13 and the refresh failed (X token refresh failed: 400 Bad Request): reconnect at /api/x/authorize',
+        'X token expired 2026-10-13 and the refresh failed (X token refresh failed: 400 Bad Request): reconnect at https://ryan-realty.com/api/x/authorize',
     })
   })
 
@@ -387,7 +404,7 @@ describe('/api/cron/token-heartbeat', () => {
     expect(byPlatform(body, 'pinterest')).toMatchObject({
       state: 'not_connected',
       severity: 'failure',
-      message: 'Pinterest is not connected (no pinterest_auth row): connect at /api/pinterest/authorize',
+      message: 'Pinterest is not connected (no pinterest_auth row): connect at https://ryan-realty.com/api/pinterest/authorize',
     })
   })
 
@@ -436,6 +453,33 @@ describe('/api/cron/token-heartbeat', () => {
     const { status, body } = await run()
     expect(status).toBe(500)
     expect(body.ok).toBe(false)
+  })
+
+  it('an alert module that fails to load still writes sync_logs and the run row, and fails the run', async () => {
+    healthyData()
+    db.tables.pinterest_auth = null // one failure, so the alert path runs
+    vi.resetModules()
+    vi.doMock('@/lib/crm/broker-alerts', () => {
+      throw new Error('broker-alerts failed to load')
+    })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const { status, body } = await run()
+      expect(status).toBe(500)
+      expect(body.ok).toBe(false)
+      // vitest wraps the factory's throw in its own message; what matters is that it is recorded.
+      expect((body as unknown as { alertError: string | null }).alertError).toEqual(expect.any(String))
+      expect(alerts).toHaveLength(0)
+      const rows = db.syncLogs[0]
+      expect(rows).toHaveLength(8)
+      const runRow = rows.find((r) => r.endpoint === 'token_heartbeat')
+      expect(runRow).toMatchObject({ response_status: 500, alert_sent: false })
+      expect(String(runRow?.error_message)).toContain('Pinterest is not connected')
+      expect(String(runRow?.error_message)).toContain('alert queue failed: ')
+    } finally {
+      vi.doUnmock('@/lib/crm/broker-alerts')
+      vi.resetModules()
+    }
   })
 
   it('never logs, returns, stores or texts a token value', async () => {
