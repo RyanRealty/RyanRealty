@@ -1,4 +1,16 @@
-# Current — 2026-10-14 (Cursor, PR hygiene + Zillow FSBO mapped parse)
+# Current — 2026-10-14 (Cursor, AGENTS.md single process source)
+
+Surface: Cursor cloud. Branch `cursor/agents-md-single-source-6f1e` / PR #562 from origin/main `c7e237ccf` (#547 after #471 / #556 / #560). Folds and supersedes #544. Nobody pushes main. Nothing sent.
+
+**What this branch does.** `AGENTS.md` is the only process-rule file. CORE RULES add PRs only, auto-merge except `hold-for-matt`, stale PRs, Done = merged + production READY + live URL, payload caps, no sleep waits, new process rules in `AGENTS.md`, and DB writes when Matt's task needs them. Workflows enqueue auto-merge and close stale PRs. `merge-gate` is the required CI rollup (lint, gates, unit, and on app PRs build / e2e / a11y). Lighthouse and content-floor stay out of that rollup.
+
+**Also this session.** GitHub App token (`ghs_`, account `cursor`) 403s Administration: create label, PATCH `allow_auto_merge` / `delete_branch_on_merge`, POST ruleset, PUT branch protection. Did not push an empty commit to main because protection is not active. Squash-merged already-mergeable #559, #546, and #547. #550 and #514 stay CONFLICTING (`Auto merge is not allowed for this repository`). #545/#469/#473/#479 stay open (titles already hold for Matt).
+
+**Held.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+
+## Earlier — 2026-10-14 (Cursor, PR hygiene + Zillow FSBO mapped parse)
 
 Surface: Cursor cloud. Branch `cursor/fsbo-zillow-mapped-output-66eb` from origin/main `482727cb7` (merged, not rebased). PR #556. Nobody pushes main. Nothing sent. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true. Approved CMA and email wording unchanged.
 
