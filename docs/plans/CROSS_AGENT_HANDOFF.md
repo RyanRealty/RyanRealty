@@ -1,4 +1,20 @@
-# Current — 2026-10-14 (Cursor, GA4 offline conversions)
+# Current — 2026-10-14 (Claude, the two buyer landing pages look like landing pages)
+
+Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b` from origin/main `5293aa46`. PR #548 open; merge once GitHub checks are green, then `npm run deploy:verify`. Nothing sent. Nobody pushes main.
+
+**What this commit does.** `/buy/concessions` and `/buy/alerts` were a cream column of prose and a form (Matt 2026-10-14: "these are supposed to be landing pages, and they're kind of bums"). Both now open the way `/sell` does: a `V3Stage` photograph with the H1, the page's sourced figures on the navy band, and the ask in the first viewport. Concessions: the Bend Drake Park aerial, then the ad's "Same $10,000" as a live instrument on the new barrel primitive `V3Compare` (seller dollars scrubbed, two monthly savings rolling on `V3Number`, the margin drawn as two bars on one scale, the loan inputs folded under "Your numbers"), then the two-year share chart, caps, the ask, and the phone. The admin-register `components/ui` inputs left the route. Alerts: Smith Rock, the signup as a cream slab on the photograph (town chips, email, price and bedrooms folded), `V3Steps` for what lands in the inbox, a `V3ListingDial` of the newest single-family listings in Bend (`getCityListings`, listed-newest, SFR sub type), `V3Answers` for the FAQ with the page's doors, a `Quiet` of sources. Same action, same lead and tracking tokens, same approved H1, meta, FAQ and cadence sentences. Figures unchanged and still traced: the 90-day concession read in `lib/concessions/results.ts`, the live Freddie Mac rate, the Bend new-30-day count, the 7-day cut count and months of supply from the same helpers as before.
+
+**Taste pass.** A separate Sonnet evaluator scored the first cut 62 (concessions) and 67 (alerts) against TASTE.md and named the defects; the real ones were fixed before the push: the caps section carried builder language ("not re-fetched this session") and is now `V3Answers` with a source per loan family, the compare instrument puts the two figures before the scrubber under a compact Stage so the ad's numbers are in the 1440 fold, the chart's last tick hung 13px past the phone viewport (`V3Chart.css` end-tick rule at 40rem), the alerts band wrapped with a stranded middot (shorter labels), the slab named the page a fourth time (eyebrow only now), and the Smith Rock sky read cobalt (deep scrim). Shots at 1440 and 375 are in the session scratchpad, not the repo; the routes have no taste class or parity receipt.
+
+**Not this change.** Do not send. Do not apply hosted SQL. Do not merge the phase-pool branch. Do not rebuild letters. The Google Drive "Same $10,000" ad file Matt linked was not reachable from this session (Drive returned not found), so no video was placed on the page; the page carries the ad's device as a live instrument instead.
+
+Skills read: `design_system/public/PUBLIC_UI.md`, `design_system/public/TASTE.md`, `.claude/skills/frontend-design/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `docs/CLOUD_ENVIRONMENT_SETUP.md`.
+
+## Earlier — 2026-10-14 (Cursor, Meta Lead no dollar values)
+
+## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
+
+## Earlier — 2026-10-14 (Cursor, GA4 offline conversions)
 
 Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-3b48` (#543), merged origin/main `7e23fdb97` (#551 handoff, #489 same-vintage, #542 Meta Lead no dollars). Nothing sent. Nobody pushes main. No rebuild.
 
