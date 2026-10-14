@@ -1,3 +1,4 @@
+import type { SubjectUnitFacts } from '@/lib/cma/subject-units'
 /**
  * Shared types for the deterministic CMA builder (lib/cma/**).
  *
@@ -39,6 +40,13 @@ export interface CmaSubject {
   lotAcres: number | null
   /** MLS property_sub_type — drives product-class comparability. */
   propertySubType: string | null
+  /** MLS PropertyType: A residential, C residential income, D land. Absent on rows built before. */
+  propertyType?: string | null
+  /**
+   * The home's unit and ADU reading off its own MLS records (lib/cma/subject-units.ts,
+   * Matt 2026-10-14). A multi-unit reading refuses the build before comps.
+   */
+  units?: SubjectUnitFacts | null
   yearBuilt: number | null
   garageSpaces: number | null
   photoUrl: string | null

@@ -29,6 +29,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { complianceFromSkipTrace, resolveOwnerContact } from './owner-resolution.mjs'
 import type { CountyOwner, SkipTraceResult } from './owner-resolution.d.ts'
+import { OWNER_ENTITY_RE, chooseGreetingForEmail, ownerOfRecordNote, parseOwnerHousehold } from './crm/household-names'
 
 const APIFY_BASE = 'https://api.apify.com/v2'
 
@@ -573,6 +574,11 @@ function buildCountyNotes(
   const humanBehindEntity = c.isEntity && trace?.person ? (trace.person.full || [trace.person.first, trace.person.last].filter(Boolean).join(' ')) : ''
   return [
     `Resolved via Deschutes County assessor records (taxlot ${c.taxlot ?? 'unknown'}, account ${c.accountId ?? 'unknown'}).`,
+    // The county string as written, every row, so the greeting check can read
+    // the household back (lib/crm/household-names.ts, Matt 2026-10-14). It
+    // sits BEFORE the legal-owner sentence, which lib/prospecting/company-owner.ts
+    // cuts at the markers that follow it.
+    ownerOfRecordNote(c.ownerRaw),
     c.isEntity ? `Legal owner (entity): ${c.ownerRaw}.${humanBehindEntity ? ` Skip-trace resolved contact: ${humanBehindEntity}.` : ''}` : '',
     mailing ? `Mailing: ${mailing}.` : '',
     c.absentee ? 'ABSENTEE owner (mailing differs from property).' : 'Owner-occupied per mailing address.',
@@ -588,6 +594,39 @@ function buildCountyNotes(
   ]
     .filter(Boolean)
     .join(' ')
+}
+
+/**
+ * The name the lead is filed under, given the email it will be reached at.
+ * Pure and exported for the test. `fullName` is the county or skip-trace
+ * person; `ownerRaw` is the county owner string. The name moves to the
+ * co-owner the email carries; otherwise it stays, and when the email names
+ * nobody on a multi-owner record the note says the letter opens "Hi there,".
+ */
+export function ownerNameForEmail(
+  fullName: string,
+  email: string | null,
+  ownerRaw: string | null | undefined,
+): { ownerName: string; greetingNote: string } {
+  const name = fullName.trim()
+  if (!name || !email) return { ownerName: name, greetingNote: '' }
+  const base = OWNER_ENTITY_RE.test(name) ? null : (name.split(/\s+/)[0] ?? null)
+  const choice = chooseGreetingForEmail({ baseFirstName: base, clientName: name, email, ownerOfRecord: ownerRaw })
+  const picked = choice.firstName
+  if (picked && (!base || picked.toLowerCase() !== base.toLowerCase())) {
+    const household = parseOwnerHousehold(ownerRaw)
+    const person = household.people.find((p) => p.first.toLowerCase() === picked.toLowerCase())
+    const surname = person?.last ?? (base ? name.split(/\s+/).slice(-1)[0] ?? '' : '')
+    const ownerName = [picked, surname].filter(Boolean).join(' ')
+    return {
+      ownerName,
+      greetingNote: `Greeting: ${email} is ${ownerName}'s (${choice.reason}); the lead is filed under that name, not ${name}. The phones and emails are the household's as the skip trace returned them.`,
+    }
+  }
+  if (!picked && base) {
+    return { ownerName: name, greetingNote: `Greeting: ${choice.reason}, so the letter opens Hi there.` }
+  }
+  return { ownerName: name, greetingNote: '' }
 }
 
 function complianceFieldsFromEnrichment(
@@ -666,6 +705,14 @@ export async function lookupOwnerForExpiredListing(params: {
       const fullName = c.isEntity
         ? traceHuman || c.ownerRaw
         : [c.firstName, c.lastName].filter(Boolean).join(' ') || traceHuman || c.ownerRaw
+      // The lead is filed under the person the email belongs to (Matt
+      // 2026-10-14, 429 Irving: the county trust names David and Margo, the
+      // skip trace returned Margo's record carrying dkremers@hotmail.com, and
+      // "Hi Margo," landed in David's inbox). When the email carries a
+      // co-owner's name instead, the lead takes that name; when it carries
+      // nobody's on a multi-owner record, the notes say so and the letter
+      // opens "Hi there,".
+      const { ownerName, greetingNote } = ownerNameForEmail(fullName, resolved.bestEmail ?? null, c.ownerRaw)
       const mailing = [c.mailingStreet, c.mailingCity, c.mailingState, c.mailingZip]
         .filter(Boolean)
         .join(', ')
@@ -701,12 +748,12 @@ export async function lookupOwnerForExpiredListing(params: {
         })
           ? 'matched-dial'
           : 'pending',
-        ownerName: fullName,
+        ownerName,
         ownerMailingAddress: mailing || undefined,
         ownerEmail: resolved.bestEmail ?? undefined,
         ownerPhone: resolved.bestPhone ?? undefined,
         source: `deschutes-county:${c.taxlot ?? 'taxlot'}`,
-        notes: buildCountyNotes(c, resolved.trace, ownership),
+        notes: [buildCountyNotes(c, resolved.trace, ownership), greetingNote].filter(Boolean).join(' '),
         allPhones: tracePhones,
         allEmails: traceEmails,
         taxlot: c.taxlot,
@@ -715,7 +762,10 @@ export async function lookupOwnerForExpiredListing(params: {
         emailHardStop: resolved.emailHardStop,
         absentee: c.absentee,
         outOfState: c.outOfState,
-        demographics: resolved.trace?.demographics ?? undefined,
+        // The skip-trace person's age, marital status and the like belong to
+        // the person the trace returned, not to a co-owner the email moved
+        // the lead to.
+        demographics: ownerName === fullName ? (resolved.trace?.demographics ?? undefined) : undefined,
         flags: resolved.trace?.flags ?? undefined,
         ownershipSince: ownership?.since ?? null,
         ownershipSource: ownership ? 'deschutes-dial-deed-history' : null,

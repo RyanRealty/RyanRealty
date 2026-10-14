@@ -17,6 +17,7 @@ import {
   STALE_LABEL,
   STALE_LABEL_COLOR,
   STALE_LABEL_DESCRIPTION,
+  mergeAction,
   requiredChecksStatus,
   shouldQueueAutoMerge,
   titleLooksLikeHold,
@@ -119,22 +120,23 @@ function handlePr(number) {
     return
   }
 
-  const queued = gh(['pr', 'merge', String(number), '--auto', '--squash', '--delete-branch'])
-  if (queued.ok) {
-    console.log(`#${number} auto-merge queued or merged`)
-    return
-  }
-  const err = `${queued.stderr} ${queued.stdout}`
-  console.log(`#${number} --auto failed: ${err.trim()}`)
-
   const checks = gh(['pr', 'checks', String(number), '--json', 'name,state,bucket'])
   if (!checks.ok) {
     console.log(`#${number} checks unread; leave open`)
     return
   }
-  const status = requiredChecksStatus(JSON.parse(checks.stdout || '[]'))
-  console.log(`#${number} required checks: ${status}`)
-  if (status !== 'ready') return
+  const requiredStatus = requiredChecksStatus(JSON.parse(checks.stdout || '[]'))
+  const repo = gh(['api', 'repos/{owner}/{repo}', '--jq', '.allow_auto_merge'])
+  const allowAutoMerge = repo.ok && repo.stdout.trim() === 'true'
+  const action = mergeAction({ requiredStatus, allowAutoMerge })
+  console.log(`#${number} required checks: ${requiredStatus}; allow_auto_merge=${allowAutoMerge}; action=${action}`)
+  if (action === 'queue-auto') {
+    const queued = gh(['pr', 'merge', String(number), '--auto', '--squash', '--delete-branch'])
+    if (queued.ok) console.log(`#${number} auto-merge queued`)
+    else console.log(`#${number} --auto failed: ${(queued.stderr || queued.stdout).trim()}`)
+    return
+  }
+  if (action !== 'squash-now') return
   const merged = gh(['pr', 'merge', String(number), '--squash', '--delete-branch'])
   if (!merged.ok) fail(merged.stderr || `gh pr merge ${number} failed`)
   console.log(`#${number} squash-merged after required checks`)

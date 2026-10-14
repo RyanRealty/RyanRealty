@@ -128,6 +128,14 @@ export function classifyAgeBand(yearBuilt: number | null | undefined, asOfYear: 
 export function classifyProduct(subType: string | null | undefined): ProductKey {
   if (!subType?.trim()) return 'unknown'
   const s = subType.toLowerCase()
+  // Duplex, Triplex, Quadruplex and Multi Family are their own product (rule
+  // 23, Matt 2026-10-14). sale_pricing_facts admits PropertyType A closes
+  // only, so no facts row carries this class: it names a SUBJECT the build
+  // refuses (lib/cma/subject-units.ts) and the remarks reader's verdict on a
+  // sale, never a pool filter.
+  if (/duplex|tri-?plex|four-?plex|quad-?plex|quadruplex|multi[- ]?family|multi[- ]?unit|residential income/.test(s)) {
+    return 'multi-unit'
+  }
   if (s.includes('leased land')) return 'leased-land'
   if (s.includes('cooperative') || s.includes('co-op')) return 'coop'
   if (s.includes('manufactured') || s.includes('mobile')) return 'manufactured'
