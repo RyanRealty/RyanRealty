@@ -1,4 +1,14 @@
-# Current — 2026-10-14 (Cursor, homes-for-sale-by-area internal links)
+# Current — 2026-10-14 (Cursor, G46 commit-compiles process tree)
+
+Surface: Cursor cloud. Branch `cursor/commit-compiles-heavy-timeout-84fb` from origin/main `a4b308804`. PR open. Do not merge. Do not `git push` main. Nothing sent.
+
+**What this branch does.** `scripts/check-commit-compiles.mjs` (G46) spawns tsc detached. If `/home/box/agent-data/tools/heavy.sh` exists, tsc runs as `heavy.sh <tsc cmd...>`. The child pid is kept. On exit, SIGINT, SIGTERM, uncaughtException, and unhandledRejection the gate SIGTERMs the process group, SIGKILLs after ~5s, and `fs.rmSync`s the `/tmp/rr-commit-check-*` dir. Default timeout is 10 minutes (`COMMIT_COMPILES_TIMEOUT_MS`). Pass/fail banners are unchanged.
+
+**Next.** Leave the PR open. Do not merge from this session.
+
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `.claude/skills/tdd/SKILL.md`.
+
+## Earlier — 2026-10-14 (Cursor, homes-for-sale-by-area internal links)
 
 Surface: Cursor cloud. Branch `cursor/homes-for-sale-by-area-f550` merged onto origin/main `ab4342b1d` (#511 listings-failure no-cache, #539 inherited CI reds, #536 /buy slug allowlist, #538 city living/cost geo-guard, plus #528/#533/#512/#521/#513). PR #525. Do not `git push` main. Nothing sent. Prod DB read-only.
 
