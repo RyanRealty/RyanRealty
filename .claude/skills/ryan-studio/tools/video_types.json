@@ -1,6 +1,6 @@
 {
   "_doc": "Machine copy of rules/VIDEO_TYPES.md. Keep in sync. RULEBOOK.md wins.",
-  "defaults": {"hook_max_s": 2, "min_s": 15, "max_s": 30, "hard_max_s": 40, "max_hero_numbers": 2, "min_hold_s": 2.5, "requires_end_card": true, "requires_real_footage": true, "requires_loop": true},
+  "defaults": {"hook_max_s": 2, "min_s": 15, "max_s": 30, "hard_max_s": 40, "max_hero_numbers": 2, "min_hold_s": 2.5, "requires_end_card": true, "requires_real_footage": true, "requires_loop": true, "requires_voiceover": true},
   "types": {
     "listing": {},
     "market_update": {"hard_max_s": 40},

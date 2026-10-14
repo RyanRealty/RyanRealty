@@ -84,7 +84,7 @@ const PDF_RENDER_TRACE_INCLUDES = [
 ] as const
 
 // The Studio's motion stage (lib/studio/motion): Chromium the way the PDF
-// routes get it, plus the fonts and wordmark MOTION_ASSET_FILES in
+// routes get it, plus the fonts and logos MOTION_ASSET_FILES in
 // lib/studio/motion/assets.ts reads from disk. ffmpeg is deliberately NOT here:
 // the '*' exclude below strips @ffmpeg-installer from every function and
 // excludes win over includes, so lib/video/ffmpeg.ts fetches the same pinned,
@@ -97,7 +97,9 @@ const STUDIO_MOTION_TRACE_INCLUDES = [
   './node_modules/geist/dist/fonts/geist-sans/Geist-Regular.woff2',
   './node_modules/geist/dist/fonts/geist-sans/Geist-Medium.woff2',
   './node_modules/geist/dist/fonts/geist-sans/Geist-SemiBold.woff2',
+  './node_modules/geist/dist/fonts/geist-sans/Geist-Bold.woff2',
   './public/brand/logo-horizontal-navy.png',
+  './public/brand/wordmark-stacked-navy.png',
 ]
 
 // Every page or route whose import graph reaches sendCmaToLead or

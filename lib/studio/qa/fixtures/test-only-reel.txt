@@ -1,0 +1,2 @@
+Test-only stub reel. Tests point a TEST-ONLY registry's approved stub technique here
+(approved_by "test-only stub", never "matt"). It is not a render and approves nothing real.

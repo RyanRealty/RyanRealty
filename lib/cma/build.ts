@@ -450,6 +450,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             subjectIrrigation,
             subjectZoning: site.zone,
             asOf: generatedAtIso.slice(0, 10),
+            // The re-entry after a review drop (CmaBuildInput.aduFallback).
+            aduPass: input.aduFallback ? 'ordinary' : 'first',
+            aduSalesHeld: input.aduFallback?.heldAfterReview,
           }),
       marketPromise,
     ])
@@ -654,6 +657,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       judgment = review.judgment
       const gated = review.gated
       if (gated.shortage) {
+        // AN ADU HOME FALLS BACK AFTER THE REVIEW TOO (Matt 2026-10-14,
+        // lib/pricing/adu-preference.ts). The ADU-first set is decided on the
+        // picker's count; a review drop with no ADU bench leaves it short, and
+        // the rule says the ordinary set then prices the home. Re-enter once
+        // on the ordinary pass. Nothing has been recorded for this attempt.
+        if (!input.aduFallback && selection.diagnostics.adu_preference?.outcome === 'adu-sales') {
+          console.log(
+            `[cma/build] ${slug}: the ADU-first set held ${gated.comps.length} of ${MIN_COMPS} after the review; rebuilding on the ordinary set`,
+          )
+          return buildCma({ ...input, aduFallback: { heldAfterReview: gated.comps.length } })
+        }
         const err =
           gated.droppedProduct > 0
             ? `Not enough sales of the same product type to price this home. ${gated.comps.length} of ${selection.comps.length} candidates matched, and this home needs ${MIN_COMPS}.`

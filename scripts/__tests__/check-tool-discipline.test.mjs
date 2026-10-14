@@ -16,6 +16,13 @@ describe('inlineViolations', () => {
     expect(inlineViolations('scripts/_voice_lib.py', src)).toHaveLength(0)
   })
 
+  it("ALLOWS the same call inside the Studio's shared voice client, and flags the rest of lib/studio", () => {
+    const src = `await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + id + '/with-timestamps')`
+    expect(inlineViolations('lib/studio/voice/elevenlabs.ts', src)).toHaveLength(0)
+    expect(inlineViolations('lib/studio/voice/mix.ts', src)).toContain('elevenlabs-inline')
+    expect(inlineViolations('lib/studio/produce.ts', src)).toContain('elevenlabs-inline')
+  })
+
   it('FLAGS an inline Replicate predictions call in a non-allowed file', () => {
     const src = `fetch('https://api.replicate.com/v1/predictions', { method: 'POST' })`
     expect(inlineViolations('app/actions/foo.ts', src)).toContain('replicate-video-inline')

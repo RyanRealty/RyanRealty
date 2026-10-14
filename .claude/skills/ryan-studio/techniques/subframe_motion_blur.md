@@ -1,9 +1,12 @@
 # Subframe motion blur
 
 Source: video-skills-research 2026-10-13 #2 (claude-motion-design)
+Category: transition
+
+Planned: not on the menu yet (video_gate refuses it). Home when built: lib/studio/motion/render.ts.
 
 ## Recipe
-Render 4 subframes per output frame on a 180 degree shutter and blend: `ffmpeg -i frames_120fps/%05d.png -vf "tmix=frames=2:weights='1 1',fps=30" -c:v libx264 -crf 16 out.mp4`. Never blend across a hard cut (split at cuts first). 540p draft before master.
+Render several subframes per output frame on a 180 degree shutter and average them, so fast moves blur like a camera's. Never blend across a hard cut. The motion stage is a pure function of t, so subframes are just extra seeks.
 
 ## Use
-List `subframe_motion_blur` in brief.techniques. Mandatory spec_rules still apply.
+List `subframe_motion_blur` in brief.techniques once it is ready.

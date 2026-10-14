@@ -14,6 +14,7 @@ const subject: MotionSubject = {
 const assets: MotionAssets = {
   fonts: { amboqia: 'a', amboqiaI: 'a', azo: 'a', geist400: 'a', geist500: 'a', geist600: 'a' },
   wordmark: 'w',
+  endcardLogo: 'e',
   headshots: {},
 }
 
@@ -79,8 +80,11 @@ describe('composeMotion', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.body.toString()).toBe('final')
-    expect(result.stills.map((s) => s.cueId)).toEqual(['lead1', 'closer'])
-    expect(result.record.cues.map((c) => c.kind)).toEqual(['meter', 'closer'])
+    expect(result.stills.map((s) => s.cueId)).toEqual(['lead1', 'endcard'])
+    expect(result.record.cues.map((c) => c.kind)).toEqual(['meter', 'endcard'])
+    // The locked card's copy is on the record, and the film runs on past the clip.
+    expect(result.record.cues[1].text).toEqual(['Quality', 'Local', 'Service', 'Call now', '541.703.3095'])
+    expect(result.record.duration).toBe(9.05)
     expect(result.record.cues[0].figureKeys).toEqual(['months of supply'])
     expect(result.record).toMatchObject({ frames: 180, captured: 41 })
     const call = (d.render as ReturnType<typeof vi.fn>).mock.calls[0][0]
@@ -94,7 +98,7 @@ describe('composeMotion', () => {
       deps({
         render: async (i: RenderMotionInput) => ({
           body: Buffer.from('final'),
-          stills: i.stills.filter((s) => s.cueId !== 'closer').map((s) => ({ ...s, jpg: Buffer.from('') })),
+          stills: i.stills.filter((s) => s.cueId !== 'endcard').map((s) => ({ ...s, jpg: Buffer.from('') })),
           renderedText: ['4.1'],
           fonts: [],
           frames: 180,
@@ -104,7 +108,7 @@ describe('composeMotion', () => {
       }),
     )
     expect(result.ok).toBe(true)
-    if (result.ok) expect(result.record.notes).toContain('No still for closer: ffmpeg could not pull it.')
+    if (result.ok) expect(result.record.notes).toContain('No still for endcard: ffmpeg could not pull it.')
   })
 
   it('reports no-ffmpeg instead of throwing', async () => {
@@ -147,7 +151,8 @@ describe('composeMotion', () => {
     const result = await composeMotion(scored, d)
     expect(result.ok).toBe(true)
     const scoreCall = (d.composeScore as ReturnType<typeof vi.fn>).mock.calls[0][0] as ScoreInput
-    expect(scoreCall).toMatchObject({ seed: 'draft-1', mood: 'measured', duration: 6 })
+    // The clip's 6 s plus the 3.05 s end card, to the whole frame (272 at 30 fps).
+    expect(scoreCall).toMatchObject({ seed: 'draft-1', mood: 'measured', duration: 272 / 30 })
     expect(scoreCall.events.some((e) => e.kind === 'lockup')).toBe(true)
     const renderCall = (d.render as ReturnType<typeof vi.fn>).mock.calls[0][0] as RenderMotionInput
     expect(renderCall.audioPath).toMatch(/score\.wav$/)
@@ -180,7 +185,7 @@ describe('composeMotion', () => {
     expect(call.plan.surface).toBe('paper')
     expect(call.html).toContain('class="paper"')
     if (result.ok) {
-      expect(result.record.cues.map((c) => c.kind)).toEqual(['chart', 'meter', 'closer'])
+      expect(result.record.cues.map((c) => c.kind)).toEqual(['chart', 'meter', 'endcard'])
       expect(result.record.duration).toBe(call.plan.duration)
     }
     // Every plotted month gets its own note: 23 of the 24 published.

@@ -1,6 +1,6 @@
 # Buyer ad, autumn 2026
 
-Status: **paused** (Matt 2026-10-14). No render until the content process (`docs/plans/STUDIO_ONE_FACTORY.md`) is live, and until Matt approves the techniques this ad uses. You see its board before anything costly is made.
+Status: **techniques first** (Matt 2026-10-14). This ad's techniques are built first: the full-screen $10,000, the map lighting up area cells (never single sold homes, ODS §5-4), motion blur, and the number landing on the beat. Matt approves each from a showcase reel; then Matt sees this ad's board before anything costly is made. Nothing renders as an ad, and nothing posts, before that. Process: `docs/plans/CONTENT_PROCESS.md`.
 
 **Buyer ad, Matt's calls 2026-10-14.** Lead with the $10,000 typical seller credit. Count Bend single-family homes (MLS city `bend`, segment detached). Payoff line "Sellers are paying to close". A map of this summer's price-cut and credit sales closes it, then "Bend's Best Deals, link in bio", then the locked end card.
 

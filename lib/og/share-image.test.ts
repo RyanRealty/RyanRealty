@@ -7,6 +7,7 @@ import {
   shortOgTitle,
 } from '@/lib/og/share-image-url'
 import { resolvePlaceOgPhoto } from '@/lib/og/resolve-photo'
+import { resolveCardPhotoSrc } from '@/lib/og/share-card'
 import { GET } from '@/app/api/og/route'
 
 const KEY_ROUTES = [
@@ -44,6 +45,15 @@ describe('shortOgTitle', () => {
 
   it('refuses top-team copy and never invents a client name', () => {
     expect(shortOgTitle('Central Oregon top team')).toBe('')
+  })
+})
+
+describe('resolveCardPhotoSrc', () => {
+  it('turns a local public path into an absolute ryan-realty.com URL', () => {
+    expect(resolveCardPhotoSrc('/images/kb/sunriver-deschutes-river.jpg')).toBe(
+      'https://ryan-realty.com/images/kb/sunriver-deschutes-river.jpg',
+    )
+    expect(resolveCardPhotoSrc(null)).toMatch(/^https:\/\/ryan-realty\.com\/images\/kb\//)
   })
 })
 
