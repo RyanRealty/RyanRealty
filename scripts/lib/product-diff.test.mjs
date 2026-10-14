@@ -8,7 +8,9 @@ import {
   isReleaseSkippable,
   isUsableSha,
   classifyDiff,
+  classifyProductDiff,
   listChangedFiles,
+  packageJsonChangeIsScriptsOnly,
 } from './product-diff.mjs'
 
 describe('isUsableSha', () => {
@@ -97,6 +99,22 @@ describe('classifyDiff', () => {
 
   it('unknown git state is unknown (caller must not skip a product release)', () => {
     expect(classifyDiff(null).status).toBe('unknown')
+    expect(classifyProductDiff(null).status).toBe('unknown')
+  })
+
+  it('treats an explicit scripts-only package.json flag as skippable', () => {
+    expect(
+      classifyProductDiff(['package.json', 'scripts/cleanup-merged-worktrees.sh'], {
+        packageJsonScriptsOnly: true,
+      }).status,
+    ).toBe('skip')
+    expect(
+      classifyProductDiff(['package.json', 'app/page.tsx'], { packageJsonScriptsOnly: true })
+        .blockers,
+    ).toEqual(['app/page.tsx'])
+    expect(
+      classifyProductDiff(['package.json'], { packageJsonScriptsOnly: false }).status,
+    ).toBe('build')
   })
 
   it('release mode still tags a migration-only push', () => {
@@ -155,5 +173,105 @@ describe('listChangedFiles (no prev): the commit asked for, a merge against its 
 
   it('a commit git cannot read is unknown, never an empty diff', () => {
     expect(listChangedFiles({ prev: '', head: 'f'.repeat(40), cwd: dir })).toBeNull()
+  })
+})
+
+describe('packageJsonChangeIsScriptsOnly', () => {
+  let dir = ''
+  const shas = {}
+  const git = (...args) =>
+    execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', ...args], {
+      cwd: dir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      env: Object.fromEntries(
+        Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
+      ),
+    }).trim()
+  const commit = (contents, msg) => {
+    writeFileSync(join(dir, 'package.json'), `${contents}\n`)
+    git('add', 'package.json')
+    git('commit', '-q', '-m', msg)
+    return git('rev-parse', 'HEAD')
+  }
+
+  beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), 'pkg-scripts-only-'))
+    git('init', '-q', '-b', 'main')
+    shas.root = commit(
+      JSON.stringify({ name: 'rr', scripts: { test: 'echo 1' }, dependencies: { next: '16.0.0' } }, null, 2),
+      'root package',
+    )
+    shas.scripts = commit(
+      JSON.stringify(
+        { name: 'rr', scripts: { test: 'echo 1', 'wt:cleanup': 'bash scripts/cleanup.sh' }, dependencies: { next: '16.0.0' } },
+        null,
+        2,
+      ),
+      'scripts only',
+    )
+    shas.deps = commit(
+      JSON.stringify(
+        {
+          name: 'rr',
+          scripts: { test: 'echo 1', 'wt:cleanup': 'bash scripts/cleanup.sh' },
+          dependencies: { next: '16.1.0' },
+        },
+        null,
+        2,
+      ),
+      'deps bump',
+    )
+  })
+  afterAll(() => {
+    if (dir) rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('skips a scripts-only package.json edit and still builds a dependency bump', () => {
+    expect(
+      packageJsonChangeIsScriptsOnly({ prev: shas.root, head: shas.scripts, cwd: dir }),
+    ).toBe(true)
+    expect(
+      classifyProductDiff(['package.json', 'scripts/cleanup.sh'], {
+        prev: shas.root,
+        head: shas.scripts,
+        cwd: dir,
+      }).status,
+    ).toBe('skip')
+    expect(packageJsonChangeIsScriptsOnly({ prev: shas.scripts, head: shas.deps, cwd: dir })).toBe(
+      false,
+    )
+    expect(
+      classifyProductDiff(['package.json'], { prev: shas.scripts, head: shas.deps, cwd: dir }).status,
+    ).toBe('build')
+  })
+
+  it('compares package.json against the merge-base, not a later main tip', () => {
+    git('checkout', '-q', '-b', 'feature', shas.root)
+    const feature = commit(
+      JSON.stringify(
+        { name: 'rr', scripts: { test: 'echo 1', 'wt:cleanup': 'bash x' }, dependencies: { next: '16.0.0' } },
+        null,
+        2,
+      ),
+      'feature scripts',
+    )
+    git('checkout', '-q', 'main')
+    const movedMain = commit(
+      JSON.stringify(
+        {
+          name: 'rr',
+          scripts: { test: 'echo 1', 'email:one-off': 'tsx send.ts' },
+          dependencies: { next: '16.0.0' },
+        },
+        null,
+        2,
+      ),
+      'main added email script',
+    )
+    expect(
+      packageJsonChangeIsScriptsOnly({ prev: movedMain, head: feature, cwd: dir }),
+    ).toBe(true)
+    git('checkout', '-q', 'main')
   })
 })

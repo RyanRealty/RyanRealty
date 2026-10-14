@@ -172,8 +172,8 @@ declined was still recorded and identified on a CMA or BPO document).
 |---|---|---|---|
 | **Declined** | banner answered with analytics AND marketing off, or an unreadable consent cookie | nothing: no session, no event, no identification, no GA4 mirror. On client documents (`/cma`, `/bpo`) as on every page: the script posts nothing and stores no session id | everything |
 | **GPC** | `Sec-GPC: 1` or `navigator.globalPrivacyControl` | nothing; if the browser was already identified, a durable `channel='all'` suppression on that contact. Both trackers, the site's and the client document's, write no identifier (no session id, no lifecycle record, no first-touch capture, no consent cookie) and post no event: once per page load they send a notice that carries the signal and nothing else (`{ gpc: true }`), and no identify ping. The route checks GPC before anything else, drops the request, and finds the contact from what the browser already carries on every request here: the signed `rr_pid` cookie, else its `rr_vid` in `visitor_identity_map` (a tracker from before 2026-09-30 still names its session). Until 2026-09-30 the site tracker minted a session id and posted every event with its address and campaign, while the document tracker sent nothing, so a known contact reading a report under GPC was never suppressed. GPC wins over the US analytics default and over a stored marketing accept for tags and recording | everything |
-| **Essential** | no banner answer in a restricted region (EEA, UK, CH) or with unknown country, or marketing-only | browser session id, `rr_vid`, page URL (identity params stripped), page title and category, event type and time, referrer, landing page, campaign params (`utm_*`, `fbclid`, `gclid`), the automation class label (below), and **identification of a person who clicked a link we sent them, signed in, or submitted a form** (the session's `crm_person_id` and the signed `rr_pid` cookie); page views mirrored to GA4 under an anonymous client id | the user-agent string, IP geo, listing meta columns, scroll depth, dwell, the event metadata blob; no looking-at broker text |
-| **Analytics / all** | analytics granted (explicit accept, or no banner answer outside restricted regions with no GPC) | everything above, plus user agent, IP geo, listing meta, scroll, dwell, metadata; the looking-at broker text on a listing view | — |
+| **Essential** | no banner answer in a restricted region (EEA, UK, CH) or with unknown country, or marketing-only | browser session id, `rr_vid`, page URL (identity params stripped), page title and category, event type and time, referrer, landing page, campaign params (`utm_*`, `fbclid`, `gclid`), the automation class label (below), and **identification of a person who clicked a link we sent them, signed in, or submitted a form** (the session's `crm_person_id`; the signed `rr_pid` cookie for a link or a sign-in, and for a form submit from its next session on); page views mirrored to GA4 under an anonymous client id, never a GA4 user id | the user-agent string, IP geo, listing meta columns, scroll depth, dwell, the event metadata blob; no looking-at broker text |
+| **Analytics / all** | analytics granted (explicit accept, or no banner answer outside restricted regions with no GPC) | everything above, plus user agent, IP geo, listing meta, scroll, dwell, metadata; the looking-at broker text on a listing view; a known contact's GA4 hits carry the hashed CRM id as `user_id` (`lib/analytics/ga4-user-id.ts`) | — |
 
 Identification at essential is disclosed in `app/privacy/page.tsx` ("Once you sign in,
 contact us, or follow a link we send, we may recognize you on later visits using a
@@ -515,7 +515,11 @@ build when any part of it is broken.**
 Matching happens on the server against `crm_people`; no URL carries an email. What the
 browser gets back is hashes only (`/api/identity/me`): a GA4 `user_id` that is a SHA-256
 of the person id (or of a signed-in visitor's email), and a SHA-256 of a signed-in
-visitor's email for Meta Pixel advanced matching.
+visitor's email for Meta Pixel advanced matching. The server sends the same `user_id`
+(`lib/analytics/ga4-user-id.ts`) on the page-view mirror, `generate_lead`,
+`person_identified` and `valuation_requested` for a known contact, at the analytics tier
+only: an essential-tier visit reaches GA4 under an anonymous client id and nothing else
+(`docs/analytics/README.md` "Known contacts carry a user_id").
 
 **Measured, the 30 days to 2026-09-23** (supabase-js reads, fetched 2026-09-23T02:49Z,
 window `first_seen_at >= 2026-08-24T02:49Z` on `visitor_sessions`, `ts >=

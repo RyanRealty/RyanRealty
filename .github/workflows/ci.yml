@@ -53,34 +53,31 @@ env:
   SPARK_API_KEY: ${{ secrets.SPARK_API_KEY || 'ci-e2e-dummy-not-a-real-key' }}
 
 jobs:
-  # Docs-only pull requests (every changed file under docs/, e.g. the CMA
-  # handoff note) cannot change the built app: no app, lib or component code
-  # reads docs/. They still get lint, ci:gates and test:unit; the build and
-  # the server-side jobs are skipped. Anything outside docs/ runs everything.
+  # Skip Next SSG when the PR cannot change the built app. Same classifier as
+  # vercel-ignore-build (scripts/lib/product-diff.mjs): docs, skills, scripts,
+  # hooks, agent protocol, and a scripts-only package.json edit. A hosted
+  # Supabase blip must not fail a worktree-cleanup PR (2026-10-14, #624).
+  # lint / ci:gates / unit still run. Unknown git state fails closed (app=true).
   changes:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      pull-requests: read
+      contents: read
     outputs:
       app: ${{ steps.files.outputs.app }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       - id: files
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
-            --jq '.[].filename' > /tmp/changed.txt
-          total=$(wc -l < /tmp/changed.txt)
-          outside=$(grep -cv '^docs/' /tmp/changed.txt || true)
-          echo "changed files: $total, outside docs/: $outside"
-          # The files API stops at 3000; treat a huge or empty list as app code.
-          if [ "$total" -gt 0 ] && [ "$total" -lt 3000 ] && [ "$outside" -eq 0 ]; then
-            echo "app=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "app=true" >> "$GITHUB_OUTPUT"
-          fi
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-pr-app-change.mjs
 
   lint:
     runs-on: ubuntu-latest

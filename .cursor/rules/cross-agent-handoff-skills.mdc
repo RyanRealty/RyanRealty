@@ -7,7 +7,7 @@ alwaysApply: true
 
 Matt switches between **Cursor** and **Claude Code / Cowork**. Chats do not transfer.
 
-1. **Before stopping or switching tools:** Write **your own note** in **`docs/plans/handoffs/`** (one file per session; `docs/plans/CROSS_AGENT_HANDOFF.md` is frozen): surface, time, `main` @ SHA after push, done / next / blockers / which **`SKILL.md` files you read**.
+1. **Before stopping or switching tools:** Write **your own note** in **`docs/plans/handoffs/`** (one file per session; `docs/plans/CROSS_AGENT_HANDOFF.md` is frozen): surface, time, `main` @ SHA after push, done / next / blockers / which **`SKILL.md` files you read**. If your PR already merged or closed, remove your own worktree or clone (`npm run wt:cleanup`); never remove a checkout with uncommitted changes, unpushed commits, stashes, or one another session is using.
 2. **When picking up:** After `git pull`, **run `npx tsx scripts/loop-brief.ts`** (it prints the standing holds and newest handoff notes), then `npx tsx scripts/orchestrate.ts next` (or the task Matt gives you).
 3. **Skills:** If a skill might apply—even ~1%—**read the skill’s `SKILL.md` first** (repo: `.cursor/skills/`, `video_production_skills/`; plugins under `~/.cursor/plugins/.../skills/` when relevant). Then execute. Full policy: **`AGENTS.md`** sections *Cross-agent handoff* and *Skills*.
 

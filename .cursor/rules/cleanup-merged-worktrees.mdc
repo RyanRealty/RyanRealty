@@ -1,0 +1,15 @@
+---
+description: After a PR merges or closes, remove your own worktree or clone. Never delete a dirty, unpushed, stashed, or in-use checkout.
+alwaysApply: true
+---
+
+# Cleanup merged worktrees (Matt 2026-10-14)
+
+Agents create a new worktree or clone per task (`~/RyanRealty-wt-*`, `~/rr-*`, `~/wt-*`, `~/rr-grok-*`, `~/.grok/worktrees/*`). Each is 0.9–3 GB. Remove yours when the PR is merged or closed.
+
+1. End of task, after the PR merges or closes: `npm run wt:cleanup` from the primary checkout, or `git worktree remove <path>` then `git worktree prune`, then delete the local branch.
+2. Never remove a checkout with uncommitted changes, unpushed commits, stashes, or one another session is using.
+3. Dry-run first if unsure: `npm run wt:cleanup:dry`. The script prints KEEP / SKIP / REMOVE with reasons.
+4. The same script runs from `.husky/post-merge`, `.husky/post-checkout`, and `npm run ship`. On the Mini, load the launchd job once: `bash scripts/install-cleanup-launchd.sh`.
+
+Canonical detail: **AGENTS.md → Worktrees**. Script: `scripts/cleanup-merged-worktrees.sh`.

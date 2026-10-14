@@ -88,6 +88,16 @@ describe('identifyPersonFromEmailClickNative', () => {
     expect(state.ga4).toHaveBeenCalledTimes(1)
   })
 
+  it('person_identified names the contact for GA4 at the analytics tier only (fireGa4Event derives the hashed user_id)', async () => {
+    state.headers = { 'user-agent': HUMAN_UA, host: 'ryan-realty.com', 'x-vercel-ip-country': 'US' }
+    await identifyPersonFromEmailClickNative(TOKEN, SESSION)
+    expect(state.ga4.mock.calls[0][0]).toMatchObject({ eventName: 'person_identified', knownContact: { personId: PERSON, trackingLevel: 'analytics' } })
+    state.ga4.mockClear()
+    state.headers = { 'user-agent': HUMAN_UA, host: 'ryan-realty.com', 'x-vercel-ip-country': 'DE' }
+    await identifyPersonFromEmailClickNative(TOKEN, SESSION)
+    expect(state.ga4.mock.calls[0][0]).toMatchObject({ knownContact: { personId: PERSON, trackingLevel: 'essential' } })
+  })
+
   it.each([
     ['a declared crawler', 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'],
     ['a link previewer', 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'],

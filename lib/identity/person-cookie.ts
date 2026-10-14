@@ -4,7 +4,10 @@
  * Set by the identity loop when a browser proves who it is (a signed tracked
  * link, a sign-in) or arrives already known (the track route, on a new session
  * whose rr_vid the identity map holds), and read by the track route,
- * /api/identity/me, the landing-page forms and the CMA document gate.
+ * /api/identity/me, the landing-page forms and the CMA document gate. A form
+ * submit does not set it: a typed email is attribution, not proof for an
+ * access decision. The submit maps the browser's rr_vid, so its next session
+ * is born identified and gets the cookie then, as a `claimed` one (below).
  *
  * Signed since 2026-09-23 (P7). The value used to be the raw crm_people.id, so
  * anyone could set `rr_pid=<id>` in their own browser and pass the CMA
