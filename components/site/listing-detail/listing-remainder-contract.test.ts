@@ -35,6 +35,8 @@ describe('listing remainder composition', () => {
     expect(PAGE).toMatch(/import \{ ListingSaveButton/)
     expect(PAGE).toMatch(/import \{ ListingShareButton/)
     expect(PAGE).toContain('listingDocumentTitle')
+    expect(PAGE).toContain('listingShareOgTitle')
+    expect(PAGE).toContain('listingOgImagePath')
     expect(STRIP).toContain('<ListingSaveButton')
     expect(STRIP).toContain('<ListingShareButton')
     expect(STRIP).toContain('listing-face__keep')
