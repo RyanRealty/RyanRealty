@@ -326,8 +326,12 @@ describe('R7: platform video functions are imported only by the publish route', 
 describe('the scripts refuse at runtime (credentials stripped, so a regression cannot reach an API)', () => {
   const cleanEnv = () =>
     Object.fromEntries(Object.entries(process.env).filter(([k]) => !/META|SUPABASE|YOUTUBE|YT_|GOOGLE|TOKEN|SECRET|KEY|VITEST/i.test(k)))
+  // The scripts import lib/content/video-freeze.ts directly, which plain Node runs
+  // from 22.18 on (type stripping). CI's unit lanes run Node 20, so there the
+  // script runs under the repo's tsx loader; on a Node that strips types, as is.
+  const loader = process.features?.typescript ? [] : ['--import', 'tsx']
   const run = (script, args) =>
-    spawnSync(process.execPath, [script, ...args], { cwd: ROOT, env: cleanEnv(), encoding: 'utf8', timeout: 60_000 })
+    spawnSync(process.execPath, [...loader, script, ...args], { cwd: ROOT, env: cleanEnv(), encoding: 'utf8', timeout: 60_000 })
 
   it('upload-youtube.mjs refuses a private upload and says so', () => {
     const dir = mkdtempSync(join(tmpdir(), 'rr-video-freeze-'))
