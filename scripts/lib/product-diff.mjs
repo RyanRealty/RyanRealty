@@ -116,6 +116,92 @@ export function listChangedFiles(opts = {}) {
   }
 }
 
+function gitOpts(cwd) {
+  return {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+    ...(cwd
+      ? {
+          cwd,
+          env: Object.fromEntries(
+            Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
+          ),
+        }
+      : {}),
+  }
+}
+
+function gitShow(rev, file, cwd) {
+  try {
+    return execSync(`git show ${rev}:${file}`, gitOpts(cwd))
+  } catch {
+    return null
+  }
+}
+
+function gitRevParse(rev, cwd) {
+  try {
+    return execSync(`git rev-parse ${rev}`, gitOpts(cwd)).trim()
+  } catch {
+    return ''
+  }
+}
+
+function gitMergeBase(a, b, cwd) {
+  try {
+    return execSync(`git merge-base ${a} ${b}`, gitOpts(cwd)).trim()
+  } catch {
+    return ''
+  }
+}
+
+function sortKeysDeep(value) {
+  if (Array.isArray(value)) return value.map(sortKeysDeep)
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, sortKeysDeep(value[key])]),
+    )
+  }
+  return value
+}
+
+/**
+ * True when package.json changed only under `scripts` (npm script names).
+ * A dependency, engines, or exports edit still rebuilds Next.
+ *
+ * @param {{ prev?: string, head?: string, cwd?: string }} [opts]
+ * @returns {boolean}
+ */
+export function packageJsonChangeIsScriptsOnly(opts = {}) {
+  const head = (opts.head ?? 'HEAD').trim() || 'HEAD'
+  let prev = (opts.prev ?? '').trim()
+  if (isUsableSha(prev)) {
+    const mergeBase = gitMergeBase(prev, head, opts.cwd)
+    if (isUsableSha(mergeBase)) prev = mergeBase
+  } else {
+    prev = gitRevParse(`${head}^`, opts.cwd)
+    if (!isUsableSha(prev)) return false
+  }
+  const before = gitShow(prev, 'package.json', opts.cwd)
+  const after = gitShow(head, 'package.json', opts.cwd)
+  if (before == null || after == null) return false
+  try {
+    const strip = (text) => {
+      const parsed = JSON.parse(text)
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('package.json is not an object')
+      }
+      const { scripts: _scripts, ...rest } = parsed
+      return JSON.stringify(sortKeysDeep(rest))
+    }
+    return strip(before) === strip(after)
+  } catch {
+    return false
+  }
+}
+
 /**
  * @param {string[] | null} files
  * @param {{ skippable?: (file: string) => boolean }} [opts]
@@ -131,4 +217,34 @@ export function classifyDiff(files, opts = {}) {
     files,
     blockers,
   }
+}
+
+/**
+ * Same as classifyDiff, plus: a scripts-only package.json edit does not
+ * change the Next compile (Matt's cost-aware skip). Fail closed when git
+ * cannot prove the rest of the file is unchanged.
+ *
+ * @param {string[] | null} files
+ * @param {{
+ *   skippable?: (file: string) => boolean
+ *   packageJsonScriptsOnly?: boolean
+ *   prev?: string
+ *   head?: string
+ *   cwd?: string
+ * }} [opts]
+ */
+export function classifyProductDiff(files, opts = {}) {
+  if (!files) return classifyDiff(null)
+  const skippable = opts.skippable ?? isVercelSkippable
+  let scriptsOnly = opts.packageJsonScriptsOnly
+  if (scriptsOnly == null && files.includes('package.json')) {
+    scriptsOnly = packageJsonChangeIsScriptsOnly({
+      prev: opts.prev,
+      head: opts.head,
+      cwd: opts.cwd,
+    })
+  }
+  return classifyDiff(files, {
+    skippable: (file) => skippable(file) || (Boolean(scriptsOnly) && file === 'package.json'),
+  })
 }

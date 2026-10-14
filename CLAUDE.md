@@ -1,12 +1,12 @@
 # CORE RULES (read first; these override everything below and any handoff or plan doc)
 
-These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait, or to `git push` `main`, is stale. Process rules live in `AGENTS.md` only. `CLAUDE.md` and `.cursor/rules` point here. New process rules land in `AGENTS.md` in the same PR.
+These outrank every later line, skill, and plan. Process rules live in `AGENTS.md` only. New ones land there in the same PR.
 
 **PRs only.** Never push or fast-forward to `main`. Branch, open a PR, merge. Unfinished work is `npm run push` only.
 
-**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except `hold-for-matt` without `approved-by-matt`. Approval (label or `.github/approved-prs`) unholds and merges when `merge-gate` is green.
+**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except `hold-for-matt` without `approved-by-matt`.
 
-**Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason. The stale job keeps the branch.
+**Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason.
 
 **Done.** Merged, Vercel production **READY**, and the live URL checked. `npm run ship` is the land path.
 
@@ -34,9 +34,11 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Video.** One factory (Matt 2026-10-13): every video, any bot or machine, renders via `npm run studio:render`; Imagine makes footage only. Nothing reaches Matt until `npm run video:check -- <mp4> --final` passes. Rules: `.claude/skills/ryan-studio/SKILL.md`.
 
----
+**Social queue.** Drafts in `content-queue/` must pass `npm run ci:content-queue`. No `approved: true` door. Details in AGENTS.md.
 
-Process: **[AGENTS.md](AGENTS.md)**. Domain canon stays here. Do not copy process rules back.
+**Worktrees.** After your PR merges or closes, remove your own worktree or clone (`npm run wt:cleanup`). Never remove a checkout with uncommitted changes, unpushed commits, stashes, or one another session is using.
+
+---
 
 # Ryan Realty — agent canon
 
