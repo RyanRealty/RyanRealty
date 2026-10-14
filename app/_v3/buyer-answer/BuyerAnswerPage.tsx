@@ -19,17 +19,22 @@ import './buyer-answer.css'
 
 export function BuyerAnswerPage({ model }: { model: BuyerAnswerModel }) {
   const dateModified = model.asOfIso ?? undefined
-  const indexLabel = model.def.placeKind === 'city' ? 'Cities' : 'Communities'
-  const indexHref = model.def.placeKind === 'city' ? '/cities' : '/communities'
+  const isCommunity = model.def.placeKind === 'community'
+  const isNeighborhood = model.def.placeKind === 'neighborhood'
+  const indexLabel = isCommunity ? 'Communities' : 'Cities'
+  const indexHref = isCommunity ? '/communities' : '/cities'
+  const cityHref = `/cities/${model.def.citySlug ?? 'bend'}`
+  const breadcrumbItems = [
+    { name: 'Home', url: '/' },
+    { name: indexLabel, url: indexHref },
+    ...(isNeighborhood ? [{ name: 'Bend', url: cityHref }] : []),
+    { name: model.placeName, url: model.hub.href },
+    { name: model.def.h1, url: model.def.path },
+  ]
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
-      items: [
-        { name: 'Home', url: '/' },
-        { name: indexLabel, url: indexHref },
-        { name: model.placeName, url: model.hub.href },
-        { name: model.def.h1, url: model.def.path },
-      ],
+      items: breadcrumbItems,
     },
     {
       type: 'webPage',
@@ -37,6 +42,8 @@ export function BuyerAnswerPage({ model }: { model: BuyerAnswerModel }) {
       description: model.answer,
       url: model.def.path,
       dateModified,
+      authorName: model.byline.label,
+      authorUrl: model.byline.href,
     },
     {
       type: 'faqPage',
@@ -55,6 +62,7 @@ export function BuyerAnswerPage({ model }: { model: BuyerAnswerModel }) {
           trail={[
             { label: 'Home', href: '/' },
             { label: indexLabel, href: indexHref },
+            ...(isNeighborhood ? [{ label: 'Bend', href: cityHref }] : []),
             { label: model.placeName, href: model.hub.href },
             { label: model.def.h1 },
           ]}

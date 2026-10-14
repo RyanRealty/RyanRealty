@@ -12,6 +12,7 @@ import {
   attributionQueryString,
   fireLeadGenerated,
   mergeLeadAttribution,
+  persistGaClientIdFromCookies,
   type LeadAttributionParams,
 } from '@/lib/lead-tracking'
 import type { LeadFormId, LeadType } from '@/lib/analytics/lead-event'
@@ -179,6 +180,7 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
           console.warn(
             `[lead-landing] CRM push failed. native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
           )
+          await persistGaClientIdFromCookies(native.personId)
         }
       } catch (e) {
         console.warn('[lead-landing] native fallback lead failed:', e)
@@ -258,7 +260,8 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
       console.warn('[lead-landing] canonical tagging / session stitch failed (non-blocking):', err)
     }
 
-    // GA4 Measurement Protocol mirror.
+    // First-touch `_ga` on the contact, then the one generate_lead.
+    await persistGaClientIdFromCookies(result.personId)
     await fireLeadGenerated({
       lp_variant: lpVariant,
       lead_type:
@@ -270,6 +273,7 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
           : 'buyer_question'),
       form_id: input.formId ?? 'lead_landing',
       event_id: eventId,
+      crm_person_id: result.personId,
       attribution,
       extra: {
         intent: input.leadIntent,

@@ -84,6 +84,54 @@
       "label": "Bend vs Redmond",
       "path": "/cities/bend/vs/redmond",
       "description": "side-by-side live MLS inventory for the two cities"
+    },
+    {
+      "section": "buyer-answers",
+      "label": "Buying a house in Bend from out of state",
+      "path": "/cities/bend/from-out-of-state",
+      "description": "live Bend MLS inventory for a remote purchase, with the 2014 founding"
+    },
+    {
+      "section": "buyer-answers",
+      "label": "Buying a second home in Sunriver",
+      "path": "/communities/sunriver/second-home",
+      "description": "live Sunriver inventory for a second home, no invented rental rule"
+    },
+    {
+      "section": "buyer-answers",
+      "label": "Buying a home in Redmond",
+      "path": "/cities/redmond/buying",
+      "description": "live Redmond MLS inventory for a first look at buying there"
+    },
+    {
+      "section": "buyer-answers",
+      "label": "Old Bend housing market",
+      "path": "/cities/bend/old-bend/living",
+      "description": "live Old Bend inventory from the neighborhood public inventory SoR"
+    },
+    {
+      "section": "buyer-answers",
+      "label": "Broken Top housing market",
+      "path": "/communities/broken-top/living",
+      "description": "live Broken Top MLS inventory and pace"
+    },
+    {
+      "section": "buyer-answers",
+      "label": "Bend luxury homes for sale",
+      "path": "/homes-for-sale/bend/over-1-5m",
+      "description": "live count of Bend listings priced $1,500,000 and up"
+    },
+    {
+      "section": "buyer-answers",
+      "label": "Central Oregon acreage for sale",
+      "path": "/homes-for-sale/acreage",
+      "description": "live count of Central Oregon homes on an acre or more"
+    },
+    {
+      "section": "buyer-answers",
+      "label": "Central Oregon homes under $500,000",
+      "path": "/homes-for-sale/under-500k",
+      "description": "live count of Central Oregon listings under $500,000"
     }
   ],
   "queries": [

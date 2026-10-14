@@ -387,9 +387,9 @@ All rules in `.cursor/rules/` are mandatory. Key rules:
 - **Utilities**: Use `cn()` from `@/lib/utils` for conditional classes.
 - **Fonts**: Geist Sans (`font-sans`) and Geist Mono (`font-mono`) only.
 
-### Browser analytics events (locked, Matt 2026-10-08)
+### Analytics
 
-- Browser events reach GA4 only through GTM's GA4 Event tag: push them with `trackEvent()` / `pushDataLayerEvent()` (`lib/analytics/ga4-browser-events.ts`), never `gtag('event', …)` for GA4, and add a new event name to `GA4_BROWSER_EVENTS` plus the GTM steps in `docs/GTM_GA4_BROWSER_EVENTS.md` (Matt publishes GTM). Held by `lib/analytics/ga4-browser-events.test.ts`.
+Source of truth: [`docs/analytics/README.md`](docs/analytics/README.md).
 
 ### Server Actions
 
@@ -408,8 +408,6 @@ export async function doThing(): Promise<{ data: Result | null; error: string | 
   }
 }
 ```
-
-**Lead event (locked, Matt 2026-10-08):** GA4 `generate_lead` is sent only from the server through `fireLeadGenerated` (`lib/lead-tracking.ts`), with a `lead_type` from the fixed list and a `form_id` in `lib/analytics/lead-event.ts`; never `value` or `currency` (no dollar values on leads); never from the browser, never `fireGa4Event('generate_lead')` directly, and a non-lead (recruit, newsletter) uses `fireNonLeadEvent`. `lib/analytics/lead-event.test.ts` holds it.
 
 ### File Ownership
 

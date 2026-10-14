@@ -11,6 +11,7 @@ const h = vi.hoisted(() => ({
   enrichNativeLead: vi.fn(),
   upsertListingAlert: vi.fn(),
   fireLeadGenerated: vi.fn(),
+  persistGaClientIdFromCookies: vi.fn(),
   stitchFormSubmitIdentity: vi.fn(),
   getCookie: vi.fn(),
   sendAlertConfirmation: vi.fn(),
@@ -48,6 +49,7 @@ vi.mock('@/lib/lead-tracking', async (importOriginal) => {
   return {
     ...actual,
     fireLeadGenerated: (...args: unknown[]) => h.fireLeadGenerated(...args),
+    persistGaClientIdFromCookies: (...args: unknown[]) => h.persistGaClientIdFromCookies(...args),
   }
 })
 
@@ -85,6 +87,7 @@ beforeEach(() => {
   h.enrichNativeLead.mockReset()
   h.upsertListingAlert.mockReset()
   h.fireLeadGenerated.mockReset()
+  h.persistGaClientIdFromCookies.mockReset()
   h.stitchFormSubmitIdentity.mockReset()
   h.getCookie.mockReset()
   h.sendAlertConfirmation.mockReset()
@@ -98,6 +101,7 @@ beforeEach(() => {
   h.createNativeTask.mockResolvedValue(undefined)
   h.upsertListingAlert.mockResolvedValue({ ok: true })
   h.fireLeadGenerated.mockResolvedValue(undefined)
+  h.persistGaClientIdFromCookies.mockResolvedValue(undefined)
   h.stitchFormSubmitIdentity.mockResolvedValue(undefined)
   h.getCookie.mockImplementation((name: string) =>
     name === 'rr_vid' ? { value: RR_VID } : undefined,
@@ -176,6 +180,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
     expect(h.canonicallyTagLead).not.toHaveBeenCalled()
     expect(h.createNativeTask).not.toHaveBeenCalled()
     expect(h.stitchFormSubmitIdentity).not.toHaveBeenCalled()
+    expect(h.persistGaClientIdFromCookies).toHaveBeenCalledWith(PERSON_ID)
     expect(h.fireLeadGenerated).not.toHaveBeenCalled()
     expect(h.sendAlertConfirmation).not.toHaveBeenCalled()
   })
@@ -192,11 +197,13 @@ describe('submitSearchAlertSignup identity stitch', () => {
 
   it('defaults generate_lead to search_alert / search-alert for existing callers', async () => {
     await signup()
+    expect(h.persistGaClientIdFromCookies).toHaveBeenCalledWith(PERSON_ID)
     expect(h.fireLeadGenerated).toHaveBeenCalledWith(
       expect.objectContaining({
         lp_variant: 'search-alert',
         lead_type: 'buyer_alerts',
         form_id: 'search_alert',
+        crm_person_id: PERSON_ID,
       }),
     )
   })
@@ -214,11 +221,13 @@ describe('submitSearchAlertSignup identity stitch', () => {
         fbclid: 'F1',
       },
     })
+    expect(h.persistGaClientIdFromCookies).toHaveBeenCalledWith(PERSON_ID)
     expect(h.fireLeadGenerated).toHaveBeenCalledWith(
       expect.objectContaining({
         lp_variant: 'buy-alerts',
         lead_type: 'buyer_alerts',
         form_id: 'buyer_alerts_lp',
+        crm_person_id: PERSON_ID,
         attribution: expect.objectContaining({
           lp_source: 'facebook',
           lp_medium: 'paid_social',
@@ -246,11 +255,13 @@ describe('submitSearchAlertSignup identity stitch', () => {
 
   it('defaults buyer_leverage_lp to buy-leverage and fires that form_id with buyer_alerts', async () => {
     await signup({ formId: 'buyer_leverage_lp' })
+    expect(h.persistGaClientIdFromCookies).toHaveBeenCalledWith(PERSON_ID)
     expect(h.fireLeadGenerated).toHaveBeenCalledWith(
       expect.objectContaining({
         lp_variant: 'buy-leverage',
         lead_type: 'buyer_alerts',
         form_id: 'buyer_leverage_lp',
+        crm_person_id: PERSON_ID,
       }),
     )
   })

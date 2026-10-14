@@ -1,38 +1,64 @@
 # Current — 2026-10-14 (Cursor, AGENTS.md single process source)
 
-Surface: Cursor cloud. Branch `cursor/agents-md-single-source-6f1e` / PR #562 from origin/main `a0030cbdc` (#546 after #559). Folds and supersedes #544 (agent rules: PR plus self-merge, DB writes). Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/agents-md-single-source-6f1e` / PR #562 from origin/main `482727cb7` (#560). Folds and supersedes #544. Nobody pushes main. Nothing sent.
 
-**What this branch does.** `AGENTS.md` is the only process-rule file. CORE RULES (identical prefix in `CLAUDE.md` for Grok's 10k cutoff) add: PRs only / no fast-forward; auto-merge except `hold-for-matt`; no PR older than 3 days; Done = merged + production READY + live URL; payload caps; no sleep waits; new process rules land in `AGENTS.md`; bots may write the Ryan Realty Supabase DB when Matt's task needs it. `CLAUDE.md` and `.cursor/rules` process files point here. Sends, expired drip hard stop, no force-push, no secrets, no approved-CMA wording changes stay.
+**What this branch does.** `AGENTS.md` is the only process-rule file. CORE RULES add PRs only, auto-merge except `hold-for-matt`, stale PRs, Done = merged + production READY + live URL, payload caps, no sleep waits, new process rules in `AGENTS.md`, and DB writes when Matt's task needs them. Workflows enqueue auto-merge and close stale PRs. `merge-gate` is the required CI rollup (lint, gates, unit, and on app PRs build / e2e / a11y). Lighthouse and content-floor stay out of that rollup.
 
-**Also this session.** Tried repo Allow auto-merge + `hold-for-matt` label: GitHub App 403. `gh pr merge --auto` squash-merged #559 (`5ebc1c030`) and #546 (`a0030cbdc`) because they were already mergeable. #547/#550/#514 cannot enable auto-merge (`Auto merge is not allowed for this repository`); #550 and #514 are CONFLICTING. #545/#469/#473/#479 stay open (titles already hold for Matt; label could not be created).
+**Also this session.** GitHub App token (`ghs_`, account `cursor`) 403s Administration: create label, PATCH `allow_auto_merge` / `delete_branch_on_merge`, POST ruleset, PUT branch protection. Did not push an empty commit to main because protection is not active. `gh pr merge --auto` squash-merged #559 and #546 when they were already mergeable. #547/#550/#514 cannot queue auto-merge (`Auto merge is not allowed for this repository`); #550 and #514 are CONFLICTING. #545/#469/#473/#479 stay open (titles already hold for Matt).
 
 **Held.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
+## Earlier — 2026-10-14 (Cursor, persist GA client id on lead forms)
+
+Surface: Cursor cloud. Branch `cursor/persist-ga-client-id-3b48` / PR #560. Nothing sent. Nobody pushes main. No rebuild.
+
+**This pass.** Every lead form fill now first-touch writes `crm_people.custom.gaClientId` from the `_ga` cookie (last two numeric dot parts). `fireLeadGenerated` persists even when GPC or a decline blocks `generate_lead`, and each form action also calls `persistGaClientIdFromCookies` and passes `crm_person_id` (buyer_alerts_lp, buyer_leverage_lp, contact, seller valuation, lead-landing, page-cta, search-alert, concessions, place-value, and the other capture doors). Same cookie id is what the server `generate_lead` MP call uses. Follow-up to #543 so the daily offline cron has a client_id to send.
+
+**Still open.** Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`). #452 landed. Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. The unique `idx_listings_parcel_number` migration is not on main.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+
+## Earlier — 2026-10-14 (Cursor, G46 commit-compiles process tree)
+
+Surface: Cursor cloud. Branch `cursor/commit-compiles-heavy-timeout-84fb` landed on main via #541 at `63f24f16a`. G46 tsc spawn is process-tree killed. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, buyer-answers batch 2)
+
+Surface: Cursor cloud. Branch `cursor/buyer-answers-batch-2-41c4` landed on main via #557 at `63d924ee5`. Living+cost buyer-answer pages, luxury/acreage/under-500k presets. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, lead page v3)
+
+Surface: Cursor cloud. Branch `cursor/lead-page-v3-d7f6` landed on main via #506 at `a00d7c3ca`. Admin person page v3 behind `lead-page-v3`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, analytics SoT)
+
+Surface: Cursor cloud. Branch `cursor/analytics-sot-readme-5e14` landed on main via #558 at `ee189e044`. `docs/analytics/README.md` is the analytics source of truth. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, STOP cell intake)
+
+Surface: Cursor cloud. PR #546 landed. Skip a STOP'd cell on the mobile-only intake path. Nothing sent.
+
 ## Earlier — 2026-10-14 (Cursor, reader-5 leftover reads)
 
-Surface: Cursor cloud. Branch `cursor/reader-5-leftover-reads-52cc` / PR #559, merged onto `origin/main` (`5ebc1c030`). Closed stale #552. Nobody pushes main. Nothing sent. No CMA rows written.
+Surface: Cursor cloud. PR #559 landed. Thin-window own-listing-unsold and own-ground sold count. Closed stale #552. Nothing sent.
 
-**What that branch did.** (1) Thin-window own-listing-unsold: an Active home whose ask was cut, with no per-foot local verdict, stands in as its own local read so own-ground sales move down with the city index. (2) Own-ground sold count: when own-subdivision rungs find nothing, one any-size read of the subject's ground; the letter says "No home sold" only on a real zero.
+## Earlier — 2026-10-14 (Claude, buyer landing pages)
 
-## Earlier — 2026-10-14 (Claude, the two buyer landing pages look like landing pages)
+Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b` landed on main via #548 at `befee8c88`. `/buy/concessions` and `/buy/alerts` now open with a `V3Stage` photograph. Nothing sent. Nobody pushes main.
 
-Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b` from origin/main `5293aa46`. PR #548 landed on main. Nothing sent. Nobody pushes main.
+## Earlier — 2026-10-14 (Cursor, relist blip)
 
-## Earlier — 2026-10-14 (Cursor, Meta Lead no dollar values)
+Surface: Cursor cloud. Branch `fix/relist-blip` landed on main via #452 at `608fd879b`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, offline GA4 conversions live)
+
+Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-41c4` landed on main via #543. Offline conversions cron reads `ga_client_id` and posts GA4 Measurement Protocol hits. Live audit: 0 of 23,909 contacts had a usable client_id — that is why the persist pass exists. Production SHA `e532597d8`. Nobody pushes main. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
 
-## Earlier — 2026-10-14 (Cursor, GA4 offline conversions)
-
-Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-3b48` (#543), merged origin/main `7e23fdb97` (#551 handoff, #489 same-vintage, #542 Meta Lead no dollars). Nothing sent. Nobody pushes main. No rebuild.
-
-**This pass.** Daily `/api/cron/offline-conversions` now also sends GA4 MP `qualify_lead` (Buyer Contract, Pending) and `close_convert_lead` (Closed) through `fireGa4Event`. `lead_type` only, no dollar amount. Stored `_ga` client_id on `crm_people.custom.gaClientId` (first-touch from `fireLeadGenerated`). Skip + log when missing. Idempotent `ga4_offline_conversion` / `person:<id>:<stageKey>`. Live audit 2026-10-14: **0 of 23,909** contacts have a usable client_id. Land #543, then `gh pr checks --watch` and `gh pr merge --squash`.
-
-**Still open.** Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`). Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. The unique `idx_listings_parcel_number` migration is not on main.
-
-Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 
