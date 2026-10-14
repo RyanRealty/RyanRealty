@@ -3,10 +3,13 @@
  * for the Website view of /admin/analytics (Matt 2026-10-14: one page that
  * "actually makes sense").
  *
- * Source: visitor_sessions (first-party; every visitor the tracker recorded,
- * whatever they answered on the cookie banner, minus Global Privacy Control
- * opt-outs, which the track route never stores). One paged read covers the
- * current window AND the comparison window, then everything is counted here:
+ * Source: visitor_sessions (first-party). The track route's consent gate
+ * (app/api/visitors/track/route.ts) decides what is stored: a visitor who
+ * declines cookies, or whose browser sends Global Privacy Control, is never
+ * stored; a visitor in a privacy-law region who has not answered is stored
+ * without location or browser details; everyone else is stored in full. One
+ * paged read covers the current window AND the comparison window, then
+ * everything is counted here:
  *
  *   visits             sessions whose first_seen_at falls in the window
  *   engaged visits     visits that did more than glance: engagement_score at
