@@ -63,6 +63,17 @@ describe('decideOutreachBuild', () => {
     ).toEqual({ ok: true })
   })
 
+  it('refuses a STOP or other SMS-suppressed cell when there is no email', () => {
+    expect(
+      decideOutreachBuild({
+        ...clean,
+        email: null,
+        smsSuppressed: true,
+        phones: [{ value: '5415550100', type: 'mobile' }],
+      }),
+    ).toEqual({ ok: false, reason: 'The cell cannot be texted. The CMA was not built.' })
+  })
+
   it('treats a stored compliance hard stop as an email block', () => {
     expect(decideOutreachBuild({ ...clean, hardStop: true }).ok).toBe(false)
   })
@@ -98,5 +109,14 @@ describe('buildCma calls the gate first', () => {
     const snap = body.indexOf('snapshotCmaVersion(')
     expect(gate).toBeGreaterThan(-1)
     expect(snap).toBeGreaterThan(gate)
+  })
+
+  it('checks SMS suppression on the cell before a mobile-only build', () => {
+    const src = readFileSync(join(process.cwd(), 'lib/cma/outreach-build-gate.ts'), 'utf8')
+    expect(src).toContain('isSuppressedByPhone')
+    expect(src).toContain('smsSuppressed')
+    const body = src.slice(src.indexOf('export async function gateOutreachBuild'))
+    expect(body.indexOf('isSuppressedByPhone')).toBeGreaterThan(-1)
+    expect(body.indexOf('isSuppressedByPhone')).toBeLessThan(body.indexOf('decideOutreachBuild'))
   })
 })

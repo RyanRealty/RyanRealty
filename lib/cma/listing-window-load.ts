@@ -71,9 +71,15 @@ export function subjectListingWindow(args: {
   /** Pacific day the current Active stretch began. */
   activeFrom: string | null | undefined
   offDate: string | null | undefined
-}): { city: string | null | undefined; listDate: string | null | undefined; offDate: string | null } {
+}): {
+  city: string | null | undefined
+  listDate: string | null | undefined
+  offDate: string | null
+  /** True when the home is on the market today and the window runs to the letter date. */
+  ongoing: boolean
+} {
   if (!args.onMarket) {
-    return { city: args.city, listDate: args.listDate, offDate: args.offDate ?? null }
+    return { city: args.city, listDate: args.listDate, offDate: args.offDate ?? null, ongoing: false }
   }
   // 3062 NW Kelly Hill is Active, so the cycle has no off-market date and the
   // date gate used to read nothing (Matt 2026-10-09). The window is the current
@@ -81,7 +87,7 @@ export function subjectListingWindow(args: {
   // sale. This does not add a second discount.
   const listDate = pacificDay(args.activeFrom) ?? pacificDay(args.listDate) ?? args.listDate ?? null
   const offDate = pacificDay(args.asOf) ?? String(args.asOf ?? '').slice(0, 10)
-  return { city: args.city, listDate, offDate: offDate || null }
+  return { city: args.city, listDate, offDate: offDate || null, ongoing: true }
 }
 
 /** The window's dates, or null when there is no dated window to read over. */
