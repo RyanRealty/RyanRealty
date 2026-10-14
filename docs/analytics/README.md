@@ -154,6 +154,12 @@ UTM on paid / organic buyer links (`lib/analytics/utm.ts`, `docs/analytics/buyer
 - `utm_campaign` = `buyer-<angle>` (`buyer-leverage`, `buyer-price-drops`, `buyer-what-it-buys`, `buyer-relocate`, `buyer-first-home`, `buyer-deal-report`, or a later kebab `buyer-*`)
 - `utm_content` = **creative ID** (e.g. `reloc-h3-v1`, or the ad-platform macro in the ad URL template — never a street address)
 
+### Landing-page views and audiences
+
+- `view_landing_page` fires once per view of a live landing page from `components/tracking/LandingPageViewTracker.tsx` (mounted once in `PublicClientLayer`). Live means the four /sell pages and each `/buy/<slug>` in `lib/routing/buy-public-slugs.ts` (`liveLandingVariant`); a 404 sends nothing. `lp_variant` is the PAGE variant (`seller-home-value`, `expired-listing`, `fsbo`, `buy-<slug>`), with the page's own `lp_*` utm.
+- GA4 audiences built on it, managed by `scripts/ga4-admin.mjs` (`apply-audiences` runs the audience step only): **LP visitors 7d / 30d — no conversion** (`view_landing_page`, excluding `generate_lead`) and **High-intent sellers** (`scroll_depth` with `page_type` `sell` and `depth` over 74; `audiences/16124906126`, rebuilt 2026-10-14). Audience filters cannot be edited; a rebuild goes through `REBUILT_AUDIENCES`.
+- CRM credit for a buyer lead (saved search, alert, save, price watch, the /buy forms) is the landing link of the live visit, else the page's own link when there is no live visit (`lib/crm/visit-attribution.ts`, Matt 2026-10-09). The browser keeps no landing context.
+
 ### Server page-view mirror (kept on purpose)
 
 `app/api/visitors/track` still mirrors essential-tier `page_view` (and a few intent events) through Measurement Protocol (`lib/analytics/ga4-mirror.ts`, on since 2026-08-10). **That mirror stays.** Consequence: GA4 **geography is unreliable** (MP hits do not carry a real visitor geo), and sessions / source / medium / engagement are shaped by the mirror. Use first-party `visitor_sessions` / Search Console when geography or organic counts matter. `session_start` / `first_visit` still come only from the browser tag — those are the outage canary (`lib/analytics/ga4-tracking-health.ts`).
@@ -243,6 +249,9 @@ One set per URL, via `buildTrackedUrl` in `lib/analytics/utm.ts`. Existing `utm_
 | Meta Pixel consent | `lib/analytics/meta-pixel-consent.ts` |
 | UTM builder | `lib/analytics/utm.ts` |
 | LP variant from path | `lib/analytics/lp-variant.ts` |
+| Landing-page view (`view_landing_page`) | `components/tracking/LandingPageViewTracker.tsx` |
+| Buyer lead credit (visit, else page) | `lib/crm/visit-attribution.ts`, `lib/data/identity/visitCampaign.ts` |
+| GA4 audiences | `scripts/ga4-admin.mjs` (`apply-audiences`) |
 | MP page-view mirror | `lib/analytics/ga4-mirror.ts` |
 | GTM bootstrap | `lib/analytics/gtm-bootstrap.ts` |
 | Offline Meta + GA4 | `lib/meta-offline-conversions.ts`, `lib/marketing/offline-milestones.ts`, `lib/marketing/offline-ga4.ts`, `app/api/cron/offline-conversions/route.ts` |

@@ -1,4 +1,16 @@
-# Current — 2026-10-14 (Cursor, PR hygiene + Zillow FSBO mapped parse)
+# Current — 2026-10-14 (Claude, buyer visit attribution + GA4 landing-page audiences)
+
+Surface: Claude Code cloud. Branch `claude/agent-navigation-efficiency-dp5zj5`, main merged in (not rebased). Draft PR to main; Matt merges. Nobody pushes main. Nothing sent.
+
+**This session (Matt's two answers of 2026-10-09).** (1) "Visit they signed up in": every buyer door (saved search, alert, save, price watch, /buy lead form, /buy/concessions) credits the live visit's landing link, else the page's own link with no live visit (`lib/crm/visit-attribution.ts`, `readLiveVisit` on `visitor_sessions.landing_page`). The tab-lifetime `rr_lp_context` is gone. (2) "Rebuild on /sell and /buy": `view_landing_page` fires from `components/tracking/LandingPageViewTracker.tsx` on live landing pages only; GA4 "High-intent sellers" rebuilt as `audiences/16124906126` (`scroll_depth`, `page_type` sell, `depth` > 74), the old one renamed "(retired 2026-10-14, never matched)". `scripts/ga4-admin.mjs apply-audiences` runs the audience step only.
+
+**Found, not changed.** GA4 key events `home_valuation_cta_click`, `listing_inquiry`, `listing_showing_click`, `schedule_showing` were unmarked on the property 2026-10-14 between 04:00 and 05:05 UTC by another session; the script no longer lists any event the property dropped. Doors still writing the site host as `crm_people.source` (FUNNEL-4 leftovers): `/buy` lead form, CMA download, listing payment email, CMA PDF route.
+
+**Next.** After Matt merges: `npm run deploy:verify <merge sha>`; a few days later, read GA4 for `view_landing_page` on /sell and /buy and the two LP-visitor audiences filling.
+
+Skills read: `code-review` (built-in), `CLAUDE.md` §0 §1 §6 §7 §8.
+
+## Earlier — 2026-10-14 (Cursor, PR hygiene + Zillow FSBO mapped parse)
 
 Surface: Cursor cloud. Branch `cursor/fsbo-zillow-mapped-output-66eb` from origin/main `482727cb7` (merged, not rebased). PR #556. Nobody pushes main. Nothing sent. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true. Approved CMA and email wording unchanged.
 

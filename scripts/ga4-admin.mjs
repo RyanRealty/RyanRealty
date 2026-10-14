@@ -14,8 +14,8 @@
  *       Adds analytics.edit scope so we can mutate config.
  *
  * Locked config:
- *   - 7 conversion events (generate_lead, valuation_requested, contact_agent,
- *     call_initiated, tour_requested, cma_anchor_click, listing_showing_click)
+ *   - 4 conversion events (generate_lead, call_initiated, tour_requested,
+ *     cma_anchor_click)
  *   - 9 custom event-scoped dimensions (lp_variant, lp_source, lp_medium,
  *     lp_campaign, lp_content, broker, lead_classification, lead_type)
  *   - 2 custom user-scoped dimensions (assigned_broker, lead_status)
@@ -76,15 +76,21 @@ if (!PROPERTY_ID || !CLIENT_EMAIL || !PRIVATE_KEY) {
 // Locked configuration
 // ──────────────────────────────────────────────────────────────────────────
 
-/** Events that should be marked as conversions (key events in GA4 vocab). */
+/**
+ * Events that should be marked as conversions (key events in GA4 vocab). `apply`
+ * only adds, so this list must never name an event the property has stopped
+ * marking, or a run would undo that call. valuation_requested stays a step event
+ * beside the one generate_lead per submit (docs/ANALYTICS_LEAD_TRACKING.md) and
+ * contact_agent has no sender; both were listed here until 2026-10-14. So was
+ * listing_showing_click, which the property stopped marking between 04:00 and
+ * 05:05 UTC that day (with home_valuation_cta_click, listing_inquiry and
+ * schedule_showing), a change made outside this script.
+ */
 const CONVERSION_EVENTS = [
   { name: 'generate_lead',         purpose: 'primary seller lead conversion' },
-  { name: 'valuation_requested',   purpose: 'CMA request' },
-  { name: 'contact_agent',         purpose: 'direct broker contact' },
   { name: 'call_initiated',        purpose: 'tel: link click' },
   { name: 'tour_requested',        purpose: 'buyer tour request' },
   { name: 'cma_anchor_click',      purpose: 'CMA section interaction' },
-  { name: 'listing_showing_click', purpose: 'listing page CTA' },
 ]
 
 /**
