@@ -1,0 +1,12 @@
+{
+  "rule": "R-052",
+  "step": "brief",
+  "what": "a brief with no spec_rules",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules",
+      "delete": true
+    }
+  ]
+}

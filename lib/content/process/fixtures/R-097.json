@@ -1,0 +1,12 @@
+{
+  "rule": "R-097",
+  "step": "master",
+  "what": "a 24 fps file",
+  "setup": {
+    "measure": {
+      "probe": {
+        "fps": 24
+      }
+    }
+  }
+}

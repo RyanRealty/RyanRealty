@@ -45,7 +45,7 @@ import {
 import { fetchConversationParticipants, groupShapeOf, parseConversationMedia } from '@/lib/crm/twilio-conversations'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { markConversationUnreadOnInbound } from '@/app/actions/crm-inbox'
-import { addSuppression, removeSuppression } from '@/lib/crm/suppressions'
+import { addSuppression, clearNonOptOutSuppressions, removeSuppression } from '@/lib/crm/suppressions'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import { sendCrmEmail } from '@/lib/crm/gmail'
 import { mailboxForSlug } from '@/lib/data/brokers/directory'
@@ -155,6 +155,18 @@ export async function POST(request: Request) {
       },
       { onConflict: 'dedupe_key', ignoreDuplicates: true },
     )
+  }
+
+  // Author sent the inbound — lift their import / non-opt-out suppressions.
+  // Passive group members did not text us; their suppressions stay.
+  try {
+    await clearNonOptOutSuppressions({
+      personId: match.personId,
+      clearedBy: 'conversations-events',
+      clearedReason: `inbound sms_in ${messageSid}`,
+    })
+  } catch (e) {
+    console.warn('[twilio/conversations-events] clear non-opt-out suppressions failed', e)
   }
 
   // Shadow-write ONE inbound message into the conversation model (RC1), keyed on

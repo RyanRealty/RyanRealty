@@ -26,6 +26,9 @@ const HOUSING_MARKET_RESERVED = new Set([
 
 const BEND_HOODS: ReadonlySet<string> = new Set(BEND_NEIGHBORHOOD_DISTRICTS.map((d) => d.slug))
 
+/** Real /cities/<city>/<segment> routes that are not a Bend NA district. */
+const CITY_CHILD_RESERVED = new Set(['living', 'cost', 'vs', 'types', 'from-out-of-state', 'buying'])
+
 export type GeoPathDecision =
   | { kind: 'pass' }
   | { kind: 'redirect'; destination: string; status: 308 }
@@ -77,7 +80,9 @@ export function resolveHousingMarketPath(pathname: string): GeoPathDecision | nu
 }
 
 /**
- * /cities/<city>/<hood>. null when this is not a two-segment city path.
+ * /cities/<city>/<hood>. null when this is not a two-segment city path,
+ * or when the second segment is a reserved child route (living, cost,
+ * vs, types, from-out-of-state, buying) that the App Router owns.
  *
  * Out-of-market city: 308 /oregon/<city>. Bend NA district: pass. Unknown
  * hood: 404. Registry communities under /cities are hopped earlier.
@@ -90,6 +95,7 @@ export function resolveCityNeighborhoodPath(pathname: string): GeoPathDecision |
   if (!CENTRAL_OREGON_CITY_SLUGS.has(city)) {
     return { kind: 'redirect', destination: `/oregon/${encodeURIComponent(city)}`, status: 308 }
   }
+  if (CITY_CHILD_RESERVED.has(hood)) return null
   if (city === 'bend' && BEND_HOODS.has(hood)) return { kind: 'pass' }
   return { kind: 'not-found' }
 }

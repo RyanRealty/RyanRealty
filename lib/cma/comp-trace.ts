@@ -29,6 +29,7 @@
  *     ->>'product_type')::int) from cmas;
  */
 
+import type { AduPreference } from '@/lib/pricing/adu-preference'
 import type { NotSettingSale } from '@/lib/pricing/price-set'
 
 /** Every reason a candidate row can be dropped, counted per tier and in total. */
@@ -240,6 +241,23 @@ export interface CompSelectionDiagnostics {
    */
   refill_bench?: { rung: string | null; widening: boolean; held: number }
   /**
+   * AN ADU HOME PRICES FROM ADU SALES FIRST (Matt 2026-10-14): the pass that
+   * ran, how many ADU sales set the price, and the sentence the letter prints
+   * (lib/pricing/adu-preference.ts). Absent when the subject has no ADU and
+   * on rows stored before it landed.
+   */
+  adu_preference?: AduPreference
+  /**
+   * How many homes sold on the subject's own ground (its plat, phases and
+   * family, or its MLS name off any polygon) over the widest own-subdivision
+   * window, any size and any residential type (lib/cma/own-ground-sold.ts).
+   * Read only when the own-subdivision rungs found nothing, so the comp story
+   * can say "No home sold in X" or "No sale inside X matched your home"
+   * truthfully (reader review 2026-10-09, 915 Saginaw). Absent otherwise, and
+   * on rows stored before then.
+   */
+  own_ground_sold?: { months: number; since: string; n: number; capped: boolean; source: string } | null
+  /**
    * What the comparability review refilled, round by round, and how many
    * bench sales were left. Absent when nothing was refilled.
    */
@@ -254,7 +272,7 @@ const EXCLUSION_LABELS: Record<keyof CompExclusionCounts, string> = {
   product_type:
     'they are a different product (a townhome, condo, manufactured home, leased-land or co-op sale does not compete with a detached house)',
   bath_count:
-    "they are two or more rooms away from the subject, or one room away and outside this home's own plat, neighborhood and street",
+    'they are three or more whole rooms away from the subject on bedrooms or on bathrooms',
   lot_character: 'their lot character does not match (acreage against an in-town lot, or far outside the acreage band)',
   resort_premium: 'they sit in a resort community the subject is not in (premium contamination, or the reverse)',
   market_area: "they sit outside the subject's neighborhood boundary",

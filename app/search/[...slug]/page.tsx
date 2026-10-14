@@ -4,8 +4,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { getListingsWithAdvanced } from '../../actions/listings'
-import { getRecentPriceDropEntries, type ListingCardPriceDrop } from '@/lib/data'
-import { getSession } from '../../actions/auth'
+import { getRecentPriceDropEntries, getRegionPulse, type ListingCardPriceDrop } from '@/lib/data'
+import { isBuyerAnswerPreset } from '@/lib/buyer-answers'
 import { SearchAlertCapture } from '../../../components/search/SearchAlertCapture'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
 import { cityEntityKey, homesForSalePath, listingTileHref } from '../../../lib/slug'
@@ -39,9 +39,6 @@ import { getResortEntityKeys } from '../../actions/subdivision-flags'
 import { getSubdivisionTabContent } from '../../actions/subdivision-descriptions'
 import TrackSearchView from '../../../components/tracking/TrackSearchView'
 import { ResultsStamp } from '@/components/search/ResultsStamp.client'
-import { getSavedListingKeys } from '../../actions/saved-listings'
-import { getLikedListingKeys } from '../../actions/likes'
-import { getBuyingPreferences } from '../../actions/buying-preferences'
 import { shouldNoIndexSearchVariant } from '../../../lib/seo-routing'
 import { decodeMapPolygon } from '@/lib/map-polygon'
 import { generateStaticParams as buildSearchStaticParams, IS_PRODUCTION_BUILD } from './search-static'
@@ -166,7 +163,7 @@ export default async function SearchPage({
   // real golf homes + FAQ). `?all=1` falls through to the standard filterable
   // list+map view of the same golf-filtered homes.
   if (preset?.landing === 'golf' && city && sp.all !== '1') {
-    return renderGolfLanding(city)
+    return renderGolfLanding(city, preset.shortLabel)
   }
 
   const effectiveStatusFilter = (filterOpts.statusFilter && ['active', 'active_and_pending', 'pending', 'closed', 'all'].includes(filterOpts.statusFilter))
@@ -257,15 +254,10 @@ export default async function SearchPage({
         : null
     // No shared price-drop read here: the split view prints dated drops from
     // its own per-card read (getViewportListings, attachListingCardExtras).
-    const session = await withTimeout(getSession(), null, 600)
-    const [savedKeys, likedKeys, prefs] =
-      session?.user
-        ? await Promise.all([
-            withTimeout(getSavedListingKeys(), [], 600),
-            withTimeout(getLikedListingKeys(), [], 600),
-            withTimeout(getBuyingPreferences(), null, 600),
-          ])
-        : ([[], [] as string[], null] as [string[], string[], Awaited<ReturnType<typeof getBuyingPreferences>>])
+    // Saved / liked / signed-in hydrate after paint (useViewerListingState).
+    // A cookies() read here would make every city browse dynamic and defeat
+    // the s-maxage=60 CDN header (production TTFB on /homes-for-sale/bend
+    // was ~2.0 s).
     return renderMapSplitView({
       sp,
       slug,
@@ -285,10 +277,10 @@ export default async function SearchPage({
             : placeHomesForSaleHeading(displayName)),
       searchPagePath,
       searchBreadcrumbItems,
-      savedKeys,
-      likedKeys,
-      session,
-      prefs,
+      savedKeys: [],
+      likedKeys: [],
+      session: null,
+      prefs: null,
       effectiveStatusFilter,
       initialPolygon,
       presetChips,
@@ -299,9 +291,10 @@ export default async function SearchPage({
 
   // Fetch the independent data the clean results page renders in one parallel batch:
   //   listings (grid + pagination), recent price drops (the "Price drop"
-  //   badge), session (save-search), resort entity keys (JSON-LD + breadcrumb
-  //   resort flag).
-  const [listingsResult, priceDrops, session, resortEntityKeys, citySfrTiles] = await Promise.all([
+  //   badge), resort entity keys (JSON-LD + breadcrumb resort flag).
+  // Signed-in / saved / liked hydrate on the client so this HTML stays
+  // visitor-independent and the CDN can hold it.
+  const [listingsResult, priceDrops, resortEntityKeys, citySfrTiles] = await Promise.all([
     // Route through getListingsWithAdvanced: it serves the common city + base-
     // filter case from the slim, resilient-cached listing_tile_mv (sub-second,
     // with an EXACT count so pagination/header stay right) and only falls back
@@ -322,7 +315,6 @@ export default async function SearchPage({
           getRecentPriceDropEntries(30).then((entries) => new Map(entries)),
           new Map<string, ListingCardPriceDrop>(),
         ),
-    withTimeout(getSession(), null, 600),
     withTimeout(getResortEntityKeys(), new Set<string>()),
     isPlainCityBrowse && city ? loadCitySfrTilesForSearch(city) : Promise.resolve([]),
   ])
@@ -421,18 +413,21 @@ export default async function SearchPage({
   // buildMarketFaq so the visible numbers and the markup never diverge. Every
   // figure is null-guarded (no invented stats, CLAUDE.md §0).
   const isPlainCityPage = !!(city && !subdivision && !preset)
-  // Preset-page SEO depth (Family 3 / W3.2): city AND {city}/{area}/{preset} pages.
-  // Clean canonical only — no sort-only, no noindex variants, no degraded counts.
+  const isRegionBuyerPreset = !city && !!preset && isBuyerAnswerPreset('central-oregon', preset.slug)
+  // Preset-page SEO depth (Family 3 / W3.2): city AND {city}/{area}/{preset}
+  // pages, plus region buyer-answer presets (/homes-for-sale/acreage,
+  // /homes-for-sale/under-500k). Clean canonical only — no sort-only, no
+  // noindex variants, no degraded counts.
   const isPresetDepthPage = !!(
-    city &&
     preset &&
     !isSortOnlyPreset(preset) &&
-    !shouldNoIndexSearchVariant(sp)
+    !shouldNoIndexSearchVariant(sp) &&
+    (city || isRegionBuyerPreset)
   )
   // §0: area-scoped totalCount must name the area, not the city.
   const presetAreaLabel = subdivision ? placeName : null
   const {
-    cityFaqInput,
+    cityFaqInput: cityLayerFaqInput,
     publishedCityInventory,
     cityMarketFaq,
     priceLadder,
@@ -445,9 +440,22 @@ export default async function SearchPage({
     isPresetDepthPage,
     citySfrTiles,
   })
+  const regionPulse = isRegionBuyerPreset ? await getRegionPulse().catch(() => null) : null
+  const cityFaqInput =
+    isRegionBuyerPreset && regionPulse
+      ? {
+          grain: 'region' as const,
+          source: 'pulse' as const,
+          activeCount: regionPulse.activeCount,
+          medianListPrice: regionPulse.medianListPrice,
+          medianDaysToPending: regionPulse.medianDaysToPending,
+          monthsOfSupply: regionPulse.monthsOfSupply,
+          refreshedAt: regionPulse.updatedAt || null,
+        }
+      : cityLayerFaqInput
   const presetDepth =
-    isPresetDepthPage && city && preset && !listingsResult.degraded
-      ? buildPresetFaq(city, preset, totalCount, cityFaqInput, presetAreaLabel)
+    isPresetDepthPage && preset && !listingsResult.degraded && (city || isRegionBuyerPreset)
+      ? buildPresetFaq(city ?? 'Central Oregon', preset, totalCount, cityFaqInput, presetAreaLabel)
       : null
   const presetBandLinks =
     isPresetDepthPage && city && preset
@@ -500,7 +508,7 @@ export default async function SearchPage({
           most city/preset links land on, not just the bare /homes-for-sale page. */}
       {(city || hasFilterOnly) && (
         <SearchAlertCapture
-          signedIn={!!session?.user}
+          signedIn={false}
           defaultCity={filterCity ?? ''}
           defaultSubdivision={filterSubdivision ?? ''}
           defaultFilters={guestAlertFilters}
@@ -585,9 +593,43 @@ export default async function SearchPage({
         <div className="max-w-2xl">
           <V3Heading level={1}>{headerTitle}</V3Heading>
           {presetDepth ? (
-            <p className="mt-3 tabular-nums">
-              {presetDepth.intro}
-            </p>
+            <div className="mt-3 tabular-nums">
+              <p>{presetDepth.intro}</p>
+              {presetDepth.buyerAnswer ? (
+                <>
+                  <p className="mt-2">{presetDepth.buyerAnswer.citation}.</p>
+                  <p className="mt-2">
+                    Written by <Link href={presetDepth.buyerAnswer.byline.href}>{presetDepth.buyerAnswer.byline.label}</Link>
+                  </p>
+                  <table className="mt-4 w-full max-w-xl">
+                    <caption className="mb-2 text-left">{presetDepth.buyerAnswer.table.caption}</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col" className="text-left">Figure</th>
+                        <th scope="col" className="text-left">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {presetDepth.buyerAnswer.table.rows.map((row) => (
+                        <tr key={row.label}>
+                          <th scope="row" className="text-left font-medium">{row.label}</th>
+                          <td>{row.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p className="mt-3 text-sm">
+                    <Link href={presetDepth.buyerAnswer.hub.href}>{presetDepth.buyerAnswer.hub.label}</Link>
+                    {presetDepth.buyerAnswer.buyLinks.map((link) => (
+                      <span key={link.href}>
+                        {' · '}
+                        <Link href={link.href}>{link.label}</Link>
+                      </span>
+                    ))}
+                  </p>
+                </>
+              ) : null}
+            </div>
           ) : headerIntro ? (
             <p className="mt-3 tabular-nums">
               {headerIntro}
@@ -619,7 +661,7 @@ export default async function SearchPage({
           <SearchFilterBar
             basePath={searchPagePath}
             presetChips={presetChips}
-            signedIn={!!session?.user}
+            signedIn={false}
             pathContext={{ ...resolved, city, citySlug: slug[0] }}
             minPrice={numStr(filterOpts.minPrice)}
             maxPrice={numStr(filterOpts.maxPrice)}

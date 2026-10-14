@@ -170,6 +170,31 @@ check('Offline-conversion is idempotent (stable event_id)', /event_id/.test(offl
   'lib/meta-offline-conversions.ts must send a stable event_id so a retry/re-run never double-counts the conversion.')
 check('Offline-conversion uses system_generated action_source', /system_generated/.test(offline),
   "lib/meta-offline-conversions.ts must use action_source 'system_generated' (the conversion did not happen on the website).")
+const offlineCron = read('app/api/cron/offline-conversions/route.ts')
+const offlineGa4 = read('lib/marketing/offline-ga4.ts')
+check('Offline-conversion cron also sends GA4 qualify_lead / close_convert_lead',
+  /sendOfflineGa4Conversion/.test(offlineCron) && /qualify_lead/.test(offlineGa4) && /close_convert_lead/.test(offlineGa4),
+  'The daily offline-conversion cron must send GA4 Measurement Protocol qualify_lead (Buyer Contract, Pending) and close_convert_lead (Closed) through the shared MP helper.')
+const offlineGa4Params = offlineGa4.match(/export function offlineGa4EventParams[\s\S]*?\n}/)?.[0] ?? ''
+check('GA4 offline events carry lead_type and no value/currency',
+  /return \{ lead_type: leadType \}/.test(offlineGa4Params) &&
+    !/\bvalue\s*:/.test(offlineGa4Params) &&
+    !/\bcurrency\s*:/.test(offlineGa4Params),
+  'lib/marketing/offline-ga4.ts must send lead_type and must not send value or currency.')
+check('GA4 offline send skips contacts with no stored client_id',
+  /readStoredGaClientId/.test(offlineCron) && /ga4MissingClientId/.test(offlineCron),
+  'The cron must use the stored GA client_id and log how many contacts have none — never mint a uuid.')
+const gaCookie = read('lib/ga4-measurement-protocol.ts')
+const leadTracking = read('lib/lead-tracking.ts')
+check('GA _ga cookie client_id is the last two numeric dot parts',
+  /parts\.length - 2/.test(gaCookie) && /parts\.length - 1/.test(gaCookie),
+  'clientIdFromGaCookie must take the last two numeric segments of `_ga`, not only GA1.x.digits.digits.')
+check('Lead forms persist the _ga client_id first-touch on the CRM person',
+  /persistGaClientIdFromCookies/.test(leadTracking) &&
+    /rememberGaClientId\(personId, readGa4ClientIdFromCookies\(cookieStore\)\)/.test(leadTracking) &&
+    (/rememberGaClientId\(params\.crm_person_id \?\? params\.fub_person_id, clientId\)/.test(leadTracking) ||
+      /await persistGaClientIdFromCookies\(params\.crm_person_id \?\? params\.fub_person_id\)/.test(leadTracking)),
+  'fireLeadGenerated and persistGaClientIdFromCookies must first-touch write crm_people.custom.gaClientId from the _ga cookie.')
 
 // ── 8. Measurement hygiene (visibility audit 2026-09-22, TRACK-1/2/3) ─────────
 // Unit tests prove each piece (legacy-next-image, web-vitals-sample,

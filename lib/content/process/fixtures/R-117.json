@@ -1,0 +1,13 @@
+{
+  "rule": "R-117",
+  "step": "master",
+  "what": "an end card start 0.2 s before its beat",
+  "setup": {
+    "manifest": [
+      {
+        "path": "endcard.start",
+        "set": 12
+      }
+    ]
+  }
+}

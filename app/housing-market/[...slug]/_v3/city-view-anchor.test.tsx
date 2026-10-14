@@ -11,7 +11,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { CityMarketView } from './city-view'
 
 const TAKEAWAYS = [
-  'Bend has 3.6 months of supply, a seller’s market.',
+  'Bend has 3.6 months of supply.',
   'The median single-family home in Bend sold for $759,000 in September 2026.',
 ]
 
@@ -22,7 +22,7 @@ function render(closedFigures: { value: string; label: string }[]) {
       citySlug: 'bend',
       hud: null,
       mosText: null,
-      verdict: { kind: 'balanced', label: 'Balanced' },
+      verdict: { kind: 'balanced', label: '4.5 months of supply' },
       refreshedAt: null,
       valuationHrefValue: '/sell',
       snapshots: [],

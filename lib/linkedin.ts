@@ -1,3 +1,4 @@
+// Removed as a platform (Matt 2026-10-14); not called by the publish door or the heartbeat.
 import { createClient } from '@supabase/supabase-js'
 
 const LINKEDIN_OAUTH_AUTH_URL = 'https://www.linkedin.com/oauth/v2/authorization'

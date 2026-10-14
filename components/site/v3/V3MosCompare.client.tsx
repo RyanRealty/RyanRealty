@@ -81,7 +81,7 @@ export function V3MosCompare({
   regionLabel,
   regionMos,
   regionMosLabel,
-  regionVerdict,
+  regionVerdict: _regionVerdict,
   cities,
   source,
   id = 'cities-mos-compare',
@@ -110,9 +110,9 @@ export function V3MosCompare({
   if (!geometry || !Number.isFinite(regionMos) || regionMos <= 0) return null
 
   const idleRead =
-    selected && selected.mosLabel && selected.verdictLabel
-      ? `${selected.name} at ${selected.mosLabel} mo (${selected.verdictLabel}) · ${regionLabel} at ${regionMosLabel}`
-      : `${regionVerdict} at ${regionMosLabel} months`
+    selected && selected.mosLabel
+      ? `${selected.name} at ${selected.mosLabel} mo · ${regionLabel} at ${regionMosLabel}`
+      : `${regionLabel} has ${regionMosLabel} months of supply`
 
   return (
     <figure
@@ -165,7 +165,7 @@ export function V3MosCompare({
                         />
                       </span>
                       <span className="v3-mos-compare__option-meta">
-                        {city.mosLabel} mo · {city.verdictLabel}
+                        {city.mosLabel} mo
                         {city.activeLabel ? ` · ${city.activeLabel}` : ''}
                       </span>
                     </span>
@@ -185,7 +185,7 @@ export function V3MosCompare({
       <div
         className="v3-mos-compare__field"
         role="img"
-        aria-label={`${regionLabel} months of supply ${regionMosLabel}, ${regionVerdict}. Scale from 0 to ${V3_MOS_COMPARE_MAX} months with thresholds at 4 and 6.${
+        aria-label={`${regionLabel} months of supply ${regionMosLabel}. Scale from 0 to ${V3_MOS_COMPARE_MAX} months.${
           selected?.mosLabel ? ` Overlay: ${selected.name} at ${selected.mosLabel} months.` : ''
         }`}
       >

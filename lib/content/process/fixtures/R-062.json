@@ -1,0 +1,12 @@
+{
+  "rule": "R-062",
+  "step": "brief",
+  "what": "a planned technique",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "techniques.8",
+      "set": "subframe_motion_blur"
+    }
+  ]
+}

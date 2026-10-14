@@ -103,6 +103,8 @@ describe('SITE_SUBMIT_SOURCES — pinned against the action files', () => {
     ['app/actions/search-alert-capture.ts', "source: 'idx-registration'"],
     ['app/communities/[slug]/_v3/place-value-actions.ts', "source: 'place-page'"],
     ['app/actions/book-appointment.ts', 'website-booking'],
+    ['app/actions/lead-capture.ts', "PAGE_CTA_DOOR = 'homepage-cta'"],
+    ['app/actions/cma-download.ts', "source: 'listing-pricing-read'"],
   ])('%s still writes %s', (file, literal) => {
     expect(read(file)).toContain(literal)
   })
@@ -141,6 +143,14 @@ describe('SITE_SUBMIT_SOURCES — pinned against the action files', () => {
 
   it('every source has its matching tag', () => {
     expect(SITE_SUBMIT_TAGS).toEqual(SITE_SUBMIT_SOURCES.map((s) => `source:${s}`))
+  })
+
+  it('watches the market and FAQ questions and the pricing read, not the analysis download or the newsletter (Matt 2026-10-14)', () => {
+    expect(isSiteSubmit({ personId: 1, source: 'homepage-cta' })).toBe(true)
+    expect(isSiteSubmit({ personId: 1, source: 'listing-pricing-read' })).toBe(true)
+    expect(isSiteSubmit({ personId: 1, source: 'idx-registration', tags: ['source:listing-pricing-read'] })).toBe(true)
+    expect(isSiteSubmit({ personId: 1, source: 'published-cma', tags: ['audience:buyer', 'source:published-cma'] })).toBe(false)
+    expect(isSiteSubmit({ personId: 1, source: 'blog-email', tags: ['source:blog-email'] })).toBe(false)
   })
 })
 

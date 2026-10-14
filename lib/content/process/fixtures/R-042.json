@@ -1,0 +1,17 @@
+{
+  "rule": "R-042",
+  "step": "brief",
+  "what": "a script of uncontracted pairs",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.voiceover.script",
+      "set": "[warm] So... Bend has three and a half months of homes for sale right now. Sellers still have the edge... so you will go in with a plan. [long pause] Send this to whoever you are house hunting with."
+    },
+    {
+      "in": "timeline",
+      "path": "voice.script",
+      "set": "[warm] So... Bend has three and a half months of homes for sale right now. Sellers still have the edge... so you will go in with a plan. [long pause] Send this to whoever you are house hunting with."
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "rule": "R-118",
+  "step": "master",
+  "what": "an end card at SSIM 0.5",
+  "setup": {
+    "measure": {
+      "endcardSsim": 0.5
+    }
+  }
+}

@@ -27,11 +27,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { detectFsboListings, FSBO_SERVICE_AREA_CITIES, FSBO_MIN_LIST_PRICE, type FsboListing } from '@/lib/fsbo-detector'
 import { detectCraigslistFsboListings } from '@/lib/fsbo-craigslist'
 import { lookupOwnerForExpiredListing, type OwnerLookupResult } from '@/lib/expired-owner-lookup'
-import { isSuppressedByEmail } from '@/lib/crm/suppressions'
+import { isSuppressedByEmail, isSuppressedByPhone } from '@/lib/crm/suppressions'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { normalizeParcelNumber, probeIntakeBackOnMarket } from '@/lib/data/prospecting/compliance'
 import { hasSendableEmail } from '@/lib/data/prospecting/types'
-import { decideProspectIntake, intakeBuildsCma } from '@/lib/prospecting/intake-gate'
+import { decideProspectIntake, intakeBuildsCma, pickSendableCell } from '@/lib/prospecting/intake-gate'
 import { sendFsboAlertEmail } from '@/lib/fsbo-alert'
 
 const MAX_PER_RUN = 15
@@ -180,6 +180,8 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
       }
 
       let emailSuppressed = false
+      let smsSuppressed = false
+      const intakePhones = ownerLookup?.allPhones ?? []
       if (!onMarket && hasSendableEmail(ownerEmail)) {
         try {
           const sup = await isSuppressedByEmail(ownerEmail!, 'email')
@@ -194,6 +196,21 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
           continue
         }
       }
+      const cellForGate = pickSendableCell(intakePhones)
+      if (!onMarket && cellForGate && (!hasSendableEmail(ownerEmail) || emailSuppressed)) {
+        try {
+          const sup = await isSuppressedByPhone(cellForGate, 'sms')
+          if (sup.reasons.some((r) => r.startsWith('phone-suppression-check-failed'))) {
+            stats.errors++
+            continue
+          }
+          smsSuppressed = sup.suppressed
+        } catch (err) {
+          console.error('[fsbo-processor] sms suppression unread', l.fsboUrl, err)
+          stats.errors++
+          continue
+        }
+      }
       const intakeFlags = ownerLookup?.complianceFlags ?? []
       const decision = decideProspectIntake({
         onMarket,
@@ -203,7 +220,8 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
         dncPhone: intakeFlags.includes('dnc'),
         email: ownerEmail,
         emailSuppressed,
-        phones: ownerLookup?.allPhones ?? [],
+        smsSuppressed,
+        phones: intakePhones,
       })
       const skipReason = decision.action === 'skip' ? decision.reason : 'proceed'
 
@@ -315,6 +333,7 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
             leadEmail: clientEmail,
             leadName: ownerName,
             leadPhone: ownerPhone,
+            ownerPhones: ownerLookup?.allPhones ?? [],
             leadTimeline: 'ready-now',
             leadClassification: 'hot',
             crmPersonId,

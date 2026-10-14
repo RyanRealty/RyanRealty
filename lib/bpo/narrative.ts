@@ -76,14 +76,10 @@ export function buildBpoRationale(args: {
 
   // 3. Market frame.
   if (market) {
-    const verdict =
-      market.marketVerdict === 'seller'
-        ? "a seller's market"
-        : market.marketVerdict === 'buyer'
-          ? "a buyer's market"
-          : 'a balanced market'
+    const supply =
+      market.monthsOfSupply != null ? ` has ${formatMonthsOfSupply(market.monthsOfSupply)} months of supply` : ''
     paras.push(
-      `${market.geoLabel} is ${verdict}${market.monthsOfSupply != null ? ` at ${formatMonthsOfSupply(market.monthsOfSupply)} months of supply` : ''}` +
+      `${market.geoLabel}${supply}` +
         `${market.medianDom != null ? `, with homes taking a median of ${Math.round(market.medianDom)} days to sell` : ''}. ` +
         `${opinion.confidenceReason} We hold this opinion at ${opinion.confidence.toLowerCase()} confidence.`,
     )

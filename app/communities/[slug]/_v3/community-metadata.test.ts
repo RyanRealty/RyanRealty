@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { shareDescription } from '@/lib/share-metadata'
+import { BRAND_SUFFIX, TITLE_BUDGET } from '@/lib/site/page-metadata'
 import resortRegistry from '@/data/resort-communities.json'
 import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
 import {
@@ -132,7 +133,7 @@ describe('SITE-177 community SERP copy', () => {
         city: 'Bend',
         listedCount: 8,
       }),
-    ).toBe('Mountain High real estate | 8 Homes for Sale')
+    ).toBe('Mountain High Homes for Sale & Real Estate')
     expect(
       communitySerpTitle({
         slug: 'mountain-high',
@@ -140,11 +141,11 @@ describe('SITE-177 community SERP copy', () => {
         city: 'Bend',
         listedCount: null,
       }),
-    ).toBe('Mountain High real estate | Homes for Sale')
+    ).toBe('Mountain High Homes for Sale & Real Estate')
     // One listing reads as one home, in the title and the description.
     expect(
       communitySerpTitle({ slug: 'mountain-high', name: 'Mountain High', city: 'Bend', listedCount: 1 }),
-    ).toBe('Mountain High real estate | 1 Home for Sale')
+    ).toBe('Mountain High Homes for Sale & Real Estate')
     expect(
       communitySerpDescription({
         slug: 'mountain-high',
@@ -182,7 +183,7 @@ describe('SITE-177 community SERP copy', () => {
       stock: { listedCount: 47, types: ['homes', 'attached', 'lots'] },
     })
     // Matt 2026-10-04: /cities/sunriver 301s here, so this page carries "real estate" too.
-    expect(input.title).toBe('Sunriver real estate | Homes for Sale')
+    expect(input.title).toBe('Sunriver Homes for Sale & Real Estate')
     expect(input.description).toMatch(/^Sunriver, Oregon homes for sale\./)
     expect(input.description).not.toMatch(/Sunriver in Sunriver/)
     expect(input.path).toBe('/communities/sunriver')
@@ -195,7 +196,7 @@ describe('SITE-177 community SERP copy', () => {
       city: 'Sisters',
       stock: { listedCount: 31, types: ['homes', 'attached', 'lots'] },
     })
-    expect(input.title).toBe('Black Butte Ranch real estate | Homes for Sale')
+    expect(input.title).toBe('Black Butte Ranch Homes for Sale & Real Estate')
     expect(input.description).toMatch(/^Black Butte Ranch, Oregon homes for sale\./)
     expect(input.description).not.toMatch(/Black Butte Ranch in Sisters/)
     expect(input.description).toMatch(/Golf resort with two courses under the Cascades\./)
@@ -231,8 +232,7 @@ describe('SITE-177 community SERP copy', () => {
       city: 'Bend',
       stock: { listedCount: 24, types: ['homes', 'attached', 'lots'] },
     })
-    expect(input.title).toBe('Tetherow real estate | Bend Homes for Sale')
-    expect(input.title.length).toBeLessThanOrEqual(46)
+    expect(input.title).toBe('Tetherow Homes for Sale & Real Estate')
     expect(input.description).toMatch(/^Tetherow real estate in Bend, Oregon\./)
     expect(input.description).not.toMatch(/Active single-family homes/)
     expect(input.description).toMatch(/lots/i)
@@ -240,63 +240,52 @@ describe('SITE-177 community SERP copy', () => {
     expect(shareDescription(input.description)).toBe(input.description)
   })
 
-  it('every registered community leads with "real estate" (Matt 2026-09-24, self-city 2026-10-04)', () => {
+  it('every registered community title carries both searched phrases inside the 60-char budget (Matt 2026-10-14)', () => {
     const input = communityMetadataInput({
       slug: 'broken-top',
       name: 'Broken Top',
       city: 'Bend',
       stock: { listedCount: 12, types: ['homes'] },
     })
-    expect(input.title).toBe('Broken Top real estate | Bend Homes for Sale')
-    expect(input.title.length).toBeLessThanOrEqual(46)
-    // Sweep the registry: "real estate" everywhere. The two self-city
-    // communities joined 2026-10-04, when their /cities/<slug> twins became 301s.
+    expect(input.title).toBe('Broken Top Homes for Sale & Real Estate')
+    // Sweep the registry: "{Name} Homes for Sale & Real Estate", and the whole
+    // document title (layout adds " | Ryan Realty") fits 60 (Matt 2026-10-05).
     const registry = (resortRegistry as { communities: Array<{ slug: string; label: string; city: string }> })
       .communities
     expect(registry.length).toBeGreaterThan(10)
-    // The route's slug is the public one (pronghorn is served as juniper-preserve).
-    const plain = registry
+    const off = registry
       .map((e) => ({ ...e, slug: publicCommunitySlug(e) }))
-      .filter((e) => !communitySerpTitle({ slug: e.slug, name: e.label, city: e.city }).startsWith(`${e.label} real estate`))
+      .map((e) => ({ slug: e.slug, label: e.label, title: communitySerpTitle({ slug: e.slug, name: e.label, city: e.city }) }))
+      .filter((e) => {
+        const both = `${e.label} Homes for Sale & Real Estate`
+        // A name too long for both phrases keeps "Homes for Sale", uncut.
+        const want = both.length <= TITLE_BUDGET ? both : `${e.label} Homes for Sale`
+        return e.title !== want || e.title.length > TITLE_BUDGET
+      })
       .map((e) => e.slug)
       .sort()
-    expect(plain).toEqual([])
-    // Every one fits the 60-char SERP width once the layout adds " | Ryan Realty"
-    // (Matt 2026-10-05): the town tail and "| Homes for Sale" go before the name.
-    const long = registry
-      .map((e) => ({ ...e, slug: publicCommunitySlug(e) }))
-      .map((e) => communitySerpTitle({ slug: e.slug, name: e.label, city: e.city }))
-      .filter((t) => t.length > 46 && t !== t.split(' | ')[0])
-    expect(long).toEqual([])
+    expect(off).toEqual([])
   })
 
-  it('a compound slug keeps the Homes for Sale title (noindex, not a registered community)', () => {
+  it('a name too long for both phrases keeps "Homes for Sale", never a cut name', () => {
     expect(
       communitySerpTitle({ slug: 'bend-parks-at-broken-top', name: 'Parks at Broken Top', city: 'Bend' }),
-    ).toBe('Parks at Broken Top Homes for Sale | Bend, OR')
+    ).toBe('Parks at Broken Top Homes for Sale')
   })
 
-  it('Brasada / Tetherow / Broken Top titles keep Matt prefixes and fit 46+14', () => {
-    expect(communitySerpTitle({ slug: 'brasada-ranch', name: 'Brasada Ranch', city: 'Powell Butte' })).toBe(
-      'Brasada Ranch real estate | Homes, Lots, Agent',
-    )
-    expect(communitySerpTitle({ slug: 'tetherow', name: 'Tetherow', city: 'Bend' })).toBe(
-      'Tetherow real estate | Bend Homes for Sale',
-    )
-    expect(communitySerpTitle({ slug: 'broken-top', name: 'Broken Top', city: 'Bend' })).toBe(
-      'Broken Top real estate | Bend Homes for Sale',
-    )
-    expect(communitySerpTitle({ slug: 'black-butte-ranch', name: 'Black Butte Ranch', city: 'Sisters' })).toBe(
-      'Black Butte Ranch real estate | Homes for Sale',
-    )
-    for (const t of [
-      'Brasada Ranch real estate | Homes, Lots, Agent',
-      'Tetherow real estate | Bend Homes for Sale',
-      'Broken Top real estate | Bend Homes for Sale',
-      'Black Butte Ranch real estate | Homes for Sale',
-    ]) {
-      expect(t.startsWith(t.split(' | ')[0]!)).toBe(true)
-      expect(t.length + ' | Ryan Realty'.length).toBeLessThanOrEqual(60)
+  it('the seven resort titles Search Console measured (Matt 2026-10-14)', () => {
+    for (const [slug, name, city] of [
+      ['brasada-ranch', 'Brasada Ranch', 'Powell Butte'],
+      ['tetherow', 'Tetherow', 'Bend'],
+      ['broken-top', 'Broken Top', 'Bend'],
+      ['black-butte-ranch', 'Black Butte Ranch', 'Sisters'],
+      ['sunriver', 'Sunriver', 'Sunriver'],
+      ['eagle-crest', 'Eagle Crest', 'Redmond'],
+      ['caldera-springs', 'Caldera Springs', 'Sunriver'],
+    ] as const) {
+      const t = communitySerpTitle({ slug, name, city })
+      expect(t).toBe(`${name} Homes for Sale & Real Estate`)
+      expect(`${t}${BRAND_SUFFIX}`.length).toBeLessThanOrEqual(60)
     }
   })
 

@@ -151,6 +151,8 @@ export interface BpoBuildInput {
   /** Broker-adjusted opinion of value (rebuild path). */
   priceOverride?: number | null
   client?: BpoClientLink
+  /** buildBpo sets this on itself after a review drop on an ADU-first set (see CmaBuildInput.aduFallback). Never set by a caller. */
+  aduFallback?: { heldAfterReview: number } | null
 }
 
 export interface BpoBuildResult {

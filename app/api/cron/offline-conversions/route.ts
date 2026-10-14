@@ -37,8 +37,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { uploadOfflineConversion } from '@/lib/meta-offline-conversions'
+import { isIndustryContact } from '@/lib/crm/industry-contact'
 import { withIdempotency } from '@/lib/crm/idempotency'
 import { primaryValue } from '@/lib/crm/merge'
+import { readStoredGaClientId } from '@/lib/data/analytics/gaClientId'
+import { ga4EventForBuyerStage } from '@/lib/marketing/offline-ga4'
+import { sendOfflineGa4Conversion } from '@/lib/marketing/send-offline-ga4'
 import {
   UPLOAD_WINDOW_DAYS,
   conversionValue,
@@ -66,6 +70,8 @@ type PersonRow = {
   last_name: string | null
   emails: unknown
   phones: unknown
+  tags: unknown
+  stage: string | null
 }
 
 export async function GET(request: NextRequest) {
@@ -90,6 +96,9 @@ export async function GET(request: NextRequest) {
   const uploaded: string[] = []
   const skipped: string[] = []
   const errors: string[] = []
+  const ga4Sent: string[] = []
+  const ga4Skipped: string[] = []
+  const missingClientIdPeople = new Set<number>()
 
   const { data: deals, error: dealErr } = await sb
     .from('crm_deals')
@@ -125,6 +134,7 @@ export async function GET(request: NextRequest) {
       .select('channel')
       .eq('person_id', deal.person_id)
       .eq('channel', 'all')
+      .is('cleared_at', null)
       .limit(1)
     if (suppErr) {
       // Fail CLOSED, exactly like the send chokepoint: an unreadable compliance
@@ -140,7 +150,7 @@ export async function GET(request: NextRequest) {
 
     const { data: person, error: personErr } = await sb
       .from('crm_people')
-      .select('id,first_name,last_name,emails,phones')
+      .select('id,first_name,last_name,emails,phones,tags,stage')
       .eq('id', deal.person_id)
       .maybeSingle()
     if (personErr || !person) {
@@ -148,8 +158,43 @@ export async function GET(request: NextRequest) {
       continue
     }
     const p = person as PersonRow
+    if (isIndustryContact({ tags: p.tags, stage: p.stage })) {
+      skipped.push(`deal ${deal.id}: industry contact — never uploaded`)
+      continue
+    }
     const email = primaryValue(p.emails)
     const phone = primaryValue(p.phones)
+
+    // GA4 half of the same loop. Buyer Contract + Pending → qualify_lead,
+    // Closed → close_convert_lead. Needs the stored `_ga` client_id lead
+    // attribution wrote on the contact; a missing id is a skip, never a
+    // minted uuid (that would create an orphan user).
+    const ga4Event = ga4EventForBuyerStage(deal.stage)
+    if (ga4Event) {
+      const clientId = await readStoredGaClientId(sb, deal.person_id)
+      if (!clientId) {
+        missingClientIdPeople.add(deal.person_id)
+        ga4Skipped.push(`deal ${deal.id}: no stored GA client_id`)
+      } else {
+        try {
+          const res = await sendOfflineGa4Conversion({
+            personId: deal.person_id,
+            event: ga4Event,
+            clientId,
+            dryRun,
+          })
+          if (res.ok) {
+            ga4Sent.push(
+              `${dryRun ? 'WOULD send ' : ''}${res.eventId} ${ga4Event.eventName} lead_type=${ga4Event.leadType}`,
+            )
+          } else {
+            errors.push(`${res.eventId}: ${res.error}`)
+          }
+        } catch (e) {
+          errors.push(`ga4 person ${deal.person_id} ${ga4Event.stageKey}: ${e instanceof Error ? e.message : String(e)}`)
+        }
+      }
+    }
 
     // The stored Meta click id, when this person ever arrived from an ad. It is
     // the strongest attribution key, but it is optional — Meta matches on hashed
@@ -207,6 +252,13 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const ga4MissingClientId = missingClientIdPeople.size
+  if (ga4MissingClientId > 0) {
+    console.info(
+      `[offline-conversions] skipped ${ga4MissingClientId} contact${ga4MissingClientId === 1 ? '' : 's'} with no stored GA client_id`,
+    )
+  }
+
   return NextResponse.json({
     ok: errors.length === 0,
     dryRun,
@@ -214,6 +266,9 @@ export async function GET(request: NextRequest) {
     dealsScanned: (deals ?? []).length,
     uploaded,
     skipped,
+    ga4Sent,
+    ga4Skipped,
+    ga4MissingClientId,
     errors,
     ranAt: now.toISOString(),
   })

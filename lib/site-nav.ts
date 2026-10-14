@@ -10,7 +10,7 @@
  * Projections from this file (do not re-author separate trees):
  *   KB_TOP_NAV     — desktop top bar + caret panels (KbNav)
  *   KB_MENU_GROUPS — Menu+ / mobile overlay
- *   KB_FOOTER_COLUMNS / FOOTER_NAV — footer columns (Markets, Buy · Sell · Join, Company, Contact)
+ *   KB_FOOTER_COLUMNS / FOOTER_NAV — footer columns (Homes for sale by area, Markets, Buy · Sell · Join, Company, Contact)
  *   PRIMARY_NAV    — alias of KB_TOP_NAV for reachability gate + legacy imports
  *
  * Gate: scripts/check-nav-reachability.mjs
@@ -18,6 +18,11 @@
 
 import { publishNewsletterSubscribeHref } from '@/lib/site/publish-newsletter-href'
 import { bendLuxuryHomesDoor } from '@/lib/site/bend-luxury-homes'
+import {
+  HOMES_FOR_SALE_BY_AREA_HEADING,
+  HOMES_FOR_SALE_CITY_HUBS,
+  HOMES_FOR_SALE_COMMUNITY_HUBS,
+} from '@/lib/site/homes-for-sale-by-area'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -192,6 +197,8 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/homes-for-sale/sisters', label: 'Sisters homes for sale' },
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
+      { href: '/buy/alerts', label: 'Listing alerts' },
+      { href: '/buy/leverage', label: 'Buyer leverage' },
       bendLuxuryHomesDoor(),
       { href: '/new-construction', label: 'New construction in Bend' },
       { href: '/our-homes', label: 'Our listings' },
@@ -283,6 +290,8 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
       { href: REGIONAL_SEARCH.href, label: 'Search homes' },
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
+      { href: '/buy/alerts', label: 'Listing alerts' },
+      { href: '/buy/leverage', label: 'Buyer leverage' },
       bendLuxuryHomesDoor(),
       { href: '/new-construction', label: 'New construction in Bend' },
       { href: '/our-homes', label: 'Our listings' },
@@ -352,15 +361,28 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
 // ─── Footers (projections) ────────────────────────────────────────────────────
 
 /**
- * Public sitemap: Markets / Buy · Sell · Join / Company / Contact.
+ * Public sitemap: Homes for sale by area / Markets / Buy · Sell · Join /
+ * Company / Contact.
  * Markets is a city directory: the town name is the place-page door, communities
- * nest under it. Keyword sentences ("Homes for sale in {city}") live on
- * /site-index, not as a hairline dump in chrome (SITE-157, Matt 2026-09-20).
+ * nest under it. The area block is the one exact-match inventory door
+ * (`{Place} homes for sale` → /homes-for-sale/{city} and /communities/{slug}).
+ * SITE-157 still keeps "Homes for sale in {city}" / "{city} housing market"
+ * off the Markets hairline and on /site-index.
  * Header chrome: Homes / Places / Market / Sell / About.
  */
 const FOOTER_MORE_CITIES = ['La Pine', 'Terrebonne', 'Prineville', 'Madras'] as const
 
+function areaHubLinks(
+  hubs: readonly { href: string; anchor: string }[],
+): { href: string; label: string }[] {
+  return hubs.map((hub) => ({ href: hub.href, label: hub.anchor }))
+}
+
 export const KB_FOOTER_COLUMNS: FooterGroup[] = [
+  footerFromGroups(HOMES_FOR_SALE_BY_AREA_HEADING, [
+    { heading: 'Cities', links: areaHubLinks(HOMES_FOR_SALE_CITY_HUBS) },
+    { heading: 'Communities', links: areaHubLinks(HOMES_FOR_SALE_COMMUNITY_HUBS) },
+  ]),
   footerFromGroups('Markets', [
     cityFooterCluster(
       'Bend',
@@ -392,6 +414,8 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
         { href: REGIONAL_SEARCH.href, label: 'Search homes' },
         { href: '/open-houses', label: 'Open houses' },
         { href: '/price-drops', label: 'Price drops' },
+        { href: '/buy/alerts', label: 'Listing alerts' },
+        { href: '/buy/leverage', label: 'Buyer leverage' },
         bendLuxuryHomesDoor(),
         { href: '/new-construction', label: 'New construction in Bend' },
         { href: '/our-homes', label: 'Our listings' },

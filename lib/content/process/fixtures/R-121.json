@@ -1,0 +1,10 @@
+{
+  "rule": "R-121",
+  "step": "master",
+  "what": "a loop at SSIM 0.5",
+  "setup": {
+    "measure": {
+      "loopSsim": 0.5
+    }
+  }
+}

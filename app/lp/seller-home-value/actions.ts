@@ -17,7 +17,7 @@ import { geocodeAndTagLead } from '@/lib/lead-geocode'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { sendSellerLeadAlertEmail } from '@/lib/seller-lead-alert'
-import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { fireLeadGenerated, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { leadOriginPath } from '@/lib/crm/lead-origin-path'
@@ -222,7 +222,9 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     const name = submission.name?.trim() ?? ''
     const phone = submission.phone?.trim() ?? ''
     const timeline = submission.timeline
-    const lpSource = submission.source ?? 'seller-lp'
+    // The door (FUNNEL-4), picked here from the two this form knows: a server
+    // action's argument is whatever the client sends.
+    const lpSource = submission.source === 'list-now-lp' ? 'list-now-lp' : 'seller-lp'
     const isListNowLp = lpSource === 'list-now-lp'
     const { classification, tierTag } = classifyTimeline(timeline)
     // SITE-05: the control that sent the visitor here, kept to the closed set
@@ -703,8 +705,6 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
             timeline: timeline ?? 'unspecified',
             classification,
             assigned_broker: assignment.broker,
-            value: 500,
-            currency: 'USD',
           },
         }),
       }).catch((err) => {
@@ -715,7 +715,9 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // ─── GA4: the one server-side generate_lead (lib/lead-tracking.ts) ────
     // The browser no longer sends its own copy (lead-event.test.ts); this is
     // the single count. fireLeadGenerated reads the `_ga` cookie and referer
-    // UTMs itself and never throws.
+    // UTMs itself and never throws. Persist first so the cookie is on the
+    // contact even if generate_lead is skipped.
+    await persistGaClientIdFromCookies(fubPersonId)
     void fireLeadGenerated({
       lp_variant: isListNowLp ? 'sell-your-home' : 'seller-home-value',
       lead_type: isListNowLp ? 'seller_listing' : 'seller_valuation',
@@ -723,6 +725,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       broker_slug: assignment.broker,
       lead_classification: classification,
       event_id: eventId,
+      crm_person_id: fubPersonId,
       // SITE-05: which ask sent the submit rides on the one lead event.
       extra: askSource ? { ask_source: askSource } : undefined,
     })

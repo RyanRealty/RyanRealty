@@ -8,16 +8,20 @@ const h = vi.hoisted(() => ({
   sendEvent: vi.fn(),
   canonicallyTagLead: vi.fn(),
   createNativeTask: vi.fn(),
+  enrichNativeLead: vi.fn(),
   upsertListingAlert: vi.fn(),
   fireLeadGenerated: vi.fn(),
+  persistGaClientIdFromCookies: vi.fn(),
   stitchFormSubmitIdentity: vi.fn(),
   getCookie: vi.fn(),
   sendAlertConfirmation: vi.fn(),
+  headerGet: vi.fn((_name?: string) => null as string | null),
+  readLiveVisit: vi.fn(),
 }))
 
 vi.mock('next/headers', () => ({
   cookies: () => Promise.resolve({ get: h.getCookie }),
-  headers: () => Promise.resolve({ get: () => null }),
+  headers: () => Promise.resolve({ get: (name: string) => h.headerGet(name) }),
 }))
 
 vi.mock('@/lib/rate-limit', () => ({
@@ -34,15 +38,21 @@ vi.mock('@/lib/canonical-lead-tagger', () => ({
 
 vi.mock('@/lib/data/crm/ensureNativeLead', () => ({
   createNativeTask: (...args: unknown[]) => h.createNativeTask(...args),
+  enrichNativeLead: (...args: unknown[]) => h.enrichNativeLead(...args),
 }))
 
 vi.mock('@/lib/data/leads/listingAlerts', () => ({
   upsertListingAlert: (...args: unknown[]) => h.upsertListingAlert(...args),
 }))
 
-vi.mock('@/lib/lead-tracking', () => ({
-  fireLeadGenerated: (...args: unknown[]) => h.fireLeadGenerated(...args),
-}))
+vi.mock('@/lib/lead-tracking', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/lead-tracking')>()
+  return {
+    ...actual,
+    fireLeadGenerated: (...args: unknown[]) => h.fireLeadGenerated(...args),
+    persistGaClientIdFromCookies: (...args: unknown[]) => h.persistGaClientIdFromCookies(...args),
+  }
+})
 
 // SITE-09: the same-minute confirmation is a governed send; never reach the rail
 // (or Supabase, through the signing-broker resolver) from a unit test.
@@ -54,7 +64,16 @@ vi.mock('@/lib/visitor-backfill', () => ({
   stitchFormSubmitIdentity: (...args: unknown[]) => h.stitchFormSubmitIdentity(...args),
 }))
 
-import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
+// The visit's recorded campaign (visitor_sessions). Never read production.
+vi.mock('@/lib/data/identity/visitCampaign', () => ({
+  readLiveVisit: (...args: unknown[]) => h.readLiveVisit(...args),
+}))
+
+import {
+  submitListingPriceDropWatch,
+  submitListingSaveCapture,
+  submitSearchAlertSignup,
+} from '@/app/actions/search-alert-capture'
 
 const PERSON_ID = 42
 const EMAIL = 'buyer@example.com'
@@ -67,7 +86,7 @@ const BASE = {
   company: '',
 }
 
-async function signup(overrides: Partial<typeof BASE> & { sessionId?: string } = {}) {
+async function signup(overrides: Partial<Parameters<typeof submitSearchAlertSignup>[0]> = {}) {
   return submitSearchAlertSignup({ ...BASE, ...overrides })
 }
 
@@ -75,18 +94,26 @@ beforeEach(() => {
   h.sendEvent.mockReset()
   h.canonicallyTagLead.mockReset()
   h.createNativeTask.mockReset()
+  h.enrichNativeLead.mockReset()
   h.upsertListingAlert.mockReset()
   h.fireLeadGenerated.mockReset()
+  h.persistGaClientIdFromCookies.mockReset()
   h.stitchFormSubmitIdentity.mockReset()
   h.getCookie.mockReset()
   h.sendAlertConfirmation.mockReset()
+  h.headerGet.mockReset()
+  h.headerGet.mockReturnValue(null)
+  h.readLiveVisit.mockReset()
+  h.readLiveVisit.mockResolvedValue(null)
   h.sendAlertConfirmation.mockResolvedValue({ ok: false, via: 'skipped', error: 'unit test' })
+  h.enrichNativeLead.mockResolvedValue(undefined)
 
   h.sendEvent.mockResolvedValue({ ok: true, status: 200, personId: PERSON_ID })
   h.canonicallyTagLead.mockResolvedValue(undefined)
   h.createNativeTask.mockResolvedValue(undefined)
   h.upsertListingAlert.mockResolvedValue({ ok: true })
   h.fireLeadGenerated.mockResolvedValue(undefined)
+  h.persistGaClientIdFromCookies.mockResolvedValue(undefined)
   h.stitchFormSubmitIdentity.mockResolvedValue(undefined)
   h.getCookie.mockImplementation((name: string) =>
     name === 'rr_vid' ? { value: RR_VID } : undefined,
@@ -97,7 +124,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
   it('calls stitchFormSubmitIdentity with rr_vid + person id when a person exists', async () => {
     const result = await signup()
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, counted: true })
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledTimes(1)
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledWith({
       personId: PERSON_ID,
@@ -120,7 +147,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
   it('passes a valid uuid v4 sessionId through to stitch', async () => {
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toMatchObject({ ok: true })
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledTimes(1)
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledWith({
       personId: PERSON_ID,
@@ -133,7 +160,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
   it('does not stitch when the honeypot is filled', async () => {
     const result = await signup({ company: 'Acme Bot Farm' })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, counted: false })
     expect(h.sendEvent).not.toHaveBeenCalled()
     expect(h.stitchFormSubmitIdentity).not.toHaveBeenCalled()
     expect(h.upsertListingAlert).not.toHaveBeenCalled()
@@ -144,7 +171,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
 
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toMatchObject({ ok: true })
     expect(h.upsertListingAlert).toHaveBeenCalled()
   })
 
@@ -160,11 +187,12 @@ describe('submitSearchAlertSignup identity stitch', () => {
 
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, counted: false })
     expect(h.upsertListingAlert).toHaveBeenCalledWith(expect.objectContaining({ email: EMAIL, crmPersonId: PERSON_ID }))
     expect(h.canonicallyTagLead).not.toHaveBeenCalled()
     expect(h.createNativeTask).not.toHaveBeenCalled()
     expect(h.stitchFormSubmitIdentity).not.toHaveBeenCalled()
+    expect(h.persistGaClientIdFromCookies).toHaveBeenCalledWith(PERSON_ID)
     expect(h.fireLeadGenerated).not.toHaveBeenCalled()
     expect(h.sendAlertConfirmation).not.toHaveBeenCalled()
   })
@@ -174,8 +202,266 @@ describe('submitSearchAlertSignup identity stitch', () => {
 
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toMatchObject({ ok: true })
     expect(h.stitchFormSubmitIdentity).not.toHaveBeenCalled()
     expect(h.upsertListingAlert).toHaveBeenCalled()
+  })
+
+  it('defaults generate_lead to search_alert / search-alert for existing callers', async () => {
+    await signup()
+    expect(h.persistGaClientIdFromCookies).toHaveBeenCalledWith(PERSON_ID)
+    expect(h.fireLeadGenerated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lp_variant: 'search-alert',
+        lead_type: 'buyer_alerts',
+        form_id: 'search_alert',
+        crm_person_id: PERSON_ID,
+      }),
+    )
+  })
+
+  it('accepts formId, lpVariant, and lpContext and writes UTM CRM tags', async () => {
+    await signup({
+      formId: 'buyer_alerts_lp',
+      lpVariant: 'buy-alerts',
+      lpContext: {
+        lp_source: 'facebook',
+        lp_medium: 'paid_social',
+        lp_campaign: 'buyer-price-drops',
+        lp_content: 'reloc-h3-v1',
+        gclid: 'G1',
+        fbclid: 'F1',
+      },
+    })
+    expect(h.persistGaClientIdFromCookies).toHaveBeenCalledWith(PERSON_ID)
+    expect(h.fireLeadGenerated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lp_variant: 'buy-alerts',
+        lead_type: 'buyer_alerts',
+        form_id: 'buyer_alerts_lp',
+        crm_person_id: PERSON_ID,
+        attribution: expect.objectContaining({
+          lp_source: 'facebook',
+          lp_medium: 'paid_social',
+          gclid: 'G1',
+          fbclid: 'F1',
+        }),
+      }),
+    )
+    const sent = h.sendEvent.mock.calls[0][0] as { sourceUrl: string; campaign?: { source?: string } }
+    expect(sent.sourceUrl).toContain('utm_source=facebook')
+    expect(sent.sourceUrl).toContain('gclid=G1')
+    expect(sent.campaign).toMatchObject({ source: 'facebook', medium: 'paid_social' })
+    expect(h.canonicallyTagLead).toHaveBeenCalledWith(
+      expect.objectContaining({
+        extraTags: expect.arrayContaining(['channel:fb-ads', 'campaign:buyer-price-drops', 'ad-content:reloc-h3-v1']),
+        originContext: expect.objectContaining({
+          utmSource: 'facebook',
+          utmMedium: 'paid_social',
+          utmCampaign: 'buyer-price-drops',
+          utmContent: 'reloc-h3-v1',
+        }),
+      }),
+    )
+  })
+
+  it('defaults buyer_leverage_lp to buy-leverage and fires that form_id with buyer_alerts', async () => {
+    await signup({ formId: 'buyer_leverage_lp' })
+    expect(h.persistGaClientIdFromCookies).toHaveBeenCalledWith(PERSON_ID)
+    expect(h.fireLeadGenerated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lp_variant: 'buy-leverage',
+        lead_type: 'buyer_alerts',
+        form_id: 'buyer_leverage_lp',
+        crm_person_id: PERSON_ID,
+      }),
+    )
+  })
+})
+
+describe('submitSearchAlertSignup price-drop watch', () => {
+  const PRICE_DROP_EVENTS = {
+    new: false,
+    price_change: true,
+    status_change: false,
+    back_on_market: false,
+    sold: false,
+    open_house: false,
+  }
+
+  it('writes the price-change events map and confirms as a price-drop watch', async () => {
+    const result = await signup({ events: PRICE_DROP_EVENTS })
+
+    expect(result).toMatchObject({ ok: true })
+    expect(h.upsertListingAlert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: EMAIL,
+        events: PRICE_DROP_EVENTS,
+      }),
+    )
+    expect(h.sendAlertConfirmation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'price-drop',
+      }),
+    )
+    expect(h.sendAlertConfirmation.mock.calls[0][0].listingUrl).toBeUndefined()
+    expect(h.sendEvent.mock.calls[0][0].message).toMatch(/Price-drop alert/)
+  })
+
+  it('carries gclid, fbclid and utm_* on CRM sourceUrl and campaign', async () => {
+    const result = await signup({
+      landingSearch: '?gclid=G1&fbclid=F1&utm_source=google&utm_medium=cpc&utm_campaign=price-drops&email=no@no.com',
+    })
+
+    expect(result).toMatchObject({ ok: true })
+    const sent = h.sendEvent.mock.calls[0][0]
+    expect(sent.sourceUrl).toMatch(/gclid=G1/)
+    expect(sent.sourceUrl).toMatch(/fbclid=F1/)
+    expect(sent.sourceUrl).toMatch(/utm_source=google/)
+    expect(sent.sourceUrl).not.toMatch(/email=/)
+    expect(sent.campaign).toEqual({
+      source: 'google',
+      medium: 'cpc',
+      campaign: 'price-drops',
+    })
+  })
+
+  it('falls back to the referer when landingSearch is empty', async () => {
+    h.headerGet.mockImplementation((name?: string) =>
+      name === 'referer'
+        ? 'https://ryan-realty.com/price-drops?gclid=FROMREF&utm_source=facebook'
+        : null,
+    )
+
+    await signup()
+
+    const sent = h.sendEvent.mock.calls[0][0]
+    expect(sent.sourceUrl).toMatch(/gclid=FROMREF/)
+    expect(sent.campaign).toEqual({ source: 'facebook' })
+  })
+
+  it('stores EU hashed-match consent on the person and never puts dollars on generate_lead', async () => {
+    const result = await signup({ adMatchConsent: true })
+
+    expect(result).toMatchObject({ ok: true })
+    expect(h.enrichNativeLead).toHaveBeenCalledWith(
+      expect.objectContaining({
+        personId: PERSON_ID,
+        custom: expect.objectContaining({ adMatchConsent: 'granted' }),
+      }),
+    )
+    const lead = h.fireLeadGenerated.mock.calls[0][0]
+    expect(lead).toMatchObject({
+      lead_type: 'buyer_alerts',
+      form_id: 'search_alert',
+    })
+    expect(lead).not.toHaveProperty('value')
+    expect(lead).not.toHaveProperty('currency')
+    expect(JSON.stringify(lead)).not.toMatch(/adMatch|consent/)
+  })
+
+  it('does not write ad-match consent when the box is unchecked', async () => {
+    await signup()
+    expect(h.enrichNativeLead).not.toHaveBeenCalled()
+  })
+})
+
+// Matt 2026-10-09, "Visit they signed up in": every buyer door tags the lead with
+// the link that started the live visit, else the page's own link when there is
+// no live visit, else nothing.
+describe('same-visit ad tags on the buyer doors', () => {
+  const FB_VISIT = { source: 'facebook', medium: 'paid_social', campaign: 'buyer-price-drops', content: 'reloc-h3-v1' }
+  const FB_TAGS = ['channel:fb-ads', 'campaign:buyer-price-drops', 'ad-content:reloc-h3-v1']
+  const FB_ORIGIN = {
+    utmSource: 'facebook',
+    utmMedium: 'paid_social',
+    utmCampaign: 'buyer-price-drops',
+    utmContent: 'reloc-h3-v1',
+  }
+  const LISTING = { email: EMAIL, listingKey: '220123456', addressLine: '123 Main St', company: '' }
+  const tagCall = () => h.canonicallyTagLead.mock.calls[0][0] as { extraTags?: string[]; originContext: Record<string, unknown> }
+  const refererIs = (url: string) => h.headerGet.mockImplementation((name?: string) => (name === 'referer' ? url : null))
+
+  it('an alert signup on a page with no link carries the visit’s campaign', async () => {
+    h.readLiveVisit.mockResolvedValue({ campaign: FB_VISIT })
+
+    await signup({ sessionId: SESSION_ID })
+
+    expect(h.readLiveVisit).toHaveBeenCalledWith({ sessionId: SESSION_ID, rrVid: RR_VID })
+    expect(tagCall().extraTags).toEqual(FB_TAGS)
+    expect(tagCall().originContext).toMatchObject(FB_ORIGIN)
+  })
+
+  it('with no live visit, an alert signup is credited to the page’s link', async () => {
+    await signup({ sessionId: SESSION_ID, landingSearch: '?utm_source=google&utm_medium=cpc&utm_campaign=bend-homes' })
+
+    expect(tagCall().extraTags).toEqual(['channel:google-ads', 'campaign:bend-homes'])
+  })
+
+  it('a live visit outranks a link inside the site, and the note keeps the page’s utm when nothing earned credit', async () => {
+    h.readLiveVisit.mockResolvedValue({ campaign: null })
+
+    await signup({ sessionId: SESSION_ID, landingSearch: '?utm_source=cma&utm_medium=document&utm_campaign=cma-letter' })
+
+    expect(tagCall().extraTags).toEqual([])
+    expect(tagCall().originContext).toMatchObject({ utmSource: 'cma', utmMedium: 'document', utmCampaign: 'cma-letter' })
+  })
+
+  it('a suspect alert signup reads no visit and tags nothing', async () => {
+    h.sendEvent.mockResolvedValueOnce({ ok: true, status: 200, personId: PERSON_ID, suspect: true })
+
+    await signup({ sessionId: SESSION_ID })
+
+    expect(h.readLiveVisit).not.toHaveBeenCalled()
+    expect(h.canonicallyTagLead).not.toHaveBeenCalled()
+  })
+
+  it('with no live visit, a guest save carries the listing page’s link from the Referer', async () => {
+    refererIs('https://ryan-realty.com/homes-for-sale/listing/220123456?utm_source=google&utm_medium=cpc&utm_campaign=new-listings')
+
+    await submitListingSaveCapture({ ...LISTING, sessionId: SESSION_ID })
+
+    expect(h.readLiveVisit).toHaveBeenCalledWith({ sessionId: SESSION_ID, rrVid: RR_VID })
+    expect(tagCall().extraTags).toEqual(['channel:google-ads', 'campaign:new-listings'])
+    expect(tagCall().originContext).toMatchObject({ source: 'listing-save', utmSource: 'google', utmMedium: 'cpc' })
+  })
+
+  it('a guest save from a CMA comp link is credited to the visit, not to utm_source=cma', async () => {
+    h.readLiveVisit.mockResolvedValue({ campaign: { source: 'crm', medium: 'sms', campaign: null, content: null } })
+    refererIs('https://ryan-realty.com/homes-for-sale/listing/220123456?utm_source=cma&utm_medium=document&utm_campaign=cma-letter')
+
+    await submitListingSaveCapture({ ...LISTING, sessionId: SESSION_ID })
+
+    expect(tagCall().extraTags).toEqual(['channel:crm'])
+  })
+
+  it('a guest save without a page link carries the visit’s campaign', async () => {
+    h.readLiveVisit.mockResolvedValue({ campaign: FB_VISIT })
+
+    await submitListingSaveCapture({ ...LISTING, sessionId: SESSION_ID })
+
+    expect(tagCall().extraTags).toEqual(FB_TAGS)
+    expect(tagCall().originContext).toMatchObject({ source: 'listing-save', ...FB_ORIGIN })
+  })
+
+  it('a price watch carries the visit’s campaign', async () => {
+    h.readLiveVisit.mockResolvedValue({ campaign: FB_VISIT })
+
+    await submitListingPriceDropWatch({ ...LISTING, sessionId: SESSION_ID })
+
+    expect(h.readLiveVisit).toHaveBeenCalledWith({ sessionId: SESSION_ID, rrVid: RR_VID })
+    expect(tagCall().extraTags).toEqual(FB_TAGS)
+    expect(tagCall().originContext).toMatchObject({ source: 'listing-price-watch', ...FB_ORIGIN })
+  })
+
+  it('no campaign either way: a save and a watch get no channel tags', async () => {
+    await submitListingSaveCapture({ ...LISTING, sessionId: SESSION_ID })
+    await submitListingPriceDropWatch({ ...LISTING, sessionId: SESSION_ID })
+
+    expect(h.canonicallyTagLead).toHaveBeenCalledTimes(2)
+    for (const [call] of h.canonicallyTagLead.mock.calls as Array<[{ extraTags?: string[]; originContext: Record<string, unknown> }]>) {
+      expect(call.extraTags).toEqual([])
+      expect(call.originContext.utmSource).toBeUndefined()
+    }
   })
 })

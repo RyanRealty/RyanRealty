@@ -25,7 +25,7 @@ So: if your latest work isn’t committed and pushed, Vercel will keep serving t
    ```bash
    git push -u origin HEAD
    ```
-   Open a PR to `main`; Matt merges. Never push `main` yourself.
+   A finished unit is `npm run ship`. Never `git push` `main`.
 
 3. **Vercel**
    - Vercel will detect the push and start a new deployment.
@@ -95,6 +95,6 @@ In Vercel: **Project → Settings → Cron Jobs** (or `vercel.json`), add each U
 ## Quick checklist
 
 - [ ] Code committed (`git status` clean or only intended changes).
-- [ ] Branch pushed and a PR opened to `main`; Matt merges.
+- [ ] Finished work landed with `npm run ship`.
 - [ ] Vercel env vars set (especially `NEXT_PUBLIC_SITE_URL` = your Vercel URL).
 - [ ] Supabase Redirect URLs include your Vercel URL (Supabase → Authentication → URL Configuration).

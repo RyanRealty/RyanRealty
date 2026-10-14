@@ -9,14 +9,13 @@ const files = {
   annual: readFileSync(resolve('app/housing-market/annual-review/page.tsx'), 'utf8'),
   cities: readFileSync(resolve('app/cities/page.tsx'), 'utf8'),
   snapshot: readFileSync(resolve('components/site/MarketSnapshot.tsx'), 'utf8'),
-  searchOg: readFileSync(resolve('app/search/og/[...slug]/route.tsx'), 'utf8'),
-  housingOg: readFileSync(resolve('app/housing-market/og/[...slug]/route.tsx'), 'utf8'),
   // SiteHeader was deleted 2026-08-27 with the legacy chrome. V3Chrome is the
   // one public header and publishes no MOS figure of its own; the chrome-level
   // read that remains is getMegaMenuData, on the next line, which carries this
   // rule forward unchanged.
   mega: readFileSync(resolve('lib/data/nav/getMegaMenuData.ts'), 'utf8'),
   search: readFileSync(resolve('lib/market/search-city-sfr-publish.ts'), 'utf8'),
+  leverage: readFileSync(resolve('app/buy/leverage/_v3/leverage-data.ts'), 'utf8'),
 }
 
 describe('D21 leftover MOS destinations and leftover remainder', () => {

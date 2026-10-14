@@ -23,6 +23,7 @@ import {
 } from '@/lib/data'
 import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
 import { applySubjectFactOverrides, resolveCmaSubject } from '@/lib/cma/subject'
+import { multiUnitSubjectRefusal } from '@/lib/cma/subject-units'
 import { applyReconciledRoomCounts, reconcileSubjectRoomCounts } from '@/lib/cma/subject-room-conflict'
 import { pickCoverPhoto } from '@/lib/cma/cover-photo'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
@@ -45,12 +46,13 @@ import {
 import { selectionIsExclusivePocket } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { finishExclusivePocketPricing, localReadForSet } from '@/lib/cma/pocket-pricing'
 import { buildRejectedSales } from '@/lib/pricing/rejected'
-import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
+import { dropPriorSalesOfSameHome, seatDistinctHomes } from '@/lib/pricing/same-address'
 import { buildPricingReview, confidenceForVerdict } from '@/lib/pricing/review'
 import { applyAskBelowBandHold, applyAskInBandHold } from '@/lib/cma/gap-hold'
+import { gateOutreachBuild } from '@/lib/cma/outreach-build-gate'
 import { attachSellerNet, reanchorSellerNet } from '@/lib/pricing/seller-net'
 import { pricingFailureMessage } from '@/lib/pricing/price-set'
-import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
+import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import { composeBuildSummary, composeFailureSummary } from '@/lib/cma/build-summary'
 import { getCmaMarketContext, yearMartCite, cmaMarketSources, CMA_MARKET_POPULATION } from '@/lib/cma/market'
@@ -266,6 +268,15 @@ async function persistJudgeCache(slug: string, record: JudgeDecisionRecord): Pro
 
 export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
   const slug = input.slug.trim().toLowerCase()
+  // Expired and FSBO only. Live status, then compliance, then a sendable
+  // email or a typed cell. This runs before the snapshot so a rebuild cannot
+  // price a home that is back on the market or has nobody to reach.
+  const docType: 'cma' | 'expired-audit' = input.docType === 'expired-audit' ? 'expired-audit' : 'cma'
+  const blocked = await gateOutreachBuild(input)
+  if (!blocked.ok) {
+    await recordBuildFailure(slug, blocked.reason, { stage: 'subject', docType })
+    return { ok: false, error: blocked.reason, slug }
+  }
   const generatedAtIso = new Date().toISOString()
   // The letter's calendar day in Pacific time, the day every printed date on
   // the document reads (formatDate). A UTC slice of an evening build is the
@@ -273,8 +284,6 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
   // 2026-10-08" and "listed ... through October 8, 2026" (reader review
   // 2026-10-08). The reads that print a day take this.
   const letterDay = zonedDateKey(generatedAtIso)
-  // Hoisted: every failure path stamps it on the row alongside the comp trace.
-  const docType: 'cma' | 'expired-audit' = input.docType === 'expired-audit' ? 'expired-audit' : 'cma'
   // Held outside the try so the catch-all below can still write the comp trace.
   // A throw anywhere downstream of selection (voice gate, render, persist) used
   // to wipe the answer to "why these comps" off the row entirely.
@@ -308,6 +317,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       },
       input.subjectFacts,
     )
+    // A duplex or other multi-unit home is refused before a single comp is
+    // read (Matt 2026-10-14, 429 Irving: a duplex by its own listing history,
+    // priced on five single-family sales). Rule 23 prices like from like, and
+    // the pool holds no multi-unit sales, so the queue files it for Matt. The
+    // resolver decides (every pricing build reads the same field); the
+    // overrides above never change a unit count.
+    const unitRefusal = resolved.refusal ?? multiUnitSubjectRefusal(subject)
+    if (unitRefusal) {
+      await recordBuildFailure(slug, unitRefusal, { stage: 'subject', docType, trace: [resolved.trace] })
+      return { ok: false, error: unitRefusal, slug }
+    }
     // The cover (Matt 2026-09-09): the best exterior among the listing's own
     // photos, graded once each, the MLS hero kept when it already is one.
     const coverPhoto = await pickCoverPhoto({ listingKey: subject.listingKey, heroUrl: subject.photoUrl })
@@ -430,6 +450,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             subjectIrrigation,
             subjectZoning: site.zone,
             asOf: generatedAtIso.slice(0, 10),
+            // The re-entry after a review drop (CmaBuildInput.aduFallback).
+            aduPass: input.aduFallback ? 'ordinary' : 'first',
+            aduSalesHeld: input.aduFallback?.heldAfterReview,
           }),
       marketPromise,
     ])
@@ -477,6 +500,47 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           .map((d) => d.address)
           .join(', ')}) and were dropped so no home is counted twice.`,
       )
+    }
+
+    // The walk can still hand five keys that are four homes. The bench already
+    // holds the next home. Take it only when a duplicate drop left the set
+    // short. A set that was never short does not pull from the bench.
+    if (priorSaleDrops.length > 0 && selection.comps.length < MIN_COMPS) {
+      const bench = selection.refill?.comps ?? []
+      if (bench.length > 0) {
+        const filled = seatDistinctHomes([...selection.comps, ...bench], MIN_COMPS)
+        const before = new Set(selection.comps.map((comp) => comp.listingKey))
+        const added = filled.seated.filter((comp) => !before.has(comp.listingKey))
+        if (added.length > 0 && filled.seated.length > selection.comps.length) {
+          const benchSales = selection.refill?.pricingSales ?? []
+          const salesByKey = new Map(
+            [...(selection.pricingSales ?? []), ...benchSales].map((sale) => [sale.listingKey, sale]),
+          )
+          const nextSales = selection.pricingSales
+            ? filled.seated
+                .map((comp) => salesByKey.get(comp.listingKey))
+                .filter((sale): sale is NonNullable<typeof sale> => sale != null)
+            : null
+          const salesMatch = nextSales == null || nextSales.length === filled.seated.length
+          if (salesMatch) {
+            selection.comps = filled.seated
+            if (nextSales) selection.pricingSales = nextSales
+            const seatedKeys = new Set(filled.seated.map((comp) => comp.listingKey))
+            if (selection.refill) {
+              selection.refill = {
+                ...selection.refill,
+                comps: selection.refill.comps.filter((comp) => !seatedKeys.has(comp.listingKey)),
+                pricingSales: selection.refill.pricingSales?.filter((sale) => !seatedKeys.has(sale.listingKey)),
+              }
+            }
+            selection.trace.push(
+              `One home, one sale left the set short of ${MIN_COMPS}, so the next home took that seat (${added
+                .map((comp) => comp.address)
+                .join(', ')}).`,
+            )
+          }
+        }
+      }
     }
 
     // Relists reset OnMarketDate. Calendar DOM from that date undercounts
@@ -547,18 +611,16 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // every candidate that does not price by the one step that took it out.
     let differentProduct = 0
     if (!isCurated) {
-      // The review's keep prices the house, and nothing it excluded comes
-      // back (the Falcon re-admission is retired, lib/cma/judgment-prune.ts).
+      // The picker's set prices the house. The review reads those same sales
+      // and does not remove one or change its weight (lib/cma/judgment-prune.ts).
       // A different product, age-restricted housing included, never prices
-      // it. Fewer than the minimum is the existing comp shortage, not a price.
+      // it. Fewer than the minimum after that wall is the existing comp shortage.
       //
       // REFILL FROM THE SAME RUNG (Matt 2026-10-08, lib/cma/review-refill.ts).
-      // When the review drops a sale, or splits on one, from an exactly-five
-      // set a widening rung reached, the next sale on that same rung is taken
-      // and the refilled set is reviewed again, at most twice and never past
-      // the rung's bench. `selection.comps` becomes every candidate the
-      // review saw, so the letter's "N of M candidate sales kept" and the
-      // rejected list describe the final set.
+      // A review exclude or a split does not remove a sale (Matt 2026-10-09).
+      // When the product wall leaves a widening rung short of five, the next
+      // sale on that same rung is taken. `selection.comps` is every candidate
+      // that read, so the letter describes that set.
       const review = await reviewWithRefill({
         subject,
         selection,
@@ -574,9 +636,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       if (review.pricingSales) selection.pricingSales = review.pricingSales
       selection.trace.push(...review.trace)
       if (review.refill) selection.diagnostics.review_refill = review.refill
-      // JUDGE_UNSTABLE after every refill the rung allowed (JudgeUnstableError,
-      // lib/cma/judge-vote.ts): store the decision on the row and fail the
-      // build with the judge's own sentence, as before the refill existed.
+      // A split no longer comes back as unstable (review-refill.ts). The sales
+      // the picker kept still price. This remains only if a caller still
+      // surfaces a split as a failure.
       const unstable: JudgeUnstableError | null = review.unstable
       if (unstable) {
         await persistJudgeCache(slug, unstable.record).catch((cacheErr) => {
@@ -595,10 +657,21 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       judgment = review.judgment
       const gated = review.gated
       if (gated.shortage) {
+        // AN ADU HOME FALLS BACK AFTER THE REVIEW TOO (Matt 2026-10-14,
+        // lib/pricing/adu-preference.ts). The ADU-first set is decided on the
+        // picker's count; a review drop with no ADU bench leaves it short, and
+        // the rule says the ordinary set then prices the home. Re-enter once
+        // on the ordinary pass. Nothing has been recorded for this attempt.
+        if (!input.aduFallback && selection.diagnostics.adu_preference?.outcome === 'adu-sales') {
+          console.log(
+            `[cma/build] ${slug}: the ADU-first set held ${gated.comps.length} of ${MIN_COMPS} after the review; rebuilding on the ordinary set`,
+          )
+          return buildCma({ ...input, aduFallback: { heldAfterReview: gated.comps.length } })
+        }
         const err =
           gated.droppedProduct > 0
             ? `Not enough sales of the same product type to price this home. ${gated.comps.length} of ${selection.comps.length} candidates matched, and this home needs ${MIN_COMPS}.`
-            : `Not enough comparable sales the review would keep. ${gated.comps.length} of ${selection.comps.length} stayed, and this home needs ${MIN_COMPS}.`
+            : `Not enough comparable sales to price this home. ${gated.comps.length} of ${selection.comps.length} stayed, and this home needs ${MIN_COMPS}.`
         await recordBuildFailure(slug, err, {
           stage: 'comps',
           docType,
@@ -611,10 +684,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       compsForPricing = gated.comps
       differentProduct = gated.droppedProduct
       if (judgment) {
-        const excluded = judgment.verdicts.filter((v) => v.tier === 'exclude').length
-        const weak = judgment.verdicts.filter((v) => v.tier === 'weak').length
         selection.trace.push(
-          `Comparability judgment (${judgment.model}): kept ${judgment.keptKeys.length} of ${selection.comps.length} candidates, excluded ${excluded} as non-comparable, down-weighted ${weak}. ${judgment.cacheHit ? 'Reused the stored decision. ' : ''}${gated.trace}`,
+          `Comparability judgment (${judgment.model}) read the sales the picker kept. It does not remove one or change its weight. ${judgment.cacheHit ? 'Reused the stored decision. ' : ''}${gated.trace}`,
         )
       } else if (gated.droppedProduct > 0) {
         selection.trace.push(
@@ -646,12 +717,14 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       }
     }
 
-    // 4. Adjustments + pricing (on the vetted comp set). Judge verdicts feed
-    // the Method 3 reconciliation weights: strong = full weight, weak = half
-    // (bracketing only). An automatic set dropped its excludes above; a
-    // broker-picked one prices every pick as chosen, an exclude verdict
-    // included, and only `weak` is halved (reviewWeightFactor).
-    const tierByKey = new Map(judgment?.verdicts.map((v) => [v.listingKey, v.tier]) ?? [])
+    // 4. Adjustments + pricing on the picker's set. An automatic build does
+    // not halve a sale the review called weak: the picker already weighed it.
+    // A broker-picked set still halves weak, and never drops a pick.
+    const tierByKey = new Map(
+      (judgment?.verdicts ?? [])
+        .filter((v) => isCurated || v.tier === 'strong')
+        .map((v) => [v.listingKey, v.tier] as const),
+    )
     // ONE CITY, ONE BASIS (tasteReview round three, §1). This used to load the
     // index only on the facts path, so cma-1617-nw-8th — a Bend subject the
     // facts ladder starved, sent to the listings ladder by pickCompSource —
@@ -917,14 +990,12 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         // out. This used to call all of them "excluded as a different market
         // segment", the different-product sales and the audit removals included.
         const reasons = [
-          breakdown.reviewExcluded ? `${breakdown.reviewExcluded} excluded by the review` : null,
           breakdown.differentProduct ? `${breakdown.differentProduct} left out as a different product type` : null,
-          breakdown.auditRemoved ? `${breakdown.auditRemoved} removed on the independent audit's findings` : null,
           weakCount ? `${weakCount} down-weighted to bracket the range` : null,
         ].filter((r): r is string => r != null)
         p.notes.push(
-          `Comparable review: ${set.length} of ${selection.comps.length} candidate sales kept after a per-comp comparability review${
-            reasons.length ? `, ${reasons.join(', ')}` : ''
+          `Comparable review: ${set.length} of ${selection.comps.length} candidate sales are the sales the picker kept. The review read those same sales and did not remove one${
+            reasons.length ? ` (${reasons.join(', ')})` : ''
           }.${final.narrative ? ` ${final.narrative}` : ''}`,
         )
       }
@@ -934,7 +1005,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     }
     const excludedForAudit = () =>
       judgment?.verdicts
-        .filter((v) => v.tier === 'exclude')
+        .filter((v) => v.tier === 'exclude' && !compsForPricing.some((c) => c.listingKey === v.listingKey))
         .map((v) => ({ listingKey: v.listingKey, reason: v.reason })) ?? []
     // The judge's narrative, held apart from whatever a pass prints, and gated
     // again on every set this build prices. `gatedKeys` is the set the review
@@ -1034,111 +1105,49 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // prompt. Anything but a clean pass forces broker review via the contract.
     let audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market, site, candidates: selection.comps })
 
-    // 4.45. Bounded self-repair: when the audit ties critical/major findings
-    // to SPECIFIC comps, drop those comps, re-price, and re-audit ONCE. The
-    // repaired analysis is what ships; both rounds are recorded. Never prunes
-    // below the comp floor, never loops more than once.
-    let firstRoundAudit: typeof audit = null
-    let repairedKeys: string[] = []
-    // A broker-curated set is not auto-repaired by dropping comps — the broker
-    // owns the selection. A non-pass audit still records its findings and forces
-    // needs_review through the contract, so the broker reviews it explicitly.
-    if (audit && audit.verdict !== 'pass' && !isCurated) {
-      const customSubject = subjectIsCustomOrNew
+    // 4.45. The audit reads the sales the picker kept. It does not remove one
+    // (Matt 2026-10-09). A finding stays on the row and the contract still
+    // forces broker review. The price does not move to a shorter set.
+    // There is no first-round snapshot: that field only existed to remember
+    // the audit from before a sale was dropped.
+    const repairedKeys: string[] = []
+    if (audit && audit.verdict !== 'pass') {
       const flagged = [
         ...new Set(
           audit.findings
-            .filter((f) => {
-              if (
-                !(f.severity === 'critical' || f.severity === 'major') ||
-                !(f.category === 'comp-selection' || f.category === 'data-integrity') ||
-                !f.compListingKey
-              ) {
-                return false
-              }
-              if (f.category === 'data-integrity') return true
-              if (!customSubject) return true
-              const peer = compsForPricing.find((c) => c.listingKey === f.compListingKey)
-              if (
-                peer &&
-                yearQualityCompatible(
-                  {
-                    yearBuilt: subject.yearBuilt,
-                    newConstructionYn: subject.newConstructionYn,
-                    remarks: subject.publicRemarks,
-                    propertySubType: subject.propertySubType,
-                  },
-                  { yearBuilt: peer.yearBuilt, remarks: peer.publicRemarks },
-                ) &&
-                /luxury|too expensive|premium|price.?tier|higher price/i.test(`${f.claim} ${f.evidence}`)
-              ) {
-                return false
-              }
-              return true
-            })
+            .filter(
+              (f) =>
+                (f.severity === 'critical' || f.severity === 'major') &&
+                (f.category === 'comp-selection' || f.category === 'data-integrity') &&
+                Boolean(f.compListingKey) &&
+                compsForPricing.some((c) => c.listingKey === f.compListingKey),
+            )
             .map((f) => f.compListingKey!),
         ),
       ]
-      const remaining = compsForPricing.filter((c) => !flagged.includes(c.listingKey))
-      // A five-sale set cannot lose a sale and still price (the cap equals the
-      // floor, Matt 2026-10-07): a flagged comp falls through to the review
-      // flag, never a silent reprice.
-      if (flagged.length > 0 && remaining.length >= MIN_COMPS) {
-        const repriced = priceSet(remaining)
-        if (repriced.p) {
-          firstRoundAudit = audit
-          repairedKeys = flagged
-          compsForPricing = remaining
-          adjusted = repriced.adj
-          pricing = repriced.p
-          pricedListingMarket = repriced.listingMarket
-          if (lastCycleFailed) {
-            const row0 = cycleRows[0] ?? {}
-            applyFailedAskCap(pricing, {
-              lastFailedListPrice: subject.lastListPrice,
-              offMarketDate: String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null,
-              daysOnMarket: subjectDomDays(subject),
-              originalListPrice: failedAskOriginal,
-            })
-          }
-          selection.trace.push(
-            `Adversarial audit repair: ${flagged.length} comp(s) flagged by the independent audit were removed and the analysis re-priced on the ${remaining.length}-comp set, then re-audited.`,
-          )
-          settled = await settleRecommended(adjusted, pricing)
-          competition = settled.competition
-          pricing = settled.pricing
-          audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market, site, candidates: selection.comps })
-        }
+      if (flagged.length > 0) {
+        selection.trace.push(
+          `The audit reads the sales the picker kept. It does not remove one. It named ${flagged.length} of those sales, and the finding stays for broker review.`,
+        )
       }
     }
 
-    // 4.46. Narrative repair — the findings the comp repair above cannot touch.
+    // 4.46. Narrative repair. The comps and the price do not move here.
     //
-    // A finding with a compListingKey is about a SALE, and 4.45 answers it by
-    // dropping the sale. A finding without one is about the PROSE: a miscounted
-    // bedroom claim, a $/sqft bracket no comp falls in. Those had no repair path
-    // at all, so a sound analysis described one sentence badly failed the audit
-    // and parked in draft permanently. On 2026-08-06 that was every stored CMA,
-    // 8 of 8 on `Audit verdict: fail`.
-    //
-    // The comps and the pricing do not move here. Only the sentences do, and
-    // the deterministic integrity check must not get worse, and the audit is
-    // then re-run so the recorded verdict describes the narrative that actually
-    // ships. Once. A document that still fails stays flagged, which is the
-    // correct outcome — the point is to stop failing for a fixable sentence,
+    // 4.45 does not drop a sale, so a finding about a seated sale stays on the
+    // row. What this pass may change is a sentence: a miscounted bedroom, a
+    // $/sqft bracket no sale falls in. The deterministic integrity check must
+    // not get worse, and the audit is then re-run so the recorded verdict
+    // describes the narrative that actually ships. Once. A document that still
+    // fails stays flagged. The point is to stop failing for a fixable sentence,
     // not to talk the auditor out of a real finding.
     let narrativeRepair: { model: string; costUsd: number; accepted: boolean } | null = null
     if (audit && audit.verdict !== 'pass' && judgment && !isCurated) {
-      // Eligibility is "the comp repair did not already answer this", NOT
-      // "the finding mentions no comp". Naming a comp does not make a finding
-      // about the comp: the second Byron rebuild failed on "the narrative
-      // falsely claims the 3-bed comp is weighted half when the actual weight
-      // is 0.3249", which cites 20603 Kira and is nonetheless a sentence
-      // problem about a sale we correctly kept. Filtering on compListingKey
-      // sent it to the comp-dropping path, which had nothing to drop, so
-      // nothing repaired it. Anything 4.45 already resolved by removing the
-      // sale is excluded here; everything else that still fails is prose the
-      // model gets one chance to correct.
+      // Naming a sale does not make a finding about dropping that sale. The
+      // second Byron rebuild failed on a sentence that cited 20603 Kira and
+      // was still a sentence problem about a sale the picker kept. 4.45 does
+      // not remove a sale, so repairedKeys stays empty and every critical or
+      // major finding is prose the model gets one chance to correct.
       const proseFindings = audit.findings
         .filter(
           (f) =>
@@ -1802,7 +1811,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             findings: audit.findings,
             cost_usd: audit.costUsd,
             repaired_comp_keys: repairedKeys.length ? repairedKeys : undefined,
-            first_round_verdict: firstRoundAudit?.verdict,
+            first_round_verdict: undefined,
           }
         : { source: 'none', note: 'Audit unavailable — needs_review forced.' },
       comps: adjusted.map((c) => ({
@@ -2089,7 +2098,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       site,
       judgment,
       audit,
-      firstRoundAudit,
+      firstRoundAudit: null,
       repairedKeys,
       contract,
       pricing,

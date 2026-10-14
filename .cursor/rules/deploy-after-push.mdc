@@ -7,7 +7,7 @@ alwaysApply: false
 
 **Default:** Pushing to **`main`** triggers Vercel production deploy via Git integration. You do not need `vercel --prod` unless that integration is broken or you are doing an exceptional manual deploy.
 
-**Done** still requires **production verification** and **production parity** (including hosted migrations when schema changed). See `.cursor/rules/deploy-verify-before-done.mdc` and `.cursor/rules/production-parity.mdc`.
+**Done** is **[AGENTS.md](../../AGENTS.md) CORE RULES**: merged, production READY, live URL checked, plus hosted migrations when schema changed.
 
 ## Optional manual deploy
 

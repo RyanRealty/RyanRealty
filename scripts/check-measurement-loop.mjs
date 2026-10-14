@@ -124,7 +124,10 @@ if (lp) {
 //    north-star can never move off zero. The live buyer LP is /buy/[intent]
 //    (app/actions/lead-landing.ts). This check read /lp/buyer-listing-alerts'
 //    action until 2026-10-04, a file with no caller since that page became a
-//    redirect, while the live form stamped no tag.
+//    redirect, while the live form stamped no tag. Since 2026-10-14 the buyer
+//    doors stamp them through signupAttribution (lib/crm/visit-attribution.ts):
+//    the page's utm, else the visit's landing link (Matt 2026-10-09), turned
+//    into tags by the same resolvePaidAttributionTags.
 const battr = read('app/api/cron/buyer-lead-attribution/route.ts')
 check('buyer-lead-attribution/route.ts is missing', battr !== null)
 if (battr) {
@@ -136,8 +139,13 @@ if (battr) {
 const blp = read('app/actions/lead-landing.ts')
 check('buyer LP action app/actions/lead-landing.ts is missing', blp !== null)
 if (blp) {
-  check('buyer LP must stamp paid-attribution tags from the visitor utm (resolvePaidAttributionTags with lp_content, passed as extraTags)',
-    /resolvePaidAttributionTags\(\{[\s\S]{0,300}?lp_content/.test(blp) && /extraTags:\s*paidTags/.test(blp))
+  check('buyer LP must stamp paid-attribution tags from the visitor utm (resolvePaidAttributionTags or signupAttribution with lp_content, passed as extraTags)',
+    /(?:resolvePaidAttributionTags|signupAttribution)\(\{[\s\S]{0,300}?lp_content/.test(blp) && /extraTags:\s*paidTags/.test(blp))
+  if (/signupAttribution\(/.test(blp)) {
+    const visit = read('lib/crm/visit-attribution.ts')
+    check('lib/crm/visit-attribution.ts must turn the link into tags with resolvePaidAttributionTags',
+      visit !== null && /resolvePaidAttributionTags\(\{[\s\S]{0,200}?utmContent/.test(visit))
+  }
 }
 const vercelBuyer = read('vercel.json')
 if (vercelBuyer) {

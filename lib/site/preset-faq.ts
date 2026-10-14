@@ -6,6 +6,10 @@ import { getCityContent } from '@/lib/city-content'
 import { homesForSalePath } from '@/lib/slug'
 import type { MarketFaqInput, MarketFaqItem } from '@/lib/site/market-faq'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
+import { isBuyerAnswerPreset } from '@/lib/buyer-answers/registry'
+import { BUY_LINKS, buyerAnswerByline, presetAnswer } from '@/lib/buyer-answers/copy'
+import { formatUsd, mlsCitation } from '@/lib/buyer-answers/format'
+import { cityEntityKey } from '@/lib/slug'
 
 /**
  * Preset-scoped editorial depth for the indexable search-preset pages
@@ -34,6 +38,14 @@ import { publishDaysFigure } from '@/lib/market/publish-days-figure'
  * so they render no depth (and no duplicate-content FAQ).
  */
 
+export type PresetBuyerAnswerExtras = {
+  citation: string
+  table: { caption: string; rows: { label: string; value: string }[] }
+  byline: { href: string; label: string }
+  hub: { href: string; label: string }
+  buyLinks: { href: string; label: string }[]
+}
+
 export type PresetFaqResult = {
   /** 2-3 sentence editorial intro, rendered under the H1. */
   intro: string
@@ -41,6 +53,8 @@ export type PresetFaqResult = {
   faqs: MarketFaqItem[]
   /** Sentence-case section title for the FAQ block. */
   faqTitle: string
+  /** Long-tail buyer-answer extras on selected city+preset routes. */
+  buyerAnswer?: PresetBuyerAnswerExtras
 }
 
 export type PresetCrossLink = { href: string; label: string }
@@ -414,10 +428,51 @@ export function buildPresetFaq(
     })
   }
 
+  const citySlug = cityEntityKey(city)
+  const isRegion = citySlug === 'central-oregon'
+  const buyerAnswer = !area && citySlug && isBuyerAnswerPreset(citySlug, preset.slug)
+    ? {
+        citation: mlsCitation(label),
+        table: {
+          caption: `${place}, ${mlsCitation(label)}`,
+          rows: [
+            { label: copy.plural, value: String(count) },
+            ...(cityPulse?.medianListPrice != null && cityPulse.medianListPrice > 0
+              ? [{
+                  label: isRegion ? `${city} median list (region-wide)` : `${city} median list (city-wide)`,
+                  value: formatUsd(cityPulse.medianListPrice),
+                }]
+              : []),
+            ...(cityDays
+              ? [{
+                  label: isRegion ? `${city} days to pending (region-wide)` : `${city} days to pending (city-wide)`,
+                  value: cityDays,
+                }]
+              : []),
+          ],
+        },
+        byline: buyerAnswerByline(),
+        hub: isRegion
+          ? { href: '/housing-market/central-oregon', label: 'Central Oregon market' }
+          : { href: `/cities/${citySlug}`, label: `${city} city page` },
+        buyLinks: [...BUY_LINKS],
+      }
+    : undefined
+
   return {
-    intro,
+    intro: buyerAnswer
+      ? presetAnswer({
+          city: place,
+          plural: copy.plural,
+          count,
+          medianListPrice: cityPulse?.medianListPrice ?? null,
+          medianDaysToPending: cityPulse?.medianDaysToPending ?? null,
+          asOf: label,
+        })
+      : intro,
     faqs: faqs.slice(0, 4),
     faqTitle: `Questions about ${copy.plural} in ${place}`,
+    buyerAnswer,
   }
 }
 

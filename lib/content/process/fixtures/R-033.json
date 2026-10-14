@@ -1,0 +1,12 @@
+{
+  "rule": "R-033",
+  "step": "brief",
+  "what": "top team in the caption",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "caption",
+      "set": "Bend top team has 3.5 months of homes for sale."
+    }
+  ]
+}

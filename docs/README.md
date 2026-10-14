@@ -13,7 +13,7 @@ Last curated: 2026-04-21 (governance purge ch.3). Obsolete/snapshot docs moved t
 | What the site does today (feature inventory) | `docs/FEATURES.md` |
 | How the Supabase schema works | `docs/DATABASE_FOR_AI_AGENTS.md` |
 | Work standards + design system + skill routing | `/CLAUDE.md` (root) |
-| Cross-tool handoff state (Cursor ↔ Claude Code) | `docs/plans/CROSS_AGENT_HANDOFF.md` |
+| Cross-tool handoff state (Cursor ↔ Claude Code) | `docs/plans/handoffs/` (one note per session) |
 
 ## Active docs by topic
 
@@ -40,6 +40,7 @@ Last curated: 2026-04-21 (governance purge ch.3). Obsolete/snapshot docs moved t
 - Authoritative URL spec: `.cursor/rules/seo-url-guardrails.mdc`
 
 ### Reporting + analytics
+- `analytics/README.md` — **source of truth** for ryan-realty.com GA4 / GTM / leads / consent / offline conversions
 - `REPORTING_AND_ANALYTICS.md` — reporting architecture (cache tables, RPCs)
 - `TRACKING_AND_ANALYTICS_AUDIT.md` — what fires, what doesn't
 - `GA4_SERVICE_ACCOUNT_SETUP.md` — GA4 Data API service account setup
@@ -59,6 +60,7 @@ Last curated: 2026-04-21 (governance purge ch.3). Obsolete/snapshot docs moved t
 ### Media
 - `VIDEO_DATA_FLOW.md` — Spark → details.Videos → listing page pipeline
 - `VIDEO_TROUBLESHOOTING.md` — video debug guide
+- `ai-voiceover-scripts.md` — ad/VO/caption process and per-engine markup (Matt 2026-10-13)
 
 ### Deployment
 - `VERCEL_DEPLOY.md` — Vercel deploy steps + env checklist

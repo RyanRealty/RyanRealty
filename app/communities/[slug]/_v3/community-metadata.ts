@@ -19,7 +19,7 @@ import { fitTitle, type pageMetadata } from '@/lib/site/page-metadata'
 import { shareDescription } from '@/lib/share-metadata'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
 import { isSelfCityCommunity } from '@/lib/communities/self-city-community'
-import { preferPlaceHero } from '@/lib/geo-images'
+import { shareOgImagePath } from '@/lib/og/share-image-url'
 import {
   listingItemListFromHomes,
   type ListingItemListHome,
@@ -75,32 +75,21 @@ export function communitySerpTitle(input: {
   city: string
   listedCount?: number | null
 }): string {
-  const { name, city, slug, listedCount } = input
-  // A compound slug is noindex and not a registered community: unchanged.
-  // A self-city community (Sunriver, Black Butte Ranch) took the inventory-only
-  // title while its /cities/<slug> twin held "{place} real estate" (SITE-187 /
-  // SITE-184). That twin now 301s here (Matt 2026-10-04), so this page carries
-  // both queries like every other registered community.
-  if (!isCanonicalCommunitySlug(slug)) {
-    return `${name} Homes for Sale | ${city}, OR`
-  }
-  // Per-slug SERP tails (SEO & AEO Desk 2026-10-08). Keep Matt's "{name} real
-  // estate" prefix. Black Butte Ranch is unchanged (regex locks the full
-  // string). Each form already fits TITLE_BUDGET (46) plus " | Ryan Realty".
-  if (slug === 'brasada-ranch') return `${name} real estate | Homes, Lots, Agent`
-  if (slug === 'tetherow' || slug === 'broken-top') return `${name} real estate | Bend Homes for Sale`
-  // Mountain High GSC: title at pos 5–15 with 0 CTR. Name the on-page listed
-  // count, or omit a count. Never a parent-city leak (SEO-58).
-  const homes =
-    slug === 'mountain-high' && listedCount != null && listedCount > 0
-      ? `${formatCount(listedCount)} ${listedCount === 1 ? 'Home' : 'Homes'} for Sale`
-      : 'Homes for Sale'
-  // "{name} real estate" is the other query for the same URL: Tetherow first
-  // (Matt 2026-09-22), every registered community since (Matt 2026-09-24).
-  // The heading stays "{name} homes for sale".
-  // Fit the 60-char SERP width (Matt 2026-10-05): the town tail goes first,
-  // then "| Homes for Sale"; "{name} real estate" always leads.
-  return fitTitle(`${name} real estate | ${homes} | ${city}, OR`, `${name} real estate | ${homes}`, `${name} real estate`)
+  const { name, city } = input
+  void input.slug
+  void input.listedCount
+  // One title on every /communities/[slug] page (Matt 2026-10-13). Matt
+  // 2026-10-14: carry both searched phrases. Over 90 days Search Console showed
+  // about as many "<name> real estate" searches (2,624) as "<name> homes for
+  // sale" (2,421) across the seven resort pages. The 60-char budget (10-05)
+  // fits both phrases or the city, not all three, so fitTitle keeps the city
+  // only when it fits and a long recorded name keeps "Homes for Sale" alone.
+  // Layout appends " | Ryan Realty". The city is the registry city, never guessed.
+  return fitTitle(
+    `${name} Homes for Sale & Real Estate | ${city}, OR`,
+    `${name} Homes for Sale & Real Estate`,
+    `${name} Homes for Sale`,
+  )
 }
 
 function serpTownhomeMix(types: readonly PlaceBuyerGroup[]): string[] {
@@ -275,25 +264,6 @@ function datasetDescription(
   return `Single-family home market data for ${name} in ${cityName}, Oregon. ${sentence}. Sourced from the regional MLS via Ryan Realty.`
 }
 
-/** Curated KB hero photos. Verified to exist under public/images/kb/. */
-const KB_HERO: Record<string, string> = {
-  tetherow: '/images/kb/tetherow-golf-aerial.jpg',
-  'broken-top': '/images/kb/broken-top.jpg',
-  'northwest-crossing': '/images/kb/northwest-crossing.jpg',
-  'caldera-springs': '/images/kb/caldera-springs.jpg',
-  'three-rivers': '/images/kb/three-rivers.jpg',
-  'vandevert-ranch': '/images/kb/vandevert-ranch.jpg',
-}
-
-/** Curated community photos. Verified to exist under public/images/communities/. */
-const COMMUNITY_HERO: Record<string, string> = {
-  'broken-top': '/images/communities/broken-top.jpg',
-  'caldera-springs': '/images/communities/caldera-springs.jpg',
-  'northwest-crossing': '/images/communities/northwest-crossing.jpg',
-  'three-rivers': '/images/communities/three-rivers.jpg',
-  'vandevert-ranch': '/images/communities/vandevert-ranch.jpg',
-}
-
 export function communityMetadataInput(input: {
   slug: string
   name: string
@@ -325,10 +295,8 @@ export function communityMetadataInput(input: {
 }): Parameters<typeof pageMetadata>[0] {
   const { slug, name, city } = input
 
-  // Every community gets a community-specific OG image. Priority: curated KB
-  // hero photo, then curated community folder photo, then the generated card,
-  // which renders the name and city on the brand background so no community
-  // falls through to the generic /api/og?type=default card.
+  // Every community share card goes through /api/og so the real wordmark sits
+  // on that community's hero. The route resolves the photo from slug.
   // A COMPOUND SLUG IS NEVER CANONICAL, so it must not compete in the index.
   // Communities live at their bare registry slug (/communities/tetherow);
   // `<city>-<name>` is a legacy shape that middleware canonicalises when the
@@ -352,12 +320,7 @@ export function communityMetadataInput(input: {
   // else. (§0 — a degraded read is not evidence, in either direction.)
   const compoundNonCommunity = !isCanonicalCommunitySlug(slug)
 
-  const ogImage = preferPlaceHero(
-    input.heroImageUrl,
-    KB_HERO[slug] ??
-      COMMUNITY_HERO[slug] ??
-      `/api/og?type=community&name=${encodeURIComponent(name)}&city=${encodeURIComponent(city)}`,
-  )
+  const ogImage = shareOgImagePath({ type: 'community', slug, title: name })
 
   if (input.refused) {
     return {
@@ -379,10 +342,8 @@ export function communityMetadataInput(input: {
   }
 
   return {
-    // Title format: "[Community] real estate | Homes for Sale | [City], OR";
-    // a self-city community (Sunriver, Black Butte Ranch) and a compound slug
-    // keep "[Community] Homes for Sale | [City], OR". Mountain High names the
-    // on-page listed count when stock carries it. H1 stays "{Place} homes for sale".
+    // Title format: "[Community] Homes for Sale | [City], OR" (Matt 2026-10-13).
+    // Layout appends " | Ryan Realty". H1 is the same phrase.
     title: communitySerpTitle({
       slug,
       name,

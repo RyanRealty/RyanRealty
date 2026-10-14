@@ -3,6 +3,7 @@ import { marketVerdict } from '@/lib/market/classify'
 import {
   CLOSER_SECONDS,
   CUE_PARTS,
+  ENDCARD_SECONDS,
   ENTER_SECONDS,
   MIN_CARD_SECONDS,
   cueTexts,
@@ -48,16 +49,33 @@ const byKind = <K extends MotionCue['kind']>(plan: MotionPlan, kind: K) =>
   plan.cues.filter((c): c is Extract<MotionCue, { kind: K }> => c.kind === kind)
 
 describe('planMotion: market', () => {
-  it('a six-second pulse gets the meter up front and the brand card at the close', () => {
+  it('a six-second pulse gets the meter up front and the locked end card after the clip', () => {
     const plan = planMotion({ spec: { lead: 'market', closer: 'brand' }, subject: market('4.1'), duration: 6 })
-    expect(plan.cues.map((c) => c.kind)).toEqual(['meter', 'closer'])
-    const [meter, closer] = plan.cues
+    expect(plan.cues.map((c) => c.kind)).toEqual(['meter', 'endcard'])
+    const [meter, endcard] = plan.cues
     // Content is fully up by 1.0s.
     expect(meter.start + ENTER_SECONDS).toBeLessThanOrEqual(1)
     expect(meter.end - meter.start).toBeGreaterThanOrEqual(MIN_CARD_SECONDS)
-    expect(closer.start).toBeCloseTo(6 - CLOSER_SECONDS)
-    expect(closer.end).toBe(6)
-    expect(meter.end).toBeLessThan(closer.start)
+    // The end card is opaque, so it follows the footage rather than eating it.
+    expect(endcard.start).toBe(6)
+    expect(endcard.end).toBe(6 + ENDCARD_SECONDS)
+    expect(plan.duration).toBe(endcard.end)
+    expect(plan.footageSeconds).toBe(6)
+    expect(meter.end).toBeLessThanOrEqual(6 - 0.2)
+  })
+
+  it('the end card starts on a whole frame after footage of any length', () => {
+    const plan = planMotion({ spec: { lead: 'market', closer: 'brand' }, subject: market('4.1'), duration: 6.041667 })
+    const endcard = plan.cues.find((c) => c.kind === 'endcard')
+    if (endcard?.kind !== 'endcard') throw new Error('no end card')
+    // Frame 182 at 30 fps is the first whole frame after the clip ends, and
+    // the card is up on it: the start is never a hair after the frame.
+    expect(endcard.start).toBe(6.066)
+    expect(182 / 30).toBeGreaterThanOrEqual(endcard.start)
+    expect(181 / 30).toBeLessThan(endcard.start)
+    expect(frameState(plan, 182 / 30).find((s) => s.id === 'endcard-card')?.opacity).toBe(1)
+    expect(frameState(plan, 181 / 30).find((s) => s.id === 'endcard-card')?.opacity).toBe(0)
+    expect(endcard.times).toMatchObject({ quality: 6.066, local: 6.466, service: 6.866, call: 7.316, out: 9.116 })
   })
 
   it('the verdict is the canonical one for the number it sits beside', () => {
@@ -94,37 +112,47 @@ describe('planMotion: listings', () => {
       duration: 24,
       beats: [0, 6, 12, 18],
     })
-    expect(plan.cues.map((c) => c.kind)).toEqual(['title', 'figure', 'closer'])
-    const [title, price, closer] = plan.cues
+    expect(plan.cues.map((c) => c.kind)).toEqual(['title', 'figure', 'closer', 'endcard'])
+    const [title, price, closer, endcard] = plan.cues
     expect(title).toMatchObject({ eyebrow: 'Bend', line: '61234 Elm St' })
     expect(title.end).toBeLessThan(6)
     expect(price.start).toBeGreaterThanOrEqual(6)
     expect(price.end).toBeLessThan(12)
     expect(price).toMatchObject({ value: '$1,250,000', detail: '4 bedrooms · 3.5 bathrooms' })
+    // Our own listing keeps the agent's card, then closes on the locked card.
     expect(closer).toMatchObject({ start: 24 - CLOSER_SECONDS, end: 24, agent: MATT })
+    expect(endcard).toMatchObject({ start: 24, end: 24 + ENDCARD_SECONDS })
   })
 
   it('a single clip carries one card with address and price together', () => {
     const plan = planMotion({ spec: { lead: 'listing', closer: 'listing-agent' }, subject: listing(MATT), duration: 6 })
-    expect(plan.cues.map((c) => c.kind)).toEqual(['title', 'closer'])
+    expect(plan.cues.map((c) => c.kind)).toEqual(['title', 'closer', 'endcard'])
     expect(plan.cues[0]).toMatchObject({ line: '61234 Elm St', value: '$1,250,000' })
   })
 
   it("another office's listing gets no brand card, and says so", () => {
     const plan = planMotion({ spec: { lead: 'listing', closer: 'listing-agent' }, subject: listing(null), duration: 6 })
-    expect(plan.cues.some((c) => c.kind === 'closer')).toBe(false)
+    expect(plan.cues.some((c) => c.kind === 'closer' || c.kind === 'endcard')).toBe(false)
+    expect(plan.duration).toBe(6)
     expect(plan.notes.join(' ')).toMatch(/not a Ryan Realty broker/)
   })
 
   it("closer 'none' keeps the brand out of frame entirely", () => {
     const plan = planMotion({ spec: { lead: 'listing', closer: 'none' }, subject: listing(MATT), duration: 6 })
     expect(plan.cues.map((c) => c.kind)).toEqual(['title'])
+    expect(plan.duration).toBe(6)
     expect(plan.notes).toEqual([])
   })
 
-  it('a clip too short for the closer still gets its lead card', () => {
+  it('a short clip still gets its lead card, and the end card after it', () => {
     const plan = planMotion({ spec: { lead: 'market', closer: 'brand' }, subject: market('4.1'), duration: 4 })
-    expect(plan.cues.map((c) => c.kind)).toEqual(['meter'])
+    expect(plan.cues.map((c) => c.kind)).toEqual(['meter', 'endcard'])
+    expect(plan.duration).toBe(4 + ENDCARD_SECONDS)
+  })
+
+  it('a clip too short for the agent card drops it and keeps the end card', () => {
+    const plan = planMotion({ spec: { lead: 'listing', closer: 'listing-agent' }, subject: listing(MATT), duration: 4 })
+    expect(plan.cues.map((c) => c.kind)).toEqual(['title', 'endcard'])
     expect(plan.notes.join(' ')).toMatch(/no room/)
   })
 })
@@ -165,6 +193,7 @@ describe('figureLeaks (§0 backstop)', () => {
     const subject = market('4.1')
     const plan = planMotion({ spec: { lead: 'market', closer: 'brand' }, subject, duration: 6 })
     expect(figureLeaks(plan, subject)).toEqual([])
+    expect(figureLeaks(plan, subject, ['4.1 months of supply', '4 mo', '6 mo', '10 mo', '4', '6'])).toEqual([])
     const film = planMotion({
       spec: { lead: 'listing', closer: 'listing-agent' },
       subject: listing(MATT),
@@ -209,10 +238,15 @@ describe('frameState', () => {
     expect(JSON.stringify(frameState(plan, 2.2))).toBe(JSON.stringify(frameState(plan, 2.6)))
   })
 
-  it('travel never exceeds 16px at 1080 wide, and the closer holds to the last frame', () => {
-    for (let t = 0; t <= 6; t += 1 / 30) for (const s of frameState(plan, t)) expect(s.y).toBeLessThanOrEqual(16)
-    const last = frameState(plan, 6).filter((s) => s.id.startsWith('closer'))
-    expect(last.every((s) => s.opacity === 1 && s.y === 0)).toBe(true)
+  it('lead travel never exceeds 16px at 1080 wide, and the end card holds to the last frame', () => {
+    for (let t = 0; t <= plan.duration; t += 1 / 30) {
+      for (const s of frameState(plan, t)) if (!s.id.startsWith('endcard')) expect(s.y).toBeLessThanOrEqual(16)
+    }
+    const last = frameState(plan, plan.duration - 1 / 30).filter((s) => s.id.startsWith('endcard'))
+    expect(last.map((s) => s.id)).toEqual(CUE_PARTS.endcard.map(({ part }) => `endcard-${part}`))
+    expect(last.every((s) => s.opacity === 1)).toBe(true)
+    // The call block has landed and holds.
+    expect(last.filter((s) => s.id === 'endcard-pill' || s.id === 'endcard-phone').every((s) => s.y === 0)).toBe(true)
   })
 
   it('the meter marker draws on once the card is in, then stays', () => {

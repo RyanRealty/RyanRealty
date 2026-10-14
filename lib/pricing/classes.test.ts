@@ -606,6 +606,12 @@ describe('aduFromRemarks: the remarks state a second living unit on the lot (Mat
     expect(aduFromRemarks('Possible shop site, garden beds, mature trees, and the home includes a detached ADU.')).toBe(true)
   })
 
+  it('counts an ADU stated in a new construction home, and still hedges construct an ADU', () => {
+    expect(aduFromRemarks("Don't miss this stunning new construction home with an ADU")).toBe(true)
+    expect(aduFromRemarks('There is room to construct an ADU behind the garage.')).toBe(false)
+    expect(aduFromRemarks('A buyer could construct an ADU on the back half.')).toBe(false)
+  })
+
   it('mother-in-law: a unit, apartment or cottage counts, a suite, quarters or wing inside the house does not', () => {
     expect(aduFromRemarks('The lowest level houses a fully permitted mother-in-law unit with private entrance, wet bar, and W/D.')).toBe(true)
     expect(aduFromRemarks('Mother in law apartment over the garage.')).toBe(true)
@@ -627,5 +633,17 @@ describe('aduFromRemarks: the remarks state a second living unit on the lot (Mat
     expect(aduSaleRefused(adu, plain)).toBe(false)
     expect(aduSaleRefused(plain, null)).toBe(false)
     expect(aduSaleRefused(plain, plain)).toBe(false)
+  })
+})
+
+describe('classifyProduct reads multi-unit sub types as their own product (Matt 2026-10-14, 429 Irving)', () => {
+  it('Duplex, Triplex, Quadruplex and Multi Family are multi-unit, never unknown', () => {
+    expect(classifyProduct('Duplex')).toBe('multi-unit')
+    expect(classifyProduct('Triplex')).toBe('multi-unit')
+    expect(classifyProduct('Quadruplex')).toBe('multi-unit')
+    expect(classifyProduct('Multi Family')).toBe('multi-unit')
+    expect(classifyProduct('Residential Income')).toBe('multi-unit')
+    expect(productCompatible('multi-unit', 'detached')).toBe(false)
+    expect(productCompatible('multi-unit', 'multi-unit')).toBe(true)
   })
 })

@@ -1,0 +1,10 @@
+{
+  "rule": "R-127",
+  "step": "master",
+  "what": "tesseract not installed",
+  "setup": {
+    "pixels": {
+      "missing": "tesseract is not installed"
+    }
+  }
+}

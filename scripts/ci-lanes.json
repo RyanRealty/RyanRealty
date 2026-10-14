@@ -1,6 +1,13 @@
 {
   "version": 1,
   "always": [
+    "ci:studio-rules",
+    "ci:video-freeze",
+    "ci:private-remarks",
+    "ci:deals-copy",
+    "ci:imagine-no-paid-api",
+    "ci:studio-techniques",
+    "ci:content-rules",
     "ci:broker-own-book",
     "ci:commit-compiles",
     "ci:count-degraded-read",
@@ -25,11 +32,13 @@
     "ci:pdf-trace-guard",
     "ci:entity-scope",
     "ci:gates-wired",
+    "ci:ship-path",
     "ci:governed-send",
     "ci:hidden-exclusion-surfaces",
     "ci:hooks-installed",
     "ci:identity-stitch-paths",
     "ci:analytics-suppression",
+    "ci:analytics-registry",
     "ci:jsonb-cast-guard",
     "ci:jsonb-contains",
     "ci:listing-alert-enroll",
@@ -248,7 +257,9 @@
       "lib/seo*",
       "app/sitemap.ts",
       "app/robots.ts",
-      "app/llms.txt/**"
+      "app/llms.txt/**",
+      "middleware.ts",
+      "scripts/check-ai-crawler-access.mjs"
     ],
     "ci:ai-query-battery": [
       "app/**/page.tsx",
@@ -692,6 +703,7 @@
       "scripts/ci-lanes.json",
       "scripts/check-tests-wired.mjs",
       "scripts/check-gates-wired.mjs",
+      ".claude/skills/ryan-studio/tools/tests/**",
       ".husky/**",
       ".github/workflows/**"
     ],
@@ -1246,6 +1258,15 @@
       "app/robots.ts",
       "app/llms.txt/**",
       "app/sitemap.ts"
+    ],
+    "ci:sitemap-url-health": [
+      "app/communities/**",
+      "app/robots.ts",
+      "lib/site/listings-unavailable.ts",
+      "scripts/lib/sitemap-url-health.mjs",
+      "scripts/check-sitemap-url-health.mjs",
+      "scripts/check-vercel-deploy.mjs",
+      "scripts/lib/live-seo-audit.mjs"
     ],
     "ci:skyslope-mirror": [
       "lib/tc/**",

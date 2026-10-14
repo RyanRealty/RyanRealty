@@ -50,7 +50,7 @@ describe('chromeMegaModel — all five chrome menus', () => {
     eyebrow: 'Central Oregon detached homes right now',
     facts: [
       { figure: '$750K', label: 'median list price' },
-      { figure: '5.1', label: 'months of supply, balanced market' },
+      { figure: '5.1', label: 'months of supply' },
     ],
     note: 'Read Sep 18, 2026',
   }

@@ -31,6 +31,7 @@ export type EmailCohortRecipient = {
   emails: unknown
   phones: unknown
   addresses: unknown
+  tags: unknown
   custom: Record<string, unknown>
 }
 
@@ -64,7 +65,7 @@ export async function getEmailCohortRecipients(ids: number[]): Promise<EmailCoho
   const sb = createServiceClient()
   const { data, error } = await sb
     .from('crm_people')
-    .select('id,fub_legacy_id,emails,phones,addresses,assigned_broker,name,first_name,last_name,stage,source,lender_name,custom,deleted')
+    .select('id,fub_legacy_id,emails,phones,addresses,assigned_broker,name,first_name,last_name,stage,source,lender_name,tags,custom,deleted')
     .in('id', clean)
   if (error || !data) {
     if (error) console.error('[getEmailCohortRecipients]', error.message)
@@ -86,6 +87,7 @@ export async function getEmailCohortRecipients(ids: number[]): Promise<EmailCoho
       emails: r.emails ?? null,
       phones: r.phones ?? null,
       addresses: r.addresses ?? null,
+      tags: r.tags ?? null,
       custom: (r.custom ?? {}) as Record<string, unknown>,
     }))
 }

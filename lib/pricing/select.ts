@@ -3,6 +3,7 @@
  * listings for comps once sale_pricing_facts is populated.
  */
 
+import { aduFirst, aduPreferenceTrace, isAduSale, reviewFallbackPreference, subjectHasAdu } from '@/lib/pricing/adu-preference'
 import { isRuralAcreage } from '@/lib/cma/comp-tiers'
 import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
 import type { CmaSubject } from '@/lib/cma/types'
@@ -41,6 +42,8 @@ import {
   selectPricingFactsPool,
   selectSeniorCommunityListingKeys,
   selectListingBathSplits,
+  selectListingUnitNumbers,
+  selectListingViews,
   RECENT_CLOSE_CATCH_UP_DAYS,
   type PricingFactsCatchUp,
 } from '@/lib/data/pricing/facts'
@@ -48,6 +51,7 @@ import { estimateClosePrice, pricingSaleToCmaComp } from '@/lib/pricing/estimate
 import { anchorPlacePhrase } from '@/lib/pricing/price-anchor'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CompSelection } from '@/lib/cma/comps'
+import { readOwnGroundSold } from '@/lib/cma/own-ground-sold'
 import { diagnoseStarvation, emptyExclusions, factsStopReason, type FactsPathHold } from '@/lib/cma/comp-trace'
 import {
   CUSTOM_FACTS_POOL_MONTHS,
@@ -79,6 +83,7 @@ export function cmaSubjectToPricing(
   return {
     listingKey: subject.listingKey,
     streetAddress: subject.streetAddress,
+    unitNumber: subject.unitNumber ?? null,
     city: subject.city,
     citySlug: citySlug(subject.city),
     subdivision: subject.subdivision,
@@ -105,6 +110,10 @@ export function cmaSubjectToPricing(
     propertySubType: subject.propertySubType,
     zoning: extras.zoning ?? zoningFromSubject ?? null,
     publicRemarks: subject.publicRemarks,
+    // The details' ADU reading, or the remarks' (subjectHasAdu): the wall and
+    // the ADU-first pass read this one flag (lib/pricing/adu-preference.ts).
+    aduYn: subjectHasAdu(subject) || (subject.units?.aduYn ?? null),
+    viewDescription: subject.viewDescription,
     seniorCommunityYn: subject.seniorCommunityYn ?? null,
     irrigationClass: extras.irrigationClass ?? null,
   }
@@ -126,6 +135,14 @@ export async function selectPricingComps(
      * caught up every Central Oregon close of the window citywide.
      */
     catchUpRecent?: boolean
+    /**
+     * 'ordinary' skips the ADU-first pass and stamps a review fallback
+     * (lib/pricing/adu-preference.ts): a build re-enters this way when its
+     * ADU-first set lost a sale in the comparability review. `aduSalesHeld`
+     * is how many ADU sales that set still held after the review.
+     */
+    aduPass?: 'first' | 'ordinary'
+    aduSalesHeld?: number
   } = {},
 ): Promise<PricingMatchResult & { factsReady: boolean }> {
   const factsReady = (await countSalePricingFacts()) >= 1000
@@ -163,8 +180,8 @@ export async function selectPricingComps(
     },
     asOfYear,
   )
-  // Ordinary: 24 months, the longest ordinary rung, and no further. Custom/new
-  // stays at 30 so those 24-month rungs still have a pool. Do not shrink the 30.
+  // The load reaches the 36-month recovery rungs. The price anchor still
+  // reads the ordinary 24-month window, or 30 for custom and new.
   const closeAfterIso = factsPoolCloseAfter(asOf, customOrNew)
   const sqft = pricingSubject.sqft
   // THE POOL IS NEVER OLDER THAN THE CHARTS (2026-10-07, 3037 Purcell). The
@@ -246,9 +263,11 @@ export async function selectPricingComps(
   // evidence either way.
   // The MLS full / half bath split, also only on listings: the room rule
   // compares full baths, and facts `baths` counts a powder room whole.
-  const [seniorKeys, bathSplits] = await Promise.all([
+  const [seniorKeys, bathSplits, unitNumbers, listingViews] = await Promise.all([
     selectSeniorCommunityListingKeys([...byKey.keys()]),
     selectListingBathSplits([...byKey.keys()]),
+    selectListingUnitNumbers([...byKey.keys()]),
+    selectListingViews([...byKey.keys()]),
   ])
   const sales = [...byKey.values()].map((s) => ({
     ...s,
@@ -256,6 +275,8 @@ export async function selectPricingComps(
     seniorCommunityYn: seniorKeys.has(s.listingKey) ? true : null,
     bathsFull: bathSplits.get(s.listingKey)?.full ?? null,
     bathsHalf: bathSplits.get(s.listingKey)?.half ?? null,
+    unitNumber: unitNumbers.get(s.listingKey) ?? null,
+    viewDescription: listingViews.get(s.listingKey) ?? null,
   }))
   // Touching plats, closest first. When this home has a neighborhood, a plat
   // with inNeighborhood false stays out. Null means no polygon was tested and
@@ -316,12 +337,26 @@ export async function selectPricingComps(
       if (z !== undefined) x.zoning = z
     }
   }
-  const walked = walkPricingLadder(pricingSubject, sales, {
+  const walkOpts = {
     asOf,
     cells,
     anchorWindowMonths: customOrNew ? CUSTOM_FACTS_POOL_MONTHS : ORDINARY_FACTS_POOL_MONTHS,
+  }
+  // AN ADU HOME PRICES FROM ADU SALES FIRST (Matt 2026-10-14,
+  // lib/pricing/adu-preference.ts). The pool is loaded once. The walk first
+  // admits its ADU sales alone (aduSalesOnly at the door; the price anchor
+  // and the pocket still read the whole pool), and five or more price-setting
+  // ones are the set. Fewer hand the walk the whole pool, and the letter says so.
+  const subjectAdu = pricingSubject.aduYn === true
+  const { result: walked, aduPreference: passPreference } = await aduFirst({
+    subjectAdu: subjectAdu && opts.aduPass !== 'ordinary',
+    run: (aduSalesOnly) => walkPricingLadder(pricingSubject, sales, { ...walkOpts, aduSalesOnly }),
   })
-  return { ...walked, trace: [...catchUpTrace, ...walked.trace], factsReady: true }
+  // A build re-entered on the ordinary pass stamps the review fallback.
+  const aduPreference =
+    passPreference ?? (subjectAdu && opts.aduPass === 'ordinary' ? reviewFallbackPreference(opts.aduSalesHeld ?? 0) : null)
+  const aduTrace = aduPreference ? [aduPreferenceTrace(aduPreference, sales.filter(isAduSale).length)] : []
+  return { ...walked, aduPreference, trace: [...catchUpTrace, ...aduTrace, ...walked.trace], factsReady: true }
 }
 
 /** Missing recent closes one comp search may rebuild before it reads (the 6-hourly cron takes the rest). */
@@ -521,6 +556,7 @@ export function matchToCompSelection(
       starved: match.starved,
       starved_at: match.starved ? match.tiersUsed[match.tiersUsed.length - 1] ?? null : null,
       starved_reason: starvedReason,
+      ...(match.aduPreference ? { adu_preference: match.aduPreference } : {}),
       facts_path: factsPath,
       target_comps: PRICING_TARGET_COMPS,
       min_comps: PRICING_MIN_COMPS,
@@ -631,6 +667,9 @@ export async function selectCompsPreferringFacts(
     subjectIrrigation?: IrrigationClass | null
     subjectZoning?: string | null
     asOf?: string
+    /** See selectPricingComps: the build's re-entry on the ordinary pass after a review drop. */
+    aduPass?: 'first' | 'ordinary'
+    aduSalesHeld?: number
   } = {},
 ): Promise<CompSelection> {
   // Classify BEFORE any ladder. Custom/new must never load listings SQL tiers
@@ -645,12 +684,61 @@ export async function selectCompsPreferringFacts(
   })
   if (customOrNew) {
     const match = await selectPricingComps(subject, opts)
-    return matchToCompSelection(subject, match, { customOrNew })
+    return withOwnGroundSold(matchToCompSelection(subject, match, { customOrNew }), subject, opts.asOf)
   }
   const { selectComps } = await import('@/lib/cma/comps')
   const match = await selectPricingComps(subject, opts)
   if (pickCompSource({ ...match, customOrNew }) === 'facts') {
-    return matchToCompSelection(subject, match, { customOrNew })
+    return withOwnGroundSold(matchToCompSelection(subject, match, { customOrNew }), subject, opts.asOf)
   }
-  return withFactsPath(await selectComps(subject, opts), match)
+  // The listings fallback takes the same two-pass shape (Matt 2026-10-14):
+  // ADU sales only first (selectComps aduSalesOnly), the whole ladder when
+  // fewer than five of them set the price. The listings ladder reads its rungs
+  // as it walks, so an ADU home that reaches this fallback reads them twice;
+  // that cost is bounded to ADU homes the facts walk could not price and is
+  // taken over a second pool reader.
+  const subjectAdu = subjectHasAdu(subject)
+  const listings = await aduFirst({
+    subjectAdu: subjectAdu && opts.aduPass !== 'ordinary',
+    run: (aduSalesOnly) => selectComps(subject, { subjectIrrigation: opts.subjectIrrigation, subjectZoning: opts.subjectZoning, asOf: opts.asOf, aduSalesOnly }),
+  })
+  const listingsPreference =
+    listings.aduPreference ?? (subjectAdu && opts.aduPass === 'ordinary' ? reviewFallbackPreference(opts.aduSalesHeld ?? 0) : null)
+  if (listingsPreference) {
+    listings.result.diagnostics.adu_preference = listingsPreference
+    listings.result.trace.unshift(aduPreferenceTrace(listingsPreference, null))
+  }
+  return withOwnGroundSold(withFactsPath(listings.result, match), subject, opts.asOf)
+}
+
+/**
+ * WHEN THE OWN-SUBDIVISION RUNGS FOUND NOTHING, DID ANYTHING SELL THERE
+ * (reader review 2026-10-09, 915 Saginaw). One read of the subject's own
+ * ground, any size, over the widest own-subdivision window, stamped on the
+ * diagnostics as `own_ground_sold` for the comp story (lib/pricing/comp-search.ts).
+ * Nothing about the search or the price changes.
+ */
+async function withOwnGroundSold(
+  selection: CompSelection,
+  subject: CmaSubject,
+  asOf: string | undefined,
+): Promise<CompSelection> {
+  const own = (selection.diagnostics?.ladder ?? []).filter((r) => r.ran && r.tier.startsWith('subdivision-'))
+  if (own.length === 0 || own.some((r) => r.comps_added > 0)) return selection
+  const months = Math.max(...own.map((r) => r.months_back))
+  if (!(months > 0)) return selection
+  const sold = await readOwnGroundSold({ subject, months, asOf: (asOf ?? new Date().toISOString()).slice(0, 10) })
+  if (!sold) return selection
+  selection.diagnostics.own_ground_sold = sold
+  // On an ADU-sales set the own rungs admitted ADU sales alone, so a plain
+  // home that sold there was skipped by design, not unmatched.
+  const aduSet = selection.diagnostics.adu_preference?.outcome === 'adu-sales'
+  selection.trace.push(
+    sold.n === 0
+      ? `No home sold on the subject's own ground in the last ${months} months, any size (${sold.source}).`
+      : `${sold.capped ? 'At least ' : ''}${sold.n} home(s) sold on the subject's own ground in the last ${months} months, none of them ${
+          aduSet ? 'an ADU sale the ADU-first pass admitted' : 'matched the own-subdivision rungs'
+        } (${sold.source}).`,
+  )
+  return selection
 }

@@ -54,7 +54,7 @@ fixed → 10–15m. Blocked → 60m heartbeat, do not invent UI work.
 5. **Never mass-enroll** the historical book (`ENROLLMENT_EPOCH` in `lib/crm/enroll.ts`).
 6. **Draft-first** for CMA/BPO/newsletters — never auto-send to the lead.
 7. Ship on `main` per AGENTS.md when you fix something; `npm run deploy:verify`
-   when app code changed. Update `CROSS_AGENT_HANDOFF.md` Current before stop.
+   when app code changed. Write your note in `docs/plans/handoffs/` before stop.
 8. Fix the **class**, then add/adjust a gate or e2e check so it cannot silently
    regress.
 
@@ -143,7 +143,7 @@ scripted litmus when person/send path touched.
 ### 7. Ship
 
 Commit scoped files. Push `main` when the unit is coherent. `deploy:verify` if
-app runtime changed. Update state JSON + `CROSS_AGENT_HANDOFF.md` Current.
+app runtime changed. Update state JSON + your note in `docs/plans/handoffs/`.
 
 ### 8. Stop conditions
 
@@ -188,7 +188,7 @@ Canon: docs/plans/ADMIN_REBUILD/FULL-AUDIT-2026-08-03.md.
 Run one grind iteration now: e2e → highest Lane A/B punch item → prove → fix
 class → prove → ship. Do not redesign UI or cut nav unless
 PHASE-0-ANSWERS.md is complete and Matt has locked IA. Update
-tmp/crm-up-to-snuff-state.json and CROSS_AGENT_HANDOFF.md before stop.
+tmp/crm-up-to-snuff-state.json and your note in docs/plans/handoffs/ before stop.
 If only Matt-gated work remains, write the IA proposal and stop.
 ```
 

@@ -331,23 +331,33 @@ describe('a shared subdivision name is the same plat only when it is a real name
   })
 })
 
-describe('one size limit for any sale that sets the price: 25% everywhere (Matt 2026-10-08)', () => {
-  // 2382 Jackson, 2,016 sqft, was priced with 2225 Indigo, 2 bed, 1,393 sqft,
-  // 30.9% smaller, admitted on a wider rung at full weight.
+describe('one size limit for any sale that sets the price: the picker\'s 35% (Matt 2026-10-09)', () => {
+  // 2382 Jackson, 2,016 sqft. 2225 Indigo, 1,393 sqft, is 30.9% smaller.
+  // The wide rung searches that far. The price uses the same line.
   const jackson = { subjectSqft: 2016, ownPlat: true, subjectSubdivision: 'Home Plat', saleSubdivision: 'Home Plat' }
 
-  it('is the plat band, defined once, and not the wide search band', () => {
-    expect(PRICE_SET_SQFT_BAND).toBe(0.25)
-    expect(PRICE_SET_SQFT_BAND).toBe(PLAT_SQFT_BAND)
-    expect(PRICE_SET_SQFT_BAND).not.toBe(PLAT_WIDE_SQFT_BAND)
+  it('is the wide search band, defined once', () => {
+    expect(PRICE_SET_SQFT_BAND).toBe(0.35)
+    expect(PRICE_SET_SQFT_BAND).toBe(PLAT_WIDE_SQFT_BAND)
+    expect(PRICE_SET_SQFT_BAND).not.toBe(PLAT_SQFT_BAND)
   })
 
-  it('2225 Indigo, 30.9% smaller, never sets the price, on the own plat or on any wider rung', () => {
-    expect(clearlyDifferentSize(2016, 1393)).toBe(true)
-    expect(saleSetsThePrice({ ...jackson, saleSqft: 1393 })).toBe(false)
-    expect(saleSetsThePrice({ ...jackson, ownPlat: false, saleSubdivision: 'Touching Plat', saleSqft: 1393 })).toBe(false)
-    expect(closedCompWeight({ ...jackson, saleSqft: 1393, monthsSinceClose: 1, selectionTier: 'subdivision-3mo-wide' })).toBe(0)
-    expect(closedCompWeight({ ...jackson, saleSqft: 1393, monthsSinceClose: 1, ownPlat: false, selectionTier: 'adjacent-sub-6mo' })).toBe(0)
+  it('2225 Indigo, 30.9% smaller, sets the price on the own plat and on a wider rung', () => {
+    expect(clearlyDifferentSize(2016, 1393)).toBe(false)
+    expect(saleSetsThePrice({ ...jackson, saleSqft: 1393 })).toBe(true)
+    expect(saleSetsThePrice({ ...jackson, ownPlat: false, saleSubdivision: 'Touching Plat', saleSqft: 1393 })).toBe(true)
+    expect(closedCompWeight({ ...jackson, saleSqft: 1393, monthsSinceClose: 1, selectionTier: 'subdivision-3mo-wide' })).toBeGreaterThan(0)
+    expect(closedCompWeight({ ...jackson, saleSqft: 1393, monthsSinceClose: 1, ownPlat: false, selectionTier: 'adjacent-sub-6mo' })).toBeGreaterThan(0)
+  })
+
+  it('2735 Crossing at 28% and 2764 Spring Water at 31% set the price', () => {
+    // 2339 Labiche, 1,001 sq ft. 2735 Crossing, 1,282 sq ft, is 28% larger.
+    expect(clearlyDifferentSize(1001, 1282)).toBe(false)
+    expect(saleSetsThePrice({ subjectSqft: 1001, saleSqft: 1282, ownPlat: true })).toBe(true)
+    // 2745 Aldrich, 1,201 sq ft. 2764 Spring Water, 1,574 sq ft, is 31% larger.
+    expect(clearlyDifferentSize(1201, 1574)).toBe(false)
+    expect(saleSetsThePrice({ subjectSqft: 1201, saleSqft: 1574, ownPlat: true })).toBe(true)
+    expect(priceSetRefusal({ subjectSqft: 1201, saleSqft: 1574, ownPlat: true })).toBeNull()
   })
 
   it('a sale 17.9% smaller still sets it', () => {
@@ -356,39 +366,40 @@ describe('one size limit for any sale that sets the price: 25% everywhere (Matt 
     expect(closedCompWeight({ ...jackson, saleSqft: 1655, monthsSinceClose: 1 })).toBeGreaterThan(0)
   })
 
-  it('exactly 25% sets the price; 25.1% does not, smaller or larger', () => {
-    // 2,016 x 0.75 = 1,512 and 2,016 x 1.25 = 2,520, on the line.
-    expect(clearlyDifferentSize(2016, 1512)).toBe(false)
-    expect(clearlyDifferentSize(2016, 2520)).toBe(false)
-    expect(saleSetsThePrice({ ...jackson, saleSqft: 1512 })).toBe(true)
-    expect(saleSetsThePrice({ ...jackson, saleSqft: 2520 })).toBe(true)
-    // 25.1% either way: 1,510 is 25.10% under, 2,522 is 25.10% over.
-    expect(Math.abs(2016 - 1510) / 2016).toBeGreaterThan(0.25)
-    expect(clearlyDifferentSize(2016, 1510)).toBe(true)
-    expect(clearlyDifferentSize(2016, 2522)).toBe(true)
-    expect(saleSetsThePrice({ ...jackson, saleSqft: 1510 })).toBe(false)
-    expect(saleSetsThePrice({ ...jackson, saleSqft: 2522 })).toBe(false)
+  it('exactly 35% sets the price; just past 35% does not, smaller or larger', () => {
+    // 2,016 x 0.65 = 1,310.4 and 2,016 x 1.35 = 2,721.6. 1,311 and 2,721 sit inside.
+    expect((2016 - 1311) / 2016).toBeLessThanOrEqual(0.35)
+    expect((2721 - 2016) / 2016).toBeLessThanOrEqual(0.35)
+    expect(clearlyDifferentSize(2016, 1311)).toBe(false)
+    expect(clearlyDifferentSize(2016, 2721)).toBe(false)
+    expect(saleSetsThePrice({ ...jackson, saleSqft: 1311 })).toBe(true)
+    expect(saleSetsThePrice({ ...jackson, saleSqft: 2721 })).toBe(true)
+    // Just past the line either way.
+    expect((2016 - 1310) / 2016).toBeGreaterThan(0.35)
+    expect((2722 - 2016) / 2016).toBeGreaterThan(0.35)
+    expect(clearlyDifferentSize(2016, 1310)).toBe(true)
+    expect(clearlyDifferentSize(2016, 2722)).toBe(true)
+    expect(saleSetsThePrice({ ...jackson, saleSqft: 1310 })).toBe(false)
+    expect(saleSetsThePrice({ ...jackson, saleSqft: 2722 })).toBe(false)
+    expect(closedCompWeight({ ...jackson, saleSqft: 1310, monthsSinceClose: 1 })).toBe(0)
   })
 
-  it('names the size refusal in the words the letter prints, and does not call 25% a miss (2745 Aldrich)', () => {
-    const aldrich = sizeRefusalReason(1201, 1574)
-    expect(aldrich).toBe(
-      '1,574 sq ft, 31% larger than this home; sales more than 25% larger or smaller do not set the price',
+  it('names a sale past 35% in the words the letter prints, and does not call 35% a miss', () => {
+    // 1,201 x 1.36 = 1,633.36. 1,634 is 36% larger.
+    const past = sizeRefusalReason(1201, 1634)
+    expect(past).toBe(
+      '1,634 sq ft, 36% larger than this home; sales more than 35% larger or smaller do not set the price',
     )
-    expect(priceSetRefusal({ subjectSqft: 1201, saleSqft: 1574, ownPlat: true })).toEqual({
+    expect(priceSetRefusal({ subjectSqft: 1201, saleSqft: 1634, ownPlat: true })).toEqual({
       code: 'size',
-      reason: aldrich,
+      reason: past,
     })
-    expect(saleSetsThePrice({ subjectSqft: 1201, saleSqft: 1574, ownPlat: true })).toBe(false)
-    // 30.85% smaller rounds to 31, the same whole-percent reading as Aldrich.
-    expect(sizeRefusalReason(2016, 1393)).toBe(
-      '1,393 sq ft, 31% smaller than this home; sales more than 25% larger or smaller do not set the price',
-    )
-    // Just past the line, a rounded 25 would say the sale is inside the band.
-    const barely = sizeRefusalReason(10000, 12504)
-    expect(clearlyDifferentSize(10000, 12504)).toBe(true)
-    expect(barely).toContain('25.1% larger')
-    expect(barely).not.toContain(', 25% larger')
+    expect(saleSetsThePrice({ subjectSqft: 1201, saleSqft: 1634, ownPlat: true })).toBe(false)
+    // Just past the line, a rounded 35 would say the sale is inside the band.
+    const barely = sizeRefusalReason(10000, 13510)
+    expect(clearlyDifferentSize(10000, 13510)).toBe(true)
+    expect(barely).toContain('35.1% larger')
+    expect(barely).not.toContain(', 35% larger')
     expect(productRefusalReason(0.2, 5)).toBe(
       "5 acres against this home's 0.2 acres; a cottage and an acreage property do not set each other's price",
     )
@@ -397,11 +408,11 @@ describe('one size limit for any sale that sets the price: 25% everywhere (Matt 
     )
   })
 
-  it('the old 35% band no longer admits a sale between 25% and 35%', () => {
-    // 2,016 x 0.70 = 1,411: 30% smaller, inside the wide search band, outside the price-setting band.
-    expect(clearlyDifferentSize(2016, 1411)).toBe(true)
-    expect(saleSetsThePrice({ ...jackson, saleSqft: 1411 })).toBe(false)
-    expect(clearlyDifferentSize(2016, 2620)).toBe(true)
-    expect(saleSetsThePrice({ ...jackson, saleSqft: 2620 })).toBe(false)
+  it('a sale between the old 25% door and 35% sets the price', () => {
+    // 2,016 x 0.70 = 1,411: 30% smaller. 2,620 is 30% larger.
+    expect(clearlyDifferentSize(2016, 1411)).toBe(false)
+    expect(saleSetsThePrice({ ...jackson, saleSqft: 1411 })).toBe(true)
+    expect(clearlyDifferentSize(2016, 2620)).toBe(false)
+    expect(saleSetsThePrice({ ...jackson, saleSqft: 2620 })).toBe(true)
   })
 })

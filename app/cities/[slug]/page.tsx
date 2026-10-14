@@ -92,6 +92,7 @@ import { homesForSalePath, slugify } from '@/lib/slug'
 import { placeInventoryHref } from '@/lib/communities/self-city-community'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata, publishCityRealEstateTitle } from '@/lib/site/page-metadata'
+import { shareOgImagePath } from '@/lib/og/share-image-url'
 import { placeCityRealEstateHeading, placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import { placeBoundaryClause, placeInventorySource } from '@/lib/place/place-inventory-source'
 import { cityPageTrail } from '@/lib/site/place-trail'
@@ -265,6 +266,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: publishCityRealEstateTitle(cityName),
     description: `Live ${cityName}, Oregon real estate: active single-family homes, months of supply, neighborhoods, subdivisions, open houses, and MLS market data from Oregon Data Share.`,
     path: `/cities/${slug}`,
+    ogImage: shareOgImagePath({ type: 'city', slug, title: cityName }),
   })
 }
 
@@ -651,7 +653,7 @@ async function renderCityDetail({ params }: Props) {
   // the MOS source line (MOS_THRESHOLD_CLAUSE, scripts/check-market-formula.mjs),
   // so the verdict and its rule stay one tap apart without being said twice.
   const foldVerdictProse =
-    mosRaw != null && face.verdict && face.verdict.kind !== 'unknown' ? `A ${face.verdict.label}.` : null
+    mosRaw != null && face.verdict && face.verdict.kind !== 'unknown' ? `${face.verdict.label}.` : null
   const insightBoard = buildCityInsightBoard({
     placeName: cityName,
     marketHref: `/housing-market/${slug}`,

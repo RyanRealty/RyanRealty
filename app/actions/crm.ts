@@ -342,7 +342,7 @@ export async function getCrmPersonFull(id: number): Promise<CrmPersonFull> {
     sb.from('crm_contact_points').select('id,kind,value,label,is_primary,status').eq('person_id', id).order('is_primary', { ascending: false }),
     sb.from('crm_timeline').select('id,ts,kind,title,body,source,broker,payload,starred', { count: 'exact' }).eq('person_id', id).order('ts', { ascending: false }).limit(100),
     sb.from('crm_tasks').select('id,name,type,due_at,completed_at,assigned_broker,fub_legacy_id').eq('person_id', id).order('completed_at', { ascending: true, nullsFirst: true }).order('due_at', { ascending: true }).limit(50),
-    sb.from('crm_suppressions').select('id,channel,reason,source').eq('person_id', id),
+    sb.from('crm_suppressions').select('id,channel,reason,source').eq('person_id', id).is('cleared_at', null),
     sb.from('crm_sequence_enrollments').select('id,status,step_index,crm_sequences(name)').eq('person_id', id),
     fubId ? sb.from('fub_person_geo').select('*').eq('fub_person_id', fubId).maybeSingle() : Promise.resolve({ data: null }),
     fubId ? sb.from('cma_deliveries').select('*').eq('fub_person_id', fubId).order('created_at', { ascending: false }).limit(5) : Promise.resolve({ data: [] }),
@@ -716,7 +716,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     access: access.access,
     explicitGroupThread,
     overrideQuietHours: override,
-    // Direct compose Send: consent / TCPA soft opt-in / STOP-list are BULK ONLY.
+    // Direct compose Send: a missing-consent row is bulk-only. STOP still holds.
     skipSuppression: true,
     requirePersonInScope,
     revalidate: revalidateCrm,
@@ -726,8 +726,9 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   if (groupAttempt.status === 'fallback') fallbackNotice = groupAttempt.notice
 
   // §A4: each 1:1 recipient routes through the governed chokepoint
-  // (lib/comms/sendGovernedSms). Manual compose skips suppression (bulk-only);
-  // quiet hours still apply unless the broker overrides.
+  // (lib/comms/sendGovernedSms). Manual compose may skip a soft consent row;
+  // STOP / bounce / complaint / unsubscribe / GPC still hold. Quiet hours
+  // still apply unless the broker overrides.
   const { sendGovernedSms } = await import('@/lib/comms/sendGovernedSms')
   for (const rid of recipientIds) {
     // Every recipient (including extras) must be in the broker's scope.

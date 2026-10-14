@@ -5,7 +5,7 @@
 **Dispositions:** LOCKED (standing rule in force) · VERIFIED (built; per the source doc or map evidence) · PARTIAL · MISSING (not built — must cite a covering gap G-row) · PARKED (deliberate not-now) · GATED (waits on a Matt per-action approval) · SUPERSEDED.
 **Honesty:** VERIFIED here inherits from source docs and map evidence statuses. The v1 certification pass (VERSION-1) re-verifies; a disposition an accept test contradicts gets corrected, never argued with.
 **Covers column:** MISSING/PARTIAL rows cite the VERSION-1 gap (G-row) or owner that carries them. Ad-hoc work that touches a row updates it in the same change.
-**Max:** R-227 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
+**Max:** R-239 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
 
 ## The animals (what each is, how it improves)
 
@@ -65,8 +65,8 @@
 | R-030 | Full autonomy post-hoc for reversible work; per-action approval for outbound/publish/spend/OAuth only | CLAUDE.md §1 (Matt 2026-07-21) | LOCKED | — |
 | R-031 | Broker self-approval: content the broker initiates on the SMS line, APPROVE = stamp, Matt digest | CLAUDE.md §1 (2026-08-01) | LOCKED | — |
 | R-032 | Every rule that keeps being violated becomes a mechanical gate, not more prose | DECISIONS-RECORDED §9 | LOCKED | catalog `docs/MECHANICAL_GATES.md` |
-| R-033 | Production truth is origin/main; ship same session; deploy:verify after every push; migrations same delivery | AGENTS.md; production-parity | LOCKED | — |
-| R-034 | Done = build + real data + deploy READY + screenshots 390/1280; per-class accept by goal type | definition-of-done; COMPANY_IMPROVEMENT §Accept | LOCKED | — |
+| R-033 | Production truth is origin/main; PRs only, never git push or fast-forward main; open every PR with auto-merge (squash, delete branch) except hold-for-matt; agents merge once checks pass; Done = merged + production READY + live URL checked; migrations same delivery; workflows enqueue auto-merge and close stale PRs | AGENTS.md CORE RULES; production-parity; Matt 2026-10-13/14 | LOCKED | `.github/workflows/pr-auto-merge.yml`, `pr-stale.yml`; merge-gate |
+| R-034 | Done = merged + Vercel production READY + live URL checked (+ build, real data, screenshots 390/1280 on UI); per-class accept by goal type | AGENTS.md CORE RULES; definition-of-done; COMPANY_IMPROVEMENT §Accept; Matt 2026-10-14 | LOCKED | — |
 | R-035 | One recursive company process (THE LOOP); versions certify the whole; conditions never dates | Matt 2026-08-15; DEVELOPMENT_PROCESS | VERIFIED | v1.4.0 shipped |
 | R-036 | Everything remembered: durable work graph is the source of record; chat is disposable | Matt 2026-08-15 | VERIFIED | `loop_work_nodes` + loop-brief |
 | R-037 | No shortcut assumptions: selection happens over the full enumerated universe | Matt 2026-08-15 | VERIFIED | G56 + this register (G57) |
@@ -79,8 +79,8 @@
 | R-044 | Video hard rules: 1080×1920, hook by frame 12, single-word Amboqia captions, Victoria VO, no unapproved MP4 ships | CLAUDE.md §4 (locked 2026-04-27…05-20) | LOCKED | — |
 | R-045 | Video producers stay out of the brain REGISTRY; local worker only | CLAUDE.md §4 (Matt 2026-06-14) | LOCKED | — |
 | R-046 | Outbound content must "blow them away"; Tumalo kit is the named exemplar | BROKER-OS (2026-08-12) | LOCKED | — |
-| R-047 | Two tracks never mix files; parallel in worktrees, serial PRs to main (Matt merges); anti-stranding contract | BROKER-OS v0.12/v0.13; AGENTIC_GRAPH rule 11 | LOCKED | — |
-| R-048 | Canon consolidation: one rule once; no conflicting plan docs; plans register in the canon | DECISIONS-RECORDED §7 | VERIFIED | G44 |
+| R-047 | Two tracks never mix files; parallel in worktrees, serial PRs to main; never git push main; agents merge their own PRs (auto-merge except hold-for-matt) then verify the production deploy; anti-stranding contract | BROKER-OS v0.12/v0.13; AGENTIC_GRAPH rule 11; AGENTS.md; Matt 2026-10-13/14 | LOCKED | — |
+| R-048 | Canon consolidation: one rule once; process rules live only in AGENTS.md; CLAUDE.md and .cursor/rules point there; no conflicting plan docs; plans register in the canon | DECISIONS-RECORDED §7; Matt 2026-10-14 | VERIFIED | G44; AGENTS.md |
 | R-049 | Expired/FSBO first message proves this-home marketing; never blame prior agent; never invent numbers | BROKER-OS | LOCKED | — |
 | R-050 | Graph engineering adopted as substance: contracts, edges-as-code, verifier edges, budgets, stop conditions | AGENTIC_GRAPH (GO 2026-08-15) | VERIFIED | workflows + canon v1.4.0 |
 | R-051 | Named stops stand: I6, Tremor npm, PropXYZ purchase, new Public Product OS. Page-grade process is KILLED (Matt 2026-08-16) — do not run, do not score, do not fix-to-a-rubric | Matt 2026-08-16; handoff 2026-08-15 | LOCKED | R-215 |
@@ -315,6 +315,18 @@
 | R-225 | A listing photograph is never generated, animated by a model, or reshaped. Listing video pans across the real photo at its true proportions (uniform scale + crop); a generated still must already be the clip's shape or it is not animated | Matt 2026-10-07 ADD ("That can't happen") | VERIFIED | `lib/video/pan.ts` + `pan.test.ts` (square stays square), shape gate in `lib/studio/produce.ts`, `studio.test.ts`; the 11 squeezed drafts killed |
 | R-226 | Charts, maps and data in video are drawn by the Studio's motion stage from verified data, never by a generator: `market_trend` (up to 24 published Market Truth months drawn on, no floor rule, round-value gridlines, the latest value as an end-of-line label and the first on a leader to its ring, then the meter filled to its value) and `place_map` (city outline, log-space camera in, recorded `boundaries` outline, live figures). $0 but the caption; a film that cannot be drawn is killed | Matt 2026-10-07 ADD ("incorporate these skills", prompt-motion.com) | VERIFIED | `lib/studio/motion/{chart,map}.ts`, `paper.test.ts`, `compose.int.test.ts` (cream and navy pixels exact), `studio.test.ts` (no paid adapter called); QA renders of Bend and Old Bend in `out/motion-qa/`, a separate critic pass, every P0/P1 fixed |
 | R-227 | Every Studio video carries an original score composed in code (`lib/studio/score`), read off the plan's own cue times (`lib/studio/motion/sound.ts`): calm and percussion-free on listings, a soft pulse on market and place films, one note per plotted month on a trend film; mastered to -14 LUFS, at or under -1 dBTP after AAC. A score that fails ships a silent film and says why | Matt 2026-10-07 ADD | VERIFIED | `lib/studio/score/*.test.ts` (BS.1770 meter calibration, ffmpeg cross-check), `compose.int.test.ts` (ebur128 on the muxed file) |
+| R-228 | Bots may write to the Ryan Realty Supabase database when a task Matt asked for needs it. This replaces the old production-DB read-only rule. Sends, the expired drip hard stop, and the other standing rules stay | Matt 2026-10-13 ADD | LOCKED | CORE RULES in AGENTS.md |
+| R-229 | PRs only. Never push or fast-forward to main | Matt 2026-10-14 ADD | LOCKED | AGENTS.md CORE RULES |
+| R-230 | Open every PR with auto-merge on (`gh pr merge --auto --squash --delete-branch`), except PRs labeled hold-for-matt | Matt 2026-10-14 ADD | LOCKED | AGENTS.md CORE RULES |
+| R-231 | No PR older than 3 days: rebase and merge it, or close it with a reason and delete the branch | Matt 2026-10-14 ADD | LOCKED | AGENTS.md CORE RULES |
+| R-232 | Done means merged, the production deploy READY, and the live URL checked | Matt 2026-10-14 ADD | LOCKED | AGENTS.md CORE RULES |
+| R-233 | Respect page payload budgets: cap grids and schema lists, and never send the same data twice | Matt 2026-10-14 ADD | LOCKED | AGENTS.md; `SSR_GRID_PAGE`; `ci:page-payload` |
+| R-234 | No sleep-based waits. Use `gh pr checks --watch` or CI waits | Matt 2026-10-14 ADD | LOCKED | AGENTS.md CORE RULES |
+| R-235 | New process rules go into AGENTS.md in the same PR | Matt 2026-10-14 ADD | LOCKED | AGENTS.md CORE RULES |
+| R-236 | AGENTS.md is the single process-rule source; CLAUDE.md and .cursor/rules point to it instead of duplicating | Matt 2026-10-14 ADD | LOCKED | AGENTS.md; ci:core-rules-prefix (shared CORE RULES prefix for Grok's 10k cutoff) |
+| R-237 | Main is protected by a ruleset or branch protection: block direct pushes and force-pushes, require a PR, require merge-gate + security-scan (lint, gates, unit, and on app PRs build / e2e / a11y). Do not require Lighthouse or content-floor. Repository admins may bypass in an emergency | Matt 2026-10-14 ADD | PARTIAL | AGENTS.md process land path 9; this session's GitHub App 403s POST rulesets and PUT branch protection (`Resource not accessible by integration`) |
+| R-238 | Repo Allow auto-merge and delete-branch-on-merge stay on. `.github/workflows/pr-auto-merge.yml` runs `gh pr merge --auto --squash` unless hold-for-matt, and removes auto-merge when that label is added | Matt 2026-10-14 ADD | VERIFIED | Matt turned on Allow auto-merge and Automatically delete head branches in Settings on 2026-10-14. The `main` rule requires `merge-gate`; branches need not be up to date. The GitHub App still cannot change these settings (403). |
+| R-239 | Daily stale-PR workflow (plus workflow_dispatch) labels open PRs older than 3 days `stale` (not hold-for-matt), then closes them after 2 more days with a reason and keeps the branch | Matt 2026-10-14 ADD | LOCKED | `.github/workflows/pr-stale.yml`; `scripts/pr-stale.mjs` |
 
 ## Standing Matt gates (never agent-closed)
 

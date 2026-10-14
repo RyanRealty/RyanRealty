@@ -48,7 +48,7 @@ import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { SAME_STREET_SIZE_BAND, sameStreetPeer } from '@/lib/pricing/price-anchor'
 import { carriedRoomDecision } from '@/lib/pricing/room-ground'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
-import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
+import { roomDifferenceSentence, roomOffPhrase } from '@/lib/pricing/room-counts'
 import {
   EXCLUSION_BASES,
   checkJudgmentConsistency,
@@ -196,7 +196,7 @@ function describeComp(c: CmaComp): string {
     c.subdivision ? `subdiv=${c.subdivision}` : null,
     `${c.beds ?? '?'}bd/${c.baths ?? '?'}ba`,
     c.roomDifference?.length
-      ? `room-note: one ${c.roomDifference.map((n) => (n === 'beds' ? 'bedroom' : 'bathroom')).join(' and ')} different on own ground, $0 on the room`
+      ? `room-note: ${roomOffPhrase(c.roomDifference, c.roomDecision?.gap)} different, counts for less, $0 on the room`
       : null,
     `${c.sqft}sqft`,
     c.lotAcres != null ? `${c.lotAcres}ac lot` : null,
@@ -315,7 +315,7 @@ const SYSTEM =
   'exclude for lot size there, on any basis. Weigh it less if you must. At one acre and above on either side, a ' +
   'lot of a materially different size may still be excluded with basis=lot. ' +
   'Apply the same discipline to every non-numeric criterion. Do not exclude a sale for living area inside ' +
-  '25 percent of the subject, and do not exclude one for year built. The picker already made those cuts, ' +
+  '35 percent of the subject, and do not exclude one for year built. The picker already made those cuts, ' +
   'and it widens closed-sale age and date when the first location search is short of 3. A looser match stays. ' +
   'Weigh it less. Do not drop it. ' +
   'WHAT REVIEWERS CATCH MOST OFTEN, in order: a kept comp in an amenity-bearing planned community or resort when the subject is not, or the reverse; ' +
@@ -324,12 +324,11 @@ const SYSTEM =
   'CUSTOM AND NEW CONSTRUCTION: do not exclude a same-generation custom or new-construction peer as too luxury, ' +
   'too expensive, or a premium tier. Year and quality outrank price. A 2022 custom sale is a peer to a 2024 custom ' +
   'subject even when it sold higher. ' +
-  'THE ONE ROOM RULE (locked, beds and baths, same decision). Same whole count travels anywhere. ONE whole room ' +
-  'apart is used only on the subject\'s own ground — its plat, its mapped neighborhood, or its own street — and is ' +
-  'disclosed on the sale. Do not exclude that sale for the room gap, and apply no dollar value to the room. Two or ' +
-  'more whole rooms apart is refused everywhere: exclude those. A half bath never decides usability. A candidate ' +
-  'with a room-note is already on the subject\'s own ground; keep it. Code holds you to this rule the same way it ' +
-  'holds the $/sqft band. ' +
+  'THE ONE ROOM RULE (beds and baths, same decision). Same whole count travels anywhere. Up to two whole bedrooms ' +
+  'off, up to two whole bathrooms off, or both, stays in the set and counts for less than the same room count. ' +
+  'Do not exclude that sale for the room gap, and apply no dollar value to the room. Three or more whole rooms apart ' +
+  'on either count is refused everywhere: exclude those. A half bath never decides usability. A candidate with a ' +
+  'room-note stays. Code holds you to this rule the same way it holds the $/sqft band. ' +
   // ── narrative discipline ───────────────────────────────────────────────────
   'THE NARRATIVE IS EVIDENCE, NOT SALES COPY. A seller reads it and an independent reviewer checks every clause ' +
   'against the data in this prompt. State what IS known: how many sales you kept, the $/sqft band, the rule that ' +
@@ -805,11 +804,11 @@ function finalizeJudgment(args: {
     restoredByRule++
   }
 
-  // THE ONE ROOM RULE IS NOT A JUDGE CALL (Matt 2026-09-10, skill 0.1).
-  // This review reads the picker's own decision for the sale, re-run on the
-  // counts the picker compared (carriedRoomDecision). A one-room gap on own
-  // ground that the picker kept cannot be dropped for the room; a gap the
-  // rule refuses cannot stay, whatever the model said.
+  // THE ROOM RULE IS NOT A JUDGE CALL (Matt 2026-09-10, skill 0.1; widened
+  // 2026-10-09). This review reads the picker's own decision for the sale,
+  // re-run on the counts the picker compared (carriedRoomDecision). Up to two
+  // bedrooms off and two bathrooms off that the picker kept cannot be dropped
+  // for the room. Three or more on one count cannot stay, whatever the model said.
   for (const v of judged.verdicts) {
     const c = byKey.get(v.listingKey)
     if (!c) continue
@@ -818,8 +817,7 @@ function finalizeJudgment(args: {
       if (v.tier === 'exclude') continue
       v.tier = 'exclude'
       v.basis = 'other'
-      v.reason =
-        'Room counts are two or more whole rooms apart, or one apart off this home\'s own ground.'
+      v.reason = 'Room counts are three or more whole rooms apart.'
       resolvedByCode.push(`${v.listingKey}: excluded, one-room rule refuses this sale`)
       continue
     }
@@ -827,7 +825,7 @@ function finalizeJudgment(args: {
     v.tier = 'strong'
     delete v.basis
     v.reason =
-      roomDifferenceSentence(rooms.notes) ??
+      roomDifferenceSentence(rooms.notes, rooms.gap) ??
       'Room counts follow the one-room rule. This sale stays.'
     protectedKeys.add(v.listingKey)
     restoredByRule++

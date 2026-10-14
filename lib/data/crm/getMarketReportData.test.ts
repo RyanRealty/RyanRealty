@@ -407,7 +407,7 @@ describe('getMarketReportData (D27 leftover fetch integration)', () => {
     monthsOfSupply: 3.5,
     mosLabel: '3.5 months',
     verdictKind: 'sellers' as const,
-    verdictLabel: "Seller's market",
+    verdictLabel: '3.5 months of supply',
     medianListPrice: 799000,
     computedAt: '2026-06-25T12:00:00Z',
     completeThrough: '2026-06-25',

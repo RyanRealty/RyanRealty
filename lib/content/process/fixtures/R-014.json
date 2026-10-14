@@ -1,0 +1,12 @@
+{
+  "rule": "R-014",
+  "step": "brief",
+  "what": "a 15.3 s story teaser (hard maximum 15 s)",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "video_type",
+      "set": "story_teaser"
+    }
+  ]
+}

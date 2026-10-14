@@ -93,12 +93,12 @@ describe('expired rows match the count', () => {
     expect(set.count).toBe(0)
     expect(set.likeYours).toBe(false)
     expect(set.peers).toHaveLength(0)
-    expect(set.sentence).not.toMatch(/No home /)
-    expect(set.sentence).toContain('We searched listings in')
-    expect(set.sentence).toContain('between $403,000 and $1,356,000.')
-    // The reason is the one the fit returned, never a list of four.
+    expect(set.sentence).toBe(
+      'No home like yours in River West came off the market without selling in the last 36 months.',
+    )
     expect(set.sentence).not.toContain('None were close')
     expect(set.sentence).not.toContain('bedrooms, bathrooms, size or age')
+    expect(set.sentence).not.toMatch(/between \$|[—–]/)
     const shown = unsoldPeersFor({
       subject: { listingKey: 'SUBJ', mlsNumber: '1', streetAddress: '1617 NW 8th' },
       peers: set.peers,
@@ -106,20 +106,24 @@ describe('expired rows match the count', () => {
     expect(shown).toHaveLength(0)
   })
 
-  it('shows all seven fitting homes, and the matrix does not drop two', () => {
+  it('prints five of seven fitting homes, and the matrix keeps those five', () => {
     const set = buildExpiredPeerSet({
       rows: rows(3, 1200) as never,
       subject,
       area,
       asOf: new Date('2026-09-08T12:00:00.000Z'),
     })
-    expect(set.count).toBe(7)
-    expect(set.peers).toHaveLength(7)
+    expect(set.count).toBe(5)
+    expect(set.peers).toHaveLength(5)
+    expect(set.peers.map((p) => p.listingKey)).toEqual(['K0', 'K1', 'K2', 'K3', 'K4'])
+    expect(set.sentence).toBe(
+      'Five homes like yours in River West came off the market without selling in the last 36 months. Two more homes like yours were in that pool.',
+    )
     const shown = unsoldPeersFor({
       subject: { listingKey: 'SUBJ', mlsNumber: '1', streetAddress: '1617 NW 8th' },
       peers: set.peers,
     })
-    expect(shown).toHaveLength(7)
+    expect(shown).toHaveLength(5)
     const html = shown.map((p) => `<td>${p.address}</td>`).join('')
     expect(countedAddressesMissingFromDocument(set.peers.map((p) => p.address), html)).toEqual([])
   })

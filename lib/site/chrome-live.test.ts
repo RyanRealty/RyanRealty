@@ -20,7 +20,7 @@ describe('composeChromeLive', () => {
     expect(live.Sell?.eyebrow).toBe('Central Oregon sellers right now')
     expect(live.Market?.facts.map((f) => `${f.figure} ${f.label}`)).toEqual([
       '$750K median list price',
-      '5.1 months of supply, balanced market',
+      '5.1 months of supply',
       '27 median days to pending',
     ])
     expect(live.Sell?.facts[0]).toEqual({ figure: '501', label: 'sold in the last 30 days' })
@@ -48,11 +48,11 @@ describe('composeChromeLive', () => {
     expect(Object.keys(partial)).toEqual(['Areas'])
   })
 
-  it('keeps the verdict word on the number it belongs to', () => {
+  it('prints months of supply with no market-type label', () => {
     const seller = composeChromeLive({ atlas: null, towns: [], region: { medianListPrice: null, monthsOfSupply: 3.2, medianDaysToPending: null, stamp: null } })
-    expect(seller.Market?.facts[0]?.label).toBe("months of supply, seller's market")
+    expect(seller.Market?.facts[0]?.label).toBe('months of supply')
     const buyer = composeChromeLive({ atlas: null, towns: [], region: { medianListPrice: null, monthsOfSupply: 6.4, medianDaysToPending: null, stamp: null } })
-    expect(buyer.Market?.facts[0]?.label).toBe("months of supply, buyer's market")
+    expect(buyer.Market?.facts[0]?.label).toBe('months of supply')
   })
 })
 

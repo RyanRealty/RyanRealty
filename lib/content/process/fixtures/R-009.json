@@ -1,0 +1,12 @@
+{
+  "rule": "R-009",
+  "step": "brief",
+  "what": "no payoff beat",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.2.role",
+      "set": "body"
+    }
+  ]
+}

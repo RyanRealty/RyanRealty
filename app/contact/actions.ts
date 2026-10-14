@@ -9,7 +9,7 @@ import { sendContactNotification } from '@/lib/resend'
 import { canonicallyTagLead, type LeadAudience } from '@/lib/canonical-lead-tagger'
 import { classifyPropertyGeo, referralIntakeTags } from '@/lib/referral-geo'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
-import { fireLeadGenerated, fireNonLeadEvent } from '@/lib/lead-tracking'
+import { fireLeadGenerated, fireNonLeadEvent, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { contactLeadType } from '@/lib/analytics/lead-event'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
@@ -276,17 +276,9 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   })
 
   // Send to Meta CAPI for deduplication with browser pixel.
-  // Every Lead carries an estimated value so Meta's bid algorithm can
-  // optimize for higher-value conversions. Property inquiries are higher
-  // intent than general inquiries; fold that into the value tier.
+  // Leads are counted by type. Do not send value or currency.
   const eventId = generateEventId()
-  const inquiryLower = inquiryType.toLowerCase()
   const recruit = isJoinInquiry(inquiryType)
-  const leadValue = listingKey || inquiryLower.includes('property') || inquiryLower.includes('listing')
-    ? 300
-    : inquiryLower.includes('seller') || inquiryLower.includes('valuation')
-      ? 500
-      : 200
   if (!recruit) {
     const sharing = await visitorCapiConsent()
     if (sharing.allowed) {
@@ -304,8 +296,6 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
           secGpc: sharing.secGpc,
           customData: {
             inquiry_type: inquiryType,
-            value: leadValue,
-            currency: 'USD',
           },
           eventSourceUrl: `${siteOrigin()}/contact`,
         }),
@@ -319,6 +309,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   // recruit inquiry is not a lead: its own recruit_inquiry event. "general" is
   // gone: a tour is buyer_showing, a home named is listing_inquiry, a selling or
   // buying inquiry says so, and only the rest is contact_general.
+  await persistGaClientIdFromCookies(capturedPersonId)
   if (recruit) {
     await fireNonLeadEvent({
       event_name: 'recruit_inquiry',
@@ -332,6 +323,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
       lead_type: contactLeadType({ isTour, listingKey, inquiryType }),
       form_id: 'contact',
       event_id: eventId,
+      crm_person_id: capturedPersonId,
       extra: { inquiry_type: inquiryType },
     })
   }

@@ -1,0 +1,13 @@
+{
+  "rule": "R-105",
+  "step": "master",
+  "what": "a peak at +0.5 dBTP",
+  "setup": {
+    "measure": {
+      "loudness": {
+        "integratedLufs": -14,
+        "truePeakDb": 0.5
+      }
+    }
+  }
+}

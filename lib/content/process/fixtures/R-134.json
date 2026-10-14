@@ -1,0 +1,8 @@
+{
+  "rule": "R-134",
+  "step": "brief",
+  "what": "an output folder under public/",
+  "setup": {
+    "publicOut": true
+  }
+}

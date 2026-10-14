@@ -101,6 +101,15 @@ export function crossesUs97(a: LatLng | null | undefined, b: LatLng | null | und
 
 /** A pin this close to the TIGER centerline sits on the highway, not east or west of it. */
 const ON_BANK_MILES = 0.1
+/**
+ * How much farther from the centerline the other house has to sit before a
+ * frontage pin and an inland pin are different pools. A few hundred feet of
+ * setback on the same side is the next house, not a highway split. Hayden
+ * Ranch (on the centerline) against Diamond Bar Ranch (about a quarter mile
+ * off it) still splits. 20090 Mount Faith against 20052 Badger, both west of
+ * the parkway and a tenth of a mile apart, does not (Matt 2026-10-09).
+ */
+const US97_FRONTAGE_GAP_MILES = 0.15
 
 export function distanceToUs97(p: LatLng | null | undefined): number | null {
   if (!finitePoint(p)) return null
@@ -143,7 +152,9 @@ export function us97Bank(p: LatLng | null | undefined): Us97Bank | null {
 
 /**
  * True when A and B are different buyer pools across US-97: opposite banks,
- * or one on the frontage and the other inland. Missing coordinates fail open.
+ * or one on the frontage and the other far enough inland to be a different
+ * setting. A pin just outside the frontage band, on the same side, stays.
+ * Missing coordinates fail open.
  */
 export function differentUs97Bank(
   a: LatLng | null | undefined,
@@ -152,8 +163,14 @@ export function differentUs97Bank(
   const sa = us97Bank(a)
   const sb = us97Bank(b)
   if (sa == null || sb == null) return false
-  if (sa === 'on' && sb === 'on') return false
-  return sa !== sb
+  if (sa === sb) return false
+  if (sa === 'on' || sb === 'on') {
+    const da = distanceToUs97(a)
+    const db = distanceToUs97(b)
+    if (da == null || db == null) return false
+    return Math.abs(da - db) >= US97_FRONTAGE_GAP_MILES
+  }
+  return true
 }
 
 const MILES_PER_DEG_LAT = 69.0

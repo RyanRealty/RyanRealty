@@ -1,0 +1,12 @@
+{
+  "rule": "R-071",
+  "step": "brief",
+  "what": "a timeline with no voice",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "voice",
+      "delete": true
+    }
+  ]
+}

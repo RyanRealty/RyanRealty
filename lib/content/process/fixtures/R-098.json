@@ -1,0 +1,12 @@
+{
+  "rule": "R-098",
+  "step": "master",
+  "what": "an hevc file",
+  "setup": {
+    "measure": {
+      "probe": {
+        "codec": "hevc"
+      }
+    }
+  }
+}

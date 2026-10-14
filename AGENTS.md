@@ -1,26 +1,67 @@
 # CORE RULES (read first; these override everything below and any handoff or plan doc)
 
-These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). If a later line or a plan says to land, fast-forward, or push `main`, ignore it.
+These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait, or to `git push` `main`, is stale. Process rules live in `AGENTS.md` only. `CLAUDE.md` and `.cursor/rules` point here. New process rules land in `AGENTS.md` in the same PR.
 
-**Main.** Code reaches `main` only when Matt merges a pull request. Open a PR to `main`; Matt merges. Never push `main`, never `git push origin HEAD:main`, never fast-forward `main`, never merge `main` yourself, even if a handoff says land or fast-forward. Nobody pushes `main`, including admins.
+**PRs only.** Never push or fast-forward to `main`. Branch, open a PR, merge. Unfinished work is `npm run push` only.
 
-**Git safety.** No rebase. No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away.
+**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except PRs labeled `hold-for-matt`. Workflows enqueue that.
 
-**Do not send.** Emails, texts, CMAs, and social posts stay drafts until Matt asks to send that specific item. A rebuild does not send, enqueue, or approve.
+**Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason. The stale job keeps the branch.
+
+**Done.** Merged, Vercel production **READY**, and the live URL checked. `npm run ship` is the land path.
+
+**Git safety.** No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away. Rebase only to land a PR.
+
+**Do not send.** Emails, texts, CMAs, and social posts stay drafts until Matt asks to send that specific item. A rebuild does not send, enqueue, or approve. Do not change approved CMA or email wording.
 
 **Names.** Never put buyer or seller names in public copy (site, email, social, letters).
 
 **Invent nothing.** Never invent numbers, names, prices, stats, or people. If it is not in the source you just read, it does not ship.
 
-**Prod DB.** Production Supabase is read-only unless Matt says otherwise in this session. Raw SQL is `-- audit:` row reads only.
+**DB.** Bots may write to the Ryan Realty Supabase DB when a task Matt asked for needs it. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true.
 
 **Secrets.** Never print API keys, tokens, passwords, or `.env` values. Never put them in commits, logs, or chat.
 
-**Integrations.** Before saying a service is not connected, search this repo for the existing client, env var, and key. The wiring is usually already here.
+**Payload.** Cap grids and schema lists. Never send the same data twice.
+
+**Waits.** No sleep-based waits. Use `gh pr checks --watch` or CI waits.
+
+**Integrations.** Before saying a service is not connected, search this repo for the existing client, env var, and key.
 
 **Cursor out.** When Cursor is out (usage, credit, spend, 402, or a 20-minute stall), switch to Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve`. Never use `XAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` to get past a limit.
 
-**Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
+**Keep moving.** Unfinished work: push the branch, write your note in `docs/plans/handoffs/`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
+
+**Video.** One factory (Matt 2026-10-13): every video, any bot or machine, renders via `npm run studio:render`; Imagine makes footage only. Nothing reaches Matt until `npm run video:check -- <mp4> --final` passes. Rules: `.claude/skills/ryan-studio/SKILL.md`.
+
+---
+
+## Process land path (this file is the source)
+
+`CLAUDE.md` and `.cursor/rules` point here. Domain canon (data accuracy, voice, design, CMA rulings) stays in the file that owns the surface. Process does not.
+
+1. **PRs only.** Never `git push` `main`. Never fast-forward `main`. Branch from current `origin/main`, open a PR, merge that PR.
+2. **Auto-merge.** After opening a PR, run `gh pr merge --auto --squash --delete-branch` unless it is labeled `hold-for-matt`. Never run `gh pr merge` on a `hold-for-matt` PR, including `--auto`. `--auto` squash-merges immediately when Allow auto-merge is off and the PR is MERGEABLE. Create that label if it is missing. Enable "Allow auto-merge" and "Automatically delete head branches" on the GitHub repo if they are off. `.github/workflows/pr-auto-merge.yml` queues the same command, drops auto-merge when `hold-for-matt` is added, and squash-merges after `merge-gate` + `security-scan` when the repo setting is still off.
+3. **Stale PRs.** A PR older than 3 days is rebased and merged, or closed with a written reason. `.github/workflows/pr-stale.yml` (daily + `workflow_dispatch`) labels `stale` at 3 days and closes after 2 more days, keeping the branch so the work is not lost. Skip `hold-for-matt`.
+4. **Done.** The PR is merged, the Vercel production deploy for that SHA is **READY**, and the live URL is checked. `npm run ship` is the land path. Unfinished work is `npm run push` plus your note in `docs/plans/handoffs/`.
+5. **Payload.** Public pages respect the page payload budgets (`SSR_GRID_PAGE` in `lib/site/ssr-grid-page.ts`, `ci:page-payload`, Atlas props budget). Cap grids and schema lists. Never serialize the same listing or schema payload twice.
+6. **Waits.** No `sleep` polls. Use `gh pr checks --watch` or the CI wait the tool already has. R-221 still bans sitting on `gh run view` in a loop. **R-221:** do not poll GitHub Actions.
+7. **New process rules.** A standing process rule Matt issues lands in this file in the same PR as the work it governs.
+8. **DB writes.** Bots may write to the Ryan Realty Supabase DB when a task Matt asked for needs it. Sends stay drafts. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` in `lib/data/prospecting/drip-schedule.ts` stays `true`. Approved CMA and email wording do not change without Matt's sign-off.
+9. **merge-gate.** CI job `merge-gate` is the required land-path rollup: lint, gates, unit, and on app PRs build / e2e / a11y. Do not require Lighthouse or content-floor. A ruleset or branch protection on `main` should require `merge-gate` + `security-scan`, block direct pushes and force-pushes, require a PR, and let repository admins bypass in an emergency. This session's GitHub App token 403s Administration (`Resource not accessible by integration`); do not push an empty commit to `main` until the API shows protection is active.
+
+---
+
+## Ad copy, voiceover and captions
+
+All ad work (copy, captions, voice, video, avatar) follows this same process on every tool (Grok, Claude, or another). Never a generic fallback. Written voice stays [`marketing_brain_skills/brand-voice/VOICE.md`](marketing_brain_skills/brand-voice/VOICE.md). Engine markup, script template, and caption timing: [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md).
+
+1. Same process on every tool. Never drop to a generic script because the tool changed.
+2. Warm and conversational, like a friendly person on a phone call: short sentences, one idea each, light filler, natural pauses. Never scripted, robotic, broadcast, or market-report, and never complicated.
+3. The voiceover is a female voice.
+4. TikTok-style burned-in captions, 1-4 words per card, timed from the final rendered audio's timestamps. Never estimated.
+5. Write the VO in the confirmed engine's official markup. ElevenLabs v3/v4: ellipses, line breaks, and audio tags; no `<break>`. ElevenLabs v2: `<break time>`; no audio tags. Grok TTS: inline `[pause]` / `[breath]`; no SSML. Money is spoken words on every engine.
+6. Facts and numbers stay exactly as in the approved brief. Say "buyers have leverage," never "buyer's market." No em dashes, no client names or addresses, no "top team." Financing ads carry "Not lending advice. Talk to your lender." Nothing publishes without Matt.
 
 ---
 
@@ -37,16 +78,16 @@ This document tells AI coding agents (Cursor, Copilot, Windsurf, etc.) how to au
 Every session — Claude Code, Cursor, or Grok — starts here:
 
 0. **`docs/GROK_BOT_BRAIN.md`** if you are a Grok Bot / Grok Build teammate — map only, then open the one door for this job. Do not load the whole canon.
-1. **`docs/plans/CROSS_AGENT_HANDOFF.md` Current block** (the file holds exactly one; `ci:handoff-current`) — what the other surface left. Read the archive only for a named SHA.
+1. **Handoff notes in `docs/plans/handoffs/`** (one file per session; `ci:handoff-current`): the standing holds and the newest notes. The loop brief prints them. `CROSS_AGENT_HANDOFF.md` is frozen history.
 2. **`npx tsx scripts/loop-brief.ts`** — durable work graph + ship class. That is next work. Not `orchestrate.ts`. Not `docs/SITE_SPEC.md`. When Matt says "run the loop", follow **`docs/RUN_LOOP.md`**.
 3. **`docs/DATA_ACCESS_LAYER.md`** when the task touches listings/stats — every page calls `@/lib/data/*`; raw `.from('listings')` outside `lib/data/` is banned.
 
 **Locked CMA process rules. Do not loosen these.**
 
 1. One CMA path. Price on current main only. No second ladder. No 80% send floor. Do not merge PR 408 or any 80% floor. PR 401 stays. Do not revert 770a4fd1.
-2. Recommended price is the house from comps only. ADU, second lot, and rental income are letter notes, not dollars, until Matt says otherwise.
+2. Recommended price is the house from comps only. ADU, second lot, and rental income are letter notes, not dollars, until Matt says otherwise. An ADU home prices from ADU sales first (Matt 2026-10-14): the ladder runs over closed sales whose remarks state an ADU or other second living unit; five or more price-setting ones are the set; fewer, before or after the comparability review, hand the home to the ordinary set (sales with or without one) and the letter says so in one sentence (lib/pricing/adu-preference.ts, `adu_preference` on the selection diagnostics; a review drop re-enters the build once on the ordinary pass, `CmaBuildInput.aduFallback`). The ADU still carries no dollar of its own.
 3. Hold for Matt if the rec is more than 15% under last ask, or any amount over it. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold.
-4. One room rule: same whole bed or bath count anywhere. One whole room apart only on the subject's own plat, mapped neighborhood, or own street, kept and disclosed, zero dollars. Two or more apart refused everywhere. The picker and the review call the same decision. The review must not exclude a sale the picker kept for a room gap this rule allows.
+4. One room rule (Matt 2026-10-09): same whole bed or bath count anywhere. Up to two whole bedrooms off, up to two whole bathrooms off, or both, stays wherever the search already reached, kept and disclosed. It weighs less: one bedroom off is 0.85 of the room step, two bedrooms off is 0.70, one bathroom off is 0.90, two bathrooms off is 0.75, and the two counts multiply. Location still outranks rooms (same subdivision 3, adjacent 2, neighborhood 1). No dollar value is applied to the room. Three or more whole rooms apart on one count is refused everywhere. The picker and the review call the same decision. The review must not exclude a sale the picker kept for a room gap this rule allows.
 5. Pocket rungs are skipped when the plat and the street already have five sales before the first quarter-mile pocket rung. A cheap different-plat pocket sale drops when no own-plat sale remains in the set that is actually priced. Do not check only the pre-review set.
 6. Do not build or send a CMA if the home is listed again. Live status first. Active, pending, or otherwise on the market means skip.
 7. A rebuild does not send, enqueue, or approve.
@@ -56,7 +97,7 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 11. Approved CMAs send only in the weekday 9:03 AM PT window.
 12. Never use buyer or seller names in social, email, or public copy.
 13. No em dashes in public site copy.
-14. Every change ships as a branch + PR (Matt 2026-10-08). Push the branch to GitHub right away and open a PR to `main`. Matt merges. Nobody pushes to `main`, including admins. No rebase, force-push, or reset.
+14. A finished change is `npm run ship` (Matt 2026-10-09). Unfinished work is pushed as a branch right away. Never `git push` `main`. No rebase, force-push, or reset.
 15. Recommended price is the weighted price of the sales the picker kept. A closer match weighs more. A looser match stays. Location order, heaviest first, is the long-standing search order: same subdivision (weight 3), adjacent subdivisions (weight 2), the neighborhood or community (weight 1). Size and bedrooms come after that and cannot reorder it. A same-subdivision sale outweighs a similar-size neighborhood sale. An adjacent-subdivision sale sits between those two. One size cutoff, the picker's, about 35% living area. The review does not drop a picker-kept sale for a tighter size gap or a 15-year vintage wall. When the first location search is short of 3 comps, widen the closed-sale age and date range. Do not return a short set. The pull walks same subdivision, then adjacent subdivisions, then the neighborhood community, and widens the closed-sale age and date inside each before the next. After that community, distance rings start at 0.25 miles and step up by 0.25 miles. Do not open with a 1-mile ring. Do not fall back to same-zip while a closer place still has sales.
 **One rule set (Matt 2026-10-08).** There is no second review. The picker rules are the process. "One rule set. The picker's size cutoff, sales kept out to about a 35% living-area gap, is the only size cutoff. Nothing re-judges a sale the picker kept. If the first search returns fewer than 3 comps that pass, widen the closed-sale age and date range and search again. Do not return a short set with no recovery, and do not run a token-burning review that uses different cuts."
 16. An expired, canceled, or withdrawn home that did not sell was overpriced. The recommended price must come out under the last ask. A number that matches the ask, or sits over it, is wrong. The comps still set the price. Location weights stay same subdivision 3, adjacent 2, neighborhood 1, and size and bedrooms cannot reorder that. If the weighted comp price is already under the last ask, leave it. Do not add a second discount. If it is at the last ask or above it, pull it under. With no days on market and no original ask, the pull is $1,000, not a percent. When days on market or an original ask is already on the subject, start at 1% under and deepen with days on market toward 120 days. No price cut, when the original ask is known and did not come down, adds up to 2% more, so 3% at 120 days. A known price cut, or no original ask to judge a cut by, adds at most 0.5% more, so 1.5% at 120 days. The pull floors to the thousand and stays inside 3%. This is only for a home that failed to sell. Do not apply it to a normal comp sale. The hold is separate and unchanged: a rec more than 15% under last ask, or any amount over last ask, is a hold. Exactly 15% under is not a hold. Recommended price is still the house from comps only. ADU, second lot, and rental stay notes, not dollars. The under-the-ask test reads the weighted price of the sales that set the price (reconciliation.weightedPrice), not the list tier above it (Matt 2026-10-08, delegated): 3037 Purcell's sales blend to $561,188, already under the $565,000 ask, so the cover is $561,000 before the actives pull and the $576,000 list tier is not used; 62475 Woodsman's sales blend to $1,577,841, already under the $1,600,000 ask, so the cover is $1,578,000 before the actives pull and the $1,620,000 list tier is not used. When that weighted price is at or above the last ask, this pull is unchanged. The high-DOM sitting-actives pull still applies after. Held by lib/cma/failed-ask-weighted.test.ts.
@@ -68,17 +109,17 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 22. Community membership is the location of the address, for every community. It is not the MLS SubdivisionName and not a one-community exception. A sale belongs to the subject's community when its latitude and longitude sit inside that community boundary, or inside a plat that sits in that community, even when the MLS subdivision name is a different plat. A sale does not belong because the remarks mention the community. The search order is own subdivision, then adjacent subdivisions, then the neighborhood community, then distance. A point inside a recorded plat is a member of that community even when the MLS subdivision name differs. A remarks mention of the community or the golf course is not membership. Distance rings start at 0.25 miles and step up by 0.25 miles. Do not open with a 1-mile ring. Do not replace that order with a radius search.
 23. A recommended price under every sale that set it, or above every one of them, is not a price. The set is wrong, or the result is a hold. Do not print a number outside that set. A sale does not set the price when it is a different community than the subject, or a clearly different size or product: a house much larger or much smaller than the one living-area cutoff, a cottage versus acreage, or a different plat that is not the subject's community. A different MLS name inside the subject's community still sets the price. Community membership stays the location of the address. The search order is unchanged.
 24. Expired and FSBO intake (Matt 2026-10-05). A CMA is built when we hold a sendable owner email, or a cell number we can text. Before `createCmaRequest` and before the CRM person is created, in this order: live status, then compliance, then email, then a cell. Live status skips Active, Pending, Coming Soon, and Closed after the expiry, matched on the same address or the same parcel or taxlot. Compliance skips a litigator and a deceased owner. The litigator tag is applied only when the skip-trace says the person is a litigator. TCPA-only and a DNC phone block calls and texts. They do not block email and they do not set `compliance:hard-stop`. A sendable, non-suppressed email still builds the CMA and the send stays email. With no sendable email, a non-DNC cell whose line type is mobile, wireless, or cell builds the CMA and the send is SMS. A landline, a VOIP number, or a phone with no line type does not. An untyped listing-page phone is not a cell. A suppressed email is not used. A clean cell still builds, and that send is SMS. Nothing texts the owner from intake. The existing prospect SMS intro sends after the letter is approved. Do not put this gate in `sendCmaToLead` or `createCmaRequest`. Those also serve inbound seller and lead-form CMAs. The source of truth is `expired_listings.compliance_hard_stop` and `compliance_flags`, and the same columns on `fsbo_listings`. Every expired and FSBO send path reads them. A litigator or deceased owner sets the column so the send stays blocked. See `.cursor/rules/expired-fsbo-intake.mdc`.
-25. **UTM convention (Analytics fix 8, 2026-10-08).** Every outbound ryan-realty.com link is built with `buildTrackedUrl` in `lib/analytics/utm.ts`. One UTM set per URL (existing `utm_*` are replaced, never appended). No street addresses, person names, or per-property slugs in any `utm_*` value. Test/preview sends use `test: true` so `utm_campaign=test-<campaign>`. CMA document identity rides in first-party `rr_doc=<cmas.slug>`, not in `utm_campaign`. Details: `.cursor/rules/utm-convention.mdc`.
+25. **UTM convention (Analytics fix 8, 2026-10-08).** Every outbound ryan-realty.com link is built with `buildTrackedUrl` in `lib/analytics/utm.ts`. One UTM set per URL (existing `utm_*` are replaced, never appended). No street addresses, person names, or per-property slugs in any `utm_*` value. Test/preview sends use `test: true` so `utm_campaign=test-<campaign>`. CMA document identity rides in first-party `rr_doc=<cmas.slug>`, not in `utm_campaign`. Details: `.cursor/rules/utm-convention.mdc`. Buyer paid/organic table: `docs/analytics/buyer-utm-spec.md`.
 
 | Param | Allowed values |
 |---|---|
-| utm_source | `crm`, `cma`, `gbp`, `facebook`, `instagram`, `x`, `youtube`, `newsletter`, `zillow`, `realtor`, `referral-<domain>` |
+| utm_source | `crm`, `cma`, `gbp`, `facebook`, `instagram`, `x`, `youtube`, `tiktok`, `google`, `newsletter`, `zillow`, `realtor`, `referral-<domain>` |
 | utm_medium | `email`, `sms`, `organic`, `social`, `paid_social`, `cpc`, `document`, `referral`, `qr` |
-| utm_campaign | stable program slug: `cma-letter`, `expired-outreach`, `fsbo-outreach`, `market-report-YYYY-MM`, `open-house-weekly`, `listing-launch`, plus `listing-alerts`, `gbp-profile`, `newsletter`, `social-post`, `crm-outbound` |
+| utm_campaign | stable program slug: `cma-letter`, `expired-outreach`, `fsbo-outreach`, `market-report-YYYY-MM`, `open-house-weekly`, `listing-launch`, plus `listing-alerts`, `gbp-profile`, `newsletter`, `social-post`, `crm-outbound`, `buyer-leverage`, `buyer-price-drops`, `buyer-what-it-buys`, `buyer-relocate`, `buyer-first-home`, `buyer-deal-report`, and `buyer-<angle>` |
 | utm_content | variant: `v2`, `cta-top`, `listing-<listing_key>`, `agent-<slug>` (never an address) |
 | utm_term | paid keyword only (medium `cpc` or `paid_social`) |
-26. **Grok fallback when Cursor is out (Matt 2026-10-08).** Bots never stop because Cursor is out. When a Cursor cloud agent or CLI hits a usage, credit, spend or on-demand limit (or a 402), or stalls for 20 minutes, switch at once to the Grok CLI on Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve -p ...`, run in a fresh worktree branched from origin/main (skill: grok-fallback-when-cursor-is-out; helper: `/home/box/agent-data/tools/grok-code-pr.sh`). Never use XAI_API_KEY, ANTHROPIC_API_KEY or OPENAI_API_KEY to get past a limit. Every other rule still holds: land per rule 14, DB read-only unless Matt says otherwise, no secrets printed, no sends. Tell Matt you switched, with the exact Cursor error, and the PR link. If Grok's login is also out, stop and ask Matt to re-login. Don't wait silently.
-29. A sale the letter prints outside the price chapter says why it does not set the price (Matt 2026-10-08, delegated; 2745 Aldrich). Any closed sale printed outside the price chapter (the plat or neighborhood history list, a map, a caption) that is not one of the sales that set the price says so once, beside it, in the words the engine recorded. 2745 Aldrich's plat list led with 2764 Spring Water, $525,000, Nov 2025, 1,574 sq ft against this home's 1,201 (31% larger). Rule 20 keeps that sale out of the price, and the letter says so beside it: "1,574 sq ft, 31% larger than this home; sales more than 25% larger or smaller do not set the price." The renderer prints that recorded sentence and does not recompute the gap, the community, or the product. The walk records the sale and the reason when rule 20 refuses it (notSettingSales on the facts walk, not_setting_sales on the selection). A printed sale the walk did not record is asked of the same price-set decision, or of the set-aside record when that is why it carries no weight, and that sentence is what prints. A sale that sets the price gets no such line. The price set does not change, and PRICE_SET_SQFT_BAND does not change. Map pins that already carry a set-aside sentence are not labeled a second time. Held by lib/pricing/price-set.test.ts, lib/pricing/match.test.ts, and lib/cma/excluded-sale-note.test.ts.
+26. **Grok fallback when Cursor is out (Matt 2026-10-08).** Bots never stop because Cursor is out. When a Cursor cloud agent or CLI hits a usage, credit, spend or on-demand limit (or a 402), or stalls for 20 minutes, switch at once to the Grok CLI on Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve -p ...`, run in a fresh worktree branched from origin/main (skill: grok-fallback-when-cursor-is-out; helper: `/home/box/agent-data/tools/grok-code-pr.sh`). Never use XAI_API_KEY, ANTHROPIC_API_KEY or OPENAI_API_KEY to get past a limit. Every other rule still holds: land per rule 14, write the DB when the task needs it, no secrets printed, no sends. Tell Matt you switched, with the exact Cursor error, and the PR link. If Grok's login is also out, stop and ask Matt to re-login. Don't wait silently.
+29. A sale the letter prints outside the price chapter says why it does not set the price (Matt 2026-10-08, delegated; 2745 Aldrich). Any closed sale printed outside the price chapter (the plat or neighborhood history list, a map, a caption) that is not one of the sales that set the price says so once, beside it, in the words the engine recorded. The one size cutoff is the picker's, 35% living area (Matt 2026-10-09: the picker and the review use that same line). A sale inside it sets the price, including 2764 Spring Water at 1,574 sq ft against 2745 Aldrich's 1,201 (31% larger) and 2735 Crossing at 1,282 sq ft against 2339 Labiche's 1,001 (28% larger). A sale past 35% does not set the price, and the letter says so beside it in the words the engine recorded: the living area, the percent, then "sales more than 35% larger or smaller do not set the price." The renderer prints that recorded sentence and does not recompute the gap, the community, or the product. The walk records the sale and the reason when rule 20 refuses it (notSettingSales on the facts walk, not_setting_sales on the selection). A printed sale the walk did not record is asked of the same price-set decision, or of the set-aside record when that is why it carries no weight, and that sentence is what prints. A sale that sets the price gets no such line. PRICE_SET_SQFT_BAND is that one cutoff. It is not a second, tighter cut. Map pins that already carry a set-aside sentence are not labeled a second time. Held by lib/pricing/price-set.test.ts, lib/pricing/match.test.ts, and lib/cma/excluded-sale-note.test.ts.
 30. A size mix is not a market move (2026-10-09, 2902 Pinnacle). The block that reads a home about this size states the market in the unit that holds size still, price per square foot, the same per-foot word the date gate already reads (Matt 2026-10-08, down only if local fell). When the two windows' median living areas differ by 5 percent or more (LISTING_MARKET_SIZE_MIX in lib/cma/listing-window-market.ts, the line already used to say the homes changed size), the letter does not call the median sale price a rise, a fall, or flat. It leads with the per-foot move, names the size change once, and prints the two median sale prices as what those homes sold for. The sale-price slope says "different sizes" and is not inked as a decline. A half of one sale stays "one sale, not a trend" and is not this rule. The date gate reads the per-foot word, never the dollar median, so a mix-shifted dollar fall does not move a sale down and the price does not change. 2902 Pinnacle: Mountain View, 13 sales at 1,727 sq ft then 9 at 1,518 sq ft (12 percent smaller), median sale $585,000 then $550,000, while the rate went from $335 to $357 a square foot. Held by lib/cma/listing-window-market.test.ts. Lookpass `--check` fails a price-led mix shift through listingMarketPriceLedMixShift.
 31. The live letter draws the one comps map (2026-10-09, 2745 Aldrich). render_args omits the tile, so every view rebuilds it. That rebuild is not an optional 4-second read. The map has its own budget, long enough for a cold boundary read and the static tile, and it starts with the other serve reads. A finished tile is cached by the document slug plus a hash of the map inputs (the coordinates, the product, and the homes the map pins), through the unstable_cache door. A stored row gets that map with no database write. The plat polygons are read together. When the tile cannot be drawn, the page prints no map caption, no pin legend, and no sentence that says every pin above. A cream scatter with no tile is not that map. The matrices do not claim a map that is not there. Held by lib/cma/serve-map.test.ts, lib/cma/map-tile-cache.test.ts, lib/cma/map-tile-parallel.test.ts, and the lookpass --check map image assertion in lib/cma/lookpass-chapters.ts.
 32. A stored competition or unsold row with no subdivision and no plat prints when the build drew that set on the area the letter is filtering, and a delivered or finalized letter prints the competition and unsold rows it was signed with (Matt 2026-10-09, 2902 Pinnacle and 1195 Remarkable). The render dropped every blank place and then rewrote the sentence to "0 homes" and "No other listing like yours" over five stored rivals and three unsold homes in those same plats. A blank place is the build's own area decision when the filter area is that drawn area. Otherwise the row is tested on its coordinates when the area kind can test them, and a blank with neither is still outside (2566 Keats). A delivered or finalized letter does not re-test those rows and does not restate the counts (serve-document.ts D27). A draft still drops a named subdivision outside the sales plats (rule 24, 3177 Coho). The count sentence matches the rows drawn. A new build stores subdivision, platSlug, and coordinates on every rival and unsold peer. Held by lib/cma/render-area-filter.test.ts and scripts/cma-render-audit.ts.
@@ -87,7 +128,7 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 
 `docs/EXECUTION_PLAN.md` and `docs/SITE_SPEC.md` are 2026-05-22 fossils (SITE_SPEC still describes an AgentFire WordPress cutover that already shipped). Do not execute them.
 
-**Done = the served ship class is locally accepted, then one `npm run push` + `deploy:verify` when the app changed.**
+**Done = the served ship class is locally accepted, then one `npm run ship`. That includes `deploy:verify` when the app changed.**
 
 **Fresh environment** (no `node_modules`, no git hooks): run `bash scripts/cloud-setup.sh` first. It installs the dependencies, the git hooks and the brand fonts. Claude Code cloud sessions get the same from `.claude/hooks/session-start.sh`.
 
@@ -109,15 +150,15 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 
 ### Start of every session (any tool)
 
-1. `git fetch origin` and branch from current `origin/main`. Do not rebase, force-push, or reset. All code work is pushed to GitHub as a branch right away (locked process rule 14).
+1. `git fetch origin` and branch from current `origin/main`. No force-push or reset. Rebase only to land a PR. A finished unit is `npm run ship`. Unfinished work is `npm run push` right away (rule 14).
 2. If you are picking up mid-thread from the other surface, read the newest `~/.claude/plans/HANDOFF-*.md` when one exists (narrative); otherwise **`git log origin/main -5`** is enough.
 3. What you can reach (Supabase, the Google service account, Gmail, Vercel, GitHub, the rest) is in [`docs/ACCESS_INVENTORY.md`](docs/ACCESS_INVENTORY.md). Never ask Matt what access you have (Matt 2026-10-07). A provider refusal is a scope or grant to name precisely, not a question.
 4. **The public origin is https://ryan-realty.com. Never use `ryanrealty.vercel.app` for anything outward** (a link, email, SMS, canonical, OG or sitemap URL, PDF, redirect, lead source, or a URL a script prints or posts; Matt 2026-10-07). `siteOrigin()` / `siteUrl()` / `siteHost()` in [`lib/site-origin.ts`](lib/site-origin.ts) (plain-node scripts: `scripts/lib/site-origin.mjs`) is the only way to build an outward URL; never read `NEXT_PUBLIC_SITE_URL` directly (production still holds the alias). Held by `ci:site-origin` (G81).
 
 ### Ship discipline (non-negotiable)
 
-1. **Production truth is `origin/main`.** All code work is pushed to GitHub as a branch right away. Every change ships as a branch + PR to `main`; Matt merges. Nobody pushes to `main`, including admins (Matt 2026-10-08). No rebase, force-push, or reset. Unfinished work still gets a line in `docs/plans/CROSS_AGENT_HANDOFF.md`. Network failure is the only excuse for the branch not being on origin yet. Say that explicitly.
-2. **Production follows Git.** Pushing `main` triggers Vercel production when the diff affects the Next app; “shipped” means Matt merged the PR and remote `main` is updated and, when app code changed, the production deploy is **READY** (see `.cursor/rules/deploy-verify-before-done.mdc`). Docs/skills/changelog-only pushes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
+1. **Production truth is `origin/main`.** Never push or fast-forward to `main`. A finished change is `npm run ship`: gates, push the branch, open the PR with auto-merge (`gh pr merge --auto --squash --delete-branch`, skip `hold-for-matt`), then confirm production **READY** and check the live URL. No force-push or reset. Rebase only to land a PR. Unfinished work still gets a note in `docs/plans/handoffs/`. Network failure is the only excuse for the branch not being on origin yet. Say that explicitly.
+2. **Production follows Git.** A merge onto `main` triggers Vercel production when the diff affects the Next app; “shipped” means `origin/main` moved, the production deploy is **READY**, and the live URL is checked (CORE RULES **Done**). Docs/skills/changelog-only changes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
 3. **No hanging migrations.** New files under `supabase/migrations/` are not real until they run on **hosted** Supabase. Apply them in the **same delivery effort** as the code that needs them — never “commit now, migrate later” (`.cursor/rules/supabase-migrations-auto.mdc`, `.cursor/rules/production-parity.mdc`).
 4. **Branch, then push.** Day-to-day edits go on a branch from current `origin/main` and that branch is pushed to GitHub right away. Use linked worktrees for parallel agents, not as a silent parking lot. See **Worktrees** below.
 
@@ -125,13 +166,13 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 
 July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change *when* and *what* you push:
 
-1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit on the branch**, `NODE_OPTIONS=--max-old-space-size=8192 npm run push` (pushes that branch, not `main`), then `npm run deploy:verify` when the user-facing app changed and Matt has merged the PR.
+1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit on the branch**, then `NODE_OPTIONS=--max-old-space-size=8192 npm run ship`. That command runs `deploy:verify` when the app changed.
 2. **Docs / skills / rules / plans / handoffs only** → **batch into one commit**, then push once. Local `npm run push` already skips `next build` for non-buildable diffs; Vercel skips the remote build via `ignoreCommand`. Do not drip many docs commits that each burn local `ci:gates`.
 3. **Do not push mid-thought.** Commit locally while iterating if you need a restore point; push when the unit of work is coherent.
 4. **Ship class (fleet / loop):** same-category bot findings share one isolated verify + one production deploy. `loop-brief` prints the class. Do not run `npm run push` after each finding.
-5. **R-221 — do not poll GitHub Actions.** One `ci:gates` per ship. After a green local stamp + push, stop. Do not `gh run view` in a loop. Do not rematch `origin/main` unless GitHub says CONFLICTING. Live-DB int tests are nightly (`test:int`), not a reason to sit idle.
+5. **R-221 — do not poll GitHub Actions.** One `ci:gates` per ship. Wait with `gh pr checks --watch`, not `sleep` and not `gh run view` in a loop. Do not rematch `origin/main` unless GitHub says CONFLICTING. Live-DB int tests are nightly (`test:int`), not a reason to sit idle.
 6. **Release / changelog:** GitHub Releases carry the notes. Do not recreate a `chore: update changelog` commit on `main` — that path burned hundreds of full production builds.
-7. **Worktree branches:** push them to GitHub right away. Do not keep the only copy local. Do not merge them to `main` yourself. Open a PR to `main`; Matt merges.
+7. **Worktree branches:** a finished unit is `npm run ship` from that checkout. Unfinished work is `npm run push` plus a handoff line. Do not keep the only copy local.
 
 ### Worktrees (allowed — design against stranded work)
 
@@ -143,7 +184,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 
 1. Branch name: `wt/<topic>-YYYYMMDD` (or harness names like `claude/…`). Push the branch before stop, or write the handoff.
 2. Path: sibling dir such as `../RyanRealty-wt-<topic>` — not nested inside the primary tree.
-3. Session end: push the branch to origin with `npm run push`. Do not merge, rebase, force-push, or reset onto `main`. If work is unfinished, also write branch + absolute path + next step into `docs/plans/CROSS_AGENT_HANDOFF.md` Current block on that branch.
+3. Session end: unfinished work is `npm run push` plus a handoff note (branch, absolute path, next step) in `docs/plans/handoffs/`. A finished unit is `npm run ship`. No force-push or reset. Rebase only to land a PR.
 4. Cleanup when merged: delete branch, `git worktree remove <path>`, `git worktree prune`. Run `node scripts/worktree-hygiene.mjs` at session start/end.
 5. Never leave the only copy of valued commits in an unpushed worktree with no handoff line.
 
@@ -154,18 +195,18 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 | What actually shipped | `git log origin/main` |
 | Backlog / next task | `npx tsx scripts/loop-brief.ts` (work graph). `task-registry.json` / `orchestrate.ts` are complete (49/49) — do not pick work from them. |
 | Optional handoff notes | `~/.claude/plans/HANDOFF-*.md` — add or update when switching tools with context the repo does not carry |
-| **Cross-agent continuity (required when switching)** | **`docs/plans/CROSS_AGENT_HANDOFF.md`** — replace the one **Current** block before you stop or when Matt moves to the other tool. The other agent must **read it after `git pull`** before deep work. |
+| **Cross-agent continuity (required when switching)** | **`docs/plans/handoffs/`**: write your own note (`<YYYY-MM-DDTHHMMZ>-<branch>.md`) before you stop or when Matt moves to the other tool. The other agent reads the newest notes (the loop brief prints them) after `git pull`. |
 | **Grok Bot / Grok Build fleet** | **`docs/GROK_BOT_BRAIN.md`** — index. Company dump is `docs/GROK_BOT_COMPANY.md`. Do not paste either into a mega system prompt. |
 | **Global skill index (Cursor + Claude)** | **`~/.claude/GLOBAL_SKILLS_REGISTRY.md`** — full path list of every `SKILL.md` on this machine (plugins, repo, TC, Cowork notes). **Git mirror:** `docs/plans/GLOBAL_SKILLS_REGISTRY.md`. **Cursor stub:** `~/.cursor/GLOBAL_SKILLS_REGISTRY.md`. |
 | **Database reference (required before ANY SQL or market-report work)** | **[`docs/DATABASE_FOR_AI_AGENTS.md`](docs/DATABASE_FOR_AI_AGENTS.md)** — every table grouped by purpose, the cache model (`market_pulse_live` 10-min freshness, `market_stats_cache` 6-hour freshness), 14 resort communities + 14 Bend neighborhoods + city/region levels, the `listings` 800-field reality with mixed-case quoting rules, methodology versioning, slug formats. Source-of-truth registry: **[`data/resort-communities.json`](data/resort-communities.json)**. Don't aggregate raw `listings` for market reports — use the cache. |
 
-**Cursor:** `.cursor/rules/` as usual. **Claude Code:** `CLAUDE.md` in this repo mirrors ship discipline; stay aligned with this section.
+**Cursor:** `.cursor/rules/` point here for process. **Claude Code:** `CLAUDE.md` points here for process; domain canon stays in that file.
 
 ### Cross-agent handoff (mandatory when work spans tools)
 
-1. **Push the branch to origin first** (nothing handoff-worthy should be unpushed). Do not merge it to `main`.
-2. Open **`docs/plans/CROSS_AGENT_HANDOFF.md`** and replace the **Current** block (exactly one; never stack a second, `ci:handoff-current` fails it; carry any still-open Matt directive forward): surface, time, commit SHA, what finished, what is next, blockers, which **`SKILL.md` files you actually read**.
-3. Optionally also write narrative under **`~/.claude/plans/HANDOFF-*.md`** for Claude Desktop-only context (paths on disk, local-only experiments)—still assume the other agent only **pulls git** and reads **`CROSS_AGENT_HANDOFF.md`**.
+1. **Unfinished work pushes the branch and stops.** A finished unit is `npm run ship` and does not stop at a handoff.
+2. Write **your own note** in **`docs/plans/handoffs/`** (format in its README; never edit another session's note; `ci:handoff-current`): surface, time, commit SHA, what finished, what is next, blockers, which **`SKILL.md` files you actually read**. A Matt directive that must outlive your note goes in the README's **Standing holds**.
+3. Optionally also write narrative under **`~/.claude/plans/HANDOFF-*.md`** for Claude Desktop-only context (paths on disk, local-only experiments)—still assume the other agent only **pulls git** and reads **`docs/plans/handoffs/`**.
 
 ### Skills (load before substantive work)
 
@@ -178,7 +219,7 @@ If a workspace **skill** might apply—even slightly—**read its `SKILL.md` fir
 - **Any public site work (any tool):** the backlog is the site queue in `loop_work_nodes` (domain `public-ux`, version_gap `SITE-*`). Follow **`docs/RUN_LOOP.md`**: it holds the claim path, the accept test, the land path and the stop rule for every tool, and nothing here restates them. Lane mechanics: `.claude/skills/site-queue/SKILL.md` (Cursor and Grok: `.cursor/skills/site-queue/SKILL.md`). Site commits carry a `Node: <id>` trailer (G72, commit-msg hook). Do not write a new site audit; append findings to a node.
 - **This repo:** `.cursor/skills/**/SKILL.md` (e.g. Oregon OREF, OREA PB, SkySlope, professional Word, etc.)
 - **Cursor-bundled / plugin skills:** paths under `~/.cursor/plugins/.../skills/**/SKILL.md` when the task matches their description (Next.js, Vercel, Supabase, TDD, debugging, etc.)
-- **Video:** no producer `SKILL.md` remains. Rules live in `CLAUDE.md` §4. Caption modules only: `video_production_skills/captions/canonical/`.
+- **Video:** no producer `SKILL.md` remains. Rules live in `CLAUDE.md` §4. Ad copy, voiceover and captions: this file's section of that name and [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). Caption modules only: `video_production_skills/captions/canonical/`.
 - **Publishing trigger:** if Matt says "go ahead and publish it" after approving content, load `automation_skills/automation/publish/SKILL.md` (and know the live path is `/api/cron/publisher-sweep` → `/api/social/publish`)
 - **Cowork-only skills** (e.g. mounted **docx** under `mnt/.claude/skills/`): see section **E** in the global registry; copy into `~/.claude/skills/` if you need the same skill in Claude Code CLI.
 - **Marketing, advertising, paid social, Meta or Facebook or Instagram ads, lead generation, seller acquisition, CPL or CAPI, weekly optimization packets, `agent_insights` marketing rows:** Read **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** first (canonical end-to-end system map). For **how each path creates a lead** (webhooks, forms, dedup, sinks), read **`docs/MARKETING_LEAD_FLOW.md`**. Then **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`** for launch checklist and budgets. For the recurring optimization routine load **`.cursor/skills/facebook-seller-growth/SKILL.md`** (and append learnings to **`docs/marketing/facebook-seller-growth-LEARNINGS.md`**). Cursor surfaces **`.cursor/rules/marketing-advertising-workflow.mdc`** when the task matches these topics.
@@ -347,9 +388,9 @@ All rules in `.cursor/rules/` are mandatory. Key rules:
 - **Utilities**: Use `cn()` from `@/lib/utils` for conditional classes.
 - **Fonts**: Geist Sans (`font-sans`) and Geist Mono (`font-mono`) only.
 
-### Browser analytics events (locked, Matt 2026-10-08)
+### Analytics
 
-- Browser events reach GA4 only through GTM's GA4 Event tag: push them with `trackEvent()` / `pushDataLayerEvent()` (`lib/analytics/ga4-browser-events.ts`), never `gtag('event', …)` for GA4, and add a new event name to `GA4_BROWSER_EVENTS` plus the GTM steps in `docs/GTM_GA4_BROWSER_EVENTS.md` (Matt publishes GTM). Held by `lib/analytics/ga4-browser-events.test.ts`.
+Source of truth: [`docs/analytics/README.md`](docs/analytics/README.md).
 
 ### Server Actions
 
@@ -368,8 +409,6 @@ export async function doThing(): Promise<{ data: Result | null; error: string | 
   }
 }
 ```
-
-**Lead event (locked, Matt 2026-10-08):** GA4 `generate_lead` is sent only from the server through `fireLeadGenerated` (`lib/lead-tracking.ts`), with a `lead_type` from the fixed list and a `form_id` in `lib/analytics/lead-event.ts`; never `value` or `currency` (no dollar values on leads); never from the browser, never `fireGa4Event('generate_lead')` directly, and a non-lead (recruit, newsletter) uses `fireNonLeadEvent`. `lib/analytics/lead-event.test.ts` holds it.
 
 ### File Ownership
 
@@ -459,28 +498,31 @@ If UI or routes changed, the matching `ci:*` members are already in `ci:gates`. 
 ## How to Complete
 
 ```bash
-NODE_OPTIONS=--max-old-space-size=8192 npm run push   # the branch, not main
+NODE_OPTIONS=--max-old-space-size=8192 npm run ship
 ```
 
-`orchestrate.ts complete` is retired. The work graph updates from loop/sentinel, not from that CLI.
+`npm run push` saves an unfinished branch. It does not reach production. `orchestrate.ts complete` is retired. The work graph updates from loop/sentinel, not from that CLI.
 
-## CRITICAL: Push the branch and open a PR. Matt merges. Nobody pushes `main`.
+## CRITICAL: A finished unit is `npm run ship`. Never `git push` `main`.
 
-**Production deploys from `main` only. Every change reaches `main` only through a PR that Matt merges. Nobody pushes to `main`, including admins (Matt 2026-10-08).** Routine work: commit on a branch from current `origin/main` and `npm run push` that branch, then open a PR to `main`. Do not merge, rebase, force-push, or reset. Do not leave the only copy of valued work unpushed. Unfinished work gets a line in `CROSS_AGENT_HANDOFF.md`.
+**Production deploys from `main`. A finished change is `npm run ship`: local gates, push the branch, open the PR with auto-merge (`gh pr merge --auto --squash --delete-branch`, skip `hold-for-matt`), then confirm the Vercel production deploy is READY and check the live URL.** Never push or fast-forward to `main`. No force-push or reset. Rebase only to land a PR. Do not leave the only copy of valued work unpushed. Unfinished work is `npm run push` plus a note in `docs/plans/handoffs/`. One `ci:gates` per ship; do not poll GitHub Actions.
 
 ```bash
-# DEFAULT: push the branch, not main
-NODE_OPTIONS=--max-old-space-size=8192 npm run push
+# DEFAULT: finished work
+NODE_OPTIONS=--max-old-space-size=8192 npm run ship
+gh pr merge --auto --squash --delete-branch
 
-# WORKTREE: branch from current origin/main, push the branch, do not merge it
+# WORKTREE: branch from current origin/main, then the same command from that checkout
 git fetch origin
 git worktree add -b wt/crm-mobile-20260726 ../RyanRealty-wt-crm-mobile origin/main
 # …work in the other checkout…
-# npm run push of that branch. Do not merge it to main.
+# npm run ship from that checkout when the unit is finished
 
 # WRONG
-# merge, rebase, force-push, or reset onto main yourself
+# git push main, or fast-forward main
+# force-push or reset
 # leave the only copy of the work unpushed, with no handoff
+# sleep-based waits instead of `gh pr checks --watch`
 ```
 
 ## Production parity (code + database + Vercel)
@@ -541,9 +583,9 @@ Always idempotent: use `IF NOT EXISTS`, `IF EXISTS`, `ON CONFLICT DO NOTHING`.
 
 ## Reference
 
-- **Next work**: `npx tsx scripts/loop-brief.ts` + `docs/plans/CROSS_AGENT_HANDOFF.md` Current
+- **Next work**: `npx tsx scripts/loop-brief.ts` (prints the newest `docs/plans/handoffs/` notes)
 - **Runtime photograph**: `docs/audits/RUNTIME_CROSSWALK_2026-08-18.md`
 - **DAL**: `docs/DATA_ACCESS_LAYER.md` + `docs/DATABASE_FOR_AI_AGENTS.md`
 - **Design System**: `CLAUDE.md` + `design_system/ryan-realty/`
-- **Cursor Rules**: `.cursor/rules/`
+- **Cursor Rules**: `.cursor/rules/` (process points at this file)
 - Fossils (do not execute): `docs/plans/task-registry.json`, `docs/plans/phase-N-brief.md` (deleted), `docs/EXECUTION_PLAN.md`, `docs/SITE_SPEC.md`

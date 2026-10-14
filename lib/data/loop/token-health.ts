@@ -10,13 +10,12 @@ export type TokenHealthStatus = 'valid' | 'auto-refresh' | 'needs-reauth' | 'emp
 
 export const HEARTBEAT_FAIL_STREAK = 3
 
+/** LinkedIn and Threads were removed as platforms (Matt 2026-10-14) and are not scored. */
 export const AUTH_TABLE_TO_HEARTBEAT: Record<string, string> = {
   tiktok_auth: 'token_heartbeat:tiktok',
   youtube_auth: 'token_heartbeat:youtube',
-  linkedin_auth: 'token_heartbeat:linkedin',
   x_auth: 'token_heartbeat:x',
   google_business_profile_auth: 'token_heartbeat:google_business_profile',
-  threads_auth: 'token_heartbeat:threads',
   pinterest_auth: 'token_heartbeat:pinterest',
   nextdoor_auth: 'token_heartbeat:nextdoor',
 }

@@ -1,0 +1,12 @@
+{
+  "rule": "R-106",
+  "step": "master",
+  "what": "a file with no audio stream",
+  "setup": {
+    "measure": {
+      "probe": {
+        "hasAudio": false
+      }
+    }
+  }
+}

@@ -6,10 +6,11 @@
  *      above it (SKILL.md rule 3). Exactly 15% under is not a hold. A missing
  *      ask or a missing recommendation is not a hold: this rule does not
  *      invent a price, and it is not an 80% floor.
- *   2. The build itself recorded an ask-in-band hold (`pricing.hold`, written
- *      by lib/cma/build.ts): the subject's last failed ask sits inside the
- *      trimmed band the recommendation reads from, so the letter's reason
- *      that the ask was too high does not hold (rule 22, Matt 2026-10-07).
+ *   2. The build recorded an ask-in-band hold, and the recommendation is
+ *      missing, equal to the last ask, over it, or more than 15% under it.
+ *      A recommendation already under the last ask, and not more than 15%
+ *      under, is the letter (Matt 2026-10-12). The ask sitting inside the
+ *      band does not hold that letter. Exactly 15% under is not a hold.
  *   3. The live backstop for rows whose build did not measure the ask
  *      against the band (built before that field, or with no failed cycle,
  *      ask or band at build time): an expired home whose ask sits inside the
@@ -103,6 +104,21 @@ function positive(n: number | null | undefined): n is number {
 }
 
 /**
+ * Ask-in-band is not a send hold, and not a held letter, when the
+ * recommendation is already under the last ask and not more than 15% under.
+ * Exactly 15% under counts (same line as rule 3). Missing, equal, or any
+ * amount over does not. Ask-below-band never uses this.
+ */
+export function askInBandPriceExempt(
+  recommended: number | null | undefined,
+  lastAsk: number | null | undefined,
+): boolean {
+  if (!positive(recommended) || !positive(lastAsk)) return false
+  if (recommended >= lastAsk) return false
+  return recommended >= lastAsk * 0.85
+}
+
+/**
  * True when there is an ask and a band to measure it against. Rule 22 decides
  * nothing on a row without both, so such a row has not been measured.
  */
@@ -158,6 +174,10 @@ export function applyAskInBandHold(
     ? askInBandHold(askForHold, pricing.valueLow, pricing.valueHigh)
     : ({ hold: false } as const)
   if (!bandHold.hold) return pricing
+  // Measured, and the price is already the one the letter can stand on.
+  // Do not write the hold or flag the row. askInBandMeasured stays true so
+  // the live backstop does not second-guess a decision the build made.
+  if (askInBandPriceExempt(pricing.recommended, askForHold)) return pricing
   const printed = printedBandBounds(pricing.valueLow, pricing.valueHigh)
   pricing.hold = {
     kind: ASK_IN_BAND_KIND,
@@ -283,7 +303,11 @@ export function recommendationGapHold(
   // band it printed, so the row is held whatever the live numbers say. The
   // dollars are restated only when the row's own ask and band agree with the
   // verdict; otherwise the plain reason, never a sentence the numbers refute.
-  if (band?.holdKind === ASK_IN_BAND_KIND) {
+  // A stored ask-in-band kind holds only when the price itself does not
+  // already stand: missing, equal, over, or more than 15% under. A price
+  // under the ask and within 15% falls through. Rule 3 will not hold it,
+  // and a build that stored the kind has already measured.
+  if (band?.holdKind === ASK_IN_BAND_KIND && !askInBandPriceExempt(recommended, lastAsk)) {
     const live = askInBandHold(lastAsk, band.low, band.high)
     return { hold: true, reason: live.hold ? live.reason : ASK_IN_BAND_REASON_PLAIN }
   }
@@ -331,7 +355,7 @@ export function recommendationGapHold(
   // against the band (built before pricing.hold landed, or with no ask or no
   // band at build time), scoped to an expired home. A build that measured and
   // decided no hold is not second-guessed on the row's own numbers.
-  if (band?.origin === 'expired' && band.holdDecided !== true) {
+  if (band?.origin === 'expired' && band.holdDecided !== true && !askInBandPriceExempt(recommended, lastAsk)) {
     return askInBandHold(lastAsk, band.low, band.high)
   }
   return { hold: false }

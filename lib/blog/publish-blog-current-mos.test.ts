@@ -52,7 +52,7 @@ describe('publishBlogCurrentMos', () => {
       label: 'Central Oregon overall',
       mos: 5.74,
       display: '5.7',
-      verdict: 'balanced market',
+      verdict: '5.7 months of supply',
     })
     // Sunriver is a geo_type='neighborhood' row: actives from a polygon, closes
     // from a subdivision-name text join. It drops out of the table rather than

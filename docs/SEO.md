@@ -5,6 +5,8 @@
 
 This doc summarizes what's in place so the site can compete for real estate searches and be a strong source for users and LLMs.
 
+**Every agent (Claude, Cursor, Grok) starts SEO work here.** Matt's calls are in `data/seo/decisions.json`; read it before planning, not after a deploy fails. Measurement (GA4, Search Console, GTM) is [`docs/analytics/README.md`](analytics/README.md). The dated `docs/seo-*-2026-05-1x.md` files are history: where they disagree with this page or a pin, the pin wins.
+
 ## How SEO is kept from regressing (2026-10-04)
 
 Read this before changing any URL, redirect, title, canonical or robots rule.
@@ -14,7 +16,7 @@ Read this before changing any URL, redirect, title, canonical or robots rule.
 3. **Daily crawl probe:** `/api/cron/crawl-probe` checks sitemaps, sampled pages and Google's own index status every morning, and alerts Matt.
 4. **Commit gates:** `npm run ci:gates` (titles, H1s, nav, crawler access, internal links and more; catalog in `docs/MECHANICAL_GATES.md`).
 
-**Listing indexing (Matt 2026-10-05):** reverted SITE-33's out-of-area noindex; Search Console showed it cost ~36% of impressions dropped since Sep 12. Every listing page, in-area or out, is `index, follow` with a self canonical, and every Active/AUC listing is in `/sitemaps/listings.xml` (out-of-area pages keep the honesty block). Only the refusal page is noindexed. Held by `ci:listing-offmarket-index` and the `out-of-area-listing-indexed` pin.
+**Listing indexing (2026-10-13):** `/sitemaps/listings.xml` submits Active, Active Under Contract, and Pending only, with `lastmod` from `modified_at` (ModificationTimestamp). Closed / Expired / Withdrawn / Canceled pages older than 90 days are `noindex, follow` with a canonical to the community hub, else the city hub. Recent off-market and every on-market status stay `index, follow` on the listing URL. Out-of-area on-market listings stay indexed (SITE-33 reverted 2026-10-05). Thin geo/matrix URLs with fewer than 3 active listings are omitted and noindexed. Held by `listingIndexPolicy`, `ci:listing-offmarket-index`, and the `out-of-area-listing-indexed` pin.
 
 ## Technical foundations
 

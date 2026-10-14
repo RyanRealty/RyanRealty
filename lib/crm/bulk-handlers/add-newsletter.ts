@@ -30,6 +30,8 @@ import type { BulkHandler, BulkResult } from '@/lib/crm/bulk-jobs'
 import { canSubscribe } from '@/lib/crm/membership-consent'
 import type { SuppressionSignal } from '@/lib/data/crm/getSuppressionSignals'
 import { TAG_CHANNEL } from '@/lib/crm/tag-channel'
+import { isIndustryContact } from '@/lib/crm/industry-contact'
+import { whereActiveSuppression } from '@/lib/crm/suppression-lifecycle'
 import { subscribeToNewsletter } from '@/lib/data/newsletter'
 import type { NewsletterSegment } from '@/lib/data/newsletter'
 
@@ -85,7 +87,7 @@ export const addNewsletterHandler: BulkHandler = async (ids, params): Promise<Pa
   const sb = createServiceClient()
   const [people, supps] = await Promise.all([
     sb.from('crm_people').select('id,name,emails,tags,deleted,fub_legacy_id').in('id', ids),
-    sb.from('crm_suppressions').select('person_id,channel,reason').in('person_id', ids),
+    whereActiveSuppression(sb.from('crm_suppressions').select('person_id,channel,reason').in('person_id', ids)),
   ])
   // Fail CLOSED on an unreadable compliance table: skip the chunk rather than
   // subscribe people whose opt-out state could not be read.
@@ -110,6 +112,12 @@ export const addNewsletterHandler: BulkHandler = async (ids, params): Promise<Pa
 
     const email = primaryEmailOf(person)
     if (!email) { result.skipped++; bump('no_email'); continue }
+
+    if (isIndustryContact({ tags: person.tags })) {
+      result.skipped++
+      bump('industry_contact')
+      continue
+    }
 
     const decision = canSubscribe('email', signalsFor(person.tags, suppById.get(id) ?? []))
     if (!decision.allowed) { result.skipped++; bump('opted_out'); continue }

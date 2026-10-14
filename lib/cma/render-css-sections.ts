@@ -303,7 +303,7 @@ export function cmaSectionStyles(): string {
   @media print {
     .comp-stack { display: none !important; }
     /* 4pt inside the content box. A right-aligned room sentence
-       ("One bedroom off yours. No dollar adjustment.") was landing 0.04in
+       ("One bedroom off yours. It counts for less. No dollar adjustment.") was landing 0.04in
        past the right margin on a full-width last column. The sentence stays
        whole. The table moves in. */
     .comp-matrix-wrap { display: block !important; overflow-x: visible; max-width: calc(100% - 4pt); }
@@ -438,7 +438,7 @@ export function cmaSectionStyles(): string {
   /* Each unsold peer's dollars-a-foot story, keyed to its pin. */
   .peer-stories { list-style: none; margin: 8px 0 0; padding: 0; }
   .peer-stories li { display: flex; align-items: baseline; gap: 6px; margin: 0 0 5px; font-size: 10.5px; line-height: 1.45; }
-  .peer-stories .ps-a { font-weight: 600; white-space: nowrap; }
+  .peer-stories .ps-a { font-weight: 600; white-space: normal; }
   .peer-stories .ps-r { min-width: 0; }
   /* Chapter 3's lead line, under the number that is the chapter title. */
   .worth-lead { font-size: 13.5px; line-height: 1.5; margin: 0 0 12px; }
@@ -694,7 +694,9 @@ export function cmaSectionStyles(): string {
   /* The adjustment grid repeats the columns and drops the photographs. */
   table.comp-matrix.is-adjustments thead th.v { padding-top: 2px; }
   .subhead.adjustments-h { margin-top: 12px; }
-  .pin-badge { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: var(--navy); color: var(--cream); font-size: 9px; font-weight: 700; line-height: 1; margin-right: 5px; flex: 0 0 auto; vertical-align: middle; }
+  /* Width follows the key. A fixed 15px circle centered "xxxvi" and the longer
+     unsold keys, and the left half painted into the page margin. */
+  .pin-badge { display: inline-flex; align-items: center; justify-content: center; width: auto; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; background: var(--navy); color: var(--cream); font-size: 9px; font-weight: 700; line-height: 1; margin-right: 5px; flex: 0 0 auto; vertical-align: middle; }
   table.comp-matrix th, table.comp-matrix td {
     padding: 5px 6px;
     /* Values sit under their own column head. Only the thead rule carried

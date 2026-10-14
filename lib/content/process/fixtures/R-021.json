@@ -1,0 +1,12 @@
+{
+  "rule": "R-021",
+  "step": "brief",
+  "what": "a row with no definition",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "numbers.0.definition",
+      "set": ""
+    }
+  ]
+}

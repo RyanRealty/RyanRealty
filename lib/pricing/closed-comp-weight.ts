@@ -260,26 +260,34 @@ export function locationMatchFromFacts(facts: SaleLocationFacts): LocationMatch 
 }
 
 /** One whole bedroom apart still counts. It weighs less than one bath apart. */
-const BED_ONE_APART = 0.85
+export const BED_ONE_APART = 0.85
+/** Two whole bedrooms apart still counts, and weighs less than one apart. */
+export const BED_TWO_APART = 0.7
 /**
  * One whole bath apart is still the close match: same subdivision, within
  * about 350 square feet, and within 5 years. It weighs more than an extra
  * bedroom and less than the same bath count.
  */
-const BATH_ONE_APART = 0.9
+export const BATH_ONE_APART = 0.9
+/** Two whole bathrooms apart still counts, and weighs less than one apart. */
+export const BATH_TWO_APART = 0.75
 
-/** Whole rooms. A missing count is not a mismatch. One apart still weighs. */
+/** Whole rooms. A missing count is not a mismatch. One or two apart still weigh. */
 function roomProximity(
   subject: number | null | undefined,
   sale: number | null | undefined,
   oneApart: number,
+  twoApart: number,
 ): number {
   if (subject == null || sale == null) return 1
   if (!Number.isFinite(subject) || !Number.isFinite(sale) || subject <= 0 || sale <= 0) return 1
   const gap = Math.abs(Math.floor(subject) - Math.floor(sale))
   if (gap === 0) return 1
   if (gap === 1) return oneApart
-  return 0.7
+  if (gap === 2) return twoApart
+  // Three or more is refused at the door. A sale that reaches here still
+  // counts for less than a two-room gap, and the location step still holds it.
+  return +(twoApart * 0.7).toFixed(4)
 }
 
 function yearBuilt(value: number | null | undefined): number | null {
@@ -415,8 +423,8 @@ export function closedCompWeight(input: ClosedCompWeightInput): number {
   )
   const secondary =
     size *
-    roomProximity(input.subjectBeds, input.saleBeds, BED_ONE_APART) *
-    roomProximity(baths.subject, baths.sale, BATH_ONE_APART) *
+    roomProximity(input.subjectBeds, input.saleBeds, BED_ONE_APART, BED_TWO_APART) *
+    roomProximity(baths.subject, baths.sale, BATH_ONE_APART, BATH_TWO_APART) *
     ageProximity(input.subjectYearBuilt, input.saleYearBuilt) *
     lotProximity(input.subjectLotAcres, input.saleLotAcres) *
     recency

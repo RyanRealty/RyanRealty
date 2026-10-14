@@ -1,0 +1,17 @@
+{
+  "rule": "R-017",
+  "step": "brief",
+  "what": "a beat held 0.7 s",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.1.end",
+      "set": 4
+    },
+    {
+      "in": "timeline",
+      "path": "beats.2.start",
+      "set": 4
+    }
+  ]
+}

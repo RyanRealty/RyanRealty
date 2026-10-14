@@ -1,0 +1,13 @@
+{
+  "rule": "R-103",
+  "step": "master",
+  "what": "a film whose only text is captions",
+  "setup": {
+    "manifest": [
+      {
+        "path": "texts.*.kind",
+        "set": "caption"
+      }
+    ]
+  }
+}

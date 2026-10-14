@@ -53,10 +53,13 @@ import {
 } from '@/lib/cma/versions'
 import { buildCma } from '@/lib/cma/build'
 import { prepareCmaSendPreview, sendCmaToLead } from '@/lib/cma/send'
+import { companyOwnerSendHold, isCompanyOwnerHoldError } from '@/lib/prospecting/company-owner'
 import { ensureNativeLead, enrichNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { searchPeopleByName } from '@/lib/data/crm/searchPeople'
 import { attachCmaToPerson } from '@/lib/data/cma/crm'
 import { isSuppressed, isSuppressedByPhone, isSuppressedByEmail } from '@/lib/crm/suppressions'
+import { isIndustryContact } from '@/lib/crm/industry-contact'
+import { readPersonAudienceFields } from '@/lib/data/crm/getPeopleAudienceFields'
 import { smsWindowCloseAtFor } from '@/lib/crm/recipient-timezones'
 import { quietHoursRefusal } from '@/lib/comms/guards'
 import { renderCrmMerge, findUnresolvedMergeTokens, type MergePersonLike } from '@/lib/crm/merge'
@@ -154,6 +157,8 @@ export async function sendProspectingIntro(
 
     const prospect = await getProspect(kind, id)
     if (!prospect) return { ok: false, error: 'Prospect not found.', code: 'not-found' }
+    const companyHold = companyOwnerSendHold(prospect.enrichmentNotes)
+    if (companyHold) return { ok: false, error: companyHold, code: 'company-owned' }
 
     // 3. Built-doc: a document must exist AND be client-ready (the public /cma
     // route 404s drafts, so the texted link must be finalized/delivered). The
@@ -255,6 +260,10 @@ export async function sendProspectingIntro(
     const sup = await isSuppressed(lead.personId, 'sms')
     if (sup.suppressed) {
       return { ok: false, error: `Suppressed for SMS: ${sup.reasons.join(', ') || 'opt-out on file'}.`, code: 'suppressed' }
+    }
+    const industrySms = await readPersonAudienceFields(lead.personId)
+    if (industrySms.error || (industrySms.fields && isIndustryContact(industrySms.fields))) {
+      return { ok: false, error: 'Industry contact — excluded from marketing outreach.', code: 'industry-contact' }
     }
     // F6: value-keyed SMS suppression (an opt-out attached to the number, not a
     // person, e.g. a manual/imported STOP before any person row existed).
@@ -495,6 +504,8 @@ export async function sendProspectingEmailIntro(
 
     const prospect = await getProspect(kind, id)
     if (!prospect) return { ok: false, error: 'Prospect not found.', code: 'not-found' }
+    const companyHold = companyOwnerSendHold(prospect.enrichmentNotes)
+    if (companyHold) return { ok: false, error: companyHold, code: 'company-owned' }
 
     // 3. Built-doc: client-ready only — the emailed link/PDF must never be a
     // draft (same chain as the SMS steps, including the cma_id-first slug
@@ -588,6 +599,10 @@ export async function sendProspectingEmailIntro(
     if (emailSup.suppressed) {
       return { ok: false, error: `Address suppressed for email: ${emailSup.reasons.join(', ') || 'opt-out on file'}.`, code: 'suppressed' }
     }
+    const industryEmail = await readPersonAudienceFields(lead.personId)
+    if (industryEmail.error || (industryEmail.fields && isIndustryContact(industryEmail.fields))) {
+      return { ok: false, error: 'Industry contact — excluded from marketing outreach.', code: 'industry-contact' }
+    }
 
     // 11. Broker overrides gate: fail-closed on any unresolved %token% (mirrors
     // SMS step 11's refusal). The rail's own default compose carries no tokens.
@@ -679,6 +694,10 @@ export async function sendProspectingEmailIntro(
       { callerHoldsProspectClaim: true },
     )
     if (!sent.ok) {
+      if (isCompanyOwnerHoldError(sent.error)) {
+        await releaseProspectEmailSend(kind, id)
+        return { ok: false, error: sent.error, code: 'company-owned' }
+      }
       if (isUnconfirmedGmailSendError(sent.error)) {
         console.error('[sendProspectingEmailIntro] Gmail did not confirm the send; claim kept for stuck-send recovery:', {
           kind,

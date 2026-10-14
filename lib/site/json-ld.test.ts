@@ -45,6 +45,43 @@ describe('buildJsonLd', () => {
       expect(node.numberOfBathroomsTotal).toBe(3)
     })
 
+    it('nests a Residence about node that matches Quick facts, with Offer beside it', () => {
+      const node = buildJsonLd({
+        ...base,
+        beds: 3,
+        baths: 2,
+        livingAreaSqft: 1500,
+        yearBuilt: 2000,
+        availability: 'Active',
+        residenceType: 'SingleFamilyResidence',
+        additionalProperty: [
+          { name: 'Community', value: 'Tetherow' },
+          { name: 'Status', value: 'Active' },
+          { name: 'HOA', value: '$171 per month' },
+        ],
+      })
+      expect(node['@type']).toBe('RealEstateListing')
+      const about = rec(node.about)
+      expect(about).toMatchObject({
+        '@type': 'SingleFamilyResidence',
+        numberOfBedrooms: 3,
+        numberOfBathroomsTotal: 2,
+        yearBuilt: 2000,
+      })
+      expect(rec(node.offers)).toMatchObject({ '@type': 'Offer', price: 750000, priceCurrency: 'USD' })
+      const props = node.additionalProperty as Array<Record<string, unknown>>
+      expect(props).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ '@type': 'PropertyValue', name: 'Community', value: 'Tetherow' }),
+          expect.objectContaining({ name: 'HOA', value: '$171 per month' }),
+        ]),
+      )
+    })
+
+    it('omits Residence about when the listing is not a dwelling', () => {
+      expect(buildJsonLd(base).about).toBeUndefined()
+    })
+
     it('Active -> InStock offer at the list price', () => {
       const offer = rec(buildJsonLd({ ...base, availability: 'Active' }).offers)
       expect(offer).toMatchObject({
@@ -167,6 +204,21 @@ describe('buildJsonLd', () => {
     const r = buildJsonLd({ type: 'webPage', name: 'Team', url: '/team', aboutOrganization: true })
     expect(rec(r.isPartOf)?.['@id']).toMatch(/#website$/)
     expect(rec(r.mainEntity)?.['@id']).toMatch(/#organization$/)
+  })
+
+  it('webPage can name the visible author', () => {
+    const r = buildJsonLd({
+      type: 'webPage',
+      name: 'Buying a house in Bend from out of state',
+      url: '/cities/bend/from-out-of-state',
+      authorName: 'Matt Ryan, Principal Broker',
+      authorUrl: '/team/matthew-ryan',
+    })
+    expect(rec(r.author)).toMatchObject({
+      '@type': 'Person',
+      name: 'Matt Ryan, Principal Broker',
+    })
+    expect(String(rec(r.author)?.url)).toMatch(/\/team\/matthew-ryan$/)
   })
 
   it('already-absolute URLs pass through unchanged', () => {

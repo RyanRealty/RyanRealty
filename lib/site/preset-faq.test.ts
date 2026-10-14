@@ -49,11 +49,10 @@ describe('buildPresetFaq', () => {
   it('builds the full intro + 4 FAQs for a price band with pulse data', () => {
     const result = buildPresetFaq('Bend', preset('under-750k'), 214, PULSE)!
     expect(result.intro).toContain('214 homes under $750,000 are on the market in Bend right now.')
-    // City character from getCityContent.
-    expect(result.intro).toContain('Bend is the largest city in Central Oregon')
-    // Labeled city-wide context, never the segment's own median.
-    expect(result.intro).toContain('Across Bend as a whole, the median list price is $819,000')
-    expect(result.intro).toContain('as of June 2026')
+    expect(result.intro).toContain('Oregon Data Share MLS, as of')
+    expect(result.intro).toContain('median single-family list price is $818,950')
+    expect(result.buyerAnswer?.byline.href).toBe('/team/matthew-ryan')
+    expect(result.buyerAnswer?.table.rows[0]?.value).toBe('214')
     expect(result.faqs).toHaveLength(4)
     expect(result.faqs[0]!.question).toBe('How many homes under $750,000 are for sale in Bend?')
     expect(result.faqs[0]!.answer).toContain('214')
@@ -112,6 +111,20 @@ describe('buildPresetFaq', () => {
     const year = resolvePresetYearBuiltMin(p)!
     const result = buildPresetFaq('Redmond', p, 70, null)!
     expect(result.faqs[1]!.answer).toContain(`built in ${year} or later`)
+  })
+
+  it('adds region buyer-answer extras for Central Oregon acreage', () => {
+    const result = buildPresetFaq('Central Oregon', preset('acreage'), 88, {
+      grain: 'region',
+      source: 'pulse',
+      medianListPrice: 699_000,
+      medianDaysToPending: 33,
+      refreshedAt: PULSE.refreshedAt,
+    })!
+    expect(result.buyerAnswer?.hub.href).toBe('/housing-market/central-oregon')
+    expect(result.buyerAnswer?.byline.href).toBe('/team/matthew-ryan')
+    expect(result.buyerAnswer?.table.rows.some((row) => row.label.includes('region-wide'))).toBe(true)
+    expect(result.intro).toContain('Oregon Data Share MLS')
   })
 
   it('produces brand-voice-clean strings (no em-dash, semicolon, or exclamation)', () => {

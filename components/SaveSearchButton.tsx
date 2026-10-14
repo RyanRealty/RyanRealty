@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useUrlSearchParams } from '@/lib/search/url-search-params.client'
 import { createSavedSearch } from '@/app/actions/saved-searches'
-import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
+import { submitSearchAlertSignup } from '@/lib/analytics/submit-alert-signup'
+import { trackAlertSignup } from '@/lib/analytics/form-conversion'
 import { normalizeSavedSearchFilters } from '@/lib/search-filters'
 import { buildSavedSearchPathFilters, type SavedSearchPathContext } from '@/lib/search/saved-search-path-filters'
 import {
@@ -170,10 +171,12 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
     const result = await createSavedSearch(trimmedName, filters, {
       isPublic,
       publicTitle: isPublic ? trimmedName : undefined,
+      sessionId: readRrSessionId(),
     })
     setStatus(result.error ? 'error' : 'done')
     if (!result.error) {
       fireSaveEvent()
+      trackAlertSignup({ method: 'search_alert', form_id: 'search_alert' })
       // High-intent event: visitor saved a search, expects alerts on new matches.
       // Carries the filter dimensions so we can answer "which buyer criteria
       // are most common" from the GA4 event taxonomy.

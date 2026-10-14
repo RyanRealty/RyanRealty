@@ -77,4 +77,30 @@ describe('resolveCityNeighborhoodPath', () => {
     expect(resolveCityNeighborhoodPath('/cities/bend')).toBeNull()
     expect(resolveCityNeighborhoodPath('/cities/grants-pass')).toBeNull()
   })
+
+  it('leaves reserved city child routes to their own pages', () => {
+    expect(resolveCityNeighborhoodPath('/cities/bend/living')).toBeNull()
+    expect(resolveCityNeighborhoodPath('/cities/bend/cost')).toBeNull()
+    expect(resolveCityNeighborhoodPath('/cities/redmond/living')).toBeNull()
+    expect(resolveCityNeighborhoodPath('/cities/redmond/cost')).toBeNull()
+    expect(resolveCityNeighborhoodPath('/cities/sisters/living')).toBeNull()
+    expect(resolveCityNeighborhoodPath('/cities/bend/vs')).toBeNull()
+    expect(resolveCityNeighborhoodPath('/cities/bend/types')).toBeNull()
+    expect(resolveCityNeighborhoodPath('/cities/bend/from-out-of-state')).toBeNull()
+    expect(resolveCityNeighborhoodPath('/cities/redmond/buying')).toBeNull()
+  })
+
+  it('leaves three-segment neighborhood buyer-answer children to the App Router', () => {
+    expect(resolveCityNeighborhoodPath('/cities/bend/old-bend/living')).toBeNull()
+    expect(resolveCityNeighborhoodPath('/cities/bend/southeast-bend/cost')).toBeNull()
+    expect(resolveCityNeighborhoodPath('/cities/bend/century-west/living')).toBeNull()
+  })
+
+  it('still 308s reserved children under an out-of-market town', () => {
+    expect(resolveCityNeighborhoodPath('/cities/medford/living')).toEqual({
+      kind: 'redirect',
+      destination: '/oregon/medford',
+      status: 308,
+    })
+  })
 })

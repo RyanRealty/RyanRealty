@@ -14,6 +14,7 @@ import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import { listStudioDrafts, countStudioDraftsByStatus } from '@/lib/data/studio/drafts'
 import { studioPlaceOptions } from '@/lib/data/studio/subjects'
 import { STUDIO_FORMAT_LIST, getStudioFormat } from '@/lib/studio/formats'
+import { videoFreezeRefusal } from '@/lib/content/video-freeze'
 import { StudioProducer } from './StudioProducer'
 import { DraftCard, type DraftCardModel } from './DraftCard'
 
@@ -58,6 +59,7 @@ export default async function StudioPage() {
     typeLayer: d.typeLayer,
     origin: d.origin,
     createdAt: d.createdAt,
+    approvalFrozen: videoFreezeRefusal({ kind: d.mediaKind, url: d.mediaUrl, format: d.formatId }),
   }))
 
   return (
@@ -88,6 +90,8 @@ export default async function StudioPage() {
           label: f.label,
           what: f.what,
           subject: f.subject,
+          // Video publishing is frozen (Matt 2026-10-14): say so before the click.
+          frozen: videoFreezeRefusal({ kind: f.media, format: f.id }),
         }))}
         places={places}
       />

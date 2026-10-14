@@ -128,6 +128,14 @@ export function classifyAgeBand(yearBuilt: number | null | undefined, asOfYear: 
 export function classifyProduct(subType: string | null | undefined): ProductKey {
   if (!subType?.trim()) return 'unknown'
   const s = subType.toLowerCase()
+  // Duplex, Triplex, Quadruplex and Multi Family are their own product (rule
+  // 23, Matt 2026-10-14). sale_pricing_facts admits PropertyType A closes
+  // only, so no facts row carries this class: it names a SUBJECT the build
+  // refuses (lib/cma/subject-units.ts) and the remarks reader's verdict on a
+  // sale, never a pool filter.
+  if (/duplex|tri-?plex|four-?plex|quad-?plex|quadruplex|multi[- ]?family|multi[- ]?unit|residential income/.test(s)) {
+    return 'multi-unit'
+  }
   if (s.includes('leased land')) return 'leased-land'
   if (s.includes('cooperative') || s.includes('co-op')) return 'coop'
   if (s.includes('manufactured') || s.includes('mobile')) return 'manufactured'
@@ -225,7 +233,7 @@ const SECOND_UNIT_RE =
 const SECOND_UNIT_CLAUSE_END = /[.!?;:\n\r]|--|\u2014/g
 const SECOND_UNIT_BEFORE_WINDOW = 60
 const SECOND_UNIT_HEDGE_BEFORE =
-  /\b(?:potential(?:ly)?|possib(?:le|ly|ility|ilities)|could|would|might|may|can\s+(?:be|add|build|accommodate|easily|also)|options?\s+(?:for|to|of)|optional|room\s+(?:for|to)|space\s+(?:for|to)|build|building\s+(?:an?|your|out)|add|adding|construct\w*|creat(?:e|ing)|convert\w*|future|plans?\s+(?:for|to)|planned|approved\s+plans?|permits?\s+(?:for|to)|zoned|zoning|allows?|eligib\w*|ready\s+(?:for|to)|dream\w*|eyeing|envision\w*|imagin\w*|consider\w*|explor\w*|bring\s+your|if\s+you|want(?:ed)?\s+to|(?:ideal|perfect|great|suited|suitable|use|used|serve|serves|function|works?)\s+(?:for|as)|think)\b/gi
+  /\b(?:potential(?:ly)?|possib(?:le|ly|ility|ilities)|could|would|might|may|can\s+(?:be|add|build|accommodate|easily|also)|options?\s+(?:for|to|of)|optional|room\s+(?:for|to)|space\s+(?:for|to)|build|building\s+(?:an?|your|out)|add|adding|construct(?!ion)\w*|creat(?:e|ing)|convert\w*|future|plans?\s+(?:for|to)|planned|approved\s+plans?|permits?\s+(?:for|to)|zoned|zoning|allows?|eligib\w*|ready\s+(?:for|to)|dream\w*|eyeing|envision\w*|imagin\w*|consider\w*|explor\w*|bring\s+your|if\s+you|want(?:ed)?\s+to|(?:ideal|perfect|great|suited|suitable|use|used|serve|serves|function|works?)\s+(?:for|as)|think)\b/gi
 /** A stated feature between the hedge and the unit word: the hedge is about something else. */
 const SECOND_UNIT_STATEMENT_BREAK =
   /\b(?:features?|featuring|includes?|including|has|have|having|offers?|offering|boasts?|plus|comes with|complete with|from)\b/i
@@ -325,6 +333,26 @@ export function aduFromRemarks(remarks: string | null | undefined): boolean {
 }
 
 /**
+ * True when the subject has a second living unit on its lot: the MLS details
+ * say so (Accessory Dwelling Unit YN, read onto CmaSubject.units by
+ * lib/cma/subject-units.ts) or the remarks state one. A reading from the
+ * details wins over blank remarks, so a home whose agent listed the ADU as a
+ * field and never wrote it into the remarks is still an ADU home here, on the
+ * wall below, and on the ADU-first pass (lib/pricing/adu-preference.ts).
+ */
+export function subjectHasAdu(subject: {
+  units?: { aduYn?: boolean | null } | null
+  publicRemarks?: string | null
+}): boolean {
+  return subject.units?.aduYn === true || aduFromRemarks(subject.publicRemarks)
+}
+
+/** True when a closed sale's remarks state an ADU or other second living unit. The one reading a sale has. */
+export function isAduSale(sale: { publicRemarks?: string | null }): boolean {
+  return aduFromRemarks(sale.publicRemarks)
+}
+
+/**
  * THE ADU WALL. True when the sale's remarks state an ADU and the subject's do
  * not, so the sale never sets the subject's price. Not symmetric: a subject
  * with an ADU may use sales with and without one (its ADU is a letter note,
@@ -334,7 +362,16 @@ export function aduFromRemarks(remarks: string | null | undefined): boolean {
 export function aduSaleRefused(
   subjectRemarks: string | null | undefined,
   saleRemarks: string | null | undefined,
+  /**
+   * The subject's MLS details reading (Accessory Dwelling Unit YN, read onto
+   * CmaSubject.units by lib/cma/subject-units.ts), when the caller has it. True
+   * makes the subject an ADU home even when its remarks are silent, so no ADU
+   * sale is refused (2026-10-14, with the ADU-first pass in
+   * lib/pricing/adu-preference.ts). False or null changes nothing.
+   */
+  subjectAdu?: boolean | null,
 ): boolean {
+  if (subjectAdu === true) return false
   return aduFromRemarks(saleRemarks) && !aduFromRemarks(subjectRemarks)
 }
 
@@ -502,6 +539,15 @@ export function productCompatible(a: ProductKey, b: ProductKey): boolean {
 export const TOWNHOUSE_FACTS_OR =
   'and(product_class.eq.attached,property_sub_type.ilike.%town%),product_class.eq.townhouse'
 
+/**
+ * Condo closes are stored as product_class attached, the same bucket as
+ * townhouses. Bend on 2026-10-09: 158 condo closes since 2024-10-09, every
+ * one attached, zero with product_class condo. An equality on condo returns
+ * an empty pool, which is how 2745 Ordway's own building never entered.
+ */
+export const CONDO_FACTS_OR =
+  'and(product_class.eq.attached,property_sub_type.ilike.%condo%),product_class.eq.condo'
+
 export type FactsProductClause = {
   eq?: ['product_class', string]
   or?: string
@@ -510,6 +556,7 @@ export type FactsProductClause = {
 export function factsProductClauses(productClass: string | null | undefined): FactsProductClause {
   if (!productClass || productClass === 'unknown' || productClass === 'multi-unit') return {}
   if (productClass === 'townhouse') return { or: TOWNHOUSE_FACTS_OR }
+  if (productClass === 'condo') return { or: CONDO_FACTS_OR }
   return { eq: ['product_class', productClass] }
 }
 

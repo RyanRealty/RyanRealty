@@ -21,7 +21,8 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
-import { getA2pCampaignStatus, getAccountType, getInboundWebhookHealth } from '@/lib/crm/twilio'
+import { getA2pCampaignStatus, getAccountType, getInboundWebhookHealth, getRecentTwilioMessages } from '@/lib/crm/twilio'
+import { findUnforwardedTexts } from '@/lib/crm/inbound-forward-audit'
 import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 import { evaluateHealthRules, type HealthSignals } from '@/lib/crm/health-rules'
 import { validateSegment, type CrmNode } from '@/lib/crm/segment-ast'
@@ -37,6 +38,8 @@ const WEBHOOK_ERROR_LOOKBACK_HOURS = 24
 const SEND_LOOKBACK_HOURS = 24
 /** Re-page cadence for a still-firing alarm (matches the cron interval x N). */
 const ALERT_COOLDOWN_MINUTES = 360
+/** Window for inbound texts that must have reached a broker's phone. */
+const INBOUND_FORWARD_LOOKBACK_HOURS = 24
 
 /**
  * Every EXACT geographic term in a segment: subdivision conditions still on the
@@ -95,6 +98,35 @@ async function gatherGeoSmartLists(
     return out
   } catch {
     return []
+  }
+}
+
+/**
+ * Inbound texts in the trailing window that Twilio received but that never
+ * reached a broker's phone: Twilio's message log against crm_sms_inbound_log.
+ * null on any read failure so the rule skips rather than false-pages.
+ */
+async function gatherUnforwardedTexts(
+  sb: ReturnType<typeof createServiceClient>,
+  now: Date,
+): Promise<HealthSignals['unforwardedTexts']> {
+  try {
+    const since = new Date(now.getTime() - INBOUND_FORWARD_LOOKBACK_HOURS * 3600 * 1000).toISOString()
+    const [messages, logRes, firstRes] = await Promise.all([
+      getRecentTwilioMessages(INBOUND_FORWARD_LOOKBACK_HOURS, now),
+      sb.from('crm_sms_inbound_log').select('message_sid,outcome,forward_sid').gte('ts', since).limit(1000),
+      sb.from('crm_sms_inbound_log').select('ts').order('ts', { ascending: true }).limit(1).maybeSingle(),
+    ])
+    // A full page means the log may be truncated; skip rather than false-page.
+    if (!messages || logRes.error || firstRes.error || (logRes.data?.length ?? 0) >= 1000) return null
+    return findUnforwardedTexts({
+      messages,
+      log: (logRes.data ?? []).map((r) => ({ messageSid: r.message_sid, outcome: r.outcome, forwardSid: r.forward_sid })),
+      logStartedAt: firstRes.data?.ts ?? null,
+      now,
+    })
+  } catch {
+    return null
   }
 }
 
@@ -175,8 +207,11 @@ export async function GET(request: Request) {
     mvRefreshAgeHours = null
   }
 
+  const unforwardedTexts = await gatherUnforwardedTexts(sb, now)
+
   const signals: HealthSignals = {
     inboundWebhook,
+    unforwardedTexts,
     a2pStatus,
     smsSendAttempts24h: smsOut24h.count ?? 0,
     newLeads48h: newLeads24h.count ?? 0,

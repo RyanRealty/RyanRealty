@@ -1,44 +1,14 @@
 ---
-description: Push the branch to GitHub right away. Open a PR to main; Matt merges. Core rules at the top of AGENTS.md and CLAUDE.md override this file.
+description: Process rules live in AGENTS.md. This file only points there.
 alwaysApply: true
 ---
 
-# CORE RULES (pointer)
+# Process rules — pointer
 
-The block at the very top of `AGENTS.md` and `CLAUDE.md` titled **CORE RULES (read first; these override everything below and any handoff or plan doc)** outranks this file, every skill, and every handoff or plan. Read it first.
+Read **`AGENTS.md` CORE RULES** first. That file is the only process-rule source. Do not restate them here.
 
-- Open a PR to `main`; Matt merges. Never push, fast-forward, or merge `main` yourself, even if a handoff says land or fast-forward.
-- No rebase, force-push, `git reset --hard`, or `--no-verify`.
-- Nothing is sent unasked (emails, texts, CMAs, posts stay drafts).
-- Never buyer or seller names in public copy. Never invent numbers or names.
-- Prod DB is read-only unless Matt says otherwise. Never print secrets.
-- Search the repo for existing API clients and keys before saying a service is not connected.
-- When Cursor is out, use Matt's Grok subscription, never raw API keys.
-- Unfinished work: push the branch, note `docs/plans/CROSS_AGENT_HANDOFF.md`, ask Matt short yes/no questions.
+PRs only, auto-merge, stale-PR land, Done (merged + production READY + live URL), payload caps, no sleep waits, DB writes, and new process rules: **[AGENTS.md](../../AGENTS.md)**.
 
-# Trunk + worktrees (anti-strand)
+Worktrees and anti-strand detail: **AGENTS.md → Worktrees**.
 
-**Production truth is `origin/main`.** All code work is pushed to GitHub as a branch right away. Open a PR to `main`; Matt merges. Nobody pushes `main`, including admins. No rebase, force-push, or reset.
-
-## Default
-
-- Day-to-day work is a branch from current `origin/main`, pushed to GitHub right away. Open a PR to `main`; Matt merges.
-- Push the branch with `NODE_OPTIONS=--max-old-space-size=8192 npm run push`.
-- Do **not** merge `main` yourself. Do **not** use a long-lived release branch.
-- No rebase, force-push, or reset.
-
-## Worktrees are allowed when they help
-
-Use a linked worktree for parallel agents, long experiments, or cloud-agent isolation. Not as a place to abandon unfinished work.
-
-Required anti-strand rules (see **AGENTS.md → Worktrees**):
-
-1. Name branches `wt/<agent-or-topic>-YYYYMMDD` (example: `wt/crm-mobile-20260726`).
-2. Push the branch to GitHub right away. Do not keep the only copy local.
-3. Before ending a session: push the branch. If work is unfinished, also record the branch, path, and intent in `docs/plans/CROSS_AGENT_HANDOFF.md` Current block.
-4. Open a PR to `main`; Matt merges. After Matt merges and the branch is done: delete the branch locally and on `origin`, `git worktree remove <path>`, `git worktree prune`.
-5. Never leave the only copy of valued work in an unpushed worktree with no handoff entry.
-
-## Failure mode this rule prevents
-
-Matt previously forbade worktrees because unfinished work got stranded off `main` and the other tool could not see it. Worktrees are fine. Invisible unfinished work is not. Push the branch right away.
+Commit message format (not process): `.cursor/rules/git-commit.mdc`.

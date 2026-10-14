@@ -55,11 +55,23 @@ export const metadata: Metadata = {
     type: "website",
     url: getCanonicalSiteUrl(),
     siteName: "Ryan Realty",
+    images: [
+      {
+        url: `${getCanonicalSiteUrl()}/api/og?type=default&title=${encodeURIComponent('Bend · Central Oregon')}`,
+        width: 1200,
+        height: 630,
+        alt: "Ryan Realty, Central Oregon Real Estate",
+        type: "image/png",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Ryan Realty, Central Oregon Real Estate",
     description: "Find your next home in Bend and Central Oregon. Expert real estate service and listings.",
+    images: [
+      `${getCanonicalSiteUrl()}/api/og?type=default&title=${encodeURIComponent('Bend · Central Oregon')}`,
+    ],
   },
   robots: { index: true, follow: true },
   // No blanket alternates.canonical here — a root-layout canonical silently

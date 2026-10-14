@@ -37,7 +37,7 @@ import {
   type OwnerLookupResult,
 } from '@/lib/expired-owner-lookup'
 import { autoEnrollPerson } from '@/lib/crm/enroll'
-import { isSuppressedByEmail } from '@/lib/crm/suppressions'
+import { isSuppressedByEmail, isSuppressedByPhone } from '@/lib/crm/suppressions'
 import {
   ensureNativeLead,
   enrichNativeLead,
@@ -45,7 +45,7 @@ import {
 } from '@/lib/data/crm/ensureNativeLead'
 import { normalizeParcelNumber, probeIntakeBackOnMarket } from '@/lib/data/prospecting/compliance'
 import { hasSendableEmail } from '@/lib/data/prospecting/types'
-import { decideProspectIntake, intakeBuildsCma } from '@/lib/prospecting/intake-gate'
+import { decideProspectIntake, intakeBuildsCma, pickSendableCell } from '@/lib/prospecting/intake-gate'
 
 // Expired leads auto-enroll into the "Expired Recovery (auto)" sequence
 // (crm_sequences.fub_legacy_plan_id = 71) via autoEnrollPerson, which resolves
@@ -248,7 +248,9 @@ export async function processNewExpiredListings(
       }
 
       let emailSuppressed = false
+      let smsSuppressed = false
       const candidateEmail = owner.ownerEmail ?? null
+      const intakePhones = owner.allPhones ?? []
       if (!onMarket && hasSendableEmail(candidateEmail)) {
         try {
           const sup = await isSuppressedByEmail(candidateEmail!, 'email')
@@ -263,6 +265,21 @@ export async function processNewExpiredListings(
           continue
         }
       }
+      const cellForGate = pickSendableCell(intakePhones)
+      if (!onMarket && cellForGate && (!hasSendableEmail(candidateEmail) || emailSuppressed)) {
+        try {
+          const sup = await isSuppressedByPhone(cellForGate, 'sms')
+          if (sup.reasons.some((r) => r.startsWith('phone-suppression-check-failed'))) {
+            stats.errors++
+            continue
+          }
+          smsSuppressed = sup.suppressed
+        } catch (err) {
+          console.error('[expired-listing-processor] sms suppression unread', l.ListingKey, err)
+          stats.errors++
+          continue
+        }
+      }
       const intakeFlags = owner.complianceFlags ?? []
       const decision = decideProspectIntake({
         onMarket,
@@ -272,7 +289,8 @@ export async function processNewExpiredListings(
         dncPhone: intakeFlags.includes('dnc'),
         email: candidateEmail,
         emailSuppressed,
-        phones: owner.allPhones ?? [],
+        smsSuppressed,
+        phones: intakePhones,
       })
       const lookupPending = !lookedUp || owner.status === 'pending'
 
@@ -443,6 +461,7 @@ export async function processNewExpiredListings(
               leadEmail: clientEmail,
               leadName: owner.ownerName ?? null,
               leadPhone,
+              ownerPhones: owner.allPhones ?? [],
               leadTimeline: 'ready-now',
               leadClassification: 'hot',
               crmPersonId,

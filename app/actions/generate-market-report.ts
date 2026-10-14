@@ -9,7 +9,6 @@ import {
   type MarketReportAreaBlock,
 } from '@/lib/data/crm/getMarketReportData'
 import {
-  verdictLabel,
   meaningLine,
   formatCurrencyRounded,
   formatYoy,
@@ -77,9 +76,8 @@ function formatDate(d: Date): string {
  */
 function verdictHtml(block: MarketReportAreaBlock): string {
   const parts: string[] = []
-  const verdict = verdictLabel(block.marketVerdict)
-  if (block.marketVerdict != null && block.monthsOfSupply != null) {
-    parts.push(`${verdict} with ${formatMonths(block.monthsOfSupply)} of supply.`)
+  if (block.monthsOfSupply != null) {
+    parts.push(`${formatMonths(block.monthsOfSupply)} of supply.`)
   }
   if (block.medianPrice != null) {
     const yoy = block.yoyPct != null ? ` (${formatYoy(block.yoyPct)})` : ''

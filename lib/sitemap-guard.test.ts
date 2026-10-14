@@ -58,6 +58,17 @@ describe('filterRogueCityUrls (W1.3/P0.3 output-based drift backstop)', () => {
     expect(filterRogueCityUrls([{ url: '//ryan-realty.com/cities/redmond/canyon-rim' }], allowed).length).toBe(1)
   })
 
+  it('keeps each registered city buyer answer, and still drops an unregistered one', async () => {
+    const { buyerAnswerSitemapPaths } = await import('./buyer-answers/registry')
+    const cityChildren = buyerAnswerSitemapPaths().filter((p) => /^\/cities\/[^/]+\/[^/]+$/.test(p))
+    // The seven live on 2026-10-14: cost, living, buying and from-out-of-state.
+    expect(cityChildren).toEqual(expect.arrayContaining(['/cities/bend/cost', '/cities/redmond/buying', '/cities/bend/from-out-of-state']))
+    const entries = cityChildren.map((path) => ({ url: `${BASE}${path}` }))
+    expect(filterRogueCityUrls(entries, allowed)).toEqual(entries)
+    expect(cityChildren).not.toContain('/cities/madras/cost')
+    expect(filterRogueCityUrls([{ url: `${BASE}/cities/madras/cost` }, { url: rogueTemplate }], allowed)).toEqual([])
+  })
+
   it('keeps sanctioned neighborhood URLs (both with and without a trailing slash)', () => {
     const entries = [
       { url: `${BASE}/cities/bend/larkspur` },
@@ -128,5 +139,44 @@ describe('finalizeSitemapEntries (visibility audit 2026-09-22: redirect sources,
 
   it('still applies the rogue 2-segment /cities backstop', () => {
     expect(finalizeSitemapEntries([{ url: rogueTemplate }], allowed)).toEqual([])
+  })
+})
+
+describe('dropEmptyOpenHouseCities (SITE-27: an empty week renders noindex)', () => {
+  const entries = [
+    { url: `${BASE}/open-houses` },
+    { url: `${BASE}/open-houses/bend` },
+    { url: `${BASE}/open-houses/brothers` },
+    { url: `${BASE}/open-houses/black-butte-ranch/` },
+    { url: `${BASE}/cities/brothers` },
+  ]
+
+  it('drops each city page with no open house this week, and nothing else', async () => {
+    const { dropEmptyOpenHouseCities } = await import('./sitemap-guard')
+    const kept = dropEmptyOpenHouseCities(entries, new Set(['bend'])).map((e) => e.url)
+    expect(kept).toEqual([`${BASE}/open-houses`, `${BASE}/open-houses/bend`, `${BASE}/cities/brothers`])
+  })
+
+  it('keeps every page when the calendar read failed (unknown is not empty)', async () => {
+    const { dropEmptyOpenHouseCities } = await import('./sitemap-guard')
+    expect(dropEmptyOpenHouseCities(entries, null)).toEqual(entries)
+  })
+
+  it('logs one info line naming each dropped city once, and no error', async () => {
+    const { dropEmptyOpenHouseCities } = await import('./sitemap-guard')
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      dropEmptyOpenHouseCities([...entries, { url: `${BASE}/open-houses/brothers` }], new Set(['bend']))
+      expect(err).not.toHaveBeenCalled()
+      expect(log).toHaveBeenCalledTimes(1)
+      expect(log.mock.calls[0][0]).toMatch(/: black-butte-ranch, brothers$/)
+      log.mockClear()
+      dropEmptyOpenHouseCities(entries, new Set(['bend', 'brothers', 'black-butte-ranch']))
+      expect(log).not.toHaveBeenCalled()
+    } finally {
+      log.mockRestore()
+      err.mockRestore()
+    }
   })
 })
