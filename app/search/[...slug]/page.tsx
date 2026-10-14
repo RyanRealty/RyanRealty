@@ -576,9 +576,43 @@ export default async function SearchPage({
         <div className="max-w-2xl">
           <V3Heading level={1}>{headerTitle}</V3Heading>
           {presetDepth ? (
-            <p className="mt-3 tabular-nums">
-              {presetDepth.intro}
-            </p>
+            <div className="mt-3 tabular-nums">
+              <p>{presetDepth.intro}</p>
+              {presetDepth.buyerAnswer ? (
+                <>
+                  <p className="mt-2">{presetDepth.buyerAnswer.citation}.</p>
+                  <p className="mt-2">
+                    Written by <Link href={presetDepth.buyerAnswer.byline.href}>{presetDepth.buyerAnswer.byline.label}</Link>
+                  </p>
+                  <table className="mt-4 w-full max-w-xl">
+                    <caption className="mb-2 text-left">{presetDepth.buyerAnswer.table.caption}</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col" className="text-left">Figure</th>
+                        <th scope="col" className="text-left">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {presetDepth.buyerAnswer.table.rows.map((row) => (
+                        <tr key={row.label}>
+                          <th scope="row" className="text-left font-medium">{row.label}</th>
+                          <td>{row.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p className="mt-3 text-sm">
+                    <Link href={presetDepth.buyerAnswer.hub.href}>{presetDepth.buyerAnswer.hub.label}</Link>
+                    {presetDepth.buyerAnswer.buyLinks.map((link) => (
+                      <span key={link.href}>
+                        {' · '}
+                        <Link href={link.href}>{link.label}</Link>
+                      </span>
+                    ))}
+                  </p>
+                </>
+              ) : null}
+            </div>
           ) : headerIntro ? (
             <p className="mt-3 tabular-nums">
               {headerIntro}

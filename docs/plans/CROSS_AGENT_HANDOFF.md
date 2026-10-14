@@ -1,8 +1,8 @@
 # Current — 2026-10-13 (Cursor, HTML payload budget)
 
-Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `40ffcb2b9` (merged, not rebased: #533 sitemap, #521 fold, #532, #505, #512). Land path is `gh pr merge 527 --squash` after this PR's own CI. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `65f98dd2a` (merged, not rebased: #528 buyer answers, #533 sitemap, #521 fold, #532, #512). Land path is `gh pr merge 527 --squash` after this PR's own CI. Nobody pushes main. Nothing sent.
 
-**What this branch does.** Caps public listing SSR grids at 24 cards (`SSR_GRID_PAGE`; home rails 36). Community fold grid and map homes past 24 load from `GET /api/place/homes`. Search SSR no longer reads cookies (`getSession` / saved / liked); viewer state hydrates after paint so `/homes-for-sale/bend` can use the public `s-maxage=60` header. Listing media flight capped at 24 photos. `ci:page-payload` shrink-only ratchet plus a 200 KB hard fail when serialized unique listing cards exceed one grid page. Community fold layout from #521 is kept; only the card cap is ours. #533 listing-index / sitemap policy is taken from main as-is.
+**What this branch does.** Caps public listing SSR grids at 24 cards (`SSR_GRID_PAGE`; home rails 36). Community fold grid and map homes past 24 load from `GET /api/place/homes`. Search SSR no longer reads cookies (`getSession` / saved / liked); viewer state hydrates after paint so `/homes-for-sale/bend` can use the public `s-maxage=60` header. Listing media flight capped at 24 photos. `ci:page-payload` shrink-only ratchet plus a 200 KB hard fail when serialized unique listing cards exceed one grid page. Community fold layout from #521 is kept; only the card cap is ours. #528 buyer-answer markup on search and #533 listing-index / sitemap policy are taken from main as-is.
 
 **Measured (identity, 2026-10-13).** Production before → local after (`next start`): `/` 493347 → 472180 B (36 cards, TTFB ~127 ms); `/communities/tetherow` 710608 → 676659 B (22 cards, TTFB 8–38 ms); `/homes-for-sale/bend` 415747 → 301396 B (24 cards, TTFB 32–139 ms, was ~2.0 s); `/homes-for-sale` 437386 → 324569 B; `/listing/22054302` 208030 → 188557 B. Gzip already under 150 KB on the named routes.
 
@@ -12,53 +12,27 @@ Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `docs/RUN_LOOP.md` (this is payload plumbing, not a site-queue look change).
 
-## Earlier — 2026-10-13 (Cursor, sitemap + listing index hygiene)
+## Earlier — 2026-10-13 (Cursor, buyer answer pages)
 
-Surface: Cursor cloud. Branch `cursor/sitemap-index-hygiene-f2b8` landed on main via #533. Sitemap / robots only. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/buyer-answer-pages-cde8` landed on main via #528. 36 long-tail buyer-answer pages. Nobody pushes main. Nothing sent.
 
-**What that branch did.** `listings.xml` submits Active, Active Under Contract, and Pending with `lastmod` from `modified_at`. Closed / Expired / Withdrawn / Canceled pages older than 90 days are `noindex, follow` with a community or city hub canonical (`listingIndexPolicy`, extending #513). `geo.xml` browse pairs and `matrix.xml` combos with fewer than 3 active listings drop and noindex. Live before counts: listings 7,487 · geo 3,961 · matrix 842.
+**What that branch did.** Child routes under community and city hubs (`/living`, `/cost`, `/hoa`, `/short-term-rentals`, `/vs/[other]`) plus extras on existing price-band, acreage, and new-construction search routes. Each child page opens with a 40-60 word live MLS answer cited as Oregon Data Share MLS, a figures table, listing dial, FAQ + FAQPage, hub and `/buy/*` links, and a `/team/matthew-ryan` byline. HOA only where master assessments are sourced (Tetherow, Sunriver, Caldera Springs). STR only Tetherow and Juniper Preserve. Sitemap and llms.txt list them. Registry: `lib/buyer-answers`.
 
-**Not this change.** Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill.
+**Not this change.** Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send until Matt asks. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase. Do not run the CRM backfill.
 
 **Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool` in the primary checkout. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §0 (listing_tile_mv).
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md`, `lib/buyer-answers/*`.
+
+## Earlier — 2026-10-13 (Cursor, sitemap + listing index hygiene)
+
+Surface: Cursor cloud. Branch `cursor/sitemap-index-hygiene-f2b8` landed on main via #533. Do not `git push` main. Nothing sent.
+
+**What that commit did.** `listings.xml` submits Active, Active Under Contract, and Pending. Closed / Expired / Withdrawn / Canceled pages older than 90 days are `noindex, follow` with a community or city hub canonical. Thin geo and matrix URLs drop.
 
 ## Earlier — 2026-10-13 (Cursor, price-drops accuracy)
 
 Surface: Cursor cloud. Branch `cursor/price-drops-accuracy-61bb` landed on main via #512. Nothing sent.
-
-## Earlier — 2026-10-13 (Cursor, off-market listing noindex + community door, landing)
-
-Surface: Cursor cloud. Branch `cursor/listing-offmarket-noindex-2c0f` merged as #513 onto origin/main after #526. Do not `git push` main. Nothing sent.
-
-**What that branch did.** Closed / Expired / Canceled / Withdrawn listing pages ship `noindex, follow`. When the home belongs to a registry community the HTML canonical is that `/communities/<slug>` page. Pending stays indexed. Active listings keep `index, follow` and print a prominent "{Name} homes for sale" door to the community page. `listings.xml` already ships Active/AUC only.
-
-**Verified on Brasada.** Active MLS 220229872: `index, follow`, self-canonical, door "Brasada Ranch homes for sale" → `/communities/brasada-ranch`. Closed MLS 220224479: `noindex, follow`, canonical `https://ryan-realty.com/communities/brasada-ranch`, HTTP 200.
-
-**Not this change.** Do not send. Do not apply hosted SQL.
-
-Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md` §3a (registry communities), `AGENTS.md` CORE RULES.
-
-## Earlier — 2026-10-13 (Cursor, one business + one author JSON-LD)
-
-Surface: Cursor cloud. Branch `cursor/one-author-entity-118d` merged onto origin/main `7a17527a1` as #519 (`6f0b60010`). Nothing sent.
-
-**What that branch did.** Every BlogPosting author is `{@id: https://ryan-realty.com/team/matthew-ryan#person}`. Person sameAs adds verified Zillow, LinkedIn, Experience.com, YouTube, Instagram. Organization sameAs adds Zillow, Yelp, Experience.com. `/team/matthew-ryan` renders a 400-600 word bio from repo facts (LLC 2014, Bend office June 2023). Homepage title is `Ryan Realty | Bend, Oregon Real Estate Brokerage`. Realtor.com and Homes.com stay off: no verified live person URL.
-
-**Still open.** Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill. Do not send. Lead-event parse error already landed on main via #516 / #518.
-
-Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES, `CLAUDE.md` §0/§2/§7.
-
-## Earlier — 2026-10-13 (Cursor, community fold upgrade)
-
-Surface: Cursor cloud. Branch `cursor/community-pages-fold-upgrade-7688`. Landed on main via #521. Do not `git push` main. Nothing sent.
-
-**What that change did.** Every `/communities/[slug]` page server-renders above the fold: H1 community homes for sale, a live leftover answer, active grid, recently-sold table, HOA/STR/amenities, FAQ, and a local broker block.
-
-## Earlier — 2026-10-13 (Cursor, off-market listing noindex + community door)
-
-Surface: Cursor cloud. Branch `cursor/listing-offmarket-noindex-2c0f`. Landed on main via #513. This PR extends the 90-day stale rule and sitemap floors on top of that door.
 
 ## Earlier — 2026-10-13 (Cursor, inbound SMS clear + industry exclusion, PR only)
 
