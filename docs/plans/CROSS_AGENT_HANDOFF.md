@@ -1,14 +1,18 @@
-# Current — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
+# Current — 2026-10-14 (Cursor, buyer-answers batch 2)
 
-Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489), which includes #485 (`fe948f648`) and #488 (`2167f8f71`). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/buyer-answers-batch-2-41c4` from origin/main `7e23fdb97`. Land path is `gh pr checks --watch` then `gh pr merge --squash`. Nobody pushes main. Nothing sent.
 
-**What landed.** #485 refuses an expired/FSBO CMA build when the home is on the market or has no sendable email. #488 ranks closer lots and matching views ahead of a mismatched sale. #489 seats a same-generation half-mile sale ahead of a stale neighbor.
-
-**Held.** #452 stays open: the body requires a rule-25 fleet score before merge (stretch clocks). #471 stays open: merge conflicts with later main and would drop `loadCmaMapTile` / `CMA_MAP_MS`; lint-and-build is already red. The unique `idx_listings_parcel_number` migration is not on main.
+**What this branch does.** Extends the buyer-answer system (#528) with batch 2: living+cost for Broken Top, Brasada Ranch, Three Rivers; cost for Juniper Preserve, Eagle Crest, Black Butte Ranch; living+cost for six Bend NA districts with enough inventory (Old Bend, Southeast Bend, Century West, Southwest Bend, Summit West, Old Farm District); buyer-question pages for Bend from out of state, Sunriver second home, and buying in Redmond; luxury Bend preset (`/homes-for-sale/bend/over-1-5m`) plus region presets `/homes-for-sale/acreage` and `/homes-for-sale/under-500k`. Same templates, live MLS, FAQPage, author `/team/matthew-ryan`, sitemap + llms.txt. Edge guard reserves `from-out-of-state` and `buying`. Skipped thin places: Crosswater, Vandevert Ranch, Shevlin Commons, Discovery West.
 
 **Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool`. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `docs/DATABASE_FOR_AI_AGENTS.md` (cache + neighborhood inventory SoR).
+
+## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
+
+Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 
