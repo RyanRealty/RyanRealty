@@ -115,13 +115,12 @@ const DEFAULT_KEYWORDS: ReadonlyArray<string> = [
   'Ryan Realty',
 ]
 
-// Dynamic, always-present OG image. /api/og paints the real wordmark over a
-// place photo (or the Tetherow aerial fallback). robots.ts allows /api/og
-// for social scrapers. Keep this file free of other @/lib imports —
-// ci:listing-offmarket-index executes pageMetadata from a transpiled isolate.
-function defaultOgImage(title: string): string {
-  const short = title.replace(/\s*[|·].*$/, '').replace(/\s+/g, ' ').trim().slice(0, 36)
-  return `/api/og?type=default&title=${encodeURIComponent(short || 'Bend · Central Oregon')}`
+// Dynamic, always-present OG image. /api/og paints the wordmark over a
+// curated Bend landscape. robots.ts allows /api/og for social scrapers.
+// Keep this file free of other @/lib imports — ci:listing-offmarket-index
+// executes pageMetadata from a transpiled isolate.
+function defaultOgImage(): string {
+  return '/api/og?type=default'
 }
 
 /** The separators a title segment may end on, plus the two the old cut missed. */
@@ -252,7 +251,7 @@ export function pageMetadata(input: PageMetadataInput): Metadata {
   const title = documentTitle(input.title)
   const socialTitle = input.ogTitle?.trim() || title
   const description = shareDescription(input.description, MAX_DESC)
-  const ogImage = input.ogImage ?? defaultOgImage(title)
+  const ogImage = input.ogImage ?? defaultOgImage()
   const twitterImage = input.twitterImage ?? ogImage
   const ogImageUrl = ogImage.startsWith('http') ? ogImage : `${site}${ogImage}`
   const twitterImageUrl = twitterImage.startsWith('http') ? twitterImage : `${site}${twitterImage}`
@@ -277,7 +276,7 @@ export function pageMetadata(input: PageMetadataInput): Metadata {
       card: 'summary_large_image',
       title: socialTitle,
       description,
-      images: [{ url: twitterImageUrl, width: 1200, height: 630, alt: title }],
+      images: [{ url: twitterImageUrl, width: 1200, height: 630, alt: socialTitle }],
     },
     // noindex no longer implies nofollow. ~580 rendered noindex pages each carry
     // ~200 internal links; "noindex, nofollow" told Google to drop every one.

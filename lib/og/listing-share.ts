@@ -3,8 +3,8 @@
  *
  * Social cards are not the SERP document title. The document title stays
  * address-first and budgeted (listingDocumentTitle). The share title is
- * address · price · beds/baths, and the image is the listing's own hero
- * photo — never the default aerial — unless that listing has no photo.
+ * address · price · beds/baths. The image is the listing's own hero photo,
+ * or the curated landscape fallback — never a photo-less card.
  */
 
 import { listingMlsAddressFull, listingMlsStreetLine } from '@/lib/listing/publish-street-line'
@@ -13,7 +13,7 @@ import {
   publishListingPublishedWholePropertyPrice,
   publishListingStatusWord,
 } from '@/lib/listing/publish-listing-published-price'
-import { shareOgImagePath, shortOgTitle } from '@/lib/og/share-image-url'
+import { shareOgImagePath } from '@/lib/og/share-image-url'
 
 export type ListingShareFields = {
   listingKey: string
@@ -81,31 +81,15 @@ export function listingShareOgTitle(
   return parts.join(' · ')
 }
 
-/** Card lines: street on the headline, price + rooms on the second line. */
-export function listingShareCardLines(listing: ListingShareFields): {
-  title: string
-  subtitle: string
-} {
-  const street = listingMlsStreetLine(listing) || listing.city?.trim() || 'Home for sale'
-  const subtitle = [publishedPriceText(listing), bedBathFacts(listing)]
-    .filter((part): part is string => Boolean(part))
-    .join(' · ')
-  return {
-    title: shortOgTitle(street, 42) || street,
-    subtitle,
-  }
-}
-
 /** True when this listing may put its own hero on a share card. */
 export function listingHasSharePhoto(photoUrl: string | null | undefined): boolean {
   return Boolean(photoUrl?.trim())
 }
 
 /**
- * Root-relative listing card path, or undefined so pageMetadata falls back to
- * the default aerial only when the listing has no photo.
+ * Root-relative listing card path. Always the listing type so the image is
+ * the MLS hero, or the landscape fallback — never the generic default card.
  */
-export function listingOgImagePath(listing: Pick<ListingShareFields, 'listingKey' | 'photoUrl'>): string | undefined {
-  if (!listingHasSharePhoto(listing.photoUrl)) return undefined
+export function listingOgImagePath(listing: Pick<ListingShareFields, 'listingKey'>): string {
   return shareOgImagePath({ type: 'listing', id: listing.listingKey })
 }

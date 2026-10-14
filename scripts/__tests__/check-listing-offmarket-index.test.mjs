@@ -98,7 +98,7 @@ function edit(rel, from, to) {
 }
 
 /** The last field generateMetadata hands pageMetadata; every break adds after it. */
-const OG_LINE = 'ogImage: `/api/og?type=listing&id=${encodeURIComponent(listing.listingKey)}`,'
+const OG_LINE = 'ogImage: listingOgImagePath(listing),'
 
 /** A line inside generateMetadata to hang a local const off. */
 const CANONICAL_DECL = '  const canonicalPath = listingCanonicalHref(listing)'

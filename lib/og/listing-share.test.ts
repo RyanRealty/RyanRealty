@@ -5,7 +5,6 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import {
   listingHasSharePhoto,
   listingOgImagePath,
-  listingShareCardLines,
   listingShareOgTitle,
 } from '@/lib/og/listing-share'
 
@@ -62,24 +61,19 @@ describe('listingShareOgTitle', () => {
   })
 })
 
-describe('listing share card + image', () => {
-  it('puts the street on the card and the price on the second line', () => {
-    expect(listingShareCardLines(EVIE)).toEqual({
-      title: '61637 SE Evie Drive',
-      subtitle: '$634,900 · 4 bed, 3 bath',
-    })
-  })
-
-  it('emits a listing og:image only when the listing has a hero photo', () => {
+describe('listing share image', () => {
+  it('always emits a listing og:image, even when the listing has no hero', () => {
     expect(listingHasSharePhoto(EVIE.photoUrl)).toBe(true)
     expect(listingOgImagePath(EVIE)).toBe(
       `/api/og?type=listing&id=${encodeURIComponent(EVIE.listingKey)}`,
     )
     expect(listingHasSharePhoto(null)).toBe(false)
-    expect(listingOgImagePath({ listingKey: EVIE.listingKey, photoUrl: null })).toBeUndefined()
+    expect(listingOgImagePath({ listingKey: EVIE.listingKey, photoUrl: null })).toBe(
+      `/api/og?type=listing&id=${encodeURIComponent(EVIE.listingKey)}`,
+    )
   })
 
-  it('pageMetadata uses the listing card, not the default aerial, when a photo exists', () => {
+  it('pageMetadata uses the listing card, not the default landscape', () => {
     const meta = pageMetadata({
       title: '61637 SE Evie Drive, Bend, OR 97702',
       ogTitle: listingShareOgTitle(EVIE),
@@ -99,7 +93,7 @@ describe('listing share card + image', () => {
     )
   })
 
-  it('pageMetadata falls back to the default card only when the listing has no photo', () => {
+  it('pageMetadata still uses the listing card when the listing has no photo', () => {
     const meta = pageMetadata({
       title: '1 Oak, Bend',
       description: 'A home with no MLS photo.',
@@ -108,7 +102,8 @@ describe('listing share card + image', () => {
     })
     const image = Array.isArray(meta.openGraph?.images) ? meta.openGraph.images[0] : null
     const url = image && typeof image === 'object' && 'url' in image ? String(image.url) : ''
-    expect(url).toMatch(/\/api\/og\?type=default/)
+    expect(url).toMatch(/\/api\/og\?type=listing&id=k/)
+    expect(url).not.toMatch(/type=default/)
   })
 })
 
@@ -147,15 +142,19 @@ describe('listing URL shapes and social crawlers', () => {
     expect(middleware).toMatch(/Listing canonical hop/)
   })
 
-  it('listing generateMetadata and /api/og resolve ListNumber or ListingKey and require a photo', () => {
+  it('listing generateMetadata and /api/og resolve ListNumber or ListingKey and paint no title', () => {
     const page = readFileSync('app/listing/[listingKey]/page.tsx', 'utf8')
     const route = readFileSync('app/api/og/route.tsx', 'utf8')
+    const card = readFileSync('lib/og/share-card.tsx', 'utf8')
     expect(page).toContain('listingShareOgTitle')
     expect(page).toContain('listingOgImagePath')
     expect(page).not.toMatch(/ogImage: `\/api\/og\?type=listing/)
     expect(route).toContain('getListingLookup')
     expect(route).toContain('listingHasSharePhoto')
-    expect(route).toContain('listingShareCardLines')
+    expect(route).not.toContain('listingShareCardLines')
     expect(route).not.toContain('getListingTiles')
+    expect(card).not.toMatch(/fontSize/)
+    expect(card).not.toMatch(/subtitle/)
+    expect(card).toMatch(/navy tint/)
   })
 })

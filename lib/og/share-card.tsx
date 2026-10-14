@@ -2,11 +2,15 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ImageResponse } from 'next/og'
 import { siteOrigin } from '@/lib/site-origin'
-import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH, shortOgTitle } from './share-image-url'
-import { isLocalPublicPath, OG_FALLBACK_PHOTO, OG_LOGO_REL } from './resolve-photo'
+import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH } from './share-image-url'
+import {
+  isLocalPublicPath,
+  OG_LOGO_REL,
+  resolveOgFallbackPhoto,
+  type OgPhotoKind,
+} from './resolve-photo'
 
 const NAVY = '#102742'
-const CREAM = '#faf8f4'
 
 const OG_CACHE =
   'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800'
@@ -34,11 +38,14 @@ function publicHttps(publicPath: string): string {
  * 500s on Vercel (they are not in the serverless trace; a 1.6 MB JPEG data
  * URL also blows the function). Listing heroes already arrive as https URLs.
  */
-export function resolveCardPhotoSrc(photoSrc: string | null | undefined): string {
+export function resolveCardPhotoSrc(
+  photoSrc: string | null | undefined,
+  fallback: OgPhotoKind = 'default',
+): string {
   const src = photoSrc?.trim()
   if (src && /^https:\/\//i.test(src)) return src
   if (src && isLocalPublicPath(src)) return publicHttps(src)
-  return publicHttps(OG_FALLBACK_PHOTO)
+  return publicHttps(resolveOgFallbackPhoto(fallback))
 }
 
 export function ogLogoSrc(): string {
@@ -55,16 +62,17 @@ export function withOgCache(image: ImageResponse): ImageResponse {
   return image
 }
 
+/**
+ * 1200×630 share image: the photo, a subtle navy tint along the bottom
+ * edge, and the real wordmark. No title or price overlay — iMessage and
+ * Slack already print og:title under the image.
+ */
 export function renderShareCard(input: {
-  title?: string | null
-  subtitle?: string | null
   photoSrc?: string | null
+  fallback?: OgPhotoKind
 }): ImageResponse {
-  const title = shortOgTitle(input.title ?? '', input.subtitle ? 42 : 36)
-  const subtitle = (input.subtitle ?? '').replace(/\s+/g, ' ').trim()
-  const photo = resolveCardPhotoSrc(input.photoSrc)
+  const photo = resolveCardPhotoSrc(input.photoSrc, input.fallback ?? 'default')
   const logo = ogLogoSrc()
-  const titleSize = title.length > 26 ? 44 : 56
 
   return withOgCache(
     new ImageResponse(
@@ -94,62 +102,25 @@ export function renderShareCard(input: {
           <div
             style={{
               position: 'absolute',
-              top: 0,
               left: 0,
+              bottom: 0,
               width: OG_IMAGE_WIDTH,
-              height: OG_IMAGE_HEIGHT,
+              height: 180,
               display: 'flex',
               backgroundImage:
-                'linear-gradient(180deg, rgba(16,39,66,0.28) 0%, rgba(16,39,66,0.12) 42%, rgba(16,39,66,0.78) 100%)',
+                'linear-gradient(180deg, rgba(16,39,66,0) 0%, rgba(16,39,66,0.42) 100%)',
             }}
           />
           <div
             style={{
               display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
+              alignItems: 'flex-end',
               width: '100%',
               height: '100%',
-              padding: '40px 48px 44px',
+              padding: '0 48px 36px',
             }}
           >
-            <img src={logo} alt="" width={260} height={52} />
-            {title || subtitle ? (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
-                }}
-              >
-                {title ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      color: CREAM,
-                      fontSize: titleSize,
-                      fontWeight: 700,
-                      lineHeight: 1.15,
-                    }}
-                  >
-                    {title}
-                  </div>
-                ) : null}
-                {subtitle ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      color: CREAM,
-                      fontSize: 36,
-                      fontWeight: 600,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {subtitle}
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
+            <img src={logo} alt="" width={240} height={48} />
           </div>
         </div>
       ),

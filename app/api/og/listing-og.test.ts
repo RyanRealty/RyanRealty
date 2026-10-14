@@ -44,15 +44,16 @@ beforeEach(() => {
 })
 
 describe('/api/og listing cards', () => {
-  it('resolves an MLS ListNumber and paints the hero plus address and price', async () => {
+  it('resolves an MLS ListNumber and uses the hero photo with no title overlay', async () => {
     lookup.mockResolvedValue({ kind: 'ok', listing: LISTING })
     const res = await GET(new Request('http://localhost/api/og?type=listing&id=220227635'))
     expect(lookup).toHaveBeenCalledWith('220227635')
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.photoSrc).toBe(LISTING.photoUrl)
-    expect(body.title).toBe('61637 SE Evie Drive')
-    expect(body.subtitle).toBe('$634,900 · 4 bed, 3 bath')
+    expect(body.title).toBeUndefined()
+    expect(body.subtitle).toBeUndefined()
+    expect(body.fallback).toBe('listing')
   })
 
   it('resolves a RETS ListingKey the same way', async () => {
@@ -62,24 +63,25 @@ describe('/api/og listing cards', () => {
     )
     expect(lookup).toHaveBeenCalledWith('20260824231914656196000000')
     expect(renderCard).toHaveBeenCalledWith(
-      expect.objectContaining({ photoSrc: LISTING.photoUrl }),
+      expect.objectContaining({ photoSrc: LISTING.photoUrl, fallback: 'listing' }),
     )
   })
 
-  it('falls back to the default aerial only when the listing has no photo', async () => {
+  it('uses the landscape fallback when the listing has no photo', async () => {
     lookup.mockResolvedValue({ kind: 'ok', listing: { ...LISTING, photoUrl: null } })
     const res = await GET(new Request('http://localhost/api/og?type=listing&id=220227635'))
     const body = await res.json()
-    expect(body.photoSrc).toBeNull()
-    expect(body.title).toBe('Bend · Central Oregon')
-    expect(body.subtitle).toBeUndefined()
+    expect(body.photoSrc).toBeUndefined()
+    expect(body.fallback).toBe('listing')
+    expect(body.title).toBeUndefined()
   })
 
-  it('falls back to the default card when the listing is missing', async () => {
+  it('uses the landscape fallback when the listing is missing', async () => {
     lookup.mockResolvedValue({ kind: 'missing' })
     const res = await GET(new Request('http://localhost/api/og?type=listing&id=22054302'))
     const body = await res.json()
-    expect(body.title).toBe('Bend · Central Oregon')
-    expect(body.photoSrc).toBeNull()
+    expect(body.fallback).toBe('listing')
+    expect(body.photoSrc).toBeUndefined()
+    expect(body.title).toBeUndefined()
   })
 })
