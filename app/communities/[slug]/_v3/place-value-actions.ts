@@ -30,7 +30,7 @@ import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { createCmaRequest } from '@/lib/cma-request'
 import { sendPlaceValueConfirmation } from '@/lib/cma/request-emails'
 import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
-import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { fireLeadGenerated, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 import { buildAnswerFigures, salesPerMonthFrom } from '@/lib/site/answer-figures'
 import { slugify } from '@/lib/slug'
 import type {
@@ -336,11 +336,14 @@ export async function requestPlaceValuation(input: PlaceValueRequestInput): Prom
   }
 
   // GA4: the one server-side generate_lead (lib/lead-tracking.ts). Never throws.
+  // Persist first so the cookie is on the contact even if generate_lead is skipped.
+  await persistGaClientIdFromCookies(personId)
   void fireLeadGenerated({
     lp_variant: 'place-page',
     lead_type: 'seller_valuation',
     form_id: 'place_value',
     broker_slug: brokerSlug,
+    crm_person_id: personId,
     extra: { place_slug: place.slug },
   })
 

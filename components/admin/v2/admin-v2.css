@@ -530,3 +530,9 @@ textarea.av2-input { min-height:88px; resize:vertical; }
 .av2-fold__hint { font-weight: 500; color: var(--a-text-2); font-size: var(--a-text-sm); text-align: right; }
 .av2-fold__body { padding: 8px 16px 14px; border-top: 1px solid var(--a-border); }
 .av2-fold__lede { font-size: var(--a-text-sm); color: var(--a-text-2); margin: 8px 0 0; }
+
+/* lead-page-v3: stack the right-now strip and the timeline/sidebar on a phone. */
+@media (max-width: 900px) {
+  .lead-v3-grid,
+  .lead-v3-now { grid-template-columns: 1fr !important; }
+}

@@ -19,7 +19,7 @@ import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { upsertListingAlert } from '@/lib/data/leads/listingAlerts'
 import { nativeCrmPersonId } from '@/lib/alerts/enroll-identity'
-import { attributionParamsFromSearch, fireLeadGenerated } from '@/lib/lead-tracking'
+import { attributionParamsFromSearch, fireLeadGenerated, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { isLeadFormId, type LeadFormId } from '@/lib/analytics/lead-event'
 import { pageLinkFromReferer, signupAttribution } from '@/lib/crm/visit-attribution'
@@ -348,8 +348,9 @@ export async function submitSearchAlertSignup(input: {
     }
   }
 
-  // 7. GA4 conversion mirror (best-effort, zero value: this is a free capture).
+  // 7. First-touch `_ga` on the contact, then the GA4 conversion mirror.
   // form_id must be a string literal in each call object (lead-event.test.ts).
+  await persistGaClientIdFromCookies(crmPersonId ?? fubPersonId)
   if (!suspect) {
     try {
       if (formId === 'buyer_alerts_lp') {
@@ -357,7 +358,7 @@ export async function submitSearchAlertSignup(input: {
           lp_variant: lpVariant,
           lead_type: 'buyer_alerts',
           form_id: 'buyer_alerts_lp',
-          fub_person_id: fubPersonId ?? undefined,
+          crm_person_id: crmPersonId ?? fubPersonId,
           attribution: attr,
         })
       } else if (formId === 'buyer_leverage_lp') {
@@ -365,7 +366,7 @@ export async function submitSearchAlertSignup(input: {
           lp_variant: lpVariant,
           lead_type: 'buyer_alerts',
           form_id: 'buyer_leverage_lp',
-          fub_person_id: fubPersonId ?? undefined,
+          crm_person_id: crmPersonId ?? fubPersonId,
           attribution: attr,
         })
       } else {
@@ -373,7 +374,7 @@ export async function submitSearchAlertSignup(input: {
           lp_variant: lpVariant,
           lead_type: 'buyer_alerts',
           form_id: 'search_alert',
-          fub_person_id: fubPersonId ?? undefined,
+          crm_person_id: crmPersonId ?? fubPersonId,
           attribution: attr,
         })
       }
@@ -443,6 +444,7 @@ export async function submitListingSaveCapture(input: {
   const listingUrl = `${base}/homes-for-sale/listing/${encodeURIComponent(listingKey)}`
 
   let suspect = false
+  let capturedSavePersonId: number | null = null
   try {
     // Same per-broker attribution rule as the alert signup above.
     const attributed = await readAttributedAgentServer()
@@ -456,6 +458,7 @@ export async function submitListingSaveCapture(input: {
       brokerAttribution: attributed ? { brokerSlug: attributed.broker } : undefined,
     })
     const nativeId = result.ok ? nativeCrmPersonId(result.personId) : null
+    capturedSavePersonId = nativeId
     suspect = result.ok && result.suspect
     if (nativeId && !suspect) {
       try {
@@ -527,12 +530,14 @@ export async function submitListingSaveCapture(input: {
     // Best-effort. Never block the visitor's confirmation on a capture blip.
   }
 
+  await persistGaClientIdFromCookies(capturedSavePersonId)
   if (!suspect) {
     try {
       await fireLeadGenerated({
         lp_variant: 'listing-save',
         lead_type: 'buyer_alerts',
         form_id: 'listing_save',
+        crm_person_id: capturedSavePersonId,
       })
     } catch {
       // best-effort
@@ -738,13 +743,14 @@ export async function submitListingPriceDropWatch(input: {
     }
   }
 
+  await persistGaClientIdFromCookies(crmPersonId)
   if (!suspect) {
     try {
       await fireLeadGenerated({
         lp_variant: 'listing-price-watch',
         lead_type: 'buyer_alerts',
         form_id: 'listing_price_watch',
-        fub_person_id: crmPersonId ?? undefined,
+        crm_person_id: crmPersonId,
       })
     } catch {
       // best-effort

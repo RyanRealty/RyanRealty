@@ -6,7 +6,7 @@
  * later from cron and have no request cookies, so the cookie value has to live
  * on the contact. First-touch: the first valid client_id wins.
  *
- * A usable id is the `_ga` cookie shape `digits.digits` (clientIdFromGaCookie).
+ * A usable id is the last two numeric parts of `_ga` (`digits.digits`).
  * A uuid minted by fireGa4Event when the cookie is missing is not stored and
  * is not treated as usable — that user never existed in GA4.
  */

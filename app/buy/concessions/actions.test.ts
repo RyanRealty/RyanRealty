@@ -28,7 +28,10 @@ vi.mock('@/lib/crm/send-event', () => ({ sendEvent: (...a: unknown[]) => h.sendE
 vi.mock('@/lib/canonical-lead-tagger', () => ({ canonicallyTagLead: (...a: unknown[]) => h.canonicallyTagLead(...a) }))
 vi.mock('@/lib/data/crm/ensureNativeLead', () => ({ ensureNativeLead: (...a: unknown[]) => h.ensureNativeLead(...a) }))
 vi.mock('@/lib/data/identity/visitCampaign', () => ({ readLiveVisit: (...a: unknown[]) => h.readLiveVisit(...a) }))
-vi.mock('@/lib/lead-tracking', () => ({ fireLeadGenerated: (...a: unknown[]) => h.fireLeadGenerated(...a) }))
+vi.mock('@/lib/lead-tracking', () => ({
+  fireLeadGenerated: (...a: unknown[]) => h.fireLeadGenerated(...a),
+  persistGaClientIdFromCookies: vi.fn(async () => undefined),
+}))
 vi.mock('@/lib/crm/enroll', () => ({ autoEnrollByPersonId: vi.fn(async () => undefined) }))
 vi.mock('@/lib/visitor-backfill', () => ({ stitchFormSubmitIdentity: vi.fn(async () => undefined) }))
 vi.mock('@/lib/resend', () => ({ sendContactNotification: vi.fn(async () => undefined) }))

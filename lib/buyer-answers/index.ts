@@ -16,6 +16,7 @@ export {
   buyerAnswersOfKind,
   communityBuyerAnswerParams,
   isBuyerAnswerPreset,
+  neighborhoodBuyerAnswerParams,
   vsBuyerAnswerParams,
 } from './registry'
 export { loadBuyerAnswer, loadBuyerAnswerForSlugs } from './load'
