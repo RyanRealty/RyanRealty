@@ -175,6 +175,14 @@ describe('datacenter-geo: a cold arrival from a datacenter town', () => {
   })
 })
 
+describe('a malformed geo header', () => {
+  it('never throws the request; the session is still recorded', async () => {
+    const res = await track(event(sid(40)), { ua: CURRENT_UA, headers: { 'cf-ipcity': '%E0%A4%A', 'x-vercel-ip-country': 'US' } })
+    expect(res.status).toBe(200)
+    expect(store.session(sid(40))).toMatchObject({ is_automated: false })
+  })
+})
+
 describe('a HeadlessChrome client hint', () => {
   it('is permanent automation, even behind a desktop user agent and a signed token', async () => {
     const res = await track(event(sid(30), { identityToken: signPersonLinkToken(PERSON, 'email'), referrer: 'https://mail.google.com/' }), {

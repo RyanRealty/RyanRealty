@@ -307,8 +307,18 @@ function readIpGeo(req: NextRequest): { country?: string; region?: string; city?
   return {
     country: country?.trim() ? country.trim().toUpperCase().slice(0, 2) : undefined,
     region:  region?.trim()  ? region.trim().slice(0, 64) : undefined,
-    // Vercel sends URL-encoded city names (e.g. "Bend" or "San%20Francisco")
-    city:    city?.trim()    ? decodeURIComponent(city.trim()).slice(0, 64) : undefined,
+    // Vercel sends URL-encoded city names (e.g. "Bend" or "San%20Francisco").
+    // Read at every tier for the automation class, so a malformed value (a
+    // client can send cf-ipcity itself) must not throw the request.
+    city:    city?.trim()    ? decodeCity(city.trim()).slice(0, 64) : undefined,
+  }
+}
+
+function decodeCity(raw: string): string {
+  try {
+    return decodeURIComponent(raw)
+  } catch {
+    return raw
   }
 }
 
