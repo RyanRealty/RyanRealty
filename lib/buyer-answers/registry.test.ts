@@ -5,15 +5,16 @@ import {
   buyerAnswerSitemapPaths,
   communityBuyerAnswerParams,
   isBuyerAnswerPreset,
+  neighborhoodBuyerAnswerParams,
   vsBuyerAnswerParams,
 } from './registry'
 import { MASTER_HOA_DURABLE_SLUGS, STR_PUBLIC_SLUGS, sourcedStr, masterHoaAnnual } from './sourced'
 import { communityPath } from '@/lib/communities/community-public-pair'
 
 describe('buyer-answer registry', () => {
-  it('holds 25 to 40 long-tail queries', () => {
+  it('holds 25 to 80 long-tail queries', () => {
     expect(BUYER_ANSWER_DEFS.length).toBeGreaterThanOrEqual(25)
-    expect(BUYER_ANSWER_DEFS.length).toBeLessThanOrEqual(40)
+    expect(BUYER_ANSWER_DEFS.length).toBeLessThanOrEqual(80)
   })
 
   it('gives each query a unique path and id', () => {
@@ -56,7 +57,48 @@ describe('buyer-answer registry', () => {
     expect(BUYER_ANSWER_DEFS.some((def) => def.path === '/homes-for-sale/bend/under-500k')).toBe(true)
     expect(BUYER_ANSWER_DEFS.some((def) => def.path === '/new-construction')).toBe(true)
     expect(isBuyerAnswerPreset('bend', 'under-500k')).toBe(true)
+    expect(isBuyerAnswerPreset('bend', 'over-1-5m')).toBe(true)
+    expect(isBuyerAnswerPreset('central-oregon', 'acreage')).toBe(true)
+    expect(isBuyerAnswerPreset('central-oregon', 'under-500k')).toBe(true)
     expect(isBuyerAnswerPreset('bend', 'pending')).toBe(false)
+    expect(BUYER_ANSWER_DEFS.some((def) => def.path === '/homes-for-sale/acreage')).toBe(true)
+    expect(BUYER_ANSWER_DEFS.some((def) => def.path === '/homes-for-sale/under-500k')).toBe(true)
+    expect(BUYER_ANSWER_DEFS.some((def) => def.path === '/homes-for-sale/bend/over-1-5m')).toBe(true)
+  })
+
+  it('adds batch-2 community and neighborhood children only where inventory supports them', () => {
+    expect(communityBuyerAnswerParams('living', 'community').map((row) => row.slug)).toEqual(
+      expect.arrayContaining(['broken-top', 'brasada-ranch', 'three-rivers']),
+    )
+    expect(communityBuyerAnswerParams('cost', 'community').map((row) => row.slug)).toEqual(
+      expect.arrayContaining([
+        'broken-top',
+        'brasada-ranch',
+        'three-rivers',
+        'juniper-preserve',
+        'eagle-crest',
+        'black-butte-ranch',
+      ]),
+    )
+    expect(BUYER_ANSWER_DEFS.some((def) => def.path.includes('/crosswater/'))).toBe(false)
+    expect(BUYER_ANSWER_DEFS.some((def) => def.path.includes('/vandevert'))).toBe(false)
+    expect(BUYER_ANSWER_DEFS.some((def) => def.path.includes('shevlin'))).toBe(false)
+    expect(BUYER_ANSWER_DEFS.some((def) => def.path.includes('discovery-west'))).toBe(false)
+    expect(neighborhoodBuyerAnswerParams('living').map((row) => row.neighborhoodSlug)).toEqual(
+      expect.arrayContaining([
+        'old-bend',
+        'southeast-bend',
+        'century-west',
+        'southwest-bend',
+        'summit-west',
+        'old-farm-district',
+      ]),
+    )
+    expect(buyerAnswerByPath('/cities/bend/from-out-of-state')?.kind).toBe('from-out-of-state')
+    expect(buyerAnswerByPath('/communities/sunriver/second-home')?.kind).toBe('second-home')
+    expect(buyerAnswerByPath('/cities/redmond/buying')?.kind).toBe('buying')
+    expect(buyerAnswerSitemapPaths()).toContain('/cities/bend/old-bend/living')
+    expect(buyerAnswerSitemapPaths()).toContain('/communities/broken-top/cost')
   })
 
   it('builds static params from the registry', () => {

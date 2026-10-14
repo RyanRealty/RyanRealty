@@ -17,41 +17,57 @@ Skills read: `marketing_brain_skills/producers/cma/SKILL.md` §0.3, `docs/DATABA
 
 ## Earlier — 2026-10-14 (Cursor, reader-5 leftover reads)
 
-Surface: Cursor cloud. Branch `cursor/reader-5-leftover-reads-52cc` / PR #559, merged onto current `origin/main` `befee8c88` (normal merge, no rebase). Closed stale #552. Nobody pushes main. Nothing sent. No CMA rows written.
+## Earlier — 2026-10-14 (Cursor, G46 commit-compiles process tree)
 
-**What this branch does.** (1) Thin-window own-listing-unsold: an Active home whose ask was cut, with no per-foot local verdict, stands in as its own local read so own-ground sales move down with the city index. (2) Own-ground sold count: when own-subdivision rungs find nothing, one any-size read of the subject's ground; the letter says "No home sold" only on a real zero.
+Surface: Cursor cloud. Branch `cursor/commit-compiles-heavy-timeout-84fb`. PR https://github.com/RyanRealty/RyanRealty/pull/541. Merged origin/main `63d924ee5` into the branch (handoff Current only). Matt approved merge once checks pass, treating Lighthouse JSON flake, `/communities/tetherow` page-payload, and `/sell` content-floor as already-red-on-main. Nobody pushes main. Nothing sent.
 
-**Live dry-run 2026-10-14 (read-only, `scripts/cma-build-dryrun.ts`).** Kelly Hill `cma-3062-nw-kelly-hill`: same 5 comps both sides (2955 Bordeaux $800k, 2974 Chardonnay $735k, 3080 Kelly Hill $788k, 3074 Kelly Hill $645k, 2370 Summerhill $649,900). Main rec $696,000 band $625,650–$788,042 branch `no-local-read`. New rec $676,000 band $620,000–$733,116 branch `own-listing-unsold` (ask $699,999, 3.4% under, inside stored leftover band $674,070–$733,116). Saginaw `cma-915-saginaw`: both sides fail at 4 price-setting sales (628 Portland, 536 Saginaw, 1527 10th, 620 Portland); no rec/band. New `own_ground_sold` n=0 (Park Place% 0 rows and plat box 0 rows).
+**What this branch does.** `scripts/check-commit-compiles.mjs` (G46) spawns tsc detached. If `/home/box/agent-data/tools/heavy.sh` exists, tsc runs as `heavy.sh <tsc cmd...>`. The child pid is kept. On exit, SIGINT, SIGTERM, uncaughtException, and unhandledRejection the gate SIGTERMs the process group, SIGKILLs after ~5s, and `fs.rmSync`s the `/tmp/rr-commit-check-*` dir. Default timeout is 10 minutes (`COMMIT_COMPILES_TIMEOUT_MS`). Pass/fail banners are unchanged.
 
-**Held.** #471 stays open: merge conflicts with later main and would drop `loadCmaMapTile` / `CMA_MAP_MS`. #452 landed. Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `.claude/skills/tdd/SKILL.md`.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+## Earlier — 2026-10-14 (Cursor, buyer-answers batch 2)
 
-## Earlier — 2026-10-14 (Claude, the two buyer landing pages look like landing pages)
+Surface: Cursor cloud. Branch `cursor/buyer-answers-batch-2-41c4` from origin/main `a00d7c3ca` (merged #506, no rebase). Land path is `gh pr checks --watch` then `gh pr merge --squash`. Nobody pushes main. Nothing sent.
 
-Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b` from origin/main `5293aa46`. PR #548 landed on main. Nothing sent. Nobody pushes main.
+**What this branch does.** Extends the buyer-answer system (#528) with batch 2: living+cost for Broken Top, Brasada Ranch, Three Rivers; cost for Juniper Preserve, Eagle Crest, Black Butte Ranch; living+cost for six Bend NA districts with enough inventory (Old Bend, Southeast Bend, Century West, Southwest Bend, Summit West, Old Farm District); buyer-question pages for Bend from out of state, Sunriver second home, and buying in Redmond; luxury Bend preset (`/homes-for-sale/bend/over-1-5m`) plus region presets `/homes-for-sale/acreage` and `/homes-for-sale/under-500k`. Same templates, live MLS, FAQPage, author `/team/matthew-ryan`, sitemap + llms.txt. Edge guard reserves `from-out-of-state` and `buying`. Skipped thin places: Crosswater, Vandevert Ranch, Shevlin Commons, Discovery West.
 
-**What this commit does.** `/buy/concessions` and `/buy/alerts` were a cream column of prose and a form (Matt 2026-10-14: "these are supposed to be landing pages, and they're kind of bums"). Both now open the way `/sell` does: a `V3Stage` photograph with the H1, the page's sourced figures on the navy band, and the ask in the first viewport. Concessions: the Bend Drake Park aerial, then the ad's "Same $10,000" as a live instrument on the new barrel primitive `V3Compare` (seller dollars scrubbed, two monthly savings rolling on `V3Number`, the margin drawn as two bars on one scale, the loan inputs folded under "Your numbers"), then the two-year share chart, caps, the ask, and the phone. The admin-register `components/ui` inputs left the route. Alerts: Smith Rock, the signup as a cream slab on the photograph (town chips, email, price and bedrooms folded), `V3Steps` for what lands in the inbox, a `V3ListingDial` of the newest single-family listings in Bend (`getCityListings`, listed-newest, SFR sub type), `V3Answers` for the FAQ with the page's doors, a `Quiet` of sources. Same action, same lead and tracking tokens, same approved H1, meta, FAQ and cadence sentences. Figures unchanged and still traced: the 90-day concession read in `lib/concessions/results.ts`, the live Freddie Mac rate, the Bend new-30-day count, the 7-day cut count and months of supply from the same helpers as before.
+**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`).
 
-**Taste pass.** A separate Sonnet evaluator scored the first cut 62 (concessions) and 67 (alerts) against TASTE.md and named the defects; the real ones were fixed before the push: the caps section carried builder language ("not re-fetched this session") and is now `V3Answers` with a source per loan family, the compare instrument puts the two figures before the scrubber under a compact Stage so the ad's numbers are in the 1440 fold, the chart's last tick hung 13px past the phone viewport (`V3Chart.css` end-tick rule at 40rem), the alerts band wrapped with a stranded middot (shorter labels), the slab named the page a fourth time (eyebrow only now), and the Smith Rock sky read cobalt (deep scrim). Shots at 1440 and 375 are in the session scratchpad, not the repo; the routes have no taste class or parity receipt.
+**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool`. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
 
-**Not this change.** Do not send. Do not apply hosted SQL. Do not merge the phase-pool branch. Do not rebuild letters. The Google Drive "Same $10,000" ad file Matt linked was not reachable from this session (Drive returned not found), so no video was placed on the page; the page carries the ad's device as a live instrument instead.
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `docs/DATABASE_FOR_AI_AGENTS.md` (cache + neighborhood inventory SoR).
 
-Skills read: `design_system/public/PUBLIC_UI.md`, `design_system/public/TASTE.md`, `.claude/skills/frontend-design/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `docs/CLOUD_ENVIRONMENT_SETUP.md`.
+## Earlier — 2026-10-14 (Cursor, lead page v3)
 
-## Earlier — 2026-10-14 (Cursor, Meta Lead no dollar values)
+Surface: Cursor cloud. Branch `cursor/lead-page-v3-d7f6` landed on main via #506 at `a00d7c3ca`. Admin person page v3 behind `lead-page-v3`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, analytics SoT)
+
+Surface: Cursor cloud. Branch `cursor/analytics-sot-readme-5e14` landed on main via #558 at `ee189e044`. `docs/analytics/README.md` is the analytics source of truth. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, STOP cell intake)
+
+Surface: Cursor cloud. PR #546 landed. Skip a STOP'd cell on the mobile-only intake path. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, reader-5 leftover reads)
+
+Surface: Cursor cloud. PR #559 landed. Thin-window own-listing-unsold and own-ground sold count. Closed stale #552. Nothing sent.
+
+## Earlier — 2026-10-14 (Claude, buyer landing pages)
+
+Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b` landed on main via #548 at `befee8c88`. `/buy/concessions` and `/buy/alerts` now open with a `V3Stage` photograph. Nothing sent. Nobody pushes main.
+
+## Earlier — 2026-10-14 (Cursor, relist blip)
+
+Surface: Cursor cloud. Branch `fix/relist-blip` landed on main via #452 at `608fd879b`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, offline GA4 conversions live)
+
+Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-41c4` landed on main via #543. Offline conversions cron reads `ga_client_id` and posts GA4 Measurement Protocol hits. Production SHA `e532597d8`. Nobody pushes main. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
 
-## Earlier — 2026-10-14 (Cursor, GA4 offline conversions)
-
-Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-3b48` (#543), merged origin/main `7e23fdb97` (#551 handoff, #489 same-vintage, #542 Meta Lead no dollars). Nothing sent. Nobody pushes main. No rebuild.
-
-**This pass.** Daily `/api/cron/offline-conversions` now also sends GA4 MP `qualify_lead` (Buyer Contract, Pending) and `close_convert_lead` (Closed) through `fireGa4Event`. `lead_type` only, no dollar amount. Stored `_ga` client_id on `crm_people.custom.gaClientId` (first-touch from `fireLeadGenerated`). Skip + log when missing. Idempotent `ga4_offline_conversion` / `person:<id>:<stageKey>`. Live audit 2026-10-14: **0 of 23,909** contacts have a usable client_id. Land #543, then `gh pr checks --watch` and `gh pr merge --squash`.
-
-**Still open.** Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`). Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. The unique `idx_listings_parcel_number` migration is not on main.
-
-Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 

@@ -40,6 +40,7 @@ Last curated: 2026-04-21 (governance purge ch.3). Obsolete/snapshot docs moved t
 - Authoritative URL spec: `.cursor/rules/seo-url-guardrails.mdc`
 
 ### Reporting + analytics
+- `analytics/README.md` — **source of truth** for ryan-realty.com GA4 / GTM / leads / consent / offline conversions
 - `REPORTING_AND_ANALYTICS.md` — reporting architecture (cache tables, RPCs)
 - `TRACKING_AND_ANALYTICS_AUDIT.md` — what fires, what doesn't
 - `GA4_SERVICE_ACCOUNT_SETUP.md` — GA4 Data API service account setup
