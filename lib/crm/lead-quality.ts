@@ -43,6 +43,7 @@
  */
 
 export const QUALITY_SUSPECT_TAG = 'quality:suspect'
+export const QUALITY_UNVERIFIED_TAG = 'quality:unverified'
 export const QUALITY_SIGNAL_TAG_PREFIX = 'quality:signal:'
 
 export type LeadQualitySignal =
@@ -221,6 +222,11 @@ export function qualityTags(verdict: LeadQualityVerdict): string[] {
 /** Does this person carry the suspect flag? Every skip gate reads this one test. */
 export function hasSuspectTag(tags: unknown): boolean {
   return Array.isArray(tags) && tags.includes(QUALITY_SUSPECT_TAG)
+}
+
+/** Inbound bulk-text flag. The row stays; sequences do not enroll. */
+export function hasUnverifiedTag(tags: unknown): boolean {
+  return Array.isArray(tags) && tags.includes(QUALITY_UNVERIFIED_TAG)
 }
 
 /** Plain-language reason for the timeline note and logs. */

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   QUALITY_SUSPECT_TAG,
+  QUALITY_UNVERIFIED_TAG,
   caseSwitches,
   classifyLeadQuality,
   describeSignals,
   hasSuspectTag,
+  hasUnverifiedTag,
   isDisposableEmail,
   isDotTrickEmail,
   isGluedName,
@@ -158,6 +160,12 @@ describe('tags, alert kinds, words', () => {
     expect(hasSuspectTag(['source:contact-form', QUALITY_SUSPECT_TAG])).toBe(true)
     expect(hasSuspectTag(['quality:signal:honeypot'])).toBe(false)
     expect(hasSuspectTag(null)).toBe(false)
+  })
+
+  it('hasUnverifiedTag reads the inbound bulk-text flag', () => {
+    expect(hasUnverifiedTag(['source:inbound-sms', QUALITY_UNVERIFIED_TAG])).toBe(true)
+    expect(hasUnverifiedTag(['quality:suspect'])).toBe(false)
+    expect(hasUnverifiedTag(null)).toBe(false)
   })
 
   it('silences lead pings, never a reply, a booking, a CMA or the digest', () => {

@@ -26,6 +26,7 @@ import { buildSuggestedReplyLink } from '@/components/admin/crm/composer-preload
 import { handleAgentInbound, processAfterDebounce } from '@/lib/agent/ingress'
 import { isBrokerSmsAgentEnvEnabled } from '@/lib/data/agent/broker-agent-flags'
 import { CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import { applyInboundMessageEnrichment } from '@/lib/data/crm/applyInboundMessageEnrichment'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -526,6 +527,30 @@ export async function POST(request: Request) {
       })
     } catch (err) {
       console.error('[inbound-sms] alert email failed', err)
+    }
+
+    // Name / intent / area from the text. Placeholder names only. Never replies
+    // to the sender. after() so Twilio gets TwiML before the Claude call.
+    if (displayBody) {
+      const enrichArgs = {
+        personId: match.personId,
+        body: displayBody,
+        channel: 'sms' as const,
+        fromNumber: from,
+        messageSid: sid,
+        broker: match.broker,
+      }
+      const runEnrich = () =>
+        applyInboundMessageEnrichment(enrichArgs).catch((e) => {
+          console.warn('[twilio/inbound-sms] inbound enrich failed', e)
+        })
+      try {
+        after(() => {
+          void runEnrich()
+        })
+      } catch {
+        void runEnrich()
+      }
     }
 
     // Real-time forward to the assigned broker's cell — parity with the inbound

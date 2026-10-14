@@ -85,9 +85,12 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
   // 7 days lets the 15-minute crm-auto-enroll sweep pick the person up (after
   // that, enroll them from the lead page).
   {
-    const { hasSuspectTag } = await import('@/lib/crm/lead-quality')
+    const { hasSuspectTag, hasUnverifiedTag } = await import('@/lib/crm/lead-quality')
     if (hasSuspectTag(tags)) {
       return { enrolled: false, reason: 'quality:suspect (intake screen: likely script submit)' }
+    }
+    if (hasUnverifiedTag(tags)) {
+      return { enrolled: false, reason: 'quality:unverified (inbound bulk-text flag)' }
     }
   }
 
