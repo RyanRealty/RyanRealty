@@ -623,8 +623,12 @@
   margin: 0 auto;
   padding: 0 var(--v3-gutter, 1.25rem) 2rem;
 }
-.v3 .sell-plan-more a {
-  color: var(--v3-ink);
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
+/* `color` on a bare `a` lives in @layer base so Tailwind's utilities layer
+   keeps winning (ci:css-layers). */
+@layer base {
+  .v3 .sell-plan-more a {
+    color: var(--v3-ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
 }
