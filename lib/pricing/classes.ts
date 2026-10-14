@@ -333,6 +333,26 @@ export function aduFromRemarks(remarks: string | null | undefined): boolean {
 }
 
 /**
+ * True when the subject has a second living unit on its lot: the MLS details
+ * say so (Accessory Dwelling Unit YN, read onto CmaSubject.units by
+ * lib/cma/subject-units.ts) or the remarks state one. A reading from the
+ * details wins over blank remarks, so a home whose agent listed the ADU as a
+ * field and never wrote it into the remarks is still an ADU home here, on the
+ * wall below, and on the ADU-first pass (lib/pricing/adu-preference.ts).
+ */
+export function subjectHasAdu(subject: {
+  units?: { aduYn?: boolean | null } | null
+  publicRemarks?: string | null
+}): boolean {
+  return subject.units?.aduYn === true || aduFromRemarks(subject.publicRemarks)
+}
+
+/** True when a closed sale's remarks state an ADU or other second living unit. The one reading a sale has. */
+export function isAduSale(sale: { publicRemarks?: string | null }): boolean {
+  return aduFromRemarks(sale.publicRemarks)
+}
+
+/**
  * THE ADU WALL. True when the sale's remarks state an ADU and the subject's do
  * not, so the sale never sets the subject's price. Not symmetric: a subject
  * with an ADU may use sales with and without one (its ADU is a letter note,
@@ -342,7 +362,16 @@ export function aduFromRemarks(remarks: string | null | undefined): boolean {
 export function aduSaleRefused(
   subjectRemarks: string | null | undefined,
   saleRemarks: string | null | undefined,
+  /**
+   * The subject's MLS details reading (Accessory Dwelling Unit YN, read onto
+   * CmaSubject.units by lib/cma/subject-units.ts), when the caller has it. True
+   * makes the subject an ADU home even when its remarks are silent, so no ADU
+   * sale is refused (2026-10-14, with the ADU-first pass in
+   * lib/pricing/adu-preference.ts). False or null changes nothing.
+   */
+  subjectAdu?: boolean | null,
 ): boolean {
+  if (subjectAdu === true) return false
   return aduFromRemarks(saleRemarks) && !aduFromRemarks(subjectRemarks)
 }
 

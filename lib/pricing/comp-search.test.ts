@@ -425,3 +425,18 @@ describe('buildCompSearch — on acreage the record carries the split sentence',
     expect(town!.ruralSentence).toBeNull()
   })
 })
+
+describe('buildCompSearch — an ADU home carries its pass sentence (Matt 2026-10-14)', () => {
+  it('stores the sentence beside the base sentence, and null for a home without an ADU', () => {
+    const adu = buildCompSearch({
+      subdivision: 'Diamond Bar Ranch',
+      ladder: diamondBarLadder,
+      keptComps: [...dbr(3), ...other(2)],
+      aduSentence: 'This home has an accessory dwelling unit, so its price is read from closed sales that also have one.',
+    })
+    expect(adu!.aduSentence).toContain('accessory dwelling unit')
+    expect(adu!.sentence).toContain('Three of the five sales are in Diamond Bar Ranch')
+    const plain = buildCompSearch({ subdivision: 'Diamond Bar Ranch', ladder: diamondBarLadder, keptComps: [...dbr(3), ...other(2)] })
+    expect(plain!.aduSentence).toBeNull()
+  })
+})

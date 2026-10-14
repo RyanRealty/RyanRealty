@@ -1080,4 +1080,23 @@ describe('selectComps — a sale with an ADU never prices a home without one (Ma
     expect(keys(sel)).toContain('NORTON')
     expect(sel.diagnostics.excluded_totals.adu_sale).toBe(0)
   })
+
+  it('keeps it for a subject whose MLS details say ADU while its remarks are silent (units.aduYn on the wall, 2026-10-14)', async () => {
+    const sel = await selectComps(
+      subject({ subdivision: 'Kenwood', publicRemarks: null, units: { multiUnit: false, reasons: [], unitsTotal: null, aduYn: true, aduSqft: 520, aduType: 'Detached', priorMultiUnit: null } }),
+    )
+    expect(keys(sel)).toContain('NORTON')
+    expect(sel.diagnostics.excluded_totals.adu_sale).toBe(0)
+  })
+
+  it('the ADU-only pass admits ADU sales alone and counts the plain ones as another product (Matt 2026-10-14)', async () => {
+    const sel = await selectComps(
+      subject({ subdivision: 'Kenwood', publicRemarks: 'Craftsman with a permitted detached ADU over the garage.' }),
+      { aduSalesOnly: true },
+    )
+    expect(keys(sel)).toEqual(['NORTON'])
+    expect(sel.diagnostics.excluded_totals.adu_sale).toBe(0)
+    // Skipped before any wall, so no total describes the plain sales.
+    expect(sel.diagnostics.excluded_totals.product_type).toBe(0)
+  })
 })
