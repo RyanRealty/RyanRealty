@@ -1,18 +1,20 @@
 # Current — 2026-10-14 (Cursor, G46 commit-compiles process tree)
 
-Surface: Cursor cloud. Branch `cursor/commit-compiles-heavy-timeout-84fb`. PR https://github.com/RyanRealty/RyanRealty/pull/541. Merged origin/main `a3664c434` into the branch (handoff Current only). Matt approved merge once checks pass, treating Lighthouse JSON flake, `/communities/tetherow` page-payload, and `/sell` content-floor as already-red-on-main. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/commit-compiles-heavy-timeout-84fb`. PR https://github.com/RyanRealty/RyanRealty/pull/541. Merged origin/main `7e23fdb97` into the branch (handoff Current only). Matt approved merge once checks pass, treating Lighthouse JSON flake, `/communities/tetherow` page-payload, and `/sell` content-floor as already-red-on-main. Nobody pushes main. Nothing sent.
 
 **What this branch does.** `scripts/check-commit-compiles.mjs` (G46) spawns tsc detached. If `/home/box/agent-data/tools/heavy.sh` exists, tsc runs as `heavy.sh <tsc cmd...>`. The child pid is kept. On exit, SIGINT, SIGTERM, uncaughtException, and unhandledRejection the gate SIGTERMs the process group, SIGKILLs after ~5s, and `fs.rmSync`s the `/tmp/rr-commit-check-*` dir. Default timeout is 10 minutes (`COMMIT_COMPILES_TIMEOUT_MS`). Pass/fail banners are unchanged.
 
 Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `.claude/skills/tdd/SKILL.md`.
 
-## Earlier — 2026-10-14 (Cursor, Meta Lead no dollar values)
+## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
 
-Surface: Cursor cloud. #542 landed on main at `99b50558f`. Vercel production `dpl_9TWvoucwshSZUsVD8hoWokVpLJMn` READY for that SHA. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489), which includes #485 (`fe948f648`) and #488 (`2167f8f71`). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
 
-**What #542 did.** Meta CAPI and pixel Lead events keep `lead_type` and `content_name` and no longer send `value` or `currency`. Offline conversions stay optional.
+**What landed.** #485 refuses an expired/FSBO CMA build when the home is on the market or has no sendable email. #488 ranks closer lots and matching views ahead of a mismatched sale. #489 seats a same-generation half-mile sale ahead of a stale neighbor.
 
-**Still open from prior Current.** Land #489 if still open. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main). Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+**Held.** #452 stays open: the body requires a rule-25 fleet score before merge (stretch clocks). #471 stays open: merge conflicts with later main and would drop `loadCmaMapTile` / `CMA_MAP_MS`; lint-and-build is already red. The unique `idx_listings_parcel_number` migration is not on main.
+
+**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
