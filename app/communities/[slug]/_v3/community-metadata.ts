@@ -15,7 +15,7 @@
  */
 
 import { cityHref } from '@/lib/site/place-href'
-import { type pageMetadata } from '@/lib/site/page-metadata'
+import { fitTitle, type pageMetadata } from '@/lib/site/page-metadata'
 import { shareDescription } from '@/lib/share-metadata'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
 import { isSelfCityCommunity } from '@/lib/communities/self-city-community'
@@ -78,10 +78,18 @@ export function communitySerpTitle(input: {
   const { name, city } = input
   void input.slug
   void input.listedCount
-  // Matt 2026-10-13: one title on every /communities/[slug] page.
-  // Layout appends " | Ryan Realty". The city is this community's registry
-  // city (Bend, Sunriver, Redmond, Sisters, Powell Butte), never a guessed one.
-  return `${name} Homes for Sale | ${city}, OR`
+  // One title on every /communities/[slug] page (Matt 2026-10-13). Matt
+  // 2026-10-14: carry both searched phrases. Over 90 days Search Console showed
+  // about as many "<name> real estate" searches (2,624) as "<name> homes for
+  // sale" (2,421) across the seven resort pages. The 60-char budget (10-05)
+  // fits both phrases or the city, not all three, so fitTitle keeps the city
+  // only when it fits and a long recorded name keeps "Homes for Sale" alone.
+  // Layout appends " | Ryan Realty". The city is the registry city, never guessed.
+  return fitTitle(
+    `${name} Homes for Sale & Real Estate | ${city}, OR`,
+    `${name} Homes for Sale & Real Estate`,
+    `${name} Homes for Sale`,
+  )
 }
 
 function serpTownhomeMix(types: readonly PlaceBuyerGroup[]): string[] {
