@@ -42,6 +42,10 @@ import { getListingSitemapRows } from '@/lib/data/sitemap/getListingSitemapRows'
 import type { ListingSitemapRow } from '@/lib/data/sitemap/listing-sitemap-path'
 import { getListingSitemapPhotos } from '@/lib/data/sitemap/getListingSitemapPhotos'
 import { listingPhotoSitemapPart } from '@/lib/data/sitemap/listing-photo-sitemap'
+import { getListingMlsVideosByKeys, getListingTileAddressesByKeys } from '@/lib/data/videos/getListingMlsVideos'
+import { publishListingVideos } from '@/lib/listing/publish-listing-video-schema'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { LISTING_MOSAIC_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { getIndexablePresetSlugs } from '@/lib/search-presets'
 import { createUniverseMemo } from '@/lib/sitemap-universe-memo'
 
@@ -119,6 +123,59 @@ export async function getListingPhotoSitemapEntries(part: number): Promise<Listi
   for (const row of rows) {
     const images = photos.get(row.listingKey)
     if (images && images.length > 0) out.push({ path: row.path, lastModified: row.lastModified, images })
+  }
+  return out
+}
+
+export type ListingVideoSitemapVideo = {
+  title: string
+  description: string
+  playerUrl: string
+  thumbnailUrl: string
+  publicationDate: string
+}
+
+export type ListingVideoSitemapEntry = { path: string; lastModified: string; videos: ListingVideoSitemapVideo[] }
+
+/**
+ * /sitemaps/video.xml (2026-10-14): every listings.xml listing whose MLS video
+ * is a YouTube or Vimeo player with a dated MLS record, the same videos the
+ * listing page's VideoObject describes (publishListingVideos), up to three per
+ * listing. The typed tour flags prefilter before any details read
+ * (getListingMlsVideosByKeys onlyFlagged), so a video only the jsonb knows of
+ * is on its page but not here.
+ */
+export async function getListingVideoSitemapEntries(): Promise<ListingVideoSitemapEntry[]> {
+  const rows = await getListingSitemapRowsOnce()
+  const media = await getListingMlsVideosByKeys(
+    rows.map((r) => r.listingKey),
+    { onlyFlagged: true },
+  )
+  const withVideo = rows.filter((r) => media.has(r.listingKey))
+  const addresses = await getListingTileAddressesByKeys(withVideo.map((r) => r.listingKey))
+  const out: ListingVideoSitemapEntry[] = []
+  for (const row of withVideo) {
+    const m = media.get(row.listingKey)!
+    const lead = m.leadPhotoUrl ? listingRowPhotoSrc(m.leadPhotoUrl, LISTING_MOSAIC_LEAD_PHOTO_SIZE) : null
+    const published = publishListingVideos(m.videos, lead, 3)
+    if (published.length === 0) continue
+    const a = addresses.get(row.listingKey)
+    const street = a
+      ? publishStreetLine({ streetNumber: a.streetNumber, streetName: a.streetName, streetSuffix: a.streetSuffix })
+      : null
+    if (!street) continue
+    const place = `${street}${a?.city ? `, ${a.city}, OR` : ''}`
+    out.push({
+      path: row.path,
+      lastModified: row.lastModified,
+      videos: published.map((v, i) => ({
+        title: i === 0 ? `Video tour of ${place}` : `Video tour of ${place}, video ${i + 1}`,
+        description: `Video tour of ${place}, from the MLS listing.`,
+        playerUrl: v.player.embedUrl,
+        thumbnailUrl: v.thumbnailUrl,
+        publicationDate: v.uploadDate,
+      })),
+    })
   }
   return out
 }

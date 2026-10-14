@@ -3,9 +3,16 @@
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata (city-aware
  * title/description/canonical/OG), ItemList + BreadcrumbList + CollectionPage
- * JSON-LD, one VideoObject per embeddable tour (raw <script>, VideoObject is
- * not in SchemaInput), city chips as V3Button ghosts with aria-current,
+ * JSON-LD, city chips as V3Button ghosts with aria-current,
  * revalidate 300, V3SectionTracker pageType="media".
+ *
+ * TOURS (2026-10-14). listing_tile_mv carries has_virtual_tour but no URL, so
+ * every tile shipped tourUrl: null and the page emitted no VideoObject. The
+ * tiles' real video and tour URLs now come from the MLS payload in one bounded
+ * read (getListingMlsVideosByKeys), shaped exactly as the listing page shapes
+ * them, cleaned of mail-scanner wrappers. A VideoObject is emitted only for a
+ * YouTube or Vimeo player with a dated MLS record (publishListingVideoSchemas),
+ * built through buildJsonLd.
  *
  * LEFTOVERS, not v3 atoms: HideAwareVideoGrid (inline play) and VideoFeedClient
  * (vertical feed at ?view=feed). No video-grid atom exists. Those two are the
@@ -25,7 +32,12 @@
 
 import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
-import { getListingTiles, getCityListings, type ListingTile } from '@/lib/data'
+import { getListingTiles, getCityListings, getListingMlsVideosByKeys, type ListingTile } from '@/lib/data'
+import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { buildJsonLd } from '@/lib/site/json-ld'
+import { publishListingHeroVideo } from '@/lib/listing/publish-listing-hero-video'
+import { publishListingVideoSchemas } from '@/lib/listing/publish-listing-video-schema'
+import type { VideoEmbed } from '@/lib/data/types/video'
 import { tileToCardData } from '@/lib/site/listing-card'
 import { listingsBrowsePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
@@ -103,7 +115,23 @@ export default async function VideosPage({
     sort: 'newest' as const,
     limit: view === 'feed' ? 60 : 36,
   }
-  const tiles: ListingTile[] = city ? await getCityListings(city, filter) : await getListingTiles(filter)
+  const flaggedTiles: ListingTile[] = city ? await getCityListings(city, filter) : await getListingTiles(filter)
+  // The tiles' MLS videos, one bounded read (the tile MV has no URL). A failed
+  // or slow read leaves the photo tiles as they were, never an error page.
+  const mlsMedia = await withTimeoutFallback(
+    getListingMlsVideosByKeys(flaggedTiles.map((t) => t.listingKey).filter(Boolean)),
+    new Map<string, { videos: VideoEmbed[]; leadPhotoUrl: string | null }>(),
+    6000,
+    'videos:mls-media',
+  )
+  const videosByKey = new Map<string, VideoEmbed[]>()
+  const tiles: ListingTile[] = flaggedTiles.map((t) => {
+    const videos = mlsMedia.get(t.listingKey)?.videos ?? []
+    videosByKey.set(t.listingKey, videos)
+    // The walkthrough reel the listing page leads with, else any playable tour.
+    const playable = publishListingHeroVideo(videos) ?? videos.find((v) => v.embedType !== 'link') ?? null
+    return playable ? { ...t, tourUrl: playable.url } : t
+  })
 
   const videoItems: HideAwareVideoItem[] = tiles
     .map((t): HideAwareVideoItem | null => {
@@ -132,23 +160,21 @@ export default async function VideosPage({
     return `${siteUrl}${u.startsWith('/') ? '' : '/'}${u}`
   }
 
-  const videoObjects = cards
-    .map((c) => {
-      const contentUrl = absoluteUrl(c.tourUrl)
-      if (!contentUrl) return null
-      const thumbnailUrl = absoluteUrl(c.photoUrl)
-      return {
-        '@context': 'https://schema.org',
-        '@type': 'VideoObject',
-        name: `Video tour · ${c.addressLine}`,
-        description: `Video tour of ${c.addressLine}, ${c.cityLine}.`,
-        ...(thumbnailUrl ? { thumbnailUrl } : {}),
-        contentUrl,
-        embedUrl: contentUrl,
-        url: absoluteUrl(c.href),
-      }
-    })
-    .filter((v): v is NonNullable<typeof v> => v !== null)
+  // One VideoObject per tile whose video is a YouTube or Vimeo player with a
+  // dated MLS record; the listing page is the item's url.
+  const videoObjects = videoItems.flatMap((item) => {
+    const tile = tiles.find((t) => t.listingKey === item.ListingKey)
+    if (!tile) return []
+    const place = [item.card.addressLine, tile.city ? `${tile.city}, OR` : null].filter(Boolean).join(', ')
+    return publishListingVideoSchemas({
+      videos: videosByKey.get(tile.listingKey) ?? [],
+      name: `Video tour of ${place}`,
+      description: `Video tour of ${place}, from the MLS listing.`,
+      pageUrl: absoluteUrl(item.card.href) ?? item.card.href,
+      leadPhotoUrl: tile.photoUrl ?? null,
+      max: 1,
+    }).map((schema) => buildJsonLd(schema))
+  })
 
   const crumbTrail = city
     ? [
@@ -228,7 +254,7 @@ export default async function VideosPage({
       />
       {videoObjects.map((video) => (
         <script
-          key={video.contentUrl}
+          key={String(video.embedUrl)}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(video) }}
         />

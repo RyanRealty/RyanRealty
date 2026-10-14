@@ -33,6 +33,8 @@ import { publishListingQuickFacts } from '@/lib/listing/publish-listing-quick-fa
 import { listingCanonicalHref } from '@/lib/slug'
 import type { PlaceCrumb } from '@/lib/site/place-trail'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import type { VideoEmbed } from '@/lib/data/types/video'
+import { publishListingVideoSchemas } from '@/lib/listing/publish-listing-video-schema'
 
 /** Photos in the RealEstateListing `image` list (lib/site/json-ld.ts caps at the same). */
 export const LISTING_JSONLD_IMAGE_CAP = 10
@@ -93,6 +95,16 @@ export type ListingJsonLdInput = {
   }
   photoUrls: readonly string[]
   agent: { fullName: string; email: string | null; phoneDirect: string | null } | null
+  /**
+   * The page's own videos (getListingVideos, already empty when the listing's
+   * media is suppressed). A dated YouTube or Vimeo tour becomes a VideoObject
+   * (publishListingVideoSchemas); anything else adds nothing.
+   */
+  videos?: readonly VideoEmbed[]
+  /** The MLS lead photo, the still for a Vimeo tour. */
+  leadPhotoUrl?: string | null
+  /** Listing brokerage, credited in the VideoObject description (ODS §5-3 P). */
+  listOfficeName?: string | null
 }
 
 /**
@@ -114,6 +126,17 @@ export function listingCanonicalPath(listing: ListingJsonLdInput['listing']): st
 
 export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
   const { listing, street, listingKey, wholePropertyPrice, photoUrls, agent, trail } = input
+  const videoPlace = street
+    ? `${street}${listing.city ? `, ${listing.city}, OR` : ''}`
+    : `listing ${listing.listNumber ?? listingKey}`
+  const office = input.listOfficeName?.trim()
+  const videoSchemas = publishListingVideoSchemas({
+    videos: input.videos ?? [],
+    name: `Video tour of ${videoPlace}`,
+    description: `Video tour of ${videoPlace}, from the MLS listing.${office ? ` Listing courtesy of ${office}.` : ''}`,
+    pageUrl: listingCanonicalPath(listing),
+    leadPhotoUrl: input.leadPhotoUrl ?? photoUrls[0] ?? null,
+  })
   const canonicalPath = listingCanonicalPath(listing)
   const livingArea = listing.sqft ?? listing.totalLivingAreaSqFt
   const ancestors = trail.filter((crumb) => crumb.href)
@@ -199,5 +222,6 @@ export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
             .map((row) => ({ name: row.term, value: row.value }))
         : undefined,
     },
+    ...videoSchemas,
   ]
 }

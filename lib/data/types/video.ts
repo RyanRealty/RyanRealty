@@ -44,4 +44,8 @@ export type VideoEmbed = {
    *  Google-Drive, etc.) rather than a marketing video. The listing page shows
    *  tours in a dedicated viewer, separate from the video hero. */
   isVirtualTour?: boolean
+  /** ISO time of the MLS media record (its ModificationTimestamp), when the
+   *  video came from details.Videos / VirtualTours. The only real date a
+   *  listing video carries; without it no VideoObject is emitted. */
+  uploadDate?: string
 }

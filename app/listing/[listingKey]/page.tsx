@@ -1073,6 +1073,9 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     agent: listingAgent
       ? { fullName: listingAgent.fullName, email: listingAgent.email, phoneDirect: listingAgent.phoneDirect }
       : null,
+    videos,
+    leadPhotoUrl: galleryPhotos[0]?.url ?? null,
+    listOfficeName: listing.listOfficeName,
   })
 
   return (

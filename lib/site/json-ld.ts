@@ -63,6 +63,12 @@ export type VideoInput = {
   uploadDate?: string
   /** ISO 8601 duration, e.g. PT27S. */
   duration?: string
+  /**
+   * False for a video Ryan Realty did not make: a listing broker's MLS video
+   * tour is that broker's work, so the node names no publisher rather than
+   * claiming ours (2026-10-14). Area guides (our cuts) leave it unset.
+   */
+  publishedByRyanRealty?: boolean
 }
 
 /** A single named, verified statistic — feeds Place.additionalProperty + Dataset.variableMeasured. */
@@ -697,7 +703,8 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
         thumbnailUrl: input.thumbnailUrl,
         uploadDate: input.uploadDate,
         duration: input.duration,
-        publisher: { '@type': 'Organization', name: 'Ryan Realty', url: site },
+        publisher:
+          input.publishedByRyanRealty === false ? undefined : { '@type': 'Organization', name: 'Ryan Realty', url: site },
       })
     case 'service':
       return prune({

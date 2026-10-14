@@ -24,9 +24,14 @@ import { z } from 'zod'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { supabaseAnon } from '@/lib/data/client'
-import { normalizeEmbed, preferPlayableCopy } from '@/lib/video-embed'
-import type { VideoEmbed, VideoSource } from '@/lib/data/types/video'
-import { isListingVirtualTour } from '@/lib/listing/publish-listing-hero-video'
+import type { VideoEmbed } from '@/lib/data/types/video'
+import {
+  createListingVideoCollector,
+  latestMediaHistoryDates,
+  mlsDetailsVideoCandidates,
+  needsMediaHistoryDate,
+  type MediaHistoryDates,
+} from '@/lib/listing/listing-video-assembly'
 
 // normalizeEmbed moved to the pure (client-safe) lib/video-embed module so the
 // VideoListingCard client component can resolve a scalar tour URL to the same
@@ -49,94 +54,6 @@ type CacheListingEntry = {
   video_url?: string | null
   video_source?: string | null
   poster_url?: string | null
-}
-
-/**
- * Pull an `iframe src="..."` URL out of an MLS-supplied ObjectHtml
- * payload. The RETS Spark feed wraps the video reference in an iframe
- * HTML snippet (typical pattern: `<iframe src="https://player.vimeo.com/video/123" ...>`).
- * Returns the unescaped URL, or null if no iframe was found.
- */
-function extractIframeSrc(html: string): string | null {
-  const m = /<iframe[^>]+src\s*=\s*["']([^"']+)["']/i.exec(html)
-  if (!m) return null
-  // Spark double-encodes ampersands inside the HTML — convert &amp; back to &
-  // so the embed URL stays browser-loadable.
-  return m[1].replace(/&amp;/g, '&')
-}
-
-/**
- * Detect the video source/embed shape from a URL.
- */
-function classifyVideo(url: string, hintSource?: string | null): {
-  source: VideoSource
-  embedType: 'iframe' | 'video-tag'
-  professional: boolean
-} {
-  const u = url.toLowerCase()
-  // Map hint source first (these come from the MLS feed)
-  if (hintSource) {
-    const hint = hintSource.toLowerCase()
-    if (hint.includes('aryeo')) return { source: 'mls-aryeo', embedType: 'iframe', professional: true }
-    if (hint.includes('walker')) return { source: 'mls-walker-homes', embedType: 'iframe', professional: true }
-    if (hint.includes('riley')) return { source: 'mls-riley-visuals', embedType: 'iframe', professional: true }
-    if (hint.includes('matterport')) return { source: 'mls-matterport', embedType: 'iframe', professional: true }
-    if (hint.includes('cloudflare')) return { source: 'mls-cloudflare-stream', embedType: 'iframe', professional: true }
-    if (hint.includes('mapright')) return { source: 'mls-mapright', embedType: 'iframe', professional: true }
-  }
-
-  // URL pattern heuristics
-  if (u.includes('vimeo.com')) return { source: 'mls-vimeo', embedType: 'iframe', professional: true }
-  if (u.includes('youtube.com') || u.includes('youtu.be')) {
-    return { source: 'mls-youtube', embedType: 'iframe', professional: true }
-  }
-  if (u.includes('cloudflarestream.com') || u.includes('videodelivery.net')) {
-    return { source: 'mls-cloudflare-stream', embedType: 'iframe', professional: true }
-  }
-  if (u.includes('aryeo.com')) {
-    return { source: 'mls-aryeo', embedType: 'iframe', professional: true }
-  }
-  if (u.includes('matterport.com')) {
-    return { source: 'mls-matterport', embedType: 'iframe', professional: true }
-  }
-  if (u.endsWith('.mp4') || u.endsWith('.webm') || u.endsWith('.mov')) {
-    return { source: 'mls-direct-mp4', embedType: 'video-tag', professional: true }
-  }
-  return { source: 'mls-other', embedType: 'iframe', professional: true }
-}
-
-/** Rank an MLS VirtualTours entry: unbranded first (no competitor chrome),
- *  then branded, then unknown. Lower = preferred. */
-function virtualTourRank(t: unknown): number {
-  if (!t || typeof t !== 'object') return 3
-  const type = String((t as Record<string, unknown>).Type ?? '').toLowerCase()
-  if (type === 'unbranded') return 0
-  if (type === 'branded') return 1
-  return 2
-}
-
-/**
- * Derive a raw video URL from an MLS `details.Videos` entry. The RETS Spark feed
- * stores the reference under `ObjectHtml`, which may be an <iframe> snippet, an
- * <a> link, OR a BARE URL (Dropbox, Aryeo). The previous code only handled the
- * <iframe> case via extractIframeSrc, silently dropping ~half of listing videos
- * — including the $48.56M (Dropbox) and $21M (Aryeo) flagships.
- */
-function deriveRawUrl(vid: Record<string, unknown>): string | null {
-  for (const f of ['MediaURL', 'VideoURL', 'Url'] as const) {
-    const v = vid[f]
-    if (typeof v === 'string' && /^https?:\/\//i.test(v.trim())) return v.trim()
-  }
-  const oh = vid.ObjectHtml
-  if (typeof oh === 'string') {
-    const html = oh.trim()
-    const iframe = extractIframeSrc(html)
-    if (iframe) return iframe
-    const a = /<a[^>]+href\s*=\s*["']([^"']+)["']/i.exec(html)
-    if (a) return a[1].replace(/&amp;/g, '&')
-    if (/^(?:https?:)?\/\/\S+$/i.test(html)) return html.replace(/&amp;/g, '&')
-  }
-  return null
 }
 
 /**
@@ -192,44 +109,14 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
   // durable, sync-proof gate — see migration 20260618121500_add_media_suppressed.sql.
   if (resolved?.media_suppressed === true) return []
 
-  const out: VideoEmbed[] = []
-  /** media identity -> its index in `out` */
-  const seen = new Map<string, number>()
-
-  // Dedup by media IDENTITY (the embed URL without query/hash), NOT the raw
-  // string. The MLS frequently lists the SAME Vimeo/YouTube/Matterport as both a
-  // Video and a VirtualTour — and the two copies often differ by a query param
-  // (e.g. the video iframe carries Vimeo's privacy `?h=` hash but the tour URL
-  // does not, so the tour copy embeds a dead/private player). Keying on the
-  // path-level identity shows that media once instead of a working video plus
-  // a broken duplicate "tour". The first copy keeps its place and tags; it
-  // takes the later copy's src only when the later one alone carries the hash.
-  const mediaKey = (u: string) => u.split('?')[0].split('#')[0]
+  // Dedup by media identity, first copy keeps its place; the later copy lends
+  // its Vimeo privacy hash or its MLS date (lib/listing/listing-video-assembly.ts).
+  const collector = createListingVideoCollector()
   const pushEmbed = (
     raw: string | null | undefined,
     hint: string | null | undefined,
     extra: Partial<VideoEmbed> = {},
-  ): void => {
-    if (!raw) return
-    const norm = normalizeEmbed(raw, hint)
-    if (!norm) return
-    const key = mediaKey(norm.url)
-    const at = seen.get(key)
-    if (at !== undefined) {
-      const url = preferPlayableCopy(out[at].url, norm.url)
-      if (url !== out[at].url) out[at] = { ...out[at], url }
-      return
-    }
-    seen.set(key, out.length)
-    out.push({
-      source: classifyVideo(norm.url, hint ?? undefined).source,
-      embedType: norm.embedType,
-      url: norm.url,
-      posterUrl: norm.posterUrl,
-      professional: true,
-      ...extra,
-    })
-  }
+  ): void => collector.push(raw, hint, extra)
 
   // ─── Tier 1: listing_videos (our own publishes) ───────────────────
   const { data: ourRows, error: ourErr } = await supabase
@@ -263,69 +150,34 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
     }
   }
 
-  // ─── Tier 3: listings.details.Videos JSONB (raw MLS payload) ──────
-  // The `listings.details` jsonb sometimes carries a Videos array on
-  // luxury listings that haven't propagated to video_tours_cache yet.
-  // Fetch the row and inspect the `details->Videos` path.
-  {
-    const details = resolved?.details
-    if (details && typeof details === 'object') {
-      const videos = (details as Record<string, unknown>).Videos
-      if (Array.isArray(videos)) {
-        for (const v of videos) {
-          if (!v || typeof v !== 'object') continue
-          const vid = v as Record<string, unknown>
-          // The MLS RETS feed stores the canonical video under `ObjectHtml`,
-          // which is an <iframe> snippet for some videographers but a BARE URL
-          // (Dropbox, Aryeo) for others. deriveRawUrl handles all shapes;
-          // normalizeEmbed picks the embeddable form (or a watch-link).
-          const hint = typeof vid.Source === 'string' ? vid.Source : null
-          const name = typeof vid.Name === 'string' ? vid.Name : null
-          const raw = deriveRawUrl(vid)
-          pushEmbed(
-            raw,
-            hint,
-            isListingVirtualTour({ url: raw, name, hint }) ? { isVirtualTour: true } : {},
-          )
-        }
-      }
-
-      // ─── Tier 4: virtual TOURS (distinct from videos) ─────────────────
-      // Matt: "listing videos and virtual tours are different." Walkthrough
-      // VIDEOS live in details.Videos (above); 3D / Matterport / Zillow-3D /
-      // Google-Drive TOURS live in THREE other places. Read all, unbranded
-      // first, deduped, and tag isVirtualTour so the page can show them in a
-      // dedicated tour viewer:
-      //   1. details.VirtualTourURLUnbranded — a SCALAR default field, the most
-      //      reliable (present even when the VirtualTours expansion never synced;
-      //      ~298 active listings the site previously ignored entirely).
-      //   2. details.VirtualTours[].Uri — the expansion array.
-      //   3. details.VirtualTourURLBranded — fallback (carries agency chrome).
-      const det = details as Record<string, unknown>
-      const tourCandidates: string[] = []
-      const pushTour = (v: unknown) => {
-        if (typeof v === 'string' && /^https?:\/\//i.test(v.trim())) tourCandidates.push(v.trim())
-      }
-      pushTour(det.VirtualTourURLUnbranded)
-      if (Array.isArray(det.VirtualTours)) {
-        for (const t of [...det.VirtualTours].sort((a, b) => virtualTourRank(a) - virtualTourRank(b))) {
-          if (t && typeof t === 'object') pushTour((t as Record<string, unknown>).Uri)
-        }
-      }
-      pushTour(det.VirtualTourURLBranded)
-      // A tour that is the SAME media as a Video above is dropped by mediaKey
-      // dedup — so it never renders as a broken duplicate. Only a genuinely
-      // distinct tour (different Matterport/3D/video) survives to its own viewer.
-      // Walkthrough reels stuffed into VirtualTours (Trailmere Vimeo) are
-      // tagged as video, not 3D, so the gallery chrome can show a Video tab.
-      for (const raw of tourCandidates) {
-        const isTour = isListingVirtualTour({ url: raw, hint: 'virtual-tour' })
-        pushEmbed(raw, isTour ? 'virtual-tour' : null, { isVirtualTour: isTour })
-      }
-    }
+  // ─── Tiers 3 + 4: listings.details Videos, then the virtual TOURS ──
+  // details.Videos carries marketing videos (ObjectHtml may be an <iframe>
+  // snippet, an <a>, or a BARE URL: Dropbox, Aryeo). Tours live in three
+  // other places: the scalar VirtualTourURLUnbranded (the most reliable, ~298
+  // active listings the site once ignored), VirtualTours[].Uri (unbranded
+  // first), and VirtualTourURLBranded. A tour that is the same media as a Video
+  // is dropped by the identity dedup; a walkthrough reel stuffed into
+  // VirtualTours (Trailmere Vimeo) is tagged video, not 3D. Each Videos[] /
+  // VirtualTours[] object's ModificationTimestamp rides along as uploadDate.
+  // The shaping lives in lib/listing/listing-video-assembly.ts so /videos and
+  // /sitemaps/video.xml resolve a listing's media the same way.
+  // A media record stamped with the feed's 1970 sentinel takes its date from
+  // the MLS history when it is the listing's only record of its kind. A failed
+  // history read only means no date (and so no VideoObject), never no video.
+  let history: MediaHistoryDates = {}
+  if (needsMediaHistoryDate(resolved?.details)) {
+    const { data: events, error: eventsErr } = await supabase
+      .from('listing_history')
+      .select('event, event_date')
+      .eq('listing_key', canonicalKey)
+      .in('event', ['Video', 'VirtualTour'])
+      .order('event_date', { ascending: false })
+      .limit(100)
+    if (!eventsErr && events) history = latestMediaHistoryDates(events as Array<{ event: string | null; event_date: string | null }>)
   }
+  collector.pushCandidates(mlsDetailsVideoCandidates(resolved?.details, new Date(), history))
 
-  return out
+  return collector.list()
 }
 
 export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
@@ -364,11 +216,13 @@ export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
     // v15 bump 2026-09-25 — Vimeo srcs keep the unlisted-video privacy hash
     // (vimeo.com/<id>/<hash> or ?h=). v14 entries hold hashless player srcs,
     // which Vimeo answers with "this video does not exist".
+    // v17 bump 2026-10-14 — entries carry uploadDate (the MLS media record's
+    // ModificationTimestamp), which the listing VideoObject needs.
     // v16 bump 2026-10-14 — every URL passes cleanListingMediaUrl in
     // normalizeEmbed: a SafeLinks-wrapped link (whose data param named another
     // brokerage's agent by email) is unwrapped, an unreadable wrapper dropped.
     // v15 entries hold the wrapped strings.
-    ['listing-videos-v16', listingKey],
+    ['listing-videos-v17', listingKey],
     {
       revalidate: CACHE_WINDOWS.videos,
       tags: [cacheTag.listing(listingKey), cacheTag.videos],

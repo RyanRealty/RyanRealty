@@ -50,11 +50,13 @@ export async function GET() {
   const lastmod = new Date().toISOString()
 
   // The five URL classes first (their union is every URL), then the media
-  // sitemaps that re-list listing URLs with their photos (2026-10-14). The
-  // photo part count is a constant, so this route still reads nothing.
+  // sitemaps that re-list listing URLs with their photos and video tours
+  // (2026-10-14). The photo part count is a constant, so this route still
+  // reads nothing.
   const childPaths = [
     ...SITEMAP_CLASSES.map((cls) => `/sitemaps/${cls}.xml`),
     ...Array.from({ length: LISTING_PHOTO_SITEMAP_PARTS }, (_, i) => `/sitemaps/listing-photos/${i + 1}.xml`),
+    '/sitemaps/video.xml',
   ]
   const entries = childPaths
     .map((path) => `<sitemap><loc>${baseUrl}${path}</loc><lastmod>${lastmod}</lastmod></sitemap>`)
