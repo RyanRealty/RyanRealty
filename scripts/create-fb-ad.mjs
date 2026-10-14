@@ -51,6 +51,10 @@ import {
 
 import { getOrCreateForm } from '../lib/lead-form-template.mjs'
 import { search, register } from '../lib/asset-library.mjs'
+import { videoFreezeRefusal } from '../lib/content/video-freeze.ts'
+
+/** This script only makes video lead-gen ads: an uploaded MP4 in a video_data creative. */
+const AD_CREATIVE_MEDIA = { kind: 'video', mimeType: 'video/mp4', format: 'object_story_spec.video_data' }
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..')
@@ -226,6 +230,19 @@ async function main() {
   console.log(`City: ${city} | Period: ${period} | Launch: ${shouldLaunch}`)
   if (dryRun) console.log('(dry-run — will not call Meta API)')
   console.log()
+
+  // Video freeze (Matt 2026-10-14, lib/content/video-freeze.ts): every ad this
+  // script makes is a video creative, so nothing is uploaded or created (no
+  // video, campaign, ad set, form, creative or ad) until the server-signed
+  // certificate check is live. Image ad creatives are not frozen; they are not
+  // made here. --dry-run calls no API and still runs.
+  const frozen = dryRun ? null : videoFreezeRefusal(AD_CREATIVE_MEDIA)
+  if (frozen) {
+    console.error(frozen)
+    console.error('Nothing was uploaded or created in the ad account.')
+    process.exitCode = 1
+    return
+  }
 
   // Preflight env check
   checkEnvPreflight()

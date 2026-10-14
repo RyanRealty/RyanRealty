@@ -2,6 +2,7 @@
   "version": 1,
   "always": [
     "ci:studio-rules",
+    "ci:video-freeze",
     "ci:private-remarks",
     "ci:deals-copy",
     "ci:imagine-no-paid-api",

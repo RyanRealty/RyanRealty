@@ -108,7 +108,7 @@ export const DELIVERABLE_GROUPS: DeliverableGroup[] = [
       {
         id: 'sold_deal_summary',
         label: 'Just sold / sold deal summary',
-        description: 'IG/FB static + LinkedIn market-insight version.',
+        description: 'IG/FB static post with the close details.',
         prompt: 'Make a sold deal summary.',
         needsProperty: true,
       },
