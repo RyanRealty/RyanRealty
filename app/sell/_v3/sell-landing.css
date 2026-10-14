@@ -158,6 +158,9 @@ html[data-sell-entry='cma'] .v3.v3-stage.sell-landing-hero .sell-hero-sub--cma {
   .v3.v3-stage .sell-hero-reach a,
   .v3 .sell-final__reach a,
   .v3 .sell-final__report a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--v3-tap);
     color: var(--v3-ink);
     text-decoration: underline;
     text-underline-offset: var(--v3-underline-offset);
@@ -196,6 +199,9 @@ html[data-sell-entry='cma'] .v3.v3-stage.sell-landing-hero .sell-hero-sub--cma {
    (ci:css-layers). */
 @layer base {
   .sell-direct__source a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--v3-tap);
     color: var(--v3-ink);
     text-decoration: underline;
     text-underline-offset: var(--v3-underline-offset);
