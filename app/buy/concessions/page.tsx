@@ -12,9 +12,10 @@ import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { formatDate } from '@/lib/format/date'
+import { getCalculatorDefaults } from '@/lib/data'
 import { getLiveMortgageRate } from '@/lib/data/market/getLiveMortgageRate'
 import { listingsBrowsePath } from '@/lib/slug'
-import { DEFAULT_COMPARE, FALLBACK_PMMS } from '@/lib/concessions/payment-math'
+import { DEFAULT_COMPARE } from '@/lib/concessions/payment-math'
 import { formatPriceExact } from '@/lib/format/money'
 import {
   CONCESSION_QUERY_RUN,
@@ -82,10 +83,14 @@ const schemas: SchemaInput[] = [
 ]
 
 export default async function BuyConcessionsPage() {
-  const liveRate = await getLiveMortgageRate().catch(() => null)
-  const ratePct = liveRate?.ratePct ?? FALLBACK_PMMS.ratePct
-  const weekStart = liveRate?.weekStart ?? FALLBACK_PMMS.weekStart
-  const rateSourceLine = `Freddie Mac Primary Mortgage Market Survey, 30-year fixed ${ratePct.toFixed(2)}%, week of ${formatDate(weekStart)}. ${liveRate?.source ?? 'freddie:pmms30'}. Starting rate for this calculator; you can change it. Not a quote.`
+  const [liveRate, calcDefaults] = await Promise.all([
+    getLiveMortgageRate(),
+    getCalculatorDefaults(),
+  ])
+  const ratePct = liveRate?.ratePct ?? calcDefaults.mortgageRate
+  const rateSourceLine = liveRate
+    ? `Freddie Mac Primary Mortgage Market Survey, 30-year fixed ${ratePct.toFixed(2)}%, week of ${formatDate(liveRate.weekStart)}. ${liveRate.source}. Starting rate for this calculator; you can change it. Not a quote.`
+    : `30-year fixed ${ratePct.toFixed(2)}% from the site calculator defaults (ingested weekly series). Starting rate for this calculator; you can change it. Not a quote.`
 
   const heroFigures: [V3InstrumentFigure, ...V3InstrumentFigure[]] = [
     {

@@ -1,12 +1,12 @@
-# Current — 2026-10-13 (Cursor, make main CI green)
+# Current — 2026-10-14 (Cursor, make main CI green)
 
-Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` merged origin/main `65f98dd2a` (#528, #533, #512). PR #532. Fix the red required checks, then squash-merge. Nothing sent. Nobody pushes main.
+Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` merged origin/main `65f98dd2a` (#528, #533, #512). PR #532. Finish remaining red checks, then squash-merge. Nothing sent. Nobody pushes main.
 
-**What this commit does.** `ci:studio-rules` names `video_gate.test.mjs` and `video_render_gate.test.mjs` so both run on Node 20 and Node 22. `ci:tests-wired` counts those skill-local files. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150) so content-floor stays 3780. After #521, `communitySoldWindowStart` uses `zonedDateKey` and type links jump to `#homes-dial-<group>` so pa11y on /communities/tetherow is green.
+**What this commit does.** `ci:studio-rules` names both studio node tests. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150) so content-floor stays 3780. After #521, type links jump to `#homes-dial-<group>`. After #528, `serve.ts` re-exports `V3Footer`. After #498, `/buy/concessions` takes the 30-yr rate from `getLiveMortgageRate` / `getCalculatorDefaults` and points are `dollars / loan * 100` so `ci:stat-source` stays one engine.
 
 **Not this change.** Do not send. Do not apply hosted SQL. Do not merge the phase-pool branch. Do not rebuild letters.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `scripts/check-claude-canon.mjs`, `scripts/check-tests-wired.mjs`, `scripts/check-date-format.mjs`.
+Skills read: `.cursor/rules/git-commit.mdc`, `scripts/check-stat-source.mjs`, `scripts/check-tests-wired.mjs`, `scripts/check-date-format.mjs`.
 
 ## Earlier — 2026-10-13 (Cursor, buyer answer pages)
 

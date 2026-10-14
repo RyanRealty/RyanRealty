@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   comparePriceCutVsConcession,
   concessionCapPct,
+  dollarsToPoints,
   monthlyPI,
   rateAfterBuydown,
 } from './payment-math'
@@ -21,9 +22,15 @@ describe('monthlyPI', () => {
   })
 })
 
+describe('dollarsToPoints', () => {
+  it('is dollars as a percent of the loan', () => {
+    expect(dollarsToPoints(10_000, 556_680)).toBeCloseTo((10_000 / 556_680) * 100, 10)
+  })
+})
+
 describe('rateAfterBuydown', () => {
   it('at 1.0 point per 0.25% matches the Python multiply', () => {
-    const points = 10_000 / (556_680 * 0.01)
+    const points = dollarsToPoints(10_000, 556_680)
     expect(rateAfterBuydown(7.4, points, 1)).toBeCloseTo(6.950908960264425, 10)
   })
 
