@@ -9,12 +9,14 @@ import { Button, TextField } from '@/components/admin/v2'
 export function PersonAddressEditor({
   personId,
   address,
+  autoEdit = false,
 }: {
   personId: number
   address: PersonAddress | null
+  autoEdit?: boolean
 }) {
   const router = useRouter()
-  const [editing, setEditing] = useState(false)
+  const [editing, setEditing] = useState(autoEdit)
   const [street, setStreet] = useState(address?.street ?? '')
   const [city, setCity] = useState(address?.city ?? '')
   const [state, setState] = useState(address?.state || 'OR')
