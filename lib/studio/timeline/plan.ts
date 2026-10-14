@@ -40,6 +40,7 @@ import { ENDCARD, type EndcardTimes } from '../motion/endcard'
 import { HOLD_DRIFT_PX, REVEAL_SECONDS } from '../motion/reveal'
 import type { PlateSegment } from '@/lib/video/plate'
 import type { ManifestBeat, ManifestNumber } from '../qa/manifest'
+import { fixedRow } from '../qa/evaluate'
 import type { CaptionCard, SpokenWord } from '../voice/types'
 import {
   CARD_CUT_MARGIN_SECONDS,
@@ -432,11 +433,17 @@ export function planFilm(input: {
   if (loop && endcard) techniques.push({ name: 'loop_seam_edit', proofs: [], detail: `iris over the last ${LOOP_SECONDS}s opens onto frame 0 (plate and type)` })
   if (input.scored) techniques.push({ name: 'composed_score', proofs: [], detail: 'code-composed score, ducked under the voice, mastered to -14 LUFS' })
 
-  // The manifest's numbers: the brief's rows (they cover their figure anywhere),
-  // then the authored digits each card draws beside them, each tied to the cues
-  // that draw it (the renderer turns those into the boxes the row may cover).
-  const numbers: PlannedNumber[] = briefNumbersToManifest(brief)
+  // The manifest's numbers: the brief's measured rows (they cover their figure
+  // anywhere), then the authored digits each card draws beside them, each tied
+  // to the cues that draw it (the renderer turns those into the boxes the row
+  // may cover). A brief row whose window is "none" (a threshold) is bound the
+  // same way: it covers only the cards that draw it, never a caption or the voice.
+  const numbers: PlannedNumber[] = briefNumbersToManifest(brief).map((row) => (fixedRow(row) ? { ...row, cues: [] } : row))
   for (const b of built) {
+    if (b.row && fixedRow({ window: b.row.window })) {
+      const own = numbers.find((n) => n.cues && n.onScreen === b.row!.on_screen)
+      if (own && !own.cues!.includes(b.cue.id)) own.cues!.push(b.cue.id)
+    }
     for (const row of authoredRows(b.cue, b.row)) {
       const same = numbers.find((n) => n.onScreen === row.onScreen)
       if (!same) numbers.push({ ...row, cues: [b.cue.id] })

@@ -14,8 +14,12 @@
  *   - a READY or APPROVED code technique names its lib/studio module and the
  *     test that holds it, and both files exist;
  *   - an APPROVED technique carries approved_by "matt", approved_on (an ISO
- *     date) and reel (the showcase render Matt saw). Nothing is approved by
- *     an agent: Matt approves after watching the reel (Matt 2026-10-14);
+ *     date) and reel (the showcase render Matt saw): a file in this checkout or
+ *     an https URL this gate HEAD-checks with a timeout. Nothing is approved by
+ *     an agent: Matt approves after watching the reel (Matt 2026-10-14). The rule
+ *     lives in .claude/skills/ryan-studio/tools/technique-approval.mjs, and the
+ *     commit-msg gate scripts/check-technique-approval.mjs refuses a commit that
+ *     adds or changes an approved row without `Approved-by: matt` naming it;
  *   - a PLANNED technique names its home, so the idea has a place to land
  *     (video_gate refuses planned techniques in a brief);
  *   - every category is one video:check knows (lib/studio/qa/thresholds.ts);
@@ -25,6 +29,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { approvalProblems, checkReels, reelKind } from '../.claude/skills/ryan-studio/tools/technique-approval.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const TECH_DIR = '.claude/skills/ryan-studio/techniques'
@@ -44,9 +49,11 @@ export function checkCategories(thresholdsSource) {
 /**
  * Pure: problems with a registry. `exists(path)` answers for repo-relative
  * paths; `recipeFiles` are the .md names in the techniques folder;
- * `readRecipe(name)` returns a recipe's text.
+ * `readRecipe(name)` returns a recipe's text; `reels` (Map name -> found,
+ * from checkReels) answers for approved rows' reels, defaulting to `exists`
+ * for repo paths and "not HEAD-checked" for URLs.
  */
-export function registryProblems({ registry, knownCategories, exists, recipeFiles, readRecipe }) {
+export function registryProblems({ registry, knownCategories, exists, recipeFiles, readRecipe, reels }) {
   const problems = []
   const techniques = registry && typeof registry === 'object' ? registry.techniques : null
   if (!techniques || typeof techniques !== 'object') return ['registry.json has no "techniques" object']
@@ -73,10 +80,9 @@ export function registryProblems({ registry, knownCategories, exists, recipeFile
       if (!recipeFiles.includes(t.file)) problems.push(`${where}: recipe ${t.file} does not exist`)
     }
     if (t.status === 'approved') {
-      if (t.approved_by !== 'matt') problems.push(`${where} is approved but approved_by is ${JSON.stringify(t.approved_by ?? null)}, not "matt"`)
-      if (!(typeof t.approved_on === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.approved_on) && !Number.isNaN(Date.parse(t.approved_on)))) problems.push(`${where} is approved with no approved_on ISO date (YYYY-MM-DD)`)
-      if (!(typeof t.reel === 'string' && t.reel.trim())) problems.push(`${where} is approved with no reel (the path or URL of the showcase render Matt saw)`)
-    } else if (t.approved_by !== undefined || t.approved_on !== undefined) {
+      const reelFound = reels && reels.has(name) ? reels.get(name) : reelKind(t.reel) === 'path' ? exists(t.reel) : null
+      for (const p of approvalProblems(t, { reelFound })) problems.push(`${where} is approved but ${p}`)
+    } else if (t.approved_by !== undefined || t.approved_on !== undefined || t.reel !== undefined) {
       problems.push(`${where} carries approval fields but its status is "${t.status}"`)
     }
     if ((t.status === 'ready' || t.status === 'approved') && t.kind === 'code') {
@@ -99,7 +105,7 @@ export function registryProblems({ registry, knownCategories, exists, recipeFile
   return problems
 }
 
-function main() {
+async function main() {
   const dir = join(ROOT, TECH_DIR)
   const registry = JSON.parse(readFileSync(join(dir, 'registry.json'), 'utf8'))
   const knownCategories = checkCategories(readFileSync(join(ROOT, 'lib/studio/qa/thresholds.ts'), 'utf8'))
@@ -110,6 +116,7 @@ function main() {
     exists: (p) => existsSync(join(ROOT, p)),
     recipeFiles,
     readRecipe: (f) => readFileSync(join(dir, f), 'utf8'),
+    reels: await checkReels(registry.techniques ?? {}, { root: ROOT }),
   })
   const entries = Object.values(registry.techniques)
   const ready = entries.filter((t) => t.status === 'ready' || t.status === 'approved').length

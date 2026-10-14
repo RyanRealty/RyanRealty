@@ -40,21 +40,38 @@ describe('ci:studio-techniques', () => {
     expect(problems.join('\n')).toMatch(/planned with no "home"/)
   })
 
-  it('accepts an approved technique only with approved_by matt, an ISO approved_on and a reel', () => {
+  it('accepts an approved technique only with approved_by matt, an ISO approved_on and a reel that exists', () => {
+    const reelOnDisk = (p) => p === 'lib/studio/motion/chart.ts' || p === 'lib/studio/motion/paper.test.ts' || p === 'out/studio/reels/a.mp4'
     const approved = { ...ready, status: 'approved', approved_by: 'matt', approved_on: '2026-10-20', reel: 'out/studio/reels/a.mp4' }
-    expect(registryProblems(base({ a: approved }))).toEqual([])
-    const out = registryProblems(base({ a: { ...approved, approved_by: 'claude', approved_on: 'last week', reel: ' ' } })).join('\n')
+    expect(registryProblems(base({ a: approved }, { exists: reelOnDisk }))).toEqual([])
+    const out = registryProblems(base({ a: { ...approved, approved_by: 'claude', approved_on: 'last week', reel: ' ' } }, { exists: reelOnDisk })).join('\n')
     expect(out).toMatch(/approved_by is "claude", not "matt"/)
     expect(out).toMatch(/no approved_on ISO date/)
     expect(out).toMatch(/no reel/)
+    // The reel must exist: a repo file on disk, or an https URL that answers a HEAD request.
+    expect(registryProblems(base({ a: approved })).join('\n')).toMatch(/reel out\/studio\/reels\/a\.mp4 is not a file in this checkout/)
+    const url = { ...approved, reel: 'https://reels.example.com/a.mp4' }
+    expect(registryProblems(base({ a: url })).join('\n')).toMatch(/was not HEAD-checked/)
+    expect(registryProblems(base({ a: url }, { reels: new Map([['a', false]]) })).join('\n')).toMatch(/did not answer a HEAD request/)
+    expect(registryProblems(base({ a: url }, { reels: new Map([['a', true]]) }))).toEqual([])
+    expect(registryProblems(base({ a: { ...approved, reel: '/abs/a.mp4' } }, { exists: () => true })).join('\n')).toMatch(/neither a repo path nor an https URL/)
     expect(registryProblems(base({ a: { ...ready, approved_by: 'matt' } })).join('\n')).toMatch(/carries approval fields but its status is "ready"/)
-    expect(registryProblems(base({ a: { ...approved, module: 'lib/x.ts' } })).join('\n')).toMatch(/module lib\/x\.ts does not exist/)
+    expect(registryProblems(base({ a: { ...approved, module: 'lib/x.ts' } }, { exists: reelOnDisk })).join('\n')).toMatch(/module lib\/x\.ts does not exist/)
   })
 
-  it('approves nothing on an agent\'s word: the committed registry has no approved technique', async () => {
+  it('approves nothing on an agent\'s word: the committed registry has ZERO approved rows today', async () => {
+    // Interim (F1): Matt approves a signature technique after watching its reel, and until those
+    // approvals live in the database the committed registry carries none. When Matt approves one,
+    // this test changes in the same commit, which the commit-msg gate holds to `Approved-by: matt`.
     const { readFileSync } = await import('node:fs')
     const reg = JSON.parse(readFileSync('.claude/skills/ryan-studio/techniques/registry.json', 'utf8')).techniques
-    for (const [name, t] of Object.entries(reg)) if (t.status === 'approved') expect(t.approved_by, name).toBe('matt')
+    const approved = Object.entries(reg).filter(([, t]) => t.status === 'approved').map(([n]) => n)
+    expect(approved).toEqual([])
+    for (const [name, t] of Object.entries(reg)) {
+      expect(t.approved_by, name).toBeUndefined()
+      expect(t.approved_on, name).toBeUndefined()
+      expect(t.reel, name).toBeUndefined()
+    }
   })
 
   it('refuses a missing or unknown tier', () => {

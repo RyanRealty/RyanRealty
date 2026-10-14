@@ -36,6 +36,7 @@ import {
   evaluateNumbers,
   evaluateSafeArea,
   evaluateVerdictWords,
+  fixedRow,
   missingVoiceProblem,
   numberProblems,
   requiredPartProblem,
@@ -159,15 +160,31 @@ export function dryWords(script: string): SpokenWord[] {
   return out
 }
 
+/**
+ * A stand-in box for the cards that draw brief row i at step b: a threshold row
+ * (window "none") covers its figure only where it is drawn (check 9), so its
+ * cards and the row share this box until the real boxes exist.
+ */
+const rowBox = (i: number): ManifestBox => ({ x: -2, y: -(i + 1), w: 0, h: 0 })
+
+/** The brief's numbers rows at step b: threshold rows bound to their stand-in box. */
+function stepBNumbers(brief: StudioBrief): ManifestNumber[] {
+  return briefNumbersToManifest(brief).map((row, i) => (fixedRow(row) ? { ...row, boxes: [rowBox(i)] } : row))
+}
+
 /** Every string the film will draw, as card texts (times and boxes come at steps c and d). */
 export function drawnStrings(brief: StudioBrief, timeline: Timeline): ManifestText[] {
   const out: ManifestText[] = []
-  const add = (text: string | undefined, kind: ManifestText['kind'] = 'card') => {
-    if (text && text.trim()) out.push({ text, start: 0, end: 1, box: NO_BOX, kind })
+  const add = (text: string | undefined, kind: ManifestText['kind'] = 'card', box: ManifestBox = NO_BOX) => {
+    if (text && text.trim()) out.push({ text, start: 0, end: 1, box, kind })
+  }
+  const figure = (key: string | undefined) => {
+    const i = key === undefined ? -1 : brief.numbers.findIndex((n) => n.key === key)
+    if (i >= 0) add(brief.numbers[i].on_screen, 'card', fixedRow(brief.numbers[i]) ? rowBox(i) : NO_BOX)
   }
   const card = (c: TimelineCard) => {
     if (c.kind === 'number') {
-      add(findNumber(brief, c.number)?.on_screen)
+      figure(c.number)
       add(c.eyebrow)
       add(c.unit)
       add(c.footer)
@@ -183,7 +200,7 @@ export function drawnStrings(brief: StudioBrief, timeline: Timeline): ManifestTe
       add(beat.scene.line)
     } else if (beat.scene) {
       add(beat.scene.eyebrow)
-      if (beat.scene.show_value !== false) add(findNumber(brief, beat.scene.number)?.on_screen)
+      if (beat.scene.show_value !== false) figure(beat.scene.number)
     }
     beat.cards?.forEach(card)
     if (!beat.cards && !beat.scene) {
@@ -218,7 +235,7 @@ export function textPreflight(brief: StudioBrief, timeline: Timeline, ctx: Prefl
       problems.push({ check: 8, problem: (e as Error).message })
     }
   }
-  const m = draft({ videoType: brief.video_type, texts: drawnStrings(brief, timeline), numbers: briefNumbersToManifest(brief), voice, captions })
+  const m = draft({ videoType: brief.video_type, texts: drawnStrings(brief, timeline), numbers: stepBNumbers(brief), voice, captions })
   problems.push(...tag(7, [missingVoiceProblem(voice, required, brief.video_type)]))
   problems.push(...tag(8, [captionPresenceProblem(voice, captions, required, brief.video_type)]))
   if (voice && captions.length) problems.push(...tag(8, captionProblems(evaluateCaptions(voice, captions))))

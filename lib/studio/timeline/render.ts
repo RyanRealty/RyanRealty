@@ -29,7 +29,7 @@ import { FILM_LEDGER_PATH, REPO_ROOT, loadVideoTypes, typeRulesFor } from '../qa
 import { MANIFEST_FACTORY, MANIFEST_VERSION, safeSlug, type Manifest } from '../qa/manifest'
 import { layoutPreflight, planPreflight, plannedManifest, refuse, textPreflight, type PreflightContext } from './preflight'
 import { readLedger } from '../qa/ledger'
-import { loadTechniqueRegistry } from '../qa/techniques'
+import { loadCheckedTechniqueRegistry } from '../qa/techniques'
 import { createMeasure, type Measure } from '../qa/measure'
 import { composeScore, SAMPLE_RATE } from '../score'
 import { parseWav } from '../voice/decode'
@@ -277,7 +277,9 @@ export async function renderTimelineFilm(opts: RenderOptions, deps: RenderDeps):
   const slug = safeSlug(typeof brief.slug === 'string' ? brief.slug : brief.title)
   const ledger = readLedger(opts.ledgerPath ?? FILM_LEDGER_PATH)
   if (ledger.errors.length) throw new RenderError(`the film ledger is damaged: ${ledger.errors.slice(0, 3).join('; ')}`)
-  const ctx: PreflightContext = { types, rules, registry: loadTechniqueRegistry(deps.registryPath), ledger: ledger.entries, slug }
+  // A registry handed in through deps.registryPath is a test's: it approves only with TEST_APPROVER.
+  const registry = await loadCheckedTechniqueRegistry(deps.registryPath, { testOnly: Boolean(deps.registryPath) })
+  const ctx: PreflightContext = { types, rules, registry, ledger: ledger.entries, slug }
   // b: the script and every authored string, before any download or the paid voice.
   refuse('text', textPreflight(brief, timeline, ctx))
   log('preflight b (script and authored strings): clear')

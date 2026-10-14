@@ -19,6 +19,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { TEST_ONLY_APPROVAL } from '../qa/fixtures/test-approval'
 import { launchMotionChrome, motionChromePath } from '../motion/endcard-render'
 import { checkVideo } from '../qa/check'
 import { parseManifestJson } from '../qa/manifest'
@@ -143,7 +144,7 @@ describe.skipIf(!hasMedia || !hasChrome)('studio:render, a 10.5 s film with no n
     // pipeline stays tested while nothing in the committed registry is approved and the
     // real meter stays a base technique.
     const raw = JSON.parse(readFileSync(join(process.cwd(), '.claude/skills/ryan-studio/techniques/registry.json'), 'utf8'))
-    raw.techniques.meter_fill_verdict = { ...raw.techniques.meter_fill_verdict, tier: 'signature', status: 'approved', approved_by: 'test-only stub', approved_on: '2026-10-14', reel: 'none' }
+    raw.techniques.meter_fill_verdict = { ...raw.techniques.meter_fill_verdict, tier: 'signature', status: 'approved', ...TEST_ONLY_APPROVAL }
     const registry = join(dir, 'registry.test-only.json')
     writeFileSync(registry, JSON.stringify(raw))
     const ledger = join(dir, 'ledger.jsonl')

@@ -7,6 +7,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { TEST_ONLY_APPROVAL } from './fixtures/test-approval'
 import { checkVideo, type CheckDeps, type CheckReport } from './check'
 import type { Interval, Loudness, Measure, ProbeResult } from './measure'
 import type { GateRun, PixelProbe } from './pixels'
@@ -164,7 +165,7 @@ const REGISTRY = {
   techniques: {
     dollar_first_hook: { category: 'hook', status: 'ready', tier: 'base' },
     question_secret_hook: { category: 'hook', status: 'ready', tier: 'base' },
-    subframe_motion_blur: { category: 'scene', status: 'approved', tier: 'signature' },
+    subframe_motion_blur: { category: 'scene', status: 'approved', tier: 'signature', ...TEST_ONLY_APPROVAL },
     loop_seam_edit: { category: 'scene', status: 'ready', tier: 'base' },
     eased_number_reveal: { category: 'type', status: 'ready', tier: 'base' },
     measured_drop_sync: { category: 'sound', status: 'ready', tier: 'base' },
@@ -579,12 +580,15 @@ describe('8 Captions', () => {
 describe('9 Numbers', () => {
   it('fails a figure with no numbers row', async () => {
     const r = await run({ manifest: (m) => { m.texts[0].text = '63% cut, 12 days' } })
-    expect(get(r.report, 9).detail).toContain('figure "12" in texts[0] "63% cut, 12 days" has no numbers row')
+    expect(get(r.report, 9).detail).toContain('figure "12 days" in texts[0] "63% cut, 12 days" has no numbers row')
   })
 
   it('fails a figure a row only contains, and a spoken figure no sourced caption shows', async () => {
     const sub = await run({ manifest: (m) => { m.texts[0].text = '63 homes'; m.numbers[0].onScreen = '63 mo' } })
-    expect(get(sub.report, 9).detail).toContain('"63" in texts[0]')
+    expect(get(sub.report, 9).detail).toContain('"63 homes" in texts[0]')
+    // The same digits in another unit (F3).
+    const unit = await run({ manifest: (m) => { m.texts[0].text = '63 days on market' } })
+    expect(get(unit.report, 9).detail).toContain('figure "63 days" in texts[0] "63 days on market" has no numbers row')
     const said = await run({ manifest: (m) => { m.voice.words[6].word = 'twelve'; m.voice.words[7].word = 'percent'; m.captions[2].text = 'TWELVE PERCENT' } })
     expect(get(said.report, 9).detail).toContain('spoken "twelve percent" is not shown as a figure')
   })

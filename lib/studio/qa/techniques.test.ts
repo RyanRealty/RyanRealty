@@ -2,7 +2,8 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { SIGNATURE_FLOOR_MESSAGE, evaluateTechniques, loadTechniqueRegistry, notReadyTechniques, signatureFloorProblem, techniqueProblems, unusableReason, usableTechnique, type TechniqueRegistry } from './techniques'
+import { TEST_ONLY_APPROVAL, TEST_ONLY_REEL } from './fixtures/test-approval'
+import { SIGNATURE_FLOOR_MESSAGE, TEST_APPROVER, approvalFailures, evaluateTechniques, loadCheckedTechniqueRegistry, loadTechniqueRegistry, notReadyTechniques, signatureFloorProblem, techniqueProblems, unusableReason, usableTechnique, type TechniqueApproval, type TechniqueRegistry } from './techniques'
 
 const registry: TechniqueRegistry = {
   hasCategories: true,
@@ -96,6 +97,9 @@ describe('loadTechniqueRegistry', () => {
   })
 })
 
+/** An approval that holds in the committed registry: Matt, an ISO date, a reel found on disk. */
+const MATT: TechniqueApproval = { approved_by: 'matt', approved_on: '2026-10-20', reel: 'out/studio/reels/a.mp4', reelFound: true }
+
 describe('the approval rungs and the signature floor (Matt 2026-10-14)', () => {
   const rungs: TechniqueRegistry = {
     ...registry,
@@ -106,8 +110,13 @@ describe('the approval rungs and the signature floor (Matt 2026-10-14)', () => {
       ['measured_drop_sync', 'planned'],
     ]),
     tier: new Map([['subframe_motion_blur', 'signature']]),
+    approvals: new Map([['eased_number_reveal', MATT]]),
   }
-  const approvedSig: TechniqueRegistry = { ...rungs, status: new Map([...rungs.status!, ['subframe_motion_blur', 'approved']]) }
+  const approvedSig: TechniqueRegistry = {
+    ...rungs,
+    status: new Map([...rungs.status!, ['subframe_motion_blur', 'approved']]),
+    approvals: new Map([...rungs.approvals!, ['subframe_motion_blur', MATT]]),
+  }
 
   it('lets a base technique run when ready or approved, and a signature only when approved', () => {
     expect(usableTechnique('dollar_first_hook', rungs)).toBe(true)
@@ -137,5 +146,83 @@ describe('the approval rungs and the signature floor (Matt 2026-10-14)', () => {
     expect(r.tier?.get('outline_draw_zoom')).toBe('signature')
     expect(r.tier?.get('meter_fill_verdict')).toBe('base')
     expect(r.status?.get('outline_draw_zoom')).toMatch(/^(ready|approved)$/)
+  })
+})
+
+describe('an approval holds only with Matt, an ISO date and a reel that exists (F1, interim)', () => {
+  const base: TechniqueRegistry = {
+    hasCategories: true,
+    categories: new Map([['sig', 'scene']]) as TechniqueRegistry['categories'],
+    status: new Map([['sig', 'approved']]),
+    tier: new Map([['sig', 'signature']]),
+  }
+  const withApproval = (a: Partial<TechniqueApproval>, approver?: string): TechniqueRegistry => ({ ...base, approver, approvals: new Map([['sig', { ...MATT, ...a }]]) })
+
+  it('accepts the full approval', () => {
+    expect(usableTechnique('sig', withApproval({}))).toBe(true)
+    expect(signatureFloorProblem(['sig'], withApproval({}))).toBeNull()
+  })
+
+  it('refuses status "approved" on its own: no approval record, a bot as approver, no date, no reel', () => {
+    expect(usableTechnique('sig', base)).toBe(false)
+    expect(approvalFailures('sig', base)).toEqual(['has no approval record'])
+    expect(usableTechnique('sig', withApproval({ approved_by: 'claude' }))).toBe(false)
+    expect(approvalFailures('sig', withApproval({ approved_by: 'claude' })).join()).toContain('approved_by is "claude", not "matt"')
+    expect(usableTechnique('sig', withApproval({ approved_on: 'yesterday' }))).toBe(false)
+    expect(usableTechnique('sig', withApproval({ approved_on: '2026-02-30' }))).toBe(false)
+    expect(usableTechnique('sig', withApproval({ reel: 'x', reelFound: false }))).toBe(false)
+    expect(usableTechnique('sig', withApproval({ reel: '../outside.mp4', reelFound: true }))).toBe(false)
+    expect(usableTechnique('sig', withApproval({ reel: 'http://example.com/r.mp4', reelFound: true }))).toBe(false)
+    expect(usableTechnique('sig', withApproval({ reel: 'https://example.com/r.mp4', reelFound: null }))).toBe(false)
+    expect(unusableReason('sig', withApproval({ approved_by: 'claude' }))).toContain('is marked approved but the approval does not hold')
+    expect(signatureFloorProblem(['sig'], withApproval({ approved_by: 'claude' }))).toBe(SIGNATURE_FLOOR_MESSAGE)
+  })
+
+  it('takes the test approver only in a test-only registry, and never "matt" there', () => {
+    expect(usableTechnique('sig', withApproval({ approved_by: TEST_APPROVER }))).toBe(false)
+    expect(usableTechnique('sig', withApproval({ approved_by: TEST_APPROVER }, TEST_APPROVER))).toBe(true)
+    expect(usableTechnique('sig', withApproval({}, TEST_APPROVER))).toBe(false)
+  })
+
+  describe('reading the file', () => {
+    const dirs: string[] = []
+    afterEach(() => {
+      while (dirs.length) rmSync(dirs.pop()!, { recursive: true, force: true })
+    })
+    const write = (sig: Record<string, unknown>) => {
+      const d = mkdtempSync(join(tmpdir(), 'rr-reg-'))
+      dirs.push(d)
+      const p = join(d, 'registry.json')
+      writeFileSync(p, JSON.stringify({ techniques: { sig: { category: 'scene', tier: 'signature', status: 'approved', ...sig } } }))
+      return p
+    }
+
+    it('checks a repo-path reel on disk and refuses a missing one', () => {
+      expect(usableTechnique('sig', loadTechniqueRegistry(write({ ...TEST_ONLY_APPROVAL }), { testOnly: true }))).toBe(true)
+      expect(usableTechnique('sig', loadTechniqueRegistry(write({ ...TEST_ONLY_APPROVAL })))).toBe(false)
+      expect(usableTechnique('sig', loadTechniqueRegistry(write({ ...TEST_ONLY_APPROVAL, reel: 'out/studio/reels/never-rendered.mp4' }), { testOnly: true }))).toBe(false)
+      const forged = loadTechniqueRegistry(write({ approved_by: 'matt', approved_on: '2026-10-14', reel: 'out/studio/reels/never-rendered.mp4' }))
+      expect(approvalFailures('sig', forged).join()).toContain('is not a file in this checkout')
+      expect(TEST_ONLY_REEL.startsWith('lib/')).toBe(true)
+    })
+
+    it('HEAD-checks an https reel with a timeout', async () => {
+      const path = write({ approved_by: TEST_APPROVER, approved_on: '2026-10-14', reel: 'https://reels.example.com/sig.mp4' })
+      const calls: string[] = []
+      const ok = (async (url: string, init: { method: string }) => {
+        calls.push(`${init.method} ${url}`)
+        return new Response(null, { status: 200 })
+      }) as unknown as typeof fetch
+      expect(usableTechnique('sig', await loadCheckedTechniqueRegistry(path, { testOnly: true, fetchImpl: ok }))).toBe(true)
+      expect(calls).toEqual(['HEAD https://reels.example.com/sig.mp4'])
+      const missing = (async () => new Response(null, { status: 404 })) as unknown as typeof fetch
+      expect(usableTechnique('sig', await loadCheckedTechniqueRegistry(path, { testOnly: true, fetchImpl: missing }))).toBe(false)
+      const stalled = ((_: string, init: { signal: AbortSignal }) =>
+        new Promise((_res, rej) => init.signal.addEventListener('abort', () => rej(new Error('aborted'))))) as unknown as typeof fetch
+      const r = await loadCheckedTechniqueRegistry(path, { testOnly: true, fetchImpl: stalled, timeoutMs: 20 })
+      expect(approvalFailures('sig', r).join()).toContain('did not answer a HEAD request')
+      // Unchecked (the sync loader) is not approved either.
+      expect(approvalFailures('sig', loadTechniqueRegistry(path, { testOnly: true })).join()).toContain('was not HEAD-checked')
+    })
   })
 })

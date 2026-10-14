@@ -11,11 +11,29 @@
  */
 import { readFileSync } from 'node:fs'
 import {
+  APPROVER,
+  TEST_APPROVER,
+  approvalProblems,
+  checkReels,
+  repoReels,
+} from '../../../.claude/skills/ryan-studio/tools/technique-approval.mjs'
+import {
   REQUIRED_TECHNIQUE_CATEGORIES,
   TECHNIQUE_CATEGORIES,
   TECHNIQUE_REGISTRY_PATH,
   type TechniqueCategory,
 } from './thresholds'
+
+export { APPROVER, TEST_APPROVER }
+
+/** An approved row's approval fields, as the registry wrote them (checked by technique-approval.mjs). */
+export interface TechniqueApproval {
+  approved_by?: unknown
+  approved_on?: unknown
+  reel?: unknown
+  /** Whether the reel exists: true, false, or null for an https reel not yet HEAD-checked. */
+  reelFound: boolean | null
+}
 
 export interface TechniqueRegistry {
   /** name -> category, or null when the registry gives that technique none. */
@@ -26,14 +44,50 @@ export interface TechniqueRegistry {
   tier?: Map<string, string | null>
   /** True when at least one technique carries a valid category. */
   hasCategories: boolean
+  /** Approved rows' approval fields and reel answer. A row marked approved without an entry here is not approved. */
+  approvals?: Map<string, TechniqueApproval>
+  /** Who may approve in this registry: "matt", or TEST_APPROVER for a registry a test handed in. */
+  approver?: string
 }
 
-/** Read the registry. Throws when the file is missing or malformed. */
-export function loadTechniqueRegistry(path: string = TECHNIQUE_REGISTRY_PATH): TechniqueRegistry {
-  const raw = JSON.parse(readFileSync(path, 'utf8')) as { techniques?: Record<string, { category?: unknown; status?: unknown; tier?: unknown }> }
+export interface RegistryLoadOptions {
+  /** A registry a test handed in through a code seam: its approved rows name TEST_APPROVER, never "matt". */
+  testOnly?: boolean
+  /** Repo root for reel paths (tests). */
+  root?: string
+}
+
+type RawTechnique = { category?: unknown; status?: unknown; tier?: unknown; approved_by?: unknown; approved_on?: unknown; reel?: unknown }
+
+function readRaw(path: string): Record<string, RawTechnique> {
+  const raw = JSON.parse(readFileSync(path, 'utf8')) as { techniques?: Record<string, RawTechnique> }
   if (!raw || typeof raw !== 'object' || !raw.techniques || typeof raw.techniques !== 'object') {
     throw new Error(`${path} has no "techniques" object`)
   }
+  return raw.techniques
+}
+
+/**
+ * Read the registry, checking approved rows' reels that are repo paths (an https
+ * reel stays unchecked, so not approved: use loadCheckedTechniqueRegistry). Throws
+ * when the file is missing or malformed.
+ */
+export function loadTechniqueRegistry(path: string = TECHNIQUE_REGISTRY_PATH, opts: RegistryLoadOptions = {}): TechniqueRegistry {
+  const techniques = readRaw(path)
+  return buildRegistry(techniques, repoReels(techniques, opts.root), opts)
+}
+
+/** The registry with every approved row's reel checked: repo paths on disk, https reels by HEAD with a timeout. */
+export async function loadCheckedTechniqueRegistry(
+  path: string = TECHNIQUE_REGISTRY_PATH,
+  opts: RegistryLoadOptions & { fetchImpl?: typeof fetch; timeoutMs?: number } = {},
+): Promise<TechniqueRegistry> {
+  const techniques = readRaw(path)
+  return buildRegistry(techniques, await checkReels(techniques, { root: opts.root, fetchImpl: opts.fetchImpl, timeoutMs: opts.timeoutMs }), opts)
+}
+
+function buildRegistry(techniques: Record<string, RawTechnique>, reels: Map<string, boolean | null>, opts: RegistryLoadOptions): TechniqueRegistry {
+  const raw = { techniques }
   const categories = new Map<string, TechniqueCategory | null>()
   const status = new Map<string, string | null>()
   const tier = new Map<string, string | null>()
@@ -45,7 +99,19 @@ export function loadTechniqueRegistry(path: string = TECHNIQUE_REGISTRY_PATH): T
     const st = def && typeof def === 'object' ? def.status : undefined
     status.set(name, typeof st === 'string' ? st : null)
   }
-  return { categories, status, tier, hasCategories: [...categories.values()].some((c) => c !== null) }
+  const approvals = new Map<string, TechniqueApproval>()
+  for (const [name, def] of Object.entries(raw.techniques)) {
+    if (!def || typeof def !== 'object' || def.status !== 'approved') continue
+    approvals.set(name, { approved_by: def.approved_by, approved_on: def.approved_on, reel: def.reel, reelFound: reels.get(name) ?? null })
+  }
+  return {
+    categories,
+    status,
+    tier,
+    hasCategories: [...categories.values()].some((c) => c !== null),
+    approvals,
+    approver: opts.testOnly ? TEST_APPROVER : APPROVER,
+  }
 }
 
 export interface TechniqueEvaluation {
@@ -100,16 +166,34 @@ export function techniqueProblems(briefTechniques: readonly string[], ran: reado
 }
 
 /**
+ * Why a row marked approved is not approved: approved_by is not the registry's
+ * approver ("matt"; TEST_APPROVER only in a registry a test handed in), no ISO
+ * approved_on, or no reel that exists. [] when the approval holds.
+ */
+export function approvalFailures(name: string, registry: TechniqueRegistry): string[] {
+  const a = registry.approvals?.get(name)
+  if (!a) return ['has no approval record']
+  return approvalProblems(a, { approver: registry.approver ?? APPROVER, reelFound: a.reelFound })
+}
+
+/** Marked approved, and the approval holds. */
+export function approvedTechnique(name: string, registry: TechniqueRegistry): boolean {
+  return registry.status?.get(name) === 'approved' && approvalFailures(name, registry).length === 0
+}
+
+/**
  * The status rungs (Matt 2026-10-14): planned (an idea with a home), ready
  * (code and test, built), approved (Matt saw its showcase reel and said yes).
  * A base technique is usable when ready or approved; a signature technique
- * only when approved: no film is built from showpieces Matt has not seen.
+ * only when approved: no film is built from showpieces Matt has not seen. An
+ * approved row counts only when its approval holds (approvalFailures).
  */
 export function usableTechnique(name: string, registry: TechniqueRegistry): boolean {
   if (!registry.categories.has(name)) return false
   const status = registry.status?.get(name) ?? null
-  if (registry.tier?.get(name) === 'signature') return status === 'approved'
-  return status === 'ready' || status === 'approved'
+  if (status === 'approved') return approvedTechnique(name, registry)
+  if (registry.tier?.get(name) === 'signature') return false
+  return status === 'ready'
 }
 
 /** Brief techniques a film may not use: unknown, planned, or a signature Matt has not approved. */
@@ -121,6 +205,7 @@ export function notReadyTechniques(briefTechniques: readonly string[], registry:
 export function unusableReason(name: string, registry: TechniqueRegistry): string {
   if (!registry.categories.has(name)) return `"${name}" is not in the registry`
   const status = registry.status?.get(name) ?? 'no status'
+  if (status === 'approved' && !approvedTechnique(name, registry)) return `"${name}" is marked approved but the approval does not hold: it ${approvalFailures(name, registry).join('; ')}`
   if (registry.tier?.get(name) === 'signature') return `signature technique "${name}" is ${status}, not approved (Matt approves a signature technique after seeing its showcase reel)`
   return `"${name}" is ${status}, not ready`
 }

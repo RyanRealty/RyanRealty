@@ -18,6 +18,9 @@ import {
   shortHolds,
   silentFilmDeclared,
   voiceoverRequired,
+  fixedRow,
+  supplyRow,
+  verdictsIn,
 } from './evaluate'
 import type { ManifestBeat, ManifestCaption, ManifestEndcard, ManifestText, ManifestVoice } from './manifest'
 
@@ -257,7 +260,7 @@ describe('evaluateNumbers', () => {
 
   it('matches whole tokens with their unit or prefix, never a substring', () => {
     // review finding: "4" passed against "4 mo", "10" against "10 mo", "$475" against "$475K"
-    expect(evaluateNumbers([card({ text: 'under 4 months' })], [], [{ ...row, onScreen: '4 mo' }], null).unmatched).toHaveLength(1)
+    expect(evaluateNumbers([card({ text: 'under 4' })], [], [{ ...row, onScreen: '4 mo' }], null).unmatched).toHaveLength(1)
     expect(evaluateNumbers([card({ text: '10 homes' })], [], [{ ...row, onScreen: '10 mo' }], null).unmatched).toHaveLength(1)
     expect(evaluateNumbers([card({ text: '$475 down' })], [], [{ ...row, onScreen: '$475K' }], null).unmatched).toHaveLength(1)
     expect(evaluateNumbers([card({ text: '$475K median' })], [], [{ ...row, onScreen: 'median $475K' }], null).unmatched).toEqual([])
@@ -280,7 +283,43 @@ describe('evaluateNumbers', () => {
   })
 
   it('fails a figure with no row', () => {
-    expect(evaluateNumbers([card({ text: '12 days' })], [], [row], null).unmatched).toEqual(['"12" in texts[0] "12 days"'])
+    expect(evaluateNumbers([card({ text: '12 days' })], [], [row], null).unmatched).toEqual(['"12 days" in texts[0] "12 days"'])
+  })
+
+  it('carries the unit: one row does not cover the same digits in another unit (F3)', () => {
+    // review finding: "3.5 days to pending" and "4 days on market" passed beside the
+    // months-of-supply row "3.5" and the threshold row "4".
+    const mos = { onScreen: '3.5', source: 'market_metric', window: '2026-04-17..2026-10-13', geography: 'Bend', definition: 'Months of supply: active listings over monthly sales' }
+    const threshold = { onScreen: '4', source: 'lib/market/classify.ts', window: 'none: a fixed threshold, not a measurement', geography: 'every market', definition: 'The months-of-supply threshold' }
+    const f = evaluateNumbers([card({ text: '3.5 days to pending' }), card({ text: '4 days on market' })], [], [mos, threshold], null)
+    expect(f.unmatched).toEqual(['"3.5 days" in texts[0] "3.5 days to pending"', '"4 days" in texts[1] "4 days on market"'])
+    expect(numberProblems(f)).toHaveLength(2)
+    // The same row covers its figure bare (the meter) and in its own unit (a caption).
+    expect(numberProblems(evaluateNumbers([card({ text: '3.5' })], [{ text: '3.5 months of homes', start: 0, end: 1, words: [0, 1, 2, 3] }], [mos], null))).toEqual([])
+    // A row whose own figure carries a unit needs that unit.
+    expect(evaluateNumbers([card({ text: '45 days' })], [], [{ ...mos, onScreen: '45 mo' }], null).unmatched).toHaveLength(1)
+    // Fullwidth digits are figures.
+    expect(evaluateNumbers([card({ text: '１２％ of homes' })], [], [mos], null).unmatched).toEqual(['"12%" in texts[0] "１２％ of homes"'])
+    expect(evaluateNumbers([card({ text: '１２％ of homes' })], [], [{ ...row, onScreen: '12%' }], null).unmatched).toEqual([])
+  })
+
+  it('lets a threshold row (window "none") cover only its own bound box, never a caption or the voice (F3)', () => {
+    const box = { x: 10, y: 20, w: 30, h: 40 }
+    const threshold = { onScreen: '4', source: 'lib/market/classify.ts', window: 'none: a fixed threshold', geography: 'every market', definition: 'The months-of-supply threshold' }
+    expect(fixedRow(threshold)).toBe(true)
+    expect(fixedRow({ window: '2026-01-01..2026-09-30' })).toBe(false)
+    // Unbound: covers nothing anywhere.
+    expect(evaluateNumbers([card({ text: '4' })], [], [threshold], null).unmatched).toHaveLength(1)
+    const voice = voiceOf('under four months')
+    const caps: ManifestCaption[] = [{ text: 'under 4 months', start: 0, end: 1, words: [0, 1, 2] }]
+    const said = evaluateNumbers([], caps, [threshold], voice)
+    expect(said.unmatched).toEqual(['"4 mo" in captions[0] "under 4 months"'])
+    expect(said.spokenUnsourced[0]).toContain('shown as "4 mo", which no brief numbers row covers')
+    // Bound to its box: covers that card only.
+    const bound = { ...threshold, boxes: [box] }
+    expect(evaluateNumbers([card({ text: '4', box })], [], [bound], null).unmatched).toEqual([])
+    expect(evaluateNumbers([card({ text: '4', box: { ...box, y: 900 } })], [], [bound], null).unmatched).toHaveLength(1)
+    expect(evaluateNumbers([], caps, [bound], voice).spokenUnsourced).toHaveLength(1)
   })
 
   it('fails a figure said in words that no caption shows as a sourced figure', () => {
@@ -302,7 +341,29 @@ describe('evaluateNumbers', () => {
     const caps: ManifestCaption[] = [{ text: 'under 4 months', start: 0, end: 1, words: [0, 1, 2] }]
     const f = evaluateNumbers([], caps, [{ onScreen: '4', ...trace, boxes: [{ x: 0, y: 0, w: 10, h: 10 }] }], voice)
     expect(f.spokenUnsourced[0]).toContain('no brief numbers row covers')
-    expect(numberProblems(evaluateNumbers([], caps, [{ onScreen: '4', ...trace }], voice))).toEqual([])
+    expect(numberProblems(evaluateNumbers([], caps, [{ onScreen: '4', ...trace, definition: 'months of supply' }], voice))).toEqual([])
+  })
+
+  it("refuses the review's quantity words unless a caption shows each as a sourced figure (F4)", () => {
+    const said = 'Prices doubled in a dozen neighborhoods and half the listings cut their price by a quarter'
+    const voice = voiceOf(said)
+    const all = said.split(' ').map((_, i) => i)
+    const asWords = evaluateNumbers([], [{ text: said, start: 0, end: 5, words: all }], [row], voice)
+    expect(asWords.spokenUnsourced).toHaveLength(4)
+    expect(asWords.wordsOnScreen).toHaveLength(4)
+    // Shown through display rules as figures, each still needs a brief row.
+    const shown = 'Prices 2x in 12 neighborhoods and 50% the listings cut their price by 25%'
+    const unsourced = evaluateNumbers([], [{ text: shown, start: 0, end: 5, words: all }], [row], voice)
+    expect(unsourced.spokenUnsourced).toEqual([
+      'spoken "doubled" is shown as "2 times", which no brief numbers row covers',
+      'spoken "a dozen" is shown as "12 neighborhoods", which no brief numbers row covers',
+      'spoken "half" is shown as "50%", which no brief numbers row covers',
+      'spoken "a quarter" is shown as "25%", which no brief numbers row covers',
+    ])
+    const rows = ['2x', '12 neighborhoods', '50%', '25%'].map((onScreen) => ({ ...row, onScreen }))
+    expect(evaluateNumbers([], [{ text: shown, start: 0, end: 5, words: all }], rows, voice).spokenUnsourced).toEqual([])
+    // A vague quantity has no figure to show.
+    expect(evaluateNumbers([], [], [row], voiceOf('most buyers wait')).spokenUnsourced[0]).toContain('is a quantity with no single figure')
   })
 
   it('fails a spoken figure on no caption, and a figure written in words on a card', () => {
@@ -416,6 +477,38 @@ describe('evaluateVerdictWords', () => {
     expect(evaluateVerdictWords([mos('7')], say('Sellers are in control'), [], null)).toHaveLength(1)
     expect(evaluateVerdictWords([mos('7')], say('The market favors sellers'), [], null)).toHaveLength(1)
     expect(evaluateVerdictWords([mos('5')], say('Buyers are in control'), [], null)).toHaveLength(1)
+  })
+
+  it("hits all five of the review's phrasings, and the ellipsis the voice keeps (F5)", () => {
+    // review finding: an inserted word, a reordered line or "Buyers..." slipped past the exact phrases
+    for (const line of ['Buyers now have leverage', 'Buyers have real leverage', 'The edge goes to buyers', 'Buyers are in charge', 'Buyers... have the edge.']) {
+      expect(evaluateVerdictWords([mos('3.5')], say(line), [], null), line).toHaveLength(1)
+    }
+    const voice: ManifestVoice = { engine: 'e', model: 'm', voiceId: 'v', words: ['Buyers...', 'have', 'the', 'edge.'].map((word, i) => ({ word, start: i, end: i + 1 })) }
+    expect(evaluateVerdictWords([mos('3.5')], [], [], voice)).toEqual([{ where: 'voice', what: '"buyers have the edge" beside 3.5 months of supply, which is the sellers band' }])
+  })
+
+  it('reads a side word within four words of an edge word, and who loses or is denied the edge', () => {
+    expect(verdictsIn('Buyers have the upper hand')).toEqual([{ side: 'buyers', words: 'buyers have the upper hand' }])
+    expect(verdictsIn('the advantage is with sellers')[0].side).toBe('sellers')
+    expect(verdictsIn('buying power is with buyers')[0].side).toBe('buyers')
+    expect(verdictsIn('Sellers have the edge over buyers')).toEqual([{ side: 'sellers', words: 'sellers have the edge' }])
+    expect(verdictsIn('Buyers have no leverage')).toEqual([{ side: 'sellers', words: 'buyers have no leverage' }])
+    expect(verdictsIn('buyers in this town still say the edge is real')).toEqual([])
+    expect(verdictsIn("Send this to whoever you're house hunting with")).toEqual([])
+    // Beside 3.5 months, a line that agrees is fine; one that does not is caught.
+    expect(evaluateVerdictWords([mos('3.5')], say('Sellers have the edge over buyers'), [], null)).toEqual([])
+    expect(evaluateVerdictWords([mos('3.5')], say('Buyers have no leverage'), [], null)).toEqual([])
+    expect(evaluateVerdictWords([mos('7')], say('Buyers have no leverage'), [], null)).toHaveLength(1)
+  })
+
+  it('finds the supply row by its stat id or by its definition, not only by the words "months of supply" (F5)', () => {
+    // review finding: a row defined as "active listings divided by monthly closed sales" switched the check off
+    const byDefinition = { onScreen: '3.5', source: 'Supabase market_metric', definition: 'active listings divided by monthly closed sales' }
+    expect(evaluateVerdictWords([byDefinition], say('Buyers have leverage'), [], null)).toHaveLength(1)
+    expect(supplyRow({ source: "market_metric stat_id='months_of_supply'", definition: 'x' })).toBe(true)
+    expect(supplyRow({ source: 's', definition: 'Active single-family listings over the six-month average of closed sales' })).toBe(true)
+    expect(supplyRow({ source: 's', definition: 'share of listings with a price cut' })).toBe(false)
   })
 
   it('reads only brief rows, not authored rows with boxes', () => {

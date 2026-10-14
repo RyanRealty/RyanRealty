@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NON_STATISTICAL_SPOKEN, alignCaption, extractNumberTokens, parseCaptionNumber, parseSpokenNumber, spokenFigures, squash, tokenShowsSpoken, tokenizeWords } from './spoken'
+import { NON_STATISTICAL_SPOKEN, alignCaption, extractNumberTokens, parseCaptionNumber, parseSpokenNumber, spokenFigures, squash, tokenShowsSpoken, tokenizeWords, firstUnitIn, splitFigure } from './spoken'
 
 const words = (s: string) => s.split(' ')
 
@@ -39,7 +39,8 @@ describe('parseSpokenNumber', () => {
     expect(value('three and a half')).toEqual({ values: [3.5], unit: null })
     expect(value('twenty and a half percent')).toEqual({ values: [20.5], unit: 'percent' })
     expect(value('and a half')).toBeNull()
-    expect(value('a half')).toBeNull()
+    // "a half" on its own is a fraction (F4): a ratio that must be shown as a sourced figure.
+    expect(value('a half')).toEqual({ values: [0.5], unit: 'ratio' })
     expect(value('three and a')).toBeNull()
   })
 
@@ -59,11 +60,12 @@ describe('parseSpokenNumber', () => {
 
 describe('parseCaptionNumber', () => {
   it('reads figures with units and suffixes', () => {
-    expect(parseCaptionNumber('63%')).toEqual({ value: 63, unit: 'percent' })
-    expect(parseCaptionNumber('$475k')).toEqual({ value: 475000, unit: 'dollar' })
-    expect(parseCaptionNumber('$1.2m')).toEqual({ value: 1200000, unit: 'dollar' })
-    expect(parseCaptionNumber('1,250,000')).toEqual({ value: 1250000, unit: null })
-    expect(parseCaptionNumber('3.5')).toEqual({ value: 3.5, unit: null })
+    expect(parseCaptionNumber('63%')).toMatchObject({ value: 63, unit: 'percent', decimals: 0 })
+    expect(parseCaptionNumber('$475k')).toMatchObject({ value: 475000, unit: 'dollar' })
+    expect(parseCaptionNumber('$1.2m')).toMatchObject({ value: 1200000, unit: 'dollar' })
+    expect(parseCaptionNumber('1,250,000')).toMatchObject({ value: 1250000, unit: null })
+    expect(parseCaptionNumber('3.5')).toMatchObject({ value: 3.5, unit: null, decimals: 1 })
+    expect(parseCaptionNumber('2x')).toMatchObject({ value: 2, unit: 'ratio' })
   })
 
   it('returns null for words and mixed tokens', () => {
@@ -119,13 +121,13 @@ describe('alignCaption', () => {
 
 describe('extractNumberTokens', () => {
   it('finds figures with symbols, commas and decimals', () => {
-    expect(extractNumberTokens('63% cut their price to $475K from $1,250,000, now 3.5 months')).toEqual(['63%', '$475K', '$1,250,000', '3.5'])
+    expect(extractNumberTokens('63% cut their price to $475K from $1,250,000, now 3.5 months')).toEqual(['63%', '$475K', '$1,250,000', '3.5 mo'])
   })
 
   it('skips the locked phone number in every spelling', () => {
     expect(extractNumberTokens('Call now 541.703.3095')).toEqual([])
     expect(extractNumberTokens('(541) 703-3095')).toEqual([])
-    expect(extractNumberTokens('+1 541 703 3095 and 12 homes')).toEqual(['12'])
+    expect(extractNumberTokens('+1 541 703 3095 and 12 homes')).toEqual(['12 homes'])
   })
 
   it('treats other phone numbers as figures', () => {
@@ -136,8 +138,9 @@ describe('extractNumberTokens', () => {
     expect(extractNumberTokens('Q3 and H2')).toEqual([])
   })
 
-  it('keeps digits glued to a letter on the right', () => {
-    expect(extractNumberTokens('3BR homes')).toEqual(['3'])
+  it('keeps digits glued to a letter on the right, with that unit', () => {
+    expect(extractNumberTokens('3BR homes')).toEqual(['3 beds'])
+    expect(extractNumberTokens('2x faster')).toEqual(['2 times'])
   })
 
   it('strips a trailing comma and returns nothing for plain words', () => {
@@ -147,9 +150,36 @@ describe('extractNumberTokens', () => {
 
   it('keeps each figure with its unit or prefix, so "4 mo" is never "4"', () => {
     expect(extractNumberTokens('4 mo, 6 mo, 10 mo')).toEqual(['4 mo', '6 mo', '10 mo'])
-    expect(extractNumberTokens('under 4 months')).toEqual(['4'])
-    expect(extractNumberTokens('4 MO')).toEqual(['4 MO'])
-    expect(extractNumberTokens('4 more homes')).toEqual(['4'])
+    expect(extractNumberTokens('4 MO')).toEqual(['4 mo'])
+    expect(extractNumberTokens('4 the end')).toEqual(['4'])
+  })
+
+  it('carries the unit word into the token, one form per unit (F3)', () => {
+    // review finding: "3.5 days to pending" and "4 days on market" were "3.5" and "4"
+    expect(extractNumberTokens('3.5 days to pending')).toEqual(['3.5 days'])
+    expect(extractNumberTokens('4 days on market')).toEqual(['4 days'])
+    expect(extractNumberTokens('under 4 months')).toEqual(['4 mo'])
+    expect(extractNumberTokens('1 month, 2 mos, 3mo')).toEqual(['1 mo', '2 mo', '3 mo'])
+    expect(extractNumberTokens('4 more homes and 714 active listings')).toEqual(['4 homes', '714 listings'])
+    expect(extractNumberTokens('1,212 closed sales in 26 weeks')).toEqual(['1,212 sales', '26 weeks'])
+    expect(extractNumberTokens('12 percent, 12 per cent')).toEqual(['12%', '12%'])
+    expect(extractNumberTokens('1,800 sq ft on 2 acres')).toEqual(['1,800 sqft', '2 acres'])
+    expect(extractNumberTokens('38 price cuts, 9 offers, 3 beds')).toEqual(['38 cuts', '9 offers', '3 beds'])
+    expect(extractNumberTokens('in 2026 prices rose')).toEqual(['2026'])
+  })
+
+  it('reads fullwidth digits as digits (F3)', () => {
+    expect(extractNumberTokens('１２％ of homes')).toEqual(['12%'])
+    expect(extractNumberTokens('３.５ months')).toEqual(['3.5 mo'])
+  })
+
+  it('finds the first unit word in a definition, and splits a token back', () => {
+    expect(firstUnitIn('Months of supply: active listings divided by closings')).toBe('mo')
+    expect(firstUnitIn('The months-of-supply threshold')).toBe('mo')
+    expect(firstUnitIn('Median closed price')).toBeNull()
+    expect(splitFigure('3.5 mo')).toEqual({ num: '3.5', unit: 'mo' })
+    expect(splitFigure('12%')).toEqual({ num: '12', unit: '%' })
+    expect(splitFigure('$475K')).toEqual({ num: '$475K', unit: '' })
   })
 
   it('reads a rank (#1) and a figure glued to punctuation (fell,12%)', () => {
@@ -216,12 +246,71 @@ describe('tokenShowsSpoken', () => {
     expect(tokenShowsSpoken('12', { values: [12], unit: 'percent' })).toBe(false)
     expect(tokenShowsSpoken('$475K', { values: [475000], unit: 'dollar' })).toBe(true)
     expect(tokenShowsSpoken('3.5', { values: [3.5], unit: null })).toBe(true)
-    expect(tokenShowsSpoken('4 mo', { values: [4], unit: null })).toBe(false)
+    // A unit word shows the same spoken count ("four months" as "4 mo"); a magnitude does not.
+    expect(tokenShowsSpoken('4 mo', { values: [4], unit: null })).toBe(true)
+    expect(tokenShowsSpoken('4K', { values: [4], unit: null })).toBe(false)
+    expect(tokenShowsSpoken('12 days', { values: [12], unit: 'percent' })).toBe(false)
   })
 })
 
 describe('squash', () => {
   it('lowercases and drops spaces', () => {
     expect(squash(' $475 K ')).toBe('$475k')
+  })
+})
+
+describe('quantity words are figures (F4)', () => {
+  const w = (x: string) => x.split(' ')
+  const seen = (x: string) => spokenFigures(w(x)).map((f) => ({ said: f.said, values: f.values, unit: f.unit, vague: f.vague ?? false }))
+
+  it("reads the review's sentence as four figures", () => {
+    // review finding: this sentence gave no spoken figure, so it passed preflight b and check 9
+    expect(seen('Prices doubled in a dozen neighborhoods and half the listings cut their price by a quarter')).toEqual([
+      { said: 'doubled', values: [2], unit: 'ratio', vague: false },
+      { said: 'a dozen', values: [12], unit: null, vague: false },
+      { said: 'half', values: [0.5], unit: 'ratio', vague: false },
+      { said: 'a quarter', values: [0.25], unit: 'ratio', vague: false },
+    ])
+  })
+
+  it('maps ratios, fractions and dozens to values', () => {
+    expect(seen('twice as many')).toEqual([{ said: 'twice', values: [2], unit: 'ratio', vague: false }])
+    expect(seen('sales tripled')).toEqual([{ said: 'tripled', values: [3], unit: 'ratio', vague: false }])
+    expect(seen('a third of listings')[0]).toMatchObject({ said: 'a third', unit: 'ratio' })
+    expect(seen('two thirds of sales')[0].values[0]).toBeCloseTo(2 / 3, 5)
+    expect(seen('three quarters of homes')[0]).toMatchObject({ values: [0.75], unit: 'ratio' })
+    expect(seen('two dozen homes')).toEqual([{ said: 'two dozen', values: [24], unit: null, vague: false }])
+    // "and a half" still closes a number; "the third month" is still an ordinal.
+    expect(seen('three and a half months')).toEqual([{ said: 'three and a half', values: [3.5], unit: null, vague: false }])
+    expect(seen('the third month')).toEqual([{ said: 'third', values: [3], unit: null, vague: false }])
+  })
+
+  it('marks a quantity with no single figure as vague', () => {
+    for (const x of ['Most buyers want a plan', 'hundreds of homes', 'dozens of offers', 'the majority of sellers', 'a majority of sellers']) {
+      const f = seen(x)
+      expect(f, x).toHaveLength(1)
+      expect(f[0].vague, x).toBe(true)
+    }
+  })
+
+  it('leaves a superlative and a stretch of the year alone', () => {
+    expect(seen('the most popular street')).toEqual([])
+    expect(seen("Bend's most popular street")).toEqual([])
+    expect(seen('at most')).toEqual([])
+    expect(seen('last quarter sales')).toEqual([])
+  })
+
+  it('lets a display rule show a ratio as its figure, and checks it', () => {
+    expect(alignCaption('Prices 2x', ['Prices', 'doubled']).ok).toBe(true)
+    expect(alignCaption('Prices 3x', ['Prices', 'doubled']).ok).toBe(false)
+    expect(alignCaption('25% of homes', ['a', 'quarter', 'of', 'homes']).ok).toBe(true)
+    expect(alignCaption('33% of sales', ['a', 'third', 'of', 'sales']).ok).toBe(true)
+    expect(alignCaption('34% of sales', ['a', 'third', 'of', 'sales']).ok).toBe(false)
+    expect(alignCaption('12 homes', ['a', 'dozen', 'homes']).ok).toBe(true)
+    expect(alignCaption('lots of homes', ['hundreds', 'of', 'homes']).ok).toBe(false)
+    expect(tokenShowsSpoken('2 times', { values: [2], unit: 'ratio' })).toBe(true)
+    expect(tokenShowsSpoken('100%', { values: [2], unit: 'ratio' })).toBe(true)
+    expect(tokenShowsSpoken('50%', { values: [0.5], unit: 'ratio' })).toBe(true)
+    expect(tokenShowsSpoken('2 times', { values: [], unit: null, vague: true })).toBe(false)
   })
 })

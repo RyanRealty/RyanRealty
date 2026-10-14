@@ -32,15 +32,6 @@
     "fetched_at": "2026-10-13T23:59:44.654Z",
     "computed_at": "2026-10-13T18:22:17.097625+00:00"
    }
-  },
-  {
-   "key": "mos_seller_max",
-   "on_screen": "4",
-   "value": 4,
-   "definition": "The months-of-supply threshold under which a market favors sellers: at or under 4 months is a seller's market, 4 to 6 balanced, 6 or more a buyer's market (CLAUDE.md §0 market-data thresholds; lib/market/classify.ts MOS_SELLER_MAX = 4). A fixed threshold, not a measurement.",
-   "window": "none: a fixed threshold, not a measurement",
-   "geography": "every market (the same threshold for every place)",
-   "source": "lib/market/classify.ts MOS_SELLER_MAX (CLAUDE.md §0: months of supply <= 4 seller's, 4 to 6 balanced, >= 6 buyer's; enforced by scripts/check-market-formula.mjs)"
   }
  ],
  "footage": [
@@ -61,7 +52,7 @@
   "spec": "templates/END_CARD_SPEC.md",
   "phone": "541.703.3095"
  },
- "caption": "Bend has 3.5 months of single-family homes for sale right now. Under four months, sellers still have the edge, so go in with a plan. Send this to whoever you're house hunting with.",
+ "caption": "Bend has 3.5 months of single-family homes for sale right now. Sellers still have the edge, so go in with a plan. Send this to whoever you're house hunting with.",
  "sources": [
   "getMarketPulse({ geoType: 'city', geoSlug: 'bend' }) read 2026-10-13T23:59:44Z (lib/data/market/getMarketPulse.ts, Market Truth overlay)",
   "market_metric row: stat_id months_of_supply, city bend, segment detached, mt-v1, value 3.53465346534653, sample_n 1212, complete_through 2026-10-12, period_end 2026-10-13, window_months 6, computed_at 2026-10-13T18:22:17Z (audit row read)"
@@ -86,7 +77,7 @@
    "tone": "warm_conversational",
    "engine": "elevenlabs_v3",
    "script_follows_engine_rules": true,
-   "script": "[warm] So... Bend has three and a half months of homes for sale right now. Under four months, sellers still have the edge... so go in with a plan. [long pause] Send this to whoever you're house hunting with."
+   "script": "[warm] So... Bend has three and a half months of homes for sale right now. Sellers still have the edge... so go in with a plan. [long pause] Send this to whoever you're house hunting with."
   },
   "loopable": true,
   "end_card_sequence": [

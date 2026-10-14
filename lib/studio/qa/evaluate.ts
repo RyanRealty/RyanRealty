@@ -5,7 +5,7 @@
  * returns what is wrong, so each rule is tested without ffmpeg. check.ts feeds
  * these with real measurements and turns their findings into check results.
  */
-import { alignCaption, extractNumberTokens, spokenFigures, squash, tokenShowsSpoken, tokenizeWords } from './spoken'
+import { alignCaption, extractNumberTokens, firstUnitIn, splitFigure, spokenFigures, squash, tokenShowsSpoken, tokenizeWords } from './spoken'
 import type {
   ManifestAudio,
   ManifestBeat,
@@ -267,9 +267,43 @@ export interface NumberFindings {
 
 const TRACE_FIELDS = ['source', 'window', 'geography', 'definition'] as const
 
-/** A row's figures, squashed: "$475K" is one figure, and only "$475K" equals it. */
-function rowTokens(row: ManifestNumber): Set<string> {
-  return new Set(extractNumberTokens(row.onScreen).map(squash))
+/**
+ * A row whose window starts "none" is not a measurement (a threshold, a scale
+ * mark): it covers its figure only inside the drawn boxes it is bound to, never
+ * in a caption or the voice, the same as a code-authored row (F3, 2026-10-14).
+ */
+export function fixedRow(row: Pick<ManifestNumber, 'window'>): boolean {
+  return /^\s*none\b/i.test(row.window ?? '')
+}
+
+interface RowFigure {
+  num: string
+  /** The figure's unit: its own ("4 mo", "12%"), else the first unit word of the row's definition, else none. */
+  unit: string
+  /** True when the row's on-screen figure carries the unit itself. */
+  explicit: boolean
+}
+
+/** A row's figures, each with its unit: "$475K" is one figure, "3.5" defined as months of supply is 3.5 months. */
+function rowFigures(row: ManifestNumber): RowFigure[] {
+  const defined = firstUnitIn(row.definition ?? '') ?? ''
+  return extractNumberTokens(row.onScreen).map((tok) => {
+    const f = splitFigure(tok)
+    return f.unit ? { num: squash(f.num), unit: f.unit, explicit: true } : { num: squash(f.num), unit: defined, explicit: false }
+  })
+}
+
+/**
+ * Does a row's figure cover this token? Same number with the same prefix and
+ * magnitude, and the same unit: a token with a unit needs a row in that unit
+ * (its own, or its definition's); a bare token is covered by a bare row, or by
+ * a row whose unit is only in its definition ("3.5" on the meter, defined as months).
+ */
+function covers(rf: RowFigure, token: string): boolean {
+  const f = splitFigure(token)
+  if (squash(f.num) !== rf.num) return false
+  if (rf.explicit) return f.unit === rf.unit
+  return f.unit === '' || f.unit === rf.unit
 }
 
 const sameBox = (a: ManifestBox, b: ManifestBox): boolean =>
@@ -277,16 +311,20 @@ const sameBox = (a: ManifestBox, b: ManifestBox): boolean =>
 
 /**
  * Check 9: every figure has a numbers row that IS that figure. A token matches
- * a row only as a whole token with its unit or prefix ("4" is not "4 mo",
- * "$475" is not "$475K"). A brief row (no boxes) covers the figure anywhere: a
- * card, a caption, the voice. An authored row (a scale mark, an as-of date)
- * covers only the drawn boxes it lists.
+ * a row only as a whole token with its prefix, magnitude and unit ("4" is not
+ * "4 mo", "$475" is not "$475K", "3.5 days" is not 3.5 months of supply). A
+ * measured brief row (no boxes, a real window) covers the figure anywhere: a
+ * card, a caption, the voice. An authored row (a scale mark, an as-of date) and
+ * a brief row whose window is "none" (a threshold) cover only the drawn boxes
+ * they are bound to.
  *
  * A number said in words is a figure too (§0): every spoken figure must be
- * shown, in the caption that carries its words, as a figure a brief row covers
- * (the timeline's display rule does that). A figure written in words on a
- * caption or a card has no row and fails. The short allowlist of non-statistical
- * words ("one of", "this one") lives in spoken.ts.
+ * shown, in the caption that carries its words, as a figure a measured brief
+ * row covers (the timeline's display rule does that). That includes ratio and
+ * fraction words ("doubled" as "2x", "a quarter" as "25%") and "a dozen"; a
+ * quantity with no single figure ("most", "dozens", "hundreds of") is refused. A figure written in
+ * words on a caption or a card has no row and fails. The short allowlist of
+ * non-statistical words ("one of", "this one") lives in spoken.ts.
  */
 export function evaluateNumbers(
   texts: readonly ManifestText[],
@@ -294,9 +332,9 @@ export function evaluateNumbers(
   rows: readonly ManifestNumber[],
   voice: ManifestVoice | null,
 ): NumberFindings {
-  const sourced = rows.filter((r) => !r.boxes || r.boxes.length === 0).map(rowTokens)
-  const authored = rows.filter((r) => r.boxes && r.boxes.length > 0).map((r) => ({ tokens: rowTokens(r), boxes: r.boxes! }))
-  const bySource = (tok: string) => sourced.some((set) => set.has(squash(tok)))
+  const measured = rows.filter((r) => (!r.boxes || r.boxes.length === 0) && !fixedRow(r)).map(rowFigures)
+  const bound = rows.filter((r) => r.boxes && r.boxes.length > 0).map((r) => ({ figures: rowFigures(r), boxes: r.boxes! }))
+  const bySource = (tok: string) => measured.some((figs) => figs.some((rf) => covers(rf, tok)))
 
   const seen = new Set<string>()
   const tokens: string[] = []
@@ -310,7 +348,7 @@ export function evaluateNumbers(
   }
   texts.forEach((t, i) => {
     for (const tok of extractNumberTokens(t.text)) {
-      const covered = bySource(tok) || (t.kind !== 'caption' && authored.some((a) => a.tokens.has(squash(tok)) && a.boxes.some((b) => sameBox(b, t.box))))
+      const covered = bySource(tok) || (t.kind !== 'caption' && bound.some((a) => a.figures.some((rf) => covers(rf, tok)) && a.boxes.some((b) => sameBox(b, t.box))))
       note(tok, covered, `texts[${i}] "${t.text}"`)
     }
   })
@@ -324,6 +362,11 @@ export function evaluateNumbers(
   const spoken: string[] = []
   const spokenUnsourced: string[] = []
   for (const f of spokenFigures(said)) {
+    if (f.vague) {
+      spoken.push(`"${f.said}" shown as nothing`)
+      spokenUnsourced.push(`spoken "${f.said}" (words ${f.first} to ${f.last}) is a quantity with no single figure; say the brief's figure instead`)
+      continue
+    }
     const span: number[] = []
     for (let n = f.first; n <= f.last; n++) span.push(n)
     const caption = captions.find((c) => span.every((n) => c.words.includes(n)))
@@ -404,18 +447,83 @@ export function evaluateCopy(
  * Bands come from lib/market/classify.ts (<= 4 sellers, 4 to 6 balanced,
  * >= 6 buyers). In a balanced band neither side's line agrees.
  */
-export const BUYER_SIDE: readonly string[] = [
-  'buyers have leverage', "buyer's market", "buyers' market", 'buyers market', 'buyers have the edge', 'buyers have the upper hand',
-  'market favors buyers', 'market favours buyers', 'buyer friendly', 'buyers are in control',
+/** Words that name a side of the market, each folded to "buyers" or "sellers". */
+const SIDE_OF: Record<string, 'buyers' | 'sellers'> = {
+  buyer: 'buyers', buyers: 'buyers', "buyer's": 'buyers', "buyers'": 'buyers',
+  seller: 'sellers', sellers: 'sellers', "seller's": 'sellers', "sellers'": 'sellers',
+}
+/**
+ * Words that give a side the market (F5, 2026-10-14). A side word within
+ * VERDICT_WINDOW tokens of one of these, before or after, is that side's
+ * verdict: "Buyers now have real leverage", "The edge goes to buyers",
+ * "Buyers... have the edge", "the market favors sellers".
+ */
+export const EDGE_WORDS: readonly string[] = [
+  'leverage', 'edge', 'upper hand', 'in charge', 'in control', 'favor', 'favors', 'favored', 'favoring',
+  'favour', 'favours', 'favoured', 'favouring', 'advantage', 'advantages', 'power', 'friendly',
 ]
-export const SELLER_SIDE: readonly string[] = [
-  "seller's market", "sellers' market", 'sellers market', 'sellers have leverage', 'sellers have the edge', 'sellers have the upper hand',
-  'market favors sellers', 'market favours sellers', 'seller friendly', 'sellers are in control',
-]
+export const VERDICT_WINDOW = 4
+/** A side word right after one of these is the side that loses ("leverage over sellers", "from sellers to buyers"). */
+const LOSER_MARKS = new Set(['over', 'than', 'against', 'from'])
+/** Between a side and its edge word, one of these hands the edge to the other side ("buyers have no leverage"). */
+const NEGATORS = new Set(['no', 'not', "don't", "doesn't", "didn't", "isn't", "aren't", "won't", 'never', 'without', 'lost', 'lose', 'losing', 'less', 'little', 'lack', 'lacks'])
 
-/** Lowercase, straight apostrophes, hyphens and runs of space as one space: "buyer-friendly" reads as "buyer friendly". */
-const verdictForm = (text: string) =>
-  text.toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[-\u2010\u2011]/g, ' ').replace(/\s+/g, ' ')
+/** Lowercase tokens with every mark but the apostrophe gone: "Buyers... have the edge." reads "buyers have the edge". */
+function verdictTokens(text: string): string[] {
+  return text
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[^a-z0-9'\s]+/g, ' ')
+    .split(/\s+/)
+    .map((t) => t.replace(/^'+/, ''))
+    .filter(Boolean)
+}
+
+/** Every verdict a text gives: the side it favors and the words that say so. */
+export function verdictsIn(text: string): Array<{ side: 'buyers' | 'sellers'; words: string }> {
+  const tok = verdictTokens(text)
+  const edges = EDGE_WORDS.map((e) => e.split(' '))
+  const out: Array<{ side: 'buyers' | 'sellers'; words: string }> = []
+  const other = (s: 'buyers' | 'sellers') => (s === 'buyers' ? 'sellers' : 'buyers')
+  for (let i = 0; i < tok.length; i++) {
+    // "buyer's market", "sellers market"
+    const side = SIDE_OF[tok[i]]
+    if (side && tok[i + 1] === 'market') out.push({ side, words: tok.slice(i, i + 2).join(' ') })
+    const edge = edges.find((e) => e.every((w, k) => tok[i + k] === w))
+    if (!edge) continue
+    const from = i
+    const to = i + edge.length - 1
+    let best: { at: number; side: 'buyers' | 'sellers'; dist: number } | null = null
+    let tie = false
+    for (let j = Math.max(0, from - VERDICT_WINDOW); j <= Math.min(tok.length - 1, to + VERDICT_WINDOW); j++) {
+      const s = SIDE_OF[tok[j]]
+      if (!s || (j >= from && j <= to)) continue
+      if (j > 0 && LOSER_MARKS.has(tok[j - 1])) continue
+      const between = j < from ? tok.slice(j + 1, from) : tok.slice(to + 1, j)
+      const negated = (j < from ? between : tok.slice(Math.max(0, from - 2), from)).some((w) => NEGATORS.has(w))
+      const favored = negated ? other(s) : s
+      const dist = j < from ? from - j : j - to
+      if (!best || dist < best.dist) {
+        best = { at: j, side: favored, dist }
+        tie = false
+      } else if (dist === best.dist && favored !== best.side) tie = true
+    }
+    if (best && !tie) out.push({ side: best.side, words: tok.slice(Math.min(best.at, from), Math.max(best.at, to) + 1).join(' ') })
+  }
+  return out
+}
+
+/**
+ * Is this row the months-of-supply reading? By its stat id or name in the
+ * source or definition ("months_of_supply", "months of supply"), or by a
+ * definition of active listings over monthly or six-month sales.
+ */
+export function supplyRow(n: Pick<ManifestNumber, 'source' | 'definition'>): boolean {
+  const text = `${n.definition ?? ''} ${n.source ?? ''}`
+  if (/months?[\s_-]+of[\s_-]+supply/i.test(text)) return true
+  return /\bactive(?:\s+[a-z-]+)?\s+(?:listings?|inventory|homes)\b[^.;]*?\b(?:divided\s+by|over|per|\/)\s*[^.;]*?\b(?:monthly|a\s+month|per\s+month|six[\s-]month|6[\s-]month|180[\s-]day|closed_180d)/i.test(text)
+}
 
 /** The leading number of a figure as shown ("3.5", "3.5 months", "3.5 mo"), as plan.ts reads it. */
 export function leadingNumber(shown: string): number | null {
@@ -434,8 +542,8 @@ export function evaluateVerdictWords(
   // thresholds record window "none: ..."), and it is a brief row (authored
   // rows carry boxes).
   const supply = numbers
-    .filter((n) => /months?[\s_]of[\s_]supply/i.test(`${n.definition ?? ''} ${n.source ?? ''}`))
-    .filter((n) => !n.boxes?.length && !/^\s*none\b/i.test(n.window ?? ''))
+    .filter((n) => supplyRow(n))
+    .filter((n) => !n.boxes?.length && !fixedRow(n))
     .map((n) => ({ shown: n.onScreen.trim(), value: leadingNumber(n.onScreen) }))
     .filter((n): n is { shown: string; value: number } => n.value !== null)
   if (!supply.length) return []
@@ -447,13 +555,9 @@ export function evaluateVerdictWords(
   const hits: CopyHit[] = []
   for (const { shown, value } of supply) {
     const { kind } = marketVerdict(value)
-    const wrong = kind === 'sellers' ? BUYER_SIDE : kind === 'buyers' ? SELLER_SIDE : [...BUYER_SIDE, ...SELLER_SIDE]
     for (const s of sources) {
-      const low = verdictForm(s.text)
-      for (const phrase of wrong) {
-        if (low.includes(verdictForm(phrase))) {
-          hits.push({ where: s.where, what: `"${phrase}" beside ${shown} months of supply, which is the ${kind} band` })
-        }
+      for (const v of verdictsIn(s.text)) {
+        if (v.side !== kind) hits.push({ where: s.where, what: `"${v.words}" beside ${shown} months of supply, which is the ${kind} band` })
       }
     }
   }

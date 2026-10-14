@@ -22,6 +22,7 @@ keeps being violated, the answer is a new gate, not more prose.
 | G10 | **Bundle budget** — total + per-chunk JS size ceiling + growth-vs-baseline detection | `scripts/check-bundle-budget.mjs` (baselined) post-`next build` | Plan §1 |
 | G11 | **Route smoke** — every canonical route returns 200, non-blank, non-404 against a live server | `scripts/check-route-smoke.mjs` + start-server-and-test | feedback memory "verify before moving on" |
 | G12 | **Draft-first commit gate** — user-facing diffs require an `Approved-by: matt` or `Draft-shown: <url>` line | `.husky/commit-msg` → `scripts/check-draft-first.mjs` | CLAUDE.md §0.5 |
+| G12b | **Technique approval commit gate**: a commit that adds or changes an `approved` row in `.claude/skills/ryan-studio/techniques/registry.json` needs an `Approved-by: matt` line and the technique's name in its message; no override env. The approval itself holds only with approved_by "matt", an ISO approved_on and a reel that exists (`technique-approval.mjs`, read by video_gate, `ci:studio-techniques`, the render preflight and video:check) | `.husky/commit-msg` → `scripts/check-technique-approval.mjs` | Matt 2026-10-14 (nothing is approved by an agent); interim until approvals live in the database |
 | G13 | First-frame thumbnail quality (video pipeline) | `scripts/check_first_frame.py` | CLAUDE.md §4 |
 | G14 | TypeScript strict | `tsc --noEmit` via `next build` | Plan §1 |
 | G15 | Lighthouse perf ≥ 0.90 / a11y ≥ 0.95 / BP ≥ 0.90 / SEO ≥ 0.95 / LCP ≤ 2500ms / CLS ≤ 0.10 | `npm run ci:lighthouse` (blocks PRs) | Plan §1 |

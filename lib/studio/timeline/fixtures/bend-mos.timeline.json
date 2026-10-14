@@ -4,13 +4,12 @@
  "loop_seam": "the end card irises open onto frame 0 (loop_seam_edit)",
  "score": "measured",
  "voice": {
-  "script": "[warm] So... Bend has three and a half months of homes for sale right now. Under four months, sellers still have the edge... so go in with a plan. [long pause] Send this to whoever you're house hunting with.",
+  "script": "[warm] So... Bend has three and a half months of homes for sale right now. Sellers still have the edge... so go in with a plan. [long pause] Send this to whoever you're house hunting with.",
   "voice": "ellen",
   "start": 0.25,
   "seed": 1013,
   "display": {
-   "three and a half": "3.5",
-   "four": "4"
+   "three and a half": "3.5"
   }
  },
  "beats": [
@@ -39,7 +38,7 @@
    "role": "body",
    "start": 3.3,
    "end": 6.0,
-   "text": "Under four months, sellers still have the edge",
+   "text": "Sellers still have the edge",
    "number": "3.5",
    "footage": {
     "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/videos/curated/ab884521-161f-4fbf-adf8-f8b2850ae0ea.mp4",

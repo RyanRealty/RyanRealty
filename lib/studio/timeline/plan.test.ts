@@ -61,7 +61,7 @@ describe('planFilm on the sample (Bend months of supply)', () => {
     const kinds = film.plan.cues.map((c) => c.kind)
     expect(kinds.slice(0, 4)).toEqual(['number', 'meter', 'text', 'cta'])
     expect(kinds.at(-1)).toBe('endcard')
-    expect(byKind(film.plan.cues, 'caption').length).toBeGreaterThan(10)
+    expect(byKind(film.plan.cues, 'caption').length).toBeGreaterThanOrEqual(10)
     const [number] = byKind(film.plan.cues, 'number')
     expect(number).toMatchObject({ start: 0.1, value: '3.5', unit: 'months of homes for sale', asOf: 'As of Oct 13, 2026' })
     expect(number.eyebrow).toBe('City of Bend · single-family homes')
@@ -90,7 +90,6 @@ describe('planFilm on the sample (Bend months of supply)', () => {
       'has 3.5 months',
       'of homes for sale',
       'right now.',
-      'Under 4 months,',
       'sellers still have',
       'the edge',
       'so go',
@@ -122,17 +121,36 @@ describe('planFilm on the sample (Bend months of supply)', () => {
   })
 
   it('carries the brief rows and a row for every authored digit beside them (ticks, scale marks, as-of date)', () => {
-    expect(film.numbers.map((n) => n.onScreen)).toEqual(['3.5', '4', 'As of Oct 13, 2026', '6', '4 mo', '6 mo', '10 mo'])
+    expect(film.numbers.map((n) => n.onScreen)).toEqual(['3.5', 'As of Oct 13, 2026', '4', '6', '4 mo', '6 mo', '10 mo'])
     for (const n of film.numbers) for (const k of ['source', 'window', 'geography', 'definition'] as const) expect(n[k]?.trim()).toBeTruthy()
   })
 
-  it('ties each authored row to the cues that draw it, and leaves brief rows free', () => {
+  it('ties each authored row to the cues that draw it, and leaves measured brief rows free', () => {
     const cues = Object.fromEntries(film.numbers.map((n) => [n.onScreen, n.cues ?? null]))
     expect(cues['3.5']).toBeNull()
-    expect(cues['4']).toBeNull()
+    expect(cues['4']).toEqual(['supply-meter'])
     expect(cues['As of Oct 13, 2026']).toEqual(['hook-number', 'supply-meter'])
     expect(cues['4 mo']).toEqual(['supply-meter'])
     expect(cues['6']).toEqual(['supply-meter'])
+  })
+
+  it('binds a brief threshold row (window "none") to the cues that draw it, never free (F3)', () => {
+    const threshold = {
+      key: 'mos_seller_max',
+      on_screen: '4',
+      value: 4,
+      definition: 'The months-of-supply threshold under which a market favors sellers (lib/market/classify.ts MOS_SELLER_MAX).',
+      window: 'none: a fixed threshold, not a measurement',
+      geography: 'every market',
+      source: 'lib/market/classify.ts MOS_SELLER_MAX',
+    }
+    const withThreshold = plan((b) => { b.numbers.push(threshold) })
+    const row = withThreshold.numbers.find((n) => n.onScreen === '4')!
+    expect(row.window).toMatch(/^none/)
+    expect(row.cues).toEqual(['supply-meter'])
+    // A threshold no card draws stays bound to nothing, so it covers nothing (check 9).
+    const undrawn = plan((b) => { b.numbers.push({ ...threshold, key: 'mos_balanced_max', on_screen: '7' }) })
+    expect(undrawn.numbers.find((n) => n.onScreen === '7')!.cues).toEqual([])
   })
 
   it('passes the §0 backstop, and an unsourced number on a card is caught', () => {

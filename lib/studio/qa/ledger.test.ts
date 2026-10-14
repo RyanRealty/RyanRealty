@@ -143,7 +143,9 @@ describe('revisions and what is left', () => {
     expect(unusedCombinations(entry(), ledger, { ...withStatus, tier }).some((x) => x.includes('loop_seam_edit'))).toBe(false)
     const approved = new Map(status)
     approved.set('loop_seam_edit', 'approved')
-    expect(unusedCombinations(entry(), ledger, { ...withStatus, tier, status: approved })).toContain('dollar_first_hook + loop_seam_edit')
+    const approvals = new Map([['loop_seam_edit', { approved_by: 'matt', approved_on: '2026-10-20', reel: 'out/studio/reels/loop.mp4', reelFound: true }]])
+    expect(unusedCombinations(entry(), ledger, { ...withStatus, tier, status: approved })).not.toContain('dollar_first_hook + loop_seam_edit')
+    expect(unusedCombinations(entry(), ledger, { ...withStatus, tier, status: approved, approvals })).toContain('dollar_first_hook + loop_seam_edit')
   })
 })
 

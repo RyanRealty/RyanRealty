@@ -28,9 +28,23 @@ const DOLLAR_WORDS = new Set(['dollar', 'dollars'])
  */
 const HALF_TAIL = ['and', 'a', 'half'] as const
 
+/**
+ * Quantity words (F4, 2026-10-14): a ratio, a fraction or a dozen said in words
+ * is a figure too. Each maps to a value ("doubled" is 2 times, "a quarter" is
+ * one in four, "a dozen" is 12) that must be shown as a sourced figure, or is a
+ * quantity with no single figure ("most", "dozens", "hundreds of") and refused.
+ */
+const RATIO_WORDS: Record<string, number> = {
+  doubled: 2, doubling: 2, twice: 2, tripled: 3, tripling: 3, thrice: 3, quadrupled: 4, halved: 0.5, halving: 0.5,
+}
+const FRACTION_WORDS: Record<string, number> = { half: 2, halves: 2, third: 3, thirds: 3, quarter: 4, quarters: 4 }
+const DOZEN_WORDS = new Set(['dozen'])
+const VAGUE_WORDS = new Set(['dozens', 'hundreds', 'thousands', 'millions', 'most', 'majority'])
+const QUANTITY_WORDS = new Set([...Object.keys(RATIO_WORDS), ...Object.keys(FRACTION_WORDS), ...DOZEN_WORDS, ...VAGUE_WORDS])
+
 const NUMBER_WORDS = new Set([
   ...Object.keys(UNITS), ...Object.keys(TEENS), ...Object.keys(TENS), ...Object.keys(SCALES),
-  'hundred', 'point', 'and', 'a', 'half', ...PERCENT_WORDS, ...DOLLAR_WORDS,
+  'hundred', 'point', 'and', 'a', 'half', ...PERCENT_WORDS, ...DOLLAR_WORDS, ...QUANTITY_WORDS,
 ])
 
 export function isNumberWord(token: string): boolean {
@@ -104,16 +118,46 @@ function parseYear(tokens: string[]): number | null {
   return null
 }
 
-export type NumberUnit = 'percent' | 'dollar' | null
+/** "ratio": a multiple or a fraction said in words ("doubled" is 2, "a quarter" is 0.25). */
+export type NumberUnit = 'percent' | 'dollar' | 'ratio' | null
 
 export interface SpokenNumber {
-  /** Every reading that fits (a plain count, or a spoken year). */
+  /** Every reading that fits (a plain count, or a spoken year). Empty for a vague quantity. */
   values: number[]
   unit: NumberUnit
+  /** A quantity with no single figure ("most", "dozens", "hundreds of"): never shown as a figure. */
+  vague?: true
 }
 
-/** Parse a run of spoken number words, with an optional trailing percent or dollars. */
+/** A quantity phrase: a ratio word, a fraction ("a third", "two thirds"), a dozen, or a vague quantity. Null otherwise. */
+function parseQuantity(tokens: string[]): SpokenNumber | null {
+  if (tokens.length === 1) {
+    const [t] = tokens
+    if (t in RATIO_WORDS) return { values: [RATIO_WORDS[t]], unit: 'ratio' }
+    if (VAGUE_WORDS.has(t)) return { values: [], unit: null, vague: true }
+    if (t === 'half') return { values: [0.5], unit: 'ratio' }
+    if (t === 'dozen') return { values: [12], unit: null }
+    return null
+  }
+  if (tokens.length === 2 && tokens[0] === 'a' && tokens[1] === 'majority') return { values: [], unit: null, vague: true }
+  const last = tokens[tokens.length - 1]
+  const head = tokens.slice(0, -1)
+  const count = head.length === 1 && (head[0] === 'a' || head[0] === 'an') ? 1 : parseCardinal(head)
+  if (count === null || count <= 0) return null
+  if (last === 'dozen') return { values: [count * 12], unit: null }
+  if (last in FRACTION_WORDS) {
+    const plural = last.endsWith('s')
+    if (plural !== count > 1) return null
+    return { values: [Math.round((count / FRACTION_WORDS[last]) * 1e6) / 1e6], unit: 'ratio' }
+  }
+  return null
+}
+
+/** Parse a run of spoken number words, with an optional trailing percent or dollars, or a quantity phrase. */
 export function parseSpokenNumber(tokens: string[]): SpokenNumber | null {
+  const quantity = parseQuantity(tokens)
+  if (quantity) return quantity
+  if (tokens.some((t) => QUANTITY_WORDS.has(t) && t !== 'half')) return null
   let body = tokens
   let unit: NumberUnit = null
   const last = tokens[tokens.length - 1]
@@ -156,20 +200,37 @@ export function parseSpokenNumber(tokens: string[]): SpokenNumber | null {
 export interface CaptionNumber {
   value: number
   unit: NumberUnit
+  /** Decimal places as shown ("33%" has 0), so a fraction said in words may round to it. */
+  decimals: number
 }
 
-/** "$475K" gives 475000 dollars; "63%" gives 63 percent; "1,250" gives 1250. Null when not numeric. */
+/** "$475K" gives 475000 dollars; "63%" gives 63 percent; "2x" gives a ratio of 2; "1,250" gives 1250. Null when not numeric. */
 export function parseCaptionNumber(token: string): CaptionNumber | null {
-  const m = /^(\$)?(\d[\d,]*(?:\.\d+)?)(%|k|m)?$/i.exec(token)
+  const m = /^(\$)?(\d[\d,]*(?:\.(\d+))?)(%|k|m|x)?$/i.exec(token)
   if (!m) return null
   let value = Number(m[2].replace(/,/g, ''))
   if (!Number.isFinite(value)) return null
-  const suffix = (m[3] ?? '').toLowerCase()
+  const suffix = (m[4] ?? '').toLowerCase()
   if (suffix === 'k') value *= 1e3
   if (suffix === 'm') value *= 1e6
   value = Math.round(value * 1e6) / 1e6
-  const unit: NumberUnit = suffix === '%' ? 'percent' : m[1] ? 'dollar' : null
-  return { value, unit }
+  const unit: NumberUnit = suffix === '%' ? 'percent' : suffix === 'x' ? 'ratio' : m[1] ? 'dollar' : null
+  return { value, unit, decimals: suffix === 'k' || suffix === 'm' ? 6 : (m[3] ?? '').length }
+}
+
+/**
+ * Does a shown figure say this spoken number? The same value in the same unit;
+ * a ratio said in words ("doubled", "a third") may also be shown as a percent,
+ * rounded as shown: a share (a third as "33%") or, above 1, a change ("doubled"
+ * as "100%"). A vague quantity is never shown by a figure.
+ */
+export function shownSays(shown: CaptionNumber, spoken: Pick<SpokenNumber, 'values' | 'unit' | 'vague'>): boolean {
+  if (spoken.vague) return false
+  const tol = Math.max(1e-6, 0.5 * 10 ** -shown.decimals)
+  const near = (v: number) => Math.abs(v - shown.value) <= tol + 1e-9
+  if (shown.unit === spoken.unit) return spoken.values.some((v) => (spoken.unit === 'ratio' ? near(v) : sameValue(v, shown.value)))
+  if (spoken.unit === 'ratio' && shown.unit === 'percent') return spoken.values.some((v) => near(v * 100) || (v > 1 && near((v - 1) * 100)))
+  return false
 }
 
 export interface AlignResult {
@@ -198,7 +259,7 @@ export function alignCaption(captionText: string, spokenWords: string[]): AlignR
     let matched = 0
     for (let k = run; k >= 1; k--) {
       const got = parseSpokenNumber(spoken.slice(j, j + k))
-      if (got && got.unit === want.unit && got.values.some((v) => Math.abs(v - want.value) <= 1e-6 * Math.max(1, Math.abs(want.value)))) {
+      if (got && shownSays(want, got)) {
         matched = k
         break
       }
@@ -218,18 +279,102 @@ export function alignCaption(captionText: string, spokenWords: string[]): AlignR
 const LOCKED_PHONE = /(?:\+?1[\s.-]*)?\(?541\)?[\s.-]*703[\s.-]*3095/g
 
 /**
- * Number tokens in a string, each WITH its own unit or prefix, so a row covers a
- * token only when they are the same figure: "$475K" is not "$475", "4 mo" is not
- * "4". A token is digits with an optional leading $ or # (a rank: "#1"),
- * thousands commas, a decimal part, and a trailing %, K, M or " mo". The locked
- * end card phone number is not a figure and is skipped. A digit glued to a
- * letter on its left (Q3, H2) is part of a word, not a figure; a digit after
- * punctuation glued to a word ("fell,12%") is a figure.
+ * Unit words a figure carries, each with the one form two figures compare by
+ * (F3, 2026-10-14): "3.5 days" is not "3.5 months", "4 homes" is not "4 sales".
+ * Plurals and abbreviations fold together ("month", "months", "mo" are "mo").
+ */
+const UNIT_FORMS: ReadonlyArray<readonly [string, readonly string[]]> = [
+  ['%', ['percent', 'per cent', 'pct']],
+  ['mo', ['months', 'month', 'mos', 'mo']],
+  ['days', ['days', 'day']],
+  ['weeks', ['weeks', 'week', 'wks', 'wk']],
+  ['years', ['years', 'year', 'yrs', 'yr']],
+  ['hours', ['hours', 'hour', 'hrs', 'hr']],
+  ['minutes', ['minutes', 'minute', 'mins', 'min']],
+  ['homes', ['homes', 'home', 'houses', 'house', 'properties', 'property', 'condos', 'condo', 'townhomes', 'townhome']],
+  ['sales', ['sales', 'sale', 'closings', 'closing']],
+  ['listings', ['listings', 'listing']],
+  ['offers', ['offers', 'offer']],
+  ['showings', ['showings', 'showing']],
+  ['buyers', ['buyers', 'buyer']],
+  ['sellers', ['sellers', 'seller']],
+  ['people', ['people', 'persons', 'person', 'residents', 'resident']],
+  ['cuts', ['price cuts', 'price cut', 'cuts', 'reductions', 'reduction']],
+  ['beds', ['bedrooms', 'bedroom', 'beds', 'bed', 'bds', 'bd', 'br']],
+  ['baths', ['bathrooms', 'bathroom', 'baths', 'bath', 'ba']],
+  ['sqft', ['square feet', 'square foot', 'sq ft', 'sq. ft.', 'sq. ft', 'sqft', 'sf']],
+  ['acres', ['acres', 'acre', 'ac']],
+  ['miles', ['miles', 'mile', 'mi']],
+  ['lots', ['lots', 'lot']],
+  ['units', ['units', 'unit']],
+  ['permits', ['permits', 'permit']],
+  ['jobs', ['jobs', 'job']],
+  ['neighborhoods', ['neighborhoods', 'neighborhood', 'subdivisions', 'subdivision']],
+  ['points', ['basis points', 'points', 'point', 'pts', 'bps']],
+  ['times', ['times', 'x']],
+]
+const UNIT_OF = new Map<string, string>()
+for (const [form, words] of UNIT_FORMS) for (const w of words) UNIT_OF.set(w, form)
+const UNIT_ALTERNATION = [...UNIT_OF.keys()]
+  .sort((a, b) => b.length - a.length)
+  .map((w) => w.replace(/[.]/g, '\\.').replace(/ /g, '\\s+'))
+  .join('|')
+/** One describing word may sit between a figure and its unit ("714 active listings", "4 more days"). */
+const BETWEEN = ['active', 'new', 'pending', 'closed', 'sold', 'more', 'fewer', 'less', 'straight', 'consecutive', 'total', 'open', 'whole', 'full', 'single-family', 'detached', 'local']
+const UNIT_AFTER = new RegExp(`^(?:\\s*%|\\s*(?:(?:${BETWEEN.join('|')})\\s+)?(${UNIT_ALTERNATION})(?![A-Za-z0-9]))`, 'i')
+const GLUED_UNIT = /^(mos?|x)(?![A-Za-z0-9])/i
+const FIGURE_CORE = /(?<![A-Za-z0-9$#])(?<!\d[.,])([#$]?)(\d[\d,]*(?:\.\d+)?)([KkMm](?![A-Za-z]))?/g
+
+/** The one form of a unit word ("Months" is "mo"), or null when it is not one. */
+export function unitForm(word: string): string | null {
+  return UNIT_OF.get(word.toLowerCase().replace(/\s+/g, ' ')) ?? null
+}
+
+/** The first unit word in a piece of prose (a row's definition), as its one form, or null. */
+export function firstUnitIn(text: string): string | null {
+  const m = new RegExp(`(?<![A-Za-z0-9])(${UNIT_ALTERNATION})(?![A-Za-z0-9])`, 'i').exec(normalizeDigits(text).replace(/[-\u2010\u2011]/g, ' '))
+  return m ? unitForm(m[1]) : null
+}
+
+/** Fullwidth and other compatibility digits ("１２％") read as the digits they are. */
+export function normalizeDigits(text: string): string {
+  return text.normalize('NFKC')
+}
+
+/**
+ * Number tokens in a string, each WITH its own unit, in one form, so a row
+ * covers a token only when they are the same figure in the same unit: "$475K"
+ * is not "$475", "4 mo" is not "4", "3.5 days" is not "3.5 mo". A token is
+ * digits with an optional leading $ or # (a rank: "#1"), thousands commas, a
+ * decimal part and K or M, then its unit: "%" or a unit word (UNIT_FORMS),
+ * with at most one describing word between ("714 active listings" is
+ * "714 listings"). Fullwidth digits count. The locked end card phone number is
+ * not a figure and is skipped. A digit glued to a letter on its left (Q3, H2)
+ * is part of a word, not a figure; a digit after punctuation glued to a word
+ * ("fell,12%") is a figure.
  */
 export function extractNumberTokens(text: string): string[] {
-  const cleaned = text.replace(LOCKED_PHONE, ' ')
-  const re = /(?<![A-Za-z0-9$#])(?<!\d[.,])[#$]?\d[\d,]*(?:\.\d+)?(?:%|[KkMm](?![A-Za-z])|\s?[Mm][Oo]\b)?/g
-  return [...cleaned.matchAll(re)].map((m) => m[0].replace(/[.,]+$/, ''))
+  const cleaned = normalizeDigits(text).replace(LOCKED_PHONE, ' ')
+  const out: string[] = []
+  for (const m of cleaned.matchAll(FIGURE_CORE)) {
+    const number = m[2].replace(/[.,]+$/, '')
+    const core = `${m[1]}${number}${m[3] ?? ''}`
+    const rest = cleaned.slice(m.index! + m[0].length)
+    let unit = ''
+    const glued = m[3] ? null : GLUED_UNIT.exec(rest)
+    const after = UNIT_AFTER.exec(rest)
+    if (glued) unit = unitForm(glued[1]) ?? ''
+    else if (after) unit = after[1] ? (unitForm(after[1]) ?? '') : '%'
+    out.push(unit === '%' ? `${core}%` : unit ? `${core} ${unit}` : core)
+  }
+  return out
+}
+
+/** A figure token split into its number ("$475K", "#1", "3.5") and its unit ("%", "mo", or ""). */
+export function splitFigure(token: string): { num: string; unit: string } {
+  const m = /^([#$]?\d[\d,]*(?:\.\d+)?(?:[KkMm])?)(%|\s+(.+))?$/.exec(token.trim())
+  if (!m) return { num: token.trim(), unit: '' }
+  return { num: m[1], unit: m[2] === '%' ? '%' : (m[3] ?? '').toLowerCase() }
 }
 
 /** Case and space insensitive form of a figure token: two tokens cover each other only when these are equal. */
@@ -258,11 +403,17 @@ const ORDINALS: Record<string, number> = {
  * shown as a sourced figure. Each entry has its own test (spoken.test.ts).
  *  - "one of", "one more": a member of a set, not a count.
  *  - "this one", "the one", "no one", "that one": a pronoun.
+ *  - "the most", "at most" (and "Bend's most"): a superlative, not a share.
+ *  - "last quarter", "this quarter": a stretch of the year, not a fraction.
  *  - "first" and "second" are never read as figures (see ORDINALS).
  */
 export const NON_STATISTICAL_SPOKEN: ReadonlyArray<{ word: string; before?: readonly string[]; after?: readonly string[] }> = [
   { word: 'one', after: ['of', 'more'] },
   { word: 'one', before: ['this', 'the', 'no', 'that'] },
+  // "the most popular", "at most": a superlative, not a share.
+  { word: 'most', before: ['the', 'at'] },
+  // "last quarter", "this quarter": a stretch of the year, not a fraction.
+  { word: 'quarter', before: ['last', 'this', 'next', 'the', 'each', 'per', 'every', 'first', 'second', 'third', 'fourth', 'fiscal'] },
 ]
 
 export interface SpokenFigure {
@@ -271,9 +422,11 @@ export interface SpokenFigure {
   last: number
   /** The words as said ("twelve percent"). */
   said: string
-  /** Every value the words can mean (a count, or a spoken year). */
+  /** Every value the words can mean (a count, or a spoken year). Empty for a vague quantity. */
   values: number[]
   unit: NumberUnit
+  /** A quantity with no single figure ("most", "dozens", "hundreds of"): refused, never shown. */
+  vague?: true
 }
 
 const DIGIT_WORDS: Record<string, string> = {
@@ -285,6 +438,9 @@ function phoneSpan(tokens: readonly string[]): [number, number] | null {
   const at = tokens.map((t) => DIGIT_WORDS[t] ?? '-').join('').indexOf('5417033095')
   return at < 0 ? null : [at, at + 10]
 }
+
+/** Words "a" may lead as one quantity ("a quarter", "a third", "a dozen", "a half", "a majority"). */
+const LEADS_QUANTITY = new Set(['half', 'third', 'quarter', 'dozen', 'majority'])
 
 /** Words that may not start a figure: they only join or close one. */
 const NOT_A_START = new Set(['and', 'a', 'point', 'half', 'oh', ...PERCENT_WORDS, ...DOLLAR_WORDS])
@@ -307,10 +463,10 @@ export function spokenFigures(words: readonly string[]): SpokenFigure[] {
     }
   })
   const out: SpokenFigure[] = []
-  const push = (from: number, to: number, values: number[], unit: NumberUnit) => {
+  const push = (from: number, to: number, values: number[], unit: NumberUnit, vague?: true) => {
     const first = owner[from]
     const last = owner[to]
-    out.push({ first, last, said: words.slice(first, last + 1).join(' '), values, unit })
+    out.push({ first, last, said: words.slice(first, last + 1).join(' '), values, unit, ...(vague ? { vague } : {}) })
   }
   let i = 0
   while (i < tokens.length) {
@@ -320,8 +476,9 @@ export function spokenFigures(words: readonly string[]): SpokenFigure[] {
       i++
       continue
     }
-    const leadsScale = tok === 'a' && (tokens[i + 1] === 'hundred' || tokens[i + 1] in SCALES)
-    if (!isNumberWord(tok) || (NOT_A_START.has(tok) && !leadsScale)) {
+    // "a" counts as one before hundred or a scale ("a hundred homes"), and leads a quantity ("a quarter", "a dozen").
+    const leadsScale = tok === 'a' && (tokens[i + 1] === 'hundred' || tokens[i + 1] in SCALES || LEADS_QUANTITY.has(tokens[i + 1]))
+    if (!isNumberWord(tok) || (NOT_A_START.has(tok) && !leadsScale && !parseQuantity([tok]))) {
       i++
       continue
     }
@@ -340,9 +497,10 @@ export function spokenFigures(words: readonly string[]): SpokenFigure[] {
       let taken = 0
       for (let k = stop - p; k >= 1; k--) {
         const piece = run.slice(p, p + k).map((t, n) => (t === 'a' && n === 0 && (run[p + 1] === 'hundred' || run[p + 1] in SCALES) ? 'one' : t))
-        // A figure starts on a number, never on a joining word or a unit word.
-        if (NOT_A_START.has(run[p]) && piece[0] !== 'one') continue
-        const got = parseSpokenNumber(piece)
+        // A figure starts on a number, never on a joining word or a unit word (a quantity phrase is one).
+        const quantity = parseQuantity(piece)
+        if (NOT_A_START.has(run[p]) && piece[0] !== 'one' && !quantity) continue
+        const got = quantity ?? parseSpokenNumber(piece)
         if (!got) continue
         const from = i + p
         const to = i + p + k - 1
@@ -350,13 +508,14 @@ export function spokenFigures(words: readonly string[]): SpokenFigure[] {
         const after = tokens[to + 1]
         const allowed =
           k === 1 &&
-          NON_STATISTICAL_SPOKEN.some(
+          (NON_STATISTICAL_SPOKEN.some(
             (rule) =>
               rule.word === piece[0] &&
               ((rule.after !== undefined && after !== undefined && rule.after.includes(after)) ||
                 (rule.before !== undefined && before !== undefined && rule.before.includes(before))),
-          )
-        if (!allowed) push(from, to, got.values, got.unit)
+          ) ||
+            (piece[0] === 'most' && before !== undefined && /'s$/.test(before)))
+        if (!allowed) push(from, to, got.values, got.unit, got.vague)
         taken = k
         break
       }
@@ -373,7 +532,8 @@ export function sameValue(a: number, b: number): boolean {
 }
 
 /** Does a figure token ("12%", "$475K", "3.5") show this spoken figure? Same value and same unit. */
-export function tokenShowsSpoken(token: string, figure: Pick<SpokenFigure, 'values' | 'unit'>): boolean {
-  const n = parseCaptionNumber(token)
-  return n !== null && n.unit === figure.unit && figure.values.some((v) => sameValue(v, n.value))
+export function tokenShowsSpoken(token: string, figure: Pick<SpokenFigure, 'values' | 'unit' | 'vague'>): boolean {
+  const { num, unit } = splitFigure(token)
+  const n = parseCaptionNumber(unit === '%' ? `${num}%` : unit === 'times' ? `${num}x` : num)
+  return n !== null && shownSays(n, figure)
 }

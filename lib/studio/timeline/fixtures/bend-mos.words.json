@@ -1,5 +1,5 @@
 {
- "_doc": "Spoken words of the sample voiceover on the voice's own clock, read from the ElevenLabs v3 with-timestamps alignment (eleven_v3, voice ellen, seed 1013) for lib/studio/timeline/fixtures/bend-mos.timeline.json. Unit tests plan with these instead of calling the API.",
+ "_doc": "Spoken words of the sample voiceover on the voice's own clock, read from the ElevenLabs v3 with-timestamps alignment (eleven_v3, voice ellen, seed 1013) for lib/studio/timeline/fixtures/bend-mos.timeline.json. Unit tests plan with these instead of calling the API. On 2026-10-14 the words \"Under four months,\" were cut from this fixture by hand when the fixed 4-month threshold left the script (a threshold row may not be said: video:check check 9); the remaining timings are the synthesis's own. A real render re-synthesizes the script.",
  "model": "eleven_v3",
  "words": [
   {"word": "So", "start": 0.267, "end": 0.32},
@@ -16,9 +16,6 @@
   {"word": "sale", "start": 2.704, "end": 2.96},
   {"word": "right", "start": 3, "end": 3.2},
   {"word": "now.", "start": 3.24, "end": 3.36},
-  {"word": "Under", "start": 3.653, "end": 3.92},
-  {"word": "four", "start": 3.952, "end": 4.08},
-  {"word": "months,", "start": 4.137, "end": 4.48},
   {"word": "sellers", "start": 4.77, "end": 5.12},
   {"word": "still", "start": 5.16, "end": 5.36},
   {"word": "have", "start": 5.392, "end": 5.52},

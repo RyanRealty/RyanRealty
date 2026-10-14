@@ -121,10 +121,11 @@ export function textsFromDrawn(
 }
 
 /**
- * The manifest's numbers rows: brief rows as they are; each authored row (a
- * scale mark, an as-of date) bound to the drawn boxes of the cues that draw it,
- * so it covers only those (check 9). An authored row its cues never drew is
- * reported missing.
+ * The manifest's numbers rows: measured brief rows as they are; each authored
+ * row (a scale mark, an as-of date) and each threshold row (window "none") bound
+ * to the drawn boxes of the cues that draw it, so it covers only those (check 9).
+ * An authored row its cues never drew is reported missing; a threshold row no
+ * card draws is kept unbound (it covers nothing).
  */
 export function boundNumbers(
   planned: readonly PlannedNumber[],
@@ -134,7 +135,9 @@ export function boundNumbers(
   const rows: ManifestNumber[] = []
   const missing: string[] = []
   for (const { cues: from, ...row } of planned) {
-    if (!from) {
+    // A measured brief row covers its figure anywhere; a threshold row no card
+    // draws stays unbound and covers nothing (check 9).
+    if (!from || from.length === 0) {
       rows.push(row)
       continue
     }

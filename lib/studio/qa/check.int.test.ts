@@ -18,6 +18,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { TEST_ONLY_APPROVAL } from './fixtures/test-approval'
 import { checkVideo, type CheckReport } from './check'
 import { findFont, writeContactSheet } from './contact'
 import { createMeasure, resolveBinary, runBinary } from './measure'
@@ -50,7 +51,7 @@ const TECHNIQUES = ['dollar_first_hook', 'subframe_motion_blur', 'eased_number_r
 const REGISTRY = {
   techniques: {
     dollar_first_hook: { category: 'hook', status: 'ready', tier: 'base' },
-    subframe_motion_blur: { category: 'scene', status: 'approved', tier: 'signature' },
+    subframe_motion_blur: { category: 'scene', status: 'approved', tier: 'signature', ...TEST_ONLY_APPROVAL },
     eased_number_reveal: { category: 'type', status: 'ready', tier: 'base' },
   },
 }

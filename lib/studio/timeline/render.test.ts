@@ -75,7 +75,7 @@ describe('textsFromProbes', () => {
 
 describe('boundNumbers', () => {
   const film = sampleFilm()
-  it('binds each authored row to the boxes its cues drew, and leaves brief rows unbound', () => {
+  it('binds each authored row to the boxes its cues drew, and leaves measured brief rows unbound', () => {
     const probes = fakeProbes(film).map((p) => ({
       ...p,
       // Give each drawn text its own box, so the binding is visible.
@@ -87,10 +87,17 @@ describe('boundNumbers', () => {
     expect(bound.ok).toBe(true)
     const row = (s: string) => bound.rows.find((r) => r.onScreen === s)!
     expect(row('3.5').boxes).toBeUndefined()
-    expect(row('4').boxes).toBeUndefined()
+    expect(row('4').boxes).toHaveLength(1)
     expect(row('4 mo').boxes).toHaveLength(1)
     expect(row('As of Oct 13, 2026').boxes).toHaveLength(2)
     expect(bound.rows.every((r) => !('cues' in r))).toBe(true)
+  })
+
+  it('keeps a threshold row no card draws unbound (it covers nothing), and does not call it missing', () => {
+    const { texts, cues } = textsFromProbes(film, fakeProbes(film))
+    const r = boundNumbers([{ onScreen: '7', source: 's', window: 'none: a fixed threshold', geography: 'g', definition: 'd', cues: [] }], texts, cues)
+    expect(r.ok).toBe(true)
+    expect(r.rows).toEqual([{ onScreen: '7', source: 's', window: 'none: a fixed threshold', geography: 'g', definition: 'd' }])
   })
 
   it('reports an authored figure its cue never drew', () => {

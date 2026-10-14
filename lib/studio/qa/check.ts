@@ -69,7 +69,7 @@ import {
   unlistedFigures,
   type PixelProbe,
 } from './pixels'
-import { evaluateTechniques, loadTechniqueRegistry, techniqueProblems, type TechniqueRegistry } from './techniques'
+import { evaluateTechniques, loadCheckedTechniqueRegistry, techniqueProblems, type TechniqueRegistry } from './techniques'
 import {
   FILM_LEDGER_PATH,
   LEDGER_WINDOW,
@@ -176,6 +176,8 @@ class Ctx {
   rules: TypeRules | null = null
   rulesProblem = ''
   ledgerEntry: LedgerEntry | null = null
+  /** True when the registry came from CheckDeps.testPaths (a test), never from the CLI. */
+  registryTestOnly = false
   private memo = new Map<string, Promise<unknown>>()
 
   constructor(readonly opts: CheckOptions, readonly measure: Measure, readonly now: () => Date) {
@@ -563,8 +565,13 @@ async function review(c: Ctx): Promise<Body> {
   return verdict(problems, { reviewer: typeof raw.reviewer === 'string' ? raw.reviewer : null, watched: raw.watched === true, listened: raw.listened === true, verdict: typeof raw.verdict === 'string' ? raw.verdict : null }, expected, `reviewed by ${String(raw.reviewer)}, verdict ship`)
 }
 
-function loadRegistry(c: Ctx): TechniqueRegistry {
-  return loadTechniqueRegistry(c.opts.registryPath)
+/**
+ * The registry, approved rows' reels checked (repo files on disk, https reels by HEAD).
+ * A registry a test handed in (CheckDeps.testPaths) approves only with TEST_APPROVER;
+ * the committed file and a CLI --registry approve only with "matt".
+ */
+function loadRegistry(c: Ctx): Promise<TechniqueRegistry> {
+  return c.once('registry', () => loadCheckedTechniqueRegistry(c.opts.registryPath, { testOnly: c.registryTestOnly }))
 }
 
 async function techniquesRan(c: Ctx): Promise<Body> {
@@ -578,7 +585,7 @@ async function techniquesRan(c: Ctx): Promise<Body> {
   if (!briefList) {
     return bad({ briefTechniques: null, manifestTechniques: m.techniques }, expected, c.briefProblem ? `no brief techniques: ${c.briefProblem}` : 'no brief (and the manifest carries no briefTechniques)')
   }
-  const registry = loadRegistry(c)
+  const registry = await loadRegistry(c)
   const ev = evaluateTechniques(briefList, m.techniques, registry)
   const problems = techniqueProblems(briefList, m.techniques, registry)
   return verdict(
@@ -593,7 +600,7 @@ async function notARepeat(c: Ctx): Promise<Body> {
   const m = c.manifest
   const expected = { notSameHookAndSceneSetAsLast: LEDGER_WINDOW, sameVideoType: true, revisionsOfTheSameSlug: 'not a repeat' }
   if (!m) return c.noManifest(expected)
-  const registry = loadRegistry(c)
+  const registry = await loadRegistry(c)
   const sha = await c.sha()
   const built = buildLedgerEntry({ sha256: sha, slug: m.slug, videoType: m.videoType, techniques: m.techniques, checkedAt: c.now().toISOString() }, registry)
   if (!built.ok) return bad({ hookDevice: null, sceneSet: [] }, expected, `cannot be compared: ${built.reason}`)
@@ -707,6 +714,7 @@ export async function checkVideo(opts: CheckOptions, deps: CheckDeps = {}): Prom
   }
   const effective: CheckOptions = { ...opts, ...(deps.testPaths ?? {}) }
   const c = new Ctx(effective, deps.measure ?? realMeasure, now)
+  c.registryTestOnly = Boolean(deps.testPaths?.registryPath)
   c.load()
   const probe = deps.pixels ?? createPixelProbe()
 

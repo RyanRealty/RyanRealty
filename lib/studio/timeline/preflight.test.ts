@@ -21,6 +21,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { TEST_ONLY_APPROVAL } from '../qa/fixtures/test-approval'
 import { cueTexts, stillTimes } from '../motion/cues'
 import type { DrawnText } from '../motion/render'
 import { CHECK_IDS } from '../qa/check'
@@ -60,10 +61,10 @@ beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), 'rr-preflight-'))
   const raw = read('.claude/skills/ryan-studio/techniques/registry.json')
   // A stub approval in a temp copy, for the tests only. Never the committed registry.
-  raw.techniques.outline_draw_zoom = { ...raw.techniques.outline_draw_zoom, status: 'approved', approved_by: 'test-only stub', approved_on: '2026-10-14', reel: 'none' }
+  raw.techniques.outline_draw_zoom = { ...raw.techniques.outline_draw_zoom, status: 'approved', ...TEST_ONLY_APPROVAL }
   registryPath = join(dir, 'registry.test-only.json')
   writeFileSync(registryPath, JSON.stringify(raw))
-  registry = loadTechniqueRegistry(registryPath)
+  registry = loadTechniqueRegistry(registryPath, { testOnly: true })
 })
 afterAll(() => {
   if (dir) rmSync(dir, { recursive: true, force: true })
@@ -189,12 +190,20 @@ const repeatLine: LedgerEntry = {
   sceneSet: ['meter_fill_verdict', 'outline_draw_zoom'], techniques: [], checkedAt: '2026-10-13T00:00:00.000Z',
 }
 
+/** The review's sentence (F4): no number word in it, four figures all the same. */
+const QUANTITY_SCRIPT =
+  "[warm] So... prices doubled in a dozen neighborhoods and half the listings cut their price by a quarter. Sellers still have the edge... so go in with a plan. [long pause] Send this to whoever you're house hunting with."
+
 const CASES: Case[] = [
   // b: the script and the authored strings
   textCase(7, 'no voice on a voiced type', (_b, t) => { delete t.voice }),
   textCase(8, 'a display rule that shows words the voice does not say', (_b, t) => { t.voice.display['right now'] = 'today' }),
   textCase(9, 'a figure said in words with no display rule', (b, t) => {
-    t.voice.script = '[warm] So... prices fell twelve percent in Bend. Under four months, sellers still have the edge... so go in with a plan. [long pause] Send this to whoever you\'re house hunting with.'
+    t.voice.script = '[warm] So... prices fell twelve percent in Bend. Sellers still have the edge... so go in with a plan. [long pause] Send this to whoever you\'re house hunting with.'
+    b.spec_rules.voiceover.script = t.voice.script
+  }),
+  textCase(9, "the review's quantity words (doubled, a dozen, half, a quarter)", (b, t) => {
+    t.voice.script = QUANTITY_SCRIPT
     b.spec_rules.voiceover.script = t.voice.script
   }),
   textCase(10, 'a fair housing flag on a card', (_b, t) => { t.beats[0].cards[0].footer = 'Perfect for young professionals' }),
@@ -241,6 +250,26 @@ describe('every preflight check is refused by every step its row names', () => {
       expect(checksIn(k.run())).toContain(k.check)
     })
   }
+})
+
+describe('quantity words refuse at step b (F4)', () => {
+  it("names each figure in the review's sentence that no sourced caption shows", () => {
+    const { brief, timeline } = parsed((b, t) => {
+      t.voice.script = QUANTITY_SCRIPT
+      b.spec_rules.voiceover.script = t.voice.script
+    })
+    const nine = textPreflight(brief, timeline, ctxFor(brief)).filter((p) => p.check === 9).map((p) => p.problem)
+    for (const said of ["doubled", "a dozen", "half", "a quarter"]) expect(nine.some((p) => p.includes(`spoken "${said}`)), said).toBe(true)
+  })
+
+  it('refuses a vague quantity outright', () => {
+    const { brief, timeline } = parsed((b, t) => {
+      t.voice.script = "[warm] So... most buyers in Bend go in with a plan. [long pause] Send this to whoever you're house hunting with."
+      b.spec_rules.voiceover.script = t.voice.script
+    })
+    const nine = textPreflight(brief, timeline, ctxFor(brief)).filter((p) => p.check === 9).map((p) => p.problem)
+    expect(nine.join('\n')).toContain('spoken "most" (words 1 to 1) is a quantity with no single figure')
+  })
 })
 
 describe('the real sample, against the committed registry', () => {
