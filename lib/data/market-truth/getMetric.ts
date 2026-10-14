@@ -184,6 +184,93 @@ function toMetricResult(row: Record<string, unknown>): MetricResult {
   }
 }
 
+/**
+ * How far back, in period_end days, getMetrics' first read reaches. The
+ * compute writes one period_end per day, so the first read holds the last four
+ * days of rows; any input it cannot answer is read again over all history.
+ */
+export const METRIC_RECENT_PERIOD_DAYS = 3
+
+function isoDateDaysAgo(days: number, now = Date.now()): string {
+  return new Date(now - days * 86_400_000).toISOString().slice(0, 10)
+}
+
+/** A PostgREST filter value, quoted so a reserved character cannot end it. */
+function quoted(value: string): string {
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+}
+
+/**
+ * `and(segment.eq."condo",stat_id.in.("active_count",...)),and(...)`: each
+ * segment with only the stats asked of it. The IN lists alone read every
+ * asked stat for every asked segment, which on the history read is mostly
+ * rows of inputs the recent read already answered.
+ */
+export function segmentStatPairsFilter(inputs: GetMetricInput[]): string {
+  const statsBySegment = new Map<string, Set<string>>()
+  for (const input of inputs) {
+    const stats = statsBySegment.get(input.segment) ?? new Set<string>()
+    stats.add(input.stat)
+    statsBySegment.set(input.segment, stats)
+  }
+  return [...statsBySegment]
+    .map(([segment, stats]) => `and(segment.eq.${quoted(segment)},stat_id.in.(${[...stats].map(quoted).join(',')}))`)
+    .join(',')
+}
+
+/**
+ * Every publishable market_metric row the inputs could pick, newest first,
+ * paged past PostgREST's 1,000-row cap. `periodEndFrom` keeps only rows whose
+ * period_end is on or after that date; `pairsOnly` reads each segment's own
+ * stats instead of every stat for every segment.
+ */
+async function readCandidateRows(
+  sb: ReturnType<typeof createServiceClient>,
+  inputs: GetMetricInput[],
+  periodEndFrom: string | null,
+  pairsOnly = false,
+): Promise<Record<string, unknown>[]> {
+  const windows = inputs.every((input) => input.windowMonths != null)
+    ? unique(inputs.map((input) => String(input.windowMonths)))
+    : null
+  const periodEnds = inputs.every((input) => Boolean(input.periodEnd))
+    ? unique(inputs.map((input) => String(input.periodEnd).slice(0, 10)))
+    : null
+  const rows: Record<string, unknown>[] = []
+  for (let from = 0; ; from += METRIC_PAGE) {
+    let query = sb
+      .from('market_metric')
+      .select(METRIC_COLUMNS)
+      .in('stat_id', unique(inputs.map((input) => input.stat)))
+      .in('geo_type', unique(inputs.map((input) => input.geoType)))
+      .in('geo_slug', unique(inputs.map((input) => input.geoSlug)))
+      .in('segment', unique(inputs.map((input) => input.segment)))
+      .in(
+        'definition_id',
+        unique(inputs.map((input) => input.definitionId ?? DEFINITION_ID)),
+      )
+      // pickRow answers only from a publishable row (isFreshPublishable), so
+      // a withheld row is never read. It also puts the read on
+      // market_metric_lookup_idx, the partial index over publishable rows.
+      .eq('is_publishable', true)
+    if (windows) query = query.in('window_months', windows)
+    if (periodEnds) query = query.in('period_end', periodEnds)
+    if (periodEndFrom) query = query.gte('period_end', periodEndFrom)
+    if (pairsOnly) query = query.or(segmentStatPairsFilter(inputs))
+    // computed_at is shared by every row one compute run writes, so the
+    // primary key breaks the tie: offset pages over a non-unique order can
+    // skip a row or repeat one between pages.
+    const { data, error } = await orderByPrimaryKey(query.order('computed_at', { ascending: false }))
+      .range(from, from + METRIC_PAGE - 1)
+
+    if (error) throw new Error(`getMetrics: ${error.message}`)
+    const page = (data ?? []) as Record<string, unknown>[]
+    rows.push(...page)
+    if (page.length < METRIC_PAGE) break
+  }
+  return rows
+}
+
 export async function getMetrics(inputs: GetMetricInput[]): Promise<(MetricResult | null)[]> {
   for (const input of inputs) {
     if (!STAT_BY_ID.get(input.stat)) throw new UnknownStatError(input.stat)
@@ -201,43 +288,30 @@ export async function getMetrics(inputs: GetMetricInput[]): Promise<(MetricResul
   // loadOverlayRows). Ordered by computed_at desc, the range loop finishes
   // every page; the window and period filters narrow the read when every
   // input names one. pickRow still decides which row answers.
-  const windows = inputs.every((input) => input.windowMonths != null)
-    ? unique(inputs.map((input) => String(input.windowMonths)))
-    : null
-  const periodEnds = inputs.every((input) => Boolean(input.periodEnd))
-    ? unique(inputs.map((input) => String(input.periodEnd).slice(0, 10)))
-    : null
+  //
+  // RECENT FIRST, THEN HISTORY ONLY WHERE NEEDED (2026-10-14). Reading every
+  // day of every stat made the read grow by a day of rows each day: the public
+  // segments read for city:bend paged 9,540 rows in 10 sequential requests to
+  // answer 9 rows (2.4 s warm, 9.5 s cold from a quiet session), and
+  // city/zip/nbh:publicSegments were 458 of the 2026-10-14 production builds'
+  // rail timeouts. pickRow takes the candidate with the LATEST period_end
+  // first (preferSegmentCell), so when an input has any candidate with
+  // period_end on or after the cut, its pick is among the rows on or after the
+  // cut, and the first read finds the same row the full read would. Only the
+  // inputs the first read leaves unanswered read history, so every answer is
+  // the one the full read gives (getMetric.test.ts proves it against the full
+  // read over generated stores).
   const sb = createServiceClient()
-  const rows: Record<string, unknown>[] = []
-  for (let from = 0; ; from += METRIC_PAGE) {
-    let query = sb
-      .from('market_metric')
-      .select(METRIC_COLUMNS)
-      .in('stat_id', unique(inputs.map((input) => input.stat)))
-      .in('geo_type', unique(inputs.map((input) => input.geoType)))
-      .in('geo_slug', unique(inputs.map((input) => input.geoSlug)))
-      .in('segment', unique(inputs.map((input) => input.segment)))
-      .in(
-        'definition_id',
-        unique(inputs.map((input) => input.definitionId ?? DEFINITION_ID)),
-      )
-    if (windows) query = query.in('window_months', windows)
-    if (periodEnds) query = query.in('period_end', periodEnds)
-    // computed_at is shared by every row one compute run writes, so the
-    // primary key breaks the tie: offset pages over a non-unique order can
-    // skip a row or repeat one between pages.
-    const { data, error } = await orderByPrimaryKey(query.order('computed_at', { ascending: false }))
-      .range(from, from + METRIC_PAGE - 1)
-
-    if (error) throw new Error(`getMetrics: ${error.message}`)
-    const page = (data ?? []) as Record<string, unknown>[]
-    rows.push(...page)
-    if (page.length < METRIC_PAGE) break
+  const recent = await readCandidateRows(sb, inputs, isoDateDaysAgo(METRIC_RECENT_PERIOD_DAYS))
+  const picked = inputs.map((input) => pickRow(recent, input))
+  const unanswered = inputs.filter((_, i) => picked[i] == null)
+  if (unanswered.length > 0) {
+    const history = await readCandidateRows(sb, unanswered, null, true)
+    inputs.forEach((input, i) => {
+      if (picked[i] == null) picked[i] = pickRow(history, input)
+    })
   }
-  return inputs.map((input) => {
-    const row = pickRow(rows, input)
-    return row ? toMetricResult(row) : null
-  })
+  return picked.map((row) => (row ? toMetricResult(row) : null))
 }
 
 export async function getMetric(input: GetMetricInput): Promise<MetricResult | null> {
