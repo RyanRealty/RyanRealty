@@ -14,7 +14,7 @@ const {
   type PersistOk = { ok: true; id: number; persisted: true }
   type PersistFail = { ok: false; persisted: false; error: string }
   return {
-    insertTwilioRawEvent: vi.fn(async (_row?: { kind: string; providerSid: string; payload: Record<string, string> }): Promise<PersistOk | PersistFail> => ({
+    insertTwilioRawEvent: vi.fn(async (_row: { kind: string; providerSid: string; payload: Record<string, string> }): Promise<PersistOk | PersistFail> => ({
       ok: true,
       id: 11,
       persisted: true,
@@ -153,7 +153,7 @@ describe('twilio webhook ack', () => {
   it('persists the raw payload before the ack', async () => {
     const order: string[] = []
     insertTwilioRawEvent.mockImplementation(async (row) => {
-      order.push(`persist:${row.providerSid}`)
+      order.push(`persist:${row!.providerSid}`)
       return { ok: true, id: 4, persisted: true }
     })
     const res = await ackTwilioWebhook({
