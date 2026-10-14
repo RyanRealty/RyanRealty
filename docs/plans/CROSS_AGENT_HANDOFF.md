@@ -1,12 +1,14 @@
-# Current — 2026-10-14 (Cursor, agent rules: PR merge + DB writes)
+# Current — 2026-10-14 (Cursor, Lighthouse artifact-poll retry)
 
-Surface: Cursor cloud. Branch `cursor/agent-rules-main-db-136e` from origin/main `12878ac14` (merged, not rebased: #568, #562, #547, #471, #556, #557, #506, #558). Matt approved merging #544 once checks pass. Known main flakes allowed: `/sell` content-floor, `/communities/tetherow` page-payload, Lighthouse JSON. Other agents closed #544 three times as superseded by #562; Matt still wants this PR merged. Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. Branch `cursor/lhci-artifact-poll-4396` from origin/main `83d4fdf40` (#529 just merged). Nobody pushes main. Nothing sent. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true. CMA and email wording unchanged.
 
-**What this branch does.** Agent instruction files match Matt 2026-10-13: PRs only, never `git push` `main`; merge your own PR once CI checks pass, then verify the production deploy. Bots may write to Ryan Realty Supabase when a task Matt asked for needs it. #562 on main is the process-rule source (`AGENTS.md`). This PR keeps that plus the Current block. Merge with a normal merge commit, not squash.
+**Done this session.** #452 merged `608fd879b`, deploy READY. #471 merged `637dbefcf`, deploy READY. #529 merged `83d4fdf40`, deploy verify in flight.
+
+**This branch.** `use-build` retries `gh api .../artifacts` until the body is valid JSON (12 tries) so Lighthouse no longer dies on `unexpected end of JSON input`. Helper `scripts/lib/valid-json.mjs`. Merge when green.
 
 **Still open.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `new-branch-and-pr`, `make-pr-easy-to-review`.
 
 ## Earlier — 2026-10-14 (Claude, CMA multi-unit guard + greeting names the person at the address)
 

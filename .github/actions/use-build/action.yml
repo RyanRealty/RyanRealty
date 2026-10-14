@@ -37,17 +37,40 @@ runs:
         RUN: repos/${{ github.repository }}/actions/runs/${{ github.run_id }}
       run: |
         for i in $(seq 1 150); do
-          if [ -n "$(gh api "$RUN/artifacts" --jq '.artifacts[] | select(.name == "next-build") | .id')" ]; then
-            echo "next-build artifact found (waited ~$((i * 10 - 10))s)"; exit 0
+          body=$(gh api "$RUN/artifacts" 2>/dev/null || true)
+          if printf '%s' "$body" | node scripts/lib/valid-json.mjs --stdin; then
+            if [ -n "$(printf '%s' "$body" | jq -r '.artifacts[] | select(.name == "next-build") | .id' | head -1)" ]; then
+              echo "next-build artifact found (waited ~$((i * 10 - 10))s)"; exit 0
+            fi
           fi
-          state=$(gh api "$RUN/jobs?per_page=100" --jq '.jobs[] | select(.name == "build") | "\(.status) \(.conclusion)"')
-          case "$state" in
-            "completed success") ;;  # uploaded; the artifact list catches up on the next probe
-            completed*) echo "::error::the build job ended ($state) without an artifact"; exit 1 ;;
-          esac
+          jobs=$(gh api "$RUN/jobs?per_page=100" 2>/dev/null || true)
+          if printf '%s' "$jobs" | node scripts/lib/valid-json.mjs --stdin; then
+            state=$(printf '%s' "$jobs" | jq -r '.jobs[] | select(.name == "build") | "\(.status) \(.conclusion)"')
+            case "$state" in
+              "completed success") ;;  # uploaded; the artifact list catches up on the next probe
+              completed*) echo "::error::the build job ended ($state) without an artifact"; exit 1 ;;
+            esac
+          fi
           sleep 10
         done
         echo "::error::no next-build artifact after 25 minutes"; exit 1
+    # download-artifact parses the artifacts list as JSON. An empty or
+    # truncated reply is "unexpected end of JSON input". Retry until valid.
+    - name: Wait for a valid artifacts JSON reply
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        RUN: repos/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        for i in $(seq 1 12); do
+          body=$(gh api "$RUN/artifacts" 2>/dev/null || true)
+          if printf '%s' "$body" | node scripts/lib/valid-json.mjs --stdin; then
+            echo "artifacts list is valid JSON (try $i)"; exit 0
+          fi
+          echo "artifacts list not valid JSON (try $i); retrying"
+          sleep 5
+        done
+        echo "::error::artifacts list was not valid JSON after 12 tries"; exit 1
     - uses: actions/download-artifact@v4
       with:
         name: next-build
