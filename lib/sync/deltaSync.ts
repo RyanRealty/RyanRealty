@@ -50,7 +50,9 @@ import { restoreServedAgain } from '@/lib/sync/mlsRemovedRestore'
 import { syncAuxiliaryTablesForFinalization } from '@/app/api/admin/sync/_shared/listing-completeness'
 import { processNewExpiredListings } from '@/lib/expired-listing-processor'
 import { createServiceClient } from '@/lib/supabase/service'
-import { submitIndexNow, type IndexNowResult } from '@/lib/seo/indexnow'
+import { revalidateTag } from 'next/cache'
+import { cacheTag } from '@/lib/data/cache/unstable-cache'
+import { indexNowEnabled, submitIndexNow, type IndexNowResult } from '@/lib/seo/indexnow'
 import { listingIndexNowUrls, type ListingPageChange } from '@/lib/seo/indexnow-listings'
 
 // ── Canonical reconciled constants (prefer the hardened cron lane) ──────────
@@ -545,28 +547,76 @@ export type DeltaIndexNowSummary = {
   skipped: IndexNowResult['skipped']
 }
 
+const listNumberOf = (row: Record<string, unknown>) => String(row.ListNumber ?? '').trim()
+
+/**
+ * The changed rows whose page changed the way the plan says. A broker
+ * override wins over Spark on the page (upsertListingRows re-applies it), so:
+ * a row whose status is overridden is left out (Spark's row cannot say what
+ * the page shows, or whether it is public), and a price change on a row whose
+ * price is overridden is no change at all. Pure; exported for tests.
+ */
+export function indexNowCandidates(
+  changed: readonly Record<string, unknown>[],
+  pageChanges: ReadonlyMap<string, ReadonlySet<ListingPageChange>>,
+  overrides: ReadonlyMap<string, { status: boolean; listPrice: boolean }>,
+): Record<string, unknown>[] {
+  return changed.filter((row) => {
+    const o = overrides.get(listNumberOf(row))
+    if (!o) return true
+    if (o.status) return false
+    const reasons = [...(pageChanges.get(listNumberOf(row)) ?? [])]
+    return reasons.some((r) => !(r === 'price' && o.listPrice))
+  })
+}
+
 /**
  * Tell IndexNow about the written rows whose public page changed. Started
  * after the writes and awaited at the end of the run, so it overlaps the
- * run's tail instead of adding to it; each request has a short timeout and
- * nothing here throws, so it can never fail or stall the sync.
+ * run's tail instead of adding to it. Each listing's cached reads expire
+ * first, so the crawler IndexNow sends reads the page as written, not a
+ * stale-while-revalidate copy. Production only; one small override read; each
+ * request has a short timeout; nothing here throws, so it can never fail or
+ * stall the sync.
  */
-function startIndexNow(
+async function runIndexNow(
   written: readonly Record<string, unknown>[],
   pageChanges: ReadonlyMap<string, ReadonlySet<ListingPageChange>>,
   nowIso: string,
 ): Promise<DeltaIndexNowSummary> {
-  const failed: DeltaIndexNowSummary = { urls: 0, submitted: 0, ok: false, skipped: null }
+  if (!indexNowEnabled()) return { urls: 0, submitted: 0, ok: true, skipped: 'disabled' }
   try {
-    const changed = written.filter((row) => pageChanges.has(String(row.ListNumber ?? '').trim()))
-    const urls = listingIndexNowUrls(changed, new Date(nowIso))
-    return submitIndexNow(urls).then(
-      (r) => ({ urls: urls.length, submitted: r.submitted, ok: r.ok, skipped: r.skipped }),
-      () => ({ ...failed, urls: urls.length }),
-    )
+    const changed = written.filter((row) => pageChanges.has(listNumberOf(row)))
+    if (changed.length === 0) return { urls: 0, submitted: 0, ok: true, skipped: 'empty' }
+    const overrides = await getAdminOverrideFlags(changed.map(listNumberOf))
+    const rows = indexNowCandidates(changed, pageChanges, overrides)
+    expireListingReads(rows)
+    const urls = listingIndexNowUrls(rows, new Date(nowIso))
+    const r = await submitIndexNow(urls)
+    return { urls: urls.length, submitted: r.submitted, ok: r.ok, skipped: r.skipped }
   } catch (err) {
     console.error('[deltaSync] IndexNow skipped this tick (non-fatal).', err instanceof Error ? err.message : err)
-    return Promise.resolve(failed)
+    return { urls: 0, submitted: 0, ok: false, skipped: null }
+  }
+}
+
+/**
+ * Expire the cached detail, photo and video reads of these listings at once
+ * (cacheTag.listing, by ListingKey and by MLS number, the two keys a listing
+ * URL resolves through). Without it the first visit after a change, often the
+ * crawler itself on a quiet listing, is served the pre-change read while the
+ * cache refreshes behind it. Outside a Next request (a script) there is no
+ * cache to expire, and revalidateTag throws; that is not a sync failure.
+ */
+function expireListingReads(rows: readonly Record<string, unknown>[]): void {
+  try {
+    const keys = new Set<string>()
+    for (const row of rows) {
+      for (const k of [row.ListingKey, row.ListNumber]) if (typeof k === 'string' && k.trim()) keys.add(k.trim())
+    }
+    for (const k of keys) revalidateTag(cacheTag.listing(k), { expire: 0 })
+  } catch (err) {
+    console.warn('[deltaSync] listing cache expiry skipped (non-fatal).', err instanceof Error ? err.message : err)
   }
 }
 
@@ -963,7 +1013,7 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
   }
 
   // 7. IndexNow, after the writes. Overlaps the rest of the run; awaited below.
-  const indexNowPending = startIndexNow(written, plan.pageChanges, nowIso)
+  const indexNowPending = runIndexNow(written, plan.pageChanges, nowIso)
 
   // Cursor: advance only as far as safely drained (cursor-safety p0.1).
   const nextCursor = computeNextDeltaCursor({ upsertFailed, truncated, runStartedAt, maxProcessedTs: plan.maxProcessedTs })

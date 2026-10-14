@@ -2,9 +2,10 @@
  * Which listing pages the MLS delta sync tells IndexNow about, and at which
  * URL (lib/seo/indexnow.ts; called from lib/sync/deltaSync.ts after the write).
  *
- * The URL is the listing canonical: listingCanonicalHref, the one builder the
- * listing page, its JSON-LD and /sitemaps/listings.xml all use. Never a
- * hand-built path.
+ * The URL is the listing canonical, built by the same pure core the canonical
+ * hop uses (mapListingCanonicalPathRow + listingCanonicalPathFromFields, i.e.
+ * listingCanonicalHref, the one builder the listing page, its JSON-LD and
+ * /sitemaps/listings.xml all use). Never a hand-built path.
  *
  * A written row is skipped when the site does not put its page in the index,
  * by the same rules the page itself applies:
@@ -22,19 +23,21 @@
  * media-suppressed listing, because its page shows no photo either way.
  */
 
-import { mayDisplayListingPublicly } from '@/lib/data/listings/listingCanonicalPathCore'
+import {
+  listingCanonicalPathFromFields,
+  mapListingCanonicalPathRow,
+  mayDisplayListingPublicly,
+} from '@/lib/data/listings/listingCanonicalPathCore'
 import { isComingSoonStatus } from '@/lib/listing-status-public'
 import { listingIndexPolicy, listingOffMarketAnchor } from '@/lib/listing/listing-index-policy'
 import { indexNowUrl } from '@/lib/seo/indexnow'
-import { listingCanonicalHref, listingsBrowsePath } from '@/lib/slug'
+import { listingsBrowsePath } from '@/lib/slug'
 
 /** Why a listing's public page changed in a sync run. */
 export type ListingPageChange = 'new' | 'status' | 'price' | 'photo' | 'reopened'
 
-function text(value: unknown): string | null {
-  if (value == null) return null
-  const s = String(value).trim()
-  return s ? s : null
+function str(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null
 }
 
 /**
@@ -42,31 +45,20 @@ function text(value: unknown): string | null {
  * or null when the page is not one the site shows in the index.
  */
 export function listingIndexNowPath(row: Record<string, unknown>, now: Date): string | null {
-  const listingKey = text(row.ListingKey) ?? text(row.ListNumber)
-  if (!listingKey) return null
+  const fields = mapListingCanonicalPathRow(row)
+  if (!fields) return null
   if (!mayDisplayListingPublicly(row)) return null
-  const status = text(row.StandardStatus)
+  const status = str(row.StandardStatus)
   if (isComingSoonStatus(status)) return null
-  const path = listingCanonicalHref({
-    listingKey,
-    listNumber: text(row.ListNumber),
-    streetNumber: text(row.StreetNumber),
-    streetName: text(row.StreetName),
-    city: text(row.City),
-    subdivisionName: text(row.SubdivisionName),
-  })
+  const path = listingCanonicalPathFromFields(fields)
   if (!path || path === listingsBrowsePath()) return null
   const policy = listingIndexPolicy({
     status,
     listingPath: path,
-    offMarketAt: listingOffMarketAnchor({
-      closeDate: text(row.CloseDate),
-      modifiedAt: text(row.ModificationTimestamp),
-    }),
+    offMarketAt: listingOffMarketAnchor({ closeDate: str(row.CloseDate), modifiedAt: str(row.ModificationTimestamp) }),
     now,
   })
-  if (policy.noindex) return null
-  return path
+  return policy.noindex ? null : path
 }
 
 /** Absolute canonical URLs for the written rows whose pages are indexable, deduplicated. */

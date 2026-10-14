@@ -12,8 +12,13 @@ const writes = vi.hoisted(() => ({
   existing: [] as Record<string, unknown>[],
   upsertOk: true,
   upserted: [] as Record<string, unknown>[][],
+  overrides: new Map<string, { status: boolean; listPrice: boolean }>(),
+  overrideReads: [] as string[][],
+  overrideReadFails: false,
 }))
+const expired = vi.hoisted(() => ({ tags: [] as Array<{ tag: string; profile: unknown }> }))
 const indexNow = vi.hoisted(() => ({
+  enabled: true,
   submit: vi.fn(async (urls: Iterable<string>) => ({
     ok: true,
     skipped: null,
@@ -51,7 +56,11 @@ vi.mock('@/lib/data/sync/syncWrites', () => ({
   getExistingListingsByListNumbers: vi.fn(async (nums: string[]) =>
     writes.existing.filter((r) => nums.includes(String(r.ListNumber))),
   ),
-  getAdminOverrideFlags: vi.fn(async () => new Map()),
+  getAdminOverrideFlags: vi.fn(async (nums: string[]) => {
+    writes.overrideReads.push(nums)
+    if (writes.overrideReadFails) throw new Error('db down')
+    return new Map([...writes.overrides].filter(([n]) => nums.includes(n)))
+  }),
   getHeldMediaByListNumbers: vi.fn(async () => new Map()),
   setListingFreezeFlags: vi.fn(async () => ({ ok: true })),
   upsertListingRows: vi.fn(async (rows: Record<string, unknown>[]) => {
@@ -66,17 +75,30 @@ vi.mock('@/lib/data/sync/syncWrites', () => ({
 }))
 vi.mock('@/lib/seo/indexnow', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/seo/indexnow')>()),
+  indexNowEnabled: () => indexNow.enabled,
   submitIndexNow: (urls: Iterable<string>) => indexNow.submit(urls),
 }))
+vi.mock('next/cache', () => ({
+  revalidateTag: (tag: string, profile: unknown) => {
+    expired.tags.push({ tag, profile })
+  },
+}))
 
-import { computeDeltaPlan, runDeltaSync, type ExistingListingLite, type SparkDeltaResult } from './deltaSync'
+import { COMING_SOON_STATUS } from '@/lib/listing-status-public'
+import {
+  computeDeltaPlan,
+  indexNowCandidates,
+  runDeltaSync,
+  type ExistingListingLite,
+  type SparkDeltaResult,
+} from './deltaSync'
 
 const NOW = '2026-10-14T12:00:00.000Z'
 const PHOTO_A = 'https://cdn.photos.sparkplatform.com/or/a-o.jpg'
 const PHOTO_B = 'https://cdn.photos.sparkplatform.com/or/b-o.jpg'
 
 function mkResult(overrides: Record<string, unknown> = {}): SparkDeltaResult {
-  const { photo, ...fields } = { photo: PHOTO_A as string | null, ...overrides }
+  const { photo = PHOTO_A, ...fields } = overrides as Record<string, unknown> & { photo?: string | null }
   return {
     Id: String(fields.ListingKey ?? 'KEY1'),
     StandardFields: {
@@ -174,12 +196,44 @@ describe('computeDeltaPlan: page changes for IndexNow', () => {
   })
 })
 
+describe('indexNowCandidates: a broker override wins over Spark on the page', () => {
+  const reasons = (...r: Array<'new' | 'status' | 'price' | 'photo' | 'reopened'>) => new Set(r)
+  const a = { ListNumber: '1' }
+  const b = { ListNumber: '2' }
+
+  it('keeps rows with no override', () => {
+    expect(indexNowCandidates([a], new Map([['1', reasons('status')]]), new Map())).toEqual([a])
+  })
+
+  it('drops a row whose status is overridden: Spark cannot say what the page shows', () => {
+    const o = new Map([['1', { status: true, listPrice: false }]])
+    expect(indexNowCandidates([a], new Map([['1', reasons('photo')]]), o)).toEqual([])
+  })
+
+  it('a price change under a price override is no change; another reason still counts', () => {
+    const o = new Map([
+      ['1', { status: false, listPrice: true }],
+      ['2', { status: false, listPrice: true }],
+    ])
+    const changes = new Map([
+      ['1', reasons('price')],
+      ['2', reasons('price', 'photo')],
+    ])
+    expect(indexNowCandidates([a, b], changes, o)).toEqual([b])
+  })
+})
+
 describe('runDeltaSync execute: IndexNow after the write', () => {
   beforeEach(() => {
     spark.results = []
     writes.existing = []
     writes.upsertOk = true
     writes.upserted = []
+    writes.overrides = new Map()
+    writes.overrideReads = []
+    writes.overrideReadFails = false
+    expired.tags = []
+    indexNow.enabled = true
     indexNow.submit.mockClear()
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -194,7 +248,7 @@ describe('runDeltaSync execute: IndexNow after the write', () => {
       mkResult(), // price change below
       mkResult({ ListNumber: '220000002', ListingKey: 'K2', StreetNumber: '9', StreetName: 'Elm St' }), // new
       mkResult({ ListNumber: '220000003', ListingKey: 'K3', StreetNumber: '7', StreetName: 'Oak St' }), // unchanged
-      mkResult({ ListNumber: '220000004', ListingKey: 'K4', StandardStatus: 'Coming Soon' }), // new, never public
+      mkResult({ ListNumber: '220000004', ListingKey: 'K4', StandardStatus: COMING_SOON_STATUS }), // new, pre-marketing
       mkResult({ ListNumber: '220000005', ListingKey: 'K5', IDXParticipant: false }), // new, IDX opt-out
     ]
     writes.existing = [
@@ -211,15 +265,48 @@ describe('runDeltaSync execute: IndexNow after the write', () => {
       'https://ryan-realty.com/homes-for-sale/bend/tetherow/9-elm-st-220000002',
     ])
     expect(r.indexNow).toEqual({ urls: 2, submitted: 2, ok: true, skipped: null })
+    // The override read covers only the changed rows, never the unchanged one.
+    expect(writes.overrideReads).toEqual([['220000001', '220000002', '220000004', '220000005']])
   })
 
-  it('submits nothing for rows whose upsert failed', async () => {
+  it('expires the changed listings’ cached reads at once, by key and MLS number, before submitting', async () => {
+    spark.results = [mkResult({ ListPrice: 480000 })]
+    writes.existing = [existing()]
+    await runDeltaSync({ mode: 'execute', accessToken: 't', nowIso: NOW })
+    expect(expired.tags).toEqual([
+      { tag: 'listing:KEY1', profile: { expire: 0 } },
+      { tag: 'listing:220000001', profile: { expire: 0 } },
+    ])
+  })
+
+  it('leaves out a listing whose status a broker overrode', async () => {
+    spark.results = [mkResult({ StandardStatus: 'Pending' })]
+    writes.existing = [existing()]
+    writes.overrides = new Map([['220000001', { status: true, listPrice: false }]])
+    const r = await runDeltaSync({ mode: 'execute', accessToken: 't', nowIso: NOW })
+    expect([...indexNow.submit.mock.calls[0]![0]]).toEqual([])
+    expect(r.indexNow.urls).toBe(0)
+  })
+
+  it('submits nothing, and reads nothing, for rows whose upsert failed', async () => {
     spark.results = [mkResult()]
     writes.upsertOk = false
     const r = await runDeltaSync({ mode: 'execute', accessToken: 't', nowIso: NOW })
     expect(r.ok).toBe(false)
-    expect([...indexNow.submit.mock.calls[0]![0]]).toEqual([])
-    expect(r.indexNow.urls).toBe(0)
+    expect(indexNow.submit).not.toHaveBeenCalled()
+    expect(writes.overrideReads).toEqual([])
+    expect(r.indexNow).toEqual({ urls: 0, submitted: 0, ok: true, skipped: 'empty' })
+  })
+
+  it('does nothing outside production: no read, no cache expiry, no submission', async () => {
+    indexNow.enabled = false
+    spark.results = [mkResult()]
+    const r = await runDeltaSync({ mode: 'execute', accessToken: 't', nowIso: NOW })
+    expect(r.ok).toBe(true)
+    expect(writes.overrideReads).toEqual([])
+    expect(expired.tags).toEqual([])
+    expect(indexNow.submit).not.toHaveBeenCalled()
+    expect(r.indexNow.skipped).toBe('disabled')
   })
 
   it('a failed submission never fails the sync', async () => {
@@ -228,7 +315,16 @@ describe('runDeltaSync execute: IndexNow after the write', () => {
     const r = await runDeltaSync({ mode: 'execute', accessToken: 't', nowIso: NOW })
     expect(r.ok).toBe(true)
     expect(r.totalUpserted).toBe(1)
-    expect(r.indexNow).toEqual({ urls: 1, submitted: 0, ok: false, skipped: null })
+    expect(r.indexNow).toEqual({ urls: 0, submitted: 0, ok: false, skipped: null })
+  })
+
+  it('a failed override read never fails the sync, and submits nothing', async () => {
+    spark.results = [mkResult()]
+    writes.overrideReadFails = true
+    const r = await runDeltaSync({ mode: 'execute', accessToken: 't', nowIso: NOW })
+    expect(r.ok).toBe(true)
+    expect(indexNow.submit).not.toHaveBeenCalled()
+    expect(r.indexNow.ok).toBe(false)
   })
 
   it('shadow mode never submits', async () => {

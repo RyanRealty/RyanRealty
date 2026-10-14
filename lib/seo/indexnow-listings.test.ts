@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { COMING_SOON_STATUS } from '@/lib/listing-status-public'
 import { listingCanonicalHref } from '@/lib/slug'
 import { listingIndexNowPath, listingIndexNowUrls } from './indexnow-listings'
 
@@ -53,7 +54,10 @@ describe('listingIndexNowPath', () => {
     expect(listingIndexNowPath(row({ permit_internet_yn: null, idx_participant: null }), NOW)).not.toBeNull()
   })
 
-  it.each(['Coming Soon', 'ComingSoon', 'coming soon'])('skips pre-marketing (%s): it never renders publicly', (status) => {
+  // The pre-marketing status in the spellings the feed sends, built from the
+  // one constant (ci:public-listing-status keeps the literal out of this file).
+  const preMarketing = [COMING_SOON_STATUS, COMING_SOON_STATUS.replace(' ', ''), COMING_SOON_STATUS.toLowerCase()]
+  it.each(preMarketing)('skips pre-marketing (%s): it never renders publicly', (status) => {
     expect(listingIndexNowPath(row({ StandardStatus: status }), NOW)).toBeNull()
   })
 
@@ -88,7 +92,7 @@ describe('listingIndexNowUrls', () => {
       [
         row(),
         row(),
-        row({ ListNumber: '220000002', ListingKey: 'K2', StandardStatus: 'Coming Soon' }),
+        row({ ListNumber: '220000002', ListingKey: 'K2', StandardStatus: COMING_SOON_STATUS }),
         row({ ListNumber: '220000003', ListingKey: 'K3', StreetNumber: '9', StreetName: 'Elm St' }),
       ],
       NOW,
