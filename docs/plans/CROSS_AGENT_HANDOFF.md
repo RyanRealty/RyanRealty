@@ -1,12 +1,16 @@
 # Current — 2026-10-14 (Cursor, homes-for-sale-by-area internal links)
 
-Surface: Cursor cloud. Branch `cursor/homes-for-sale-by-area-f550` merged onto origin/main `5293aa46c` (#539 inherited CI reds, #536 /buy slug allowlist, #538 city living/cost geo-guard, plus #528/#533/#512/#521/#513). PR #525. Do not `git push` main. Nothing sent. Prod DB read-only.
+Surface: Cursor cloud. Branch `cursor/homes-for-sale-by-area-f550` merged onto origin/main `ab4342b1d` (#511 listings-failure no-cache, #539 inherited CI reds, #536 /buy slug allowlist, #538 city living/cost geo-guard, plus #528/#533/#512/#521/#513). PR #525. Do not `git push` main. Nothing sent. Prod DB read-only.
 
 **What this branch does.** Sitewide footer column "Homes for sale by area" with exact-match anchors to `/homes-for-sale/{bend,redmond,sisters,sunriver,la-pine}` plus the top eight community hubs. Listing pages keep the place trail and add city + community text doors via `listingCommunityDoor` (PR #513). Off-market index policy stays #533 (90-day stale noindex). Blog posts that name a place get a contextual hub link. `/homes-for-sale/bend` server-renders live inventory takeaways after the H1. Visitor copy never says leftover HUD.
 
 **Next.** Watch CI on PR #525, squash-merge, verify production.
 
 Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `.cursor/rules/git-commit.mdc`, `docs/plans/PUBLIC_PRODUCT/PAGE_OUTLINE.md`.
+
+## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
+
+Surface: Cursor cloud. Landed on main via #511 at `ab4342b1d`. Community and resort pages throw `ListingsUnavailableError` after one retry when the listings or community read does not answer, so Next keeps the last good ISR copy. A cold miss is HTTP 500 + noindex. `CommunityDegraded` is deleted.
 
 ## Earlier — 2026-10-14 (Cursor, make main CI green)
 

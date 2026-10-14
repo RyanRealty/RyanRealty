@@ -1253,6 +1253,15 @@
       "app/llms.txt/**",
       "app/sitemap.ts"
     ],
+    "ci:sitemap-url-health": [
+      "app/communities/**",
+      "app/robots.ts",
+      "lib/site/listings-unavailable.ts",
+      "scripts/lib/sitemap-url-health.mjs",
+      "scripts/check-sitemap-url-health.mjs",
+      "scripts/check-vercel-deploy.mjs",
+      "scripts/lib/live-seo-audit.mjs"
+    ],
     "ci:skyslope-mirror": [
       "lib/tc/**",
       "lib/data/tc/**",
