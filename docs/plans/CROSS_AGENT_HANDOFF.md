@@ -1,12 +1,16 @@
 # Current — 2026-10-14 (Cursor, Tetherow HTML payload)
 
-Surface: Cursor cloud. Branch `cursor/tetherow-payload-9d69` from origin/main `7ebb9a12b`. PR only — do not merge. Nothing sent. Nobody pushes main.
+Surface: Cursor cloud. #554 (`cursor/tetherow-payload-9d69`) merged `origin/main` (handoff Current-block conflict only; no force-push). Production `/communities/tetherow` identity is 825,232 bytes, 21 `#homes` cards, 35 sold ledger rows with thumbs, `#homes-dial` already listing hrefs, no "Nothing listed". #554 as written drops that to 12 cards (grid never fetches the rest), 8 sold rows with no thumbs, and an empty map seed that SSR-renders "Nothing listed" until `/api/place/homes` lands. That is a visible break. Restoring the 21 cards and 35 thumbs erases the bytes that get under 710,608 (694 KB). Fallback is #553 (baseline reset). Nobody pushes main. Nothing sent.
 
-**What this branch does.** `/communities/tetherow` fails every PR smoke: CI measured 761,217 bytes vs the 710,608 (694 KB) shrink-only baseline (+50,609). Production identity is 825,232. After trim, local `next start` measured **674,965 bytes** (659.1 KB), **35,643 under** the baseline. Tetherow has 22 on-market homes, so #527's `homesSrc` never attached and the same rows shipped in the fold grid and in `PlaceSubdivisionMap` RSC. Map seed is now empty and always fetches `/api/place/homes`. Fold grid caps at 12. Sold table caps at 8 with no thumbs. JSON-LD ItemList already caps at 8 photographed homes; the page now passes only that slice. Baseline file unchanged.
+**Not this change.** Do not merge #554 onto main. Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. Hold #452. Hold #471.
 
-**CI on current main.** `ci:css-layers` is green (1 baselined offender, `help-driver.css`). `app/sell/_v3/sell-stage.css:575` is `@keyframes sell-ask-step`, not an un-layered `a`/`button` color rule. CLAUDE.md is 38,656 / 38,733. `unit (2)` is green on recent main runs. No trivial main-only fix in this PR.
+## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
 
-**Not this change.** Do not merge this PR. Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main).
+Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489), which includes #485 (`fe948f648`) and #488 (`2167f8f71`). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
+
+**What landed.** #485 refuses an expired/FSBO CMA build when the home is on the market or has no sendable email. #488 ranks closer lots and matching views ahead of a mismatched sale. #489 seats a same-generation half-mile sale ahead of a stale neighbor.
+
+**Held.** #452 stays open: the body requires a rule-25 fleet score before merge (stretch clocks). #471 stays open: merge conflicts with later main and would drop `loadCmaMapTile` / `CMA_MAP_MS`; lint-and-build is already red. The unique `idx_listings_parcel_number` migration is not on main.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
