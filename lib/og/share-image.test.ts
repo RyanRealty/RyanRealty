@@ -63,7 +63,11 @@ describe('share-card metadata', () => {
       expect(image && typeof image === 'object' && 'width' in image ? image.width : 0).toBe(1200)
       expect(image && typeof image === 'object' && 'height' in image ? image.height : 0).toBe(630)
       expect(image && typeof image === 'object' && 'alt' in image ? image.alt : '').toBeTruthy()
-      expect(meta.twitter?.card).toBe('summary_large_image')
+      const twitterCard =
+        meta.twitter && typeof meta.twitter === 'object' && 'card' in meta.twitter
+          ? meta.twitter.card
+          : null
+      expect(twitterCard).toBe('summary_large_image')
       const twitter = Array.isArray(meta.twitter?.images) ? meta.twitter.images[0] : null
       const twitterUrl =
         typeof twitter === 'string'

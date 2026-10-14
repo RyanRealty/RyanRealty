@@ -1,5 +1,4 @@
 import { getBlogPostForOgBySlug, getBrokerForOgBySlug } from '@/lib/data/brokers/getBrokers'
-import { getHeroPhotosByListingKeys } from '@/lib/data/listings/getListingDetailBundles'
 import { getListingTiles } from '@/lib/data/listings/getListingTiles'
 import { renderShareCard } from '@/lib/og/share-card'
 import { resolvePlaceOgPhoto } from '@/lib/og/resolve-photo'
@@ -34,14 +33,11 @@ export async function GET(request: Request) {
       })
       const tile = tiles[0]
       if (tile) {
-        let photoUrl: string | undefined = tile.photoUrl ?? undefined
-        if (!photoUrl) {
-          const heroMap = await getHeroPhotosByListingKeys([tile.listingKey])
-          photoUrl = heroMap.get(tile.listingKey)
-        }
+        // Tile photoUrl is already null when media_suppressed. Do not fall
+        // back to listing_photos — that table is not suppression-gated.
         return renderShareCard({
           title: listingCardTitle(tile),
-          photoSrc: photoUrl,
+          photoSrc: tile.photoUrl,
         })
       }
     } catch (err) {
