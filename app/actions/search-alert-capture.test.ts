@@ -15,7 +15,7 @@ const h = vi.hoisted(() => ({
   getCookie: vi.fn(),
   sendAlertConfirmation: vi.fn(),
   headerGet: vi.fn((_name?: string) => null as string | null),
-  readVisitCampaign: vi.fn(),
+  readLiveVisit: vi.fn(),
 }))
 
 vi.mock('next/headers', () => ({
@@ -64,7 +64,7 @@ vi.mock('@/lib/visitor-backfill', () => ({
 
 // The visit's recorded campaign (visitor_sessions). Never read production.
 vi.mock('@/lib/data/identity/visitCampaign', () => ({
-  readVisitCampaign: (...args: unknown[]) => h.readVisitCampaign(...args),
+  readLiveVisit: (...args: unknown[]) => h.readLiveVisit(...args),
 }))
 
 import {
@@ -100,8 +100,8 @@ beforeEach(() => {
   h.sendAlertConfirmation.mockReset()
   h.headerGet.mockReset()
   h.headerGet.mockReturnValue(null)
-  h.readVisitCampaign.mockReset()
-  h.readVisitCampaign.mockResolvedValue(null)
+  h.readLiveVisit.mockReset()
+  h.readLiveVisit.mockResolvedValue(null)
   h.sendAlertConfirmation.mockResolvedValue({ ok: false, via: 'skipped', error: 'unit test' })
   h.enrichNativeLead.mockResolvedValue(undefined)
 
@@ -356,7 +356,8 @@ describe('submitSearchAlertSignup price-drop watch', () => {
 })
 
 // Matt 2026-10-09, "Visit they signed up in": every buyer door tags the lead with
-// the page's link, else the campaign the visit arrived with, else nothing.
+// the link that started the live visit, else the page's own link when there is
+// no live visit, else nothing.
 describe('same-visit ad tags on the buyer doors', () => {
   const FB_VISIT = { source: 'facebook', medium: 'paid_social', campaign: 'buyer-price-drops', content: 'reloc-h3-v1' }
   const FB_TAGS = ['channel:fb-ads', 'campaign:buyer-price-drops', 'ad-content:reloc-h3-v1']
@@ -368,22 +369,31 @@ describe('same-visit ad tags on the buyer doors', () => {
   }
   const LISTING = { email: EMAIL, listingKey: '220123456', addressLine: '123 Main St', company: '' }
   const tagCall = () => h.canonicallyTagLead.mock.calls[0][0] as { extraTags?: string[]; originContext: Record<string, unknown> }
+  const refererIs = (url: string) => h.headerGet.mockImplementation((name?: string) => (name === 'referer' ? url : null))
 
   it('an alert signup on a page with no link carries the visit’s campaign', async () => {
-    h.readVisitCampaign.mockResolvedValue(FB_VISIT)
+    h.readLiveVisit.mockResolvedValue({ campaign: FB_VISIT })
 
     await signup({ sessionId: SESSION_ID })
 
-    expect(h.readVisitCampaign).toHaveBeenCalledWith({ sessionId: SESSION_ID, rrVid: RR_VID })
+    expect(h.readLiveVisit).toHaveBeenCalledWith({ sessionId: SESSION_ID, rrVid: RR_VID })
     expect(tagCall().extraTags).toEqual(FB_TAGS)
     expect(tagCall().originContext).toMatchObject(FB_ORIGIN)
   })
 
-  it('an alert signup whose page carries a link never reads the visit', async () => {
+  it('with no live visit, an alert signup is credited to the page’s link', async () => {
     await signup({ sessionId: SESSION_ID, landingSearch: '?utm_source=google&utm_medium=cpc&utm_campaign=bend-homes' })
 
-    expect(h.readVisitCampaign).not.toHaveBeenCalled()
     expect(tagCall().extraTags).toEqual(['channel:google-ads', 'campaign:bend-homes'])
+  })
+
+  it('a live visit outranks a link inside the site, and the note keeps the page’s utm when nothing earned credit', async () => {
+    h.readLiveVisit.mockResolvedValue({ campaign: null })
+
+    await signup({ sessionId: SESSION_ID, landingSearch: '?utm_source=cma&utm_medium=document&utm_campaign=cma-letter' })
+
+    expect(tagCall().extraTags).toEqual([])
+    expect(tagCall().originContext).toMatchObject({ utmSource: 'cma', utmMedium: 'document', utmCampaign: 'cma-letter' })
   })
 
   it('a suspect alert signup reads no visit and tags nothing', async () => {
@@ -391,40 +401,44 @@ describe('same-visit ad tags on the buyer doors', () => {
 
     await signup({ sessionId: SESSION_ID })
 
-    expect(h.readVisitCampaign).not.toHaveBeenCalled()
+    expect(h.readLiveVisit).not.toHaveBeenCalled()
     expect(h.canonicallyTagLead).not.toHaveBeenCalled()
   })
 
-  it('a guest save carries the listing page’s link from the Referer', async () => {
-    h.headerGet.mockImplementation((name?: string) =>
-      name === 'referer'
-        ? 'https://ryan-realty.com/homes-for-sale/listing/220123456?utm_source=google&utm_medium=cpc&utm_campaign=new-listings'
-        : null,
-    )
+  it('with no live visit, a guest save carries the listing page’s link from the Referer', async () => {
+    refererIs('https://ryan-realty.com/homes-for-sale/listing/220123456?utm_source=google&utm_medium=cpc&utm_campaign=new-listings')
 
     await submitListingSaveCapture({ ...LISTING, sessionId: SESSION_ID })
 
-    expect(h.readVisitCampaign).not.toHaveBeenCalled()
+    expect(h.readLiveVisit).toHaveBeenCalledWith({ sessionId: SESSION_ID, rrVid: RR_VID })
     expect(tagCall().extraTags).toEqual(['channel:google-ads', 'campaign:new-listings'])
     expect(tagCall().originContext).toMatchObject({ source: 'listing-save', utmSource: 'google', utmMedium: 'cpc' })
   })
 
-  it('a guest save without a page link carries the visit’s campaign', async () => {
-    h.readVisitCampaign.mockResolvedValue(FB_VISIT)
+  it('a guest save from a CMA comp link is credited to the visit, not to utm_source=cma', async () => {
+    h.readLiveVisit.mockResolvedValue({ campaign: { source: 'crm', medium: 'sms', campaign: null, content: null } })
+    refererIs('https://ryan-realty.com/homes-for-sale/listing/220123456?utm_source=cma&utm_medium=document&utm_campaign=cma-letter')
 
     await submitListingSaveCapture({ ...LISTING, sessionId: SESSION_ID })
 
-    expect(h.readVisitCampaign).toHaveBeenCalledWith({ sessionId: SESSION_ID, rrVid: RR_VID })
+    expect(tagCall().extraTags).toEqual(['channel:crm'])
+  })
+
+  it('a guest save without a page link carries the visit’s campaign', async () => {
+    h.readLiveVisit.mockResolvedValue({ campaign: FB_VISIT })
+
+    await submitListingSaveCapture({ ...LISTING, sessionId: SESSION_ID })
+
     expect(tagCall().extraTags).toEqual(FB_TAGS)
     expect(tagCall().originContext).toMatchObject({ source: 'listing-save', ...FB_ORIGIN })
   })
 
-  it('a price watch without a page link carries the visit’s campaign', async () => {
-    h.readVisitCampaign.mockResolvedValue(FB_VISIT)
+  it('a price watch carries the visit’s campaign', async () => {
+    h.readLiveVisit.mockResolvedValue({ campaign: FB_VISIT })
 
     await submitListingPriceDropWatch({ ...LISTING, sessionId: SESSION_ID })
 
-    expect(h.readVisitCampaign).toHaveBeenCalledWith({ sessionId: SESSION_ID, rrVid: RR_VID })
+    expect(h.readLiveVisit).toHaveBeenCalledWith({ sessionId: SESSION_ID, rrVid: RR_VID })
     expect(tagCall().extraTags).toEqual(FB_TAGS)
     expect(tagCall().originContext).toMatchObject({ source: 'listing-price-watch', ...FB_ORIGIN })
   })

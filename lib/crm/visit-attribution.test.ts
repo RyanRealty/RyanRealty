@@ -1,12 +1,13 @@
 /**
- * Which link a buyer sign-up is credited to (Matt 2026-10-09, "Visit they
- * signed up in"): the page's own link, else the visit's recorded campaign, else
- * nothing. Mocks only: the visit read is stubbed, never production.
+ * Which link a buyer lead is credited to (Matt 2026-10-09, "Visit they signed up
+ * in"): the landing link of the live visit, else the page's own link when there
+ * is no live visit, else nothing. Mocks only: the visit read is stubbed, never
+ * production.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({
-  readVisitCampaign: vi.fn(),
+  readLiveVisit: vi.fn(),
   getCookie: vi.fn(),
   headerGet: vi.fn((_name?: string) => null as string | null),
   cookiesThrow: false,
@@ -18,17 +19,18 @@ vi.mock('next/headers', () => ({
 }))
 
 vi.mock('@/lib/data/identity/visitCampaign', () => ({
-  readVisitCampaign: (...args: unknown[]) => h.readVisitCampaign(...args),
+  readLiveVisit: (...args: unknown[]) => h.readLiveVisit(...args),
 }))
 
-import { pageLinkFromReferer, signupAttribution } from '@/lib/crm/visit-attribution'
+import { noSignupAttribution, pageLinkFromReferer, signupAttribution } from '@/lib/crm/visit-attribution'
 
 const SID = '550e8400-e29b-41d4-a716-446655440000'
 const RR_VID = '9b2d6c1e-3f4a-4b5c-8d7e-0a1b2c3d4e5f'
+const FB_PAGE = { source: 'facebook', medium: 'paid_social', campaign: 'buyer-price-drops', content: 'reloc-h3-v1' }
 
 beforeEach(() => {
-  h.readVisitCampaign.mockReset()
-  h.readVisitCampaign.mockResolvedValue(null)
+  h.readLiveVisit.mockReset()
+  h.readLiveVisit.mockResolvedValue(null)
   h.getCookie.mockReset()
   h.getCookie.mockImplementation((name: string) => (name === 'rr_vid' ? { value: RR_VID } : undefined))
   h.headerGet.mockReset()
@@ -37,47 +39,60 @@ beforeEach(() => {
 })
 
 describe('signupAttribution', () => {
-  it('the page link wins and the visit is never read', async () => {
-    const out = await signupAttribution({
-      page: { source: 'facebook', medium: 'paid_social', campaign: 'buyer-price-drops', content: 'reloc-h3-v1' },
-      sessionId: SID,
-    })
-    expect(out.from).toBe('page')
-    expect(out.tags).toEqual(['channel:fb-ads', 'campaign:buyer-price-drops', 'ad-content:reloc-h3-v1'])
-    expect(out.utm).toEqual({ source: 'facebook', medium: 'paid_social', campaign: 'buyer-price-drops', content: 'reloc-h3-v1' })
-    expect(h.readVisitCampaign).not.toHaveBeenCalled()
-  })
-
-  it('without a page link, the visit the sign-up happened in answers', async () => {
-    h.readVisitCampaign.mockResolvedValue({ source: 'google', medium: 'cpc', campaign: 'bend-homes', content: null })
-    const out = await signupAttribution({ page: { source: undefined, medium: 'cpc' }, sessionId: SID })
-    expect(h.readVisitCampaign).toHaveBeenCalledWith({ sessionId: SID, rrVid: RR_VID })
+  it('the live visit’s landing link answers', async () => {
+    h.readLiveVisit.mockResolvedValue({ campaign: { source: 'google', medium: 'cpc', campaign: 'bend-homes', content: null } })
+    const out = await signupAttribution({ sessionId: SID })
+    expect(h.readLiveVisit).toHaveBeenCalledWith({ sessionId: SID, rrVid: RR_VID })
     expect(out).toEqual({
       tags: ['channel:google-ads', 'campaign:bend-homes'],
       utm: { source: 'google', medium: 'cpc', campaign: 'bend-homes', content: undefined },
-      from: 'visit',
     })
   })
 
-  it('an organic visit keeps its channel without the -ads label', async () => {
-    h.readVisitCampaign.mockResolvedValue({ source: 'facebook', medium: 'social', campaign: null, content: 'tour-reel' })
+  it('a link inside the site never outranks the visit (a CMA comp link carries utm_source=cma)', async () => {
+    h.readLiveVisit.mockResolvedValue({ campaign: { source: 'crm', medium: 'sms', campaign: null, content: null } })
+    const out = await signupAttribution({
+      page: { source: 'cma', medium: 'document', campaign: 'cma-letter' },
+      sessionId: SID,
+    })
+    expect(out.tags).toEqual(['channel:crm'])
+    expect(out.utm?.source).toBe('crm')
+  })
+
+  it('a live visit that arrived untagged gives no credit, whatever the page carries', async () => {
+    h.readLiveVisit.mockResolvedValue({ campaign: null })
+    await expect(signupAttribution({ page: FB_PAGE, sessionId: SID })).resolves.toEqual({ tags: [], utm: null })
+  })
+
+  it('with no live visit, the page’s own link answers', async () => {
+    const out = await signupAttribution({ page: FB_PAGE, sessionId: SID })
+    expect(out.tags).toEqual(['channel:fb-ads', 'campaign:buyer-price-drops', 'ad-content:reloc-h3-v1'])
+    expect(out.utm).toEqual(FB_PAGE)
+  })
+
+  it('an organic link keeps its channel without the -ads label', async () => {
+    h.readLiveVisit.mockResolvedValue({ campaign: { source: 'facebook', medium: 'social', campaign: null, content: 'tour-reel' } })
     const out = await signupAttribution({ sessionId: SID })
     expect(out.tags).toEqual(['channel:facebook', 'ad-content:tour-reel'])
-    expect(out.from).toBe('visit')
   })
 
-  it('no campaign either way means no tags', async () => {
-    const out = await signupAttribution({ page: null })
-    expect(out).toEqual({ tags: [], utm: null, from: null })
-    expect(h.readVisitCampaign).toHaveBeenCalledWith({ sessionId: undefined, rrVid: RR_VID })
+  it('no live visit and no page link means no tags', async () => {
+    await expect(signupAttribution({ page: { medium: 'cpc' } })).resolves.toEqual({ tags: [], utm: null })
+    expect(h.readLiveVisit).toHaveBeenCalledWith({ sessionId: undefined, rrVid: RR_VID })
   })
 
-  it('a cookie read that throws still reads the session', async () => {
+  it('a cookie read that throws still asks for the session', async () => {
     h.cookiesThrow = true
-    h.readVisitCampaign.mockResolvedValue({ source: 'newsletter', medium: 'email', campaign: null, content: null })
+    h.readLiveVisit.mockResolvedValue({ campaign: { source: 'newsletter', medium: 'email', campaign: null, content: null } })
     const out = await signupAttribution({ sessionId: SID })
-    expect(h.readVisitCampaign).toHaveBeenCalledWith({ sessionId: SID, rrVid: null })
+    expect(h.readLiveVisit).toHaveBeenCalledWith({ sessionId: SID, rrVid: null })
     expect(out.tags).toEqual(['channel:newsletter'])
+  })
+
+  it('every no-credit answer is a fresh value', () => {
+    const a = noSignupAttribution()
+    a.tags.push('channel:x')
+    expect(noSignupAttribution()).toEqual({ tags: [], utm: null })
   })
 })
 

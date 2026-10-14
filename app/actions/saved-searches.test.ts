@@ -12,7 +12,7 @@ const h = vi.hoisted(() => ({
   canonicallyTagLead: vi.fn(),
   upsertListingAlert: vi.fn(),
   stampListingAlertsCrmPerson: vi.fn(),
-  readVisitCampaign: vi.fn(),
+  readLiveVisit: vi.fn(),
   getCookie: vi.fn(),
   headerGet: vi.fn((_name?: string) => null as string | null),
 }))
@@ -40,7 +40,7 @@ vi.mock('@/lib/canonical-lead-tagger', () => ({
   canonicallyTagLead: (...args: unknown[]) => h.canonicallyTagLead(...args),
 }))
 vi.mock('@/lib/data/identity/visitCampaign', () => ({
-  readVisitCampaign: (...args: unknown[]) => h.readVisitCampaign(...args),
+  readLiveVisit: (...args: unknown[]) => h.readLiveVisit(...args),
 }))
 
 import { createSavedSearch } from '@/app/actions/saved-searches'
@@ -57,19 +57,21 @@ beforeEach(() => {
   h.canonicallyTagLead.mockResolvedValue(undefined)
   h.upsertListingAlert.mockResolvedValue({ ok: true })
   h.stampListingAlertsCrmPerson.mockResolvedValue(undefined)
-  h.readVisitCampaign.mockResolvedValue(null)
+  h.readLiveVisit.mockResolvedValue(null)
   h.getCookie.mockImplementation((name: string) => (name === 'rr_vid' ? { value: RR_VID } : undefined))
   h.headerGet.mockReturnValue(null)
 })
 
 describe('createSavedSearch attribution', () => {
   it('carries the visit’s campaign when the search page has no link', async () => {
-    h.readVisitCampaign.mockResolvedValue({ source: 'facebook', medium: 'paid_social', campaign: 'buyer-price-drops', content: 'reloc-h3-v1' })
+    h.readLiveVisit.mockResolvedValue({
+      campaign: { source: 'facebook', medium: 'paid_social', campaign: 'buyer-price-drops', content: 'reloc-h3-v1' },
+    })
 
     const out = await createSavedSearch('Bend under 700', { city: 'Bend', maxPrice: 700000 }, { sessionId: SESSION_ID })
 
     expect(out).toEqual({ error: null })
-    expect(h.readVisitCampaign).toHaveBeenCalledWith({ sessionId: SESSION_ID, rrVid: RR_VID })
+    expect(h.readLiveVisit).toHaveBeenCalledWith({ sessionId: SESSION_ID, rrVid: RR_VID })
     expect(tagCall().extraTags).toEqual(['channel:fb-ads', 'campaign:buyer-price-drops', 'ad-content:reloc-h3-v1'])
     expect(tagCall().originContext).toMatchObject({
       source: 'saved-search',
@@ -80,15 +82,25 @@ describe('createSavedSearch attribution', () => {
     })
   })
 
-  it('the search page’s own link wins over the visit', async () => {
+  it('with no live visit, the search page’s own link answers', async () => {
     h.headerGet.mockImplementation((name?: string) =>
       name === 'referer' ? 'https://ryan-realty.com/homes-for-sale/bend?utm_source=google&utm_medium=cpc&utm_campaign=bend-homes' : null,
     )
 
     await createSavedSearch('Bend', { city: 'Bend' })
 
-    expect(h.readVisitCampaign).not.toHaveBeenCalled()
     expect(tagCall().extraTags).toEqual(['channel:google-ads', 'campaign:bend-homes'])
+  })
+
+  it('a live visit outranks the search page’s link', async () => {
+    h.readLiveVisit.mockResolvedValue({ campaign: { source: 'newsletter', medium: 'email', campaign: 'oct-market', content: null } })
+    h.headerGet.mockImplementation((name?: string) =>
+      name === 'referer' ? 'https://ryan-realty.com/homes-for-sale/bend?utm_source=cma&utm_medium=document' : null,
+    )
+
+    await createSavedSearch('Bend', { city: 'Bend' })
+
+    expect(tagCall().extraTags).toEqual(['channel:newsletter', 'campaign:oct-market'])
   })
 
   it('no campaign either way: no channel tags, and the save still lands', async () => {
@@ -104,7 +116,7 @@ describe('createSavedSearch attribution', () => {
     h.getSession.mockResolvedValue(null)
 
     await expect(createSavedSearch('Bend', { city: 'Bend' })).resolves.toEqual({ error: 'Not signed in' })
-    expect(h.readVisitCampaign).not.toHaveBeenCalled()
+    expect(h.readLiveVisit).not.toHaveBeenCalled()
     expect(h.sendEvent).not.toHaveBeenCalled()
   })
 })

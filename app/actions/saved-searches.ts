@@ -163,8 +163,8 @@ export async function createSavedSearch(
     if (crmPersonId) {
       const { canonicallyTagLead } = await import('@/lib/canonical-lead-tagger')
       const { pageLinkFromReferer, signupAttribution } = await import('@/lib/crm/visit-attribution')
-      // The search page's link, else the campaign the visit arrived with (Matt
-      // 2026-10-09, "Visit they signed up in").
+      // The link that started the visit, else the search page's own (Matt
+      // 2026-10-09, "Visit they signed up in"; lib/crm/visit-attribution.ts).
       const signup = await signupAttribution({ page: await pageLinkFromReferer(), sessionId: options?.sessionId })
       await canonicallyTagLead({
         fubPersonId: crmPersonId,

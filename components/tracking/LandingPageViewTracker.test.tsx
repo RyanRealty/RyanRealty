@@ -91,8 +91,8 @@ describe('LandingPageViewTracker', () => {
     expect(lpViews().map((r) => r.lp_variant)).toEqual(cases.map(([, v]) => v))
   })
 
-  it('stays silent off the landing pages', () => {
-    for (const path of ['/homes-for-sale', '/buy', '/', '/sell-my-home-fast']) {
+  it('stays silent off the landing pages and on a 404 under /buy or /lp', () => {
+    for (const path of ['/homes-for-sale', '/buy', '/', '/sell-my-home-fast', '/buy/xyz', '/lp/foo', '/lp/seller-home-value', '/sell/inherited-home']) {
       nav.pathname = path
       if (!root) render()
       else rerender()

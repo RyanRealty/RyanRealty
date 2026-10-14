@@ -60,7 +60,7 @@ vi.mock('@/lib/data/client', () => ({
   }),
 }))
 
-import { readVisitCampaign } from '@/lib/data/identity/visitCampaign'
+import { readLiveVisit } from '@/lib/data/identity/visitCampaign'
 
 const NOW = Date.parse('2026-10-14T18:00:00.000Z')
 const MIN = 60 * 1000
@@ -94,8 +94,8 @@ beforeEach(() => {
   calls.throwOnFrom = false
 })
 
-describe('readVisitCampaign', () => {
-  it('the session the form names answers while it is the live visit', async () => {
+describe('readLiveVisit', () => {
+  it('the session the form names answers with its landing link while it is live', async () => {
     db.visitor_sessions.push(
       session({
         session_id: SID,
@@ -108,54 +108,56 @@ describe('readVisitCampaign', () => {
         },
       }),
     )
-    await expect(readVisitCampaign({ sessionId: SID, now: NOW })).resolves.toEqual({
-      source: 'facebook',
-      medium: 'paid_social',
-      campaign: 'buyer-price-drops',
-      content: 'reloc-h3-v1',
+    await expect(readLiveVisit({ sessionId: SID, now: NOW })).resolves.toEqual({
+      campaign: {
+        source: 'facebook',
+        medium: 'paid_social',
+        campaign: 'buyer-price-drops',
+        content: 'reloc-h3-v1',
+      },
     })
   })
 
-  it('a live session with no campaign answers null and does not borrow another session', async () => {
+  it('a live visit with no campaign says so, and never borrows another session', async () => {
     db.visitor_sessions.push(
       session({ session_id: SID, last_seen_at: at(2) }),
       session({ session_id: OTHER_SID, last_seen_at: at(1), link: { utm_source: 'facebook', utm_medium: 'paid_social' } }),
     )
-    await expect(readVisitCampaign({ sessionId: SID, rrVid: RR_VID, now: NOW })).resolves.toBeNull()
+    await expect(readLiveVisit({ sessionId: SID, rrVid: RR_VID, now: NOW })).resolves.toEqual({ campaign: null })
   })
 
-  it('a session past the 30-minute idle window does not answer for today', async () => {
+  it('a session past the 30-minute idle window is no live visit', async () => {
     db.visitor_sessions.push(
       session({ session_id: SID, last_seen_at: at(31), link: { utm_source: 'facebook', utm_medium: 'paid_social' } }),
     )
-    await expect(readVisitCampaign({ sessionId: SID, rrVid: RR_VID, now: NOW })).resolves.toBeNull()
+    await expect(readLiveVisit({ sessionId: SID, rrVid: RR_VID, now: NOW })).resolves.toBeNull()
   })
 
-  it('a stale form session falls through to the browser’s live session', async () => {
+  it('a stale or unwritten form session is no live visit: the browser’s other sessions are not asked', async () => {
+    // A session the tracker started a moment ago has no row yet; the browser's
+    // previous visit must not answer for it.
     db.visitor_sessions.push(
-      session({ session_id: SID, last_seen_at: at(240), link: { utm_source: 'newsletter', utm_medium: 'email' } }),
       session({
         session_id: OTHER_SID,
         last_seen_at: at(3),
         link: { utm_source: 'google', utm_medium: 'cpc', utm_campaign: 'bend-homes' },
       }),
     )
-    await expect(readVisitCampaign({ sessionId: SID, rrVid: RR_VID, now: NOW })).resolves.toEqual({
-      source: 'google',
-      medium: 'cpc',
-      campaign: 'bend-homes',
-      content: null,
-    })
+    await expect(readLiveVisit({ sessionId: SID, rrVid: RR_VID, now: NOW })).resolves.toBeNull()
+    db.visitor_sessions.push(session({ session_id: SID, last_seen_at: at(240), link: { utm_source: 'newsletter', utm_medium: 'email' } }))
+    await expect(readLiveVisit({ sessionId: SID, rrVid: RR_VID, now: NOW })).resolves.toBeNull()
   })
 
-  it('by rr_vid alone, the most recent live session answers', async () => {
+  it('with no session id, the browser’s most recent live session answers', async () => {
     db.visitor_sessions.push(
       session({ session_id: SID, last_seen_at: at(20), link: { utm_source: 'facebook', utm_medium: 'paid_social' } }),
       session({ session_id: OTHER_SID, last_seen_at: at(4) }),
     )
-    // The newest live session arrived with no campaign: no tags, even though an
+    // The newest live session arrived with no campaign: no credit, even though an
     // older session in the window had one.
-    await expect(readVisitCampaign({ rrVid: RR_VID, now: NOW })).resolves.toBeNull()
+    await expect(readLiveVisit({ rrVid: RR_VID, now: NOW })).resolves.toEqual({ campaign: null })
+    db.visitor_sessions = [session({ session_id: SID, last_seen_at: at(40), link: { utm_source: 'facebook' } })]
+    await expect(readLiveVisit({ rrVid: RR_VID, now: NOW })).resolves.toBeNull()
   })
 
   it('another browser’s session never answers', async () => {
@@ -167,35 +169,35 @@ describe('readVisitCampaign', () => {
         link: { utm_source: 'facebook' },
       }),
     )
-    await expect(readVisitCampaign({ sessionId: SID, rrVid: RR_VID, now: NOW })).resolves.toBeNull()
+    await expect(readLiveVisit({ rrVid: RR_VID, now: NOW })).resolves.toBeNull()
   })
 
   it('reads nothing for ids that are not uuid v4', async () => {
-    await expect(readVisitCampaign({ sessionId: 'not-a-uuid', rrVid: 'rr-vid-from-cookie', now: NOW })).resolves.toBeNull()
+    await expect(readLiveVisit({ sessionId: 'not-a-uuid', rrVid: 'rr-vid-from-cookie', now: NOW })).resolves.toBeNull()
     expect(calls.reads).toBe(0)
   })
 
-  it('trims blank utm values and never throws', async () => {
+  it('a blank utm_source is no campaign, and a failed read is no live visit', async () => {
     db.visitor_sessions.push(session({ session_id: SID, last_seen_at: at(1), link: { utm_source: '  ', utm_medium: 'cpc' } }))
-    await expect(readVisitCampaign({ sessionId: SID, now: NOW })).resolves.toBeNull()
+    await expect(readLiveVisit({ sessionId: SID, now: NOW })).resolves.toEqual({ campaign: null })
     calls.throwOnFrom = true
-    await expect(readVisitCampaign({ sessionId: SID, now: NOW })).resolves.toBeNull()
+    await expect(readLiveVisit({ sessionId: SID, now: NOW })).resolves.toBeNull()
   })
 
-  it('an untagged arrival never tags, whatever captureSource guessed into the columns', async () => {
+  it('an untagged arrival is no campaign, whatever captureSource guessed into the columns', async () => {
     // direct / none: no referrer, no utm.
     db.visitor_sessions.push(session({ session_id: SID, last_seen_at: at(1) }))
-    await expect(readVisitCampaign({ sessionId: SID, now: NOW })).resolves.toBeNull()
+    await expect(readLiveVisit({ sessionId: SID, now: NOW })).resolves.toEqual({ campaign: null })
     // A Google search result: captureSource writes google / organic from the referrer.
     db.visitor_sessions = [
       session({ session_id: SID, last_seen_at: at(1), referrer: 'https://www.google.com/', columns: { utm_source: 'google', utm_medium: 'organic' } }),
     ]
-    await expect(readVisitCampaign({ sessionId: SID, now: NOW })).resolves.toBeNull()
+    await expect(readLiveVisit({ sessionId: SID, now: NOW })).resolves.toEqual({ campaign: null })
     // A Facebook post shared without tags: facebook / social from the referrer.
     db.visitor_sessions = [
       session({ session_id: SID, last_seen_at: at(1), referrer: 'https://m.facebook.com/', columns: { utm_source: 'facebook', utm_medium: 'social' } }),
     ]
-    await expect(readVisitCampaign({ sessionId: SID, now: NOW })).resolves.toBeNull()
+    await expect(readLiveVisit({ sessionId: SID, now: NOW })).resolves.toEqual({ campaign: null })
   })
 
   it('reads the link off a landing page that also carries other query params', async () => {
@@ -206,11 +208,8 @@ describe('readVisitCampaign', () => {
         landing_page: 'https://ryan-realty.com/homes-for-sale/listing/220123456?fbclid=F1&utm_source=fb&utm_medium=paid_social&utm_content=tour%20reel',
       }),
     )
-    await expect(readVisitCampaign({ sessionId: SID, now: NOW })).resolves.toEqual({
-      source: 'fb',
-      medium: 'paid_social',
-      campaign: null,
-      content: 'tour reel',
+    await expect(readLiveVisit({ sessionId: SID, now: NOW })).resolves.toEqual({
+      campaign: { source: 'fb', medium: 'paid_social', campaign: null, content: 'tour reel' },
     })
   })
 })

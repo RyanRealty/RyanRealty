@@ -1,42 +1,55 @@
 /**
- * Which link gets the credit for a buyer sign-up (Matt 2026-10-09, "Visit they
- * signed up in"): saved searches, search alerts, listing saves and price-drop
- * watches are tagged with the link that started the visit they happen in.
+ * Which link gets the credit for a buyer lead (Matt 2026-10-09, "Visit they
+ * signed up in"): saved searches, search alerts, listing saves, price-drop
+ * watches and the /buy forms are tagged with the link that started the visit
+ * they happen in.
  *
- * The page's own link wins when it carries one (the form's lpContext, the page
- * query or the Referer: a new campaign's arrival starts a new visit, so it is
- * the same link). Otherwise the visit's recorded campaign answers, read from
- * visitor_sessions by the form's session id or the browser's rr_vid cookie
- * (lib/data/identity/visitCampaign.ts). That covers the buyer who arrived from
- * an ad, browsed a few pages and signed up on a page whose URL no longer
- * carries the link. No campaign either way, no tags: a sign-up days later in an
- * untagged visit stays uncredited, as Matt chose.
+ * The visit answers first: the landing link of the live session the form names,
+ * read from visitor_sessions (lib/data/identity/visitCampaign.ts). It answers
+ * even when its link carried no campaign, and even when the page's address
+ * carries utm_*: a link inside the site keeps its tags (a CMA's comp links say
+ * utm_source=cma) without starting a new visit, while a new campaign arriving
+ * from outside does start one, so the visit already holds it. The page's own
+ * link (the form's lpContext, the page query or the Referer) answers only when
+ * there is no live visit: tracking declined or GPC, or a visit the tracker has
+ * not written yet.
+ *
+ * No campaign either way, no tags: a sign-up days later in an untagged visit
+ * stays uncredited, as Matt chose. A tab left open on an ad's own landing
+ * address still carries that ad's link; the tracker records a visit resumed
+ * there under the same address, as GA4's own attribution does.
  */
 import 'server-only'
 import { cookies, headers } from 'next/headers'
-import { readVisitCampaign } from '@/lib/data/identity/visitCampaign'
+import { readLiveVisit } from '@/lib/data/identity/visitCampaign'
 import { resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { attributionParamsFromSearch } from '@/lib/lead-tracking'
 
 export type SignupUtm = { source: string; medium?: string; campaign?: string; content?: string }
 
-export type SignupPageLink = { source?: string; medium?: string; campaign?: string; content?: string }
+/** A page's link as a door reads it; utm_source is required for it to count. */
+export type SignupPageLink = Partial<SignupUtm>
 
 export type SignupAttribution = {
   /** channel: / campaign: / ad-content: tags for canonicallyTagLead's extraTags. */
   tags: string[]
   /** The link that earned them, for the person's origin context; null with no tags. */
   utm: SignupUtm | null
-  from: 'page' | 'visit' | null
 }
 
-function tagsFor(utm: SignupUtm): string[] {
-  return resolvePaidAttributionTags({
+/** No credit: a fresh value, so a caller that extends its tags never shares them. */
+export function noSignupAttribution(): SignupAttribution {
+  return { tags: [], utm: null }
+}
+
+function credit(utm: SignupUtm): SignupAttribution {
+  const tags = resolvePaidAttributionTags({
     utmSource: utm.source,
     utmMedium: utm.medium,
     utmCampaign: utm.campaign,
     utmContent: utm.content,
   })
+  return { tags, utm }
 }
 
 /**
@@ -58,34 +71,34 @@ export async function pageLinkFromReferer(): Promise<SignupPageLink | null> {
 }
 
 export async function signupAttribution(input: {
-  /** The page's own link, when the door reads one (utm_source required). */
+  /** The page's own link, when the door reads one. Used only with no live visit. */
   page?: SignupPageLink | null
   /** The VisitTracker session id the form sent, read on the client. */
   sessionId?: string | null
 }): Promise<SignupAttribution> {
-  const pageSource = input.page?.source?.trim()
-  if (pageSource) {
-    const utm: SignupUtm = {
-      source: pageSource,
-      medium: input.page?.medium || undefined,
-      campaign: input.page?.campaign || undefined,
-      content: input.page?.content || undefined,
-    }
-    return { tags: tagsFor(utm), utm, from: 'page' }
-  }
   let rrVid: string | null = null
   try {
     rrVid = (await cookies()).get('rr_vid')?.value ?? null
   } catch {
     rrVid = null
   }
-  const visit = await readVisitCampaign({ sessionId: input.sessionId, rrVid })
-  if (!visit) return { tags: [], utm: null, from: null }
-  const utm: SignupUtm = {
-    source: visit.source,
-    medium: visit.medium ?? undefined,
-    campaign: visit.campaign ?? undefined,
-    content: visit.content ?? undefined,
+  const visit = await readLiveVisit({ sessionId: input.sessionId, rrVid })
+  if (visit) {
+    const c = visit.campaign
+    if (!c) return noSignupAttribution()
+    return credit({
+      source: c.source,
+      medium: c.medium ?? undefined,
+      campaign: c.campaign ?? undefined,
+      content: c.content ?? undefined,
+    })
   }
-  return { tags: tagsFor(utm), utm, from: 'visit' }
+  const pageSource = input.page?.source?.trim()
+  if (!pageSource) return noSignupAttribution()
+  return credit({
+    source: pageSource,
+    medium: input.page?.medium || undefined,
+    campaign: input.page?.campaign || undefined,
+    content: input.page?.content || undefined,
+  })
 }

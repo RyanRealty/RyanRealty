@@ -1,15 +1,14 @@
 /**
- * The campaign a visit arrived with, for tagging a sign-up from that visit
- * (Matt 2026-10-09, "Visit they signed up in": saved searches, search alerts,
- * listing saves and price-drop watches are credited to the link that started
- * the visit they happen in). DAL boundary (G1): the raw .from() lives here.
+ * The campaign a visit arrived with, for tagging a lead from that visit (Matt
+ * 2026-10-09, "Visit they signed up in": a buyer sign-up or form is credited to
+ * the link that started the visit it happens in; lib/crm/visit-attribution.ts).
+ * DAL boundary (G1): the raw .from() lives here.
  *
  * The tracker records each session at every consent tier except an explicit
  * decline or GPC, and starts a new session after VISIT_IDLE_MS idle or on a new
  * campaign's arrival (lib/analytics/visitor-session.ts decideSession), so a
  * session's landing page IS the link that started that visit. A visitor who
- * declined tracking has no row, and their sign-up stays untagged unless the page
- * itself carries the link.
+ * declined tracking has no row; their lead is credited to the page's own link.
  *
  * The campaign is read from that landing page's own utm_* query, never from the
  * utm_* columns: captureSource fills those from the referrer when the link had
@@ -58,21 +57,25 @@ function toCampaign(row: CampaignRow | null | undefined): VisitCampaign | null {
 }
 
 /**
- * The visit's campaign. Only a session still inside the tracker's visit window
- * (VISIT_IDLE_MS since its last event, the rule decideSession applies) answers,
- * so an old visit never answers for today's.
+ * The visit a sign-up happens in, or null when there is no live one.
  *
- * The session the form names (`sessionId`, read on the client) answers first,
- * campaign or not. The client keeps that id past the idle timeout (it names the
- * session holding the browsing history, for the stitch), so a stale or unknown
- * id falls through to the browser's (`rrVid` cookie) most recent live session.
- * null when no live session exists or its landing link carried no utm_source.
+ * Only a session still inside the tracker's visit window (VISIT_IDLE_MS since
+ * its last event, the rule decideSession applies) is live, so an old visit never
+ * answers for today's. The session the form names (`sessionId`, read on the
+ * client from the store every tab shares) is the one asked. It is null when the
+ * session has gone idle or has no row: tracking declined or GPC, or a session the
+ * tracker started a moment ago and has not written yet. The browser's other
+ * sessions are never asked in its place, so a brand-new visit never borrows the
+ * one before it. Only a caller with no session id is answered from the browser's
+ * (`rrVid` cookie) most recent live session.
+ *
+ * `campaign` is null for a live visit whose landing link carried no utm_source.
  */
-export async function readVisitCampaign(input: {
+export async function readLiveVisit(input: {
   sessionId?: string | null
   rrVid?: string | null
   now?: number
-}): Promise<VisitCampaign | null> {
+}): Promise<{ campaign: VisitCampaign | null } | null> {
   try {
     const sb = createServiceClient()
     const since = new Date((input.now ?? Date.now()) - VISIT_IDLE_MS).toISOString()
@@ -84,7 +87,7 @@ export async function readVisitCampaign(input: {
         .eq('session_id', sessionId)
         .gte('last_seen_at', since)
         .maybeSingle()
-      if (data) return toCampaign(data as CampaignRow)
+      return data ? { campaign: toCampaign(data as CampaignRow) } : null
     }
     const rrVid = input.rrVid?.trim()
     if (rrVid && SESSION_UUID_V4.test(rrVid)) {
@@ -96,7 +99,7 @@ export async function readVisitCampaign(input: {
         .order('last_seen_at', { ascending: false })
         .limit(1)
         .maybeSingle()
-      return toCampaign(data as CampaignRow | null)
+      return data ? { campaign: toCampaign(data as CampaignRow) } : null
     }
     return null
   } catch {

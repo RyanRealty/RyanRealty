@@ -46,9 +46,9 @@ vi.mock('next/headers', () => ({
   headers: async () => new Headers(),
 }))
 // The visit's landing link (visitor_sessions). Never read production.
-const readVisitCampaign = vi.fn()
+const readLiveVisit = vi.fn()
 vi.mock('@/lib/data/identity/visitCampaign', () => ({
-  readVisitCampaign: (...args: unknown[]) => readVisitCampaign(...args),
+  readLiveVisit: (...args: unknown[]) => readLiveVisit(...args),
 }))
 
 import { submitLeadLandingForm } from './lead-landing'
@@ -73,7 +73,7 @@ beforeEach(() => {
   ensureNativeLead.mockReset().mockResolvedValue({ personId: PERSON_ID, created: true })
   enrichNativeLead.mockReset().mockResolvedValue(undefined)
   fireLeadGenerated.mockReset().mockResolvedValue(undefined)
-  readVisitCampaign.mockReset().mockResolvedValue(null)
+  readLiveVisit.mockReset().mockResolvedValue(null)
   vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200 })))
 })
 
@@ -183,23 +183,27 @@ describe('submitLeadLandingForm visit attribution', () => {
   const SESSION_ID = '550e8400-e29b-41d4-a716-446655440000'
 
   it('a page with no utm is credited to the visit’s landing link', async () => {
-    readVisitCampaign.mockResolvedValue({ source: 'facebook', medium: 'paid_social', campaign: 'spring-buyers', content: 'act-9' })
+    readLiveVisit.mockResolvedValue({ campaign: { source: 'facebook', medium: 'paid_social', campaign: 'spring-buyers', content: 'act-9' } })
 
     const res = await submitLeadLandingForm({ ...input(), sessionId: SESSION_ID })
 
     expect(res).toEqual({ error: null })
-    expect(readVisitCampaign).toHaveBeenCalledWith({ sessionId: SESSION_ID, rrVid: null })
+    expect(readLiveVisit).toHaveBeenCalledWith({ sessionId: SESSION_ID, rrVid: null })
     expect(canonicallyTagLead).toHaveBeenCalledWith(
       expect.objectContaining({ extraTags: ['channel:fb-ads', 'campaign:spring-buyers', 'ad-content:act-9'] }),
     )
   })
 
-  it('the page’s own utm wins and the visit is never read', async () => {
-    readVisitCampaign.mockResolvedValue({ source: 'facebook', medium: 'paid_social', campaign: null, content: null })
+  it('a live visit outranks the page’s utm', async () => {
+    readLiveVisit.mockResolvedValue({ campaign: { source: 'facebook', medium: 'paid_social', campaign: null, content: null } })
 
     await submitLeadLandingForm({ ...input({ lp_source: 'google', lp_medium: 'cpc' }), sessionId: SESSION_ID })
 
-    expect(readVisitCampaign).not.toHaveBeenCalled()
+    expect(canonicallyTagLead).toHaveBeenCalledWith(expect.objectContaining({ extraTags: ['channel:fb-ads'] }))
+  })
+
+  it('with no live visit, the page’s utm answers', async () => {
+    await submitLeadLandingForm({ ...input({ lp_source: 'google', lp_medium: 'cpc' }), sessionId: SESSION_ID })
     expect(canonicallyTagLead).toHaveBeenCalledWith(expect.objectContaining({ extraTags: ['channel:google-ads'] }))
   })
 

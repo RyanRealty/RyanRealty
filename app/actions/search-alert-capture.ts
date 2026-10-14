@@ -221,12 +221,19 @@ export async function submitSearchAlertSignup(input: {
     suspect = result.ok && result.suspect
     if (nativeId && !suspect) {
       try {
-        // The page's link, else the campaign the visit arrived with (Matt
+        // The link that started the visit, else the page's own (Matt
         // 2026-10-09, "Visit they signed up in"; lib/crm/visit-attribution.ts).
+        // The origin note keeps the page's utm when neither earned credit.
         const signup = await signupAttribution({
           page: { source: attr.lp_source, medium: attr.lp_medium, campaign: attr.lp_campaign, content: attr.lp_content },
           sessionId: input.sessionId,
         })
+        const noteUtm = signup.utm ?? {
+          source: attr.lp_source,
+          medium: attr.lp_medium,
+          campaign: attr.lp_campaign,
+          content: attr.lp_content,
+        }
         await canonicallyTagLead({
           fubPersonId: nativeId,
           audience: 'buyer',
@@ -242,10 +249,10 @@ export async function submitSearchAlertSignup(input: {
             want: isPriceDropAlert
               ? `Price-drop alerts for ${name}${summary ? `, ${summary}` : ''}`
               : `Listing alerts for ${name}${summary ? `, ${summary}` : ''}`,
-            utmSource: signup.utm?.source,
-            utmMedium: signup.utm?.medium,
-            utmCampaign: signup.utm?.campaign,
-            utmContent: signup.utm?.content,
+            utmSource: noteUtm.source,
+            utmMedium: noteUtm.medium,
+            utmCampaign: noteUtm.campaign,
+            utmContent: noteUtm.content,
           },
         })
         // Notify the assigned broker so a signup is never missed — a native
@@ -452,8 +459,8 @@ export async function submitListingSaveCapture(input: {
     suspect = result.ok && result.suspect
     if (nativeId && !suspect) {
       try {
-        // The listing page's link, else the campaign the visit arrived with
-        // (Matt 2026-10-09, "Visit they signed up in").
+        // The link that started the visit, else the listing page's own (Matt
+        // 2026-10-09, "Visit they signed up in"; lib/crm/visit-attribution.ts).
         const signup = await signupAttribution({ page: await pageLinkFromReferer(), sessionId: input.sessionId })
         await canonicallyTagLead({
           fubPersonId: nativeId,
@@ -639,8 +646,8 @@ export async function submitListingPriceDropWatch(input: {
     suspect = result.ok && result.suspect
     if (crmPersonId && !suspect) {
       try {
-        // The listing page's link, else the campaign the visit arrived with
-        // (Matt 2026-10-09, "Visit they signed up in").
+        // The link that started the visit, else the listing page's own (Matt
+        // 2026-10-09, "Visit they signed up in"; lib/crm/visit-attribution.ts).
         const signup = await signupAttribution({ page: await pageLinkFromReferer(), sessionId: input.sessionId })
         await canonicallyTagLead({
           fubPersonId: crmPersonId,

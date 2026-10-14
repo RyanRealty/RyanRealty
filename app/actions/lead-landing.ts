@@ -104,13 +104,14 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
     }
 
     // Paid-channel attribution: channel:*, campaign:* and ad-content:* from the
-    // page's utm, else from the link that started the visit the submit happens
-    // in (Matt 2026-10-09, "Visit they signed up in"). buyer- and
-    // seller-lead-attribution match a lead to the post or ad that sent it by
-    // these tags and nothing else, and this form is the live buyer LP
+    // link that started the visit the submit happens in, else the page's utm
+    // (Matt 2026-10-09, "Visit they signed up in"; lib/crm/visit-attribution.ts).
+    // buyer- and seller-lead-attribution match a lead to the post or ad that
+    // sent it by these tags and nothing else, and this form is the live buyer LP
     // (/buy/<intent>, /buy/leverage; no page renders a seller config). Empty
-    // when neither carried a utm_source.
-    const signup = await signupAttribution({
+    // when neither carried a utm_source. Started here and awaited after the CRM
+    // write, so the visit read adds nothing to the submit's wait.
+    const signupPending = signupAttribution({
       page: {
         source: input.lpContext?.lp_source,
         medium: input.lpContext?.lp_medium,
@@ -119,7 +120,6 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
       },
       sessionId: input.sessionId,
     })
-    const paidTags = signup.tags
 
     let refererAttr: LeadAttributionParams = {}
     try {
@@ -167,6 +167,7 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
         ...(input.lpContext?.lp_term ? { term: input.lpContext.lp_term } : {}),
       },
     })
+    const paidTags = (await signupPending).tags
     if (!result.ok) {
       // ─── Native-capture fallback on a CRM push failure (CONTACT360 Phase 0.2)
       // The CRM push failed (likely a CRM outage) — without a native record this
