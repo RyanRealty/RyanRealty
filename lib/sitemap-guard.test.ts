@@ -150,4 +150,22 @@ describe('dropEmptyOpenHouseCities (SITE-27: an empty week renders noindex)', ()
     const { dropEmptyOpenHouseCities } = await import('./sitemap-guard')
     expect(dropEmptyOpenHouseCities(entries, null)).toEqual(entries)
   })
+
+  it('logs one info line naming each dropped city once, and no error', async () => {
+    const { dropEmptyOpenHouseCities } = await import('./sitemap-guard')
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      dropEmptyOpenHouseCities([...entries, { url: `${BASE}/open-houses/brothers` }], new Set(['bend']))
+      expect(err).not.toHaveBeenCalled()
+      expect(log).toHaveBeenCalledTimes(1)
+      expect(log.mock.calls[0][0]).toMatch(/: black-butte-ranch, brothers$/)
+      log.mockClear()
+      dropEmptyOpenHouseCities(entries, new Set(['bend', 'brothers', 'black-butte-ranch']))
+      expect(log).not.toHaveBeenCalled()
+    } finally {
+      log.mockRestore()
+      err.mockRestore()
+    }
+  })
 })
