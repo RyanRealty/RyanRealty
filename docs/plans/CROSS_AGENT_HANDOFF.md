@@ -1,22 +1,48 @@
 # Current — 2026-10-14 (Cursor, merge main into #545 /sell rebuild)
 
-Surface: Cursor cloud. PR #545 `tip/sell-landing-rebuild-netsheet`. Merged `origin/main` `ee189e044` (#558 analytics SoT, #546 STOP'd-cell, #559 leftover reads, #548 buyer LPs). Matt approved merge after CI. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. PR #545 `tip/sell-landing-rebuild-netsheet`. Merged `origin/main` `c7e237ccf` (#547 #471 #556 #560 #541 #557 #506 and later). Matt approved merge after CI. Nobody pushes main. Nothing sent.
 
 **What this branch does.** Rebuild `/sell` as a seller landing with the net-sheet link, `sellEntry` on the value form, Drake Park srcset, and reseated content floor.
 
-**Held.** #471 stays open (would drop `loadCmaMapTile` / `CMA_MAP_MS`). Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. Do not rebuild letters.
+**Held.** Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. Do not rebuild letters. #471 landed on main.
 
 Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`.
 
+## Earlier — 2026-10-14 (Cursor, PR hygiene + Zillow FSBO mapped parse)
+
+Surface: Cursor cloud. Branch `cursor/fsbo-zillow-mapped-output-66eb` from origin/main `482727cb7` (merged, not rebased). PR #556. Nobody pushes main. Nothing sent. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true. Approved CMA and email wording unchanged.
+
+**This session.** Closed #404 (market-report subscriptions): 625 commits behind main, 11 content conflicts in send/email/middleware/suppressions. Branch `claude/market-report-subscription` kept. Zillow FSBO `parseZillowItem` accepts the 2026-09-01 Apify mapped fields; Craigslist owner lookup left out. #475 closed as the docs-only WIP. Closed-PR branches #509 #510 #522 #523 #530 #534 #535 #540 deleted (content already on main or superseded Current snapshots). September `wt/*` `mini/*` `eval/*` tips whose added files already exist on main were deleted; branches with unique files were kept.
+
+**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. Do not delete `fix/reader-5-engine-full`, `fix/cma-recency-market-20261004`, `claude/cma-send-floor`, `claude/mls-relist-sync`, `tip/cma-agent-rules`.
+
+**Held.** #471 stays open: merge conflicts with later main and would drop `loadCmaMapTile` / `CMA_MAP_MS`.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+
+## Earlier — 2026-10-14 (Cursor, persist GA client id on lead forms)
+
+Surface: Cursor cloud. Branch `cursor/persist-ga-client-id-3b48` landed via #560 at `482727cb7`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, G46 commit-compiles process tree)
+
+Surface: Cursor cloud. Branch `cursor/commit-compiles-heavy-timeout-84fb` landed on main via #541 at `63f24f16a`. G46 tsc spawn is process-tree killed. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, buyer-answers batch 2)
+
+Surface: Cursor cloud. Branch `cursor/buyer-answers-batch-2-41c4` landed on main via #557 at `63d924ee5`. Living+cost buyer-answer pages, luxury/acreage/under-500k presets. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, lead page v3)
+
+Surface: Cursor cloud. Branch `cursor/lead-page-v3-d7f6` landed on main via #506 at `a00d7c3ca`. Admin person page v3 behind `lead-page-v3`. Nobody pushes main. Nothing sent.
+
 ## Earlier — 2026-10-14 (Cursor, analytics SoT)
 
-Surface: Cursor cloud. Branch `cursor/analytics-sot-readme-5e14`. `docs/analytics/README.md` is the analytics source of truth. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/analytics-sot-readme-5e14` landed on main via #558 at `ee189e044`. `docs/analytics/README.md` is the analytics source of truth. Nobody pushes main. Nothing sent.
 
-**This pass.** `docs/analytics/README.md` is the analytics SoT (GA4 property, measurement ID, GTM container live version 7 — Merge never Overwrite, browser dataLayer events, server `generate_lead`, buyer form_ids, consent, daily 8 AM PT offline cron including #543 `qualify_lead` / `close_convert_lead`). Pointers in CLAUDE.md (shrink-only) and AGENTS.md.
+## Earlier — 2026-10-14 (Cursor, STOP cell intake)
 
-**Still open.** Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`). Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. The unique `idx_listings_parcel_number` migration is not on main. #452 landed.
-
-Skills read: `.cursor/rules/git-commit.mdc`.
+Surface: Cursor cloud. PR #546 landed. Skip a STOP'd cell on the mobile-only intake path. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, reader-5 leftover reads)
 
@@ -24,7 +50,25 @@ Surface: Cursor cloud. PR #559 landed. Thin-window own-listing-unsold and own-gr
 
 ## Earlier — 2026-10-14 (Claude, buyer landing pages)
 
-Surface: Claude Code cloud. PR #548 (`claude/festive-ramanujan-xfbo6b`). `/buy/concessions` and `/buy/alerts` open like `/sell`: `V3Stage`, sourced figures, ask in the first viewport. Same lead and tracking tokens. Nothing sent.
+Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b` landed on main via #548 at `befee8c88`. `/buy/concessions` and `/buy/alerts` now open with a `V3Stage` photograph. Nothing sent. Nobody pushes main.
+
+## Earlier — 2026-10-14 (Cursor, relist blip)
+
+Surface: Cursor cloud. Branch `fix/relist-blip` landed on main via #452 at `608fd879b`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, offline GA4 conversions live)
+
+Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-41c4` landed on main via #543. Offline conversions cron reads `ga_client_id` and posts GA4 Measurement Protocol hits. Live audit: 0 of 23,909 contacts had a usable client_id — that is why the persist pass exists. Production SHA `e532597d8`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
+
+Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
+
+Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
+
+**What landed.** #485 refuses an expired/FSBO CMA build when the home is on the market or has no sendable email. #488 ranks closer lots and matching views ahead of a mismatched sale. #489 seats a same-generation half-mile sale ahead of a stale neighbor.
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 

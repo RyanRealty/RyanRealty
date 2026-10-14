@@ -125,6 +125,7 @@ describe('GET /admin/cmas/[slug]/view draft row', () => {
     expect(html).toContain('3711 Purcell draft report')
     expect(html).not.toContain('CMA not found')
     expect(res.headers.get('content-type')).toMatch(/text\/html/)
+    expect(getCmaRenderSourceBySlug).toHaveBeenCalledTimes(1)
   })
 
   it('still returns HTML when the live market read hangs', async () => {

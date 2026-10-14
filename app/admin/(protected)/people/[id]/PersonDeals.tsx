@@ -25,6 +25,7 @@ export function PersonDeals({
   inboundAddress,
   whoLabels,
   relationships,
+  hideHeading = false,
 }: {
   personId: number
   deals: PersonDealLink[]
@@ -37,13 +38,14 @@ export function PersonDeals({
     label: string
     type: string
   }>
+  hideHeading?: boolean
 }) {
   const defaultRole = defaultDealRoleFromWho(whoLabels)
   return (
     <>
       {deals.length > 0 ? (
         <section aria-label="Deals">
-          <SectionHead>Deals</SectionHead>
+          {hideHeading ? null : <SectionHead>Deals</SectionHead>}
           <ul className="av2-quietlist">
             {deals.map((d) => (
               <li key={d.dealId} className="av2-quiet">
