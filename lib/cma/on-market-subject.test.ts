@@ -22,7 +22,9 @@ import {
   HELD_PRICE_HEADLINE,
   coverPriceHeadline,
 } from './cover-value'
-import { onMarketAskSentence, whatItsWorthLead } from './render-pricing-page'
+import { onMarketAskSentence, salesThatSetItHeading, whatItsWorthLead } from './render-pricing-page'
+import { reconciliationSentenceFor, weightRowLabel } from './sales-role'
+import { CLOSED_SET_VALUE_LABEL, setAsidePinNote } from './comp-pin-map'
 import {
   NON_SOLICITATION_LISTED_SENTENCE,
   NON_SOLICITATION_SENTENCE,
@@ -315,6 +317,37 @@ describe('3062 NW Kelly Hill, on the market with another brokerage', () => {
   const text = textOf(html)
   const web = textOf(renderImmersiveCmaHtml(letterArgs(), 'https://ryan-realty.com'))
 
+  it('calls what the sales set a value, never a price (reader review 2026-10-09)', () => {
+    // "The sales that set this price", "Weight in this price" sat under a
+    // cover that says "Our opinion of value".
+    for (const doc of [text, web]) {
+      expect(doc).toContain('The sales that set this value.')
+      expect(doc).toContain('The value on the cover comes to')
+      expect(doc).toContain('that set the value, from the Oregon Data Share MLS')
+      expect(doc).not.toContain('set this price')
+      expect(doc).not.toContain('set the price')
+      expect(doc).not.toContain('in this price')
+      expect(doc).not.toContain('behind this price')
+      expect(doc).not.toContain('The price on the cover comes to')
+    }
+    expect(text).toContain('3062 NW Kelly Hill · Near this value')
+    expect(text).not.toContain('· At this price')
+    expect(weightRowLabel(pricing, comps, { onMarket: true })).toBe('Weight in this value')
+    expect(
+      reconciliationSentenceFor(
+        '2955 Bordeaux carries the most weight of the three sales behind this price, at 40 percent.',
+        pricing,
+        comps,
+        { onMarket: true },
+      ),
+    ).toBe('2955 Bordeaux carries the most weight of the three sales behind this value, at 40 percent.')
+    expect(setAsidePinNote(CLOSED_SET_VALUE_LABEL)).toBe('Set aside: did not set the value')
+    // Off the market the words stay the price's.
+    expect(weightRowLabel(pricing, comps)).toBe('Weight in this price')
+    expect(salesThatSetItHeading(pricing, comps)).toBe('The sales that set this price.')
+    expect(salesThatSetItHeading(pricing, comps, { onMarket: true })).toBe('The sales that set this value.')
+  })
+
   it('labels the cover figure as our opinion of value, with the figure unchanged', () => {
     for (const doc of [text, web]) {
       expect(doc).toContain(COVER_ON_MARKET_HEADLINE)
@@ -372,12 +405,14 @@ describe('3062 NW Kelly Hill, on the market with another brokerage', () => {
 
   it('counts the sales in Basis the way the price chapter does (rule 17)', () => {
     expect(text).toContain('The three closed sales below set this number')
+    // A home on the market: the sales set the value, never the price (reader
+    // review 2026-10-09; the test said "set the price" until then).
     expect(text).toContain(
-      'The value range rests on the three closed comparable sales that set the price, from the Oregon Data Share MLS',
+      'The value range rests on the three closed comparable sales that set the value, from the Oregon Data Share MLS',
     )
     // The grid is named by its chapter's heading, never "the price chapter"
     // (reader review 2026-10-08).
-    expect(text).toContain('The grid of the sales that set this price moves each sale')
+    expect(text).toContain('The grid of the sales that set this value moves each sale')
     expect(text).toContain('Two more sales are shown in the same grid and set aside.')
     expect(text).not.toContain('the price chapter')
     expect(text).not.toContain('rests on 5 closed comparable sales')

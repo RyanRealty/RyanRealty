@@ -113,8 +113,9 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
     // The window the subdivision rungs actually read, not "recent" (reader
     // review 2026-10-08: the sentence claims only what the search covered).
     expect(s!.sentence).toBe(
-      'No sale inside Diamond Bar Ranch in the last 6 months matched your home, so the search opened to Redmond Heights.',
+      'No home sold in Diamond Bar Ranch in the last 6 months, so the search opened to Redmond Heights.',
     )
+    expect(s!.sentence).not.toContain('matched your home')
     expect(s!.sentence).not.toContain('your own street')
   })
 
@@ -168,7 +169,36 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
     expect(s!.sentence).toBe(
       'One of the five sales is in Northwest Townsite. Four more were added: 1345 Milwaukee in Grandview, 1340 Cumberland in Highland, 1613 Ithaca in Bonne Home and 1685 Fresno in Bonne Home.',
     )
-    expect(s!.sentence).not.toMatch(/No sale inside|No recent sale/)
+    expect(s!.sentence).not.toMatch(/No sale inside|No recent sale|matched your home/)
+  })
+
+  it('names a bare MLS code as the recorded plat and does not rename a real subdivision (20676 Wild Rose)', () => {
+    const s = buildCompSearch({
+      subdivision: 'Larkspur',
+      ladder: [
+        rung({ tier: 'subdivision-24mo', monthsBack: 24, compsAdded: 0 }),
+        rung({ tier: 'adjacent-subdivision-24mo', monthsBack: 24, compsAdded: 2 }),
+      ],
+      keptComps: [
+        {
+          subdivision: 'CLAB',
+          subdivisionSlug: 'tara-view-estates',
+          selectionTier: 'adjacent-subdivision-24mo',
+          address: '61197 Cottonwood',
+        },
+        {
+          subdivision: 'Foxborough',
+          subdivisionSlug: 'foxborough-phase-3',
+          selectionTier: 'adjacent-subdivision-24mo',
+          address: '20606 Songbird',
+        },
+      ],
+    })
+    expect(s!.sentence).toBe(
+      'No home sold in Larkspur in the last 24 months, so the search opened to 61197 Cottonwood in Tara View Estates and 20606 Songbird in Foxborough.',
+    )
+    expect(s!.sentence).not.toContain('CLAB')
+    expect(s!.sentence).not.toContain('Foxborough Phase 3')
   })
 
   it('a differently spelled sale the selector did not stamp own plat stays outside', () => {

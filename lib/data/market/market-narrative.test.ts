@@ -43,9 +43,9 @@ describe('market narrative generator (W8.7)', () => {
   })
 
   it('pins the Mohtashami months-of-supply verdict', () => {
-    expect(buildMarketNarrative({ ...base, monthsOfSupply: 3.0 }).overview).toContain("seller's market")
-    expect(buildMarketNarrative({ ...base, monthsOfSupply: 5.0 }).overview).toContain('balanced')
-    expect(buildMarketNarrative({ ...base, monthsOfSupply: 8.0 }).overview).toContain("buyer's market")
+    expect(buildMarketNarrative({ ...base, monthsOfSupply: 3.0 }).overview).toContain('well-priced homes move quickly')
+    expect(buildMarketNarrative({ ...base, monthsOfSupply: 5.0 }).overview).toContain('the sales pace and the listings on the market are close')
+    expect(buildMarketNarrative({ ...base, monthsOfSupply: 8.0 }).overview).toContain('buyers have leverage')
   })
 
   it('makes NO market-direction claim when months-of-supply is null (§0)', () => {

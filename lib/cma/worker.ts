@@ -24,6 +24,7 @@ import { isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent
 import { parsePositiveInt, parsePositiveNumber } from '@/lib/cma/client-link'
 import type { CmaActionRow } from '@/lib/data'
 import { buildCma } from '@/lib/cma/build'
+import { ownerPhonesFromPayload } from '@/lib/cma/outreach-build-gate'
 import { runWithGrokTransportAsync } from '@/lib/grok/transport'
 import { cmaBuildGrokTransport } from '@/lib/cma/build-transport'
 import { autoSendBuiltCma } from '@/lib/cma/auto-send'
@@ -175,6 +176,7 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
     // CMA the prospecting surface then refuses to send.
     docType: (str(payload['doc_type']) === 'expired-audit' ? 'expired-audit' : 'cma') as 'expired-audit' | 'cma',
     requestSource,
+    ownerPhones: ownerPhonesFromPayload(payload['owner_phones']),
   }
   const transport = cmaBuildGrokTransport(requestSource)
   const result = transport

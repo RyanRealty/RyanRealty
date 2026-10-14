@@ -22,8 +22,9 @@
  */
 
 import { PRICE_SET_SQFT_BAND } from '@/lib/pricing/price-set'
-import { aduSaleRefused, classifyAgeBand, multiUnitFromRemarks } from '@/lib/pricing/classes'
+import { aduSaleRefused, multiUnitFromRemarks } from '@/lib/pricing/classes'
 import { onOwnPlat } from '@/lib/pricing/plat-ground'
+import { roomOffPhrase } from '@/lib/pricing/room-counts'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
 import { letterProductMatch, resolveMarketArea } from '@/lib/cma/market-area'
 import { compAreaContains, salesAreaIsBounded, type CompArea } from '@/lib/pricing/comp-area'
@@ -59,10 +60,10 @@ export function sameAreaAgeYears(area: CompArea | null): number | null {
 }
 
 /**
- * One size rule for every home in the letter (Matt 2026-10-08, "25% everywhere",
- * extended the same day to the competition and came-off homes): a home more
- * than a quarter larger or smaller than the subject is never shown as like
- * yours, the same band that decides which sales set the price.
+ * One size rule for every home in the letter (Matt 2026-10-09): the picker's
+ * 35% living-area cutoff. A home more than 35% larger or smaller than the
+ * subject is never shown as like yours. That is the same band that decides
+ * which sales set the price.
  */
 export const SAME_AREA_SQFT_BAND = PRICE_SET_SQFT_BAND
 
@@ -179,12 +180,11 @@ export function sameAreaSubject(s: CmaSubject): SameAreaSubject {
  *    2026-10-08 "Yes, everywhere"), the MLS name only where no polygon holds
  *    the home.
  * 5. ROOMS. Rule 4 verbatim through `roomCountsDecision`: same whole count
- *    anywhere; one bedroom OR one bathroom apart only on the subject's own
- *    ground (own plat, the same mapped polygon, the same street), kept and
- *    disclosed; two or more apart refused; an unknown count is a match.
- * 6. AGE. Skipped on the own plat, as the walk skips it. Otherwise built
- *    within the year band of the rungs that bound the area (`sameAreaAgeYears`)
- *    when both years are known.
+ *    anywhere; up to two bedrooms off, up to two bathrooms off, or both,
+ *    wherever the search already reached, kept and disclosed and weighed
+ *    less; three or more apart on one count refused; an unknown count is a match.
+ * 6. YEAR. Not a wall (Matt 2026-10-10). A 1920 house and a 2024 infill on
+ *    this plat, or on a plat that touches it, both stay. Year only ranks.
  *
  * Not applied, because they belong to a closed sale or a strict rung only:
  * close date, plausible close, months back, the $/sqft tier cut, story class.
@@ -272,45 +272,47 @@ export function sameAreaFit(
     if (differs(c.subjectBaths, c.saleBaths)) which.push('baths')
     return { ok: false, reason: 'rooms', rooms: which }
   }
-  if (
-    !ownPlat &&
-    !ageOk(subject.yearBuilt ?? null, c.yearBuilt ?? null, new Date().getUTCFullYear(), sameAreaAgeYears(area))
-  ) {
-    return { ok: false, reason: 'age' }
-  }
+  // Year built never removes a home from this pool (Matt 2026-10-10).
   return { ok: true, ownPlat, roomDifference: rooms.notes }
 }
 
-/** Mirrors `ageOk` in lib/pricing/match.ts (private there, and that file is off limits to this change). */
-function ageOk(
-  subjectYear: number | null,
-  candidateYear: number | null,
-  asOfYear: number,
-  maxYears: number | null,
-): boolean {
-  if (maxYears == null) return true
-  if (subjectYear == null || candidateYear == null) return true
-  const a = classifyAgeBand(subjectYear, asOfYear)
-  const b = classifyAgeBand(candidateYear, asOfYear)
-  if (a === 'unknown' || b === 'unknown') return true
-  return Math.abs(subjectYear - candidateYear) <= maxYears
+function wholeRooms(count: number | null | undefined): number | null {
+  if (count == null || !Number.isFinite(count) || count <= 0) return null
+  return Math.floor(count)
 }
 
 /**
- * The disclosure beside a set that holds a home kept one room apart, in the
+ * The disclosure beside a set that holds a home kept with a room gap, in the
  * same words `roomDifferenceSentence` (lib/pricing/room-counts.ts) prints
- * under a sale: which home, which room, and that no dollar value is applied.
- * Empty when nothing is noted.
+ * under a sale: which home, which room, how far off, and that no dollar
+ * value is applied. Empty when nothing is noted. Without the subject's
+ * counts the sentence says one, which is what a note meant before a gap of
+ * two was allowed.
  */
 export function roomNotedSentence(
-  rows: ReadonlyArray<{ address: string; roomDifference?: Array<'beds' | 'baths'> | null }>,
+  rows: ReadonlyArray<{
+    address: string
+    roomDifference?: Array<'beds' | 'baths'> | null
+    beds?: number | null
+    baths?: number | null
+  }>,
+  subject?: { beds?: number | null; baths?: number | null } | null,
 ): string {
   const noted = rows.filter((r) => (r.roomDifference ?? []).length > 0)
   if (noted.length === 0) return ''
   const lines = noted.map((r) => {
-    const parts = (r.roomDifference ?? []).map((n) => (n === 'beds' ? 'bedroom' : 'bathroom'))
-    const list = parts.length === 1 ? parts[0]! : `${parts[0]} and ${parts[1]}`
-    return `${r.address} is one ${list} different from yours.`
+    const subjectBeds = wholeRooms(subject?.beds)
+    const subjectBaths = wholeRooms(subject?.baths)
+    const saleBeds = wholeRooms(r.beds)
+    const saleBaths = wholeRooms(r.baths)
+    const gap =
+      subjectBeds != null || subjectBaths != null
+        ? {
+            beds: subjectBeds != null && saleBeds != null ? Math.abs(subjectBeds - saleBeds) : undefined,
+            baths: subjectBaths != null && saleBaths != null ? Math.abs(subjectBaths - saleBaths) : undefined,
+          }
+        : null
+    return `${r.address} is ${roomOffPhrase(r.roomDifference ?? [], gap)} different from yours.`
   })
   return `${lines.join(' ')} No dollar value is applied to the room.`
 }

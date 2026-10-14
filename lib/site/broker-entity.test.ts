@@ -10,12 +10,14 @@ describe('broker entity ids and sameAs (AEO-6 / COMP-8)', () => {
     )
   })
 
-  it("gives Matt his verified Zillow, LinkedIn and Experience.com profiles and invents none for anyone else", () => {
-    // Experience.com added 2026-10-08 (SEO & AEO Desk: live, names Ryan Realty LLC and license 201206613).
+  it("gives Matt his verified Zillow, LinkedIn, Experience.com, YouTube and Instagram profiles and invents none for anyone else", () => {
+    // Realtor.com and Homes.com stay off until a live person-profile URL is confirmed.
     expect(brokerSameAs('matthew-ryan')).toEqual([
       'https://www.zillow.com/profile/Ryan%20Realty%20Bend',
       'https://www.linkedin.com/in/mattmryan',
       'https://www.experience.com/reviews/matthew-15390858',
+      BRAND.social.youtube,
+      BRAND.social.instagram,
     ])
     expect(brokerSameAs('paul-stevenson')).toEqual([])
     expect(brokerSameAs('rebecca-peterson')).toEqual([])
@@ -25,6 +27,7 @@ describe('broker entity ids and sameAs (AEO-6 / COMP-8)', () => {
     expect(ENTITY_SAME_AS.slice(0, SOCIAL_PROFILES.length)).toEqual(SOCIAL_PROFILES)
     expect(ENTITY_SAME_AS).toContain('https://www.zillow.com/profile/Ryan%20Realty%20Bend')
     expect(ENTITY_SAME_AS).toContain('https://www.yelp.com/biz/ryan-realty-bend')
+    expect(ENTITY_SAME_AS).toContain('https://www.experience.com/reviews/matthew-15390858')
     expect(new Set(ENTITY_SAME_AS).size).toBe(ENTITY_SAME_AS.length)
   })
 

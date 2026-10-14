@@ -35,6 +35,7 @@
 
 import { cookies, headers } from 'next/headers'
 import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-protocol'
+import { rememberGaClientId } from '@/lib/data/analytics/gaClientId'
 import { CONSENT_COOKIE, recordingAllowed } from '@/lib/identity/consent'
 import {
   isLeadFormId,
@@ -72,6 +73,12 @@ export type FireLeadParams = {
    * no dollar values on leads).
    */
   extra?: Record<string, string | number | boolean | undefined | null>
+  /**
+   * Client-captured UTM / click ids (getLpContext). Win over the request
+   * Referer so a visitor who clicks around still carries the ad source into
+   * generate_lead. Referer fills any key the client omitted.
+   */
+  attribution?: LeadAttributionParams
 }
 
 /** First-party campaign params on generate_lead. Allowlisted, no PII. Independent of ad cookies. */
@@ -93,6 +100,65 @@ export type LeadAttributionParams = {
   lp_term?: string
   gclid?: string
   fbclid?: string
+}
+
+const ATTRIBUTION_KEYS: (keyof LeadAttributionParams)[] = [
+  'lp_source',
+  'lp_medium',
+  'lp_campaign',
+  'lp_content',
+  'lp_term',
+  'gclid',
+  'fbclid',
+]
+
+/** Client-defined keys win; referer fills anything the client omitted. */
+export function mergeLeadAttributionParams(
+  referer: LeadAttributionParams = {},
+  client?: LeadAttributionParams | null,
+): LeadAttributionParams {
+  const out: LeadAttributionParams = {}
+  for (const key of ATTRIBUTION_KEYS) {
+    const value = client?.[key] ?? referer[key]
+    if (value) out[key] = value
+  }
+  return out
+}
+
+/** Overlay client lpContext (utm/gclid/fbclid) on referer params so click-around keeps the ad. */
+export function mergeLeadAttribution(
+  fromReferer: LeadAttributionParams,
+  fromClient?: LeadAttributionParams,
+): LeadAttributionParams {
+  if (!fromClient) return { ...fromReferer }
+  const overlay: LeadAttributionParams = {}
+  const keys = [
+    'lp_source',
+    'lp_medium',
+    'lp_campaign',
+    'lp_content',
+    'lp_term',
+    'gclid',
+    'fbclid',
+  ] as const
+  for (const key of keys) {
+    const v = fromClient[key]
+    if (typeof v === 'string' && v.trim()) overlay[key] = v.trim()
+  }
+  return { ...fromReferer, ...overlay }
+}
+
+/** Query string for CRM sourceUrl from the same keys generate_lead stores as lp_*. */
+export function attributionQueryString(attr: LeadAttributionParams): string {
+  const qs = new URLSearchParams()
+  if (attr.lp_source) qs.set('utm_source', attr.lp_source)
+  if (attr.lp_medium) qs.set('utm_medium', attr.lp_medium)
+  if (attr.lp_campaign) qs.set('utm_campaign', attr.lp_campaign)
+  if (attr.lp_content) qs.set('utm_content', attr.lp_content)
+  if (attr.lp_term) qs.set('utm_term', attr.lp_term)
+  if (attr.gclid) qs.set('gclid', attr.gclid)
+  if (attr.fbclid) qs.set('fbclid', attr.fbclid)
+  return qs.toString()
 }
 
 /** Campaign params from the referer, the same way every lead path read them. */
@@ -164,6 +230,7 @@ export function leadEventParams(
   delete extra.lp_campaign
   delete extra.lp_content
   delete extra.lp_term
+  const mergedUtm = mergeLeadAttributionParams(utm, params.attribution)
   return {
     lp_variant: params.lp_variant,
     broker_slug: params.broker_slug,
@@ -171,7 +238,7 @@ export function leadEventParams(
     event_id: params.event_id,
     crm_person_id: params.crm_person_id ?? params.fub_person_id ?? undefined,
     ...extra,
-    ...utm,
+    ...mergedUtm,
     // Last, so `extra` can never change what the lead is.
     lead_type: params.lead_type,
     form_id: params.form_id,
@@ -197,8 +264,12 @@ export async function fireLeadGenerated(params: FireLeadParams): Promise<void> {
       console.info(`[lead-tracking] ${eventName} not sent to GA4 for ${params.lp_variant}: GPC or a cookie decline`)
       return
     }
-    const eventParams = leadEventParams(params, utm)
+    const eventParams = leadEventParams(params, mergeLeadAttribution(utm, params.attribution))
     if (!eventParams) return
+    // Offline conversions (qualify_lead / close_convert_lead) run from cron
+    // and have no request cookies. Persist the `_ga` client_id on the contact
+    // so that later send can stitch to the same GA4 user.
+    void rememberGaClientId(params.crm_person_id ?? params.fub_person_id, clientId)
     await fireGa4Event({
       eventName,
       clientId,

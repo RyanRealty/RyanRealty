@@ -22,6 +22,7 @@
 import { marketVerdict } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPriceExact } from '@/lib/format/money'
+import { communityTakeaways } from './place-takeaways.community'
 
 export type PlaceTakeawaysInput = {
   /** "Bend", "Sunriver", "Tetherow". */
@@ -50,8 +51,20 @@ export type PlaceTakeawaysInput = {
    * 'market' is the /housing-market/<city> answer block (SEO & AEO Desk brief
    * 2026-10-08): sale price first, then the 12-month change, pace, and supply,
    * written to be quoted on its own. The inputs below are read only by it.
+   * 'community' is the resort community pages plus Sunriver and Mountain High:
+   * identity first, then sale/ask, then cash, types, or belonging. Keep 'place'
+   * byte-identical.
    */
-  variant?: 'place' | 'market'
+  variant?: 'place' | 'market' | 'community'
+  /** Registry slug; required for variant 'community'. */
+  communitySlug?: string | null
+  /** Share of closes paid in cash, 0..1. Community variant only. */
+  cashShare?: number | null
+  /** Parent-city cash share, 0..1. Community variant only (Tetherow vs Bend). */
+  cityCashShare?: number | null
+  /** Type rails: name townhomes/lots only when the listed set includes them. */
+  hasTownhomes?: boolean
+  hasLots?: boolean
   /** Same month a year earlier, from the same monthly series as saleMedian. */
   priorYearMonthMedian?: { value: number; label: string } | null
   /** Median sale price over the last 12 months (publicPace.medianClose). */
@@ -65,9 +78,9 @@ export type PlaceTakeawaysInput = {
 }
 
 const MEANING: Record<string, string> = {
-  sellers: 'sellers have the edge',
-  balanced: 'neither buyers nor sellers have a clear edge',
-  buyers: 'buyers have room to negotiate',
+  sellers: 'listings are getting absorbed faster than they are replaced',
+  balanced: 'the sales pace and the listings on the market are close',
+  buyers: 'buyers have leverage',
 }
 
 function count(n: number, one: string, many: string): string {
@@ -87,9 +100,9 @@ function days(n: number | null | undefined): string | null {
 }
 
 const THRESHOLD_CLAUSE: Record<string, string> = {
-  sellers: '4 months or less favors sellers',
-  balanced: 'between 4 and 6 months is balanced',
-  buyers: '6 months or more favors buyers',
+  sellers: 'listings are getting absorbed faster than they are replaced',
+  balanced: 'the sales pace and the listings on the market are close',
+  buyers: 'buyers have leverage',
 }
 
 /**
@@ -152,7 +165,7 @@ function marketTakeaways(place: string, input: PlaceTakeawaysInput): string[] {
   const verdict = marketVerdict(input.monthsOfSupply)
   if (input.monthsOfSupply != null && THRESHOLD_CLAUSE[verdict.kind]) {
     out.push(
-      `${place} has ${formatMonthsOfSupply(input.monthsOfSupply)} months of supply, which makes it a ${verdict.label} (${THRESHOLD_CLAUSE[verdict.kind]}).`,
+      `${place} has ${formatMonthsOfSupply(input.monthsOfSupply)} months of supply (${THRESHOLD_CLAUSE[verdict.kind]}).`,
     )
   }
 
@@ -164,6 +177,7 @@ export function placeTakeaways(input: PlaceTakeawaysInput): string[] {
   const place = input.place.trim()
   if (!place) return []
   if (input.variant === 'market') return marketTakeaways(place, input)
+  if (input.variant === 'community') return communityTakeaways(input)
   const out: string[] = []
   const asOf = input.asOfLabel?.trim() ? ` as of ${input.asOfLabel.trim()}` : ''
 
@@ -183,7 +197,7 @@ export function placeTakeaways(input: PlaceTakeawaysInput): string[] {
   const verdict = marketVerdict(input.monthsOfSupply)
   if (input.monthsOfSupply != null && verdict.kind !== 'unknown' && MEANING[verdict.kind]) {
     const mos = formatMonthsOfSupply(input.monthsOfSupply)
-    out.push(`${place} has ${mos} months of supply, a ${verdict.label}, so ${MEANING[verdict.kind]}.`)
+    out.push(`${place} has ${mos} months of supply, so ${MEANING[verdict.kind]}.`)
   }
 
   if (input.saleMedian && input.saleMedian.value > 0 && input.saleMedian.when.trim()) {

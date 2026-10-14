@@ -62,7 +62,7 @@ export type MosFaq = { question: string; answer: string }
  * sentence the rest of the site prints.
  */
 export const MOS_MARKET_TYPE_QUESTION =
-  'What exactly is a seller’s market versus a buyer’s market?'
+  'What does a high or low months of supply mean?'
 
 export const MOS_MARKET_TYPE_ANSWER_TAIL =
   ' At the low end, listings are getting absorbed faster than new inventory can replace them, and sellers hold more leverage on price and terms. At the high end, buyers have more homes to choose from and more room to negotiate.'
@@ -104,7 +104,7 @@ export const MOS_METADATA_KEYWORDS = [
   'months of supply',
   'months of supply real estate',
   'months of supply definition',
-  'seller’s market vs buyer’s market',
+  'months of supply Central Oregon',
   'Central Oregon housing market',
   'Bend real estate market',
   'Ryan Realty',

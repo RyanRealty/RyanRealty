@@ -22,6 +22,7 @@ const BROKER_ROW = {
 const getCmaBrokerBySlugOrEmail = vi.fn(async () => BROKER_ROW)
 const buildCmaMapDataUri = vi.fn(async () => ({ dataUri: 'data:image/png;base64,MAP' }))
 const cmaMapOptionsFromArgs = vi.fn(() => ({}))
+const loadCmaMapTile = vi.fn(async () => ({ dataUri: 'data:image/png;base64,MAP', overlay: null }))
 
 vi.mock('@/lib/data', () => ({
   getCmaServeHead: (...args: unknown[]) => getCmaServeHead(...args),
@@ -33,7 +34,10 @@ vi.mock('@/lib/data', () => ({
 vi.mock('@/lib/data/cma/builderReads', () => ({
   getCmaCityClosedDuring: () => getCmaCityClosedDuring(),
   getLikeHomeSales: () => getLikeHomeSales(),
-  getCmaBrokerBySlugOrEmail: (...args: unknown[]) => getCmaBrokerBySlugOrEmail(...args),
+  getCmaBrokerBySlugOrEmail: (...args: unknown[]) =>
+    (getCmaBrokerBySlugOrEmail as (...inner: unknown[]) => ReturnType<typeof getCmaBrokerBySlugOrEmail>)(
+      ...args,
+    ),
 }))
 
 vi.mock('@/lib/cma/immersive', () => ({
@@ -42,8 +46,15 @@ vi.mock('@/lib/cma/immersive', () => ({
 }))
 
 vi.mock('@/lib/cma/map', () => ({
-  buildCmaMapDataUri: (...args: unknown[]) => buildCmaMapDataUri(...args),
-  cmaMapOptionsFromArgs: (...args: unknown[]) => cmaMapOptionsFromArgs(...args),
+  buildCmaMapDataUri: (...args: unknown[]) =>
+    (buildCmaMapDataUri as (...inner: unknown[]) => ReturnType<typeof buildCmaMapDataUri>)(...args),
+  cmaMapOptionsFromArgs: (...args: unknown[]) =>
+    (cmaMapOptionsFromArgs as (...inner: unknown[]) => ReturnType<typeof cmaMapOptionsFromArgs>)(...args),
+}))
+
+vi.mock('@/lib/cma/map-tile-cache', () => ({
+  loadCmaMapTile: (...args: unknown[]) =>
+    (loadCmaMapTile as (...inner: unknown[]) => ReturnType<typeof loadCmaMapTile>)(...args),
 }))
 
 vi.mock('@/lib/cma/market-area-hydrate', () => ({
@@ -54,7 +65,7 @@ vi.mock('next/headers', () => ({
   cookies: vi.fn(async () => ({ get: () => undefined })),
 }))
 
-import { serveCmaDocument } from './serve-document'
+import { CMA_IMMERSIVE_MS, serveCmaDocument } from './serve-document'
 
 const DRAFT_SLUG = 'cma-850-quince-redmond-97756'
 
@@ -84,6 +95,8 @@ describe('serveCmaDocument', () => {
     getCmaBrokerBySlugOrEmail.mockImplementation(async () => BROKER_ROW)
     buildCmaMapDataUri.mockReset()
     buildCmaMapDataUri.mockImplementation(async () => ({ dataUri: 'data:image/png;base64,MAP' }))
+    loadCmaMapTile.mockReset()
+    loadCmaMapTile.mockImplementation(async () => ({ dataUri: 'data:image/png;base64,MAP', overlay: null }))
     getCmaCityClosedDuring.mockReset()
     getCmaCityClosedDuring.mockResolvedValue([])
     getLikeHomeSales.mockReset()
@@ -298,10 +311,10 @@ describe('serveCmaDocument', () => {
             setTimeout(() => resolve(BROKER_ROW), 2_000)
           }),
       )
-      buildCmaMapDataUri.mockImplementation(
+      loadCmaMapTile.mockImplementation(
         () =>
           new Promise((resolve) => {
-            setTimeout(() => resolve({ dataUri: 'data:image/png;base64,MAP' }), 2_000)
+            setTimeout(() => resolve({ dataUri: 'data:image/png;base64,MAP', overlay: null }), 2_000)
           }),
       )
       getCmaServeHead.mockResolvedValue(draftHead)
@@ -326,7 +339,7 @@ describe('serveCmaDocument', () => {
       if (settled?.kind !== 'html') return
       expect(settled.html).toContain('DRAFT CMA FROM RENDER_ARGS')
       expect(getCmaBrokerBySlugOrEmail).toHaveBeenCalled()
-      expect(buildCmaMapDataUri).toHaveBeenCalled()
+      expect(loadCmaMapTile).toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
@@ -409,7 +422,7 @@ describe('serveCmaDocument', () => {
         viewerEmail: 'matt@ryan-realty.com',
         skipRegisterGate: true,
       })
-      await vi.advanceTimersByTimeAsync(12_000)
+      await vi.advanceTimersByTimeAsync(CMA_IMMERSIVE_MS)
       const result = await pending
       expect(result.kind).toBe('html')
       if (result.kind !== 'html') return
@@ -459,6 +472,8 @@ describe('needs review — the broker gate', () => {
     getCmaBrokerBySlugOrEmail.mockImplementation(async () => BROKER_ROW)
     buildCmaMapDataUri.mockReset()
     buildCmaMapDataUri.mockImplementation(async () => ({ dataUri: 'data:image/png;base64,MAP' }))
+    loadCmaMapTile.mockReset()
+    loadCmaMapTile.mockImplementation(async () => ({ dataUri: 'data:image/png;base64,MAP', overlay: null }))
   })
 
   it('banners the admin view, at the top of the document', async () => {

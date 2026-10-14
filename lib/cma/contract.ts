@@ -35,7 +35,14 @@ import { closedSaleLow } from '@/lib/cma/expired-audit'
 // dwelling needs a verified current entitlement (SKILL §3.5).
 const RESTRICTIVE_ZONE_RE = /\b(EFU|EFUTRB|F1|F2|SM)\b/i
 
-export const COMP_MAX_AGE_MONTHS = 24
+/**
+ * Oldest close a seated sale may carry. This is the recovery window
+ * (`DATE_RECOVERY_MONTHS` in lib/pricing/ladder.ts), not the ordinary
+ * 24-month rung. A short set keeps a same-place sale out to 36 months, and
+ * that sale has to survive this check or the letter dies on a comp the
+ * picker was told to keep. A sale past 36 months still fails.
+ */
+export const COMP_MAX_AGE_MONTHS = 36
 
 /**
  * How far under the owner's own ask a recommendation may sit before an
@@ -305,7 +312,7 @@ export function evaluateAccuracyContract(args: {
       : crossRoom
         ? `Comp ${crossRoom.comp.address} is ${comparedRoomsText(crossRoom.decision.compared, 'sale')} against this home's ${comparedRoomsText(crossRoom.decision.compared, 'subject')}, a room gap the one-room rule refuses.${notCompared}`
         : roomNoted > 0
-          ? `Every priced sale matches the subject's ${subjectRooms} counts, except ${roomNoted} on this home's own ground that sit one room away and are disclosed as such.${notCompared}`
+          ? `Every priced sale matches the subject's ${subjectRooms} counts, except ${roomNoted} that sit as many as two bedrooms or two bathrooms off. Each one counts for less, and each is disclosed. No dollar value is applied to the room.${notCompared}`
           : `Every priced sale has a room count the one-room rule allows (${subjectRooms}).${notCompared}`,
   })
   checks.push({

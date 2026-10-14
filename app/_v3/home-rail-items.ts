@@ -320,11 +320,11 @@ export function homeRailRows(
   const bendArea = tiles.filter((t) => BEND_AREA.has((t.city ?? '').trim().toLowerCase()))
   const localPool = bendArea.length >= 3 ? bendArea : tiles
   const deduped = takeCards(localPool, opts.nowMs, openHouseLabels, priceDrops, RAIL_CARD_CAP, claimed)
-  // The lead shelf is the one that may not go missing. The live pool is 3,000
-  // tiles (HOME_TILE_FETCH) against at most 24 claimed keys, so the exclusion
-  // never bites there; on a pool small enough that it does, a repeated house
-  // beats no shelf at all, and the page says so by having one rail instead of
-  // three.
+  // The lead shelf is the one that may not go missing. The live homepage pool
+  // is HOME_RAIL_POOL newest tiles plus the current price-drop keys, against
+  // at most 24 claimed keys, so the exclusion rarely bites; on a pool small
+  // enough that it does, a repeated house beats no shelf at all, and the page
+  // says so by having one rail instead of three.
   const local =
     deduped.length >= 3
       ? deduped

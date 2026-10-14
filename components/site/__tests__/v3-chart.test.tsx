@@ -288,7 +288,7 @@ describe('V3Instrument mounts the chart atom', () => {
 
     const html = renderToStaticMarkup(
       createElement(V3Instrument, {
-        headline: v3Text('A balanced market'),
+        headline: v3Text('4.5 months of supply'),
         figures,
         source: v3Text('live MLS, Bend single-family, CloseDate rolling 12 months'),
         level: 1,
@@ -307,7 +307,7 @@ describe('V3Instrument mounts the chart atom', () => {
   it('does not invent a chart when the caller has only figures', () => {
     const html = renderToStaticMarkup(
       createElement(V3Instrument, {
-        headline: v3Text('A balanced market'),
+        headline: v3Text('4.5 months of supply'),
         figures,
         source: v3Text('live MLS, Bend single-family, CloseDate rolling 12 months'),
         level: 1,

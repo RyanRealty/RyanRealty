@@ -3,7 +3,13 @@
  * twice at a $167,500 difference (tasteReview round three, §3).
  */
 import { describe, expect, it } from 'vitest'
-import { dropPriorSalesOfSameHome, isSameProperty, normalizeAddress } from './same-address'
+import {
+  addressIsThisHome,
+  dropPriorSalesOfSameHome,
+  isSameProperty,
+  normalizeAddress,
+  seatDistinctHomes,
+} from './same-address'
 
 /** The live cma-19968 set, keys and all. */
 const TARGEE_JUNE = {
@@ -76,6 +82,58 @@ describe('dropPriorSalesOfSameHome', () => {
     expect(out.dropped.map((d) => d.listingKey).sort()).toEqual(
       ['OLD', TARGEE_MARCH.listingKey].sort(),
     )
+  })
+
+  it('treats a different condo unit as a different home, and a detached house at the same address as this home', () => {
+    expect(
+      addressIsThisHome({
+        subjectAddress: '2745 Ordway',
+        saleAddress: '2745 Ordway',
+        subjectUnit: '104',
+        saleUnit: '207',
+        productClass: 'condo',
+      }),
+    ).toBe(false)
+    expect(
+      addressIsThisHome({
+        subjectAddress: '2745 Ordway',
+        saleAddress: '2745 Ordway',
+        subjectUnit: '104',
+        saleUnit: '104',
+        productClass: 'condo',
+      }),
+    ).toBe(true)
+    expect(
+      addressIsThisHome({
+        subjectAddress: '23 Benaiah',
+        saleAddress: '23 Benaiah',
+        productClass: 'detached',
+      }),
+    ).toBe(true)
+  })
+
+  it('walks past an earlier close and seats the next home', () => {
+    const sixth = { listingKey: 'D', address: '61000 Sixth', closeDate: '2026-02-01', sqft: 1500 }
+    const ranked = [OTHERS[0]!, TARGEE_JUNE, OTHERS[1]!, TARGEE_MARCH, OTHERS[2]!, sixth]
+    const out = seatDistinctHomes(ranked, 5)
+    expect(out.seated.map((s) => s.listingKey)).toEqual(['A', TARGEE_JUNE.listingKey, 'B', 'C', 'D'])
+    expect(out.held.map((s) => s.listingKey)).toEqual([TARGEE_MARCH.listingKey])
+    expect(out.replaced).toEqual([])
+  })
+
+  it('keeps the later close when it arrives after the seat is full', () => {
+    const sixth = { listingKey: 'D', address: '61000 Sixth', closeDate: '2026-02-01', sqft: 1500 }
+    const ranked = [OTHERS[0]!, TARGEE_MARCH, OTHERS[1]!, OTHERS[2]!, sixth, TARGEE_JUNE]
+    const out = seatDistinctHomes(ranked, 5)
+    expect(out.seated.map((s) => s.listingKey)).toEqual([
+      'A',
+      'B',
+      'C',
+      'D',
+      TARGEE_JUNE.listingKey,
+    ])
+    expect(out.replaced.map((s) => s.listingKey)).toEqual([TARGEE_MARCH.listingKey])
+    expect(out.seated).toHaveLength(5)
   })
 
   it('normalizes case, spacing and trailing punctuation, and nothing else', () => {

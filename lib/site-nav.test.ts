@@ -154,12 +154,26 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
 
   it('footer columns group towns under Markets, then Buy · Sell · Join, Company, Contact', () => {
     expect(KB_FOOTER_COLUMNS.map((c) => c.heading)).toEqual([
+      'Homes for sale by area',
       'Markets',
       'Buy · Sell · Join',
       'Company',
       'Contact',
     ])
-    const markets = KB_FOOTER_COLUMNS[0]!
+    const byArea = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Homes for sale by area')
+    expect(byArea?.groups?.map((g) => g.heading)).toEqual(['Cities', 'Communities'])
+    expect(byArea?.groups?.[0]?.links.map((l) => [l.label, l.href])).toEqual([
+      ['Bend homes for sale', '/homes-for-sale/bend'],
+      ['Redmond homes for sale', '/homes-for-sale/redmond'],
+      ['Sisters homes for sale', '/homes-for-sale/sisters'],
+      ['Sunriver homes for sale', '/homes-for-sale/sunriver'],
+      ['La Pine homes for sale', '/homes-for-sale/la-pine'],
+    ])
+    expect(byArea?.groups?.[1]?.links).toHaveLength(8)
+    expect(byArea?.groups?.[1]?.links.map((l) => l.label).every((label) => / homes for sale$/.test(label))).toBe(
+      true,
+    )
+    const markets = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Markets')!
     expect(markets.groups?.map((g) => g.heading)).toEqual([
       'Bend',
       'Redmond',
@@ -214,6 +228,8 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       '/homes-for-sale',
       '/open-houses',
       '/price-drops',
+      '/buy/alerts',
+      '/buy/leverage',
       '/homes-for-sale/bend/luxury',
       '/new-construction',
       '/our-homes',
@@ -247,18 +263,23 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       '/communities/black-butte-ranch',
       '/communities/caldera-springs',
       '/communities/crosswater',
+      '/communities/brasada-ranch',
       // SITE-187: the one sitewide exact-anchor door to the Sunriver winner.
       '/communities/sunriver',
     ])
     for (const href of communityHrefs) expect(allowed.has(href), href).toBe(true)
     // SITE-184: the Sisters cluster's one community door carries the exact
     // phrase to the Black Butte Ranch winner; the heading stays the city guide.
-    const sistersGroup = KB_FOOTER_COLUMNS[0]!.groups?.find((g) => g.heading === 'Sisters')
+    const sistersGroup = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Markets')!.groups?.find(
+      (g) => g.heading === 'Sisters',
+    )
     expect(sistersGroup?.href).toBe('/cities/sisters')
     expect(sistersGroup?.links.map((l) => [l.label, l.href])).toEqual([
       ['Black Butte Ranch homes for sale', '/communities/black-butte-ranch'],
     ])
-    const sunriverGroup = KB_FOOTER_COLUMNS[0]!.groups?.find((g) => g.heading === 'Sunriver')
+    const sunriverGroup = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Markets')!.groups?.find(
+      (g) => g.heading === 'Sunriver',
+    )
     // The heading would repeat the exact-phrase link's URL, so it is text.
     expect(sunriverGroup?.href).toBeUndefined()
     expect(sunriverGroup?.links.map((l) => [l.label, l.href])).toEqual([

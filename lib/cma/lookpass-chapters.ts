@@ -91,6 +91,26 @@ function countTag(block: string, tag: string): number {
  * is one chapter (the letter's cover, print pages, and closing page; the
  * immersive's hero and every scroll scene).
  */
+/**
+ * The live letter's one map is an `<img class="pin-map">` (rule 31).
+ *
+ * An `<svg class="pin-map">` is the cream scatter the drawing unit builds
+ * when the tile is missing. That is not the map. Returns a sentence when
+ * the document has no map image, or null when the image is there.
+ */
+export function mapImageGap(html: string): string | null {
+  if (/<img\b[^>]*\bclass="[^"]*\bpin-map\b[^"]*"/i.test(html)) return null
+  const hasMapChapter =
+    /\bid="the-map"/i.test(html) ||
+    /Comparable homes near you/i.test(html) ||
+    /class="pin-map-wrap"/i.test(html) ||
+    /<svg\b[^>]*\bclass="[^"]*\bpin-map\b/i.test(html)
+  if (hasMapChapter) {
+    return 'map chapter has no map image (img.pin-map). An SVG scatter is not the map.'
+  }
+  return 'no map image (img.pin-map)'
+}
+
 export function extractChapters(html: string): LookpassChapter[] {
   return topLevelSections(html).map((block, i) => {
     const openTag = /^<section\b[^>]*>/i.exec(block)?.[0] ?? '<section>'

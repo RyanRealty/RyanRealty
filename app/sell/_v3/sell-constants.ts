@@ -11,6 +11,7 @@ export const EXPIRED_ROUTE = '/sell/expired-listings'
 export const INHERITED_ROUTE = '/sell/inherited-home'
 export const FORM_ANCHOR = '#get-value'
 export const VALUATION_FORM_ANCHOR = '#valuation-form'
+/** 4200×3150 repo still. Content-floor heroImageNatural is 3780 (0.9 of that). */
 export const SELL_POSTER = '/images/homepage/tetherow-golf-aerial.jpg'
 /** Stage context line. One phrase, not a sentence. */
 export const SELL_STAGE_EYEBROW = '3% listing plan'

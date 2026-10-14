@@ -1089,9 +1089,7 @@ Things the plan didn't originally cover that could undermine the entire effort i
 
 **This section's recommendation has been deleted, not amended.** It read: keep the page but add `noindex`, set JSON-LD `Offer.availability` to `SoldOut`, and optionally 410 after 12 months. It contradicted `docs/MASTER_SPEC.md` §4.9, which said keep the URL indexed; both had sat in writing, unimplemented, for months, and a surface with two written policies has none.
 
-**Matt ruled 2026-09-08 (SITE-32): off-market listing URLs stay INDEXED, `index, follow`.** The measurement is what settled it — off-market detail URLs earn roughly 324–577 organic clicks per 90 days at a CTR that straddles or beats Active, and an address query has no Active substitute, so a `noindex` deletes those clicks instead of redistributing them.
-
-**The one policy statement now lives in `docs/MASTER_SPEC.md` §4.9 ("Listing not found / sold / withdrawn"). Read it there; do not restate it here.** What ships against it: SITE-21's honest off-market state on the page, and `scripts/check-listing-offmarket-index.mjs` (`ci:listing-offmarket-index`) holding the two metadata chokepoints so no `noindex` can reappear for an off-market status.
+**The one policy statement lives in `docs/MASTER_SPEC.md` §4.9 ("Listing not found / sold / withdrawn"). Read it there; do not restate it here.** Matt 2026-10-13 superseded the 2026-09-08 keep-indexed ruling: off-market detail URLs are `noindex, follow`, with a community canonical when a registry community page exists. What ships against it: SITE-21's honest off-market state on the page, `listingIndexPolicy`, and `scripts/check-listing-offmarket-index.mjs` (`ci:listing-offmarket-index`).
 
 ### 2. Image Alt Text (Currently Generic or Missing)
 

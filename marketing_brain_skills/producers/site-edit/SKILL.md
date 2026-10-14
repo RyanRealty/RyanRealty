@@ -125,7 +125,7 @@ If status is not 'pending', stop: report the current status to Matt and do nothi
 
 Before touching any file:
 - `CLAUDE.md` §0.  Data Accuracy mandate (any market figures in copy must be verified)
-- `CLAUDE.md` "Draft-First, Commit-Last".  the PR is the draft; Matt merges; never push to main
+- `CLAUDE.md` "Draft-First, Commit-Last".  the PR is the draft; npm run ship lands; never push to main
 - `design_system/ryan-realty/SKILL.md`.  brand register; shadcn token system
 - `marketing_brain_skills/brand-voice/VOICE.md`.  voice validation
 
@@ -269,7 +269,7 @@ All after_text values passed brand voice check against
 No hex color violations. All edits use shadcn/ui token system.
 
 ## Approval gate
-Matt merges this PR in GitHub. Do NOT approve via the action row in the brain.
+npm run ship lands this PR in GitHub. Do NOT approve via the action row in the brain.
 
 🤖 Generated with Claude Code / marketing brain.  site-edit producer
 EOF
@@ -311,7 +311,7 @@ Draft ready: site-edit.  <page_path>
     TypeScript: PASS (zero errors)
     Design tokens: PASS
 
-Matt merges the PR in GitHub to ship. No additional approval step in the brain.
+npm run ship lands the PR in GitHub to ship. No additional approval step in the brain.
 ```
 
 Then stop. Wait for Matt to merge the PR.
@@ -348,7 +348,7 @@ app/<page_path>/page.tsx   (edited on branch site-edit/<action_id>)
 
 | approval_type | what it means | who can grant |
 |---|---|---|
-| `matt-review-PR` | Matt merges the PR in GitHub | Matt only.  via GitHub UI |
+| `matt-review-PR` | npm run ship lands the PR in GitHub | agent.  via GitHub UI |
 
 This producer does NOT use `matt-review-draft`. The PR is the draft. Matt
 evaluates the diff in GitHub and merges to ship. The action row advances from
@@ -372,7 +372,7 @@ in_production     ← set immediately; executed_at=now()
   ▼ (branch + PR created)
 ready             ← executor_response = {branch_name, pr_url, files_changed}
   │
-  ▼ (Matt merges PR in GitHub)
+  ▼ (npm run ship lands PR in GitHub)
 approved
   │
   ▼ (Vercel build completes.  detected via Vercel MCP or manual update)

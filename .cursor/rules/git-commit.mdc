@@ -36,7 +36,7 @@ chore: update supabase-js to 2.98.0
 2. `git add -A` (or stage intentionally — never commit secrets)
 3. `git commit -m "type: description"`
 4. **Push that branch to GitHub in the same session** with `npm run push`. All code work is pushed to GitHub as a branch right away. Do not leave finished work only on a local branch. Matt uses Claude Code and Cursor interchangeably; unpushed commits are invisible to the other tool and are not “shipped.”
-5. Open a PR to `main`; Matt merges. Never push, fast-forward, or merge `main` yourself. No rebase, force-push, or reset. If the remote branch moved and the push is rejected, stop and report.
+5. A finished unit is `npm run ship`. Unfinished work stays `npm run push`. Never `git push` `main`. No rebase, force-push, or reset. If the pull request conflicts with `main`, stop.
 
 Pre-commit runs `npm test`. Pre-push runs the full quality gate.
 
@@ -47,10 +47,10 @@ SKIP_DB_GUARD=1 git push         # skip migration drift check only
 ```
 
 ## Branch strategy
-- **Production is `main`.** Open a PR to `main`; Matt merges. Never push `main` yourself. After Matt merges, Vercel production deploys (docs-only commits may skip via `ignoreCommand`).
+- **Production is `main`.** A finished unit is `npm run ship`. Never `git push` `main`. Vercel deploys `main` (a docs-only diff may skip via `ignoreCommand`).
 - **Worktrees allowed** for parallel agents / experiments — name `wt/<topic>-YYYYMMDD`, push the branch right away, or record it in `CROSS_AGENT_HANDOFF.md` before stopping. See `.cursor/rules/always-merge-to-main.mdc` and **AGENTS.md → Worktrees**.
 - Push the branch to GitHub right away. Do not keep the only copy local.
-- Open a PR to `main`; Matt merges.
+- A finished unit is `npm run ship`. Never `git push` `main`.
 - No rebase, force-push, or reset.
 
 ## Do NOT

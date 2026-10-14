@@ -218,14 +218,16 @@ describe('reconcileListedVsDetachedFaq', () => {
 describe('reconcilePlaceHoaFaq', () => {
   const baseFaqs = [{ question: 'Does Tetherow have an HOA?', answer: 'Yes. Estimated annual HOA fees in Tetherow start around $1,464.' }]
 
-  it('replaces the HOA answer with the measured figure and its basis', () => {
+  it('replaces the HOA answer with the measured sentence, not "current listings"', () => {
+    const basis =
+      'Detached Tetherow listings that reported dues since October 2023 show a median of $171 a month ($2,052 a year), across 6 listings. Dues vary by property. Confirm the current amount with the association before you buy.'
     const out = reconcilePlaceHoaFaq(baseFaqs, {
       annual: 2052,
       kind: 'measured',
-      basis: 'median of the 6 current listings that report dues',
+      basis,
     })
-    expect(out[0]?.answer).toMatch(/\$2,052/)
-    expect(out[0]?.answer).toMatch(/median of the 6 current listings that report dues/)
+    expect(out[0]?.answer).toBe(basis)
+    expect(out[0]?.answer).not.toMatch(/current listings that report dues/)
   })
 
   it('is a no-op for master and estimate kinds, and for no resolved HOA', () => {

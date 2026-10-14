@@ -219,12 +219,13 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 44.0601,
     lng: -121.3138,
     recurrence: 'Annually, the second weekend of October',
-    nextConfirmedDate: '2026-10-07',
-    endDate: '2026-10-11',
+    // 2026 ran Oct 7-11. Deadline and Your Oregon News (2026-10-11 and 2026-10-12) announced 2027 as Oct 6-10.
+    nextConfirmedDate: '2027-10-06',
+    endDate: '2027-10-10',
     priceInfo: 'Ticketed',
     organizer: 'BendFilm',
     officialUrl: 'https://bendfilm.org/2026-bendfilm-festival/',
-    lastVerified: '2026-07-03',
+    lastVerified: '2026-10-13',
     blurb:
       'An independent film festival that fills the Tower Theatre and other downtown venues with five days of screenings, filmmaker Q and As, and parties each October. It is pass and ticket based, with showings across several downtown venues.',
   },
@@ -738,12 +739,13 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 44.2909,
     lng: -121.5493,
     recurrence: 'Annually, the second weekend of October',
-    nextConfirmedDate: '2026-10-10',
-    endDate: '2026-10-11',
+    // 2026 ran Oct 10-11. The chamber says the second weekend of October; 2027 dates are not published yet.
+    nextConfirmedDate: null,
+    endDate: null,
     priceInfo: 'Free',
     organizer: 'Sisters Area Chamber of Commerce',
     officialUrl: 'https://www.sisterscountry.com/events/sisters-harvest-faire',
-    lastVerified: '2026-07-03',
+    lastVerified: '2026-10-13',
     blurb:
       "One of the largest craft fairs in Central Oregon, the Sisters Harvest Faire fills the downtown streets with more than a hundred artisan and food booths across a fall weekend. It pairs handmade goods and regional food with the crisp shoulder season weather that makes autumn in Sisters worth the drive.",
   },

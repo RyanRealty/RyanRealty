@@ -73,7 +73,7 @@ export type CmaBandRival = {
   listingHistoryLine?: string | null
   /** Miles from the subject. Blank on a stored row until print fills it from coordinates. */
   proximity?: string | null
-  /** Rule 4: one room apart on the subject's own ground, kept and disclosed, zero dollars. */
+  /** Rule 4: up to two whole rooms off stays and weighs less. Three or more on one count is refused. No dollar value. */
   roomDifference?: Array<'beds' | 'baths'> | null
   /**
    * MLS public remarks, carried only while the build fits the home (the
@@ -702,6 +702,12 @@ export type CmaBandRivalSet = {
   shortOfFive?: boolean
   /** What lo..hi is centered on and how wide it opened; the letter states it (lib/cma/competition-band-basis.ts). */
   bandBasis?: import('@/lib/cma/competition-band-basis').CompetitionBandBasis | null
+  /**
+   * The set was drawn on its own plats (the subject's plat, the plats that
+   * touch it, and the next row when that row was opened), not on the plats
+   * the sold comps happened to sit in. The render keeps those homes.
+   */
+  poolGeography?: boolean
 }
 
 /**
@@ -744,7 +750,11 @@ export function competitionAreaSentence(input: {
     address: string
     status?: 'Active' | 'Pending'
     roomDifference?: Array<'beds' | 'baths'> | null
+    beds?: number | null
+    baths?: number | null
   }>
+  /** The subject's counts, so a two-room gap is named as two. */
+  subject?: { beds?: number | null; baths?: number | null } | null
 }): string {
   const where = compAreaIn(input.area)
   const whereOr = compAreaIn(input.area, { negative: true })
@@ -752,7 +762,7 @@ export function competitionAreaSentence(input: {
   const tail = input.shortOfFive
     ? ` Nothing from outside ${compAreaPhrase(input.area)} was added to make up the number.`
     : ''
-  const noted = roomNotedSentence(input.rivals ?? [])
+  const noted = roomNotedSentence(input.rivals ?? [], input.subject)
   const rooms = noted ? ` ${noted}` : ''
   const unlike = input.unlikeCount ?? 0
   if (input.activeCount === 0 && input.pendingCount === 0) {
@@ -878,6 +888,7 @@ export function buildBandRivalSet(input: {
       unlike: input.unlike ?? null,
       shortOfFive: input.shortOfFive,
       rivals,
+      subject: input.subject ?? null,
     }),
     source: competitionAreaSourceLine({
       area: input.area,
@@ -1181,7 +1192,9 @@ export function bandRowToRival(row: BandInventoryRow, status: 'Active' | 'Pendin
     ...(row.public_remarks != null ? { publicRemarks: row.public_remarks } : {}),
     // The polygon the area read placed it in, so every later area test (the
     // fit, the ring pick, the render) reads the polygon, not the MLS spelling.
-    ...(row.plat_slug !== undefined ? { platSlug: row.plat_slug } : {}),
+    // Always stored, null when the read found none, so a later render can
+    // tell "no plat" from "the field was never written" (Matt 2026-10-09).
+    platSlug: row.plat_slug ?? null,
   }
   // The last stretch off the row alone; the competition read adds the ask
   // history for the homes it prints (assemble-competition.ts).

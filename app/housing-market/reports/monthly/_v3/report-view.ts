@@ -41,7 +41,7 @@ import {
   mosText,
   pctChange,
 } from '@/lib/market-report/format'
-import { VERDICT_LABEL, floorsRule } from '@/lib/market-report/narrative'
+import { floorsRule } from '@/lib/market-report/narrative'
 import type { ReportGeo } from '@/lib/market-report/geos'
 import type { EditionPayload, Kpis, MarketSection, MonthlySeries, Pt, Verdict } from '@/lib/market-report/types'
 import {
@@ -302,12 +302,11 @@ export function marketFigures(k: Kpis, links: FigureLinks = {}): V3InstrumentFig
       ? figure(days(k.dtc.v), 'median days to pending', links.href)
       : figure(DASH, `days to pending: under ${FLOORS.dtc} sales with a pending date`)
 
-  const verdict = publishedVerdict(k)
   const supply =
     k.mos != null
       ? figure(
           mosText(k.mos),
-          verdict ? `months of supply, ${VERDICT_LABEL[verdict]}` : 'months of supply',
+          'months of supply',
           links.supplyHref,
         )
       : figure(DASH, `months of supply: ${plural(k.closed6, 'sale', 'sales')} in six months, under the ${FLOORS.mos} a reading needs`)
@@ -529,12 +528,10 @@ export function supplySeasons(series: MonthlySeries | undefined, place: string):
     const month = Number(p.k.slice(5, 7))
     if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) continue
     const cells = byYear.get(year) ?? Array.from({ length: 12 }, (): V3SeasonCell | null => null)
-    const call = supplyVerdict(p.v)
     cells[month - 1] = {
       value: p.v,
       tick: v3Text(monthTickLabel(p.k)),
       label: v3Text(`${mosText(p.v)} months`),
-      ...(call ? { note: v3Text(VERDICT_LABEL[call]) } : {}),
     }
     byYear.set(year, cells)
   }
@@ -558,7 +555,7 @@ export function supplySeasons(series: MonthlySeries | undefined, place: string):
       {
         from: VERDICT_SELLER_MAX,
         to: VERDICT_BUYER_MIN,
-        label: v3Text(`Balanced: above ${VERDICT_SELLER_MAX} and under ${VERDICT_BUYER_MIN} months`),
+        label: v3Text(`${VERDICT_SELLER_MAX} to ${VERDICT_BUYER_MIN} months`),
       },
     ],
     threshold: VERDICT_SELLER_MAX,
@@ -595,11 +592,10 @@ function unit(text: string): string {
   return text.replace(/ /g, '\u00a0')
 }
 
-/** "3.9 months of supply, a seller's market" or the bare number when the call is not printable. */
+/** "3.9 months of supply" or the bare number when the call is not printable. */
 function supplyClause(k: Kpis): string | null {
   if (k.mos == null) return null
-  const verdict = publishedVerdict(k)
-  return `${unit(`${mosText(k.mos)} months of supply`)}${verdict ? `, ${VERDICT_LABEL[verdict]}` : ''}`
+  return unit(`${mosText(k.mos)} months of supply`)
 }
 
 /**

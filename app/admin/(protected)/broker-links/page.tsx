@@ -4,9 +4,11 @@
 // (design_system/admin/ADMIN_UI.md). Presentation only.
 //
 // Carried over verbatim: requireAdminPage('content.marketing'), siteUrl() (now
-// siteOrigin(), lib/site-origin.ts: never the Vercel alias), the BROKERS and LPS
-// tables, the `${base}/lp/${lp.slug}?agent=${b.slug}` URL shape, the
-// assigned_broker lead-form instructions, and the CopyLinkButton mount.
+// siteOrigin(), lib/site-origin.ts: never the Vercel alias), the BROKERS table,
+// the `?agent=${b.slug}` routing tag, the assigned_broker lead-form
+// instructions, and the CopyLinkButton mount. The links themselves open the
+// live pages (2026-10-09): every /lp page they used to name has 308'd since
+// 2026-09-06, so each link cost a redirect and two of them landed on /sell.
 //
 // Shape changed, data did not: the shadcn Cards became the family's grid, the
 // <h1> title chrome is gone (the nav names the page), the per-broker <h2>s
@@ -23,12 +25,12 @@ export const dynamic = 'force-dynamic'
 
 export const metadata = { title: 'Ad links' }
 
-const LPS: { slug: string; label: string }[] = [
-  { slug: 'seller-home-value', label: 'Seller — Home value' },
-  { slug: 'sell-your-home', label: 'Seller — List now' },
-  { slug: 'fsbo', label: 'FSBO backup' },
-  { slug: 'expired-listing', label: 'Expired listing' },
-  { slug: 'buyer-listing-alerts', label: 'Buyer — Listing alerts' },
+/** Where each /lp page now 308s (next.config.ts). A link already shared still routes: the redirect keeps ?agent=. */
+const LPS: { path: string; label: string }[] = [
+  { path: '/sell', label: 'Seller — Home value' },
+  { path: '/sell/for-sale-by-owner', label: 'FSBO backup' },
+  { path: '/sell/expired-listings', label: 'Expired listing' },
+  { path: '/homes-for-sale', label: 'Buyer — Home search and alerts' },
 ]
 
 const COLUMNS: ReportColumn[] = [
@@ -82,9 +84,9 @@ export default async function BrokerLinksPage() {
             template="minmax(150px, 1fr) minmax(260px, 2.2fr) auto"
             minWidth={560}
             rows={LPS.map((lp) => {
-              const url = `${base}/lp/${lp.slug}?agent=${b.slug}`
+              const url = `${base}${lp.path}?agent=${b.slug}`
               return {
-                key: `${b.slug}-${lp.slug}`,
+                key: `${b.slug}-${lp.path}`,
                 cells: [
                   lp.label,
                   <span key="u" style={{ overflowWrap: 'anywhere', color: 'var(--a-text-2)' }}>

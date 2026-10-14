@@ -63,13 +63,20 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).not.toMatch(/<PlaceTypeSlider/)
     expect(SRC).toMatch(/<V3Heading/)
     expect(SRC).not.toMatch(/headingLevel=\{1\}/)
-    expect(SRC).toMatch(/id="homes"/)
+    expect(SRC).toMatch(/<CommunityHomesGrid/)
+    expect(SRC).toMatch(/href="#homes"/)
     expect(SRC).toMatch(/const liveStockTiles = population\.tiles/)
     expect(SRC).toMatch(/placeStockSectionsFromTiles/)
     expect(SRC).toMatch(/community-field-types/)
     expect(SRC).toMatch(/loadCommunitySerpStock/)
     expect(SRC).toMatch(/belongingHeadline\(/)
     expect(SRC).toMatch(/\{headline\}/)
+    expect(SRC).toMatch(/<CommunityFoldAnswer/)
+    expect(SRC).toMatch(/<CommunityHomesGrid/)
+    expect(SRC).toMatch(/<CommunityBroker/)
+    expect(SRC).toMatch(/communityAuthoredFaqs/)
+    expect(SRC).toMatch(/communityTypeDownLinks/)
+    expect(SRC).toMatch(/isCommunityLedeSlug/)
     // seedRing keys on having a TRUSTED outline: the stored row, keyed by the
     // registry and passed by the one trust rule (2026-09-25).
     expect(SRC).toMatch(/const seedRing = mapPolygon != null/)
@@ -155,23 +162,21 @@ describe('community map and homes: one for-sale population (2026-09-25)', () => 
   })
 })
 
-describe('SITE-214 community body read is raced like the head', () => {
-  it('races the body community read and renders a degraded body when it did not answer', () => {
+describe('community listings failure is not a cacheable 200', () => {
+  it('retries the body community read and throws instead of rendering CommunityDegraded', () => {
+    expect(SRC).toMatch(/readOrRefuseListings\(/)
     expect(SRC).toMatch(
       /withTimeoutFallbackResult\(\s*getCommunityBySlug\(slug\),\s*null,\s*PLACE_HEAD_READ_MS,\s*'comm:body-community'/,
     )
-    expect(SRC).toMatch(/if \(!communityRead\.ok\)[\s\S]{0,300}<CommunityDegraded/)
+    expect(SRC).toMatch(/comm:body-community \$\{slug\}/)
+    expect(SRC).not.toMatch(/CommunityDegraded/)
     expect(SRC).not.toMatch(/const community = await getCommunityBySlug\(slug\)/)
     expect(SRC).not.toMatch(/unstable_noStore\(|noStore\(\)/)
   })
 
-  it('degraded body prints no figure and no em dash', () => {
-    const body = readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), '_v3/CommunityDegraded.tsx'),
-      'utf8',
-    )
-    expect(body).toMatch(/headingLevel=\{1\}/)
-    expect(body).not.toMatch(/—/)
-    expect(body).not.toMatch(/0 homes|activeCount|medianPrice/)
+  it('retries a failed population read and refuses a timed-out empty homes list', () => {
+    expect(SRC).toMatch(/refuseEmptyFailedListings\(population, `comm:population \$\{slug\}`\)/)
+    expect(SRC).toMatch(/getCommunityPopulation\(slug\)/)
+    expect(SRC).not.toMatch(/emptyCommunityPopulation/)
   })
 })

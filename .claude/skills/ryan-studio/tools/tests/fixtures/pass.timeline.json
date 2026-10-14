@@ -1,0 +1,10 @@
+{
+  "duration_s": 24, "fps": 30, "loop_seam": "end card fades to the opening river frame",
+  "beats": [
+    {"id": "b1", "role": "hook", "start": 0, "end": 3, "text": "UNDER ASKING", "number": "69%", "boxes": [{"label": "69%", "x": 140, "y": 600, "w": 700, "h": 300}]},
+    {"id": "b2", "role": "intro", "start": 3, "end": 6, "text": "BEND THIS SUMMER"},
+    {"id": "b3", "role": "body", "start": 6, "end": 11, "text": "PRICE CUTS", "number": "1 IN 2"},
+    {"id": "b4", "role": "payoff", "start": 11, "end": 19, "text": "ROOM TO NEGOTIATE"},
+    {"id": "b5", "role": "endcard", "start": 19, "end": 24, "text": "Quality Local Service Call now 541.703.3095"}
+  ]
+}

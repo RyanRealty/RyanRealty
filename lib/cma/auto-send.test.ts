@@ -253,17 +253,18 @@ describe('autoSendBuiltCma — what it will never touch', () => {
 })
 
 describe('autoSendBuiltCma — a ready row that holds is never finalized (review, 2026-10-07)', () => {
-  it('refuses an unmeasured expired row whose ask sits inside the stored band', async () => {
+  it('does not block an unmeasured expired row as ask-in-band when the recommendation is under the ask and within 15%', async () => {
+    // $905,000 vs $925,000: 925_000 * 0.85 = 786_250, so the price is exempt.
     const d = deps({
       findRow: vi.fn(async () =>
         queueRow({ recommendedList: 905000, valueLow: 893000, valueHigh: 951000, theirPrice: 925000, holdKind: null, holdDecided: false }),
       ),
     })
     const res = await autoSendBuiltCma('cma-1-main', d)
-    expect(res.outcome).toBe('not-ready')
-    expect(res.reason).toContain('The last ask of $925,000 sits inside the sales range of $893,000 to $951,000')
-    expect(d.finalize).not.toHaveBeenCalled()
-    expect(d.enqueueDrip).not.toHaveBeenCalled()
+    expect(res.outcome).toBe('queued')
+    expect(res.reason).not.toContain('sits inside the sales range')
+    expect(d.finalize).toHaveBeenCalledWith('cma-1-main')
+    expect(d.enqueueDrip).toHaveBeenCalledWith('expired', 'K1')
     expect(d.sendNow).not.toHaveBeenCalled()
   })
 

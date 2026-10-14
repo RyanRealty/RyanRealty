@@ -193,7 +193,7 @@ describe('marketFigures', () => {
     expect(figures.map((f) => f.value)).toEqual([money(k.median.v), count(k.sales), days(k.dtc.v), mosText(k.mos)])
     // 600 for sale over 900 six-month sales: 4.0 months, which is a seller's market (4 or less).
     expect(k.mos).toBe(4)
-    expect(figures[3]!.label).toBe("months of supply, a seller's market")
+    expect(figures[3]!.label).toBe('months of supply')
     expect(figures[3]!.href).toBe('/months-of-supply')
     expect(figures[0]!.label).toBe(`median sale price in August (${pctChange(k.medianYoY)} from August 2025)`)
     expect(figures[1]!.label).toBe('homes sold in August')
@@ -271,10 +271,12 @@ describe('market by market', () => {
     expect(bendRow.detail).toBe(marketDetail(bend))
     expect(bendRow.detail?.startsWith('August: ')).toBe(true)
     expect(bendRow.detail).toContain(`${count(bend.sales)}\u00a0sold`)
-    expect(bendRow.detail).toContain("4.0\u00a0months\u00a0of\u00a0supply, a seller's market")
+    expect(bendRow.detail).toContain('4.0\u00a0months\u00a0of\u00a0supply')
+    expect(bendRow.detail).not.toMatch(/seller's market|buyer's market|balanced market/i)
     const sisters = rows.find((r) => r.what === 'Sisters')!
     expect(sisters.detail?.startsWith('Jun to Aug: ')).toBe(true)
-    expect(sisters.detail).toContain("6.0\u00a0months\u00a0of\u00a0supply, a buyer's market")
+    expect(sisters.detail).toContain('6.0\u00a0months\u00a0of\u00a0supply')
+    expect(sisters.detail).not.toMatch(/seller's market|buyer's market|balanced market/i)
   })
 
   it('never lets a line break fall between a figure and its unit', () => {
@@ -330,7 +332,7 @@ describe('charts', () => {
   it('draws months of supply against the balanced zone and claims the pattern, not the figure', () => {
     const strips = supplySeasons(payload.region.series, 'Central Oregon')!
     expect(strips.caption).toBe('Central Oregon months of supply by month, September 2023 to August 2026')
-    expect(strips.bands).toEqual([{ from: 4, to: 6, label: 'Balanced: above 4 and under 6 months' }])
+    expect(strips.bands).toEqual([{ from: 4, to: 6, label: '4 to 6 months' }])
     expect(strips.threshold).toBe(4)
     // Every stored month is 4.0, on the line and never past it.
     expect(strips.claim).toBe('Supply stayed at 4 months or under in 2026 through August and in all of 2025.')
@@ -338,7 +340,7 @@ describe('charts', () => {
     const newest = strips.rows[0]!.cells[7]!
     expect(newest.tick).toBe('Aug 2026')
     expect(newest.label).toBe('4.0 months')
-    expect(newest.note).toBe("a seller's market")
+    expect(newest.note).toBeUndefined()
   })
 
   it('keeps every stored month, one strip per calendar year, newest first, January in the first column', () => {
@@ -363,14 +365,14 @@ describe('charts', () => {
       strips.rows.flatMap((r) => r.cells.flatMap((c) => (c ? [[String(c.tick), c] as const] : []))),
     )
     expect(byTick.get('Oct 2025')!.label).toBe(`${mosText(3.96)} months`)
-    expect(byTick.get('Oct 2025')!.note).toBe("a seller's market")
-    expect(byTick.get('Nov 2025')!.note).toBe("a seller's market")
-    // 4.04 prints 4.1, never a 4.0 beside a balanced call.
+    expect(byTick.get('Oct 2025')!.note).toBeUndefined()
+    expect(byTick.get('Nov 2025')!.note).toBeUndefined()
+    // 4.04 prints 4.1, never a 4.0 that would read as a different band.
     expect(byTick.get('Dec 2025')!.label).toBe('4.1 months')
-    expect(byTick.get('Dec 2025')!.note).toBe('a balanced market')
+    expect(byTick.get('Dec 2025')!.note).toBeUndefined()
     expect(byTick.get('Jan 2026')!.label).toBe('5.9 months')
-    expect(byTick.get('Jan 2026')!.note).toBe('a balanced market')
-    expect(byTick.get('Feb 2026')!.note).toBe("a buyer's market")
+    expect(byTick.get('Jan 2026')!.note).toBeUndefined()
+    expect(byTick.get('Feb 2026')!.note).toBeUndefined()
     // The domain holds the whole balanced zone and the run's own top.
     expect(strips.max).toBe(7)
     expect(supplySeasons(payload.region.series, 'Central Oregon')!.max).toBe(6)

@@ -153,11 +153,11 @@ describe('ZIP page is on the v3 barrel', () => {
     // headline; the verdict sentence beneath it is the answer. Family-wide
     // consistency is gated by ci:market-question; this pin holds the route's
     // exact template and its §0 fallback.
-    expect(PAGE).toContain("`Is ZIP ${zip} a buyer's or seller's market?`")
+    expect(PAGE).toContain('`How many months of supply does ZIP ${zip} have?`')
     // A question with no answer under it is worse than a label (§0): no
     // publishable verdict falls back to the homes-for-sale headline.
     expect(PAGE).toMatch(
-      /const marketHeadline =\s*\n\s*verdict && mosText != null\s*\n\s*\? `Is ZIP \$\{zip\} a buyer's or seller's market\?`\s*\n\s*: placeHomesForSaleHeading\(zip\)/,
+      /const marketHeadline =\s*\n\s*verdict && mosText != null\s*\n\s*\? `How many months of supply does ZIP \$\{zip\} have\?`\s*\n\s*: placeHomesForSaleHeading\(zip\)/,
     )
     expect(PAGE).toMatch(/headline=\{v3Text\(marketHeadline\)\}/)
   })

@@ -1,7 +1,9 @@
 /**
  * JSON-LD structured data generators for SEO. Step 20.
  */
+import { BROKERS } from '@/lib/brand/contact'
 import { siteOrigin } from '@/lib/site-origin'
+import { brokerPersonId } from '@/lib/site/broker-entity'
 import { listingTileHref, teamPath } from '@/lib/slug'
 
 const SITE_URL = siteOrigin()
@@ -86,6 +88,9 @@ export function generateBrokerSchema(broker: {
   }
 }
 
+/** One author to Google: every BlogPosting joins the founder Person node. */
+export const BLOG_AUTHOR_PERSON_SLUG = BROKERS.matt.slug
+
 export function generateBlogSchema(post: {
   title: string
   slug: string
@@ -94,12 +99,10 @@ export function generateBlogSchema(post: {
   updated_at?: string | null
   image?: string | null
   author_name?: string | null
-  /** brokers.slug of the byline broker; gives the author Person its /team page @id and url. */
+  /** Accepted for callers; schema always uses the founder Person @id. */
   author_slug?: string | null
 }): Record<string, unknown> {
-  const authorUrl = post.author_slug?.trim()
-    ? `${SITE_URL}/team/${encodeURIComponent(post.author_slug.trim())}`
-    : null
+  const authorUrl = `${SITE_URL}${teamPath(BLOG_AUTHOR_PERSON_SLUG)}`
   return {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -111,17 +114,15 @@ export function generateBlogSchema(post: {
     // dateModified drives the AI/Google recency preference; fall back to the
     // publish date so the field is always present (no freshness cliff on edits).
     dateModified: post.updated_at ?? post.published_at ?? undefined,
-    // The @id is the one the organization schema already names its founder by
-    // (`/team/matthew-ryan#person`), so the byline joins that entity instead of
-    // being an anonymous name (AIV #1, 2026-10-08).
-    author: post.author_name
-      ? {
-          '@type': 'Person',
-          ...(authorUrl ? { '@id': `${authorUrl}#person` } : {}),
-          name: post.author_name,
-          ...(authorUrl ? { url: authorUrl } : {}),
-        }
-      : undefined,
+    // One author: every BlogPosting references the founder Person the
+    // Organization already names (`/team/matthew-ryan#person`).
+    author: {
+      '@type': 'Person',
+      '@id': brokerPersonId(SITE_URL, BLOG_AUTHOR_PERSON_SLUG),
+      name: post.author_name?.trim() || BROKERS.matt.name,
+      url: authorUrl,
+    },
+    publisher: { '@id': `${SITE_URL}#organization` },
   }
 }
 

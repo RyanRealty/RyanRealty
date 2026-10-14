@@ -10,6 +10,8 @@
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { geoReferralEnrollBlock } from '@/lib/referral-geo'
+import { isIndustryContact } from '@/lib/crm/industry-contact'
+import { whereActiveSuppression } from '@/lib/crm/suppression-lifecycle'
 
 /** People created before this moment are never auto-enrolled. */
 export const ENROLLMENT_EPOCH = '2026-06-10T00:00:00Z'
@@ -41,7 +43,7 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
   const sb = createServiceClient()
   const { data: person } = await sb
     .from('crm_people')
-    .select('id,tags,source,created_at,fub_created_at,emails')
+    .select('id,tags,stage,source,created_at,fub_created_at,emails')
     .eq('id', personId)
     .maybeSingle()
   if (!person) return { enrolled: false, reason: 'person not found' }
@@ -62,6 +64,9 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
   // so a person carrying a site-submit door tag is not an outreach-list row.
   // Same predicate as the 15-minute sweep (app/api/cron/crm-auto-enroll).
   const tags = (person.tags as string[]) ?? []
+  if (isIndustryContact({ tags, stage: (person.stage as string | null) ?? null })) {
+    return { enrolled: false, reason: 'industry-contact' }
+  }
   const { isOutreachListOnly } = await import('@/lib/crm/lead-source')
   if (isOutreachListOnly((person.source as string | null) ?? null, tags)) {
     return { enrolled: false, reason: 'outreach-list source (manual outreach only)' }
@@ -96,12 +101,9 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
   if (referralBlock) return { enrolled: false, reason: referralBlock }
 
   // hard-stop: never enroll
-  const { data: hardStop, error: hardStopError } = await sb
-    .from('crm_suppressions')
-    .select('id')
-    .eq('person_id', personId)
-    .eq('channel', 'all')
-    .limit(1)
+  const { data: hardStop, error: hardStopError } = await whereActiveSuppression(
+    sb.from('crm_suppressions').select('id').eq('person_id', personId).eq('channel', 'all'),
+  ).limit(1)
   // fail CLOSED (audit p0.3): an unreadable compliance table must NOT enroll.
   if (hardStopError) return { enrolled: false, reason: 'hard-stop check failed: ' + hardStopError.message }
   if (hardStop?.length) return { enrolled: false, reason: 'hard-stopped' }
@@ -219,12 +221,14 @@ export async function manualEnrollPerson(personId: number, sequenceId: number, e
   if (!seq) return { enrolled: false, reason: 'workflow not found' }
   if (seq.status !== 'active') return { enrolled: false, reason: 'that workflow is not active' }
 
-  const { data: hardStop, error: hardStopError } = await sb
-    .from('crm_suppressions')
-    .select('id')
-    .eq('person_id', personId)
-    .eq('channel', 'all')
-    .limit(1)
+  const { data: person } = await sb.from('crm_people').select('tags,stage').eq('id', personId).maybeSingle()
+  if (isIndustryContact({ tags: person?.tags, stage: (person?.stage as string | null) ?? null })) {
+    return { enrolled: false, reason: 'industry-contact' }
+  }
+
+  const { data: hardStop, error: hardStopError } = await whereActiveSuppression(
+    sb.from('crm_suppressions').select('id').eq('person_id', personId).eq('channel', 'all'),
+  ).limit(1)
   // fail CLOSED (audit p0.3): an unreadable compliance table must NOT enroll.
   if (hardStopError) return { enrolled: false, reason: 'hard-stop check failed: ' + hardStopError.message }
   if (hardStop?.length) return { enrolled: false, reason: 'contact is hard-stopped' }
@@ -358,7 +362,9 @@ export async function autoEnrollByPersonId(
           t.startsWith('audience:') ||
           (t.startsWith('source:') && t.includes('-lp')) ||
           t.startsWith('intent:') ||
-          t.startsWith('channel:fb-ads') ||
+          // Any channel tag: it is stamped from the visit's link at a form
+          // submit (resolvePaidAttributionTags), organic post or ad alike.
+          t.startsWith('channel:') ||
           t.startsWith('source:fb-ads'),
       )
       // A bare website sign-in (Google / SSO): source is the site itself, no

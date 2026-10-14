@@ -77,6 +77,22 @@ Same house row (not a custom photo grid each). Photo Field. No filled Value my h
 
 Tours that exist. Until then, listing pages carry video. Do not invent a second product.
 
+### `/buy/concessions`
+
+**Job.** Ads destination for Bend buyers: show that seller concessions are common, then let them compare a price cut to the same dollars as a rate buy-down, then capture a consult.
+
+| # | Section | Notes |
+|---|---|---|
+| 1 | Instrument | H1 "Buyers have leverage in Bend." Stats from the 90-day Bend concession query: 1 in 2, typical $10,000, 1.3%. Source line plus "blank MLS field may undercount". |
+| 2 | Sheet | Client payment calculator. No storage until lead submit. Caps by loan type and LTV. Freddie Mac PMMS 30-yr with as-of date. |
+| 3 | Instrument | Monthly share chart Oct 2024 to Sep 2026. Claim: 38% in Sep 2025 to 48% in Sep 2026. |
+| 4 | Quiet | Fannie / FHA / VA / USDA / RESPA caps. Required lender line. |
+| 5 | Ask | Name, email, phone, timeline. CTA "Get a concession plan for your offer". Consent + SMS. |
+| 6 | Quiet | Phone 541.703.3095 (CONTACT.phoneDirect) and fair housing notice. |
+| 7 | Footer | V3Footer. |
+
+Copy: "buyers have leverage". No "buyer's market" / "seller's market". No em dashes. No client names. No "not a fit". Static route; do not fold into `/buy/[intent]`.
+
 ### Listing (house URL)
 
 **Job.** This house. Beat Zillow Showcase.

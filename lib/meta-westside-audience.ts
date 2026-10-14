@@ -41,6 +41,7 @@ import {
   isMetaAudiencePushEnabled,
 } from '@/lib/meta-env'
 import { normalizeEmail, normalizePhone, normalizeName, sha256Hex } from '@/lib/meta/audienceHash'
+import { isIndustryContact } from '@/lib/crm/industry-contact'
 import { META_MIN_AUDIENCE_SIZE, type AudienceRunSummary } from '@/lib/meta/audienceLedger'
 
 /** The one fixed audience this module maintains (created 2026-05-25). */
@@ -129,6 +130,7 @@ export type WestsideInputs = {
 
 /** True when any tag carries a realtor/industry keyword (case-insensitive). */
 export function isRealtorTagged(tags: readonly unknown[] | null | undefined): boolean {
+  if (isIndustryContact({ tags })) return true
   const lower = (tags ?? []).map((t) => String(t).toLowerCase())
   return lower.some((t) => REALTOR_TAG_KEYWORDS.some((kw) => t.includes(kw)))
 }
@@ -301,7 +303,7 @@ export async function loadWestsideInputs(
   for (let i = 0; i < linkedIds.length; i += PEOPLE_CHUNK_SIZE) {
     const idsParam = linkedIds.slice(i, i + PEOPLE_CHUNK_SIZE).join(',')
     const [suppressions, peoplePage] = await Promise.all([
-      sbFetch(`crm_suppressions?select=person_id&channel=eq.all&person_id=in.(${idsParam})`),
+      sbFetch(`crm_suppressions?select=person_id&channel=eq.all&cleared_at=is.null&person_id=in.(${idsParam})`),
       sbFetch(`crm_people?select=id,tags,emails,phones,first_name,last_name&id=in.(${idsParam})`),
     ])
     for (const row of suppressions as Array<{ person_id: number }>) {

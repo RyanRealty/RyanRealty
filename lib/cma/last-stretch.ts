@@ -14,9 +14,12 @@
  * helpers, so the grid, the cards, the pins, the days chart and the
  * competition read one answer.
  *
- * The MLS OriginalListPrice stays on every row untouched: the price engine's
- * sale-to-original-ask ratios and the failed-ask pull read it, and this ruling
- * is about what the letter prints.
+ * The MLS OriginalListPrice stays on every row untouched, for display where
+ * these helpers already handle it. The price reads the same clock (Matt
+ * 2026-10-08, "Yes, after this landing"): the list engine's sale-to-original
+ * shares over the comps divide by `saleOriginalAsk`, and rule 16's cut test
+ * reads the subject's last-stretch first ask (lib/cma/expired-audit.ts
+ * failedAskCutOriginal).
  *
  * Pure.
  */
@@ -61,6 +64,21 @@ export function saleStretch(c: {
   const restarted = offerDay != null && firstDay != null && offerDay > firstDay
   if (!restarted) return { firstAsk: original, restarted: false }
   return { firstAsk: original != null && list != null && original === list ? list : null, restarted: true }
+}
+
+/**
+ * The original ask a closed sale's sale-to-original share divides by (Matt
+ * 2026-10-08, "Yes, after this landing"): the first ask of the listing period
+ * that produced the sale, the same figure the grid prints for it. A relisted
+ * sale's original ask is the ask in effect when its last stretch began (61197
+ * Cottonwood: $774,900 when it came back Nov 13, not April's $849,900), and a
+ * Coming Soon price changed before it went Active is not one. A stretch that
+ * came back with no ask on record has no share, never one off an earlier
+ * stretch's ask. A sale with no stamped stretch keeps its MLS
+ * OriginalListPrice, as every build read it before.
+ */
+export function saleOriginalAsk(c: Parameters<typeof saleStretch>[0]): number | null {
+  return saleStretch(c).firstAsk
 }
 
 /**

@@ -97,7 +97,7 @@ describe('2382 Jackson: the raw-range sentence names the adjustments it was pric
     expect(adjustedForPhrase(kept)).toBe('date and seller concessions')
     const html = cityMedianReconciliationHtml({ pricing, comps, subject } as unknown as OpinionPageArgs)
     expect(html).toContain(
-      'The three sales behind your price sold for $545,000 to $690,000 before adjusting for date and seller concessions; adjusted, they support',
+      'The three sales behind your price sold for $545,000 to $690,000 before adjusting for date and seller concessions.',
     )
     expect(html).not.toContain('date and size')
   })

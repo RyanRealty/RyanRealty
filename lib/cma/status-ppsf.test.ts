@@ -168,7 +168,8 @@ describe('status ppsf matrix captions', () => {
       entry({ key: '1', family: 'closed', listPrice: 512000, closePrice: 496000, sqft: 1600 }),
       entry({ key: '2', family: 'closed', listPrice: 528000, closePrice: 512000, sqft: 1600 }),
     ])
-    expect(closed).toContain('These two sales list at')
+    // A sale is done: it listed at a rate (reader review 2026-10-09).
+    expect(closed).toContain('These two sales listed at')
     expect(closed).toContain('and sold at')
     expect(closed).toContain('data-ppsf-status="sold"')
     const asking = statusPpsfCaptionHtml('active', [
@@ -176,5 +177,17 @@ describe('status ppsf matrix captions', () => {
     ])
     expect(asking).toContain('This one listing lists at $340 a foot.')
     expect(asking).not.toContain('sold at')
+    // A listing that came off unsold was listed at its rate; it is not for
+    // sale now (915 Saginaw, 636 Portland, canceled in August).
+    const unsold = statusPpsfCaptionHtml('unsold', [
+      entry({ key: 'i', family: 'unsold', listPrice: 1165000, sqft: 1904 }),
+    ])
+    expect(unsold).toContain('This one listing was listed at $612 a foot.')
+    expect(unsold).not.toContain('lists at')
+    const twoUnsold = statusPpsfCaptionHtml('unsold', [
+      entry({ key: 'i', family: 'unsold', listPrice: 1165000, sqft: 1904 }),
+      entry({ key: 'ii', family: 'unsold', listPrice: 600000, sqft: 2000 }),
+    ])
+    expect(twoUnsold).toContain('These two listings were listed at')
   })
 })

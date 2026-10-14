@@ -10,10 +10,12 @@ import { isResortCommunity } from '@/lib/cma/resort-guard'
 import { anchorPlacePhrase, resolvePriceAnchor, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
 import { onOwnPlat, ownGroundSeatRank } from '@/lib/pricing/plat-ground'
 import { describePriceTierLine, insidePriceTier, priceTierLine } from '@/lib/pricing/price-tier'
-import { notSettingSaleFrom, priceSetRefusal, saleSetsThePrice, type NotSettingSale } from '@/lib/pricing/price-set'
+import { notSettingSaleFrom, PRICE_SET_SQFT_BAND, priceSetRefusal, saleSetsThePrice, type NotSettingSale } from '@/lib/pricing/price-set'
 import { locationMatchFromFacts, type LocationMatch } from '@/lib/pricing/closed-comp-weight'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
+import { wholeBathPair } from '@/lib/pricing/bath-count'
+import { amenityViewsFromListing, poolPlaceFromTier, rankBestPool, type BestPoolHome } from '@/lib/pricing/best-pool'
 import { roomCountsDecision, type RoomDecision } from '@/lib/pricing/room-ground'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
@@ -50,9 +52,9 @@ import {
   type WaterClass,
 } from '@/lib/pricing/classes'
 import {
+  ORDINARY_FACTS_POOL_MONTHS,
   PRICING_MIN_COMPS,
   PRICING_TARGET_COMPS,
-  PRICING_WALK_CAP,
   pricingTierLadder,
   type AppleStrictness,
   type PricingTier,
@@ -63,6 +65,7 @@ import {
   pocketStopsLaterRungs,
   pocketStarvedForYearQuality,
 } from '@/lib/pricing/ladder'
+import { addressIsThisHome, distinctHomeCount, isSameProperty, seatDistinctHomes } from '@/lib/pricing/same-address'
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible, type RuralSplitCounts } from '@/lib/pricing/rural'
 import {
   applyInferredPocket,
@@ -74,6 +77,8 @@ import {
 export type PricingSubject = {
   listingKey: string | null
   streetAddress: string
+  /** MLS unit. A shared building uses it so another unit is not this home. */
+  unitNumber?: string | null
   city: string
   citySlug: string
   subdivision: string | null
@@ -121,6 +126,12 @@ export type PricingSubject = {
   /** Zoning of record. Hard cut only when both sides have a non-empty string. */
   zoning?: string | null
   publicRemarks?: string | null
+  /**
+   * MLS view, as stored on the listing. The best-five rank reads lake, pond,
+   * river, creek, and golf from it. Unset means the view was not read, and a
+   * sale is not demoted for a view we did not see.
+   */
+  viewDescription?: string | null
   /** The MLS SeniorCommunityYN field. True is age-restriction evidence; false or null is not evidence. */
   seniorCommunityYn?: boolean | null
   /**
@@ -161,6 +172,8 @@ export type PricingSale = {
   listingKey: string
   listNumber: string | null
   address: string
+  /** MLS unit. Absent on sale_pricing_facts; stamped from listings before the walk. */
+  unitNumber?: string | null
   city: string
   citySlug: string
   subdivision: string | null
@@ -198,6 +211,8 @@ export type PricingSale = {
   closePpsf: number
   photoUrl: string | null
   publicRemarks: string | null
+  /** MLS view from listings. Facts do not carry it. Unset fails open in the rank. */
+  viewDescription?: string | null
   /**
    * The MLS SeniorCommunityYN field, read from listings (sale_pricing_facts
    * does not carry it). True is age-restriction evidence; false or null is not.
@@ -346,20 +361,17 @@ export type PricingMatchResult = {
   /** The rung that first brought the set to PRICING_TARGET_COMPS; null when the walk never reached it. */
   reachedOnTier?: string | null
   /**
-   * True when that rung widened the area (touching plats, the next row, a
-   * ring, the neighborhood, the community, the boundary exit, the widening).
-   * False when own ground reached five, which seats up to seven on its own.
+   * True when the rung that first reached five was not the subject's own
+   * street or plat: a touching plat, the next row, or a later rung that
+   * filled a short pool. False when own ground reached five.
    */
   reachedOnWidening?: boolean
   /**
-   * REFILL FROM THE SAME RUNG (Matt 2026-10-08). The rung that reached five
-   * widened the area and seated only the shortfall; these are that rung's
-   * remaining qualifying, price-setting sales the cap did not seat, in the
-   * rung's own order (closest matches first). When the comparability review
-   * drops a seated sale, the build takes the next one from here, never from a
-   * wider rung (lib/cma/review-refill.ts). Empty when own ground reached five.
-   * Optional only so a stub result (the facts table still backfilling) and
-   * test literals stay valid; the walk always sets it.
+   * Sales that qualified and do not set the price. On a full plat pool these
+   * are the rest of that pool, after the best five, in rank order. On a short
+   * pool these are the later rung's extras the cap did not seat. A seated
+   * sale is never also here. Optional only so a stub result and test literals
+   * stay valid; the walk always sets it.
    */
   bench?: SelectedPricingComp[]
   /**
@@ -368,6 +380,24 @@ export type PricingMatchResult = {
    * The renderer does not recompute it. Empty when nothing was refused.
    */
   notSettingSales?: NotSettingSale[]
+  /**
+   * In-band sales that did not seat, and the last wall that held each one,
+   * when the walk finished short of five. `no-rung` means no rung's place
+   * included the sale. Absent when the walk reached five.
+   */
+  unseatedWalls?: UnseatedWall[]
+}
+
+/** One in-band sale the walk did not seat, and the wall that held it. */
+export type UnseatedWall = {
+  listingKey: string
+  address: string
+  sqft: number
+  closePrice: number
+  subdivision: string | null
+  why: string
+  tier: string
+  miles: number | null
 }
 
 function monthsBetween(laterIso: string, earlierIso: string): number {
@@ -408,7 +438,8 @@ function zoningCompatible(subjectZone: string | null | undefined, saleZone: stri
   return a === b
 }
 
-function applesOk(
+/** The product wall that refused the sale, or null when the sale is the same product. */
+function applesMiss(
   subject: PricingSubject,
   sale: PricingSale,
   level: AppleStrictness,
@@ -420,8 +451,8 @@ function applesOk(
    * treats both as walls.
    */
   allowFeatureCross = false,
-): boolean {
-  if (!productCompatible(subject.productClass, sale.productClass)) return false
+): string | null {
+  if (!productCompatible(subject.productClass, sale.productClass)) return 'product'
   // AGE-RESTRICTED HOUSING IS A DIFFERENT PRODUCT (lib/pricing/age-restricted.ts,
   // 2026-09-30). A 55+ sale off the subject's own plat walls on every rung
   // unless the subject is 55+ itself. Inside the plat it passes here, and the
@@ -436,7 +467,7 @@ function applesOk(
       ownPlatShare: subject.ownPlatAgeRestrictedShare,
     })
   ) {
-    return false
+    return 'age-restricted'
   }
   const customOrNew = isCustomOrNewSubject(
     {
@@ -453,23 +484,23 @@ function applesOk(
   // run its own copy without the own-plat test, so it refused a one-room sale
   // on the subject's recorded plat that rule 4 keeps.
   if (customOrNew) {
-    if (!customLotCompatible(subject.lotAcres, sale.lotAcres)) return false
+    if (!customLotCompatible(subject.lotAcres, sale.lotAcres)) return 'lot'
   } else {
-    if (!lotCompatible(subject.lotAcres, sale.lotAcres)) return false
+    if (!lotCompatible(subject.lotAcres, sale.lotAcres)) return 'lot'
   }
-  if (!resortCommunityCompatible(subject.subdivision, sale.subdivision)) return false
+  if (!resortCommunityCompatible(subject.subdivision, sale.subdivision)) return 'resort'
   // Water stays hard on every rung. A well house and a city-water house are
   // different products; widening distance does not make them comparable.
   // Sewer is hard outside the recorded plat. Inside it, septic and public
   // sewer both stay and the letter names which is which. Unknown still stays.
-  if (!waterCompatible(subject.waterClass, sale.waterClass)) return false
+  if (!waterCompatible(subject.waterClass, sale.waterClass)) return 'water'
   if (
     !sewerCompatible(subject.sewerClass, sale.sewerClass) &&
     !saleInsideSubjectCommunity(subject, sale)
   ) {
-    return false
+    return 'sewer'
   }
-  if (crossesMajorDivide(subject.marketArea, sale.marketArea)) return false
+  if (crossesMajorDivide(subject.marketArea, sale.marketArea)) return 'divide'
   // The highway cut, and the one exception Matt named: on a subject with no
   // mapped boundary, the starved widening rung may cross when a crossing is
   // the only way to reach three sales, and the report says so.
@@ -483,7 +514,7 @@ function applesOk(
       { lat: sale.latitude ?? NaN, lng: sale.longitude ?? NaN },
     )
   if (crossesHighway && !allowFeatureCross) {
-    return false
+    return 'highway'
   }
   // A RIVER IS A WALL WHERE NOTHING ELSE IS (Matt 2026-09-09: "if we're in a
   // city that doesn't really have that, then we use other major things to
@@ -500,7 +531,7 @@ function applesOk(
       { lat: sale.latitude ?? NaN, lng: sale.longitude ?? NaN },
     )
   ) {
-    return false
+    return 'river'
   }
   // Unmapped rural vs a mapped Parkway/Deschutes bank: keep for ordinary
   // acreage. Custom/new outside the Bend GIS mesh (Rim View / North Rim) must
@@ -512,24 +543,34 @@ function applesOk(
     subject.ruralAcreage &&
     unmappedCrossesKnownBank(subject.marketArea, sale.marketArea)
   ) {
-    return false
+    return 'bank'
   }
   const subjectIrrigation = resolveIrrigationClass(subject.publicRemarks, null, subject.irrigationClass)
   const saleIrrigation = irrigationClassFromRemarks(sale.publicRemarks)
-  if (!irrigationCompatible(subjectIrrigation, saleIrrigation)) return false
+  if (!irrigationCompatible(subjectIrrigation, saleIrrigation)) return 'irrigation'
   if (subject.ruralAcreage || (subject.lotAcres ?? 0) >= 1) {
-    if (!horseInfrastructureCompatible(subject.publicRemarks, sale.publicRemarks)) return false
+    if (!horseInfrastructureCompatible(subject.publicRemarks, sale.publicRemarks)) return 'horse'
     // Delta 4 (Matt 2026-09-09): outside a boundary the comparison is of the
     // property. Zoning CLASS, outbuildings and usable land are hard splits,
     // never dollar adjustments; every side that is unknown keeps the sale.
-    if (!zoningClassCompatible(subject.zoning, sale.zoning)) return false
-    if (!outbuildingsCompatible(subject.publicRemarks, sale.publicRemarks)) return false
-    if (!terrainCompatible(subject.publicRemarks, sale.publicRemarks)) return false
+    if (!zoningClassCompatible(subject.zoning, sale.zoning)) return 'zoning'
+    if (!outbuildingsCompatible(subject.publicRemarks, sale.publicRemarks)) return 'outbuildings'
+    if (!terrainCompatible(subject.publicRemarks, sale.publicRemarks)) return 'terrain'
   } else if (!zoningCompatible(subject.zoning, sale.zoning)) {
-    return false
+    return 'zoning'
   }
-  if (level === 'product_lot' || level === 'utilities') return true
-  return hoaCompatible(subject.hoaClass, sale.hoaClass)
+  if (level === 'product_lot' || level === 'utilities') return null
+  return hoaCompatible(subject.hoaClass, sale.hoaClass) ? null : 'hoa'
+}
+
+function applesOk(
+  subject: PricingSubject,
+  sale: PricingSale,
+  level: AppleStrictness,
+  asOfYear?: number,
+  allowFeatureCross = false,
+): boolean {
+  return applesMiss(subject, sale, level, asOfYear, allowFeatureCross) == null
 }
 
 function cellFor(
@@ -639,6 +680,33 @@ function parentWallAdmits(subject: PricingSubject, sale: PricingSale, rung: Pare
   return subjectArea === saleArea || touchingAdjacent || customOutsideMesh || mayCrossArea
 }
 
+/** A miss about where or when this rung looks, not about the house itself. */
+const RUNG_PLACE_MISS = new Set([
+  'same-listing',
+  'this-home',
+  'not-closed-yet',
+  'implausible-close',
+  'outside-months',
+  'other-city',
+  'not-this-street',
+  'not-this-plat',
+  'outside-parent',
+  'not-adjacent-plat',
+  'not-next-plat',
+  'not-this-pocket',
+  'miles',
+])
+
+function tierMiss(why: string, miles: number | null = null, priceTier = false) {
+  return priceTier
+    ? { ok: false as const, miles, why, priceTier: true as const }
+    : { ok: false as const, miles, why }
+}
+
+function inPickerSizeBand(subjectSqft: number, saleSqft: number): boolean {
+  return subjectSqft > 0 && saleSqft > 0 && Math.abs(saleSqft - subjectSqft) / subjectSqft <= PRICE_SET_SQFT_BAND
+}
+
 function passesTier(
   subject: PricingSubject,
   sale: PricingSale,
@@ -655,45 +723,57 @@ function passesTier(
 ): {
   ok: boolean
   miles: number | null
+  /** The wall that refused the sale. Absent when the sale passes. */
+  why?: string
   roomDecision?: RoomDecision | null
   sewerNote?: string | null
   /** True when every other wall passed and the one 20% price line refused it. */
   priceTier?: boolean
 } {
-  if (subject.listingKey && sale.listingKey === subject.listingKey) return { ok: false, miles: null }
-  if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
-    return { ok: false, miles: null }
+  if (subject.listingKey && sale.listingKey === subject.listingKey) return tierMiss('same-listing')
+  // A different unit at this address is a different home. The listing key
+  // above already removed the subject's own row.
+  if (
+    addressIsThisHome({
+      subjectAddress: subject.streetAddress,
+      saleAddress: sale.address,
+      subjectUnit: subject.unitNumber,
+      saleUnit: sale.unitNumber,
+      productClass: subject.productClass,
+    })
+  ) {
+    return tierMiss('this-home')
   }
-  if (sale.closeDate >= asOf) return { ok: false, miles: null }
-  if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return { ok: false, miles: null }
-  if (monthsBetween(asOf, sale.closeDate) > tier.monthsBack) return { ok: false, miles: null }
-  if (!tier.ignoreCity && sale.citySlug !== subject.citySlug) return { ok: false, miles: null }
+  if (sale.closeDate >= asOf) return tierMiss('not-closed-yet')
+  if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return tierMiss('implausible-close')
+  if (monthsBetween(asOf, sale.closeDate) > tier.monthsBack) return tierMiss('outside-months')
+  if (!tier.ignoreCity && sale.citySlug !== subject.citySlug) return tierMiss('other-city')
   const onOwnStreet = sameStreetPeer(
     { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft },
     { address: sale.address, city: sale.city, sqft: sale.sqft },
   )
-  if (tier.sameStreetOnly && !onOwnStreet) return { ok: false, miles: null }
+  if (tier.sameStreetOnly && !onOwnStreet) return tierMiss('not-this-street')
   // The subject's own street is its own ground for every rule below, exactly as
   // its own plat is.
   const ownPlat = tier.sameSubdivision === true || tier.sameStreetOnly === true
   // Street-cluster subjects: "same subdivision" means the exclusive Canter /
   // Horse Back / Ranch pocket, not every Black Butte home that shares the
   // catch-all SaddleStone MLS name (Matt Flex HARD LOCK 2026-09-15).
-  if (tier.sameSubdivision && !inSubjectPlat(subject, sale)) return { ok: false, miles: null }
+  if (tier.sameSubdivision && !inSubjectPlat(subject, sale)) return tierMiss('not-this-plat')
   // THE PARENT IS THE WALL (parentWallAdmits): the community line on
   // every rung, the street-cluster polygon on the own-ground rungs, and the
   // neighborhood polygon on every rung that leaves the subdivision. The GLA
   // bracket reads the same predicate.
   const asOfYear = Number(asOf.slice(0, 4))
-  if (!parentWallAdmits(subject, sale, tier, asOfYear)) return { ok: false, miles: null }
+  if (!parentWallAdmits(subject, sale, tier, asOfYear)) return tierMiss('outside-parent')
   // The plats next to the subject's, closest first.
   if (tier.adjacentSubdivision) {
     const ring = subject.adjacentSubdivisionSlugs ?? []
-    if (!sale.subdivisionSlug || !ring.includes(sale.subdivisionSlug)) return { ok: false, miles: null }
+    if (!sale.subdivisionSlug || !ring.includes(sale.subdivisionSlug)) return tierMiss('not-adjacent-plat')
   }
   if (tier.closerSubdivision) {
     const next = subject.closerSubdivisionSlugs ?? []
-    if (!sale.subdivisionSlug || !next.includes(sale.subdivisionSlug)) return { ok: false, miles: null }
+    if (!sale.subdivisionSlug || !next.includes(sale.subdivisionSlug)) return tierMiss('not-next-plat')
   }
   if (tier.samePocket) {
     const nameHit =
@@ -701,28 +781,29 @@ function passesTier(
       (subject.pocketSubdivisionNorms ?? []).includes(sale.subdivisionNorm!)
     const saleStreet = streetKey(sale.address)
     const streetHit = Boolean(saleStreet && (subject.pocketStreetKeys ?? []).includes(saleStreet))
-    if (!nameHit && !streetHit) return { ok: false, miles: null }
+    if (!nameHit && !streetHit) return tierMiss('not-this-pocket')
   }
   const sqftLo = subject.sqft * (1 - tier.sqftBand)
   const sqftHi = subject.sqft * (1 + tier.sqftBand)
-  if (sale.sqft < sqftLo || sale.sqft > sqftHi) return { ok: false, miles: null }
+  if (sale.sqft < sqftLo || sale.sqft > sqftHi) return tierMiss('size')
 
   const allowFeatureCross = Boolean(tier.whenStarved) && subject.marketArea == null
-  if (!applesOk(subject, sale, tier.apples, asOfYear, allowFeatureCross)) {
-    return { ok: false, miles: null }
-  }
-  // ONE ROOM RULE (rule 4). The picker's one call (pickerRoomDecision), the
-  // same one the size bracket makes and the seated sale carries. Own plat and
-  // own street are own ground, so one room apart is noted; two or more is
-  // refused everywhere. (The own-street rung's sale is a sameStreetPeer, which
-  // roomCountsDecision reads as own ground itself.)
+  const apples = applesMiss(subject, sale, tier.apples, asOfYear, allowFeatureCross)
+  if (apples) return tierMiss(apples)
+  // ONE ROOM RULE (rule 4, Matt 2026-10-09). Up to two bedrooms off, up to two
+  // bathrooms off, or both, stays and is weighed less. Three or more on either
+  // count is refused everywhere. The picker's one call (pickerRoomDecision) is
+  // the same one the size bracket makes and the seated sale carries.
   const rooms = pickerRoomDecision(subject, sale)
-  if (!rooms.ok) return { ok: false, miles: null }
-  if (!ownPlat && !ageOk(subject.yearBuilt, sale.yearBuilt, asOfYear, tier.ageYears)) {
-    return { ok: false, miles: null }
+  if (!rooms.ok) return tierMiss('rooms')
+  // Age does not remove a sale on the subject's own plat, a plat that touches
+  // it, or the next row (Matt 2026-10-10). Year only ranks those. Distance,
+  // community, and the other rungs still refuse a sale outside the year band.
+  if (poolPlaceFromTier(tier.name) == null && !ownPlat && !ageOk(subject.yearBuilt, sale.yearBuilt, asOfYear, tier.ageYears)) {
+    return tierMiss('age')
   }
   if (!ownPlat && !storyOk(subject.storyClass, sale.storyClass, tier.sameStory)) {
-    return { ok: false, miles: null }
+    return tierMiss('stories')
   }
   // Beds and baths are decided by the ONE ROOM RULE above. The per-tier
   // bedSlop/bathSlop numbers no longer gate anything: a rung cannot be looser
@@ -756,7 +837,7 @@ function passesTier(
       asOfYear,
     )
   ) {
-    return { ok: false, miles: null }
+    return tierMiss('resale-versus-new')
   }
   if (
     !skipYearQualityOnExclusive &&
@@ -771,7 +852,7 @@ function passesTier(
       asOfYear,
     )
   ) {
-    return { ok: false, miles: null }
+    return tierMiss('year-quality')
   }
 
   // Price-tier + neighborhood cuts on every rung that leaves the subdivision.
@@ -786,8 +867,12 @@ function passesTier(
     const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
     const comp = cellFor(cells, sale.citySlug, sale.subdivisionNorm)
     const tierRatio = subjectArea != null ? SAME_NEIGHBORHOOD_TIER_RATIO : undefined
+    // Own, adjacent, and the next row keep a sale whose plat median sits in
+    // another price cell (Matt 2026-10-10). The cell still refuses a sale on
+    // a distance, community, or similar-subdivision rung.
     if (
       !customPeer &&
+      poolPlaceFromTier(tier.name) == null &&
       !similarPerformingSubdivision(
         subj?.medianPpsf ?? null,
         subj?.n ?? 0,
@@ -796,7 +881,7 @@ function passesTier(
         tierRatio,
       )
     ) {
-      return { ok: false, miles: null }
+      return tierMiss('subdivision-tier')
     }
     // The same plan on the same street is this home's tier, whatever a
     // neighborhood median says (lib/pricing/price-anchor.ts).
@@ -815,7 +900,14 @@ function passesTier(
       // The sale is not refused here: every other wall below still runs first,
       // so the rung counts only the sales the line alone kept out.
       // Custom and new subjects keep the floor and lose the ceiling, as before.
-      if (!ownStreet && !insidePriceTier(sale.closePpsf, line, { floorOnly: customPeer })) {
+      // Own, adjacent, and the next row keep a sale the 20% line would refuse.
+      // It stays in the pool and competes in the rank. Distance, community,
+      // and the other rungs still refuse it.
+      if (
+        poolPlaceFromTier(tier.name) == null &&
+        !ownStreet &&
+        !insidePriceTier(sale.closePpsf, line, { floorOnly: customPeer })
+      ) {
         outsidePriceLine = true
       }
     } else {
@@ -826,7 +918,8 @@ function passesTier(
       // passes when it has none (untieredSalePriceTierOk fails open).
       const subjectPpsf = subj?.medianPpsf ?? null
       const subjectN = subj?.n ?? 0
-      const gradeOnOwnPpsf = !ownStreet && (!comp || !sale.subdivisionNorm || subj == null)
+      const gradeOnOwnPpsf =
+        poolPlaceFromTier(tier.name) == null && !ownStreet && (!comp || !sale.subdivisionNorm || subj == null)
       if (gradeOnOwnPpsf) {
         // Custom and new subjects keep the FLOOR and lose the ceiling. A custom
         // home selling far above its neighborhood's median is what custom means;
@@ -834,7 +927,7 @@ function passesTier(
         const ok = customPeer
           ? customSalePriceFloorOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)
           : untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)
-        if (!ok) return { ok: false, miles: null }
+        if (!ok) return tierMiss('price-cell')
       }
     }
   }
@@ -844,10 +937,10 @@ function passesTier(
     { lat: sale.latitude, lng: sale.longitude },
   )
   if (tier.maxMiles != null) {
-    if (miles == null || miles > tier.maxMiles) return { ok: false, miles }
+    if (miles == null || miles > tier.maxMiles) return tierMiss('miles', miles)
   }
   // Every wall passed. The price line is the only thing keeping it out.
-  if (outsidePriceLine) return { ok: false, miles, priceTier: true }
+  if (outsidePriceLine) return tierMiss('price-line', miles, true)
   const sewerNote = saleInsideSubjectCommunity(subject, sale)
     ? sewerPlatNote(subject.sewerClass, sale.sewerClass, sale.address)
     : null
@@ -1104,14 +1197,23 @@ function bracketEligible(
   tiers: readonly PricingTier[] = pricingTierLadder(),
 ): boolean {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return false
-  if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) return false
+  if (
+    addressIsThisHome({
+      subjectAddress: subject.streetAddress,
+      saleAddress: sale.address,
+      subjectUnit: subject.unitNumber,
+      saleUnit: sale.unitNumber,
+      productClass: subject.productClass,
+    })
+  ) {
+    return false
+  }
   if (!bracketStaysOnSubdivisionRows(subject, sale)) return false
   if (sale.closeDate >= asOf) return false
-  // THE BRACKET SWAP OBEYS THE SAME 24-MONTH WALL AS EVERY RUNG. It checked
-  // only that the sale was not in the future, so on a custom or new subject —
-  // whose pool reaches back thirty months — it could import a sale the accuracy
-  // contract then hard-fails as older than 24 months, and the whole build died
-  // on a comp the swap itself had chosen (cma-63531-gentry, 2026-09-10).
+  // The bracket swap stays on the ordinary 24-month rung. Recovery sales
+  // (out to 36 months) are seated by the recovery rungs, not by this swap.
+  // Letting the swap reach past 24 months pulled a sale onto a custom subject
+  // the contract then killed (cma-63531-gentry, 2026-09-10).
   if (monthsBetween(asOf, sale.closeDate) > BRACKET_MAX_AGE_MONTHS) return false
   if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return false
   const asOfYear = Number(asOf.slice(0, 4))
@@ -1352,38 +1454,6 @@ function pocketSalesSitWithKept(
   })
 }
 
-function similarity(subject: PricingSubject, sale: PricingSale, asOf: string, pocketStarved: boolean): number {
-  const size = 1 / (1 + Math.abs(sale.sqft - subject.sqft) / subject.sqft)
-  const recency = 1 / (1 + monthsBetween(asOf, sale.closeDate) / 9)
-  const age =
-    subject.yearBuilt != null && sale.yearBuilt != null
-      ? 1 / (1 + Math.abs(subject.yearBuilt - sale.yearBuilt) / 20)
-      : 0.85
-  const story = subject.storyClass !== 'unknown' && subject.storyClass === sale.storyClass ? 1 : 0.75
-  const miles =
-    distanceMiles(
-      { lat: subject.latitude, lng: subject.longitude },
-      { lat: sale.latitude, lng: sale.longitude },
-    ) ?? 2
-  const dist = 1 / (1 + miles / 2)
-  const customOrNew = isCustomOrNewSubject(
-    {
-      yearBuilt: subject.yearBuilt,
-      newConstructionYn: subject.newConstruction,
-      remarks: subject.publicRemarks,
-      propertySubType: subject.propertySubType,
-    },
-    Number(asOf.slice(0, 4)),
-  )
-  // Year + quality outrank radius ONLY when the exclusive pocket is starved
-  // (Matt 2026-09-15). A named SaddleStone pocket with Horse Back / Ranch
-  // sales must not lose to farther Clearpine / Forest Edge on vintage.
-  if (customOrNew && pocketStarved) {
-    return size * 0.26 + recency * 0.20 + age * 0.28 + story * 0.14 + dist * 0.12
-  }
-  return size * 0.28 + recency * 0.22 + age * 0.16 + story * 0.16 + dist * 0.18
-}
-
 
 /**
  * Own ground, then the touching plats, then the next row, then a pocket.
@@ -1402,6 +1472,15 @@ function pricingLocationGroup(tier: string | null | undefined): number {
 /** Same era, then a generation apart, then a different era. Unknown sits in the middle. */
 const PLAT_ERA_TIGHT_YEARS = 7
 const PLAT_ERA_LOOSE_YEARS = 15
+/**
+ * Same generation against this home's own-plat median year: within 10.
+ * Stale: more than 15 years off. A gap of 11 to 15, and a plat with no year,
+ * are neither. Those neighbors keep the order they already had.
+ */
+const SAME_GENERATION_YEARS = 10
+const STALE_GENERATION_YEARS = 15
+/** The 0.25 and 0.5 mile rings. A same-generation sale does not open 0.75 or farther. */
+const SAME_VINTAGE_MAX_MILES = 0.5
 /** A plat whose homes are within about 10% of this living area is the same size. */
 const PLAT_SIZE_CLOSE = 0.1
 /** Float noise under a hundredth of a mile does not beat a closer feature match. */
@@ -1413,6 +1492,154 @@ function platKey(sale: PricingSale): string {
   const name = sale.subdivisionNorm?.trim().toLowerCase()
   if (name) return name
   return sale.listingKey
+}
+
+function builtYear(year: number | null | undefined): number | null {
+  return year != null && year >= 1850 ? year : null
+}
+
+/** Median year built of one plat's sales in the pool. No year means the plat is unknown. */
+function platYearMedians(pool: readonly PricingSale[]): Map<string, number> {
+  const years = new Map<string, number[]>()
+  for (const sale of pool) {
+    const year = builtYear(sale.yearBuilt)
+    if (year == null) continue
+    const key = platKey(sale)
+    const rows = years.get(key)
+    if (rows) rows.push(year)
+    else years.set(key, [year])
+  }
+  const medians = new Map<string, number>()
+  for (const [key, rows] of years) {
+    const mid = medianClose(rows)
+    if (mid != null) medians.set(key, mid)
+  }
+  return medians
+}
+
+/**
+ * The year a neighbor plat is compared to. The own plat's median year when
+ * that plat has one. The subject's year when the own plat has no year.
+ */
+function ownPlatYearBaseline(subject: PricingSubject, pool: readonly PricingSale[]): number | null {
+  const years: number[] = []
+  for (const sale of pool) {
+    if (!inSubjectPlat(subject, sale)) continue
+    const year = builtYear(sale.yearBuilt)
+    if (year != null) years.push(year)
+  }
+  return medianClose(years) ?? builtYear(subject.yearBuilt)
+}
+
+function generationGap(baseline: number | null, median: number | null | undefined): number | null {
+  if (baseline == null || median == null) return null
+  return Math.abs(baseline - median)
+}
+
+function isSameGeneration(baseline: number | null, median: number | null | undefined): boolean {
+  const gap = generationGap(baseline, median)
+  return gap != null && gap <= SAME_GENERATION_YEARS
+}
+
+function isStaleGeneration(baseline: number | null, median: number | null | undefined): boolean {
+  const gap = generationGap(baseline, median)
+  return gap != null && gap > STALE_GENERATION_YEARS
+}
+
+function withinHalfMile(subject: PricingSubject, sale: PricingSale): boolean {
+  const miles = distanceMiles(
+    { lat: subject.latitude, lng: subject.longitude },
+    { lat: sale.latitude, lng: sale.longitude },
+  )
+  return miles != null && miles <= SAME_VINTAGE_MAX_MILES
+}
+
+function isHalfMileNearbyTier(tier: PricingTier): boolean {
+  return tier.name.startsWith('nearby-') && tier.maxMiles != null && tier.maxMiles <= SAME_VINTAGE_MAX_MILES
+}
+
+/**
+ * Plat rows already hold five, a touching plat or the next row is a stale
+ * generation, and a same-generation sale within half a mile is still outside
+ * the set. That sale is not on this home's own plat. Unknown years do not
+ * open the rings.
+ */
+function staleNeighborNeedsHalfMile(
+  subject: PricingSubject,
+  pool: readonly PricingSale[],
+  admitted: Iterable<SelectedPricingComp>,
+  baseline: number | null,
+  platYears: ReadonlyMap<string, number>,
+): boolean {
+  if (baseline == null) return false
+  const admittedKeys = new Set<string>()
+  let staleNeighbor = false
+  for (const sale of admitted) {
+    admittedKeys.add(sale.listingKey)
+    const place = poolPlaceFromTier(sale.selectionTier)
+    if (place !== 'adjacent' && place !== 'next') continue
+    if (isStaleGeneration(baseline, platYears.get(platKey(sale)))) staleNeighbor = true
+  }
+  if (!staleNeighbor) return false
+  for (const sale of pool) {
+    if (admittedKeys.has(sale.listingKey)) continue
+    if (inSubjectPlat(subject, sale)) continue
+    if (!withinHalfMile(subject, sale)) continue
+    if (isSameGeneration(baseline, platYears.get(platKey(sale)))) return true
+  }
+  return false
+}
+
+/**
+ * A same-generation sale within half a mile takes a seat a stale neighbor
+ * would have filled. Own ground and neighbors that are not stale stay in
+ * their current order. Fewer same-generation sales than stale seats leaves
+ * the remaining stale neighbors seated. The count does not fall.
+ */
+function preferSameGenerationHalfMile(
+  subject: PricingSubject,
+  seated: readonly SelectedPricingComp[],
+  candidates: readonly SelectedPricingComp[],
+  baseline: number | null,
+  platYears: ReadonlyMap<string, number>,
+): { seated: SelectedPricingComp[]; displaced: SelectedPricingComp[] } {
+  if (baseline == null || seated.length === 0) return { seated: [...seated], displaced: [] }
+  const sameGen = candidates.filter((sale) => {
+    if (seated.some((kept) => kept.listingKey === sale.listingKey || isSameProperty(sale, kept))) return false
+    if (inSubjectPlat(subject, sale)) return false
+    if (!withinHalfMile(subject, sale)) return false
+    return isSameGeneration(baseline, platYears.get(platKey(sale)))
+  })
+  if (sameGen.length === 0) return { seated: [...seated], displaced: [] }
+  sameGen.sort((a, b) => {
+    const miles = saleMiles(subject, a) - saleMiles(subject, b)
+    if (Math.abs(miles) > MILES_TIE) return miles
+    return a.listingKey.localeCompare(b.listingKey)
+  })
+  const staleAt: number[] = []
+  seated.forEach((sale, index) => {
+    const place = poolPlaceFromTier(sale.selectionTier)
+    if (place !== 'adjacent' && place !== 'next') return
+    if (isStaleGeneration(baseline, platYears.get(platKey(sale)))) staleAt.push(index)
+  })
+  const swaps = Math.min(sameGen.length, staleAt.length)
+  if (swaps === 0) return { seated: [...seated], displaced: [] }
+  const dropAt = new Set(staleAt.slice(-swaps))
+  const displaced: SelectedPricingComp[] = []
+  const next: SelectedPricingComp[] = []
+  let incoming = 0
+  seated.forEach((sale, index) => {
+    if (!dropAt.has(index)) {
+      next.push(sale)
+      return
+    }
+    displaced.push(sale)
+    const replacement = sameGen[incoming]
+    incoming += 1
+    if (replacement) next.push(replacement)
+  })
+  if (next.length < seated.length) return { seated: [...seated], displaced: [] }
+  return { seated: next, displaced }
 }
 
 /**
@@ -1629,6 +1856,39 @@ function capPricingSet(
   return { kept, bench, widening: !ownGround }
 }
 
+/** Unknown room count is a match. A sale already admitted is at most two off. */
+function wholeCountOff(left: number | null | undefined, right: number | null | undefined): number {
+  if (left == null || right == null || !Number.isFinite(left) || !Number.isFinite(right)) return 0
+  return Math.min(2, Math.abs(left - right))
+}
+
+/** One admitted sale, as the best-five rank reads it. The rung weight is not changed. */
+function bestPoolHomeFrom(subject: PricingSubject, comp: SelectedPricingComp): BestPoolHome {
+  const place = poolPlaceFromTier(comp.selectionTier)
+  if (place == null) throw new Error(`not a pool tier: ${comp.selectionTier}`)
+  const compared = comp.roomDecision?.compared
+  const baths = wholeBathPair(subject, comp)
+  return {
+    id: comp.listingKey,
+    place,
+    sqft: comp.sqft,
+    yearBuilt: comp.yearBuilt,
+    when: comp.closeDate,
+    bedsOff: compared
+      ? wholeCountOff(compared.subjectBeds, compared.saleBeds)
+      : wholeCountOff(subject.beds, comp.beds),
+    bathsOff: compared
+      ? wholeCountOff(compared.subjectBaths, compared.saleBaths)
+      : wholeCountOff(baths.subject, baths.sale),
+    miles: distanceMiles(
+      { lat: subject.latitude, lng: subject.longitude },
+      { lat: comp.latitude, lng: comp.longitude },
+    ),
+    lotAcres: comp.lotAcres,
+    amenityViews: amenityViewsFromListing(comp.viewDescription),
+  }
+}
+
 /**
  * A neighborhood polygon or a community that walls the search confines it.
  * A community made up from a plat name, with no HOA, is an ordinary plat and
@@ -1662,13 +1922,17 @@ function tierOutsideRecordedPlatRows(tier: PricingTier): boolean {
  *
  * Every count in this function (countBeforePocket, platRowCount, the stop at
  * PRICING_TARGET_COMPS, the whenStarved and likeCommunity gates, the plat
- * lock, crossBoundary at BOUNDARY_EXIT_BELOW, exclusiveCount, runningTotal)
- * reads byKey, and byKey holds price-setting sales only: a sale that passes a
+ * lock) counts distinct homes in byKey. Two closes of one house are one home,
+ * so they do not close the next row or fill the five. crossBoundary at
+ * BOUNDARY_EXIT_BELOW, exclusiveCount, and runningTotal still read byKey,
+ * and byKey holds price-setting sales only: a sale that passes a
  * rung's walls and fails rule 20 (lib/pricing/price-set.ts saleSetsThePrice:
  * another community, or a clearly different size or product) is counted on
  * the rung as notSetting, recorded in bySale so no later rung re-scans it
  * (the test is tier-independent, so it would refuse again), and never
- * admitted. No gate is rewritten; the walk simply goes on.
+ * admitted. The walls are unchanged. Two closes of one house do not count as
+ * two of the five, so the ordered list continues when the keys are not yet
+ * five homes.
  *
  * ORDER PROOF. The tiers come from lib/pricing/ladder.ts in the locked order
  * (own street and plat, the plats that touch it, the plats that touch those,
@@ -1680,19 +1944,26 @@ function tierOutsideRecordedPlatRows(tier: PricingTier): boolean {
  * community, so a confined subject never leaves its parent to reach five: it
  * ends short and the build fails as a comp shortage. An unconfined subject
  * reaches crossBoundary only under BOUNDARY_EXIT_BELOW setters, as before,
- * and crossBoundary is still refused with no marketArea. Reaching five never
- * crosses a wall the old walk would not cross; it only continues further down
- * the same ordered list when a non-setter was met. Never a radius search in
- * place of the order.
+ * and crossBoundary is still refused with no marketArea. Reaching five homes
+ * never crosses a wall the walk would not cross. It only continues further
+ * down the same ordered list when a non-setter was met, or when two keys were
+ * one home. Never a radius search in place of the order.
  *
- * WALK TO 7, PRICE ON 5+ (Matt 2026-10-07). The subject's own ground (own
- * street, own plat, its pocket) walks its whole window. Once byKey holds
- * PRICING_TARGET_COMPS, no rung that widens the area runs. Every rung scans
- * its whole row, and capPricingSet seats the set: every sale admitted before
- * the rung that reached five keeps its seat. Own ground that reached five
- * fills up to PRICING_WALK_CAP, newest closes first, so the review can drop one
- * or two and the set still prices on five. A rung that widens the area adds
- * only the sales needed to reach five (only what's needed, Matt 2026-10-07).
+ * GATHER, THEN SEAT FIVE (Matt 2026-10-10). Own street, own plat, and every
+ * plat that touches them, including the 30- and 36-month rungs, all run
+ * before a seat is chosen. The next row runs only when that pool is still
+ * under five, and it runs to completion. Distance, community, and the other
+ * rungs keep the stop at five. The priced sales are the best five of that
+ * pool. A short pool keeps every one of those sales and fills from the later
+ * rungs, up to five. Location weight stays on the rung that admitted the sale.
+ *
+ * SAME GENERATION WITHIN HALF A MILE. When an admitted touching plat or next
+ * row is more than 15 years off this home's own-plat median year, and a
+ * same-generation sale (within 10 years of that median) sits within half a
+ * mile on another plat, the 0.25 and 0.5 mile rings still run. That sale
+ * takes a seat a stale neighbor would have filled. Own-plat sales stay.
+ * Unknown years do not promote and are not stale. The 0.75 mile ring and
+ * anything farther stay shut.
  */
 export function walkPricingLadder(
   rawSubject: PricingSubject,
@@ -1732,7 +2003,12 @@ export function walkPricingLadder(
   // row and plat read left it, not the inferred pocket: the anchor's levels are
   // its own recorded plat, that plat's family, and its own MLS subdivision name
   // before any wider ground.
-  const priceAnchor = resolvePriceAnchor(rawSubject, pool)
+  // The anchor stays on the ordinary (or custom) window. The pool also holds
+  // closes out to 36 months for the date-recovery rungs, and those older
+  // closes must not move the line on a letter that already has five sales.
+  const anchorMonths = opts.anchorWindowMonths ?? ORDINARY_FACTS_POOL_MONTHS
+  const withinAnchor = pool.filter((s) => monthsBetween(asOf, s.closeDate) <= anchorMonths)
+  const priceAnchor = resolvePriceAnchor(rawSubject, withinAnchor.length > 0 ? withinAnchor : pool)
   // The one 20% line around it (lib/pricing/price-tier.ts), or null with no anchor.
   const priceLine = priceTierLine(priceAnchor?.ppsf)
   /** Distinct sales the price line skipped, across every rung. */
@@ -1749,6 +2025,8 @@ export function walkPricingLadder(
   )
   const tiers = opts.tiers ?? pricingTierLadder({ customOrNew: customLadder })
   const byKey = new Map<string, SelectedPricingComp>()
+  /** Five listing keys can be four homes. The gates that mean "five" count homes. */
+  const homesInSet = () => distinctHomeCount([...byKey.values()])
   /** Sales already held, so one closed sale cannot enter a set twice. */
   const bySale = new Set<string>()
   const rungs: PricingLadderRung[] = []
@@ -1756,14 +2034,14 @@ export function walkPricingLadder(
   let exclusiveCount = 0
   const exclusivePending = (opts.pendingPool ?? []).filter((p) => saleInExclusivePocket(subject, p)).length
   const trace: string[] = [
-    `As-of ${asOf}. Named subdivision and its street cluster first (own street, same plat, pocket names and streets), exclusive while that set holds a tight closed+pending group. Then the plats next to it inside the same neighborhood or community, then distance inside that boundary, then similar-performing subdivisions; the boundary is crossed only when it supplied fewer than ${BOUNDARY_EXIT_BELOW} sales. Year and quality outrank radius only when exclusive closed sales sit below ${BOUNDARY_EXIT_BELOW}. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, and on acreage the zoning class (farm or forest against rural residential), outbuildings, and usable land, zoning when both sides have a zone in town, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs, a subdivision $/sqft tier gap between plats, and ${priceLine ? `off the subject's own plat and street twin, a sale's own $/sqft inside ${describePriceTierLine(priceLine)} (one 20% line around this home's price anchor, the same line the comparability review holds)` : 'no price line around the home itself, because no price anchor could be resolved'}.`,
+    `As-of ${asOf}. Named subdivision and its street cluster first (own street, same plat, pocket names and streets), exclusive while that set holds a tight closed+pending group. Then the plats next to it inside the same neighborhood or community, then distance inside that boundary, then similar-performing subdivisions; the boundary is crossed only when it supplied fewer than ${BOUNDARY_EXIT_BELOW} sales. Year and quality outrank radius only when exclusive closed sales sit below ${BOUNDARY_EXIT_BELOW}. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, and on acreage the zoning class (farm or forest against rural residential), outbuildings, and usable land, zoning when both sides have a zone in town, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs. On the subject's plat, the plats that touch it, and the plats that touch those, year built and the subdivision price cell do not remove a sale. ${priceLine ? `The 20% line around ${describePriceTierLine(priceLine)} still removes a sale on a later rung.` : 'No price line was drawn, because no price anchor could be resolved.'}`,
   ]
   if (priceAnchor && priceLine) {
     // Where the line was read, by name (Matt 2026-10-08): the narrowest level
     // that held a fair median, so a reader can see it is this home's own area.
     const windowText = opts.anchorWindowMonths ? ` that closed in the last ${opts.anchorWindowMonths} months` : ''
     trace.push(
-      `Price tier: homes of this size sell for about $${priceLine.anchor} a square foot ${anchorPlacePhrase(priceAnchor)} (median of ${priceAnchor.n} sales${windowText}). Off this home's own plat and street, sales outside ${describePriceTierLine(priceLine)} are a different market and are not used.`,
+      `Price tier: homes of this size sell for about $${priceLine.anchor} a square foot ${anchorPlacePhrase(priceAnchor)} (median of ${priceAnchor.n} sales${windowText}). On the subject's plat, the plats that touch it, and the plats that touch those, a sale outside ${describePriceTierLine(priceLine)} stays in the pool. On a later rung it is a different market and is not used.`,
     )
   }
   if (subject.inferredPocket?.inferred && subject.inferredPocket.subdivision) {
@@ -1864,11 +2142,73 @@ export function walkPricingLadder(
     }
   }
   const setsPrice = (sale: SelectedPricingComp): boolean => saleSetsThePrice(priceSetInput(sale))
+  // The first wall about the house itself. A later ring's month window, or a
+  // city rung's tighter size band, must not hide it. A seated sale is removed.
+  const wallByKey = new Map<string, UnseatedWall>()
+  const seatedOnce = new Set<string>()
+  const noteWall = (sale: PricingSale, why: string, tierName: string, miles: number | null = null) => {
+    if (!inPickerSizeBand(subject.sqft, sale.sqft)) return
+    const prior = wallByKey.get(sale.listingKey)
+    if (prior && !RUNG_PLACE_MISS.has(prior.why)) return
+    if (
+      prior &&
+      RUNG_PLACE_MISS.has(why) &&
+      prior.tier.startsWith('nearby-') &&
+      !tierName.startsWith('nearby-')
+    ) {
+      return
+    }
+    wallByKey.set(sale.listingKey, {
+      listingKey: sale.listingKey,
+      address: sale.address,
+      sqft: sale.sqft,
+      closePrice: sale.closePrice,
+      subdivision: sale.subdivision ?? null,
+      why,
+      tier: tierName,
+      miles,
+    })
+  }
 
+  const poolTiers: PricingTier[] = []
+  const nextTiers: PricingTier[] = []
+  const restTiers: PricingTier[] = []
   for (const tier of tiers) {
-    if (tier.samePocket && countBeforePocket == null) countBeforePocket = byKey.size
+    const place = poolPlaceFromTier(tier.name)
+    if (place === 'own' || place === 'adjacent') poolTiers.push(tier)
+    else if (place === 'next') nextTiers.push(tier)
+    else restTiers.push(tier)
+  }
+  const planned: { tier: PricingTier; pass: 'pool' | 'next' | 'rest' }[] = [
+    ...poolTiers.map((tier) => ({ tier, pass: 'pool' as const })),
+    ...nextTiers.map((tier) => ({ tier, pass: 'next' as const })),
+    ...restTiers.map((tier) => ({ tier, pass: 'rest' as const })),
+  ]
+  // Decided once, before any next-row rung runs, so a later next-row month
+  // still enters when the row was opened under five.
+  let nextRowClosed: boolean | null = null
+  // Own-plat median year, or the subject's year when that plat has none.
+  // Neighbor plats are stale or same-generation against this one number.
+  const baselineYear = ownPlatYearBaseline(subject, pool)
+  const platYears = platYearMedians(pool)
+  let sameVintageOpen: boolean | null = null
+  const opensForSameVintage = (tier: PricingTier): boolean => {
+    if (!isHalfMileNearbyTier(tier)) return false
+    if (sameVintageOpen == null) {
+      sameVintageOpen = staleNeighborNeedsHalfMile(subject, pool, byKey.values(), baselineYear, platYears)
+      if (sameVintageOpen) {
+        trace.push(
+          'A neighbor plat is a different generation, and a same-generation sale sits within half a mile, so the quarter-mile and half-mile rings still run. A wider ring stays shut.',
+        )
+      }
+    }
+    return sameVintageOpen
+  }
+
+  for (const { tier, pass } of planned) {
+    if (tier.samePocket && countBeforePocket == null) countBeforePocket = homesInSet()
     if (recordedPlat && platRowCount == null && tierOutsideRecordedPlatRows(tier)) {
-      platRowCount = byKey.size
+      platRowCount = homesInSet()
       if (platRowCount < PRICING_MIN_COMPS) {
         trace.push(
           `${subject.subdivision ?? 'The recorded plat'}, the plats that touch it, and the plats that touch those held ${platRowCount} price-setting sale${platRowCount === 1 ? '' : 's'}, short of ${PRICING_MIN_COMPS}, so the search went on inside the neighborhood, closest first.`,
@@ -1893,15 +2233,34 @@ export function walkPricingLadder(
       })
       continue
     }
-    // THE AREA STOPS WIDENING AT FIVE (walk to 7, Matt 2026-10-07: "while
-    // the same area still holds qualifying sales"). The subject's own ground
-    // (own street, own plat, its pocket) is the same area across its whole
-    // window, so those rungs keep walking past five. Every rung that widens
-    // the area (touching plats, the next row, rings, neighborhood, community,
-    // boundary exit, starved) is skipped once the set holds five. The cap
-    // below seats the set: own ground up to PRICING_WALK_CAP, a widening rung
-    // only up to five.
-    if (byKey.size >= PRICING_TARGET_COMPS && !isPocketExclusiveTier(tier)) {
+    // Own and adjacent rungs always finish, even after five are seated
+    // (Matt 2026-10-10). The next row is one decision: opened only while
+    // the plat and the plats that touch it hold fewer than five, then every
+    // next-row rung runs. Distance, community, and the other rungs still
+    // stop once five are seated, except the 0.25 and 0.5 mile rings when a
+    // stale neighbor is in and a same-generation sale within half a mile is
+    // not. A pocket rung is the same exception it was. Wider rings are not.
+    if (pass === 'next') {
+      if (nextRowClosed == null) nextRowClosed = homesInSet() >= PRICING_TARGET_COMPS
+      if (nextRowClosed) {
+        rungs.push({
+          tier: tier.name,
+          ran: false,
+          skippedReason: `the subject's plat and the plats that touch it already hold ${byKey.size} price-setting sales, so the next row was not opened`,
+          monthsBack: tier.monthsBack,
+          scanned: 0,
+          added: 0,
+          runningTotal: byKey.size,
+          notSetting: 0,
+        })
+        continue
+      }
+    } else if (
+      pass === 'rest' &&
+      homesInSet() >= PRICING_TARGET_COMPS &&
+      !isPocketExclusiveTier(tier) &&
+      !opensForSameVintage(tier)
+    ) {
       rungs.push({
         tier: tier.name,
         ran: false,
@@ -1918,7 +2277,7 @@ export function walkPricingLadder(
     }
     const skip =
       // THE WIDENING RUNS ONLY WHEN THE BOUNDED LADDER CAME UP SHORT.
-      tier.whenStarved && byKey.size >= PRICING_MIN_COMPS
+      tier.whenStarved && homesInSet() >= PRICING_MIN_COMPS
         ? 'the bounded search already reached the minimum, so no widening was needed'
         : tier.whenStarved &&
             pocketStopsLaterRungs({
@@ -1932,7 +2291,7 @@ export function walkPricingLadder(
         ? 'the subject is not inside a planned or golf community'
         : tier.likeCommunity && !isResortCommunity(subjectCommunity)
         ? 'the subject is not inside a golf or resort community'
-        : tier.likeCommunity && byKey.size >= PRICING_MIN_COMPS
+        : tier.likeCommunity && homesInSet() >= PRICING_MIN_COMPS
         ? 'the community supplied the minimum, so no peer community was needed'
         : tier.sameSubdivision && !subject.subdivisionSlug && !subject.subdivisionNorm
         ? 'no recorded plat holds the subject, and its MLS row names none either'
@@ -1965,7 +2324,10 @@ export function walkPricingLadder(
         // first and inside the parent wall, before the build fails (rules 15
         // and 19: "Do not return a short set"). 915 Saginaw and 1648 Pheasant
         // failed on 2026-10-07 holding one sale each with the neighborhood unread.
-        : recordedPlat && tierOutsideRecordedPlatRows(tier) && (platRowCount ?? 0) >= PRICING_MIN_COMPS
+        : recordedPlat &&
+            tierOutsideRecordedPlatRows(tier) &&
+            (platRowCount ?? 0) >= PRICING_MIN_COMPS &&
+            !opensForSameVintage(tier)
           ? `this home sits in a recorded subdivision, and that plat, the plats that touch it, and the plats that touch those already hold ${platRowCount} price-setting sales, so the search stays there. It does not open a quarter-mile pocket, a distance ring, or the rest of the neighborhood`
         : parentConfines(subject) && (tier.likeCommunity || tier.crossBoundary || tier.whenStarved)
           ? 'this home sits inside a neighborhood or community, so the search does not leave it for another community or a distance past that boundary'
@@ -2015,15 +2377,20 @@ export function walkPricingLadder(
       : pool
     for (const sale of scanPool) {
       if (byKey.has(sale.listingKey)) continue
+      // A close inside 24 months already had the normal rungs. Recovery is
+      // only the sales those rungs could not see because they were older.
+      if (tier.dateRecovery && monthsBetween(asOf, sale.closeDate) <= ORDINARY_FACTS_POOL_MONTHS) continue
       // ONE SALE, ONE ROW. A relisting of the same closed transaction carries a
-      // new listing key, so keying on that alone lets one sale into a set twice
-      // — once in the median and again at an end of the printed range. Address
-      // plus city plus close price: two different homes do not close at the
-      // exact same price at the same street address, and a duplicate always
-      // agrees with itself on price even when it disagrees on square footage.
-      const saleKey = `${sale.address.trim().toLowerCase()}|${(sale.city ?? '').trim().toLowerCase()}|${Math.round(sale.closePrice)}`
+      // new listing key, so keying on that alone lets one sale into a set twice,
+      // once in the median and again at an end of the printed range. Address,
+      // unit, city, and close price. A blank unit stays on address and price, so
+      // one house relisted at the same price still enters once. Two units in one
+      // building are two sales even when they close at the same dollar (1940
+      // Monterey Pines units 2 and 12, both $520,000).
+      const unit = (sale.unitNumber ?? '').trim().toLowerCase()
+      const saleKey = `${sale.address.trim().toLowerCase()}|${unit}|${(sale.city ?? '').trim().toLowerCase()}|${Math.round(sale.closePrice)}`
       if (bySale.has(saleKey)) continue
-      const { ok, roomDecision, sewerNote, priceTier } = passesTier(
+      const { ok, why, roomDecision, sewerNote, priceTier } = passesTier(
         subject,
         sale,
         tier,
@@ -2035,11 +2402,38 @@ export function walkPricingLadder(
         // Outside the one 20% line: skipped and counted, the walk goes on in
         // the same order. Not added to bySale, so the line is re-read on each
         // rung exactly as every other wall is.
+        noteWall(sale, why ?? 'price-line', tier.name)
         rungPriceTier++
         priceTierKeys.add(sale.listingKey)
         continue
       }
-      if (!ok) continue
+      if (!ok) {
+        const saleMiles =
+          tier.maxMiles != null
+            ? distanceMiles(
+                { lat: subject.latitude, lng: subject.longitude },
+                { lat: sale.latitude, lng: sale.longitude },
+              )
+            : null
+        const nearbyCovers =
+          tier.name.startsWith('nearby-') &&
+          tier.maxMiles != null &&
+          saleMiles != null &&
+          saleMiles <= tier.maxMiles
+        // A later city rung must not overwrite the quarter-mile reason. A
+        // sale older than this rung's months is still outside the neighborhood
+        // when the parent wall says so. That is the wall, and the month
+        // window is not hiding it.
+        let recorded = why ?? 'unknown'
+        if (recorded === 'outside-months' && nearbyCovers && !parentWallAdmits(subject, sale, tier, asOfYearForLadder)) {
+          recorded = 'outside-parent'
+        }
+        const alreadyNearby = wallByKey.get(sale.listingKey)?.tier.startsWith('nearby-') === true
+        if (nearbyCovers || (!alreadyNearby && why && !RUNG_PLACE_MISS.has(why))) {
+          noteWall(sale, recorded, tier.name, saleMiles)
+        }
+        continue
+      }
       // A SALE WITH AN ADU NEVER PRICES A HOME WITHOUT ONE (Matt 2026-10-08,
       // "ADU sale skips"; aduSaleRefused, the reader the review and the
       // listings ladder apply too). The rung would have taken it; it is
@@ -2052,7 +2446,15 @@ export function walkPricingLadder(
       }
       // The subdivision-median tier does not see this close. Once the plat has
       // a sale, a different plat has to land on that set's own prices.
-      if (!customLadder && !inSubjectPlat(subject, sale) && !closeNearOwnPlat(subject, sale, byKey.values())) {
+      // The own-plat close band stays on distance, community, and the other
+      // rungs. Own, adjacent, and the next row keep the sale in the pool.
+      if (
+        poolPlaceFromTier(tier.name) == null &&
+        !customLadder &&
+        !inSubjectPlat(subject, sale) &&
+        !closeNearOwnPlat(subject, sale, byKey.values())
+      ) {
+        noteWall(sale, 'own-plat-close-band', tier.name)
         continue
       }
       const selected: SelectedPricingComp = {
@@ -2084,6 +2486,8 @@ export function walkPricingLadder(
       }
       byKey.set(sale.listingKey, selected)
       bySale.add(saleKey)
+      wallByKey.delete(sale.listingKey)
+      seatedOnce.add(sale.listingKey)
       added++
     }
     rungs.push({
@@ -2121,7 +2525,7 @@ export function walkPricingLadder(
       if (tier.disclosure) trace.push(tier.disclosure)
     }
     if (isPocketExclusiveTier(tier)) exclusiveCount = byKey.size
-    if (reachedOnTier == null && byKey.size >= PRICING_TARGET_COMPS) reachedOnTier = tier.name
+    if (reachedOnTier == null && homesInSet() >= PRICING_TARGET_COMPS) reachedOnTier = tier.name
   }
 
   if (aduSkippedKeys.size > 0) {
@@ -2130,17 +2534,83 @@ export function walkPricingLadder(
     )
   }
   const pocketStarved = pocketStarvedForYearQuality(exclusiveCount)
-  const ranked = [...byKey.values()].sort(
-    (a, b) => similarity(subject, b, asOf, pocketStarved) - similarity(subject, a, asOf, pocketStarved),
+  const admitted = [...byKey.values()]
+  // An own-plat sale still in this set keeps the 1.3 median. The pocket pass
+  // runs only when that median was never there.
+  const hadOwnPlat = admitted.some((c) => c.ownPlat)
+  const sitting = hadOwnPlat ? admitted : pocketSalesSitWithKept(admitted, customLadder)
+  const poolComps = sitting.filter((comp) => poolPlaceFromTier(comp.selectionTier) != null)
+  const restComps = sitting.filter((comp) => poolPlaceFromTier(comp.selectionTier) == null)
+  const poolById = new Map(poolComps.map((comp) => [comp.listingKey, comp]))
+  const poolOrder = rankBestPool(
+    poolComps.map((comp) => bestPoolHomeFrom(subject, comp)),
+    {
+      sqft: subject.sqft,
+      yearBuilt: subject.yearBuilt,
+      lotAcres: subject.lotAcres,
+      amenityViews: amenityViewsFromListing(subject.viewDescription),
+    },
+    'sold',
+    poolComps.length,
   )
-  // An own-plat sale still in this set keeps the 1.3 median, including the
-  // bracket read below, which runs before that sale is removed. The pocket
-  // pass runs only when that median was never there.
-  const hadOwnPlat = ranked.some((c) => c.ownPlat)
-  const sitting = hadOwnPlat ? ranked : pocketSalesSitWithKept(ranked, customLadder)
-  const seats = capPricingSet(subject, sitting, PRICING_WALK_CAP, reachedOnTier)
-  const sliced = seats.kept
-  const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder, setsPrice, tiers)
+  const poolRanked = poolOrder
+    .map((home) => poolById.get(home.id))
+    .filter((comp): comp is SelectedPricingComp => comp != null)
+  // Five distinct homes. Two closes of one house take one seat, and the next
+  // ranked home takes the seat the earlier close does not get.
+  const poolSeat = seatDistinctHomes(poolRanked, PRICING_TARGET_COMPS)
+  const seatedPool = poolSeat.seated
+  const poolBench = poolSeat.held
+  const poolFull = seatedPool.length >= PRICING_TARGET_COMPS
+  let sliced: SelectedPricingComp[]
+  let seatBench: SelectedPricingComp[]
+  let widening: boolean
+  let vintageDisplaced = 0
+  if (poolFull) {
+    const preferred = preferSameGenerationHalfMile(subject, seatedPool, restComps, baselineYear, platYears)
+    sliced = preferred.seated
+    seatBench = [...preferred.displaced, ...poolBench]
+    vintageDisplaced = preferred.displaced.length
+    const reachedPlace = poolPlaceFromTier(reachedOnTier)
+    widening = reachedPlace != null && reachedPlace !== 'own'
+    if (preferred.displaced.length > 0) {
+      trace.push(
+        preferred.displaced.length === 1
+          ? 'A same-generation sale within half a mile took a seat ahead of a neighbor plat from a different generation.'
+          : `${preferred.displaced.length} same-generation sales within half a mile took seats ahead of neighbor plats from a different generation.`,
+      )
+    }
+  } else {
+    const slots = PRICING_TARGET_COMPS - seatedPool.length
+    const restReach = poolPlaceFromTier(reachedOnTier) == null ? reachedOnTier : null
+    const restSeats = capPricingSet(subject, restComps, slots, restReach)
+    const merged = seatDistinctHomes(
+      [...seatedPool, ...restSeats.kept, ...restSeats.bench],
+      PRICING_TARGET_COMPS,
+    )
+    sliced = merged.seated
+    seatBench = [...poolBench, ...merged.held]
+    widening = restSeats.widening
+  }
+  const naiveDistinct = distinctHomeCount(poolRanked.slice(0, PRICING_TARGET_COMPS))
+  if (sliced.length > naiveDistinct) {
+    const earlier = poolRanked.filter(
+      (sale) =>
+        !sliced.some((kept) => kept.listingKey === sale.listingKey) &&
+        sliced.some((kept) => isSameProperty(sale, kept)),
+    )
+    if (earlier.length > 0) {
+      const names = earlier.map((sale) => sale.address).join(', ')
+      trace.push(
+        `${names} ${earlier.length === 1 ? 'is an earlier sale' : 'are earlier sales'} of a home already in the five, so ${earlier.length === 1 ? 'it is' : 'they are'} not counted twice. The next home took that seat.`,
+      )
+    }
+  }
+  // A full pool is already the best five. The size bracket must not pull a
+  // later-rung sale into that set. A short pool still may.
+  const bracketed = poolFull
+    ? { comps: sliced, note: null as string | null }
+    : bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder, setsPrice, tiers)
   if (bracketed.note) {
     if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')
     trace.push(bracketed.note)
@@ -2168,11 +2638,61 @@ export function walkPricingLadder(
   }
   // The bench never holds a seated sale (the GLA bracket can seat one of them).
   const seated = new Set(comps.map((c) => c.listingKey))
-  const bench = seats.bench.filter((c) => !seated.has(c.listingKey))
-  if (seats.widening && bench.length > 0) {
+  const unseatedWalls: UnseatedWall[] = []
+  if (comps.length < PRICING_MIN_COMPS) {
+    const seen = new Set<string>()
+    for (const sale of pool) {
+      if (seated.has(sale.listingKey) || seen.has(sale.listingKey)) continue
+      if (!inPickerSizeBand(subject.sqft, sale.sqft)) continue
+      seen.add(sale.listingKey)
+      const saleMiles = distanceMiles(
+        { lat: subject.latitude, lng: subject.longitude },
+        { lat: sale.latitude, lng: sale.longitude },
+      )
+      if (seatedOnce.has(sale.listingKey)) {
+        unseatedWalls.push({
+          listingKey: sale.listingKey,
+          address: sale.address,
+          sqft: sale.sqft,
+          closePrice: sale.closePrice,
+          subdivision: sale.subdivision ?? null,
+          why: 'left-after-it-seated',
+          tier: '',
+          miles: saleMiles,
+        })
+        continue
+      }
+      const noted = wallByKey.get(sale.listingKey)
+      unseatedWalls.push(
+        noted
+          ? { ...noted, miles: noted.miles ?? saleMiles }
+          : {
+              listingKey: sale.listingKey,
+              address: sale.address,
+              sqft: sale.sqft,
+              closePrice: sale.closePrice,
+              subdivision: sale.subdivision ?? null,
+              why: 'no-rung',
+              tier: '',
+              miles: saleMiles,
+            },
+      )
+    }
+  }
+  const bench = seatBench.filter((c) => !seated.has(c.listingKey))
+  if (!poolFull && widening && bench.length > 0) {
     trace.push(
       `${reachedOnTier} widened the area and seated only what reached ${PRICING_TARGET_COMPS}; it holds ${bench.length} more qualifying sale${bench.length === 1 ? '' : 's'} the comparability review can refill from, in that rung's order, and the search never widens past it.`,
     )
+  } else if (poolFull && poolBench.length > 0) {
+    const heldBack = bench.filter((comp) => poolPlaceFromTier(comp.selectionTier) != null).length
+    if (heldBack > 0) {
+      trace.push(
+        vintageDisplaced > 0
+          ? `The plat pool held ${poolComps.length} qualifying sales. ${vintageDisplaced} from a different generation gave up a seat to a same-generation sale within half a mile, and ${heldBack} more from that pool do not set the price.`
+          : `The plat pool held ${poolComps.length} qualifying sales. The best ${seatedPool.length} set the price, and ${heldBack} more from that pool do not.`,
+      )
+    }
   }
   return {
     comps,
@@ -2182,7 +2702,7 @@ export function walkPricingLadder(
     starved: !reachedTarget,
     rungs,
     reachedOnTier,
-    reachedOnWidening: seats.widening,
+    reachedOnWidening: widening,
     bench,
     priceAnchor,
     priceTierSkipped: priceTierKeys.size,
@@ -2192,6 +2712,7 @@ export function walkPricingLadder(
     exclusiveCount,
     pocketStarved,
     notSettingSales,
+    ...(unseatedWalls.length > 0 ? { unseatedWalls } : {}),
     ...(ruralSplits ? { ruralSplits } : {}),
   }
 }
