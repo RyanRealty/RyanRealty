@@ -1,0 +1,17 @@
+{
+  "rule": "R-190",
+  "step": "brief",
+  "what": "Long, many-syllable on-screen words push the copy past the reading grade limit (no insider term, no percentage)",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.0.cards.0.footer",
+      "set": "Comprehensive evaluation of residential availability relative to historical transaction velocity demonstrates considerable negotiating opportunity for prospective purchasers"
+    },
+    {
+      "in": "timeline",
+      "path": "beats.2.scene.line",
+      "set": "Negotiate deliberately, evaluating every opportunity comprehensively"
+    }
+  ]
+}

@@ -255,7 +255,7 @@ export default hidden
 // ---------------------------------------------------------------------------
 // The real gate, as a subprocess, against a sandbox copy of the tree.
 
-const COPY = ['scripts/check-content-rules.mjs', 'lib/content/process/rules.ts', 'lib/content/process/threshold-path.ts', 'lib/content/process/rules.baseline.json', 'lib/studio/qa/thresholds.ts', '.claude/skills/ryan-studio/tools/video_types.json']
+const COPY = ['scripts/check-content-rules.mjs', 'lib/content/process/rules.ts', 'lib/content/process/threshold-path.ts', 'lib/content/process/rules.baseline.json', 'lib/studio/qa/thresholds.ts', 'lib/content/process/plain-english.ts', '.claude/skills/ryan-studio/tools/video_types.json']
 
 describe('the real gate against a sandbox of the tree', () => {
   let sandbox = ''
@@ -291,6 +291,7 @@ describe('the real gate against a sandbox of the tree', () => {
 
   const fresh = () => {
     copyFileSync(join(REPO, 'lib/content/process/rules.ts'), at('lib/content/process/rules.ts'))
+    copyFileSync(join(REPO, 'lib/content/process/plain-english.ts'), at('lib/content/process/plain-english.ts'))
     copyFileSync(join(REPO, 'lib/content/process/rules.baseline.json'), at('lib/content/process/rules.baseline.json'))
     copyFileSync(join(REPO, '.claude/skills/ryan-studio/tools/video_types.json'), at('.claude/skills/ryan-studio/tools/video_types.json'))
     for (const f of readdirSync(join(REPO, FX))) copyFileSync(join(REPO, FX, f), at(`${FX}/${f}`))
@@ -348,6 +349,34 @@ describe('the real gate against a sandbox of the tree', () => {
     const r = gate()
     expect(r.status).toBe(1)
     expect(r.out).toMatch(/banned_phrases: \[.*nestled.*\] -> \[.*\] is LOOSER/)
+  })
+
+  it('fails a loosened plain-English limit (Matt 2026-10-14) and passes a tightened one', () => {
+    fresh()
+    const grade = ruleHolding('plain_english.max_grade')
+    edit('lib/content/process/plain-english.ts', (t) => t.replace('maxGrade: 6,', 'maxGrade: 9,'))
+    const r = gate()
+    expect(r.status).toBe(1)
+    expect(r.out).toMatch(new RegExp(`${grade.id} qa:plain_english\\.max_grade: 6 -> 9 is LOOSER`))
+    fresh()
+    edit('lib/content/process/plain-english.ts', (t) => t.replace('maxGrade: 6,', 'maxGrade: 5,'))
+    const tight = gate()
+    expect(tight.status, tight.out).toBe(0)
+    expect(tight.out).toMatch(/tightened: .*plain_english\.max_grade: 6 -> 5 \(tightened\)/)
+  })
+
+  it('fails an insider term taken off the list, and a gloss added to it, as loosenings', () => {
+    fresh()
+    const terms = ruleHolding('plain_english.insider_terms')
+    edit('lib/content/process/plain-english.ts', (t) => t.replace(/\n  \{ term: 'median',[^\n]*\n/, '\n'))
+    const removed = gate()
+    expect(removed.status).toBe(1)
+    expect(removed.out).toMatch(new RegExp(`${terms.id} qa:plain_english\\.insider_terms: \\[.*median.*\\] -> \\[.*\\] is LOOSER`))
+    fresh()
+    edit('lib/content/process/plain-english.ts', (t) => t.replace("glosses: ['\\\\bhalf\\\\b", "glosses: ['\\\\bmiddle\\\\b', '\\\\bhalf\\\\b"))
+    const added = gate()
+    expect(added.status).toBe(1)
+    expect(added.out).toMatch(new RegExp(`${terms.id}#2 qa:plain_english\\.glosses: .* is LOOSER`))
   })
 
   it('fails a deleted fixture, and a rule ID that vanished', () => {

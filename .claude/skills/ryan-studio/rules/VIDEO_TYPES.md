@@ -6,6 +6,8 @@ Lines marked **PROPOSED** are new and are NOT rules until Matt says yes. The gat
 
 **Hard rule (every type, every agent, Claude or Grok):** every video has a `brief.json` (schema `templates/brief.schema.json`) and a `timeline.json`, and passes `node tools/video_gate.mjs <brief.json> <timeline.json>` **before any render**, draft or final. A failing gate means no render.
 
+**Step 0 (Matt 2026-10-14):** before the brief, the ad-strategist (`.claude/agents/ad-strategist.md`) writes `whiteboard.json` (schema `templates/whiteboard.schema.json`) in the brief's folder: audience, context, insight, contrast, why now, why us, one ask, and the read-aloud script, in plain English a 75-year-old follows on first hearing. The process's brief step refuses a brief without it and holds every word to the plain-English rules (`npm run studio -- rules <type>`, R-186 to R-196).
+
 ## Core recipe (applies to every card; RULEBOOK §2a, §2, §2b, §1, §3, §4, §5, §6)
 | # | Rule | Source |
 |---|---|---|
@@ -65,7 +67,7 @@ Sequence for every type: **hook -> intro -> body -> payoff -> end card** (intro 
 - **Compliance:** describe the place, never who should live there.
 
 ## 6. Buyer ad, Meta Housing category (`buyer_ad`)
-- **Hook:** the first line picks the buyer by need (price band, area, lifestyle fact), because Housing ads cannot target by age, gender or ZIP. Housing Special Ad Category: age fixed 18 to 65+, all genders, no ZIP/postcode targeting, location minimum 15-mile radius, no lookalikes (secondary source quoting Meta, https://leadsync.me/blog/special-ad-category-meta/ , checked 2026-10-13; research round 2 #8).
+- **Hook:** the first line picks the buyer by need (price band, area, lifestyle fact), because Housing ads cannot target by age, gender or ZIP. It opens on the bigger context, never mid-concept, and says figures in dollars (Matt 2026-10-14; the whiteboard comes first). Housing Special Ad Category: age fixed 18 to 65+, all genders, no ZIP/postcode targeting, location minimum 15-mile radius, no lookalikes (secondary source quoting Meta, https://leadsync.me/blog/special-ad-category-meta/ , checked 2026-10-13; research round 2 #8).
 - **Length:** 15 to 30 s (core recipe). **PROPOSED:** 6 to 15 s cutdowns for ad variants.
 - **Required:** brief declares `persona` (relocator, first_time, move_up, second_home) as a creative label only, never a targeting field. Hook text in the 900x1500 safe zone within 1.5 s (round 2 buyer matrix). Numbers sourced like any data Reel; "buyer's market" wording only if months of supply >= 6 for that geography. "Buyers have leverage" (buyer plan, 2026-10-13) stands on the leverage figures shown with it (price cuts, seller concessions), never on months of supply: a film that shows a months-of-supply reading uses only verdict words that agree with its band, so no buyer-side line beside Bend's ~3.5 (video:check check 10, 2026-10-14). Destination = landing page or lead form with the creative id passed to CRM.
 - **Compliance:** fair housing copy: no words describing who should live there (families, singles, age, religion, etc.); describe homes and places. Brief must state `special_ad_category: "housing"`.
