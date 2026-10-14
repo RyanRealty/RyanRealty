@@ -373,7 +373,7 @@ async function TrafficSourcesContent({
       </div>
 
       {/* TRACK-1: GA4 sessions and source/medium below are mirror-shaped. */}
-      {ga4Ok ? <Ga4MirrorNotice startDate={range.startDate} /> : null}
+      {ga4Ok ? <Ga4MirrorNotice startDate={range.startDate} endDate={range.endDate} /> : null}
 
       {!ga4Ok ? (
         <>

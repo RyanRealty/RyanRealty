@@ -79,7 +79,7 @@ export type WebsiteVisitors = {
   previous: VisitorPeriod
   geo: {
     buckets: GeoBucketRow[]
-    /** Visits that carried a location. */
+    /** Visits placed in a known area (every bucket but 'unknown'). */
     located: number
     topCities: GeoPlaceRow[]
     topStates: GeoPlaceRow[]
@@ -181,7 +181,9 @@ export function summarizeAudience(rows: readonly WebsiteSessionRow[]): Pick<Webs
     b.engaged += engaged
     bucketCounts.set(bucket, b)
     const country = normalizeCountry(r.ip_country)
-    if (country) located += 1
+    // Located means placed in a bucket: a US visit with no readable state is
+    // still "Location unknown", so it does not count here either.
+    if (bucket !== 'unknown') located += 1
 
     const city = cityKeyAndLabel(g)
     if (city) {
@@ -297,29 +299,24 @@ async function readHumanSessions(sb: Sb, startIso: string, endIso: string): Prom
   return { rows: pages.flat(), truncated: total > ROW_CAP }
 }
 
+/** Throws on any failed read, so unstable_cache never stores a failure. */
 async function readWebsiteVisitors(current: WebsiteWindow, previous: WebsiteWindow): Promise<WebsiteVisitors> {
   const sb = createServiceClient()
-  try {
-    // Automation is counted, never fetched: it outnumbers people several to
-    // one (Oct 7-13: 8,854 flagged sessions against 2,447 human ones).
-    const [human, botsNow, botsBefore] = await Promise.all([
-      readHumanSessions(sb, previous.startIso, current.endIso),
-      countSessions(sb, current.startIso, current.endIso, true),
-      countSessions(sb, previous.startIso, previous.endIso, true),
-    ])
-    const cur = human.rows.filter((r) => inWindow(r.first_seen_at, current))
-    const prev = human.rows.filter((r) => inWindow(r.first_seen_at, previous))
-    return {
-      current: { ...summarizePeriod(cur), automatedLeftOut: botsNow },
-      previous: { ...summarizePeriod(prev), automatedLeftOut: botsBefore },
-      ...summarizeAudience(cur),
-      truncated: human.truncated,
-      unreadable: false,
-    }
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e)
-    console.error('[getWebsiteVisitors]', message)
-    return emptyResult(true, message)
+  // Automation is counted, never fetched: it outnumbers people several to
+  // one (UTC days Oct 7-13: 8,854 flagged sessions against 2,447 human ones).
+  const [human, botsNow, botsBefore] = await Promise.all([
+    readHumanSessions(sb, previous.startIso, current.endIso),
+    countSessions(sb, current.startIso, current.endIso, true),
+    countSessions(sb, previous.startIso, previous.endIso, true),
+  ])
+  const cur = human.rows.filter((r) => inWindow(r.first_seen_at, current))
+  const prev = human.rows.filter((r) => inWindow(r.first_seen_at, previous))
+  return {
+    current: { ...summarizePeriod(cur), automatedLeftOut: botsNow },
+    previous: { ...summarizePeriod(prev), automatedLeftOut: botsBefore },
+    ...summarizeAudience(cur),
+    truncated: human.truncated,
+    unreadable: false,
   }
 }
 
@@ -330,8 +327,16 @@ export async function getWebsiteVisitors(input: {
   const { current, previous } = input
   const cached = unstable_cache(
     () => readWebsiteVisitors(current, previous),
-    ['website-visitors-v2', current.startIso, current.endIso, previous.startIso, previous.endIso],
+    ['website-visitors-v3', current.startIso, current.endIso, previous.startIso, previous.endIso],
     { tags: ['website-dashboard'], revalidate: 600 },
   )
-  return cached()
+  try {
+    return await cached()
+  } catch (e) {
+    // Outside the cache: a timeout shows as "could not read" for this request
+    // only, and the next load tries again.
+    const message = e instanceof Error ? e.message : String(e)
+    console.error('[getWebsiteVisitors]', message)
+    return emptyResult(true, message)
+  }
 }

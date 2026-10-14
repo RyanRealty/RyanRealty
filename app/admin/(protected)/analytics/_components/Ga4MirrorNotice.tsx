@@ -14,7 +14,7 @@
  * Mounted on: /admin/operations (DashboardGA4Panel, 30-day window),
  * /admin/reports/traffic-sources, /admin/reports/lead-flow, and the
  * /admin/analytics Google Analytics + Sources tabs. Each passes its window's
- * first day; without one the notice assumes the last 30 days.
+ * first and last day; without them the notice assumes the last 30 days.
  */
 import { VerdictLine } from '@/components/admin/v2'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -64,10 +64,10 @@ function thirtyDaysAgo(): string {
   return new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10)
 }
 
-export async function Ga4MirrorNotice({ startDate }: { startDate?: string } = {}) {
+export async function Ga4MirrorNotice({ startDate, endDate }: { startDate?: string; endDate?: string } = {}) {
   const from = startDate ?? thirtyDaysAgo()
-  const trafficCaveat = ga4WindowNeedsTrafficCaveat(from)
-  const leadCaveat = from < GA4_LEAD_SOURCE_RELIABLE_FROM
+  const trafficCaveat = ga4WindowNeedsTrafficCaveat(from, endDate)
+  const leadCaveat = from < GA4_LEAD_SOURCE_RELIABLE_FROM && !trafficCaveat
   const health = await readLatestHealth()
   const healthFailed = health !== null && !health.ok
   if (!trafficCaveat && !leadCaveat && !healthFailed) return null

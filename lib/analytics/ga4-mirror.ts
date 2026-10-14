@@ -111,12 +111,17 @@ export const GA4_TRAFFIC_RELIABLE_FROM = '2026-10-12'
 export const GA4_LEAD_SOURCE_RELIABLE_FROM = '2026-10-14'
 
 /**
- * True when a GA4 window starting on `startDate` (YYYY-MM-DD) includes days
- * whose sessions, sources and engagement the mirror inflated. A window that
- * starts on or after GA4_TRAFFIC_RELIABLE_FROM needs no caveat.
+ * True when a GA4 window (YYYY-MM-DD, inclusive) includes days whose sessions,
+ * sources and engagement the mirror inflated: any day from
+ * GA4_MP_PAGE_VIEW_MIRROR_SINCE up to the day before GA4_TRAFFIC_RELIABLE_FROM.
+ * A window that starts on or after the reliable day, or ends before the mirror
+ * began, needs no caveat. This is about the data already in the GA4 property,
+ * which production wrote, so it does not depend on the reader's environment.
  */
-export function ga4WindowNeedsTrafficCaveat(startDate: string): boolean {
-  return startDate < GA4_TRAFFIC_RELIABLE_FROM
+export function ga4WindowNeedsTrafficCaveat(startDate: string, endDate?: string): boolean {
+  if (startDate >= GA4_TRAFFIC_RELIABLE_FROM) return false
+  if (endDate !== undefined && endDate < GA4_MP_PAGE_VIEW_MIRROR_SINCE) return false
+  return true
 }
 
 /** ga4WindowNeedsTrafficCaveat for a window of the last `days` days ending now. */

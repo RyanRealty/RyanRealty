@@ -25,6 +25,7 @@ import {
   CHANNEL_PLAIN,
   addDays,
   byChannelOrder,
+  dayInZone,
   changeWords,
   int,
   lastFullDays,
@@ -70,6 +71,15 @@ function Means({ children }: { children: React.ReactNode }) {
 /** Window + source, in words, under every card. */
 function Source({ children }: { children: React.ReactNode }) {
   return <p className="av2-stamp av2-web__source">{children}</p>
+}
+
+/** A read that hit its row limit is a floor, and says so (§0). */
+function Floor({ show, what }: { show: boolean; what: string }) {
+  return show ? (
+    <p className="av2-note">
+      <b>These {what} are a floor.</b> The read stopped at its row limit, so the real numbers are higher.
+    </p>
+  ) : null
 }
 
 function More({ links }: { links: Array<{ href: string; label: string }> }) {
@@ -150,6 +160,7 @@ async function GlanceCard({ w }: { w: WindowPair }) {
           ]}
         />
       )}
+      <Floor show={v.truncated} what="visit counts" />
       <ul className="av2-web__defs">
         <li>
           <b>Visits</b>: each time someone opened the site.
@@ -245,6 +256,7 @@ async function WhereCard({ w }: { w: WindowPair }) {
             ]}
             empty={<>No US visit in this window carried a state.</>}
           />
+          <Floor show={v.truncated} what="counts" />
           {v.geo.topCountries.length > 0 ? (
             <p className="av2-note">
               Other countries:{' '}
@@ -274,7 +286,13 @@ async function WhereCard({ w }: { w: WindowPair }) {
 async function LookCard({ w }: { w: WindowPair }) {
   const [m, lp] = await Promise.all([
     getWebsiteMarkets({ startIso: w.current.startIso, endIso: w.current.endIso }),
-    getListingPerformance({ startDate: w.current.startDate, endDate: w.current.endDate, humanOnly: true }),
+    getListingPerformance({
+      startDate: w.current.startDate,
+      endDate: w.current.endDate,
+      sinceIso: w.current.startIso,
+      untilIso: w.current.endIso,
+      humanOnly: true,
+    }),
   ])
   return (
     <Card id="web-look" title="What they look at">
@@ -304,6 +322,7 @@ async function LookCard({ w }: { w: WindowPair }) {
           empty={<>No page about a town was viewed in {rangeWords(w.current)}.</>}
         />
       )}
+      <Floor show={m.truncated} what="market counts" />
       <h4 className="av2-web__sub">Most viewed listings</h4>
       {lp.unreadable ? (
         <Trouble>Could not read listing views just now ({lp.errorMessage}). Reload in a minute.</Trouble>
@@ -338,6 +357,7 @@ async function LookCard({ w }: { w: WindowPair }) {
           empty={<>No listing was viewed in {rangeWords(w.current)}.</>}
         />
       )}
+      <Floor show={lp.eventsCapped} what="listing counts" />
       <h4 className="av2-web__sub">Searched on the site</h4>
       {m.unreadable ? null : m.searchEvents === 0 ? (
         <div className="av2-empty">
@@ -420,6 +440,7 @@ async function IntentCard({ w }: { w: WindowPair }) {
           empty={<>No visits in this window.</>}
         />
       )}
+      <Floor show={v.truncated} what="counts" />
       <Source>{rangeWords(w.current)}, our own site tracking, crawlers left out. The same groups as the funnel breakdown.</Source>
       <More
         links={[
@@ -545,7 +566,7 @@ async function LeadsCard({ w }: { w: WindowPair }) {
               },
               { key: 'door', header: 'Came in through', cell: (r) => r.doorLabel },
               { key: 'broker', header: 'Broker', cell: (r) => brokerName(r.broker) },
-              { key: 'when', header: 'Day', num: true, cell: (r) => shortDay(r.createdAt.slice(0, 10)) },
+              { key: 'when', header: 'Day', num: true, cell: (r) => shortDay(dayInZone(r.createdAt)) },
             ]}
             empty={<>No new leads in this window.</>}
           />
@@ -772,8 +793,8 @@ export function WebsiteView({ now = new Date() }: { now?: Date }) {
   return (
     <>
       <p className="av2-note">
-        The last 7 full days, {rangeWords(w.current)}, compared with the 7 days before. Google figures run a few days
-        behind and say which days they cover.
+        The last 7 full days on Pacific time, {rangeWords(w.current)}, compared with the 7 days before. Google figures
+        run a few days behind and say which days they cover.
       </p>
       <div className="av2-web">
         <Suspense fallback={<Waiting id="web-glance" title="This week at a glance" what="this week's visits" />}>

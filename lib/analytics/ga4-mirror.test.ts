@@ -90,6 +90,11 @@ describe('ga4WindowNeedsTrafficCaveat — say it only where it applies', () => {
     expect(ga4WindowNeedsTrafficCaveat('2026-10-12')).toBe(false)
     expect(ga4WindowNeedsTrafficCaveat('2026-11-01')).toBe(false)
   })
+  it('a window that ended before the relay began does not', () => {
+    expect(ga4WindowNeedsTrafficCaveat('2026-07-01', '2026-07-31')).toBe(false)
+    expect(ga4WindowNeedsTrafficCaveat('2026-07-01', GA4_MP_PAGE_VIEW_MIRROR_SINCE)).toBe(true)
+    expect(ga4WindowNeedsTrafficCaveat('2026-09-01', '2026-09-30')).toBe(true)
+  })
   it('the last N days, from a fixed now', () => {
     expect(ga4LastDaysNeedTrafficCaveat(30, Date.parse('2026-10-14T12:00:00Z'))).toBe(true)
     expect(ga4LastDaysNeedTrafficCaveat(30, Date.parse('2026-11-12T12:00:00Z'))).toBe(false)

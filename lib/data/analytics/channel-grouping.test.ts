@@ -123,6 +123,25 @@ describe("classifyChannel — the tracker's own stamps are not campaigns (2026-1
     )
   })
 
+  it('a tagged campaign whose source names the referring site stays a campaign', () => {
+    expect(
+      classifyChannel(
+        s({
+          referrer: 'https://www.bendbulletin.com/x',
+          utmSource: 'bendbulletin',
+          utmMedium: 'article',
+          utmCampaign: 'fall-sellers',
+        }),
+      ),
+    ).toBe('Other Campaign')
+  })
+
+  it('the tracker copying our own www host as a referrer is not a source', () => {
+    const own = s({ referrer: 'https://www.ryan-realty.com/search', utmSource: 'www.ryan-realty.com', utmMedium: 'referral' })
+    expect(classifyChannel(own)).toBe('Direct')
+    expect(originLabel(own)).toBe('(none)')
+  })
+
   it('a tagged link from an unknown site is still a campaign', () => {
     expect(classifyChannel(s({ referrer: 'https://partner.example/x', utmSource: 'spring-mailer', utmMedium: 'print' }))).toBe(
       'Other Campaign',

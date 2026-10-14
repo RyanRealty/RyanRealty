@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   addDays,
+  dayInZone,
+  zonedMidnightMs,
   byChannelOrder,
   CHANNEL_ORDER,
   CHANNEL_PLAIN,
@@ -14,29 +16,45 @@ import {
   windowEndingOn,
 } from './website'
 
-describe('lastFullDays — today is never in the window', () => {
-  it('is the 7 full UTC days ending yesterday, and the 7 before', () => {
+describe('lastFullDays — Pacific days, and today is never in the window', () => {
+  it('is the 7 full Pacific days ending yesterday, and the 7 before', () => {
+    // 11:30 am Pacific on Oct 14.
     const w = lastFullDays(new Date('2026-10-14T18:30:00Z'), 7)
     expect(w.current).toEqual({
       startDate: '2026-10-07',
       endDate: '2026-10-13',
-      startIso: '2026-10-07T00:00:00.000Z',
-      endIso: '2026-10-13T23:59:59.999Z',
+      startIso: '2026-10-07T07:00:00.000Z',
+      endIso: '2026-10-14T06:59:59.999Z',
     })
     expect(w.previous.startDate).toBe('2026-09-30')
     expect(w.previous.endDate).toBe('2026-10-06')
+    expect(w.previous.endIso).toBe('2026-10-07T06:59:59.999Z')
   })
 
-  it('does not move during the day', () => {
-    const a = lastFullDays(new Date('2026-10-14T00:00:01Z'), 7)
-    const b = lastFullDays(new Date('2026-10-14T23:59:59Z'), 7)
-    expect(a).toEqual(b)
+  it('does not move during the Pacific day, and moves at Pacific midnight', () => {
+    const early = lastFullDays(new Date('2026-10-14T07:00:01Z'), 7) // 00:00:01 PDT Oct 14
+    const late = lastFullDays(new Date('2026-10-15T06:59:59Z'), 7) // 23:59:59 PDT Oct 14
+    expect(early).toEqual(late)
+    // 5 pm Pacific on Oct 13 is already Oct 14 in UTC; the window must not move yet.
+    expect(lastFullDays(new Date('2026-10-14T00:30:00Z'), 7).current.endDate).toBe('2026-10-12')
   })
 
-  it('crosses a month boundary', () => {
-    const w = lastFullDays(new Date('2026-11-03T10:00:00Z'), 7)
-    expect(w.current.startDate).toBe('2026-10-27')
-    expect(w.current.endDate).toBe('2026-11-02')
+  it('a lead at 6 pm Pacific on Oct 13 is inside the Oct 7 to Oct 13 window', () => {
+    const w = lastFullDays(new Date('2026-10-14T18:30:00Z'), 7)
+    const lead = '2026-10-14T01:00:00.000Z'
+    expect(lead >= w.current.startIso && lead <= w.current.endIso).toBe(true)
+    expect(dayInZone(lead)).toBe('2026-10-13')
+  })
+
+  it('handles the end of daylight time', () => {
+    // DST ends Nov 1, 2026: Oct 29 starts at 07:00Z (PDT), Nov 5 at 08:00Z (PST).
+    const w = lastFullDays(new Date('2026-11-05T20:00:00Z'), 7)
+    expect(w.current.startDate).toBe('2026-10-29')
+    expect(w.current.endDate).toBe('2026-11-04')
+    expect(w.current.startIso).toBe('2026-10-29T07:00:00.000Z')
+    expect(w.current.endIso).toBe('2026-11-05T07:59:59.999Z')
+    expect(zonedMidnightMs('2026-11-01')).toBe(Date.parse('2026-11-01T07:00:00.000Z'))
+    expect(zonedMidnightMs('2026-11-02')).toBe(Date.parse('2026-11-02T08:00:00.000Z'))
   })
 })
 

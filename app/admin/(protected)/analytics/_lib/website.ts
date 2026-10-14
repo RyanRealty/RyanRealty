@@ -2,25 +2,29 @@
  * The Website view's windows and words (Matt 2026-10-14: one page that
  * "actually makes sense", read on a phone). Pure: no I/O, no React.
  *
- * WINDOWS. Every first-party and CRM figure covers the last 7 FULL days
- * (UTC calendar days, today left out because it is not over), compared with the
- * 7 days before. A window that ended "now" would compare a part day against
- * full ones and read as a drop every morning. Search Console and Business
- * Profile report days late, so their windows end on the newest day each source
- * has reported (windowEndingOn).
+ * WINDOWS. Every first-party and CRM figure covers the last 7 FULL days on
+ * Pacific time (the brokerage's day: a lead at 6 pm on Oct 13 belongs to Oct
+ * 13), today left out because it is not over, compared with the 7 days before.
+ * A window that ended "now" would compare a part day against full ones and read
+ * as a drop every morning. Search Console and Business Profile report days
+ * late, so their windows end on the newest day each source has reported
+ * (windowEndingOn).
  */
 import type { ChannelGroup } from '@/lib/data/analytics/channel-grouping'
 
 export type DayWindow = {
-  /** Inclusive YYYY-MM-DD bounds. */
+  /** Inclusive YYYY-MM-DD bounds, Pacific calendar days. */
   startDate: string
   endDate: string
-  /** The same bounds as instants: 00:00:00.000Z and 23:59:59.999Z. */
+  /** The same bounds as instants: Pacific midnight that starts startDate, to 1 ms before the midnight after endDate. */
   startIso: string
   endIso: string
 }
 
 export type WindowPair = { current: DayWindow; previous: DayWindow }
+
+/** The brokerage's clock (Bend, Oregon). */
+export const SITE_TIME_ZONE = 'America/Los_Angeles'
 
 const DAY_MS = 86_400_000
 
@@ -28,34 +32,62 @@ function ymd(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10)
 }
 
-function dayWindow(startMs: number, days: number): DayWindow {
-  const startDate = ymd(startMs)
-  const endDate = ymd(startMs + (days - 1) * DAY_MS)
+/** How far `tz` is from UTC at an instant, in ms (Pacific: -7 h in summer, -8 h in winter). */
+function tzOffsetMs(utcMs: number, tz: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(new Date(utcMs))
+  const p = Object.fromEntries(parts.map((x) => [x.type, x.value]))
+  const asUtc = Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), Number(p.hour), Number(p.minute), Number(p.second))
+  return asUtc - Math.floor(utcMs / 1000) * 1000
+}
+
+/** The calendar day (YYYY-MM-DD) an instant falls on in `tz`. */
+export function dayInZone(at: string | number, tz: string = SITE_TIME_ZONE): string {
+  const ms = typeof at === 'number' ? at : Date.parse(at)
+  return ymd(ms + tzOffsetMs(ms, tz))
+}
+
+/** The instant (ms) of midnight starting `date` in `tz`, DST included. */
+export function zonedMidnightMs(date: string, tz: string = SITE_TIME_ZONE): number {
+  const guess = Date.parse(`${date}T00:00:00.000Z`)
+  const first = guess - tzOffsetMs(guess, tz)
+  const second = guess - tzOffsetMs(first, tz)
+  return second
+}
+
+function dayWindow(startDate: string, days: number, tz: string): DayWindow {
+  const endDate = addDays(startDate, days - 1)
   return {
     startDate,
     endDate,
-    startIso: `${startDate}T00:00:00.000Z`,
-    endIso: `${endDate}T23:59:59.999Z`,
+    startIso: new Date(zonedMidnightMs(startDate, tz)).toISOString(),
+    endIso: new Date(zonedMidnightMs(addDays(endDate, 1), tz) - 1).toISOString(),
   }
 }
 
-/** `days` full days ending yesterday (UTC), and the `days` before them. */
-export function lastFullDays(now: Date, days: number): WindowPair {
-  const todayMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
-  const currentStart = todayMs - days * DAY_MS
+/** `days` full Pacific days ending yesterday, and the `days` before them. */
+export function lastFullDays(now: Date, days: number, tz: string = SITE_TIME_ZONE): WindowPair {
+  const currentStart = addDays(dayInZone(now.getTime(), tz), -days)
   return {
-    current: dayWindow(currentStart, days),
-    previous: dayWindow(currentStart - days * DAY_MS, days),
+    current: dayWindow(currentStart, days, tz),
+    previous: dayWindow(addDays(currentStart, -days), days, tz),
   }
 }
 
 /** `days` days ending on `endDate` (YYYY-MM-DD, inclusive), and the `days` before them. */
-export function windowEndingOn(endDate: string, days: number): WindowPair {
-  const endMs = Date.parse(`${endDate}T00:00:00.000Z`)
-  const currentStart = endMs - (days - 1) * DAY_MS
+export function windowEndingOn(endDate: string, days: number, tz: string = SITE_TIME_ZONE): WindowPair {
+  const currentStart = addDays(endDate, -(days - 1))
   return {
-    current: dayWindow(currentStart, days),
-    previous: dayWindow(currentStart - days * DAY_MS, days),
+    current: dayWindow(currentStart, days, tz),
+    previous: dayWindow(addDays(currentStart, -days), days, tz),
   }
 }
 

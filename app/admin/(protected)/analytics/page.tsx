@@ -174,7 +174,7 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
   return (
     <>
       {/* Says so only when the range reaches back before GA4 sources were reliable. */}
-      <Ga4MirrorNotice startDate={range.startDate} />
+      <Ga4MirrorNotice startDate={range.startDate} endDate={range.endDate} />
       <Figures
         figures={[
           { label: 'Sessions', value: formatInt(d.sessions) },
@@ -186,8 +186,12 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
           },
           {
             label: 'Paid spend',
-            value: d.paidSpendUsd === null ? 'no data' : formatUsd(d.paidSpendUsd),
-            caption: d.paidSpendUsd === null ? 'No Meta ad spend recorded for this range' : 'Meta ads spend in the range',
+            value: d.paidSpendUnreadable ? 'not read' : d.paidSpendUsd === null ? 'no data' : formatUsd(d.paidSpendUsd),
+            caption: d.paidSpendUnreadable
+              ? 'Meta ad spend could not be read just now'
+              : d.paidSpendUsd === null
+                ? 'No Meta ad spend recorded for this range'
+                : 'Meta ads spend in the range',
           },
           { label: 'Engagement rate', value: formatPct(d.engagementRate) },
           { label: 'Bounce rate', value: formatPct(d.bounceRate) },
@@ -407,7 +411,7 @@ async function AcquisitionTab({ range }: { range: { startDate: string; endDate: 
       <FirstPartyAcquisition range={range} />
 
       <SectionHead>Google Analytics</SectionHead>
-      <Ga4MirrorNotice startDate={range.startDate} />
+      <Ga4MirrorNotice startDate={range.startDate} endDate={range.endDate} />
       <p className="av2-note">
         Google Analytics only sees visitors who allow analytics cookies. The section above covers every visitor.
       </p>
@@ -542,8 +546,12 @@ async function ConversionsTab({ range }: { range: { startDate: string; endDate: 
           },
           {
             label: 'Cost per lead',
-            value: d.costPerLeadUsd === null ? 'no data' : formatUsd(d.costPerLeadUsd),
-            caption: d.costPerLeadUsd === null ? 'No Meta ad spend recorded for this range' : 'Meta ad spend divided by CRM leads',
+            value: d.spendUnreadable ? 'not read' : d.costPerLeadUsd === null ? 'no data' : formatUsd(d.costPerLeadUsd),
+            caption: d.spendUnreadable
+              ? 'Meta ad spend could not be read just now'
+              : d.costPerLeadUsd === null
+                ? 'Needs Meta ad spend and at least one lead in this range'
+                : 'Meta ad spend divided by CRM leads',
           },
           {
             label: 'Top broker',

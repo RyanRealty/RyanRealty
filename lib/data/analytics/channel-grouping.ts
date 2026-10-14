@@ -81,8 +81,8 @@ function isSelfReferral(host: string | null): boolean {
  * as utm_source=direct, utm_medium=none (lib/analytics/visitor-session.ts), so
  * the row always has a source. That stamp says "we saw nothing", not "a
  * campaign": read as a tag, it filed every direct visit under Other Campaign
- * and the Direct share read 0% (measured 2026-10-14, 7 days: 2,264 of 2,447
- * sessions). It is treated as no tag at all.
+ * and Direct read 0 (measured 2026-10-14, human sessions on UTC days Oct 7-13:
+ * Direct 0 of 2,447 before this rule, 2,218 after). It is treated as no tag.
  */
 function isNoSourceStamp(source: string, medium: string, campaign: string): boolean {
   return source === 'direct' && (medium === '' || medium === 'none' || medium === '(none)') && campaign === ''
@@ -93,7 +93,10 @@ function isNoSourceStamp(source: string, medium: string, campaign: string): bool
  * carried no tag (medium referral, or portal for Zillow / Realtor.com /
  * Trulia). That is the referrer again, not a campaign we ran.
  */
-function isInferredFromReferrer(source: string, medium: string, host: string): boolean {
+function isInferredFromReferrer(source: string, medium: string, campaign: string, host: string): boolean {
+  // The tracker never adds a campaign when it copies the referrer, so a link
+  // that carries one is a campaign someone tagged, whatever its source says.
+  if (campaign !== '') return false
   if (medium === 'referral' || medium === 'portal') return true
   const bare = host.replace(/^www\./, '')
   return source === host || source === bare || source === bare.split('.')[0]
@@ -105,8 +108,13 @@ export function classifyChannel(s: SessionSignals): ChannelGroup {
   let medium = (s.utmMedium ?? '').trim().toLowerCase()
   const campaign = (s.utmCampaign ?? '').trim()
 
-  // 0. The tracker's "no source" stamp is not a tag.
-  if (isNoSourceStamp(source, medium, campaign)) {
+  // 0. The tracker's "no source" stamp is not a tag, and neither is its copy
+  //    of our own site as a referrer (www.ryan-realty.com and ryan-realty.com
+  //    differ as hosts, so the tracker records the hop as a referral).
+  if (
+    isNoSourceStamp(source, medium, campaign) ||
+    (isSelfReferral(source) && (medium === '' || medium === 'referral') && campaign === '')
+  ) {
     source = ''
     medium = ''
   }
@@ -132,7 +140,7 @@ export function classifyChannel(s: SessionSignals): ChannelGroup {
     if (SOCIAL_HOSTS.test(host)) return 'Organic Social'
     if (SEARCH_HOSTS.test(host)) return 'Organic Search'
     // The tracker's copy of the referrer is still just the referrer.
-    if (!source || isInferredFromReferrer(source, medium, host)) return 'Referral'
+    if (!source || isInferredFromReferrer(source, medium, campaign, host)) return 'Referral'
     // A tagged link from a site we do not otherwise recognise is still a campaign.
     return 'Other Campaign'
   }
@@ -161,7 +169,8 @@ export function originLabel(s: SessionSignals): string {
   const campaign = (s.utmCampaign ?? '').trim()
   const rawSource = (s.utmSource ?? '').trim()
   const medium = (s.utmMedium ?? '').trim().toLowerCase()
-  const source = isNoSourceStamp(rawSource.toLowerCase(), medium, campaign) ? '' : rawSource
+  const ownSiteCopy = isSelfReferral(rawSource) && (medium === '' || medium === 'referral') && campaign === ''
+  const source = isNoSourceStamp(rawSource.toLowerCase(), medium, campaign) || ownSiteCopy ? '' : rawSource
   if (source && campaign) return `${source} / ${campaign}`
   if (source) return source
   const host = hostOf(s.referrer)

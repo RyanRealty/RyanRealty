@@ -7,7 +7,7 @@
       {
         "figure": "window",
         "source": "derived",
-        "rule": "lastFullDays(now, 7): the 7 full UTC days ending yesterday, compared with the 7 days before (app/admin/(protected)/analytics/_lib/website.ts)"
+        "rule": "lastFullDays(now, 7): the 7 full Pacific (America/Los_Angeles) days ending yesterday, as instants from Pacific midnight, compared with the 7 days before (app/admin/(protected)/analytics/_lib/website.ts)"
       },
       {
         "figure": "glance.visits",
@@ -46,7 +46,7 @@
           "ip_region",
           "ip_city"
         ],
-        "rule": "geoBucketOf (lib/data/analytics/websiteGeo.ts): Central Oregon = Oregon AND isCentralOregonCity(ip_city); geo is stored only at the analytics consent tier"
+        "rule": "geoBucketOf (lib/data/analytics/websiteGeo.ts): Central Oregon = Oregon AND isCentralOregonCity(ip_city); located = visits in any bucket but unknown; geo is stored only at the analytics consent tier"
       },
       {
         "figure": "look.markets",
@@ -63,7 +63,7 @@
       {
         "figure": "look.listings",
         "source": "public.visitor_events via getListingPerformance({ humanOnly: true })",
-        "filter": "event_type = listing_view AND listing_mls IS NOT NULL AND event_at IN [window dates] AND visitor_sessions.is_automated = false"
+        "filter": "event_type = listing_view AND listing_mls IS NOT NULL AND event_at IN [window instants] AND visitor_sessions.is_automated = false"
       },
       {
         "figure": "intent.*",
@@ -83,7 +83,7 @@
       {
         "figure": "search.trend",
         "source": "public.marketing_channel_daily via getGscDaily",
-        "filter": "channel = gsc AND scope = account AND metric = clicks, last 28 reported days"
+        "filter": "channel = gsc AND scope = account AND metric = clicks, last 28 days ending on the newest day with impressions > 0 (the cron stores unreported days as zeros)"
       },
       {
         "figure": "search.topQueries",

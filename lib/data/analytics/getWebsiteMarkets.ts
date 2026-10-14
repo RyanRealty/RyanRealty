@@ -110,50 +110,47 @@ export function summarizeSearches(events: readonly SearchEventRow[], top = 8): S
   return [...counts.values()].sort((a, b) => b.searches - a.searches || a.term.localeCompare(b.term)).slice(0, top)
 }
 
+/** Throws on any failed read, so unstable_cache never stores a failure. */
 async function readWebsiteMarkets(startIso: string, endIso: string): Promise<WebsiteMarkets> {
   const sb = createServiceClient()
   // The inner join on the owning session (visitor_events.session_id is a
   // foreign key to visitor_sessions) drops automation in the database, so a
-  // crawler's views are never fetched. Measured 2026-10-14 for Oct 7-13:
+  // crawler's views are never fetched. Measured 2026-10-14 for UTC days Oct 7-13:
   // automation owned 8,983 of the 11,562 page and listing views.
-  const events = await fetchPagedRows<MarketEventRow>(
-    (from, to) =>
-      sb
-        .from('visitor_events')
-        .select('session_id,page_url,visitor_sessions!inner(is_automated)')
-        .eq('visitor_sessions.is_automated', false)
-        .in('event_type', ['page_view', 'listing_view'])
-        .gte('event_at', startIso)
-        .lte('event_at', endIso)
-        // event_at leads so the read walks the event_at index; id breaks ties
-        // so range() pages are a total order.
-        .order('event_at', { ascending: true })
-        .order('id', { ascending: true })
-        .range(from, to),
-    EVENT_CAP,
-  )
-  if (events.error) {
-    console.error('[getWebsiteMarkets]', events.error.message)
-    return failed(events.error.message)
-  }
-  const searches = await fetchPagedRows<SearchEventRow>(
-    (from, to) =>
-      sb
-        .from('visitor_events')
-        .select('metadata,visitor_sessions!inner(is_automated)')
-        .eq('visitor_sessions.is_automated', false)
-        .eq('event_type', 'search')
-        .gte('event_at', startIso)
-        .lte('event_at', endIso)
-        .order('event_at', { ascending: true })
-        .order('id', { ascending: true })
-        .range(from, to),
-    EVENT_CAP,
-  )
-  if (searches.error) {
-    console.error('[getWebsiteMarkets] searches', searches.error.message)
-    return failed(searches.error.message)
-  }
+  const [events, searches] = await Promise.all([
+    fetchPagedRows<MarketEventRow>(
+      (from, to) =>
+        sb
+          .from('visitor_events')
+          .select('session_id,page_url,visitor_sessions!inner(is_automated)')
+          .eq('visitor_sessions.is_automated', false)
+          .in('event_type', ['page_view', 'listing_view'])
+          .gte('event_at', startIso)
+          .lte('event_at', endIso)
+          // event_at leads so the read walks the event_at index; id breaks
+          // ties so range() pages are a total order.
+          .order('event_at', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to),
+      EVENT_CAP,
+    ),
+    fetchPagedRows<SearchEventRow>(
+      (from, to) =>
+        sb
+          .from('visitor_events')
+          .select('metadata,visitor_sessions!inner(is_automated)')
+          .eq('visitor_sessions.is_automated', false)
+          .eq('event_type', 'search')
+          .gte('event_at', startIso)
+          .lte('event_at', endIso)
+          .order('event_at', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to),
+      EVENT_CAP,
+    ),
+  ])
+  if (events.error) throw new Error(`page views: ${events.error.message}`)
+  if (searches.error) throw new Error(`searches: ${searches.error.message}`)
   return {
     ...summarizeMarkets(events.rows),
     searches: summarizeSearches(searches.rows),
@@ -167,8 +164,14 @@ export async function getWebsiteMarkets(input: { startIso: string; endIso: strin
   const { startIso, endIso } = input
   const cached = unstable_cache(
     () => readWebsiteMarkets(startIso, endIso),
-    ['website-markets-v3', startIso, endIso],
+    ['website-markets-v4', startIso, endIso],
     { tags: ['website-dashboard'], revalidate: 600 },
   )
-  return cached()
+  try {
+    return await cached()
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    console.error('[getWebsiteMarkets]', message)
+    return failed(message)
+  }
 }
