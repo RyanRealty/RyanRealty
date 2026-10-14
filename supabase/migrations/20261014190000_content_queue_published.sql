@@ -3,8 +3,9 @@
 -- (`scripts/content-queue/publish.mjs --live`) posts any scheduled_at on or
 -- before today that has no row here (catch-up of a missed day).
 --
--- Hosted apply: `npm run db:push` or Supabase MCP apply_migration after this
--- file lands on main. No GitHub Action auto-applies migrations.
+-- Hosted apply: no GitHub Action auto-applies migrations. This session applied
+-- it via Supabase MCP apply_migration (the repo path; ci:migration-drift
+-- requires the table in the prod snapshot). `npm run db:push` is the CLI path.
 
 CREATE TABLE IF NOT EXISTS public.content_queue_published (
   content_item text NOT NULL,
