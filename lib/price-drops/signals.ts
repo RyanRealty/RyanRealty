@@ -88,7 +88,7 @@ export function hasBankOwnedOrShortSale(
 
 /**
  * First matching public-remarks phrase. Never returns remarks text.
- * Callers must not pass private remarks here.
+ * Callers must not pass agent-only remarks here.
  */
 export function sellerCreditPhrase(publicRemarks: string | null | undefined): string | null {
   if (!publicRemarks?.trim()) return null

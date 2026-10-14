@@ -315,6 +315,7 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
             leadEmail: clientEmail,
             leadName: ownerName,
             leadPhone: ownerPhone,
+            ownerPhones: ownerLookup?.allPhones ?? [],
             leadTimeline: 'ready-now',
             leadClassification: 'hot',
             crmPersonId,

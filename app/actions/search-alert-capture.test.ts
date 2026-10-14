@@ -43,9 +43,13 @@ vi.mock('@/lib/data/leads/listingAlerts', () => ({
   upsertListingAlert: (...args: unknown[]) => h.upsertListingAlert(...args),
 }))
 
-vi.mock('@/lib/lead-tracking', () => ({
-  fireLeadGenerated: (...args: unknown[]) => h.fireLeadGenerated(...args),
-}))
+vi.mock('@/lib/lead-tracking', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/lead-tracking')>()
+  return {
+    ...actual,
+    fireLeadGenerated: (...args: unknown[]) => h.fireLeadGenerated(...args),
+  }
+})
 
 // SITE-09: the same-minute confirmation is a governed send; never reach the rail
 // (or Supabase, through the signing-broker resolver) from a unit test.
@@ -70,14 +74,7 @@ const BASE = {
   company: '',
 }
 
-async function signup(
-  overrides: Partial<typeof BASE> & {
-    sessionId?: string
-    events?: Record<string, boolean>
-    adMatchConsent?: boolean
-    landingSearch?: string
-  } = {},
-) {
+async function signup(overrides: Partial<Parameters<typeof submitSearchAlertSignup>[0]> = {}) {
   return submitSearchAlertSignup({ ...BASE, ...overrides })
 }
 
@@ -111,7 +108,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
   it('calls stitchFormSubmitIdentity with rr_vid + person id when a person exists', async () => {
     const result = await signup()
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, counted: true })
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledTimes(1)
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledWith({
       personId: PERSON_ID,
@@ -134,7 +131,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
   it('passes a valid uuid v4 sessionId through to stitch', async () => {
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toMatchObject({ ok: true })
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledTimes(1)
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledWith({
       personId: PERSON_ID,
@@ -147,7 +144,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
   it('does not stitch when the honeypot is filled', async () => {
     const result = await signup({ company: 'Acme Bot Farm' })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, counted: false })
     expect(h.sendEvent).not.toHaveBeenCalled()
     expect(h.stitchFormSubmitIdentity).not.toHaveBeenCalled()
     expect(h.upsertListingAlert).not.toHaveBeenCalled()
@@ -158,7 +155,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
 
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toMatchObject({ ok: true })
     expect(h.upsertListingAlert).toHaveBeenCalled()
   })
 
@@ -174,7 +171,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
 
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, counted: false })
     expect(h.upsertListingAlert).toHaveBeenCalledWith(expect.objectContaining({ email: EMAIL, crmPersonId: PERSON_ID }))
     expect(h.canonicallyTagLead).not.toHaveBeenCalled()
     expect(h.createNativeTask).not.toHaveBeenCalled()
@@ -188,9 +185,74 @@ describe('submitSearchAlertSignup identity stitch', () => {
 
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toMatchObject({ ok: true })
     expect(h.stitchFormSubmitIdentity).not.toHaveBeenCalled()
     expect(h.upsertListingAlert).toHaveBeenCalled()
+  })
+
+  it('defaults generate_lead to search_alert / search-alert for existing callers', async () => {
+    await signup()
+    expect(h.fireLeadGenerated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lp_variant: 'search-alert',
+        lead_type: 'buyer_alerts',
+        form_id: 'search_alert',
+      }),
+    )
+  })
+
+  it('accepts formId, lpVariant, and lpContext and writes UTM CRM tags', async () => {
+    await signup({
+      formId: 'buyer_alerts_lp',
+      lpVariant: 'buy-alerts',
+      lpContext: {
+        lp_source: 'facebook',
+        lp_medium: 'paid_social',
+        lp_campaign: 'buyer-price-drops',
+        lp_content: 'reloc-h3-v1',
+        gclid: 'G1',
+        fbclid: 'F1',
+      },
+    })
+    expect(h.fireLeadGenerated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lp_variant: 'buy-alerts',
+        lead_type: 'buyer_alerts',
+        form_id: 'buyer_alerts_lp',
+        attribution: expect.objectContaining({
+          lp_source: 'facebook',
+          lp_medium: 'paid_social',
+          gclid: 'G1',
+          fbclid: 'F1',
+        }),
+      }),
+    )
+    const sent = h.sendEvent.mock.calls[0][0] as { sourceUrl: string; campaign?: { source?: string } }
+    expect(sent.sourceUrl).toContain('utm_source=facebook')
+    expect(sent.sourceUrl).toContain('gclid=G1')
+    expect(sent.campaign).toMatchObject({ source: 'facebook', medium: 'paid_social' })
+    expect(h.canonicallyTagLead).toHaveBeenCalledWith(
+      expect.objectContaining({
+        extraTags: expect.arrayContaining(['channel:fb-ads', 'campaign:buyer-price-drops', 'ad-content:reloc-h3-v1']),
+        originContext: expect.objectContaining({
+          utmSource: 'facebook',
+          utmMedium: 'paid_social',
+          utmCampaign: 'buyer-price-drops',
+          utmContent: 'reloc-h3-v1',
+        }),
+      }),
+    )
+  })
+
+  it('defaults buyer_leverage_lp to buy-leverage and fires that form_id with buyer_alerts', async () => {
+    await signup({ formId: 'buyer_leverage_lp' })
+    expect(h.fireLeadGenerated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lp_variant: 'buy-leverage',
+        lead_type: 'buyer_alerts',
+        form_id: 'buyer_leverage_lp',
+      }),
+    )
   })
 })
 
@@ -207,7 +269,7 @@ describe('submitSearchAlertSignup price-drop watch', () => {
   it('writes the price-change events map and confirms as a price-drop watch', async () => {
     const result = await signup({ events: PRICE_DROP_EVENTS })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toMatchObject({ ok: true })
     expect(h.upsertListingAlert).toHaveBeenCalledWith(
       expect.objectContaining({
         email: EMAIL,
@@ -228,7 +290,7 @@ describe('submitSearchAlertSignup price-drop watch', () => {
       landingSearch: '?gclid=G1&fbclid=F1&utm_source=google&utm_medium=cpc&utm_campaign=price-drops&email=no@no.com',
     })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toMatchObject({ ok: true })
     const sent = h.sendEvent.mock.calls[0][0]
     expect(sent.sourceUrl).toMatch(/gclid=G1/)
     expect(sent.sourceUrl).toMatch(/fbclid=F1/)
@@ -258,7 +320,7 @@ describe('submitSearchAlertSignup price-drop watch', () => {
   it('stores EU hashed-match consent on the person and never puts dollars on generate_lead', async () => {
     const result = await signup({ adMatchConsent: true })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toMatchObject({ ok: true })
     expect(h.enrichNativeLead).toHaveBeenCalledWith(
       expect.objectContaining({
         personId: PERSON_ID,

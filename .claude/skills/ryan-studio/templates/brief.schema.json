@@ -1,29 +1,352 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Ryan Studio video brief",
-  "description": "Required before any render. Validate with node tools/video_gate.mjs brief.json timeline.json",
-  "type": "object",
-  "required": ["video_type", "title", "hook", "length_s", "numbers", "footage", "end_card", "caption"],
-  "properties": {
-    "video_type": {"enum": ["listing", "market_update", "news_civic", "closing", "neighborhood_spotlight", "buyer_ad", "brand_film", "story_teaser"]},
-    "title": {"type": "string"},
-    "hook": {"type": "object", "required": ["text", "time_s"], "properties": {"text": {"type": "string"}, "time_s": {"type": "number", "minimum": 0}}},
-    "length_s": {"type": "number", "exclusiveMinimum": 0},
-    "length_reason": {"type": "string", "description": "Required when length is over the type's max_s"},
-    "numbers": {"type": "array", "items": {"type": "object", "required": ["on_screen", "value", "definition", "window", "geography", "source"], "properties": {
-      "on_screen": {"type": "string"}, "value": {}, "definition": {"type": "string"}, "window": {"type": "string", "description": "Exact dates, e.g. 2026-07-10 to 2026-10-08"},
-      "geography": {"type": "string"}, "property_type": {"type": "string"}, "source": {"type": "string", "description": "Query file or cited URL"}, "hero": {"type": "boolean"}}}},
-    "footage": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["kind", "path", "rights"], "properties": {
-      "kind": {"enum": ["mls_photo", "listing_photo", "phone_footage", "public_meeting", "imagine_plate", "map_render", "stock_licensed", "brand_art", "other"]},
-      "path": {"type": "string"},
-      "rights": {"enum": ["ryan_listing_side", "license_covers_social", "matt_owned", "public_record", "generated_own", "licensed", "unclear"]},
-      "restyled": {"type": "boolean"}, "house_number_checked": {"type": "boolean"}}}},
-    "end_card": {"type": "object", "required": ["spec", "phone"], "properties": {"spec": {"const": "templates/END_CARD_SPEC.md"}, "phone": {"const": "541.703.3095"}}},
-    "caption": {"type": "string"},
-    "music": {"type": "object", "properties": {"song": {"type": "string"}, "picker_start": {"type": "string"}, "cue_json": {"type": "string"}, "lyric_check": {"type": "string"}}},
-    "sources": {"type": "array", "items": {"type": "string"}},
-    "persona": {"enum": ["relocator", "first_time", "move_up", "second_home"]},
-    "special_ad_category": {"enum": ["housing"]},
-    "matt_overrides": {"type": "array", "items": {"type": "object", "required": ["rule", "said", "date"], "properties": {"rule": {"type": "string"}, "said": {"type": "string"}, "date": {"type": "string"}}}}
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "Ryan Studio video brief",
+ "description": "Required before any render. Validate with node tools/video_gate.mjs brief.json timeline.json",
+ "type": "object",
+ "required": [
+  "spec_rules",
+  "techniques",
+  "video_type",
+  "title",
+  "hook",
+  "length_s",
+  "numbers",
+  "footage",
+  "end_card",
+  "caption"
+ ],
+ "properties": {
+  "video_type": {
+   "enum": [
+    "listing",
+    "market_update",
+    "news_civic",
+    "closing",
+    "neighborhood_spotlight",
+    "buyer_ad",
+    "brand_film",
+    "story_teaser"
+   ]
+  },
+  "title": {
+   "type": "string"
+  },
+  "hook": {
+   "type": "object",
+   "required": [
+    "text",
+    "time_s"
+   ],
+   "properties": {
+    "text": {
+     "type": "string"
+    },
+    "time_s": {
+     "type": "number",
+     "minimum": 0
+    }
+   }
+  },
+  "length_s": {
+   "type": "number",
+   "exclusiveMinimum": 0
+  },
+  "length_reason": {
+   "type": "string",
+   "description": "Required when length is over the type's max_s"
+  },
+  "numbers": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "on_screen",
+     "value",
+     "definition",
+     "window",
+     "geography",
+     "source"
+    ],
+    "properties": {
+     "on_screen": {
+      "type": "string"
+     },
+     "value": {},
+     "definition": {
+      "type": "string"
+     },
+     "window": {
+      "type": "string",
+      "description": "Exact dates, e.g. 2026-07-10 to 2026-10-08"
+     },
+     "geography": {
+      "type": "string"
+     },
+     "property_type": {
+      "type": "string"
+     },
+     "source": {
+      "type": "string",
+      "description": "Query file or cited URL"
+     },
+     "hero": {
+      "type": "boolean"
+     }
+    }
+   }
+  },
+  "footage": {
+   "type": "array",
+   "minItems": 1,
+   "items": {
+    "type": "object",
+    "required": [
+     "kind",
+     "path",
+     "rights"
+    ],
+    "properties": {
+     "kind": {
+      "enum": [
+       "mls_photo",
+       "listing_photo",
+       "phone_footage",
+       "public_meeting",
+       "imagine_plate",
+       "map_render",
+       "stock_licensed",
+       "brand_art",
+       "other"
+      ]
+     },
+     "path": {
+      "type": "string"
+     },
+     "rights": {
+      "enum": [
+       "ryan_listing_side",
+       "license_covers_social",
+       "matt_owned",
+       "public_record",
+       "generated_own",
+       "licensed",
+       "unclear"
+      ]
+     },
+     "restyled": {
+      "type": "boolean"
+     },
+     "house_number_checked": {
+      "type": "boolean"
+     }
+    }
+   }
+  },
+  "end_card": {
+   "type": "object",
+   "required": [
+    "spec",
+    "phone"
+   ],
+   "properties": {
+    "spec": {
+     "const": "templates/END_CARD_SPEC.md"
+    },
+    "phone": {
+     "const": "541.703.3095"
+    }
+   }
+  },
+  "caption": {
+   "type": "string"
+  },
+  "music": {
+   "type": "object",
+   "properties": {
+    "song": {
+     "type": "string"
+    },
+    "picker_start": {
+     "type": "string"
+    },
+    "cue_json": {
+     "type": "string"
+    },
+    "lyric_check": {
+     "type": "string"
+    }
+   }
+  },
+  "sources": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "persona": {
+   "enum": [
+    "relocator",
+    "first_time",
+    "move_up",
+    "second_home"
+   ]
+  },
+  "special_ad_category": {
+   "enum": [
+    "housing"
+   ]
+  },
+  "matt_overrides": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "rule",
+     "said",
+     "date"
+    ],
+    "properties": {
+     "rule": {
+      "type": "string"
+     },
+     "said": {
+      "type": "string"
+     },
+     "date": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "spec_rules": {
+   "description": "MANDATORY creation-time rules (Matt, locked 2026-10-13). A brief is invalid without every field. Fill these BEFORE making anything.",
+   "type": "object",
+   "required": [
+    "hook_by_s",
+    "length_s_range",
+    "real_footage",
+    "real_numbers_count",
+    "sound_off_readable",
+    "captions",
+    "voiceover",
+    "loopable",
+    "end_card_sequence",
+    "topic_cta",
+    "no_top_team_wording",
+    "no_price_closed_flash",
+    "same_process_any_tool"
+   ],
+   "properties": {
+    "hook_by_s": {
+     "type": "number",
+     "maximum": 2
+    },
+    "length_s_range": {
+     "const": [
+      15,
+      30
+     ]
+    },
+    "real_footage": {
+     "const": true
+    },
+    "real_numbers_count": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 2
+    },
+    "sound_off_readable": {
+     "const": true
+    },
+    "captions": {
+     "type": "object",
+     "required": [
+      "style",
+      "synced_to_vo"
+     ],
+     "properties": {
+      "style": {
+       "const": "tiktok_burned_in"
+      },
+      "synced_to_vo": {
+       "const": true
+      }
+     }
+    },
+    "voiceover": {
+     "type": "object",
+     "required": [
+      "voice",
+      "tone",
+      "engine",
+      "script_follows_engine_rules"
+     ],
+     "properties": {
+      "voice": {
+       "const": "female"
+      },
+      "tone": {
+       "const": "warm_conversational"
+      },
+      "engine": {
+       "enum": [
+        "elevenlabs_v3",
+        "grok_tts"
+       ]
+      },
+      "script_follows_engine_rules": {
+       "const": true
+      },
+      "script": {
+       "type": "string"
+      }
+     }
+    },
+    "loopable": {
+     "const": true
+    },
+    "end_card_sequence": {
+     "const": [
+      "logo",
+      "Quality / Local / Service",
+      "Call now 541.703.3095"
+     ]
+    },
+    "topic_cta": {
+     "type": "object",
+     "required": [
+      "placement"
+     ],
+     "properties": {
+      "text": {
+       "type": "string"
+      },
+      "placement": {
+       "enum": [
+        "own_card_before_end_card",
+        "none"
+       ]
+      }
+     }
+    },
+    "no_top_team_wording": {
+     "const": true
+    },
+    "no_price_closed_flash": {
+     "const": true
+    },
+    "same_process_any_tool": {
+     "const": true
+    }
+   }
+  },
+  "techniques": {
+   "type": "array",
+   "minItems": 1,
+   "items": {
+    "type": "string"
+   },
+   "description": "Technique names from techniques/registry.json (validated by video_gate)."
   }
+ }
 }

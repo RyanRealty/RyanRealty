@@ -83,6 +83,9 @@ describe('form wiring', () => {
   const priceDrops = read('app/price-drops/_v3/PriceDropAlertsSheet.client.tsx')
   const sellerAction = read('app/lp/seller-home-value/actions.ts')
   const contactAction = read('app/contact/actions.ts')
+  const leverageForms = read('app/buy/leverage/_v3/LeverageForms.client.tsx')
+  const leverageAction = read('app/buy/leverage/actions.ts')
+  const leadLanding = read('app/actions/lead-landing.ts')
   const alertAction = read('app/actions/search-alert-capture.ts')
 
   it('keeps the valuation email required attribute next to its id', () => {
@@ -111,7 +114,7 @@ describe('form wiring', () => {
   })
 
   it('does not add consent fields to generate_lead', () => {
-    for (const src of [sellerAction, contactAction, alertAction]) {
+    for (const src of [sellerAction, contactAction, leadLanding, alertAction]) {
       const block = callBlock(src, 'fireLeadGenerated')
       expect(block).toContain('lead_type')
       expect(block).toContain('form_id')
@@ -120,6 +123,18 @@ describe('form wiring', () => {
       expect(block).not.toContain('email')
       expect(block).not.toContain('phone')
     }
+  })
+
+  it('wires /buy/leverage ads consent without SMS signup', () => {
+    expect(leverageForms).toContain('writeFormAdConsent(adCookies) // hydration-safe: submit handler, not render')
+    expect(leverageForms).toContain('<FormAdCookieBox')
+    expect(leverageForms).toContain('<FormAdConsentNotice')
+    expect(leverageForms).not.toContain('SmsConsentDisclosure')
+    expect(leverageAction).toContain('submitLeadLandingForm')
+    expect(leverageAction).toContain('LEVERAGE_FORM_ID')
+    expect(leverageAction).toContain('LEVERAGE_LEAD_TYPE')
+    expect(leverageAction).not.toContain('autoEnrollByPersonId')
+    expect(leadLanding).toContain('adMatchConsentCustom')
   })
 
   it('stores a checked EU match on the person, and still builds the lead', () => {

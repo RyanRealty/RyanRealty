@@ -34,6 +34,8 @@ import {
   publishListingStatusWord,
 } from '@/lib/listing/publish-listing-published-price'
 import { isPublicOffMarketStatus } from '@/lib/listing-status-public'
+import { listingIndexPolicy, listingOffMarketAnchor } from '@/lib/listing/listing-index-policy'
+import { listingCommunityDoor } from '@/lib/listing/listing-community-door'
 import { publishListingOffMarketFacts } from '@/lib/listing/publish-listing-offmarket'
 import { ListingOffMarketFacts } from '@/components/site/listing-detail/ListingOffMarketFacts'
 import { ListingOutOfAreaNotice } from '@/components/site/listing-detail/ListingOutOfAreaNotice'
@@ -66,6 +68,9 @@ import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-s
 import { formatDate as formatCalendarDate } from '@/lib/format/date'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
+import { ListingHubLinks } from '@/components/site/listing-detail/ListingHubLinks'
+import { listingHubLinks } from '@/lib/listing/listing-hub-links'
+import { ListingQuickFacts } from '@/components/site/listing-detail/ListingQuickFacts'
 import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
 import { DescriptionBlock } from '@/components/site/listing-detail/DescriptionBlock'
 import { GoverningDocumentsBlock } from '@/components/site/listing-detail/GoverningDocumentsBlock'
@@ -240,44 +245,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // a self-canonical to whatever path was requested, so this is the single URL
   // every path for this listing points at.
   const canonicalPath = listingCanonicalHref(listing)
+  const { placeContext: metaPlace } = resolveListingPlaceAndMarket(listing)
+  const indexPolicy = listingIndexPolicy({
+    status: listing.status,
+    listingPath: canonicalPath,
+    communityHref: listingCommunityDoor(metaPlace.curatedCommunity)?.href ?? null,
+    cityHref: metaPlace.city?.href ?? null,
+    offMarketAt: listingOffMarketAnchor({
+      closeDate: listing.closeDate,
+      modifiedAt: listing.modifiedAt,
+    }),
+  })
 
-  // SITE-33 REVERTED (Matt 2026-10-05, "Undo it"). Out-of-area listings
-  // (Medford, Klamath Falls, Grants Pass, ...) are INDEXED again: the
-  // 2026-09-09 noindex cost about 36% of the Search Console impression drop
-  // since Sep 12 (~2,500 impressions and ~30 clicks a week). The honesty block
-  // stays on the page (outOfAreaListingPolicy in the page body); it no longer
-  // reaches the robots directive, and the sitemap ships the row again.
-  //
-  // SITE-32 (Matt ruled 2026-09-08). THE ABSENCE OF A STATUS BRANCH BELOW IS
-  // THE POLICY, not an oversight — read this before you add one.
-  //
-  // Off-market listing URLs — Closed, Expired, Canceled, Withdrawn, and Pending
-  // with them — stay INDEXED, index,follow, carrying SITE-21's honest state.
-  // Nothing here passes `noindex`: the only noindex on a listing URL is the
-  // refusal path one branch up, where getListingDetail returned null (IDX
-  // opt-out or Coming Soon). Neither status nor geography is an input, and
-  // neither may become one.
-  //
-  // Two contradictory written policies had stood for months — MASTER_SPEC §4.9
-  // said keep the URL indexed, docs/plans/data-architecture-plan.md Part J §1
-  // said noindex it and optionally 410 after 12 months — and neither was ever
-  // implemented. The losing text is deleted; §4.9 is the one statement.
-  // The measurement that settled it, GSC 2026-06-08..2026-09-05: off-market is
-  // 6,611 of 14,508 listing-detail URLs and 26,123 of 56,650 impressions (46%),
-  // earning ~324-577 clicks per 90 days at a CTR that straddles or beats
-  // Active. An address query has no Active substitute, so a noindex deletes
-  // those clicks rather than redistributing them. A Closed page showing
-  // ClosePrice is NOT a VOW-only sold surface under ODS A.4 for indexing (Matt,
-  // same ruling), so G54 is deliberately not extended here.
-  //
-  // These URLs are residual index, not submitted: getListingSitemapRows.ts
-  // ships Active/AUC only (every city, in-area or not), and that stays. Held by
-  // scripts/check-listing-offmarket-index.mjs (ci:listing-offmarket-index).
+  // Off-market pages older than 90 days are noindex, follow. Canonical is the
+  // community hub, else the city hub, else the listing. Recent Closed /
+  // Expired / Withdrawn and every on-market status stay index, follow on the
+  // listing URL. Geography is not an input for on-market homes (SITE-33
+  // reverted 2026-10-05). Held by listingIndexPolicy + ci:listing-offmarket-index.
   return pageMetadata({
     title,
     description: metaDescription,
-    path: canonicalPath,
+    path: indexPolicy.canonicalPath,
     ogImage: `/api/og?type=listing&id=${encodeURIComponent(listing.listingKey)}`,
+    noindex: indexPolicy.noindex,
   })
 }
 
@@ -339,8 +329,9 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   const offMarket = isPublicOffMarketStatus(listing.status)
 
   // SITE-33 — this home's market, for the honesty block only. Since Matt's
-  // 2026-10-05 revert it no longer touches robots or the sitemap: out-of-area
-  // homes are index, follow and in listings.xml. Null on every Central Oregon home, so
+  // 2026-10-05 revert it no longer touches robots or the sitemap for on-market
+  // homes: out-of-area Active/AUC/Pending stay index, follow and in listings.xml.
+  // Null on every Central Oregon home, so
   // a Bend page pays nothing: the geo read below only runs when the answer is
   // already "outside our market".
   const outOfArea = outOfAreaListingPolicy(listing.city)
@@ -660,6 +651,12 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     subdivision: aliasLadder.plat ?? placeContext.subdivision,
     address: street || `Listing ${listingKey}`,
   })
+  // Exact-match text doors to /homes-for-sale/{city} and the #513 community
+  // hub. Breadcrumb already climbs city → community (listingPlaceTrail).
+  const hubLinks = listingHubLinks({
+    city: listing.city && listing.citySlug ? { label: listing.city, slug: listing.citySlug } : null,
+    community: placeContext.curatedCommunity,
+  })
 
   const contactKey =
     publishListingContactKey({ listNumber: listing.listNumber, listingKey: listing.listingKey }) ??
@@ -888,6 +885,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           it ends in that city's referral page. Null on every Central Oregon
           listing. */}
       {outOfAreaNotice ? <ListingOutOfAreaNotice notice={outOfAreaNotice} /> : null}
+      {hubLinks ? <ListingHubLinks links={hubLinks} /> : null}
       {/* SITE-21 — THE SOLD FACTS, first thing under the price. What happened
           to this house is the answer the reader came for, and it is the only
           claim about its price that is still true. */}
@@ -898,6 +896,27 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           browseLabel={similarLabel}
         />
       ) : null}
+      <ListingQuickFacts
+        street={street}
+        city={listing.city}
+        price={wholePropertyPrice}
+        beds={listing.beds}
+        baths={listing.baths}
+        sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
+        lotSizeAcres={listing.lotSizeAcres}
+        lotSizeSqft={listing.lotSizeSqft}
+        yearBuilt={listing.yearBuilt}
+        communityName={listing.communityName}
+        subdivisionName={listing.subdivisionName}
+        status={listing.status}
+        onMarketDate={listing.onMarketDate}
+        closeDate={listing.closeDate}
+        hoaMonthly={listing.hoaMonthly}
+        associationFee={listing.associationFee}
+        associationFeeFrequency={listing.associationFeeFrequency}
+        propertySubType={listing.propertySubType}
+        propertyType={listing.propertyType}
+      />
       {/* The homes a reader CAN buy get the prominence on a page about one
           they cannot: the rail moves from the bottom of the page to directly
           under the sold facts. MASTER_SPEC §4.9. */}

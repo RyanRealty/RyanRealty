@@ -60,16 +60,83 @@ const UA = CI_PROBE_USER_AGENT
  * then run --write-baseline against a built server to record its starting
  * size. Never hand-edit a number in the baseline file — only --write-baseline
  * may move one, and CI only accepts that move going down.
+ *
+ * HARD_CEILING_BYTES (200 KB uncompressed) is the fail line for these routes
+ * after the 2026-10 HTML-payload cut. A page may also only shrink versus its
+ * own baseline. Listing detail is resolved at measure time (SMOKE_LISTING_KEY
+ * or pick-lhci-listing) and stored under `/listing/*`.
  */
-const PAGES = [
+export const HARD_CEILING_BYTES = 200 * 1024
+
+export const PAGES = [
+  { path: '/', label: 'homepage' },
+  { path: '/communities/tetherow', label: 'community place page' },
+  { path: '/homes-for-sale/bend', label: 'city browse' },
   { path: '/homes-for-sale', label: 'primary search entry point (audit item 16)' },
 ]
+
+export function baselineKeyFor(path) {
+  if (path === '/listing/*' || /^\/listing\/[^/]+$/.test(path)) return '/listing/*'
+  return path
+}
+
+export const HARD_CEILING_GRID_CARDS = 24
+export const HARD_CEILING_HOME_RAIL_CARDS = 36
+
+export function countSerializedListingKeys(html) {
+  const keys = new Set()
+  // Served HTML quotes keys two ways: raw JSON (`"ListingKey":"…"`) and the
+  // RSC flight (`\"ListingKey\":\"…\"`). Count unique values, not mentions.
+  for (const match of String(html).matchAll(/\\?"(?:listingKey|ListingKey)\\?":\\?"([^"\\]+)/g)) {
+    keys.add(match[1])
+  }
+  return keys.size
+}
+
+export function cardCapFor(path) {
+  return path === '/' ? HARD_CEILING_HOME_RAIL_CARDS : HARD_CEILING_GRID_CARDS
+}
+
+/**
+ * Fail when a page grew, or when it is over 200 KB *and* still serializes more
+ * than one grid page of listings (the bug class: 48-card seeds, whole-community
+ * homes arrays, uncapped photo flights). A 700 KB community whose map seeded
+ * 22 homes is the RSC tree, not an inventory dump — the shrink ratchet holds
+ * that page; SEO A owns the remaining tree.
+ */
+export function evaluatePayloadBudget(sizes, baseline, options = {}) {
+  const ceiling = options.ceiling ?? HARD_CEILING_BYTES
+  const cardCounts = options.cardCounts ?? {}
+  const failures = []
+  for (const [path, bytes] of Object.entries(sizes)) {
+    if (typeof bytes !== 'number' || !Number.isFinite(bytes)) {
+      failures.push(`${path}: not a measured byte count`)
+      continue
+    }
+    const key = baselineKeyFor(path)
+    const cards = cardCounts[key] ?? cardCounts[path]
+    const cap = cardCapFor(key)
+    if (bytes > ceiling && (cards == null || cards > cap)) {
+      const cardNote = cards == null ? 'listing-card count not measured' : `${cards} listing cards (cap ${cap})`
+      failures.push(
+        `${path} is ${fmt(bytes)} with ${cardNote} — hard ceiling is ${fmt(ceiling)} when more than ${cap} listings are serialized`,
+      )
+    }
+    const was = baseline?.pages?.[key]
+    if (was === undefined) {
+      failures.push(`NEW tracked page with no baseline entry: ${key} (${fmt(bytes)}) — run --write-baseline`)
+    } else if (bytes > was) {
+      failures.push(`${key} grew: ${fmt(bytes)} (baseline ${fmt(was)}) — +${(bytes - was).toLocaleString('en-US')} bytes`)
+    }
+  }
+  return failures
+}
 
 function fmt(n) {
   return `${(n / 1024).toFixed(1)} KB (${n.toLocaleString('en-US')} bytes)`
 }
 
-async function fetchPageBytes(path) {
+async function fetchPageMeasure(path) {
   const url = `${BASE_URL}${path}`
   const res = await fetch(url, {
     headers: { 'User-Agent': UA, Accept: 'text/html', 'Accept-Encoding': 'identity' },
@@ -84,20 +151,42 @@ async function fetchPageBytes(path) {
     throw new Error(`HTTP ${res.status} — is a BUILT server (npm run build && next start) running at ${BASE_URL}?`)
   }
   const buf = Buffer.from(await res.arrayBuffer())
-  return buf.length
+  return { bytes: buf.length, cards: countSerializedListingKeys(buf.toString('utf8')) }
+}
+
+async function resolveListingPath() {
+  const fromEnv = (process.env.SMOKE_LISTING_KEY ?? '').trim()
+  if (fromEnv) return `/listing/${fromEnv}`
+  try {
+    const html = await fetch(`${BASE_URL}/homes-for-sale/bend`, {
+      headers: { 'User-Agent': UA, Accept: 'text/html', 'Accept-Encoding': 'identity' },
+    }).then((res) => (res.ok ? res.text() : ''))
+    const match = html.match(/\/listing\/(\d{10,})\b/)
+    if (match) return `/listing/${match[1]}`
+  } catch {
+    /* skip — listing is optional when no key and no seed page */
+  }
+  return null
 }
 
 async function scan() {
   const sizes = {}
+  const cardCounts = {}
   const errors = []
-  for (const { path } of PAGES) {
+  const pages = [...PAGES]
+  const listingPath = await resolveListingPath()
+  if (listingPath) pages.push({ path: listingPath, label: 'listing detail' })
+  for (const { path } of pages) {
     try {
-      sizes[path] = await fetchPageBytes(path)
+      const key = baselineKeyFor(path)
+      const measured = await fetchPageMeasure(path)
+      sizes[key] = measured.bytes
+      cardCounts[key] = measured.cards
     } catch (error) {
       errors.push(`${path}: ${error.message}`)
     }
   }
-  return { sizes, errors }
+  return { sizes, cardCounts, errors }
 }
 
 function loadBaseline() {
@@ -114,7 +203,7 @@ async function main() {
   const REPORT = args.includes('--report')
   const WRITE_BASELINE = args.includes('--write-baseline')
 
-  const { sizes, errors } = await scan()
+  const { sizes, cardCounts, errors } = await scan()
 
   if (errors.length > 0) {
     console.error(`✗ Could not measure ${errors.length} page(s) against ${BASE_URL}:`)
@@ -132,11 +221,12 @@ async function main() {
       JSON.stringify(
         {
           note:
-            'Rendered-HTML-size ratchet for the heavy public pages (audit item 16, 2026-08-03). ' +
-            'bytes = raw uncompressed response body, fetched with a browser User-Agent and ' +
-            'Accept-Encoding: identity, from a BUILT `next start` server (never `next dev`). ' +
-            'Every value may only SHRINK. Regenerate with --write-baseline only after a real fix ' +
-            'lands — never to paper over a regression.',
+            'Rendered-HTML-size ratchet for the heavy public pages (audit item 16, 2026-08-03; ' +
+            'HTML payload cut 2026-10-13). bytes = raw uncompressed response body, fetched with a ' +
+            'browser User-Agent and Accept-Encoding: identity, from a BUILT `next start` server ' +
+            '(never `next dev`). Every value may only SHRINK. A page over 200 KB also fails when ' +
+            'it serializes more than one grid page of listings (24; 36 on /). Regenerate with ' +
+            '--write-baseline only after a real fix lands — never to paper over a regression.',
           measuredAt: new Date().toISOString(),
           baseUrl: BASE_URL,
           pages: sizes,
@@ -167,15 +257,7 @@ async function main() {
     process.exit(0)
   }
 
-  const failures = []
-  for (const [path, bytes] of Object.entries(sizes)) {
-    const was = baseline.pages?.[path]
-    if (was === undefined) {
-      failures.push(`NEW tracked page with no baseline entry: ${path} (${fmt(bytes)}) — run --write-baseline`)
-    } else if (bytes > was) {
-      failures.push(`${path} grew: ${fmt(bytes)} (baseline ${fmt(was)}) — +${(bytes - was).toLocaleString('en-US')} bytes`)
-    }
-  }
+  const failures = evaluatePayloadBudget(sizes, baseline, { cardCounts })
 
   console.log('page-payload budget (rendered HTML, shrink-only ratchet)')
   console.log('==========================================================')
@@ -189,11 +271,13 @@ async function main() {
     console.error('If the growth is genuinely unavoidable, re-baseline with --write-baseline. Not as a reflex.')
     process.exit(1)
   }
-  console.log(`✓ OK — ${Object.keys(sizes).length} page(s) within budget (none grew).`)
+  console.log(`✓ OK — ${Object.keys(sizes).length} page(s) within budget (none grew; 200 KB / ${HARD_CEILING_GRID_CARDS}-card dump line holds).`)
   for (const [path, bytes] of Object.entries(sizes)) {
     const was = baseline.pages?.[path]
     const shrank = was != null && bytes < was ? `  (shrank ${(was - bytes).toLocaleString('en-US')} bytes from baseline)` : ''
-    console.log(`  ${fmt(bytes)}  ${path}${shrank}`)
+    const cards = cardCounts[path]
+    const cardNote = typeof cards === 'number' ? `  ${cards} listing cards` : ''
+    console.log(`  ${fmt(bytes)}  ${path}${cardNote}${shrank}`)
   }
   process.exit(0)
 }

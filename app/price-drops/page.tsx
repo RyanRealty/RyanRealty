@@ -166,6 +166,7 @@ export default async function PriceDropsRegionPage() {
       body: 'Active single-family homes whose asking price fell in the last 7 days. Drop is previous list price to current list price. Recovered and relisted prices stay off this list.',
     },
     { label: 'All Central Oregon homes for sale', href: listingsBrowsePath() },
+    { label: 'Listing alerts', href: '/buy/alerts' },
     { label: 'Open houses this week', href: '/open-houses' },
     ...cityItems,
   ]

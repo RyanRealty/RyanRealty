@@ -3,10 +3,10 @@
  * check-sitemap-listings-honest.mjs — ci:sitemap-listings-honest
  *
  * /sitemaps/listings.xml must be a first-class read of listing_tile_mv
- * (PUBLIC_ACTIVE_STATUSES, stable listing_key order). It must not be a
- * filter over buildAllUrls: that universe swallows errors into an empty
- * urlset and paged the MV without ORDER BY (7,586 rows / 5,827 unique
- * keys on 2026-08-19).
+ * (LISTING_SITEMAP_STATUSES = Active, Active Under Contract, Pending;
+ * lastmod from modified_at). It must not be a filter over buildAllUrls:
+ * that universe swallows errors into an empty urlset and paged the MV
+ * without ORDER BY (7,586 rows / 5,827 unique keys on 2026-08-19).
  *
  * Static AST/source pins — no DB. Exit 0 = wired, 1 = the listings class
  * can go empty or drop live inventory again.
@@ -60,8 +60,8 @@ const dal = src('lib/data/sitemap/getListingSitemapRows.ts')
 if (!dal.includes("from('listing_tile_mv')")) {
   problems.push('lib/data/sitemap/getListingSitemapRows.ts: must read listing_tile_mv')
 }
-if (!dal.includes('PUBLIC_ACTIVE_STATUSES')) {
-  problems.push('lib/data/sitemap/getListingSitemapRows.ts: must filter PUBLIC_ACTIVE_STATUSES')
+if (!dal.includes('LISTING_SITEMAP_STATUSES')) {
+  problems.push('lib/data/sitemap/getListingSitemapRows.ts: must filter LISTING_SITEMAP_STATUSES')
 }
 if (!/\.order\(\s*['"]listing_key['"]/.test(dal)) {
   problems.push('lib/data/sitemap/getListingSitemapRows.ts: must .order(listing_key) — unordered pages drop live keys')

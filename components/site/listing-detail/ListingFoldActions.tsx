@@ -6,7 +6,7 @@
  * flows. Not a sticky/fixed bar (Matt lock).
  */
 import { useCallback, useId, useState, useTransition } from 'react'
-import { submitListingPriceDropWatch } from '@/app/actions/search-alert-capture'
+import { submitListingPriceDropWatch } from '@/lib/analytics/submit-alert-signup'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'

@@ -3,7 +3,7 @@
  *
  * Always-on: listing_terms (owner will carry / assumable) and lifetime
  * price_drop event counts. Optional, flag-gated: public remarks phrases and
- * special listing conditions. Never selects private_remarks. Never returns
+ * special listing conditions. Never selects agent-only remarks. Never returns
  * remarks text.
  *
  * Per docs/DATABASE_FOR_AI_AGENTS.md §0: this is a listing-key fact read on

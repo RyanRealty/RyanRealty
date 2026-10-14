@@ -26,8 +26,8 @@ import {
 const row = (standard_status: string, n: number) => ({ subdivision_name: 'x', standard_status, n })
 
 const MV = [
-  // bend/cambria: 22 closed, nothing for sale -> sold-history, emitted
-  { cityLower: 'bend', subdivisionName: 'Cambria', rows: [row('Closed', 22), row('Expired', 3), row('Canceled', 4)] },
+  // bend/cambria: 22 closed, 3 for sale -> sold-history, emitted
+  { cityLower: 'bend', subdivisionName: 'Cambria', rows: [row('Closed', 22), row('Expired', 3), row('Canceled', 4), row('Active', 3)] },
   // bend/boulevard: indexable plat twin
   { cityLower: 'bend', subdivisionName: 'Boulevard', rows: [row('Closed', 40), row('Active', 1)] },
   // bend/amundson: 7 closed, none for sale -> thin
@@ -56,7 +56,7 @@ beforeEach(() => {
 describe('buildBrowsePairIndex', () => {
   it('counts closed and active per (city slug, area slug), merging spellings of one slug', () => {
     const index = buildBrowsePairIndex(MV)
-    expect(index.get('bend/cambria')).toEqual({ mlsName: 'Cambria', closedLifetime: 22, activeNow: 0 })
+    expect(index.get('bend/cambria')).toEqual({ mlsName: 'Cambria', closedLifetime: 22, activeNow: 3 })
     // Active + Active Under Contract only (PUBLIC_ACTIVE_STATUSES); Pending is not "for sale now".
     expect(index.get('la-pine/forest-view-est')).toEqual({ mlsName: 'FOREST VIEW EST', closedLifetime: 11, activeNow: 3 })
   })

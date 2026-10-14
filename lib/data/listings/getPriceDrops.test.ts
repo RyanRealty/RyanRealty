@@ -465,3 +465,22 @@ describe('getPriceDropDigest: count is every cut in the window, not a capped lis
     expect(digest).toMatchObject({ count: 0, degraded: true })
   })
 })
+
+describe('getPriceDrops: accuracy guard (Matt 2026-10-13)', () => {
+  it('excludes a typo-size cut over 50% (Hunnell Rd 90%)', () => {
+    expect(tileAndEventToDrop(tile(50_000), event(500_000, 50_000), NOW)).toBeNull()
+    expect(tileAndEventToDrop(tile(300_000), event(500_000, 300_000), NOW)).not.toBeNull()
+  })
+  it('lists only active homes with a real cut, once per MLS number', async () => {
+    sbMock.mockReturnValue(eventsClient(dropEvents(['a', 'dup', 'sold', 'typo', 'up'])).client)
+    serveTiles([
+      sfrTile('a', { listNumber: 'M1' }),
+      sfrTile('dup', { listNumber: 'M1' }),
+      sfrTile('sold', { listNumber: 'M2', status: 'Closed' }),
+      sfrTile('typo', { listNumber: 'M3', listPrice: 55_000 }),
+      sfrTile('up', { listNumber: 'M4', listPrice: 600_000 }),
+    ])
+    const result = await getPriceDrops({ limit: 48, days: 7 })
+    expect(result.drops.map((d) => d.listingKey)).toEqual(['a'])
+  })
+})

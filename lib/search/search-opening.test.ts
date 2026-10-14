@@ -34,7 +34,7 @@ describe('how /homes-for-sale opens (Matt 2026-09-23)', () => {
   })
 
   it('seeds one card page into the served HTML', () => {
-    expect(SPLIT_CARD_PAGE).toBe(48)
+    expect(SPLIT_CARD_PAGE).toBe(24)
   })
 })
 
