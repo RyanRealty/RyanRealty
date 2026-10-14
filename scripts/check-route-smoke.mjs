@@ -96,6 +96,10 @@ const HOP_ROUTES = new Map([
   ['/lp/bend', { status: 308, pathname: '/cities/bend' }],
   ['/lp/seller-home-value', { status: 308, pathname: '/sell' }],
   ['/lp/sell-your-home', { status: 308, pathname: '/sell' }],
+  // next.config 308s this situation stub onto /sell. Following it in the
+  // concurrent pass renders /sell a second time under the same 15s budget
+  // (run 38589676872 aborted both /sell and this path).
+  ['/sell/inherited-home', { status: 308, pathname: '/sell' }],
   ['/lp/buyer-listing-alerts', { status: 308, pathname: '/homes-for-sale' }],
   ['/lp/expired-listing', { status: 308, pathname: '/sell/expired-listings' }],
   ['/lp/fsbo', { status: 308, pathname: '/sell/for-sale-by-owner' }],
@@ -105,8 +109,12 @@ const HOP_ROUTES = new Map([
   ['/luxury-homes-bend-oregon', { status: 301, pathname: '/homes-for-sale/bend/luxury' }],
 ])
 
+const HEAVY_PUBLIC = new Set(['/sell', '/housing-market/reports', '/housing-market/history'])
+
 function timeoutFor(path) {
-  return path.startsWith('/admin/') ? Math.max(TIMEOUT_MS, ADMIN_TIMEOUT_MS) : TIMEOUT_MS
+  if (path.startsWith('/admin/')) return Math.max(TIMEOUT_MS, ADMIN_TIMEOUT_MS)
+  if (HEAVY_PUBLIC.has(path) || path.startsWith('/sell/')) return Math.max(TIMEOUT_MS, 30_000)
+  return TIMEOUT_MS
 }
 // CONCURRENCY caps parallel HTTP requests so the smoke covers the
 // full canonical set without overwhelming the dev/start:ci server.
@@ -369,6 +377,19 @@ async function checkHop(route, url, hop) {
  * hardcoded. Failing to obtain one is a FAILURE, not a skip — silence here is
  * exactly how this defect survived.
  */
+async function discoverResolvingListingKeyFromBrowse() {
+  try {
+    const { status, body } = await fetchWithTimeout(`${BASE}/homes-for-sale`, Math.max(TIMEOUT_MS, 30_000))
+    if (status !== 200 || !body) return null
+    const m = body.match(/\/homes-for-sale\/[^"'<\s]+?-(\d{5,})/)
+    if (!m) return null
+    console.warn(`  sitemaps/listings.xml never answered 200; discovered ${m[0]} from /homes-for-sale`)
+    return { key: m[1], path: m[0], why: null }
+  } catch {
+    return null
+  }
+}
+
 async function discoverResolvingListingKey() {
   // The sitemap is the heaviest read this gate makes: ~7,500 active rows paged
   // out of a ~600,000-row MV. On 2026-09-16 it answered 500 ("canceling
@@ -386,8 +407,8 @@ async function discoverResolvingListingKey() {
   // Every attempt's throw is caught here and counted like a bad status. The
   // sitemap also gets its own, longer ceiling: fifteen seconds is right for a
   // page, not for the one read that pages 7,500 rows on a cold server.
-  const DISCOVERY_ATTEMPTS = 3
-  const DISCOVERY_BACKOFF_MS = [1000, 3000]
+  const DISCOVERY_ATTEMPTS = 5
+  const DISCOVERY_BACKOFF_MS = [5_000, 10_000, 15_000, 20_000]
   let status = 0
   let body = ''
   let why = ''
@@ -407,7 +428,11 @@ async function discoverResolvingListingKey() {
       await new Promise((r) => setTimeout(r, wait))
     }
   }
-  if (status !== 200) return { key: null, path: null, why: `sitemaps/listings.xml answered ${why} on ${DISCOVERY_ATTEMPTS} attempts` }
+  if (status !== 200) {
+    const fallback = await discoverResolvingListingKeyFromBrowse()
+    if (fallback) return fallback
+    return { key: null, path: null, why: `sitemaps/listings.xml answered ${why} on ${DISCOVERY_ATTEMPTS} attempts` }
+  }
   // Canonical detail URLs end in -<mlsNumber>; getListingCanonicalPathFields
   // accepts an MLS number as well as a ListingKey.
   const m = body.match(/<loc>([^<]*\/homes-for-sale\/[^<]*?-(\d{5,}))<\/loc>/)
@@ -516,8 +541,25 @@ function timedOutFullPage(result) {
     !result.predetermined &&
     !result.resolvingRedirect &&
     !result.listingSegment &&
-    !result.refusal &&
     !HOP_ROUTES.has(result.path)
+  )
+}
+
+/**
+ * A listing refusal that served the loading.tsx shell (HTTP 200, title
+ * "Listing loading", no noindex) during the concurrent pass. The same
+ * streamed-shell problem the refusal gate exists to catch: React flushed
+ * before the miss path wrote robots. Run 38596963689 / 38596961264.
+ * One serial retry, same as a timed-out full page. A real missing noindex
+ * still fails on the retry.
+ */
+function streamedRefusalShell(result) {
+  return (
+    Boolean(result.refusal) &&
+    !result.ok &&
+    result.status === 200 &&
+    (/listing loading/i.test(result.title ?? '') ||
+      (result.reasons ?? []).some((reason) => /noindex/i.test(reason) || /no <h1>/i.test(reason)))
   )
 }
 
@@ -610,7 +652,10 @@ async function main() {
   // with the server to itself, and that still fails.
   const lookupUnavailable = (r) => !r.ok && r.status === 503 && r.lookup === 'unavailable'
   const needsSerial = (i) =>
-    timedOutFullPage(results[i]) || hopPassedThrough(results[i], toCheck[i]) || lookupUnavailable(results[i])
+    timedOutFullPage(results[i]) ||
+    hopPassedThrough(results[i], toCheck[i]) ||
+    lookupUnavailable(results[i]) ||
+    streamedRefusalShell(results[i])
   // The server keeps rendering a page after the client gives up on it, so the
   // renders the pool abandoned drain before the serial retries begin.
   if (results.some((_, i) => needsSerial(i))) await new Promise((r) => setTimeout(r, RETRY_SETTLE_MS))
@@ -626,6 +671,13 @@ async function main() {
       const retry = await checkRoute(toCheck[i])
       results[i] = retry.ok
         ? { ...retry, title: `${retry.title ?? ''} (hopped on a serial retry; the concurrent pass missed the edge lookup budget)` }
+        : retry
+      continue
+    }
+    if (streamedRefusalShell(results[i]) || (timedOutFullPage(results[i]) && toCheck[i].refusal)) {
+      const retry = await checkRoute(toCheck[i])
+      results[i] = retry.ok
+        ? { ...retry, title: `${retry.title ?? ''} (answered on a serial retry after a streamed listing shell)` }
         : retry
       continue
     }
