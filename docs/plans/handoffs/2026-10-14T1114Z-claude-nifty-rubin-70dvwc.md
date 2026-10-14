@@ -11,7 +11,6 @@ Branch `claude/nifty-rubin-70dvwc`. Nobody pushes main. Nothing sent, posted or 
 - Motion foundations: `lib/studio/motion/spring.ts`, `camera.ts`.
 - Int tests run only by name (`npm run test:int` sets `RR_INT_RUN=1`); `npm test` names its projects. A helper's bare `vitest run` swept two zztest marker objects from production storage on 2026-10-14 (disclosed to Matt).
 - Each video type keeps its own length window in `video_gate.mjs` and the render gate (Matt 2026-10-14).
-- The sitemap lists `/open-houses/{city}` only when the city has an open house in the page's window.
 
 **Next.** Matt picked the buyer ad's techniques first: `figure_pullout_hook`, `map_area_cells` (aggregate cells only, ODS §5-4; `MIN_SALES_PER_CELL = 3` needs Matt's sign-off), `subframe_motion_blur`, `measured_drop_sync`. Builders run in worktrees `tech-hook`, `tech-cells`, `tech-blurbeat`. Then a showcase reel for Matt, then the buyer ad's board (`docs/plans/BUYER_AD.md`).
 
