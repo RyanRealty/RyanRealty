@@ -24,7 +24,7 @@ Branch `claude/agent-navigation-efficiency-dp5zj5`. PR #566 merged as `cd35a2a70
 
 **Next.**
 - In a few days, read GA4 for `view_landing_page` on /sell and /buy, and check the LP-visitor audiences are filling.
-- `/communities/<slug>` logged `ListingsUnavailableError` on 15 production deploys in the 20 hours to 14:15Z 2026-10-14 (fail-closed by design, `lib/site/listings-unavailable.ts`). It was not on #580's deploy when checked. Under investigation in this session.
+- `/communities/<slug>` logged `ListingsUnavailableError` (the body's community read missed its 8 s timeout twice) on 15 production deploys in the 20 hours to 14:15Z 2026-10-14. Three deploys logged it between 12:13Z and 12:33Z, and none since, #580's included. All 19 registry communities are prerendered (`generateStaticParams`), so a failed revalidation keeps the last good copy (`lib/site/listings-unavailable.ts`). No visitor-facing fault found; no change.
 
 **Held.** The standing holds in `README.md` here. Leave the full `scripts/ga4-admin.mjs apply` unrun. `apply-audiences` is the audience step alone.
 
