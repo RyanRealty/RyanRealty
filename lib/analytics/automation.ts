@@ -200,6 +200,17 @@ export function sessionBlocksIdentification(
 const ARRIVAL_PARAM_RE = /^(utm_.+|fbclid|gclid|msclkid|ttclid|_pid|agent|rr_doc)$/
 
 /**
+ * `?agent=` names the broker, not the click: the site stamps it on its own
+ * Book-a-tour links (/book?agent=<slug>&listing=<mls>), and the measured
+ * Linux Chrome 150 crawler followed those 107 times in 14 days (2026-10-14
+ * audit). It still exempts the contact-deep-link shape, as it always has; for
+ * the stale-browser and datacenter-geo rules a broker's shared link needs
+ * another sign (a referrer, a campaign tag, a token), and a person who arrives
+ * on one is cleared by the first scroll, page or identification.
+ */
+const BROKER_ONLY_PARAM = 'agent'
+
+/**
  * Desktop Google Chrome's major version from a user agent, or null for anything
  * else: phones and tablets, ChromeOS (school and kiosk Chromebooks are pinned
  * to old builds by policy), and the Chromium browsers that ship on their own
@@ -336,12 +347,12 @@ export function classifyArrivalShape(args: {
   // A link we sent or a tagged campaign is a person's click, never this class.
   // (The tracker labels an untagged arrival 'direct / none', so the landing
   // URL's own params are the evidence, not the session's utm columns.)
-  for (const key of u.searchParams.keys()) {
-    if (ARRIVAL_PARAM_RE.test(key)) return human
-  }
+  const keys = [...u.searchParams.keys()].filter((k) => ARRIVAL_PARAM_RE.test(k))
+  if (keys.some((k) => k !== BROKER_ONLY_PARAM)) return human
+  const brokerLink = keys.length > 0
   const path = u.pathname.replace(/\/+$/, '') || '/'
   if (path === '/contact' && (u.searchParams.get('listingKey') ?? '').trim()) {
-    return { automated: true, reason: 'contact-deep-link' }
+    return brokerLink ? human : { automated: true, reason: 'contact-deep-link' }
   }
   if (isStaleDesktopChrome(args.userAgent, args.atMs ?? Date.now())) {
     return { automated: true, reason: 'stale-browser' }

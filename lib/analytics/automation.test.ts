@@ -182,6 +182,15 @@ describe('classifyArrivalShape — stale-browser (provisional)', () => {
     expect(cold({ userAgent: old, hasToken: true }).automated).toBe(false)
   })
 
+  it('a broker param alone is not an outside click: the crawler follows the Book-a-tour links that carry it', () => {
+    const book = 'https://ryan-realty.com/book?agent=matt&listing=20261007155928106289'
+    expect(cold({ userAgent: desktop(LINUX, 150), landingPage: book })).toEqual({ automated: true, reason: 'stale-browser' })
+    expect(cold({ userAgent: desktop(LINUX, 154), landingPage: book }).automated).toBe(false)
+    expect(cold({ userAgent: desktop(LINUX, 150), landingPage: `${book}&utm_source=crm` }).automated).toBe(false)
+    // ...and it still exempts the contact-deep-link shape, as it always has
+    expect(cold({ landingPage: 'https://ryan-realty.com/contact?listingKey=220199976&agent=matt' }).automated).toBe(false)
+  })
+
   it('never flags a current browser or a phone on a cold arrival', () => {
     expect(cold({ userAgent: desktop(MAC, 154) }).automated).toBe(false)
     expect(cold({ userAgent: desktop(WIN, 155) }).automated).toBe(false)
