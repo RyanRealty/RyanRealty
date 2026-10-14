@@ -39,6 +39,7 @@ import { CO_SCHOOLS } from '@/data/co-schools'
 import { CO_PARKS } from '@/data/co-parks'
 import { CORE_MARKET_PATHS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
 import { buyerAnswerSitemapPaths } from '@/lib/buyer-answers'
+import { loadIndexableOpenHouseCitySlugs } from '@/app/open-houses/_v3/oh-city-indexable'
 
 // The ONLY slugs with a real /communities/[slug] page — derived directly from
 // the curated resort registry (data/resort-communities.json) so the sitemap
@@ -273,7 +274,10 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       ...(selfCitySearchUrlLeavesSitemap(citySlug)
         ? []
         : [{ url: `${baseUrl}/homes-for-sale/${citySlug}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.85 }]),
-      { url: `${baseUrl}/open-houses/${citySlug}`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
+      // /open-houses/{city} is NOT seeded here. The page is noindex when the
+      // city has no open house in the window, so it is submitted only when a
+      // read says it is indexable (the open-house-cities leg below); a seed
+      // cannot know, and a no-database build has nothing to ask.
     )
   }
 
@@ -368,6 +372,20 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
         [] as Array<{ slug: string; updated_at?: string }>,
       ),
       'listing-rows': leg('listing-rows', getListingSitemapRows(now), []),
+      // Which /open-houses/{city} pages are indexable today (2026-10-14).
+      // The page noindexes a city with no open house in the canonical window,
+      // and a sitemap lists only indexable URLs: deploy:verify 9fa63fa7a found
+      // /open-houses/brothers and /open-houses/black-butte-ranch submitted
+      // while noindex. ONE region-wide read answers for every city, through
+      // the same decision function the page's generateMetadata calls
+      // (app/open-houses/_v3/oh-city-indexable.ts). A failed or overrun read
+      // resolves to the empty set, which leaves every city URL out: unknown is
+      // not indexable. The hub /open-houses stays in the static pages.
+      'open-house-cities': leg(
+        'open-house-cities',
+        loadIndexableOpenHouseCitySlugs(),
+        new Set<string>() as ReadonlySet<string>,
+      ),
       'blog-posts': leg(
         'blog-posts',
         fetchAllRows<{ slug: string; published_at?: string | null }>(
@@ -391,6 +409,8 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // fallback silently dropped every /cities, /homes-for-sale/{city}/{preset}
     // and /open-houses family from that hour's sitemap (visibility audit,
     // DATA-4). cityEntityKey is slugify(), so a slug maps to itself.
+    // (/open-houses/{city} no longer rides this list's fallback: its own leg
+    // decides whether each page is indexable.)
     const cityRows = await started['cities']
 
     const cities = Array.from(
@@ -434,7 +454,6 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
         ...(selfCitySearchUrlLeavesSitemap(key)
           ? []
           : [{ url: `${baseUrl}/homes-for-sale/${key}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.85 }]),
-        { url: `${baseUrl}/open-houses/${key}`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
       )
 
       // Preset filter pages per city. Sort-only presets (price-low-to-high /
@@ -463,6 +482,16 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
           priority: 0.8,
         })
       }
+    }
+
+    // /open-houses/{city}: the site cities plus every service-area city with an
+    // active listing, each only when the shared decision says its page is
+    // indexable (index,follow) today. The Set is empty when the read failed or
+    // overran its leg, so a degraded build lists none of them, never all.
+    const indexableOpenHouseCities = await started['open-house-cities']
+    for (const slug of new Set<string>([...SITE_CITY_SLUGS, ...cities.map((c) => cityEntityKey(c))])) {
+      if (!indexableOpenHouseCities.has(slug)) continue
+      dynamicPages.push({ url: `${baseUrl}/open-houses/${slug}`, lastModified: now, changeFrequency: 'daily', priority: 0.6 })
     }
 
     // Place-type pages (EXP-6): /cities/{city}/types/{type} and

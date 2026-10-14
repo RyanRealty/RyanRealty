@@ -1979,6 +1979,8 @@ If a user pans the map to an area outside Central Oregon, display a gentle overl
 
 **Exclusions (robots.txt confirms):** `/admin/`, `/api/`, `/auth/`, `/account/`, all search-result URLs (infinite parameter space), all query-param URLs (filters, pagination), `/compare` (query-param-driven).
 
+**Open-house city pages (2026-10-14):** `/open-houses/{city}` is submitted only while the page is `index,follow`, which is when at least one open house is on that city's calendar in the canonical window (today through six days out, Pacific). A city with none renders `noindex` and stays out of the file; the hub `/open-houses` is always listed. The decision is one function, `openHouseCityDecision` in `app/open-houses/_v3/oh-city-indexable.ts`, called by the city page's `generateMetadata` and, through one region-wide read, by `app/sitemap.ts`. A failed or timed-out read lists no city page (unknown is not indexable). Pinned by `lib/sitemap-open-houses.test.ts` and `app/open-houses/_v3/oh-city-indexable.test.ts`; found by `deploy:verify` (`/open-houses/brothers`, `/open-houses/black-butte-ranch`, noindex on a sitemap URL).
+
 **Sold/expired listings:** Do not include listings with `StandardStatus` in `('Withdrawn', 'Expired', 'Cancelled')` in the sitemap. Include `Closed` (sold) listings only for 90 days post-close (`CloseDate >= now() - interval '90 days'`), then drop from sitemap to let Google naturally delist.
 
 **Sitemap index file:** If the number of active listings exceeds 50,000 URLs (unlikely at MVP given Bend market size but planned for scale), split into a sitemap index file pointing to multiple sitemap files by entity type (listings sitemap, neighborhoods sitemap, schools sitemap, etc.).
