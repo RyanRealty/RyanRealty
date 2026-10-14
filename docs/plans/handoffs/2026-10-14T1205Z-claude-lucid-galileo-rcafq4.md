@@ -1,6 +1,6 @@
 # 2026-10-14 (Claude Code cloud, CMA multi-unit guard, greeting rule, ADU-first pricing)
 
-Branch `claude/lucid-galileo-rcafq4`. Landed: #561 (`9f788f38`, the multi-unit subject refusal and the greeting that names the person at the address) and #570 (`eb2c14ad`, the frozen handoff's Earlier entry). Open: this branch's PR for ADU-first pricing (the branch's open PR; number added once it exists). Nothing sent. No rebuild.
+Branch `claude/lucid-galileo-rcafq4`. Landed: #561 (`9f788f38`, the multi-unit subject refusal and the greeting that names the person at the address) and #570 (`eb2c14ad`, the frozen handoff's Earlier entry). Open: #578 (ADU-first pricing, this branch). Nothing sent. No rebuild.
 
 **What landed in #561.** `lib/cma/subject-units.ts` reads every MLS row at the subject's address and `resolveCmaSubject` refuses a multi-unit home before a comp is read (CMA SKILL rule 23 extended; queue bucket "Multi-unit home"). `lib/crm/household-names.ts` parses the county owner string and matches the email's local part; the lookup files the lead under the person the email belongs to, and compose time runs the same rule against the address the send goes to (rule 34). Carried in: the #553 Tetherow page-payload baseline and a route-smoke serial retry for a 503 marked `x-listing-lookup: unavailable`.
 
