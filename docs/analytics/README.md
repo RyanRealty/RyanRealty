@@ -43,7 +43,7 @@ Env vars (names only): `NEXT_PUBLIC_GA4_MEASUREMENT_ID`, `NEXT_PUBLIC_GTM_CONTAI
 ## GA4 property settings (owner decisions)
 
 - **Custom dimensions registered:** 32 (30 event-scoped, 2 user-scoped: `assigned_broker`, `lead_status`). They include `lead_type`, `form_id` and `lp_variant`. `npm run analytics:audit` prints the full list. Register any new reportable param in GA4 Admin → Data display → Custom definitions before relying on it in Explorations.
-- **Key events (13):** `generate_lead`, `qualify_lead`, `close_convert_lead`, `call_initiated`, `email_agent`, `cma_anchor_click`, `cma_downloaded`, `tour_requested`, `schedule_showing`, `listing_showing_click`, `listing_inquiry`, `home_valuation_cta_click`, `purchase`. Nothing in the code sends `schedule_showing`, `listing_showing_click`, `listing_inquiry` (it is a `lead_type`, not an event name) or `home_valuation_cta_click`. Removing or adding a key event changes what Google Ads can import, so it is Matt's call.
+- **Key events (9):** `generate_lead`, `qualify_lead`, `close_convert_lead`, `call_initiated`, `email_agent`, `cma_anchor_click`, `cma_downloaded`, `tour_requested`, and GA4's built-in `purchase`. Matt removed four that nothing sent (`schedule_showing`, `listing_showing_click`, `listing_inquiry`, `home_valuation_cta_click`) on 2026-10-14; GA4 keeps their history. `scripts/ga4-admin-setup.mjs` holds this list (and `RETIRED_KEY_EVENTS`), so a run never re-adds them. A new key event needs a sender first, and it changes what Google Ads can import: Matt's call.
 - **Primary channel group:** `AI Assistants (Custom)` — includes an **AI Assistants** channel (ChatGPT / Perplexity / similar referral hosts). Do not delete the group.
 - **Google Signals: ON.** Owner decision. Do not disable. (`scripts/ga4-admin-setup.mjs` enables Signals + consented; the older consent doc that said to keep Signals off is stale.)
 - **Data retention:** 14 months (Standard-tier maximum).
@@ -272,7 +272,7 @@ One set per URL, via `buildTrackedUrl` in `lib/analytics/utm.ts`. Existing `utm_
 - Use `ryanrealty.vercel.app` on any outward URL.
 - Write a new GA4, Search Console or GTM probe, script or scratch audit. Extend `scripts/analytics-audit.mjs` and the Registry.
 - Send a server GA4 event with only a `client_id`. Use `ga4ServerContext()`.
-- Run `scripts/ga4-admin.mjs apply` or `scripts/ga4-admin-setup.mjs` without `--dry-run` until their configs match the live property.
+- Run `scripts/ga4-admin.mjs apply`. Change GA4 Admin config only through `scripts/ga4-admin-setup.mjs` (dry-run first).
 
 ---
 
@@ -342,8 +342,8 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | `scripts/seo-gsc-sitemap-submit.mjs` | Submits the sitemap index and its children to Search Console |
 | `scripts/gsc-listing-noindex-sweep.mjs` | URL Inspection sweep that fills `gsc_listing_index_flags` |
 | `scripts/ga4-404-report.mjs` | GA4 page views that land on a 404, for redirects |
-| `scripts/ga4-admin-setup.mjs` | GA4 Admin baseline (Signals, retention, lookback, dimensions). **Do not run without `--dry-run`.** Its key-event list does not match the live property's 13. Reconcile it first. |
-| `scripts/ga4-admin.mjs` | Older GA4 Admin config plus audiences. **Do not run `apply`.** Its 7 "locked" conversions disagree with both the live property and `ga4-admin-setup.mjs`. Use `npm run analytics:audit` to read config. |
+| `scripts/ga4-admin-setup.mjs` | **Canonical** GA4 Admin config: Signals, retention, lookback, custom dimensions, key events and retired key events. Matches the live property as of 2026-10-14. Run `--dry-run` first; change GA4 config by editing this file, then applying. |
+| `scripts/ga4-admin.mjs` | Older GA4 Admin config plus audiences. **Do not run `apply`.** Its 7 "locked" conversions disagree with the live property and with `ga4-admin-setup.mjs`, the canonical config. Use `npm run analytics:audit` to read config. |
 | `scripts/_gsc-by-class.mjs` | One-off (2026-08). Search Console clicks by route class. Superseded by `lib/data/loop/gsc-api.ts`. Do not extend. |
 | `scripts/_gsc-index-check.mjs` | One-off. Sites and sitemaps. Superseded by `npm run analytics:audit`. Do not extend. |
 | `scripts/_gsc-place-pages.mjs` | One-off (2026-09-22). Place-page query landings. Do not extend. |

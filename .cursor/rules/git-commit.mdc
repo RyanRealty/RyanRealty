@@ -48,7 +48,7 @@ SKIP_DB_GUARD=1 git push         # skip migration drift check only
 
 ## Branch strategy
 - **Production is `main`.** A finished unit is `npm run ship`. Never `git push` `main`. Vercel deploys `main` (a docs-only diff may skip via `ignoreCommand`).
-- **Worktrees allowed** for parallel agents / experiments — name `wt/<topic>-YYYYMMDD`, push the branch right away, or record it in `CROSS_AGENT_HANDOFF.md` before stopping. See `.cursor/rules/always-merge-to-main.mdc` and **AGENTS.md → Worktrees**.
+- **Worktrees allowed** for parallel agents / experiments — name `wt/<topic>-YYYYMMDD`, push the branch right away, or record it in your note in `docs/plans/handoffs/` before stopping. See `.cursor/rules/always-merge-to-main.mdc` and **AGENTS.md → Worktrees**.
 - Push the branch to GitHub right away. Do not keep the only copy local.
 - A finished unit is `npm run ship`. Never `git push` `main`.
 - No rebase, force-push, or reset.

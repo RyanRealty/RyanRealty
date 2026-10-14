@@ -14,7 +14,7 @@ The block at the very top of `AGENTS.md` and `CLAUDE.md` titled **CORE RULES (re
 - Prod DB is read-only unless Matt says otherwise. Never print secrets.
 - Search the repo for existing API clients and keys before saying a service is not connected.
 - When Cursor is out, use Matt's Grok subscription, never raw API keys.
-- Unfinished work: push the branch, note `docs/plans/CROSS_AGENT_HANDOFF.md`, ask Matt short yes/no questions.
+- Unfinished work: push the branch, write your note in `docs/plans/handoffs/`, ask Matt short yes/no questions.
 
 # Trunk + worktrees (anti-strand)
 
@@ -35,7 +35,7 @@ Required anti-strand rules (see **AGENTS.md → Worktrees**):
 
 1. Name branches `wt/<agent-or-topic>-YYYYMMDD` (example: `wt/crm-mobile-20260726`).
 2. Push the branch to GitHub right away. Do not keep the only copy local.
-3. Before ending a session: push the branch. If work is unfinished, also record the branch, path, and intent in `docs/plans/CROSS_AGENT_HANDOFF.md` Current block.
+3. Before ending a session: push the branch. If work is unfinished, also record the branch, path, and intent in your own note in `docs/plans/handoffs/`.
 4. A finished unit is `npm run ship` from that checkout. After it is on `main`: delete the branch locally and on `origin`, `git worktree remove <path>`, `git worktree prune`.
 5. Never leave the only copy of valued work in an unpushed worktree with no handoff entry.
 

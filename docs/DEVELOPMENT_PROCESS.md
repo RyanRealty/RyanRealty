@@ -80,7 +80,7 @@ never objectives.
 | `loop_work_nodes` (Supabase) | In-flight work: nodes with contracts (objective · output · accept), dependencies, state (`open → in_progress → blocked/done/killed`), evidence. DAL `lib/data/loop/work-graph.ts` | Never |
 | `site_improvement_ledger` | Hypotheses + measured verdicts (the Learn edge) | Never |
 | `VERSION-1.md` + Enterprise Map | The floor, the gap list, the closed universe | Never |
-| `CROSS_AGENT_HANDOFF.md` | Narrative continuity between tools/sessions | Never (Current block replaced, history kept) |
+| `handoffs/` (one note per session) | Narrative continuity between tools/sessions | Never (each session owns its note; `CROSS_AGENT_HANDOFF.md` frozen 2026-10-14) |
 | codebase-memory graph + ADRs | Code structure + standing decisions, queryable | Refreshed via `detect_changes` |
 
 **The boot ritual is a command, not a convention:** `npx tsx scripts/loop-brief.ts`

@@ -1,4 +1,12 @@
-# Current — 2026-10-14 (Cursor, G46 commit-compiles process tree)
+# Cross-agent handoff (frozen 2026-10-14)
+
+**New handoffs do not go here.** Matt 2026-10-14: one note per session in
+[`docs/plans/handoffs/`](handoffs/README.md). This shared `# Current` block put every
+merged PR into conflict with every open one, and each fix restarted that PR's CI.
+`ci:handoff-current` fails a `# Current` block in this file. Resolving a merge
+conflict here: take main's side. The blocks below are history.
+
+## Earlier — 2026-10-14 (Cursor, G46 commit-compiles process tree)
 
 Surface: Cursor cloud. Branch `cursor/commit-compiles-heavy-timeout-84fb`. PR https://github.com/RyanRealty/RyanRealty/pull/541. Merged origin/main `63d924ee5` into the branch (handoff Current only). Matt approved merge once checks pass, treating Lighthouse JSON flake, `/communities/tetherow` page-payload, and `/sell` content-floor as already-red-on-main. Nobody pushes main. Nothing sent.
 
