@@ -1,10 +1,10 @@
-# Current — 2026-10-14 (Cursor, land CMA intake + ranking PRs)
+# Current — 2026-10-14 (Cursor, agent rules: PR merge + DB writes)
 
-Surface: Cursor cloud. Landing #485 then #488 then #489 onto origin/main. Closed #524 because `/buy/alerts` is live via #536. Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. Branch `cursor/agent-rules-main-db-136e` from origin/main `fe948f648`. PR only; do not merge this PR from this session (Matt asked for the URL and CI status). Nothing sent. Nobody pushes main. No rebuild.
 
-**This pass.** Merge main into #485 (intake safety gate), wait for checks, merge. Then the two ranking PRs. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale: merge would revert the rule-31 map cache, `cleared_at`, and industry exclusion).
+**What this branch does.** Agent instruction files now match Matt 2026-10-13: branch and PR only, never `git push` `main`; merge your own PR once CI checks pass, then verify the production deploy. Bots may write to Ryan Realty Supabase when a task Matt asked for needs it. That replaces the old production-DB read-only rule. Sends, the expired drip hard stop, and the other standing rules stay.
 
-**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+**Still open from the prior Current.** Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale: merge would revert the rule-31 map cache, `cleared_at`, and industry exclusion). Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 

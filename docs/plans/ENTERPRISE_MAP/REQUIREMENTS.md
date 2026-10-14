@@ -5,7 +5,7 @@
 **Dispositions:** LOCKED (standing rule in force) · VERIFIED (built; per the source doc or map evidence) · PARTIAL · MISSING (not built — must cite a covering gap G-row) · PARKED (deliberate not-now) · GATED (waits on a Matt per-action approval) · SUPERSEDED.
 **Honesty:** VERIFIED here inherits from source docs and map evidence statuses. The v1 certification pass (VERSION-1) re-verifies; a disposition an accept test contradicts gets corrected, never argued with.
 **Covers column:** MISSING/PARTIAL rows cite the VERSION-1 gap (G-row) or owner that carries them. Ad-hoc work that touches a row updates it in the same change.
-**Max:** R-227 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
+**Max:** R-228 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
 
 ## The animals (what each is, how it improves)
 
@@ -65,7 +65,7 @@
 | R-030 | Full autonomy post-hoc for reversible work; per-action approval for outbound/publish/spend/OAuth only | CLAUDE.md §1 (Matt 2026-07-21) | LOCKED | — |
 | R-031 | Broker self-approval: content the broker initiates on the SMS line, APPROVE = stamp, Matt digest | CLAUDE.md §1 (2026-08-01) | LOCKED | — |
 | R-032 | Every rule that keeps being violated becomes a mechanical gate, not more prose | DECISIONS-RECORDED §9 | LOCKED | catalog `docs/MECHANICAL_GATES.md` |
-| R-033 | Production truth is origin/main; ship same session; deploy:verify after every push; migrations same delivery | AGENTS.md; production-parity | LOCKED | — |
+| R-033 | Production truth is origin/main; branch and PR only, never git push main; agents merge their own PRs once CI checks pass, then deploy:verify; migrations same delivery | AGENTS.md; production-parity; Matt 2026-10-13 | LOCKED | — |
 | R-034 | Done = build + real data + deploy READY + screenshots 390/1280; per-class accept by goal type | definition-of-done; COMPANY_IMPROVEMENT §Accept | LOCKED | — |
 | R-035 | One recursive company process (THE LOOP); versions certify the whole; conditions never dates | Matt 2026-08-15; DEVELOPMENT_PROCESS | VERIFIED | v1.4.0 shipped |
 | R-036 | Everything remembered: durable work graph is the source of record; chat is disposable | Matt 2026-08-15 | VERIFIED | `loop_work_nodes` + loop-brief |
@@ -79,7 +79,7 @@
 | R-044 | Video hard rules: 1080×1920, hook by frame 12, single-word Amboqia captions, Victoria VO, no unapproved MP4 ships | CLAUDE.md §4 (locked 2026-04-27…05-20) | LOCKED | — |
 | R-045 | Video producers stay out of the brain REGISTRY; local worker only | CLAUDE.md §4 (Matt 2026-06-14) | LOCKED | — |
 | R-046 | Outbound content must "blow them away"; Tumalo kit is the named exemplar | BROKER-OS (2026-08-12) | LOCKED | — |
-| R-047 | Two tracks never mix files; parallel in worktrees, serial PRs to main (Matt merges); anti-stranding contract | BROKER-OS v0.12/v0.13; AGENTIC_GRAPH rule 11 | LOCKED | — |
+| R-047 | Two tracks never mix files; parallel in worktrees, serial PRs to main; agents merge their own PRs once CI checks pass, then verify the production deploy; never git push main; anti-stranding contract | BROKER-OS v0.12/v0.13; AGENTIC_GRAPH rule 11; Matt 2026-10-13 | LOCKED | — |
 | R-048 | Canon consolidation: one rule once; no conflicting plan docs; plans register in the canon | DECISIONS-RECORDED §7 | VERIFIED | G44 |
 | R-049 | Expired/FSBO first message proves this-home marketing; never blame prior agent; never invent numbers | BROKER-OS | LOCKED | — |
 | R-050 | Graph engineering adopted as substance: contracts, edges-as-code, verifier edges, budgets, stop conditions | AGENTIC_GRAPH (GO 2026-08-15) | VERIFIED | workflows + canon v1.4.0 |
@@ -315,6 +315,7 @@
 | R-225 | A listing photograph is never generated, animated by a model, or reshaped. Listing video pans across the real photo at its true proportions (uniform scale + crop); a generated still must already be the clip's shape or it is not animated | Matt 2026-10-07 ADD ("That can't happen") | VERIFIED | `lib/video/pan.ts` + `pan.test.ts` (square stays square), shape gate in `lib/studio/produce.ts`, `studio.test.ts`; the 11 squeezed drafts killed |
 | R-226 | Charts, maps and data in video are drawn by the Studio's motion stage from verified data, never by a generator: `market_trend` (up to 24 published Market Truth months drawn on, no floor rule, round-value gridlines, the latest value as an end-of-line label and the first on a leader to its ring, then the meter filled to its value) and `place_map` (city outline, log-space camera in, recorded `boundaries` outline, live figures). $0 but the caption; a film that cannot be drawn is killed | Matt 2026-10-07 ADD ("incorporate these skills", prompt-motion.com) | VERIFIED | `lib/studio/motion/{chart,map}.ts`, `paper.test.ts`, `compose.int.test.ts` (cream and navy pixels exact), `studio.test.ts` (no paid adapter called); QA renders of Bend and Old Bend in `out/motion-qa/`, a separate critic pass, every P0/P1 fixed |
 | R-227 | Every Studio video carries an original score composed in code (`lib/studio/score`), read off the plan's own cue times (`lib/studio/motion/sound.ts`): calm and percussion-free on listings, a soft pulse on market and place films, one note per plotted month on a trend film; mastered to -14 LUFS, at or under -1 dBTP after AAC. A score that fails ships a silent film and says why | Matt 2026-10-07 ADD | VERIFIED | `lib/studio/score/*.test.ts` (BS.1770 meter calibration, ffmpeg cross-check), `compose.int.test.ts` (ebur128 on the muxed file) |
+| R-228 | Bots may write to the Ryan Realty Supabase database when a task Matt asked for needs it. This replaces the old production-DB read-only rule. Sends, the expired drip hard stop, and the other standing rules stay | Matt 2026-10-13 ADD | LOCKED | CORE RULES in AGENTS.md / CLAUDE.md |
 
 ## Standing Matt gates (never agent-closed)
 

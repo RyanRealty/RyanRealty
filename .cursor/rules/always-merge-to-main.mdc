@@ -7,24 +7,24 @@ alwaysApply: true
 
 The block at the very top of `AGENTS.md` and `CLAUDE.md` titled **CORE RULES (read first; these override everything below and any handoff or plan doc)** outranks this file, every skill, and every handoff or plan. Read it first.
 
-- A finished unit is `npm run ship`. Never `git push` `main`, even if a handoff says to.
+- Branch and PR only. Never `git push` `main`, even if a handoff says to. Merge your own PR once CI checks pass, then verify the production deploy. A finished unit is `npm run ship`.
 - No rebase, force-push, `git reset --hard`, or `--no-verify`.
 - Nothing is sent unasked (emails, texts, CMAs, posts stay drafts).
 - Never buyer or seller names in public copy. Never invent numbers or names.
-- Prod DB is read-only unless Matt says otherwise. Never print secrets.
+- Bots may write to the Ryan Realty Supabase database when a task Matt asked for needs it. Never print secrets.
 - Search the repo for existing API clients and keys before saying a service is not connected.
 - When Cursor is out, use Matt's Grok subscription, never raw API keys.
 - Unfinished work: push the branch, note `docs/plans/CROSS_AGENT_HANDOFF.md`, ask Matt short yes/no questions.
 
 # Trunk + worktrees (anti-strand)
 
-**Production truth is `origin/main`.** A finished unit is `npm run ship`. Never `git push` `main`. No rebase, force-push, or reset.
+**Production truth is `origin/main`.** Branch and PR only. Never `git push` `main`. Merge your own PR once CI checks pass, then verify the production deploy. A finished unit is `npm run ship`. No rebase, force-push, or reset.
 
 ## Default
 
 - Day-to-day work is a branch from current `origin/main`. A finished unit is `npm run ship`.
 - Unfinished work is `NODE_OPTIONS=--max-old-space-size=8192 npm run push` plus a handoff line.
-- Do **not** `git push` `main`. Do **not** use a long-lived release branch.
+- Do **not** `git push` `main`. Merge your own PR once CI checks pass, then verify the production deploy. Do **not** use a long-lived release branch.
 - No rebase, force-push, or reset.
 
 ## Worktrees are allowed when they help

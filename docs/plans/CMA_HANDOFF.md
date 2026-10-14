@@ -36,8 +36,8 @@ Every unsent expired-listing CMA draft is rebuilt and saved on current main. Eac
 - Pricing rules 15, 16, 20 and 22 in `marketing_brain_skills/producers/cma/SKILL.md` section 0.3, plus rules 29 to 32 (added 10/8 and 10/9).
 - A home back on the market is never rebuilt and never sent. Live status comes first.
 - Delivered letters never change.
-- PRs only. Agents may merge their own PRs once checks are green (Matt, 10/9). Never push to main directly, no force-push or rebase.
-- Production DB is read-only except the saved rebuild of drafts. No sends. Never use buyer or seller names in public copy.
+- PRs only. Agents merge their own PRs once CI checks pass, then verify the production deploy (Matt 2026-10-13). Never push to main directly, no force-push or rebase.
+- Bots may write to the Ryan Realty Supabase database when a task Matt asked for needs it (Matt 2026-10-13). No sends. Never use buyer or seller names in public copy.
 - Use Matt's Grok subscription, never the XAI, OpenAI or Anthropic API keys, for agent sessions.
 
 ## Mac mini tooling (`~/grok-build`)
@@ -58,13 +58,13 @@ git checkout claude/beautiful-lamport-2x4fjs && git pull origin claude/beautiful
 git ls-remote origin fix/on-market-value fix/relist-clock fix/plat-ground-facts   # in-flight fix branches, see "In flight"
 ```
 
-The work branch is `claude/beautiful-lamport-2x4fjs`. Landing is a pull request to main. Matt merges. Do not push, fast-forward, or merge into main. No rebase, force-push, or reset.
+The work branch is `claude/beautiful-lamport-2x4fjs`. Landing is a pull request to main. Merge your own PR once CI checks pass, then verify the production deploy. Never `git push` `main`. No rebase, force-push, or reset.
 
 ## STOPPING POINT, 2026-10-09
 
 This section is the current order. It overrides every older landing line in this file.
 
-Landing is a pull request to main. Matt merges. Do not push, fast-forward, or merge into main. No rebase, force-push, or reset. Nothing is sent to any owner. The production database is read-only from these sessions.
+Landing is a pull request to main. Merge your own PR once CI checks pass, then verify the production deploy. Never `git push` `main`. No rebase, force-push, or reset. Nothing is sent to any owner. Bots may write to the Ryan Realty Supabase database when a task Matt asked for needs it.
 
 This session (`~/RyanRealty`, branch `claude/beautiful-lamport-2x4fjs`) found `origin/main` already joined to the branch. Merge commit `632b64564` ("Merge origin/main before landing (round 1)", author Claude) has parents `be92e394e` and `0918d4418` (Google Signals back on, #446). At the start of this write, that commit was the tip of both `origin/main` and this branch. This session did not push to main. The commit that adds this section is the pull request.
 
@@ -92,7 +92,7 @@ Nothing has been sent to any owner. Do not rebuild the ten drafts until Matt app
 - No em dashes in letter or public text.
 
 **Data access**
-- Raw SQL is for `-- audit:` row reads only. Aggregates go through the DAL; the hook refuses aggregates on `listings` and `sale_pricing_facts`.
+- Bots may write when a task Matt asked for needs it. Aggregates go through the DAL; the hook refuses aggregates on `listings` and `sale_pricing_facts`.
 - Agents run tests with `--project unit` only. The `*.int.test.ts` tests write to production.
 
 **Process**
@@ -103,7 +103,7 @@ Nothing has been sent to any owner. Do not rebuild the ten drafts until Matt app
 
 ## Where things are (2026-10-08 ~23:30 UTC)
 
-- **All four ruling fixes are merged** on the branch at `3b1c7b036`: plat-identity, wording 3 and 4, on-market-value, relist-clock and plat-ground-facts with seat order. The final fleet score on `3b1c7b036` was started 23:2x UTC in the cloud against `docs/plans/cma-handoff/fleet-baseline-2026-10-08.json`. If no result is recorded below, rerun it (see Fleet), show Matt the result, and on his yes open a PR to `main`; Matt merges.
+- **All four ruling fixes are merged** on the branch at `3b1c7b036`: plat-identity, wording 3 and 4, on-market-value, relist-clock and plat-ground-facts with seat order. The final fleet score on `3b1c7b036` was started 23:2x UTC in the cloud against `docs/plans/cma-handoff/fleet-baseline-2026-10-08.json`. If no result is recorded below, rerun it (see Fleet), show Matt the result, and on his yes open a PR to `main`; merge your own PR once CI checks pass, then verify the production deploy.
 
 ### Earlier state
 
@@ -162,7 +162,7 @@ Each was started by a cloud agent with `docs/plans/cma-handoff/fix-brief.md`.
      - Saginaw small wording.
 
   If a reader-5 branch is missing on origin, redo it from these bullets with `docs/plans/cma-handoff/fix-brief.md`.
-- **Then:** each of those branches is its own pull request. Matt merges. Do not push, fast-forward, or merge into main. After a merge is on main, `deploy:verify`. Rebuild the ten only when Matt names the letters. Reader notes land in `~/grok-build/reviews/<slug>.md`. Re-read all ten, including the six not re-read on 10-09 (Woodsman, Jackson, Purcell, Pheasant, Coho, Aldrich). Then send Matt the links table only after he approves each letter.
+- **Then:** each of those branches is its own pull request. Merge your own PR once CI checks pass, then verify the production deploy. Never `git push` `main`. After a merge is on main, `deploy:verify`. Rebuild the ten only when Matt names the letters. Reader notes land in `~/grok-build/reviews/<slug>.md`. Re-read all ten, including the six not re-read on 10-09 (Woodsman, Jackson, Purcell, Pheasant, Coho, Aldrich). Then send Matt the links table only after he approves each letter.
 - **Matt 2026-10-09: "Trust the MLS fields"** for room counts. 1340 Cumberland stays 3 bed even though its remarks say 2, and Jacksonville is unchanged.
 - **Open for Matt:** see "Open questions" below. Item 9 is new: main's "One rule set" doc paragraph contradicts rule 20's 25% line and the 5-sale floor.
 
@@ -200,7 +200,7 @@ Each was started by a cloud agent with `docs/plans/cma-handoff/fix-brief.md`.
 
 **`fix/price-clock` `d2ae3129c` is pushed, NOT merged.** Per Matt, it goes after this landing. It moves rule 16's cut test and the comp sale-to-original ratios to the last stretch. Wild Rose goes from $593,000 to $591,000; Saginaw is unchanged. It needs its own fleet score.
 
-**Order from here:** superseded by "STOPPING POINT, 2026-10-09" above. Do not fast-forward main. Each fix branch is its own pull request. Matt merges.
+**Order from here:** superseded by "STOPPING POINT, 2026-10-09" above. Do not fast-forward main. Each fix branch is its own pull request. Merge your own PR once CI checks pass, then verify the production deploy.
 
 ## Fleet (rule 25)
 
@@ -229,7 +229,7 @@ NODE_USE_ENV_PROXY=1 npm run cma:fleet -- --concurrency 4 \
 
 ## Landing steps after the fleet yes
 
-1. Open a pull request to main. Matt merges. Do not push, fast-forward, or merge into main.
+1. Open a pull request to main. Merge your own PR once CI checks pass, then verify the production deploy. Never `git push` `main`.
 2. After that merge is on main, `npm run deploy:verify`.
 3. Rebuild the drafts, one at a time or 2 to 3 in parallel: `npx tsx scripts/_rebuild-cma.ts <slug>`. This writes the draft row only; it cannot send.
 4. Run one reader agent per letter with `docs/plans/cma-handoff/reader-brief.md`. Fix hard defects, then repeat.

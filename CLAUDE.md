@@ -12,7 +12,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Invent nothing.** Never invent numbers, names, prices, stats, or people. If it is not in the source you just read, it does not ship.
 
-**Prod DB.** Production Supabase is read-only unless Matt says otherwise in this session. Raw SQL is `-- audit:` row reads only.
+**Prod DB.** Bots may write to the Ryan Realty Supabase database when a task Matt asked for needs it (Matt 2026-10-13).
 
 **Secrets.** Never print API keys, tokens, passwords, or `.env` values. Never put them in commits, logs, or chat.
 
