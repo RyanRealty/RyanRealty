@@ -194,7 +194,7 @@ A page or event flag never expires; only the listing-view count has a window. `s
 
 | Audience | Condition |
 |---|---|
-| Buyers - active | `view_listing` count over 2 in 30 days, or `save_listing` |
+| Buyers - active | `view_listing` count over 2, or `save_listing` (GA4 allows no day window on an event count; the 30-day membership drops a buyer who stops returning) |
 | Buyers - hot | `schedule_tour_click`, `ask_question_click` or `call_initiated` |
 | Sellers - interested | `page_view` with `page_type` = `sell`, or `address_submit`, or `place_value_answer` |
 | Sellers - started valuation | `address_submit`, excluding users with `generate_lead` |

@@ -252,7 +252,7 @@ const AUDIENCES = [
   // payload builder if a condition here ever names one.
   {
     displayName: 'Buyers - active',
-    description: 'Behavior only: 3+ view_listing in 30 days, or save_listing. No demographic or place terms.',
+    description: 'Behavior only: 3+ view_listing or a save_listing. No demographic or place terms.',
     membershipDurationDays: 30,
     group: 'visitor-intent',
     spec: { kind: 'buyers_active' },
@@ -633,9 +633,9 @@ function buildAudiencePayload(parent, audience) {
       break
 
     case 'buyers_active':
-      // 3+ view_listing in any rolling 30 days (eventCount > 2, the form the
-      // repeat_visitors audience uses; GREATER_THAN_OR_EQUAL intermittently fails
-      // validation), or any save_listing. One INCLUDE clause, the two ORed.
+      // 3+ view_listing (eventCount > 2, the form the repeat_visitors audience
+      // uses; GREATER_THAN_OR_EQUAL intermittently fails validation), or any
+      // save_listing. One INCLUDE clause, the two ORed.
       base.requestBody.filterClauses = [
         includeMultiOr([
           {
@@ -650,7 +650,12 @@ function buildAudiencePayload(parent, audience) {
                           {
                             dimensionOrMetricFilter: {
                               fieldName: 'eventCount',
-                              inAnyNDayPeriod: 30,
+                              // GA4 rejects eventCount without atAnyPointInTime
+                              // ("does not support dynamic evaluation"), and that
+                              // flag rules out inAnyNDayPeriod. So the count is over
+                              // the user's history; the 30-day membership drops a
+                              // buyer who stops coming back.
+                              atAnyPointInTime: true,
                               numericFilter: { operation: 'GREATER_THAN', value: { int64Value: '2' } },
                             },
                           },
