@@ -83,7 +83,7 @@
 
 **Contradictions settled by the newest rule:**
 - The paid xAI API is out (RULEBOOK, 2026-09-24).
-- Each video type keeps its own length window. The render gate's fixed 15 to 30 s length check (`video_render_gate.py`, #520) gets the per-type window when the rules file lands.
+- Each video type keeps its own length window. The render gate (`video_render_gate.py`) judges length against the type's window from `video_types.json`, and against the longest run the brief allows when it is given `--max-s` (R-016 holds the brief's window).
 - The old Cursor video rule is replaced.
 - "#1 on the drop" applies to Matt's picker song; our composed music stays calm, with no drops.
 

@@ -129,3 +129,20 @@ test('spoken voice: the gate blocks a brief with a prose VO, and with no VO', ()
   const c = pb(); delete c.spec_rules.voiceover.script;
   assert.match(fails(c), /script is required/);
 });
+test('the brief schema holds length_s_range as the type\'s own window, not a pinned [15,30] (Matt 2026-10-14)', () => {
+  const schema = JSON.parse(readFileSync(join(here, '..', '..', 'templates', 'brief.schema.json'), 'utf8'));
+  const prop = schema.properties.spec_rules.properties.length_s_range;
+  assert.equal('const' in prop, false, 'a const pins one window for every type');
+  assert.equal(prop.type, 'array');
+  assert.equal(prop.minItems, 2); assert.equal(prop.maxItems, 2);
+  assert.equal(prop.items.type, 'number');
+  assert.match(prop.description, /video_types\.json/);
+  // Every type's window, as the gate demands it, is a pair this schema accepts, and the briefs the gate passes agree.
+  for (const [name, type] of Object.entries(cfg.types)) {
+    const win = [type.min_s ?? cfg.defaults.min_s, type.max_s ?? cfg.defaults.max_s];
+    assert.equal(win.length, prop.minItems, name);
+    assert.ok(win.every((n) => typeof n === 'number' && n > (prop.items.exclusiveMinimum ?? -Infinity)), `${name} window ${win}`);
+    const b = pb(); b.video_type = name; b.spec_rules.length_s_range = win;
+    assert.doesNotMatch(fails(b), /length_s_range/, name);
+  }
+});

@@ -15,9 +15,10 @@
  * The enforcer's export existing in its module is held by scripts/check-content-rules.mjs
  * (ci:content-rules) and its break-tests, which read the TypeScript AST.
  */
-import { existsSync, readdirSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { gate } from '../../../.claude/skills/ryan-studio/tools/video_gate.mjs'
 import { REPO_ROOT } from '../../studio/qa/thresholds'
 import { ruleFor } from './classify'
 import { RULES, UNRATCHETED, type Rule } from './rules'
@@ -98,4 +99,30 @@ describe('every enforced rule refuses at its step, on its own fixture', () => {
       expect(ruleFor(hit[0].problem)?.id === undefined).toBe(false)
     })
   }
+})
+
+describe('R-016 names the length-window refusal for every video type, whatever its window', () => {
+  const tools = join(REPO_ROOT, '.claude', 'skills', 'ryan-studio', 'tools')
+  const json = (rel: string) => JSON.parse(readFileSync(join(tools, rel), 'utf8'))
+  const cfg = json('video_types.json')
+  const registry = JSON.parse(readFileSync(join(REPO_ROOT, '.claude', 'skills', 'ryan-studio', 'techniques', 'registry.json'), 'utf8')).techniques
+
+  /** The real brief gate's refusal for a brief whose spec_rules length range is wrong for its type. */
+  const refusal = (type: string) => {
+    const brief = { ...json('tests/fixtures/pass.brief.json'), video_type: type }
+    brief.spec_rules = { ...brief.spec_rules, length_s_range: [1, 2] }
+    return (gate(brief, json('tests/fixtures/pass.timeline.json'), cfg, registry, {}).fails as string[]).find((f) => f.includes('length_s_range'))
+  }
+
+  it('labels the refusal R-016 for each type in video_types.json (a story teaser 7 to 15 s, a brand film 15 to 90 s)', () => {
+    const types = Object.keys(cfg.types)
+    expect(types).toEqual(expect.arrayContaining(['story_teaser', 'brand_film']))
+    for (const type of types) {
+      const sentence = refusal(type)
+      expect(sentence, `${type}: the gate said nothing about length_s_range`).toBeDefined()
+      expect(ruleFor(sentence!)?.id, `${type}: ${sentence}`).toBe('R-016')
+    }
+    expect(refusal('story_teaser')).toContain('[7,15]')
+    expect(refusal('brand_film')).toContain('[15,90]')
+  })
 })

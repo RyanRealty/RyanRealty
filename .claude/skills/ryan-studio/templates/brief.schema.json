@@ -91,7 +91,7 @@
   },
   "length_reason": {
    "type": "string",
-   "description": "Required when length is over the type's max_s"
+   "description": "Required when length is over the type's max_s (video_gate.mjs lets a film with a reason run to the type's hard_max_s; the render gate is then given that ceiling as --max-s)"
   },
   "numbers": {
    "type": "array",
@@ -338,10 +338,14 @@
      "maximum": 2
     },
     "length_s_range": {
-     "const": [
-      15,
-      30
-     ]
+     "type": "array",
+     "description": "The video type's own length window [min_s, max_s] from tools/video_types.json (15 to 30 for most types, story_teaser 7 to 15, brand_film 15 to 90). video_gate.mjs holds it equal to the type's window, so the brief's video_type decides which pair is valid.",
+     "items": {
+      "type": "number",
+      "exclusiveMinimum": 0
+     },
+     "minItems": 2,
+     "maxItems": 2
     },
     "real_footage": {
      "const": true

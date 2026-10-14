@@ -265,7 +265,7 @@ export const RULES: readonly Rule[] = [
     status: 'enforced',
     enforcer: { module: '.claude/skills/ryan-studio/tools/video_gate.mjs', export: 'gate' },
     fixture: 'lib/content/process/fixtures/R-016.json',
-    fixtureMatch: 'spec_rules\\.length_s_range must be \\[15,30\\], the \\w+ window',
+    fixtureMatch: 'spec_rules\\.length_s_range must be \\[[\\d.]+,[\\d.]+\\], the \\w+ window',
   },
   {
     id: 'R-017',
