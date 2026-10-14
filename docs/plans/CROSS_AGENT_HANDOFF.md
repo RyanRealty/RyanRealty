@@ -1,33 +1,18 @@
-# Current — 2026-10-14 (Cursor, persist GA client id on lead forms)
+# Current — 2026-10-14 (Cursor, PR hygiene + Zillow FSBO mapped parse)
 
-## Earlier — 2026-10-14 (Claude, CMA multi-unit subject guard + greeting names the person at the address)
+Surface: Cursor cloud. Branch `cursor/fsbo-zillow-mapped-output-66eb` from origin/main `482727cb7` (merged, not rebased). PR #556. Nobody pushes main. Nothing sent. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true. Approved CMA and email wording unchanged.
 
-Surface: Claude Code cloud. Branch `claude/lucid-galileo-rcafq4`. Nothing sent. No rebuild. Nobody pushes main. Prod DB read-only (audit reads only).
+**This session.** Closed #404 (market-report subscriptions): 625 commits behind main, 11 content conflicts in send/email/middleware/suppressions. Branch `claude/market-report-subscription` kept. Zillow FSBO `parseZillowItem` accepts the 2026-09-01 Apify mapped fields; Craigslist owner lookup left out. #475 closed as the docs-only WIP. Closed-PR branches #509 #510 #522 #523 #530 #534 #535 #540 deleted (content already on main or superseded Current snapshots). September `wt/*` `mini/*` `eval/*` tips whose added files already exist on main were deleted; branches with unique files were kept.
 
-**What this change does (Matt 2026-10-14, 429 Irving, Dave Kremers' reply).**
+**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. Do not delete `fix/reader-5-engine-full`, `fix/cma-recency-market-20261004`, `claude/cma-send-floor`, `claude/mls-relist-sync`, `tip/cma-agent-rules`.
 
-1. **Multi-unit subject guard (rule 23 extended).** `lib/cma/subject-units.ts` reads every MLS row at the subject's address (the subject finders now project `details`): PropertyType C, a Duplex/Triplex/Quadruplex/Multi Family sub type, `NumberOfUnitsTotal` of 2+, duplex remarks, or an earlier record of the same structure (same year built, or an earlier living area between 1x and 4x the current) that says so. The build refuses before a comp is read ("Multi-unit home: ..."), the queue files it as "Multi-unit home". 429 Irving: the 2026 record is SFR 1,629 sq ft with a 520 sq ft ADU; the 2005 close at the same address is PropertyType C, Duplex, 2 units, 2,300 sq ft, built 2003. `classifyProduct` now reads Duplex etc. as `multi-unit`, not `unknown`. The subject carries `units` (multi-unit reasons, ADU YN/sqft/type, prior record) and the trace states it.
-2. **Greeting names the person at the address (rule 34).** `lib/crm/household-names.ts` parses the county owner string into its people and matches the email's local part. The lookup files the lead under the person the email belongs to (`ownerNameForEmail`, notes say so) and writes "Owner of record: ..." on every county hit. Compose time (`cmaFirstContactFactsForSend`, Review preview and every send) runs `chooseGreetingForEmail` against the address the send goes to; rows without the marker ask the county once, live (`lib/cma/owner-of-record.ts`). 429 Irving: county "DAVID & MARGO KREMERS TRUST", skip trace returned Margo's record carrying dkremers@hotmail.com, letter said "Hi Margo," to David. Under the rule: David. Wagon Master (aletakatra@, "Hi Jason,") would be Aleta; Starview (roopal74@, "Hi James,") would be Roopal; a two-party record and a handle that names nobody is "Hi there,".
-
-**Not this change.** The CRM person for 429 Irving (crm_people 63709) still reads Margo; the cmas row still says Margo. Prod stays read-only; Matt decides whether to correct the row. The sent letters are sent. Whether a house with an ADU should be priced only from ADU sales (today: either, Matt 2026-10-08) is a question to Matt, not changed here. Do not send. Do not rebuild letters.
-
-Skills read: `marketing_brain_skills/producers/cma/SKILL.md` §0.3, `docs/DATABASE_FOR_AI_AGENTS.md` §2f, `.cursor/rules/git-commit.mdc`.
-
-## Earlier — 2026-10-14 (Cursor, land CMA intake + ranking PRs)
-
-## Earlier — 2026-10-14 (Claude, the two buyer landing pages look like landing pages)
-
-## Earlier — 2026-10-14 (Cursor, reader-5 leftover reads)
-
-## Earlier — 2026-10-14 (Cursor, G46 commit-compiles process tree)
-
-Surface: Cursor cloud. Branch `cursor/persist-ga-client-id-3b48` / PR #560. Nothing sent. Nobody pushes main. No rebuild.
-
-**This pass.** Every lead form fill now first-touch writes `crm_people.custom.gaClientId` from the `_ga` cookie (last two numeric dot parts). `fireLeadGenerated` persists even when GPC or a decline blocks `generate_lead`, and each form action also calls `persistGaClientIdFromCookies` and passes `crm_person_id` (buyer_alerts_lp, buyer_leverage_lp, contact, seller valuation, lead-landing, page-cta, search-alert, concessions, place-value, and the other capture doors). Same cookie id is what the server `generate_lead` MP call uses. Follow-up to #543 so the daily offline cron has a client_id to send.
-
-**Still open.** Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`). #452 landed. Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. The unique `idx_listings_parcel_number` migration is not on main.
+**Held.** #471 stays open: merge conflicts with later main and would drop `loadCmaMapTile` / `CMA_MAP_MS`.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+
+## Earlier — 2026-10-14 (Cursor, persist GA client id on lead forms)
+
+Surface: Cursor cloud. Branch `cursor/persist-ga-client-id-3b48` landed via #560 at `482727cb7`. Nobody pushes main. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, G46 commit-compiles process tree)
 
@@ -68,6 +53,12 @@ Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-41c4` landed on ma
 ## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
 
 Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
+
+Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
+
+**What landed.** #485 refuses an expired/FSBO CMA build when the home is on the market or has no sendable email. #488 ranks closer lots and matching views ahead of a mismatched sale. #489 seats a same-generation half-mile sale ahead of a stale neighbor.
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 
