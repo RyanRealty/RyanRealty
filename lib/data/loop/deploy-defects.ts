@@ -542,7 +542,10 @@ export function formatDeployDefectBrief(
   const rank = (n: { state: WorkNodeState }) => (n.state === 'open' ? 0 : n.state === 'in_progress' ? 1 : 2)
   for (const n of [...active].sort((a, b) => rank(a) - rank(b) || a.updatedAt.localeCompare(b.updatedAt))) {
     const gap = n.versionGap as string
-    const found = /Found at deploy (\S+) on (\S+?)\./.exec(n.objective)
+    // The date ends at the sentence's period, not the first one: a lazy match stopped
+    // at the '.000Z' fraction and dropped the Z, so the time read as local (off by
+    // the zone's offset on any machine not on UTC).
+    const found = /Found at deploy (\S+) on (\S+?)\.(?:\s|$)/.exec(n.objective)
     lines.push(`  ${gap} [${n.state}] ${n.title}${found ? ` (found at ${found[1]}, ${stamp(found[2])})` : ''}`)
     const view = { ...n, evidence: null } as DeployNodeView
     if (n.state === 'open') lines.push(`    UNCLAIMED. Claim it: ${deployClaimCommand(gap, now)}`)
