@@ -38,6 +38,11 @@
  *       it, and `npm run test:int` sets it. A plain `vitest run <folder>` from an
  *       agent with production keys once pulled the int project in and swept the
  *       marketing-deliverables bucket.
+ *   R6  No command runs vitest without naming its project (2026-10-14). The
+ *       int project writes to production and setup() refuses it without
+ *       RR_INT_RUN=1, so a bare `vitest run` (it was `npm test`) aborts on every
+ *       machine with production keys. package.json scripts, workflow steps,
+ *       hooks and shell scripts each pass `--project`.
  *
  * AST throughout (repo convention: code-inspecting gates use the TypeScript
  * compiler, never regex over source) — a rename, a reformat, or a differently
@@ -45,10 +50,11 @@
  *
  * Exit: 0 = a killed int run cannot leave permanent residue in production.
  */
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import ts from 'typescript'
 import { walkFiles } from './lib/walk.mjs'
+import { bareVitestRuns } from './lib/vitest-projects.mjs'
 
 const SCOPE_MODULE = 'test/int-scope.ts'
 const SETUP_MODULE = 'test/int-global-setup.ts'
@@ -163,6 +169,38 @@ if (setupSf) {
 const pkgScripts = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8')).scripts ?? {}
 if (!/^RR_INT_RUN=1 vitest run --project int\b/.test(pkgScripts['test:int'] ?? '')) {
   problems.push(`package.json: "test:int" must be \`RR_INT_RUN=1 vitest run --project int\` — it is the one door to an int run (R5).`)
+}
+
+// R6: every command that runs vitest names its project.
+for (const [name, cmd] of Object.entries(pkgScripts)) {
+  for (const run of bareVitestRuns(String(cmd))) {
+    problems.push(`package.json: script "${name}" runs vitest with no --project (\`${run}\`). A bare run pulls in the int project, which writes to production and refuses to start without RR_INT_RUN=1. Name the project: \`--project unit --project gates\` (R6).`)
+  }
+}
+// Where the repo keeps commands: workflow steps, git hooks (no extension), shell scripts.
+const COMMAND_FILES = [
+  ['.github/workflows', /\.ya?ml$/],
+  ['.husky', /^[^.]+$/],
+  ['scripts', /\.sh$/],
+]
+for (const [dir, pattern] of COMMAND_FILES) {
+  let names = []
+  try {
+    names = readdirSync(join(process.cwd(), dir)).filter((n) => pattern.test(n))
+  } catch {
+    continue
+  }
+  for (const name of names) {
+    let text = ''
+    try {
+      text = readFileSync(join(process.cwd(), dir, name), 'utf8')
+    } catch {
+      continue
+    }
+    for (const run of bareVitestRuns(text)) {
+      problems.push(`${dir}/${name}: runs vitest with no --project (\`${run}\`). A bare run pulls in the int project, which writes to production and refuses to start without RR_INT_RUN=1 (R6).`)
+    }
+  }
 }
 
 // ── R1 / R2 / R4: every int test ─────────────────────────────────────────────

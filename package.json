@@ -319,7 +319,7 @@
     "flyer:fetch-photos": "node scripts/fetch-listing-photos-for-flyer.mjs",
     "flyer:just-listed": "node scripts/render-just-listed-flyer.mjs",
     "sync:strict-last-ask": "node scripts/sync-strict-verify-last-ask.mjs",
-    "test": "vitest run",
+    "test": "vitest run --project unit --project gates",
     "test:unit": "vitest run --project unit --project gates",
     "test:int": "RR_INT_RUN=1 vitest run --project int",
     "orchestrate": "npx tsx scripts/orchestrate.ts",
