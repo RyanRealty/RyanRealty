@@ -55,21 +55,19 @@ Surface: Grok. Branch `fix/cma-outreach-build-gate`, PR #485, cut from origin/ma
 
 Skills read: none. The send used `sendCmaToLead` after the live gate. Git commit format from `.cursor/rules/git-commit.mdc`.
 
+## Earlier — 2026-10-14 (Cursor, homes-for-sale-by-area internal links)
+
+Surface: Cursor cloud. Landed on main via #525. Sitewide footer column "Homes for sale by area" plus listing city/community doors. Nothing sent.
+
 ## Earlier — 2026-10-14 (Cursor, city buyer-answer geo-guard)
 
-Surface: Cursor cloud. Landed on main via #538. `resolveCityNeighborhoodPath` reserved `living`, `cost`, `vs`, `types` so city buyer-answer children are not 404ed as unknown neighborhoods.
+Surface: Cursor cloud. Landed on main via #538 at `e534ef5a4`. Nobody pushes main. Nothing sent.
+
+**What landed.** `resolveCityNeighborhoodPath` treated `/cities/<city>/living` and `/cost` as unknown neighborhoods and hard-404ed them at the edge. Reserved child segments (`living`, `cost`, `vs`, `types`) now pass through to the App Router. Out-of-market towns still 308 to `/oregon/<town>`. Unknown hoods still 404.
 
 ## Earlier — 2026-10-13 (Cursor, buyer answer pages)
 
-Surface: Cursor cloud. Branch `cursor/buyer-answer-pages-cde8`. Landed on main via #528. 36 long-tail buyer-answer pages. Nobody pushes main. Nothing sent.
-
-**What that commit did.** Child routes under community and city hubs (`/living`, `/cost`, `/hoa`, `/short-term-rentals`, `/vs/[other]`) plus extras on existing price-band, acreage, and new-construction search routes. Each child page opens with a 40-60 word live MLS answer cited as Oregon Data Share MLS, a figures table, listing dial, FAQ + FAQPage, hub and `/buy/*` links, and a `/team/matthew-ryan` byline. HOA only where master assessments are sourced (Tetherow, Sunriver, Caldera Springs). STR only Tetherow and Juniper Preserve. Sitemap and llms.txt list them. Registry: `lib/buyer-answers`.
-
-**Not this change.** Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send until Matt asks. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase. Do not run the CRM backfill.
-
-**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool` in the primary checkout. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
-
-Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md`, `lib/buyer-answers/*`.
+Surface: Cursor cloud. Landed on main via #528 at `65f98dd2a`. Child routes under community and city hubs plus extras on search routes. Live MLS answers cited as Oregon Data Share MLS.
 
 ## Earlier — 2026-10-13 (Cursor, sitemap + listing index hygiene)
 

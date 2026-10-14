@@ -8,6 +8,7 @@
  * juniper-preserve) never ships the 308 hop as the link.
  *
  * Anchor text is the site's place heading: "{Name} homes for sale".
+ * Listing hub links reuse this door instead of inventing a second community link.
  */
 
 import { communityPublicPairForPlace } from '@/lib/communities/community-public-pair'
