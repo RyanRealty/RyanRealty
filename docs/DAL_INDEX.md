@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-10-14T12:51:29.999Z
+**Generated:** 2026-10-14T13:47:51.470Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -2110,12 +2110,6 @@ Companion files:
 
 ---
 
-### `lib/data/crm/getPersonRightNow.ts`
-
-**Exports:** `getPersonRightNow`
-
----
-
 ### `lib/data/crm/getPersonSuppressions.ts`
 
 **Exports:** `getPersonSuppressions`
@@ -2123,12 +2117,6 @@ Companion files:
 **Tables:** `crm_suppressions`
 
 **Selected columns:** `channel`, `reason`
-
----
-
-### `lib/data/crm/getPersonTimeline.ts`
-
-**Exports:** `getPersonTimeline`
 
 ---
 

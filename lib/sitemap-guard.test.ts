@@ -130,3 +130,24 @@ describe('finalizeSitemapEntries (visibility audit 2026-09-22: redirect sources,
     expect(finalizeSitemapEntries([{ url: rogueTemplate }], allowed)).toEqual([])
   })
 })
+
+describe('dropEmptyOpenHouseCities (SITE-27: an empty week renders noindex)', () => {
+  const entries = [
+    { url: `${BASE}/open-houses` },
+    { url: `${BASE}/open-houses/bend` },
+    { url: `${BASE}/open-houses/brothers` },
+    { url: `${BASE}/open-houses/black-butte-ranch/` },
+    { url: `${BASE}/cities/brothers` },
+  ]
+
+  it('drops each city page with no open house this week, and nothing else', async () => {
+    const { dropEmptyOpenHouseCities } = await import('./sitemap-guard')
+    const kept = dropEmptyOpenHouseCities(entries, new Set(['bend'])).map((e) => e.url)
+    expect(kept).toEqual([`${BASE}/open-houses`, `${BASE}/open-houses/bend`, `${BASE}/cities/brothers`])
+  })
+
+  it('keeps every page when the calendar read failed (unknown is not empty)', async () => {
+    const { dropEmptyOpenHouseCities } = await import('./sitemap-guard')
+    expect(dropEmptyOpenHouseCities(entries, null)).toEqual(entries)
+  })
+})
