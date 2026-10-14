@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { listingGalleryFrameAlt, listingPhotoAlt } from './listing-photo-alt'
+import { listingGalleryFrameAlt, listingPhotoAlt, publishListingPhotoCaption } from './listing-photo-alt'
 
 describe('listingPhotoAlt', () => {
   it('joins address and city when both are present', () => {
@@ -66,5 +66,51 @@ describe('listingGalleryFrameAlt', () => {
     expect(listingGalleryFrameAlt({ addressLine: '', ordinal: 0, total: 0 }).length).toBeGreaterThan(
       0,
     )
+  })
+})
+
+describe('listingGalleryFrameAlt with the MLS caption (2026-10-14)', () => {
+  const base = { addressLine: '2750 NE Great Horned Place', cityLine: 'Bend, OR', ordinal: 3, total: 54 }
+
+  it('leads with the caption as written, then names the home', () => {
+    expect(listingGalleryFrameAlt({ ...base, caption: 'Kitchen with quartz island' })).toBe(
+      'Kitchen with quartz island. 2750 NE Great Horned Place, Bend, OR, photo 3 of 54',
+    )
+  })
+
+  it('keeps the caption punctuation and only collapses whitespace', () => {
+    expect(listingGalleryFrameAlt({ ...base, caption: '  Views of  Mt. Bachelor! ' })).toBe(
+      'Views of Mt. Bachelor! 2750 NE Great Horned Place, Bend, OR, photo 3 of 54',
+    )
+  })
+
+  it('falls back to address, city, photo n of N for a blank or empty caption', () => {
+    const fallback = '2750 NE Great Horned Place, Bend, OR, photo 3 of 54'
+    expect(listingGalleryFrameAlt({ ...base, caption: '' })).toBe(fallback)
+    expect(listingGalleryFrameAlt({ ...base, caption: '   ' })).toBe(fallback)
+    expect(listingGalleryFrameAlt({ ...base, caption: null })).toBe(fallback)
+    expect(listingGalleryFrameAlt(base)).toBe(fallback)
+  })
+})
+
+describe('publishListingPhotoCaption', () => {
+  it('withholds a caption carrying another brokerage contact or a link', () => {
+    expect(publishListingPhotoCaption('Call broker@example.com for a showing')).toBeNull()
+    expect(publishListingPhotoCaption('Call 541-555-0123 for details')).toBeNull()
+    expect(publishListingPhotoCaption('Tour at www.example.com')).toBeNull()
+  })
+
+  it('withholds file names and number-only captions', () => {
+    expect(publishListingPhotoCaption('IMG_4021.jpg')).toBeNull()
+    expect(publishListingPhotoCaption('DSC0193')).toBeNull()
+    expect(publishListingPhotoCaption('12')).toBeNull()
+  })
+
+  it('withholds a caption long enough to be remarks', () => {
+    expect(publishListingPhotoCaption('a'.repeat(201))).toBeNull()
+  })
+
+  it('prints an ordinary caption unchanged', () => {
+    expect(publishListingPhotoCaption('Primary suite with gas fireplace')).toBe('Primary suite with gas fireplace')
   })
 })

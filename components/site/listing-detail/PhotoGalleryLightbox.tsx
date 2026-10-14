@@ -157,6 +157,7 @@ export function PhotoGalleryLightbox({
     addressLine: addressLine || altBase,
     ordinal: (openIndex ?? 0) + 1,
     total: Math.max(1, count),
+    caption: current?.caption,
   })
 
   function selectPane(next: GalleryPane) {
@@ -298,6 +299,7 @@ export function PhotoGalleryLightbox({
                     addressLine: addressLine || altBase,
                     ordinal: i + 1,
                     total: Math.max(1, count),
+                    caption: p.caption,
                   })}
                   fill
                   sizes="108px"

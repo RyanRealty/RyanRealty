@@ -64,3 +64,15 @@ describe('buildListingJsonLd Quick facts match', () => {
     expect(n.residenceType).toBeUndefined()
   })
 })
+
+describe('buildListingJsonLd photo list (2026-10-14)', () => {
+  it('carries up to ten photos into image, in gallery order', () => {
+    const photoUrls = Array.from({ length: 14 }, (_, i) => `https://cdn.resize.sparkplatform.com/ore/1600x1200/true/p${i}-o.jpg`)
+    const rel = buildListingJsonLd({ ...base, listing, photoUrls }).find((s) => s.type === 'realEstateListing') as unknown as {
+      photos?: string[]
+    }
+    expect(rel.photos).toHaveLength(10)
+    expect(rel.photos?.[0]).toBe(photoUrls[0])
+    expect(rel.photos?.[9]).toBe(photoUrls[9])
+  })
+})

@@ -47,7 +47,7 @@
       "scene": {
         "kind": "meter_fill_verdict",
         "number": "bend_sfr_mos",
-        "eyebrow": "Bend single-family · months of supply",
+        "eyebrow": "Bend homes for sale",
         "show_value": false
       }
     },

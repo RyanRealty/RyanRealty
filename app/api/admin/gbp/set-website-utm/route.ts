@@ -30,14 +30,16 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 
-// Canonical GBP Website URL — chosen by Matt 2026-05-24.
-// Using utm_source=gbp (not utm_source=google) so the channel is
-// instantly distinguishable from regular Google organic in any report
-// without needing to filter by campaign. Tradeoff: GA4's default
-// "Organic Search" channel grouping won't auto-pick this up; see
-// docs/UTM_TRACKING_CONVENTION.md §2 for the channel-grouping override.
+// Canonical GBP Website URL, set by Matt 2026-05-24 and live on the profile
+// since (data/analytics/decisions.json gbp-website-utm). utm_source=gbp keeps
+// Business Profile visits apart from other Google traffic; utm_medium=organic
+// still puts them in GA4's Organic Search channel, which counts any session
+// whose medium is exactly "organic" (74 sessions, 42 key events
+// 2026-05-24..2026-10-14). This constant read utm_campaign=gbp-profile until
+// 2026-10-14, so running the route would have renamed the live campaign and
+// split its history.
 const DESIRED_URL =
-  'https://ryan-realty.com/?utm_source=gbp&utm_medium=organic&utm_campaign=gbp-profile'
+  'https://ryan-realty.com/?utm_source=gbp&utm_medium=organic&utm_campaign=profile'
 
 function unauthorized(reason: string) {
   return NextResponse.json({ ok: false, error: reason }, { status: 401 })

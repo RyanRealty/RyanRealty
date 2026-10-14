@@ -154,6 +154,21 @@ describe('share-metadata', () => {
     it('says nothing extra for an on-market listing', () => {
       expect(listingShareSummary({ price: 500000, statusWord: null })).toBe('$500,000')
     })
+
+    // 2026-10-14: a land listing has no beds, baths or sq ft; its lot is the one
+    // size fact it has, and the MLS number is the one key a bare parcel has.
+    it('prints the lot after the home stats and the MLS number last, only when given', () => {
+      expect(
+        listingShareSummary({
+          price: 114500,
+          lot: '5-acre lot',
+          address: 'Lot 84 SE Galveston Loop',
+          city: 'Longhorn Ridge, Prineville',
+          mlsNumber: '201505641',
+        }),
+      ).toBe('$114,500 · 5-acre lot · Lot 84 SE Galveston Loop, Longhorn Ridge, Prineville · MLS 201505641')
+      expect(listingShareSummary({ price: 114500, lot: '  ', mlsNumber: null })).toBe('$114,500')
+    })
   })
 
   describe('listingShareText', () => {

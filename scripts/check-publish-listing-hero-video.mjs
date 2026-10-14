@@ -27,15 +27,21 @@ checks.push({
 })
 
 const videos = src('lib/data/videos/getListingVideos.ts')
+// 2026-10-14: the details.Videos / VirtualTours shaping moved to one pure
+// module shared by the listing page, /videos and /sitemaps/video.xml, so the
+// tagging is checked there and getListingVideos must route through it.
+const assembly = src('lib/listing/listing-video-assembly.ts')
 // The cache key only moves forward: v14 evicted the untagged 3D rows, v15 the
 // hashless Vimeo srcs. A later bump passes; a revert to an older key fails.
 const videosKeyVersion = Number(/'listing-videos-v(\d+)'/.exec(videos)?.[1] ?? 0)
 checks.push({
   label: 'details.Videos 3D rows tag isVirtualTour',
   ok:
-    /from ['"]@\/lib\/listing\/publish-listing-hero-video['"]/.test(videos) &&
-    /isListingVirtualTour\(/.test(videos) &&
-    videos.includes('isVirtualTour: true') &&
+    /from ['"]@\/lib\/listing\/listing-video-assembly['"]/.test(videos) &&
+    /mlsDetailsVideoCandidates\(/.test(videos) &&
+    /from ['"]@\/lib\/listing\/publish-listing-hero-video['"]/.test(assembly) &&
+    /isListingVirtualTour\(/.test(assembly) &&
+    assembly.includes('isVirtualTour: true') &&
     videosKeyVersion >= 15,
 })
 

@@ -16,6 +16,12 @@
  *       shell out to npm. Never publishes, never writes under public/.
  *   status <slug>
  *       Prints the stamps and the caps spent for a film in out/studio/<slug>/.
+ *   whiteboard <whiteboard.json> <brief-or-numbers.json> [--ad]
+ *       Step 0 (Matt 2026-10-14): checks the ad-strategist's whiteboard before
+ *       anyone builds: every field filled, its figures are rows of the brief's
+ *       numbers (a brief, or a JSON list of brief.numbers rows), and its script
+ *       meets the plain-English rules (R-186 to R-191). The ad rules apply when
+ *       the brief is an ad, or with --ad. The brief step runs the same check.
  *
  * Exit 0 on success, 1 when a step refuses, 2 for bad usage. `studio:render`
  * and `video:check` are unchanged; this is the path that runs the steps.
@@ -25,7 +31,8 @@ import path from 'node:path'
 const USAGE = `Usage:
   npm run studio -- rules <deliverable-or-video-type> [--json]
   npm run studio -- run <brief.json> <timeline.json> [--to <step>] [--allow-unbuilt-step <step>]...
-  npm run studio -- status <slug>`
+  npm run studio -- status <slug>
+  npm run studio -- whiteboard <whiteboard.json> <brief-or-numbers.json> [--ad]`
 
 const root = path.resolve(__dirname, '..')
 
@@ -145,11 +152,43 @@ async function run(argv: string[]): Promise<number> {
   return result.ok ? 0 : 1
 }
 
+async function whiteboard(args: string[]): Promise<number> {
+  const ad = args.includes('--ad')
+  const files = args.filter((a) => a !== '--ad')
+  if (files.length !== 2 || files.some((f) => f.startsWith('--'))) return usage('whiteboard takes a whiteboard.json and a brief (or a JSON list of its numbers rows)')
+  const { existsSync, readFileSync } = await import('node:fs')
+  for (const f of files) if (!existsSync(f)) return usage(`${f} does not exist`)
+  const { checkWhiteboard, isAd } = await import('../lib/content/process/plain-english')
+  let raw: unknown
+  let numbers: unknown
+  try {
+    raw = JSON.parse(readFileSync(files[0], 'utf8'))
+  } catch (e) {
+    console.error(`whiteboard: ${files[0]} is not JSON (${(e as Error).message})`)
+    return 1
+  }
+  try {
+    numbers = JSON.parse(readFileSync(files[1], 'utf8'))
+  } catch (e) {
+    return usage(`${files[1]} is not JSON (${(e as Error).message})`)
+  }
+  const rows = Array.isArray(numbers) ? numbers : Array.isArray((numbers as { numbers?: unknown })?.numbers) ? (numbers as { numbers: unknown[] }).numbers : []
+  const result = checkWhiteboard({ path: files[0], raw }, rows as never, ad || isAd(numbers))
+  if (result.problems.length === 0) {
+    console.log(`whiteboard OK: ${files[0]} (${rows.length} figure row${rows.length === 1 ? '' : 's'} to check against${ad || isAd(numbers) ? ', ad rules on' : ''})`)
+    return 0
+  }
+  console.error(`whiteboard refused: ${result.problems.length} problem(s)`)
+  for (const p of result.problems) console.error(`  - ${p}`)
+  return 1
+}
+
 async function main(): Promise<number> {
   const [cmd, ...args] = process.argv.slice(2)
   if (cmd === 'rules') return rules(args)
   if (cmd === 'run') return run(args)
   if (cmd === 'status') return status(args)
+  if (cmd === 'whiteboard') return whiteboard(args)
   return usage(cmd ? `unknown command "${cmd}"` : 'a command is required')
 }
 

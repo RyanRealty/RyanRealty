@@ -70,6 +70,18 @@ export function listingShareSummary(opts: {
    * with no status word still reads as a home you can buy today.
    */
   statusWord?: string | null
+  /**
+   * The lot, already worded ("0.46-acre lot"). The caller decides when it
+   * belongs: a land listing has no beds, baths or sq ft, so the lot is the one
+   * size fact it has.
+   */
+  lot?: string | null
+  /**
+   * The MLS number, printed last. For a listing whose street line carries no
+   * house number ("Kouns Drive", a bare parcel), which is the one key left
+   * that tells it from the parcels beside it.
+   */
+  mlsNumber?: string | null
 }): string {
   const parts: string[] = []
   const statusWord = opts.statusWord?.trim() || null
@@ -86,8 +98,12 @@ export function listingShareSummary(opts: {
   if (opts.sqft != null && opts.sqft > 0) {
     parts.push(`${Number(opts.sqft).toLocaleString()} sq ft`)
   }
+  const lot = opts.lot?.trim()
+  if (lot) parts.push(lot)
   const location = [opts.address, opts.city].filter(Boolean).join(opts.address && opts.city ? ', ' : '')
   if (location) parts.push(location)
+  const mlsNumber = opts.mlsNumber?.trim()
+  if (mlsNumber) parts.push(`MLS ${mlsNumber}`)
   const raw = parts.join(' · ')
   return shareDescription(raw || 'Property for sale. Ryan Realty')
 }

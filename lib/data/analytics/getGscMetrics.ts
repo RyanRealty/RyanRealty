@@ -30,6 +30,32 @@ export type GscScopeResult = {
   unreadable: boolean
 }
 
+/**
+ * The latest date the GSC snapshot holds (account-scope impressions), or null
+ * when none is stored or the read failed. Search Console runs 2-3 days behind
+ * and the snapshot cron stores a day only once Google has reported it
+ * (lib/marketing-brain/gsc-reported-days.ts), so a window ending today is
+ * short at the tail. A comparison must end at this date, not at today, or the
+ * later period reads as a drop.
+ */
+export async function getGscLatestDate(): Promise<string | null> {
+  const client = createServiceClient()
+  const { data, error } = await client
+    .from('marketing_channel_daily')
+    .select('date')
+    .eq('channel', 'gsc')
+    .eq('scope', 'account')
+    .eq('metric', 'impressions')
+    .order('date', { ascending: false })
+    .limit(1)
+  if (error) {
+    console.error('[getGscLatestDate]', error.message)
+    return null
+  }
+  const date = (data?.[0] as { date?: string } | undefined)?.date
+  return typeof date === 'string' ? date.slice(0, 10) : null
+}
+
 /** Per-query or per-page aggregate over a date range (scope='campaign' for queries, 'page' for URLs). */
 export async function getGscScopeAggregate(
   scope: GscScope,

@@ -39,6 +39,12 @@ import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { buildAllUrls } from '@/app/sitemap'
 import { classifySitemapUrl, type SitemapClass } from '@/lib/data/sitemap/classify'
 import { getListingSitemapRows } from '@/lib/data/sitemap/getListingSitemapRows'
+import type { ListingSitemapRow } from '@/lib/data/sitemap/listing-sitemap-path'
+import { getListingSitemapPhotos } from '@/lib/data/sitemap/getListingSitemapPhotos'
+import { listingPhotoSitemapPart } from '@/lib/data/sitemap/listing-photo-sitemap'
+import { getListingMlsVideosByKeys, getListingVideoPlacesByKeys } from '@/lib/data/videos/getListingMlsVideos'
+import { listingVideoDescription, publishListingVideos } from '@/lib/listing/publish-listing-video-schema'
+import { LISTING_MOSAIC_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { getIndexablePresetSlugs } from '@/lib/search-presets'
 import { createUniverseMemo } from '@/lib/sitemap-universe-memo'
 
@@ -51,8 +57,12 @@ export function siteBaseUrl(): string {
 // warmer. See lib/sitemap-universe-memo.ts and its tests for the invariant.
 const UNIVERSE_TTL_MS = 600_000
 
+// listings: false (2026-10-14). The universe only feeds core, geo, matrix and
+// content, and every listing URL classifies as 'listings', which is served
+// below without the universe. The listing leg was read and discarded on every
+// build, and as the slowest leg it held each post-deploy build open longest.
 const buildUniverseOnce = createUniverseMemo<MetadataRoute.Sitemap>(
-  () => buildAllUrls(siteBaseUrl(), new Date()),
+  () => buildAllUrls(siteBaseUrl(), new Date(), { listings: false }),
   UNIVERSE_TTL_MS,
 )
 
@@ -90,3 +100,102 @@ export const getClassRows = unstable_cache(
   ['sitemap-class-urls-v5'],
   { revalidate: 3600 },
 )
+
+/**
+ * The listings.xml listing set (Active, Active Under Contract, Pending, from
+ * listing_tile_mv) with its ListingKeys, as compact [key, path, lastmod]
+ * tuples: ~1 MB for ~8,800 listings, under unstable_cache's 2 MB entry. Cached
+ * across instances for the hour, so the 24 photo parts and video.xml, each
+ * served by whichever instance takes the request, share one listing read
+ * instead of paging the set 25 times. A failed read throws and is not cached.
+ */
+const getListingSitemapKeyTuples = unstable_cache(
+  async (): Promise<Array<[string, string, string]>> =>
+    (await getListingSitemapRows()).map((r) => [r.listingKey, r.path, r.lastModified]),
+  ['sitemap-listing-key-rows-v1'],
+  { revalidate: 3600 },
+)
+
+/** The keyed listing set, also memoized per instance (unstable_cache does not dedupe in-flight misses). */
+export const getListingSitemapRowsOnce = createUniverseMemo<ListingSitemapRow[]>(
+  async () =>
+    (await getListingSitemapKeyTuples()).map(([listingKey, path, lastModified]) => ({
+      listingKey,
+      path,
+      lastModified,
+      imageUrl: null,
+    })),
+  UNIVERSE_TTL_MS,
+)
+
+export type ListingPhotoSitemapEntry = { path: string; lastModified: string; images: string[] }
+
+/**
+ * One /sitemaps/listing-photos/{part}.xml: the listings.xml listings whose
+ * ListingKey hashes to `part`, each with every photo (capped), in listing_key
+ * order. A listing with no publishable photo is left out of the file.
+ */
+export async function getListingPhotoSitemapEntries(part: number): Promise<ListingPhotoSitemapEntry[]> {
+  const rows = (await getListingSitemapRowsOnce()).filter((r) => listingPhotoSitemapPart(r.listingKey) === part)
+  const photos = await getListingSitemapPhotos(rows.map((r) => r.listingKey))
+  const out: ListingPhotoSitemapEntry[] = []
+  for (const row of rows) {
+    const images = photos.get(row.listingKey)
+    if (images && images.length > 0) out.push({ path: row.path, lastModified: row.lastModified, images })
+  }
+  return out
+}
+
+export type ListingVideoSitemapVideo = {
+  title: string
+  description: string
+  playerUrl: string
+  thumbnailUrl: string
+  publicationDate: string
+}
+
+export type ListingVideoSitemapEntry = { path: string; lastModified: string; videos: ListingVideoSitemapVideo[] }
+
+/**
+ * /sitemaps/video.xml (2026-10-14): every listings.xml listing whose MLS video
+ * is a YouTube or Vimeo player with a dated MLS record, the same videos the
+ * listing page's VideoObject describes (publishListingVideos), up to three per
+ * listing. The typed tour flags prefilter before any details read
+ * (getListingMlsVideosByKeys onlyFlagged), so a video only the jsonb knows of
+ * is on its page but not here.
+ */
+export async function getListingVideoSitemapEntries(): Promise<ListingVideoSitemapEntry[]> {
+  const rows = await getListingSitemapRowsOnce()
+  const media = await getListingMlsVideosByKeys(
+    rows.map((r) => r.listingKey),
+    { onlyFlagged: true },
+  )
+  const qualifying = rows.flatMap((row) => {
+    const m = media.get(row.listingKey)
+    if (!m) return []
+    const lead = m.leadPhotoUrl ? listingRowPhotoSrc(m.leadPhotoUrl, LISTING_MOSAIC_LEAD_PHOTO_SIZE) : null
+    const published = publishListingVideos(m.videos, lead, 3)
+    return published.length > 0 ? [{ row, published }] : []
+  })
+  // The street line the listing page prints (MLS directionals and suffix) and
+  // the brokerage it credits, read only for the listings that qualify.
+  const places = await getListingVideoPlacesByKeys(qualifying.map((q) => q.row.listingKey))
+  const out: ListingVideoSitemapEntry[] = []
+  for (const { row, published } of qualifying) {
+    const p = places.get(row.listingKey)
+    if (!p?.street) continue
+    const place = `${p.street}${p.city ? `, ${p.city}, OR` : ''}`
+    out.push({
+      path: row.path,
+      lastModified: row.lastModified,
+      videos: published.map((v, i) => ({
+        title: i === 0 ? `Video tour of ${place}` : `Video tour of ${place}, video ${i + 1}`,
+        description: listingVideoDescription(place, p.listOfficeName),
+        playerUrl: v.player.embedUrl,
+        thumbnailUrl: v.thumbnailUrl,
+        publicationDate: v.uploadDate,
+      })),
+    })
+  }
+  return out
+}
