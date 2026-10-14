@@ -3,11 +3,15 @@
  * GA4 Admin API config — audit + apply.
  *
  * Modes:
- *   node scripts/ga4-admin.mjs audit   → list current config, write to out/ga4-audit.json
- *   node scripts/ga4-admin.mjs apply   → apply the locked config below (idempotent)
+ *   node scripts/ga4-admin.mjs audit            → list current config, write to out/ga4-audit.json
+ *   node scripts/ga4-admin.mjs apply            → apply the locked config below (idempotent)
+ *   node scripts/ga4-admin.mjs apply-audiences  → the audience step only: create missing
+ *                                                 audiences and rebuild REBUILT_AUDIENCES.
+ *                                                 Touches no key event or dimension.
  *
  * Auth: reuses GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL + GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
- *       from .env.local. Adds analytics.edit scope so we can mutate config.
+ *       from .env.local, else from the process environment (a cloud session).
+ *       Adds analytics.edit scope so we can mutate config.
  *
  * Locked config:
  *   - 7 conversion events (generate_lead, valuation_requested, contact_agent,
@@ -38,10 +42,8 @@ const REPO_ROOT = join(__dirname, '..')
 
 function loadEnv() {
   const envPath = join(REPO_ROOT, '.env.local')
-  if (!existsSync(envPath)) {
-    console.error('FATAL: .env.local not found at', envPath)
-    process.exit(1)
-  }
+  // A cloud session has the variables in its environment and no .env.local.
+  if (!existsSync(envPath)) return { ...process.env }
   const text = readFileSync(envPath, 'utf8')
   const env = {}
   for (const rawLine of text.split('\n')) {
@@ -186,7 +188,8 @@ const AUDIENCES = [
   },
   {
     displayName: 'High-intent sellers',
-    description: 'Visited /lp/seller-home-value AND scroll_depth >= 75.',
+    // GA4 caps an audience description at 100 characters.
+    description: 'Scrolled 75%+ of a /sell landing page: scroll_depth with page_type sell, depth over 74. 30 days.',
     membershipDurationDays: 30,
     spec: { kind: 'high_intent_sellers' },
   },
@@ -227,6 +230,29 @@ const AUDIENCES = [
     spec: { kind: 'real_site_traffic' },
   },
 ]
+
+/**
+ * Audiences whose filters were rebuilt. GA4 keeps an audience's filters
+ * immutable (Admin API v1alpha: filterClauses "Required. Immutable."), so a
+ * rebuild renames the live audience created before `rebuiltOn` to `retiredAs`
+ * and creates the spec's definition under the same name. A rename is reversible;
+ * an archive is not. Idempotent: once the rebuilt audience exists (created on or
+ * after rebuiltOn), nothing is renamed again.
+ *
+ * High-intent sellers (Matt 2026-10-09: rebuild the landing-page audiences on
+ * /sell and /buy). The 2026-05-22 definition needed view_landing_page with
+ * lp_variant seller-home-value AND scroll_depth with percent_scrolled over 74.
+ * No page sent view_landing_page from 2026-08-01 to 2026-10-09, and no tracker
+ * has ever sent percent_scrolled, so it could not match anyone. A first rebuild
+ * the same day filtered on `percent` and was archived within minutes: GA4 never
+ * receives that name either (see the high_intent_sellers payload).
+ */
+const REBUILT_AUDIENCES = {
+  'High-intent sellers': {
+    rebuiltOn: '2026-10-14',
+    retiredAs: 'High-intent sellers (retired 2026-10-14, never matched)',
+  },
+}
 
 // ──────────────────────────────────────────────────────────────────────────
 // Audience payload builder — produces real GA4 Admin API filter clauses.
@@ -430,16 +456,22 @@ function buildAudiencePayload(parent, audience) {
       break
 
     case 'high_intent_sellers':
+      // Scrolled 75% or more of a seller landing page, read off the one event
+      // that says both. V3SectionTracker pushes scroll_depth with page_type
+      // (pageTypeFromPath: 'sell' on every /sell page) and percent (25, 50, 75,
+      // 100); the GTM GA4 Event tag sends page_type as page context and folds
+      // percent into `depth` (lib/analytics/ga4-browser-events.ts
+      // GA4_PARAM_ALIASES), so GA4 holds depth, never percent. The server mirror
+      // in /api/visitors/track sends scroll_depth with page_type and no depth,
+      // so only the browser hit can match. Event parameters go by their bare
+      // names, the form GA4 stores (the 2026-05-22 audience: lp_variant,
+      // percent_scrolled).
       base.requestBody.filterClauses = [
-        // High-intent sellers: visited the seller LP AND scrolled past 74%.
-        // Two INCLUDE clauses combine with AND semantics across clauses.
         includeAcrossAllSessions(
-          eventFilter('view_landing_page', [
-            dimensionFilterStringEquals('customEvent:lp_variant', 'seller-home-value'),
+          eventFilter('scroll_depth', [
+            dimensionFilterStringEquals('page_type', 'sell'),
+            dimensionFilterGt('depth', 74),
           ])
-        ),
-        includeAcrossAllSessions(
-          eventFilter('scroll_depth', [dimensionFilterGt('percent_scrolled', 74)])
         ),
       ]
       break
@@ -729,26 +761,60 @@ async function apply() {
   }
 
   // 3. Audiences
+  await applyAudiences(admin, parent, log)
+
+  return finishApply(log)
+}
+
+/**
+ * Create every missing audience, and rebuild each REBUILT_AUDIENCES entry whose
+ * live audience predates its rebuild: rename the old one to `retiredAs`, then
+ * create the spec's definition. The new audience is created only after the
+ * rename lands, so two audiences never share a name.
+ */
+async function applyAudiences(admin, parent, log) {
   const existingAudiences = await listAllAudiences(admin, parent)
-  const existingAudSet = new Set(existingAudiences.map((a) => a.displayName))
   for (const audience of AUDIENCES) {
-    if (existingAudSet.has(audience.displayName)) {
+    const live = existingAudiences.find((a) => a.displayName === audience.displayName)
+    const rebuild = REBUILT_AUDIENCES[audience.displayName]
+    const stale = live && rebuild && Date.parse(live.createTime) < Date.parse(rebuild.rebuiltOn)
+    if (live && !stale) {
       log.skipped.push(`audience:${audience.displayName} (already exists)`)
       console.log(`  [skip] audience already exists: ${audience.displayName}`)
       continue
     }
     try {
+      if (stale) {
+        await admin.properties.audiences.patch({
+          name: live.name,
+          updateMask: 'displayName',
+          requestBody: { displayName: rebuild.retiredAs },
+        })
+        log.applied.push(`audience-renamed:${live.name} -> ${rebuild.retiredAs}`)
+        console.log(`  [~]    renamed ${live.name} to: ${rebuild.retiredAs}`)
+      }
       const payload = buildAudiencePayload(parent, audience)
-      await admin.properties.audiences.create(payload)
-      log.applied.push(`audience:${audience.displayName}`)
-      console.log(`  [+]    created audience: ${audience.displayName}`)
+      const created = await admin.properties.audiences.create(payload)
+      log.applied.push(`audience:${audience.displayName} (${created.data?.name ?? 'created'})`)
+      console.log(`  [+]    created audience: ${audience.displayName} (${created.data?.name ?? ''})`)
     } catch (e) {
       const msg = e?.message ?? String(e)
       log.errors.push({ kind: 'audience', name: audience.displayName, error: msg })
       console.error(`  [!]    failed audience ${audience.displayName}: ${msg}`)
     }
   }
+}
 
+async function applyAudiencesOnly() {
+  const admin = getAdminClient()
+  const parent = `properties/${PROPERTY_ID}`
+  console.log(`Applying the audience step to GA4 property ${PROPERTY_ID}…`)
+  const log = { applied: [], skipped: [], errors: [] }
+  await applyAudiences(admin, parent, log)
+  return finishApply(log)
+}
+
+function finishApply(log) {
   console.log('')
   console.log('Apply summary:')
   console.log(`  applied: ${log.applied.length}`)
@@ -760,6 +826,7 @@ async function apply() {
   const outPath = join(outDir, 'ga4-apply.json')
   writeFileSync(outPath, JSON.stringify({ appliedAt: new Date().toISOString(), ...log }, null, 2))
   console.log(`Apply log written to ${outPath}`)
+  if (log.errors.length) process.exitCode = 1
 
   return log
 }
@@ -774,8 +841,10 @@ async function main() {
     await audit()
   } else if (mode === 'apply') {
     await apply()
+  } else if (mode === 'apply-audiences') {
+    await applyAudiencesOnly()
   } else {
-    console.error('Usage: node scripts/ga4-admin.mjs <audit|apply>')
+    console.error('Usage: node scripts/ga4-admin.mjs <audit|apply|apply-audiences>')
     process.exit(1)
   }
 }
