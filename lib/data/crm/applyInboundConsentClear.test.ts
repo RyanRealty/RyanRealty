@@ -4,6 +4,7 @@ type PersonRow = {
   id: number
   tags: string[]
   emails: Array<{ value: string }>
+  custom?: Record<string, unknown>
   deleted?: boolean
 }
 type SuppressionRow = { id: number; channel: string; reason: string; cleared_at?: string | null }
@@ -13,6 +14,7 @@ const state = {
     id: 57526,
     tags: ['contact:do-not-call', 'contact:do-not-text', 'broker:matt', 'unsubscribed'],
     emails: [{ value: 'leslie@example.com' }],
+    custom: { cmaConsent: { sms: false, email: false, slug: 'cma-x' } },
   } as PersonRow | null,
   trackedSends: 1,
   suppressions: [
@@ -83,6 +85,7 @@ beforeEach(() => {
     id: 57526,
     tags: ['contact:do-not-call', 'contact:do-not-text', 'broker:matt', 'unsubscribed'],
     emails: [{ value: 'leslie@example.com' }],
+    custom: { cmaConsent: { sms: false, email: false, slug: 'cma-x' } },
   }
   state.trackedSends = 1
   state.suppressions = [
@@ -108,6 +111,12 @@ describe('applyInboundConsentClear', () => {
     expect(out.applied).toBe(true)
     expect(out.tagsRemoved).toEqual(['contact:do-not-call', 'contact:do-not-text'])
     expect(state.tagUpdates[0]?.tags).toEqual(['broker:matt', 'unsubscribed'])
+    expect((state.tagUpdates[0]?.custom as { cmaConsent?: { sms?: boolean; email?: boolean } })?.cmaConsent).toEqual({
+      sms: true,
+      email: true,
+      slug: 'cma-x',
+    })
+    expect(out.cmaConsentReset).toBe(true)
     expect(state.clearedIds.sort()).toEqual([11, 12])
     expect(state.timeline[0]).toMatchObject({
       person_id: 57526,

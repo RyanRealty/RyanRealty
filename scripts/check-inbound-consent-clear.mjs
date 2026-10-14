@@ -23,6 +23,10 @@ const plan = read('lib/crm/inbound-consent-clear.ts')
 const apply = read('lib/data/crm/applyInboundConsentClear.ts')
 const tests = read('lib/crm/inbound-consent-clear.test.ts')
 const applyTests = read('lib/data/crm/applyInboundConsentClear.test.ts')
+const consent = read('lib/crm/person-channel-consent.ts')
+const consentTests = read('lib/crm/person-channel-consent.test.ts')
+const editor = read('app/admin/(protected)/people/[id]/PersonConsentEditor.tsx')
+const action = read('app/actions/crm-person-consent.ts')
 const sms = read('app/api/twilio/inbound-sms/route.ts')
 const voice = read('app/api/twilio/voice/route.ts')
 const voicemail = read('app/api/twilio/voice-complete/route.ts')
@@ -80,11 +84,33 @@ if (!/stop-keyword/.test(applyTests) || !/no-tracked-send/.test(applyTests)) {
   fails.push('lib/data/crm/applyInboundConsentClear.test.ts must cover STOP and no-tracked-send')
 }
 
+if (!/cmaConsent/.test(plan) || !/cmaConsentReset/.test(plan)) {
+  fails.push('inbound planner must reset custom.cmaConsent')
+}
+if (!/cmaConsent/.test(apply)) {
+  fails.push('applyInboundConsentClear must write custom.cmaConsent')
+}
+if (!/cmaConsent/.test(tests) || !/STOP never resets CMA/.test(tests)) {
+  fails.push('inbound tests must cover CMA consent reset and STOP not resetting it')
+}
+if (!/readPersonChannelConsent/.test(consent) || !/planPersonChannelConsentEdit/.test(consent)) {
+  fails.push('lib/crm/person-channel-consent.ts must export read + plan for SMS/email/call')
+}
+if (!/setPersonChannelConsentAction/.test(action)) {
+  fails.push('app/actions/crm-person-consent.ts must export setPersonChannelConsentAction')
+}
+if (!/SMS/.test(editor) || !/Email/.test(editor) || !/Call/.test(editor) || !/setPersonChannelConsentAction/.test(editor)) {
+  fails.push('PersonConsentEditor must edit SMS, email, and call via setPersonChannelConsentAction')
+}
+if (!/stop-keyword/.test(consentTests) || !/sms-consent:no/.test(consentTests)) {
+  fails.push('person-channel-consent tests must cover STOP lock and declined-SMS reset')
+}
+
 if (!/Inbound reply clears DNC/.test(agents) && !/34\./.test(agents)) {
   fails.push('AGENTS.md must include rule 34 (inbound reply clears DNC / no-SMS)')
 }
-if (!/applyInboundConsentClear/.test(agents)) {
-  fails.push('AGENTS.md rule 34 must name applyInboundConsentClear')
+if (!/applyInboundConsentClear/.test(agents) || !/cmaConsent/.test(agents) || !/setPersonChannelConsentAction/.test(agents)) {
+  fails.push('AGENTS.md rule 34 must name applyInboundConsentClear, cmaConsent, and the person-page action')
 }
 
 console.log('Inbound consent clear gate (ci:inbound-consent-clear)')
