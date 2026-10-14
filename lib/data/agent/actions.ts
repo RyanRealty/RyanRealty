@@ -25,6 +25,7 @@
  * so one broker's SMS thread can never see or touch another's job.
  */
 import { createServiceClient } from '@/lib/supabase/service'
+import { rowVideoFreezeRefusal } from '@/lib/content/video-freeze'
 
 /** Statuses a broker's SMS thread cares about — the full active lifecycle
  *  short of 'executed'/'measured'/'killed'. */
@@ -258,7 +259,49 @@ export interface ApproveActionInput {
 }
 export type ApproveActionResult =
   | { ok: true }
-  | { ok: false; error: string; reason: 'not_ready' | 'db_error' | 'invalid_input' }
+  | { ok: false; error: string; reason: 'not_ready' | 'db_error' | 'invalid_input' | 'video_frozen' }
+
+/** The columns lib/content/video-freeze.ts judges: what a row would post. */
+export interface ActionMediaFacts {
+  id: string
+  action_type: string | null
+  format: string | null
+  executor_response: Record<string, unknown> | null
+}
+
+/**
+ * Read what each row would post, for the video freeze (Matt 2026-10-14) at
+ * the approve doors: approveAction here and the approval-queue routes. Ids
+ * that match no row are simply absent from `rows`.
+ */
+export async function readActionMediaFacts(
+  ids: string[],
+): Promise<{ ok: true; rows: ActionMediaFacts[] } | { ok: false; error: string }> {
+  const wanted = [...new Set(ids.map((i) => (i ?? '').trim()).filter(Boolean))]
+  if (wanted.length === 0) return { ok: true, rows: [] }
+  try {
+    const sb = createServiceClient()
+    const { data, error } = await sb
+      .from('marketing_brain_actions')
+      .select('id, action_type, format, executor_response')
+      .in('id', wanted)
+    if (error) return { ok: false, error: error.message }
+    return {
+      ok: true,
+      rows: ((data ?? []) as Array<Record<string, unknown>>).map((row) => ({
+        id: String(row.id),
+        action_type: typeof row.action_type === 'string' ? row.action_type : null,
+        format: typeof row.format === 'string' ? row.format : null,
+        executor_response:
+          row.executor_response && typeof row.executor_response === 'object'
+            ? (row.executor_response as Record<string, unknown>)
+            : null,
+      })),
+    }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}
 
 /**
  * ready -> approved. Optimistic lock: only fires when the row is STILL
@@ -275,6 +318,14 @@ export async function approveAction(actionId: string, input: ApproveActionInput)
     return { ok: false, error: 'actionId and approvedBy are required', reason: 'invalid_input' }
   }
   try {
+    // The video freeze (Matt 2026-10-14): a row that would post video is never
+    // stamped, from the SMS line, the approval queue, or Today. Retired by the
+    // certificate check.
+    const facts = await readActionMediaFacts([id])
+    if (!facts.ok) return { ok: false, error: facts.error, reason: 'db_error' }
+    const frozen = rowVideoFreezeRefusal(facts.rows[0] ?? {})
+    if (frozen) return { ok: false, error: frozen, reason: 'video_frozen' }
+
     const sb = createServiceClient()
     const update: Record<string, unknown> = {
       status: 'approved',

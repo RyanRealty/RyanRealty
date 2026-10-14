@@ -30,6 +30,7 @@ import { getThreadsAccessToken, publishThreadsVideo } from '@/lib/threads'
 import { publishNextdoorPost } from '@/lib/nextdoor'
 import { assertNoDashes, DashViolationError } from '@/lib/punctuation-guard'
 import { buildTrackedUrl, isUtmCampaign, platformUtmMedium, platformUtmSource } from '@/lib/analytics/utm'
+import { videoFreezeRefusal } from '@/lib/content/video-freeze'
 
 /** Fan-out can exceed 60s when Meta poll finishes slowly or FB reel upload is large. */
 export const maxDuration = 300
@@ -662,6 +663,20 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: PublishRequest = await request.json()
+
+    // Video freeze (Matt 2026-10-14, lib/content/video-freeze.ts): no video,
+    // and no media that cannot be told apart from video, reaches a channel by
+    // this route, approved or not. 423 Locked. Image posts pass. Retired by
+    // the server-signed certificate check.
+    const frozen = videoFreezeRefusal({
+      mediaType: body?.mediaType,
+      url: body?.mediaUrl,
+      format: body?.contentType,
+    })
+    if (frozen) {
+      return NextResponse.json({ error: frozen }, { status: 423 })
+    }
+
     const {
       approved,
       platforms,

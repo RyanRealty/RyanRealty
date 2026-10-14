@@ -49,6 +49,7 @@ import type { VisionVerdict } from '@/lib/grok/vision'
 import { figureScope, type MotionAgent, type MotionOutline, type MotionSeries } from './motion/cues'
 import { aspectValue, imageSize, sameShape } from '@/lib/video/image-size'
 import type { ComposeMotionInput, ComposeMotionResult } from './motion/compose'
+import { videoFreezeRefusal } from '@/lib/content/video-freeze'
 
 /** How many candidate stills we generate per attempt. */
 const CANDIDATES = 2
@@ -332,13 +333,21 @@ async function buildHeroFrame(
   return null
 }
 
-/** Produce one draft. Never posts. Never falls back to a template. */
+/**
+ * Produce one draft. Never posts. Never falls back to a template. A video
+ * format is refused outright while video publishing is frozen
+ * (lib/content/video-freeze.ts).
+ */
 export async function produceStudioDraft(
   input: StudioProduceInput,
   adapters: StudioAdapters,
 ): Promise<StudioProduceResult> {
   const format = getStudioFormat(input.formatId)
   if (!format) return { ok: false, error: `Unknown format: ${input.formatId}` }
+  // The video freeze (Matt 2026-10-14): a video format makes no row, spends
+  // nothing, and never reaches the queue. Retired by the certificate check.
+  const frozen = videoFreezeRefusal({ kind: format.media, format: format.id })
+  if (frozen) return { ok: false, error: frozen }
   if (format.subject !== 'none' && !input.subjectQuery?.trim()) {
     return { ok: false, error: `${format.label} needs a ${format.subject}.` }
   }
