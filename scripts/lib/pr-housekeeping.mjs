@@ -116,6 +116,19 @@ export function shouldRemoveHoldLabel(pr) {
 }
 
 /**
+ * Stamp the label when approval came from `.github/approved-prs` so later
+ * workflow_run checkouts of main still see the approval via the API.
+ * @param {{
+ *   labels?: unknown,
+ *   number?: unknown,
+ *   approvedNumbers?: unknown,
+ * }} pr
+ */
+export function shouldStampApprovedLabel(pr) {
+  return isApprovedByMatt(pr) && !hasLabel(pr?.labels, APPROVED_LABEL)
+}
+
+/**
  * @param {{
  *   draft?: boolean,
  *   labels?: unknown,
