@@ -46,9 +46,11 @@ export function searchFieldRows(
  *   substring filter cannot drop a match the server made on a field the row does
  *   not print (V3ChromeSearch does the same). Seed rows do not: the typed words
  *   narrow them ("Re" leaves Redmond).
- * - When the typed words read as filters ("3 bed in Tumalo", an address) and no
- *   row already names them, a last row applies them as a sentence, so Enter on
- *   words that match no place still searches.
+ * - A last row applies the typed words as a sentence (lib/parse-search-query.ts)
+ *   when they read as filters ("3 bed under 800k") or when no row would show,
+ *   and no row already names them. Enter takes the first row, so without it
+ *   Enter on words that match no place did nothing; the field before the morph
+ *   applied them as a keyword search, and this keeps that.
  */
 export function searchFieldItems(
   rows: readonly SuggestItem[],
@@ -62,8 +64,16 @@ export function searchFieldItems(
     description: row.sublabel,
     ...(opts.fromServer && text ? { keywords: [text] } : {}),
   }))
-  const named = rows.some((row) => row.label.trim().toLowerCase() === text.toLowerCase())
-  if (text.length >= 2 && !named && Object.keys(parseSearchQuery(text)).length > 0) {
+  if (text.length < 2) return items
+  const needle = text.toLowerCase()
+  if (rows.some((row) => row.label.trim().toLowerCase() === needle)) return items
+  // Seed rows are narrowed by MorphingSearch's own filter (title + description);
+  // server rows are not (their keyword is the typed words).
+  const shown = opts.fromServer
+    ? rows.length
+    : rows.filter((row) => `${row.label} ${row.sublabel ?? ''}`.toLowerCase().includes(needle)).length
+  const filters = Object.keys(parseSearchQuery(text)).some((key) => key !== 'keywords')
+  if (filters || shown === 0) {
     items.push({ id: `${TYPED_SEARCH_ROW_PREFIX}${text}`, title: text, description: 'Search homes' })
   }
   return items
