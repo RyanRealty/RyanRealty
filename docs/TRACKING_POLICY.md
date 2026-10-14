@@ -329,8 +329,8 @@ returns). Window `visitor_sessions.first_seen_at` in [2026-09-30T00:00Z, 2026-10
 
 The clusters `stale-browser` catches: Linux Chrome 150 (774 sessions, one exact user-agent
 string, from Wilmington DE, New York, Princeton, Boston, Dallas and dozens more towns, all
-with no referrer), Windows and macOS Chrome 148, 149 and 150 (490 sessions on six exact
-strings, almost all from Santa Clara CA and Mexico City), Windows Chrome 151 (55) and 144
+with no referrer), Windows and macOS Chrome 148, 149 and 150 (490 sessions, most from
+Santa Clara CA and Mexico City), Windows Chrome 151 (55) and 144
 (52) from scattered residential-proxy towns. By town: Santa Clara 311, Mexico City 111,
 Wilmington DE 98, New York 92, Princeton NJ 83, Boston 73, Dallas 52. No referrer, most of
 them one page and gone in under two seconds, none identified. `datacenter-geo` adds Council
