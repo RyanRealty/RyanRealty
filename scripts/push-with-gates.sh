@@ -244,7 +244,18 @@ do_push() {
   # (origin/main). `push.default=current` would mint origin/wt/* instead
   # (observed 2026-08-19: dbd671c7). `git push @{u}` is parsed as a remote
   # name and fails. Extra args still pass through.
-  if [ "$#" -eq 0 ]; then
+  # A fresh cloud-session branch has no upstream yet, and push.default=upstream
+  # then refuses ("has no upstream branch"), after the whole gate chain passed.
+  # Every new session hit that on its first push (2026-10-14). A named branch
+  # with no upstream is published to the same name and tracked (-u). main,
+  # wt/* and a detached HEAD keep the upstream rule: they must never mint a branch.
+  if [ "$#" -eq 0 ] && ! git rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1; then
+    _br=$(git rev-parse --abbrev-ref HEAD)
+    case "$_br" in
+      main | wt/* | HEAD) git -c push.default=upstream push >"$PUSH_LOG" 2>&1 ;;
+      *) git push -u origin "$_br" >"$PUSH_LOG" 2>&1 ;;
+    esac
+  elif [ "$#" -eq 0 ]; then
     git -c push.default=upstream push >"$PUSH_LOG" 2>&1
   else
     git push "$@" >"$PUSH_LOG" 2>&1
