@@ -33,10 +33,12 @@ const lines = corpus.split('\n')
 /** A literal on a line that sets the field, not in a map, a list or a comment that merely names it. */
 const setOnLine = (field, value) => lines.some((l) => field.test(l) && l.includes(`'${value}'`) && !/^\s*(\*|\/\/)/.test(l))
 
-/** Variants built from a template rather than written as a literal, with the template that builds them. */
+/** Variants not written as a literal on an lp_variant line, with the code that sends them (a template or a constant). */
 const TEMPLATED = {
   'lead-landing-buyer': 'lead-landing-${input.audience}',
   'page-cta-general': "page-cta-${input.leadType ?? 'general'}",
+  'buy-leverage': "LEVERAGE_LP_VARIANT = 'buy-leverage'",
+  'buy-alerts': "BUY_ALERTS_LP_VARIANT = 'buy-alerts'",
 }
 
 // next.config.ts redirects() (not headers(), whose sources carry cache rules) plus

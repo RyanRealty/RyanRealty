@@ -22,7 +22,7 @@ import { nativeCrmPersonId } from '@/lib/alerts/enroll-identity'
 import { attributionParamsFromSearch, fireLeadGenerated, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { isLeadFormId, type LeadFormId } from '@/lib/analytics/lead-event'
-import { resolvePaidAttributionTags } from '@/lib/crm/lead-source'
+import { pageLinkFromReferer, signupAttribution } from '@/lib/crm/visit-attribution'
 import {
   appendListingAlertAttribution,
   listingAlertAttributionFromContext,
@@ -185,12 +185,6 @@ export async function submitSearchAlertSignup(input: {
     listingAlertAttributionFromContext(input.lpContext),
     mergeLeadAttribution(attributionParamsFromSearch(input.landingSearch ?? ''), fromReferer),
   )
-  const paidTags = resolvePaidAttributionTags({
-    utmSource: attr.lp_source,
-    utmMedium: attr.lp_medium,
-    utmCampaign: attr.lp_campaign,
-    utmContent: attr.lp_content,
-  })
   const attributedUrl = appendListingAlertAttribution(searchUrl, attr)
   const campaign = listingAlertCampaign(attr)
 
@@ -227,12 +221,25 @@ export async function submitSearchAlertSignup(input: {
     suspect = result.ok && result.suspect
     if (nativeId && !suspect) {
       try {
+        // The link that started the visit, else the page's own (Matt
+        // 2026-10-09, "Visit they signed up in"; lib/crm/visit-attribution.ts).
+        // The origin note keeps the page's utm when neither earned credit.
+        const signup = await signupAttribution({
+          page: { source: attr.lp_source, medium: attr.lp_medium, campaign: attr.lp_campaign, content: attr.lp_content },
+          sessionId: input.sessionId,
+        })
+        const noteUtm = signup.utm ?? {
+          source: attr.lp_source,
+          medium: attr.lp_medium,
+          campaign: attr.lp_campaign,
+          content: attr.lp_content,
+        }
         await canonicallyTagLead({
           fubPersonId: nativeId,
           audience: 'buyer',
           source: 'idx-registration',
           tier: 'warm',
-          extraTags: paidTags,
+          extraTags: signup.tags,
           originContext: {
             source: isPriceDropAlert ? 'price-drop-alert' : 'saved-search',
             sourceLabel: isPriceDropAlert ? 'Price-drop alert signup' : 'Listing-alert signup',
@@ -242,10 +249,10 @@ export async function submitSearchAlertSignup(input: {
             want: isPriceDropAlert
               ? `Price-drop alerts for ${name}${summary ? `, ${summary}` : ''}`
               : `Listing alerts for ${name}${summary ? `, ${summary}` : ''}`,
-            utmSource: attr.lp_source,
-            utmMedium: attr.lp_medium,
-            utmCampaign: attr.lp_campaign,
-            utmContent: attr.lp_content,
+            utmSource: noteUtm.source,
+            utmMedium: noteUtm.medium,
+            utmCampaign: noteUtm.campaign,
+            utmContent: noteUtm.content,
           },
         })
         // Notify the assigned broker so a signup is never missed — a native
@@ -455,11 +462,15 @@ export async function submitListingSaveCapture(input: {
     suspect = result.ok && result.suspect
     if (nativeId && !suspect) {
       try {
+        // The link that started the visit, else the listing page's own (Matt
+        // 2026-10-09, "Visit they signed up in"; lib/crm/visit-attribution.ts).
+        const signup = await signupAttribution({ page: await pageLinkFromReferer(), sessionId: input.sessionId })
         await canonicallyTagLead({
           fubPersonId: nativeId,
           audience: 'buyer',
           source: 'idx-registration',
           tier: 'warm',
+          extraTags: signup.tags,
           originContext: {
             source: 'listing-save',
             sourceLabel: 'Saved a home (guest)',
@@ -467,6 +478,10 @@ export async function submitListingSaveCapture(input: {
             audience: 'buyer',
             tier: 'warm',
             want: `Saved ${homeLabel}`,
+            utmSource: signup.utm?.source,
+            utmMedium: signup.utm?.medium,
+            utmCampaign: signup.utm?.campaign,
+            utmContent: signup.utm?.content,
           },
         })
         await createNativeTask({
@@ -636,11 +651,15 @@ export async function submitListingPriceDropWatch(input: {
     suspect = result.ok && result.suspect
     if (crmPersonId && !suspect) {
       try {
+        // The link that started the visit, else the listing page's own (Matt
+        // 2026-10-09, "Visit they signed up in"; lib/crm/visit-attribution.ts).
+        const signup = await signupAttribution({ page: await pageLinkFromReferer(), sessionId: input.sessionId })
         await canonicallyTagLead({
           fubPersonId: crmPersonId,
           audience: 'buyer',
           source: 'idx-registration',
           tier: 'warm',
+          extraTags: signup.tags,
           originContext: {
             source: 'listing-price-watch',
             sourceLabel: 'Price-drop watch (guest)',
@@ -648,6 +667,10 @@ export async function submitListingPriceDropWatch(input: {
             audience: 'buyer',
             tier: 'warm',
             want: `Price changes on ${homeLabel} (listingKey ${listingKey})`,
+            utmSource: signup.utm?.source,
+            utmMedium: signup.utm?.medium,
+            utmCampaign: signup.utm?.campaign,
+            utmContent: signup.utm?.content,
           },
         })
         await createNativeTask({

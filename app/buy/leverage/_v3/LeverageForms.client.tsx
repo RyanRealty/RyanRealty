@@ -6,13 +6,13 @@
  * and lead_type LEVERAGE_LEAD_TYPE (buyer_alerts). Ad-cookie + US notice
  * match #465. No SMS signup.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { V3Ask, type V3AskField, type V3AskResult } from '@/components/site/v3/V3Ask.client'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { FormAdConsentNotice, FormAdCookieBox, useFormConsentRestricted } from '@/components/site/FormAdConsent'
 import { writeFormAdConsent } from '@/lib/identity/form-ad-consent'
-import { getLpContext, readRrSessionId, trackEvent, trackLandingPageView } from '@/lib/tracking'
+import { getLpContext, readRrSessionId, trackEvent } from '@/lib/tracking'
 import { trackCtaClick } from '@/lib/cta-tracking'
 import { submitLeverageLead, type LeverageLeadKind } from '../actions'
 import {
@@ -152,11 +152,8 @@ function LeverageAsk({
   )
 }
 
+// view_landing_page fires site-wide (components/tracking/LandingPageViewTracker.tsx).
 export function LeverageForms({ copy }: { copy: LeverageCopy }) {
-  useEffect(() => {
-    trackLandingPageView(LEVERAGE_LP_VARIANT)
-  }, [])
-
   return (
     <div className="v3-leverage-forms">
       <LeverageAsk

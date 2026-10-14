@@ -12,7 +12,7 @@
  * carries the ask and not a six-field form.
  */
 import Link from 'next/link'
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useState, type FormEvent } from 'react'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { FormAdConsentNotice, FormAdCookieBox, useFormConsentRestricted } from '@/components/site/FormAdConsent'
 import { V3Button, V3Eyebrow } from '@/components/site/v3/atoms'
@@ -25,7 +25,7 @@ import {
 } from '@/lib/alerts/guest-watch-residual'
 import { fireSearchEvent } from '@/components/search/search-events.client'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
-import { getLpContext, readRrSessionId, trackEvent, trackLandingPageView } from '@/lib/tracking'
+import { getLpContext, readRrSessionId, trackEvent } from '@/lib/tracking'
 import {
   BUY_ALERTS_BED_OPTIONS,
   BUY_ALERTS_COPY,
@@ -55,10 +55,6 @@ export function BuyAlertsSignup() {
   const [adCookies, setAdCookies] = useState(false)
   const [adMatch, setAdMatch] = useState(false)
   const restricted = useFormConsentRestricted()
-
-  useEffect(() => {
-    trackLandingPageView(BUY_ALERTS_LP_VARIANT) // hydration-safe: effect only
-  }, [])
 
   const onSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {

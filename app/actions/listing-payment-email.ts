@@ -153,7 +153,8 @@ export async function submitListingPaymentEmail(input: {
     const result = await sendEvent({
       type: 'Property Inquiry',
       person: { emails: [{ value: email }] },
-      source: base.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com',
+      // The door (FUNNEL-4), never the site host; GA4 sends the same name as lp_variant.
+      source: 'listing-payment-email',
       system: 'Ryan Realty Website',
       sourceUrl: listingUrl,
       message: `Asked for the payment on ${address} (listingKey ${listingKey}) — ${totalLine}, ${assumptions}`,

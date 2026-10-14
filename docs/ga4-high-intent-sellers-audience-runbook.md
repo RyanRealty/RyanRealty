@@ -1,45 +1,37 @@
-# GA4 audience: "High-intent sellers" — manual UI build
+# GA4 audience: "High-intent sellers"
 
-**Last item from the GA4 admin config (15/16 applied programmatically).** The `ga4-admin.mjs` script failed to create this one audience because the GA4 Admin API's filter syntax for numeric-parameter comparisons (`percent_scrolled > 74`) does not match what `dimensionFilterGt()` emits. The UI build path takes 90 seconds and is the recommended fix.
+**Built by `scripts/ga4-admin.mjs`; there is no manual step (2026-10-14).** This page used
+to give UI steps for a definition that could never match. It now records the live one.
 
-## What this audience captures
+## Definition
 
-Visitors who:
+Live as `properties/527333348/audiences/16124906126`, created 2026-10-14, 30-day membership:
 
-1. Viewed `/lp/seller-home-value` (the canonical seller LP), **AND**
-2. Scrolled past 74% of the page (deep engagement signal)
+- Event `scroll_depth` with `page_type` exactly `sell` AND `depth` greater than 74.
 
-Membership window: 30 days. This is the audience to retarget for the HNW elderly Bend homeowner campaign — they self-selected as serious sellers by scrolling past the form.
+`V3SectionTracker` pushes `scroll_depth` with `page_type` (`sell` on every /sell page) and
+`percent` at 25/50/75/100. The GTM GA4 Event tag sends `page_type` as page context and folds
+`percent` into `depth` (`lib/analytics/ga4-browser-events.ts`, `GA4_PARAM_ALIASES`), so GA4
+holds `depth` and never `percent`. The server mirror in `/api/visitors/track` sends
+`scroll_depth` with `page_type` and no depth, so only the browser hit can match. Checked on
+production 2026-10-14 with every analytics request blocked: /sell pushed `scroll_depth`
+with `page_type` `sell` and `depth` 25, 50, 75 and 100.
 
-## Build steps (Matt, ~90 seconds)
+## History
 
-1. Open https://analytics.google.com → property `Ryan Realty` (id `527333348`).
-2. Admin (gear icon, bottom-left).
-3. Property column → **Audiences**.
-4. Click **New audience** → **Create a custom audience**.
-5. Name: `High-intent sellers`
-6. Description: `Visited /lp/seller-home-value AND scrolled past 74%. 30-day window. Use for retargeting HNW seller campaigns.`
-7. Membership duration: **30 days**.
-8. **Add condition** (first):
-   - Event: `view_landing_page`
-   - Add parameter filter: `lp_variant` exactly matches `seller-home-value`
-9. Click **AND** below the first condition.
-10. **Add condition** (second):
-    - Event: `scroll_depth`
-    - Add parameter filter: `percent_scrolled` greater than `74`
-11. Save.
+The 2026-05-22 definition needed `view_landing_page` with `lp_variant` `seller-home-value`
+AND `scroll_depth` with `percent_scrolled` over 74. No page sent `view_landing_page` from
+2026-08-01 to 2026-10-09, and no tracker sends `percent_scrolled`, so it matched no one. It
+is kept, renamed "High-intent sellers (retired 2026-10-14, never matched)".
 
-The audience will start populating immediately and reach full 30-day membership in 30 days. Available as a Google Ads remarketing audience within ~48 hours after Google Signals sync.
+## Changing it
 
-## Verification
-
-After save, re-run the GA4 admin audit to confirm:
-
-```bash
-node scripts/ga4-admin.mjs audit
-```
-
-The audit JSON should show `audiences.count = 16` (was 15) and a row with `displayName = "High-intent sellers"`.
+GA4 audience filters cannot be edited after creation. Change the spec in
+`scripts/ga4-admin.mjs`, add the audience to `REBUILT_AUDIENCES` with that day's date, and
+run `node scripts/ga4-admin.mjs apply-audiences`: it renames the old audience, creates the
+new one, and touches no key event or dimension. `node scripts/ga4-admin.mjs audit` lists
+the result. A new audience fills from its creation onward; GA4 backfills up to 30 days only
+for lists it shares with Google Ads.
 
 ## When to use this audience
 

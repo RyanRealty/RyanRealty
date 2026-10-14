@@ -1,12 +1,12 @@
 'use server'
 
-import { siteHost, siteOrigin } from '@/lib/site-origin'
+import { siteOrigin } from '@/lib/site-origin'
 import { sendEvent, type LeadEventPerson } from '@/lib/crm/send-event'
 import { sendContactNotification } from '@/lib/resend'
 import type { LeadLandingAudience } from '@/lib/lead-landing-content'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
-import { resolvePaidAttributionTags } from '@/lib/crm/lead-source'
+import { signupAttribution } from '@/lib/crm/visit-attribution'
 import {
   attributionParamsFromSearch,
   attributionQueryString,
@@ -25,11 +25,6 @@ import { cookies, headers } from 'next/headers'
 const SITE_URL = siteOrigin()
 
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
-/** The site's own host as the lead source: 'ryan-realty.com' in production, never the Vercel alias. */
-function websiteSource(): string {
-  return siteHost()
-}
 
 type LpContextInput = {
   lp_variant?: string
@@ -52,9 +47,10 @@ type SubmitLeadLandingInput = {
   phone?: string
   timeframe?: string
   message?: string
-  /** Attribution captured client-side: utm_* / gclid / fbclid from the URL
-   *  the visitor arrived on (getLpContext + sessionStorage after
-   *  trackLandingPageView). Survives clicking around before submit. */
+  /** The page's own link: utm_* / gclid / fbclid on the address the form is
+   *  submitted from (getLpContext). A visitor who clicked around first is
+   *  credited to the visit's landing link on the server instead
+   *  (lib/crm/visit-attribution.ts). */
   lpContext?: LpContextInput
   /** Anonymous visitor session id (uuid v4) from localStorage. When present,
    *  we stitch this lead's prior browsing history to the CRM person and mark
@@ -103,16 +99,22 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
       ...(phone ? { phones: [{ value: phone }] } : {}),
     }
 
-    // Paid-channel attribution, the seller LP's rule: channel:*, campaign:* and
-    // ad-content:* from the URL utm. buyer- and seller-lead-attribution match a
-    // lead to the post or ad that sent it by these tags and nothing else, and
-    // this form is the live buyer LP (/buy/[intent]) since /lp/buyer-listing-alerts
-    // became a redirect. Empty when the visit carried no utm_source.
-    const paidTags = resolvePaidAttributionTags({
-      utmSource: input.lpContext?.lp_source,
-      utmMedium: input.lpContext?.lp_medium,
-      utmCampaign: input.lpContext?.lp_campaign,
-      utmContent: input.lpContext?.lp_content,
+    // Paid-channel attribution: channel:*, campaign:* and ad-content:* from the
+    // link that started the visit the submit happens in, else the page's utm
+    // (Matt 2026-10-09, "Visit they signed up in"; lib/crm/visit-attribution.ts).
+    // buyer- and seller-lead-attribution match a lead to the post or ad that
+    // sent it by these tags and nothing else, and this form is the live buyer LP
+    // (/buy/<intent>, /buy/leverage; no page renders a seller config). Empty
+    // when neither carried a utm_source. Started here and awaited after the CRM
+    // write, so the visit read adds nothing to the submit's wait.
+    const signupPending = signupAttribution({
+      page: {
+        source: input.lpContext?.lp_source,
+        medium: input.lpContext?.lp_medium,
+        campaign: input.lpContext?.lp_campaign,
+        content: input.lpContext?.lp_content,
+      },
+      sessionId: input.sessionId,
     })
 
     let refererAttr: LeadAttributionParams = {}
@@ -145,10 +147,13 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
       .filter(Boolean)
       .join(' | ')
 
+    // crm_people.source is the door, not the site host (FUNNEL-4, 2026-09-23).
+    const leadDoor = input.audience === 'seller' ? 'seller-lp' : 'buyer-lp'
     const result = await sendEvent({
       type: eventType,
       person,
-      source: websiteSource(),
+      // The door (FUNNEL-4), the same label the fallback and the canonical tag write.
+      source: leadDoor,
       sourceUrl,
       pageUrl: sourceUrl,
       pageTitle: input.pageTitle,
@@ -161,20 +166,20 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
         ...(input.lpContext?.lp_term ? { term: input.lpContext.lp_term } : {}),
       },
     })
+    const paidTags = (await signupPending).tags
     if (!result.ok) {
       // ─── Native-capture fallback on a CRM push failure (CONTACT360 Phase 0.2)
       // The CRM push failed (likely a CRM outage) — without a native record this
       // buyer/seller LP lead would be dropped entirely. Capture it in crm_people
       // + crm_contact_points so the lead is tracked, then still surface the error
       // so the visitor is prompted to retry (the native row dedupes on retry).
-      const lpSource = input.audience === 'seller' ? 'seller-lp' : 'buyer-lp'
       try {
         const native = await ensureNativeLead({
           name,
           email,
           phone,
-          source: lpSource,
-          tags: [`audience:${input.audience}`, `source:${lpSource}`, 'fub-fallback', ...paidTags],
+          source: leadDoor,
+          tags: [`audience:${input.audience}`, `source:${leadDoor}`, 'fub-fallback', ...paidTags],
         })
         if (native.created || native.personId > 0) {
           console.warn(
@@ -236,7 +241,7 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
         await canonicallyTagLead({
           fubPersonId: result.personId,
           audience: input.audience === 'seller' ? 'seller' : 'buyer',
-          source: input.audience === 'seller' ? 'seller-lp' : 'buyer-lp',
+          source: leadDoor,
           extraTags: paidTags,
         })
 

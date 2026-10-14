@@ -4,6 +4,8 @@
  * registry a test hands in through a code seam (RenderDeps.registryPath,
  * CheckDeps.testPaths, video_gate's opts.approver). The committed registry
  * approves nothing (scripts/__tests__/check-studio-techniques.test.mjs).
+ *
+ * reachability: entry-point test fixture, imported only by the studio tests (check, techniques, preflight, render).
  */
 import { TEST_APPROVER } from '../techniques'
 
