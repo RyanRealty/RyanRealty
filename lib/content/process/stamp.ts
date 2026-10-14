@@ -40,6 +40,8 @@ export type Stamp = {
   /** What the step produced, for the steps after it to read. */
   outputs: Record<string, unknown>
   outputsSha256: string
+  /** What the step reported that nothing later depends on (not hashed; see StepResult.report). */
+  report?: Record<string, unknown>
   /** 'not built' when the step exists but phase 1 builds nothing for it; 'not needed' when the brief has nothing for it to do. */
   status: 'built' | 'not built' | 'not needed'
   /** True when the run passed an unbuilt step with --allow-unbuilt-step (logged here, so a reader can see it). */

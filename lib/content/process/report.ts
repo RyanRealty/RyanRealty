@@ -43,7 +43,7 @@ export function formatStatus(slug: string, reads: ReadonlyArray<{ step: StepId; 
       continue
     }
     const s = read.stamp
-    const extra = [s.status !== 'built' ? s.status : null, s.allowUnbuilt ? 'allowed past with --allow-unbuilt-step' : null, `attempt ${s.attempt ?? '?'}`, `by ${s.builder} on ${s.machine}`, s.gitHead ? `at ${s.gitHead.slice(0, 9)}` : null, `rules ${s.rulesVersion.slice(0, 12)}`].filter(Boolean)
+    const extra = [s.status !== 'built' ? s.status : null, s.allowUnbuilt ? 'allowed past with --allow-unbuilt-step' : null, `attempt ${s.attempt ?? '?'}`, `by ${s.builder} on ${s.machine}`, s.gitHead ? `at ${s.gitHead.slice(0, 9)}` : null, `rules ${s.rulesVersion.slice(0, 12)}`, ...Object.entries(s.report ?? {}).map(([k, v]) => `${k} ${String(v)}`)].filter(Boolean)
     out.push(`  ${pad(step, 9)} ${s.verdict.toUpperCase()}  ${s.at}  ${extra.join(', ')}`)
     for (const p of s.problems.slice(0, 20)) out.push(`      - ${p.rule ? `[${p.rule}] ` : ''}${p.problem.split('\n')[0]}`)
     if (s.problems.length > 20) out.push(`      ... and ${s.problems.length - 20} more`)

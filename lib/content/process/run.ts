@@ -180,6 +180,9 @@ async function execute(ctx: RunContext, steps: readonly StepId[], step: StepId, 
   const attempt = ctx.claims.attempts(ctx.slug).filter((a) => a.step === step).length + 1
   ctx.attempt = attempt
   ctx.claims.recordStart(ctx.slug, { kind: 'start', step, attempt, at: ctx.now().toISOString(), builder: ctx.builder, machine: ctx.machine })
+  // What the step is about to read, hashed BEFORE it runs: a file that changes during a long step
+  // is then recorded with the hash its verdict was reached on, and the next check refuses the stamp.
+  const before = await partsFor(ctx, step, steps, stamps)
   let result
   try {
     result = await def.run(ctx, stamps)
@@ -187,7 +190,9 @@ async function execute(ctx: RunContext, steps: readonly StepId[], step: StepId, 
     result = { problems: [classify(`step ${step} crashed: ${(e as Error).message}`)], outputs: {} }
   }
   const verdict = result.problems.length === 0 ? 'pass' : 'fail'
-  const inputs = await partsFor(ctx, step, steps, stamps)
+  // The parts the step brings into being itself (stills fetches the clips) are hashed after it: only those.
+  const made = def.produces ?? []
+  const inputs = made.length ? { ...before, ...Object.fromEntries(Object.entries(await partsFor(ctx, step, steps, stamps)).filter(([part]) => made.some((prefix) => part.startsWith(prefix)))) } : before
   const stamp: Stamp = {
     step,
     slug: ctx.slug,
@@ -202,6 +207,7 @@ async function execute(ctx: RunContext, steps: readonly StepId[], step: StepId, 
     inputs,
     outputs: result.outputs,
     outputsSha256: hashJson(result.outputs),
+    ...(result.report ? { report: result.report } : {}),
     status: result.status ?? 'built',
     ...(result.allowUnbuilt ? { allowUnbuilt: true } : {}),
     attempt,

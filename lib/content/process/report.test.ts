@@ -71,6 +71,11 @@ describe('formatStatus', () => {
     expect(text).toContain('Job limits: boards 1 of 3, animatics 0 of 2, masters 0 of 2, minutes 60 of 90.')
   })
 
+  it('shows what a step reported that no later step depends on, such as a voice read from the cache', () => {
+    const text = formatStatus('film', [{ step: 'voice', read: { ok: true, stamp: stamp({ step: 'voice', report: { cached: true } }) } }], [], null, new Date())
+    expect(text).toMatch(/voice\s+PASS\s+.*rules b{12}, cached true/)
+  })
+
   it('says the clock has not started before a first brief attempt', () => {
     expect(formatStatus('film', [], [], null, new Date())).toContain('minutes 0 of 90 (the clock starts at the first brief attempt)')
   })

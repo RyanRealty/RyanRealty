@@ -62,12 +62,15 @@ export const voiceStep: StepDef = {
           model: voice.model,
           voiceId: voice.voiceId,
           offset: voice.offset,
-          cached: voice.cached,
           words: voice.words.length,
           captions: voice.captions.length,
           lastWordEnd: last.end,
           wordsSha256: hashJson(voice.words),
         },
+        // Whether this run paid for the voice or read the cache is the one thing a re-run with the same
+        // script changes. It is reported, not hashed: in outputs it would change outputsSha256 and
+        // invalidate the board and master stamps built on the voice.
+        report: { cached: voice.cached },
       }
     } catch (e) {
       return { problems: [classify((e as Error).message)], outputs: {} }

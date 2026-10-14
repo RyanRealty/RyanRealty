@@ -3,7 +3,7 @@
  * refusals before anything runs. Everything runs on the harness's fakes (no
  * network, no paid voice, no browser, no ffmpeg, no git of this checkout).
  */
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { REPO_ROOT } from '../../studio/qa/thresholds'
@@ -11,7 +11,10 @@ import { ruleFor } from './classify'
 import type { RunContext } from './context'
 import { runStep, runSteps, type RunOptions } from './run'
 import { rulesVersion } from './rules-version'
+import { hashFile } from './canonical'
 import { readStamp } from './stamp'
+import { STEP_DEFS } from './steps/index'
+import { CLIP_PART } from './steps/stills'
 import { baseFilm, fakeVoiceProvider, makeHarness, type Harness } from './test-harness'
 import { filmVoice, paidVoiceRefused } from './steps/voice'
 
@@ -218,6 +221,73 @@ describe('runStep: one step, with every step before it still holding', () => {
     const r = await runStep(options(h), 'voice')
     expect(r.ok).toBe(true)
     expect(r.outcomes[0]).toMatchObject({ step: 'voice', action: 'ran' })
+  })
+})
+
+describe('what a stamp records of its inputs', () => {
+  it('hashes what a step reads BEFORE it runs, so a file changed during the step does not stand beside a verdict reached on the old one', async () => {
+    const h = makeHarness()
+    const def = STEP_DEFS.brief!
+    const realRun = def.run
+    const ledgerBefore = hashFile(h.ledgerPath)
+    // A long step during which something else touches a file the step reads (here, the film ledger).
+    def.run = async (ctx, stamps) => {
+      const r = await realRun(ctx, stamps)
+      appendFileSync(h.ledgerPath, '\n')
+      return r
+    }
+    try {
+      const first = await runSteps(options(h, { to: 'brief' }))
+      expect(first.outcomes[0]).toMatchObject({ step: 'brief', action: 'ran' })
+    } finally {
+      def.run = realRun
+    }
+    expect(hashFile(h.ledgerPath)).not.toBe(ledgerBefore)
+    // The stamp holds the hash the step read, not the hash of the file as it was left.
+    expect(stamp(h, 'brief').inputs['file:ledger']).toBe(ledgerBefore)
+    // So the next run does not take the stamp for current: the ledger is not what the verdict was reached on.
+    const again = await runSteps(options(h, { to: 'brief' }))
+    expect(again.outcomes[0]).toMatchObject({ step: 'brief', action: 'ran' })
+    expect(stamp(h, 'brief').inputs['file:ledger']).toBe(hashFile(h.ledgerPath))
+    const third = await runSteps(options(h, { to: 'brief' }))
+    expect(third.outcomes[0].action).toBe('valid')
+  })
+
+  it('re-hashes only what the step itself produces: the clips step stills fetches', async () => {
+    const h = makeHarness()
+    expect(STEP_DEFS.stills!.produces).toEqual([CLIP_PART])
+    for (const [id, def] of Object.entries(STEP_DEFS)) if (id !== 'stills') expect(def!.produces, id).toBeUndefined()
+    const r = await runSteps(options(h, { to: 'stills' }))
+    expect(r.ok).toBe(true)
+    const clips = Object.entries(stamp(h, 'stills').inputs).filter(([part]) => part.startsWith(CLIP_PART))
+    expect(clips.length).toBeGreaterThan(0)
+    // The clips were missing before the step and are the downloaded files after it, not 'missing'.
+    for (const [part, hash] of clips) expect(hash, part).toMatch(/^[0-9a-f]{64}$/)
+    // And the stamp holds: a second run takes every step as current.
+    const again = await runSteps(options(h, { to: 'stills' }))
+    expect(again.outcomes.map((o) => o.action)).toEqual(['valid', 'valid', 'valid'])
+  })
+})
+
+describe('the voice step re-run from the cache', () => {
+  it('reports that the voice came from the cache without changing what later steps depend on', async () => {
+    const h = makeHarness()
+    const voice = countVoice(h)
+    await runSteps(options(h, { to: 'stills' }))
+    const first = stamp(h, 'voice')
+    expect(first.report).toEqual({ cached: false })
+    expect(first.outputs).not.toHaveProperty('cached')
+    expect(voice.n).toBe(1)
+    // The same script run again (step voice by name): the voice is read from the cache.
+    const rerun = await runStep(options(h), 'voice')
+    expect(rerun.ok).toBe(true)
+    const second = stamp(h, 'voice')
+    expect(second.report).toEqual({ cached: true })
+    expect(voice.n).toBe(1)
+    // What a later step reads is unchanged, so the stamps built on the voice still hold.
+    expect(second.outputsSha256).toBe(first.outputsSha256)
+    const resumed = await runSteps(options(h, { to: 'stills' }))
+    expect(resumed.outcomes.map((o) => o.action)).toEqual(['valid', 'valid', 'valid'])
   })
 })
 

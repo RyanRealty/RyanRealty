@@ -18,17 +18,21 @@ import { classify } from '../classify'
 import type { RunContext, StepDef } from '../context'
 import type { StampProblem } from '../stamp'
 
+/** The prefix of the part name a stamp gives a footage clip. */
+export const CLIP_PART = 'file:clip:'
+
 /** The footage files the timeline names, by the name a stamp gives them (a missing file is a value: it changes when it appears). */
 export async function clipParts(ctx: RunContext): Promise<Record<string, string>> {
   const t = parseTimeline(ctx.timeline)
   if (!t.ok) return {}
   const out: Record<string, string> = {}
   for (const f of footageSources(t.value)) {
-    if (out[`file:clip:${f.src}`]) continue
+    const part = `${CLIP_PART}${f.src}`
+    if (out[part]) continue
     try {
-      out[`file:clip:${f.src}`] = await sha256File(footageFilePath(f.src, ctx))
+      out[part] = await sha256File(footageFilePath(f.src, ctx))
     } catch {
-      out[`file:clip:${f.src}`] = 'missing'
+      out[part] = 'missing'
     }
   }
   return out
@@ -52,6 +56,8 @@ export const stillsStep: StepDef = {
   async parts(ctx) {
     return clipParts(ctx)
   },
+  // The step fetches the clips into the cache: they are 'missing' before it runs and hashed after.
+  produces: [CLIP_PART],
   async run(ctx) {
     const t = parseTimeline(ctx.timeline)
     if (!t.ok) return { problems: [classify('the timeline is not valid, so its footage cannot be read')], outputs: {} }

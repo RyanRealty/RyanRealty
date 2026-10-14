@@ -76,7 +76,14 @@ export type RunContext = {
 
 export type StepResult = {
   problems: StampProblem[]
+  /** What the step produced, for the steps after it to read. Hashed into the stamp (outputsSha256), so it holds only what a later step may depend on. */
   outputs: Record<string, unknown>
+  /**
+   * What the step wants a reader of its stamp to see that no later step depends on
+   * (whether the voice came from the cache). Kept in the stamp, never hashed: a
+   * re-run that differs only here must not invalidate the steps built on this one.
+   */
+  report?: Record<string, unknown>
   status?: Stamp['status']
   /** Set when an unbuilt step was passed with --allow-unbuilt-step. */
   allowUnbuilt?: boolean
@@ -88,5 +95,12 @@ export type StepDef = {
   id: StepId
   /** The parts of what this step reads besides the brief, the timeline and the stamps before it. */
   parts(ctx: RunContext): Promise<Record<string, string>>
+  /**
+   * Name prefixes of the parts this step itself brings into being while it runs (stills fetches
+   * the clips: 'file:clip:'). Only those are hashed after the run. Every other part is hashed
+   * BEFORE it, so a file that changes during a long step is recorded with the hash the verdict
+   * was reached on, and the next check refuses the stamp instead of trusting it.
+   */
+  produces?: readonly string[]
   run(ctx: RunContext, stamps: StepStamps): Promise<StepResult>
 }
