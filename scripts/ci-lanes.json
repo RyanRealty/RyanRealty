@@ -35,6 +35,7 @@
     "ci:hooks-installed",
     "ci:identity-stitch-paths",
     "ci:analytics-suppression",
+    "ci:analytics-registry",
     "ci:jsonb-cast-guard",
     "ci:jsonb-contains",
     "ci:listing-alert-enroll",

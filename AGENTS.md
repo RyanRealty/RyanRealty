@@ -30,7 +30,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Cursor out.** When Cursor is out (usage, credit, spend, 402, or a 20-minute stall), switch to Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve`. Never use `XAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` to get past a limit.
 
-**Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
+**Keep moving.** Unfinished work: push the branch, write your note in `docs/plans/handoffs/`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
 
 **Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. Ad copy, VO, captions: [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). video_gate is backup.
 
@@ -43,7 +43,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 1. **PRs only.** Never `git push` `main`. Never fast-forward `main`. Branch from current `origin/main`, open a PR, merge that PR.
 2. **Auto-merge.** After opening a PR, run `gh pr merge --auto --squash --delete-branch` unless it is labeled `hold-for-matt`. Never run `gh pr merge` on a `hold-for-matt` PR, including `--auto`. `--auto` squash-merges immediately when Allow auto-merge is off and the PR is MERGEABLE. Create that label if it is missing. Enable "Allow auto-merge" and "Automatically delete head branches" on the GitHub repo if they are off. `.github/workflows/pr-auto-merge.yml` queues the same command, drops auto-merge when `hold-for-matt` is added, and squash-merges after `merge-gate` + `security-scan` when the repo setting is still off.
 3. **Stale PRs.** A PR older than 3 days is rebased and merged, or closed with a written reason. `.github/workflows/pr-stale.yml` (daily + `workflow_dispatch`) labels `stale` at 3 days and closes after 2 more days, keeping the branch so the work is not lost. Skip `hold-for-matt`.
-4. **Done.** The PR is merged, the Vercel production deploy for that SHA is **READY**, and the live URL is checked. `npm run ship` is the land path. Unfinished work is `npm run push` plus a Current line in `docs/plans/CROSS_AGENT_HANDOFF.md`.
+4. **Done.** The PR is merged, the Vercel production deploy for that SHA is **READY**, and the live URL is checked. `npm run ship` is the land path. Unfinished work is `npm run push` plus your note in `docs/plans/handoffs/`.
 5. **Payload.** Public pages respect the page payload budgets (`SSR_GRID_PAGE` in `lib/site/ssr-grid-page.ts`, `ci:page-payload`, Atlas props budget). Cap grids and schema lists. Never serialize the same listing or schema payload twice.
 6. **Waits.** No `sleep` polls. Use `gh pr checks --watch` or the CI wait the tool already has. R-221 still bans sitting on `gh run view` in a loop. **R-221:** do not poll GitHub Actions.
 7. **New process rules.** A standing process rule Matt issues lands in this file in the same PR as the work it governs.
@@ -78,7 +78,7 @@ This document tells AI coding agents (Cursor, Copilot, Windsurf, etc.) how to au
 Every session — Claude Code, Cursor, or Grok — starts here:
 
 0. **`docs/GROK_BOT_BRAIN.md`** if you are a Grok Bot / Grok Build teammate — map only, then open the one door for this job. Do not load the whole canon.
-1. **`docs/plans/CROSS_AGENT_HANDOFF.md` Current block** (the file holds exactly one; `ci:handoff-current`) — what the other surface left. Read the archive only for a named SHA.
+1. **Handoff notes in `docs/plans/handoffs/`** (one file per session; `ci:handoff-current`): the standing holds and the newest notes. The loop brief prints them. `CROSS_AGENT_HANDOFF.md` is frozen history.
 2. **`npx tsx scripts/loop-brief.ts`** — durable work graph + ship class. That is next work. Not `orchestrate.ts`. Not `docs/SITE_SPEC.md`. When Matt says "run the loop", follow **`docs/RUN_LOOP.md`**.
 3. **`docs/DATA_ACCESS_LAYER.md`** when the task touches listings/stats — every page calls `@/lib/data/*`; raw `.from('listings')` outside `lib/data/` is banned.
 
@@ -157,7 +157,7 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 
 ### Ship discipline (non-negotiable)
 
-1. **Production truth is `origin/main`.** Never push or fast-forward to `main`. A finished change is `npm run ship`: gates, push the branch, open the PR with auto-merge (`gh pr merge --auto --squash --delete-branch`, skip `hold-for-matt`), then confirm production **READY** and check the live URL. No force-push or reset. Rebase only to land a PR. Unfinished work still gets a line in `docs/plans/CROSS_AGENT_HANDOFF.md`. Network failure is the only excuse for the branch not being on origin yet. Say that explicitly.
+1. **Production truth is `origin/main`.** Never push or fast-forward to `main`. A finished change is `npm run ship`: gates, push the branch, open the PR with auto-merge (`gh pr merge --auto --squash --delete-branch`, skip `hold-for-matt`), then confirm production **READY** and check the live URL. No force-push or reset. Rebase only to land a PR. Unfinished work still gets a note in `docs/plans/handoffs/`. Network failure is the only excuse for the branch not being on origin yet. Say that explicitly.
 2. **Production follows Git.** A merge onto `main` triggers Vercel production when the diff affects the Next app; “shipped” means `origin/main` moved, the production deploy is **READY**, and the live URL is checked (CORE RULES **Done**). Docs/skills/changelog-only changes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
 3. **No hanging migrations.** New files under `supabase/migrations/` are not real until they run on **hosted** Supabase. Apply them in the **same delivery effort** as the code that needs them — never “commit now, migrate later” (`.cursor/rules/supabase-migrations-auto.mdc`, `.cursor/rules/production-parity.mdc`).
 4. **Branch, then push.** Day-to-day edits go on a branch from current `origin/main` and that branch is pushed to GitHub right away. Use linked worktrees for parallel agents, not as a silent parking lot. See **Worktrees** below.
@@ -184,7 +184,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 
 1. Branch name: `wt/<topic>-YYYYMMDD` (or harness names like `claude/…`). Push the branch before stop, or write the handoff.
 2. Path: sibling dir such as `../RyanRealty-wt-<topic>` — not nested inside the primary tree.
-3. Session end: unfinished work is `npm run push` plus a handoff line (branch, absolute path, next step) in `docs/plans/CROSS_AGENT_HANDOFF.md`. A finished unit is `npm run ship`. No force-push or reset. Rebase only to land a PR.
+3. Session end: unfinished work is `npm run push` plus a handoff note (branch, absolute path, next step) in `docs/plans/handoffs/`. A finished unit is `npm run ship`. No force-push or reset. Rebase only to land a PR.
 4. Cleanup when merged: delete branch, `git worktree remove <path>`, `git worktree prune`. Run `node scripts/worktree-hygiene.mjs` at session start/end.
 5. Never leave the only copy of valued commits in an unpushed worktree with no handoff line.
 
@@ -195,7 +195,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 | What actually shipped | `git log origin/main` |
 | Backlog / next task | `npx tsx scripts/loop-brief.ts` (work graph). `task-registry.json` / `orchestrate.ts` are complete (49/49) — do not pick work from them. |
 | Optional handoff notes | `~/.claude/plans/HANDOFF-*.md` — add or update when switching tools with context the repo does not carry |
-| **Cross-agent continuity (required when switching)** | **`docs/plans/CROSS_AGENT_HANDOFF.md`** — replace the one **Current** block before you stop or when Matt moves to the other tool. The other agent must **read it after `git pull`** before deep work. |
+| **Cross-agent continuity (required when switching)** | **`docs/plans/handoffs/`**: write your own note (`<YYYY-MM-DDTHHMMZ>-<branch>.md`) before you stop or when Matt moves to the other tool. The other agent reads the newest notes (the loop brief prints them) after `git pull`. |
 | **Grok Bot / Grok Build fleet** | **`docs/GROK_BOT_BRAIN.md`** — index. Company dump is `docs/GROK_BOT_COMPANY.md`. Do not paste either into a mega system prompt. |
 | **Global skill index (Cursor + Claude)** | **`~/.claude/GLOBAL_SKILLS_REGISTRY.md`** — full path list of every `SKILL.md` on this machine (plugins, repo, TC, Cowork notes). **Git mirror:** `docs/plans/GLOBAL_SKILLS_REGISTRY.md`. **Cursor stub:** `~/.cursor/GLOBAL_SKILLS_REGISTRY.md`. |
 | **Database reference (required before ANY SQL or market-report work)** | **[`docs/DATABASE_FOR_AI_AGENTS.md`](docs/DATABASE_FOR_AI_AGENTS.md)** — every table grouped by purpose, the cache model (`market_pulse_live` 10-min freshness, `market_stats_cache` 6-hour freshness), 14 resort communities + 14 Bend neighborhoods + city/region levels, the `listings` 800-field reality with mixed-case quoting rules, methodology versioning, slug formats. Source-of-truth registry: **[`data/resort-communities.json`](data/resort-communities.json)**. Don't aggregate raw `listings` for market reports — use the cache. |
@@ -205,8 +205,8 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 ### Cross-agent handoff (mandatory when work spans tools)
 
 1. **Unfinished work pushes the branch and stops.** A finished unit is `npm run ship` and does not stop at a handoff.
-2. Open **`docs/plans/CROSS_AGENT_HANDOFF.md`** and replace the **Current** block (exactly one; never stack a second, `ci:handoff-current` fails it; carry any still-open Matt directive forward): surface, time, commit SHA, what finished, what is next, blockers, which **`SKILL.md` files you actually read**.
-3. Optionally also write narrative under **`~/.claude/plans/HANDOFF-*.md`** for Claude Desktop-only context (paths on disk, local-only experiments)—still assume the other agent only **pulls git** and reads **`CROSS_AGENT_HANDOFF.md`**.
+2. Write **your own note** in **`docs/plans/handoffs/`** (format in its README; never edit another session's note; `ci:handoff-current`): surface, time, commit SHA, what finished, what is next, blockers, which **`SKILL.md` files you actually read**. A Matt directive that must outlive your note goes in the README's **Standing holds**.
+3. Optionally also write narrative under **`~/.claude/plans/HANDOFF-*.md`** for Claude Desktop-only context (paths on disk, local-only experiments)—still assume the other agent only **pulls git** and reads **`docs/plans/handoffs/`**.
 
 ### Skills (load before substantive work)
 
@@ -505,7 +505,7 @@ NODE_OPTIONS=--max-old-space-size=8192 npm run ship
 
 ## CRITICAL: A finished unit is `npm run ship`. Never `git push` `main`.
 
-**Production deploys from `main`. A finished change is `npm run ship`: local gates, push the branch, open the PR with auto-merge (`gh pr merge --auto --squash --delete-branch`, skip `hold-for-matt`), then confirm the Vercel production deploy is READY and check the live URL.** Never push or fast-forward to `main`. No force-push or reset. Rebase only to land a PR. Do not leave the only copy of valued work unpushed. Unfinished work is `npm run push` plus a line in `CROSS_AGENT_HANDOFF.md`. One `ci:gates` per ship; do not poll GitHub Actions.
+**Production deploys from `main`. A finished change is `npm run ship`: local gates, push the branch, open the PR with auto-merge (`gh pr merge --auto --squash --delete-branch`, skip `hold-for-matt`), then confirm the Vercel production deploy is READY and check the live URL.** Never push or fast-forward to `main`. No force-push or reset. Rebase only to land a PR. Do not leave the only copy of valued work unpushed. Unfinished work is `npm run push` plus a note in `docs/plans/handoffs/`. One `ci:gates` per ship; do not poll GitHub Actions.
 
 ```bash
 # DEFAULT: finished work
@@ -583,7 +583,7 @@ Always idempotent: use `IF NOT EXISTS`, `IF EXISTS`, `ON CONFLICT DO NOTHING`.
 
 ## Reference
 
-- **Next work**: `npx tsx scripts/loop-brief.ts` + `docs/plans/CROSS_AGENT_HANDOFF.md` Current
+- **Next work**: `npx tsx scripts/loop-brief.ts` (prints the newest `docs/plans/handoffs/` notes)
 - **Runtime photograph**: `docs/audits/RUNTIME_CROSSWALK_2026-08-18.md`
 - **DAL**: `docs/DATA_ACCESS_LAYER.md` + `docs/DATABASE_FOR_AI_AGENTS.md`
 - **Design System**: `CLAUDE.md` + `design_system/ryan-realty/`

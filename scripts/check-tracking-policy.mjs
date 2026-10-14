@@ -191,7 +191,9 @@ check('GA _ga cookie client_id is the last two numeric dot parts',
   'clientIdFromGaCookie must take the last two numeric segments of `_ga`, not only GA1.x.digits.digits.')
 check('Lead forms persist the _ga client_id first-touch on the CRM person',
   /persistGaClientIdFromCookies/.test(leadTracking) &&
-    /rememberGaClientId\(params\.crm_person_id \?\? params\.fub_person_id, clientId\)/.test(leadTracking),
+    /rememberGaClientId\(personId, readGa4ClientIdFromCookies\(cookieStore\)\)/.test(leadTracking) &&
+    (/rememberGaClientId\(params\.crm_person_id \?\? params\.fub_person_id, clientId\)/.test(leadTracking) ||
+      /await persistGaClientIdFromCookies\(params\.crm_person_id \?\? params\.fub_person_id\)/.test(leadTracking)),
   'fireLeadGenerated and persistGaClientIdFromCookies must first-touch write crm_people.custom.gaClientId from the _ga cookie.')
 
 // ── 8. Measurement hygiene (visibility audit 2026-09-22, TRACK-1/2/3) ─────────

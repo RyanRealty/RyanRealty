@@ -1,5 +1,5 @@
 ---
-description: Hand off to the other agent via docs/plans/CROSS_AGENT_HANDOFF.md; load relevant SKILL.md before substantive work.
+description: Hand off to the other agent with your own note in docs/plans/handoffs/; load relevant SKILL.md before substantive work.
 alwaysApply: true
 ---
 
@@ -7,8 +7,8 @@ alwaysApply: true
 
 Matt switches between **Cursor** and **Claude Code / Cowork**. Chats do not transfer.
 
-1. **Before stopping or switching tools:** Update **`docs/plans/CROSS_AGENT_HANDOFF.md`** (replace the **Current** block): surface, time, `main` @ SHA after push, done / next / blockers / which **`SKILL.md` files you read**.
-2. **When picking up:** After `git pull`, **read `docs/plans/CROSS_AGENT_HANDOFF.md`**, then `npx tsx scripts/orchestrate.ts next` (or the task Matt gives you).
+1. **Before stopping or switching tools:** Write **your own note** in **`docs/plans/handoffs/`** (one file per session; `docs/plans/CROSS_AGENT_HANDOFF.md` is frozen): surface, time, `main` @ SHA after push, done / next / blockers / which **`SKILL.md` files you read**.
+2. **When picking up:** After `git pull`, **run `npx tsx scripts/loop-brief.ts`** (it prints the standing holds and newest handoff notes), then `npx tsx scripts/orchestrate.ts next` (or the task Matt gives you).
 3. **Skills:** If a skill might apply—even ~1%—**read the skill’s `SKILL.md` first** (repo: `.cursor/skills/`, `video_production_skills/`; plugins under `~/.cursor/plugins/.../skills/` when relevant). Then execute. Full policy: **`AGENTS.md`** sections *Cross-agent handoff* and *Skills*.
 
 Optional narrative-only notes: `~/.claude/plans/HANDOFF-*.md` (not a substitute for updating the repo handoff file).

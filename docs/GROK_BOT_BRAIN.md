@@ -11,7 +11,7 @@ Company dump (who we are, kit, hard no's): [`docs/GROK_BOT_COMPANY.md`](GROK_BOT
 | Job | Read only these |
 |-----|-----------------|
 | **Canon** | [`CLAUDE.md`](../CLAUDE.md) §0 (data accuracy) + [`CONTEXT.md`](../CONTEXT.md) (place words). Stop there unless the task names another § |
-| **Work graph** | `npx tsx scripts/loop-brief.ts`, then [`docs/plans/CROSS_AGENT_HANDOFF.md`](plans/CROSS_AGENT_HANDOFF.md) **Current** block only (the file holds one). Enterprise Map photograph: [`docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md`](plans/ENTERPRISE_MAP/SESSION_HANDOFF.md) |
+| **Work graph** | `npx tsx scripts/loop-brief.ts`, which prints the standing holds and newest notes from [`docs/plans/handoffs/`](plans/handoffs/README.md). Enterprise Map photograph: [`docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md`](plans/ENTERPRISE_MAP/SESSION_HANDOFF.md) |
 | **Public restyle** | [`design_system/ryan-realty/locked/LOCKED.md`](../design_system/ryan-realty/locked/LOCKED.md) + the PNGs in that folder. Live data stays on Spark / place graph / Chart Room. Same URLs. No new routes |
 | **Public site / run loop** | [`docs/RUN_LOOP.md`](RUN_LOOP.md), then [`.cursor/skills/site-queue/SKILL.md`](../.cursor/skills/site-queue/SKILL.md) for what differs when the builder is Grok. |
 | **CRM** | Live product is ryan-realty.com (`lib/crm`, `/admin/crm`). Compose and send from the site. Test as matt@ / marketing@ / admin@ only. Never the 648 household |

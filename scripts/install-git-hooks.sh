@@ -35,7 +35,7 @@ branch="$(git rev-parse --abbrev-ref HEAD)"
 if [ "$branch" != "main" ]; then
   echo "NOTE: committing on '$branch' (not main)."
   echo "Worktrees are allowed. Before you stop: merge to main + push, or record the"
-  echo "branch in docs/plans/CROSS_AGENT_HANDOFF.md. Prefer names: wt/<topic>-YYYYMMDD"
+  echo "branch in your note in docs/plans/handoffs/. Prefer names: wt/<topic>-YYYYMMDD"
   if ! echo "$branch" | grep -qE '^(wt/|claude/|cursor/)'; then
     echo "TIP: rename to wt/<topic>-YYYYMMDD so stranded branches are obvious."
   fi
