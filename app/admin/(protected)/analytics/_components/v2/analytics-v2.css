@@ -216,6 +216,9 @@ a.av2-step.is-on {
 .av2-web__defs b { color: var(--a-text); font-weight: 600; }
 .av2-web__source { margin: var(--a-s3) 0 var(--a-s2); }
 .av2-web__more { font-size: var(--a-text-sm); color: var(--a-text-2); margin: 0; }
-.av2-web__more a,
-.av2-web a { color: var(--a-accent); }
+/* Layered so a Tailwind color utility on a link still wins (ci:css-layers). */
+@layer base {
+  .av2-web__more a,
+  .av2-web a { color: var(--a-accent); }
+}
 .av2-web__more a { display: inline-flex; align-items: center; min-height: 44px; }
