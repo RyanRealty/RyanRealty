@@ -1,12 +1,18 @@
-# Current — 2026-10-14 (Cursor, land CMA intake + ranking PRs)
+# Current — 2026-10-14 (Cursor, Tetherow HTML payload)
 
-Surface: Cursor cloud. #485 merged to origin/main `fe948f648`. Now landing #488 then #489. Closed #524 because `/buy/alerts` is live via #536. Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. Branch `cursor/tetherow-payload-9d69` from origin/main `7ebb9a12b`. PR only — do not merge. Nothing sent. Nobody pushes main.
 
-**This pass.** #488 closer-lot/view ranking, then #489 same-vintage seating. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main).
+**What this branch does.** `/communities/tetherow` fails every PR smoke: CI measured 761,217 bytes vs the 710,608 (694 KB) shrink-only baseline (+50,609). Production identity is 825,232. After trim, local `next start` measured **674,965 bytes** (659.1 KB), **35,643 under** the baseline. Tetherow has 22 on-market homes, so #527's `homesSrc` never attached and the same rows shipped in the fold grid and in `PlaceSubdivisionMap` RSC. Map seed is now empty and always fetches `/api/place/homes`. Fold grid caps at 12. Sold table caps at 8 with no thumbs. JSON-LD ItemList already caps at 8 photographed homes; the page now passes only that slice. Baseline file unchanged.
 
-**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+**CI on current main.** `ci:css-layers` is green (1 baselined offender, `help-driver.css`). `app/sell/_v3/sell-stage.css:575` is `@keyframes sell-ask-step`, not an un-layered `a`/`button` color rule. CLAUDE.md is 38,656 / 38,733. `unit (2)` is green on recent main runs. No trivial main-only fix in this PR.
+
+**Not this change.** Do not merge this PR. Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main).
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+
+## Earlier — 2026-10-14 (Cursor, CMA intake + ranking landed)
+
+Surface: Cursor cloud. #485, #488, and #489 are on origin/main (`7ebb9a12b`). Closed #524 because `/buy/alerts` is live via #536. Nothing sent. Nobody pushes main. No rebuild.
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 
