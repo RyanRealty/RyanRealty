@@ -1,10 +1,10 @@
-# Current — 2026-10-14 (Cursor, land CMA intake + ranking PRs)
+# Current — 2026-10-14 (Cursor, Meta Lead no dollar values)
 
-Surface: Cursor cloud. #485 merged to origin/main `fe948f648`. Now landing #488 then #489. Closed #524 because `/buy/alerts` is live via #536. Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. #542 landed on main at `99b50558f`. Vercel production `dpl_9TWvoucwshSZUsVD8hoWokVpLJMn` READY for that SHA. Nobody pushes main. Nothing sent.
 
-**This pass.** #488 closer-lot/view ranking, then #489 same-vintage seating. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main).
+**What #542 did.** Meta CAPI and pixel Lead events keep `lead_type` and `content_name` and no longer send `value` or `currency`. Offline conversions stay optional.
 
-**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+**Still open from prior Current.** Land #489 if still open. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main). Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
