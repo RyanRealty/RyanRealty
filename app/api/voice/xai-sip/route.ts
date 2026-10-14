@@ -10,7 +10,7 @@
  * Env: XAI_API_KEY, XAI_SIP_WEBHOOK_SECRET (signing secret from POST /v2/phone-numbers).
  */
 import { NextResponse, after } from 'next/server'
-import WebSocket from 'ws'
+import { runSipCall } from '@/lib/grok/voice-sip'
 import { verifyXaiWebhook } from '@/lib/voice/xai-sip'
 import { RECEPTIONIST_GREETING, RECEPTIONIST_PROMPT } from '@/lib/voice/receptionist-prompt'
 
@@ -21,43 +21,6 @@ export const maxDuration = 800
 type IncomingEvent = {
   type?: string
   data?: { call_id?: string; sip_headers?: { name: string; value: string }[] }
-}
-
-function runCall(callId: string, from: string): Promise<void> {
-  return new Promise((resolve) => {
-    const log = (m: string) => console.log(`[xai-sip] call=${callId} ${m}`)
-    const ws = new WebSocket(`wss://api.x.ai/v1/realtime?call_id=${encodeURIComponent(callId)}`, {
-      headers: { Authorization: `Bearer ${process.env.XAI_API_KEY ?? ''}` },
-    })
-    const done = () => resolve()
-    const timer = setTimeout(() => { log('max duration reached'); ws.close() }, 780_000)
-    ws.on('open', () => {
-      log(`joined from=${from}`)
-      ws.send(JSON.stringify({
-        type: 'session.update',
-        session: {
-          voice: 'eve',
-          instructions: RECEPTIONIST_PROMPT,
-          turn_detection: { type: 'server_vad' },
-          audio: { input: { transcription: { model: 'grok-transcribe' } } },
-        },
-      }))
-      ws.send(JSON.stringify({
-        type: 'response.create',
-        response: { instructions: `Greet the caller with exactly: "${RECEPTIONIST_GREETING}"` },
-      }))
-    })
-    ws.on('message', (raw) => {
-      let e: { type?: string; transcript?: string; error?: unknown }
-      try { e = JSON.parse(raw.toString()) } catch { return }
-      if (!e.type) return
-      if (e.type === 'error') log(`error ${JSON.stringify(e.error ?? e)}`)
-      else if (/input_audio_transcription\.completed$/.test(e.type)) log(`CALLER: ${e.transcript ?? ''}`)
-      else if (/output_audio_transcript\.done$|audio_transcript\.done$/.test(e.type)) log(`AGENT: ${e.transcript ?? ''}`)
-    })
-    ws.on('error', (err) => log(`ws error ${err.message}`))
-    ws.on('close', (code) => { clearTimeout(timer); log(`ended code=${code}`); done() })
-  })
 }
 
 export async function POST(req: Request) {
@@ -77,6 +40,6 @@ export async function POST(req: Request) {
   }
   const callId = event.data.call_id
   const from = event.data.sip_headers?.find((h) => h.name.toLowerCase() === 'from')?.value ?? 'unknown'
-  after(() => runCall(callId, from))
+  after(() => runSipCall(callId, from, { instructions: RECEPTIONIST_PROMPT, greeting: RECEPTIONIST_GREETING }))
   return NextResponse.json({ ok: true })
 }
