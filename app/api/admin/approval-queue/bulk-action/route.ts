@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireAdminRoute } from '@/lib/admin/require-admin'
+import { readActionMediaFacts } from '@/lib/data/agent/actions'
+import { splitVideoFrozen, VIDEO_FREEZE_MESSAGE } from '@/lib/content/video-freeze'
 
 /**
  * POST /api/admin/approval-queue/bulk-action  (W10.4)
@@ -18,6 +20,10 @@ import { requireAdminRoute } from '@/lib/admin/require-admin'
  * Status scope: every mutation is `.in('status', ['ready','needs_changes'])`, so a
  * stale client that submits an id already approved/killed/pending cannot re-flip
  * it. `affected` reports how many rows actually changed (may be < ids.length).
+ *
+ * Video freeze (Matt 2026-10-14, lib/content/video-freeze.ts): bulk approve
+ * stamps only the rows that would not post video. The held ids come back as
+ * `frozen`; a selection that is all video is refused 423 Locked.
  */
 
 const MAX_BULK = 100 // matches the page's .limit(100) fetch
@@ -57,6 +63,17 @@ export async function POST(request: NextRequest) {
 
     switch (body.action) {
       case 'approve_now': {
+        const facts = await readActionMediaFacts(ids)
+        if (!facts.ok) throw new Error(facts.error)
+        const { allowed, frozen } = splitVideoFrozen(facts.rows)
+        const frozenIds = frozen.map((row) => row.id)
+        const approvableIds = allowed.map((row) => row.id)
+        if (approvableIds.length === 0) {
+          if (frozenIds.length > 0) {
+            return NextResponse.json({ error: VIDEO_FREEZE_MESSAGE, frozen: frozenIds }, { status: 423 })
+          }
+          return NextResponse.json({ ok: true, status: 'approved', affected: 0, frozen: [] })
+        }
         const { data, error } = await service
           .from('marketing_brain_actions')
           .update({
@@ -64,7 +81,7 @@ export async function POST(request: NextRequest) {
             approved_at: new Date().toISOString(),
             approved_by: user.email,
           })
-          .in('id', ids)
+          .in('id', approvableIds)
           .in('status', MUTABLE_STATUSES)
           .select('id')
         if (error) throw error
@@ -76,11 +93,17 @@ export async function POST(request: NextRequest) {
               actionType: 'approval_queue_bulk_approve',
               resourceType: 'marketing_brain_action',
               resourceId: ids[0] ?? null,
-              details: { affected: (data ?? []).length, ids },
+              details: { affected: (data ?? []).length, ids, video_frozen: frozenIds },
             }),
           )
           .catch(() => {})
-        return NextResponse.json({ ok: true, status: 'approved', affected: (data ?? []).length })
+        return NextResponse.json({
+          ok: true,
+          status: 'approved',
+          affected: (data ?? []).length,
+          frozen: frozenIds,
+          ...(frozenIds.length > 0 ? { notice: VIDEO_FREEZE_MESSAGE } : {}),
+        })
       }
 
       case 'reject': {

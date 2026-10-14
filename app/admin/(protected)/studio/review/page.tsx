@@ -17,6 +17,7 @@ import { requireAdminPage } from '@/lib/admin/require-admin'
 import { SectionHead } from '@/components/admin/v2'
 import { listStudioDrafts, countStudioDraftsByStatus } from '@/lib/data/studio/drafts'
 import { getStudioFormat } from '@/lib/studio/formats'
+import { videoFreezeRefusal } from '@/lib/content/video-freeze'
 import type { DraftCardModel } from '../DraftCard'
 import { ReviewQueue } from './ReviewQueue'
 
@@ -48,6 +49,7 @@ export default async function StudioReviewPage() {
     typeLayer: d.typeLayer,
     origin: d.origin,
     createdAt: d.createdAt,
+    approvalFrozen: videoFreezeRefusal({ kind: d.mediaKind, url: d.mediaUrl, format: d.formatId }),
   }))
 
   return (

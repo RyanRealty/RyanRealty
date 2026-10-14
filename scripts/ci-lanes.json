@@ -294,6 +294,20 @@
       "app/api/social/publish/**",
       "lib/social/**"
     ],
+    "ci:video-freeze": [
+      "lib/content/**",
+      "lib/studio/**",
+      "lib/social/**",
+      "lib/data/studio/**",
+      "lib/data/agent/**",
+      "app/api/admin/approval-queue/**",
+      "app/api/cron/publisher-sweep/**",
+      "app/api/social/publish/**",
+      "scripts/check-video-freeze.mjs",
+      "scripts/__tests__/check-video-freeze.test.mjs",
+      "package.json",
+      "scripts/ci-lanes.json"
+    ],
     "ci:asset-register-dedup": [
       "lib/asset-library.mjs",
       "lib/asset-library.ts",

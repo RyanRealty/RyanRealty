@@ -11,6 +11,15 @@ import {
 } from './imagine-produce'
 import type { MarketPulse } from '@/lib/data/types/market'
 
+// These tests cover the Imagine pipeline itself, so they run with the video
+// freeze lifted (lib/content/video-freeze.ts, Matt 2026-10-14). The freeze is
+// tested for real in imagine-produce.video-freeze.test.ts. Delete this mock
+// when the certificate check retires the freeze.
+vi.mock('@/lib/content/video-freeze', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/content/video-freeze')>()),
+  videoFreezeRefusal: () => null,
+}))
+
 const LISTING: LiveListingForImagine = {
   listingKey: 'abc-key',
   listNumber: '220189422',
