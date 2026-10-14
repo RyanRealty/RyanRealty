@@ -1,22 +1,16 @@
 # Current — 2026-10-14 (Cursor, Tetherow page-payload baseline)
 
-Surface: Cursor cloud. Branch `cursor/tetherow-payload-baseline-58a6` (#553). Closed #554 with the note that trimming under 710 KB drops visible homes, sold rows, and map pins. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/tetherow-payload-baseline-58a6` (#553) merged `origin/main` including #543. Closed #554: trimming under 710 KB drops visible homes, sold rows, and map pins. Nobody pushes main. Nothing sent.
 
 **What this branch does.** Resets `ci:page-payload` for `/communities/tetherow` from 710,608 to 841,616 bytes. Live production identity on current main is 825,232 (21 #homes cards, 22 serialized listing keys, 35 sold thumbs). Local `next start` was 797,069. Baseline is 825,232 + 16 KiB so the next on-market home does not fail the shrink-only line. Other ratchet pages kept their numbers. Hard 200 KB / 24-card dump line unchanged.
 
 **Not this change.** Do not merge `cursor/ai-voiceover-scripts-8a9c` unless Matt asks. Do not merge the SMS suppression branch. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill. Do not send. Do not merge `fix/cma-phase-match`. Do not rebuild letters. Hold #452. Hold #471.
 
-## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
-
-Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489), which includes #485 (`fe948f648`) and #488 (`2167f8f71`). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
-
-**What landed.** #485 refuses an expired/FSBO CMA build when the home is on the market or has no sendable email. #488 ranks closer lots and matching views ahead of a mismatched sale. #489 seats a same-generation half-mile sale ahead of a stale neighbor.
-
-**Held.** #452 stays open: the body requires a rule-25 fleet score before merge (stretch clocks). #471 stays open: merge conflicts with later main and would drop `loadCmaMapTile` / `CMA_MAP_MS`; lint-and-build is already red. The unique `idx_listings_parcel_number` migration is not on main.
-
-**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool`. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
-
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `docs/RUN_LOOP.md` (payload plumbing, not a site-queue look change).
+
+## Earlier — 2026-10-14 (Cursor, GA4 offline conversions)
+
+Surface: Cursor cloud. #543 landed on origin/main at `e532597d8`. Daily `/api/cron/offline-conversions` also sends GA4 MP `qualify_lead` and `close_convert_lead` through `fireGa4Event`. `lead_type` only, no dollar amount. Live audit 2026-10-14: 0 of 23,909 contacts have a usable client_id. Nothing sent. Nobody pushes main.
 
 ## Earlier — 2026-10-14 (Cursor, land CMA intake + ranking PRs)
 
