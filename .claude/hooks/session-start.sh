@@ -83,6 +83,26 @@ if [ -f "$PW_JSON" ]; then
   fi
 fi
 
+# 5. OCR tools for the video check (Matt 2026-10-13: one factory, the same
+#    check on the Mac mini and in the cloud). `npm run video:check` and
+#    .claude/skills/ryan-studio/tools/video_render_gate.py read the finished
+#    MP4's pixels with tesseract and OpenCV; without them the check cannot
+#    measure, and a check that cannot measure fails.
+if ! command -v tesseract >/dev/null 2>&1; then
+  if (apt-get install -y -qq tesseract-ocr || (apt-get update -qq && apt-get install -y -qq tesseract-ocr)) >>"$LOG" 2>&1; then
+    notes+=("installed tesseract for the video check")
+  else
+    notes+=("tesseract install FAILED, see $LOG; npm run video:check cannot read text off frames")
+  fi
+fi
+if ! python3 -c "import cv2, numpy" >/dev/null 2>&1; then
+  if python3 -m pip install -q opencv-python-headless numpy >>"$LOG" 2>&1; then
+    notes+=("installed OpenCV for the video check")
+  else
+    notes+=("OpenCV install FAILED, see $LOG; npm run video:check cannot read frames")
+  fi
+fi
+
 if [ ${#notes[@]} -gt 0 ]; then
   msg="${notes[0]}"
   for n in "${notes[@]:1}"; do msg="$msg; $n"; done
