@@ -1,4 +1,6 @@
-# Current — 2026-10-14 (Claude, CMA multi-unit subject guard + greeting names the person at the address)
+# Current — 2026-10-14 (Cursor, persist GA client id on lead forms)
+
+## Earlier — 2026-10-14 (Claude, CMA multi-unit subject guard + greeting names the person at the address)
 
 Surface: Claude Code cloud. Branch `claude/lucid-galileo-rcafq4`. Nothing sent. No rebuild. Nobody pushes main. Prod DB read-only (audit reads only).
 
@@ -19,23 +21,21 @@ Skills read: `marketing_brain_skills/producers/cma/SKILL.md` §0.3, `docs/DATABA
 
 ## Earlier — 2026-10-14 (Cursor, G46 commit-compiles process tree)
 
-Surface: Cursor cloud. Branch `cursor/commit-compiles-heavy-timeout-84fb`. PR https://github.com/RyanRealty/RyanRealty/pull/541. Merged origin/main `63d924ee5` into the branch (handoff Current only). Matt approved merge once checks pass, treating Lighthouse JSON flake, `/communities/tetherow` page-payload, and `/sell` content-floor as already-red-on-main. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/persist-ga-client-id-3b48` / PR #560. Nothing sent. Nobody pushes main. No rebuild.
 
-**What this branch does.** `scripts/check-commit-compiles.mjs` (G46) spawns tsc detached. If `/home/box/agent-data/tools/heavy.sh` exists, tsc runs as `heavy.sh <tsc cmd...>`. The child pid is kept. On exit, SIGINT, SIGTERM, uncaughtException, and unhandledRejection the gate SIGTERMs the process group, SIGKILLs after ~5s, and `fs.rmSync`s the `/tmp/rr-commit-check-*` dir. Default timeout is 10 minutes (`COMMIT_COMPILES_TIMEOUT_MS`). Pass/fail banners are unchanged.
+**This pass.** Every lead form fill now first-touch writes `crm_people.custom.gaClientId` from the `_ga` cookie (last two numeric dot parts). `fireLeadGenerated` persists even when GPC or a decline blocks `generate_lead`, and each form action also calls `persistGaClientIdFromCookies` and passes `crm_person_id` (buyer_alerts_lp, buyer_leverage_lp, contact, seller valuation, lead-landing, page-cta, search-alert, concessions, place-value, and the other capture doors). Same cookie id is what the server `generate_lead` MP call uses. Follow-up to #543 so the daily offline cron has a client_id to send.
 
-Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `.claude/skills/tdd/SKILL.md`.
+**Still open.** Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`). #452 landed. Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. The unique `idx_listings_parcel_number` migration is not on main.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+
+## Earlier — 2026-10-14 (Cursor, G46 commit-compiles process tree)
+
+Surface: Cursor cloud. Branch `cursor/commit-compiles-heavy-timeout-84fb` landed on main via #541 at `63f24f16a`. G46 tsc spawn is process-tree killed. Nobody pushes main. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, buyer-answers batch 2)
 
-Surface: Cursor cloud. Branch `cursor/buyer-answers-batch-2-41c4` from origin/main `a00d7c3ca` (merged #506, no rebase). Land path is `gh pr checks --watch` then `gh pr merge --squash`. Nobody pushes main. Nothing sent.
-
-**What this branch does.** Extends the buyer-answer system (#528) with batch 2: living+cost for Broken Top, Brasada Ranch, Three Rivers; cost for Juniper Preserve, Eagle Crest, Black Butte Ranch; living+cost for six Bend NA districts with enough inventory (Old Bend, Southeast Bend, Century West, Southwest Bend, Summit West, Old Farm District); buyer-question pages for Bend from out of state, Sunriver second home, and buying in Redmond; luxury Bend preset (`/homes-for-sale/bend/over-1-5m`) plus region presets `/homes-for-sale/acreage` and `/homes-for-sale/under-500k`. Same templates, live MLS, FAQPage, author `/team/matthew-ryan`, sitemap + llms.txt. Edge guard reserves `from-out-of-state` and `buying`. Skipped thin places: Crosswater, Vandevert Ranch, Shevlin Commons, Discovery West.
-
-**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`).
-
-**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool`. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
-
-Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `docs/DATABASE_FOR_AI_AGENTS.md` (cache + neighborhood inventory SoR).
+Surface: Cursor cloud. Branch `cursor/buyer-answers-batch-2-41c4` landed on main via #557 at `63d924ee5`. Living+cost buyer-answer pages, luxury/acreage/under-500k presets. Nobody pushes main. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, lead page v3)
 
@@ -63,7 +63,7 @@ Surface: Cursor cloud. Branch `fix/relist-blip` landed on main via #452 at `608f
 
 ## Earlier — 2026-10-14 (Cursor, offline GA4 conversions live)
 
-Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-41c4` landed on main via #543. Offline conversions cron reads `ga_client_id` and posts GA4 Measurement Protocol hits. Production SHA `e532597d8`. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-41c4` landed on main via #543. Offline conversions cron reads `ga_client_id` and posts GA4 Measurement Protocol hits. Live audit: 0 of 23,909 contacts had a usable client_id — that is why the persist pass exists. Production SHA `e532597d8`. Nobody pushes main. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
 

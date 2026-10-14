@@ -23,7 +23,7 @@
 
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { queueBrokerAlert } from '@/lib/crm/broker-alerts'
-import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { fireLeadGenerated, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 import { getOutOfAreaCity } from '@/lib/data/geo/getOutOfAreaCities'
 import { GEO_OUT_OF_AREA_TAG, REFERRAL_CANDIDATE_TAG } from '@/lib/referral-geo'
 
@@ -113,11 +113,12 @@ export async function submitOutOfAreaReferral(
     }).catch(() => {})
 
     // GA4 Measurement Protocol mirror (analytics, not a message).
+    await persistGaClientIdFromCookies(personId)
     await fireLeadGenerated({
       lp_variant: 'out-of-area-city',
       lead_type: 'buyer_question',
       form_id: 'out_of_area_referral',
-      fub_person_id: personId,
+      crm_person_id: personId,
       extra: { city: city.slug, referral: 'out-of-area' },
     }).catch(() => {})
 

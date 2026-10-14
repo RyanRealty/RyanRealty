@@ -30,11 +30,13 @@ vi.mock('@/lib/visitor-backfill', () => ({ stitchFormSubmitIdentity: vi.fn(async
 vi.mock('@/lib/resend', () => ({ sendContactNotification: vi.fn(async () => undefined) }))
 
 const fireLeadGenerated = vi.fn()
+const persistGaClientIdFromCookies = vi.fn()
 vi.mock('@/lib/lead-tracking', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/lead-tracking')>()
   return {
     ...actual,
     fireLeadGenerated: (...args: unknown[]) => fireLeadGenerated(...args),
+    persistGaClientIdFromCookies: (...args: unknown[]) => persistGaClientIdFromCookies(...args),
   }
 })
 vi.mock('@/lib/meta-pixel-helpers', () => ({ generateEventId: () => 'evt-1' }))
@@ -68,6 +70,7 @@ beforeEach(() => {
   ensureNativeLead.mockReset().mockResolvedValue({ personId: PERSON_ID, created: true })
   enrichNativeLead.mockReset().mockResolvedValue(undefined)
   fireLeadGenerated.mockReset().mockResolvedValue(undefined)
+  persistGaClientIdFromCookies.mockReset().mockResolvedValue(undefined)
   vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200 })))
 })
 
@@ -114,6 +117,8 @@ describe('submitLeadLandingForm paid attribution', () => {
       }),
     )
     expect(canonicallyTagLead).not.toHaveBeenCalled()
+    expect(persistGaClientIdFromCookies).toHaveBeenCalledWith(PERSON_ID)
+    expect(fireLeadGenerated).not.toHaveBeenCalled()
   })
 
   it('puts gclid and fbclid from lpContext on the CRM source URL', async () => {
@@ -133,11 +138,13 @@ describe('submitLeadLandingForm paid attribution', () => {
       leadType: 'buyer_alerts',
       lpVariant: 'buy-leverage',
     })
+    expect(persistGaClientIdFromCookies).toHaveBeenCalledWith(PERSON_ID)
     expect(fireLeadGenerated).toHaveBeenCalledWith(
       expect.objectContaining({
         lead_type: 'buyer_alerts',
         form_id: 'buyer_leverage_lp',
         lp_variant: 'buy-leverage',
+        crm_person_id: PERSON_ID,
       }),
     )
     const payload = fireLeadGenerated.mock.calls[0]?.[0] as Record<string, unknown>

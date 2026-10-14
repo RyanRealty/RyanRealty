@@ -254,7 +254,43 @@ describe('generate_lead is server-only and sent in one place', () => {
   it('persists the _ga client_id so offline qualify_lead / close_convert_lead can stitch', () => {
     const src = readFileSync(join(ROOT, 'lib/lead-tracking.ts'), 'utf8')
     expect(src).toContain('rememberGaClientId')
+    expect(src).toContain('persistGaClientIdFromCookies')
     expect(src).toMatch(/rememberGaClientId\(params\.crm_person_id \?\? params\.fub_person_id, clientId\)/)
+    // Persist is first-party CRM state and runs before the consent return.
+    const persistAt = src.indexOf('await rememberGaClientId(params.crm_person_id')
+    const declineAt = src.indexOf('if (!analyticsAllowed)')
+    expect(persistAt).toBeGreaterThan(0)
+    expect(declineAt).toBeGreaterThan(persistAt)
+  })
+
+  it('every fireLeadGenerated call names the CRM person so persist can write', () => {
+    const bad: string[] = []
+    for (const f of FILES) {
+      if (f.rel === 'lib/lead-tracking.ts') continue
+      for (const call of fireLeadGeneratedArgs(f.src)) {
+        if (!/\b(?:crm_person_id|fub_person_id)\s*:/.test(call)) {
+          bad.push(`${f.rel}: fireLeadGenerated missing crm_person_id`)
+        }
+      }
+    }
+    expect(bad).toEqual([])
+  })
+
+  it('each named lead form action persists the _ga cookie on the person', () => {
+    const required = [
+      'app/actions/lead-landing.ts',
+      'app/actions/lead-capture.ts',
+      'app/actions/search-alert-capture.ts',
+      'app/contact/actions.ts',
+      'app/lp/seller-home-value/actions.ts',
+      'app/buy/concessions/actions.ts',
+      'app/communities/[slug]/_v3/place-value-actions.ts',
+    ]
+    const missing = required.filter((rel) => {
+      const f = FILES.find((row) => row.rel === rel)
+      return !f || !f.src.includes('persistGaClientIdFromCookies')
+    })
+    expect(missing).toEqual([])
   })
 
   it('puts no dollar value on generate_lead (Matt 2026-10-08)', () => {
