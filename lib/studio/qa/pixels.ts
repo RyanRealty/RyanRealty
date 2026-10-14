@@ -8,9 +8,11 @@
  *  1. The ryan-studio render gate (.claude/skills/ryan-studio/tools/video_render_gate.py)
  *     runs on the MP4: end card sequence, loop, hook text, caption presence
  *     across the voice, "top team", price-with-closed flashes. Its LENGTH
- *     finding is dropped (check 3 holds the type's own length; the gate's
- *     15 to 30 s is buyer_ad only), as are LOOP and END CARD for a type that
- *     requires neither and a manifest that has neither.
+ *     finding is dropped (check 3 holds the type's own length), as are LOOP and
+ *     END CARD for a type that requires neither and a manifest that has neither.
+ *     The gate is handed the longest run the brief allows (--max-s, exactly as
+ *     video_gate.mjs's Length block allows it), so a film the brief gate passes
+ *     is not failed by the gate after render.
  *  2. Every text the manifest claims (cards, the call to action, every caption)
  *     is read back off its own box at its own time (ocr.ts) and must be there:
  *     every figure in it, and at least half of its longer words.
@@ -45,6 +47,11 @@ export interface GateOptions {
   silent: boolean
   voStart: number | null
   voEnd: number | null
+  /**
+   * The longest run the brief allows (allowedLengthCeiling; Infinity for a Matt length override).
+   * Omitted: the type's own max_s, the render gate's default.
+   */
+  maxS?: number | null
 }
 
 export interface GateRun {
@@ -186,6 +193,15 @@ export function claimConfirmed(reading: string, text: string): boolean {
   return readingShowsCaption(reading, text).ok
 }
 
+/** The wrapper's command line (pixel_gate.py): the gate, the film, and the options check 17 hands the gate. */
+export function pixelGateArgs(mp4: string, opts: GateOptions): string[] {
+  const args = [PIXEL_GATE_WRAPPER, RENDER_GATE_PATH, mp4, '--type', opts.videoType]
+  if (opts.silent) args.push('--silent')
+  if (opts.maxS !== undefined && opts.maxS !== null) args.push('--max-s', opts.maxS === Infinity ? 'inf' : String(opts.maxS))
+  if (opts.voStart !== null && opts.voEnd !== null) args.push('--vo-start', opts.voStart.toFixed(3), '--vo-end', opts.voEnd.toFixed(3))
+  return args
+}
+
 // ---------------------------------------------------------------------------
 // The real probe: python3 + opencv + tesseract, ffmpeg from the shared resolver
 
@@ -214,10 +230,7 @@ export function createPixelProbe(env: NodeJS.ProcessEnv = process.env): PixelPro
       const { ffprobe } = studioBinaries(env)
       // The gate calls bare ffprobe and tesseract: put the resolved ones first on PATH.
       const PATH = [dirname(ffprobe), dirname(tess), env.PATH ?? ''].filter(Boolean).join(':')
-      const args = [PIXEL_GATE_WRAPPER, RENDER_GATE_PATH, mp4, '--type', opts.videoType]
-      if (opts.silent) args.push('--silent')
-      if (opts.voStart !== null && opts.voEnd !== null) args.push('--vo-start', opts.voStart.toFixed(3), '--vo-end', opts.voEnd.toFixed(3))
-      const r = await runBinary(py, args, { timeoutMs: 15 * 60_000, env: { ...env, PATH }, group: true })
+      const r = await runBinary(py, pixelGateArgs(mp4, opts), { timeoutMs: 15 * 60_000, env: { ...env, PATH }, group: true })
       const text = r.stdout.toString('utf8').trim()
       let parsed: { fails?: unknown; info?: unknown; samples?: unknown; error?: unknown }
       try {

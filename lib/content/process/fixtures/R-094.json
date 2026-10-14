@@ -1,0 +1,13 @@
+{
+  "rule": "R-094",
+  "step": "master",
+  "what": "a manifest that bound another brief",
+  "setup": {
+    "manifest": [
+      {
+        "path": "briefSha256",
+        "set": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      }
+    ]
+  }
+}

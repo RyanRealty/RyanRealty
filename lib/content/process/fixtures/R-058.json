@@ -1,0 +1,12 @@
+{
+  "rule": "R-058",
+  "step": "brief",
+  "what": "a topic cta placed on the end card",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.topic_cta.placement",
+      "set": "end_card"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "rule": "R-010",
+  "step": "brief",
+  "what": "a last beat that is not the end card",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.3.role",
+      "set": "payoff"
+    }
+  ]
+}

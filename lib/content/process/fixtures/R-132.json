@@ -1,0 +1,13 @@
+{
+  "rule": "R-132",
+  "step": "brief",
+  "what": "a job whose first brief attempt was 120 minutes ago",
+  "setup": {
+    "attempts": [
+      {
+        "step": "brief",
+        "minutesAgo": 120
+      }
+    ]
+  }
+}

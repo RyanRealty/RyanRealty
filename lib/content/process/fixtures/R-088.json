@@ -1,0 +1,12 @@
+{
+  "rule": "R-088",
+  "step": "board",
+  "what": "a meter scale mark the page never drew",
+  "setup": {
+    "layout": [
+      {
+        "drop": "4 mo"
+      }
+    ]
+  }
+}

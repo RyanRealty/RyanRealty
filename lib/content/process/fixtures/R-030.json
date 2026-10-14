@@ -1,0 +1,12 @@
+{
+  "rule": "R-030",
+  "step": "brief",
+  "what": "a buyer ad with no persona",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "persona",
+      "delete": true
+    }
+  ]
+}

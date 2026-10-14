@@ -1,0 +1,20 @@
+{
+  "rule": "R-018",
+  "step": "brief",
+  "what": "a planned box past x 960",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.0.boxes",
+      "set": [
+        {
+          "label": "big",
+          "x": 900,
+          "y": 300,
+          "w": 200,
+          "h": 100
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "rule": "R-054",
+  "step": "brief",
+  "what": "loopable false",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.loopable",
+      "set": false
+    }
+  ]
+}

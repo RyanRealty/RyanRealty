@@ -1,0 +1,13 @@
+{
+  "rule": "R-087",
+  "step": "master",
+  "what": "a manifest with no loop",
+  "setup": {
+    "manifest": [
+      {
+        "path": "loop",
+        "set": null
+      }
+    ]
+  }
+}

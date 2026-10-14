@@ -33,6 +33,16 @@
  *   R4  Any int test that writes at all imports test/int-scope. A brand-new
  *       file cannot hand-roll unmarked ids and slip past R1 by never spelling a
  *       marker.
+ *   R5  An int run is asked for by name (2026-10-14). setup() throws before
+ *       its first sweep unless RR_INT_RUN=1, teardown() does nothing without
+ *       it, and `npm run test:int` sets it. A plain `vitest run <folder>` from an
+ *       agent with production keys once pulled the int project in and swept the
+ *       marketing-deliverables bucket.
+ *   R6  No command runs vitest without naming its project (2026-10-14). The
+ *       int project writes to production and setup() refuses it without
+ *       RR_INT_RUN=1, so a bare `vitest run` (it was `npm test`) aborts on every
+ *       machine with production keys. package.json scripts, workflow steps,
+ *       hooks and shell scripts each pass `--project`.
  *
  * AST throughout (repo convention: code-inspecting gates use the TypeScript
  * compiler, never regex over source) — a rename, a reformat, or a differently
@@ -40,10 +50,11 @@
  *
  * Exit: 0 = a killed int run cannot leave permanent residue in production.
  */
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import ts from 'typescript'
 import { walkFiles } from './lib/walk.mjs'
+import { bareVitestRuns } from './lib/vitest-projects.mjs'
 
 const SCOPE_MODULE = 'test/int-scope.ts'
 const SETUP_MODULE = 'test/int-global-setup.ts'
@@ -140,6 +151,55 @@ if (setupSf) {
   }
   if (!text.includes('sweepIntResidue')) {
     problems.push(`${SETUP_MODULE}: does not call sweepIntResidue — the hooks are wired to nothing.`)
+  }
+  // R5: setup refuses before its first sweep; teardown stands down without the flag.
+  const setupBody = text.slice(text.search(/export async function setup\b/), text.search(/export async function teardown\b/))
+  const refuse = setupBody.indexOf('if (!intRunAllowed()) throw')
+  const firstSweep = setupBody.indexOf('sweepIntResidue')
+  if (refuse < 0 || (firstSweep >= 0 && refuse > firstSweep)) {
+    problems.push(`${SETUP_MODULE}: setup() must throw unless RR_INT_RUN=1 (\`if (!intRunAllowed()) throw\`) before it sweeps — a run nobody asked for must not write to production (R5).`)
+  }
+  if (!/export function intRunAllowed[\s\S]*?RR_INT_RUN === '1'/.test(text)) {
+    problems.push(`${SETUP_MODULE}: intRunAllowed() must answer true only for RR_INT_RUN === '1' (R5).`)
+  }
+  if (!/export async function teardown\b[\s\S]*?!intRunAllowed\(\)\) return/.test(text)) {
+    problems.push(`${SETUP_MODULE}: teardown() must return without sweeping unless RR_INT_RUN=1 (R5).`)
+  }
+}
+const pkgScripts = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8')).scripts ?? {}
+if (!/^RR_INT_RUN=1 vitest run --project int\b/.test(pkgScripts['test:int'] ?? '')) {
+  problems.push(`package.json: "test:int" must be \`RR_INT_RUN=1 vitest run --project int\` — it is the one door to an int run (R5).`)
+}
+
+// R6: every command that runs vitest names its project.
+for (const [name, cmd] of Object.entries(pkgScripts)) {
+  for (const run of bareVitestRuns(String(cmd))) {
+    problems.push(`package.json: script "${name}" runs vitest with no --project (\`${run}\`). A bare run pulls in the int project, which writes to production and refuses to start without RR_INT_RUN=1. Name the project: \`--project unit --project gates\` (R6).`)
+  }
+}
+// Where the repo keeps commands: workflow steps, git hooks (no extension), shell scripts.
+const COMMAND_FILES = [
+  ['.github/workflows', /\.ya?ml$/],
+  ['.husky', /^[^.]+$/],
+  ['scripts', /\.sh$/],
+]
+for (const [dir, pattern] of COMMAND_FILES) {
+  let names = []
+  try {
+    names = readdirSync(join(process.cwd(), dir)).filter((n) => pattern.test(n))
+  } catch {
+    continue
+  }
+  for (const name of names) {
+    let text = ''
+    try {
+      text = readFileSync(join(process.cwd(), dir, name), 'utf8')
+    } catch {
+      continue
+    }
+    for (const run of bareVitestRuns(text)) {
+      problems.push(`${dir}/${name}: runs vitest with no --project (\`${run}\`). A bare run pulls in the int project, which writes to production and refuses to start without RR_INT_RUN=1 (R6).`)
+    }
   }
 }
 

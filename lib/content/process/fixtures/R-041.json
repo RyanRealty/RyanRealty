@@ -1,0 +1,12 @@
+{
+  "rule": "R-041",
+  "step": "brief",
+  "what": "\"Buyers have leverage\" beside 3.5 months",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.2.scene.line",
+      "set": "Buyers have leverage"
+    }
+  ]
+}

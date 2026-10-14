@@ -1,0 +1,10 @@
+{
+  "rule": "R-102",
+  "step": "master",
+  "what": "a blank frame at the hook limit",
+  "setup": {
+    "measure": {
+      "hookVariance": 1
+    }
+  }
+}

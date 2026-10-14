@@ -1,0 +1,12 @@
+{
+  "rule": "R-060",
+  "step": "brief",
+  "what": "a brief with no techniques",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "techniques",
+      "set": []
+    }
+  ]
+}

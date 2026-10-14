@@ -1,0 +1,12 @@
+{
+  "rule": "R-036",
+  "step": "brief",
+  "what": "the banned pattern",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "caption",
+      "set": "It's not just 3.5 months, it's a signal."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "rule": "R-016",
+  "step": "brief",
+  "what": "a spec_rules length window of 7 to 15 s",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.length_s_range",
+      "set": [
+        7,
+        15
+      ]
+    }
+  ]
+}

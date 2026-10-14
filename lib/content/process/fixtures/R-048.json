@@ -1,0 +1,12 @@
+{
+  "rule": "R-048",
+  "step": "brief",
+  "what": "a male voice",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.voiceover.voice",
+      "set": "male"
+    }
+  ]
+}

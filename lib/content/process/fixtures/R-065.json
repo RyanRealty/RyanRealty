@@ -1,0 +1,12 @@
+{
+  "rule": "R-065",
+  "step": "brief",
+  "what": "a film with no approved signature",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "techniques.7",
+      "set": "eased_number_reveal"
+    }
+  ]
+}

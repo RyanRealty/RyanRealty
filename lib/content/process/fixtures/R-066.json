@@ -1,0 +1,12 @@
+{
+  "rule": "R-066",
+  "step": "brief",
+  "what": "a film with no hook technique",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "techniques.0",
+      "set": "eased_number_reveal"
+    }
+  ]
+}

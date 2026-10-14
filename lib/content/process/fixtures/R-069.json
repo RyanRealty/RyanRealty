@@ -1,0 +1,21 @@
+{
+  "rule": "R-069",
+  "step": "brief",
+  "what": "a ledger line with this film's hook and scenes",
+  "setup": {
+    "ledger": [
+      {
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "slug": "another-film",
+        "videoType": "buyer_ad",
+        "hookDevice": "dollar_first_hook",
+        "sceneSet": [
+          "meter_fill_verdict",
+          "outline_draw_zoom"
+        ],
+        "techniques": [],
+        "checkedAt": "2026-10-13T00:00:00.000Z"
+      }
+    ]
+  }
+}

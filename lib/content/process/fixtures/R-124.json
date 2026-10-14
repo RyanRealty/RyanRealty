@@ -1,0 +1,12 @@
+{
+  "rule": "R-124",
+  "step": "master",
+  "what": "a render gate finding",
+  "setup": {
+    "pixels": {
+      "gateFails": [
+        "HOOK: no hook text in the first 2.0s"
+      ]
+    }
+  }
+}
