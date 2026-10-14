@@ -129,10 +129,13 @@ describe('shell projection (one nav source for every surface)', () => {
   // silently is not, so a new number here comes with the reason.
   // 41→40 / 29→28 on 2026-09-01: the People-list fold removed the duplicate
   // 'Full list' child (Matt lock, decisions.md "UX CONSOLIDATION LOCKS" #2).
-  it('renders the nav budget: 40 superuser items, 28 broker items (Production + Signing + Sign-off on Closings)', () => {
+  // 40→41 superuser on 2026-10-14: Reports → Website (/admin/analytics), the one
+  // website dashboard Matt asked for; performance.view is superuser-only, so the
+  // broker count does not move.
+  it('renders the nav budget: 41 superuser items, 28 broker items (Production + Signing + Sign-off on Closings)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
-    expect(count('superuser')).toBe(40)
+    expect(count('superuser')).toBe(41)
     expect(count('broker')).toBe(28)
   })
 

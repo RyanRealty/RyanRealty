@@ -95,7 +95,7 @@ async function LpLeaderboard({ range }: { range: { startDate: string; endDate: s
       <Figures
         figures={[
           { label: 'LP variants', value: formatInt(rows.length) },
-          { label: 'Visits (30d)', value: formatInt(totalVisits) },
+          { label: 'Visits in this range', value: formatInt(totalVisits) },
           { label: 'Identified', value: formatInt(totalIdentified), caption: formatPct(totalIdentified, totalVisits) + ' identify rate' },
           { label: 'Hot leads', value: formatInt(totalHot), tone: totalHot > 0 ? 'ok' : undefined },
           { label: 'Best LP', value: `${(best.identifyRate * 100).toFixed(1)}%`, caption: best.variant, tone: 'ok' },
@@ -167,7 +167,7 @@ export default async function LpLeaderboardPage({ searchParams }: { searchParams
   return (
     <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
       <p className="av2-note">
-        Which landing page actually converts. Pulled directly from <code>visitor_sessions</code> with the landing page mapped back to its LP variant slug. Ranked by identify rate.
+        Which landing page actually turns visitors into known contacts. From our own site tracking: each visit is matched to the landing page it started on. Ranked by the share of visitors who became known contacts.
       </p>
       <RangeControl current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
 

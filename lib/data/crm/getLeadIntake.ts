@@ -6,6 +6,7 @@ import {
   CHANNEL_LABEL,
   type LeadChannel,
 } from './leadSourceTaxonomy'
+import { classifyCaptureDoor, type CaptureDoorId } from '@/lib/data/analytics/captureDoors'
 
 /**
  * getLeadIntake — the single source of truth for "how many leads did we get" on
@@ -23,10 +24,15 @@ import {
  * written at the 2026-06-24 CRM cutover and its dashboard queries filtered on a
  * non-existent `created_at` column, so those numbers were always 0/stale.
  *
- * DAL boundary (G1): the raw crm_people read lives here. Pages the three needed
- * columns (source, assigned_broker, created_at) — NEVER trusts rows.length for
- * termination beyond the short-read check (PostgREST 1000-row cap). Cached 10
- * min to match the reporting TTL used across the CRM DAL.
+ * DAL boundary (G1): the raw crm_people read lives here. Pages the five needed
+ * columns (id, name, source, assigned_broker, created_at) — NEVER trusts
+ * rows.length for termination beyond the short-read check (PostgREST 1000-row
+ * cap). Cached 10 min to match the reporting TTL used across the CRM DAL.
+ *
+ * byDoor and recent (2026-10-14, the Website view of /admin/analytics) are the
+ * same inbound rows read two more ways: by the form or path that created the
+ * person (classifyCaptureDoor, the funnel's one door catalog) and newest first
+ * with the person id, so every row can open /admin/crm/[id].
  */
 
 export type LeadIntakeInput = {
@@ -62,11 +68,35 @@ export type LeadIntake = {
   byBroker: { broker: string; count: number }[]
   /** Per-day inbound vs outreach counts (ascending date). */
   byDay: { date: string; inbound: number; outreach: number }[]
+  /** Inbound leads by the form or path that created them, descending count. */
+  byDoor: { door: CaptureDoorId; label: string; count: number }[]
+  /** The newest inbound leads (at most RECENT_CAP), newest first. */
+  recent: LeadIntakeRecent[]
   /** True when crm_people could not be read (dashboard shows a degraded tile). */
   unreadable: boolean
 }
 
-type Row = { source: string | null; assigned_broker: string | null; created_at: string }
+export type LeadIntakeRecent = {
+  id: number
+  /** crm_people.name as stored; null when the person has none. */
+  name: string | null
+  createdAt: string
+  source: string | null
+  channelLabel: string
+  doorLabel: string
+  /** assigned_broker slug, lower-cased; 'unassigned' when empty. */
+  broker: string
+}
+
+const RECENT_CAP = 25
+
+type Row = {
+  id: number
+  name: string | null
+  source: string | null
+  assigned_broker: string | null
+  created_at: string
+}
 
 function emptyIntake(startIso: string, endIso: string, unreadable: boolean): LeadIntake {
   return {
@@ -79,6 +109,8 @@ function emptyIntake(startIso: string, endIso: string, unreadable: boolean): Lea
     bySource: [],
     byBroker: [],
     byDay: [],
+    byDoor: [],
+    recent: [],
     unreadable,
   }
 }
@@ -91,7 +123,7 @@ async function readLeadIntake(input: LeadIntakeInput): Promise<LeadIntake> {
   for (let from = 0; from < 200_000; from += PAGE) {
     let q = sb
       .from('crm_people')
-      .select('source, assigned_broker, created_at')
+      .select('id, name, source, assigned_broker, created_at')
       .eq('deleted', false)
       .gte('created_at', startIso)
       .lte('created_at', endIso)
@@ -112,6 +144,8 @@ async function readLeadIntake(input: LeadIntakeInput): Promise<LeadIntake> {
   const sourceAgg = new Map<string, { channel: LeadChannel; count: number }>()
   const brokerAgg = new Map<string, number>()
   const dayAgg = new Map<string, { inbound: number; outreach: number }>()
+  const doorAgg = new Map<CaptureDoorId, { label: string; count: number }>()
+  const inboundRows: Array<{ row: Row; channelLabel: string; doorLabel: string; broker: string }> = []
   let inboundLeads = 0
   let outreachAdded = 0
 
@@ -135,6 +169,12 @@ async function readLeadIntake(input: LeadIntakeInput): Promise<LeadIntake> {
       // broker (inbound only)
       const b = (r.assigned_broker ?? 'unassigned').trim().toLowerCase() || 'unassigned'
       brokerAgg.set(b, (brokerAgg.get(b) ?? 0) + 1)
+      // door (inbound only): which form or path created the person
+      const door = classifyCaptureDoor(r.source)
+      const dd = doorAgg.get(door.id) ?? { label: door.label, count: 0 }
+      dd.count += 1
+      doorAgg.set(door.id, dd)
+      inboundRows.push({ row: r, channelLabel: CHANNEL_LABEL[cls.channel], doorLabel: door.label, broker: b })
     } else if (cls.outreachList) {
       outreachAdded += 1
       d.outreach += 1
@@ -166,6 +206,24 @@ async function readLeadIntake(input: LeadIntakeInput): Promise<LeadIntake> {
     .map(([date, v]) => ({ date, inbound: v.inbound, outreach: v.outreach }))
     .sort((a, b) => a.date.localeCompare(b.date))
 
+  const byDoor = Array.from(doorAgg.entries())
+    .map(([door, v]) => ({ door, label: v.label, count: v.count }))
+    .sort((a, b) => b.count - a.count)
+
+  // Rows arrive oldest first (the paged read orders by created_at ascending).
+  const recent: LeadIntakeRecent[] = inboundRows
+    .slice(-RECENT_CAP)
+    .reverse()
+    .map(({ row, channelLabel, doorLabel, broker }) => ({
+      id: row.id,
+      name: row.name,
+      createdAt: row.created_at,
+      source: row.source,
+      channelLabel,
+      doorLabel,
+      broker,
+    }))
+
   return {
     startIso,
     endIso,
@@ -176,6 +234,8 @@ async function readLeadIntake(input: LeadIntakeInput): Promise<LeadIntake> {
     bySource,
     byBroker,
     byDay,
+    byDoor,
+    recent,
     unreadable: false,
   }
 }
@@ -187,7 +247,7 @@ async function readLeadIntake(input: LeadIntakeInput): Promise<LeadIntake> {
 export async function getLeadIntake(input: LeadIntakeInput): Promise<LeadIntake> {
   const cached = unstable_cache(
     () => readLeadIntake(input),
-    ['crm-lead-intake-v1', input.startIso, input.endIso, input.brokerSlug ?? 'all'],
+    ['crm-lead-intake-v2', input.startIso, input.endIso, input.brokerSlug ?? 'all'],
     { tags: ['crm-lead-intake', 'crm-reporting'], revalidate: 600 },
   )
   return cached()

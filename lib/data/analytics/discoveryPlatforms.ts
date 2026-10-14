@@ -174,7 +174,7 @@ export const DISCOVERY_SPECS: readonly DiscoverySpec[] = [
     secondary: [],
     caveatWhenPresent: '',
     alwaysUnmeasured:
-      'TikTok writes cumulative video views, not daily impressions. A period sum would double-count. Period reach is UNMEASURED.',
+      'TikTok saves running totals of video views, not daily impressions, so adding up a period would double count. Reach for this window is not measured.',
   },
   {
     id: 'llm',
@@ -260,7 +260,7 @@ export function rollDiscovery(rows: SnapshotMetricRow[]): DiscoveryChannel[] {
       unmeasuredReason: null,
       caveat:
         primary.rows === 0
-          ? `No ${spec.channel} snapshot rows for ${spec.primaryLabel} in this window. The cron may be behind or OAuth may be expired.`
+          ? `No ${spec.label} ${spec.primaryLabel} were saved for this window. The daily import may be behind, or its account connection may have expired.`
           : spec.caveatWhenPresent,
       rowCount: primary.rows,
     }
