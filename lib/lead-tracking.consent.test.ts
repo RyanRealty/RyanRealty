@@ -25,7 +25,7 @@ vi.mock('@/lib/data/analytics/gaClientId', () => ({
   rememberGaClientId: (personId: unknown, clientId: unknown) => h.rememberGaClientId(personId, clientId),
 }))
 
-import { fireLeadGenerated, fireNonLeadEvent } from '@/lib/lead-tracking'
+import { fireLeadGenerated, fireNonLeadEvent, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 import { CONSENT_COOKIE } from '@/lib/identity/consent'
 
 const LEAD = { lp_variant: 'contact', lead_type: 'buyer_question', form_id: 'contact' } as const
@@ -65,9 +65,29 @@ describe('server generate_lead honors GPC and a decline', () => {
     expect(h.rememberGaClientId).toHaveBeenCalledWith(64115, '123.456')
   })
 
-  it('does not persist a client_id when analytics is declined', async () => {
+  it('still persists the _ga client_id when analytics is declined so #543 can stitch later', async () => {
     h.cookies[CONSENT_COOKIE] = encodeURIComponent(JSON.stringify({ analytics: false, marketing: false }))
     await fireLeadGenerated({ ...LEAD, crm_person_id: 64115 } as never)
-    expect(h.rememberGaClientId).not.toHaveBeenCalled()
+    expect(h.rememberGaClientId).toHaveBeenCalledWith(64115, '123.456')
+    expect(h.fireGa4Event).not.toHaveBeenCalled()
+  })
+
+  it('still persists the _ga client_id under Sec-GPC: 1', async () => {
+    h.headers['sec-gpc'] = '1'
+    await fireLeadGenerated({ ...LEAD, crm_person_id: 64115 } as never)
+    expect(h.rememberGaClientId).toHaveBeenCalledWith(64115, '123.456')
+    expect(h.fireGa4Event).not.toHaveBeenCalled()
+  })
+})
+
+describe('persistGaClientIdFromCookies — form actions write first-touch themselves', () => {
+  it('reads the _ga cookie and remembers it on the person', async () => {
+    await persistGaClientIdFromCookies(64115)
+    expect(h.rememberGaClientId).toHaveBeenCalledWith(64115, '123.456')
+  })
+
+  it('no-ops a missing person without throwing', async () => {
+    await persistGaClientIdFromCookies(null)
+    expect(h.rememberGaClientId).toHaveBeenCalledWith(null, '123.456')
   })
 })

@@ -65,14 +65,18 @@ function getCreds(): { measurementId: string; apiSecret: string } | null {
 
 /**
  * Parse the GA4 `_ga` cookie value and return the client_id portion.
- * Cookie format: `GA1.x.<random>.<timestamp>` — client_id is `<random>.<timestamp>`.
- * Returns null if the cookie is missing or malformed.
+ * Cookie format is usually `GA1.x.<random>.<timestamp>`. The client_id is the
+ * last two numeric dot parts, so `GA1.1.123.456`, `GA1.2.123.456`, and a
+ * bare `123.456` all yield `123.456`. Returns null if missing or malformed.
  */
 export function clientIdFromGaCookie(cookieValue: string | undefined | null): string | null {
   if (!cookieValue) return null
-  const m = cookieValue.match(/^GA\d\.\d\.(\d+\.\d+)$/)
-  if (!m) return null
-  return m[1]
+  const parts = cookieValue.trim().split('.')
+  if (parts.length < 2) return null
+  const left = parts[parts.length - 2]
+  const right = parts[parts.length - 1]
+  if (!left || !right || !/^\d+$/.test(left) || !/^\d+$/.test(right)) return null
+  return `${left}.${right}`
 }
 
 /**
