@@ -151,7 +151,7 @@
     {
       "id": "automation-flagged-not-deleted",
       "decided": "Matt 2026-10-14",
-      "why": "Automation is flagged, never deleted: a crawler, scraper, headless browser or our own tooling keeps its visitor_sessions row and events with is_automated = true and an automation_reason, so the call stays auditable and reversible. Every visitor count (the Website dashboard, /admin/visitors, lead sources, funnels) must leave flagged sessions out. The rules and their measured hits live in docs/TRACKING_POLICY.md 'Automation'; scripts/audit-visitor-automation.ts replays them over any window and fails if a session that proved to be a person ends up flagged.",
+      "why": "Automation is flagged, never deleted: a crawler, scraper, headless browser or our own tooling keeps its visitor_sessions row and events with is_automated = true and an automation_reason, so the call stays auditable and reversible. Every visitor count (the Website dashboard, /admin/visitors, lead sources, funnels) must leave flagged sessions out. The rules and their measured hits live in docs/TRACKING_POLICY.md 'Automation'; scripts/audit-visitor-automation.ts replays them over any window and lists every session that proved to be a person which a rule flagged on arrival.",
       "code": "lib/analytics/automation.test.ts"
     }
   ]

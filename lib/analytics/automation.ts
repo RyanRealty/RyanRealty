@@ -212,16 +212,19 @@ const BROKER_ONLY_PARAM = 'agent'
 
 /**
  * Desktop Google Chrome's major version from a user agent, or null for anything
- * else: phones and tablets, ChromeOS (school and kiosk Chromebooks are pinned
- * to old builds by policy), and the Chromium browsers that ship on their own
- * schedule (Edge, Opera, Samsung Internet, Yandex, Vivaldi, UC).
+ * else. Only the exact desktop Chrome template counts: Windows, macOS or Linux,
+ * then `AppleWebKit/537.36 (KHTML, like Gecko) Chrome/<n>.<...> Safari/537.36`
+ * and nothing after it. A Chromium browser on its own schedule adds a token
+ * (Edge `Edg/`, Opera `OPR/`, Electron apps `Electron/`, Whale, Avast, Yandex,
+ * Samsung) and so is never judged against Chrome's calendar; phones and ChromeOS
+ * (school Chromebooks are pinned by policy) do not match the platform.
  */
+const DESKTOP_CHROME_RE =
+  /^Mozilla\/5\.0 \((?:Windows NT [^)]+|Macintosh; Intel Mac OS X [^)]+|X11; Linux [^)]+)\) AppleWebKit\/537\.36 \(KHTML, like Gecko\) Chrome\/(\d+)\.[\d.]+ Safari\/537\.36$/
+
 export function desktopChromeMajor(userAgent: string | null | undefined): number | null {
   if (typeof userAgent !== 'string') return null
-  const ua = userAgent.trim()
-  if (!/\((?:Windows NT|Macintosh;|X11; Linux)/.test(ua)) return null
-  if (/Android|Mobile|CrOS|Edg\/|EdgA\/|OPR\/|SamsungBrowser|YaBrowser|Vivaldi|UCBrowser|CriOS/i.test(ua)) return null
-  const m = ua.match(/\bChrome\/(\d+)\./)
+  const m = userAgent.trim().match(DESKTOP_CHROME_RE)
   return m ? Number(m[1]) : null
 }
 

@@ -28,7 +28,10 @@
  *
  * "People" (the must-not-flag check): sessions stamped with a CRM contact, on a
  * browser the identity map holds against a contact, or carrying a form, opt-in,
- * save or click event.
+ * save or click event. The check that can fail is the arrival one: every person
+ * a rule flagged at birth is listed (for review). Still flagged at the end is
+ * reported too and exits 1, but identification and person evidence clear a
+ * provisional class by design, so it holds by construction.
  */
 import { config as loadEnv } from 'dotenv'
 loadEnv({ path: '.env.local' })
@@ -101,6 +104,11 @@ async function main() {
     (s.rr_vid != null && w.knownBrowsers.has(s.rr_vid)) ||
     evs.some((e) => PERSON_EVENT_TYPES.has(e.type))
   const identified = (s: AuditSessionRow) => s.crm_person_id != null || (s.rr_vid != null && w.knownBrowsers.has(s.rr_vid))
+  // The stored landing page has the identity token stripped, so a tracked-link
+  // arrival is read back from how the session was identified: the route saw the
+  // token on that request (hasToken) and never flagged it.
+  const arrivedWithToken = (s: AuditSessionRow) =>
+    typeof s.identified_via === 'string' && (s.identified_via.startsWith('tracked_link:') || s.identified_via.startsWith('email_click'))
 
   let flaggedNow = 0
   let unflaggedNow = 0
@@ -109,6 +117,7 @@ async function main() {
   let people = 0
   let peopleBirthFlagged = 0
   let peopleEndFlagged = 0
+  const peopleBirth = new Map<string, number>()
   const byReason = new Map<string, number>()
   type Tally = { birth: number; end: number; endOnUnflagged: number; towns: Map<string, number>; browsers: Map<string, number> }
   const rule = new Map<string, Tally>()
@@ -135,6 +144,7 @@ async function main() {
       userAgent: s.user_agent,
       geo: { city: s.ip_city, region: s.ip_region, country: s.ip_country },
       atMs: Date.parse(s.first_seen_at),
+      hasToken: arrivedWithToken(s),
     })
     if (!shape.automated || !shape.reason) continue
     const landing = s.landing_page
@@ -146,7 +156,10 @@ async function main() {
     const t = rule.get(shape.reason) ?? { birth: 0, end: 0, endOnUnflagged: 0, towns: new Map(), browsers: new Map() }
     rule.set(shape.reason, t)
     t.birth++
-    if (person) peopleBirthFlagged++
+    if (person) {
+      peopleBirthFlagged++
+      bump(peopleBirth, `${shape.reason}, identified via ${s.identified_via ?? '(not identified)'}, ${browserFamily(s.user_agent)}, ${s.ip_city ?? '(no town)'}`)
+    }
     const later = evs.slice(1).find((e) => auto.isPersonEvidence({ eventType: e.type, pageUrl: e.pageUrl, landingPage: landing }))
     if (later) {
       bump(clearedBy, `cleared by a later ${later.type}`)
@@ -188,8 +201,12 @@ async function main() {
   console.log(top(clearedBy, 10))
   console.log(`\nNot flagged today, flagged by the replay: ${newlyFlagged} (not flagged today after: ${unflaggedNow - newlyFlagged})`)
   console.log(`\nPeople check: ${people} sessions proved a person (contact, known browser, form, opt-in, save or click)`)
-  console.log(`  flagged at birth by a provisional rule: ${peopleBirthFlagged}`)
-  console.log(`  still flagged at the end: ${peopleEndFlagged}${peopleEndFlagged === 0 ? '  (PASS)' : '  (FAIL)'}`)
+  // The test that can fail: did a rule fire on a person's arrival at all, before
+  // their own events or identification could clear it? (Still flagged at the end
+  // is reported too, but identification and person evidence clear by design.)
+  console.log(`  flagged at birth by a provisional rule: ${peopleBirthFlagged}${peopleBirthFlagged === 0 ? '  (PASS)' : '  (REVIEW: listed below)'}`)
+  if (peopleBirth.size) console.log(top(peopleBirth, 20))
+  console.log(`  still flagged after their events and identification: ${peopleEndFlagged}${peopleEndFlagged === 0 ? '  (PASS)' : '  (FAIL)'}`)
   if (peopleEndFlagged > 0) process.exitCode = 1
 
   const csv = arg('--reflag-csv')

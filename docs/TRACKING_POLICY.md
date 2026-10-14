@@ -322,9 +322,9 @@ returns). Window `visitor_sessions.first_seen_at` in [2026-09-30T00:00Z, 2026-10
 
 | Rule | Set at birth | Still flagged after the session's events | Newly flagged (not flagged as stored) |
 |---|---|---|---|
-| `stale-browser` | 1,377 | 1,375 | 1,375 |
+| `stale-browser` | 1,376 | 1,374 | 1,374 |
 | `contact-deep-link` (now cleared only by a sign of a person) | 434 | 434 | 43 |
-| `datacenter-geo` | 11 | 9 | 9 |
+| `datacenter-geo` | 12 | 10 | 10 |
 | **All** | | | **1,427**: not flagged goes from 4,413 to 2,986 |
 
 The clusters `stale-browser` catches: Linux Chrome 150 (774 sessions, one exact user-agent
@@ -332,10 +332,10 @@ string, from Wilmington DE, New York, Princeton, Boston, Dallas and dozens more 
 with no referrer), Windows and macOS Chrome 148, 149 and 150 (490 sessions on six exact
 strings, almost all from Santa Clara CA and Mexico City), Windows Chrome 151 (55) and 144
 (52) from scattered residential-proxy towns. By town: Santa Clara 311, Mexico City 111,
-Wilmington DE 98, New York 92, Princeton NJ 83, Boston 73, Dallas 52. One page, no
-referrer, gone in under two seconds, none identified. `datacenter-geo` adds Council Bluffs
-4, Moncks Corner 2, Santa Clara 2, Ashburn 1 (among them four Android 6 Nexus 5X renders
-in the same minute and a spoofed iOS 16 user agent with Safari 26.5).
+Wilmington DE 98, New York 92, Princeton NJ 83, Boston 73, Dallas 52. No referrer, most of
+them one page and gone in under two seconds, none identified. `datacenter-geo` adds Council
+Bluffs 5, Moncks Corner 2, Santa Clara 2, Ashburn 1 (among them four Android 6 Nexus 5X
+renders in one minute and two iPhone user agents claiming iOS 16 with Safari 26.5).
 
 The stale-browser and datacenter-geo rules replay only where the user agent or town was
 stored (1,738 sessions); 3,066 sessions in the window were stored at the essential tier
@@ -344,10 +344,17 @@ larger: for [2026-10-09, 2026-10-14) not flagged goes from 1,822 to 429.
 
 **People check (the rules must not flag a person).** A session proved a person when it is
 stamped with a CRM contact, its browser is in `visitor_identity_map` with a contact, or it
-carries a form, opt-in, save or click event. 14 days: 88 such sessions; 1 was flagged at
-birth (`datacenter-geo`, Ashburn VA), then cleared by identification; **0 end flagged**.
-90 days ([2026-07-16, 2026-10-14)): 355 people, the same 1 flagged at birth, **0 end
-flagged**. Identified contacts on old Chrome builds exist (macOS 128 and 131, Windows 140
+carries a form, opt-in, save or click event. The test that can fail is the arrival: did a
+rule fire on a person before their own events or identification could clear it (both
+clear a provisional class by design, so "still flagged at the end" holds by construction
+and is reported only as a check on the wiring). 14 days: 88 such sessions; **1 flagged on
+arrival**, a contact-form submit from Ashburn VA on Linux Chrome 154 (`datacenter-geo`,
+cleared when the form identified it; whether a person or a scripted form is not
+established); 0 still flagged. 90 days ([2026-07-16, 2026-10-14)): 355 people, the same 1
+on arrival, 0 still flagged. Known limits: a scraper that scrolls the page or follows a
+link in the same tab shows the same signs as a person and clears its own flag (2 cleared
+by a scroll and 1 by a second page in the 14 days); the rules err toward counting a
+person. Identified contacts on old Chrome builds exist (macOS 128 and 131, Windows 140
 to 142); they arrived with a referrer or a campaign, or showed a person on their first
 event, and none is flagged. The 90-day replay also flags 1,094 macOS Chrome 124 sessions,
 the user agent our own capture tool used before the `rr_automation` marker (Matt

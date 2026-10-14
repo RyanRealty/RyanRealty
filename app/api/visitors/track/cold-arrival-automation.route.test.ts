@@ -12,7 +12,7 @@
  * hint is permanent automation and identifies nobody.
  */
 import { NextRequest } from 'next/server'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeVisitorDb } from '@/test/fake-visitor-db'
 import { signPersonLinkToken } from '@/lib/identity/link-token'
 import { personCookieValue } from '@/lib/identity/person-cookie'
@@ -85,11 +85,20 @@ const geo = (city: string, region: string) => ({
 })
 
 beforeEach(() => {
+  // The stale-browser rule reads the request time against the Chrome release
+  // table, so the clock is pinned: Chrome 154 is current on this day and
+  // Chrome 150 long superseded (lib/analytics/chrome-releases.ts).
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-10-14T18:00:00Z'))
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co'
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key'
   process.env.GA4_API_SECRET = 'test-secret'
   store.reset()
   spies.ga4.mockClear()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('stale-browser: a long-superseded desktop Chrome on a cold arrival', () => {
@@ -119,6 +128,15 @@ describe('stale-browser: a long-superseded desktop Chrome on a cold arrival', ()
     await track(event(sid(4)))
     await track(event(sid(4), { pageUrl: 'https://ryan-realty.com/homes-for-sale/bend' }))
     expect(store.session(sid(4))).toMatchObject({ is_automated: false, automation_reason: null })
+  })
+
+  it('a still-flagged session sends nothing to GA4 until it shows a person, then mirrors', async () => {
+    await track(event(sid(11)))
+    await track(event(sid(11), { pageUrl: `${LANDING}?page=2` })) // a re-render of the landing page
+    expect(spies.ga4).not.toHaveBeenCalled()
+    await track(event(sid(11), { pageUrl: 'https://ryan-realty.com/homes-for-sale/bend' }))
+    expect(store.session(sid(11))).toMatchObject({ is_automated: false })
+    expect(spies.ga4).toHaveBeenCalledTimes(1)
   })
 
   it('a session whose first event already shows a person is never flagged', async () => {
@@ -160,6 +178,20 @@ describe('datacenter-geo: a cold arrival from a datacenter town', () => {
       ip_city: 'Santa Clara',
       ip_region: 'CA',
     })
+  })
+
+  it('a person whose address changes mid-session (a VPN, a carrier) is still cleared by a scroll', async () => {
+    await track(event(sid(24)), { ua: CURRENT_UA, headers: geo('Ashburn', 'VA') })
+    expect(store.session(sid(24))).toMatchObject({ is_automated: true, automation_reason: 'datacenter-geo' })
+    await track(event(sid(24), { eventType: 'scroll_depth', consent: 'all' }), { ua: CURRENT_UA, headers: geo('Bend', 'OR') })
+    expect(store.session(sid(24))).toMatchObject({ is_automated: false, automation_reason: null })
+  })
+
+  it('reads only the geo Vercel sets: a client-sent cf-ipcity neither flags nor hides a session', async () => {
+    await track(event(sid(25)), { ua: CURRENT_UA, headers: { 'cf-ipcity': 'Santa Clara', 'cf-region': 'CA', 'cf-ipcountry': 'US' } })
+    expect(store.session(sid(25))).toMatchObject({ is_automated: false })
+    await track(event(sid(26)), { ua: CURRENT_UA, headers: { ...geo('Council Bluffs', 'IA'), 'cf-ipcity': 'Bend', 'cf-region': 'OR' } })
+    expect(store.session(sid(26))).toMatchObject({ is_automated: true, automation_reason: 'datacenter-geo' })
   })
 
   it('a town this brokerage serves is never flagged, Prineville and its datacenters included', async () => {
