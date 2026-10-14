@@ -1,0 +1,12 @@
+{
+  "rule": "R-023",
+  "step": "brief",
+  "what": "footage with unclear rights",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "footage.0.rights",
+      "set": "unclear"
+    }
+  ]
+}

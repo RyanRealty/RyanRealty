@@ -1,0 +1,8 @@
+{
+  "rule": "R-091",
+  "step": "animatic",
+  "what": "the animatic with no allowance",
+  "setup": {
+    "allowUnbuilt": []
+  }
+}

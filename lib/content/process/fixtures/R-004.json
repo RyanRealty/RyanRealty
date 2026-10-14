@@ -1,0 +1,12 @@
+{
+  "rule": "R-004",
+  "step": "brief",
+  "what": "a hook at 3.5 s",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "hook.time_s",
+      "set": 3.5
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "rule": "R-072",
+  "step": "brief",
+  "what": "a display rule that shows a word the voice does not say",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "voice.display.right now",
+      "set": "today"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "rule": "R-107",
+  "step": "master",
+  "what": "a five word caption",
+  "setup": {
+    "manifest": [
+      {
+        "path": "captions.0.text",
+        "set": "SO BEND HAS A HOME"
+      }
+    ]
+  }
+}

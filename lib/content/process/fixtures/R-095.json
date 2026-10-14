@@ -1,0 +1,13 @@
+{
+  "rule": "R-095",
+  "step": "master",
+  "what": "a manifest that says listing for a buyer ad",
+  "setup": {
+    "manifest": [
+      {
+        "path": "videoType",
+        "set": "listing"
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "rule": "R-022",
+  "step": "brief",
+  "what": "footage that is only map renders",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "footage.0.kind",
+      "set": "map_render"
+    },
+    {
+      "in": "brief",
+      "path": "footage.1.kind",
+      "set": "map_render"
+    }
+  ]
+}

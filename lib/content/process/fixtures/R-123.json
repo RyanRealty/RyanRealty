@@ -1,0 +1,13 @@
+{
+  "rule": "R-123",
+  "step": "master",
+  "what": "a manifest technique the registry lacks",
+  "setup": {
+    "manifest": [
+      {
+        "path": "techniques.8",
+        "set": "made_up"
+      }
+    ]
+  }
+}

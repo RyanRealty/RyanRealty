@@ -1,0 +1,14 @@
+{
+  "rule": "R-001",
+  "step": "brief",
+  "what": "a beat with a mistyped key",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.0.fotage",
+      "set": {
+        "src": "x.mp4"
+      }
+    }
+  ]
+}

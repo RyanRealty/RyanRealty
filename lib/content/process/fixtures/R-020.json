@@ -1,0 +1,12 @@
+{
+  "rule": "R-020",
+  "step": "brief",
+  "what": "a beat number with no row",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.2.number",
+      "set": "9.9"
+    }
+  ]
+}

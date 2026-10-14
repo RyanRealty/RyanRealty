@@ -1,0 +1,12 @@
+{
+  "rule": "R-082",
+  "step": "stills",
+  "what": "a beat whose clip path is not there",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.0.footage.src",
+      "set": "missing/clip.mp4"
+    }
+  ]
+}

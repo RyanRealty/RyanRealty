@@ -1,0 +1,12 @@
+{
+  "rule": "R-012",
+  "step": "brief",
+  "what": "a brief that says 22 s over a 15.3 s timeline",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "length_s",
+      "set": 22
+    }
+  ]
+}

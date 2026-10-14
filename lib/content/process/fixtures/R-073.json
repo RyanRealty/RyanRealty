@@ -1,0 +1,17 @@
+{
+  "rule": "R-073",
+  "step": "brief",
+  "what": "twelve percent said with no display rule",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.voiceover.script",
+      "set": "[warm] So... prices fell twelve percent in Bend. Sellers still have the edge... so go in with a plan. [long pause] Send this to whoever you're house hunting with."
+    },
+    {
+      "in": "timeline",
+      "path": "voice.script",
+      "set": "[warm] So... prices fell twelve percent in Bend. Sellers still have the edge... so go in with a plan. [long pause] Send this to whoever you're house hunting with."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "rule": "R-084",
+  "step": "board",
+  "what": "an end card beat 0.25 s short",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.3.end",
+      "set": 15
+    }
+  ]
+}

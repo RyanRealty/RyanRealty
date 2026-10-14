@@ -1,0 +1,12 @@
+{
+  "rule": "R-064",
+  "step": "brief",
+  "what": "a signature technique that is only ready",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "techniques.8",
+      "set": "line_draw_riding_dot"
+    }
+  ]
+}

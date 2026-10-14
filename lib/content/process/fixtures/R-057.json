@@ -1,0 +1,15 @@
+{
+  "rule": "R-057",
+  "step": "brief",
+  "what": "an end card with no Quality word",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.end_card_sequence",
+      "set": [
+        "logo",
+        "Call now 541.703.3095"
+      ]
+    }
+  ]
+}
