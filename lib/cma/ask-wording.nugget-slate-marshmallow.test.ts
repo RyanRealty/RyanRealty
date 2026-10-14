@@ -34,7 +34,9 @@ describe('ask wording from one computed position', () => {
     const low = 594_000
     const high = 623_000
     expect(lastAskVersusHeroBand(ask, low, high)).toBe('inside')
-    expect(askAgainstRangeSentence(ask, low, high)).toBe('You were asking inside the range the sales support.')
+    expect(askAgainstRangeSentence(ask, low, high)).toBe(
+      'You were asking inside the range the sales support. One of the sales that set this price is above that ask.',
+    )
     const story = askStoryReading({
       ask,
       rangeLow: low,

@@ -56,10 +56,11 @@ export default function LeadLandingForm({
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    // Capture the visitor's real first-touch attribution + anonymous session
-    // id before the server hop. getLpContext() reads utm_* from the URL and
-    // the persisted rr_lp_context; readRrSessionId() returns the uuid that
-    // ties this submit to the prior anonymous browsing in visitor_sessions.
+    // Capture the visit's attribution + anonymous session id before the server
+    // hop. getLpContext() reads utm_* from the URL this form is submitted on (the
+    // rr_lp_context fallback has had no writer since LandingPageTracker was
+    // deleted 2026-09-09); readRrSessionId() returns the uuid that ties this
+    // submit to the prior anonymous browsing in visitor_sessions.
     const lpContext = getLpContext()
     const sessionId = readRrSessionId()
     startTransition(async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { atlasLabelBox, packAtlasLabels, type AtlasLabelCandidate } from './pack-labels'
+import { atlasLabelBox, packAtlasLabels, wrapLabelLines, type AtlasLabelCandidate } from './pack-labels'
 
 function cand(partial: Partial<AtlasLabelCandidate> & Pick<AtlasLabelCandidate, 'id' | 'text'>): AtlasLabelCandidate {
   return {
@@ -74,5 +74,19 @@ describe('atlasLabelBox', () => {
     const long = atlasLabelBox('Northwest Crossing', 'place')
     const town = atlasLabelBox('Bend', 'town')
     expect(long.hw).toBeGreaterThan(town.hw)
+  })
+
+  it('wraps a recorded plat name inside the width the box reserved', () => {
+    const name = 'Deschutes River Recreation Homesites Unit 9 Part 2 Blocks 41-61'
+    const fs = 11
+    const box = atlasLabelBox(name, 'place')
+    const maxW = (box.hw - 4) * 2
+    const lines = wrapLabelLines(name, maxW, fs)
+    expect(lines.length).toBeGreaterThan(1)
+    expect(lines.join(' ')).toBe(name)
+    for (const line of lines) {
+      expect(line.length * fs * 0.58).toBeLessThanOrEqual(maxW + 0.5)
+    }
+    expect(box.hh).toBeGreaterThan((lines.length * fs * 1.2) / 2)
   })
 })

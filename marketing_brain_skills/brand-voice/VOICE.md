@@ -41,6 +41,15 @@ with a client from the first conversation through closing.
   not a form. A place heading reads "{Place} homes for sale", never "Every home for sale
   in {Place}". Buyers say subdivision, neighborhood and community, not plat. Held at Tip
   Ready by `scripts/lib/mannered-public-copy.mjs`.
+- **Ads, voiceover and captions** (2026-10-13). Spoken ads use a warm phone-call
+  register: short sentences, one idea each, light filler, natural pauses. Never scripted,
+  robotic, broadcast, or market-report. The VO is a female voice. Written site, email,
+  CMA, and packet copy still follow the rest of this file. Process and engine markup:
+  AGENTS.md "Ad copy, voiceover and captions" and
+  [`docs/ai-voiceover-scripts.md`](../../docs/ai-voiceover-scripts.md). Say "buyers have
+  leverage," never "buyer's market." No client names or addresses, no "top team."
+  Financing ads carry "Not lending advice. Talk to your lender." Nothing publishes
+  without Matt.
 
 ## Exemplars
 

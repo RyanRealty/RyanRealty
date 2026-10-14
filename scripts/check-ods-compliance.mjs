@@ -22,10 +22,10 @@
  *    SCOPE, RULED BY MATT 2026-09-08 (SITE-32) — DO NOT RE-OPEN: this clause
  *    binds the COMPILATION surfaces (search presets, statusFilter variants),
  *    which is what the checks below read. A single listing's DETAIL page
- *    showing its own ClosePrice is NOT a VOW-only sold surface for indexing
- *    purposes, so off-market detail URLs stay index,follow and this gate is
- *    deliberately NOT extended to app/listing/**. That policy is stated once,
- *    in docs/MASTER_SPEC.md §4.9, and held by ci:listing-offmarket-index
+ *    showing its own ClosePrice is NOT a VOW compilation surface, so this
+ *    gate is deliberately NOT extended to app/listing/**. Off-market detail
+ *    URLs are noindex,follow (Matt 2026-10-13; docs/MASTER_SPEC.md §4.9),
+ *    held by ci:listing-offmarket-index
  *    (scripts/check-listing-offmarket-index.mjs).
  *  §5-3 I — IDX displays refresh at least every 12 hours: sync-delta must be
  *    registered in vercel.json (ours runs every 15 minutes).

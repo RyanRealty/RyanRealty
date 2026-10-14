@@ -97,6 +97,25 @@ function svgOf(map: CmaMapResult): string {
   return Buffer.from(map.dataUri.replace(/^data:image\/svg\+xml;base64,/, ''), 'base64').toString('utf8')
 }
 
+/** A long plat name is painted across tspans. Join each text node back into the name. */
+function paintedLabels(svg: string): string[] {
+  const labels: string[] = []
+  for (const block of svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)) {
+    const inner = block[1] ?? ''
+    const spans = [...inner.matchAll(/<tspan\b[^>]*>([^<]*)<\/tspan>/g)].map((m) => m[1] ?? '')
+    const raw = spans.length > 0 ? spans.join(' ') : inner
+    labels.push(
+      raw
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .trim(),
+    )
+  }
+  return labels
+}
+
 function ringOf(b: Box) {
   return ringsFromGeometry(box(b) as GeoJSON.Polygon, { maxPoints: Infinity, maxPolygons: Infinity })
 }
@@ -162,15 +181,15 @@ describe('the one map, reader review 2026-10-08: every pin inside a drawn line',
     expect(requested).toContain('silver-sage-phase-2')
     expect(requested).not.toContain('holliday-park-third-addition-phase-iii')
     expect(map!.outlineRings).toHaveLength(2)
-    const svg = svgOf(map!)
-    expect(svg).toContain('Silver Sage Phase I')
-    expect(svg).toContain('Silver Sage Phase 2')
-    expect(svg).not.toContain('Holliday Park Third Addition Phase III')
+    const names = paintedLabels(svgOf(map!))
+    expect(names).toContain('Silver Sage Phase I')
+    expect(names).toContain('Silver Sage Phase 2')
+    expect(names).not.toContain('Holliday Park Third Addition Phase III')
     // The street-held home is not outlined, but the place the caption names
     // for it is on the map beside it (third reader review 2026-10-08: "pin 5
     // sits in Holliday Park but the map does not label Holliday Park"), and
     // the result says so for the caption.
-    expect(svg).toContain('>Holliday Park</text>')
+    expect(names).toContain('Holliday Park')
     expect(map!.streetPlaceShown).toBe('Holliday Park')
     // Every pin is inside a drawn line, except the one the caption holds to the street.
     expect(pinsOutsideOutlines({ pins: map!.pins, rings: map!.outlineRings })).toEqual(['5'])
@@ -211,10 +230,10 @@ describe('the one map, reader review 2026-10-08: every pin inside a drawn line',
     expect(pointInAnyRing(pin3, ringOf(plats['holliday-park-third-addition-phase-ii']!))).toBe(false)
     expect(map!.outlineRings).toHaveLength(3)
     // The frame holds no part of Aspen Heights' centroid, and the name is on the map anyway.
-    const svg = svgOf(map!)
-    expect(svg).toContain('Aspen Heights Phase IV')
-    expect(svg).toContain('Holliday Park Third Addition Phase II')
-    expect(svg).toContain('Holliday Park Third Addition Phase III')
+    const names = paintedLabels(svgOf(map!))
+    expect(names).toContain('Aspen Heights Phase IV')
+    expect(names).toContain('Holliday Park Third Addition Phase II')
+    expect(names).toContain('Holliday Park Third Addition Phase III')
     expect(pinsOutsideOutlines({ pins: map!.pins, rings: map!.outlineRings })).toEqual([])
   })
 

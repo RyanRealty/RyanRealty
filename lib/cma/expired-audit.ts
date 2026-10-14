@@ -374,6 +374,70 @@ function dayString(value: string | null | undefined): string | null {
   return pacificDay(value ?? null)
 }
 
+/** A recorded ask change as the price-event read carries it. */
+type CyclePriceEvent = { date?: string; ask: number; at?: string | null; previousAsk?: number | null }
+
+/**
+ * The ask in effect the moment the failed listing's last stretch on the market
+ * began, and whether a recorded change or a restart placed it (`placed`).
+ *
+ * Placed: the last recorded ask change at or before that moment, else the ask
+ * the first later change moved off of, else the opening ask, and on a stretch
+ * that came back with no change on record only when the ask never moved
+ * (`askInEffectAt`). Not placed: the MLS OriginalListPrice, which is the
+ * listing's opening ask, Coming Soon included. Null when the record cannot
+ * say; never the final ask.
+ */
+function stretchOpeningAsk(
+  cycle: BpoListingCycle,
+  priceEvents: ReadonlyArray<CyclePriceEvent> | null | undefined,
+): { ask: number | null; placed: boolean } {
+  const startAt = cycle.listedAt ?? cycle.listDate ?? null
+  const timed: AskChange[] = (priceEvents ?? []).flatMap((e) => {
+    const to = positiveAsk(e.ask)
+    return e.at && to != null ? [{ at: e.at, from: positiveAsk(e.previousAsk), to }] : []
+  })
+  if (Number.isFinite(mlsEventMillis(startAt)) && (timed.length > 0 || cycle.restarted === true)) {
+    return {
+      ask: askInEffectAt(timed, startAt, {
+        openingAsk: cycle.originalListPrice,
+        currentAsk: cycle.finalListPrice,
+        restarted: cycle.restarted === true,
+      }),
+      placed: true,
+    }
+  }
+  return { ask: positiveAsk(cycle.originalListPrice), placed: false }
+}
+
+/**
+ * THE PRICE READS THE LETTER'S CLOCK (Matt 2026-10-08, "Yes, after this
+ * landing"). Rule 16's failed-ask pull asks whether the subject's ask was cut,
+ * and from what. That is measured on its last stretch on the market, from the
+ * ask in effect when it went Active: the same first ask the letter prints
+ * (rule 28). 20676 Wild Rose's MLS OriginalListPrice is $625,000, a Coming
+ * Soon price changed to $599,900 fourteen seconds before it went Active; on
+ * its last stretch it asked $599,900 the whole time and was never cut, so the
+ * pull reads it as a known ask that did not come down.
+ *
+ * `cycle` is the failed cycle after `cycleOnTheMarket` (its last Active
+ * stretch), and `priceEvents` the dated ask changes the build reads for it. A
+ * stretch whose first ask the record cannot say has no original ask to judge
+ * a cut by (null, rule 16's smaller extra), never an earlier stretch's ask
+ * and never the final ask. With no cycle the MLS OriginalListPrice stands, as
+ * every build read it before. Read for a stale cycle too: the story is
+ * suppressed past FAILED_ASK_RECENCY_MONTHS, the pull is not.
+ */
+export function failedAskCutOriginal(args: {
+  cycle: BpoListingCycle | null | undefined
+  priceEvents?: ReadonlyArray<CyclePriceEvent> | null
+  /** OriginalListPrice off the failed listing's MLS row, for a subject with no cycle. */
+  mlsOriginalListPrice?: number | null
+}): number | null {
+  if (!args.cycle) return positiveAsk(args.mlsOriginalListPrice)
+  return stretchOpeningAsk(args.cycle, args.priceEvents).ask
+}
+
 /**
  * Build the timeline from the final cycle plus whatever dated price events the
  * record holds. Pure — the caller does the reading (lib/pricing/local-outcomes
@@ -401,23 +465,14 @@ export function buildFinalCycle(args: {
   // "You first asked $625,000" and "Asked $625K on Sep 2". OriginalListPrice
   // is the opening ask of the listing, Coming Soon included, so it stands only
   // when no recorded change places the ask at that moment.
-  const opening = positiveAsk(cycle.originalListPrice) ?? positiveAsk(cycle.finalListPrice)
   const startAt = cycle.listedAt ?? cycle.listDate ?? null
   const startMs = mlsEventMillis(startAt)
-  const timed: AskChange[] = (args.priceEvents ?? []).flatMap((e) => {
-    const to = positiveAsk(e.ask)
-    return e.at && to != null ? [{ at: e.at, from: positiveAsk(e.previousAsk), to }] : []
-  })
   // A stretch that came back with no recorded change to place its ask has no
   // known opening ask unless the ask never moved: never the earlier stretch's.
-  const initialAsk =
-    Number.isFinite(startMs) && (timed.length > 0 || cycle.restarted === true)
-      ? askInEffectAt(timed, startAt, {
-          openingAsk: cycle.originalListPrice,
-          currentAsk: cycle.finalListPrice,
-          restarted: cycle.restarted === true,
-        })
-      : opening
+  // Unplaced, a row with no OriginalListPrice draws its final ask flat; the
+  // failed-ask pull does not take that as an original (failedAskCutOriginal).
+  const opening = stretchOpeningAsk(cycle, args.priceEvents)
+  const initialAsk = opening.placed ? opening.ask : (opening.ask ?? positiveAsk(cycle.finalListPrice))
   const finalAsk = positiveAsk(cycle.finalListPrice)
   const days = finalCycleDaysOnMarket(cycle)
 
@@ -1171,6 +1226,56 @@ function weightedPriceOf(pricing: { reconciliation?: { weightedPrice?: number | 
 }
 
 /**
+ * Rule 16 (Matt 2026-10-08, delegated). The under-the-ask test reads the
+ * weighted price of the sales that set the price. When that price is already
+ * under the last ask, the failed-ask pull does not run. The recommendation is
+ * that price to the nearest thousand, the same figure the clamp line calls
+ * "near $X". A list tier above it is not used.
+ *
+ * 3037 Purcell blends to $561,188 under a $565,000 ask. The list tier was
+ * $576,000, and the pull printed $555,000. The cover is $561,000.
+ * 62475 Woodsman blends to $1,577,841 under a $1,600,000 ask. The list tier
+ * was $1,620,000, and the pull printed $1,576,000. The cover is $1,578,000.
+ *
+ * A nearest thousand that lands on or over the ask is not under the ask, so
+ * the pull still runs. A weighted price at or above the ask is unchanged
+ * here. A recommendation already under the weighted thousand is not raised:
+ * the street anchor sits between the two calls to this function, and this
+ * step does not put that price back up.
+ *
+ * Returns true when this branch owns the price and the pull must not run.
+ */
+function leaveWeightedPriceUnderAsk(
+  pricing: {
+    conservative: number
+    recommended: number
+    highEnd: number
+    valueLow?: number
+    valueHigh?: number
+    rangeRule?: { saleLow?: number; evidenceLow?: number } | null
+    reconciliation?: { weightedPrice?: number | null } | null
+  },
+  ask: number,
+): boolean {
+  const weighted = weightedPriceOf(pricing)
+  if (weighted == null || !(weighted < ask)) return false
+  const near = Math.round(weighted / 1000) * 1000
+  if (!(near > 0) || !(near < ask)) return false
+  if (pricing.recommended > near) pricing.recommended = near
+  // The list-from-close floor sits above this price (Purcell: $572,000 over
+  // the $561,188 blend). The high-DOM actives pull stops on the conservative
+  // tier, so that floor is not used. It falls to the closed-sale low when
+  // that low is at or under the recommendation.
+  if (pricing.conservative > pricing.recommended) {
+    const saleLow = closedSaleLow(pricing)
+    pricing.conservative =
+      saleLow != null && saleLow > 0 && saleLow <= pricing.recommended ? saleLow : pricing.recommended
+  }
+  if (pricing.highEnd > pricing.recommended && pricing.highEnd >= ask) pricing.highEnd = pricing.recommended
+  return true
+}
+
+/**
  * The sentence the document prints where the clamp binds.
  *
  * The cover owns the recommended dollars. This sentence must not say "that
@@ -1299,17 +1404,31 @@ export function applyFailedAskCap(
     pricing.failedAskBelowRange = true
     const note = failedAskBelowRangeNote(ask)
     if (!pricing.notes.includes(note)) pricing.notes.push(note)
-    const evidenceRec = priorBefore.get('recommended') ?? pricing.recommended
-    // Already under the ask: leave the comps. Do not pin the list up to a
-    // sale that sits on or above the ask that failed, and do not cut again.
-    if (evidenceRec < ask) {
-      reanchorSellerNet(pricing)
-      return { applied: false, cappedTo: null, uncappedRecommended: null, belowRange: true }
-    }
   }
   // A broker override with a note may sit below the sales. Do not lift or cut it.
   if (band && salesLow != null && pricing.recommended < salesLow && hasStoredBelowRangeReason(pricing)) {
     return none
+  }
+
+  // The weighted price of the sales that set the price is already under the
+  // ask. Leave it. Do not test the list tier, and do not pull again.
+  if (leaveWeightedPriceUnderAsk(pricing, ask)) {
+    reanchorSellerNet(pricing)
+    return {
+      applied: false,
+      cappedTo: null,
+      uncappedRecommended: null,
+      belowRange: pricing.failedAskBelowRange === true,
+    }
+  }
+  if (askBand && ask < askBand.low) {
+    const evidenceRec = priorBefore.get('recommended') ?? pricing.recommended
+    // No weighted price under the ask. The list tier is already under that
+    // ask: leave it. Do not pin the list up onto a sale, and do not cut again.
+    if (evidenceRec < ask) {
+      reanchorSellerNet(pricing)
+      return { applied: false, cappedTo: null, uncappedRecommended: null, belowRange: true }
+    }
   }
 
   let recent = false
@@ -1336,8 +1455,9 @@ export function applyFailedAskCap(
     askInsideBand && !hasStoredBelowRangeReason(pricing)
       ? Math.max(ceilings.highEnd.value, recCeil)
       : ceilings.highEnd.value
-  // Comps under the failed ask stay. Comps at or above it come under the ask
-  // by the small step in priceUnderFailedAsk. A percentile ceiling must not
+  // The list tier, used when no weighted price is under the ask. A list tier
+  // under the ask stays. A list tier at or above it comes under the ask by
+  // the small step in priceUnderFailedAsk. A percentile ceiling must not
   // take a second cut off a price that is already under, and it must not
   // leave the recommendation sitting on the ask.
   const evidenceRec = priorBefore.get('recommended') ?? pricing.recommended

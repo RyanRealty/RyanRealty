@@ -187,7 +187,10 @@ describe('62475 Woodsman: the local page says held flat, so no sale moves for da
     expect(local.place).toBe('Shevlin West')
     expect(local.early).toEqual({ ppsf: 581, n: 4, from: '2026-03-06', to: '2026-06-17' })
     expect(local.late).toEqual({ ppsf: 572, n: 2, from: '2026-06-18', to: '2026-09-30' })
-    expect(listingMarketSentence(WOODSMAN_LOCAL)).toContain('The price per square foot held flat, $581 then $572.')
+    expect(listingMarketSentence(WOODSMAN_LOCAL)).toContain(
+      'the price per square foot in Shevlin West for a home about this size held flat, $581 then $572.',
+    )
+    expect(listingMarketSentence(WOODSMAN_LOCAL)).not.toContain('rose from $1,591,500')
   })
 
   it('moves no sale: every factor is 1 and every sale keeps its sold price for date', () => {

@@ -14,23 +14,38 @@ export const TRANSPORT_RETRIES = 1
 const RETRY_DELAY_MS = 1_000
 
 /**
+ * Run `attempt` with ONE retry when it throws. `attempt` runs fresh each time,
+ * so it can open its own timeout and read its own body: a read that drops
+ * mid-body is a transport error too. Whatever answer it returns, any HTTP
+ * status included, is the caller's to judge and is never retried.
+ *
+ * @template T
+ * @param {(attempt: number) => Promise<T>} attempt
+ * @param {{ retries?: number, retryDelayMs?: number }} [opts]
+ * @returns {Promise<T>}
+ */
+export async function withTransportRetry(attempt, opts = {}) {
+  const retries = opts.retries ?? TRANSPORT_RETRIES
+  const delay = opts.retryDelayMs ?? RETRY_DELAY_MS
+  let lastError
+  for (let i = 0; i <= retries; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, delay))
+    try {
+      return await attempt(i)
+    } catch (e) {
+      lastError = e
+    }
+  }
+  throw lastError
+}
+
+/**
  * @param {string | URL} url
  * @param {RequestInit} [init]
  * @param {{ retries?: number, retryDelayMs?: number, fetchImpl?: typeof fetch }} [opts]
  * @returns {Promise<Response>}
  */
 export async function fetchWithTransportRetry(url, init = {}, opts = {}) {
-  const retries = opts.retries ?? TRANSPORT_RETRIES
-  const delay = opts.retryDelayMs ?? RETRY_DELAY_MS
   const doFetch = opts.fetchImpl ?? fetch
-  let lastError
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    if (attempt > 0) await new Promise((r) => setTimeout(r, delay))
-    try {
-      return await doFetch(url, init)
-    } catch (e) {
-      lastError = e
-    }
-  }
-  throw lastError
+  return withTransportRetry(() => doFetch(url, init), opts)
 }

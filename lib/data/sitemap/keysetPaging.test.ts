@@ -236,7 +236,7 @@ describe('getListingSitemapRows keyset paging', () => {
     })
     setSb(sb.client)
 
-    await expect(getListingSitemapRows(NOW)).rejects.toThrow(/reported 5 Active\/AUC rows but the page read returned 0/)
+    await expect(getListingSitemapRows(NOW)).rejects.toThrow(/reported 5 Active\/AUC\/Pending rows but the page read returned 0/)
   })
 
   it('a known zero count short-circuits without reading any pages', async () => {

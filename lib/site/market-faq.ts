@@ -1,7 +1,7 @@
 // brand-voice:exempt — factual market Q&A generated from verified live data, no marketing prose
 import type { StatValue } from '@/lib/site/json-ld'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
-import { marketVerdict, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
@@ -158,12 +158,7 @@ function resolveAsOf(refreshedAt: string | null | undefined): { iso: string | nu
   }
 }
 
-/** Months-of-supply -> market type, per the canonical CLAUDE.md thresholds. */
-function marketType(mos: number): string {
-  // Thresholds via lib/market/classify.ts (audit p0.4b); short form for FAQ prose.
-  const SHORT = { sellers: "seller's", balanced: 'balanced', buyers: "buyer's", unknown: 'balanced' } as const
-  return SHORT[marketVerdict(mos).kind]
-}
+
 
 function attendanceSchoolNames(names: readonly string[] | null | undefined): string[] {
   const out: string[] = []
@@ -334,8 +329,8 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
     // it; this builder was the one that did not.
     const displayMos = formatMonthsOfSupply(publishedMos)
     faqs.push({
-      question: `Is ${geoName} a buyer's or seller's market?`,
-      answer: `${geoName} has ${displayMos} months of supply, which is a ${marketType(publishedMos)} market. ${MOS_THRESHOLD_CLAUSE}`,
+      question: `How many months of supply does ${geoName} have?`,
+      answer: `${geoName} has ${displayMos} months of supply. ${MOS_THRESHOLD_CLAUSE}`,
     })
     // Number(), not the raw value: the Dataset variable is the machine-readable copy
     // of the sentence above it, so it publishes the number that is on the screen.

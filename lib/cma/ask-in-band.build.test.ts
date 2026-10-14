@@ -28,8 +28,19 @@ function pricingAfterPin(over: Partial<CmaPricing> = {}): CmaPricing {
 }
 
 describe('the ask-in-band hold on the built document (rule 22)', () => {
-  it('holds an expired home whose failed ask sits inside the pinned band', () => {
+  it('does not hold when the recommendation is already under the ask and within 15%', () => {
     const p = applyAskInBandHold(pricingAfterPin(), { lastCycleFailed: true, lastListPrice: 925_000, auditVerdict: 'pass' })
+    expect(p.askInBandMeasured).toBe(true)
+    expect(p.hold ?? null).toBeNull()
+    expect(p.needsReview).toBe(false)
+  })
+
+  it('holds when the recommendation is more than 15% under an ask inside the band', () => {
+    const p = applyAskInBandHold(pricingAfterPin({ recommended: 700_000 }), {
+      lastCycleFailed: true,
+      lastListPrice: 925_000,
+      auditVerdict: 'pass',
+    })
     expect(p.needsReview).toBe(true)
     expect(p.hold?.kind).toBe('ask-in-band')
     expect(p.hold?.ask).toBe(925_000)
@@ -40,12 +51,11 @@ describe('the ask-in-band hold on the built document (rule 22)', () => {
     expect(p.reviewReason).not.toMatch(/[—–]/)
   })
 
-  it('keeps an earlier review reason and appends the hold', () => {
-    const p = applyAskInBandHold(pricingAfterPin({ needsReview: true, reviewReason: 'The range is wider than usual.' }), {
-      lastCycleFailed: true,
-      lastListPrice: 925_000,
-      auditVerdict: 'pass',
-    })
+  it('keeps an earlier review reason and appends the hold when the price does not stand', () => {
+    const p = applyAskInBandHold(
+      pricingAfterPin({ recommended: 700_000, needsReview: true, reviewReason: 'The range is wider than usual.' }),
+      { lastCycleFailed: true, lastListPrice: 925_000, auditVerdict: 'pass' },
+    )
     expect(p.reviewReason).toMatch(/^The range is wider than usual\. The last ask of \$925,000/)
   })
 

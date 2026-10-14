@@ -17,6 +17,7 @@ import {
 } from '@/lib/routing/legacy-next-image'
 import { GONE_BODY, GONE_CACHE_SECONDS, isGonePath } from '@/lib/routing/gone-prefixes'
 import { resolveBlogIndexRedirect } from '@/lib/routing/blog-index-redirect'
+import { isUnknownBuyPublicPath } from '@/lib/routing/buy-public-slugs'
 import { resolveCityNeighborhoodPath, resolveHousingMarketPath } from '@/lib/routing/geo-path-guard'
 import { isRouterFlightRequest, listingIdFromRequestPath, resolveListingCanonicalHop } from '@/lib/routing/listing-canonical-hop'
 import {
@@ -204,17 +205,18 @@ const BLOCKED_COUNTRIES = parseBlockedCountries()
 // Pages cited in compliance filings (A2P 10DLC campaign message_flow, carrier
 // CTA verification) must be loadable by reviewer tooling, which often presents
 // an HTTP-library User-Agent. Twilio error 30909 hit us twice (2026-06-11)
-// because the bad-ua screen 403'd these exact URLs. Keep this list in sync
-// with CTA_URLS in scripts/crm-a2p-resubmit.mjs.
+// because the bad-ua screen 403'd these exact URLs. Every path in CTA_URLS in
+// scripts/crm-a2p-resubmit.mjs, plus the privacy and terms pages the message
+// flow links (scripts/__tests__/middleware-compliance-paths.test.mjs holds the
+// two together; the /lp pages this used to list 308 to these since 2026-09-06).
 const COMPLIANCE_VERIFICATION_PATHS = new Set([
   '/privacy',
   '/terms',
   '/contact',
+  '/sell',
   '/sell/valuation',
-  '/lp/seller-home-value',
-  '/lp/sell-your-home',
-  '/lp/buyer-listing-alerts',
-  '/lp/expired-listing',
+  '/sell/expired-listings',
+  '/homes-for-sale',
 ])
 
 /**
@@ -224,7 +226,9 @@ const COMPLIANCE_VERIFICATION_PATHS = new Set([
 function screenBotRequest(request: NextRequest, pathname: string): string | null {
   if (process.env.BOT_SCREEN_DISABLED === '1') return null
   if (pathname.startsWith('/api/')) return null
-  if (COMPLIANCE_VERIFICATION_PATHS.has(pathname.replace(/\/$/, '') || '/')) return null
+  // The filed URL exactly, with no query: a reviewer loads the page once, while
+  // a scraper paging /homes-for-sale?page=N stays screened.
+  if (!request.nextUrl.search && COMPLIANCE_VERIFICATION_PATHS.has(pathname.replace(/\/$/, '') || '/')) return null
 
   const ua = request.headers.get('user-agent') ?? ''
 
@@ -388,6 +392,13 @@ const REPORT_NOT_FOUND_HTML =
   '<div style="max-width:32rem;padding:2rem"><h1 style="font-size:2rem;margin:0 0 .75rem">Page not found</h1>' +
   `<p style="opacity:.8;line-height:1.6;margin:0 0 1.5rem">There is no monthly market report at this address. The archive has every edition since ${FIRST_EDITION_LABEL}.</p>` +
   '<a href="/housing-market/reports/monthly" style="color:#faf8f4;text-decoration:underline">Every monthly report</a></div></body></html>'
+
+const BUY_NOT_FOUND_HTML =
+  '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Page not found · Ryan Realty</title></head>' +
+  '<body style="font-family:Geist,system-ui,sans-serif;background:#102742;color:#faf8f4;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center">' +
+  '<div style="max-width:32rem;padding:2rem"><h1 style="font-size:2rem;margin:0 0 .75rem">Page not found</h1>' +
+  '<p style="opacity:.8;line-height:1.6;margin:0 0 1.5rem">There is no buyer page at this address. Search every active listing instead.</p>' +
+  '<a href="/homes-for-sale" style="color:#faf8f4;text-decoration:underline">Homes for sale</a></div></body></html>'
 
 const GEO_NOT_FOUND_HTML =
   '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Page not found · Ryan Realty</title></head>' +
@@ -674,6 +685,22 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         },
       })
     }
+  }
+
+  // ─── (0b2c) Unknown /buy/<slug> → REAL 404 (buyer-pivot 2026-10-13) ──
+  // /buy/[intent] notFound() runs under app/buy/loading.tsx and used to flush
+  // a 200 "Page Not Found" + noindex (measured /buy/leverage, /buy/first-time).
+  // Known slugs stay in lib/routing/buy-public-slugs.ts. Bare /buy is not in
+  // that list so next.config can 301 it to /homes-for-sale.
+  if (!pathname.startsWith('/api/') && isUnknownBuyPublicPath(pathname)) {
+    return new NextResponse(BUY_NOT_FOUND_HTML, {
+      status: 404,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+        'x-robots-tag': 'noindex',
+      },
+    })
   }
 
   // ─── (0b3) Invalid monthly report edition → REAL 404 (SEO-9) ────────────

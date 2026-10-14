@@ -42,6 +42,7 @@ const UNAVAILABLE = 'components/site/listing-detail/ListingUnavailable.tsx'
 const META = 'lib/site/page-metadata.ts'
 const SHARE = 'lib/share-metadata.ts'
 const ORIGIN = 'lib/site-origin.ts'
+const POLICY = 'lib/listing/listing-index-policy.ts'
 
 const LOOKUP_DAL = 'lib/data/listings/getListingDetail.ts'
 const MIDDLEWARE = 'middleware.ts'
@@ -60,6 +61,7 @@ const FILES = [
   MIDDLEWARE,
   UNAVAILABLE_503,
   SITEMAP_ROWS,
+  POLICY,
 ]
 
 function reset() {
@@ -116,13 +118,43 @@ describe('ci:listing-offmarket-index', () => {
     expect(code).toBe(0)
   })
 
+  describe('listingIndexPolicy is the only robots mapping', () => {
+    it('hardcoding noindex: false fails', () => {
+      reset()
+      edit(PAGE, 'noindex: indexPolicy.noindex,', 'noindex: false,')
+      const { code, out } = run()
+      expect(code).toBe(1)
+      expect(out).toMatch(/noindex: indexPolicy\.noindex|must pass `noindex: indexPolicy\.noindex`/)
+    })
+
+    it('keeping the canonical on the listing URL for every status fails', () => {
+      reset()
+      edit(PAGE, 'path: indexPolicy.canonicalPath,', 'path: canonicalPath,')
+      const { code, out } = run()
+      expect(code).toBe(1)
+      expect(out).toContain('indexPolicy.canonicalPath')
+    })
+
+    it('rewriting listingIndexPolicy to always index fails', () => {
+      reset()
+      edit(
+        POLICY,
+        'if (!isPublicOffMarketStatus(input.status)) {\n    return { noindex: false, canonicalPath: listingPath }\n  }',
+        'return { noindex: false, canonicalPath: listingPath }\n  if (!isPublicOffMarketStatus(input.status)) {\n    return { noindex: false, canonicalPath: listingPath }\n  }',
+      )
+      const { code, out } = run()
+      expect(code).toBe(1)
+      expect(out).toMatch(/Closed page older than 90 days|community hub canonical/)
+    })
+  })
+
   describe('a status branch at the [listingKey] chokepoint fails, however it is written', () => {
     it('a predicate call as the directive', () => {
       reset()
       edit(PAGE, OG_LINE, OG_LINE + '\n    noindex: isPublicOffMarketStatus(listing.status),')
       const { code, out } = run()
       expect(code).toBe(1)
-      expect(out).toMatch(/isPublicOffMarketStatus|Status is not an input/)
+      expect(out).toMatch(/isPublicOffMarketStatus|Status is not an ad-hoc input|listingIndexPolicy/)
     })
 
     it('a bare comparison against a status literal', () => {
@@ -130,7 +162,7 @@ describe('ci:listing-offmarket-index', () => {
       edit(PAGE, OG_LINE, OG_LINE + "\n    noindex: listing.status === 'Closed',")
       const { code, out } = run()
       expect(code).toBe(1)
-      expect(out).toContain('Status is not an input')
+      expect(out).toMatch(/Status is not an ad-hoc input|listingIndexPolicy/)
     })
 
     it('the status test hidden one hop away in a local const', () => {
@@ -189,7 +221,7 @@ describe('ci:listing-offmarket-index', () => {
         edit(PAGE, OG_LINE, OG_LINE + '\n    ' + directive)
         const { code, out } = run()
         expect(code).toBe(1)
-        expect(out).toContain('out-of-area listings are index, follow')
+        expect(out).toMatch(/out-of-area|index, follow/)
       })
     }
 
@@ -206,8 +238,8 @@ describe('ci:listing-offmarket-index', () => {
       reset()
       edit(
         SITEMAP_ROWS,
-        "import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'",
-        "import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'\nimport { isServiceAreaCity } from '@/lib/data/listings/service-area'",
+        "import { LISTING_SITEMAP_STATUSES } from '@/lib/listing-status-public'",
+        "import { LISTING_SITEMAP_STATUSES } from '@/lib/listing-status-public'\nimport { isServiceAreaCity } from '@/lib/data/listings/service-area'",
       )
       edit(SITEMAP_ROWS, 'assembleListingSitemapRows(tiles, now,', 'assembleListingSitemapRows(tiles.filter((t) => isServiceAreaCity(t.city)), now,')
       const { code, out } = run()

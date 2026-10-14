@@ -185,6 +185,7 @@ describe('listing remainder composition', () => {
     // mount and call the on-market page reordered when it is not.
     const order = [
       '<PriceCtaStrip',
+      '<ListingQuickFacts',
       '<PropertySpecs',
       '<DescriptionBlock',
       '<MortgageCalculator',
@@ -217,6 +218,7 @@ describe('listing remainder composition', () => {
     const order = [
       '<PriceCtaStrip',
       '<ListingOffMarketFacts',
+      '<ListingQuickFacts',
       '<ListingSimilarStrip',
       '<ListingLikeThisAlerts',
       '<PropertySpecs',
@@ -232,6 +234,17 @@ describe('listing remainder composition', () => {
    * robots is "index, follow" like every other listing (the noindex cost ~36%
    * of the Search Console impression drop since Sep 12).
    */
+  it('prints city and community hub text links after the price strip', () => {
+    const main = PAGE.slice(PAGE.indexOf('const main = ('), PAGE.indexOf('const floating ='))
+    expect(PAGE).toMatch(/import \{ listingHubLinks \} from '@\/lib\/listing\/listing-hub-links'/)
+    expect(PAGE).toMatch(/<ListingHubLinks/)
+    const hubs = main.indexOf('<ListingHubLinks')
+    expect(hubs).toBeGreaterThan(main.indexOf('<PriceCtaStrip'))
+    expect(hubs).toBeGreaterThan(main.indexOf('<ListingOutOfAreaNotice'))
+    expect(hubs).toBeLessThan(main.indexOf('<ListingOffMarketFacts'))
+    expect(PAGE).not.toMatch(/<ListingCommunityDoor/)
+  })
+
   it('discloses the market on an out-of-area home, before it says anything else about it', () => {
     const main = PAGE.slice(PAGE.indexOf('const main = ('), PAGE.indexOf('const floating ='))
     const notice = main.indexOf('<ListingOutOfAreaNotice')
@@ -337,5 +350,17 @@ describe('listing remainder composition', () => {
     expect(PAGE).toMatch(/id="other-subdivs"/)
     expect(PAGE).toMatch(/nameOnly/)
     expect(PAGE).toMatch(/listingAtlas\.otherSubdivs/)
+  })
+
+  it('puts the community door under the price strip via hub links, not in Quick facts', () => {
+    expect(PAGE).toMatch(/listingCommunityDoor/)
+    expect(PAGE).toMatch(/<ListingHubLinks/)
+    expect(PAGE).not.toMatch(/<ListingCommunityDoor/)
+    const main = PAGE.slice(PAGE.indexOf('const main = ('), PAGE.indexOf('const floating ='))
+    expect(main.indexOf('<PriceCtaStrip')).toBeLessThan(main.indexOf('<ListingHubLinks'))
+    expect(main.indexOf('<ListingHubLinks')).toBeLessThan(main.indexOf('<PropertySpecs'))
+    expect(PAGE).toMatch(/listingIndexPolicy/)
+    expect(PAGE).toMatch(/noindex: indexPolicy\.noindex/)
+    expect(PAGE).toMatch(/path: indexPolicy\.canonicalPath/)
   })
 })

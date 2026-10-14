@@ -25,7 +25,12 @@ import {
   LEAD_TYPES,
   NON_LEAD_EVENTS,
 } from './lead-event'
-import { attributionParamsFromSearch, leadEventParams, type FireLeadParams } from '@/lib/lead-tracking'
+import {
+  attributionParamsFromSearch,
+  leadEventParams,
+  mergeLeadAttribution,
+  type FireLeadParams,
+} from '@/lib/lead-tracking'
 
 const ROOT = process.cwd()
 
@@ -128,6 +133,36 @@ describe('leadEventParams', () => {
     expect(p).not.toHaveProperty('email')
   })
 
+  it('lets client attribution win over referer UTMs so click-around still converts', () => {
+    const referer = attributionParamsFromSearch('?utm_source=google&utm_medium=cpc&gclid=G1')
+    const p = leadEventParams(
+      {
+        ...ok,
+        attribution: { lp_source: 'facebook', lp_medium: 'paid_social', fbclid: 'F1' },
+      },
+      referer,
+    )
+    expect(p).toMatchObject({
+      lp_source: 'facebook',
+      lp_medium: 'paid_social',
+      gclid: 'G1',
+      fbclid: 'F1',
+    })
+  })
+
+  it('lets client lpContext win over a bare referer so click-around still attributes', () => {
+    const merged = mergeLeadAttribution(
+      { lp_source: 'direct' },
+      { lp_source: 'facebook', lp_medium: 'paid_social', gclid: 'g-1', fbclid: 'f-1' },
+    )
+    expect(merged).toEqual({
+      lp_source: 'facebook',
+      lp_medium: 'paid_social',
+      gclid: 'g-1',
+      fbclid: 'f-1',
+    })
+  })
+
   it('never lets extra change what the lead is or inject dollar values', () => {
     const p = leadEventParams({
       ...ok,
@@ -144,6 +179,8 @@ describe('leadEventParams', () => {
       expect(f).toMatch(/^[a-z][a-z0-9_]*$/)
       expect(isLeadFormId(f)).toBe(true)
     }
+    expect(LEAD_FORM_IDS).toContain('buyer_alerts_lp')
+    expect(LEAD_FORM_IDS).toContain('buyer_leverage_lp')
   })
 })
 
@@ -194,9 +231,20 @@ describe('generate_lead is server-only and sent in one place', () => {
         // ones it only compares against (`x === 'seller' ? ... : ...`).
         const lits = [...lt[1].matchAll(/(?<![=!]==?\s*)'([a-z_]+)'/g)].map((m) => m[1])
         // contactLeadType() returns LeadType and has its own test above.
-        if (lits.length === 0 && !/^\s*contactLeadType\(/.test(lt[1])) bad.push(`${f.rel}: lead_type is not a literal`)
+        if (
+          lits.length === 0 &&
+          !/^\s*contactLeadType\(/.test(lt[1]) &&
+          !/^\s*(?:input\.)?leadType/.test(lt[1])
+        ) {
+          bad.push(`${f.rel}: lead_type is not a literal`)
+        }
         for (const l of lits) if (!isLeadType(l)) bad.push(`${f.rel}: ${l}`)
-        if (!/form_id:\s*'[a-z_]+'/.test(call)) bad.push(`${f.rel}: no literal form_id`)
+        if (
+          !/form_id:\s*'[a-z_]+'/.test(call) &&
+          !/form_id:\s*(?:input\.)?formId(?:\s*\?\?\s*'[a-z_]+')?/.test(call)
+        ) {
+          bad.push(`${f.rel}: no literal form_id`)
+        }
       }
     }
     expect(bad).toEqual([])
@@ -215,6 +263,23 @@ describe('generate_lead is server-only and sent in one place', () => {
         if (/\bvalue\s*:/.test(call) || /\bcurrency\s*:/.test(call)) {
           bad.push(`${f.rel}: value/currency in fireLeadGenerated`)
         }
+      }
+    }
+    expect(bad).toEqual([])
+  })
+})
+
+describe('Meta Lead events carry no dollar value (Matt 2026-10-14)', () => {
+  it('no CAPI Lead or fbq Lead payload sends value or currency', () => {
+    const skip = new Set(['lib/meta-offline-conversions.ts'])
+    const bad: string[] = []
+    for (const f of FILES) {
+      if (skip.has(f.rel)) continue
+      if (/fbq\([\s\S]{0,160}['"`]Lead['"`][\s\S]{0,400}?\b(?:value|currency)\s*:/.test(f.src)) {
+        bad.push(`${f.rel}: fbq Lead value/currency`)
+      }
+      if (/eventName:\s*['"`]Lead['"`][\s\S]{0,800}?\b(?:value|currency)\s*:/.test(f.src)) {
+        bad.push(`${f.rel}: CAPI Lead value/currency`)
       }
     }
     expect(bad).toEqual([])

@@ -106,7 +106,29 @@ export function askAgainstRangeSentence(
       ? `Your last ask was ${pct} percent below the bottom of the range the sales support.`
       : `You were asking ${pct} percent below the bottom of the range the sales support.`
   }
-  return last ? 'Your last ask was inside the range the sales support.' : 'You were asking inside the range the sales support.'
+  const inside = last
+    ? 'Your last ask was inside the range the sales support.'
+    : 'You were asking inside the range the sales support.'
+  // The high of the range is one sale. When that sale's adjusted price is
+  // strictly above the ask, say so. Equal to the top is not above. Below
+  // the range is a different sentence and does not get this one.
+  if (ask < high) return `${inside} ${SALE_ABOVE_ASK_SENTENCE}`
+  return inside
+}
+
+/** Said once, when one adjusted sale that sets the range sits above the last ask. */
+export const SALE_ABOVE_ASK_SENTENCE = 'One of the sales that set this price is above that ask.'
+
+function saleAboveAskClause(
+  ask: number | null | undefined,
+  rangeLow: number | null | undefined,
+  rangeHigh: number | null | undefined,
+): string {
+  if (ask == null || !(ask > 0) || rangeLow == null || rangeHigh == null) return ''
+  const low = Math.min(rangeLow, rangeHigh)
+  const high = Math.max(rangeLow, rangeHigh)
+  if (!(low > 0) || !(high > ask) || ask < low) return ''
+  return SALE_ABOVE_ASK_SENTENCE
 }
 
 /**
@@ -572,9 +594,11 @@ export function askStoryReading(input: {
   const speaks = inRangeStretchSpeaks(stretch, input.marketMedianDom)
   const told = rangeSplitSentences(split, own)
   // The split sentences already count the days; the two dates are said once
-  // ahead of them, without the count.
+  // ahead of them, without the count. This return does not use `against`,
+  // so the sale-above sentence has to ride here or a cut-price letter drops it.
   const datesLine = input.cameOff ? cameOffThenSentence(input.cameOff, { withDays: false }) : null
-  if (told) return join([datesLine ?? '', ...told, medianLine, speaks ? walkTheHouseSentence(cls, stretch) : ''])
+  const above = own === 'inside' ? saleAboveAskClause(input.ask, input.rangeLow, input.rangeHigh) : ''
+  if (told) return join([datesLine ?? '', ...told, above, medianLine, speaks ? walkTheHouseSentence(cls, stretch) : ''])
   // Every day sat on this side. The days were just said by the sat sentence,
   // so the claim refers back to them rather than printing the count twice
   // (Matt 2026-10-07: each is said once).

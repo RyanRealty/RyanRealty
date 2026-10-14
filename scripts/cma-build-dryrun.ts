@@ -359,7 +359,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   const { getBpoListingCyclesByAddress } = await import('@/lib/data/bpo/reads')
   const { analyzeListingHistory } = await import('@/lib/bpo/history')
   const { readFailedListingCycle, withFailedCycle } = await import('@/lib/cma/failed-cycle-read')
-  const { buildFailureFindings, stampFinalCycleDom, resolveFinalCycle, buildAskExposure, applyFailedAskCap, FAILED_ASK_RECENCY_MONTHS } =
+  const { buildFailureFindings, stampFinalCycleDom, resolveFinalCycle, buildAskExposure, applyFailedAskCap, failedAskCutOriginal, FAILED_ASK_RECENCY_MONTHS } =
     await import('@/lib/cma/expired-audit')
   const { buildSubjectStatus } = await import('@/lib/pricing/subject-status')
   const { attachCompConcessions, attachSellerNet, reanchorSellerNet } = await import('@/lib/pricing/seller-net')
@@ -534,13 +534,17 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   const { localReadForSet, finishExclusivePocketPricing } = await import('@/lib/cma/pocket-pricing')
   const { preserveHydratedClosedCompDom, pricingSaleToCmaComp } = await import('@/lib/pricing/estimate')
   const exclusivePocket = selectionIsExclusivePocket(selection.tiersUsed ?? [])
-  const finalCycleForWindow = lastCycleFailed
+  const failedCycleRead = lastCycleFailed
     ? await (async () => {
         const cycle = failedCycle
         const priceEvents = cycle?.listingKey ? await getCmaListingPriceEvents(cycle.listingKey).catch(() => []) : []
-        return resolveFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey }).cycle
+        return {
+          cycle: resolveFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey }).cycle,
+          priceEvents,
+        }
       })()
     : null
+  const finalCycleForWindow = failedCycleRead?.cycle ?? null
   const { zonedDateKey } = await import('@/lib/format/date')
   const letterDay = zonedDateKey(new Date().toISOString())
   const listingWindow = subjectListingWindow({
@@ -631,7 +635,13 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
       // $1,000 step where the build pulls by days on market (3037 Purcell,
       // $564,000 here against $555,000 in the build, 2026-10-07).
       daysOnMarket: subjectDomDays(subject),
-      originalListPrice: Number(row0['OriginalListPrice']) || null,
+      // The cut is read on the last stretch, exactly as the build reads it
+      // (Matt 2026-10-08, "Yes, after this landing").
+      originalListPrice: failedAskCutOriginal({
+        cycle: failedCycle,
+        priceEvents: failedCycleRead?.priceEvents ?? [],
+        mlsOriginalListPrice: Number(row0['OriginalListPrice']) || null,
+      }),
     })
   }
 

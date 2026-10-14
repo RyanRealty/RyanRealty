@@ -88,10 +88,12 @@ export type RoomCompared = {
   phaseFamily: boolean
 }
 
-/** THE one-room decision, with what it compared. */
+/** THE room decision, with what it compared. */
 export type RoomDecision = {
   ok: boolean
   notes: Array<'beds' | 'baths'>
+  /** Whole rooms apart on each count. Zero when that count matches or is unknown. */
+  gap: { beds: number; baths: number }
   compared: RoomCompared
 }
 

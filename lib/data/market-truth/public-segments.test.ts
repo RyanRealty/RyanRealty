@@ -169,7 +169,6 @@ describe('getPublicPlaceSegments', () => {
     })).toEqual([
       '$326,000',
       '12.8 months',
-      "buyer's market",
       '5 under contract now',
       '32 sold in the last 12 months',
       '41 days to an offer, last 12 months',
@@ -198,7 +197,7 @@ describe('getPublicPlaceSegments', () => {
       medianList: 326000,
       monthsOfSupply: 0.0,
       verdict: 'buyer',
-    })).toEqual(['$326,000', "buyer's market"])
+    })).toEqual(['$326,000'])
     const items = publicSegmentItems(
       [
         {

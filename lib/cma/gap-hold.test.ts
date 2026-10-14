@@ -79,13 +79,19 @@ describe('askInBandHold (SKILL.md rule 22, Matt 2026-10-07: ask in band is a hol
 })
 
 describe('recommendationGapHold with the band (the send gates, rule 22)', () => {
-  it('holds a row whose build recorded the ask-in-band kind, with the plain reason when the dollars are missing', () => {
+  it('does not hold a stored ask-in-band kind when the recommendation is under the ask and within 15%', () => {
     const stored = recommendationGapHold(900_000, 925_000, { low: null, high: null, holdKind: ASK_IN_BAND_KIND })
+    expect(stored.hold).toBe(false)
+    const withDollars = recommendationGapHold(900_000, 925_000, { low: 893_000, high: 951_000, holdKind: ASK_IN_BAND_KIND })
+    expect(withDollars.hold).toBe(false)
+    // Exactly 15% under is not a hold.
+    expect(recommendationGapHold(925_000 * 0.85, 925_000, { low: 700_000, high: 951_000, holdKind: ASK_IN_BAND_KIND }).hold).toBe(false)
+  })
+
+  it('holds a stored ask-in-band kind when the recommendation is missing, and says the plain reason', () => {
+    const stored = recommendationGapHold(null, 925_000, { low: null, high: null, holdKind: ASK_IN_BAND_KIND })
     expect(stored.hold).toBe(true)
     if (stored.hold) expect(stored.reason).toBe(ASK_IN_BAND_REASON_PLAIN)
-    const withDollars = recommendationGapHold(900_000, 925_000, { low: 893_000, high: 951_000, holdKind: ASK_IN_BAND_KIND })
-    expect(withDollars.hold).toBe(true)
-    if (withDollars.hold) expect(withDollars.reason).toContain('$925,000')
   })
 
   it('the stored kind wins even when the live numbers would not hold, and then says only the plain reason', () => {
@@ -99,15 +105,18 @@ describe('recommendationGapHold with the band (the send gates, rule 22)', () => 
     expect(
       recommendationGapHold(900_000, 925_000, { low: 893_000, high: 951_000, origin: 'expired', holdDecided: true }).hold,
     ).toBe(false)
+    // 900 is within 15% of 925, so an unmeasured row is not held either.
     expect(
       recommendationGapHold(900_000, 925_000, { low: 893_000, high: 951_000, origin: 'expired', holdDecided: false }).hold,
-    ).toBe(true)
+    ).toBe(false)
   })
 
-  it('holds an expired home whose ask sits inside the stored band (the backstop for rows built before the field)', () => {
-    const live = recommendationGapHold(900_000, 925_000, { low: 893_000, high: 951_000, origin: 'expired' })
-    expect(live.hold).toBe(true)
-    if (live.hold) expect(live.reason).toMatch(/inside the sales range/)
+  it('holds an unmeasured expired home when the recommendation is missing or equal to the ask', () => {
+    const missing = recommendationGapHold(null, 925_000, { low: 893_000, high: 951_000, origin: 'expired' })
+    expect(missing.hold).toBe(true)
+    if (missing.hold) expect(missing.reason).toMatch(/inside the sales range/)
+    const equal = recommendationGapHold(925_000, 925_000, { low: 893_000, high: 951_000, origin: 'expired', holdDecided: false })
+    expect(equal.hold).toBe(true)
   })
 
   it("does not hold an FSBO's current ask inside the band on the live check (rule 16's thesis is a home that did not sell)", () => {

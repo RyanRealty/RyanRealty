@@ -20,17 +20,29 @@ vi.mock('@/lib/canonical-lead-tagger', () => ({
 }))
 
 const ensureNativeLead = vi.fn()
+const enrichNativeLead = vi.fn()
 vi.mock('@/lib/data/crm/ensureNativeLead', () => ({
   ensureNativeLead: (...args: unknown[]) => ensureNativeLead(...args),
+  enrichNativeLead: (...args: unknown[]) => enrichNativeLead(...args),
 }))
 
 vi.mock('@/lib/visitor-backfill', () => ({ stitchFormSubmitIdentity: vi.fn(async () => undefined) }))
 vi.mock('@/lib/resend', () => ({ sendContactNotification: vi.fn(async () => undefined) }))
-vi.mock('@/lib/lead-tracking', () => ({ fireLeadGenerated: vi.fn(async () => undefined) }))
+
+const fireLeadGenerated = vi.fn()
+vi.mock('@/lib/lead-tracking', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/lead-tracking')>()
+  return {
+    ...actual,
+    fireLeadGenerated: (...args: unknown[]) => fireLeadGenerated(...args),
+  }
+})
 vi.mock('@/lib/meta-pixel-helpers', () => ({ generateEventId: () => 'evt-1' }))
+vi.mock('@/lib/meta-capi-visitor', () => ({
+  visitorCapiConsent: async () => ({ allowed: true, consentCookie: 'granted' }),
+}))
 vi.mock('next/headers', () => ({
   cookies: async () => ({ get: () => undefined }),
-  // visitorCapiConsent (main, PR #437) reads Sec-GPC; no consent cookie, so it fails closed.
   headers: async () => new Headers(),
 }))
 
@@ -54,6 +66,8 @@ beforeEach(() => {
   sendEvent.mockReset().mockResolvedValue({ ok: true, personId: PERSON_ID })
   canonicallyTagLead.mockReset().mockResolvedValue({ ok: true })
   ensureNativeLead.mockReset().mockResolvedValue({ personId: PERSON_ID, created: true })
+  enrichNativeLead.mockReset().mockResolvedValue(undefined)
+  fireLeadGenerated.mockReset().mockResolvedValue(undefined)
   vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200 })))
 })
 
@@ -82,9 +96,16 @@ describe('submitLeadLandingForm paid attribution', () => {
     expect(canonicallyTagLead).toHaveBeenCalledWith(expect.objectContaining({ extraTags: [] }))
   })
 
+  it('names an organic post click for its platform, never as an ad, and keeps the post id', async () => {
+    await submitLeadLandingForm(input({ lp_source: 'facebook', lp_medium: 'social', lp_campaign: 'social-post', lp_content: 'act-77' }))
+    expect(canonicallyTagLead).toHaveBeenCalledWith(
+      expect.objectContaining({ extraTags: ['channel:facebook', 'campaign:social-post', 'ad-content:act-77'] }),
+    )
+  })
+
   it('keeps the tags on the native fallback when the CRM push fails', async () => {
     sendEvent.mockResolvedValueOnce({ ok: false, error: 'down' })
-    const res = await submitLeadLandingForm(input({ lp_source: 'facebook', lp_content: 'act-9' }))
+    const res = await submitLeadLandingForm(input({ lp_source: 'facebook', lp_medium: 'paid_social', lp_content: 'act-9' }))
     expect(res.error).toBe('down')
     expect(ensureNativeLead).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -93,5 +114,57 @@ describe('submitLeadLandingForm paid attribution', () => {
       }),
     )
     expect(canonicallyTagLead).not.toHaveBeenCalled()
+  })
+
+  it('puts gclid and fbclid from lpContext on the CRM source URL', async () => {
+    await submitLeadLandingForm(
+      input({ lp_source: 'google', gclid: 'g-1', fbclid: 'f-1' }),
+    )
+    const sourceUrl = sendEvent.mock.calls[0]?.[0].sourceUrl as string
+    expect(sourceUrl).toContain('gclid=g-1')
+    expect(sourceUrl).toContain('fbclid=f-1')
+    expect(sourceUrl).toContain('utm_source=google')
+  })
+
+  it('accepts form_id, lead_type, and lp_variant overrides without value on generate_lead', async () => {
+    await submitLeadLandingForm({
+      ...input(),
+      formId: 'buyer_leverage_lp',
+      leadType: 'buyer_alerts',
+      lpVariant: 'buy-leverage',
+    })
+    expect(fireLeadGenerated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lead_type: 'buyer_alerts',
+        form_id: 'buyer_leverage_lp',
+        lp_variant: 'buy-leverage',
+      }),
+    )
+    const payload = fireLeadGenerated.mock.calls[0]?.[0] as Record<string, unknown>
+    expect(JSON.stringify(payload)).not.toMatch(/"value"/)
+    expect(JSON.stringify(payload)).not.toMatch(/currency/)
+  })
+
+  it('sends Meta CAPI Lead with lead_type and content_name, never value or currency', async () => {
+    await submitLeadLandingForm({
+      ...input(),
+      formId: 'buyer_leverage_lp',
+      leadType: 'buyer_alerts',
+      lpVariant: 'buy-leverage',
+    })
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>
+    const capiCall = fetchMock.mock.calls.find((call) => String(call[0]).includes('/api/meta-capi'))
+    expect(capiCall).toBeTruthy()
+    const body = JSON.parse(String((capiCall?.[1] as { body?: string })?.body)) as {
+      eventName: string
+      customData: Record<string, unknown>
+    }
+    expect(body.eventName).toBe('Lead')
+    expect(body.customData).toMatchObject({
+      content_name: 'buyer_leverage_lp',
+      lead_type: 'buyer_alerts',
+    })
+    expect(body.customData).not.toHaveProperty('value')
+    expect(body.customData).not.toHaveProperty('currency')
   })
 })

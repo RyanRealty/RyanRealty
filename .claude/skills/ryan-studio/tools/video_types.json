@@ -1,0 +1,16 @@
+{
+  "_doc": "Machine copy of rules/VIDEO_TYPES.md. Keep in sync. RULEBOOK.md wins.",
+  "defaults": {"hook_max_s": 2, "min_s": 15, "max_s": 30, "hard_max_s": 40, "max_hero_numbers": 2, "min_hold_s": 2.5, "requires_end_card": true, "requires_real_footage": true, "requires_loop": true},
+  "types": {
+    "listing": {},
+    "market_update": {"hard_max_s": 40},
+    "news_civic": {"requires_sources": true},
+    "closing": {"min_s": 15},
+    "neighborhood_spotlight": {},
+    "buyer_ad": {"requires_special_ad_category": "housing", "requires_persona": true, "hook_max_s": 1.5},
+    "brand_film": {"max_s": 90, "hard_max_s": 90, "min_s": 15},
+    "story_teaser": {"min_s": 7, "max_s": 15, "hard_max_s": 15, "max_hero_numbers": 1}
+  },
+  "banned_phrases": ["nestled", "hidden gem", "vibrant", "thriving", "bustling", "whether you're", "look no further", "dream home", "unlock", "elevate", "discover", "explore", "journey", "more than just", "in today's market", "game-changer", "game changer", "perfect blend", "hottest market ever", "top team"],
+  "fair_housing_flags": ["families", "family-friendly", "singles", "young professionals", "retirees", "empty nesters", "christian", "church", "exclusive", "safe neighborhood", "walking distance to church"]
+}

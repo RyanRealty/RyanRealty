@@ -60,7 +60,7 @@ import { getCommunitySeoAbout } from '@/lib/community-seo-content'
 import { GOLF_COURSES } from '@/data/golf/courses'
 import { communityOutlineRef } from '@/lib/communities/community-outline'
 import { communityRegistryContext } from '@/lib/communities/community-registry-context'
-import { emptyCommunityPopulation, getCommunityPopulation } from '@/lib/place/community-population'
+import { getCommunityPopulation } from '@/lib/place/community-population'
 import { getDistrictForCity } from '@/data/co-schools'
 import { communityNewestListingsHref, getPlaceLinks } from '@/lib/place-links'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
@@ -137,10 +137,27 @@ import { getPlaceOpeningListings, getSubdivisionOnMarketRows } from '@/lib/data'
 
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { CommunityAmenities } from './_v3/CommunityAmenities.client'
+import { CommunityFoldAnswer } from './_v3/CommunityFoldAnswer'
+import { CommunityHomesGrid } from './_v3/CommunityHomesGrid'
+import { CommunityBroker } from './_v3/CommunityBroker'
+import { communityBrokerBlock } from './_v3/community-broker'
+import {
+  communityFoldAnswer,
+  communityFoldDaysToContract,
+} from './_v3/community-fold-answer'
+import {
+  communitySoldLedgerRows,
+  communitySoldRows,
+  communitySoldWindowStart,
+} from './_v3/community-sold'
+import { loadCommunitySoldTiles } from './_v3/community-sold-load'
 import { amenityItemListItems, buildCommunityAmenityBoard } from './_v3/community-amenities'
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { regionsFromChildCells } from '@/lib/place/child-rings'
 import { placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
+import { placeHomesCountLabel } from '@/lib/place/place-count-label'
+import { communityHomesSrc } from '@/lib/place/place-homes-src'
+import { SSR_GRID_PAGE } from '@/lib/site/ssr-grid-page'
 import { loadPlaceLeaseSection } from '@/lib/place/place-lease-stock'
 import { placeBoundaryClause, placeInventorySource } from '@/lib/place/place-inventory-source'
 import { childListingKeys, slugFromPlaceHref, subdivisionRailEntries } from '@/lib/place/place-child-stock'
@@ -158,7 +175,10 @@ import {
 } from './_v3/community-stock-types'
 import { resolveCommunityDisplayName } from './_v3/community-display-name'
 import { CommunityUnavailable } from './_v3/CommunityUnavailable'
-import { CommunityDegraded } from './_v3/CommunityDegraded'
+import {
+  readOrRefuseListings,
+  refuseEmptyFailedListings,
+} from '@/lib/site/listings-unavailable'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
 import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
 import { getRecordedPlatLabel } from '@/lib/data/subdivisions/getRecordedPlatLabel'
@@ -170,6 +190,14 @@ import {
   reconcilePlaceHoaFaq,
 } from './_v3/community-figures'
 import { buildPlaceKnowledge, communityGuides, placeKnowledgeSource } from './_v3/place-knowledge'
+import {
+  communityAnswerMarketLink,
+  communityAuthoredFaqs,
+  dropsGeneratedHoaQuestion,
+  isGeneratedHoaQuestion,
+  stockRailAsk,
+} from './_v3/community-authored-faqs'
+import { communityTypeDownLinks, isCommunityLedeSlug } from './_v3/community-type-links'
 
 import {
   PLACE_NEAR_RECREATION_TRACE,
@@ -223,6 +251,11 @@ function mosBarsProps(view: PlaceMosView): V3MosBarsProps {
 
 type Props = {
   params: Promise<{ slug: string }>
+}
+
+/** One population read. The page retries this; it is not a second source. */
+function readCommunityPopulation(slug: string) {
+  return withTimeoutFallbackResult(getCommunityPopulation(slug), null, 20000, 'comm:population')
 }
 
 /**
@@ -300,6 +333,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         types: stockRead.value.types,
       }
     : { listedCount: null, types: [] }
+  const paceRead = await withTimeoutFallbackResult(
+    getPublicDetachedPace({
+      geoType: 'neighborhood',
+      geoSlug: slug,
+    }),
+    EMPTY_PUBLIC_PACE,
+    3000,
+    'comm:meta-pace',
+  )
+  const medianSale12 = paceRead.ok ? paceRead.value.medianClose : null
+  const yoyMedian = paceRead.ok ? paceRead.value.yoyMedian : null
   return pageMetadata(
     communityMetadataInput({
       slug,
@@ -308,6 +352,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       heroImageUrl: community.heroImageUrl,
       refused: resolved?.kind === 'refuse',
       stock,
+      medianSale12,
+      yoyMedian,
     }),
   )
 }
@@ -319,29 +365,17 @@ export default async function CommunityDetailPage(props: Props) {
 async function renderCommunityDetail({ params }: Props) {
   const { slug } = await params
 
-  // RACED like generateMetadata above (SITE-214). A read that threw or hung used
-  // to end in error.tsx, a hollow 200 titled "This community didn't load" that a
-  // crawler indexed as the page. Unknown renders a small honest body with no
-  // figures; only a read that ANSWERED with no community is a 404. The degrade
-  // is noted by withTimeoutFallbackResult, so this copy's ISR lifetime is the
-  // 60 s window (lib/site/degraded-isr.ts), and robots stay as the head set them.
-  const communityRead = await withTimeoutFallbackResult(
-    getCommunityBySlug(slug),
-    null,
-    PLACE_HEAD_READ_MS,
-    'comm:body-community',
+  // RACED like generateMetadata above (SITE-214). A read that did not answer
+  // used to render a soft listings-miss body as a cacheable 200 ("The live
+  // homes did not load"), which crawlers indexed as the page. Throw instead:
+  // Next keeps the last good ISR copy, and a cold miss is HTTP 500 (error.tsx,
+  // noindex), never a cached empty community. Only a read that ANSWERED
+  // with no community is a 404. Retry once before refusing.
+  const community = await readOrRefuseListings(
+    () =>
+      withTimeoutFallbackResult(getCommunityBySlug(slug), null, PLACE_HEAD_READ_MS, 'comm:body-community'),
+    `comm:body-community ${slug}`,
   )
-  if (!communityRead.ok) {
-    const entry = getResortCommunityBySlug(slug)
-    return (
-      <CommunityDegraded
-        name={entry?.label ?? placeNameFromSlug(slug)}
-        city={entry?.city ?? null}
-        citySlug={entry?.city_slug ?? null}
-      />
-    )
-  }
-  const community = communityRead.value
   if (!community) notFound()
 
   // SITE-28 — NAME FIRST, BEFORE ANY OTHER READ. If this URL has no real place
@@ -424,7 +458,8 @@ async function renderCommunityDetail({ params }: Props) {
     // THE FOR-SALE POPULATION: one set for the homes list, the map's for-sale
     // dots, the head's count and the Atlas dots route. Its switch (outline
     // only, or outline plus MLS names) is COMMUNITY_FOR_SALE_SCOPE there.
-    withTimeoutFallbackResult(getCommunityPopulation(slug), null, 20000, 'comm:population'),
+    // Retried + refused below: a timed-out population is not "0 for sale".
+    readCommunityPopulation(slug),
     trustedOutlineSlug
       ? withTimeoutFallback(
           getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: trustedOutlineSlug }),
@@ -499,6 +534,14 @@ async function renderCommunityDetail({ params }: Props) {
       ? withTimeoutFallback(getPlaceSchools('neighborhood', trustedOutlineSlug), [], 4500, 'comm:schools')
       : Promise.resolve([] as Awaited<ReturnType<typeof getPlaceSchools>>),
   ])
+  const soldWindowEnd = zonedDateKey(new Date())
+  const soldWindowStart = communitySoldWindowStart(new Date())
+  const soldTiles = await loadCommunitySoldTiles({
+    neighborhoodSlug,
+    aliases: placeAliases,
+    windowStart: soldWindowStart,
+    windowEnd: soldWindowEnd,
+  })
   const commMt = commOverlays.get(`neighborhood:${cityDetachedSlug(neighborhoodSlug)}`)
   const hud = leftoverHudKpis({
     grain: 'neighborhood',
@@ -527,7 +570,7 @@ async function renderCommunityDetail({ params }: Props) {
   const belongingLine = belongingCaption(belonging)
 
   const { measuredAnnual: hoaMeasuredAnnual, measuredBasis: hoaMeasuredBasis } =
-    measuredPlaceHoaInput(placeCharacter)
+    measuredPlaceHoaInput(placeCharacter, publicName)
   const resolvedHoa = publishPlaceHoa({
     measuredAnnual: hoaMeasuredAnnual,
     measuredBasis: hoaMeasuredBasis,
@@ -536,9 +579,13 @@ async function renderCommunityDetail({ params }: Props) {
     subEstimates: registryEntry?.sub_neighborhoods?.map((s) => s.hoa_annual_estimate),
   })
 
-  // A population that did not read is unknown, not empty: nothing listed, and
-  // the Atlas says its read did not complete (§0).
-  const population = populationRead.value ?? emptyCommunityPopulation(slug)
+  // A population that did not read is unknown, not empty. Retry once, then
+  // throw so ISR keeps the last good homes list instead of caching "0 for sale".
+  const population = populationRead.ok
+    ? populationRead.value
+    : await readOrRefuseListings(() => readCommunityPopulation(slug), `comm:population ${slug}`)
+  if (!population) notFound()
+  refuseEmptyFailedListings(population, `comm:population ${slug}`)
   const aliasAwareCount = population.aliasAwareCount
 
   const activeCount: number | null = hud.active
@@ -548,6 +595,23 @@ async function renderCommunityDetail({ params }: Props) {
   const leftoverStamp =
     commMt?.headlines?.computedAt ?? commMt?.inventory?.computedAt ?? snapshot?.refreshedAt ?? null
   const mosAsOf = leftoverStamp ? formatDate(leftoverStamp) : null
+  const foldAnswer = communityFoldAnswer({
+    place: publicName,
+    asOfLabel: mosAsOf,
+    active: hud.active,
+    medianList: hud.medianList,
+    medianSale12: publicPace.medianClose,
+    ...communityFoldDaysToContract(hud.daysToPending, publicPace.daysToContract),
+  })
+  const brokerBlock = communityBrokerBlock(publicName)
+  const soldLedger = communitySoldLedgerRows(
+    communitySoldRows({
+      tiles: soldTiles,
+      aliases: placeAliases,
+      windowStart: soldWindowStart,
+      windowEnd: soldWindowEnd,
+    }),
+  )
   const placeMos = buildPlaceMosView({
     active: hud.active,
     monthsSupply: hud.monthsSupply,
@@ -715,7 +779,7 @@ async function renderCommunityDetail({ params }: Props) {
     cityName,
     marketHref: cityReportHref,
     verdictProse:
-      placeMos && hud.monthsSupply != null ? `A ${marketVerdict(hud.monthsSupply).label}.` : null,
+      placeMos && hud.monthsSupply != null ? `${marketVerdict(hud.monthsSupply).label}.` : null,
     floor: supplyFloor
       ? {
           closedSixMonths: supplyFloor.closedSixMonths,
@@ -892,13 +956,41 @@ async function renderCommunityDetail({ params }: Props) {
       dateLabel: formatDate(post.publishedAt),
     })),
   )
+  const lotsRail = stockRailAsk(stockSections.find((section) => section.key === 'land')?.rows)
+  const attachedRail = stockRailAsk(stockSections.find((section) => section.key === 'attached')?.rows)
+  const hoaMeasured = measuredPlaceHoaInput(placeCharacter, publicName)
+  const authoredFaqs = communityAuthoredFaqs({
+    slug,
+    name: publicName,
+    asOfLabel: mosAsOf,
+    medianSale12: publicPace.medianClose,
+    medianList: hud.medianList,
+    closedCount12: publicPace.closedCount,
+    saleToOriginal: publicPace.saleToOriginal,
+    cashShare: publicPace.cashShare,
+    activeSfr: hud.active,
+    lotsForSale: lotsRail.forSale,
+    lotsAskLow: lotsRail.low,
+    lotsAskHigh: lotsRail.high,
+    townhomesForSale: attachedRail.forSale,
+    hoaMonthly: hoaMeasured.measuredMonthly,
+    hoaAnnual: hoaMeasured.measuredAnnual,
+    hoaReported: hoaMeasured.measuredReported,
+    membershipOfficePhone: richContent?.membershipOfficePhone ?? null,
+    membershipTierCount: (richContent?.membershipTiers ?? []).filter((tier) =>
+      String(tier.name ?? tier.tier ?? tier.label ?? '').trim(),
+    ).length,
+  })
+  const generatedFaqs = dropsGeneratedHoaQuestion(authoredFaqs)
+    ? faqs.filter((item) => !isGeneratedHoaQuestion(item.question))
+    : faqs
   const pageFaqs = reconcilePlaceHoaFaq(
-    reconcileListedVsDetachedFaq(faqs, {
+    reconcileListedVsDetachedFaq(generatedFaqs, {
       placeName: publicName,
       listedCount,
       detachedCount: hud.active,
     }),
-    resolvedHoa,
+    dropsGeneratedHoaQuestion(authoredFaqs) ? null : resolvedHoa,
   )
 
   /* ── The cited Q&A (SITE-08) ────────────────────────────────────────────
@@ -949,6 +1041,7 @@ async function renderCommunityDetail({ params }: Props) {
     asOfLabel,
     // SITE-01's address ask IS on this page, at the top of the opening.
     valueAsk: { href: '#value', onPage: true },
+    leading: authoredFaqs,
     extra: pageFaqs,
   })
   const answerFaqs = answersFaqItems(placeAnswers)
@@ -1013,6 +1106,36 @@ async function renderCommunityDetail({ params }: Props) {
     listedCount: placeHomes.length > 0 ? placeHomes.length : null,
     types: communityStockTypesFromListings(placeHomes),
   }
+  const communityLede = isCommunityLedeSlug(slug)
+    ? placeTakeaways({
+        variant: 'community',
+        communitySlug: slug,
+        place: publicName,
+        asOfLabel: mosAsOf,
+        medianList: hud.medianList,
+        saleMedian:
+          publicPace.medianClose != null && publicPace.medianClose > 0
+            ? { value: publicPace.medianClose, when: 'over the last 12 months' }
+            : null,
+        yoyMedian: publicPace.yoyMedian,
+        cashShare: publicPace.cashShare,
+        cityCashShare: cityPace.cashShare,
+        hasTownhomes: listedStock.types.includes('attached'),
+        hasLots: listedStock.types.includes('lots'),
+      })
+    : []
+  const communityAnswerLink = communityAnswerMarketLink({
+    name: publicName,
+    cityName,
+    citySlug,
+    communityMarketHref,
+    cityReportHref,
+  })
+  const typeDownLinks = communityTypeDownLinks({
+    slug,
+    name: publicName,
+    types: listedStock.types,
+  })
   const fieldTypeIndex = communityFieldTypeIndex(placeHomes)
   const communitySchemas = buildCommunitySchemas({
     slug,
@@ -1031,6 +1154,8 @@ async function renderCommunityDetail({ params }: Props) {
     amenityItems: amenityBoard ? amenityItemListItems(amenityBoard, `/communities/${slug}`) : undefined,
     homes: placeHomes,
     stock: listedStock,
+    medianSale12: publicPace.medianClose,
+    yoyMedian: publicPace.yoyMedian,
   })
   const communityGuideSchema = areaGuideVideoSchema(publicName, `/communities/${slug}`, areaGuideVideo)
   if (communityGuideSchema) communitySchemas.push(communityGuideSchema)
@@ -1110,6 +1235,12 @@ async function renderCommunityDetail({ params }: Props) {
                 </>
               ) : null}
               <a href="#homes">{publicName} homes for sale</a>
+              {typeDownLinks.map((link) => (
+                <span key={link.href}>
+                  {' · '}
+                  <a href={link.href}>{link.label}</a>
+                </span>
+              ))}
             </p>
             {belongingLine ? (
               <p
@@ -1122,10 +1253,28 @@ async function renderCommunityDetail({ params }: Props) {
           </div>
         </div>
 
+        <CommunityFoldAnswer id="answer" answer={foldAnswer} link={communityAnswerLink} />
+        <CommunityHomesGrid id="homes" placeName={publicName} homes={placeHomes.slice(0, SSR_GRID_PAGE)} />
+        {soldLedger ? (
+          <V3Ledger
+            id="sold"
+            eyebrow={v3Text(`${publicName} · Sold`)}
+            heading={v3Text('Recently sold (6 mo)')}
+            rows={soldLedger}
+            source={v3Text(
+              mosAsOf
+                ? `Oregon Data Share MLS, closed sales in ${publicName} in the last 6 months, as of ${mosAsOf}.`
+                : `Oregon Data Share MLS, closed sales in ${publicName} in the last 6 months.`,
+            )}
+          />
+        ) : null}
+
         <PlaceSubdivisionMap
           placeName={publicName}
           rail={railEntries}
-          homes={placeHomes}
+          homes={placeHomes.slice(0, SSR_GRID_PAGE)}
+          homesSrc={placeHomes.length > SSR_GRID_PAGE ? communityHomesSrc(slug) : undefined}
+          homesCountLabel={placeHomesCountLabel(placeHomes)}
           leases={leaseSection?.rows ?? []}
           keysBySlug={homesByChild}
           source={inventorySource}
@@ -1191,7 +1340,7 @@ async function renderCommunityDetail({ params }: Props) {
             </div>
           </div>
           <V3Takeaways
-            id="takeaways"
+            id={communityLede.length >= 2 ? 'glance' : 'takeaways'}
             heading={`${publicName} at a glance`}
             items={takeaways}
             source={mosAsOf ? `Single-family homes, Oregon Data Share MLS, as of ${mosAsOf}.` : null}
@@ -1201,7 +1350,7 @@ async function renderCommunityDetail({ params }: Props) {
               <ul>
                 {fieldTypeIndex.map((item) => (
                   <li key={item.key}>
-                    <a href={`#homes-${item.key}`}>
+                    <a href={`#homes-dial-${item.key}`}>
                       {item.heading}
                       <span> · {item.countLabel}</span>
                     </a>
@@ -1216,7 +1365,7 @@ async function renderCommunityDetail({ params }: Props) {
               subdivision chosen on the map. */}
           {/* "699 for sale on the map": the same set the Atlas above counts, and not
               the market figure's houses (Matt 2026-10-04, reconcile the counts). */}
-          <PlaceSubdivisionHomes id="homes" countScope="on the map" />
+          <PlaceSubdivisionHomes id="homes-dial" countScope="on the map" />
         </PlaceSubdivisionMap>
 
         <div className="community-fold">
@@ -1288,7 +1437,7 @@ async function renderCommunityDetail({ params }: Props) {
             source={placeKnowledgeSource({
               name: publicName,
               content: richContent,
-              hasMeasuredHoa: Boolean(measuredPlaceHoaInput(placeCharacter).measuredAnnual),
+              hasMeasuredHoa: Boolean(measuredPlaceHoaInput(placeCharacter, publicName).measuredAnnual),
               hasSchools: placeSchools.length > 0,
             })}
           />
@@ -1400,6 +1549,8 @@ async function renderCommunityDetail({ params }: Props) {
             asOfLabel ? ` Market data updated ${asOfLabel}.` : ''
           }`}
         />
+
+        <CommunityBroker id="broker" block={brokerBlock} />
       </main>
 
       <V3Footer columns={V3_FOOTER_COLUMNS} />

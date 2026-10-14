@@ -2,12 +2,17 @@ import { describe, expect, it } from 'vitest'
 import {
   chooseListingMarket,
   listingMarketMoveWord,
+  listingMarketPriceLedMixShift,
   listingMarketSentence,
+  listingMarketSizeMix,
   listingMarketSource,
+  pocketLocalReadOf,
   withSqftMedian,
   type ListingMarketClose,
   type ListingMarketMove,
 } from '@/lib/cma/listing-window-market'
+import { applyExclusivePocketDateAdj } from '@/lib/pricing/exclusive-pocket-date-adj'
+import type { MarketPath } from '@/lib/pricing/market-path'
 import { listingMarketSlopesPhoneSvg, listingMarketSlopesSvg } from '@/lib/cma/market-charts'
 import { listingMarketSlopes } from '@/lib/cma/listing-window-market'
 import { whatHappenedGraphicHtml, whatHappenedPage, type OpinionPageArgs } from '@/lib/cma/opinion-pages'
@@ -268,28 +273,42 @@ describe('the market slopes', () => {
     ],
   })!
 
-  it('draws the dollar rise and the per-foot fall on separate slopes', () => {
-    const svg = listingMarketSlopesSvg({ ...listingMarketSlopes(move), caption: listingMarketSentence(move) })
+  it('leads with the per-foot fall and does not call the larger homes a rise', () => {
+    // 2,242 sqft then 2,483 sqft is about 11 percent larger. The dollar median
+    // rose and the rate per foot fell. That dollar rise is the size, not the market.
+    expect(listingMarketSizeMix(move)).toBe(true)
+    const sentence = listingMarketSentence(move)
+    expect(sentence).toContain('the price per square foot in Old Farm District for a home about this size fell from $324 to $314')
+    expect(sentence).toContain('The later homes were larger.')
+    expect(sentence).toContain('The median sale was $726,425, then $779,950.')
+    expect(sentence).not.toContain('rose from $726,425')
+    expect(listingMarketPriceLedMixShift(move)).toBeNull()
+    const slopes = listingMarketSlopes(move)
+    expect(slopes.panels.map((p) => p.title)).toEqual(['Price per square foot', 'Sale price'])
+    expect(slopes.panels[1]!.label).toBe('different sizes')
+    const svg = listingMarketSlopesSvg({ ...slopes, caption: sentence })
     expect(svg).toContain('Old Farm District, a home about this size')
     expect(svg).toContain('$726,425')
     expect(svg).toContain('$779,950')
     expect(svg).toContain('$324')
     expect(svg).toContain('$314')
-    expect(svg).toContain('>rose<')
     expect(svg).toContain('>fell<')
+    expect(svg).toContain('>different sizes<')
+    expect(svg).not.toMatch(/>(rose|held flat)</)
     expect(svg).toContain('2,242 sqft')
     expect(svg).toContain('2,483 sqft')
     expect(svg.match(/Mar 6–Jun 12/g)).toHaveLength(1)
     expect(svg).not.toContain('<rect')
-    const priceY = Number(/\$726,425<\/text>/.test(svg) ? /y="([\d.]+)"[^>]*>\$726,425</.exec(svg)?.[1] : NaN)
+    const footY = Number(/y="([\d.]+)"[^>]*>\$324</.exec(svg)?.[1])
     const firstCircles = [...svg.matchAll(/<circle[^>]*\bcy="([\d.]+)"/g)].slice(0, 2).map((m) => Number(m[1]))
-    expect(priceY).toBeLessThan(Math.min(...firstCircles))
-    expect(firstCircles[0]).toBeGreaterThan(firstCircles[1]!)
+    expect(footY).toBeLessThan(Math.min(...firstCircles))
+    // The per-foot slope falls: the left point sits above the right one.
+    expect(firstCircles[0]).toBeLessThan(firstCircles[1]!)
     expect(svg).toContain('#A8452B')
-    const rose = svg.indexOf('>rose<')
     const fell = svg.indexOf('>fell<')
-    expect(svg.slice(0, rose)).not.toContain('#A8452B')
-    expect(svg.slice(rose, fell)).toContain('#A8452B')
+    const sizes = svg.indexOf('>different sizes<')
+    expect(svg.slice(0, fell)).toContain('#A8452B')
+    expect(svg.slice(sizes)).not.toContain('#A8452B')
   })
 
   it('fits a phone with nothing outside the viewBox', () => {
@@ -380,8 +399,11 @@ describe('chapter one keeps the market and does not print the regional tiles', (
 
   it('prints the market sentence under the ask, and does not print the regional tiles', () => {
     const page = whatHappenedPage({ ...base, listingMarket: move })
-    expect(page?.body).toContain('rose from $726,425 to $779,950')
     expect(page?.body).toContain('fell from $324 to $314')
+    expect(page?.body).toContain('The later homes were larger.')
+    expect(page?.body).toContain('The median sale was $726,425, then $779,950.')
+    expect(page?.body).not.toContain('rose from $726,425')
+    expect(page?.body).toContain('>different sizes<')
     expect(page?.body).not.toContain('3,394')
     expect(page?.body).not.toContain('94.2%')
     expect(page?.body).not.toContain('12.3%')
@@ -440,5 +462,112 @@ describe('the rate per foot is net of recorded concessions, like the table (read
     const source = listingMarketSource(stored)
     expect(source).not.toContain('concession')
     expect(source).toContain('Measured October 8, 2026.')
+  })
+})
+
+/**
+ * render_args.listingMarket on cma-2902-pinnacle, as stored 2026-09-30.
+ * Mountain View, a home about this size. The later homes are 12 percent
+ * smaller, the median sale went from $585,000 to $550,000, and the rate
+ * went from $335 to $357 a square foot. The dollar drop is the size mix.
+ */
+const PINNACLE: ListingMarketMove = {
+  place: 'Mountain View',
+  grain: 'neighborhood',
+  sized: true,
+  sqftLow: 1188,
+  sqftHigh: 1980,
+  early: { from: '2026-05-12', to: '2026-06-25', n: 13, median: 585000, ppsf: 335, sqftMedian: 1727 },
+  late: { from: '2026-06-26', to: '2026-08-10', n: 9, median: 550000, ppsf: 357, sqftMedian: 1518 },
+  priceMove: 'fell',
+  ppsfMove: 'rose',
+  ppsfNet: true,
+  asOf: '2026-09-30',
+}
+
+const COOLING: MarketPath = {
+  factor: 0.93,
+  fromPpsf: 335,
+  toPpsf: 311,
+  monthlyRate: -0.01,
+  months: 3,
+  regime: 'falling',
+  capped: false,
+  source: 'index',
+  referenceMonths: ['2026-05-01', '2026-06-01', '2026-07-01'],
+  reversedWithinSpan: false,
+}
+
+describe('size mix is not a market move (2902 Pinnacle, 2026-10-09)', () => {
+  it('leads with the per-foot rise and does not call the smaller homes a fall', () => {
+    expect(listingMarketSizeMix(PINNACLE)).toBe(true)
+    const s = listingMarketSentence(PINNACLE)
+    expect(s).toBe(
+      'While your home was listed, the price per square foot in Mountain View for a home about this size rose from $335 to $357. The later homes were smaller. The median one was 1,518 square feet, and the earlier median was 1,727. The median sale was $585,000, then $550,000.',
+    )
+    expect(s).not.toMatch(/\bfell\b/)
+    expect(listingMarketPriceLedMixShift(PINNACLE)).toBeNull()
+  })
+
+  it('draws the per-foot rise first and labels the sale price as different sizes', () => {
+    const slopes = listingMarketSlopes(PINNACLE)
+    expect(slopes.kicker).toBe('Mountain View, a home about this size')
+    expect(slopes.panels.map((p) => p.title)).toEqual(['Price per square foot', 'Sale price'])
+    expect(slopes.panels[0]).toMatchObject({ move: 'rose', fromText: '$335', toText: '$357' })
+    expect(slopes.panels[0]!.label).toBeUndefined()
+    expect(slopes.panels[1]).toMatchObject({ move: 'fell', label: 'different sizes', fromText: '$585,000', toText: '$550,000' })
+    const svg = listingMarketSlopesPhoneSvg({ ...slopes, caption: listingMarketSentence(PINNACLE) })
+    expect(svg).toContain('>rose<')
+    expect(svg).toContain('>different sizes<')
+    expect(svg).not.toMatch(/>(fell|held flat)</)
+    expect(svg).not.toContain('#A8452B')
+    expect(svg).toContain('1,727 sqft')
+    expect(svg).toContain('1,518 sqft')
+    expect(textOutsideViewBox(svg)).toEqual([])
+    const page = whatHappenedPage({
+      subject: {
+        streetAddress: '2902 Pinnacle',
+        city: 'Bend',
+        standardStatus: 'Canceled',
+        sqft: 1584,
+        lastListPrice: 585000,
+      },
+      pricing: { valueLow: 483000, valueHigh: 591000 },
+      market: { medianDom: 26 },
+      expiredAudit: {
+        findings: [{ lens: 'pricing', fact: 'Sat 90 days.', meaning: '' }],
+        finalCycle: { listDate: '2026-05-12', offMarketDate: '2026-08-10', status: 'Canceled', days: 90 },
+      },
+      listingMarket: PINNACLE,
+      generatedAtIso: '2026-09-30T00:00:00.000Z',
+    } as unknown as OpinionPageArgs)
+    expect(page?.body).toContain(listingMarketSentence(PINNACLE))
+    expect(page?.body).toContain('>different sizes<')
+  })
+
+  it('does not read the dollar fall as a local fall, so an own-ground sale is not cut', () => {
+    const local = pocketLocalReadOf(PINNACLE)
+    expect(local.verdict).toBe('rose')
+    expect(local.missing).toBeNull()
+    const stayed = applyExclusivePocketDateAdj(COOLING, true, local)
+    expect(stayed.factor).toBe(1)
+    expect(stayed).not.toBe(COOLING)
+  })
+
+  it('keeps the sale-price word when the two windows are within 5 percent of size', () => {
+    const close = {
+      ...PINNACLE,
+      late: { ...PINNACLE.late, sqftMedian: 1641 },
+    }
+    expect(listingMarketSizeMix(close)).toBe(false)
+    expect(listingMarketSentence(close)).toContain('fell from $585,000 to $550,000')
+    expect(listingMarketPriceLedMixShift(close)).toBeNull()
+    const over = {
+      ...PINNACLE,
+      late: { ...PINNACLE.late, sqftMedian: 1640 },
+    }
+    expect(listingMarketSizeMix(over)).toBe(true)
+    expect(listingMarketSentence(over)).not.toContain('fell from')
+    expect(listingMarketPriceLedMixShift(over)).toBeNull()
   })
 })

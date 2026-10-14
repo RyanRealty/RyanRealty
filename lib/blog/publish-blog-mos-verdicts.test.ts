@@ -32,23 +32,23 @@ describe('parsePlaceMosPairs', () => {
 })
 
 describe('rewriteBlogMosVerdicts', () => {
-  it('moves a balanced MOS out of a buyer territory list', () => {
+  it('strips a buyer-territory list to the months-of-supply figures', () => {
     const out = rewriteBlogMosVerdicts(FOUNDING)
-    expect(out).toContain("Sunriver at 12.0 and La Pine at 11.4 are firmly in buyer's territory")
-    expect(out).toContain('Madras at 5.4 is a balanced market')
-    expect(out).not.toMatch(/Sunriver at 12\.0, Madras at 5\.4, and La Pine at 11\.4 are firmly in buyer's territory/)
+    expect(out).toContain('Sunriver at 12.0, Madras at 5.4, and La Pine at 11.4.')
+    expect(out).not.toMatch(/firmly in buyer's territory/)
+    expect(out).not.toMatch(/seller's market|buyer's market|balanced market/i)
     expect(out).toContain('Sisters and Prineville hold the middle at 5.9 and 5.4')
-    expect(out).toContain('Redmond sits at 3.9 months of supply, still on the seller\'s side of the line')
   })
 
-  it('rewrites an inline months + verdict mismatch', () => {
+  it('strips an inline months + market-type label', () => {
     const out = rewriteBlogMosVerdicts('<li><strong>Madras: 5.4 months</strong>, a buyer\'s market</li>')
-    expect(out).toContain("5.4 months</strong>, a balanced market")
+    expect(out).toContain('5.4 months</strong>')
     expect(out).not.toContain("a buyer's market")
+    expect(out).not.toContain('a balanced market')
   })
 
-  it('leaves a correctly classified buyer list alone', () => {
+  it('strips a buyer-territory claim even when the MOS figures sit on the buyer side', () => {
     const src = 'Sunriver at 12.0 and La Pine at 11.4 are firmly in buyer\'s territory.'
-    expect(rewriteBlogMosVerdicts(src)).toBe(src)
+    expect(rewriteBlogMosVerdicts(src)).toBe('Sunriver at 12.0 and La Pine at 11.4.')
   })
 })

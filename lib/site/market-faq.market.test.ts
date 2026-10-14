@@ -39,7 +39,7 @@ describe('buildMarketFaq, market page', () => {
       'What is the median home price in Bend?',
       'Are home prices going up in Bend?',
       'How many single-family homes are for sale in Bend?',
-      "Is Bend a buyer's or seller's market?",
+      'How many months of supply does Bend have?',
       'How long does it take to sell a house in Bend?',
       'How many homes sold in Bend in the last year?',
     ])
@@ -62,7 +62,7 @@ describe('buildMarketFaq, market page', () => {
       "There are 714 active single-family listings in Bend as of October 2026, counting every home with a Bend address in the regional MLS that isn't under contract yet.",
     )
     expect(faqs[3].answer).toBe(
-      "Bend has 3.5 months of supply, which is a seller's market. 4 months of supply or less is a seller's market, above 4 and under 6 is balanced, 6 or more is a buyer's market.",
+      'Bend has 3.5 months of supply. A lower months-of-supply figure means fewer homes for sale relative to the recent sales pace.',
     )
     expect(faqs[5].answer).toBe('2,206 single-family homes sold in Bend over the past 12 months as of October 2026.')
   })

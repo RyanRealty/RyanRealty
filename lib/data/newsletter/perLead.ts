@@ -238,7 +238,11 @@ export async function getEmailKeyedSuppressionSignals(email: string): Promise<Su
   const norm = (email ?? '').trim().toLowerCase()
   if (!norm) return [{ channel: 'all', reason: 'no-email' }]
   const sb = createServiceClient()
-  const { data, error } = await sb.from('crm_suppressions').select('channel, reason').eq('value', norm)
+  const { data, error } = await sb
+    .from('crm_suppressions')
+    .select('channel, reason')
+    .eq('value', norm)
+    .is('cleared_at', null)
   if (error) return [{ channel: 'all', reason: 'suppression-check-failed' }]
   return (data ?? []).map((r) => ({
     channel: (r as { channel: string }).channel as SuppressionSignal['channel'],

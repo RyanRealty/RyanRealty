@@ -367,7 +367,7 @@ export function whyWeKeptComp(comp: CmaAdjustedComp): {
   // sentence here too (Matt 2026-09-10). The row a reader actually sees is
   // "Adjusted for rooms (theirs vs yours)" in lib/cma/comp-matrix.ts — this
   // function has no caller in the render today.
-  const room = roomDifferenceSentence(comp.roomDifference)
+  const room = roomDifferenceSentence(comp.roomDifference, comp.roomDecision?.gap)
   const withRoom = (s: string) => (room ? `${s} ${room}` : s)
   if (tier && reason) {
     const label = tier === 'strong' ? 'Strong' : 'Weak'

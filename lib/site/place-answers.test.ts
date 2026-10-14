@@ -84,9 +84,10 @@ describe('buildPlaceAnswers — the verdict is the number, drawn', () => {
   it('states the verdict lib/market/classify.ts computes, and bands the same rule', () => {
     const { answers } = buildPlaceAnswers(awbrey)
     const verdict = answers.find((a) => a.id === 'answer-verdict')
-    expect(verdict?.question).toBe("Is Awbrey Butte a buyer's or seller's market?")
+    expect(verdict?.question).toBe('How many months of supply does Awbrey Butte have?')
     expect(verdict?.figure?.value).toBe('4.9')
-    expect(String(verdict?.body)).toContain('4.9 months of supply, which is a balanced market')
+    expect(String(verdict?.body)).toContain('4.9 months of supply')
+    expect(String(verdict?.body)).not.toMatch(/seller's market|buyer's market|balanced market/i)
     expect(marketVerdict(4.9).kind).toBe('balanced')
     const mark = verdict?.figure?.mark
     expect(mark).toMatchObject({ kind: 'scale', min: 0, max: 12, at: 4.9 })
@@ -109,7 +110,7 @@ describe('buildPlaceAnswers — the verdict is the number, drawn', () => {
       figures: { closedCount: { count: 24, windowLabel: 'over the past 12 months' } },
     })
     const verdict = answers.find((a) => a.id === 'answer-verdict')
-    expect(verdict?.question).toBe("Is Tetherow a buyer's or seller's market?")
+    expect(verdict?.question).toBe('How many months of supply does Tetherow have?')
     // AEO-5 / VOICE-5: the refusal is said in plain words, not pipeline talk.
     expect(String(verdict?.body)).toContain('Too few homes have sold in Tetherow on their own')
     expect(String(verdict?.body)).not.toMatch(/we can attribute|not printing one/)
@@ -119,7 +120,7 @@ describe('buildPlaceAnswers — the verdict is the number, drawn', () => {
 
   it('asks nothing about the verdict when it has neither a ratio nor a count', () => {
     const q = questionsOf({ ...base, figures: { activeCount: 15 } })
-    expect(q).not.toContain("Is Awbrey Butte a buyer's or seller's market?")
+    expect(q).not.toContain('How many months of supply does Awbrey Butte have?')
   })
 })
 
@@ -405,6 +406,17 @@ describe('the reader\'s sentence and the machine handle are separate fields', ()
     // given an empty one — an empty source line reads as a missing source.
     expect(school?.source).toBeUndefined()
     expect(out.traces).toContain('regional MLS, the median of the 135 current listings that report dues')
+  })
+
+  it('puts leading authored questions ahead of figured rows and extra', () => {
+    const out = buildPlaceAnswers({
+      ...awbrey,
+      leading: [{ question: 'How do I find a real estate agent for Awbrey Butte?', answer: 'Call Ryan Realty.' }],
+      extra: [{ question: 'What school district serves Awbrey Butte?', answer: 'Bend-La Pine Schools.' }],
+    })
+    expect(out.answers[0]?.question).toBe('How do I find a real estate agent for Awbrey Butte?')
+    expect(out.answers.at(-1)?.question).toMatch(/worth/)
+    expect(answersFaqItems(out.answers)[0]?.question).toBe('How do I find a real estate agent for Awbrey Butte?')
   })
 })
 

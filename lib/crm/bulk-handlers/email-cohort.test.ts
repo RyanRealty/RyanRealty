@@ -103,6 +103,7 @@ const recipient = (over: Partial<EmailCohortRecipient> = {}): EmailCohortRecipie
   emails: [{ value: 'lead@example.com', isPrimary: 1 }],
   phones: [],
   addresses: [],
+  tags: [],
   custom: {},
   ...over,
 })
@@ -200,6 +201,14 @@ describe('sendOneCohortEmail — suppression + claim-before-send + record shape'
     // Signature off the wire unless a test opts in — keeps existing HTML
     // assertions byte-stable. Default-on is covered in its own cases.
     mockGetSignature.mockResolvedValue(null)
+  })
+
+  it('skips an industry contact WITHOUT claiming or sending', async () => {
+    mockIsSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    const out = await sendOneCohortEmail(recipient({ tags: ['industry:contact'] }), CONTENT, {}, CTX)
+    expect(out).toEqual({ kind: 'skipped', bucket: 'industry-contact' })
+    expect(mockInsertEmailEvent).not.toHaveBeenCalled()
+    expect(mockSendEmail).not.toHaveBeenCalled()
   })
 
   it('skips + buckets a suppressed recipient WITHOUT claiming or sending', async () => {

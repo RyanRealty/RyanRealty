@@ -352,7 +352,7 @@ gh pr create \
 `npx tsc --noEmit` returned zero errors.
 
 ## Approval gate
-Matt merges this PR in GitHub. No additional action row approval needed.
+npm run ship lands this PR in GitHub. No additional action row approval needed.
 
 🤖 Generated with Claude Code / marketing brain.  site-performance producer
 EOF
@@ -394,7 +394,7 @@ Draft ready: site-performance.  <fix_type> on <target>
   VALIDATION
     TypeScript: PASS (zero errors)
 
-Matt merges the PR in GitHub to ship.
+npm run ship lands the PR in GitHub to ship.
 ```
 
 Then stop. Wait for Matt to merge.
@@ -444,7 +444,7 @@ app/<page_path>/page.tsx             (Script JSON-LD block injected)
 
 | approval_type | what it means | who can grant |
 |---|---|---|
-| `matt-review-PR` | Matt merges the PR in GitHub | Matt only.  via GitHub UI |
+| `matt-review-PR` | npm run ship lands the PR in GitHub | agent.  via GitHub UI |
 
 Voice validation is not applicable here. No copy changes.
 
@@ -465,7 +465,7 @@ in_production     ← set on pickup; executed_at=now()
   ▼ (branch + PR created)
 ready             ← executor_response = {branch_name, pr_url, files_changed, fix_type}
   │
-  ▼ (Matt merges PR)
+  ▼ (npm run ship lands PR)
 approved
   │
   ▼ (Vercel build + deploy completes)

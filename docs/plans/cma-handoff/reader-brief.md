@@ -16,7 +16,7 @@ Read one rebuilt home-value letter the way the homeowner would, and find every d
 - Recompute every percent, difference, weighted price and grid column:
   - sold plus every printed adjustment row equals the adjusted price;
   - net equals the sum of the rows.
-- The printed price range is the trimmed range of the price-setting sales, with the highest and lowest set aside. Check which sales were set aside and whether the printed range matches.
+- The printed price range is the lowest and highest adjusted price of the sales that set the price. A high and a low are the range. A letter already stored with sales set aside still prints that stored band. Check that the printed range matches the sales that set the price.
 - Dates read as of the build date, Pacific.
 
 **Text hygiene**

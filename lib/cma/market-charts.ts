@@ -6,6 +6,15 @@
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
 import { compactUsd, compactUsdLabels } from '@/lib/cma/compact-usd'
 import { pacificDay, type CameOffFacts } from '@/lib/cma/listing-status'
+import {
+  placeLabels,
+  strokeBox,
+  textBox,
+  type LabelBox,
+  type LabelCandidate,
+  type LabelToPlace,
+  type SoftObstacle,
+} from '@/lib/charts/label-place'
 
 const esc = escapeHtml
 
@@ -856,11 +865,6 @@ export function listingTimelinePhoneSvg(input: ListingTimelineInput): string {
   return timelineBody({ input, g, W, H, plotL, plotR, top, bottom, x, y, fs: 10.5, endFs: 11 })
 }
 
-/**
- * Where the zone caption sits. Prefer the inner edge farthest from every
- * asking-price label, so the sentence does not run through a dollar figure.
- * A short zone has no room inside; the caption goes just above it.
- */
 /** Geist's measured width a character at these sizes, in em (see timelineBody). */
 const ZONE_CHAR_EM = 0.62
 /** The smallest the zone label is drawn. */
@@ -882,22 +886,110 @@ export function zoneLabelLines(label: string, available: number, fs: number): { 
   return { lines, fs: Math.max(ZONE_MIN_FS, fit(Math.max(...lines.map((l) => l.length)))) }
 }
 
-function zoneCaptionY(
-  zoneTop: number,
-  zoneBottom: number,
-  askLabelYs: number[],
-  fs: number,
-  frameTop: number,
-): number {
-  const gap = fs + 8
-  if (zoneBottom - zoneTop < gap) return Math.max(zoneTop - 6, frameTop - 12)
-  const innerTop = zoneTop + fs + 2
-  const innerBottom = zoneBottom - 4
-  const clear = (y: number) => askLabelYs.every((ay) => Math.abs(ay - y) >= gap)
-  if (clear(innerBottom)) return innerBottom
-  if (clear(innerTop)) return innerTop
-  return innerBottom
+/**
+ * The end-of-line label on two lines, broken at the space that leaves the
+ * longer line shortest, never between a number and its unit ("canceled" /
+ * "after 138 days"). Null when the label is one word.
+ */
+export function endLabelLines(text: string, fs: number): [string, string] | null {
+  const words = text.split(' ')
+  let best: [string, string] | null = null
+  let widest = Infinity
+  for (let i = 1; i < words.length; i++) {
+    // "138" / "days" would part a count from its unit.
+    if (/^\d[\d,]*$/.test(words[i - 1]!)) continue
+    const pair: [string, string] = [words.slice(0, i).join(' '), words.slice(i).join(' ')]
+    const w = Math.max(labelWidth(pair[0], fs, true), labelWidth(pair[1], fs, true))
+    if (w < widest) {
+      widest = w
+      best = pair
+    }
+  }
+  return best
 }
+
+/** One drawn label: its lines, where they start, and how they anchor. */
+type PlacedText = { x: number; baselines: number[]; lines: string[]; anchor: 'start' | 'middle' | 'end' }
+
+/**
+ * How far a label's lines sit from the baseline, as a share of the font size.
+ * Generous on both sides: a label clears its neighbours by the ink it could
+ * have in either face, not by the glyphs this one happens to use.
+ */
+const LABEL_ASCENT = 0.92
+const LABEL_DESCENT = 0.28
+
+function textCandidate(
+  t: PlacedText,
+  fs: number,
+  bold: boolean,
+  cost: number,
+): LabelCandidate<PlacedText> {
+  return {
+    cost,
+    value: t,
+    boxes: t.lines.map((line, i) =>
+      textBox({
+        x: t.x,
+        baseline: t.baselines[i]!,
+        width: labelWidth(line, fs, bold),
+        fontSize: fs,
+        anchor: t.anchor,
+        ascent: LABEL_ASCENT,
+        descent: LABEL_DESCENT,
+      }),
+    ),
+  }
+}
+
+/** Centred on `cx`, pulled inside the frame when it would run off either edge. */
+function fitAnchor(cx: number, width: number, W: number): { x: number; anchor: 'start' | 'middle' | 'end' } {
+  if (cx - width / 2 < 1) return { x: 1, anchor: 'start' }
+  if (cx + width / 2 > W - 1) return { x: W - 1, anchor: 'end' }
+  return { x: cx, anchor: 'middle' }
+}
+
+/**
+ * The zone's two edge figures in the gutter: each at its edge, parted evenly
+ * about their middle when the zone is thinner than a line of type, and one
+ * figure when both edges print the same price.
+ */
+export function gutterEdgeLabels(input: {
+  high: string
+  low: string
+  highY: number
+  lowY: number
+  fs: number
+}): Array<{ text: string; y: number }> {
+  if (input.high === input.low) return [{ text: input.high, y: (input.highY + input.lowY) / 2 }]
+  const sep = input.fs * EDGE_LINE
+  if (input.lowY - input.highY >= sep) {
+    return [
+      { text: input.high, y: input.highY },
+      { text: input.low, y: input.lowY },
+    ]
+  }
+  const mid = (input.highY + input.lowY) / 2
+  return [
+    { text: input.high, y: mid - sep / 2 },
+    { text: input.low, y: mid + sep / 2 },
+  ]
+}
+
+/** Two gutter figures sit at least this many font sizes apart, baseline to baseline. */
+const EDGE_LINE = 1.35
+
+/**
+ * What the drawn labels weigh, as the cost of leaving each off. Moving a label
+ * anywhere costs less than dropping the lightest one. The end of the line is
+ * the reading ("canceled after 138 days"); the first and last asks are the two
+ * the gap is measured from; the zone caption names the shading; a middle cut
+ * is stated in the sentence above the chart and on its own mark's tap.
+ */
+const DROP_END = 1000
+const DROP_ZONE = 600
+const DROP_EDGE_ASK = 400
+const DROP_MIDDLE_ASK = 60
 
 function timelineBody(o: {
   input: ListingTimelineInput
@@ -913,7 +1005,7 @@ function timelineBody(o: {
   fs: number
   endFs: number
 }): string {
-  const { input, g, W, H, plotL, plotR, top, bottom, x, y, fs, endFs } = o
+  const { input, g, W, H, plotL, plotR, bottom, x, y, fs, endFs } = o
   const zoneTop = y(g.high)
   const zoneBottom = y(g.low)
   const path = timelineStepPath(g, x, y)
@@ -926,90 +1018,249 @@ function timelineBody(o: {
   // Woodsman's $1,618,053 and $1,554,207 edges both read "$1.6M").
   const askLabel = compactUsdLabels(g.steps.map((s) => s.ask))
   const edgeLabel = compactUsdLabels([g.high, g.low])
+  const endX = x(g.t1)
+  const endY = y(last.ask)
+  const endText = timelineEndLabel(input)
+  const startDay = monthDay(input.listDate)
+  const endDay = input.offMarketDate ? monthDay(input.offMarketDate) : ''
+  const tickY = bottom + 16
+
+  // ── The ink no label may touch ───────────────────────────────────────────
+  // The asking-price line (2.5 wide), every mark on it, the time axis, its two
+  // dates, and the two zone-edge figures in the gutter. The zone's own edges
+  // are hairlines a label may cross, at a price.
+  const LINE_HALF = 1.25
+  const hard: LabelBox[] = []
+  g.steps.forEach((s, i) => {
+    const sx = x(s.t)
+    const sy = y(s.ask)
+    const nextT = i + 1 < g.steps.length ? g.steps[i + 1]!.t : g.t1
+    hard.push(strokeBox(sx, sy, x(nextT), sy, LINE_HALF))
+    if (i > 0) hard.push(strokeBox(sx, y(g.steps[i - 1]!.ask), sx, sy, LINE_HALF))
+    hard.push(strokeBox(sx, sy, sx, sy, 3.5))
+  })
+  hard.push(strokeBox(endX, endY, endX, endY, 4.3))
+  hard.push(strokeBox(plotL, bottom, plotR, bottom, 0.4))
+  const ink = (x0: number, baseline: number, text: string, anchor: 'start' | 'end') =>
+    textBox({ x: x0, baseline, width: labelWidth(text, fs), fontSize: fs, anchor, ascent: LABEL_ASCENT, descent: LABEL_DESCENT })
+  hard.push(ink(plotL, tickY, startDay, 'start'))
+  if (endDay) hard.push(ink(plotR, tickY, endDay, 'end'))
+  // The two zone-edge figures in the gutter, each level with its edge. A thin
+  // zone puts them closer than a line of type, so they part evenly about its
+  // middle (2745 Aldrich: $479K over $474K, 15 units apart at 12 units); a
+  // zone with no height (one price at both edges, 1551 Redmond) is one figure.
+  const edges = gutterEdgeLabels({
+    high: edgeLabel(g.high),
+    low: edgeLabel(g.low),
+    highY: zoneTop + 4,
+    lowY: zoneBottom + 4,
+    fs,
+  })
+  for (const e of edges) {
+    hard.push(ink(plotL - 8, e.y, e.text, 'end'))
+  }
+  const soft: SoftObstacle[] = [
+    { box: strokeBox(plotL, zoneTop, plotR, zoneTop, 0.5), cost: 1.5 },
+    { box: strokeBox(plotL, zoneBottom, plotR, zoneBottom, 0.5), cost: 1.5 },
+  ]
+
+  // ── Where each label may sit ─────────────────────────────────────────────
+  const labels: LabelToPlace<PlacedText>[] = []
+
+  // The end of the line: above or below its mark (below when the line runs
+  // high, so it reads under the end of the line), stacked one line further
+  // out, on two lines, or as its own line under the date it came off.
+  const endBelowFirst = endY < bottom - 34
+  const endWidth = labelWidth(endText, endFs, true)
+  const endOne = (baseline: number, cost: number) => {
+    const fit = fitAnchor(endX, endWidth, W)
+    return textCandidate({ ...fit, baselines: [baseline], lines: [endText] }, endFs, true, cost)
+  }
+  const split = endLabelLines(endText, endFs)
+  const lh = endFs * 1.15
+  const endTwo = (firstBaseline: number, cost: number) => {
+    if (!split) return null
+    const fit = fitAnchor(endX, Math.max(...split.map((l) => labelWidth(l, endFs, true))), W)
+    return textCandidate({ ...fit, baselines: [firstBaseline, firstBaseline + lh], lines: [...split] }, endFs, true, cost)
+  }
+  const above = endY - 12
+  const below = endY + 20
+  // Under the date the listing came off, on its own line and flush with it:
+  // the right end of the time axis is that day, so the words read with it.
+  // The one place a label may run past the frame's foot; the drawing grows to
+  // hold it (a phone frame has no line of room under its dates).
+  const underBaseline = tickY + fs * LABEL_DESCENT + 2.5 + endFs * LABEL_ASCENT
+  const underDate =
+    endDay && plotR - endWidth >= 1
+      ? textCandidate({ x: plotR, anchor: 'end', baselines: [underBaseline], lines: [endText] }, endFs, true, 7)
+      : endOne(underBaseline, 7)
+  labels.push({
+    id: 'end',
+    dropCost: DROP_END,
+    candidates: [
+      endOne(above, endBelowFirst ? 1 : 0),
+      endOne(below, endBelowFirst ? 0 : 1),
+      endTwo(above - lh, 2),
+      endTwo(below, 2.5),
+      endOne(above - endFs - 4, 4),
+      endOne(below + endFs + 4, 5),
+      underDate,
+    ].filter((c): c is LabelCandidate<PlacedText> => c != null),
+  })
+
+  // Each ask, at the start of its own run.
+  const askAbove = (cy: number) => cy - 9
+  const askBelow = (cy: number) => cy + 6 + fs * LABEL_ASCENT
+  const askIds: string[] = []
+  g.steps.forEach((s, i) => {
+    const cx = x(s.t)
+    const cy = y(s.ask)
+    const text = askLabel(s.ask)
+    const t = (lx: number, baseline: number, anchor: 'start' | 'end', cost: number) =>
+      textCandidate({ x: lx, baselines: [baseline], lines: [text], anchor }, fs, true, cost)
+    const id = `ask${i}`
+    askIds.push(id)
+    const edge = i === 0 || i === g.steps.length - 1
+    if (i === 0) {
+      labels.push({
+        id,
+        dropCost: DROP_EDGE_ASK,
+        candidates: [
+          t(cx, askAbove(cy), 'start', 0),
+          t(cx, askBelow(cy), 'start', 2),
+          t(cx, askAbove(cy) - fs - 3, 'start', 5),
+          t(cx, askBelow(cy) + fs + 3, 'start', 6),
+        ],
+      })
+      return
+    }
+    // A change labels to the RIGHT of its step: centred, the label would sit
+    // inside the vertical segment it belongs to and read as struck through.
+    // Its next places are the corner the line does not run through (under
+    // the new level for a cut, over it for a raise), then the other two.
+    const cut = cy > y(g.steps[i - 1]!.ask)
+    labels.push({
+      id,
+      dropCost: edge ? DROP_EDGE_ASK : DROP_MIDDLE_ASK,
+      candidates: [
+        t(cx + 8, askAbove(cy), 'start', 0),
+        cut ? t(cx - 8, askBelow(cy), 'end', 2) : t(cx - 8, askAbove(cy), 'end', 2),
+        t(cx + 8, askBelow(cy), 'start', 3),
+        cut ? t(cx - 8, askAbove(cy), 'end', 4) : t(cx - 8, askBelow(cy), 'end', 4),
+        t(cx + 8, askAbove(cy) - fs - 3, 'start', 6),
+        t(cx + 8, askBelow(cy) + fs + 3, 'start', 7),
+      ],
+    })
+  })
+
+  // The zone caption NAMES which range this is — the adjusted one — and that
+  // is a longer string than the plot is wide on a phone. It shrinks to fit
+  // rather than running off the right edge, measured against the FRAME's
+  // right edge (the label starts at plotL + 6 and the viewBox ends at W).
+  // When it names every adjustment the sales carry ("adjusted for date, size
+  // and seller concessions", 3177 Coho) it can be too long for one line even
+  // at the 8-unit floor, so it breaks once after "sold," onto a second line.
+  // It sits inside the shading, at its foot or its head or anywhere between,
+  // left or right; when nothing inside is clear of the line and the asks, just
+  // over or under the shading.
+  const zone = zoneLabelLines(input.rangeLabel, W - plotL - 8, fs)
+  const zoneLineH = zone.fs * 1.2
+  const zoneBlock = zoneLineH * (zone.lines.length - 1)
+  const zoneAt = (lastBaseline: number, cost: number): LabelCandidate<PlacedText>[] => {
+    const baselines = zone.lines.map((_, i) => lastBaseline - zoneBlock + i * zoneLineH)
+    return [
+      textCandidate({ x: plotL + 6, baselines, lines: zone.lines, anchor: 'start' }, zone.fs, false, cost),
+      textCandidate({ x: plotR - 6, baselines, lines: zone.lines, anchor: 'end' }, zone.fs, false, cost + 1),
+    ]
+  }
+  const innerFoot = zoneBottom - 4
+  const innerHead = zoneTop + zone.fs + 2 + zoneBlock
+  const zoneCandidates: LabelCandidate<PlacedText>[] = []
+  if (innerFoot >= innerHead) {
+    zoneCandidates.push(...zoneAt(innerFoot, 0), ...zoneAt(innerHead, 1))
+    for (let b = innerFoot - 3; b > innerHead; b -= 3) zoneCandidates.push(...zoneAt(b, 2 + (innerFoot - b) / 100))
+  }
+  zoneCandidates.push(
+    ...zoneAt(zoneTop - zone.fs * LABEL_DESCENT - 3, 6),
+    ...zoneAt(zoneBottom + zone.fs * LABEL_ASCENT + 3 + zoneBlock, 6.5),
+  )
+  labels.push({ id: 'zone', dropCost: DROP_ZONE, candidates: zoneCandidates })
+
+  // Weightiest first: the search takes them in this order.
+  const order = ['end', `ask${g.steps.length - 1}`, 'ask0', 'zone', ...askIds]
+  const footRoom = endFs * 1.5
+  const ordered = [...new Set(order)]
+    .map((id) => labels.find((l) => l.id === id))
+    .filter((l): l is LabelToPlace<PlacedText> => l != null)
+    // Only the line under the date may use the room under the frame.
+    .map((l) => ({
+      ...l,
+      candidates: l.candidates.filter((c) => c === underDate || c.boxes.every((b) => b.y1 <= H)),
+    }))
+  const placed = placeLabels({
+    labels: ordered,
+    obstacles: hard,
+    soft,
+    frame: { x0: 0, y0: 0, x1: W, y1: H + footRoom },
+  })
+  const inkFoot = Math.max(0, ...[...placed.values()].flatMap((c) => (c ? c.boxes.map((b) => b.y1) : [])))
+  const viewH = Math.max(H, Math.ceil(inkFoot + 2))
+
+  const textEl = (t: PlacedText, size: number, weight: string, fill: string): string => {
+    const attrs = `text-anchor="${t.anchor}" font-size="${size.toFixed(1).replace(/\.0$/, '')}"${weight} fill="${fill}"`
+    if (t.lines.length === 1) {
+      return `<text x="${t.x.toFixed(1)}" y="${t.baselines[0]!.toFixed(1)}" ${attrs}>${esc(t.lines[0]!)}</text>`
+    }
+    const spans = t.lines
+      .map((line, i) => `<tspan x="${t.x.toFixed(1)}" y="${t.baselines[i]!.toFixed(1)}">${esc(line)}</tspan>`)
+      .join('')
+    return `<text ${attrs}>${spans}</text>`
+  }
+
   const marks = g.steps
     .map((s, i) => {
       const cx = x(s.t)
       const cy = y(s.ask)
       const label = askLabel(s.ask)
-      const w = label.length * fs * 0.58
-      // The first ask labels above its own run, from the left. A cut labels to
-      // the RIGHT of its drop: centred, the label would sit inside the vertical
-      // segment it belongs to and read as struck through. It flips back to the
-      // left when the drop lands too near the right edge.
-      const flip = i > 0 && cx + 8 + w > W - 2
-      const lx = i === 0 ? cx : flip ? cx - 8 : cx + 8
-      const anchor: 'start' | 'end' = i === 0 || !flip ? 'start' : 'end'
       // Delta 2: "Tap or hover a cut: the date and the ask." The reading is
       // composed here, from the same two recorded figures the mark is drawn
       // from; the script prints it and derives nothing.
       const read = `${i === 0 ? 'Asked' : 'Cut to'} ${label} on ${monthDay(s.date)}`
+      const at = placed.get(`ask${i}`)
       // 24 units of invisible target. On the 360-unit phone drawing that is
       // 45px on a 375 screen; the visible mark stays 3.5. It shipped at 7x7px
       // — the flagship interaction of the flagship graphic, unhittable on a
-      // phone (tasteReview item 3).
+      // phone (tasteReview item 3). A label the search left off keeps its mark
+      // and its tap.
       return `<g class="tl-mark" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
     <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="24" fill="transparent"/>
     <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" fill="${TL_INK}"/>
-    <text x="${lx.toFixed(1)}" y="${(cy - 9).toFixed(1)}" text-anchor="${anchor}" font-size="${fs}" font-weight="600" fill="${TL_INK}">${esc(label)}</text>
+    ${at ? textEl(at.value, fs, ' font-weight="600"', TL_INK) : ''}
     </g>`
     })
     .join('\n    ')
 
-  const endX = x(g.t1)
-  const endY = y(last.ask)
-  const endText = timelineEndLabel(input)
-  const endFit = fitText(endX, endText, endFs, W)
-  // The label belongs to the mark it names, so it sits with the end of the
-  // line, not parked at the foot of the frame where the eye has to hunt for
-  // what it refers to. Above the line when the line runs near the floor.
-  const endBelow = endY < bottom - 34
-  const endLabelY = endBelow ? endY + 20 : endY - 12
-  const startDay = monthDay(input.listDate)
-  const endDay = input.offMarketDate ? monthDay(input.offMarketDate) : ''
-  // Inside the shaded zone, on the edge farthest from the asking-price
-  // labels. Centering it put "where homes like yours sold" through $729K on
-  // 20506 Murphy. Above the zone, the same caption sat under an ask near the
-  // top and the line struck through it.
-  const askLabelYs = [...g.steps.map((s) => y(s.ask) - 9), endLabelY]
-  // The zone label NAMES which range this is — the adjusted one — and that is
-  // a longer string than the plot is wide on a phone. It shrinks to fit rather
-  // than running off the right edge; the look-pass measures every label's own
-  // box against the viewBox, so an unfitted label fails the run.
-  // Measured against the FRAME's right edge, not the plot's: the label starts
-  // at plotL + 6 and the viewBox ends at W. 0.62em a character is what Geist
-  // actually measures at these sizes — 0.55 fitted on paper and overflowed by
-  // 3.4 units in the browser, which the phone-frame test caught.
-  // When it names every adjustment the sales carry ("adjusted for date, size
-  // and seller concessions", 3177 Coho) it can be too long for one line even
-  // at the 8-unit floor, so it breaks once after "sold," onto a second line.
-  const zone = zoneLabelLines(input.rangeLabel, W - plotL - 8, fs)
-  const zoneLineH = zone.fs * 1.2
-  const zoneBlock = zone.fs + zoneLineH * (zone.lines.length - 1)
-  const zoneLabelY = zoneCaptionY(zoneTop, zoneBottom, askLabelYs, zoneBlock, top)
-  const zoneLabelFs = zone.fs.toFixed(1)
-  const zoneTspans = zone.lines
-    .map((line, i) => {
-      const dy = i === 0 ? -zoneLineH * (zone.lines.length - 1) : zoneLineH
-      return zone.lines.length === 1
-        ? esc(line)
-        : `<tspan x="${plotL + 6}" dy="${dy.toFixed(1)}">${esc(line)}</tspan>`
-    })
-    .join('')
+  const zonePlaced = placed.get('zone')
+  const endPlaced = placed.get('end')
 
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(input.caption)}" class="trend-svg tl-figure" data-draw="1">
+  return `<svg viewBox="0 0 ${W} ${viewH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(input.caption)}" class="trend-svg tl-figure" data-draw="1">
     <rect x="${plotL}" y="${zoneTop.toFixed(1)}" width="${(plotR - plotL).toFixed(1)}" height="${Math.max(zoneBottom - zoneTop, 2).toFixed(1)}" fill="${TL_INK}" fill-opacity="0.13"/>
     <line x1="${plotL}" y1="${zoneTop.toFixed(1)}" x2="${plotR}" y2="${zoneTop.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
     <line x1="${plotL}" y1="${zoneBottom.toFixed(1)}" x2="${plotR}" y2="${zoneBottom.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
-    <text x="${plotL + 6}" y="${zoneLabelY.toFixed(1)}" font-size="${zoneLabelFs}" fill="${TL_INK}">${zoneTspans}</text>
-    <text x="${plotL - 8}" y="${(zoneTop + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(edgeLabel(g.high))}</text>
-    <text x="${plotL - 8}" y="${(zoneBottom + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(edgeLabel(g.low))}</text>
+    ${zonePlaced ? textEl(zonePlaced.value, zone.fs, '', TL_INK) : ''}
+    ${edges
+      .map(
+        (e) =>
+          `<text x="${plotL - 8}" y="${e.y.toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(e.text)}</text>`,
+      )
+      .join('\n    ')}
     <line x1="${plotL}" y1="${bottom.toFixed(1)}" x2="${plotR}" y2="${bottom.toFixed(1)}" stroke="${TL_EDGE}" stroke-width="0.75"/>
     <path d="${path}" class="tl-ask" fill="none" stroke="${TL_INK}" stroke-width="2.5" stroke-linejoin="miter" stroke-linecap="butt"/>
     ${marks}
     <circle cx="${endX.toFixed(1)}" cy="${endY.toFixed(1)}" r="3.5" fill="none" stroke="${TL_INK}" stroke-width="1.6"/>
-    <text x="${endFit.x}" y="${endLabelY.toFixed(1)}" text-anchor="${endFit.anchor}" font-size="${endFs}" font-weight="600" fill="${TL_INK}">${esc(endText)}</text>
-    <text x="${plotL}" y="${(bottom + 16).toFixed(1)}" font-size="${fs}" fill="${TL_MUTED}">${esc(startDay)}</text>
-    ${endDay ? `<text x="${plotR}" y="${(bottom + 16).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(endDay)}</text>` : ''}
+    ${endPlaced ? textEl(endPlaced.value, endFs, ' font-weight="600"', TL_INK) : ''}
+    <text x="${plotL}" y="${tickY.toFixed(1)}" font-size="${fs}" fill="${TL_MUTED}">${esc(startDay)}</text>
+    ${endDay ? `<text x="${plotR}" y="${tickY.toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(endDay)}</text>` : ''}
   </svg>`
 }
 
