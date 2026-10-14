@@ -1,20 +1,22 @@
 # Current — 2026-10-14 (Cursor, agent rules: PR merge + DB writes)
 
-Surface: Cursor cloud. Branch `cursor/agent-rules-main-db-136e` from origin/main `1810a65f3` (merged, not rebased: #562, #547, #471, #556, #557, #506, #558). Matt approved merging #544 once checks pass. Known main flakes allowed: `/sell` content-floor, `/communities/tetherow` page-payload, Lighthouse JSON. Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. Branch `cursor/agent-rules-main-db-136e` from origin/main `12878ac14` (merged, not rebased: #568, #562, #547, #471, #556, #557, #506, #558). Matt approved merging #544 once checks pass. Known main flakes allowed: `/sell` content-floor, `/communities/tetherow` page-payload, Lighthouse JSON. Other agents closed #544 three times as superseded by #562; Matt still wants this PR merged. Nothing sent. Nobody pushes main. No rebuild.
 
-**What this branch does.** Agent instruction files match Matt 2026-10-13: PRs only, never `git push` `main`; merge your own PR once CI checks pass (auto-merge except `hold-for-matt`), then verify the production deploy. Bots may write to Ryan Realty Supabase when a task Matt asked for needs it. #562 on main is now the process-rule source (`AGENTS.md`); this PR keeps that plus the Current block.
+**What this branch does.** Agent instruction files match Matt 2026-10-13: PRs only, never `git push` `main`; merge your own PR once CI checks pass, then verify the production deploy. Bots may write to Ryan Realty Supabase when a task Matt asked for needs it. #562 on main is the process-rule source (`AGENTS.md`). This PR keeps that plus the Current block. Merge with a normal merge commit, not squash.
 
 **Still open.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
-# Earlier — 2026-10-14 (Cursor, AGENTS.md single process source)
+## Earlier — 2026-10-14 (Cursor, revert #469 hold-for-matt)
 
-Surface: Cursor cloud. Branch `cursor/agents-md-single-source-6f1e` / PR #562 from origin/main `c7e237ccf` (#547 after #471 / #556 / #560). Folds and supersedes #544. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/revert-pr-469-6f1e` from origin/main `ef24a6b5f`. Reverts #469. Nobody pushes main. Nothing sent.
 
-**What this branch does.** `AGENTS.md` is the only process-rule file. CORE RULES add PRs only, auto-merge except `hold-for-matt`, stale PRs, Done = merged + production READY + live URL, payload caps, no sleep waits, new process rules in `AGENTS.md`, and DB writes when Matt's task needs them. Workflows enqueue auto-merge and close stale PRs. `merge-gate` is the required CI rollup (lint, gates, unit, and on app PRs build / e2e / a11y). Lighthouse and content-floor stay out of that rollup.
+**What this branch does.** #469 was labeled `hold-for-matt` and titled do-not-merge-without-Matt. A session token ran `gh pr merge --auto --squash` while Allow auto-merge is off, which immediately squash-merged a MERGEABLE PR (`ef24a6b5f`). This revert restores main. #567 still open: wait for required checks before squash.
 
-**Also this session.** GitHub App token (`ghs_`, account `cursor`) 403s Administration: create label, PATCH `allow_auto_merge` / `delete_branch_on_merge`, POST ruleset, PUT branch protection. Did not push an empty commit to main because protection is not active. Squash-merged already-mergeable #559, #546, and #547. #550 and #514 stay CONFLICTING (`Auto merge is not allowed for this repository`). #545/#469/#473/#479 stay open (titles already hold for Matt).
+**Admin 403.** GitHub App token (`ghs_`, account `cursor`) still 403s Administration: PATCH `allow_auto_merge` / `delete_branch_on_merge`, POST ruleset, PUT/GET branch protection, `workflow_dispatch` Stale PRs. GET rulesets returns `[]`. Did not push an empty commit to main.
+
+**Also held.** Do not merge #545, #473, or #479.
 
 **Held.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
