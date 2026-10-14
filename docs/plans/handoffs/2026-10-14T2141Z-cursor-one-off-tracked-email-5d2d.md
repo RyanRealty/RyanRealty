@@ -11,7 +11,8 @@ AGENTS.md land-path item 9: client/lead mail uses CRM tracked send, never
 Gmail. CLI + admin POST `/api/admin/email/one-off`. Map tar.gz never
 landed; hosted generated `tetherow-map-v2.png` on campaign-media.
 
-Next: land this PR (auto-merge), production READY.
+Next: land PR 615 (auto-merge). a11y flake: listing 503 page dropped
+meta refresh so pa11y no longer fails on a slow listing read.
 
 Skills read: none this turn (CRM send path already in tree).
 
