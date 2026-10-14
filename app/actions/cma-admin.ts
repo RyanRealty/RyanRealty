@@ -14,6 +14,7 @@ import {
   ASK_BELOW_BAND_REASON_PLAIN,
   ASK_IN_BAND_KIND,
   ASK_IN_BAND_REASON_PLAIN,
+  askInBandPriceExempt,
   recommendationGapHold,
   storedHoldDecided,
   storedHoldKind,
@@ -297,25 +298,28 @@ export async function approveCmaAction(
       row.build_summary && typeof row.build_summary === 'object' && !Array.isArray(row.build_summary)
         ? (row.build_summary as Record<string, unknown>)
         : null
-    // RULE 22 (Matt 2026-10-07): the build's own ask-in-band hold is not a
-    // flag a broker acknowledges. A held document is never finalized, and the
-    // send rail (lib/cma/send.ts) requires finalized, so it never sends.
+    // A stored ask-below-band hold is not a flag a broker acknowledges.
+    // A stored ask-in-band hold is the same, except when the recommendation
+    // is already under that ask and within 15% (Matt 2026-10-12). That
+    // letter finalizes. The send rail still requires finalized.
     const storedKind = storedHoldKind(summary)
-    if (storedKind) {
+    const origin = classifyCmaOrigin(
+      (row.request_source as string | null) ?? null,
+      (row.doc_type as string | null) ?? null,
+    )
+    const lastAsk = resolveTheirPrice(origin, summary, await getCmaProspectAsk(String(row.id)))
+    const recommended = numberOrNull(row.recommended_list)
+    const inBandStands =
+      storedKind === ASK_IN_BAND_KIND && askInBandPriceExempt(recommended, lastAsk)
+    if (storedKind && !inBandStands) {
       const plain = storedKind === ASK_IN_BAND_KIND ? ASK_IN_BAND_REASON_PLAIN : ASK_BELOW_BAND_REASON_PLAIN
       const held = typeof summary?.hold_reason === 'string' && summary.hold_reason.trim() ? summary.hold_reason : plain
       return { error: held }
     }
     // The same gate the queue's send path runs (app/actions/cma-queue.ts):
     // rule 3 and the live ask-in-band backstop for a row whose build never
-    // measured the ask against the band. The report-page Approve button
-    // finalized such a row before (review, 2026-10-07). Not acknowledgeable.
-    const origin = classifyCmaOrigin(
-      (row.request_source as string | null) ?? null,
-      (row.doc_type as string | null) ?? null,
-    )
-    const lastAsk = resolveTheirPrice(origin, summary, await getCmaProspectAsk(String(row.id)))
-    const gap = recommendationGapHold(numberOrNull(row.recommended_list), lastAsk, {
+    // measured the ask against the band. Not acknowledgeable.
+    const gap = recommendationGapHold(recommended, lastAsk, {
       low: numberOrNull(row.value_low),
       high: numberOrNull(row.value_high),
       holdKind: storedKind,

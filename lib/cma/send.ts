@@ -28,6 +28,7 @@ import {
   getCmaAdminRowBySlug,
   getCmaBrokerBySlugOrEmail,
   getCmaProspectAsk,
+  getCmaProspectEnrichmentNotes,
   getCmaRenderSourceBySlug,
   updateCmaRowFieldsBySlug,
   findCrmPersonIdByEmail,
@@ -55,7 +56,8 @@ import { buildSignature } from '@/lib/crm/email-signature'
 import { getBrokers } from '@/lib/data'
 import { cmaEmailGalleryUrls } from '@/lib/cma/email-gallery'
 import { cmaEmailPhotoHtml, previewTextFromCustomBody } from '@/lib/cma/report-button'
-import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
+import { classifyCmaOrigin, isColdOrigin, type CmaOrigin } from '@/lib/cma/origin'
+import { companyOwnerSendHold } from '@/lib/prospecting/company-owner'
 import { resolveSendableClientEmail } from '@/lib/cma/send-client-email'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
 import { formatPublishedPhone } from '@/lib/cma/format-phone'
@@ -76,6 +78,8 @@ const MAX_PDF_BYTES = 25 * 1024 * 1024
 
 export interface CmaSendContext {
   slug: string
+  /** cmas.id. Cold sends read the county owner off the linked prospect row. */
+  cmaId: string
   subjectAddress: string
   /** MLS ListingKey for this CMA. Null when the row has none. */
   subjectListingKey: string | null
@@ -157,6 +161,7 @@ async function resolveSendContext(
   return {
     ctx: {
       slug,
+      cmaId: String(row.id ?? ''),
       subjectAddress: (row.subject_address as string) ?? slug,
       subjectListingKey: listingKey,
       clientName,
@@ -411,6 +416,7 @@ export async function prepareCmaSendPreview(slug: string): Promise<
     const clientName = (row.client_name as string | null) ?? null
     const fakeCtx: CmaSendContext = {
       slug,
+      cmaId: String(row.id ?? ''),
       subjectAddress: (row.subject_address as string) ?? slug,
       subjectListingKey: (row.subject_listing_key as string | null) ?? null,
       clientName,
@@ -485,6 +491,26 @@ export async function sendCmaToLead(
     if (!screen.ok) {
       return { ok: false, error: `Not sent. ${screen.detail}` }
     }
+  }
+
+  // Company-owned homes stay off cold outreach (Matt 2026-10-11). The county
+  // legal owner is the test, not the skip-trace person. Family trusts still
+  // send. An asked CMA is not this path. No linked prospect row does not hold.
+  // A failed notes read refuses the send.
+  if (isColdOrigin(ctx.origin)) {
+    const cmaId = ctx.cmaId.trim()
+    if (!cmaId) {
+      return { ok: false, error: 'Could not read the county owner. The CMA was not sent.' }
+    }
+    let notes: string | null
+    try {
+      notes = await getCmaProspectEnrichmentNotes(cmaId)
+    } catch (e) {
+      console.error('[sendCmaToLead] county owner read failed', e)
+      return { ok: false, error: 'Could not read the county owner. The CMA was not sent.' }
+    }
+    const hold = companyOwnerSendHold(notes)
+    if (hold) return { ok: false, error: hold }
   }
 
   // A send without a CRM contact is untracked (no pixel, no signed links, no

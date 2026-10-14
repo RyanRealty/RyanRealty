@@ -49,7 +49,7 @@ describe('one comp floor, and the review keep is what prices (Falcon re-admissio
     expect(MIN_COMPS).toBe(PRICING_MIN_COMPS)
   })
 
-  it('prices the six the review kept, never the sale it excluded (cma-3153-cromwell, at the five-sale floor)', () => {
+  it('prices every product-matched sale the picker kept, including one the review marked out (cma-3153-cromwell)', () => {
     const selected = ['cromwell', 'matthew', 'lansing', 'locksley-955', 'locksley-1131', 'locksley-1140', 'lansing-2'].map((k) =>
       sfr(k),
     )
@@ -73,17 +73,17 @@ describe('one comp floor, and the review keep is what prices (Falcon re-admissio
     expect(gated.shortage).toBe(false)
     expect(gated.comps.map((c) => c.listingKey)).toEqual([
       'cromwell',
+      'matthew',
       'lansing',
       'locksley-955',
       'locksley-1131',
       'locksley-1140',
       'lansing-2',
     ])
-    expect(gated.comps.some((c) => c.listingKey === 'matthew')).toBe(false)
-    expect(gated.trace).toContain('1 excluded by the comparability review')
+    expect(gated.trace).toContain('does not remove one the picker kept')
   })
 
-  it('no longer prices a filled ladder when the review keeps five of eight', () => {
+  it('prices the whole product-matched ladder when the review would have kept five of eight', () => {
     const selected = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((id, i) => sale(id, 2008 + i, 'Single Family Residence'))
     const vetted = selected.slice(0, 5)
     const verdicts = selected.map((c) => ({
@@ -102,10 +102,11 @@ describe('one comp floor, and the review keep is what prices (Falcon re-admissio
     })
     expect(gated.shortage).toBe(false)
     expect(gated.droppedProduct).toBe(0)
-    expect(gated.comps.map((c) => c.listingKey)).toEqual(['a', 'b', 'c', 'd', 'e'])
+    expect(gated.comps.map((c) => c.listingKey)).toEqual(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])
+    expect(gated.trace).toContain('does not remove one the picker kept')
   })
 
-  it('is a comp shortage, not a price off the excluded sales, when the review keeps two', () => {
+  it('still prices the sales the review would have cut down to two', () => {
     const selected = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((id) => sfr(id))
     const gated = pricingCompsAfterJudgment({
       selected,
@@ -115,12 +116,12 @@ describe('one comp floor, and the review keep is what prices (Falcon re-admissio
       minComps: MIN_COMPS,
       asOfYear: 2026,
     })
-    expect(gated.shortage).toBe(true)
-    expect(gated.comps.map((c) => c.listingKey)).toEqual(['a', 'b'])
-    expect(gated.trace).toContain('The excluded sales are not priced')
+    expect(gated.shortage).toBe(false)
+    expect(gated.comps.map((c) => c.listingKey)).toEqual(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])
+    expect(gated.trace).not.toContain('The excluded sales are not priced')
   })
 
-  it('is a comp shortage when the review keeps four of eight (five price-setting sales is the floor, Matt 2026-10-07)', () => {
+  it('does not turn four review cuts into a shortage when eight sales match the product', () => {
     const selected = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((id) => sfr(id))
     const gated = pricingCompsAfterJudgment({
       selected,
@@ -130,9 +131,9 @@ describe('one comp floor, and the review keep is what prices (Falcon re-admissio
       minComps: MIN_COMPS,
       asOfYear: 2026,
     })
-    expect(gated.shortage).toBe(true)
-    expect(gated.comps).toHaveLength(4)
-    expect(gated.trace).toContain('under the 5-sale minimum')
+    expect(gated.shortage).toBe(false)
+    expect(gated.comps).toHaveLength(8)
+    expect(gated.trace).not.toContain('under the 5-sale minimum')
   })
 
   it('prices the product-matched pool when the review did not run', () => {
@@ -221,7 +222,7 @@ describe('pricing comps stay on the product the audit can defend', () => {
     expect(gated.droppedProduct).toBe(1)
   })
 
-  it('shortages a widened set the judge kept none of, instead of pricing those sales', () => {
+  it('keeps a widened set the judge marked out on vintage, and shortages only because four is under five', () => {
     // Four sales, same subtype as a 1924 subject, years 1972 through 2021.
     // None is a new build. The judge excluded every one.
     const selected = [
@@ -244,8 +245,9 @@ describe('pricing comps stay on the product the audit can defend', () => {
       asOfYear: 2026,
     })
     expect(gated.droppedProduct).toBe(0)
-    expect(gated.comps).toEqual([])
+    expect(gated.comps.map((c) => c.listingKey)).toEqual(['a', 'b', 'c', 'd'])
     expect(gated.shortage).toBe(true)
+    expect(gated.trace).toContain('does not remove one the picker kept')
   })
 
   it('does not treat a same-street price cut as a product exclusion', () => {

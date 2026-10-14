@@ -11,6 +11,8 @@
  */
 import type { AtlasRegion } from '@/components/site/v3'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS, type AtlasPopulation } from '@/lib/atlas/build-place-atlas'
+import type { AtlasBoundaryRef } from '@/lib/atlas/atlas-dots-scope'
+import { compactAtlasGeometry } from '@/lib/atlas/compact-geometry'
 import { atlasRegionNames } from '@/lib/atlas/place-names'
 import {
   getBoundaryGeoJSON,
@@ -66,15 +68,57 @@ export type ListingAtlas = {
   /** Same-community sibling plats. Empty on a city frame (no dump). */
   otherSubdivs: { name: string; href: string }[]
   otherSubdivsHeading: string
+  /** MLS cities the population was read for (UXLIVE-3 dots URL). */
+  cities: string[]
+  /** Where the frame boundary came from, or null when the map is dots-only. */
+  boundaryRef: AtlasBoundaryRef | null
+  /** The frame polygon the Atlas was built with. */
+  boundary: GeoJSON.Polygon | GeoJSON.MultiPolygon | null
 }
 
 const READ_MS = 4500
+const NEIGHBOR_LOT_CAP = 6
+/** ~10 m: enough for a lot outline, not survey vertices. */
+const LOT_TOLERANCE_DEG = 1e-4
+
+function listingAtlasBoundaryRef(
+  grain: 'city' | 'neighborhood' | 'community',
+  frameSlug: string | null,
+  citySlug: string | null,
+  cityName: string,
+  neighborhoodBoundarySlug: string | null,
+): AtlasBoundaryRef | null {
+  if (grain === 'community' && frameSlug) return { kind: 'community', slug: frameSlug }
+  // The public door is /cities/bend/awbrey-butte. The boundaries row is
+  // bend-awbrey-butte. The dots route looks up the slug it is given and
+  // 404s on the short one, so the map keeps the count and draws no homes.
+  if (grain === 'neighborhood' && (neighborhoodBoundarySlug || frameSlug)) {
+    return { kind: 'geo', geoType: 'neighborhood', geoSlug: neighborhoodBoundarySlug ?? frameSlug! }
+  }
+  if (citySlug) return { kind: 'geo', geoType: 'city', geoSlug: citySlug }
+  return { kind: 'city-row', cityName }
+}
+
+function compactListingParcels(parcels: Taxlot[]): Taxlot[] {
+  const subject = parcels.filter((lot) => lot.isSubject)
+  const neighbors = parcels.filter((lot) => !lot.isSubject).slice(0, NEIGHBOR_LOT_CAP)
+  return [...subject, ...neighbors].map((lot) => ({
+    ...lot,
+    geometry: compactAtlasGeometry(lot.geometry, LOT_TOLERANCE_DEG),
+  }))
+}
+
+type PlaceBoundaryHit = {
+  geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon
+  /** Set when the polygon came from a neighborhood boundaries row. */
+  neighborhoodSlug: string | null
+}
 
 async function readPlaceBoundary(
   slug: string,
   citySlug: string | null,
   preferResort: boolean,
-): Promise<GeoJSON.Polygon | GeoJSON.MultiPolygon | null> {
+): Promise<PlaceBoundaryHit | null> {
   if (preferResort) {
     // A registry community's stored outline, keyed by its durable slug and
     // gated by the one trust rule (lib/communities/community-outline.ts).
@@ -84,7 +128,7 @@ async function readPlaceBoundary(
       READ_MS,
       'listing:atlasCommunity',
     )
-    if (community) return community
+    if (community) return { geometry: community, neighborhoodSlug: null }
   }
   const slugs = citySlug && citySlug !== slug ? [slug, `${citySlug}-${slug}`] : [slug]
   for (const geoSlug of slugs) {
@@ -95,7 +139,12 @@ async function readPlaceBoundary(
         READ_MS,
         `listing:atlasBoundary:${geoType}:${geoSlug}`,
       )
-      if (geometry) return geometry
+      if (geometry) {
+        return {
+          geometry,
+          neighborhoodSlug: geoType === 'neighborhood' ? geoSlug : null,
+        }
+      }
     }
   }
   return null
@@ -107,17 +156,21 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
   let grain = intent.grain
   let frameName = intent.name
   let frameSlug = intent.slug
-  let boundary =
-    grain === 'city'
-      ? scope.boundary
-      : await readPlaceBoundary(intent.slug!, scope.citySlug, grain === 'community')
+  let neighborhoodBoundarySlug: string | null = null
+  let boundary: GeoJSON.Polygon | GeoJSON.MultiPolygon | null = scope.boundary
+  if (grain !== 'city') {
+    const hit = await readPlaceBoundary(intent.slug!, scope.citySlug, grain === 'community')
+    boundary = hit?.geometry ?? null
+    neighborhoodBoundarySlug = hit?.neighborhoodSlug ?? null
+  }
   if (!boundary && grain !== 'city' && scope.communitySlug && grain !== 'community') {
     const community = await readPlaceBoundary(scope.communitySlug, scope.citySlug, true)
     if (community) {
       grain = 'community'
       frameName = scope.communityName ?? scope.communitySlug
       frameSlug = scope.communitySlug
-      boundary = community
+      boundary = community.geometry
+      neighborhoodBoundarySlug = null
     }
   }
   if (!boundary && grain !== 'city') {
@@ -125,6 +178,7 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
     frameName = scope.cityName ?? scope.city
     frameSlug = scope.citySlug
     boundary = scope.boundary
+    neighborhoodBoundarySlug = null
   }
   const hasLocalFrame = grain !== 'city' && boundary != null
   const frameHref =
@@ -146,7 +200,10 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
     ),
     withTimeoutFallback(
       (hasLocalFrame && frameSlug
-        ? getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: frameSlug })
+        ? getCommunitySubdivisions({
+            geoType: 'neighborhood',
+            geoSlug: grain === 'neighborhood' && neighborhoodBoundarySlug ? neighborhoodBoundarySlug : frameSlug,
+          })
         : scope.citySlug
           ? getCommunitySubdivisions({ geoType: 'city', geoSlug: scope.citySlug })
           : Promise.resolve([])
@@ -226,7 +283,7 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
   return {
     atlas: atlasRead ?? EMPTY_PLACE_ATLAS,
     regions,
-    parcels,
+    parcels: compactListingParcels(parcels),
     subjectParcel: parcels.find((p) => p.isSubject) ?? null,
     frameName,
     frameHref,
@@ -234,5 +291,10 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
     dotsFrame: !boundary,
     otherSubdivs,
     otherSubdivsHeading: hasLocalFrame ? frameName : '',
+    cities: [scope.city],
+    boundaryRef: boundary
+      ? listingAtlasBoundaryRef(grain, frameSlug, scope.citySlug, scope.city, neighborhoodBoundarySlug)
+      : null,
+    boundary,
   }
 }

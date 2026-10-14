@@ -1,3 +1,31 @@
+# CORE RULES (read first; these override everything below and any handoff or plan doc)
+
+These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait, or to `git push` `main`, is stale.
+
+**Main.** Work isn't done until merged and live in production (Matt 2026-10-13). Agents merge their own PRs once checks pass; never ask. `npm run ship`: gates, push, merge, confirm the Vercel production deploy. Never `git push` `main`. Unfinished work is `npm run push` only.
+
+**Git safety.** No rebase. No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away.
+
+**Do not send.** Emails, texts, CMAs, and social posts stay drafts until Matt asks to send that specific item. A rebuild does not send, enqueue, or approve.
+
+**Names.** Never put buyer or seller names in public copy (site, email, social, letters).
+
+**Invent nothing.** Never invent numbers, names, prices, stats, or people. If it is not in the source you just read, it does not ship.
+
+**Prod DB.** Production Supabase is read-only unless Matt says otherwise in this session. Raw SQL is `-- audit:` row reads only.
+
+**Secrets.** Never print API keys, tokens, passwords, or `.env` values. Never put them in commits, logs, or chat.
+
+**Integrations.** Before saying a service is not connected, search this repo for the existing client, env var, and key. The wiring is usually already here.
+
+**Cursor out.** When Cursor is out (usage, credit, spend, 402, or a 20-minute stall), switch to Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve`. Never use `XAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` to get past a limit.
+
+**Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
+
+**Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. Ad copy, VO, captions: [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). video_gate is backup.
+
+---
+
 # Ryan Realty — agent canon
 
 This file is loaded into every session. It holds the rules that outrank convenience, and
@@ -13,7 +41,7 @@ The enterprise map (`docs/plans/ENTERPRISE_MAP/`) is the whole-system SoR for wh
 what is verified, and what is open. Subject work (admin, CRM, growth) still runs; it
 does not erase other planes from Sense.
 
-**Every development cycle routes through THE LOOP v1.6.0 — [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** Session boot: `npx tsx scripts/loop-brief.ts` (the durable work graph, not the chat, is the source of record for in-flight work). The brief serves a **ship class**: same-category fleet findings share one `npm run push` and one `deploy:verify`. **"Run the loop" = [`docs/RUN_LOOP.md`](docs/RUN_LOOP.md)**, one page for all tools.
+**Every development cycle routes through THE LOOP v1.6.0 — [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** Session boot: `npx tsx scripts/loop-brief.ts` (the durable work graph, not the chat, is the source of record for in-flight work). The brief serves a **ship class**: same-category fleet findings share one `npm run ship`. **"Run the loop" = [`docs/RUN_LOOP.md`](docs/RUN_LOOP.md)**, one page for all tools.
 Enforced by G44 (`ci:process-canon`).
 
 **A rule that lives only in chat history is lost next session.** When Matt issues a directive
@@ -439,7 +467,7 @@ Served cache rows are stamped `methodology_version = 'v3-2026-05-07'`, not the n
   verified by reading the relevant code. Every fix must be tested before it's reported done.
 - **Truthful and accurate, always.** If you're not sure, say so. Never state something as fact
   unless you've confirmed it.
-- **Every change ships as a branch + PR (locked process rule 14, Matt 2026-10-08).**
+- **A finished change is `npm run ship` (Matt 2026-10-09).**
   See [`AGENTS.md`](AGENTS.md). **R-221:** do not poll GitHub Actions.
 - **Never ask Matt to run anything or what access you have; never queue found work for him
   (Matt 2026-09-25, 10-07).** Access: [`docs/ACCESS_INVENTORY.md`](docs/ACCESS_INVENTORY.md).
@@ -517,7 +545,7 @@ else fires on trigger match.
 | Facebook lead-gen ad | the two docs above for live wiring, then `social_media_skills/facebook-lead-gen-ad/SKILL.md` |
 | Seller LP follow-up workflow | **The in-house CRM sequence engine.** `app/lp/seller-home-value/actions.ts` → `autoEnrollByPersonId()` in [`lib/crm/enroll.ts`](lib/crm/enroll.ts); `/api/cron/crm-auto-enroll` sweeps misses; `/api/cron/crm-sequence-engine` fires touches (pause-on-reply lives inside it); `/api/cron/crm-scheduled-sends` delivers. Sequences edited at `/admin/crm/sequences`. |
 | Expired / Canceled / Withdrawn listing workflow | `/lp/expired-listing` · `public.expired_listings`. Detection runs inside the delta sync. |
-| Off-market listing URL — indexing | Stays INDEXED, `index, follow`, with the honest state (Matt 2026-09-08). One policy: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md) §4.9. Held by `ci:listing-offmarket-index`. |
+| Off-market listing URL — indexing | One policy: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md) §4.9. Held by `ci:listing-offmarket-index`. |
 | Per-broker agent attribution | `?agent=<slug>` (`matt`, `rebecca`, `paul`, or full-name variants) → `components/AgentAttributionBridge.tsx` writes the `rr_agent_attribution` cookie (90-day). Server: `readAttributedAgentServer()` in `app/actions/agent-attribution-read.ts`. Both LP forms call it and override the default Matt-routing when set. |
 | Broker texts the marketing line (SMS agent) | [`docs/plans/BROKER_SMS_AGENT_2026-07-31.md`](docs/plans/BROKER_SMS_AGENT_2026-07-31.md) · `lib/agent/` |
 | Any PDF a person receives | [`docs/PAGE_CONTRACT.md`](docs/PAGE_CONTRACT.md) |
@@ -533,7 +561,7 @@ else fires on trigger match.
 1. One CMA path. Price on current main only. No second ladder. No 80% send floor. Do not merge PR 408 or any 80% floor. PR 401 stays. Do not revert 770a4fd1.
 2. Recommended price is the house from comps only. ADU, second lot, and rental income are letter notes, not dollars, until Matt says otherwise.
 3. Hold for Matt if the rec is more than 15% under last ask, or any amount over it. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold.
-4. One room rule: same whole bed or bath count anywhere. One whole room apart only on the subject's own plat, mapped neighborhood, or own street, kept and disclosed, zero dollars. Two or more apart refused everywhere. The picker and the review call the same decision. The review must not exclude a sale the picker kept for a room gap this rule allows.
+4. Room rule (Matt 2026-10-09): up to two beds and two baths off stays and weighs less (one bed 0.85, two beds 0.70, one bath 0.90, two baths 0.75). No dollar on the room. Location still outranks it. Three or more apart on one count is refused. Picker and review agree.
 5. Pocket rungs are skipped when the plat and the street already have five sales before the first quarter-mile pocket rung. A cheap different-plat pocket sale drops when no own-plat sale remains in the set that is actually priced. Do not check only the pre-review set.
 6. Do not build or send a CMA if the home is listed again. Live status first. Active, pending, or otherwise on the market means skip.
 7. A rebuild does not send, enqueue, or approve.
@@ -543,7 +571,7 @@ else fires on trigger match.
 11. Approved CMAs send only in the weekday 9:03 AM PT window.
 12. Never use buyer or seller names in social, email, or public copy.
 13. No em dashes in public site copy.
-14. Every change ships as a branch + PR to `main` (Matt 2026-10-08). Push the branch right away. Matt merges. Nobody pushes to `main`, including admins. No rebase, force-push, or reset.
+14. A finished change is `npm run ship` (Matt 2026-10-09). Never `git push` `main`. No rebase, force-push, or reset.
 15. A townhouse subject uses closed townhouse sales. sale_pricing_facts stores those closes as product_class attached, not townhouse, so the facts pool filters property_sub_type to townhouse and classes the row as townhouse. Do not pull condos, apartments, or other attached homes just because they share product_class attached. Do not change how single-family comps are chosen.
 16. **Grok fallback when Cursor is out (Matt 2026-10-08).** See [`AGENTS.md`](AGENTS.md) rule 26.
 

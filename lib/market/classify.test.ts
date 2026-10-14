@@ -23,12 +23,13 @@ describe('marketVerdict (single source of <=4 / <6 / >=6)', () => {
     expect(marketVerdict(6).kind).toBe('buyers') // boundary: 6 is buyer's
     expect(marketVerdict(9).kind).toBe('buyers')
   })
-  it('returns labels and handles unknown', () => {
-    expect(marketVerdict(3).label).toBe("seller's market")
-    expect(marketVerdict(5).label).toBe('balanced market')
-    expect(marketVerdict(7).label).toBe("buyer's market")
+  it('returns the months-of-supply line and handles unknown', () => {
+    expect(marketVerdict(3).label).toBe('3.0 months of supply')
+    expect(marketVerdict(5).label).toBe('5.0 months of supply')
+    expect(marketVerdict(7).label).toBe('7.0 months of supply')
     expect(marketVerdict(null).kind).toBe('unknown')
     expect(marketVerdict(undefined).kind).toBe('unknown')
+    expect(marketVerdict(3).label).not.toMatch(/seller|buyer|balanced market/i)
   })
 })
 

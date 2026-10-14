@@ -102,6 +102,20 @@ describe('tileAndEventToDrop — was → now → % consistency (§0)', () => {
       expect(d.lastDropAmount).toBe(prev - now)
     }
   })
+
+  it('excludes a cut over 40% (Hunnell-sized markdowns stay off the page)', () => {
+    expect(tileAndEventToDrop(tile(1_649_000), event(16_490_000, 1_649_000), NOW)).toBeNull()
+    expect(tileAndEventToDrop(tile(299_000), event(500_000, 299_000), NOW)).toBeNull()
+  })
+
+  it('excludes a ~10x decimal-shift even when framed as a cut', () => {
+    expect(tileAndEventToDrop(tile(1_650_000), event(16_490_000, 1_650_000), NOW)).toBeNull()
+  })
+
+  it('keeps a 40% cut and a typical 3% cut', () => {
+    expect(tileAndEventToDrop(tile(300_000), event(500_000, 300_000), NOW)).not.toBeNull()
+    expect(tileAndEventToDrop(tile(579_000), event(599_000, 579_000), NOW)).not.toBeNull()
+  })
 })
 
 // ─── The read behind /price-drops (WP2, 2026-09-24) ───────────────────────
@@ -380,6 +394,56 @@ describe('getPriceDrops: total is the population, the list is cut at the cap it 
   })
 })
 
+describe('getPriceDrops: sanity filter withholds typos from the count and the dollar total', () => {
+  it('keeps a 9% cut and drops a 90% / 10x Hunnell-shaped row from total and totalReduced', async () => {
+    sbMock.mockReturnValue(
+      eventsClient([
+        ...dropEvents(['ok']),
+        {
+          id: 'e-hunnell',
+          listing_key: 'hunnell',
+          event_type: 'price_drop',
+          event_at: new Date(NOW_MS - 60_000).toISOString(),
+          payload: { ListNumber: 'L-hunnell', previous_price: 16_490_000, new_price: 1_649_000 },
+        },
+      ]).client,
+    )
+    serveTiles([
+      sfrTile('ok'),
+      sfrTile('hunnell', { listPrice: 1_649_000, streetNumber: '64794', streetName: 'Hunnell', streetSuffix: 'Rd' }),
+    ])
+
+    const result = await getPriceDrops({ limit: 48, days: 7 })
+
+    expect(result.drops.map((d) => d.listingKey)).toEqual(['ok'])
+    expect(result.total).toBe(1)
+    expect(result.totalReduced).toBe(50_000)
+    expect(result.degraded).toBe(false)
+  })
+
+  it('excludes a 41% cut that is not a 10x typo from the week total', async () => {
+    sbMock.mockReturnValue(
+      eventsClient([
+        ...dropEvents(['ok']),
+        {
+          id: 'e-deep',
+          listing_key: 'deep',
+          event_type: 'price_drop',
+          event_at: new Date(NOW_MS - 60_000).toISOString(),
+          payload: { ListNumber: 'L-deep', previous_price: 500_000, new_price: 294_000 },
+        },
+      ]).client,
+    )
+    serveTiles([sfrTile('ok'), sfrTile('deep', { listPrice: 294_000 })])
+
+    const result = await getPriceDrops({ limit: 48, days: 7 })
+
+    expect(result.drops.map((d) => d.listingKey)).toEqual(['ok'])
+    expect(result.total).toBe(1)
+    expect(result.totalReduced).toBe(50_000)
+  })
+})
+
 describe('getPriceDropDigest: count is every cut in the window, not a capped list', () => {
   it('counts and sums all 70 region cuts', async () => {
     const keys = keysOf('d', 70)
@@ -399,5 +463,24 @@ describe('getPriceDropDigest: count is every cut in the window, not a capped lis
     const digest = await getPriceDropDigest('central-oregon', 7)
 
     expect(digest).toMatchObject({ count: 0, degraded: true })
+  })
+})
+
+describe('getPriceDrops: accuracy guard (Matt 2026-10-13)', () => {
+  it('excludes a typo-size cut over 50% (Hunnell Rd 90%)', () => {
+    expect(tileAndEventToDrop(tile(50_000), event(500_000, 50_000), NOW)).toBeNull()
+    expect(tileAndEventToDrop(tile(300_000), event(500_000, 300_000), NOW)).not.toBeNull()
+  })
+  it('lists only active homes with a real cut, once per MLS number', async () => {
+    sbMock.mockReturnValue(eventsClient(dropEvents(['a', 'dup', 'sold', 'typo', 'up'])).client)
+    serveTiles([
+      sfrTile('a', { listNumber: 'M1' }),
+      sfrTile('dup', { listNumber: 'M1' }),
+      sfrTile('sold', { listNumber: 'M2', status: 'Closed' }),
+      sfrTile('typo', { listNumber: 'M3', listPrice: 55_000 }),
+      sfrTile('up', { listNumber: 'M4', listPrice: 600_000 }),
+    ])
+    const result = await getPriceDrops({ limit: 48, days: 7 })
+    expect(result.drops.map((d) => d.listingKey)).toEqual(['a'])
   })
 })

@@ -6,10 +6,9 @@ export type PriceDropDatasetInput = {
   /** The FULL population of cuts in the window. */
   total: number
   /**
-   * How many of that population this page actually renders. `totalReducedLabel`
-   * and `medianDropPctLabel` are computed from those rows only, so the Dataset
-   * names their scope rather than letting a 48-row sum sit beside a
-   * 262-listing count reading as if both covered the same set (§0).
+   * How many of that population this page lists. Dollar and median figures
+   * cover the whole window (getPriceDrops totals after the sanity filter),
+   * so they are not labeled as a shown-row slice.
    */
   shownCount: number
   totalReducedLabel: string | null
@@ -28,19 +27,15 @@ export function priceDropDatasetSchemas(input: PriceDropDatasetInput): SchemaInp
   const variables: StatValue[] = [
     { name: 'Price reductions (7-day window)', value: input.total, unitText: 'listings' },
   ]
-  const scope =
-    input.shownCount > 0 && input.shownCount < input.total
-      ? ` (${input.shownCount} shown)`
-      : ''
   if (input.totalReducedLabel) {
     variables.push({
-      name: `Total asking-price cuts${scope}`,
+      name: 'Total asking-price cuts',
       value: input.totalReducedLabel,
       unitText: 'USD',
     })
   }
   if (input.medianDropPctLabel) {
-    variables.push({ name: `Median drop${scope}`, value: input.medianDropPctLabel })
+    variables.push({ name: 'Median drop', value: input.medianDropPctLabel })
   }
 
   const schemas: SchemaInput[] = [

@@ -33,7 +33,7 @@ import {
   usdSigned,
 } from '@/lib/cma/render-blocks'
 import { type PricePathRange } from '@/lib/cma/price-path'
-import { compactUsdLabels } from '@/lib/cma/compact-usd'
+import { compactOrExactLabels } from '@/lib/cma/compact-usd'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom, liveListingDays } from '@/lib/cma/listing-history-line'
 import { pacificDay } from '@/lib/cma/listing-status'
@@ -496,7 +496,9 @@ function arcLines(text: string): string[] {
 export function askArcCell(entry: MatrixEntry): string {
   const asks: string[] = []
   // Two different asks never print the same label ("$1.62M → $1.62M").
-  const money = compactUsdLabels([entry.firstAsk, entry.lastAsk])
+  // A short label is kept only when it names that ask ($525,000 stays
+  // "$525K"; $524,900 prints "$524,900", not "$525K").
+  const money = compactOrExactLabels([entry.firstAsk, entry.lastAsk])
   if (entry.firstAsk != null && entry.firstAsk > 0) asks.push(money(entry.firstAsk))
   if (entry.lastAsk != null && entry.lastAsk > 0 && entry.lastAsk !== entry.firstAsk) {
     asks.push(money(entry.lastAsk))
@@ -531,8 +533,10 @@ function ppsfCell(price: number | null | undefined, sqft: number | null | undefi
  * A sale that reported no concession, and a sale with none on record.
  *
  * They are different facts and the status table under this chapter says so:
- * "A blank means nothing was recorded, and zero means the sale reported
- * none." Both printed "none" here, which told a reader a sale with no record
+ * a blank means nothing was recorded. One home prints $0 when that sale
+ * reported none. A status with more than one home prints none for a recorded
+ * zero in the concessions column, because that zero is not one home's row.
+ * Both used to print "none" here, which told a reader a sale with no record
  * had reported none. A sale with nothing recorded now says that in words, and
  * the grid takes nothing off it (`concessionOffClose`).
  */
@@ -620,6 +624,23 @@ export function domCell(
   return count
 }
 
+/**
+ * THE ORIGINAL LIST, SAID FOR WHAT IT IS (reader review 2026-10-09).
+ *
+ * A home that was withdrawn, expired, canceled or fell out of contract and
+ * came back prints the ask it came back at (rule 28), not the MLS
+ * OriginalListPrice: 628 Portland opened at $1,475,000 and came back at
+ * $1,395,000, and its cell read "Original list $1,395,000". The cell names
+ * that ask: "$1,395,000 when it came back". Every other home's cell is its
+ * original list, as before.
+ */
+export const CAME_BACK_SUFFIX = 'when it came back'
+
+export function originalListCell(entry: Pick<MatrixEntry, 'firstAsk' | 'firstAskRestarted'>): string {
+  const cell = moneyCell(entry.firstAsk)
+  return cell !== '-' && entry.firstAskRestarted === true ? `${cell} ${CAME_BACK_SUFFIX}` : cell
+}
+
 function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string[] {
   // Matt ADD 2026-09-12: kill "how the price moved" spark entirely.
   void _range
@@ -630,7 +651,7 @@ function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string
     statusCell(entry),
     statusDateCell(entry),
     moneyCell(entry.listPrice ?? entry.lastAsk),
-    moneyCell(entry.firstAsk),
+    originalListCell(entry),
     moneyCell(entry.closePrice),
     sharedConcessionCell(entry),
     soldAfterConcessionsCell(entry),
@@ -754,7 +775,7 @@ export function sizeAdjustmentCell(
  * away on a set where every sale matches.
  */
 function roomAdjustmentCell(comp: CmaAdjustedComp): string {
-  return roomAdjustmentWords(comp.roomDifference ?? [])
+  return roomAdjustmentWords(comp.roomDifference ?? [], comp.roomDecision?.gap)
 }
 
 /** The adjustment-grid cells for one closed sale, in ADJUSTMENT_ROWS order. */
@@ -855,8 +876,13 @@ export const SOLD_PPSF_NET_ROW_LABEL = 'Sold $/sqft after concessions'
 function sharedRowWords(
   family: 'closed' | 'unsold' | 'active',
   entries: readonly MatrixEntry[],
-  rows: ReadonlyArray<MatrixRow>,
+  rows0: ReadonlyArray<MatrixRow>,
 ): ReadonlyArray<MatrixRow> {
+  // A cell that says "when it came back" carries words, so its row wraps like
+  // the other worded rows: a nowrap figure cell would run into the next
+  // home's column.
+  const cameBack = entries.some((e) => e.firstAskRestarted === true)
+  const rows = cameBack ? rows0.map((row) => (row.label === 'Original list' ? { ...row, figure: false } : row)) : rows0
   if (family !== 'closed') return rows
   const credit = entries.some(saleCarriesConcession)
   return rows.map((row) => {

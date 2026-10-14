@@ -20,7 +20,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { submitListingSaveCapture } from '@/app/actions/search-alert-capture'
+import { submitListingSaveCapture } from '@/lib/analytics/submit-alert-signup'
 import { readRrSessionId } from '@/lib/tracking'
 
 type Status = 'asking' | 'sending' | 'sent' | 'failed'

@@ -28,6 +28,12 @@ import type { Metadata } from 'next'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { CONTACT } from '@/lib/brand/contact'
 import {
+  PRIVACY_MILESTONE,
+  PRIVACY_OTHER_SOURCES,
+  privacyClickIdParagraph,
+  privacyDoNotSellOptOut,
+} from '@/lib/privacy/counsel-002'
+import {
   V3_ROOT_CLASS,
   v3Text,
   V3Breadcrumb,
@@ -77,6 +83,7 @@ const ITEMS: V3QuietItem[] = [
       'Personal information: when you sign in (for example with Google), we receive your name and email. When you contact us or inquire about a listing, we receive what you provide.',
       'Browsing activity: which pages and listings you view, searches you run, and when you are signed in we associate this with your account.',
       'Cookies and device info: session and preference cookies, and general device and browser data for security and analytics.',
+      PRIVACY_OTHER_SOURCES,
     ],
   },
   {
@@ -118,7 +125,7 @@ const ITEMS: V3QuietItem[] = [
       'Essential: sign-in session, cookie-consent choice. Required for the site to work.',
       'Analytics: on by default outside the European Economic Area, the UK, and Switzerland, unless you decline or your browser sends a Global Privacy Control signal. In those regions, analytics stays off until you accept.',
       'Marketing: off until you accept, everywhere. Clicking an ad is not consent. The Meta Pixel and advertising cookies stay off until you accept marketing cookies.',
-      'Whatever you choose, we record how each visit reached us in our own first-party logs: the page you came from and any campaign tag or click id on the link you clicked (utm_*, gclid, fbclid). That tells us which of our ads, emails and posts are working. It describes the link, not you. If you decline cookies, or your browser sends a Global Privacy Control signal, we record nothing at all.',
+      privacyClickIdParagraph(),
       'You can change your cookie preferences via the cookie banner or your browser settings.',
     ],
   },
@@ -140,7 +147,10 @@ const ITEMS: V3QuietItem[] = [
   {
     kind: 'prose',
     term: 'Recognizing you and targeted advertising',
-    body: 'Once you sign in, contact us, or follow a link we send, we may recognize you on later visits using a first-party cookie and associate the pages and listings you view with your contact record in our own client-relationship system, so our team can follow up on the homes you care about. We may also send a one-way hashed version of your email or phone to Meta and Google so they can match you to your visit and measure or target advertising. We never send them your raw email or phone. We may use this information to build advertising audiences and to tailor the ads you see. You can opt out as described below.',
+    body: [
+      'Once you sign in, contact us, or follow a link we send, we may recognize you on later visits using a first-party cookie and associate the pages and listings you view with your contact record in our own client-relationship system, so our team can follow up on the homes you care about. We may also send a one-way hashed version of your email or phone to Meta and Google so they can match you to your visit and measure or target advertising. We never send them your raw email or phone. We may use this information to build advertising audiences and to tailor the ads you see. You can opt out as described below.',
+      PRIVACY_MILESTONE,
+    ],
   },
   {
     kind: 'prose',
@@ -152,10 +162,11 @@ const ITEMS: V3QuietItem[] = [
   },
   {
     kind: 'prose',
+    id: 'donotsell',
     term: 'Do not sell or share my personal information',
     body: [
       'We do not sell your personal information for money. We do use advertising and analytics services from Meta and Google that may involve sharing online identifiers, such as a hashed email or a cookie identifier, for cross-context behavioral advertising. Under California and Oregon law this can be treated as a sale or a share, and you have the right to opt out.',
-      `To opt out on this browser, set Marketing to off in our cookie banner. That stops the Meta Pixel and advertising cookies here. To opt out across our systems, email us at ${contactEmail} with the subject line Do Not Sell or Share, and we will remove you from advertising audiences and stop sharing your identifiers. Opting out does not stop the essential or analytics functions you have allowed.`,
+      privacyDoNotSellOptOut(contactEmail),
     ],
   },
   {
@@ -196,15 +207,13 @@ export default function PrivacyPage() {
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Privacy' }]} />
 
         <div id="sms">
-          <div id="donotsell">
-            <V3Quiet
-              id="privacy"
-              eyebrow="Updated October 8, 2026"
-              heading="Privacy and cookies"
-              headingLevel={1}
-              items={ITEMS}
-            />
-          </div>
+          <V3Quiet
+            id="privacy"
+            eyebrow="Updated October 8, 2026"
+            heading="Privacy and cookies"
+            headingLevel={1}
+            items={ITEMS}
+          />
         </div>
 
         <V3Ledger

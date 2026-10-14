@@ -15,6 +15,8 @@
  * - Photo/lat/lng: FSBO rows carry them natively; expired rows join `listings`.
  */
 
+import { formatDate } from '@/lib/format/date'
+
 export type ProspectKind = 'expired' | 'fsbo'
 
 /** Structured skip-trace flags. Email hard stop: 'litigator' | 'deceased' | 'hard-stop'. Phone only: 'dnc' | 'dnc:tcpa'. */
@@ -156,6 +158,8 @@ export interface ProspectRow {
   // contact (admin surface — raw is acceptable; UI masks for display)
   contactPhone: string | null
   contactEmail: string | null
+  /** County lookup notes. The company-owner hold reads the legal-owner sentence here. */
+  enrichmentNotes: string | null
 
   doc: ProspectDocState
   compliance: ProspectComplianceState
@@ -218,7 +222,6 @@ export interface ProspectDetail extends ProspectRow {
   cumulativeDaysOnMarket: number | null
   contactSource: string | null
   ownerLookupStatus: string | null
-  enrichmentNotes: string | null
   /**
    * Whole years the owner has held the property, when a source proves it.
    * Source priority (get.ts deriveOwnershipSince): crm_people.custom
@@ -384,6 +387,13 @@ export type SendGuardCode =
   | 'merge-unresolved'
   | 'send-failed'
   | 'not-found'
+  /**
+   * County legal owner is a company (LLC, LP, LLP, Inc, Corp). Cold email and
+   * SMS stay held. Family trusts are not this code. Both drains dequeue it.
+   */
+  | 'company-owned'
+  /** Broker, lender, or vendor — marketing outreach only. 1:1 composer stays open. */
+  | 'industry-contact'
 
 export type SendIntroResult =
   | { ok: true; sid: string; personId: number; sentAt: string }
@@ -445,6 +455,20 @@ export function expectedDocTypeFor(_kind: ProspectKind): 'expired-audit' | 'cma'
 /** Doc types that satisfy a kind's "built doc" check (legacy audits included). */
 export function acceptedDocTypesFor(kind: ProspectKind): ReadonlyArray<string> {
   return kind === 'expired' ? ['cma', 'expired-audit'] : ['cma']
+}
+
+/**
+ * Desk-facing reason for an FSBO row the scraper marked off_market (FSBO
+ * Desk 2026-10-09: "653 NE 12th has no flags, yet blocked"). The intake
+ * processor flips `status` to off_market once the ad has not been seen for
+ * 7+ days (lib/fsbo-processor.ts P12), so say WHEN it was last seen instead
+ * of a bare "Off market" that reads like a missing reason. The block itself
+ * is unchanged (Matt 2026-09-03 FSBO live-status hard-skip).
+ */
+export function fsboOffMarketReason(lastSeenAt: string | null | undefined): string {
+  const t = lastSeenAt ? Date.parse(lastSeenAt) : NaN
+  if (!Number.isFinite(t)) return 'Off market (FSBO ad no longer seen)'
+  return `Off market (FSBO ad not seen since ${formatDate(t)})`
 }
 
 /**

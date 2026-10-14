@@ -1,3 +1,51 @@
+# CMA handoff (START HERE). Updated 2026-10-09 9:20 AM PT
+
+Any agent: read this section first, then continue. Everything below it is older history.
+
+## Goal and definition of done
+Every unsent expired-listing CMA draft is rebuilt and saved on current main. Each one either passes every check (ready for Matt to send) or carries a clear hold or fail reason. Fleet bar: no new fails or holds against the baseline without Matt's yes (rule 25).
+
+## Where things stand
+- **Code fixes merged to main** (tip `1ca218db3`, code through `d095a9d10` plus docs #477): #447 price clock plus #456 failed-ask pricing, #449, #453, #454, #455, #457, #466 size-mix trend (rule 30), #467 live map (rule 31), #468 stored competition/unsold rows (rule 32). Delivered letters stay frozen. **Do not list #452 as merged** — it is still open.
+- **Not done yet: the saved rebuild of the unsent drafts.** About 437 drafts. A first attempt on 10/9 at 7:03 AM was STOPPED by Matt because it ran before the fixes were live. 4 drafts were saved in that run (Wild Rose, Fern Dell, Purcell, Saginaw). They lacked #447, so rebuild them again.
+- **Open PRs:** #476 CI speedup (https://github.com/RyanRealty/RyanRealty/pull/476 — checks about 45 min down to about 10; merge once green). #452 ignore a same-ask pending reversal inside an hour (https://github.com/RyanRealty/RyanRealty/pull/452 — still open; needs a rule-25 fleet score before merge). Optional, not blocking rebuild: #471 admin CMA view perf / parcel index.
+- **Latest fleet scores (dry run):** price-clock 108/140 built, 23 prices moved (median 2.3%). failed-ask 109/143 (new fail cma-1235-hartford, new hold cma-140-4th; the session recommends accepting both). disclose 110/143. All runs predate #466, #467 and #468.
+
+## Next steps, in order
+1. Confirm the Vercel production deploy of main `d095a9d10` or later is live.
+2. Optional, read-only: `npm run cma:render-audit`. It should show fail 0.
+3. Saved rebuild of every unsent draft (status draft or held, never delivered, finalized or archived). Base it on `scripts/_rebuild-cma.ts`. On the Mac mini, the sharded copy is `~/RyanRealty-wt-rebuild/scripts/_rebuild-shard.local.ts` (untracked). Run 8 shards in parallel at concurrency about 4. Each home must pass the live-status gate (skip Active, Pending or Coming Soon, or sold since the letter; fail closed) and the Spark check before it is written. It saves rows and never sends. About 7 minutes per home, so roughly 2 hours.
+4. Produce the ready-to-send list with admin links (`/admin/cmas/<slug>/view`): ready, held with reason, skipped, failed. A report script exists at `~/RyanRealty-wt-rebuild/scripts/_rebuild-report.local.ts`.
+
+## Commands
+- Tests: `npx vitest run lib/cma` (the full suite runs in the push hook).
+- Fleet score (dry run, saves nothing): `npm run cma:fleet` (rule 25; compare against `docs/plans/cma-handoff/fleet-baseline-2026-10-08.json`).
+- Stored-letter render check: `npm run cma:render-audit` (read-only, reads prod).
+- Lookpass: `npx tsx scripts/cma-lookpass.ts --check <slug>...`
+- Push: `CI_GATES_SERIAL=1 npm run push` (repo wrapper; never `--no-verify`).
+
+## Known failure buckets (examples)
+- Too few sales to set a price: cma-20289-schaeffer (4 of 5), cma-68050-fryrear-sisters (0).
+- Unit address can't be verified, so the live-status gate fails closed: cma-1015-4th, cma-1940-monterey-pines, cma-9004-split-rail-la-pine.
+- Back on the market, skip: cma-3062-nw-kelly-hill.
+- Flagged with the price under a failed ask (review): cma-20676-wild-rose, cma-14355-fern-dell-la-pine, cma-3037-purcell, cma-915-saginaw.
+- Rule 22 holds: the failed ask sits inside the sales range (Purcell, Woodsman).
+- Pre-10/4 rows store no subdivision names. #468 now prints them when they're in the area the build searched.
+
+## Matt's decisions (binding)
+- Pricing rules 15, 16, 20 and 22 in `marketing_brain_skills/producers/cma/SKILL.md` section 0.3, plus rules 29 to 32 (added 10/8 and 10/9).
+- A home back on the market is never rebuilt and never sent. Live status comes first.
+- Delivered letters never change.
+- PRs only. Agents may merge their own PRs once checks are green (Matt, 10/9). Never push to main directly, no force-push or rebase.
+- Production DB is read-only except the saved rebuild of drafts. No sends. Never use buyer or seller names in public copy.
+- Use Matt's Grok subscription, never the XAI, OpenAI or Anthropic API keys, for agent sessions.
+
+## Mac mini tooling (`~/grok-build`)
+`run-session.sh` (headless grok-4.7 at xhigh), `prompts/_rules.md` (rules every session gets), `fleet-start.sh`, `jobs/*.json` manifests, and the LaunchAgent `com.ryanrealty.grok-build` (resumes unfinished jobs after a reboot). All rebuild jobs are currently marked done/stopped.
+
+
+---
+
 # CMA work handoff (Bend expired letters + 3062 NW Kelly Hill)
 
 **Read this first if you are picking up the CMA work.** It is kept current by whichever session is doing the work. Last updated 2026-10-09 by the Grok session on this branch.
@@ -55,7 +103,7 @@ Nothing has been sent to any owner. Do not rebuild the ten drafts until Matt app
 
 ## Where things are (2026-10-08 ~23:30 UTC)
 
-- **All four ruling fixes are merged** on the branch at `3b1c7b036`: plat-identity, wording 3 and 4, on-market-value, relist-clock and plat-ground-facts with seat order. The final fleet score on `3b1c7b036` was started 23:2x UTC in the cloud against `docs/plans/cma-handoff/fleet-baseline-2026-10-08.json`. If no result is recorded below, rerun it (see Fleet), show Matt the result, and land on his yes.
+- **All four ruling fixes are merged** on the branch at `3b1c7b036`: plat-identity, wording 3 and 4, on-market-value, relist-clock and plat-ground-facts with seat order. The final fleet score on `3b1c7b036` was started 23:2x UTC in the cloud against `docs/plans/cma-handoff/fleet-baseline-2026-10-08.json`. If no result is recorded below, rerun it (see Fleet), show Matt the result, and on his yes open a PR to `main`; Matt merges.
 
 ### Earlier state
 

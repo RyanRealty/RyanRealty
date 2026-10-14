@@ -198,6 +198,8 @@ describe('gtmBootstrapScript', () => {
     expect(loadsGtm({ pathname: '/admin/crm/12', hostname: 'ryan-realty.com' })).toBe(false)
     expect(loadsGtm({ pathname: '/', hostname: '127.0.0.1' })).toBe(false)
     expect(loadsGtm({ pathname: '/', hostname: 'localhost' })).toBe(false)
+    expect(loadsGtm({ pathname: '/', hostname: 'app.localhost' })).toBe(false)
+    expect(loadsGtm({ pathname: '/', hostname: '::1' })).toBe(false)
     expect(loadsGtm({ pathname: '/', hostname: 'ryanrealty-git-x.vercel.app' })).toBe(false)
     expect(loadsGtm({ pathname: '/', hostname: 'ryan-realty.com', webdriver: true })).toBe(false)
     expect(loadsGtm({ pathname: '/', hostname: 'ryan-realty.com', cookie: 'a=b; rr_automation=1' })).toBe(false)

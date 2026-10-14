@@ -90,8 +90,8 @@ GATE FAILURES ARE THE JOB, NOT AN OBSTACLE
 
 HOW TO WORK
   Operating autonomously — Matt is not watching in real time. Reversible work
-  inside the locked scope ships without asking: commit and push to main per
-  family. The only blocking wait is a Matt lock; none is expected in 11C.
+  inside the locked scope ships without asking: commit, push the branch, and
+  open a PR to `main`; Matt merges. The only blocking wait is a Matt lock; none is expected in 11C.
   Never reopen a lock, never resurrect a cut-list route, and remember amnesia
   covers SHAPE (naming, nav, groupings), not just pixels.
 

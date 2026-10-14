@@ -807,5 +807,5 @@ rows self-cleaned.
   `tmp/mint-magic.mjs`, gitignored). Preview mutations fire as matt@ for real — prefer
   read paths / knowingly-reverted single actions.
 - Pre-commit runs full vitest (~2.5 min); pre-push runs `next build` (~2 min). Use
-  Bash timeout ≥300000 for git commit/push. Concurrent sibling sessions push to main —
-  always `git pull --rebase` before push.
+  Bash timeout ≥300000 for git commit/push. Push the branch and open a PR to `main`; Matt merges.
+  Never push `main` yourself. If the remote branch moved, fetch and retry; do not rebase onto `main`.

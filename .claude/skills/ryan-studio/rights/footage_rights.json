@@ -1,0 +1,14 @@
+{
+  "version": "2026-10-13",
+  "note": "Read by tools/video_gate.mjs. A footage row with a `source` must name a source here that is cleared for the brief's use (ads when special_ad_category is set, else organic).",
+  "sources": {
+    "snowdrift": {
+      "name": "Snowdrift Visuals Area Guide drone/photos (commissioned by Matt, 2025)",
+      "match": ["snowdrift", "area guide", "area-guide"],
+      "cleared_for": ["organic", "ads"],
+      "approved": "Matt direct approval 2026-10-13 (asset_library license=owned, 42 rows)"
+    },
+    "matt_phone": { "name": "Matt's own phone footage", "match": [], "cleared_for": ["organic", "ads"], "approved": "owner" },
+    "imagine_subscription": { "name": "Grok Imagine on the X subscription", "match": [], "cleared_for": ["organic", "ads"], "approved": "generated_own" }
+  }
+}

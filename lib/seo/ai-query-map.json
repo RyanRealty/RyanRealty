@@ -54,6 +54,36 @@
       "label": "Refer a client to Central Oregon",
       "path": "/refer-a-client",
       "description": "for licensed brokers sending a buyer or seller to Central Oregon"
+    },
+    {
+      "section": "buyer-answers",
+      "label": "Tetherow HOA fees",
+      "path": "/communities/tetherow/hoa",
+      "description": "sourced master assessment plus live MLS inventory"
+    },
+    {
+      "section": "buyer-answers",
+      "label": "Sunriver HOA fees",
+      "path": "/communities/sunriver/hoa",
+      "description": "sourced master assessment plus live MLS inventory"
+    },
+    {
+      "section": "buyer-answers",
+      "label": "Is Tetherow a good place to live",
+      "path": "/communities/tetherow/living",
+      "description": "live MLS inventory, list price, and pace, not a lifestyle score"
+    },
+    {
+      "section": "buyer-answers",
+      "label": "Bend homes under $500,000",
+      "path": "/homes-for-sale/bend/under-500k",
+      "description": "live count of Bend listings under $500,000"
+    },
+    {
+      "section": "buyer-answers",
+      "label": "Bend vs Redmond",
+      "path": "/cities/bend/vs/redmond",
+      "description": "side-by-side live MLS inventory for the two cities"
     }
   ],
   "queries": [
@@ -174,6 +204,21 @@
         }
       ],
       "llmsSubstrings": ["/communities/"]
+    },
+    {
+      "id": "buyer-tetherow-hoa",
+      "source": "gsc",
+      "query": "Tetherow HOA fees",
+      "intent": "community",
+      "citablePaths": ["/communities/tetherow/hoa"],
+      "why": "Dedicated HOA answer only because data/resort-community-tetherow.json publishes hoa_master_assessment_annual.",
+      "jsonLd": [
+        {
+          "file": "app/_v3/buyer-answer/BuyerAnswerPage.tsx",
+          "all": ["faqPage"]
+        }
+      ],
+      "llmsSubstrings": ["/communities/tetherow/hoa", "Buyer answers"]
     },
     {
       "id": "gsc-black-butte",

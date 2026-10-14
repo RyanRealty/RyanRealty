@@ -157,7 +157,7 @@ Matt reads the weekly packet. He says yes only to outbound to real people, publi
 - Nurture owns outbound. Demand / Presence never send.
 - Transaction owns anything legally binding. SkySlope is the live file until cutover.
 - Public numbers only from CAP-006 / marts / pricing facts.
-- One session per file glob. Parallel build in worktrees; serial land on `main`.
+- One session per file glob. Parallel build in worktrees; serial PRs to `main`; Matt merges.
 - Broker OS A–G are **job names**, not a second process.
 - Ads spend stays Matt-gated. Audience *wiring* (same people, same keys) is loop work.
 

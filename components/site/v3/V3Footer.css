@@ -214,10 +214,10 @@
 }
 
 /* Sitemap -------------------------------------------------------------------
-   One column while folded. From 56.25rem: Markets spans the full width as a
-   dense city directory, then Buy · Sell · Join / Company / Contact sit in a
-   short equal row under it — so Join is not stranded in a cell as tall as
-   Madras. */
+   One column while folded. From 56.25rem: Homes for sale by area and Markets
+   each span the full width, then Buy · Sell · Join / Company / Contact sit
+   in a short equal row under them — so Join is not stranded in a cell as
+   tall as Madras. */
 .v3-footer__columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -226,12 +226,28 @@
 
 @media (min-width: 56.25rem) {
   .v3-footer__columns {
-    /* Five equal tracks: Markets spans all, then Buy·Sell·Join occupy three
-       so Buy | Sell | Join sit beside Company and Contact — no cell as tall
-       as a stacked Buy list. */
+    /* Five equal tracks: Homes for sale by area and Markets each span all,
+       then Buy·Sell·Join occupy three so Buy | Sell | Join sit beside
+       Company and Contact — no cell as tall as a stacked Buy list. */
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: var(--v3-space-md) var(--v3-space-lg);
     align-items: start;
+  }
+
+  .v3-footer__column[data-heading='Homes for sale by area'] {
+    grid-column: 1 / -1;
+    padding-bottom: var(--v3-space-sm);
+    border-bottom: var(--v3-rule-hairline);
+  }
+
+  .v3-footer__column[data-heading='Homes for sale by area'] .v3-footer__clusters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--v3-space-sm) var(--v3-space-md);
+  }
+
+  .v3-footer__column[data-heading='Homes for sale by area'] .v3-footer__cluster + .v3-footer__cluster {
+    margin-top: 0;
   }
 
   .v3-footer__column[data-heading='Markets'] {
@@ -413,8 +429,17 @@
   color: var(--v3-ink-muted);
 }
 
-/* Markets is a directory, not a leftover SEO ledger: no hairline on every
-   44px row. Action columns keep the rule so their short lists still read. */
+/* Markets and the area directory are not leftover SEO ledgers: no hairline
+   on every 44px row. Action columns keep the rule so their short lists still
+   read. SITE-157 stays on Markets (town names, not keyword sentences). */
+.v3-footer__column[data-heading='Homes for sale by area'] .v3-footer__column-list li,
+.v3-footer__column[data-heading='Homes for sale by area'] .v3-footer__column-list li:last-child,
+.v3-footer__column[data-heading='Homes for sale by area'] .v3-footer__clusters .v3-footer__column-list li:last-child,
+.v3-footer__column[data-heading='Homes for sale by area']
+  .v3-footer__clusters
+  .v3-footer__cluster:last-child
+  .v3-footer__column-list
+  li:last-child,
 .v3-footer__column[data-heading='Markets'] .v3-footer__column-list li,
 .v3-footer__column[data-heading='Markets'] .v3-footer__column-list li:last-child,
 .v3-footer__column[data-heading='Markets'] .v3-footer__clusters .v3-footer__column-list li:last-child,
@@ -543,7 +568,8 @@
 
 /* Unlayered: min-width does not apply to `display: inline`, and @layer base
    loses to utilities. Short labels (DMCA) measured 42px wide. */
-.v3-footer__legal a {
+.v3-footer__legal a,
+.v3-footer__legal button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -552,7 +578,8 @@
 }
 
 @layer base {
-  .v3-footer__legal a {
+  .v3-footer__legal a,
+  .v3-footer__legal button {
     color: var(--v3-ink);
     font-size: var(--v3-size-body-sm);
     text-decoration: underline;

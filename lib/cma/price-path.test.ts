@@ -276,6 +276,22 @@ describe('shortOrExactUsd', () => {
     expect(shortOrExactUsd(957_250)).toBe('$957,250')
   })
 
+  it('names a non-round ask in dollars on the path (2799 Aldrich)', () => {
+    const aldrich = pricePathFromSale({
+      address: '2799 Aldrich',
+      listPrice: 524_900,
+      closePrice: 520_000,
+      closeDate: '2026-06-08',
+      domTotal: 10,
+      daysToOffer: 7,
+    })!
+    expect(priceHistoryReading(aldrich)).toContain('asked $524,900')
+    expect(priceHistoryReading(aldrich)).not.toContain('$525K')
+    expect(priceHistoryEndLabel(aldrich)).toContain('sold $520K')
+    expect(priceHistoryLineSvg(aldrich)).toContain('$524,900')
+    expect(priceHistoryLineSvg(aldrich)).not.toContain('$525K')
+  })
+
   it('sold end labels use exact dollars when the close is not round', () => {
     const linda = pricePathFromSale({
       address: '1027 Linda',

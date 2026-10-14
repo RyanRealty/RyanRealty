@@ -37,6 +37,7 @@ import { getPlatFamilyFootprint } from '@/lib/data/subdivisions/getPlatFamilyFoo
 import { getPlatGroundBounds } from '@/lib/data/cma/platGroundBounds'
 import { ownGroundSeatRank, platGround, platGroundReach, platGroundTrace } from '@/lib/pricing/plat-ground'
 import { keepTightestByClosePrice, PRICING_MIN_COMPS, PRICING_TARGET_COMPS, PRICING_WALK_CAP } from '@/lib/pricing/ladder'
+import { addressIsThisHome } from '@/lib/pricing/same-address'
 import type { CompRefillBench } from '@/lib/cma/review-refill'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
@@ -109,7 +110,7 @@ import { isClusterPocket, LOCAL_POOL_RADIUS_MILES, pocketStopsLaterRungs } from 
 import { locationMatchFromFacts } from '@/lib/pricing/closed-comp-weight'
 import { subjectHasRecordedSubdivision } from '@/lib/pricing/match'
 import { printedBaths } from '@/lib/pricing/bath-count'
-import { saleSetsThePrice } from '@/lib/pricing/price-set'
+import { notSettingSaleFrom, priceSetRefusal, type NotSettingSale } from '@/lib/pricing/price-set'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -134,8 +135,9 @@ export { realSubdivision }
  * for want of comparable sales. On 2026-10-07 he reversed that: a three-sale
  * letter printed a raw min-to-max band and one stray sale put the failed ask
  * inside it, which contradicts the letter. The floor is five price-setting
- * sales, the band is always the trimmed range, and a sale that does not set
- * the price (lib/pricing/price-set.ts) never counts toward the five.
+ * sales. A sale that does not set the price (lib/pricing/price-set.ts) never
+ * counts toward the five. On 2026-10-09 the band became the full spread of
+ * the sales that cleared that floor. The high and the low stay in the price.
  */
 export const MIN_COMPS = PRICING_MIN_COMPS
 /**
@@ -415,15 +417,21 @@ function emptyDiagnostics(
  * 926 and 925 sqft five months apart), counting once in the median and again
  * at the end of the printed range.
  *
- * The key is address + city + CLOSE PRICE, deliberately not address alone.
- * Two condos in one building often carry no unit number in the MLS, and
- * collapsing them would silently throw away a real comp; two different homes
- * closing at the exact same price at the same street address is not a thing.
- * Square footage is out of the key because the duplicate above disagreed with
- * itself by one foot.
+ * The key is address + unit + city + CLOSE PRICE, deliberately not address alone.
+ * A blank unit stays on address and price, so a building whose MLS rows have
+ * no unit number is not collapsed into one sale. Two units that both carry a
+ * unit number are two sales even when they close at the same dollar (1940
+ * Monterey Pines units 2 and 12, both $520,000). Square footage stays out of
+ * the key because the Ordway duplicate disagreed with itself by one foot.
  */
-function saleKey(comp: { address: string; city?: string | null; closePrice: number }): string {
-  return `${comp.address.trim().toLowerCase()}|${(comp.city ?? '').trim().toLowerCase()}|${Math.round(comp.closePrice)}`
+function saleKey(comp: {
+  address: string
+  city?: string | null
+  closePrice: number
+  unitNumber?: string | null
+}): string {
+  const unit = (comp.unitNumber ?? '').trim().toLowerCase()
+  return `${comp.address.trim().toLowerCase()}|${unit}|${(comp.city ?? '').trim().toLowerCase()}|${Math.round(comp.closePrice)}`
 }
 
 export async function selectComps(
@@ -462,6 +470,7 @@ export async function selectComps(
   const tiersUsed: string[] = []
   const ladder: CompTierTrace[] = []
   const excludedTotals = emptyExclusions()
+  const notSettingSales: NotSettingSale[] = []
   const byKey = new Map<string, CmaComp>()
   /** Sales already held, so one closed sale cannot enter a comp set twice. */
   const bySale = new Set<string>()
@@ -1167,16 +1176,17 @@ export async function selectComps(
       // ATTACHED subject are ambiguous and admit (the subject's true self is
       // already caught by ListingKey above), while on a detached subject the
       // bare address match stays self, which is what it always meant there.
-      if (subject.streetAddress && comp.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
-        const su = (subject.unitNumber ?? '').trim().toLowerCase()
-        const cu = (comp.unitNumber ?? '').trim().toLowerCase()
-        const attached = !keepSameProductType('Single Family Residence', subject.propertySubType)
-        const unitsDiffer = su !== cu
-        const bothAbsentOnAttached = !su && !cu && attached
-        if (!unitsDiffer && !bothAbsentOnAttached) {
-          rung.excluded.self++
-          continue
-        }
+      if (
+        addressIsThisHome({
+          subjectAddress: subject.streetAddress,
+          saleAddress: comp.address,
+          subjectUnit: subject.unitNumber,
+          saleUnit: comp.unitNumber,
+          sharedBuilding: !keepSameProductType('Single Family Residence', subject.propertySubType),
+        })
+      ) {
+        rung.excluded.self++
+        continue
       }
       if (byKey.has(comp.listingKey)) {
         rung.excluded.duplicate++
@@ -1494,21 +1504,27 @@ export async function selectComps(
       // FACTS_STANDALONE_MIN) reads searchCommunitySlug with the member-plat
       // map. Missing data fails open on both: saleSetsThePrice treats an
       // unknown community on both sides as a match.
-      if (
-        !saleSetsThePrice({
-          ownPlat: comp.ownPlat,
-          subjectSubdivision: subject.subdivision,
-          saleSubdivision: comp.subdivision,
-          subjectCommunity,
-          saleCommunity: compCommunity,
-          subjectCommunityLocated: subject.communityLocated === true || subjectCommunity != null,
-          saleCommunityLocated: comp.communityLocated === true || compCommunity != null,
-          subjectSqft: subject.sqft,
-          saleSqft: comp.sqft,
-          subjectLotAcres: subject.lotAcres,
-          saleLotAcres: comp.lotAcres,
-        })
-      ) {
+      const priceInput = {
+        ownPlat: comp.ownPlat,
+        subjectSubdivision: subject.subdivision,
+        saleSubdivision: comp.subdivision,
+        subjectCommunity,
+        saleCommunity: compCommunity,
+        subjectCommunityLocated: subject.communityLocated === true || subjectCommunity != null,
+        saleCommunityLocated: comp.communityLocated === true || compCommunity != null,
+        subjectSqft: subject.sqft,
+        saleSqft: comp.sqft,
+        subjectLotAcres: subject.lotAcres,
+        saleLotAcres: comp.lotAcres,
+      }
+      const refusal = priceSetRefusal(priceInput)
+      if (refusal) {
+        notSettingSales.push(
+          notSettingSaleFrom(
+            { listingKey: comp.listingKey, listNumber: comp.mlsNumber, address: comp.address },
+            refusal,
+          ),
+        )
         rung.excluded.not_price_setting++
         bySale.add(saleKey(comp))
         continue
@@ -1560,7 +1576,7 @@ export async function selectComps(
   }
   if (x.bath_count > 0) {
     trace.push(
-      `Excluded ${x.bath_count} sale(s) on room count. A sale one bedroom or bathroom away from your home is used only inside your home's own plat, neighborhood or street, and is marked where it is; two or more rooms away is not used anywhere.`,
+      `Excluded ${x.bath_count} sale(s) on room count. A sale up to two bedrooms or two bathrooms off your home is used and weighs less. Three or more rooms off on one count is not used.`,
     )
   }
   if (x.lot_character > 0) {
@@ -1762,7 +1778,7 @@ export async function selectComps(
   }
   const roomNotedCount = comps.filter((c) => (c.roomDifference ?? []).length > 0).length
   if (roomNotedCount > 0) {
-    const d = `${roomNotedCount} sale(s) are one bedroom or bathroom different from your home. They are used because they sit on your home's own ground — its plat, its neighborhood or its street — and each is marked on the report. No dollar value is applied to the room: paired sales in this market do not support one.`
+    const d = `${roomNotedCount} sale(s) are off by one or two bedrooms or bathrooms. Each one still counts, and it counts for less than a sale with the same rooms. No dollar value is applied to the room: paired sales in this market do not support one.`
     trace.push(d)
     disclosures.push(d)
   }
@@ -1827,6 +1843,7 @@ export async function selectComps(
     candidates: candidateCount,
     excluded_totals: excludedTotals,
     not_price_setting: excludedTotals.not_price_setting,
+    not_setting_sales: notSettingSales,
     outliers_excluded: excludedOutliers.length,
     final_count: comps.length,
     final_tier_counts: countByTier(comps),
@@ -1882,7 +1899,7 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
     const rooms = roomCountsDecision(subject, { ...comp, selectionTier: 'broker-selected' })
     if (!rooms.ok) {
       refused.push(
-        `${comp.address} is ${comp.beds ?? '?'} bed / ${printedBaths(comp) ?? '?'} bath against your home's ${subject.beds ?? '?'} / ${printedBaths(subject) ?? '?'}, two or more rooms apart`,
+        `${comp.address} is ${comp.beds ?? '?'} bed / ${printedBaths(comp) ?? '?'} bath against your home's ${subject.beds ?? '?'} / ${printedBaths(subject) ?? '?'}, three or more rooms apart`,
       )
       continue
     }

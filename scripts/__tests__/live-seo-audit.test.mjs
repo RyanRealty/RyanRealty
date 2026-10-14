@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { auditDecision, auditPage, auditRobots, overSoftShareProblems, parsePage, parseRobots } from '../lib/live-seo-audit.mjs'
+import { auditDecision, auditPage, auditRobots, fetchText, overSoftShareProblems, parsePage, parseRobots } from '../lib/live-seo-audit.mjs'
 
 const URL_ = 'https://ryan-realty.com/homes-for-sale/bend/woodridge'
 
@@ -152,5 +152,56 @@ describe('overSoftShareProblems (title-length ratchet, Matt 2026-10-05)', () => 
     const fails = overSoftShareProblems(['/x: title 66 chars: X', '/y: title 70 chars: Y', '/z', '/w', '/v', '/u', '/t'], 40)
     expect(fails).toHaveLength(1)
     expect(fails[0]).toMatch(/^7 of 40 sampled titles run past 60 chars, over the 15% ceiling: \/x: title 66 chars: X; /)
+  })
+})
+
+describe('fetchText: one retry for a dropped tunnel, never for an HTTP answer', () => {
+  const ok = (body = 'User-Agent: *') => ({ status: 200, headers: new Headers(), text: async () => body })
+  const dropped = () => Object.assign(new TypeError('fetch failed'), { cause: new Error('ws_closed_mid_exchange') })
+
+  it('a fetch that throws once is read on the retry', async () => {
+    let calls = 0
+    const fetchImpl = async () => {
+      calls++
+      if (calls === 1) throw dropped()
+      return ok()
+    }
+    const res = await fetchText('https://ryan-realty.com/robots.txt', 'ua', { fetchImpl, retryDelayMs: 0 })
+    expect(res).toMatchObject({ status: 200, text: 'User-Agent: *' })
+    expect(calls).toBe(2)
+  })
+
+  it('a body read that dies mid-stream is retried too', async () => {
+    let calls = 0
+    const fetchImpl = async () => {
+      calls++
+      return calls === 1
+        ? { status: 200, headers: new Headers(), text: async () => { throw new TypeError('terminated') } }
+        : ok('<urlset><url><loc>https://ryan-realty.com/</loc></url></urlset>')
+    }
+    const res = await fetchText('https://ryan-realty.com/sitemap.xml', 'ua', { fetchImpl, retryDelayMs: 0 })
+    expect(res.text).toContain('<urlset>')
+    expect(calls).toBe(2)
+  })
+
+  it('an HTTP status is the answer: a 503 is returned on the first read, not retried', async () => {
+    let calls = 0
+    const fetchImpl = async () => {
+      calls++
+      return { status: 503, headers: new Headers(), text: async () => 'down' }
+    }
+    const res = await fetchText('https://ryan-realty.com/', 'ua', { fetchImpl, retryDelayMs: 0 })
+    expect(res).toMatchObject({ status: 503, text: '' })
+    expect(calls).toBe(1)
+  })
+
+  it('two drops in a row still throw, so a real outage is not hidden', async () => {
+    let calls = 0
+    const fetchImpl = async () => {
+      calls++
+      throw dropped()
+    }
+    await expect(fetchText('https://ryan-realty.com/', 'ua', { fetchImpl, retryDelayMs: 0 })).rejects.toThrow('fetch failed')
+    expect(calls).toBe(2)
   })
 })

@@ -21,8 +21,10 @@
  * data/golf/courses.ts states 17 of 26 are confirmed, and an unverified fact
  * does not ship.
  *
- * The LP at /lp/central-oregon-golf stays exactly as it is, still linked from
- * here and from every detail page. It is paid-arrival, off the organic graph.
+ * The old LP at /lp/central-oregon-golf has 308'd to this hub since
+ * 2026-09-06, so "Homes on a golf course" opens the golf-homes landing
+ * (/homes-for-sale/on-golf-course: on a course or in a golf community)
+ * instead of linking this page back to itself.
  */
 
 import { communityPublicPair } from '@/lib/communities/community-public-pair'
@@ -133,7 +135,7 @@ export default function GolfIndexPage() {
 
   const edges: V3QuietItem[] = [
     ...communityDoors,
-    { label: 'Homes on a golf course', href: '/lp/central-oregon-golf' },
+    { label: 'Homes on a golf course', href: `${listingsBrowsePath()}/on-golf-course` },
     { label: 'Every Central Oregon community', href: '/communities' },
     { label: 'Trails', href: '/central-oregon/trails' },
     { label: 'Search homes', href: listingsBrowsePath() },

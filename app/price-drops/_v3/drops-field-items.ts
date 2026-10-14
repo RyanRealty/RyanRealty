@@ -24,6 +24,10 @@ export type PriceDropFieldItem = V3FieldItem & {
   city?: string
   /** Route slug for /price-drops/{city}, when the city is one we pre-render. */
   citySlug?: string
+  /** Current ask, for the catalog price filter. */
+  listPrice?: number
+  /** Bedroom count, for the catalog beds filter. */
+  beds?: number | null
   /**
    * The same home as the listing dial's row (Matt 2026-09-24: the fold's
    * carousel is V3ListingDial). Built here, from the same drop, in the same
@@ -145,6 +149,8 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
       ...(inventory ? { specs: inventory } : {}),
       ...(city ? { city } : {}),
       ...(citySlug ? { citySlug } : {}),
+      listPrice: drop.listPrice,
+      beds: drop.beds,
       ...(meta ? { meta } : {}),
       // Keep the feed URL. The slide asks Spark for a field plate at render
       // so a 320×240 ledger thumb never opens the fold.

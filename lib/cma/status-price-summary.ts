@@ -189,14 +189,29 @@ function unsoldStatusKey(label: string): StatusPriceKey {
 }
 
 const STATS = [
-  ['low', 'Low'],
-  ['avg', 'Avg'],
-  ['median', 'Median'],
-  ['high', 'High'],
+  ['low', 'Low in each column'],
+  ['avg', 'Avg in each column'],
+  ['median', 'Median in each column'],
+  ['high', 'High in each column'],
 ] as const
 
-function figure(band: PriceBand | null, stat: (typeof STATS)[number][0]): string {
-  return band ? esc(usd(band[stat])) : ''
+/**
+ * A recorded concession of zero, on a status with more than one home, is the
+ * concessions column's own figure. "$0" in the Low row sat beside the lowest
+ * sold price and read as that home (2224 Indigo reported $11,250; the $0 was
+ * the lowest concession among other sales). One home still prints $0: it is
+ * that sale.
+ */
+function figure(
+  band: PriceBand | null,
+  stat: (typeof STATS)[number][0],
+  homes: number,
+  concession = false,
+): string {
+  if (!band) return ''
+  const value = band[stat]
+  if (concession && value === 0 && homes > 1) return 'none'
+  return esc(usd(value))
 }
 
 function homesLabel(n: number): string {
@@ -234,10 +249,15 @@ export function statusPriceBoardHtml(rows: readonly StatusPriceRow[]): string {
   // A letter with no closed row prints no Sold column: a column of blanks
   // reads as missing data.
   const showSold = rows.some((row) => row.sold)
-  const figureCells = (row: StatusPriceRow, stat: (typeof STATS)[number][0]) =>
-    [row.list, ...(showSold ? [row.sold] : []), row.concessions, row.ppsf]
-      .map((band) => `<td class="n">${figure(band, stat)}</td>`)
-      .join('')
+  const figureCells = (row: StatusPriceRow, stat: (typeof STATS)[number][0]) => {
+    const cells: Array<[PriceBand | null, boolean]> = [
+      [row.list, false],
+      ...(showSold ? [[row.sold, false] as [PriceBand | null, boolean]] : []),
+      [row.concessions, true],
+      [row.ppsf, false],
+    ]
+    return cells.map(([band, concession]) => `<td class="n">${figure(band, stat, row.homes, concession)}</td>`).join('')
+  }
   const columns = showSold ? 5 : 4
   const groups = rows
     .map(
@@ -251,8 +271,9 @@ export function statusPriceBoardHtml(rows: readonly StatusPriceRow[]): string {
   const notes = coverageNotes(rows)
   const read = [
     n === 1 ? 'The one home in this report, by status.' : `The ${countWord(n)} homes in this report, by status.`,
+    'Low, average, median, and high are each column on its own.',
     showSold ? 'List is the asking price and Sold the closing price.' : 'List is the asking price.',
-    'Concessions are seller-paid costs the MLS recorded. A blank means nothing was recorded, and zero means the sale reported none.',
+    'Concessions are seller-paid costs the MLS recorded. A blank means nothing was recorded. $0 is one home that reported none. On a status with more than one home, none is a recorded zero in the concessions column.',
     showSold
       ? "$/sqft is each home's own price over its own living area. Once closed, that price is the sold price after a recorded concession, or the sold price when none was recorded. Before a sale it is the list price."
       : "$/sqft is each home's list price over its own living area.",

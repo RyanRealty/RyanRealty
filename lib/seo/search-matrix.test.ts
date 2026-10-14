@@ -270,7 +270,7 @@ describe('buildSearchMatrix — emission threshold + depth gate', () => {
       geo(),
       geo({ areaSlug: 'other-place', subdivisionNamesLower: ['other place'], hasDepthContent: false }),
     ]
-    const { entries, countByPath } = buildSearchMatrix(rows, geos, { presets, now: NOW })
+    const { entries, countByPath } = buildSearchMatrix(rows, geos, { presets, now: NOW, minActive: 1 })
     expect(entries.map((e) => e.path)).toEqual([
       '/homes-for-sale/bend/test-acres/multi-family',
       '/homes-for-sale/bend/test-acres/under-1m',
@@ -298,7 +298,7 @@ describe('buildSearchMatrix — emission threshold + depth gate', () => {
     expect(one.entries).toEqual([])
     const two = buildSearchMatrix(rows, [geo()], { presets: [preset('under-1m')], minActive: 2, now: NOW })
     expect(two.entries).toHaveLength(1)
-    expect(SEARCH_MATRIX_MIN_ACTIVE).toBe(1)
+    expect(SEARCH_MATRIX_MIN_ACTIVE).toBe(3)
   })
 
   it('buckets neighborhoods by exact boundary_neighborhood label + city', () => {
@@ -313,7 +313,7 @@ describe('buildSearchMatrix — emission threshold + depth gate', () => {
       neighborhoodName: 'Awbrey Butte',
       subdivisionNamesLower: undefined,
     })
-    const { entries } = buildSearchMatrix(rows, [nbhd], { presets: [preset('under-1m')], now: NOW })
+    const { entries } = buildSearchMatrix(rows, [nbhd], { presets: [preset('under-1m')], now: NOW, minActive: 1 })
     expect(entries).toHaveLength(1)
     expect(entries[0]!.count).toBe(1)
   })
@@ -329,7 +329,7 @@ describe('buildSearchMatrix — emission threshold + depth gate', () => {
       areaSlug: 'tetherow',
       subdivisionNamesLower: ['tetherow', 'tetherow resort'],
     })
-    const { entries } = buildSearchMatrix(rows, [resort], { presets: [preset('under-1m')], now: NOW })
+    const { entries } = buildSearchMatrix(rows, [resort], { presets: [preset('under-1m')], now: NOW, minActive: 1 })
     expect(entries[0]!.count).toBe(2)
   })
 
@@ -348,7 +348,7 @@ describe('buildSearchMatrix — emission threshold + depth gate', () => {
       subdivisionNamesLower: ['century west'],
       hasDepthContent: false,
     })
-    const { entries } = buildSearchMatrix(rows, [nbhd, sub], { presets: [preset('under-1m')], now: NOW })
+    const { entries } = buildSearchMatrix(rows, [nbhd, sub], { presets: [preset('under-1m')], now: NOW, minActive: 1 })
     // Neighborhood (listed first) wins, so the combo IS emitted despite the
     // duplicate subdivision geo carrying no depth.
     expect(entries).toHaveLength(1)
@@ -364,7 +364,7 @@ describe('buildSearchMatrix — emission threshold + depth gate', () => {
       geo(),
       geo({ areaSlug: 'alpha-park', subdivisionNamesLower: ['alpha park'] }),
     ]
-    const { entries } = buildSearchMatrix(rows, geos, { presets: [preset('under-1m')], now: NOW })
+    const { entries } = buildSearchMatrix(rows, geos, { presets: [preset('under-1m')], now: NOW, minActive: 1 })
     expect(entries.map((e) => e.path)).toEqual([
       '/homes-for-sale/bend/alpha-park/under-1m',
       '/homes-for-sale/bend/test-acres/under-1m',
@@ -377,9 +377,11 @@ describe('buildSearchMatrix — emission threshold + depth gate', () => {
 })
 
 describe('shouldNoIndexMatrixCombo — render-time robots decision', () => {
-  it('noindexes ONLY a verified zero', () => {
+  it('noindexes a verified count below the 3-active floor', () => {
     expect(shouldNoIndexMatrixCombo(0)).toBe(true)
-    expect(shouldNoIndexMatrixCombo(1)).toBe(false)
+    expect(shouldNoIndexMatrixCombo(1)).toBe(true)
+    expect(shouldNoIndexMatrixCombo(2)).toBe(true)
+    expect(shouldNoIndexMatrixCombo(3)).toBe(false)
     expect(shouldNoIndexMatrixCombo(12)).toBe(false)
   })
 
@@ -423,7 +425,7 @@ describe('buildSearchMatrix — city×preset counts (W3.1)', () => {
     expect(countByCityPreset.get(cityPresetPath('culver', 'under-1m'))).toBe(1)
     // The one source of truth for BOTH the render noindex and the sitemap omit:
     expect(shouldNoIndexMatrixCombo(countByCityPreset.get(cityPresetPath('culver', 'with-pool')) ?? null)).toBe(true)
-    expect(shouldNoIndexMatrixCombo(countByCityPreset.get(cityPresetPath('culver', 'under-1m')) ?? null)).toBe(false)
+    expect(shouldNoIndexMatrixCombo(countByCityPreset.get(cityPresetPath('culver', 'under-1m')) ?? null)).toBe(true)
   })
 
   it('maps MLS city_lower to the canonical URL slug (la pine → la-pine)', () => {

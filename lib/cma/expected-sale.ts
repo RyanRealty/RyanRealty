@@ -332,11 +332,17 @@ export function headingWithPriceSet(
     subdivision: string | null | undefined
     comps: readonly CmaAdjustedComp[]
     pricing: CmaPricing | null | undefined
+    /**
+     * What the sales set on this letter (lib/cma/sales-role.ts): the price,
+     * the value on a home on the market (3062 NW Kelly Hill, reader review
+     * 2026-10-09), or the range. Absent: the price.
+     */
+    role?: 'price' | 'value' | 'range'
   },
 ): string {
   const name = (input.subdivision ?? '').trim()
   if (!name || !heading.includes(name) || !/\bsales\b/i.test(heading)) return heading
-  if (/set the price/i.test(heading)) return heading
+  if (/set the (?:price|value|range)/i.test(heading)) return heading
   const setters = priceSettingComps(input.pricing, input.comps)
   if (setters.length === 0 || setters.length >= input.comps.length) return heading
   const inside = (c: CmaAdjustedComp) => (c.subdivision ?? '').trim().toLowerCase() === name.toLowerCase()
@@ -344,14 +350,15 @@ export function headingWithPriceSet(
   if (printedInside === 0 || printedInside >= input.comps.length) return heading
   const k = setters.filter(inside).length
   const m = setters.length
+  const set = `set the ${input.role ?? 'price'}`
   const clause =
     k === m
       ? m === 2
-        ? 'both that set the price are'
-        : `all ${countWord(m)} that set the price are`
+        ? `both that ${set} are`
+        : `all ${countWord(m)} that ${set} are`
       : k === 0
-        ? `none of the ${countWord(m)} that set the price is`
-        : `${countWord(k)} of the ${countWord(m)} that set the price ${k === 1 ? 'is' : 'are'}`
+        ? `none of the ${countWord(m)} that ${set} is`
+        : `${countWord(k)} of the ${countWord(m)} that ${set} ${k === 1 ? 'is' : 'are'}`
   return `${heading.trim().replace(/\.$/, '')}, and ${clause}.`
 }
 

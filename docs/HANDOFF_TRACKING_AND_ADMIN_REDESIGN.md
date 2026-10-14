@@ -235,9 +235,9 @@ and no dark patterns. First-party tracking of known leads who clicked our email 
 
 # PART 3 — Conventions, gates, verification
 
-- **Workflow:** single checkout, push to `origin/main` immediately after each commit. The session worked in a
-  git worktree and pushed `HEAD:main`. Concurrent automation pushes to `main` often → `git fetch && git rebase
-  origin/main && git push` in a small retry loop.
+- **Workflow:** branch from current `origin/main`, push the branch immediately after each commit, then
+  open a PR to `main`; Matt merges. Never push, fast-forward, or merge `main` yourself. If the remote
+  branch moved, fetch and retry the branch push; do not rebase onto `main`.
 - **Pre-commit hook** runs `ci:brand-voice` + the full `vitest` suite (601 tests). **Pre-push** runs
   `tsc --noEmit` (G46 self-containment). Both must pass.
 - **Gates a console change must keep green:** `ci:design-tokens`, `ci:console-kit`, `ci:admin-responsive`,

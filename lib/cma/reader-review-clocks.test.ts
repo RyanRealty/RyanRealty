@@ -160,6 +160,72 @@ describe('the offer clock is counted on the listing period that produced the sal
       'Sale 4, 4 D, is not on the chart: its recorded offer date does not fit its listing and closing dates.',
     )
   })
+
+  it('1654 Meadow: omits a 0-day claim when the on-market day is after the close', () => {
+    const stamped = stampClosedCompDom(
+      {
+        listingKey: '20250606000258908824000000',
+        address: '1654 Meadow',
+        closePrice: 544000,
+        closeDate: '2025-05-30',
+        listPrice: 544000,
+        originalListPrice: 544000,
+        daysToOffer: 0,
+        domTotal: 0,
+      } as unknown as CmaComp,
+      {
+        onMarketDate: '2025-06-06T21:16:52+00:00',
+        originalOnMarketTimestamp: '2025-06-06T21:16:52+00:00',
+        pendingTimestamp: '2025-06-06T21:18:25+00:00',
+        daysToPending: 0,
+        mlsDaysOnMarket: 0,
+        askChanges: [],
+        originalListPrice: 544000,
+        listPrice: 544000,
+      },
+    )
+    expect(stamped.daysToOffer).toBeNull()
+    expect(stamped.domTotal).toBeNull()
+    expect(stamped.listingHistoryLine).toContain('Listed Jun 6, 2025')
+    expect(stamped.listingHistoryLine).toContain('sold May 30, 2025')
+    expect(stamped.listingHistoryLine).not.toMatch(/\b0 days\b/)
+
+    const meadow = sale({
+      address: '1654 Meadow',
+      closePrice: 544000,
+      closeDate: '2025-05-30',
+      listPrice: 544000,
+      originalListPrice: 544000,
+      onMarketDate: '2025-06-06',
+      offerFrom: '2025-06-06',
+      daysToOffer: 0,
+      domTotal: 0,
+    })
+    const [row] = closedEntries([meadow])
+    expect(row!.domDays).toBeNull()
+    expect(row!.outcome).toBe('sold $544K')
+    expect(row!.outcome).not.toMatch(/\b0 days\b/)
+    expect(domCell(row!, row!.domDays)).toBe('-')
+    const [pin] = pinFactsFor([row!])
+    expect(pinRevealLine(pin!)).not.toMatch(/\b0 days\b/)
+
+    const html = renderDaysToOfferHtml({
+      subject: { streetAddress: 'x', city: 'Bend', standardStatus: 'Closed' } as unknown as CmaSubject,
+      comps: [
+        sale({ address: '1 A', daysToOffer: 4, domTotal: 20, closeDate: '2025-06-01', onMarketDate: '2025-05-01' }),
+        sale({ address: '2 B', daysToOffer: 8, domTotal: 20, closeDate: '2025-06-01', onMarketDate: '2025-05-01' }),
+        sale({ address: '3 C', daysToOffer: 10, domTotal: 20, closeDate: '2025-06-01', onMarketDate: '2025-05-01' }),
+        meadow,
+      ],
+      market: null,
+    })
+    expect(html).toContain('All three sales shown had an offer within 10 days.')
+    expect(html).not.toContain('All four')
+    expect(html).not.toMatch(/\b0 days\b/)
+    expect(html).toContain(
+      'Sale 4, 1654 Meadow, is not on the chart: its recorded offer date does not fit its listing and closing dates.',
+    )
+  })
 })
 
 // ── 2. "never got one" only when the days earn it ───────────────────────────

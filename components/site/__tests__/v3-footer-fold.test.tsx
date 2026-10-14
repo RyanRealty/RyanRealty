@@ -79,8 +79,9 @@ describe('the footer fold', () => {
 
   it('does not ship a solid primary button', () => {
     const out = html()
-    expect(out).not.toMatch(/<button/)
+    expect(out).toContain('Cookie settings')
     expect(out).not.toMatch(/v3-btn/)
+    expect(out).not.toMatch(/data-variant="default"/)
   })
 
   it('still carries the Oregon Data Share attribution OUTSIDE any fold', () => {
@@ -153,11 +154,17 @@ describe('the footer fold', () => {
   it('renders Markets town clusters plus Buy · Sell · Join, Company, Contact', () => {
     const out = html()
     expect(V3_FOOTER_COLUMNS.map((c) => c.heading)).toEqual([
+      'Homes for sale by area',
       'Markets',
       'Buy · Sell · Join',
       'Company',
       'Contact',
     ])
+    expect(out).toContain('data-heading="Homes for sale by area"')
+    expect(out).toContain('Bend homes for sale')
+    expect(out).toContain('href="/homes-for-sale/bend"')
+    expect(out).toContain('Tetherow homes for sale')
+    expect(out).toContain('href="/communities/tetherow"')
     expect(out).not.toContain('Homes for sale in Bend')
     expect(out).not.toContain('Bend housing market')
     expect(out).toContain('href="/cities/bend"')
@@ -174,7 +181,7 @@ describe('the footer fold', () => {
     expect(out).toContain('Value my home')
     expect(out).not.toContain('>Places</')
     expect(out).not.toContain('>Areas</')
-    expect(out).not.toMatch(/<summary class="v3-footer__column-title">Homes/)
+    expect(out).not.toMatch(/<summary class="v3-footer__column-title">Homes</)
     expect(out).not.toMatch(/<summary class="v3-footer__column-title">Buy</)
     const markets = V3_FOOTER_COLUMNS.find((c) => c.heading === 'Markets')
     expect(markets?.groups?.map((g) => g.heading)).toEqual([

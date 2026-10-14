@@ -15,8 +15,8 @@ export const posts: BlogPostSeed[] = [
     author_broker_id: "2fda6811-2edf-49e3-b3ca-33e1052f82e6",
     published_at: '2026-09-07T16:00:00Z',
     status: 'published',
-    seo_title: "Cost of Living in Bend, Oregon (2026): Housing, Taxes",
-    seo_description: "What it costs to live in Bend: live housing numbers, Oregon income and property tax rules, insurance, utilities, and how to build a budget before you tour.",
+    seo_title: "Is Bend, Oregon Expensive? Cost of Living 2026",
+    seo_description: "Housing is the cost that decides whether Bend works. Live home prices, Oregon's no-sales-tax and 4.75%-9.9% income tax trade, utilities, and a budget.",
     excerpt: "Housing is the cost that decides whether Bend works. A plain look at the housing numbers, the Oregon tax trade, insurance, utilities, and how to build a Bend budget before you tour.",
     content: `
 <p>Most cost-of-living pages are a pile of numbers nobody checked. This one is built the other way. Every figure below names its source and the date we pulled it, September 7, 2026, and the housing figures link to the live market pages that update from MLS data every day. Where a number moves weekly, we say so.</p>
@@ -452,8 +452,8 @@ export const posts: BlogPostSeed[] = [
     author_broker_id: "2fda6811-2edf-49e3-b3ca-33e1052f82e6",
     published_at: '2026-09-07T16:00:00Z',
     status: 'published',
-    seo_title: "Property Taxes in Bend and Deschutes County (2026)",
-    seo_description: "How Oregon property tax works in Deschutes County: assessed vs market value under Measure 50, the DIAL lookup, the November 15 calendar, and relief programs.",
+    seo_title: "Bend Property Taxes: Deschutes Rate, Due Dates",
+    seo_description: "Deschutes County averages $16.80 per $1,000 of assessed value, about 0.7% of market value. 2026 bills are due Nov. 16; pay in full for a 3% discount.",
     excerpt: "Oregon taxes assessed value, not what you paid. How Measure 50 works, how to look up any account, when the bill is due, how it is prorated at closing, and the 2026 relief programs.",
     content: `
 <p>Oregon does something most states do not. It taxes a number that is usually well below what your home is worth. The gap between assessed value and market value explains why two identical houses on the same street can carry very different tax bills, and it is the first thing a Bend buyer or seller should understand. Every rule below is from the Oregon Department of Revenue or Deschutes County.</p>

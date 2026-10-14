@@ -10,18 +10,12 @@
  * 20676 Wild Rose ("3 of 5 stayed"), 915 Saginaw (JUDGE_UNSTABLE, 4 of 5 in
  * every pass).
  *
- * THE RULING. When the review drops a sale from a set that was reached through
- * a widening rung, the search takes the next-best sale from THAT SAME RUNG, by
- * that rung's existing order (closest matches on the facts ladder, price-tight
- * on the listings ladder), never from a wider rung, and prices on five. The
- * area never widens past where the search stopped. The refilled sale goes
- * through the same review: the kept sales plus the refilled ones are judged
- * again as one set. If the rung has no more qualifying sales, or the refilled
- * sale is also dropped and the rung is exhausted, the build fails as a comp
- * shortage as before. A split vote (JUDGE_UNSTABLE) on an exactly-five set is
- * treated like a drop: the split sales are set aside, the shortfall is refilled
- * once from the same rung and the set is re-judged; only then unstable or
- * shortage.
+ * THE RULING (Matt 2026-10-09). The picker already seated the set. A review
+ * exclude or a split vote does not remove one of those sales, does not change
+ * its weight, and does not refill. The product wall in pricingCompsAfterJudgment
+ * is the picker's own product rule. When that wall leaves the set short, and
+ * the set was reached through a widening rung, the search still takes the
+ * next-best sale from THAT SAME RUNG, never from a wider rung.
  *
  * BOUNDED. At most as many refills as the bench holds, and at most
  * REVIEW_REFILL_MAX_ROUNDS rounds of refill-and-review after the first review.
@@ -120,9 +114,6 @@ export type ReviewRefillOutcome = {
   trace: string[]
 }
 
-const SPLIT_REASON =
-  'The comparability review split on this sale across its passes, so it was set aside and the search refilled from the same rung.'
-
 function keysOf(comps: readonly { listingKey: string }[]): string[] {
   return comps.map((c) => c.listingKey)
 }
@@ -182,28 +173,16 @@ export async function reviewWithRefill(args: ReviewRefillArgs): Promise<ReviewRe
       judgment = null
     }
     if (unstable) {
-      // A SPLIT IS A DROP (Matt 2026-10-08). The sales every pass kept stay;
-      // the split sales and the majority excludes are set aside.
-      const record = unstable.record
-      const split = new Set(record.unstableKeys)
-      const keptKeys = new Set(record.keptKeys)
-      keep = judged.filter((c) => keptKeys.has(c.listingKey) && !split.has(c.listingKey))
-      reason = 'split'
-      droppedVerdicts = judged
-        .filter((c) => !keep.includes(c))
-        .map((c) => {
-          if (split.has(c.listingKey)) {
-            return { listingKey: c.listingKey, tier: 'exclude' as const, reason: SPLIT_REASON, basis: 'other' as const }
-          }
-          const v = record.verdicts.find((x) => x.listingKey === c.listingKey)
-          return {
-            listingKey: c.listingKey,
-            tier: 'exclude' as const,
-            reason: v?.reason ?? 'Excluded by a majority of the comparability passes.',
-            ...(v?.basis ? { basis: v.basis } : {}),
-          }
-        })
-      gated = { comps: keep, shortage: keep.length < minComps, droppedProduct: 0, trace: '' }
+      // A split is not a second cut (Matt 2026-10-09). The sales the picker
+      // kept still price. The product wall is the only thing that can shorten
+      // the set, and it reads the homes, not the split.
+      trace.push(
+        'The comparability review split across its passes. The sales the picker kept still price this home.',
+      )
+      gated = gate(judged, judged, [])
+      judgment = null
+      unstable = null
+      break
     } else {
       const keptKeys = new Set(judgment?.keptKeys ?? [])
       const vetted = judgment ? judged.filter((c) => keptKeys.has(c.listingKey)) : judged
@@ -255,9 +234,7 @@ export async function reviewWithRefill(args: ReviewRefillArgs): Promise<ReviewRe
     priorExcludes.push(...droppedVerdicts)
     rounds.push({ round: round + 1, reason, dropped: droppedKeys, refilled: keysOf(prepared) })
     trace.push(
-      `Refill from the same rung (Matt 2026-10-08): the comparability review ${
-        reason === 'split' ? 'split on' : 'dropped'
-      } ${droppedComps.length} sale${droppedComps.length === 1 ? '' : 's'} (${addressesOf(droppedComps)}) from the set ${rung} reached, so the search took ${addressesOf(prepared)}, the next on ${rung} by that rung's own order, and ran the review again on the refilled set. The area never widened past ${rung}.`,
+      `Refill from the same rung: the product wall left out ${droppedComps.length} sale${droppedComps.length === 1 ? '' : 's'} (${addressesOf(droppedComps)}) from the set ${rung} reached, so the search took ${addressesOf(prepared)}, the next on ${rung} by that rung's own order. The area never widened past ${rung}.`,
     )
     candidates.push(...prepared)
     if (pricingSales) {

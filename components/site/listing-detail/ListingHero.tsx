@@ -16,9 +16,6 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from '@/components/ui/carousel'
-import { PhotoGalleryLightbox } from './PhotoGalleryLightbox'
-import { ListingTourOverlay } from './ListingTourOverlay'
-import { ListingStreetViewOverlay } from './ListingStreetViewOverlay'
 import {
   publishListingHeroUnmute,
   publishListingHeroVideo,
@@ -47,6 +44,18 @@ const ListingMediaMap = dynamic(() => import('./ListingLocationMap.client'), {
   ssr: false,
   loading: () => <div className="listing-mosaic__map-slot" aria-hidden />,
 })
+const PhotoGalleryLightbox = dynamic(
+  () => import('./PhotoGalleryLightbox').then((m) => m.PhotoGalleryLightbox),
+  { ssr: false, loading: () => null },
+)
+const ListingTourOverlay = dynamic(
+  () => import('./ListingTourOverlay').then((m) => m.ListingTourOverlay),
+  { ssr: false, loading: () => null },
+)
+const ListingStreetViewOverlay = dynamic(
+  () => import('./ListingStreetViewOverlay').then((m) => m.ListingStreetViewOverlay),
+  { ssr: false, loading: () => null },
+)
 
 /**
  * Listing media: ONE FRAME and a FILMSTRIP (site queue SITE-45).
@@ -90,6 +99,10 @@ type Props = {
   cityLine?: string | null
   lat?: number | null
   lng?: number | null
+  /** Active homes in this subdivision. The map frames the subdivision, not the region. */
+  nearby?: ReadonlyArray<{ lat: number; lng: number }>
+  /** Subdivision outline. The Map tab fits this, not every nearby pin. */
+  boundary?: GeoJSON.Geometry | null
   openHouseLabel?: string | null
   className?: string
   /**
@@ -191,6 +204,8 @@ export function ListingHero({
   cityLine,
   lat,
   lng,
+  nearby = [],
+  boundary = null,
   openHouseLabel,
   className,
   lcpPriority = true,
@@ -464,7 +479,7 @@ export function ListingHero({
         ) : null}
         {showMap ? (
           <div className="listing-mosaic__pane">
-            <ListingMediaMap lat={lat!} lng={lng!} zoom={16} />
+            <ListingMediaMap lat={lat!} lng={lng!} zoom={16} fill nearby={nearby} boundary={boundary} />
           </div>
         ) : null}
         {showMap || showTour || showVideo ? null : (

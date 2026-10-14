@@ -36,8 +36,7 @@
  * needs is hidden behind an interaction.
  */
 
-import { formatPriceExact } from '@/lib/format/money'
-import { compactUsd, compactUsdLabels } from '@/lib/cma/compact-usd'
+import { compactOrExactLabels, compactOrExactUsd, compactUsd, compactUsdLabels } from '@/lib/cma/compact-usd'
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
 import { resolveAskPosition, type AskExposureLike } from '@/lib/cma/ask-position'
 import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
@@ -152,21 +151,19 @@ export function shortUsd(n: number): string {
  * Non-round closes print exact ($609,950 / $957,250) so the letter matches MLS.
  */
 export function shortOrExactUsd(n: number): string {
-  if (!Number.isFinite(n)) return shortUsd(n)
-  const d = Math.round(n)
-  // Short only when the short label IS the price: whole thousands under a
-  // million, whole ten-thousands from a million ($1,050,000 is $1.05M, but
-  // $1,785,000 would read $1.79M and prints exact).
-  if (d % (Math.abs(d) >= 999_500 ? 10_000 : 1000) !== 0) return formatPriceExact(d)
-  return shortUsd(d)
+  // Same rule as an ask chip: short only when the short label is the price.
+  return compactOrExactUsd(n)
 }
 
 /**
- * The labels one price path prints (the opening ask, the cuts, the end), as
- * one set: two different prices on one small drawing never share a label.
+ * The labels one price path prints (the opening ask, the cuts, the end).
+ * A short label is kept only when it names that price, so $524,900 does not
+ * read "$525K" beside the exact ask on the same card. The shaded range on
+ * the reading stays on `compactUsdLabels`: that axis is the nearest thousand
+ * of a computed edge, and the cover prints the exact range.
  */
 export function pricePathMoney(path: PricePath): (n: number) => string {
-  return compactUsdLabels([
+  return compactOrExactLabels([
     path.startPrice,
     ...path.cuts.map((c) => c.price),
     path.undatedCutTo,

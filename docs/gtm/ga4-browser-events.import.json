@@ -292,6 +292,21 @@
                   {
                     "type": "TEMPLATE",
                     "key": "parameter",
+                    "value": "lead_type"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{DLV - ga4 lead_type}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
                     "value": "listing_key"
                   },
                   {
@@ -912,6 +927,31 @@
         "accountId": "0",
         "containerId": "0",
         "variableId": "116",
+        "name": "DLV - ga4 lead_type",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ga4_params.lead_type"
+          }
+        ],
+        "formatValue": {}
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "117",
         "name": "DLV - ga4 listing_key",
         "type": "v",
         "parameter": [
@@ -936,7 +976,7 @@
       {
         "accountId": "0",
         "containerId": "0",
-        "variableId": "117",
+        "variableId": "118",
         "name": "DLV - ga4 city",
         "type": "v",
         "parameter": [
@@ -961,7 +1001,7 @@
       {
         "accountId": "0",
         "containerId": "0",
-        "variableId": "118",
+        "variableId": "119",
         "name": "DLV - ga4 city_slug",
         "type": "v",
         "parameter": [
@@ -986,7 +1026,7 @@
       {
         "accountId": "0",
         "containerId": "0",
-        "variableId": "119",
+        "variableId": "120",
         "name": "DLV - ga4 community_slug",
         "type": "v",
         "parameter": [
@@ -1011,7 +1051,7 @@
       {
         "accountId": "0",
         "containerId": "0",
-        "variableId": "120",
+        "variableId": "121",
         "name": "DLV - ga4 place",
         "type": "v",
         "parameter": [
@@ -1036,7 +1076,7 @@
       {
         "accountId": "0",
         "containerId": "0",
-        "variableId": "121",
+        "variableId": "122",
         "name": "DLV - ga4 lp_variant",
         "type": "v",
         "parameter": [
@@ -1061,7 +1101,7 @@
       {
         "accountId": "0",
         "containerId": "0",
-        "variableId": "122",
+        "variableId": "123",
         "name": "DLV - ga4 lp_source",
         "type": "v",
         "parameter": [
@@ -1086,7 +1126,7 @@
       {
         "accountId": "0",
         "containerId": "0",
-        "variableId": "123",
+        "variableId": "124",
         "name": "DLV - ga4 lp_medium",
         "type": "v",
         "parameter": [
@@ -1111,7 +1151,7 @@
       {
         "accountId": "0",
         "containerId": "0",
-        "variableId": "124",
+        "variableId": "125",
         "name": "DLV - ga4 lp_campaign",
         "type": "v",
         "parameter": [
@@ -1136,7 +1176,7 @@
       {
         "accountId": "0",
         "containerId": "0",
-        "variableId": "125",
+        "variableId": "126",
         "name": "DLV - ga4 lp_content",
         "type": "v",
         "parameter": [
@@ -1161,7 +1201,7 @@
       {
         "accountId": "0",
         "containerId": "0",
-        "variableId": "126",
+        "variableId": "127",
         "name": "DLV - ga4 metric_id",
         "type": "v",
         "parameter": [
@@ -1186,7 +1226,7 @@
       {
         "accountId": "0",
         "containerId": "0",
-        "variableId": "127",
+        "variableId": "128",
         "name": "DLV - ga4 metric_rating",
         "type": "v",
         "parameter": [

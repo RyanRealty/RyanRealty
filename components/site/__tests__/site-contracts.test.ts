@@ -129,6 +129,7 @@ describe('design directive contracts', () => {
     const main = src.slice(src.indexOf('const main = ('), src.indexOf('const floating ='))
     const order = [
       '<PriceCtaStrip',
+      '<ListingQuickFacts',
       '<PropertySpecs',
       '<MortgageCalculator',
       '{atlasBlock}',

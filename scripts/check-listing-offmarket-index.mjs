@@ -2,8 +2,11 @@
 /**
  * check-listing-offmarket-index.mjs — ci:listing-offmarket-index (SITE-32).
  *
- * OFF-MARKET LISTING URLS STAY INDEXED. Matt ruled it on 2026-09-08, and this
- * gate is the ruling's only mechanical form.
+ * STALE OFF-MARKET LISTING URLS LEAVE THE INDEX. Closed / Expired /
+ * Canceled / Withdrawn pages older than 90 days are noindex, follow, with
+ * a canonical to the community hub, else the city hub. Recent off-market
+ * and every on-market status stay index, follow on the listing URL.
+ * This gate is the ruling's only mechanical form.
  *
  * WHY A GATE FOR AN ABSENCE. Two written policies had stood for months and
  * neither was implemented. docs/MASTER_SPEC.md §4.9 said an off-market detail
@@ -24,7 +27,8 @@
  * roughly 324-577 clicks per 90 days. An address query has no Active
  * substitute, so a noindex on this class deletes those clicks rather than
  * redistributing them. They are residual index, not submissions:
- * lib/data/sitemap/getListingSitemapRows.ts ships Active/AUC only.
+ * lib/data/sitemap/getListingSitemapRows.ts ships LISTING_SITEMAP_STATUSES
+ * (Active, Active Under Contract, Pending) only.
  *
  * ODS. G54 (scripts/check-ods-compliance.mjs) pins §5-4 A.4 — sold data is
  * VOW-only, no indexable public sold surface — and checks the search presets
@@ -42,21 +46,20 @@
  *     the whole class while the AST below stayed spotless. Reading the source
  *     cannot catch that; running it can.
  *
- *  2. NO NOINDEX AT THE CHOKEPOINT. In app/listing/[listingKey]/page.tsx
- *     generateMetadata, NOTHING is passed as `noindex` to pageMetadata — not
- *     a status test, and since Matt's 2026-10-05 revert of SITE-33 ("Undo
- *     it"), not geography either. Out-of-area listings (Medford, Klamath
- *     Falls, Grants Pass, ...) are index, follow: the 2026-09-09 out-of-area
- *     noindex cost about 36% of the Search Console impression drop since
- *     Sep 12 (~2,500 impressions and ~30 clicks a week). Any `noindex`
- *     property or shorthand in generateMetadata fails, whatever it computes.
- *     `nofollow` may not be set at all.
+ *  2. THE ONLY NOINDEX AT THE CHOKEPOINT IS listingIndexPolicy.noindex.
+ *     generateMetadata must call listingIndexPolicy and pass
+ *     `noindex: indexPolicy.noindex` plus `path: indexPolicy.canonicalPath`.
+ *     A raw status test, a geography test, a hardcoded true/false, or a
+ *     second noindex fails. Out-of-area on-market listings stay index,
+ *     follow (SITE-33 reverted 2026-10-05). `nofollow` may not be set at all.
+ *     listingIndexPolicy is executed in this gate so a "always index" rewrite
+ *     of the policy file fails even when the AST still looks clean.
  *
  *  7. OUT-OF-AREA ROWS SHIP IN listings.xml (Matt 2026-10-05).
  *     lib/data/sitemap/getListingSitemapRows.ts may not import or call a
  *     service-area predicate (isServiceAreaCity, outOfAreaListingPolicy,
  *     SERVICE_AREA_CITIES_*, serviceAreaSitemapTiles): the listings sitemap is
- *     every Active/AUC listing, whatever its city.
+ *     every Active/AUC/Pending listing, whatever its city.
  *
  *  3. NO SECOND ROBOTS DIRECTIVE IN EITHER FILE. Neither chokepoint may
  *     hand-build a robots object. The by-address route in particular must keep
@@ -111,6 +114,7 @@ const UNAVAILABLE = 'components/site/listing-detail/ListingUnavailable.tsx'
 const METADATA_MODULE = 'lib/site/page-metadata.ts'
 const SHARE_MODULE = 'lib/share-metadata.ts'
 const ORIGIN_MODULE = 'lib/site-origin.ts'
+const POLICY_MODULE = 'lib/listing/listing-index-policy.ts'
 
 /** Names that mean "this home is off the market". None may reach the directive. */
 const STATUS_NAMES = [
@@ -146,7 +150,7 @@ function read(rel) {
   if (!existsSync(p)) {
     failures.push(
       `${rel} is missing. Re-point this gate at the file that replaced it — the ruling it holds ` +
-        `(off-market listing URLs stay index,follow) did not move just because the route did.`,
+        `(listingIndexPolicy + §4.9) did not move just because the route did.`,
     )
     return null
   }
@@ -236,6 +240,92 @@ async function loadPageMetadata() {
   }
 }
 
+/* ── 2b. listingIndexPolicy, executed ─────────────────────────────────────── */
+
+async function loadListingIndexPolicy() {
+  const src = read(POLICY_MODULE)
+  if (!src) return null
+  const stubbed = src.replace(
+    /import \{ isPublicOffMarketStatus \} from '@\/lib\/listing-status-public'\n/,
+    `function isPublicOffMarketStatus(s){return ['Closed','Expired','Canceled','Withdrawn'].includes(String(s??'').trim())}\n`,
+  )
+  try {
+    const js = ts.transpileModule(stubbed, {
+      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+    }).outputText
+    return await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`)
+  } catch (error) {
+    failures.push(
+      `${POLICY_MODULE}: this gate could not execute listingIndexPolicy (${error.message}). ` +
+        `The status-to-robots mapping is not readable from the AST.`,
+    )
+    return null
+  }
+}
+
+{
+  const mod = await loadListingIndexPolicy()
+  if (mod) {
+    const fn = mod.listingIndexPolicy
+    if (typeof fn !== 'function') {
+      failures.push(`${POLICY_MODULE}: listingIndexPolicy is not exported.`)
+    } else {
+      const now = new Date('2026-10-13T12:00:00.000Z')
+      const path = '/homes-for-sale/powell-butte/brasada-ranch/16951-sw-century-dr-220219000'
+      if (mod.OFF_MARKET_NOINDEX_AFTER_DAYS !== 90) {
+        failures.push(
+          `${POLICY_MODULE}: OFF_MARKET_NOINDEX_AFTER_DAYS is ${mod.OFF_MARKET_NOINDEX_AFTER_DAYS}, must be 90.`,
+        )
+      }
+      for (const status of ['Active', 'Active Under Contract', 'Pending']) {
+        const p = fn({ status, listingPath: path, communityHref: '/communities/brasada-ranch', offMarketAt: '2020-01-01', now })
+        if (p.noindex !== false || p.canonicalPath !== path) {
+          failures.push(
+            `${POLICY_MODULE}: ${status} must stay index, follow on the listing URL, got ${JSON.stringify(p)}.`,
+          )
+        }
+      }
+      const recent = fn({
+        status: 'Closed',
+        listingPath: path,
+        communityHref: '/communities/brasada-ranch',
+        offMarketAt: '2026-08-01T00:00:00.000Z',
+        now,
+      })
+      if (recent.noindex !== false || recent.canonicalPath !== path) {
+        failures.push(
+          `${POLICY_MODULE}: a Closed page 90 days old or newer must stay indexed on itself, got ${JSON.stringify(recent)}.`,
+        )
+      }
+      const stale = fn({
+        status: 'Closed',
+        listingPath: path,
+        communityHref: '/communities/brasada-ranch',
+        cityHref: '/cities/powell-butte',
+        offMarketAt: '2026-06-01T00:00:00.000Z',
+        now,
+      })
+      if (stale.noindex !== true || stale.canonicalPath !== '/communities/brasada-ranch') {
+        failures.push(
+          `${POLICY_MODULE}: a Closed page older than 90 days must be noindex with a community hub canonical, got ${JSON.stringify(stale)}.`,
+        )
+      }
+      const cityOnly = fn({
+        status: 'Withdrawn',
+        listingPath: path,
+        cityHref: '/cities/powell-butte',
+        offMarketAt: '2026-01-01',
+        now,
+      })
+      if (cityOnly.noindex !== true || cityOnly.canonicalPath !== '/cities/powell-butte') {
+        failures.push(
+          `${POLICY_MODULE}: a stale off-market page with no community hub must canonicalize to the city, got ${JSON.stringify(cityOnly)}.`,
+        )
+      }
+    }
+  }
+}
+
 /* ── 2 + 4. the [listingKey] chokepoint ────────────────────────────────────── */
 
 /** String literals inside an expression, template spans included. */
@@ -293,31 +383,52 @@ function functionNamed(sf, name) {
           `renamed or moved, re-point this gate in the same commit.`,
       )
     } else {
-      // Any `noindex` in generateMetadata is a failure (Matt 2026-10-05): not
-      // status (SITE-32) and no longer geography (SITE-33 reverted). The one
-      // sanctioned noindex is the refusal constant, checked in section 4.
+      // The only allowed noindex at this chokepoint is listingIndexPolicy.noindex.
+      // A raw status test, a geography test, or a hardcoded boolean fails.
+      let sawPolicyNoindex = false
       walk(genMeta, (n) => {
         const isNoindex =
           (ts.isPropertyAssignment(n) && propertyName(n) === 'noindex') ||
           (ts.isShorthandPropertyAssignment(n) && n.name.text === 'noindex')
         if (!isNoindex) return
-        const text = n.getText(sf)
+        const text = n.getText(sf).replace(/\s+/g, ' ').trim()
+        if (text === 'noindex: indexPolicy.noindex') {
+          sawPolicyNoindex = true
+          return
+        }
         const statusy =
           STATUS_NAMES.some((name) => new RegExp(`\\b${name}\\b`).test(text)) ||
           STATUS_LITERALS.some((lit) => text.toLowerCase().includes(lit.toLowerCase()))
         failures.push(
-          `${PAGE}:${lineOf(sf, n)}: generateMetadata passes \`${text.replace(/\s+/g, ' ').slice(0, 120)}\`. ` +
+          `${PAGE}:${lineOf(sf, n)}: generateMetadata passes \`${text.slice(0, 120)}\`. ` +
             (statusy
-              ? `Status is not an input to indexing on this page (Matt 2026-09-08, SITE-32): off-market ` +
-                `URLs carry 46% of listing-detail impressions and an address query has no Active ` +
-                `substitute, so a noindex deletes those clicks. `
+              ? `Status is not an ad-hoc input here: Closed / Expired / Withdrawn older than 90 days ` +
+                `go through listingIndexPolicy, which also sets the hub canonical. `
               : '') +
-            `No listing page passes noindex: out-of-area listings are index, follow too (Matt ` +
-            `2026-10-05 reverted SITE-33; the out-of-area noindex cost ~36% of the Search Console ` +
-            `impression drop since Sep 12). The only noindex on a listing URL is the refusal ` +
-            `(LISTING_UNAVAILABLE_METADATA). See docs/MASTER_SPEC.md §4.9.`,
+            `The only noindex generateMetadata may pass is \`noindex: indexPolicy.noindex\`. ` +
+            `Out-of-area on-market listings are index, follow too (Matt 2026-10-05 reverted SITE-33). ` +
+            `See docs/MASTER_SPEC.md §4.9.`,
         )
       })
+      if (!sawPolicyNoindex) {
+        failures.push(
+          `${PAGE}: generateMetadata must pass \`noindex: indexPolicy.noindex\` from listingIndexPolicy. ` +
+            `Stale off-market pages (>90 days) are noindex, follow; on-market and recent off-market stay indexed.`,
+        )
+      }
+      if (!src.includes("from '@/lib/listing/listing-index-policy'")) {
+        failures.push(`${PAGE}: must import listingIndexPolicy from @/lib/listing/listing-index-policy.`)
+      }
+      const genText = genMeta.getText(sf)
+      if (!/\blistingIndexPolicy\s*\(/.test(genText)) {
+        failures.push(`${PAGE}: generateMetadata must call listingIndexPolicy(...).`)
+      }
+      if (!/\bpath:\s*indexPolicy\.canonicalPath\b/.test(genText)) {
+        failures.push(
+          `${PAGE}: generateMetadata must pass \`path: indexPolicy.canonicalPath\` so a stale ` +
+            `off-market page canonicalizes to the community or city hub.`,
+        )
+      }
 
       // `nofollow` is a separate field on purpose (SITE-25). Never set here.
       walk(genMeta, (n) => {
@@ -673,7 +784,7 @@ const SERVICE_AREA_NAMES = [
         if (/service-area|central-oregon|out-of-area/.test(spec)) {
           failures.push(
             `${SITEMAP_ROWS}:${lineOf(sf, n)}: imports ${spec}. The listings sitemap carries every ` +
-              `Active/AUC listing whatever its city; Matt reverted SITE-33's out-of-area sitemap drop ` +
+              `Active/AUC/Pending listing whatever its city; Matt reverted SITE-33's out-of-area sitemap drop ` +
               `on 2026-10-05 (it cost ~36% of the Search Console impression drop since Sep 12).`,
           )
         }
@@ -702,15 +813,15 @@ console.log('==========================================================')
 
 if (failures.length) {
   console.error('')
-  console.error('Off-market listing URLs must stay index,follow (Matt 2026-09-08, SITE-32):')
+  console.error('Listing robots follow listingIndexPolicy (docs/MASTER_SPEC.md §4.9):')
   for (const f of failures) console.error(`  ✗ ${f}`)
   console.error('')
   console.error('The one policy statement is docs/MASTER_SPEC.md §4.9 "Listing not found / sold /')
-  console.error('withdrawn". If the policy is genuinely changing, it changes there first, with Matt.')
+  console.error('withdrawn". Stale off-market pages (>90 days) are noindex, follow to the hub.')
   process.exit(1)
 }
 
-console.log('OK — no listing page passes noindex (status or geography); only the refusal is noindexed.')
-console.log('     listings.xml carries no service-area filter (out-of-area listings indexed, Matt 2026-10-05).')
+console.log('OK — stale off-market pages (>90d) noindex,follow to the hub; on-market and recent stay index,follow.')
+console.log('     listings.xml carries Active/AUC/Pending and no service-area filter.')
 console.log('     pageMetadata default executed: index, follow. Refusal: index: false, follow: true.')
 process.exit(0)

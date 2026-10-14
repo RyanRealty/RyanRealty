@@ -6,7 +6,7 @@
  * `20260527180000_similar_listings_mv.sql`). The MV precomputes the
  * (anchor → similar) mapping with same-city, ±20% price, ±1 bed
  * matching, ranked by same-subdivision-first, then closest-price, then
- * newest-modified.
+ * newest-modified. Tile hydration is Active / Active Under Contract only.
  *
  * Hot path is sub-1ms via the unique index on (anchor_key, rank). The
  * subsequent IN-clause to listing_tile_mv to hydrate full tile data is
@@ -74,7 +74,7 @@ async function fetchSimilarTiles(
   // returned from the MV by reading tiles into a map keyed by listing_key.
   const tiles = await getListingTiles({
     listingKeys: keys,
-    status: 'all',
+    status: 'active',
     limit: keys.length,
   })
   const byKey = new Map(tiles.map((t) => [t.listingKey, t]))
@@ -91,7 +91,7 @@ async function fetchSimilarTiles(
 // caching the empty rail. anchorKey + limit are part of the cache key automatically.
 const cachedSimilarTiles = makeResilientCached(
   fetchSimilarTiles,
-  ['similar-listings-v2'],
+  ['similar-listings-v3'],
   { revalidate: CACHE_WINDOWS.listingTile, tags: [cacheTag.listings] },
   [],
 )

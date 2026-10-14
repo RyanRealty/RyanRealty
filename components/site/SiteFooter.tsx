@@ -10,6 +10,7 @@ import {
 } from '@/components/site/primitives'
 import { NewsletterSignup } from '@/components/site/NewsletterSignup'
 import { FOOTER_NAV, LEGAL_LINKS } from '@/lib/site-nav'
+import { CookieSettingsLink } from '@/components/CookieSettingsLink'
 import { BRAND, CONTACT, BROKERS } from '@/lib/brand/contact'
 
 /**
@@ -151,6 +152,10 @@ export default function SiteFooter() {
                 </TextLink>
               </span>
             ))}
+            <span className="flex items-center gap-4">
+              <MiddleDot className="mr-0 text-white/30" />
+              <CookieSettingsLink className="text-xs text-primary-foreground/55 hover:text-primary-foreground/85" />
+            </span>
           </div>
 
           <Caption tone="on-photo" className="text-white/50 leading-[1.6]">

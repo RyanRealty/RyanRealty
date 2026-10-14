@@ -294,7 +294,7 @@ export function buildInventoryLedger(
       what: v3Text(city.label),
       detail:
         mos != null
-          ? v3Text(`${formatMonthsOfSupply(mos)} mo · ${marketVerdict(mos).label}`)
+          ? v3Text(`${formatMonthsOfSupply(mos)} months of supply`)
           : undefined,
       value: v3Text(formatPriceExact(snapshot.median_list_price)),
       id: city.slug,

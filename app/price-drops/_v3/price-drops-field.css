@@ -255,6 +255,145 @@ main.v3 > details.v3-source.pd-source,
   margin-inline-start: 0;
 }
 
+/* Full catalog under the drawing: every qualifying cut, filters, load more. */
+.pd-catalog.v3 {
+  width: 100%;
+  max-width: var(--v3-measure);
+  margin-inline: auto;
+  padding: var(--v3-space-sm) var(--v3-gutter) var(--v3-space-md);
+}
+
+.pd-catalog__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-2xs) var(--v3-space-sm);
+  margin-bottom: var(--v3-space-sm);
+}
+
+.pd-catalog .v3-heading {
+  margin: 0;
+}
+
+.pd-catalog__count {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.pd-catalog__filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-sm);
+  margin-bottom: var(--v3-space-sm);
+}
+
+.pd-catalog__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-3xs);
+  max-width: 16rem;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+}
+
+.pd-catalog__field select {
+  min-height: var(--v3-tap);
+  padding-inline: var(--v3-space-xs);
+  color: var(--v3-ink);
+  background: var(--v3-cream);
+  border: var(--v3-rule-weight-hairline) solid var(--v3-hairline);
+  font: inherit;
+}
+
+.pd-catalog__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pd-catalog__chips legend {
+  padding: 0;
+  margin-bottom: var(--v3-space-3xs);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+}
+
+.pd-catalog__chip {
+  min-height: var(--v3-tap);
+  padding-inline: var(--v3-space-sm);
+  color: var(--v3-ink);
+  background: transparent;
+  border: var(--v3-rule-weight-hairline) solid var(--v3-hairline);
+  font: inherit;
+  font-size: var(--v3-size-body-sm);
+}
+
+.pd-catalog__chip.is-on {
+  color: var(--v3-cream);
+  background: var(--v3-navy);
+  border-color: var(--v3-navy);
+}
+
+.pd-catalog__empty {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+.pd-catalog__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
+  gap: var(--v3-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pd-catalog__row {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+  color: var(--v3-ink);
+  text-decoration: none;
+}
+
+.pd-catalog__photo {
+  width: 7.5rem;
+  height: 5.625rem;
+  object-fit: cover;
+}
+
+.pd-catalog__copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-3xs);
+  min-width: 0;
+}
+
+.pd-catalog__price {
+  font-variant-numeric: tabular-nums;
+}
+
+.pd-catalog__street,
+.pd-catalog__drop,
+.pd-catalog__specs {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+.pd-catalog__more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--v3-space-sm);
+}
+
 /* Alerts stay in normal document flow under the fold — never over the Field. */
 main.v3 > .v3.v3-sheet#alerts,
 #alerts.v3.v3-sheet {

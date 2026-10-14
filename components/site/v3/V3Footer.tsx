@@ -7,7 +7,8 @@
  * DESTINATIONS COME FROM lib/site-nav.ts. Not one href is typed in this file.
  * The column set is a REQUIRED prop, and the value every public page passes is
  * V3_FOOTER_COLUMNS below, which is KB_FOOTER_COLUMNS itself rather than a copy
- * of it: Markets town clusters, Buy · Sell · Join, Company, then Contact. The
+ * of it: Homes for sale by area, Markets town clusters, Buy · Sell · Join,
+ * Company, then Contact. The
  * legal row defaults to LEGAL_LINKS, so a
  * caller cannot drop the privacy, terms, accessibility, fair-housing, DMCA, or
  * site-index links by forgetting a prop. A surface that legitimately needs a
@@ -48,6 +49,7 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
 import { KB_FOOTER_COLUMNS, LEGAL_LINKS } from '@/lib/site-nav'
+import { CookieSettingsLink } from '@/components/CookieSettingsLink'
 import { V3_ROOT_CLASS } from './atoms'
 import { V3FooterFold } from './V3FooterFold.client'
 import { V3Icon, type V3IconName } from './V3Icon'
@@ -82,7 +84,8 @@ export type V3FooterColumn = {
 /**
  * The canonical sitemap columns: lib/site-nav.ts for every destination and
  * heading. Header chrome still remaps Buy/Areas to Homes/Places; the footer
- * keeps Markets town clusters plus Buy · Sell · Join, Company, and Contact.
+ * keeps Homes for sale by area, Markets town clusters plus Buy · Sell · Join,
+ * Company, and Contact.
  */
 export const V3_FOOTER_COLUMNS: readonly V3FooterColumn[] = KB_FOOTER_COLUMNS.map(
   (column) => ({
@@ -419,6 +422,9 @@ export function V3Footer({
                     <Link href={link.href}>{link.label}</Link>
                   </li>
                 ))}
+                <li>
+                  <CookieSettingsLink />
+                </li>
               </ul>
             </nav>
           ) : null}

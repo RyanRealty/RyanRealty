@@ -211,6 +211,20 @@ describe("drainProspectingFirstTouchDrip — 'in-progress' is not 'already-sent'
     expect(sendProspectingEmailIntro).toHaveBeenCalledTimes(1)
   })
 
+  it('dequeues a company-owned refusal so the next owner can send', async () => {
+    getLastDripSentAt.mockResolvedValue(null)
+    peekOldestQueuedFirstTouch.mockResolvedValueOnce(QUEUED_FSBO).mockResolvedValueOnce(null)
+    verifyNotRelisted.mockResolvedValue({ relisted: false, verifyFailed: false })
+    sendProspectingEmailIntro.mockResolvedValue({
+      ok: false,
+      error: 'County owner is a company (LUCIA ST LLC). Cold outreach stays held.',
+      code: 'company-owned',
+    })
+    const out = await drainProspectingFirstTouchDrip(THU_8AM_PT)
+    expect(hardSkipQueuedFirstTouch).toHaveBeenCalledWith('fsbo', 'https://fsbo.example/1', 'send-refused:company-owned')
+    expect(out).toEqual({ ok: true, action: 'skipped-all', skipped: 1 })
+  })
+
   it('still dequeues a real already-sent refusal', async () => {
     getLastDripSentAt.mockResolvedValue(null)
     peekOldestQueuedFirstTouch.mockResolvedValueOnce(QUEUED_FSBO).mockResolvedValueOnce(null)

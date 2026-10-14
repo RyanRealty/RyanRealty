@@ -29,6 +29,8 @@
  *     ->>'product_type')::int) from cmas;
  */
 
+import type { NotSettingSale } from '@/lib/pricing/price-set'
+
 /** Every reason a candidate row can be dropped, counted per tier and in total. */
 export interface CompExclusionCounts {
   /** A townhome / condo / manufactured / leased-land / co-op against a detached subject (or vice versa). */
@@ -213,6 +215,12 @@ export interface CompSelectionDiagnostics {
    * on listings). They never counted toward the five (Matt 2026-10-07).
    */
   not_price_setting: number
+  /**
+   * The sales behind `not_price_setting`, named, with the sentence rule 20
+   * recorded (SKILL §0.3 rule 29). The letter prints `reason` beside a history
+   * sale that is not in the price set. Absent on rows built before it landed.
+   */
+  not_setting_sales?: NotSettingSale[]
   /** Comps handed to pricing by selectComps (after outliers + cap). */
   final_count: number
   /** Tier -> count, over the comps that actually got priced. Filled by the builder. */
@@ -246,7 +254,7 @@ const EXCLUSION_LABELS: Record<keyof CompExclusionCounts, string> = {
   product_type:
     'they are a different product (a townhome, condo, manufactured home, leased-land or co-op sale does not compete with a detached house)',
   bath_count:
-    "they are two or more rooms away from the subject, or one room away and outside this home's own plat, neighborhood and street",
+    'they are three or more whole rooms away from the subject on bedrooms or on bathrooms',
   lot_character: 'their lot character does not match (acreage against an in-town lot, or far outside the acreage band)',
   resort_premium: 'they sit in a resort community the subject is not in (premium contamination, or the reverse)',
   market_area: "they sit outside the subject's neighborhood boundary",

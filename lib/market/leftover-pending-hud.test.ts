@@ -120,7 +120,7 @@ describe('D26 leftover housing instrument and leftover as-of', () => {
   it('housing-market geo instrument is leftover HUD, not pulse fill', () => {
     const geo = readFileSync(resolve('app/housing-market/[...slug]/page.tsx'), 'utf8')
     const figures = readFileSync(resolve('app/housing-market/[...slug]/_v3/geo-figures.ts'), 'utf8')
-    expect(geo).toMatch(/leftoverHudPublishes/)
+    expect(geo).toMatch(/geoMarketPublishes/)
     expect(geo).not.toMatch(/getMarketPulse\(/)
     expect(figures).toMatch(/Oregon Data Share MLS/)
     expect(figures).toMatch(/under contract now/)

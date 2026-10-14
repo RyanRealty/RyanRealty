@@ -75,7 +75,7 @@ describe('/llms.txt shape (AEO-4)', () => {
   })
 
   it('keeps the dynamic families (guides, blog, reports, neighborhoods)', () => {
-    expect(body).toContain('https://ryan-realty.com/blog/bend-housing-market-guide')
+    expect(body).toContain('https://ryan-realty.com/housing-market/bend')
     expect(body).toContain('https://ryan-realty.com/blog/a-new-post')
     expect(body).toContain('https://ryan-realty.com/housing-market/reports/bend-weekly')
     expect(body).toContain('https://ryan-realty.com/cities/bend/awbrey-butte')

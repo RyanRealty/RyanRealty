@@ -25,6 +25,8 @@
  *                                       (the delta cron runs at :07/:37, so two
  *                                       consecutive misses is about 90 min)
  *  - lead volume cratered ............. 0 new leads in the trailing 24h
+ *  - inbound text not forwarded ....... any text received in 24h that never
+ *                                       reached a broker's phone (critical)
  */
 
 export type HealthSeverity = 'warning' | 'critical'
@@ -73,6 +75,11 @@ export interface HealthSignals {
    *  Rule 8 signal: listing_mv_drain() stamps it after every completed drain
    *  (every minute). null = stamp unreadable (skip the rule). */
   mvRefreshAgeHours: number | null
+  /** Inbound texts in the trailing window that Twilio received but that never
+   *  reached a broker's phone (findUnforwardedTexts in
+   *  lib/crm/inbound-forward-audit.ts). null = Twilio or the log unreadable
+   *  (skip the rule). */
+  unforwardedTexts: Array<{ sid: string; to: string; why: string }> | null
 }
 
 /** A geographic list is "undercounting" when the contains-signal is at least
@@ -214,6 +221,21 @@ export function evaluateHealthRules(signals: HealthSignals): { alarms: HealthAla
       key: 'listing-tile-mv-stale',
       severity: 'critical',
       message: `listing_tile_mv refresh stamp is ${formatHours(signals.mvRefreshAgeHours)} old. The minute drain is not completing: check pg_cron job listing-mv-drain in cron.job_run_details and public.listing_mv_errors.`,
+    })
+  }
+
+  // Rule 9: inbound text received but never reached a broker's phone.
+  // 2026-10-12: texts to Paul's and Rebecca's lines were received by Twilio and
+  // dropped by the webhook with no trace, found only when Matt asked why. A
+  // single miss pages: every inbound text is a person waiting on a reply.
+  if (signals.unforwardedTexts && signals.unforwardedTexts.length > 0) {
+    const misses = signals.unforwardedTexts
+    const lines = [...new Set(misses.map((m) => m.to))].join(', ')
+    const whys = [...new Set(misses.map((m) => m.why))].join(', ')
+    alarms.push({
+      key: 'inbound-text-not-forwarded',
+      severity: 'critical',
+      message: `${misses.length} inbound text${misses.length === 1 ? '' : 's'} to ${lines} never reached a broker's phone (${whys}). Check crm_sms_inbound_log and the Twilio message log for ${misses[0].sid}.`,
     })
   }
 

@@ -289,7 +289,7 @@ R1 additionally carries an exact-match contract.
 >   file: 'app/housing-market/page.tsx',
 >   checks: [
 >     { re: /titleBottom\s*=\s*["']Housing Market["']/, msg: 'market hub H1 titleBottom must be exact "Housing Market"' },
->     { re: /title:\s*['"]Central Oregon Housing Market['"]/i, msg: 'market hub title must be "Central Oregon Housing Market"' },
+>     { re: /title:\s*['"]Central Oregon Housing Market & Prices by City['"]/i, msg: 'market hub title must be "Central Oregon Housing Market & Prices by City" (Matt 2026-10-08)' },
 >   ],
 > },
 > ```

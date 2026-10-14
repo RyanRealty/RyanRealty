@@ -31,12 +31,15 @@ import { outsideSubdivisionSentence, salesMethodSentences } from '@/lib/cma/sale
 import { pricingPage } from '@/lib/cma/render-pricing-page'
 import {
   cmaDisclosureProseHtml,
+  landUseStatementsRendered,
   salesMethodHtml,
   sellerNetBodyHtml,
   sellerNetKick,
   sellerNetPage,
   type OpinionPageArgs,
 } from '@/lib/cma/opinion-pages'
+import { propertyUsePage } from '@/lib/cma/render-use-of-property'
+import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import {
   COVER_LIST_PRICE_HEADLINE,
   HERO_SOLD_RANGE_LABEL,
@@ -234,6 +237,38 @@ const COMP_SEARCH = {
   ruralSentence: null,
   keptBySubdivision: { 'Hampton Park': 4, 'Deer Pointe Village': 1 },
   rungs: [],
+}
+
+/** 1648 Pheasant shape: zone and a verification date stored, chapter not on the letter. */
+const LAND_USE_DEV: DevelopmentOpportunities = {
+  jurisdiction: 'City of Bend',
+  zone: 'RS',
+  verifiedAsOf: '2026-07-30',
+  zoningExplainer: {
+    zone: 'RS',
+    zoneName: 'Standard Density Residential',
+    purpose: 'Bend RS holds single-unit homes.',
+    permittedOutright: ['Single-unit dwelling'],
+    conditional: [],
+    dimensional: [],
+    citation: 'BDC 2.1',
+    url: 'https://www.codepublishing.com/OR/Bend/',
+  },
+  items: [
+    {
+      topic: 'ADU',
+      verdict: 'yes',
+      headline: 'An accessory dwelling is allowed on this lot.',
+      detail: 'The lot meets the size test.',
+      citation: 'BDC 3.6',
+      url: 'https://www.codepublishing.com/OR/Bend/',
+    },
+  ],
+  buyerOptions: [],
+  hoa: null,
+  marketingHighlights: [],
+  disclaimer: 'This is a preliminary read of published code, not a land-use decision.',
+  resources: [],
 }
 
 const BROKER: CmaBroker = {
@@ -465,8 +500,7 @@ describe('net from the sale: the list, and the expected sale (Keats arithmetic)'
 describe('the method moves to Basis and limits, in plain English (Keats)', () => {
   const KEATS_METHOD = [
     'One of the five sales, 530 Majesty, is outside Hampton Park, in Deer Pointe Village.',
-    "To bring each sale to today's market, we move it by how much Bend's median price per square foot changed between the month it sold and the last three full months.",
-    'That figure is built from 2,606 home sales across Bend.',
+    "Bend's median price per square foot, the figure under the sales grid, is built from 2,606 home sales across Bend.",
     'Over the last 12 months it peaked in May 2026 and has come down 7.0 percent since.',
     "That moves four of the five sales down. The other one sold when that figure was already at today's level, so it does not move.",
     'Homes in Bend are selling for 95.8 percent of the price they first asked.',
@@ -482,6 +516,36 @@ describe('the method moves to Basis and limits, in plain English (Keats)', () =>
         searchTail: 'One more was added: 530 Majesty in Deer Pointe Village.',
       }),
     ).toEqual(KEATS_METHOD)
+  })
+
+  it('does not point at verification dates when the use chapter is not on the page (1648 Pheasant, 3177 Coho, 2382 Jackson)', () => {
+    // The row holds the development read. The letter does not render it.
+    const html = cmaDisclosureProseHtml(opinion({ development: LAND_USE_DEV }))
+    expect(html).not.toContain('verification dates shown beside them')
+    expect(html).not.toContain('Land use, rental, and code statements')
+    expect(html).toContain('Not an appraisal.')
+    expect(html).toContain('ORS chapter 696')
+    expect(landUseStatementsRendered(html)).toBe(false)
+    expect(landUseStatementsRendered('Bend market statistics, verified 2026-10-08.')).toBe(false)
+    expect(landUseStatementsRendered('<h2>What this property can do</h2><p>No date on this page.</p>')).toBe(false)
+  })
+
+  it('prints the land-use limit only beside the rendered statements and their verification date', () => {
+    const page = propertyUsePage({
+      streetAddress: '1648 Pheasant',
+      development: LAND_USE_DEV,
+      rental: null,
+    })
+    expect(page?.body).toContain('What this property can do')
+    expect(page?.body).toMatch(/verified 2026-07-30/)
+    expect(landUseStatementsRendered(page?.body)).toBe(true)
+    const prose = cmaDisclosureProseHtml(opinion({ development: LAND_USE_DEV }), page!.body)
+    expect(prose).toContain(
+      'as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions',
+    )
+    expect(
+      cmaDisclosureProseHtml(opinion({ development: LAND_USE_DEV }), 'Bend market statistics, verified 2026-10-08.'),
+    ).not.toContain('verification dates shown beside them')
   })
 
   it('prints it under its own label, between what was looked at and condition', () => {
@@ -504,6 +568,30 @@ describe('the method moves to Basis and limits, in plain English (Keats)', () =>
       'Two of the five sales are outside Hampton Park: 530 Majesty in Deer Pointe Village and 700 Shelley in Awbrey Glen.',
     )
     expect(outsideSubdivisionSentence({ subdivision: null }, COMPS)).toBeNull()
+  })
+
+  it('counts an own-plat sale as inside when the MLS name differs (1355 Jacksonville)', () => {
+    const sales = [
+      { address: '1367 Milwaukee', subdivision: 'Northwest Townsite Co 2nd Addt', ownPlat: true },
+      { address: '1345 Milwaukee', subdivision: 'Grandview' },
+      { address: '1340 Cumberland', subdivision: 'Highland' },
+      { address: '1613 Ithaca', subdivision: 'Bonne Home' },
+      { address: '1685 Fresno', subdivision: 'Bonne Home' },
+    ] as never
+    expect(outsideSubdivisionSentence({ subdivision: 'Northwest Townsite' }, sales)).toBe(
+      'Four of the five sales are outside Northwest Townsite: 1345 Milwaukee in Grandview, 1340 Cumberland in Highland, 1613 Ithaca in Bonne Home and 1685 Fresno in Bonne Home.',
+    )
+  })
+
+  it('prints a bare MLS code as the recorded plat (61197 Cottonwood, CLAB)', () => {
+    const sales = [
+      { address: '1 Lark', subdivision: 'Larkspur' },
+      { address: '20825 Chloe', subdivision: 'Chloe Estates' },
+      { address: '61197 Cottonwood', subdivision: 'CLAB', subdivisionSlug: 'tara-view-estates' },
+    ] as never
+    expect(outsideSubdivisionSentence({ subdivision: 'Larkspur' }, sales)).toBe(
+      'Two of the three sales are outside Larkspur: 20825 Chloe in Chloe Estates and 61197 Cottonwood in Tara View Estates.',
+    )
   })
 
   it('says a sale did not move only for the reason the index gives', () => {

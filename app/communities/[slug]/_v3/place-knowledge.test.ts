@@ -76,11 +76,11 @@ describe('master-plan belonging Quiet', () => {
       },
     })
     const first = items[0]
-    expect(first && first.kind === 'fact' ? first.term : null).toBe('HOA from homes here')
-    expect(first && first.kind === 'fact' ? first.value : null).toBe('$2,052 a year')
-    expect(first && first.kind === 'fact' ? first.detail : null).toMatch(
-      /median of the 6 current listings that report dues/,
+    expect(first && first.kind === 'prose' ? first.term : null).toBe('HOA from homes here')
+    expect(first && first.kind === 'prose' ? first.body : null).toMatch(
+      /Detached Tetherow listings that reported dues since October 2023 show a median of \$171 a month \(\$2,052 a year\), across 6 listings/,
     )
+    expect(JSON.stringify(first)).not.toMatch(/current listings that report dues/)
   })
 
   it('explains multi-name filing as prose and carries no subdivision doors', () => {
@@ -276,8 +276,12 @@ describe('communityGuides — the place→blog direction', () => {
   })
 
   it('keeps a post the shared matcher would link to this community', () => {
-    const guides = communityGuides('tetherow', [post()], matcher)
-    expect(guides.map((g) => g.slug)).toEqual(['tetherow-resort-living-real-estate'])
+    const guides = communityGuides('tetherow', [post({ slug: 'living-at-tetherow' })], matcher)
+    expect(guides.map((g) => g.slug)).toEqual(['living-at-tetherow'])
+  })
+
+  it('drops a guide whose /blog slug already redirects onto this community', () => {
+    expect(communityGuides('tetherow', [post()], matcher)).toEqual([])
   })
 
   it('does not hand a community somebody else’s post', () => {
@@ -318,7 +322,11 @@ describe('communityGuides — the place→blog direction', () => {
   })
 
   it('carries the excerpt through so a row can print a sentence', () => {
-    const guides = communityGuides('tetherow', [post({ excerpt: 'What living here costs.' })], matcher)
+    const guides = communityGuides(
+      'tetherow',
+      [post({ slug: 'living-at-tetherow', excerpt: 'What living here costs.' })],
+      matcher,
+    )
     expect(guides[0]?.excerpt).toBe('What living here costs.')
   })
 })
