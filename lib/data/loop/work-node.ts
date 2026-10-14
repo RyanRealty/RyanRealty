@@ -88,7 +88,11 @@ export function fleetNodePriority(title: string): number {
   if (
     title.startsWith('Fleet finding [major]') ||
     title.startsWith('Matt ADD') ||
-    title.startsWith('Matt CHANGE')
+    title.startsWith('Matt CHANGE') ||
+    // A defect the post-deploy check found on production (deploy-defects.ts,
+    // DEPLOY_TITLE_PREFIX; a test keeps the two strings equal): a live defect, so
+    // it outranks planned gap work like a fleet major.
+    title.startsWith('Deploy check failed')
   ) {
     return 1
   }

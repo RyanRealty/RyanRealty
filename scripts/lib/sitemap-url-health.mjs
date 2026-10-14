@@ -232,10 +232,14 @@ async function mapLimit(items, limit, fn) {
 }
 
 /**
- * Live sweep. Returns { fails, lines, checked }.
+ * Live sweep. Returns { fails, lines, checked, checkedPaths, listedPaths }.
+ * `checkedPaths` are the pathnames fetched and `listedPaths` every pathname the
+ * sitemaps list: deploy:verify's defect filer closes a node on a pass only for URLs
+ * this run fetched or the sitemap no longer lists (lib/data/loop/deploy-defects.ts).
+ * `priorityUrls` are walked even under the cap (the failing URLs an open node names).
  *
  * @param {string} origin
- * @param {{ ua: string, concurrency?: number, maxUrls?: number, fetchImpl?: typeof fetch, timeoutMs?: number }} opts
+ * @param {{ ua: string, concurrency?: number, maxUrls?: number, fetchImpl?: typeof fetch, timeoutMs?: number, priorityUrls?: string[] }} opts
  */
 export async function runSitemapUrlHealth(origin, opts) {
   const ua = opts.ua
@@ -288,7 +292,7 @@ export async function runSitemapUrlHealth(origin, opts) {
   }
 
   const unique = [...new Set(groups.flat())]
-  const targets = takeSitemapTargets(groups, maxUrls, PRIORITY_SITEMAP_URLS)
+  const targets = takeSitemapTargets(groups, maxUrls, [...PRIORITY_SITEMAP_URLS, ...(opts.priorityUrls ?? [])])
   if (targets.length < unique.length) {
     lines.push(`pages: checking ${targets.length} of ${unique.length} sitemap URLs (stratified cap)`)
   } else {
@@ -315,7 +319,13 @@ export async function runSitemapUrlHealth(origin, opts) {
     )
   })
 
-  return { fails, lines, checked: targets.length }
+  return {
+    fails,
+    lines,
+    checked: targets.length,
+    checkedPaths: targets.map(pathnameOf),
+    listedPaths: unique.map(pathnameOf),
+  }
 }
 
 function pathnameOf(url) {
