@@ -171,6 +171,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
     const result = await createSavedSearch(trimmedName, filters, {
       isPublic,
       publicTitle: isPublic ? trimmedName : undefined,
+      sessionId: readRrSessionId(),
     })
     setStatus(result.error ? 'error' : 'done')
     if (!result.error) {
