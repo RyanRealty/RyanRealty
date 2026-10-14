@@ -67,7 +67,7 @@ describe('fetchAndCheckFreshness', () => {
 })
 
 describe('the environment a git child gets', () => {
-  const poisoned = { PATH: '/bin', GIT_DIR: '/elsewhere/.git', GIT_WORK_TREE: '/elsewhere', GIT_INDEX_FILE: '/elsewhere/index', GIT_SSL_CAINFO: '/ca.pem', GIT_TERMINAL_PROMPT: '0', HOME: '/h' } as NodeJS.ProcessEnv
+  const poisoned = { PATH: '/bin', GIT_DIR: '/elsewhere/.git', GIT_WORK_TREE: '/elsewhere', GIT_INDEX_FILE: '/elsewhere/index', GIT_SSL_CAINFO: '/ca.pem', GIT_TERMINAL_PROMPT: '0', HOME: '/h' } as unknown as NodeJS.ProcessEnv
 
   it('withoutAnyGitVar removes every GIT_* variable and keeps the rest', () => {
     expect(withoutAnyGitVar(poisoned)).toEqual({ PATH: '/bin', HOME: '/h' })
