@@ -7,6 +7,7 @@
  * drop badge. Those columns went stale on 2026-04-07. Canonical live
  * signal is activity_events (event_type = 'price_drop'). See getPriceDrops.ts.
  */
+import { cleanListingMediaUrl } from '@/lib/listing/listing-media-url'
 import { supabaseAnon } from '@/lib/data/client'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
@@ -235,7 +236,8 @@ export async function attachListingCardExtras(
     const priceDrop = drops.get(key) ?? null
     out.set(key, {
       originalListPrice: original,
-      tourUrl: raw.virtual_tour_url?.trim() || null,
+      // Rows synced before 2026-10-14 may still hold a mail-scanner rewrite.
+      tourUrl: cleanListingMediaUrl(raw.virtual_tour_url),
       listOfficeName: raw.ListOfficeName?.trim() || null,
       photoUrls: photos,
       priceDrop,

@@ -1,0 +1,8 @@
+{
+  "rule": "R-186",
+  "step": "brief",
+  "what": "No whiteboard.json beside the brief: nobody whiteboarded the piece before building it",
+  "setup": {
+    "whiteboard": false
+  }
+}

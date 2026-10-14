@@ -157,8 +157,11 @@ export function flattenSuggestions(s: SearchSuggestionsResult | null): SuggestIt
 export function useSearchSuggest(query: string): {
   suggestions: SearchSuggestionsResult | null
   loading: boolean
+  /** The trimmed query `suggestions` answer. Until a newer answer lands they are the last query's. */
+  answeredQuery: string
 } {
   const [suggestions, setSuggestions] = useState<SearchSuggestionsResult | null>(null)
+  const [answeredQuery, setAnsweredQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const cacheRef = useRef<Map<string, SearchSuggestionsResult>>(new Map())
   const latestRef = useRef('')
@@ -168,6 +171,7 @@ export function useSearchSuggest(query: string): {
     const cached = cacheRef.current.get(cacheKey)
     if (cached) {
       setSuggestions(cached)
+      setAnsweredQuery(q)
       setLoading(false)
       return
     }
@@ -178,9 +182,15 @@ export function useSearchSuggest(query: string): {
       // Degraded = a backing read failed server-side. Render what came back,
       // but never pin it — the next keystroke (or retype) retries fresh.
       if (!result.degraded) cacheRef.current.set(cacheKey, result)
-      if (latestRef.current === q) setSuggestions(result)
+      if (latestRef.current === q) {
+        setSuggestions(result)
+        setAnsweredQuery(q)
+      }
     } catch {
-      if (latestRef.current === q) setSuggestions(null)
+      if (latestRef.current === q) {
+        setSuggestions(null)
+        setAnsweredQuery(q)
+      }
     } finally {
       if (latestRef.current === q) setLoading(false)
     }
@@ -191,6 +201,7 @@ export function useSearchSuggest(query: string): {
     latestRef.current = q
     if (q.length < SUGGEST_MIN_QUERY_LENGTH) {
       setSuggestions(null)
+      setAnsweredQuery(q)
       setLoading(false)
       return
     }
@@ -198,7 +209,7 @@ export function useSearchSuggest(query: string): {
     return () => clearTimeout(t)
   }, [query, fetchSuggestions])
 
-  return { suggestions, loading }
+  return { suggestions, loading, answeredQuery }
 }
 
 type PanelProps = {

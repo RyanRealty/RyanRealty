@@ -12,7 +12,7 @@ import {
   type MorphingSearchItem,
 } from '@/components/motion/morphing-search'
 import { flattenSuggestions, useSearchSuggest } from '@/components/search/SearchSuggest'
-import { trackEvent } from '@/lib/tracking'
+import { trackSiteSearch } from '@/components/search/track-site-search'
 import './V3MorphSearch.css'
 
 const PLACE_SEEDS: MorphingSearchItem[] = [
@@ -77,16 +77,14 @@ export function V3ChromeSearch() {
 
   const onSelect = useCallback(
     (item: MorphingSearchItem) => {
-      try {
-        trackEvent('search', { surface: 'chrome', search_term: item.title })
-      } catch {
-        // tracking optional
-      }
+      // GA4 and the first-party store both hear it (track-site-search.ts). Before
+      // 2026-10-14 this sent GA4 only, so the admin search card never saw it.
+      trackSiteSearch({ surface: 'chrome', source: 'typeahead', query: item.title, term: query })
       setOpen(false)
       setQuery('')
       router.push(item.id)
     },
-    [router],
+    [router, query],
   )
 
   const onOpenChange = useCallback((next: boolean) => {

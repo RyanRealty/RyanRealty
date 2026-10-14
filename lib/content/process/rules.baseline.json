@@ -186,7 +186,18 @@
     "R-182",
     "R-183",
     "R-184",
-    "R-185"
+    "R-185",
+    "R-186",
+    "R-187",
+    "R-188",
+    "R-189",
+    "R-190",
+    "R-191",
+    "R-192",
+    "R-193",
+    "R-194",
+    "R-195",
+    "R-196"
   ],
   "thresholds": {
     "R-004": {
@@ -472,6 +483,192 @@
       "path": "caps.minutes",
       "tighterIs": "lower",
       "value": 90
+    },
+    "R-186": {
+      "source": "qa",
+      "path": "plain_english.require_whiteboard",
+      "tighterIs": "higher",
+      "value": true
+    },
+    "R-186#2": {
+      "source": "qa",
+      "path": "plain_english.takes_killed",
+      "tighterIs": "higher",
+      "value": 4
+    },
+    "R-186#3": {
+      "source": "qa",
+      "path": "plain_english.max_reason_chars",
+      "tighterIs": "lower",
+      "value": 200
+    },
+    "R-186#4": {
+      "source": "qa",
+      "path": "plain_english.whiteboard_fields",
+      "tighterIs": "higher",
+      "value": [
+        "author",
+        "audience",
+        "context",
+        "insight",
+        "contrast",
+        "why_now",
+        "why_us",
+        "ask",
+        "script",
+        "figures",
+        "takes_killed"
+      ]
+    },
+    "R-188": {
+      "source": "qa",
+      "path": "plain_english.insider_terms",
+      "tighterIs": "higher",
+      "value": [
+        "seller credit",
+        "concession",
+        "paying to close",
+        "median",
+        "single-family",
+        "SFR",
+        "detached",
+        "days on market",
+        "DOM",
+        "months of supply",
+        "absorption",
+        "inventory",
+        "active listings",
+        "list-to-sale",
+        "comps",
+        "YoY",
+        "YTD",
+        "quarter code",
+        "buy-down",
+        "points",
+        "contingent",
+        "pending",
+        "under contract",
+        "closings",
+        "CMA",
+        "REO",
+        "escrow",
+        "earnest money",
+        "basis points",
+        "PMI",
+        "LTV",
+        "DTI",
+        "PPSF"
+      ]
+    },
+    "R-188#2": {
+      "source": "qa",
+      "path": "plain_english.glosses",
+      "tighterIs": "lower",
+      "value": [
+        "seller credit => \\bmoney (that )?(the |a )?sellers? (gave|give|gives|paid|pay|pays|put|puts|covered|covers)\\b",
+        "seller credit => \\bclosing costs\\b",
+        "seller credit => \\bcosts at closing\\b",
+        "concession => \\bmoney (that )?(the |a )?sellers? (gave|give|gives|paid|pay|pays|put|puts|covered|covers)\\b",
+        "concession => \\bclosing costs\\b",
+        "concession => \\bcosts at closing\\b",
+        "paying to close => \\bclosing costs\\b",
+        "paying to close => \\bcosts at closing\\b",
+        "median => \\bhalf\\b[^.?!]*\\b(more|less|above|below|higher|lower|over|under)\\b",
+        "median => \\b(right )?in the middle\\b",
+        "single-family => \\bhouses? on (its|their|a|an) own (lots?|land)\\b",
+        "single-family => \\bnot (a |the )?(condos?|townho(use|me)s?|apartments?)\\b",
+        "SFR => \\bhouses? on (its|their|a|an) own (lots?|land)\\b",
+        "SFR => \\bnot (a |the )?(condos?|townho(use|me)s?|apartments?)\\b",
+        "detached => \\bhouses? on (its|their|a|an) own (lots?|land)\\b",
+        "detached => \\bnot (a |the )?(condos?|townho(use|me)s?|apartments?)\\b",
+        "days on market => \\b(sat|sit|sits|sitting|stayed|stay|stays) (for sale|on the market|unsold)\\b",
+        "days on market => \\b(before|until|to) (an offer|a sale|it sold|they sold|selling|sell|get an offer|getting an offer)\\b",
+        "DOM => \\b(sat|sit|sits|sitting|stayed|stay|stays) (for sale|on the market|unsold)\\b",
+        "DOM => \\b(before|until|to) (an offer|a sale|it sold|they sold|selling|sell|get an offer|getting an offer)\\b",
+        "months of supply => \\bhow long\\b[^.?!]*\\b(sell|last|take)\\b",
+        "months of supply => \\bto sell (every|all|each)\\b",
+        "absorption => \\bhow (fast|quickly)\\b[^.?!]*\\b(sell|sold|selling)\\b",
+        "inventory => \\bfor sale\\b",
+        "active listings => \\bfor sale\\b",
+        "list-to-sale => \\b(sold|sell|sells|selling|went) for (more|less) than\\b",
+        "list-to-sale => \\b(under|over|below|above) (the )?asking\\b",
+        "list-to-sale => \\bwhat (the )?sellers? asked\\b",
+        "comps => \\b(similar|nearby) (homes?|houses?)\\b[^.?!]*\\bsold\\b",
+        "comps => \\bhomes? like (yours|this|it|this one)\\b",
+        "YoY => \\b(than|from|since|compared (to|with)|versus|vs\\.?) (a year ago|last year|this time last year)\\b",
+        "YoY => \\bsame (time|months?|season|quarter) last year\\b",
+        "YoY => \\ba year (ago|earlier)\\b",
+        "YTD => \\bso far this year\\b",
+        "YTD => \\bsince (january|jan)\\b",
+        "quarter code => \\b(january|february|march|april|june|july|august|september|october|november|december|spring|summer|fall|autumn|winter)\\b",
+        "buy-down => \\blowers? (the |your |their |a )?(interest |mortgage )?rate\\b",
+        "buy-down => \\b(rate|interest) (goes|go|went|comes|come|came) down\\b",
+        "points => \\blowers? (the |your |their |a )?(interest |mortgage )?rate\\b",
+        "points => \\b(rate|interest) (goes|go|went|comes|come|came) down\\b",
+        "points => \\bfee\\b",
+        "contingent => \\bonly if\\b",
+        "contingent => \\bdepends on\\b",
+        "contingent => \\bas long as\\b",
+        "pending => \\b(an |the )?(accepted|signed) offer\\b",
+        "pending => \\bagreed (to sell|on a price|on the sale)\\b",
+        "pending => \\bnot (closed|final) yet\\b|\\bhasn't closed\\b|\\bhaven't closed\\b",
+        "under contract => \\b(an |the )?(accepted|signed) offer\\b",
+        "under contract => \\bagreed (to sell|on a price|on the sale)\\b",
+        "under contract => \\bnot (closed|final) yet\\b|\\bhasn't closed\\b|\\bhaven't closed\\b",
+        "closings => \\b(homes?|houses?) (that )?(sold|closed)\\b",
+        "CMA => \\bwhat (your|the|a) (home|house) (is|could be|would be) worth\\b",
+        "CMA => \\bhome value\\b",
+        "REO => \\bbank[- ]owned\\b",
+        "REO => \\bthe bank (owns|took)\\b",
+        "escrow => \\bholds? (the |your )?(money|deposit)\\b",
+        "earnest money => \\bdeposit\\b",
+        "earnest money => \\bgood[- ]faith\\b",
+        "basis points => \\bhundredths? of a (percent|point)\\b",
+        "PMI => \\bmortgage insurance\\b",
+        "LTV => \\bhow much (you|they) (borrow|owe)\\b",
+        "DTI => \\b(monthly )?(debts?|bills) compared (to|with) (your |their )?income\\b",
+        "PPSF => \\bper square foot\\b"
+      ]
+    },
+    "R-189": {
+      "source": "qa",
+      "path": "plain_english.ad_types",
+      "tighterIs": "higher",
+      "value": [
+        "buyer_ad"
+      ]
+    },
+    "R-189#2": {
+      "source": "qa",
+      "path": "plain_english.every_housing_ad",
+      "tighterIs": "higher",
+      "value": true
+    },
+    "R-190": {
+      "source": "qa",
+      "path": "plain_english.max_grade",
+      "tighterIs": "lower",
+      "value": 6
+    },
+    "R-191": {
+      "source": "qa",
+      "path": "plain_english.context_min_shared_words",
+      "tighterIs": "higher",
+      "value": 2
+    },
+    "R-191#2": {
+      "source": "qa",
+      "path": "plain_english.ad_types",
+      "tighterIs": "higher",
+      "value": [
+        "buyer_ad"
+      ]
+    },
+    "R-191#3": {
+      "source": "qa",
+      "path": "plain_english.every_housing_ad",
+      "tighterIs": "higher",
+      "value": true
     }
   }
 }

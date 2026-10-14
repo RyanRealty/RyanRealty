@@ -30,6 +30,7 @@ import {
   publishListingFloorPlans,
   type SparkFloorPlanRow,
 } from '@/lib/listing/publish-listing-floor-plans'
+import { pickBestListingPhotoUri } from '@/lib/data/sitemap/listing-photo-sitemap'
 
 const InputSchema = z.object({ listingKey: z.string().min(1).max(100) })
 
@@ -47,19 +48,9 @@ type DetailsPhotoJson = {
   Primary?: boolean
 }
 
-function pickBestUri(p: DetailsPhotoJson): string | null {
-  return (
-    p.Uri1600 ??
-    p.UriLarge ??
-    p.Uri2048 ??
-    p.Uri1280 ??
-    p.Uri1024 ??
-    p.Uri800 ??
-    p.Uri640 ??
-    p.Uri300 ??
-    null
-  )
-}
+// One size preference for the gallery and the photo sitemap (2026-10-14), so
+// the URL Google finds in /sitemaps/listing-photos is the URL the page loads.
+const pickBestUri = (p: DetailsPhotoJson): string | null => pickBestListingPhotoUri(p)
 
 type DetailRow = {
   ListingKey?: string | null

@@ -14,6 +14,7 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { canonicalJson, hashFile, sha256Hex } from './canonical'
+import { plainEnglishThresholds } from './plain-english'
 import { CAPS, RULES, type Rule } from './rules'
 import { buildThresholdData, resolveAll, thresholdsOf, type ThresholdData } from './threshold-path'
 import { EXTRA_BANNED_PHRASES, QA_THRESHOLDS, REQUIRED_TECHNIQUE_CATEGORIES, REPO_ROOT, loadVideoTypes, type VideoTypesFile } from '../../studio/qa/thresholds'
@@ -25,6 +26,7 @@ export function thresholdData(file: VideoTypesFile = loadVideoTypes()): Threshol
     extraBannedPhrases: EXTRA_BANNED_PHRASES,
     requiredTechniqueCategories: REQUIRED_TECHNIQUE_CATEGORIES,
     caps: CAPS,
+    plainEnglish: plainEnglishThresholds(),
     videoTypes: { defaults: file.defaults as Record<string, unknown>, types: file.types as Record<string, Record<string, unknown>>, banned_phrases: file.banned_phrases, fair_housing_flags: file.fair_housing_flags },
   })
 }

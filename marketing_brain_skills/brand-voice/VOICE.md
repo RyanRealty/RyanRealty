@@ -50,6 +50,22 @@ with a client from the first conversation through closing.
   leverage," never "buyer's market." No client names or addresses, no "top team."
   Financing ads carry "Not lending advice. Talk to your lender." Nothing publishes
   without Matt.
+- **Plain English, context first** (2026-10-14). "It needs to be explained so that a
+  75-year-old person can understand it. We're not going to pander, but we need to explain
+  it in simple, plain English." Every line has to land on first hearing.
+  - Explain before you shorten. Never jump into the middle of a concept: "Sellers are
+    paying to close" is out; "Sellers are paying some of the buyer's costs at closing" is in.
+    An agent's word (seller credit, median, single-family, days on market, months of supply)
+    only appears with its everyday meaning in the same line.
+  - Context first. Start with who it is for and what is happening ("Are you thinking of
+    buying in Central Oregon? Here's what we're seeing in the market."), then the insight,
+    then why it matters now, then what we do about it.
+  - Dollars over percentages. "$10,000 toward the buyer's costs" lands; "44%" makes people
+    do math. In an ad, no percentages and no "seven in ten".
+  - A typical figure is "typical", never "average", unless it really is an average.
+  - Ads, videos and posts start from the ad-strategist's whiteboard
+    (`.claude/agents/ad-strategist.md`). Held at the brief step by R-186 to R-191
+    (`lib/content/process/plain-english.ts`).
 
 ## Exemplars
 

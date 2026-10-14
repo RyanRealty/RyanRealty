@@ -60,6 +60,7 @@ import {
   classifyTip,
   isSkippableTip,
   findSupersedingDeploy,
+  concurrentBuilds,
 } from './lib/deploy-verify-policy.mjs'
 
 const TIMEOUT_MS = Number(process.env.DEPLOY_VERIFY_TIMEOUT_MS ?? DEFAULT_TIMEOUT_MS)
@@ -236,6 +237,10 @@ function normalizeDeploy(d) {
     inspectorUrl: d.inspectorUrl ?? null,
     sha: d.meta?.githubCommitSha ?? d.sha,
     meta: d.meta ?? { githubCommitSha: d.sha },
+    // The build window, for concurrentBuilds (G70): a slow build that shared
+    // the database with another production build is contended, not regressed.
+    buildingAt: Number(d.buildingAt) || 0,
+    ready: Number(d.ready) || 0,
   }
 }
 
@@ -295,6 +300,14 @@ function formatLogTail(events) {
 // the REAL build log — no static gate can see this. BUILD_TELEMETRY_ALLOW_SLOW=1
 // acknowledges a known-slow deploy. Fails open: telemetry unavailable (no
 // token, API error) never blocks a READY verdict (reportBuildTelemetry returns null).
+//
+// CONTENDED, NOT REGRESSED (2026-10-14): a slow build whose window overlapped
+// another production build's (concurrentBuilds, deploy-verify-policy.mjs) is
+// reported as BUILD CONTENDED with the crowd named, exits 0 and files as
+// skipped: nine builds in 48 minutes that afternoon read 192 to 372 s each
+// while every solo build read 106 to 168 s, and three of them tripped this
+// alert as regressions. A crowded build proves nothing about the code; the
+// next solo build is the measurement, and it still fails here when slow.
 const SSG_ALERT_SECONDS = 300
 const RAIL_TIMEOUT_ALERT = 50
 
@@ -305,7 +318,7 @@ function durationToSeconds(raw) {
   return m[2] === 's' ? n : n * 60
 }
 
-async function reportBuildTelemetry(apiToken, teamId, deployId) {
+async function reportBuildTelemetry(apiToken, teamId, deployId, concurrent = []) {
   try {
     const qs = teamId ? `?builds=1&limit=3000&teamId=${teamId}` : '?builds=1&limit=3000'
     const res = await fetch(`https://api.vercel.com/v3/deployments/${deployId}/events${qs}`, {
@@ -334,7 +347,8 @@ async function reportBuildTelemetry(apiToken, teamId, deployId) {
 
     const summary =
       `compile ${compileSecs ?? '?'}s · SSG ${ssgSecs ?? '?'}s` +
-      `${ssgPages ? ` (${ssgPages} pages)` : ''} · ${timeouts} rail timeout(s)`
+      `${ssgPages ? ` (${ssgPages} pages)` : ''} · ${timeouts} rail timeout(s)` +
+      ` · ${concurrent.length} concurrent production build(s)`
     out(`build telemetry: ${summary}`)
     // The keys name the alert crossed, never the measured number: a re-run that reads
     // 305s then 310s is the same defect (lib/data/loop/deploy-defects.ts fingerprint).
@@ -343,13 +357,20 @@ async function reportBuildTelemetry(apiToken, teamId, deployId) {
     if (timeouts > RAIL_TIMEOUT_ALERT) keys.push(`withTimeoutFallback rail timeouts over the ${RAIL_TIMEOUT_ALERT} alert`)
     const slow = keys.length > 0
     const allowed = process.env.BUILD_TELEMETRY_ALLOW_SLOW === '1'
-    if (slow && !allowed) {
+    const contended = slow && !allowed && concurrent.length > 0
+    if (contended) {
+      const crowd = concurrent.map((c) => `${c.sha || c.id} ${c.state}`).join(', ')
+      out(`⚠ BUILD CONTENDED — the build was slow, but ${concurrent.length} other production build(s) overlapped it: ${crowd}.`)
+      out(`  SSG ${ssgSecs}s (alert > ${SSG_ALERT_SECONDS}s) · ${timeouts} rail timeouts (alert > ${RAIL_TIMEOUT_ALERT}).`)
+      out('  A build that shared the database with another proves nothing about the code; the next solo build is the measurement (docs/MECHANICAL_GATES.md G70).')
+    } else if (slow && !allowed) {
       out('✗ BUILD REGRESSION — the deploy is READY but the build-cost class returned:')
       out(`  SSG ${ssgSecs}s (alert > ${SSG_ALERT_SECONDS}s) · ${timeouts} rail timeouts (alert > ${RAIL_TIMEOUT_ALERT}).`)
       out('  See docs/MECHANICAL_GATES.md G70. BUILD_TELEMETRY_ALLOW_SLOW=1 acknowledges a known-slow deploy.')
     }
     return {
-      regressed: slow && !allowed,
+      regressed: slow && !allowed && !contended,
+      contended,
       acknowledged: slow && allowed,
       keys,
       detail: [summary],
@@ -375,7 +396,7 @@ async function reportBuildTelemetry(apiToken, teamId, deployId) {
 // same run; filing never changes the code, and it never throws (a database that
 // cannot be reached prints a line and the verdict stands). `--no-file` (or
 // DEPLOY_VERIFY_NO_FILE=1) reads and prints, and writes nothing.
-async function runLiveChecks({ defects, apiToken, teamId, deployId, usingCliFallback }) {
+async function runLiveChecks({ defects, apiToken, projectId, teamId, deployId, usingCliFallback }) {
   let code = 0
   const problem = (c) => {
     if (code === 0) code = c
@@ -602,12 +623,24 @@ async function runLiveChecks({ defects, apiToken, teamId, deployId, usingCliFall
 
   if (!usingCliFallback) {
     await guarded('build-telemetry', async () => {
-      const t = await reportBuildTelemetry(apiToken, teamId, deployId)
+      // Which other production builds overlapped this one. Unknown (API error,
+      // deploy not in the latest twenty) reads as none, so the alert keeps its
+      // old strictness rather than passing a slow build on a missing list.
+      let concurrent = []
+      try {
+        const list = await listProductionDeployments(apiToken, projectId, teamId)
+        const ours = list.find((d) => (d.uid ?? d.id) === deployId) ?? null
+        concurrent = ours ? concurrentBuilds(ours, list) : []
+      } catch {
+        concurrent = []
+      }
+      const t = await reportBuildTelemetry(apiToken, teamId, deployId, concurrent)
       if (!t) return
       if (t.regressed) {
         problem(1)
         defects.record({ family: 'build-telemetry', status: 'fail', keys: t.keys, lines: t.detail })
-      } else if (t.acknowledged) {
+      } else if (t.acknowledged || t.contended) {
+        // Neither proves nor refutes the build-cost class: no node opens, none closes.
         defects.record({ family: 'build-telemetry', status: 'skipped' })
       } else {
         defects.record({ family: 'build-telemetry', status: 'pass', evidence: t.evidence })
@@ -701,7 +734,7 @@ async function main() {
       if (state === 'READY') {
         const url = deployment.url ? `https://${deployment.url}` : '(no url)'
         out(`READY in ${(Date.now() - startedAt) / 1000}s — ${url}`)
-        process.exit(await runLiveChecks({ defects, apiToken, teamId, deployId, usingCliFallback }))
+        process.exit(await runLiveChecks({ defects, apiToken, projectId, teamId, deployId, usingCliFallback }))
       }
       if (state === 'CANCELED') {
         if (skippableTip) {

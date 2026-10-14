@@ -5,6 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/app/actions/market-report-types'
 import { pickFirstVideoFromListingRow, resolveListingKeyFromRow } from '@/lib/pick-video-from-details'
+import { cleanListingMediaUrl } from '@/lib/listing/listing-media-url'
 import type { VideoListingRowShape } from '@/lib/video-tours-listing-videos-join'
 import {
   LISTING_VIDEO_SELECT_MAIN,
@@ -191,7 +192,7 @@ export async function fetchListingsWithVideos(
       const urlByListing = new Map<string, string>()
       for (const lv of lvRows) {
         const lk = String(lv.listing_key ?? '').trim()
-        const vu = String(lv.video_url ?? '').trim()
+        const vu = cleanListingMediaUrl(String(lv.video_url ?? ''))
         if (lk && vu && !urlByListing.has(lk)) urlByListing.set(lk, vu)
       }
       const missingKeys = [...urlByListing.keys()].filter((k) => !existingKeys.has(k)).slice(0, 80)
@@ -242,7 +243,7 @@ export async function fetchListingsWithVideos(
     const legacyVideoByKey = new Map(
       legacyVideos.map((r) => [
         String(r.listing_key ?? '').trim(),
-        String(r.video_url ?? '').trim(),
+        cleanListingMediaUrl(String(r.video_url ?? '')) ?? '',
       ])
     )
 

@@ -10,6 +10,7 @@
  */
 
 import type { VideoEmbed } from '@/lib/data/types/video'
+import { cleanListingMediaUrl } from '@/lib/listing/listing-media-url'
 
 /** Progressive / hosted walkthrough reel. MLS often stuffs these in VirtualTours. */
 export function isListingWalkthroughVideo(url?: string | null): boolean {
@@ -97,7 +98,7 @@ export const LISTING_3D_TOUR_LABEL = '3D'
  * and anything else in VirtualTours is one.
  */
 export function publishListingTourLabel(url: string | null | undefined): string | null {
-  const trimmed = url?.trim() ?? ''
+  const trimmed = cleanListingMediaUrl(url) ?? ''
   if (!trimmed) return null
   return isListingVirtualTour({ url: trimmed, isVirtualTour: true })
     ? LISTING_3D_TOUR_LABEL
@@ -113,7 +114,7 @@ export function publishTourEmbedFromUrl(
   url: string | null | undefined,
   posterUrl?: string | null,
 ): VideoEmbed | null {
-  const trimmed = url?.trim() ?? ''
+  const trimmed = cleanListingMediaUrl(url) ?? ''
   if (!trimmed) return null
   const lower = trimmed.toLowerCase()
   const mp4 = /\.mp4(\?|$)/.test(lower)

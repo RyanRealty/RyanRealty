@@ -2,6 +2,7 @@
  * reachability: entry-point test-support: rules.test.ts, run.test.ts and board.test.ts run on these fakes.
  * lib/content/process/test-harness.ts - the fakes every rule's fixture runs on.
  * Tests only: nothing in the product imports this file.
+ * reachability: entry-point test support, imported only by *.test.ts files (rules.test.ts, run.test.ts)
  *
  * A fixture (fixtures/R-xxx.json) is a small recipe: edits to the base film's
  * brief and timeline, plus a `setup` that bends one fake (the ledger, the
@@ -119,13 +120,15 @@ export type Setup = {
   repo?: RepoShape
   /** Send the output folder under public/ (the run must refuse before writing anything). */
   publicOut?: boolean
+  /** false: write no whiteboard.json beside the brief (CONTENT_PROCESS.md step 0). */
+  whiteboard?: false
 }
 
 export type Fixture = {
   rule: string
   step: StepId
   what: string
-  edits?: Array<Edit & { in: 'brief' | 'timeline' }>
+  edits?: Array<Edit & { in: 'brief' | 'timeline' | 'whiteboard' }>
   setup?: Setup
 }
 
@@ -133,8 +136,13 @@ export function loadFixture(file: string): Fixture {
   return readJson(join(FIXTURES, file)) as Fixture
 }
 
-export function baseFilm(): { brief: any; timeline: any } {
-  return { brief: readJson(join(FIXTURES, 'base.brief.json')), timeline: readJson(join(FIXTURES, 'base.timeline.json')) }
+/** The base film: its brief, its timeline, and the ad-strategist's whiteboard that sits beside the brief. */
+export function baseFilm(): { brief: any; timeline: any; whiteboard: any } {
+  return {
+    brief: readJson(join(FIXTURES, 'base.brief.json')),
+    timeline: readJson(join(FIXTURES, 'base.timeline.json')),
+    whiteboard: readJson(join(FIXTURES, 'base.whiteboard.json')),
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -290,11 +298,13 @@ export function makeHarness(setup: Setup = {}, edits: Fixture['edits'] = [], dir
   mkdirSync(work, { recursive: true })
   const outRoot = setup.publicOut ? join(dir, 'public', 'out') : join(dir, 'out')
   const base = baseFilm()
-  for (const e of edits ?? []) applyEdits(e.in === 'brief' ? base.brief : base.timeline, [e])
+  for (const e of edits ?? []) applyEdits(e.in === 'brief' ? base.brief : e.in === 'whiteboard' ? base.whiteboard : base.timeline, [e])
   const briefPath = join(work, 'brief.json')
   const timelinePath = join(work, 'timeline.json')
   writeFileSync(briefPath, JSON.stringify(base.brief, null, 2))
   writeFileSync(timelinePath, JSON.stringify(base.timeline, null, 2))
+  // The whiteboard sits in the brief's own folder, where the brief step reads it.
+  if (setup.whiteboard !== false) writeFileSync(join(work, 'whiteboard.json'), JSON.stringify(base.whiteboard, null, 2))
 
   // The registry: the real one, with the sample's signature technique approved by the TEST approver (never "matt").
   const reg = readJson(join(REPO_ROOT, '.claude', 'skills', 'ryan-studio', 'techniques', 'registry.json'))

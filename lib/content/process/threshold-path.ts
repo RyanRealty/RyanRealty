@@ -9,14 +9,19 @@
  *
  * A rule's threshold names where its number lives:
  *  - source 'qa': a dot path into QA_THRESHOLDS (lib/studio/qa/thresholds.ts),
- *    plus the lists that file also holds ('extra_banned_phrases').
+ *    plus the lists that file also holds ('extra_banned_phrases'), the job caps
+ *    ('caps.boards') and the whiteboard and plain-English limits
+ *    ('plain_english.max_grade', from plain-english.ts plainEnglishThresholds).
  *  - source 'video_types': a path into .claude/skills/ryan-studio/tools/video_types.json.
  *      'defaults.K'  the default for key K, plus the value of every type that
  *                    sets its own K (effective(type) = perType[type] ?? value);
  *      'types.T.K'   type T's own K, defaults merged under it;
  *      'banned_phrases', 'fair_housing_flags'  the file's two lists.
  *
- * A list is compared as a set: more items is tighter, any item gone is looser.
+ * A list is compared as a set. When higher is tighter (banned phrases, insider
+ * terms) more items is tighter and any item gone is looser; when lower is tighter
+ * (the glosses that let an insider term pass) any item added is looser and items
+ * only taken away are tighter.
  */
 import type { Rule, RuleThreshold } from './rules'
 
@@ -104,9 +109,12 @@ export function compareValue(baseline: ThresholdValue | undefined, current: Thre
   if (current === undefined) return 'looser'
   if (Array.isArray(baseline) || Array.isArray(current)) {
     if (!Array.isArray(baseline) || !Array.isArray(current)) return 'looser'
+    const was = new Set(baseline)
     const now = new Set(current)
-    if (baseline.some((w) => !now.has(w))) return 'looser'
-    return now.size > new Set(baseline).size ? (tighterIs === 'higher' ? 'tighter' : 'looser') : 'same'
+    const gone = [...was].some((w) => !now.has(w))
+    const added = [...now].some((w) => !was.has(w))
+    if (tighterIs === 'higher') return gone ? 'looser' : added ? 'tighter' : 'same'
+    return added ? 'looser' : gone ? 'tighter' : 'same'
   }
   const a = asNumber(baseline)
   const b = asNumber(current)
@@ -164,16 +172,24 @@ export function resolveAll(data: ThresholdData, rules: ReadonlyArray<Pick<Rule, 
   return out
 }
 
-/** The data thresholds are read from, assembled from the QA constants, the lists beside them, the job caps and video_types.json. */
+/** The data thresholds are read from, assembled from the QA constants, the lists beside them, the job caps, the plain-English limits and video_types.json. */
 export function buildThresholdData(parts: {
   qa: Record<string, unknown>
   extraBannedPhrases: readonly string[]
   requiredTechniqueCategories: readonly string[]
   caps: Record<string, unknown>
+  /** plain-english.ts plainEnglishThresholds(): the whiteboard and plain-English numbers and lists. */
+  plainEnglish: Record<string, unknown>
   videoTypes: { defaults: Record<string, unknown>; types: Record<string, Record<string, unknown>>; banned_phrases: string[]; fair_housing_flags: string[] }
 }): ThresholdData {
   return {
-    qa: { ...parts.qa, extra_banned_phrases: [...parts.extraBannedPhrases], required_technique_categories: [...parts.requiredTechniqueCategories], caps: { ...parts.caps } },
+    qa: {
+      ...parts.qa,
+      extra_banned_phrases: [...parts.extraBannedPhrases],
+      required_technique_categories: [...parts.requiredTechniqueCategories],
+      caps: { ...parts.caps },
+      plain_english: { ...parts.plainEnglish },
+    },
     videoTypes: {
       defaults: parts.videoTypes.defaults,
       types: parts.videoTypes.types,

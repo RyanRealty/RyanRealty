@@ -1,0 +1,24 @@
+{
+  "author": "ad-strategist",
+  "audience": "Anyone house hunting in Bend right now",
+  "context": "Bend has three and a half months of homes for sale right now",
+  "insight": "Sellers still have the edge, so a buyer who has a plan before the right home comes up is ready to act",
+  "contrast": null,
+  "why_now": "A plan made now is ready the day the right home comes up",
+  "why_us": "We watch the Bend market every day and help buyers make that plan",
+  "ask": "Send this to whoever you're house hunting with",
+  "script": [
+    "So... Bend has three and a half months of homes for sale right now.",
+    "Sellers still have the edge, so go in with a plan.",
+    "Send this to whoever you're house hunting with."
+  ],
+  "figures": [
+    "bend_sfr_mos"
+  ],
+  "takes_killed": [
+    "Opened on the figure alone, so a listener would not know what it counts",
+    "Said months of supply, a term most people have never heard",
+    "Called it a buyer's market, which the figure does not support",
+    "Ran three ideas in fifteen seconds, so none of them landed"
+  ]
+}

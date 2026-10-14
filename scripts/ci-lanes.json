@@ -18,6 +18,8 @@
     "ci:crm-scope",
     "ci:crm-secrets",
     "ci:crm-sms-safety",
+    "ci:inbound-message-enrich",
+    "ci:person-identity-edit",
     "ci:csp",
     "ci:dal-boundary",
     "ci:dal-column-quoting",

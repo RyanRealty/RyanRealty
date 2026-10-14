@@ -247,12 +247,15 @@ export function ListingHero({
   const hasLeadMedia = heroVideo != null || total > 0 || floorPlans.length > 0 || hasMap
   const canUnmute = publishListingHeroUnmute(heroVideo)
   const altBase = listingPhotoAlt({ addressLine: addressLine ?? '', cityLine }) || 'Listing photo'
-  const frameAlt = (ordinal: number) =>
+  // The MLS caption leads the alt when the listing broker wrote one
+  // (listingGalleryFrameAlt); the address sentence always follows it.
+  const frameAlt = (ordinal: number, caption?: string | null) =>
     listingGalleryFrameAlt({
       addressLine,
       cityLine,
       ordinal,
       total: Math.max(1, total),
+      caption,
     })
   const hasStreetView = hasMap
   const onSiteTour = virtualTour && !isOffsiteTourHost(virtualTour.url) ? virtualTour : null
@@ -527,7 +530,7 @@ export function ListingHero({
                     {i === 0 || i === frame ? (
                     <MosaicStill
                       src={photo.url}
-                      alt={frameAlt(i + 1)}
+                      alt={frameAlt(i + 1, photo.caption)}
                       sizes={i === 0 ? LISTING_MOSAIC_LEAD_SIZES : LISTING_MOSAIC_CAROUSEL_SIZES}
                       priority={lcpPriority && i === 0}
                       onShape={i === 0 && !heroVideo ? onLeadShape : undefined}
@@ -578,7 +581,7 @@ export function ListingHero({
                 >
                   <SparkSafeImage
                     src={listingRowPhotoSrc(photo.url)}
-                    alt={frameAlt(index + 1)}
+                    alt={frameAlt(index + 1, photo.caption)}
                     fill
                     sizes={LISTING_MOSAIC_STRIP_SIZES}
                     quality={LISTING_MOSAIC_PHOTO_QUALITY}

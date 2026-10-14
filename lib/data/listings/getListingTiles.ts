@@ -21,6 +21,7 @@ import type { ListingTile, ListingStatus } from '@/lib/data/types/listing'
 import { propertyTypeFilterToCodes } from '@/lib/property-type'
 import { SERVICE_AREA_CITIES_LOWER } from '@/lib/data/listings/service-area'
 import { TILE_MV_SELECT_COLUMNS } from '@/lib/listing-tile-projections'
+import { cleanListingMediaUrl } from '@/lib/listing/listing-media-url'
 import { PUBLIC_ACTIVE_STATUSES, PUBLIC_PENDING_STATUSES, COMING_SOON_STATUS } from '@/lib/listing-status-public'
 import { listedWithinDaysCutoff } from '@/lib/data/listings/searchPredicates'
 import {
@@ -260,7 +261,7 @@ function mvRowToTile(row: ListingTileMvRow): ListingTile {
     garageSpaces: row.garage_spaces,
     poolYn: row.pool_yn,
     hasVirtualTour: row.has_virtual_tour,
-    tourUrl: row.virtual_tour_url,
+    tourUrl: cleanListingMediaUrl(row.virtual_tour_url),
     dom: row.dom,
     priceDropCount: row.price_drop_count,
     addressSlug: row.address_slug,

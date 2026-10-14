@@ -1,0 +1,94 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "Ryan Studio whiteboard (content process step 0)",
+ "description": "Written by the ad-strategist (.claude/agents/ad-strategist.md) before anyone builds, as whiteboard.json in the brief's own folder. The brief step refuses a brief without one and holds its script to the plain-English rules (lib/content/process/plain-english.ts, rules R-186 to R-191). Check it with: npm run studio -- whiteboard <whiteboard.json> <brief-or-numbers.json> [--ad]. Matt 2026-10-14.",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "author",
+  "audience",
+  "context",
+  "insight",
+  "contrast",
+  "why_now",
+  "why_us",
+  "ask",
+  "script",
+  "figures",
+  "takes_killed"
+ ],
+ "properties": {
+  "author": {
+   "const": "ad-strategist",
+   "description": "Always the ad-strategist. A builder never writes the whiteboard."
+  },
+  "audience": {
+   "type": "string",
+   "minLength": 1,
+   "description": "Who this is for, in plain words, the way the opening line will call them out (\"People thinking of buying a home in Central Oregon\"). A creative label, never a targeting field; describe a situation, never who should live somewhere (fair housing)."
+  },
+  "context": {
+   "type": "string",
+   "minLength": 1,
+   "description": "What is happening, in plain words a 75-year-old follows on first hearing. The opening line shares words with this field or with audience (R-191)."
+  },
+  "insight": {
+   "type": "string",
+   "minLength": 1,
+   "description": "The thing a buyer or seller has not heard from their other broker friends."
+  },
+  "contrast": {
+   "description": "What came before, only when figures back it; null when none do.",
+   "oneOf": [
+    { "type": "null" },
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "required": ["text", "figures"],
+     "properties": {
+      "text": { "type": "string", "minLength": 1 },
+      "figures": {
+       "type": "array",
+       "minItems": 1,
+       "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+       "description": "The figure IDs that back the contrast; each is also listed in figures."
+      }
+     }
+    }
+   ]
+  },
+  "why_now": {
+   "type": "string",
+   "minLength": 1,
+   "description": "Why act now. A date or a duration is a figure: name its basis or write the condition instead (CLAUDE.md §0)."
+  },
+  "why_us": {
+   "type": "string",
+   "minLength": 1,
+   "description": "Why Ryan Realty: what we do that the viewer gets (VOICE.md). No \"top team\"."
+  },
+  "ask": {
+   "type": "string",
+   "minLength": 1,
+   "description": "The one thing the viewer does next."
+  },
+  "script": {
+   "type": "array",
+   "minItems": 1,
+   "items": { "type": "string", "minLength": 1 },
+   "description": "The read-aloud lines, in order. Line 1 names the audience or the situation. Any figure typed here is the on_screen value of a brief.numbers row listed in figures (R-187); a year or the phone number is not a figure."
+  },
+  "figures": {
+   "type": "array",
+   "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+   "description": "Figure IDs only (brief.numbers keys), never typed numbers."
+  },
+  "takes_killed": {
+   "type": "array",
+   "minItems": 4,
+   "maxItems": 4,
+   "items": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\r\\n]+$" },
+   "description": "Five takes were written; four were killed. One line each on why. The count and the length are PLAIN_ENGLISH.takesKilled and maxReasonChars in lib/content/process/plain-english.ts (a test holds this schema to them)."
+  }
+ }
+}
