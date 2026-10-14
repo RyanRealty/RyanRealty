@@ -1,8 +1,8 @@
 # Current — 2026-10-14 (Cursor, land CMA intake + ranking PRs)
 
-Surface: Cursor cloud. Landing #485 then #488 then #489 onto origin/main. Closed #524 because `/buy/alerts` is live via #536. Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. #485 merged to origin/main `fe948f648`. Now landing #488 then #489. Closed #524 because `/buy/alerts` is live via #536. Nothing sent. Nobody pushes main. No rebuild.
 
-**This pass.** Merge main into #485 (intake safety gate), wait for checks, merge. Then the two ranking PRs. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale: merge would revert the rule-31 map cache, `cleared_at`, and industry exclusion).
+**This pass.** #488 closer-lot/view ranking, then #489 same-vintage seating. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main).
 
 **Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
