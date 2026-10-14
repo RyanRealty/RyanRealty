@@ -67,18 +67,33 @@ export function scannedFiles() {
 /**
  * The calls that write crm_people.source: sendEvent, and ensureNativeLead (the
  * native write under it, which some doors also call directly as a fallback).
+ * Read under any local name: an aliased import, a destructured dynamic import,
+ * a const that holds one.
  */
 const SOURCE_WRITERS = new Set(['sendEvent', 'ensureNativeLead'])
 
-/** Text that names the site's host or origin. lib/site-origin.ts is the one place the host comes from (2026-10-07). */
-const HOST_TEXT = /NEXT_PUBLIC_SITE_URL|ryan-realty\.com|https?:\/\/|\bsite(?:Host|Origin|Url)\b|\bwebsiteSource\b/
+/** lib/site-origin.ts, the one place the host comes from (2026-10-07), and the retired websiteSource(). */
+const HOST_FUNCS = new Set(['siteHost', 'siteOrigin', 'siteUrl', 'configuredSiteOrigin', 'websiteSource'])
+
+/**
+ * A string that is the site's host or a URL, never a door. The host forms are
+ * isSiteHostSource's (lib/crm/lead-source.ts); the gate's test holds the two together.
+ */
+export function isHostLiteral(text) {
+  const s = String(text).trim().toLowerCase()
+  return /ryan-?realty\.(?:com|vercel\.app)/.test(s) || /^localhost(?::\d+)?$/.test(s) || /^https?:\/\//.test(s)
+}
+
+/** A fixed lead-in that could still begin the host or a URL. */
+const HOST_LEAD_IN = /^(?:https?:|www\.|localhost|(?:[a-z0-9-]+\.)*ryan-?realty)/i
 
 /**
  * Writes whose source is not a door label this gate can read, each scoped to
- * its file and to its source expression as written, with the reason. Kind
- * 'host': the write may carry the site host. Kind 'opaque': the value is not
- * readable here, and the reason says why it still names a door. An entry that
- * matches no write needing it fails, so the list only describes code that exists.
+ * its file and to its source expression as written, with the reason. `kind` is
+ * exactly what the write needs: 'host' (it may carry the site host), 'opaque'
+ * (its value is not readable here; the reason says why it still names a door)
+ * or 'host+opaque'. An entry that matches no write needing that kind fails, so
+ * the list only describes code that exists. An empty source is never allowed.
  */
 export const SOURCE_ALLOWED = {
   'lib/crm/send-event.ts': {
@@ -111,140 +126,329 @@ function resolveModule(spec, fromRel, read) {
   return null
 }
 
-function propertyName(p) {
-  return p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)) ? p.name.text : null
+const ASSIGN_OPS = new Set([
+  ts.SyntaxKind.EqualsToken,
+  ts.SyntaxKind.BarBarEqualsToken,
+  ts.SyntaxKind.AmpersandAmpersandEqualsToken,
+  ts.SyntaxKind.QuestionQuestionEqualsToken,
+  ts.SyntaxKind.PlusEqualsToken,
+])
+
+function unwrap(node) {
+  while (
+    ts.isParenthesizedExpression(node) ||
+    ts.isAsExpression(node) ||
+    ts.isNonNullExpression(node) ||
+    ts.isSatisfiesExpression(node) ||
+    ts.isTypeAssertionExpression(node) ||
+    ts.isAwaitExpression(node)
+  ) {
+    node = node.expression
+  }
+  return node
 }
 
-/** Does a binding name (an identifier or a destructuring pattern) bind `text`? */
-function bindsName(name, text) {
-  if (ts.isIdentifier(name)) return name.text === text
-  return name.elements.some((el) => !ts.isOmittedExpression(el) && bindsName(el.name, text))
-}
-
-function calleeName(expr) {
-  if (ts.isIdentifier(expr)) return expr.text
-  if (ts.isPropertyAccessExpression(expr)) return expr.name.text
+/** A property's key as text: `source`, `'source'`, `['source']`. */
+function keyOf(p) {
+  const n = p.name
+  if (!n) return null
+  if (ts.isIdentifier(n) || ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) return n.text
+  if (ts.isComputedPropertyName(n) && (ts.isStringLiteral(n.expression) || ts.isNoSubstitutionTemplateLiteral(n.expression))) return n.expression.text
   return null
 }
 
+const leaf = (kind, text, partial = false) => ({ kind, text: String(text).replace(/\s+/g, ' '), ...(partial ? { partial } : {}) })
+const literalLeaf = (text) => leaf(!String(text).trim() ? 'empty' : isHostLiteral(text) ? 'host' : 'label', text)
+const hasHost = (leaves) => leaves.some((l) => l.kind === 'host')
+
 /**
- * Parses files on demand (one parse per file) and reads each write's source on
- * the syntax tree, so a comment, a nested campaign.source or a `message: source`
- * value is never taken for the key.
+ * Reads each write's source on the syntax tree, each file bound alone by the
+ * TypeScript checker (no lib, no module resolution), so every name resolves to
+ * the declaration in scope where it is used. Imports are followed by hand
+ * through export aliases, re-exports and `export *`. A comment, a nested
+ * campaign.source or a `message: source` value is never taken for the key.
  */
 function sourceProject(read) {
   const modules = new Map()
 
   function load(rel) {
     if (modules.has(rel)) return modules.get(rel)
-    const text = read(rel)
     let mod = null
+    const text = read(rel)
     if (text != null) {
-      const sf = ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true, rel.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
-      mod = { rel, sf, values: new Map(), imports: new Map(), writes: [] }
-      const assign = (name, node) => mod.values.set(name, [...(mod.values.get(name) ?? []), node])
-      const visit = (node) => {
-        if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) assign(node.name.text, node.initializer)
-        else if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(node.left)) assign(node.left.text, node.right)
-        else if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
-          const bindings = node.importClause?.namedBindings
-          if (bindings && ts.isNamedImports(bindings)) {
-            for (const el of bindings.elements) mod.imports.set(el.name.text, { from: node.moduleSpecifier.text, name: (el.propertyName ?? el.name).text })
-          }
-        } else if (ts.isCallExpression(node) && SOURCE_WRITERS.has(calleeName(node.expression))) {
-          const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1
-          const write = { callee: calleeName(node.expression), line, expr: null, node: null }
-          const arg = node.arguments[0]
-          if (arg && ts.isObjectLiteralExpression(arg)) {
-            const prop = arg.properties.find(
-              (p) => (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) && propertyName(p) === 'source',
-            )
-            if (prop) write.node = ts.isShorthandPropertyAssignment(prop) ? prop.name : prop.initializer
-            else if (arg.properties.some((p) => ts.isSpreadAssignment(p))) write.expr = arg.getText(sf)
-          } else if (arg) {
-            write.expr = arg.getText(sf)
-          }
-          if (write.node) write.expr = write.node.getText(sf)
-          if (write.expr !== null) mod.writes.push(write)
-        }
-        ts.forEachChild(node, visit)
+      const path = `/${rel}`
+      const kind = rel.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+      const host = {
+        getSourceFile: (name, version) => (name === path ? ts.createSourceFile(name, text, version, true, kind) : undefined),
+        getDefaultLibFileName: () => '/lib.d.ts',
+        writeFile: () => {},
+        getCurrentDirectory: () => '/',
+        getDirectories: () => [],
+        fileExists: (name) => name === path,
+        readFile: (name) => (name === path ? text : undefined),
+        getCanonicalFileName: (name) => name,
+        useCaseSensitiveFileNames: () => true,
+        getNewLine: () => '\n',
       }
-      visit(sf)
+      const program = ts.createProgram({ rootNames: [path], options: { noResolve: true, noLib: true, types: [] }, host })
+      mod = { rel, sf: program.getSourceFile(path), checker: program.getTypeChecker(), memo: new Map(), assigns: null }
     }
     modules.set(rel, mod)
     return mod
   }
 
-  const hasHost = (leaves) => leaves.some((l) => l.kind === 'host')
-
-  /**
-   * What an identifier can hold: opaque when a parameter of an enclosing function
-   * binds it (whatever the caller passes), else what the file assigns it, else
-   * the const it imports, else opaque.
-   */
-  function nameLeaves(id, mod, seen) {
-    const name = id.text
-    if (name === 'undefined') return []
-    for (let n = id.parent; n; n = n.parent) {
-      if (ts.isFunctionLike(n) && n.parameters?.some((p) => bindsName(p.name, name))) return [{ kind: 'opaque', text: name }]
+  /** Every assignment to a variable in the file, by symbol: x = …, x ||= …, x += …. */
+  function assignmentsTo(sym, mod) {
+    if (!mod.assigns) {
+      mod.assigns = new Map()
+      const visit = (node) => {
+        if (ts.isBinaryExpression(node) && ASSIGN_OPS.has(node.operatorToken.kind) && ts.isIdentifier(node.left)) {
+          const s = mod.checker.getSymbolAtLocation(node.left)
+          if (s) mod.assigns.set(s, [...(mod.assigns.get(s) ?? []), node])
+        }
+        ts.forEachChild(node, visit)
+      }
+      visit(mod.sf)
     }
-    const local = mod.values.get(name)
-    if (local) return local.flatMap((n) => leaves(n, mod, seen))
-    const imp = mod.imports.get(name)
-    const target = imp && resolveModule(imp.from, mod.rel, read)
-    const other = target && load(target)
-    const exported = other?.values.get(imp.name)
-    if (exported) return exported.flatMap((n) => leaves(n, other, seen))
-    return [{ kind: 'opaque', text: name }]
+    return mod.assigns.get(sym) ?? []
+  }
+
+  /** The object literal an expression is: written inline, or a const never reassigned. */
+  function objectLiteralOf(node, mod, depth = 0) {
+    node = unwrap(node)
+    if (ts.isObjectLiteralExpression(node)) return node
+    if (depth > 4 || !ts.isIdentifier(node)) return null
+    const sym = mod.checker.getSymbolAtLocation(node)
+    const decls = sym?.declarations ?? []
+    if (decls.length !== 1 || !ts.isVariableDeclaration(decls[0]) || !decls[0].initializer || assignmentsTo(sym, mod).length) return null
+    return objectLiteralOf(decls[0].initializer, mod, depth + 1)
   }
 
   /**
-   * What a source expression can evaluate to: 'label' (a door name), 'host' (the
-   * site's host or origin) or 'opaque' (a parameter, a call, a property).
+   * What `obj[key]` can hold for an object literal: its last own property of
+   * that key, joined by any spread after it that may override it. Null when
+   * nothing in the literal can supply the key.
    */
-  function leaves(node, mod, seen = new Set()) {
-    if (seen.has(node)) return []
-    seen.add(node)
-    if (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node) || ts.isSatisfiesExpression(node) || ts.isTypeAssertionExpression(node)) {
-      return leaves(node.expression, mod, seen)
+  function propertyLeaves(obj, key, mod, depth = 0) {
+    let out = null
+    for (const p of obj.properties) {
+      if (ts.isSpreadAssignment(p)) {
+        const inner = depth < 4 ? objectLiteralOf(p.expression, mod) : null
+        const more = inner ? propertyLeaves(inner, key, mod, depth + 1) : [leaf('opaque', `...${p.expression.getText(mod.sf)}`)]
+        if (more) out = [...(out ?? []), ...more]
+      } else if (keyOf(p) === key) {
+        if (ts.isPropertyAssignment(p)) out = leaves(p.initializer, mod)
+        else if (ts.isShorthandPropertyAssignment(p)) out = symbolLeaves(mod.checker.getShorthandAssignmentValueSymbol(p), mod, p.name.text)
+        else out = [leaf('opaque', p.getText(mod.sf))]
+      }
     }
-    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
-      return [{ kind: HOST_TEXT.test(node.text) ? 'host' : 'label', text: node.text }]
+    return out
+  }
+
+  /** What a symbol can hold: its declarations' values plus every assignment to it. */
+  function symbolLeaves(sym, mod, name) {
+    if (!sym) return [leaf('opaque', name)]
+    if (mod.memo.has(sym)) return mod.memo.get(sym) ?? []
+    mod.memo.set(sym, null)
+    const out = []
+    for (const d of sym.declarations ?? []) {
+      if (ts.isVariableDeclaration(d)) {
+        const owner = d.parent
+        const loopVar = ts.isVariableDeclarationList(owner) && (ts.isForOfStatement(owner.parent) || ts.isForInStatement(owner.parent))
+        if (loopVar || ts.isCatchClause(owner)) out.push(leaf('opaque', name))
+        else if (d.initializer) out.push(...leaves(d.initializer, mod))
+      } else if (ts.isBindingElement(d)) {
+        // const { source } = { … }: the property of the literal it destructures, else opaque.
+        const pattern = d.parent
+        const decl = pattern?.parent
+        const key = d.propertyName ? keyOf({ name: d.propertyName }) : ts.isIdentifier(d.name) ? d.name.text : null
+        const obj = ts.isObjectBindingPattern(pattern) && decl && ts.isVariableDeclaration(decl) && decl.initializer && key ? objectLiteralOf(decl.initializer, mod) : null
+        out.push(...((obj && propertyLeaves(obj, key, mod)) ?? [leaf('opaque', name)]))
+        if (d.initializer) out.push(...leaves(d.initializer, mod))
+      } else if (ts.isImportSpecifier(d)) {
+        out.push(...importLeaves(d, mod))
+      } else if (ts.isExportSpecifier(d)) {
+        out.push(...symbolLeaves(mod.checker.getExportSpecifierLocalTargetSymbol(d), mod, name))
+      } else if (ts.isEnumMember(d) && d.initializer) {
+        out.push(...leaves(d.initializer, mod))
+      } else {
+        // A parameter, a default or namespace import, a function or class.
+        out.push(leaf('opaque', name))
+      }
     }
-    if (ts.isConditionalExpression(node)) return [...leaves(node.whenTrue, mod, seen), ...leaves(node.whenFalse, mod, seen)]
-    if (
-      ts.isBinaryExpression(node) &&
-      (node.operatorToken.kind === ts.SyntaxKind.BarBarToken || node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken)
-    ) {
-      return [...leaves(node.left, mod, seen), ...leaves(node.right, mod, seen)]
+    for (const a of assignmentsTo(sym, mod)) {
+      const right = leaves(a.right, mod)
+      if (a.operatorToken.kind !== ts.SyntaxKind.PlusEqualsToken) out.push(...right)
+      else out.push(leaf(hasHost(right) ? 'host' : 'opaque', a.getText(mod.sf)))
     }
-    if (ts.isIdentifier(node)) return nameLeaves(node, mod, seen)
+    const result = out.length ? out : [leaf('opaque', name)]
+    mod.memo.set(sym, result)
+    return result
+  }
+
+  function importLeaves(spec, mod) {
+    const decl = spec.parent?.parent?.parent
+    const from = decl && ts.isImportDeclaration(decl) && ts.isStringLiteral(decl.moduleSpecifier) ? decl.moduleSpecifier.text : null
+    const target = from && resolveModule(from, mod.rel, read)
+    const name = (spec.propertyName ?? spec.name).text
+    return (target && exportLeaves(target, name, 0)) ?? [leaf('opaque', spec.name.text)]
+  }
+
+  /** What module `rel` exports as `name`, through export aliases, re-exports and `export *`; null when it does not. */
+  function exportLeaves(rel, name, depth) {
+    const m = depth < 8 ? load(rel) : null
+    const modSym = m && m.checker.getSymbolAtLocation(m.sf)
+    if (!modSym) return null
+    const exp = m.checker.getExportsOfModule(modSym).find((s) => s.name === name)
+    if (exp) {
+      const d = exp.declarations?.[0]
+      const from = d && ts.isExportSpecifier(d) ? d.parent.parent.moduleSpecifier : null
+      if (from && ts.isStringLiteral(from)) {
+        const next = resolveModule(from.text, rel, read)
+        return (next && exportLeaves(next, (d.propertyName ?? d.name).text, depth + 1)) ?? [leaf('opaque', name)]
+      }
+      return symbolLeaves(exp, m, name)
+    }
+    for (const st of m.sf.statements) {
+      if (ts.isExportDeclaration(st) && !st.exportClause && st.moduleSpecifier && ts.isStringLiteral(st.moduleSpecifier)) {
+        const next = resolveModule(st.moduleSpecifier.text, rel, read)
+        const found = next && exportLeaves(next, name, depth + 1)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  /** The name a callee was imported or declared under, for a call through an alias. */
+  function originalName(callee, mod) {
+    callee = unwrap(callee)
+    if (ts.isPropertyAccessExpression(callee)) return callee.name.text
+    if (!ts.isIdentifier(callee)) return null
+    const d = mod.checker.getSymbolAtLocation(callee)?.declarations?.[0]
+    if (d && (ts.isImportSpecifier(d) || ts.isBindingElement(d)) && d.propertyName) return d.propertyName.getText(mod.sf)
+    return callee.text
+  }
+
+  /** The source writer a callee is (sendEvent / ensureNativeLead), under any local name; null otherwise. */
+  function writerName(callee, mod, depth = 0) {
+    callee = unwrap(callee)
+    const name = originalName(callee, mod)
+    if (SOURCE_WRITERS.has(name)) return name
+    if (!ts.isIdentifier(callee) || depth > 3) return null
+    for (const d of mod.checker.getSymbolAtLocation(callee)?.declarations ?? []) {
+      if (ts.isVariableDeclaration(d) && d.initializer) {
+        const held = writerName(d.initializer, mod, depth + 1)
+        if (held) return held
+      }
+    }
+    return null
+  }
+
+  /**
+   * A string built from pieces (`a + b`, a template literal): the host if any
+   * piece is; every spelling it can take when each piece reads to labels; else
+   * a label when a fixed lead-in names the door (`Facebook Lead Ad — ${campaign}`).
+   */
+  function joined(parts, node, mod) {
     const text = node.getText(mod.sf)
-    if (ts.isTemplateExpression(node)) {
-      // A fixed lead-in names the door (`Facebook Lead Ad — ${campaign}`).
-      if (HOST_TEXT.test(node.head.text) || node.templateSpans.some((s) => hasHost(leaves(s.expression, mod, seen)))) return [{ kind: 'host', text }]
-      return [{ kind: node.head.text.trim() ? 'label' : 'opaque', text }]
+    let spellings = ['']
+    for (const part of parts) {
+      if (typeof part === 'string') {
+        if (spellings) spellings = spellings.map((s) => s + part)
+        continue
+      }
+      const ls = leaves(part, mod)
+      if (hasHost(ls)) return [leaf('host', text)]
+      const readable = ls.every((l) => (l.kind === 'label' && !l.partial) || l.kind === 'empty')
+      spellings = readable && spellings && spellings.length * ls.length <= 32
+        ? spellings.flatMap((s) => ls.map((l) => s + (l.kind === 'empty' ? '' : l.text)))
+        : null
     }
-    let host = HOST_TEXT.test(text)
-    if (!host && (ts.isCallExpression(node) || ts.isPropertyAccessExpression(node))) {
-      // `base.replace(…)`, `new URL(origin).host`, `pick(utm, siteHost())`: the host passed through.
-      const receiver = ts.isCallExpression(node) ? node.expression : node
-      if (ts.isPropertyAccessExpression(receiver)) host = hasHost(leaves(receiver.expression, mod, seen))
-      if (!host && ts.isCallExpression(node)) host = node.arguments.some((a) => hasHost(leaves(a, mod, seen)))
-    }
-    return [{ kind: host ? 'host' : 'opaque', text }]
+    if (spellings) return spellings.map(literalLeaf)
+    const leadIn = typeof parts[0] === 'string' ? parts[0].trim() : ''
+    if (!leadIn) return [leaf('opaque', text)]
+    return [HOST_LEAD_IN.test(leadIn) ? leaf('host', text) : leaf('label', text, true)]
   }
 
-  /** Each crm_people.source write in a file, with what its source can hold. */
+  /** The operands of an `a + b + c` chain, string literals as text. */
+  function plusParts(node) {
+    node = unwrap(node)
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken) return [...plusParts(node.left), ...plusParts(node.right)]
+    return [ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) ? node.text : node]
+  }
+
+  /**
+   * What an expression can evaluate to, as leaves: 'label' (a door name), 'host'
+   * (the site's host or a URL), 'empty' (names no door) or 'opaque' (a
+   * parameter, a call or a property this gate cannot read).
+   */
+  function leaves(node, mod) {
+    node = unwrap(node)
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return [literalLeaf(node.text)]
+    if (ts.isIdentifier(node)) {
+      if (node.text === 'undefined') return [leaf('empty', 'undefined')]
+      return symbolLeaves(mod.checker.getSymbolAtLocation(node), mod, node.text)
+    }
+    if (ts.isConditionalExpression(node)) return [...leaves(node.whenTrue, mod), ...leaves(node.whenFalse, mod)]
+    if (ts.isBinaryExpression(node)) {
+      const op = node.operatorToken.kind
+      if (op === ts.SyntaxKind.BarBarToken || op === ts.SyntaxKind.QuestionQuestionToken || op === ts.SyntaxKind.AmpersandAmpersandToken) {
+        return [...leaves(node.left, mod), ...leaves(node.right, mod)]
+      }
+      if (op === ts.SyntaxKind.PlusToken) return joined(plusParts(node), node, mod)
+    }
+    if (ts.isTemplateExpression(node)) {
+      return joined([node.head.text, ...node.templateSpans.flatMap((s) => [s.expression, s.literal.text])], node, mod)
+    }
+    const text = node.getText(mod.sf)
+    if ((ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) && /\bNEXT_PUBLIC_SITE_URL\b/.test(text)) {
+      return [leaf('host', text)]
+    }
+    if (ts.isPropertyAccessExpression(node)) {
+      const obj = objectLiteralOf(node.expression, mod)
+      if (obj) return propertyLeaves(obj, node.name.text, mod) ?? [leaf('opaque', text)]
+      // new URL(siteOrigin()).host, base.hostname: a part of the host is the host.
+      return [leaf(hasHost(leaves(node.expression, mod)) ? 'host' : 'opaque', text)]
+    }
+    if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
+      const callee = unwrap(node.expression)
+      const host =
+        HOST_FUNCS.has(originalName(callee, mod)) ||
+        // base.replace(…), origin.toLowerCase(): the host, reshaped.
+        (ts.isPropertyAccessExpression(callee) && hasHost(leaves(callee.expression, mod))) ||
+        // pick(utm, siteHost()): a host passed in may be what comes back.
+        (node.arguments ?? []).some((a) => hasHost(leaves(a, mod)))
+      return [leaf(host ? 'host' : 'opaque', text)]
+    }
+    return [leaf('opaque', text)]
+  }
+
+  /** Each crm_people.source write in a file, with the source as written and what it can hold. */
   function writes(rel) {
     const mod = load(rel)
     if (!mod) return []
-    return mod.writes.map((w) => ({
-      callee: w.callee,
-      line: w.line,
-      expr: w.expr.replace(/\s+/g, ' '),
-      leaves: w.node ? leaves(w.node, mod) : [{ kind: 'opaque', text: w.expr }],
-    }))
+    const out = []
+    const visit = (node) => {
+      const callee = ts.isCallExpression(node) ? writerName(node.expression, mod) : null
+      const arg = callee ? node.arguments[0] : null
+      if (arg) {
+        const line = mod.sf.getLineAndCharacterOfPosition(node.getStart(mod.sf)).line + 1
+        const obj = objectLiteralOf(arg, mod)
+        if (!obj) {
+          out.push({ callee, line, expr: arg.getText(mod.sf).replace(/\s+/g, ' '), leaves: [leaf('opaque', arg.getText(mod.sf))] })
+        } else {
+          const ls = propertyLeaves(obj, 'source', mod)
+          if (ls) {
+            const own = [...obj.properties].reverse().find((p) => !ts.isSpreadAssignment(p) && keyOf(p) === 'source')
+            const expr = !own ? arg.getText(mod.sf) : ts.isPropertyAssignment(own) ? own.initializer.getText(mod.sf) : ts.isShorthandPropertyAssignment(own) ? own.name.text : own.getText(mod.sf)
+            out.push({ callee, line, expr: expr.replace(/\s+/g, ' '), leaves: ls })
+          }
+        }
+      }
+      ts.forEachChild(node, visit)
+    }
+    visit(mod.sf)
+    return out
   }
 
   return { writes }
@@ -255,10 +459,15 @@ export function sourceWrites(rel, read = readRepoFile) {
   return sourceProject(read).writes(rel)
 }
 
+/** What a write needs allowed: 'host', 'opaque', 'host+opaque', or null for door labels only. */
+function neededKind(leaves) {
+  return ['host', 'opaque'].filter((k) => leaves.some((l) => l.kind === k)).join('+') || null
+}
+
 /**
- * The FUNNEL-4 failures across `files`: a write whose source is the site host or
- * cannot be read down to a door label, unless `allowed` names that file and
- * expression with the matching kind; and an allowance no write needs.
+ * The FUNNEL-4 failures across `files`: a write whose source can be empty, the
+ * site host, or not read down to a door label, unless `allowed` names that file
+ * and expression with exactly the kind it needs; and an allowance no write needs.
  */
 export function sourceWriteFailures(files, { read = readRepoFile, allowed = SOURCE_ALLOWED } = {}) {
   const project = sourceProject(read)
@@ -267,23 +476,27 @@ export function sourceWriteFailures(files, { read = readRepoFile, allowed = SOUR
   const scanned = new Set(files)
   for (const rel of files) {
     const text = read(rel)
-    if (text == null || !/\b(?:sendEvent|ensureNativeLead)\s*\(/.test(text)) continue
+    if (text == null || !/\b(?:sendEvent|ensureNativeLead)\b/.test(text)) continue
     for (const w of project.writes(rel)) {
-      const need = w.leaves.some((l) => l.kind === 'host') ? 'host' : w.leaves.some((l) => l.kind === 'opaque') ? 'opaque' : null
+      const at = `${rel}:${w.line}: ${w.callee} source \`${w.expr}\``
+      if (w.leaves.some((l) => l.kind === 'empty')) {
+        fails.push(`${at} can be empty, which names no door. Write the door label (FUNNEL-4).`)
+      }
+      const need = neededKind(w.leaves)
       if (need === null) continue
       const allowance = allowed[rel]?.[w.expr]
       if (allowance?.kind === need) {
         used.add(`${rel}\n${w.expr}`)
         continue
       }
-      if (need === 'host') {
+      const unread = w.leaves.filter((l) => l.kind === 'opaque').map((l) => l.text)
+      if (need.includes('host')) {
         fails.push(
-          `${rel}:${w.line}: ${w.callee} source \`${w.expr}\` is the site host. Write the door label ('contact-form', 'idx-registration', 'seller-lp', 'buyer-lp', 'place-page', 'published-cma', ...) so crm_people.source says which form it was (FUNNEL-4), or allow it in SOURCE_ALLOWED with the reason it is not a door.`,
+          `${at} can be the site host${unread.length ? `, or values this gate cannot read (${unread.join(', ')})` : ''}. Write the door label ('contact-form', 'idx-registration', 'seller-lp', 'buyer-lp', 'place-page', 'published-cma', ...) so crm_people.source says which form it was (FUNNEL-4), or allow it in SOURCE_ALLOWED as kind '${need}' with the reason it is not a door.`,
         )
       } else {
-        const unread = w.leaves.filter((l) => l.kind === 'opaque').map((l) => l.text.replace(/\s+/g, ' '))
         fails.push(
-          `${rel}:${w.line}: ${w.callee} source \`${w.expr}\` does not read down to a door label (${unread.join(', ')}). Name the door with a string or a const, or allow it in SOURCE_ALLOWED with the reason it names a door (FUNNEL-4).`,
+          `${at} does not read down to a door label (${unread.join(', ')}). Name the door with a string or a const, or allow it in SOURCE_ALLOWED as kind 'opaque' with the reason it names a door (FUNNEL-4).`,
         )
       }
     }
@@ -292,7 +505,7 @@ export function sourceWriteFailures(files, { read = readRepoFile, allowed = SOUR
     for (const [expr, { kind }] of Object.entries(entries)) {
       if (!used.has(`${rel}\n${expr}`)) {
         fails.push(
-          `${rel}: SOURCE_ALLOWED allows \`${expr}\` (${kind}), but ${scanned.has(rel) ? `no write there needs a ${kind} allowance` : 'the file is not scanned'}. Remove the entry.`,
+          `${rel}: SOURCE_ALLOWED allows \`${expr}\` (${kind}), but ${scanned.has(rel) ? `no write there needs exactly a '${kind}' allowance` : 'the file is not scanned'}. Remove or correct the entry.`,
         )
       }
     }

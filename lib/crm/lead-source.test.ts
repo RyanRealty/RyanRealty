@@ -48,6 +48,9 @@ describe('isOutreachListOnly', () => {
   it('the same owner who then filled in one of our forms is an inbound lead', () => {
     expect(isOutreachListOnly('expired-listing-cron', ['intent:expired-listing', 'source:seller-lp'])).toBe(false)
     expect(isOutreachListOnly('expired-listing-cron', ['Source:Expired-LP'])).toBe(false)
+    // A market or FAQ question, a pricing read (on the response clock since 2026-10-14).
+    expect(isOutreachListOnly('Farm', ['source:homepage-cta'])).toBe(false)
+    expect(isOutreachListOnly('fsbo-cron', ['source:listing-pricing-read'])).toBe(false)
   })
 
   it('an inbound source is never outreach, tags or not', () => {
