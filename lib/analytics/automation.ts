@@ -56,7 +56,7 @@ export type AutomationReason =
 export type AutomationClass = { automated: boolean; reason: AutomationReason | null }
 
 export const DECLARED_CRAWLER_RE =
-  /(bot\b|bot\/|crawler|spider|slurp|googleother|google-inspectiontool|google-extended|storebot-google|adsbot|mediapartners-google|feedfetcher|bingpreview|facebookexternalhit|facebookcatalog|meta-externalagent|gptbot|oai-searchbot|chatgpt-user|perplexity|claude-(?:web|user|searchbot)|anthropic-ai|cohere-ai|ccbot|bytespider|amazonbot|applebot|yandex|baiduspider|petalbot|semrush|ahrefs|mj12bot|dotbot|dataforseo|screaming frog|embedly|whatsapp|telegram|skypeuripreview|slack-imgproxy|vercel-screenshot|vercelbot)/i
+  /(bot\b|bot\/|crawler|spider|slurp|googleother|google-inspectiontool|google-extended|storebot-google|adsbot|mediapartners-google|feedfetcher|bingpreview|facebookexternalhit|facebookcatalog|meta-externalagent|gptbot|oai-searchbot|chatgpt-user|perplexity|claude-(?:web|user|searchbot)|anthropic-ai|google-notebooklm|cohere-ai|ccbot|bytespider|amazonbot|applebot|yandex|baiduspider|petalbot|semrush|ahrefs|mj12bot|dotbot|dataforseo|screaming frog|embedly|whatsapp|telegram|skypeuripreview|slack-imgproxy|vercel-screenshot|vercelbot)/i
 
 export const TOOL_RE =
   /(curl\/|wget|python-requests|python-urllib|aiohttp|httpx|libwww-perl|java\/|okhttp|go-http-client|node-fetch|axios|undici|guzzlehttp|apache-httpclient|scrapy|httrack|zgrab|masscan|nmap|nikto|sqlmap|nuclei|wpscan|censys)/i
@@ -131,6 +131,11 @@ export const PROVISIONAL_AUTOMATION_REASONS: ReadonlySet<AutomationReason> = new
   'stale-browser',
   'datacenter-geo',
 ])
+
+/** Is this automation_reason one of the provisional, self-clearing classes? */
+export function isProvisionalReason(reason: unknown): boolean {
+  return typeof reason === 'string' && PROVISIONAL_AUTOMATION_REASONS.has(reason as AutomationReason)
+}
 
 /**
  * THE rule for which sessions automation keeps unidentified, stated once. A session

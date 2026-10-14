@@ -69,6 +69,8 @@ import {
   PROVISIONAL_AUTOMATION_REASONS,
   classifyArrivalShape,
   classifyAutomation,
+  isPersonEvidence,
+  isProvisionalReason,
 } from '@/lib/analytics/automation'
 import { campaignDetailsParams, ga4SessionParams, parseVisit } from '@/lib/analytics/ga4-visit'
 import {
@@ -435,8 +437,11 @@ export async function POST(request: NextRequest) {
   // itself stays intact for the reads that legitimately need the whole thing
   // (slug parsing, GA4's page_location) — nothing there persists an id.
   const storedPageUrl = stripIdentityParams(pageUrl) ?? pageUrl
-  // Geo + UA describe the PERSON, and stay gated on analytics consent.
-  const geo = minimalOnly ? {} as ReturnType<typeof readIpGeo> : readIpGeo(request)
+  // Geo + UA describe the PERSON, and stay gated on analytics consent. The
+  // automation classifier below still READS them at every tier (reading to
+  // classify is not storing: docs/TRACKING_POLICY.md).
+  const requestGeo = readIpGeo(request)
+  const geo = minimalOnly ? {} as ReturnType<typeof readIpGeo> : requestGeo
   const userAgent = minimalOnly ? undefined : (request.headers.get('user-agent')?.slice(0, 512) || undefined)
   // Campaign parameters describe the LINK THAT WAS CLICKED, not the visitor, and
   // are kept at every tier that stores anything — the same treatment `referrer`
@@ -493,15 +498,28 @@ export async function POST(request: NextRequest) {
     userAgent: request.headers.get('user-agent'),
     webdriver: body.webdriver,
     marker: hasAutomationMarker({ cookieHeader, search: (() => { try { return new URL(pageUrl).search } catch { return '' } })() }),
+    clientHints: request.headers.get('sec-ch-ua'),
   })
   const rawToken = arrivalTokenFrom({ identityToken: body.identityToken, pageUrl })
   const token = rawToken ? verifyPersonLinkToken(rawToken) : null
-  // Behavioural and PROVISIONAL (lib/analytics/automation.ts): the listing
-  // contact-form deep link a crawler lands on. Stored at birth, cleared below
-  // by the session's next event; never blocks identification.
+  // Behavioural and PROVISIONAL (lib/analytics/automation.ts): a cold arrival
+  // (no referrer, campaign or token) on the listing contact-form deep link, from
+  // a desktop Chrome build long superseded, or from a datacenter town. Every
+  // event of a session carries the same landing page, referrer, user agent and
+  // geo, so this is recomputed on each one. Stored at birth unless this very
+  // event shows a person, cleared below by the first event that does
+  // (isPersonEvidence) or by identification; never blocks identification.
   const arrivalShape = automation.automated
     ? { automated: false, reason: null }
-    : classifyArrivalShape({ landingPage: body.landingPage, referrer: body.referrer, hasToken: !!rawToken })
+    : classifyArrivalShape({
+        landingPage: body.landingPage,
+        referrer: body.referrer,
+        hasToken: !!rawToken,
+        userAgent: request.headers.get('user-agent'),
+        geo: requestGeo,
+        atMs: Date.now(),
+      })
+  const personEvidence = isPersonEvidence({ eventType, pageUrl, landingPage: body.landingPage })
   // A signed-in broker's browser (`rr_internal=1`, set on admin sign-in) is
   // flagged `internal` at birth: left out of counts of outside visitors and
   // never mirrored to GA4, but still a person, so identification proceeds
@@ -511,7 +529,10 @@ export async function POST(request: NextRequest) {
     ? automation
     : internalBrowser
       ? { automated: true, reason: 'internal' as const }
-      : arrivalShape
+      : arrivalShape.automated && !personEvidence
+        ? arrivalShape
+        : { automated: false, reason: null }
+  const provisionalAtBirth = birthClass.automated && isProvisionalReason(birthClass.reason)
   let tokenPersonExists = true
   if (token && !automation.automated) {
     const [owner, exists] = await Promise.all([
@@ -568,10 +589,12 @@ export async function POST(request: NextRequest) {
     // 23505 = unique_violation = session already exists, expected on revisit.
     console.warn('[visitors/track] session insert failed:', sessionWrite.message)
   }
-  // A later event on a session that was born with the provisional shape (the
-  // tracker re-sends the same landing page on every event) proves a person is
-  // reading on: clear the flag. Only sessions with that landing pay the write.
-  if (!sessionWrite.inserted && sessionWrite.code === '23505' && arrivalShape.automated) {
+  // A later event on a session born with a provisional class that shows a
+  // person (a second page, a scroll, a search, a click, a form) clears the flag.
+  // A section rendering in view or a repeat view of the landing page does not:
+  // a headless crawler's tall viewport fires those on load. Only sessions with
+  // the provisional arrival shape pay the write.
+  if (!sessionWrite.inserted && sessionWrite.code === '23505' && arrivalShape.automated && personEvidence) {
     await clearProvisionalAutomation(supabase, sessionId, PROVISIONAL_AUTOMATION_REASONS)
   }
 
@@ -602,10 +625,8 @@ export async function POST(request: NextRequest) {
       })
       identifiedNow = res.sessionStamped
       if (res.sessionStamped) setPersonCookieFor = known.personId
-      // A browser already mapped to a contact is a person, whatever it landed on.
-      if (res.sessionStamped && arrivalShape.automated) {
-        await clearProvisionalAutomation(supabase, sessionId, PROVISIONAL_AUTOMATION_REASONS)
-      }
+      // A browser already mapped to a contact is a person, whatever it landed on:
+      // identifySessionAndBrowser clears a provisional flag when it stamps.
     } else if (known?.email) {
       await stampSessionEmailOnly(supabase, sessionId, known.email)
     }
@@ -677,8 +698,8 @@ export async function POST(request: NextRequest) {
     eventType === 'sms_opt'
   // Automation never reaches GA4: a crawler render mirrored as a page_view is
   // exactly the inflation TRACK-1 measured, and GA4's known-bot filter does
-  // not see Measurement Protocol hits. A provisional contact-deep-link session
-  // loses only its first view; a later event proves a person and mirrors.
+  // not see Measurement Protocol hits. A provisionally flagged session (cold
+  // arrival that reads as a machine) loses only its first view.
   // ONE suppression decision with the browser's Google tag loader
   // (lib/analytics/ga-suppression.ts, Matt 2026-10-05): never /admin, never a
   // non-production host, never automation (user agent, navigator.webdriver, our
@@ -693,7 +714,7 @@ export async function POST(request: NextRequest) {
     mirrorGa4 &&
     !gaSuppression.suppress &&
     !automation.automated &&
-    !(sessionWrite.inserted && arrivalShape.automated)
+    !(sessionWrite.inserted && provisionalAtBirth)
   ) {
     try {
       const { fireGa4Event, clientIdFromGaCookie, clientIdFromSessionId } = await import(

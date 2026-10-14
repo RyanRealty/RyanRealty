@@ -41,22 +41,15 @@ export type AuditSessionRow = {
   automation_reason: string | null
 }
 
-export type AuditEventSummary = {
-  count: number
-  /** event_type -> number of events of that type. */
-  types: Record<string, number>
-  /** Distinct page URLs (query intact) the session's events name. */
-  distinctPages: number
-  firstEventAt: string | null
-  lastEventAt: string | null
-}
+/** One visitor_events row, trimmed to what the classifier reads. */
+export type AuditEvent = { type: string; pageUrl: string | null; at: string }
 
 export type AutomationAuditWindow = {
   sinceIso: string
   untilIso: string
   sessions: AuditSessionRow[]
-  /** session_id -> its events' summary (sessions with no event are absent). */
-  events: Map<string, AuditEventSummary>
+  /** session_id -> its events, oldest first (sessions with no event are absent). */
+  events: Map<string, AuditEvent[]>
   /** rr_vids visitor_identity_map holds against a contact. */
   knownBrowsers: Set<string>
   eventRowsRead: number
@@ -120,23 +113,17 @@ export async function readAutomationAuditWindow(args: {
   )
   if (eventsRead.error) return empty(`visitor_events: ${eventsRead.error.message}`)
 
-  const pages = new Map<string, Set<string>>()
-  const events = new Map<string, AuditEventSummary>()
+  const events = new Map<string, AuditEvent[]>()
   for (const e of eventsRead.rows) {
     if (!inWindow.has(e.session_id)) continue
-    let s = events.get(e.session_id)
-    if (!s) {
-      s = { count: 0, types: {}, distinctPages: 0, firstEventAt: null, lastEventAt: null }
-      events.set(e.session_id, s)
-      pages.set(e.session_id, new Set())
+    let list = events.get(e.session_id)
+    if (!list) {
+      list = []
+      events.set(e.session_id, list)
     }
-    s.count += 1
-    s.types[e.event_type] = (s.types[e.event_type] ?? 0) + 1
-    if (e.page_url) pages.get(e.session_id)!.add(e.page_url)
-    if (!s.firstEventAt || e.event_at < s.firstEventAt) s.firstEventAt = e.event_at
-    if (!s.lastEventAt || e.event_at > s.lastEventAt) s.lastEventAt = e.event_at
+    list.push({ type: e.event_type, pageUrl: e.page_url, at: e.event_at })
   }
-  for (const [id, s] of events) s.distinctPages = pages.get(id)?.size ?? 0
+  for (const list of events.values()) list.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))
 
   type MapRow = { rr_vid: string }
   const mapRead = await fetchPagedRows<MapRow>((from, to) =>

@@ -8,6 +8,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stitchBrowserToPerson } from '@/lib/visitor-backfill'
+import { PROVISIONAL_AUTOMATION_REASONS } from '@/lib/analytics/automation'
 
 // The legacy lockstep person column (same native crm_people.id), written and
 // read beside crm_person_id for readers that have not migrated. Named by
@@ -118,6 +119,9 @@ export async function identifySessionAndBrowser(
   } catch {
     /* never block tracking on an identity write */
   }
+  // An identified session is a person's: a provisional automation flag (a cold
+  // arrival that read as a machine) no longer holds. Matches nothing otherwise.
+  if (sessionStamped) await clearProvisionalAutomation(sb, args.sessionId, PROVISIONAL_AUTOMATION_REASONS)
   if (args.stitchBrowser === false) return { sessionStamped }
   await stitchBrowserToPerson({
     rrVid: args.rrVid ?? null,
@@ -130,8 +134,9 @@ export async function identifySessionAndBrowser(
 
 /**
  * Clear a PROVISIONAL automation flag (lib/analytics/automation.ts
- * PROVISIONAL_AUTOMATION_REASONS) once the session shows it is a person: a
- * second event, or a known browser identified at birth. Matches only rows
+ * PROVISIONAL_AUTOMATION_REASONS) once the session shows it is a person: an
+ * event that is person evidence (isPersonEvidence), or identification (every
+ * identifySessionAndBrowser stamp calls this). Matches only rows
  * carrying a provisional reason, so a UA-based flag is never cleared; on every
  * other session it is a primary-key update that matches nothing. No-op (and
  * stops trying) before migration 20260923120000 is applied.
