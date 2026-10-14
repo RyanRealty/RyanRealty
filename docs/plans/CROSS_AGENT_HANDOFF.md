@@ -1,10 +1,12 @@
-# Current — 2026-10-13 (Cursor, buyer answer pages)
+# Current — 2026-10-14 (Cursor, city buyer-answer geo-guard)
 
-Surface: Cursor cloud. Branch `cursor/buyer-answer-pages-cde8` (PR #528) rebased onto origin/main `40ffcb2b9`. 36 long-tail buyer-answer pages. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/city-buyer-answer-geo-guard-cde8` from origin/main `65f98dd2a` (#528 squash). Nobody pushes main. Nothing sent.
 
-**What this commit does.** Child routes under community and city hubs (`/living`, `/cost`, `/hoa`, `/short-term-rentals`, `/vs/[other]`) plus extras on existing price-band, acreage, and new-construction search routes. Each child page opens with a 40-60 word live MLS answer cited as Oregon Data Share MLS, a figures table, listing dial, FAQ + FAQPage, hub and `/buy/*` links, and a `/team/matthew-ryan` byline. HOA only where master assessments are sourced (Tetherow, Sunriver, Caldera Springs). STR only Tetherow and Juniper Preserve. Sitemap and llms.txt list them. Registry: `lib/buyer-answers`.
+**What landed.** #528 is on main: 36 long-tail buyer-answer pages. Community/preset/vs pages render. `/llms.txt` lists ## Buyer answers.
 
-**Next.** Wait for this PR's CI, squash-merge, verify production.
+**What this commit does.** `resolveCityNeighborhoodPath` treated `/cities/<city>/living` and `/cost` as unknown neighborhoods and hard-404ed them at the edge. Reserved child segments (`living`, `cost`, `vs`, `types`) now pass through to the App Router. Out-of-market towns still 308 to `/oregon/<town>`. Unknown hoods still 404.
+
+**Next.** Land this branch, then verify `/cities/bend/living`, `/cities/bend/cost`, `/cities/redmond/living`, `/cities/redmond/cost`, `/cities/sisters/living` live.
 
 **Not this change.** Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send until Matt asks. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase. Do not run the CRM backfill.
 
