@@ -96,6 +96,10 @@ const HOP_ROUTES = new Map([
   ['/lp/bend', { status: 308, pathname: '/cities/bend' }],
   ['/lp/seller-home-value', { status: 308, pathname: '/sell' }],
   ['/lp/sell-your-home', { status: 308, pathname: '/sell' }],
+  // next.config 308s this situation stub onto /sell. Following it in the
+  // concurrent pass renders /sell a second time under the same 15s budget
+  // (run 38589676872 aborted both /sell and this path).
+  ['/sell/inherited-home', { status: 308, pathname: '/sell' }],
   ['/lp/buyer-listing-alerts', { status: 308, pathname: '/homes-for-sale' }],
   ['/lp/expired-listing', { status: 308, pathname: '/sell/expired-listings' }],
   ['/lp/fsbo', { status: 308, pathname: '/sell/for-sale-by-owner' }],
