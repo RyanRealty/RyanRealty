@@ -1,0 +1,8 @@
+{
+  "rule": "R-070",
+  "step": "brief",
+  "what": "a ledger line that is not JSON",
+  "setup": {
+    "ledgerRaw": "not json\n"
+  }
+}

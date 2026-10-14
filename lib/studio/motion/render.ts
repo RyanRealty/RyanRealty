@@ -244,6 +244,39 @@ export async function probeMotionLayout(input: {
   }
 }
 
+/**
+ * The board's capture: the same page, set to each of `times`, as a full-size PNG
+ * with a see-through background (what the film's frames are before ffmpeg lays
+ * them over the plate). No film is encoded and no ffmpeg runs here. The content
+ * process's board step (lib/content/process) composes these over the footage.
+ */
+export async function captureMotionStills(input: {
+  plan: MotionPlan
+  html: string
+  width: number
+  height: number
+  times: number[]
+  launchBrowser: (viewport: { width: number; height: number }) => Promise<Browser>
+}): Promise<Array<{ t: number; png: Buffer }>> {
+  const scale = input.width / 1080
+  let browser: Browser | null = null
+  try {
+    browser = await input.launchBrowser({ width: input.width, height: input.height })
+    const { page } = await openMotionPage(browser, input.html, input.width, input.height)
+    const cdp = await page.createCDPSession()
+    await cdp.send('Emulation.setDefaultBackgroundColorOverride', { color: { r: 0, g: 0, b: 0, a: 0 } })
+    const out: Array<{ t: number; png: Buffer }> = []
+    for (const t of input.times) {
+      await page.evaluate((s) => (window as unknown as { __rrApply: (x: unknown) => void }).__rrApply(s), frameState(input.plan, t, scale))
+      const shot = (await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })) as { data: string }
+      out.push({ t, png: Buffer.from(shot.data, 'base64') })
+    }
+    return out
+  } finally {
+    await browser?.close().catch(() => undefined)
+  }
+}
+
 export async function renderMotion(input: RenderMotionInput): Promise<RenderMotionResult> {
   const started = Date.now()
   const { plan, width, height, fps } = input

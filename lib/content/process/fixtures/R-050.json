@@ -1,0 +1,17 @@
+{
+  "rule": "R-050",
+  "step": "brief",
+  "what": "a Grok pause tag in a v3 script",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.voiceover.script",
+      "set": "[warm] So... Bend has three and a half months of homes for sale right now. Sellers still have the edge... so go in with a plan. [pause] Send this to whoever you're house hunting with."
+    },
+    {
+      "in": "timeline",
+      "path": "voice.script",
+      "set": "[warm] So... Bend has three and a half months of homes for sale right now. Sellers still have the edge... so go in with a plan. [pause] Send this to whoever you're house hunting with."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "rule": "R-037",
+  "step": "brief",
+  "what": "two exclamation marks",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "caption",
+      "set": "Bend has 3.5 months of homes for sale!!"
+    }
+  ]
+}

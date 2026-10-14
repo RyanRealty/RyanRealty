@@ -1,0 +1,13 @@
+{
+  "rule": "R-116",
+  "step": "master",
+  "what": "an end card that goes out 0.2 s after the film",
+  "setup": {
+    "manifest": [
+      {
+        "path": "endcard.out",
+        "set": 15.5
+      }
+    ]
+  }
+}

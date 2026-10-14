@@ -1,0 +1,17 @@
+{
+  "rule": "R-046",
+  "step": "brief",
+  "what": "a script that never addresses the viewer",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.voiceover.script",
+      "set": "[warm] Bend has three and a half months of homes for sale right now. Sellers still have the edge. Send this along."
+    },
+    {
+      "in": "timeline",
+      "path": "voice.script",
+      "set": "[warm] Bend has three and a half months of homes for sale right now. Sellers still have the edge. Send this along."
+    }
+  ]
+}

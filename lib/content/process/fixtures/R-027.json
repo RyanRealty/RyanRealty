@@ -1,0 +1,12 @@
+{
+  "rule": "R-027",
+  "step": "brief",
+  "what": "footage from a vendor not on the list",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "footage.0.source",
+      "set": "random_vendor"
+    }
+  ]
+}

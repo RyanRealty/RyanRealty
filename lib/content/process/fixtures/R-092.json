@@ -1,0 +1,17 @@
+{
+  "rule": "R-092",
+  "step": "motion",
+  "what": "a brief that lists an Imagine plate",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "footage.2",
+      "set": {
+        "kind": "imagine_plate",
+        "path": "imagine/plate-1.mp4",
+        "rights": "generated_own",
+        "source": "imagine_subscription"
+      }
+    }
+  ]
+}

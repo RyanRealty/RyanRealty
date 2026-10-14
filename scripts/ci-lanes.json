@@ -7,6 +7,7 @@
     "ci:deals-copy",
     "ci:imagine-no-paid-api",
     "ci:studio-techniques",
+    "ci:content-rules",
     "ci:broker-own-book",
     "ci:commit-compiles",
     "ci:count-degraded-read",
@@ -1263,6 +1264,17 @@
       "app/robots.ts",
       "app/llms.txt/**",
       "app/sitemap.ts"
+    ],
+    "ci:deploy-defect-filing": [
+      "scripts/check-deploy-defect-filing.mjs",
+      "scripts/check-vercel-deploy.mjs",
+      "scripts/deploy-defects.ts",
+      "scripts/lib/deploy-defect-report.mjs",
+      "scripts/loop-brief.ts",
+      "lib/data/loop/deploy-defects.ts",
+      "lib/data/loop/deploy-defects-dal.ts",
+      "lib/data/loop/fleet-cases.ts",
+      "docs/RUN_LOOP.md"
     ],
     "ci:sitemap-url-health": [
       "app/communities/**",

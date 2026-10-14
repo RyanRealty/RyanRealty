@@ -1,0 +1,12 @@
+{
+  "rule": "R-011",
+  "step": "brief",
+  "what": "a wrong phone number",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "end_card.phone",
+      "set": "541.703.3096"
+    }
+  ]
+}

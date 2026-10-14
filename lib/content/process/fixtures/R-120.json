@@ -1,0 +1,10 @@
+{
+  "rule": "R-120",
+  "step": "master",
+  "what": "pixels that show the card 1.3 s later",
+  "setup": {
+    "measure": {
+      "endcardFrom": 13.5
+    }
+  }
+}

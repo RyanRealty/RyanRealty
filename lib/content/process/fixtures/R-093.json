@@ -1,0 +1,10 @@
+{
+  "rule": "R-093",
+  "step": "master",
+  "what": "a file whose hash is not the manifest's",
+  "setup": {
+    "measure": {
+      "sha": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  }
+}

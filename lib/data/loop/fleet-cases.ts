@@ -14,6 +14,7 @@ import 'server-only'
 
 import { createHash } from 'node:crypto'
 import { createServiceClient } from '@/lib/supabase/service'
+import { isDeployFoundGap } from './deploy-defects'
 
 const PROD = 'https://ryan-realty.com'
 
@@ -135,7 +136,10 @@ export async function buildFleetPack(pack: FleetPack): Promise<{ markdown: strin
     .select('version_gap,domain,title,accept,state,updated_at')
     .order('created_at', { ascending: true })
   if (error) throw new Error(`work graph unreadable: ${error.message}`)
-  const nodes = (data ?? []) as NodeRow[]
+  // A deploy-found defect (DEPLOY-*) is not shipped work to re-certify and not upcoming
+  // work to baseline: deploy:verify is its regression check, and its updates must not
+  // move every pack's RUN-TOKEN. Left out of all three.
+  const nodes = ((data ?? []) as NodeRow[]).filter((n) => !isDeployFoundGap(n.version_gap))
 
   let cases: CaseDef[]
   if (pack === 'core') {

@@ -47,13 +47,29 @@ function log(phase: string, report: Awaited<ReturnType<typeof sweepIntResidue>>)
   for (const e of report.errors) console.warn(`[int-scope] ${phase}: ${e.table} — ${e.message}`)
 }
 
+/**
+ * Int tests write to PRODUCTION and this setup deletes marker residue there, so
+ * a run must be asked for by name. On 2026-10-14 an agent's `vitest run
+ * lib/content lib/studio` (no --project) pulled in the int project here, with
+ * production keys in its environment, and swept two marker objects out of the
+ * marketing-deliverables bucket. `npm run test:int` (and the nightly) set
+ * RR_INT_RUN=1; any other run that has production keys stops before a write.
+ */
+export const INT_RUN_REFUSAL =
+  'Int tests write to production Supabase. Run them only with `npm run test:int` (it sets RR_INT_RUN=1). For a local check, use `npx vitest run --project unit` or `--project gates`.'
+
+export function intRunAllowed(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.RR_INT_RUN === '1'
+}
+
 export async function setup(): Promise<void> {
   runStartedAt = new Date().toISOString()
   if (!haveDb()) return
+  if (!intRunAllowed()) throw new Error(INT_RUN_REFUSAL)
   log('pre-run', await sweepIntResidue(await client(), { mode: 'stale', olderThanMinutes: STALE_MINUTES }))
 }
 
 export async function teardown(): Promise<void> {
-  if (!haveDb()) return
+  if (!haveDb() || !intRunAllowed()) return
   log('post-run', await sweepIntResidue(await client(), { mode: 'since', sinceIso: runStartedAt }))
 }

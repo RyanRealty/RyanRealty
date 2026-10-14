@@ -1,0 +1,12 @@
+{
+  "rule": "R-056",
+  "step": "brief",
+  "what": "plain captions",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.captions.style",
+      "set": "plain"
+    }
+  ]
+}

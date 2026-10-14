@@ -234,6 +234,14 @@ export async function fetchText(
   }, { retries, retryDelayMs })
 }
 
+function pathOf(url) {
+  try {
+    return new URL(url).pathname
+  } catch {
+    return url
+  }
+}
+
 function sample(arr, n) {
   if (arr.length <= n) return [...arr]
   const step = arr.length / n
@@ -325,6 +333,7 @@ export async function runLiveSeoAudit(base, { ua, perSitemap = 8, concurrency = 
   const fails = []
   const warns = []
   const lines = []
+  const listedPaths = []
   const origin = base.replace(/\/$/, '')
 
   const robots = await fetchText(`${origin}/robots.txt`, ua, { accept: 'text/plain' })
@@ -343,6 +352,7 @@ export async function runLiveSeoAudit(base, { ua, perSitemap = 8, concurrency = 
       fails.push(`${new URL(child).pathname} returned ${res.status} with ${locs.length} URLs`)
       continue
     }
+    listedPaths.push(...locs.map(pathOf))
     const isListings = /listings\.xml$/.test(child)
     if (isListings) {
       const images = (res.text.match(/<image:loc>/g) ?? []).length
@@ -399,5 +409,14 @@ export async function runLiveSeoAudit(base, { ua, perSitemap = 8, concurrency = 
   lines.push(`decisions: ${decisions.length} pinned, ${decisionFails.length} broken`)
   if (overSoft > 0) warns.push(`${overSoft} of ${targets.length} sampled titles run past ${MAX_TITLE_SOFT} chars (Google truncates)`)
   fails.push(...overSoftShareProblems(overSoftPages, targets.length))
-  return { fails, warns, lines }
+  // Which pathnames this run fetched and which the sitemaps list: a sampled pass
+  // proves nothing about a page it did not fetch (deploy:verify's defect filer reads
+  // these before it closes a node; lib/data/loop/deploy-defects.ts).
+  return {
+    fails,
+    warns,
+    lines,
+    checkedPaths: [...targets.map((t) => pathOf(t.url)), ...decisions.map((d) => d.path)],
+    listedPaths,
+  }
 }

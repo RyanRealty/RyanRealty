@@ -1,0 +1,17 @@
+{
+  "rule": "R-075",
+  "step": "brief",
+  "what": "three and a half days beside a months of supply row",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.voiceover.script",
+      "set": "[warm] So... Bend has three and a half days of homes for sale right now. Sellers still have the edge... so go in with a plan. [long pause] Send this to whoever you're house hunting with."
+    },
+    {
+      "in": "timeline",
+      "path": "voice.script",
+      "set": "[warm] So... Bend has three and a half days of homes for sale right now. Sellers still have the edge... so go in with a plan. [long pause] Send this to whoever you're house hunting with."
+    }
+  ]
+}

@@ -20,7 +20,9 @@ Branch `claude/agent-navigation-efficiency-dp5zj5`. PR #566 merged as `cd35a2a70
 
 **In #580.** deploy:verify on #566 found `/open-houses/brothers` and `/open-houses/black-butte-ranch` in the sitemap with `noindex` (an empty week, SITE-27). The sitemap now reads the open-house window once (`openHouseCitySlugsWithEvents`, `app/open-houses/_v3/oh-index.ts`) and drops the empty cities (`dropEmptyOpenHouseCities`, `lib/sitemap-guard.ts`); a failed read drops nothing. It also cleared main's `ci:reachable-exports` orphans.
 
-**Follow-up PR.** The drop logged one error line per URL per sitemap file; it now logs one info line naming the cities.
+**#581** (merged `b9f5adea7`, deploy:verify passed): the open-house drop logged one error line per URL per sitemap file; it now logs one info line naming the cities.
+
+**Then.** The rogue `/cities/{a}/{b}` backstop in `lib/sitemap-guard.ts` dropped the seven city buyer answers from #528 (`/cities/bend/cost`, `/cities/redmond/buying`, ...). Each was live, `index, follow` and self-canonical on 2026-10-14. The guard now passes the registered ones (`CITY_CHILD_PAGES`, from `lib/buyer-answers/registry`).
 
 **Next.**
 - In a few days, read GA4 for `view_landing_page` on /sell and /buy, and check the LP-visitor audiences are filling.

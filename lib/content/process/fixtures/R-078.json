@@ -1,0 +1,8 @@
+{
+  "rule": "R-078",
+  "step": "voice",
+  "what": "step voice asked for with no brief stamp",
+  "setup": {
+    "single": true
+  }
+}

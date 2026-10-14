@@ -237,6 +237,10 @@ describe('listing canonical hop (contract 2: one URL, every variant 308s)', () =
       '20260418234131878480000000',
     )
     expect(listingIdFromRequestPath('/listing/20260731160357907738000000')).toBe('20260731160357907738000000')
+    expect(listingIdFromRequestPath('/listing/220226356')).toBe('220226356')
+    expect(listingIdFromRequestPath('/listing/by-address/bend/providence/1522-locksley-220226356')).toBe(
+      '220226356',
+    )
     expect(listingIdFromRequestPath('/homes-for-sale/bend/1522%2Dlocksley-220226356/')).toBe('220226356')
     // Five-digit tail: the page reads it as a legacy zip form, not a key.
     expect(listingIdFromRequestPath('/homes-for-sale/bend/123-main-st-97702')).toBeNull()

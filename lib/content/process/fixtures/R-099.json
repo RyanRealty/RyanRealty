@@ -1,0 +1,12 @@
+{
+  "rule": "R-099",
+  "step": "master",
+  "what": "a 20 s file with a 15.3 s manifest",
+  "setup": {
+    "measure": {
+      "probe": {
+        "duration": 20
+      }
+    }
+  }
+}

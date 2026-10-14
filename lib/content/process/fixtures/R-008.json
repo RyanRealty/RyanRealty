@@ -1,0 +1,17 @@
+{
+  "rule": "R-008",
+  "step": "brief",
+  "what": "a payoff before a body",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.1.role",
+      "set": "payoff"
+    },
+    {
+      "in": "timeline",
+      "path": "beats.2.role",
+      "set": "body"
+    }
+  ]
+}

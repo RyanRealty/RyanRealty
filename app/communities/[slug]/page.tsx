@@ -205,6 +205,7 @@ import {
 } from '@/lib/site/place-recreation'
 import { matchGeoLinksForPost } from '@/lib/blog-geo-links'
 import { measuredPlaceHoaInput } from './_v3/place-hoa-measured'
+import { curatedNoMasterHoa, hoaCharacterFor, noMasterHoaFaq } from './_v3/place-no-master-hoa'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import {
   belongingCaption,
@@ -566,11 +567,16 @@ async function renderCommunityDetail({ params }: Props) {
   }))
   const stagePosterSrc = stagePoster(slug, community.heroImageUrl, libraryHero)
   const headline = belongingHeadline(publicName, richContent)
-  const belonging = belongingFigures(richContent, placeCharacter)
+  // Places whose own records say there is no master HOA (NorthWest Crossing):
+  // the dues median from sub-association listings is not the place's HOA, so
+  // the HOA consumers read without it and the FAQ answers with the curated copy.
+  const noMasterHoa = curatedNoMasterHoa(slug)
+  const hoaCharacter = hoaCharacterFor(slug, placeCharacter)
+  const belonging = belongingFigures(richContent, hoaCharacter)
   const belongingLine = belongingCaption(belonging)
 
   const { measuredAnnual: hoaMeasuredAnnual, measuredBasis: hoaMeasuredBasis } =
-    measuredPlaceHoaInput(placeCharacter, publicName)
+    measuredPlaceHoaInput(hoaCharacter, publicName)
   const resolvedHoa = publishPlaceHoa({
     measuredAnnual: hoaMeasuredAnnual,
     measuredBasis: hoaMeasuredBasis,
@@ -958,8 +964,8 @@ async function renderCommunityDetail({ params }: Props) {
   )
   const lotsRail = stockRailAsk(stockSections.find((section) => section.key === 'land')?.rows)
   const attachedRail = stockRailAsk(stockSections.find((section) => section.key === 'attached')?.rows)
-  const hoaMeasured = measuredPlaceHoaInput(placeCharacter, publicName)
-  const authoredFaqs = communityAuthoredFaqs({
+  const hoaMeasured = measuredPlaceHoaInput(hoaCharacter, publicName)
+  const authoredFaqs = [...noMasterHoaFaq(slug), ...communityAuthoredFaqs({
     slug,
     name: publicName,
     asOfLabel: mosAsOf,
@@ -980,7 +986,7 @@ async function renderCommunityDetail({ params }: Props) {
     membershipTierCount: (richContent?.membershipTiers ?? []).filter((tier) =>
       String(tier.name ?? tier.tier ?? tier.label ?? '').trim(),
     ).length,
-  })
+  })]
   const generatedFaqs = dropsGeneratedHoaQuestion(authoredFaqs)
     ? faqs.filter((item) => !isGeneratedHoaQuestion(item.question))
     : faqs
@@ -1072,8 +1078,9 @@ async function renderCommunityDetail({ params }: Props) {
       `I have questions about short-term rental rules in ${publicName}.`,
     )}`,
     amenityPosts: {},
-    character: placeCharacter,
+    character: hoaCharacter,
   })
+  if (noMasterHoa) knowledgeItems.unshift({ kind: 'prose', term: 'HOA', body: noMasterHoa.answer })
 
   const exploreItems = buildExploreEdges({
     communityName: publicName,
@@ -1421,7 +1428,7 @@ async function renderCommunityDetail({ params }: Props) {
             source={placeKnowledgeSource({
               name: publicName,
               content: richContent,
-              hasMeasuredHoa: Boolean(measuredPlaceHoaInput(placeCharacter, publicName).measuredAnnual),
+              hasMeasuredHoa: Boolean(measuredPlaceHoaInput(hoaCharacter, publicName).measuredAnnual),
               hasSchools: placeSchools.length > 0,
             })}
           />

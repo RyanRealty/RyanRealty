@@ -1,14 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import {
+  APPROVED_LABEL,
   CLOSE_AFTER_STALE_MS,
   HOLD_LABEL,
   REQUIRED_CHECK_NAMES,
   STALE_AFTER_MS,
   STALE_LABEL,
   hasLabel,
+  isApprovedByMatt,
   mergeAction,
+  parseApprovedPrList,
   requiredChecksStatus,
+  shouldApplyTitleHold,
   shouldQueueAutoMerge,
+  shouldRemoveHoldLabel,
   staleDecision,
   titleLooksLikeHold,
 } from '../lib/pr-housekeeping.mjs'
@@ -24,6 +29,64 @@ describe('titleLooksLikeHold', () => {
   })
 })
 
+describe('parseApprovedPrList', () => {
+  it('reads positive integers and ignores comments', () => {
+    expect(
+      parseApprovedPrList(`
+# Chief of Staff list
+567
+  601
+# 999
+not-a-number
+0
+-3
+`),
+    ).toEqual([567, 601])
+    expect(parseApprovedPrList('')).toEqual([])
+    expect(parseApprovedPrList(null)).toEqual([])
+  })
+})
+
+describe('isApprovedByMatt', () => {
+  it('accepts the label or an approved-prs number', () => {
+    expect(isApprovedByMatt({ labels: [APPROVED_LABEL], number: 12 })).toBe(true)
+    expect(isApprovedByMatt({ labels: [], number: 12, approvedNumbers: [12] })).toBe(true)
+    expect(isApprovedByMatt({ labels: [], number: 12, approvedNumbers: [13] })).toBe(false)
+    expect(isApprovedByMatt({ labels: [HOLD_LABEL], number: 12 })).toBe(false)
+  })
+})
+
+describe('shouldApplyTitleHold and shouldRemoveHoldLabel', () => {
+  it('holds a Matt-OK title only until approved', () => {
+    expect(shouldApplyTitleHold({ title: 'docs: proof (do not merge without Matt)', labels: [] })).toBe(
+      true,
+    )
+    expect(
+      shouldApplyTitleHold({
+        title: 'docs: proof (do not merge without Matt)',
+        labels: [APPROVED_LABEL],
+      }),
+    ).toBe(false)
+    expect(
+      shouldApplyTitleHold({
+        title: 'docs: proof (HOLD for Matt)',
+        number: 88,
+        approvedNumbers: [88],
+      }),
+    ).toBe(false)
+    expect(shouldApplyTitleHold({ title: 'fix: something', labels: [] })).toBe(false)
+  })
+
+  it('removes hold-for-matt once approved', () => {
+    expect(shouldRemoveHoldLabel({ labels: [HOLD_LABEL, APPROVED_LABEL] })).toBe(true)
+    expect(shouldRemoveHoldLabel({ labels: [HOLD_LABEL], number: 9, approvedNumbers: [9] })).toBe(
+      true,
+    )
+    expect(shouldRemoveHoldLabel({ labels: [HOLD_LABEL] })).toBe(false)
+    expect(shouldRemoveHoldLabel({ labels: [APPROVED_LABEL] })).toBe(false)
+  })
+})
+
 describe('shouldQueueAutoMerge', () => {
   it('queues a ready PR', () => {
     expect(shouldQueueAutoMerge({ draft: false, labels: [], title: 'fix: something' })).toBe(true)
@@ -35,6 +98,32 @@ describe('shouldQueueAutoMerge', () => {
       false,
     )
     expect(shouldQueueAutoMerge({ draft: false, labels: [], title: 'WIP HOLD for Matt' })).toBe(false)
+  })
+
+  it('queues an approved PR even with hold-for-matt or a hold title', () => {
+    expect(
+      shouldQueueAutoMerge({
+        draft: false,
+        labels: [HOLD_LABEL, APPROVED_LABEL],
+        title: 'docs: proof (do not merge without Matt)',
+      }),
+    ).toBe(true)
+    expect(
+      shouldQueueAutoMerge({
+        draft: false,
+        labels: [HOLD_LABEL],
+        title: 'docs: proof (HOLD for Matt)',
+        number: 42,
+        approvedNumbers: [42],
+      }),
+    ).toBe(true)
+    expect(
+      shouldQueueAutoMerge({
+        draft: true,
+        labels: [APPROVED_LABEL],
+        title: 'docs: proof (HOLD for Matt)',
+      }),
+    ).toBe(false)
   })
 })
 
@@ -55,6 +144,14 @@ describe('staleDecision', () => {
         now: NOW,
       }),
     ).toBe('none')
+    expect(
+      staleDecision({
+        createdAt: NOW - STALE_AFTER_MS,
+        labels: [HOLD_LABEL, APPROVED_LABEL],
+        title: 'docs: proof (do not merge without Matt)',
+        now: NOW,
+      }),
+    ).toBe('mark-stale')
   })
 
   it('marks stale at 3 days, then closes after 2 more', () => {

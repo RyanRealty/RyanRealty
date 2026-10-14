@@ -1,3 +1,5 @@
+> **History (2026-05).** Current SEO canon: [`docs/SEO.md`](SEO.md) and Matt's pinned calls in [`data/seo/decisions.json`](../data/seo/decisions.json). Where this file disagrees, those win.
+
 # SEO Audit — ryan-realty.com
 **Date:** 2026-05-13
 **Auditor:** Claude (Sonnet 4.6) via Apify live crawl + GSC data

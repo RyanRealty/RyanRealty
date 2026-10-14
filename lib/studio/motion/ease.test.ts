@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BRAND_EASE_OUT, cubicBezier, presence, progress } from './ease'
+import { BRAND_EASE_MOVE, BRAND_EASE_OUT, cubicBezier, presence, progress } from './ease'
 
 const ease = (x: number) => cubicBezier(...BRAND_EASE_OUT, x)
 
@@ -22,6 +22,20 @@ describe('brand ease-out', () => {
 
   it('agrees with linear when the curve is linear', () => {
     for (const x of [0.1, 0.33, 0.5, 0.9]) expect(cubicBezier(0, 0, 1, 1, x)).toBeCloseTo(x, 5)
+  })
+})
+
+describe('brand move ease', () => {
+  const move = (x: number) => cubicBezier(...BRAND_EASE_MOVE, x)
+
+  it('is cubic-bezier(.65,0,.35,1): slow in, slow out, symmetric about the middle', () => {
+    expect(BRAND_EASE_MOVE).toEqual([0.65, 0, 0.35, 1])
+    expect(move(0)).toBe(0)
+    expect(move(1)).toBe(1)
+    expect(move(0.5)).toBeCloseTo(0.5, 6)
+    for (const x of [0.1, 0.2, 0.35]) expect(move(x) + move(1 - x)).toBeCloseTo(1, 6)
+    expect(move(0.1)).toBeLessThan(0.1)
+    expect(move(0.9)).toBeGreaterThan(0.9)
   })
 })
 

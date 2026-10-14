@@ -332,12 +332,8 @@ export function communityMetadataInput(input: {
         'This address does not resolve to a named community in Central Oregon. Browse communities, recorded subdivisions, or homes for sale.',
       path: `/communities/${slug}`,
       noindex: compoundNonCommunity,
-      // NO ogImage. The generated card is /api/og?type=community&name=<name>,
-      // which would paint the withheld MLS token onto a shareable image — the
-      // defect, one surface over. Omitting it falls back to the site default
-      // card, which names no place. A curated KB/community photo is never
-      // reached here either: a refusing slug has no curated entry by
-      // construction (those are keyed by registry slug).
+      // NO ogImage. A refusing slug has no curated community photo; omitting
+      // ogImage falls back to the site landscape card, which names no place.
     }
   }
 

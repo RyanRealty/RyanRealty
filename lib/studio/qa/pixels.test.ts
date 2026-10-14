@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Manifest } from './manifest'
-import { PHONE_TOKENS, boxClaims, captionsWithoutBoxes, claimConfirmed, figureKey, figureShaped, gateFindings, listedFigures, unlistedFigures } from './pixels'
+import { PHONE_TOKENS, PIXEL_GATE_WRAPPER, RENDER_GATE_PATH, boxClaims, captionsWithoutBoxes, claimConfirmed, figureKey, figureShaped, gateFindings, listedFigures, pixelGateArgs, unlistedFigures } from './pixels'
 
 const box = { x: 90, y: 400, w: 860, h: 220 }
 const texts: Manifest['texts'] = [
@@ -23,6 +23,24 @@ describe('gateFindings', () => {
     expect(gateFindings(fails, { loop: null, endcard: null }, { requires_loop: false, requires_end_card: false }).kept).toEqual([])
     expect(gateFindings(fails, { loop: null, endcard: null }, rules).kept).toEqual(fails)
     expect(gateFindings(fails, { loop: { seconds: 0.3 }, endcard: null }, { requires_loop: false, requires_end_card: true }).kept).toEqual(fails)
+  })
+})
+
+describe('pixelGateArgs', () => {
+  const base = { videoType: 'market_update', silent: false, voStart: null, voEnd: null }
+  it('hands the render gate the brief\'s ceiling as --max-s, and nothing when none is given', () => {
+    expect(pixelGateArgs('f.mp4', base)).toEqual([PIXEL_GATE_WRAPPER, RENDER_GATE_PATH, 'f.mp4', '--type', 'market_update'])
+    expect(pixelGateArgs('f.mp4', { ...base, maxS: null })).not.toContain('--max-s')
+    const args = pixelGateArgs('f.mp4', { ...base, maxS: 40 })
+    expect(args.slice(args.indexOf('--max-s'), args.indexOf('--max-s') + 2)).toEqual(['--max-s', '40'])
+  })
+  it('spells no ceiling (a Matt length override) the way the gate reads it', () => {
+    const args = pixelGateArgs('f.mp4', { ...base, maxS: Infinity })
+    expect(args[args.indexOf('--max-s') + 1]).toBe('inf')
+  })
+  it('keeps the other options', () => {
+    const args = pixelGateArgs('f.mp4', { videoType: 'buyer_ad', silent: true, voStart: 0.5, voEnd: 20.25, maxS: 30 })
+    expect(args).toEqual([PIXEL_GATE_WRAPPER, RENDER_GATE_PATH, 'f.mp4', '--type', 'buyer_ad', '--silent', '--max-s', '30', '--vo-start', '0.500', '--vo-end', '20.250'])
   })
 })
 

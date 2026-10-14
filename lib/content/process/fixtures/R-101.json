@@ -1,0 +1,13 @@
+{
+  "rule": "R-101",
+  "step": "master",
+  "what": "two cuts half a second apart",
+  "setup": {
+    "measure": {
+      "cuts": [
+        4,
+        4.5
+      ]
+    }
+  }
+}
