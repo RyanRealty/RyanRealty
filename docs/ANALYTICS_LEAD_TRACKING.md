@@ -123,7 +123,9 @@ Open the person at `/admin/crm` or `/admin/people/[id]`. After identification yo
 
 ### 3.3 In GA4 (pseudonymous)
 
-GA4 shows the **`fub_person_id`** event-scoped dimension on identified events (legacy name; it is the CRM person id). To name it, open `/admin/people/[id]`. Repeat visitors who later identify light up retroactively (within origin), because backfill attaches the id to their prior session.
+A recognized contact's GA4 `user_id` is the hashed CRM id (`components/AnalyticsIdentityBridge.tsx`), which GA4 reports as **Signed in with user ID = yes**. Use that dimension, or the **Known contacts** audiences (§4.3), to see them. The hash does not name the person in GA4; who they are and every page they viewed is in the CRM timeline (`/admin/people/[id]`).
+
+The old event-scoped **`fub_person_id`** dimension is dead: it carried a value on 22 events in June to August 2026 and on none since September (GA4 Data API, 2026-10-14). Do not build on it. A filter of "`fub_person_id` matches `.+`" or "is not empty" matches GA4's literal `(not set)`, so it selects every visitor; that is how the Identified leads audiences counted everyone until 2026-10-14.
 
 ---
 
@@ -143,9 +145,9 @@ Content/context: `price_range`, `property_type`, `property_location`, `cta_locat
 
 ### 4.3 Audiences (22) — the "name with a number" + cross-source segments
 
-`All Users`, `Purchasers`, `Property Page Viewers`, `Lead Form Starters`, `Schedule Showing Prospects`, `Leads`, `Property Searchers`, `Active Buyers (3+ listings)`, `CMA Downloaders`, `Engaged Sellers (no convert 30d)`, `Repeat visitors — no conversion`, `Form starters — no submit`, `LP visitors 7d — no conversion`, `LP visitors 30d — no conversion`, `High-intent sellers`, **`Identified leads`** (GA4 audience name; the id is `crm_people.id`), `Real site traffic`, `Google visitors`, `Returning visitors`, **`Identified Google leads`**, `Facebook visitors`, **`Identified Facebook leads`**.
+`All Users`, `Purchasers`, `Property Page Viewers`, `Lead Form Starters`, `Schedule Showing Prospects`, `Leads`, `Property Searchers`, `Active Buyers (3+ listings)`, `CMA Downloaders`, `Engaged Sellers (no convert 30d)`, `Repeat visitors — no conversion`, `Form starters — no submit`, `LP visitors 7d — no conversion`, `LP visitors 30d — no conversion`, `High-intent sellers`, **`Known contacts (CRM)`**, `Real site traffic`, `Google visitors`, `Returning visitors`, **`Known contacts from Google`**, `Facebook visitors`, **`Known contacts from Facebook or Instagram`**.
 
-The three bold audiences are the direct answer to "if they continue with Google or Facebook we know who they are": each requires `fub_person_id` to be set alongside the source.
+The three bold audiences answer "if they come back from Google or Facebook, we know who they are": each requires **Signed in with user ID = yes** (a recognized CRM contact), the last two alongside the first-visit source. They replaced `Identified leads (FUB person)`, `Identified Google leads` and `Identified Facebook leads` on 2026-10-14; those three tested `fub_person_id` against `.+`, matched `(not set)`, held every visitor, and are renamed `Retired: … (counted everyone)` pending archive. `scripts/ga4-admin.mjs` now refuses any audience that tests a dimension for "any value".
 
 ---
 
@@ -161,10 +163,10 @@ GA4 **Explorations cannot be created by API** — they are UI artifacts. Build t
 ### 5.1 Identified leads — name with a number  *(the headline report)*
 
 - Type: **Free form**, table.
-- Rows: `fub_person_id`, then `lead_type`, `assigned_broker`.
-- Values: `Event count`, `Conversions`, `Sessions`.
-- Filter: `fub_person_id` **is not** `(not set)`.
-- Read: each row is one identified person. Copy the id → `/admin/people/[id]` for the name. Sort by Conversions to surface hottest leads.
+- Segment: the **Known contacts (CRM)** audience, or filter **Signed in with user ID** exactly `yes`.
+- Rows: `First user source`, `Landing page`.
+- Values: `Active users`, `Key events`, `Sessions`.
+- Read: how recognized contacts arrive and what they act on, in aggregate. GA4 holds only the hashed id; one person's name and full history are in the CRM (`/admin/people/[id]`).
 
 ### 5.2 Single-lead deep-dive — "see exactly what they are doing"
 
