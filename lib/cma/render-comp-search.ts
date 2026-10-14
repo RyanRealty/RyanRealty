@@ -207,7 +207,10 @@ function capitalise(s: string): string {
  * (reader review, 915 Saginaw and 20676 Wild Rose, 2026-10-08). New sentences
  * already say "No home sold in". This rewrites a letter that stored the old one.
  */
-function rewriteZeroSaleMatch(sentence: string): string {
+function rewriteZeroSaleMatch(sentence: string, ownGroundSold?: number | null): string {
+  // A new letter that read homes on the own ground and found some may say
+  // "matched" truthfully (reader review 2026-10-09). Do not rewrite that.
+  if (ownGroundSold != null && ownGroundSold > 0) return sentence
   return sentence
     .replace(
       /No sale inside (.+?)\s+matched your home, so the search opened to /g,
@@ -217,7 +220,10 @@ function rewriteZeroSaleMatch(sentence: string): string {
 }
 
 export function compSearchSentence(input: Parameters<typeof baseCompSearchSentence>[0]): string {
-  const base = rewriteZeroSaleMatch(baseCompSearchSentence(input))
-  const rural = cleanText(readCompSearch(input.args)?.ruralSentence ?? null)
-  return rural ? `${base} ${rural}` : base
+  const stored = readCompSearch(input.args)
+  const base = rewriteZeroSaleMatch(baseCompSearchSentence(input), stored?.ownGroundSold)
+  const rural = cleanText(stored?.ruralSentence ?? null)
+  // An ADU home says which sales set its price (Matt 2026-10-14, lib/pricing/adu-preference.ts).
+  const adu = cleanText(stored?.aduSentence ?? null)
+  return [base, rural, adu].filter((s): s is string => Boolean(s)).join(' ')
 }

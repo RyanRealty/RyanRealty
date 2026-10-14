@@ -324,6 +324,14 @@ export type CompSearch = {
   sentence: string | null
   /** On acreage: the splits that set sales aside, one sentence. */
   ruralSentence?: string | null
+  /** An ADU home: which sales set its price, one sentence (Matt 2026-10-14). */
+  aduSentence?: string | null
+  /**
+   * Homes that sold on the subject's own ground, any size, when the own
+   * rungs found none. Null when that was not read. A count above zero means
+   * a stored "matched your home" sentence is true and must not be rewritten.
+   */
+  ownGroundSold?: number | null
 }
 
 /**
@@ -361,12 +369,15 @@ export function readCompSearch(args: unknown): CompSearch | null {
       if (name && n != null && n >= 0) bySub[name] = n
     }
   }
+  const sold = num(cs.ownGroundSold)
   return {
     subdivision: str(cs.subdivision),
     rungs,
     keptBySubdivision: bySub,
     sentence: str(cs.sentence),
     ruralSentence: str(cs.ruralSentence),
+    aduSentence: str(cs.aduSentence),
+    ownGroundSold: sold != null && sold >= 0 ? sold : null,
   }
 }
 

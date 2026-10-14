@@ -81,6 +81,8 @@ type ProductSubject = {
   publicRemarks?: string | null
   subdivision?: string | null
   seniorCommunityYn?: boolean | null
+  /** The subject's MLS ADU reading (CmaSubject.units), for the ADU wall. */
+  units?: { aduYn?: boolean | null } | null
 }
 
 export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
@@ -118,7 +120,7 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
     if (multiUnitFromRemarks(comp.publicRemarks) !== multiUnitFromRemarks(args.subject.publicRemarks)) return true
     // The ADU wall: a sale whose remarks state an ADU never prices a subject
     // whose remarks state none. A subject with an ADU keeps both kinds.
-    if (aduSaleRefused(args.subject.publicRemarks, comp.publicRemarks)) return true
+    if (aduSaleRefused(args.subject.publicRemarks, comp.publicRemarks, args.subject.units?.aduYn)) return true
     if (!productTypeCompatible(args.subject.propertySubType, comp.propertySubType ?? null)) return true
     const verdict = byVerdict.get(comp.listingKey)
     if (verdict && isHardProductExclusion(verdict)) return true

@@ -2,9 +2,12 @@
   "version": 1,
   "always": [
     "ci:studio-rules",
+    "ci:video-freeze",
     "ci:private-remarks",
     "ci:deals-copy",
     "ci:imagine-no-paid-api",
+    "ci:studio-techniques",
+    "ci:content-rules",
     "ci:broker-own-book",
     "ci:commit-compiles",
     "ci:count-degraded-read",
@@ -35,6 +38,7 @@
     "ci:hooks-installed",
     "ci:identity-stitch-paths",
     "ci:analytics-suppression",
+    "ci:analytics-registry",
     "ci:jsonb-cast-guard",
     "ci:jsonb-contains",
     "ci:listing-alert-enroll",
@@ -253,7 +257,9 @@
       "lib/seo*",
       "app/sitemap.ts",
       "app/robots.ts",
-      "app/llms.txt/**"
+      "app/llms.txt/**",
+      "middleware.ts",
+      "scripts/check-ai-crawler-access.mjs"
     ],
     "ci:ai-query-battery": [
       "app/**/page.tsx",

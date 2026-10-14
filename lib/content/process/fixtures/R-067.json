@@ -1,0 +1,13 @@
+{
+  "rule": "R-067",
+  "step": "brief",
+  "what": "a registry with no categories",
+  "setup": {
+    "registry": [
+      {
+        "path": "techniques.*.category",
+        "delete": true
+      }
+    ]
+  }
+}

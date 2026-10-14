@@ -33,10 +33,10 @@
  * Never blocks the caller — wrapped in try/catch and logs failures to console.
  */
 
-import { cookies, headers } from 'next/headers'
+import { cookies } from 'next/headers'
 import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-protocol'
 import { rememberGaClientId } from '@/lib/data/analytics/gaClientId'
-import { CONSENT_COOKIE, recordingAllowed } from '@/lib/identity/consent'
+import { ga4ServerEventParams, ga4ServerSend, type Ga4ServerContext } from '@/lib/analytics/ga4-server-context'
 import {
   isLeadFormId,
   isLeadType,
@@ -79,6 +79,13 @@ export type FireLeadParams = {
    * generate_lead. Referer fills any key the client omitted.
    */
   attribution?: LeadAttributionParams
+  /**
+   * True when no visitor browser made this request: a provider webhook (Meta
+   * Lead Ads calls us directly). There are no visitor cookies, Referer or user
+   * agent to read, so the event goes without a GA4 session and the browser
+   * rules (consent cookie, automation, broker browser) do not apply to it.
+   */
+  serverToServer?: boolean
 }
 
 /** First-party campaign params on generate_lead. Allowlisted, no PII. Independent of ad cookies. */
@@ -182,30 +189,47 @@ export function attributionParamsFromSearch(search: string | URLSearchParams): L
   return out
 }
 
-async function requestContext(): Promise<{
+/**
+ * The request side of a server GA4 event, or null when it must not be sent:
+ * GPC or a stored decline (Matt 2026-10-08), a request GA4 does not count (a
+ * broker's own browser, automation, /admin, a non-production host;
+ * lib/analytics/ga-suppression.ts, Matt 2026-10-05), or a request that could
+ * not be read. The lead record in our own CRM is written by the caller either way.
+ */
+async function requestContext(opts: { serverToServer?: boolean } = {}): Promise<{
   clientId: string | undefined
   utm: LeadAttributionParams
-  /**
-   * False under Global Privacy Control (Sec-GPC: 1) or a stored banner decline:
-   * then nothing goes to GA4 (Matt 2026-10-08: GPC or a decline turns analytics
-   * off). The lead record in our own CRM is written by the caller either way.
-   */
-  analyticsAllowed: boolean
-}> {
-  const [cookieStore, headersList] = await Promise.all([cookies(), headers()])
-  const analyticsAllowed = recordingAllowed({
-    consentCookie: cookieStore.get(CONSENT_COOKIE)?.value,
-    secGpc: headersList.get('sec-gpc'),
-  })
-  const referer = headersList.get('referer') ?? ''
+  ctx: Ga4ServerContext | null
+} | null> {
+  const send = await ga4ServerSend(opts)
+  if (!send) return null
+  if (opts.serverToServer) return { clientId: undefined, utm: {}, ctx: null }
   let utm: LeadAttributionParams = {}
   try {
-    const refUrl = new URL(referer)
-    utm = attributionParamsFromSearch(refUrl.searchParams)
+    utm = attributionParamsFromSearch(new URL(send.ctx.referer).searchParams)
   } catch {
     // Referer not parseable. No UTMs to capture.
   }
-  return { clientId: readGa4ClientIdFromCookies(cookieStore) ?? undefined, utm, analyticsAllowed }
+  return { clientId: send.clientId, utm, ctx: send.ctx }
+}
+
+/**
+ * First-touch write of the `_ga` cookie onto `crm_people.custom.gaClientId`.
+ * Every lead form action calls this after the CRM person exists so offline
+ * conversions can stitch later, even when generate_lead is skipped (decline,
+ * GPC, or a path that never reaches fireLeadGenerated). Never overwrites an
+ * existing id. Fail-soft: never throws.
+ */
+export async function persistGaClientIdFromCookies(
+  personId: number | null | undefined,
+): Promise<void> {
+  try {
+    const cookieStore = await cookies()
+    await rememberGaClientId(personId, readGa4ClientIdFromCookies(cookieStore))
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.warn(`[lead-tracking] persistGaClientIdFromCookies failed: ${msg}`)
+  }
 }
 
 /**
@@ -259,21 +283,22 @@ export async function fireLeadGenerated(params: FireLeadParams): Promise<void> {
       )
       return
     }
-    const { clientId, utm, analyticsAllowed } = await requestContext()
-    if (!analyticsAllowed) {
-      console.info(`[lead-tracking] ${eventName} not sent to GA4 for ${params.lp_variant}: GPC or a cookie decline`)
+    // First-touch persist is first-party CRM state, not a GA4 send. Every form
+    // fill that created a person keeps the cookie so #543 can stitch later,
+    // even when GPC, a decline or suppression blocks generate_lead (#560).
+    if (!params.serverToServer) await persistGaClientIdFromCookies(params.crm_person_id ?? params.fub_person_id)
+    const req = await requestContext({ serverToServer: params.serverToServer })
+    if (!req) {
+      console.info(`[lead-tracking] ${eventName} not sent to GA4 for ${params.lp_variant}: GPC, a cookie decline, or a request GA4 does not count`)
       return
     }
+    const { clientId, utm, ctx } = req
     const eventParams = leadEventParams(params, mergeLeadAttribution(utm, params.attribution))
     if (!eventParams) return
-    // Offline conversions (qualify_lead / close_convert_lead) run from cron
-    // and have no request cookies. Persist the `_ga` client_id on the contact
-    // so that later send can stitch to the same GA4 user.
-    void rememberGaClientId(params.crm_person_id ?? params.fub_person_id, clientId)
     await fireGa4Event({
       eventName,
       clientId,
-      eventParams,
+      eventParams: ga4ServerEventParams(ctx, eventParams),
       userProperties: params.broker_slug ? { assigned_broker: params.broker_slug } : undefined,
     })
   } catch (e) {
@@ -294,12 +319,12 @@ export async function fireNonLeadEvent(params: {
   extra?: Record<string, string | number | boolean | undefined | null>
 }): Promise<void> {
   try {
-    const { clientId, utm, analyticsAllowed } = await requestContext()
-    if (!analyticsAllowed) return
+    const req = await requestContext()
+    if (!req) return
     await fireGa4Event({
       eventName: params.event_name,
-      clientId,
-      eventParams: { lp_variant: params.lp_variant, ...utm, ...(params.extra ?? {}), form_id: params.form_id },
+      clientId: req.clientId,
+      eventParams: ga4ServerEventParams(req.ctx, { lp_variant: params.lp_variant, ...req.utm, ...(params.extra ?? {}), form_id: params.form_id }),
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)

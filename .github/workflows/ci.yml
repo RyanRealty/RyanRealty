@@ -275,7 +275,7 @@ jobs:
   # mutely on every PR from 2026-07-25; scripts/wait-for-server.mjs reports
   # each probe and the server log is dumped on failure (.github/actions/use-build).
   smoke:
-    needs: changes
+    needs: [changes, build]
     if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -321,7 +321,7 @@ jobs:
   # carried when its contentFloor was seeded on parity.json. Lower a floor only
   # by hand, in the same commit. 27 classes, about 10 s each: split 4 ways.
   content-floor:
-    needs: changes
+    needs: [changes, build]
     if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -346,7 +346,7 @@ jobs:
   # aggregate a11y score misses). It always wanted a fresh server (it flaked
   # after Lighthouse's 24 passes on 2026-08-21); it now has one to itself.
   a11y:
-    needs: changes
+    needs: [changes, build]
     if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -365,7 +365,7 @@ jobs:
   # took 9.5 minutes on one runner, so LHCI_SHARD splits the URLs 4 ways;
   # each URL keeps its 3 runs and its assertions.
   lighthouse:
-    needs: changes
+    needs: [changes, build]
     if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -385,7 +385,7 @@ jobs:
         run: npm run ci:lighthouse
 
   e2e:
-    needs: changes
+    needs: [changes, build]
     if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -431,6 +431,40 @@ jobs:
           name: visual-diffs
           path: e2e/visual-diffs/
           retention-days: 7
+
+  # Required land-path rollup (Matt 2026-10-14). Lighthouse and content-floor
+  # flake on main and must not jam the merge queue. lint / gates / unit always
+  # run; build / e2e / a11y run on app PRs. security-scan is a sibling workflow.
+  merge-gate:
+    if: always()
+    needs: [changes, lint, gates, unit, build, e2e, a11y]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Required checks passed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          APP: ${{ needs.changes.outputs.app }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          for key in lint gates unit; do
+            result=$(echo "$RESULTS" | jq -r --arg k "$key" '.[$k].result')
+            if [ "$result" != "success" ]; then
+              echo "::error::$key is $result"
+              exit 1
+            fi
+          done
+          if [ "$EVENT" = "pull_request" ] && [ "$APP" != "false" ]; then
+            for key in build e2e a11y; do
+              result=$(echo "$RESULTS" | jq -r --arg k "$key" '.[$k].result')
+              if [ "$result" != "success" ]; then
+                echo "::error::$key is $result on an app PR"
+                exit 1
+              fi
+            done
+          fi
+          echo "merge-gate green"
 
   # The one check to read: green only when every job above passed (or was
   # skipped by design: the build and its server jobs on pushes to main and on

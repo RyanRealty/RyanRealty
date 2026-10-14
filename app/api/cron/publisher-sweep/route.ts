@@ -16,6 +16,16 @@
  * still 'approved' (optimistic lock). A row already set to 'executed' by a
  * concurrent sweep call is skipped.
  *
+ * Video freeze (Matt 2026-10-14, lib/content/video-freeze.ts): a row whose
+ * publish payload is video, or carries media that cannot be told apart from
+ * video, is skipped and logged, never POSTed. It stays 'approved' and
+ * untouched, and it does not count against maxRows, so a held video can never
+ * starve the image posts behind it. The sweep judges rows with the same
+ * rowVideoFreezeRefusal the approve doors use, so a row that carries no media
+ * at all is not held: it goes to the publish route, is refused there, and
+ * takes the failure-then-kill path it always did. Retired by the certificate
+ * check.
+ *
  * Schedule: every 10 minutes (see vercel.json).
  * Auth: Authorization: Bearer $CRON_SECRET
  *
@@ -29,11 +39,17 @@ import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { configuredSiteOrigin } from '@/lib/site-origin'
 import { createServiceClient } from '@/lib/supabase/service'
 import { buildTrackedUrl, isUtmCampaign } from '@/lib/analytics/utm'
+import { rowVideoFreezeRefusal } from '@/lib/content/video-freeze'
 
 export const maxDuration = 300
 
 const DEFAULT_MAX_ROWS = 10
 const MAX_RETRY_COUNT = 2
+/**
+ * Extra due rows read past maxRows, so approved rows held by the video freeze
+ * (skipped, never counted) cannot crowd image posts out of a run.
+ */
+const FROZEN_SCAN_HEADROOM = 100
 
 interface PublishResult {
   action_id: string
@@ -46,6 +62,20 @@ interface SweepError {
   action_id: string
   phase: string
   error: string
+}
+
+interface FrozenSkip {
+  action_id: string
+  action_type: string
+  reason: string
+}
+
+type SweepRow = {
+  id: string
+  action_type: string
+  format: string | null
+  executor_response: unknown
+  failure_log: unknown
 }
 
 export async function GET(request: NextRequest) {
@@ -66,18 +96,19 @@ export async function GET(request: NextRequest) {
   // Fetch approved rows that are due.
   const { data: candidates, error: fetchErr } = await supabase
     .from('marketing_brain_actions')
-    .select('id, action_type, executor_response, failure_log')
+    // `format` too: the freeze reads the same columns at every door.
+    .select('id, action_type, format, executor_response, failure_log')
     .eq('status', 'approved')
     .or('scheduled_for.is.null,scheduled_for.lte.' + startedAt)
     .order('approved_at', { ascending: true })
-    .limit(maxRows)
+    .limit(maxRows + FROZEN_SCAN_HEADROOM)
 
   if (fetchErr) {
     console.error('[publisher-sweep] fetch error:', fetchErr.message)
     return NextResponse.json({ error: fetchErr.message }, { status: 500 })
   }
 
-  const rows = candidates ?? []
+  const rows = (candidates ?? []) as SweepRow[]
 
   if (dryRun) {
     return NextResponse.json({
@@ -86,6 +117,8 @@ export async function GET(request: NextRequest) {
         id: r.id,
         action_type: r.action_type,
         has_publish_payload: !!(r.executor_response as Record<string, unknown> | null)?.publish_payload,
+        video_frozen:
+          !!(r.executor_response as Record<string, unknown> | null)?.publish_payload && rowVideoFreezeRefusal(r) !== null,
       })),
       startedAt,
     })
@@ -93,6 +126,8 @@ export async function GET(request: NextRequest) {
 
   const published: PublishResult[] = []
   const errors: SweepError[] = []
+  const videoFrozen: FrozenSkip[] = []
+  let handled = 0
 
   const cronSecret = process.env.CRON_SECRET
   // Server-to-server self-call: the configured origin (production hosts fold to
@@ -140,6 +175,19 @@ export async function GET(request: NextRequest) {
   for (const row of rows) {
     const executorResponse = (row.executor_response ?? {}) as Record<string, unknown>
     const publishPayload = executorResponse.publish_payload as Record<string, unknown> | undefined
+
+    // Video freeze: a video (or unknown-media) payload is held, never POSTed,
+    // and does not use up this run's maxRows. A row that carries no media is
+    // not held (the approve doors' rule), so it fails and is killed as before.
+    const frozenReason = publishPayload ? rowVideoFreezeRefusal(row) : null
+    if (frozenReason) {
+      console.warn(`[publisher-sweep] holding ${row.id} (${row.action_type}): ${frozenReason}`)
+      videoFrozen.push({ action_id: row.id, action_type: row.action_type, reason: frozenReason })
+      continue
+    }
+
+    if (handled >= maxRows) break
+    handled += 1
 
     // If producer has not written a publish_payload, log and skip.
     if (!publishPayload) {
@@ -313,11 +361,13 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     startedAt,
-    rows_processed: rows.length,
+    rows_processed: handled,
     published_count: published.length,
     error_count: errors.length,
+    video_frozen_count: videoFrozen.length,
     published,
     errors,
+    video_frozen: videoFrozen,
   })
 }
 

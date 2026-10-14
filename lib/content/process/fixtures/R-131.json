@@ -1,0 +1,15 @@
+{
+  "rule": "R-131",
+  "step": "master",
+  "what": "a third master",
+  "setup": {
+    "attempts": [
+      {
+        "step": "master"
+      },
+      {
+        "step": "master"
+      }
+    ]
+  }
+}

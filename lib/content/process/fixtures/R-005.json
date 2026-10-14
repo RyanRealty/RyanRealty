@@ -1,0 +1,12 @@
+{
+  "rule": "R-005",
+  "step": "brief",
+  "what": "an empty hook text",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "hook.text",
+      "set": " "
+    }
+  ]
+}

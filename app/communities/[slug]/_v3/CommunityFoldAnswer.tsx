@@ -24,7 +24,7 @@ export function CommunityFoldAnswer({
   answer,
   link,
   className,
-  id = 'answer',
+  id = 'takeaways',
 }: {
   answer: CommunityFoldAnswer
   link?: { label: string; href: string } | null

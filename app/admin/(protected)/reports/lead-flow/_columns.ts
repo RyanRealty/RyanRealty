@@ -3,9 +3,11 @@
 // state. See page.tsx for how each of these is used.
 import type { ReportColumn } from '@/components/admin/v2'
 
-/** Row caps the old tables applied. Carried over unchanged. */
+/**
+ * Row caps the old tables applied. The wiring table has none: it is the door
+ * registry, and a cap of 12 hid the last rows once the registry grew to 14.
+ */
 export const CAP_SOURCES = 10
-export const CAP_WIRING = 12
 export const CAP_SPLIT = 10
 export const CAP_EVENTS = 10
 export const CAP_DAYS = 14

@@ -5,6 +5,8 @@ alwaysApply: true
 
 # Production parity (single current state)
 
+Process and Done: **[AGENTS.md](../../AGENTS.md) CORE RULES**. This file is the three-layer release check only.
+
 **https://ryan-realty.com** counts as “everything latest” only when all of these match the same release:
 
 1. **`main`** includes the intended commits.  

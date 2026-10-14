@@ -1,0 +1,17 @@
+{
+  "rule": "R-043",
+  "step": "brief",
+  "what": "one long sentence",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.voiceover.script",
+      "set": "[warm] So... Bend has three and a half months of homes for sale right now and sellers still have the edge so you will want to go in with a plan before the next listing comes up. [long pause] Send this to whoever you're house hunting with."
+    },
+    {
+      "in": "timeline",
+      "path": "voice.script",
+      "set": "[warm] So... Bend has three and a half months of homes for sale right now and sellers still have the edge so you will want to go in with a plan before the next listing comes up. [long pause] Send this to whoever you're house hunting with."
+    }
+  ]
+}

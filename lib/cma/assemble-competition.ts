@@ -106,6 +106,12 @@ export function salesSearchAndArea(args: {
       args.diagnostics.rural_acreage || (subject.lotAcres ?? 0) >= 1
         ? { subjectZone: args.subjectZone, counts: args.diagnostics.excluded_totals }
         : null,
+    ownGroundSold:
+      args.diagnostics.own_ground_sold != null && args.diagnostics.own_ground_sold.n >= 0
+        ? args.diagnostics.own_ground_sold.n
+        : null,
+    // An ADU home's pass (Matt 2026-10-14): the sentence prints after the search story.
+    aduSentence: args.diagnostics.adu_preference?.sentence ?? null,
   })
   const compArea = buildCompArea({
     subject: {

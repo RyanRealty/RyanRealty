@@ -74,14 +74,16 @@ export async function countCompsForAddress(input: {
     city: input.city,
     postalCode: input.postalCode ?? null,
   })
-  if (!resolved.subject) {
+  // A multi-unit home has no count on the single-family ladder (rule 23); a
+  // broker matches it by hand, which is what the not-found copy already says.
+  if (!resolved.subject || resolved.refusal) {
     return {
       subjectFound: false,
       count: null,
       marks: [],
       tiersUsed: [],
       subjectSummary: null,
-      trace: resolved.trace,
+      trace: resolved.refusal ? `${resolved.trace} ${resolved.refusal}` : resolved.trace,
     }
   }
   const subject = resolved.subject

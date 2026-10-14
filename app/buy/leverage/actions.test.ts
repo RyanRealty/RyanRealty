@@ -23,11 +23,13 @@ vi.mock('@/lib/data/crm/ensureNativeLead', () => ({
 }))
 
 const fireLeadGenerated = vi.fn()
+const persistGaClientIdFromCookies = vi.fn()
 vi.mock('@/lib/lead-tracking', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/lead-tracking')>()
   return {
     ...actual,
     fireLeadGenerated: (...args: unknown[]) => fireLeadGenerated(...args),
+    persistGaClientIdFromCookies: (...args: unknown[]) => persistGaClientIdFromCookies(...args),
   }
 })
 
@@ -41,6 +43,8 @@ vi.mock('next/headers', () => ({
   cookies: async () => ({ get: () => undefined }),
   headers: async () => new Headers(),
 }))
+// The visit's landing link (visitor_sessions). Never read production.
+vi.mock('@/lib/data/identity/visitCampaign', () => ({ readLiveVisit: vi.fn(async () => null) }))
 
 import { submitLeverageLead } from './actions'
 import { LEVERAGE_FORM_ID, LEVERAGE_LEAD_TYPE, LEVERAGE_LP_VARIANT } from './_v3/leverage-constants'
@@ -62,6 +66,7 @@ beforeEach(() => {
   ensureNativeLead.mockReset().mockResolvedValue({ personId: PERSON_ID, created: true })
   enrichNativeLead.mockReset().mockResolvedValue(undefined)
   fireLeadGenerated.mockReset().mockResolvedValue(undefined)
+  persistGaClientIdFromCookies.mockReset().mockResolvedValue(undefined)
   vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200 })))
 })
 
@@ -113,11 +118,13 @@ describe('submitLeverageLead', () => {
 
   it('fires generate_lead with buyer_alerts and buyer_leverage_lp', async () => {
     await submitLeverageLead(input())
+    expect(persistGaClientIdFromCookies).toHaveBeenCalledWith(PERSON_ID)
     expect(fireLeadGenerated).toHaveBeenCalledWith(
       expect.objectContaining({
         lead_type: LEVERAGE_LEAD_TYPE,
         form_id: LEVERAGE_FORM_ID,
         lp_variant: LEVERAGE_LP_VARIANT,
+        crm_person_id: PERSON_ID,
       }),
     )
     const payload = fireLeadGenerated.mock.calls[0]?.[0] as Record<string, unknown>
@@ -166,6 +173,7 @@ describe('submitLeverageLead', () => {
     )
     expect(res.error).toBe('down')
     expect(ensureNativeLead).toHaveBeenCalled()
+    expect(persistGaClientIdFromCookies).toHaveBeenCalledWith(PERSON_ID)
     expect(fireLeadGenerated).not.toHaveBeenCalled()
   })
 })

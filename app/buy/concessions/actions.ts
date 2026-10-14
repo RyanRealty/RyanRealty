@@ -7,9 +7,9 @@ import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { sendEvent } from '@/lib/crm/send-event'
 import { sendContactNotification } from '@/lib/resend'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
-import { resolvePaidAttributionTags } from '@/lib/crm/lead-source'
+import { noSignupAttribution, signupAttribution } from '@/lib/crm/visit-attribution'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
-import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { fireLeadGenerated, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { TRAP } from './_v3/constants'
@@ -50,14 +50,17 @@ export async function submitConcessionsLead(formData: FormData): Promise<Concess
   if (!name) return { error: 'Please enter your name' }
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Please enter a valid email address' }
 
-  const paidTags = resolvePaidAttributionTags({
-    utmSource: lpSource,
-    utmMedium: lpMedium,
-    utmCampaign: lpCampaign,
-    utmContent: lpContent,
-  })
+  // The link that started the visit the submit happens in, else the page's own
+  // (Matt 2026-10-09, "Visit they signed up in"; lib/crm/visit-attribution.ts).
+  // Started here and awaited after the CRM write, so the visit read adds nothing
+  // to the submit's wait; a filled honeypot reads nothing.
+  const signupPending = honeypot
+    ? Promise.resolve(noSignupAttribution())
+    : signupAttribution({
+        page: { source: lpSource, medium: lpMedium, campaign: lpCampaign, content: lpContent },
+        sessionId,
+      })
   const creative = creativeTag(cr)
-  const extraTags = [...paidTags, ...(creative ? [creative] : [])]
   const details = [
     'intent=buy-concessions',
     timeline ? `timeline=${timeline}` : null,
@@ -90,6 +93,10 @@ export async function submitConcessionsLead(formData: FormData): Promise<Concess
     },
     screen: { honeypot },
   })
+  const signup = await signupPending
+  const extraTags = [...signup.tags, ...(creative ? [creative] : [])]
+  // The origin note keeps the page's utm when neither link earned credit.
+  const noteUtm = signup.utm ?? { source: lpSource, medium: lpMedium, campaign: lpCampaign, content: lpContent }
 
   let capturedPersonId: number | null = res.ok ? res.personId : null
   let suspect = res.ok ? res.suspect : false
@@ -151,10 +158,10 @@ export async function submitConcessionsLead(formData: FormData): Promise<Concess
             sourceLabel: 'Buy concessions',
             landingPage: SOURCE_URL,
             audience: 'buyer',
-            utmSource: lpSource,
-            utmMedium: lpMedium,
-            utmCampaign: lpCampaign,
-            utmContent: lpContent,
+            utmSource: noteUtm.source,
+            utmMedium: noteUtm.medium,
+            utmCampaign: noteUtm.campaign,
+            utmContent: noteUtm.content,
             want: timeline ? `timeline=${timeline}` : undefined,
             extra: [cr && `cr=${cr}`, gclid && `gclid=${gclid}`, fbclid && `fbclid=${fbclid}`]
               .filter(Boolean)
@@ -205,6 +212,7 @@ export async function submitConcessionsLead(formData: FormData): Promise<Concess
     })
   }
 
+  await persistGaClientIdFromCookies(capturedPersonId)
   await fireLeadGenerated({
     lp_variant: 'buy-concessions',
     lead_type: 'buyer_question',

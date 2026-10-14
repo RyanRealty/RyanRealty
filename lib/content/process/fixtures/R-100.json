@@ -1,0 +1,16 @@
+{
+  "rule": "R-100",
+  "step": "master",
+  "what": "a 2 s freeze",
+  "setup": {
+    "measure": {
+      "freezes": [
+        {
+          "start": 3,
+          "end": 5,
+          "duration": 2
+        }
+      ]
+    }
+  }
+}

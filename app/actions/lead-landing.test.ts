@@ -30,11 +30,13 @@ vi.mock('@/lib/visitor-backfill', () => ({ stitchFormSubmitIdentity: vi.fn(async
 vi.mock('@/lib/resend', () => ({ sendContactNotification: vi.fn(async () => undefined) }))
 
 const fireLeadGenerated = vi.fn()
+const persistGaClientIdFromCookies = vi.fn()
 vi.mock('@/lib/lead-tracking', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/lead-tracking')>()
   return {
     ...actual,
     fireLeadGenerated: (...args: unknown[]) => fireLeadGenerated(...args),
+    persistGaClientIdFromCookies: (...args: unknown[]) => persistGaClientIdFromCookies(...args),
   }
 })
 vi.mock('@/lib/meta-pixel-helpers', () => ({ generateEventId: () => 'evt-1' }))
@@ -44,6 +46,11 @@ vi.mock('@/lib/meta-capi-visitor', () => ({
 vi.mock('next/headers', () => ({
   cookies: async () => ({ get: () => undefined }),
   headers: async () => new Headers(),
+}))
+// The visit's landing link (visitor_sessions). Never read production.
+const readLiveVisit = vi.fn()
+vi.mock('@/lib/data/identity/visitCampaign', () => ({
+  readLiveVisit: (...args: unknown[]) => readLiveVisit(...args),
 }))
 
 import { submitLeadLandingForm } from './lead-landing'
@@ -68,6 +75,8 @@ beforeEach(() => {
   ensureNativeLead.mockReset().mockResolvedValue({ personId: PERSON_ID, created: true })
   enrichNativeLead.mockReset().mockResolvedValue(undefined)
   fireLeadGenerated.mockReset().mockResolvedValue(undefined)
+  readLiveVisit.mockReset().mockResolvedValue(null)
+  persistGaClientIdFromCookies.mockReset().mockResolvedValue(undefined)
   vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200 })))
 })
 
@@ -114,6 +123,8 @@ describe('submitLeadLandingForm paid attribution', () => {
       }),
     )
     expect(canonicallyTagLead).not.toHaveBeenCalled()
+    expect(persistGaClientIdFromCookies).toHaveBeenCalledWith(PERSON_ID)
+    expect(fireLeadGenerated).not.toHaveBeenCalled()
   })
 
   it('puts gclid and fbclid from lpContext on the CRM source URL', async () => {
@@ -133,11 +144,13 @@ describe('submitLeadLandingForm paid attribution', () => {
       leadType: 'buyer_alerts',
       lpVariant: 'buy-leverage',
     })
+    expect(persistGaClientIdFromCookies).toHaveBeenCalledWith(PERSON_ID)
     expect(fireLeadGenerated).toHaveBeenCalledWith(
       expect.objectContaining({
         lead_type: 'buyer_alerts',
         form_id: 'buyer_leverage_lp',
         lp_variant: 'buy-leverage',
+        crm_person_id: PERSON_ID,
       }),
     )
     const payload = fireLeadGenerated.mock.calls[0]?.[0] as Record<string, unknown>
@@ -166,5 +179,52 @@ describe('submitLeadLandingForm paid attribution', () => {
     })
     expect(body.customData).not.toHaveProperty('value')
     expect(body.customData).not.toHaveProperty('currency')
+  })
+})
+
+// Matt 2026-10-09, "Visit they signed up in": a buyer who clicked around before
+// submitting is credited to the link that started that visit, read on the
+// server. Until 2026-10-14 the page carried it in a tab-lifetime sessionStorage
+// copy, which credited a submit days later to the old ad.
+describe('submitLeadLandingForm visit attribution', () => {
+  const SESSION_ID = '550e8400-e29b-41d4-a716-446655440000'
+
+  it('a page with no utm is credited to the visit’s landing link', async () => {
+    readLiveVisit.mockResolvedValue({ campaign: { source: 'facebook', medium: 'paid_social', campaign: 'spring-buyers', content: 'act-9' } })
+
+    const res = await submitLeadLandingForm({ ...input(), sessionId: SESSION_ID })
+
+    expect(res).toEqual({ error: null })
+    expect(readLiveVisit).toHaveBeenCalledWith({ sessionId: SESSION_ID, rrVid: null })
+    expect(canonicallyTagLead).toHaveBeenCalledWith(
+      expect.objectContaining({ extraTags: ['channel:fb-ads', 'campaign:spring-buyers', 'ad-content:act-9'] }),
+    )
+  })
+
+  it('a live visit outranks the page’s utm', async () => {
+    readLiveVisit.mockResolvedValue({ campaign: { source: 'facebook', medium: 'paid_social', campaign: null, content: null } })
+
+    await submitLeadLandingForm({ ...input({ lp_source: 'google', lp_medium: 'cpc' }), sessionId: SESSION_ID })
+
+    expect(canonicallyTagLead).toHaveBeenCalledWith(expect.objectContaining({ extraTags: ['channel:fb-ads'] }))
+  })
+
+  it('with no live visit, the page’s utm answers', async () => {
+    await submitLeadLandingForm({ ...input({ lp_source: 'google', lp_medium: 'cpc' }), sessionId: SESSION_ID })
+    expect(canonicallyTagLead).toHaveBeenCalledWith(expect.objectContaining({ extraTags: ['channel:google-ads'] }))
+  })
+
+  it('no link on the page or the visit: no paid tag', async () => {
+    await submitLeadLandingForm({ ...input(), sessionId: SESSION_ID })
+    expect(canonicallyTagLead).toHaveBeenCalledWith(expect.objectContaining({ extraTags: [] }))
+  })
+})
+
+// FUNNEL-4: crm_people.source is the door. This form wrote the site host until
+// 2026-10-14, so the lead-flow report could not count /buy leads.
+describe('submitLeadLandingForm door label', () => {
+  it('writes buyer-lp, never the site host', async () => {
+    await submitLeadLandingForm(input())
+    expect(sendEvent).toHaveBeenCalledWith(expect.objectContaining({ source: 'buyer-lp' }))
   })
 })

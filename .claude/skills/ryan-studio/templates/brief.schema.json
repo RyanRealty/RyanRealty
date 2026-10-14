@@ -13,7 +13,8 @@
   "numbers",
   "footage",
   "end_card",
-  "caption"
+  "caption",
+  "creative"
  ],
  "properties": {
   "video_type": {
@@ -30,6 +31,43 @@
   },
   "title": {
    "type": "string"
+  },
+  "creative": {
+   "type": "object",
+   "description": "The creative-brain piece brief (.claude/skills/creative-brain), chosen before the story and carried into the manifest for the reviewer (Matt 2026-10-14).",
+   "required": [
+    "feel",
+    "constraint",
+    "lineage",
+    "one_sentence"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "feel": {
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 200,
+     "description": "One target emotion, chosen first (awe, chills, being-moved, satisfying, delight, humor)."
+    },
+    "constraint": {
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 200,
+     "description": "One formal constraint chosen before the story."
+    },
+    "lineage": {
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 200,
+     "description": "The non-AI artistic lineage it borrows from."
+    },
+    "one_sentence": {
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 200,
+     "description": "The idea in one sentence."
+    }
+   }
   },
   "hook": {
    "type": "object",
@@ -53,7 +91,7 @@
   },
   "length_reason": {
    "type": "string",
-   "description": "Required when length is over the type's max_s"
+   "description": "Required when length is over the type's max_s (video_gate.mjs lets a film with a reason run to the type's hard_max_s; the render gate is then given that ceiling as --max-s)"
   },
   "numbers": {
    "type": "array",
@@ -91,6 +129,64 @@
      },
      "hero": {
       "type": "boolean"
+     }
+    }
+   }
+  },
+  "outlines": {
+   "type": "array",
+   "description": "Outlines an outline_draw_zoom scene draws, read from the boundaries table at render time (never drawn by hand).",
+   "items": {
+    "type": "object",
+    "required": [
+     "key",
+     "geo_type",
+     "geo_slug",
+     "source"
+    ],
+    "properties": {
+     "key": {
+      "type": "string"
+     },
+     "geo_type": {
+      "enum": [
+       "city",
+       "neighborhood",
+       "subdivision",
+       "park",
+       "school",
+       "school_district",
+       "zip"
+      ]
+     },
+     "geo_slug": {
+      "type": "string"
+     },
+     "context": {
+      "type": "object",
+      "required": [
+       "geo_type",
+       "geo_slug"
+      ],
+      "properties": {
+       "geo_type": {
+        "enum": [
+         "city",
+         "neighborhood",
+         "subdivision",
+         "park",
+         "school",
+         "school_district",
+         "zip"
+        ]
+       },
+       "geo_slug": {
+        "type": "string"
+       }
+      }
+     },
+     "source": {
+      "type": "string"
      }
     }
    }
@@ -242,10 +338,14 @@
      "maximum": 2
     },
     "length_s_range": {
-     "const": [
-      15,
-      30
-     ]
+     "type": "array",
+     "description": "The video type's own length window [min_s, max_s] from tools/video_types.json (15 to 30 for most types, story_teaser 7 to 15, brand_film 15 to 90). video_gate.mjs holds it equal to the type's window, so the brief's video_type decides which pair is valid.",
+     "items": {
+      "type": "number",
+      "exclusiveMinimum": 0
+     },
+     "minItems": 2,
+     "maxItems": 2
     },
     "real_footage": {
      "const": true

@@ -1,0 +1,17 @@
+{
+  "rule": "R-024",
+  "step": "brief",
+  "what": "an MLS photo owned by Matt",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "footage.0.kind",
+      "set": "mls_photo"
+    },
+    {
+      "in": "brief",
+      "path": "footage.0.house_number_checked",
+      "set": true
+    }
+  ]
+}

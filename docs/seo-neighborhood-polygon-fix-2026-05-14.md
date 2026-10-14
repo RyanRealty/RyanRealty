@@ -1,3 +1,5 @@
+> **History (2026-05).** Current SEO canon: [`docs/SEO.md`](SEO.md) and Matt's pinned calls in [`data/seo/decisions.json`](../data/seo/decisions.json). Where this file disagrees, those win.
+
 # Neighborhood polygon-boundary fix — pipeline diagnosis + proposed SQL migration
 
 **Generated:** 2026-05-14

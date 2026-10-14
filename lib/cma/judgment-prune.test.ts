@@ -347,6 +347,19 @@ describe('a sale with an ADU never prices a home without one at the backstop (Ma
     expect(gated.comps.map((c) => c.listingKey)).toEqual(['norton-644', 'p1', 'p2', 'p3', 'p4', 'p5'])
   })
 
+  it('keeps both kinds for a subject whose MLS details say ADU while its remarks are silent (units.aduYn, 2026-10-14)', () => {
+    const gated = pricingCompsAfterJudgment({
+      selected,
+      vetted: selected,
+      verdicts: selected.map((c) => kept(c.listingKey)),
+      subject: { ...SFR_SUBJECT, publicRemarks: null, units: { aduYn: true } },
+      minComps: MIN_COMPS,
+      asOfYear: 2026,
+    })
+    expect(gated.droppedProduct).toBe(0)
+    expect(gated.comps.map((c) => c.listingKey)).toEqual(['norton-644', 'p1', 'p2', 'p3', 'p4', 'p5'])
+  })
+
   it('applies with no review at all, and an ADU sale is not a hard product exclusion by its reason words alone', () => {
     const gated = pricingCompsAfterJudgment({
       selected,

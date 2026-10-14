@@ -29,6 +29,8 @@ export type DraftCardModel = {
   origin: string | null
   createdAt: string
   typeLayer: StudioTypeLayer | null
+  /** Why this draft cannot be approved now (the video freeze), or null. */
+  approvalFrozen: string | null
 }
 
 function qaTone(score: number | null): string {
@@ -127,11 +129,19 @@ export function DraftCard({ draft }: { draft: DraftCardModel }) {
 
       {draft.typeLayer ? <TypeLayerLine layer={draft.typeLayer} /> : null}
 
+      {draft.status === 'ready' && !done && draft.approvalFrozen ? (
+        <p style={{ margin: '0 0 8px', color: 'var(--a-danger)', fontSize: 'var(--a-text-sm)' }}>
+          {draft.approvalFrozen}
+        </p>
+      ) : null}
+
       {draft.status === 'ready' && !done ? (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="button" onClick={approve} disabled={pending}>
-            {pending ? 'Working' : 'Approve and post'}
-          </Button>
+          {draft.approvalFrozen ? null : (
+            <Button type="button" onClick={approve} disabled={pending}>
+              {pending ? 'Working' : 'Approve and post'}
+            </Button>
+          )}
           <Button type="button" variant="quiet" onClick={kill} disabled={pending}>
             Kill
           </Button>

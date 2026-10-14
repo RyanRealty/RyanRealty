@@ -1,0 +1,12 @@
+{
+  "rule": "R-077",
+  "step": "brief",
+  "what": "a card footer with 12% in it",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.0.cards.0.footer",
+      "set": "Down 12% from last year"
+    }
+  ]
+}

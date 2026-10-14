@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { lpPathForVariant, lpVariantFromPath } from './lp-variant'
+import { liveLandingVariant, lpPathForVariant, lpVariantFromPath } from './lp-variant'
+import { BUY_PUBLIC_SLUGS } from '@/lib/routing/buy-public-slugs'
 
 describe('lpVariantFromPath', () => {
   it('reads the live landing pages the /lp pages 308 to (2026-09-06), under their old variant names', () => {
@@ -40,5 +41,21 @@ describe('lpPathForVariant', () => {
 
   it('an unknown history slug keeps its /lp path for the redirects to resolve', () => {
     expect(lpPathForVariant('tetherow')).toBe('/lp/tetherow')
+  })
+})
+
+describe('liveLandingVariant', () => {
+  it('names the live landing pages by their page variant', () => {
+    expect(liveLandingVariant('/sell')).toBe('seller-home-value')
+    expect(liveLandingVariant('/sell/valuation/')).toBe('seller-home-value')
+    expect(liveLandingVariant('/sell/expired-listings')).toBe('expired-listing')
+    expect(liveLandingVariant('https://ryan-realty.com/sell/for-sale-by-owner?utm_source=facebook')).toBe('fsbo')
+    for (const slug of BUY_PUBLIC_SLUGS) expect(liveLandingVariant(`/buy/${slug}`)).toBe(`buy-${slug}`)
+  })
+
+  it('is null for a 404 under /buy or /lp, the 308 sources, and pages that are not landing pages', () => {
+    for (const path of ['/buy/xyz', '/lp/foo', '/lp/seller-home-value', '/home-valuation', '/buy', '/sell/inherited-home', '/homes-for-sale', '/', '', null]) {
+      expect(liveLandingVariant(path)).toBeNull()
+    }
   })
 })

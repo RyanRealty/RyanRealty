@@ -8,10 +8,12 @@ const here = dirname(fileURLToPath(import.meta.url));
 const gate = join(here, '..', 'video_gate.mjs');
 const run = (n) => spawnSync(process.execPath, [gate, join(here, 'fixtures', `${n}.brief.json`), join(here, 'fixtures', `${n}.timeline.json`)], { encoding: 'utf8' });
 
-test('compliant market update passes', () => {
+test('the committed registry approves nothing, so even a compliant brief is refused at the signature floor', () => {
+  // Matt 2026-10-14: no film is built from a signature technique he has not seen.
   const r = run('pass');
-  assert.equal(r.status, 0, r.stdout + r.stderr);
-  assert.match(r.stdout, /VIDEO GATE PASSED/);
+  assert.equal(r.status, 1, r.stdout + r.stderr);
+  assert.match(r.stdout, /at least one approved signature technique/);
+  assert.match(r.stdout, /Signature technique "line_draw_riding_dot" is ready, not approved/);
 });
 
 test('broken buyer ad fails with plain reasons', () => {
@@ -27,10 +29,50 @@ test('usage error exits 2', () => {
 
 import { readFileSync } from 'node:fs';
 import { gate as g, spokenVoiceCheck } from '../video_gate.mjs';
+import { TEST_APPROVER } from '../technique-approval.mjs';
 const load = (f) => JSON.parse(readFileSync(join(here, 'fixtures', f), 'utf8'));
 const cfg = JSON.parse(readFileSync(join(here, '..', 'video_types.json'), 'utf8'));
 const pb = () => load('pass.brief.json'), pt = load('pass.timeline.json');
-const fails = (b) => g(b, pt, cfg).fails.join('\n');
+// A test-only registry: the real one with line_draw_riding_dot approved by the TEST approver (never
+// "matt") with a test-only reel, accepted only because the test passes opts.approver. Never the committed file.
+const realReg = JSON.parse(readFileSync(join(here, '..', '..', 'techniques', 'registry.json'), 'utf8')).techniques;
+const TEST_ONLY = { approved_by: TEST_APPROVER, approved_on: '2026-10-14', reel: 'lib/studio/qa/fixtures/test-only-reel.txt' };
+const testReg = { ...realReg, line_draw_riding_dot: { ...realReg.line_draw_riding_dot, status: 'approved', ...TEST_ONLY } };
+const fails = (b, reg = testReg, opts = { approver: TEST_APPROVER }) => g(b, pt, cfg, reg, opts).fails.join('\n');
+test('compliant market update passes (with its signature technique approved, test registry)', () => {
+  assert.equal(fails(pb()), '');
+});
+test('techniques: a signature needs approved, a base needs ready, and every film has one approved signature', () => {
+  assert.match(fails(pb(), realReg), /Signature technique "line_draw_riding_dot" is ready, not approved/);
+  const noSig = pb(); noSig.techniques = ['tiktok_caption_burn', 'contact_sheet_review'];
+  assert.match(fails(noSig), /no approved signature technique; every film runs at least one approved signature technique/);
+  assert.doesNotMatch(fails(pb()), /signature/);
+});
+test('approval: a row marked approved counts only with Matt, an ISO date and a reel that exists (F1)', () => {
+  // The test approver is not accepted where the committed rules apply ("matt" only).
+  assert.match(fails(pb(), testReg, {}), /"line_draw_riding_dot" is marked approved but the approval does not hold: it approved_by is "test-only stub", not "matt"/);
+  assert.match(fails(pb(), testReg, {}), /at least one approved signature technique/);
+  // A bot writing "matt" into a test registry does not pass either: there the approver is the test stub.
+  const asMatt = { ...realReg, line_draw_riding_dot: { ...realReg.line_draw_riding_dot, status: 'approved', ...TEST_ONLY, approved_by: 'matt' } };
+  assert.match(fails(pb(), asMatt), /approved_by is "matt", not "test-only stub"/);
+  // A forged "matt" row with a reel that is not in the checkout, or no date, is refused by the committed rules.
+  const forged = (over) => ({ ...realReg, line_draw_riding_dot: { ...realReg.line_draw_riding_dot, status: 'approved', approved_by: 'matt', approved_on: '2026-10-14', reel: 'out/studio/reels/never.mp4', ...over } });
+  assert.match(fails(pb(), forged({}), {}), /reel out\/studio\/reels\/never\.mp4 is not a file in this checkout/);
+  assert.match(fails(pb(), forged({ approved_on: 'today', reel: 'lib/studio/qa/fixtures/test-only-reel.txt' }), {}), /no approved_on ISO date/);
+  assert.match(fails(pb(), forged({ reel: 'https://reels.example.com/x.mp4' }), {}), /was not HEAD-checked/);
+  assert.match(fails(pb(), forged({ reel: 'https://reels.example.com/x.mp4' }), { reels: new Map([['line_draw_riding_dot', false]]) }), /did not answer a HEAD request/);
+  assert.equal(fails(pb(), forged({ reel: 'https://reels.example.com/x.mp4' }), { reels: new Map([['line_draw_riding_dot', true]]) }), '');
+});
+test('creative: the piece brief is required, each field non-empty and at most 200 characters', () => {
+  const none = pb(); delete none.creative;
+  assert.match(fails(none), /needs a "creative" block/);
+  for (const k of ['feel', 'constraint', 'lineage', 'one_sentence']) {
+    const b = pb(); b.creative[k] = '  ';
+    assert.match(fails(b), new RegExp(`creative\\.${k} is empty`));
+  }
+  const long = pb(); long.creative.lineage = 'x'.repeat(201);
+  assert.match(fails(long), /creative\.lineage runs 201 characters/);
+});
 test('spec rules: each mandatory rule blocks', () => {
   const cases = [
     [(b) => { delete b.spec_rules; }, /spec_rules/],
@@ -43,9 +85,22 @@ test('spec rules: each mandatory rule blocks', () => {
     [(b) => { b.spec_rules.end_card_sequence = ['logo', 'Call now 541.703.3095']; }, /End card must be/],
     [(b) => { b.spec_rules.topic_cta = { text: 'Get the report', placement: 'end_card' }; }, /own card/],
     [(b) => { b.techniques = ['made_up']; }, /not in techniques/],
+    [(b) => { b.techniques = ['subframe_motion_blur']; }, /is planned, not built yet/],
     [(b) => { b.caption = 'Bend top team'; }, /Top team/i],
   ];
   for (const [mut, re] of cases) { const b = pb(); mut(b); assert.match(fails(b), re); }
+});
+test('spec rules: the length range is the video type\'s own window, never a fixed 15 to 30 s (Matt 2026-10-14)', () => {
+  const b = pb();
+  assert.doesNotMatch(fails(b), /length_s_range/);
+  b.spec_rules.length_s_range = [7, 15];
+  assert.match(fails(b), new RegExp(`length_s_range must be \\[15,30\\], the ${b.video_type} window`));
+  const teaser = pb();
+  teaser.video_type = 'story_teaser';
+  teaser.spec_rules.length_s_range = [7, 15];
+  assert.doesNotMatch(fails(teaser), /length_s_range/);
+  teaser.spec_rules.length_s_range = [15, 30];
+  assert.match(fails(teaser), /length_s_range must be \[7,15\], the story_teaser window/);
 });
 test('registry: every technique has a recipe file', () => {
   const reg = JSON.parse(readFileSync(join(here, '..', '..', 'techniques', 'registry.json'), 'utf8')).techniques;
@@ -73,4 +128,21 @@ test('spoken voice: the gate blocks a brief with a prose VO, and with no VO', ()
   assert.match(fails(b), /Spoken voice/);
   const c = pb(); delete c.spec_rules.voiceover.script;
   assert.match(fails(c), /script is required/);
+});
+test('the brief schema holds length_s_range as the type\'s own window, not a pinned [15,30] (Matt 2026-10-14)', () => {
+  const schema = JSON.parse(readFileSync(join(here, '..', '..', 'templates', 'brief.schema.json'), 'utf8'));
+  const prop = schema.properties.spec_rules.properties.length_s_range;
+  assert.equal('const' in prop, false, 'a const pins one window for every type');
+  assert.equal(prop.type, 'array');
+  assert.equal(prop.minItems, 2); assert.equal(prop.maxItems, 2);
+  assert.equal(prop.items.type, 'number');
+  assert.match(prop.description, /video_types\.json/);
+  // Every type's window, as the gate demands it, is a pair this schema accepts, and the briefs the gate passes agree.
+  for (const [name, type] of Object.entries(cfg.types)) {
+    const win = [type.min_s ?? cfg.defaults.min_s, type.max_s ?? cfg.defaults.max_s];
+    assert.equal(win.length, prop.minItems, name);
+    assert.ok(win.every((n) => typeof n === 'number' && n > (prop.items.exclusiveMinimum ?? -Infinity)), `${name} window ${win}`);
+    const b = pb(); b.video_type = name; b.spec_rules.length_s_range = win;
+    assert.doesNotMatch(fails(b), /length_s_range/, name);
+  }
 });

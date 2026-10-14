@@ -86,6 +86,14 @@ describe('resolveCityNeighborhoodPath', () => {
     expect(resolveCityNeighborhoodPath('/cities/sisters/living')).toBeNull()
     expect(resolveCityNeighborhoodPath('/cities/bend/vs')).toBeNull()
     expect(resolveCityNeighborhoodPath('/cities/bend/types')).toBeNull()
+    expect(resolveCityNeighborhoodPath('/cities/bend/from-out-of-state')).toBeNull()
+    expect(resolveCityNeighborhoodPath('/cities/redmond/buying')).toBeNull()
+  })
+
+  it('leaves three-segment neighborhood buyer-answer children to the App Router', () => {
+    expect(resolveCityNeighborhoodPath('/cities/bend/old-bend/living')).toBeNull()
+    expect(resolveCityNeighborhoodPath('/cities/bend/southeast-bend/cost')).toBeNull()
+    expect(resolveCityNeighborhoodPath('/cities/bend/century-west/living')).toBeNull()
   })
 
   it('still 308s reserved children under an out-of-market town', () => {

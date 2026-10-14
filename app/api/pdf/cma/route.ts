@@ -88,12 +88,12 @@ export async function POST(request: Request) {
   // sendEvent captures natively (ensureNativeLead) and returns the crm_people
   // id, which gates the canonical tagging — the old post-send FUB
   // findPersonByEmail re-lookup was a dead no-op and was deleted.
-  const source = siteUrl.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com'
   const leadEmail = session.user.email
   sendEvent({
     type: 'Property Inquiry',
     person: { emails: [{ value: leadEmail }] },
-    source,
+    // The door, as the canonical tag below names it (FUNNEL-4), never the site host.
+    source: 'cma-request',
     sourceUrl: `${siteUrl}${listingHref}`,
     message: 'Downloaded CMA / Value Report (high intent)',
     property: {

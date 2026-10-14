@@ -1,29 +1,41 @@
 #!/usr/bin/env node
 /**
- * check-handoff-current.mjs — ci:handoff-current (visibility audit PROCESS-8, 2026-09-23).
+ * check-handoff-current.mjs — ci:handoff-current (G76).
  *
- * docs/plans/CROSS_AGENT_HANDOFF.md holds ONE `# Current` block. A second one
- * fails, because a stacked handoff is how a booting session misses what the
- * last session (or Matt) said: on 2026-09-22 the file held 52 blocks and the
- * brief showed the first 18 lines of them. Logic: scripts/lib/handoff-current.mjs.
+ * Since 2026-10-14 (Matt): one handoff note per session in docs/plans/handoffs/
+ * (scripts/lib/handoff-notes.mjs). This gate fails when:
+ *   - docs/plans/CROSS_AGENT_HANDOFF.md, once it carries the frozen header, grows a
+ *     "# Current" block again,
+ *   - docs/plans/handoffs/README.md is missing,
+ *   - a note is misnamed, has no "# " title, carries a "# Current" heading, or
+ *     runs past the line cap.
  *
- * Usage: node scripts/check-handoff-current.mjs [path]
+ * The one-block rule it replaced (visibility audit PROCESS-8, 2026-09-23) lives
+ * on as history in scripts/lib/handoff-current.mjs.
+ *
+ * Usage: node scripts/check-handoff-current.mjs [repo-root]
  */
-import { existsSync, readFileSync } from 'node:fs'
-import { currentHeadingLines, handoffCurrentProblems } from './lib/handoff-current.mjs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { FROZEN_FILE, NOTES_DIR, NOTES_README, frozenFileProblems, newestNotes, noteProblems } from './lib/handoff-notes.mjs'
 
-const FILE = process.argv[2] ?? 'docs/plans/CROSS_AGENT_HANDOFF.md'
+const ROOT = process.argv[2] ?? process.cwd()
 
-console.log('Handoff Current gate (ci:handoff-current)')
-console.log('=========================================')
-if (!existsSync(FILE)) {
-  console.error(`✗ ${FILE} is missing. Every tool reads it after a pull; restore it with one "# Current" block.`)
-  process.exit(1)
+console.log('Handoff notes gate (ci:handoff-current)')
+console.log('=======================================')
+const problems = []
+if (existsSync(join(ROOT, FROZEN_FILE))) problems.push(...frozenFileProblems(readFileSync(join(ROOT, FROZEN_FILE), 'utf8')))
+const dir = join(ROOT, NOTES_DIR)
+let names = []
+if (!existsSync(dir)) problems.push(`${NOTES_DIR}/ is missing. It holds one handoff note per session.`)
+else {
+  names = readdirSync(dir).filter((n) => n.endsWith('.md'))
+  if (!names.includes(NOTES_README)) problems.push(`${NOTES_DIR}/${NOTES_README} is missing (note format + standing holds).`)
+  for (const n of names) problems.push(...noteProblems(n, readFileSync(join(dir, n), 'utf8')))
 }
-const text = readFileSync(FILE, 'utf8')
-const problems = handoffCurrentProblems(text, FILE)
 if (problems.length) {
   for (const p of problems) console.error(`✗ ${p}`)
   process.exit(1)
 }
-console.log(`✓ ${FILE}: one "# Current" block (line ${currentHeadingLines(text)[0]}).`)
+const newest = newestNotes(names, 1)[0]
+console.log(`✓ ${names.length - 1} handoff note(s) in ${NOTES_DIR}/${newest ? `, newest ${newest}` : ''}.`)

@@ -1,0 +1,23 @@
+{
+  "rule": "R-080",
+  "step": "voice",
+  "what": "the script changed after the brief step passed",
+  "setup": {
+    "stale": {
+      "after": "brief",
+      "then": "voice",
+      "edits": [
+        {
+          "in": "brief",
+          "path": "spec_rules.voiceover.script",
+          "set": "[warm] So... Bend has three and a half months of homes for sale right now. Sellers still have the edge... so go in with a plan. [long pause] Pass this to whoever you're house hunting with."
+        },
+        {
+          "in": "timeline",
+          "path": "voice.script",
+          "set": "[warm] So... Bend has three and a half months of homes for sale right now. Sellers still have the edge... so go in with a plan. [long pause] Pass this to whoever you're house hunting with."
+        }
+      ]
+    }
+  }
+}

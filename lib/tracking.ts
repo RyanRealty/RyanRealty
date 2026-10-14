@@ -220,15 +220,21 @@ export function readRrSessionId(): string | undefined {
 }
 
 // ----------------------------------------------------------------------------
-// Landing page context — UTM capture + sessionStorage persistence.
-// See marketing_brain_skills/tools_registry/ga4-instrumentation/SKILL.md for
-// the LP tracking convention this implements. trackLandingPageView (the only
-// writer of rr_lp_context and the only sender of view_landing_page) has had no
-// caller since LandingPageTracker was deleted on 2026-09-09, after the /lp
-// pages it ran on 308'd on 2026-09-06. GA4 property 527333348 held no
-// view_landing_page event from 2026-08-01 to 2026-10-09 (Data API, read that
-// day), so the three GA4 audiences in scripts/ga4-admin.mjs that need it are
-// empty. getLpContext therefore reads the URL only in practice.
+// Landing page context: the page's own link. See
+// marketing_brain_skills/tools_registry/ga4-instrumentation/SKILL.md for the LP
+// tracking convention. view_landing_page fires once per landing-page view from
+// components/tracking/LandingPageViewTracker.tsx, for every path
+// lpVariantFromPath (lib/analytics/lp-variant.ts) names (Matt 2026-10-09:
+// rebuild the GA4 landing-page audiences on /sell and /buy; GA4 property
+// 527333348 held no view_landing_page from 2026-08-01 to 2026-10-09).
+//
+// The URL is the only source. Until 2026-10-14 trackLandingPageView also kept
+// the context in sessionStorage (rr_lp_context) and getLpContext merged it back
+// in, so a later form in the same TAB carried the old landing's utm_*. A tab
+// lives for days on a phone, so a sign-up in a new, untagged visit was credited
+// to an ad from days before. A sign-up is credited to the visit it happens in
+// (Matt 2026-10-09): the server reads that visit's landing link when the page
+// carries none (lib/crm/visit-attribution.ts).
 // ----------------------------------------------------------------------------
 
 export type LpContext = {
@@ -238,74 +244,40 @@ export type LpContext = {
   lp_campaign?: string
   lp_content?: string
   lp_term?: string
-  /** Meta click-id — persisted alongside utm_* so it survives navigation. */
+  /** Meta click-id on this page's address. */
   fbclid?: string
-  /** Google Ads click-id — same persistence treatment as fbclid. */
+  /** Google Ads click-id on this page's address. */
   gclid?: string
 }
 
-const LP_CONTEXT_STORAGE_KEY = 'rr_lp_context'
-
 /**
- * Read UTM params from the URL and any previously captured LP context from
- * sessionStorage. URL params win on conflict (a deeper-link landing always
- * re-captures). Returns undefined keys for missing params — never empty
- * strings, so they drop cleanly from GA4 event params.
+ * The utm_* and click ids on the current page's address. Returns undefined keys
+ * for missing params, never empty strings, so they drop cleanly from GA4 event
+ * params and from a form's submission.
  */
 export function getLpContext(lpVariant?: string): LpContext {
   if (typeof window === 'undefined') {
     return { lp_variant: lpVariant ?? 'unknown' }
   }
   const url = new URL(window.location.href)
-  const fromUrl: Partial<LpContext> = {
-    lp_source: url.searchParams.get('utm_source') ?? undefined,
-    lp_medium: url.searchParams.get('utm_medium') ?? undefined,
-    lp_campaign: url.searchParams.get('utm_campaign') ?? undefined,
-    lp_content: url.searchParams.get('utm_content') ?? undefined,
-    lp_term: url.searchParams.get('utm_term') ?? undefined,
-    fbclid: url.searchParams.get('fbclid') ?? undefined,
-    gclid: url.searchParams.get('gclid') ?? undefined,
-  }
-  let fromStorage: Partial<LpContext> = {}
-  try {
-    const raw = window.sessionStorage.getItem(LP_CONTEXT_STORAGE_KEY)
-    if (raw) fromStorage = JSON.parse(raw) as Partial<LpContext>
-  } catch {
-    // sessionStorage may be unavailable (private browsing) — fall through.
-  }
-  const merged: LpContext = {
-    lp_variant: lpVariant ?? fromStorage.lp_variant ?? 'unknown',
-    lp_source: fromUrl.lp_source ?? fromStorage.lp_source,
-    lp_medium: fromUrl.lp_medium ?? fromStorage.lp_medium,
-    lp_campaign: fromUrl.lp_campaign ?? fromStorage.lp_campaign,
-    lp_content: fromUrl.lp_content ?? fromStorage.lp_content,
-    lp_term: fromUrl.lp_term ?? fromStorage.lp_term,
-    fbclid: fromUrl.fbclid ?? fromStorage.fbclid,
-    gclid: fromUrl.gclid ?? fromStorage.gclid,
-  }
-  return merged
-}
-
-function persistLpContext(ctx: LpContext) {
-  if (typeof window === 'undefined') return
-  try {
-    window.sessionStorage.setItem(LP_CONTEXT_STORAGE_KEY, JSON.stringify(ctx))
-  } catch {
-    // sessionStorage may be unavailable — fail silently; the URL still carries the truth.
+  return {
+    lp_variant: lpVariant ?? 'unknown',
+    lp_source: url.searchParams.get('utm_source') || undefined,
+    lp_medium: url.searchParams.get('utm_medium') || undefined,
+    lp_campaign: url.searchParams.get('utm_campaign') || undefined,
+    lp_content: url.searchParams.get('utm_content') || undefined,
+    lp_term: url.searchParams.get('utm_term') || undefined,
+    fbclid: url.searchParams.get('fbclid') || undefined,
+    gclid: url.searchParams.get('gclid') || undefined,
   }
 }
 
 /**
- * Fire the canonical `view_landing_page` event for a landing page mount.
- * Persists the captured UTM context to sessionStorage so any later
- * trackEvent call on this LP can enrich its event params via getLpContext().
- *
- * Returns the captured context so the caller (typically <LandingPageTracker>)
- * can also pass it to scroll-depth and CTA handlers without re-reading the URL.
+ * Fire the canonical `view_landing_page` event for a landing-page view, with the
+ * page's variant and its own utm_*. Returns the context it sent.
  */
 export function trackLandingPageView(lpVariant: string): LpContext {
   const ctx = getLpContext(lpVariant)
-  persistLpContext(ctx)
   trackEvent('view_landing_page', {
     lp_variant: ctx.lp_variant,
     lp_source: ctx.lp_source,

@@ -1,0 +1,12 @@
+{
+  "rule": "R-076",
+  "step": "brief",
+  "what": "twelve percent written in a card",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.0.cards.0.footer",
+      "set": "Down twelve percent"
+    }
+  ]
+}

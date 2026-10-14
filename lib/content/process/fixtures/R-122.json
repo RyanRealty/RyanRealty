@@ -1,0 +1,13 @@
+{
+  "rule": "R-122",
+  "step": "master",
+  "what": "a named technique missing from the manifest",
+  "setup": {
+    "manifest": [
+      {
+        "path": "techniques.1",
+        "delete": true
+      }
+    ]
+  }
+}

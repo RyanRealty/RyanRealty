@@ -1,0 +1,8 @@
+{
+  "rule": "R-133",
+  "step": "brief",
+  "what": "a checkout one commit behind main",
+  "setup": {
+    "repo": "behind"
+  }
+}

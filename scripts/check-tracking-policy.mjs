@@ -184,6 +184,17 @@ check('GA4 offline events carry lead_type and no value/currency',
 check('GA4 offline send skips contacts with no stored client_id',
   /readStoredGaClientId/.test(offlineCron) && /ga4MissingClientId/.test(offlineCron),
   'The cron must use the stored GA client_id and log how many contacts have none — never mint a uuid.')
+const gaCookie = read('lib/ga4-measurement-protocol.ts')
+const leadTracking = read('lib/lead-tracking.ts')
+check('GA _ga cookie client_id is the last two numeric dot parts',
+  /parts\.length - 2/.test(gaCookie) && /parts\.length - 1/.test(gaCookie),
+  'clientIdFromGaCookie must take the last two numeric segments of `_ga`, not only GA1.x.digits.digits.')
+check('Lead forms persist the _ga client_id first-touch on the CRM person',
+  /persistGaClientIdFromCookies/.test(leadTracking) &&
+    /rememberGaClientId\(personId, readGa4ClientIdFromCookies\(cookieStore\)\)/.test(leadTracking) &&
+    (/rememberGaClientId\(params\.crm_person_id \?\? params\.fub_person_id, clientId\)/.test(leadTracking) ||
+      /await persistGaClientIdFromCookies\(params\.crm_person_id \?\? params\.fub_person_id\)/.test(leadTracking)),
+  'fireLeadGenerated and persistGaClientIdFromCookies must first-touch write crm_people.custom.gaClientId from the _ga cookie.')
 
 // ── 8. Measurement hygiene (visibility audit 2026-09-22, TRACK-1/2/3) ─────────
 // Unit tests prove each piece (legacy-next-image, web-vitals-sample,

@@ -133,7 +133,7 @@ export function BulkActionBar() {
     setTimeout(() => setToast(''), 5000)
   }
 
-  async function callBulk(body: Record<string, unknown>): Promise<number> {
+  async function callBulk(body: Record<string, unknown>): Promise<{ affected: number; frozen: number }> {
     const res = await fetch('/api/admin/approval-queue/bulk-action', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -141,16 +141,23 @@ export function BulkActionBar() {
     })
     const j = await res.json().catch(() => ({}))
     if (!res.ok) throw new Error(j?.error ?? `HTTP ${res.status}`)
-    return typeof j?.affected === 'number' ? j.affected : selected.size
+    return {
+      affected: typeof j?.affected === 'number' ? j.affected : selected.size,
+      // Video rows the route held back while video publishing is frozen.
+      frozen: Array.isArray(j?.frozen) ? j.frozen.length : 0,
+    }
   }
 
   async function approveAll() {
     setBusy(true)
     try {
-      const n = await callBulk({ action: 'approve_now' })
+      const { affected: n, frozen } = await callBulk({ action: 'approve_now' })
       clear()
       router.refresh()
-      showToast(`Approved ${n} item${n === 1 ? '' : 's'}. Publisher picks them up on the next sweep.`)
+      showToast(
+        `Approved ${n} item${n === 1 ? '' : 's'}. Publisher picks them up on the next sweep.` +
+          (frozen > 0 ? ` ${frozen} video item${frozen === 1 ? '' : 's'} held: video publishing is frozen.` : ''),
+      )
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Bulk approve failed', true)
     } finally {
@@ -162,7 +169,7 @@ export function BulkActionBar() {
     if (!rejectReason.trim()) return
     setBusy(true)
     try {
-      const n = await callBulk({ action: 'reject', killed_reason: rejectReason.trim() })
+      const { affected: n } = await callBulk({ action: 'reject', killed_reason: rejectReason.trim() })
       clear()
       setRejectOpen(false)
       setRejectReason('')

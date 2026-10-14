@@ -1,0 +1,25 @@
+{
+  "rule": "R-086",
+  "step": "board",
+  "what": "a hook beat with three cards",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.0.cards.1",
+      "set": {
+        "kind": "text",
+        "text": "Bend",
+        "tone": "plain"
+      }
+    },
+    {
+      "in": "timeline",
+      "path": "beats.0.cards.2",
+      "set": {
+        "kind": "text",
+        "text": "Right now",
+        "tone": "plain"
+      }
+    }
+  ]
+}

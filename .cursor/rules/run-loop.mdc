@@ -20,5 +20,5 @@ Never:
 - wait on Matt mid-round: take the safe path RUN_LOOP.md allows and write the choice on the
   node;
 - mark a node done from a self-report: evidence is what the environment showed;
-- leave finished work on a branch: land it, or name it in the ONE `# Current` block of
-  `docs/plans/CROSS_AGENT_HANDOFF.md`.
+- leave finished work on a branch: land it, or name it in your own note in
+  `docs/plans/handoffs/`.

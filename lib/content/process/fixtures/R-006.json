@@ -1,0 +1,12 @@
+{
+  "rule": "R-006",
+  "step": "brief",
+  "what": "a first beat that is the intro",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.0.role",
+      "set": "intro"
+    }
+  ]
+}

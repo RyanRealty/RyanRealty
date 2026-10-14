@@ -40,10 +40,10 @@
         "status": 200,
         "index": true,
         "canonical": "self",
-        "title": "^Sunriver real estate \\| Homes for Sale"
+        "title": "^Sunriver Homes for Sale & Real Estate"
       },
-      "decided": "Matt 2026-10-04",
-      "why": "Sunriver's only page carries both 'real estate' and 'homes for sale'."
+      "decided": "Matt 2026-10-14",
+      "why": "Title carries both searched phrases. Search Console, 90 days to 2026-10-12, seven resort pages: 2,624 'real estate' vs 2,421 'homes for sale' impressions. The city drops to fit 60 chars (10-05)."
     },
     {
       "id": "black-butte-ranch-one-page",
@@ -52,10 +52,10 @@
         "status": 200,
         "index": true,
         "canonical": "self",
-        "title": "^Black Butte Ranch real estate \\| Homes for Sale"
+        "title": "^Black Butte Ranch Homes for Sale & Real Estate"
       },
-      "decided": "Matt 2026-10-04",
-      "why": "Black Butte Ranch's only page carries both queries."
+      "decided": "Matt 2026-10-14",
+      "why": "Title carries both searched phrases. Search Console, 90 days to 2026-10-12, seven resort pages: 2,624 'real estate' vs 2,421 'homes for sale' impressions. The city drops to fit 60 chars (10-05)."
     },
     {
       "id": "sunriver-search-noindex",
@@ -142,10 +142,10 @@
         "status": 200,
         "index": true,
         "canonical": "self",
-        "title": "^Brasada Ranch real estate"
+        "title": "^Brasada Ranch Homes for Sale & Real Estate"
       },
-      "decided": "Matt 2026-09-24",
-      "why": "Registered community page owns '{name} real estate' and '{name} homes for sale'."
+      "decided": "Matt 2026-10-14",
+      "why": "Title carries both searched phrases. Search Console, 90 days to 2026-10-12, seven resort pages: 2,624 'real estate' vs 2,421 'homes for sale' impressions. The city drops to fit 60 chars (10-05)."
     },
     {
       "id": "resort-tetherow",
@@ -154,10 +154,10 @@
         "status": 200,
         "index": true,
         "canonical": "self",
-        "title": "^Tetherow real estate"
+        "title": "^Tetherow Homes for Sale & Real Estate"
       },
-      "decided": "Matt 2026-09-22",
-      "why": "Same rule; Tetherow first."
+      "decided": "Matt 2026-10-14",
+      "why": "Title carries both searched phrases. Search Console, 90 days to 2026-10-12, seven resort pages: 2,624 'real estate' vs 2,421 'homes for sale' impressions. The city drops to fit 60 chars (10-05)."
     },
     {
       "id": "resort-broken-top",
@@ -166,10 +166,10 @@
         "status": 200,
         "index": true,
         "canonical": "self",
-        "title": "^Broken Top real estate"
+        "title": "^Broken Top Homes for Sale & Real Estate"
       },
-      "decided": "Matt 2026-09-24",
-      "why": "Same rule."
+      "decided": "Matt 2026-10-14",
+      "why": "Title carries both searched phrases. Search Console, 90 days to 2026-10-12, seven resort pages: 2,624 'real estate' vs 2,421 'homes for sale' impressions. The city drops to fit 60 chars (10-05)."
     },
     {
       "id": "resort-caldera-springs",
@@ -178,10 +178,10 @@
         "status": 200,
         "index": true,
         "canonical": "self",
-        "title": "^Caldera Springs real estate"
+        "title": "^Caldera Springs Homes for Sale & Real Estate"
       },
-      "decided": "Matt 2026-09-24",
-      "why": "Same rule."
+      "decided": "Matt 2026-10-14",
+      "why": "Title carries both searched phrases. Search Console, 90 days to 2026-10-12, seven resort pages: 2,624 'real estate' vs 2,421 'homes for sale' impressions. The city drops to fit 60 chars (10-05)."
     },
     {
       "id": "resort-eagle-crest",
@@ -190,10 +190,10 @@
         "status": 200,
         "index": true,
         "canonical": "self",
-        "title": "^Eagle Crest real estate"
+        "title": "^Eagle Crest Homes for Sale & Real Estate"
       },
-      "decided": "Matt 2026-09-24",
-      "why": "Same rule."
+      "decided": "Matt 2026-10-14",
+      "why": "Title carries both searched phrases. Search Console, 90 days to 2026-10-12, seven resort pages: 2,624 'real estate' vs 2,421 'homes for sale' impressions. The city drops to fit 60 chars (10-05)."
     },
     {
       "id": "top-blog-indexed",

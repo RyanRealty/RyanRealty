@@ -108,10 +108,12 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
         rung({ tier: 'nearby-1mi-6mo', monthsBack: 6, compsAdded: 5 }),
       ],
       keptComps: other(5),
+      ownGroundSold: 0,
     })
     expect(s!.keptBySubdivision['Diamond Bar Ranch']).toBeUndefined()
     // The window the subdivision rungs actually read, not "recent" (reader
     // review 2026-10-08: the sentence claims only what the search covered).
+    // ownGroundSold 0 is the real-zero read (reader review 2026-10-09).
     expect(s!.sentence).toBe(
       'No home sold in Diamond Bar Ranch in the last 6 months, so the search opened to Redmond Heights.',
     )
@@ -193,6 +195,7 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
           address: '20606 Songbird',
         },
       ],
+      ownGroundSold: 0,
     })
     expect(s!.sentence).toBe(
       'No home sold in Larkspur in the last 24 months, so the search opened to 61197 Cottonwood in Tara View Estates and 20606 Songbird in Foxborough.',
@@ -420,5 +423,20 @@ describe('buildCompSearch — on acreage the record carries the split sentence',
     expect(s!.ruralSentence).toContain('61 sales on rural residential land')
     const town = buildCompSearch({ subdivision: 'Diamond Bar Ranch', ladder: diamondBarLadder, keptComps: [...dbr(3), ...other(2)] })
     expect(town!.ruralSentence).toBeNull()
+  })
+})
+
+describe('buildCompSearch — an ADU home carries its pass sentence (Matt 2026-10-14)', () => {
+  it('stores the sentence beside the base sentence, and null for a home without an ADU', () => {
+    const adu = buildCompSearch({
+      subdivision: 'Diamond Bar Ranch',
+      ladder: diamondBarLadder,
+      keptComps: [...dbr(3), ...other(2)],
+      aduSentence: 'This home has an accessory dwelling unit, so its price is read from closed sales that also have one.',
+    })
+    expect(adu!.aduSentence).toContain('accessory dwelling unit')
+    expect(adu!.sentence).toContain('Three of the five sales are in Diamond Bar Ranch')
+    const plain = buildCompSearch({ subdivision: 'Diamond Bar Ranch', ladder: diamondBarLadder, keptComps: [...dbr(3), ...other(2)] })
+    expect(plain!.aduSentence).toBeNull()
   })
 })

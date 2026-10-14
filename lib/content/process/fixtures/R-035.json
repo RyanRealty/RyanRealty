@@ -1,0 +1,12 @@
+{
+  "rule": "R-035",
+  "step": "brief",
+  "what": "nestled in the caption",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "caption",
+      "set": "Nestled in Bend, 3.5 months of homes for sale."
+    }
+  ]
+}

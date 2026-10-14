@@ -56,7 +56,6 @@
     "app/api/cron/start-sync/route.ts",
     "app/api/cron/sync-history-terminal/route.ts",
     "app/api/cron/sync-verify-full-history/route.ts",
-    "app/api/cron/token-heartbeat/route.ts",
     "app/api/cron/visitor-hot-lead-escalation/route.ts",
     "app/api/cron/weekly-pipeline-digest/route.ts",
     "app/api/marketing-brain/linkedin-orgs/route.ts",

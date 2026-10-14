@@ -9,6 +9,8 @@ This loop owns the layer the growth-loop does NOT: Google Business Profile, the 
 
 **Knowledge base (read before the first audit of a session):** `marketing_brain_skills/platforms/gbp/SKILL.md` — the algorithm primer (relevance × distance × prominence), the `marketing_channel_daily` metric dictionary, the format playbook, and the name-stuffing suspension warning. That file is the WHY; this file is the RUNBOOK.
 
+**Website SEO canon:** [`docs/SEO.md`](../../../docs/SEO.md) and Matt's pinned calls in [`data/seo/decisions.json`](../../../data/seo/decisions.json). Read both before filing a website-layer finding, so it never contradicts a call already made.
+
 ## §0 Non-negotiables (inherited, restated because they bind every audit)
 
 1. **CLAUDE.md §0 data accuracy.** Every count, rating, velocity number, and ranking position in an audit output traces to a live pull made THIS run — a timestamped scrape, screenshot, or API row. No LLM-recall numbers, no "last time we checked." Competitor names and stats persist in `data/local-seo/` with `fetched_at` stamps and go stale after 30 days.

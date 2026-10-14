@@ -1,0 +1,41 @@
+{
+  "rule": "R-019",
+  "step": "brief",
+  "what": "three different hero numbers",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.1.number",
+      "set": "4.1"
+    },
+    {
+      "in": "timeline",
+      "path": "beats.2.number",
+      "set": "5.2"
+    },
+    {
+      "in": "brief",
+      "path": "numbers.1",
+      "set": {
+        "key": "n41",
+        "on_screen": "4.1",
+        "definition": "a test figure",
+        "window": "a test window",
+        "geography": "Bend",
+        "source": "a test source"
+      }
+    },
+    {
+      "in": "brief",
+      "path": "numbers.2",
+      "set": {
+        "key": "n52",
+        "on_screen": "5.2",
+        "definition": "a test figure",
+        "window": "a test window",
+        "geography": "Bend",
+        "source": "a test source"
+      }
+    }
+  ]
+}

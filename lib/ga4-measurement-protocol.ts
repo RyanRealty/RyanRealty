@@ -65,14 +65,18 @@ function getCreds(): { measurementId: string; apiSecret: string } | null {
 
 /**
  * Parse the GA4 `_ga` cookie value and return the client_id portion.
- * Cookie format: `GA1.x.<random>.<timestamp>` — client_id is `<random>.<timestamp>`.
- * Returns null if the cookie is missing or malformed.
+ * Cookie format is usually `GA1.x.<random>.<timestamp>`. The client_id is the
+ * last two numeric dot parts, so `GA1.1.123.456`, `GA1.2.123.456`, and a
+ * bare `123.456` all yield `123.456`. Returns null if missing or malformed.
  */
 export function clientIdFromGaCookie(cookieValue: string | undefined | null): string | null {
   if (!cookieValue) return null
-  const m = cookieValue.match(/^GA\d\.\d\.(\d+\.\d+)$/)
-  if (!m) return null
-  return m[1]
+  const parts = cookieValue.trim().split('.')
+  if (parts.length < 2) return null
+  const left = parts[parts.length - 2]
+  const right = parts[parts.length - 1]
+  if (!left || !right || !/^\d+$/.test(left) || !/^\d+$/.test(right)) return null
+  return `${left}.${right}`
 }
 
 /**
@@ -241,4 +245,58 @@ export async function fireGa4Event(params: Ga4MpFireParams): Promise<Ga4MpFireRe
 export function readGa4ClientIdFromCookies(cookieStore: { get(name: string): { value: string } | undefined }): string | null {
   const value = cookieStore.get('_ga')?.value
   return clientIdFromGaCookie(value)
+}
+
+/** The browser's GA4 session, read from its `_ga_<stream>` cookie. */
+export type Ga4BrowserSession = { sessionId: string; sessionNumber?: number }
+
+/**
+ * The `_ga_<stream>` cookie name for a measurement id: `G-ST40W4WM6T` -> `_ga_ST40W4WM6T`.
+ */
+export function gaStreamCookieName(measurementId: string): string {
+  return `_ga_${measurementId.trim().replace(/^G-/i, '')}`
+}
+
+/**
+ * Parse the session the Google tag keeps in the `_ga_<stream>` cookie.
+ *
+ * WHY. A Measurement Protocol event without the browser's `session_id` is a
+ * session of its own in GA4: no landing page, no source, hostname (not set),
+ * channel Unassigned. GA4 read 2026-10-14 (2026-09-15..10-13): all 117
+ * generate_lead events and 81 person_identified events sat in Unassigned
+ * sessions with hostname (not set), so no lead was ever credited to the
+ * search, email or social visit that produced it. Google's rule: send the same
+ * client_id AND session_id the web tag uses and the event joins that session.
+ *
+ * Two formats are live:
+ *   GS1.1.<session_id>.<session_number>.<engaged>.<last_hit>.<...>
+ *   GS2.1.s<session_id>$o<session_number>$g<engaged>$t<last_hit>$...
+ */
+export function sessionFromGaStreamCookie(value: string | undefined | null): Ga4BrowserSession | null {
+  const raw = typeof value === 'string' ? value.trim() : ''
+  if (!raw) return null
+  const gs1 = /^GS1\.\d+\.(\d{6,})\.(\d+)(?:\.|$)/.exec(raw)
+  if (gs1) return { sessionId: gs1[1], sessionNumber: Number(gs1[2]) }
+  const gs2 = /^GS2\.\d+\.(.+)$/.exec(raw)
+  if (gs2) {
+    let sessionId: string | null = null
+    let sessionNumber: number | undefined
+    for (const part of gs2[1].split('$')) {
+      const k = part.charAt(0)
+      const v = part.slice(1)
+      if (k === 's' && /^\d{6,}$/.test(v)) sessionId = v
+      else if (k === 'o' && /^\d+$/.test(v)) sessionNumber = Number(v)
+    }
+    return sessionId ? { sessionId, ...(sessionNumber ? { sessionNumber } : {}) } : null
+  }
+  return null
+}
+
+/** The browser's GA4 session from a Next.js cookies() object, for the configured stream. */
+export function readGa4SessionFromCookies(
+  cookieStore: { get(name: string): { value: string } | undefined },
+  measurementId: string = (process.env.GA4_MEASUREMENT_ID || process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || 'G-ST40W4WM6T').trim(),
+): Ga4BrowserSession | null {
+  if (!measurementId) return null
+  return sessionFromGaStreamCookie(cookieStore.get(gaStreamCookieName(measurementId))?.value)
 }

@@ -6,14 +6,19 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { APPROVER, approvalProblems, checkReels, repoReels } from './technique-approval.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROLES = ['hook', 'intro', 'body', 'payoff', 'endcard'];
 const REAL = new Set(['mls_photo', 'listing_photo', 'phone_footage', 'public_meeting', 'stock_licensed', 'other']);
 const PHOTO = new Set(['mls_photo', 'listing_photo']);
 const SAFE = { maxX: 960, maxY: 1640 };
-const ADDRESS = /\b\d{2,6}\s+(?:[NSEW]\.?\s+)?[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*\s+(?:St|Street|Ave|Avenue|Rd|Road|Dr|Drive|Ln|Lane|Way|Ct|Court|Blvd|Boulevard|Pl|Place|Loop|Cir|Circle|Pkwy|Hwy|Trl|Trail|Ter)\b\.?/;
-const NAMEISH = /\b(?:Mr|Mrs|Ms|Dr)\.?\s+[A-Z][a-z]+|\bthe\s+[A-Z][a-z]+s\b(?=\s+(?:family|sold|bought|closed|purchased))/;
+// Addresses and names, in any case (F6, 2026-10-14): cards and captions are drawn in capitals, so
+// "SOLD AT 123 MAIN ST" and "sold at 123 main street" are addresses too. Words that are never a
+// street or a person ("15 minute drive", "the homes sold", "Bend and Redmond sold") are skipped.
+// lib/studio/qa/copy-rules.ts carries the same two patterns (copy-rules.test.ts fails on drift).
+export const ADDRESS = /\b\d{2,6}\s+(?:[nsew]\.?\s+)?(?:(?!(?:minutes?|mins?|miles?|hours?|hrs?|days?|weeks?|months?|years?|seconds?|homes?|houses?|listings?|percent|feet|foot|acres?|the|a|an|of|and|to|in|on|for|with|by|at|or|is|are|was|were|this|that|our|your|their|my|its|more|less|new|down|up)\b)[a-z][a-z'-]*\s+){1,3}(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|way|ct|court|blvd|boulevard|pl|place|loop|cir|circle|pkwy|hwy|trl|trail|ter)\b\.?/i;
+export const NAMEISH = /\b(?:mr|mrs|ms|dr)\.?\s+(?!(?:and|the|a|an|of|to|in|on|for|by)\b)[a-z][a-z'-]+|\bthe\s+(?!(?:homes|houses|listings|condos|townhomes|properties|sales|comps|buyers|sellers|owners|homeowners|neighbors|agents|brokers|lots|units|cabins|prices|rates|numbers|deals|offers|families|folks|locals|investors|renters|tenants|landlords|builders|keys|doors|others|twins)\b)[a-z][a-z'-]*s\b(?=\s+(?:family|sold|bought|closed|purchased))|\b(?!(?:you|we|they|i|he|she|it|my|your|our|their|his|her|its|the|a|an|this|that|these|those|both|all|some|many|most|buyers|sellers|owners|homes|houses|listings|condos|prices|rates|sales|agents|brokers|bend|redmond|sisters|sunriver|prineville|madras|tumalo|terrebonne|culver|powell|la|pine|crooked|river|ranch|oregon|spring|summer|fall|winter|me|him|us|them)\b)[a-z][a-z'-]+\s+(?:and|&)\s+(?!(?:you|we|they|i|he|she|it|my|your|our|their|his|her|its|the|a|an|this|that|these|those|both|all|some|many|most|buyers|sellers|owners|homes|houses|listings|condos|prices|rates|sales|agents|brokers|bend|redmond|sisters|sunriver|prineville|madras|tumalo|terrebonne|culver|powell|la|pine|crooked|river|ranch|oregon|spring|summer|fall|winter|me|him|us|them)\b)[a-z][a-z'-]+\s+(?:just\s+)?(?:closed|bought|sold|purchased|listed|moved)\b/i;
 
 
 // Spoken-voice check (Matt, 2026-10-13): VO must read like a person talking on camera, not prose or an ad.
@@ -47,7 +52,21 @@ export function spokenVoiceCheck(script) {
   function fail(m) { fails.push(`Spoken voice: ${m}`); }
 }
 
-export function gate(brief, timeline, cfg) {
+export const SIGNATURE_FLOOR = 'this film has no approved signature technique; every film runs at least one approved signature technique (pick one from the registry, or build one and have Matt approve its reel)';
+export const CREATIVE_FIELDS = ['feel', 'constraint', 'lineage', 'one_sentence'];
+const CREATIVE_HELP = {
+  feel: 'one target emotion, chosen first',
+  constraint: 'one formal constraint chosen before the story',
+  lineage: 'the non-AI artistic lineage it borrows from',
+  one_sentence: 'the idea in one sentence',
+};
+
+/**
+ * `registry` (the techniques object) and `opts` are for tests; the CLI reads techniques/registry.json.
+ * opts.approver: who may approve in this registry ("matt"; a test registry passes TEST_APPROVER).
+ * opts.reels: Map name -> reel found (technique-approval.mjs checkReels); default checks repo paths only.
+ */
+export function gate(brief, timeline, cfg, registry, opts = {}) {
   const fails = [], warns = [];
   const fail = (m) => fails.push(m), warn = (m) => warns.push(m);
   const req = ['video_type', 'title', 'hook', 'length_s', 'numbers', 'footage', 'end_card', 'caption'];
@@ -142,8 +161,9 @@ export function gate(brief, timeline, cfg) {
   else {
     const EC = ['logo', 'Quality / Local / Service', 'Call now 541.703.3095'];
     if (!(typeof sr.hook_by_s === 'number' && sr.hook_by_s <= 2)) fail('spec_rules.hook_by_s must be 2s or less.');
-    if (JSON.stringify(sr.length_s_range) !== '[15,30]') fail('spec_rules.length_s_range must be [15,30].');
-    if (typeof brief.length_s === 'number' && (brief.length_s < 15 || brief.length_s > 30) && !overrides.has('length')) fail(`Length ${brief.length_s}s is outside 15 to 30s.`);
+    // Each video type keeps its own length window (Matt 2026-10-14); the Length block above holds the film to it.
+    const win = [t.min_s, t.max_s];
+    if (JSON.stringify(sr.length_s_range) !== JSON.stringify(win)) fail(`spec_rules.length_s_range must be [${win.join(',')}], the ${brief.video_type} window.`);
     for (const k of ['real_footage', 'sound_off_readable', 'loopable', 'no_top_team_wording', 'no_price_closed_flash', 'same_process_any_tool']) if (sr[k] !== true) fail(`spec_rules.${k} must be true.`);
     if (!(sr.real_numbers_count >= 1 && sr.real_numbers_count <= 2)) fail('spec_rules.real_numbers_count must be 1 or 2.');
     if (sr.captions?.style !== 'tiktok_burned_in' || sr.captions?.synced_to_vo !== true) fail('Captions must be TikTok-style burned in and synced to the voiceover.');
@@ -171,24 +191,49 @@ export function gate(brief, timeline, cfg) {
     if (!rl[src]) fail(`Footage ${f.path}: source "${src}" is not in rights/footage_rights.json.`);
     else if (!(rl[src].cleared_for || []).includes(use)) fail(`Footage ${f.path}: ${rl[src].name} is not cleared for ${use}.`);
   }
-  // Technique library
-  let reg = {}; try { reg = JSON.parse(readFileSync(join(here, '..', 'techniques', 'registry.json'), 'utf8')).techniques || {}; } catch { fail('techniques/registry.json missing.'); }
+  // Technique library (Matt 2026-10-14): planned -> ready (built) -> approved (Matt saw its reel).
+  // Base techniques need ready or approved; a signature technique needs approved; every film runs
+  // at least one approved signature technique. The render preflight and video:check check 15 hold the same floor.
+  // An approved row counts only when its approval holds (technique-approval.mjs): approved_by "matt",
+  // an ISO approved_on and a reel that exists. Interim until approvals move into the database.
+  let reg = registry;
+  if (!reg) { try { reg = JSON.parse(readFileSync(join(here, '..', 'techniques', 'registry.json'), 'utf8')).techniques || {}; } catch { reg = {}; fail('techniques/registry.json missing.'); } }
+  const reels = opts.reels || repoReels(reg);
+  const approvalOf = (n) => approvalProblems(reg[n], { approver: opts.approver || APPROVER, reelFound: reels.get(n) });
+  const approvedOk = (n) => reg[n] && reg[n].status === 'approved' && approvalOf(n).length === 0;
   if (!Array.isArray(brief.techniques) || !brief.techniques.length) fail('Brief needs "techniques": names from techniques/registry.json.');
-  else for (const n of brief.techniques) if (!reg[n]) fail(`Technique "${n}" is not in techniques/registry.json.`);
+  else {
+    for (const n of brief.techniques) {
+      const e = reg[n];
+      if (!e) fail(`Technique "${n}" is not in techniques/registry.json.`);
+      else if (e.status === 'planned') fail(`Technique "${n}" is planned, not built yet (home: ${e.home || 'unnamed'}). Pick a ready technique; the renderer can only run code that exists.`);
+      else if (e.status === 'approved' && !approvedOk(n)) fail(`Technique "${n}" is marked approved but the approval does not hold: it ${approvalOf(n).join('; ')}.`);
+      else if (e.tier === 'signature' && e.status !== 'approved') fail(`Signature technique "${n}" is ${e.status}, not approved: Matt approves a signature technique after seeing its showcase reel.`);
+    }
+    if (!brief.techniques.some((n) => reg[n] && reg[n].tier === 'signature' && approvedOk(n))) fail(SIGNATURE_FLOOR);
+  }
+  // Creative brain piece brief (Matt 2026-10-14): chosen before the story, carried into the manifest.
+  const cr = brief.creative;
+  if (!cr || typeof cr !== 'object') fail('Brief needs a "creative" block: feel, constraint, lineage, one_sentence (.claude/skills/creative-brain).');
+  else for (const k of CREATIVE_FIELDS) {
+    const v = cr[k];
+    if (typeof v !== 'string' || !v.trim()) fail(`creative.${k} is empty (${CREATIVE_HELP[k]}).`);
+    else if (v.length > 200) fail(`creative.${k} runs ${v.length} characters; keep it to 200.`);
+  }
 
   // Type specifics
   if (t.requires_sources && !(brief.sources || []).length) fail('Civic piece needs sources (meeting, date, clip id, documents).');
   if (t.requires_special_ad_category && brief.special_ad_category !== t.requires_special_ad_category) fail('Buyer ad must declare special_ad_category "housing" (no age, gender or ZIP targeting).');
   if (t.requires_persona && !brief.persona) fail('Buyer ad needs a persona (relocator, first_time, move_up, second_home). The hook picks the buyer.');
   if (/\btop[- ]team\b/i.test(all)) fail('"Top team" wording is banned.');
-  if (/buyer'?s market/i.test(all)) warn('"Buyer\'s market" wording: only when months of supply is 6 or more for that geography. Bend is about 3; say "buyers have leverage".');
+  if (/buyer'?s market/i.test(all)) warn('"Buyer\'s market" wording: only when months of supply is 6 or more for that geography. Bend is about 3.5. "Buyers have leverage" needs leverage figures (price cuts, concessions) and never sits beside a months-of-supply reading under 6.');
   if (beats.some((b) => (b.end - b.start) <= 3 && /\$\s?\d/.test(b.text || '') && /closed|sold/i.test((b.text || '') + ' ' + beats.map((x) => x.text || '').join(' ')) && brief.video_type === 'closing') || (brief.video_type === 'closing' && dur <= 3)) fail('Closings are never a 3 second price + closed clip.');
   if (brief.music && brief.music.song && !brief.music.picker_start) warn('Music set but no IG picker start time (m:ss).');
   if (t.requires_loop && !timeline.loop_seam) warn('Timeline has no loop_seam note (last frame should flow back into frame 0).');
   return { fails, warns };
 }
 
-function main() {
+async function main() {
   const [bp, tp] = process.argv.slice(2);
   if (!bp || !tp) { console.error('Usage: node tools/video_gate.mjs <brief.json> <timeline.json>'); process.exit(2); }
   let brief, timeline, cfg;
@@ -197,7 +242,9 @@ function main() {
     timeline = JSON.parse(readFileSync(tp, 'utf8'));
     cfg = JSON.parse(readFileSync(join(here, 'video_types.json'), 'utf8'));
   } catch (e) { console.error(`Could not read input: ${e.message}`); process.exit(2); }
-  const { fails, warns } = gate(brief, timeline, cfg);
+  let reels;
+  try { reels = await checkReels(JSON.parse(readFileSync(join(here, '..', 'techniques', 'registry.json'), 'utf8')).techniques || {}); } catch { reels = undefined; }
+  const { fails, warns } = gate(brief, timeline, cfg, undefined, { reels });
   for (const w of warns) console.log(`WARN  ${w}`);
   if (fails.length) { for (const f of fails) console.log(`FAIL  ${f}`); console.log(`\nVIDEO GATE FAILED (${fails.length}). Do not render. Fix the brief or timeline and run again.`); process.exit(1); }
   console.log(`VIDEO GATE PASSED: ${brief.video_type} "${brief.title}".`);

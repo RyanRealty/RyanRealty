@@ -1,0 +1,13 @@
+{
+  "rule": "R-113",
+  "step": "master",
+  "what": "Local after Service",
+  "setup": {
+    "manifest": [
+      {
+        "path": "endcard.local",
+        "set": 14
+      }
+    ]
+  }
+}

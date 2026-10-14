@@ -390,7 +390,7 @@ function structureSupported(subject: CmaSubject, comp: CmaComp): boolean {
   // Rule 23, read exactly as both ladders read it: symmetric, null remarks fail open.
   if (multiUnitFromRemarks(comp.publicRemarks) !== multiUnitFromRemarks(subject.publicRemarks)) return true
   // The ADU wall, read exactly as both ladders read it: not symmetric.
-  if (aduSaleRefused(subject.publicRemarks, comp.publicRemarks)) return true
+  if (aduSaleRefused(subject.publicRemarks, comp.publicRemarks, subject.units?.aduYn)) return true
   const texts = textOf(subject, comp)
   if (!OTHER_PRODUCT.test(texts.comp)) return false
   return !OTHER_PRODUCT.test(texts.subject)
