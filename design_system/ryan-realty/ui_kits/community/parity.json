@@ -63,7 +63,7 @@
     },
     {
       "name": "PlaceSubdivisionHomes",
-      "section": "#homes-dial, the listing dials under the map (Matt 2026-09-24: every place page shows listings the same way; /subdivisions/northwest-crossing and /subdivisions/broken-top 301 here, which is where Matt still saw the carousel). Every publicly active home in the current map selection, one V3ListingDial per buyer group: one home large with its lead photograph and the card copy, the rest of the group as thumbnails on a vertical rail to its left (a strip under the card on a phone), an \"03 / 12\" readout heading the rail. The type links over it (community-field-types) land on each dial's #homes-<group> id. Commercial leases are the last dial, never in a for-sale dial or its count. Every listing stays an <a href> in the served HTML. The crawlable for-sale grid is CommunityHomesGrid #homes.",
+      "section": "#homes-dial, the listing dials under the map (Matt 2026-09-24: every place page shows listings the same way; /subdivisions/northwest-crossing and /subdivisions/broken-top 301 here, which is where Matt still saw the carousel). Every publicly active home in the current map selection, one V3ListingDial per buyer group: one home large with its lead photograph and the card copy, the rest of the group as thumbnails on a vertical rail to its left (a strip under the card on a phone), an \"03 / 12\" readout heading the rail. The type links over it (community-field-types) land on each dial's #homes-dial-<group> id. Commercial leases are the last dial, never in a for-sale dial or its count. Every listing stays an <a href> in the served HTML. The crawlable for-sale grid is CommunityHomesGrid #homes.",
       "blocking": true
     },
     {

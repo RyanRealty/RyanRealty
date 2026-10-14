@@ -13,9 +13,6 @@
 
 export const TERM_MONTHS = 360
 
-/** One discount point costs 1% of the loan amount (definition, not a market rate). */
-export const POINT_FRACTION_OF_LOAN = 0.01
-
 export type LoanType = 'conventional' | 'fha' | 'va' | 'usda'
 export type Occupancy = 'principal' | 'second' | 'investment'
 
@@ -54,6 +51,15 @@ export type CompareResult = {
   capPct: number
   capDollars: number
   withinCap: boolean
+}
+
+/**
+ * One discount point is one percent of the loan. Dollars divided by that
+ * amount is the point count the spec feeds into rateAfterBuydown.
+ */
+export function dollarsToPoints(dollars: number, loan: number): number {
+  if (!(loan > 0)) return 0
+  return (dollars / loan) * 100
 }
 
 export const DEFAULT_COMPARE: Omit<CompareInput, 'ratePct'> = {
@@ -108,7 +114,7 @@ export function comparePriceCutVsConcession(input: CompareInput): CompareResult 
   const cutLoan = Math.max(0, price - dollars) * (1 - downFraction)
   const cutPi = monthlyPI(cutLoan, input.ratePct, termMonths)
 
-  const points = loan > 0 ? dollars / (loan * POINT_FRACTION_OF_LOAN) : 0
+  const points = dollarsToPoints(dollars, loan)
   const concessionRate = rateAfterBuydown(input.ratePct, points, input.pointsPer025)
   const concessionPi = monthlyPI(loan, concessionRate, termMonths)
 

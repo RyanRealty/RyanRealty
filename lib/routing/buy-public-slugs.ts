@@ -4,11 +4,14 @@
  * a real 404 from this list. Bare /buy is not in the list so next.config can
  * 301 it to /homes-for-sale.
  *
- * /buy/alerts is a sibling worktree. Do not add it here until that page ships.
+ * BUY_STATIC_SLUGS must name every shipped app/buy/<slug>/page.tsx folder
+ * (not [intent]). The lockstep test in buy-public-slugs.test.ts fails when
+ * a page lands and this list is not updated — that miss 404'd /buy/alerts
+ * and /buy/concessions after those pages shipped.
  */
 export const BUY_INTENT_SLUGS = ['first-time-home-buyer', 'relocation', 'investment'] as const
 
-export const BUY_STATIC_SLUGS = ['leverage'] as const
+export const BUY_STATIC_SLUGS = ['alerts', 'concessions', 'leverage'] as const
 
 export const BUY_PUBLIC_SLUGS = [...BUY_INTENT_SLUGS, ...BUY_STATIC_SLUGS] as const
 
