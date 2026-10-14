@@ -101,8 +101,8 @@ describe('server events join the visitor GA4 session (2026-10-14)', () => {
     expect(h.fireGa4Event).not.toHaveBeenCalled()
   })
 
-  it('sends nothing from a preview host or automation', async () => {
-    h.headers.referer = 'https://ryanrealty-git-x.vercel.app/sell'
+  it('sends nothing from a non-production host or automation', async () => {
+    h.headers.referer = 'http://localhost:3000/sell'
     await fireLeadGenerated(LEAD as never)
     h.headers.referer = 'https://ryan-realty.com/sell'
     h.headers['user-agent'] = 'Mozilla/5.0 HeadlessChrome/130.0.0.0'
