@@ -703,8 +703,6 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
             timeline: timeline ?? 'unspecified',
             classification,
             assigned_broker: assignment.broker,
-            value: 500,
-            currency: 'USD',
           },
         }),
       }).catch((err) => {

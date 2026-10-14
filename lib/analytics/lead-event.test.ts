@@ -274,3 +274,20 @@ describe('generate_lead is server-only and sent in one place', () => {
     expect(bad).toEqual([])
   })
 })
+
+describe('Meta Lead events carry no dollar value (Matt 2026-10-14)', () => {
+  it('no CAPI Lead or fbq Lead payload sends value or currency', () => {
+    const skip = new Set(['lib/meta-offline-conversions.ts'])
+    const bad: string[] = []
+    for (const f of FILES) {
+      if (skip.has(f.rel)) continue
+      if (/fbq\([\s\S]{0,160}['"`]Lead['"`][\s\S]{0,400}?\b(?:value|currency)\s*:/.test(f.src)) {
+        bad.push(`${f.rel}: fbq Lead value/currency`)
+      }
+      if (/eventName:\s*['"`]Lead['"`][\s\S]{0,800}?\b(?:value|currency)\s*:/.test(f.src)) {
+        bad.push(`${f.rel}: CAPI Lead value/currency`)
+      }
+    }
+    expect(bad).toEqual([])
+  })
+})
