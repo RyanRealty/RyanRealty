@@ -30,21 +30,13 @@ import { getThreadsAccessToken, publishThreadsVideo } from '@/lib/threads'
 import { publishNextdoorPost } from '@/lib/nextdoor'
 import { assertNoDashes, DashViolationError } from '@/lib/punctuation-guard'
 import { buildTrackedUrl, isUtmCampaign, platformUtmMedium, platformUtmSource } from '@/lib/analytics/utm'
+import { isPublishDoorPlatform, type PublishDoorPlatform } from '@/lib/social/publish-door'
 
 /** Fan-out can exceed 60s when Meta poll finishes slowly or FB reel upload is large. */
 export const maxDuration = 300
 
-type Platform =
-  | 'instagram'
-  | 'facebook'
-  | 'tiktok'
-  | 'youtube'
-  | 'linkedin'
-  | 'google_business_profile'
-  | 'x'
-  | 'pinterest'
-  | 'threads'
-  | 'nextdoor'
+/** The door's targets live in lib/social/publish-door.ts so the token heartbeat reads the same list. */
+type Platform = PublishDoorPlatform
 type MediaType = 'image' | 'video' | 'reel'
 
 /**
@@ -701,19 +693,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const validPlatforms: Platform[] = [
-      'instagram',
-      'facebook',
-      'tiktok',
-      'youtube',
-      'linkedin',
-      'google_business_profile',
-      'x',
-      'pinterest',
-      'threads',
-      'nextdoor',
-    ]
-    const invalidPlatforms = platforms.filter((p) => !validPlatforms.includes(p))
+    const invalidPlatforms = platforms.filter((p) => !isPublishDoorPlatform(p))
     if (invalidPlatforms.length > 0) {
       return NextResponse.json(
         { error: `Invalid platforms: ${invalidPlatforms.join(', ')}` },
