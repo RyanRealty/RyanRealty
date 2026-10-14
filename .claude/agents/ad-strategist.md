@@ -59,8 +59,9 @@ Answer each in plain words, one or two short lines. This order is the message.
    No figures behind it, then `null`. Never claim a shift the data does not show (a market "breaking"
    this season, a "buyer's market"); the verdict words follow the numbers (CLAUDE.md §0).
 5. **why_now**: why act now. A date or a duration is a figure: give its basis, or say the condition.
-6. **why_us**: what Ryan Realty does that the viewer gets: we watch this market every day, quick
-   answers, careful negotiation, current data, a broker who stays through closing. No "top team".
+6. **why_us**: what Ryan Realty does that the viewer gets, only as VOICE.md says it: we watch this market closely, quick
+   answers, careful negotiation, current data, a broker who stays through closing. Never a claim
+   VOICE.md or Matt has not made (no "every day", years in business, client counts, awards). No "top team".
 7. **ask**: one thing to do next.
 8. **script**: the read-aloud lines, in order, the way the voice will say them. Line 1 calls out the
    audience or names the situation, by the same words as `audience` or `context`. The last line is
