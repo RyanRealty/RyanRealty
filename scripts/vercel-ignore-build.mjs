@@ -12,7 +12,7 @@
  * Wired via vercel.json → ignoreCommand.
  * Skip list lives in scripts/lib/product-diff.mjs (shared with release.yml).
  */
-import { classifyDiff, isVercelSkippable, listChangedFiles } from './lib/product-diff.mjs'
+import { classifyProductDiff, isVercelSkippable, listChangedFiles } from './lib/product-diff.mjs'
 
 // Preview / non-production: always skip. Pushing wt/* or cloud branches to
 // GitHub used to start a full Turbo Preview build (extra Build CPU on top of
@@ -25,7 +25,8 @@ if (vercelEnv && vercelEnv !== 'production') {
 }
 
 const files = listChangedFiles()
-const result = classifyDiff(files, { skippable: isVercelSkippable })
+const prev = (process.env.VERCEL_GIT_PREVIOUS_SHA || process.env.PRODUCT_DIFF_PREV || '').trim()
+const result = classifyProductDiff(files, { skippable: isVercelSkippable, prev, head: 'HEAD' })
 
 if (result.status === 'unknown') {
   console.log('[vercel-ignore-build] no diff available — building')
