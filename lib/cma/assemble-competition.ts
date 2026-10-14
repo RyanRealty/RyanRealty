@@ -106,6 +106,10 @@ export function salesSearchAndArea(args: {
       args.diagnostics.rural_acreage || (subject.lotAcres ?? 0) >= 1
         ? { subjectZone: args.subjectZone, counts: args.diagnostics.excluded_totals }
         : null,
+    ownGroundSold:
+      args.diagnostics.own_ground_sold != null && args.diagnostics.own_ground_sold.n >= 0
+        ? args.diagnostics.own_ground_sold.n
+        : null,
   })
   const compArea = buildCompArea({
     subject: {

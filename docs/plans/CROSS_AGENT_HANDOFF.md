@@ -4,9 +4,13 @@ Surface: Cursor cloud. Branch `cursor/analytics-sot-readme-5e14`. `docs/analytic
 
 **This pass.** `docs/analytics/README.md` is the analytics SoT (GA4 property, measurement ID, GTM container live version 7 — Merge never Overwrite, browser dataLayer events, server `generate_lead`, buyer form_ids, consent, daily 8 AM PT offline cron including #543 `qualify_lead` / `close_convert_lead`). Pointers in CLAUDE.md (shrink-only) and AGENTS.md.
 
-**Still open.** Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`). Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. The unique `idx_listings_parcel_number` migration is not on main.
+**Still open.** Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`). Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. The unique `idx_listings_parcel_number` migration is not on main. #452 landed.
 
 Skills read: `.cursor/rules/git-commit.mdc`.
+
+## Earlier — 2026-10-14 (Cursor, reader-5 leftover reads)
+
+Surface: Cursor cloud. PR #559 landed. Thin-window own-listing-unsold and own-ground sold count. Closed stale #552. Nothing sent.
 
 ## Earlier — 2026-10-14 (Claude, buyer landing pages)
 
