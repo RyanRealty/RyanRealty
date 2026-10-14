@@ -4,6 +4,7 @@ import {
   communityPresetTypeTwin,
   isPlaceTypePresetSlug,
   placeTypeSitemapPaths,
+  presetNeedsVerifiedDecision,
 } from './place-type-twin'
 import { PLACE_TYPE_PAGE_SLUGS } from '@/lib/place/publish-place-type-cards'
 import { resolvePlaceTypePage } from '@/lib/place/place-type-page'
@@ -69,5 +70,23 @@ describe('place-type twins (EXP-6)', () => {
       '/communities/tetherow/types/single-family',
     ])
     expect(placeTypeSitemapPaths(['bend'], null)).toEqual([])
+  })
+})
+
+describe('presetNeedsVerifiedDecision (an unknown decision, 2026-10-14)', () => {
+  it('is true for every preset the matrix counts and every type preset', () => {
+    for (const slug of ['under-1m', 'luxury', 'pending', 'with-pool', 'river-view', 'farms', 'businesses']) {
+      expect(presetNeedsVerifiedDecision(slug), slug).toBe(true)
+    }
+    for (const slug of PLACE_TYPE_PAGE_SLUGS) expect(presetNeedsVerifiedDecision(slug), slug).toBe(true)
+    // Case and whitespace do not change the answer, as the twin rule itself.
+    expect(presetNeedsVerifiedDecision(' Commercial ')).toBe(true)
+  })
+
+  it('is false for a preset the matrix cannot count, which the page always serves index', () => {
+    for (const slug of ['new-listings', 'open-house', 'single-level', 'rv-parking', 'on-golf-course']) {
+      expect(presetNeedsVerifiedDecision(slug), slug).toBe(false)
+    }
+    expect(presetNeedsVerifiedDecision('')).toBe(false)
   })
 })

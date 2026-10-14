@@ -18,6 +18,8 @@ Read this before changing any URL, redirect, title, canonical or robots rule.
 
 **Listing indexing (2026-10-13):** `/sitemaps/listings.xml` submits Active, Active Under Contract, and Pending only, with `lastmod` from `modified_at` (ModificationTimestamp). Closed / Expired / Withdrawn / Canceled pages older than 90 days are `noindex, follow` with a canonical to the community hub, else the city hub. Recent off-market and every on-market status stay `index, follow` on the listing URL. Out-of-area on-market listings stay indexed (SITE-33 reverted 2026-10-05). Thin geo/matrix URLs with fewer than 3 active listings are omitted and noindexed. Held by `listingIndexPolicy`, `ci:listing-offmarket-index`, and the `out-of-area-listing-indexed` pin.
 
+**Sitemap vs page on the preset URLs (2026-10-14):** the sitemap never submits a URL its page serves noindex or canonicalizes elsewhere, and a slow or failed read never flips that. The page fails open (a read blip never noindexes a live page); the sitemap fails closed. While the city x preset matrix decision is unknown, `app/sitemap.ts` omits every `/homes-for-sale/{city}/{preset}` that needs a verified decision (`presetNeedsVerifiedDecision`, `lib/seo/place-type-twin.ts`) and the file thins for that regeneration; it never submits the verified-thin presets or the type presets that canonicalize to `/cities/{city}/types/{type}`. Held by `ci:sitemap-inventory-gate` and `app/sitemap.matrix.test.ts`. Cause: matrix.xml served 808 URLs at 16:05Z because the matrix inventory read hit a statement timeout and the sitemap read the unknown as "index".
+
 ## Technical foundations
 
 - **Canonical URLs** – Every page sets `alternates.canonical` so search engines know the preferred URL (no duplicate indexing from query params).

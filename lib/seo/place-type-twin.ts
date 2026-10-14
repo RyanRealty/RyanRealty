@@ -34,9 +34,12 @@ import { getAllResortCommunities, type ResortCommunityEntry } from '@/lib/data/c
 import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
 import { PLACE_TYPE_PAGE_SLUGS } from '@/lib/place/publish-place-type-cards'
 import { slugify } from '@/lib/slug'
-import { cityPresetPath, matrixPath } from './search-matrix'
+import { cityPresetPath, matrixEmittablePresets, matrixPath } from './search-matrix'
 
 const TYPE_SLUGS: ReadonlySet<string> = new Set<string>(PLACE_TYPE_PAGE_SLUGS)
+
+/** Presets the matrix can count (derivable from the slim inventory columns). */
+let matrixDecidedSlugs: ReadonlySet<string> | null = null
 
 /**
  * Cities whose /cities/{city}/types/{type} pages RENDER. Measured live
@@ -55,6 +58,28 @@ const TYPE_PAGE_CITY_SLUGS: ReadonlySet<string> = new Set<string>(SITE_CITY_SLUG
 
 export function isPlaceTypePresetSlug(slug: string | null | undefined): boolean {
   return TYPE_SLUGS.has((slug ?? '').trim().toLowerCase())
+}
+
+/**
+ * True when the page's own verdict for /homes-for-sale/{city}/{preset} can come
+ * from the matrix: noindex on a verified zero or thin count, or (for a type
+ * preset) a canonical to the type page. Those are exactly the presets the matrix
+ * can count (matrixEmittablePresets) plus the place-type slugs. A preset outside
+ * that set never appears in cityPresetKeys, so the page serves it index,
+ * self-canonical whatever the matrix says (getMatrixCityPresetNoIndex fails
+ * OPEN on a key it never enumerated), and it needs no verified decision.
+ *
+ * The sitemap uses this to decide what to do when the decision is UNKNOWN
+ * (2026-10-14): a preset that needs a verified decision is omitted for that
+ * regeneration, a preset that does not is still submitted. An unknown decision
+ * must never be read as "index"; the page only fails open because it has to
+ * render something, and the sitemap does not.
+ */
+export function presetNeedsVerifiedDecision(presetSlug: string): boolean {
+  const preset = (presetSlug ?? '').trim().toLowerCase()
+  if (!preset) return false
+  matrixDecidedSlugs ??= new Set(matrixEmittablePresets().map((p) => p.slug))
+  return matrixDecidedSlugs.has(preset) || isPlaceTypePresetSlug(preset)
 }
 
 export function cityTypePagePath(citySlug: string, typeSlug: string): string {
