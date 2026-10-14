@@ -4,13 +4,17 @@ Surface: Cursor cloud. Branch `cursor/persist-ga-client-id-3b48`. Nothing sent. 
 
 **This pass.** Every lead form fill now first-touch writes `crm_people.custom.gaClientId` from the `_ga` cookie (last two numeric dot parts). `fireLeadGenerated` persists even when GPC or a decline blocks `generate_lead`, and each form action also calls `persistGaClientIdFromCookies` and passes `crm_person_id` (buyer_alerts_lp, buyer_leverage_lp, contact, seller valuation, lead-landing, page-cta, search-alert, concessions, place-value, and the other capture doors). Same cookie id is what the server `generate_lead` MP call uses. Follow-up to #543 so the daily offline cron has a client_id to send.
 
-**Still open.** Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`). Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. The unique `idx_listings_parcel_number` migration is not on main.
+**Still open.** Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`). #452 landed. Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. The unique `idx_listings_parcel_number` migration is not on main.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
+## Earlier — 2026-10-14 (Cursor, reader-5 leftover reads)
+
+Surface: Cursor cloud. Branch `cursor/reader-5-leftover-reads-52cc` / PR #559 landed. Thin-window own-listing-unsold and own-ground sold count. Nothing sent. No CMA rows written.
+
 ## Earlier — 2026-10-14 (Claude, the two buyer landing pages look like landing pages)
 
-Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b`. PR #548. `/buy/concessions` and `/buy/alerts` now open like `/sell`: Stage photograph, sourced figures, ask in the first viewport. Nothing sent.
+Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b`. PR #548 landed. `/buy/concessions` and `/buy/alerts` now open like `/sell`. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, GA4 offline conversions)
 
