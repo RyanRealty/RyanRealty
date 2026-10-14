@@ -6,7 +6,7 @@
  */
 import { NextRequest } from 'next/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { called, fakeSupabase, type Chain } from '@/test/fake-supabase-chain'
+import { argOf, called, fakeSupabase, type Chain } from '@/test/fake-supabase-chain'
 import { VIDEO_FREEZE_MESSAGE } from '@/lib/content/video-freeze'
 
 type Row = { id: string; action_type: string; executor_response: Record<string, unknown> | null; failure_log: unknown }
@@ -117,5 +117,63 @@ describe('publisher-sweep under the video freeze', () => {
       { id: 'image-1', action_type: 'trend_reactive', has_publish_payload: true, video_frozen: false },
     ])
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * A row that carries no media at all (prod has ops:meta_budget,
+ * analyze:metric_decomposition and ops:fub_tag_fix rows like this at ready)
+ * is not video. Approved, it must behave exactly as before the freeze: POSTed,
+ * refused by the publish route, failure-logged, and killed after two retries.
+ * It is never held as "video frozen".
+ */
+describe('publisher-sweep: an approved row with no media behaves as before the freeze', () => {
+  const opsRow = (failures: number): Row => ({
+    id: 'afc3a9b6-8e97-4d5e-8915-9e8e013829b2',
+    action_type: 'ops:meta_budget',
+    failure_log: Array.from({ length: failures }, (_, i) => ({ phase: 'publish', error: 'HTTP 400', at: `2026-10-1${i}T00:00:00Z` })),
+    executor_response: { publish_payload: { status: 'killed', platforms: [], action_type: 'ops:meta_budget' } },
+  })
+
+  beforeEach(() => {
+    // What the publish route answers a payload with no media.
+    fetchMock.mockImplementation(async () =>
+      new Response(JSON.stringify({ error: 'Publish blocked: approved must be true' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      }),
+    )
+  })
+
+  it('is POSTed, refused, and failure-logged, not held', async () => {
+    state.rows = [opsRow(0)]
+    const json = await (await sweep()).json()
+    expect(postedIds()).toEqual(['afc3a9b6-8e97-4d5e-8915-9e8e013829b2'])
+    expect(json.video_frozen_count).toBe(0)
+    expect(json.errors).toEqual([
+      { action_id: 'afc3a9b6-8e97-4d5e-8915-9e8e013829b2', phase: 'publish', error: 'Publish blocked: approved must be true' },
+    ])
+    // recordPublishFailure: the failure_log update and the failures-table row.
+    const failureLog = chains.find((c) => c.table === 'marketing_brain_actions' && called(c, 'update'))
+    expect(Object.keys(argOf(failureLog as Chain, 'update') as Record<string, unknown>)).toEqual(['failure_log'])
+    expect(chains.some((c) => c.table === 'producer_execution_failures' && called(c, 'insert'))).toBe(true)
+  })
+
+  it('is killed after two failed retries, without another POST', async () => {
+    state.rows = [opsRow(2)]
+    const json = await (await sweep()).json()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(json.video_frozen_count).toBe(0)
+    expect(json.errors).toEqual([
+      { action_id: 'afc3a9b6-8e97-4d5e-8915-9e8e013829b2', phase: 'publish', error: 'killed after max retries' },
+    ])
+    const kill = chains.find((c) => c.table === 'marketing_brain_actions' && called(c, 'update'))
+    expect(argOf(kill as Chain, 'update')).toMatchObject({ status: 'killed' })
+  })
+
+  it('a dry run does not mark it held', async () => {
+    state.rows = [opsRow(0)]
+    const json = await (await sweep('?dryRun=true')).json()
+    expect(json.candidates[0]).toMatchObject({ id: 'afc3a9b6-8e97-4d5e-8915-9e8e013829b2', video_frozen: false })
   })
 })

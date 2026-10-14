@@ -276,6 +276,25 @@ describe('R6: no direct video-post door outside a choke point', () => {
     expect(runWithAdded('scripts/yt.mjs', 'await youtube.videos\n  .insert({ part: [] })\n').join('\n')).toMatch(/videos\.insert\(\.\.\.\).*\(R6\)/)
   })
 
+  it('fails on a Facebook page video upload, by Graph base name or by host', () => {
+    expect(
+      runWithAdded('scripts/fb-video.mjs', "await postJson(`${META_GRAPH_BASE}/${pageId}/videos`, { file_url: url })\n").join('\n'),
+    ).toMatch(/^scripts\/fb-video\.mjs:1: .*\/videos.*\(R6\)/)
+    expect(
+      runWithAdded('scripts/fb-video2.mjs', "await fetch('https://graph-video.facebook.com/v21.0/123/videos', { method: 'POST' })\n").join('\n'),
+    ).toMatch(/graph-video\.facebook\.com.*\(R6\)/)
+    expect(
+      runWithAdded('scripts/fb-video3.mjs', "await fetch('https://graph.facebook.com/v21.0/123/videos?access_token=x')\n").join('\n'),
+    ).toMatch(/\(R6\)/)
+  })
+
+  it('does not fire on the site\'s own /videos page or a photographer\'s video link', () => {
+    expect(runWithAdded('lib/site/videos-link.ts', 'export const href = (siteUrl: string) => `${siteUrl}/videos?view=feed`\n')).toEqual([])
+    expect(
+      runWithAdded('scripts/aryeo-probe.mjs', "const u = 'https://jackson-real-estate-photography.aryeo.com/videos/0190'\n"),
+    ).toEqual([])
+  })
+
   it('does not fire on a comment, or on a word that only contains a signature', () => {
     expect(runWithAdded('scripts/notes.mjs', "// we used to post 'REELS' here\nconst kind = 'REELS_ARCHIVE'\n")).toEqual([])
   })
@@ -290,6 +309,13 @@ describe('R7: platform video functions are imported only by the publish route', 
   it('fails on a namespace import or a re-export of a platform client', () => {
     expect(runWithAdded('lib/social/all-graph.ts', "import * as graph from '@/lib/meta-graph'\nexport { graph }\n").join('\n')).toMatch(/lib\/meta-graph\.\*.*\(R7\)/)
     expect(runWithAdded('lib/social/tt-reexport.ts', "export { directPostVideo } from '@/lib/tiktok'\n").join('\n')).toMatch(/lib\/tiktok\.directPostVideo.*\(R7\)/)
+  })
+
+  it('fails on a script importing publishNextdoorPost (it takes a videoUrl)', () => {
+    const problems = runWithAdded('scripts/nextdoor-post.ts', "import { publishNextdoorPost } from '@/lib/nextdoor'\nexport const go = publishNextdoorPost\n")
+    expect(problems).toEqual([
+      'scripts/nextdoor-post.ts: imports lib/nextdoor.publishNextdoorPost, a platform video function only app/api/social/publish/route.ts may call (it refuses video) (R7).',
+    ])
   })
 
   it('does not fire on an image function from the same client', () => {

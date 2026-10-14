@@ -32,12 +32,13 @@
  *   R5  The retired one-off May rollout scripts, which posted Reels straight to
  *       the Graph API, stay deleted.
  *   R6  A direct video-post endpoint ('REELS', /advideos, video_reels,
- *       post/publish/, upload/youtube/v3/videos, tweet_video, videos.insert)
- *       appears only in a guarded choke point or a platform client, so a new
- *       script cannot open a door around the freeze.
+ *       post/publish/, upload/youtube/v3/videos, tweet_video, videos.insert,
+ *       the graph-video host, a Graph `.../videos` upload) appears only in a
+ *       guarded choke point or a platform client, so a new script cannot
+ *       open a door around the freeze.
  *   R7  The platform clients' video functions (publishReel, directPostVideo,
- *       uploadYouTubeVideoFromUrl, ...) are imported only by the publish
- *       route, which refuses video (R2, R3).
+ *       uploadYouTubeVideoFromUrl, publishNextdoorPost, ...) are imported only
+ *       by the publish route, which refuses video (R2, R3).
  *
  * Usage:
  *   node scripts/check-video-freeze.mjs            # check (exit 1 on a violation)
@@ -112,7 +113,7 @@ export const CHOKE_POINTS = [
     file: 'app/api/cron/publisher-sweep/route.ts',
     scope: 'GET',
     what: 'publisher-sweep POSTing a row to the publish route',
-    guard: 'videoFreezeRefusal',
+    guard: 'rowVideoFreezeRefusal',
     writes: { callee: 'fetch', argIncludes: '/api/social/publish' },
   },
   {
@@ -158,11 +159,20 @@ export const RETIRED_SCRIPTS = ['scripts/publish-2026-05-14-fixes.mjs', 'scripts
 
 /** R6: string pieces that only a direct video post uses. */
 const VIDEO_POST_EXACT = new Set(['REELS', 'tweet_video'])
-const VIDEO_POST_PARTS = ['/advideos', 'video_reels', 'post/publish/', 'upload/youtube/v3/videos']
+const VIDEO_POST_PARTS = ['/advideos', 'video_reels', 'post/publish/', 'upload/youtube/v3/videos', 'graph-video.facebook.com']
+/**
+ * Facebook's page video upload: a Graph URL ending in /videos, spelled out
+ * (https://graph.facebook.com/v21.0/123/videos) or built from a base whose
+ * name says graph (`${META_GRAPH_BASE}/${pageId}/videos`). The site's own
+ * /videos page never has "graph" in front of it. "graph" must stand as its
+ * own word ("photography.aryeo.com/videos/..." is a photographer's site).
+ */
+const GRAPH_VIDEO_UPLOAD = /(?<![a-z])graph(?![a-z])[^\s'"`]*\/videos(?:[?#/'"`]|$)/i
 
 /** R6: where those may appear, and why that is safe. */
 export const VIDEO_POST_ALLOWED = new Map([
   ['lib/meta-graph.ts', 'platform client; its video functions are imported only by the publish route (R7)'],
+  ['lib/nextdoor.ts', 'platform client; publishNextdoorPost is imported only by the publish route (R7)'],
   ['lib/tiktok.ts', 'platform client; its video functions are imported only by the publish route (R7)'],
   ['lib/x.ts', 'platform client; its video functions are imported only by the publish route (R7)'],
   ['lib/youtube.ts', 'platform client; its video functions are imported only by the publish route (R7)'],
@@ -179,12 +189,15 @@ export const PLATFORM_VIDEO_FUNCTIONS = new Map([
   ['lib/x', ['uploadVideoToX']],
   ['lib/pinterest', ['createPinterestVideoPin']],
   ['lib/threads', ['publishThreadsVideo']],
+  // It takes a videoUrl as well as an imageUrl.
+  ['lib/nextdoor', ['publishNextdoorPost']],
 ])
 export const PUBLISH_ROUTE = 'app/api/social/publish/route.ts'
 
 /** Raw text a file must hold before R6/R7 bother parsing it (parsing every file costs ~10s). */
-// `.videos` covers `youtube.videos.insert(` and the same chain split across lines.
-const R6_HINTS = [...VIDEO_POST_EXACT, ...VIDEO_POST_PARTS, '.videos']
+// `.videos` covers `youtube.videos.insert(` and the same chain split across lines;
+// `/videos` covers a Graph video upload.
+const R6_HINTS = [...VIDEO_POST_EXACT, ...VIDEO_POST_PARTS, '.videos', '/videos']
 const R7_HINTS = [...PLATFORM_VIDEO_FUNCTIONS.keys()].flatMap((mod) => {
   const base = mod.slice(mod.lastIndexOf('/'))
   return [`${base}'`, `${base}"`, `${base}.ts'`, `${base}.ts"`]
@@ -501,6 +514,14 @@ function videoPostSignature(sf) {
     if (text != null && (VIDEO_POST_EXACT.has(text) || VIDEO_POST_PARTS.some((part) => text.includes(part)))) {
       hit = { line: line(sf, node), what: text.length > 60 ? `${text.slice(0, 60)}...` : text }
       return
+    }
+    // A Graph video upload, judged on the whole literal so `${base}` names count.
+    if (ts.isTemplateExpression(node) || ts.isStringLiteralLike(node)) {
+      const whole = node.getText(sf)
+      if (GRAPH_VIDEO_UPLOAD.test(whole)) {
+        hit = { line: line(sf, node), what: whole.length > 60 ? `${whole.slice(0, 60)}...` : whole }
+        return
+      }
     }
     // youtube.videos.insert(...)
     if (
