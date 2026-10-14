@@ -35,6 +35,7 @@
 
 import { cookies, headers } from 'next/headers'
 import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-protocol'
+import { rememberGaClientId } from '@/lib/data/analytics/gaClientId'
 import { CONSENT_COOKIE, recordingAllowed } from '@/lib/identity/consent'
 import {
   isLeadFormId,
@@ -265,6 +266,10 @@ export async function fireLeadGenerated(params: FireLeadParams): Promise<void> {
     }
     const eventParams = leadEventParams(params, mergeLeadAttribution(utm, params.attribution))
     if (!eventParams) return
+    // Offline conversions (qualify_lead / close_convert_lead) run from cron
+    // and have no request cookies. Persist the `_ga` client_id on the contact
+    // so that later send can stitch to the same GA4 user.
+    void rememberGaClientId(params.crm_person_id ?? params.fub_person_id, clientId)
     await fireGa4Event({
       eventName,
       clientId,

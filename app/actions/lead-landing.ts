@@ -66,8 +66,6 @@ type SubmitLeadLandingInput = {
   leadType?: LeadType
   /** Override generate_lead lp_variant. Existing callers stay `lead-landing-${audience}`. */
   lpVariant?: string
-  /** Skip CAPI value/currency (buyer leverage). Existing callers still send them. */
-  omitCapiValue?: boolean
   /** #465 EU hashed-match box. Stored on the person; never on generate_lead. */
   adMatchConsent?: boolean
 }
@@ -189,7 +187,6 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
     }
 
     const eventId = generateEventId()
-    const leadValue = input.audience === 'seller' ? 500 : 300
     {
       const sharing = await visitorCapiConsent()
       if (sharing.allowed) {
@@ -210,7 +207,6 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
               content_name: formId,
               lead_type: leadType,
               intent: input.leadIntent,
-              ...(input.omitCapiValue ? {} : { value: leadValue, currency: 'USD' }),
             },
           }),
         }).catch((err) => {

@@ -477,6 +477,27 @@ export type {
 } from './V3Sheet'
 
 /* -------------------------------------------------------------------------- */
+/* Pattern — COMPARE: one amount, two uses, drawn on one scale                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The Sheet pattern's comparison job as an instrument (Matt 2026-10-14, the
+ * concessions landing page): the amount the reader scrubs, two outcomes that
+ * roll to their values, the margin drawn as two lengths on one scale.
+ */
+export { V3Compare } from './V3Compare.client'
+
+export type {
+  V3CompareProps,
+  V3CompareOutcome,
+  V3CompareAmount,
+  V3CompareField,
+  V3CompareNumberField,
+  V3CompareSelectField,
+  V3CompareOption,
+} from './V3Compare.client'
+
+/* -------------------------------------------------------------------------- */
 /* Pattern 6 — QUIET: hairline supporting content, the graph's outbound edges  */
 /* -------------------------------------------------------------------------- */
 
