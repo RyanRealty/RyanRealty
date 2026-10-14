@@ -1,12 +1,20 @@
-# Current — 2026-10-14 (Cursor, land CMA intake + ranking PRs)
+# Current — 2026-10-14 (Cursor, Tetherow page-payload baseline)
 
-Surface: Cursor cloud. Landing #485 then #488 then #489 onto origin/main. Closed #524 because `/buy/alerts` is live via #536. Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. Branch `cursor/tetherow-payload-baseline-58a6` from origin/main `fe948f648`. PR only — do not merge. Nobody pushes main. Nothing sent.
 
-**This pass.** Merge main into #485 (intake safety gate), wait for checks, merge. Then the two ranking PRs. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale: merge would revert the rule-31 map cache, `cleared_at`, and industry exclusion).
+**What this branch does.** Resets `ci:page-payload` for `/communities/tetherow` from 710,608 to 797,069 bytes. Local `next start` measured 797,069 three times (22 listing cards). The 24-card SSR cap cannot shrink Tetherow; the growth is #525 footer by-area plus the existing fold that parity still requires in the served HTML. Other ratchet pages kept their shrink-only numbers. Hard 200 KB / 24-card dump line unchanged.
 
-**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+**Not this change.** Do not merge this PR unless Matt asks. Do not merge `cursor/ai-voiceover-scripts-8a9c` unless Matt asks. Do not merge the SMS suppression branch. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill. Do not send. Do not merge `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters. Hold #452. Hold #471.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool`. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `docs/RUN_LOOP.md` (payload plumbing, not a site-queue look change).
+
+## Earlier — 2026-10-14 (Cursor, land CMA intake + ranking PRs)
+
+Surface: Cursor cloud. #485 landed on origin/main at `fe948f648`. Closed #524 because `/buy/alerts` is live via #536. Nothing sent. Nobody pushes main. No rebuild.
+
+**That pass.** Merge main into #485 (intake safety gate), wait for checks, merge. Then the two ranking PRs. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale: merge would revert the rule-31 map cache, `cleared_at`, and industry exclusion).
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 

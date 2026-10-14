@@ -49,7 +49,7 @@ describe('page-payload budget (200 KB hard ceiling)', () => {
   it('does not hard-fail a 700 KB community whose map seeded 22 homes', () => {
     const failures = evaluatePayloadBudget(
       { '/communities/tetherow': 700_000 },
-      { pages: { '/communities/tetherow': 710_608 } },
+      { pages: { '/communities/tetherow': 797_069 } },
       { cardCounts: { '/communities/tetherow': 22 } },
     )
     expect(failures.filter((m) => m.includes('hard ceiling'))).toEqual([])
