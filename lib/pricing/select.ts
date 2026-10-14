@@ -50,6 +50,7 @@ import { estimateClosePrice, pricingSaleToCmaComp } from '@/lib/pricing/estimate
 import { anchorPlacePhrase } from '@/lib/pricing/price-anchor'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CompSelection } from '@/lib/cma/comps'
+import { readOwnGroundSold } from '@/lib/cma/own-ground-sold'
 import { diagnoseStarvation, emptyExclusions, factsStopReason, type FactsPathHold } from '@/lib/cma/comp-trace'
 import {
   CUSTOM_FACTS_POOL_MONTHS,
@@ -653,12 +654,39 @@ export async function selectCompsPreferringFacts(
   })
   if (customOrNew) {
     const match = await selectPricingComps(subject, opts)
-    return matchToCompSelection(subject, match, { customOrNew })
+    return withOwnGroundSold(matchToCompSelection(subject, match, { customOrNew }), subject, opts.asOf)
   }
   const { selectComps } = await import('@/lib/cma/comps')
   const match = await selectPricingComps(subject, opts)
   if (pickCompSource({ ...match, customOrNew }) === 'facts') {
-    return matchToCompSelection(subject, match, { customOrNew })
+    return withOwnGroundSold(matchToCompSelection(subject, match, { customOrNew }), subject, opts.asOf)
   }
-  return withFactsPath(await selectComps(subject, opts), match)
+  return withOwnGroundSold(withFactsPath(await selectComps(subject, opts), match), subject, opts.asOf)
+}
+
+/**
+ * WHEN THE OWN-SUBDIVISION RUNGS FOUND NOTHING, DID ANYTHING SELL THERE
+ * (reader review 2026-10-09, 915 Saginaw). One read of the subject's own
+ * ground, any size, over the widest own-subdivision window, stamped on the
+ * diagnostics as `own_ground_sold` for the comp story (lib/pricing/comp-search.ts).
+ * Nothing about the search or the price changes.
+ */
+async function withOwnGroundSold(
+  selection: CompSelection,
+  subject: CmaSubject,
+  asOf: string | undefined,
+): Promise<CompSelection> {
+  const own = (selection.diagnostics?.ladder ?? []).filter((r) => r.ran && r.tier.startsWith('subdivision-'))
+  if (own.length === 0 || own.some((r) => r.comps_added > 0)) return selection
+  const months = Math.max(...own.map((r) => r.months_back))
+  if (!(months > 0)) return selection
+  const sold = await readOwnGroundSold({ subject, months, asOf: (asOf ?? new Date().toISOString()).slice(0, 10) })
+  if (!sold) return selection
+  selection.diagnostics.own_ground_sold = sold
+  selection.trace.push(
+    sold.n === 0
+      ? `No home sold on the subject's own ground in the last ${months} months, any size (${sold.source}).`
+      : `${sold.capped ? 'At least ' : ''}${sold.n} home(s) sold on the subject's own ground in the last ${months} months, none of them matched the own-subdivision rungs (${sold.source}).`,
+  )
+  return selection
 }
