@@ -178,17 +178,24 @@ export function applyVisitBrokerToGtag(): { broker_slug: string; assigned_broker
 }
 
 /**
- * Push a page view to window.dataLayer (e.g. for virtual page views or SPA updates).
- * When broker attribution is known, the event carries broker_slug and the user
- * property assigned_broker is set — not only on generate_lead.
+ * Push a client-side page view to window.dataLayer. When broker attribution is
+ * known, the event carries broker_slug and the user property assigned_broker is
+ * set — not only on generate_lead.
+ *
+ * GTM's "GA4 - page_view" tag (Custom Event `page_view`, GTM version 9,
+ * 2026-10-14) sends this push to GA4 with page_type, broker_slug, page_location
+ * and page_referrer. It is the only page_view sender: the Google tag has
+ * send_page_view false and enhanced measurement's history page views are off.
+ * It is not on the shared "GA4 - dataLayer events" trigger.
  */
 export function trackPageView(pageType: string, params: Record<string, unknown> = {}) {
   const broker = applyVisitBrokerToGtag()
   const withBroker = broker ? { broker_slug: broker.broker_slug, ...params } : params
-  // GTM's Google tag sends page_view (enhanced measurement's browser-history
-  // setting covers SPA navigations, on per the 2026-10-08 GA4 audit). This push
-  // only stamps the dataLayer; page_view is not on the GTM GA4 Event trigger.
-  pushDataLayer({ event: 'page_view', page_type: pageType, ...withBroker })
+  // Undefined values are dropped: GTM's data model would store them and wipe a
+  // sticky key such as broker_slug (same rule as pushDataLayerEvent).
+  const flat: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(withBroker)) if (value !== undefined) flat[key] = value
+  pushDataLayer({ event: 'page_view', page_type: pageType, ...flat })
 }
 
 // ----------------------------------------------------------------------------

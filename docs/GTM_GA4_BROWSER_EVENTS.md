@@ -33,13 +33,36 @@ dataLayer.push({ event: 'section_view', section: 'proof', page_type: 'sell',   /
 - Alert enroll pushes `sign_up` (already on this trigger) with `method`,
   `form_id`, and `lead_type`.
 - Not sent by this tag, on purpose: `generate_lead` (server only, Measurement
-  Protocol, one per real submission), `page_view` (the Google tag owns it),
+  Protocol, one per real submission), `page_view` (its own tag, below),
   `valuation_requested` (the server sends it for the same submissions),
   `form_start` (enhanced measurement's Form interactions already sends it; add
   it to the list in code only after that toggle is off).
-- This import does not include unused live-container triggers 6 (`CE page_view`)
-  or 7 (`CE generate_lead`); they are not in this file. Pause or delete them by
-  hand in GTM if they still exist. Never call the GTM API from this repo.
+- `CE generate_lead` was deleted from the live container in version 8 (2026-10-14). `CE page_view` is the
+  trigger of the `GA4 - page_view` tag (version 9). Never call the GTM API from this repo except read-only
+  (`npm run analytics:audit`).
+
+## page_view: one sender (GTM version 9, 2026-10-14)
+
+`page_view` has its own GA4 Event tag, `GA4 - page_view`, on the Custom Event trigger `CE page_view` (event name
+equals `page_view`). The inline GTM bootstrap pushes the first-paint `page_view` right after `gtm.js`
+(`lib/analytics/gtm-bootstrap.ts`) and `components/PageViewTracker.tsx` pushes one per **pathname** change. A
+query-only change (`?bbox=` from the search map, `?photo=N` from the gallery, identity params being stripped) is
+not a new page.
+
+| GA4 parameter | GTM variable | dataLayer key |
+|---|---|---|
+| `page_type` | `DLV - ga4 page_type` | `page_type` |
+| `broker_slug` | `DLV - ga4 broker_slug` | `broker_slug` |
+| `page_location` | `DLV - ga4 page_location` | `page_location` (identity params `_pid`, `_fuid`, `rr_doc` stripped) |
+| `page_referrer` | `DLV - ga4 page_referrer` | `page_referrer` (the previous page on a client-side navigation; absent on first paint) |
+
+It only works with both of these, or page views double:
+
+- The Google tag has the configuration parameter `send_page_view` = `false`.
+- GA4 Admin → Data streams → G-ST40W4WM6T → Enhanced measurement → Page views → **Page changes based on browser
+  history events** is off.
+
+`npm run analytics:audit` fails on any other mix (two senders, or none).
 
 ## Option A: import (about 3 minutes)
 
@@ -47,8 +70,10 @@ dataLayer.push({ event: 'section_view', section: 'proof', page_type: 'sell',   /
 2. Choose file: `docs/gtm/ga4-browser-events.import.json` (from this repo).
 3. Workspace: **Existing** → Default Workspace. Import option: **Merge** → **Rename conflicting tags, triggers, and
    variables**. Confirm.
-4. It adds 1 tag (`GA4 - dataLayer events`), 1 trigger (`CE - GA4 browser events`) and 29 Data Layer Variables
-   (`DLV - ga4 …`). It changes nothing that exists. **Matt must import and publish**
+4. It adds 2 tags (`GA4 - dataLayer events`, `GA4 - page_view`), 2 triggers (`CE - GA4 browser events`,
+   `CE page_view`) and 32 variables: the event tag's 30 Data Layer Variables plus `page_location` and
+   `page_referrer` (`DLV - ga4 …`). On the live container, which already has them, Merge renames the duplicates;
+   edit by hand there instead. It changes nothing that exists. **Matt must import and publish**
    so `lead_type` on `sign_up` reaches GA4. `sign_up` was already on the trigger regex.
    Do not add `generate_lead` to that regex.
 5. Skip to **Test**. If GTM rejects the file, use Option B; the result is identical.
@@ -91,6 +116,7 @@ value. Name the variable as in the "GTM variable" column.
 | 27 | `metric_id` | `DLV - ga4 metric_id` | `ga4_params.metric_id` |
 | 28 | `metric_rating` | `DLV - ga4 metric_rating` | `ga4_params.metric_rating` |
 | 29 | `lead_type` | `DLV - ga4 lead_type` | `ga4_params.lead_type` |
+| 30 | `seconds` | `DLV - ga4 seconds` | `ga4_params.seconds` |
 
 Also confirm the built-in variable **Event** is enabled (Variables → Configure → Event). It is on by default.
 
@@ -111,7 +137,7 @@ Also confirm the built-in variable **Event** is enabled (Variables → Configure
 - Measurement ID: `G-ST40W4WM6T`
 - Event Name: `{{Event}}`
 - Event Parameters: one row per line of the table above: Parameter Name = "GA4 parameter", Value = the
-  `{{DLV - ga4 …}}` variable. (29 rows. Empty values are not sent.)
+  `{{DLV - ga4 …}}` variable. (30 rows. Empty values are not sent.)
 - Leave "Send Ecommerce data" off. Consent: leave the built-in consent checks as they are (do not add any).
 - Triggering: `CE - GA4 browser events`.
 
@@ -122,7 +148,7 @@ Also confirm the built-in variable **Event** is enabled (Variables → Configure
    the hit's parameters show `section` / `depth` and `page_type`.
 3. Tap a phone link: `call_initiated` fires the tag. Its parameters must NOT include a phone number.
 4. GA4 → Admin → **DebugView** shows the same events.
-5. A `page_view` must NOT fire this tag (the Google tag sends page_view; this tag would double it).
+5. A `page_view` must NOT fire this tag. It fires `GA4 - page_view` only, once per page.
 
 ## Publish
 
