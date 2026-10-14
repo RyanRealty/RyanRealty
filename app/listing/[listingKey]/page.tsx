@@ -113,6 +113,7 @@ import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/component
 import { ListingSaveButton as _ListingSaveButtonImport } from '@/components/site/listing-detail/ListingSaveButton'
 import { ListingShareButton as _ListingShareButtonImport } from '@/components/site/listing-detail/ListingShareButton'
 import { listingDocumentTitle } from '@/lib/listing/listing-document-title'
+import { listingOgImagePath, listingShareOgTitle } from '@/lib/og/listing-share'
 import { getSession } from '@/lib/data/auth/getSession'
 import { TextMattCTA as _TextMattCTAImport } from '@/components/site/listing-detail/TextMattCTA'
 import { V3WorkWithUs as _V3WorkWithUsImport } from '@/components/site/v3/V3PhoneDock.client'
@@ -211,17 +212,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // and nothing else. No remarks: the facts line plus what the page holds.
   const plat = listing.subdivisionName?.trim()
   const where = [plat, listing.city?.trim()].filter(Boolean).join(', ')
+  const publishedPrice = publishListingPublishedWholePropertyPrice({
+    status: listing.status,
+    listPrice: listing.listPrice,
+    closePrice: listing.closePrice,
+    propertyType: listing.propertyType,
+    propertySubType: listing.propertySubType,
+    subdivisionName: listing.subdivisionName,
+    city: listing.city,
+    listNumber: listing.listNumber,
+  })
   const snippetLead = listingShareSummary({
-    price: publishListingPublishedWholePropertyPrice({
-      status: listing.status,
-      listPrice: listing.listPrice,
-      closePrice: listing.closePrice,
-      propertyType: listing.propertyType,
-      propertySubType: listing.propertySubType,
-      subdivisionName: listing.subdivisionName,
-      city: listing.city,
-      listNumber: listing.listNumber,
-    }),
+    price: publishedPrice,
     statusWord,
     beds: listing.beds,
     baths: listing.baths,
@@ -264,9 +266,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // reverted 2026-10-05). Held by listingIndexPolicy + ci:listing-offmarket-index.
   return pageMetadata({
     title,
+    ogTitle: listingShareOgTitle({ ...listing, addressTitle }),
     description: metaDescription,
     path: indexPolicy.canonicalPath,
-    ogImage: `/api/og?type=listing&id=${encodeURIComponent(listing.listingKey)}`,
+    ogImage: listingOgImagePath(listing),
     noindex: indexPolicy.noindex,
   })
 }

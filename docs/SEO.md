@@ -28,7 +28,7 @@ Read this before changing any URL, redirect, title, canonical or robots rule.
 ## On-page & metadata
 
 - **Titles & descriptions** – City/subdivision pages use location-specific titles and meta descriptions (from `lib/city-content.ts` where defined). Listing pages use address and key stats.
-- **Open Graph & Twitter** – All main pages set `openGraph` and `twitter` (e.g. `summary_large_image`) with title, description, and image where available (banner for search pages, first listing photo for listing pages).
+- **Open Graph & Twitter** – All main pages set `openGraph` and `twitter` (`summary_large_image`) with title, description, and an absolute image. Listing pages (`/listing/*` and slugged `/homes-for-sale/...-{mls}`), Active/Pending/Closed, resolve ListNumber or ListingKey the same way the page does. `og:title` is address · price · beds/baths. `og:image` is `/api/og?type=listing` on the primary MLS hero (`listings.PhotoURL`, already null when `media_suppressed`). Default aerial only when that listing has no photo. Social UAs (`facebookexternalhit` and the rest of `GOOD_BOT_RE`) skip the bot screen and still take the listing canonical hop.
 - **Structured data (JSON-LD)**
   - **Root**: `RealEstateAgent` (Ryan Realty) and `WebSite` with `SearchAction` (in `components/JsonLd.tsx`).
   - **Search (city/subdivision)**: `WebPage` (with `primaryImageOfPage` when banner exists), `BreadcrumbList`, `Place`, and `ItemList` (first 10 listing URLs).

@@ -508,9 +508,9 @@ const WIRED = [
   // promise — so each takes the whole-property price, never the ask. MLS
   // 220190868 asks $1 for a fractional interest at Eagle Crest.
   //
-  // /api/og share cards (2026-10-14) print a photo, the wordmark, and a short
-  // title. They do not print a list price, so they are not a whole-property
-  // surface. Keep them off this list unless a dollar figure returns.
+  // /api/og listing cards print the published whole-property price on the
+  // second line (address · price · beds/baths). That figure routes through
+  // publishListingPublishedWholePropertyPrice in lib/og/listing-share.ts.
   //
   // RentalAnalysis.tsx (the listing-page rental section this row once pinned)
   // was deleted 2026-09-09 (ci:reachable-exports): the 12-section listing
@@ -535,6 +535,11 @@ const WIRED = [
   ],
   [
     'components/site/listing-detail/PriceCtaStrip.tsx',
+    'publishListingPublishedWholePropertyPrice',
+    '@/lib/listing/publish-listing-published-price',
+  ],
+  [
+    'lib/og/listing-share.ts',
     'publishListingPublishedWholePropertyPrice',
     '@/lib/listing/publish-listing-published-price',
   ],

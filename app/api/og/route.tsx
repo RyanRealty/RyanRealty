@@ -1,21 +1,11 @@
 import { getBlogPostForOgBySlug, getBrokerForOgBySlug } from '@/lib/data/brokers/getBrokers'
-import { getListingTiles } from '@/lib/data/listings/getListingTiles'
+import { getListingLookup } from '@/lib/data/listings/getListingDetail'
+import { listingHasSharePhoto, listingShareCardLines } from '@/lib/og/listing-share'
 import { renderShareCard } from '@/lib/og/share-card'
 import { resolvePlaceOgPhoto } from '@/lib/og/resolve-photo'
-import { shortOgTitle } from '@/lib/og/share-image-url'
 
 export const runtime = 'nodejs'
 export const revalidate = 86400
-
-function listingCardTitle(tile: {
-  streetNumber?: string | null
-  streetName?: string | null
-  streetSuffix?: string | null
-  city?: string | null
-}): string {
-  const street = [tile.streetNumber, tile.streetName, tile.streetSuffix].filter(Boolean).join(' ')
-  return shortOgTitle(street || tile.city || 'Home for sale')
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -26,18 +16,15 @@ export async function GET(request: Request) {
 
   if (type === 'listing' && id) {
     try {
-      const tiles = await getListingTiles({
-        listingKeys: [id],
-        status: 'all',
-        limit: 1,
-      })
-      const tile = tiles[0]
-      if (tile) {
-        // Tile photoUrl is already null when media_suppressed. Do not fall
-        // back to listing_photos — that table is not suppression-gated.
+      // ListNumber or ListingKey — the same resolver the listing page uses.
+      // A miss, a Coming Soon, or an IDX opt-out falls through to default.
+      const lookup = await getListingLookup(id)
+      if (lookup.kind === 'ok' && listingHasSharePhoto(lookup.listing.photoUrl)) {
+        const lines = listingShareCardLines(lookup.listing)
         return renderShareCard({
-          title: listingCardTitle(tile),
-          photoSrc: tile.photoUrl,
+          title: lines.title,
+          subtitle: lines.subtitle,
+          photoSrc: lookup.listing.photoUrl,
         })
       }
     } catch (err) {

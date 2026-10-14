@@ -29,7 +29,7 @@ const KEY_ROUTES = [
   },
   {
     path: '/homes-for-sale/listing/220190868',
-    ogImage: shareOgImagePath({ type: 'listing', id: '220190868' }),
+    ogImage: shareOgImagePath({ type: 'listing', id: '20240827010740567422000000' }),
   },
   {
     path: '/',

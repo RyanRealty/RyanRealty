@@ -57,9 +57,11 @@ export function withOgCache(image: ImageResponse): ImageResponse {
 
 export function renderShareCard(input: {
   title?: string | null
+  subtitle?: string | null
   photoSrc?: string | null
 }): ImageResponse {
-  const title = shortOgTitle(input.title ?? '')
+  const title = shortOgTitle(input.title ?? '', input.subtitle ? 42 : 36)
+  const subtitle = (input.subtitle ?? '').replace(/\s+/g, ' ').trim()
   const photo = resolveCardPhotoSrc(input.photoSrc)
   const logo = ogLogoSrc()
   const titleSize = title.length > 26 ? 44 : 56
@@ -112,17 +114,40 @@ export function renderShareCard(input: {
             }}
           >
             <img src={logo} alt="" width={260} height={52} />
-            {title ? (
+            {title || subtitle ? (
               <div
                 style={{
                   display: 'flex',
-                  color: CREAM,
-                  fontSize: titleSize,
-                  fontWeight: 700,
-                  lineHeight: 1.15,
+                  flexDirection: 'column',
+                  gap: 8,
                 }}
               >
-                {title}
+                {title ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      color: CREAM,
+                      fontSize: titleSize,
+                      fontWeight: 700,
+                      lineHeight: 1.15,
+                    }}
+                  >
+                    {title}
+                  </div>
+                ) : null}
+                {subtitle ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      color: CREAM,
+                      fontSize: 36,
+                      fontWeight: 600,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {subtitle}
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
