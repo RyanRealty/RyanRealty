@@ -74,7 +74,7 @@ export type PageMetadataInput = {
   description: string
   /** Path relative to the site root, e.g. /cities/bend or /listings/12345. Leading slash required. */
   path: string
-  /** Absolute or root-relative path to OG image (1200×630 recommended). Defaults to /og-default.png. */
+  /** Absolute or root-relative path to OG image (1200×630 recommended). Defaults to /api/og. */
   ogImage?: string
   /** OG type. Default 'website'. Use 'article' for blog posts. */
   ogType?: 'website' | 'article'
@@ -109,10 +109,14 @@ const DEFAULT_KEYWORDS: ReadonlyArray<string> = [
   'Ryan Realty',
 ]
 
-// Dynamic, always-present OG image (the /og-default.png + /og-home.png static
-// files never existed → every share rendered a broken image). The /api/og route
-// renders a branded 1200×630 card; robots.ts allows /api/og for social scrapers.
-const DEFAULT_OG_IMAGE = '/api/og?type=default'
+// Dynamic, always-present OG image. /api/og paints the real wordmark over a
+// place photo (or the Tetherow aerial fallback). robots.ts allows /api/og
+// for social scrapers. Keep this file free of other @/lib imports —
+// ci:listing-offmarket-index executes pageMetadata from a transpiled isolate.
+function defaultOgImage(title: string): string {
+  const short = title.replace(/\s*[|·].*$/, '').replace(/\s+/g, ' ').trim().slice(0, 36)
+  return `/api/og?type=default&title=${encodeURIComponent(short || 'Bend · Central Oregon')}`
+}
 
 /** The separators a title segment may end on, plus the two the old cut missed. */
 const DANGLING_TOKEN = /\s*[|·—–&+-]\s*$/
@@ -241,9 +245,11 @@ export function pageMetadata(input: PageMetadataInput): Metadata {
   const canonical = `${site}${path}`
   const title = documentTitle(input.title)
   const description = shareDescription(input.description, MAX_DESC)
-  const ogImage = input.ogImage ?? DEFAULT_OG_IMAGE
+  const ogImage = input.ogImage ?? defaultOgImage(title)
   const twitterImage = input.twitterImage ?? ogImage
   const ogImageUrl = ogImage.startsWith('http') ? ogImage : `${site}${ogImage}`
+  const twitterImageUrl = twitterImage.startsWith('http') ? twitterImage : `${site}${twitterImage}`
+  const image = { url: ogImageUrl, width: 1200, height: 630, alt: title, type: 'image/png' as const }
 
   return {
     title,
@@ -257,13 +263,13 @@ export function pageMetadata(input: PageMetadataInput): Metadata {
       url: canonical,
       type: input.ogType ?? 'website',
       siteName: 'Ryan Realty',
-      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: title }],
+      images: [image],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: [twitterImage.startsWith('http') ? twitterImage : `${site}${twitterImage}`],
+      images: [{ url: twitterImageUrl, width: 1200, height: 630, alt: title }],
     },
     // noindex no longer implies nofollow. ~580 rendered noindex pages each carry
     // ~200 internal links; "noindex, nofollow" told Google to drop every one.

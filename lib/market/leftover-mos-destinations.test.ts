@@ -9,8 +9,6 @@ const files = {
   annual: readFileSync(resolve('app/housing-market/annual-review/page.tsx'), 'utf8'),
   cities: readFileSync(resolve('app/cities/page.tsx'), 'utf8'),
   snapshot: readFileSync(resolve('components/site/MarketSnapshot.tsx'), 'utf8'),
-  searchOg: readFileSync(resolve('app/search/og/[...slug]/route.tsx'), 'utf8'),
-  housingOg: readFileSync(resolve('app/housing-market/og/[...slug]/route.tsx'), 'utf8'),
   // SiteHeader was deleted 2026-08-27 with the legacy chrome. V3Chrome is the
   // one public header and publishes no MOS figure of its own; the chrome-level
   // read that remains is getMegaMenuData, on the next line, which carries this

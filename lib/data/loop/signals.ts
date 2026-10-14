@@ -225,19 +225,16 @@ export type CompanyScoreboardSignals = {
   answerEngine: AnswerEngineCitations
 }
 
+// LinkedIn and Threads were removed as platforms (Matt 2026-10-14), so their
+// token tables are not scored: a dead linkedin_auth row is not Matt-gated work.
 const SOCIAL_TABLES = [
   'tiktok_auth',
   'youtube_auth',
-  'linkedin_auth',
   'x_auth',
   'google_business_profile_auth',
-  'threads_auth',
   'pinterest_auth',
   'nextdoor_auth',
 ] as const
-
-// threads_auth carries a long-lived token with no refresh_token column.
-const NO_REFRESH_COLUMN = new Set<string>(['threads_auth'])
 
 function bump(map: CountByKey, key: string, amount = 1) {
   map[key] = (map[key] ?? 0) + amount
@@ -362,7 +359,7 @@ export async function collectCompanyScoreboardSignals(
     readPlaceMembershipFreshness(sb, now),
     readGscTrend(sb, now),
     ...SOCIAL_TABLES.map((table) =>
-      sb.from(table).select(NO_REFRESH_COLUMN.has(table) ? 'expires_at' : 'expires_at,refresh_token'),
+      sb.from(table).select('expires_at,refresh_token'),
     ),
   ])
 

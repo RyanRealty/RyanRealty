@@ -76,6 +76,7 @@ import { loadPlaceLeaseSection } from '@/lib/place/place-lease-stock'
 import { placeBoundaryClause, placeInventorySource } from '@/lib/place/place-inventory-source'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata, publishPlaceHomesTitle } from '@/lib/site/page-metadata'
+import { ogImageForPlace } from '@/lib/og/share-image-url'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import { neighborhoodPageTrail } from '@/lib/site/place-trail'
 import { runPublishedPageRender } from '@/lib/site/degraded-isr'
@@ -200,6 +201,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: publishPlaceHomesTitle(placeName, cityName),
       description: `Active single-family homes in ${placeName}, ${cityName}, Oregon. List prices and days on market, pulled live.`,
       path: `/cities/${citySlug}/${neighborhoodSlug}`,
+      ogImage: ogImageForPlace({
+        placeKind: 'neighborhood',
+        slug: neighborhoodSlug,
+        citySlug,
+        title: placeName,
+      }),
     })
   }
   const neighborhood = neighborhoodRead.value
@@ -246,6 +253,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         : title,
     description,
     path: `/cities/${citySlug}/${neighborhoodSlug}`,
+    ogImage: ogImageForPlace({
+      placeKind: 'neighborhood',
+      slug: neighborhoodSlug,
+      citySlug,
+      title: neighborhood.name,
+    }),
   })
 }
 

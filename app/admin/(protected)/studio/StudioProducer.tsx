@@ -16,6 +16,8 @@ export type ProducerFormat = {
   label: string
   what: string
   subject: 'listing' | 'place' | 'none'
+  /** Why this format cannot be produced now (the video freeze), or null. */
+  frozen: string | null
 }
 
 export function StudioProducer({
@@ -25,7 +27,7 @@ export function StudioProducer({
   formats: ProducerFormat[]
   places: Array<{ slug: string; label: string }>
 }) {
-  const [formatId, setFormatId] = useState(formats[0]?.id ?? '')
+  const [formatId, setFormatId] = useState((formats.find((f) => !f.frozen) ?? formats[0])?.id ?? '')
   const [query, setQuery] = useState('')
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -53,12 +55,18 @@ export function StudioProducer({
       <SelectField label="Make" value={formatId} onChange={(e) => setFormatId(e.target.value)}>
         {formats.map((f) => (
           <option key={f.id} value={f.id}>
-            {f.label}
+            {f.frozen ? `${f.label} (video, frozen)` : f.label}
           </option>
         ))}
       </SelectField>
 
       <p style={{ margin: 0, color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)' }}>{format?.what}</p>
+
+      {format?.frozen ? (
+        <p role="status" style={{ margin: 0, color: 'var(--a-danger)', fontSize: 'var(--a-text-sm)' }}>
+          {format.frozen}
+        </p>
+      ) : null}
 
       {format?.subject === 'listing' ? (
         <TextField
@@ -83,7 +91,10 @@ export function StudioProducer({
       ) : null}
 
       <div>
-        <Button type="submit" disabled={pending || (format?.subject !== 'none' && !query.trim())}>
+        <Button
+          type="submit"
+          disabled={pending || Boolean(format?.frozen) || (format?.subject !== 'none' && !query.trim())}
+        >
           {pending ? 'Producing, this takes a couple of minutes' : 'Produce a draft'}
         </Button>
       </div>

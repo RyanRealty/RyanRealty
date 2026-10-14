@@ -9,6 +9,7 @@
 import type { ImageToVideoOptions } from '@/lib/grok-video'
 import type { GrokImageOptions } from '@/lib/grok-image'
 import type { MarketPulse } from '@/lib/data/types/market'
+import { videoFreezeRefusal } from '@/lib/content/video-freeze'
 
 export type LiveListingForImagine = {
   listingKey: string
@@ -179,10 +180,17 @@ async function finishReady(
   return { ok: true, draftId, storedMediaUrl: opts.storedUrl, caption: opts.caption }
 }
 
+/** What the listing branch makes: an image-to-video clip stored as clip.mp4. */
+const LISTING_MEDIA = { kind: 'video', mimeType: 'video/mp4', format: 'content:imagine_listing' } as const
+
 async function produceListing(
   input: ProduceImagineInput,
   adapters: ImagineProduceAdapters,
 ): Promise<ProduceImagineResult> {
+  // The video freeze (Matt 2026-10-14): the listing clip is video, so no row
+  // and no Imagine spend while it holds. Retired by the certificate check.
+  const frozen = videoFreezeRefusal(LISTING_MEDIA)
+  if (frozen) return { ok: false, error: frozen }
   const query = input.query?.trim() ?? ''
   if (!query) return { ok: false, error: 'Name a live listing (MLS number or street address).' }
   const listing = await adapters.findLiveListing(query)

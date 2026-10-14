@@ -21,8 +21,11 @@ Branch `claude/blissful-franklin-tshl2h`, PR #563. Nobody pushes main. Nothing s
 - `CROSS_AGENT_HANDOFF.md` now carries the frozen header.
 - Seven community titles: #521 set "X Homes for Sale | City, OR" citing Matt 2026-10-13; `data/seo/decisions.json` still pins "X real estate" (Matt 09-22, 09-24, 10-04). Held for Matt; not changed.
 
+**Repo settings (Matt, 2026-10-14).** Allow auto-merge and delete-head-branch are on; the `main` rule requires `merge-gate`, not up-to-date branches. Open a PR, then `gh pr merge --auto --squash` (or the connector's auto-merge); it merges itself when `merge-gate` passes.
+
 **Matt's calls, open.**
 - A Search Console Domain property, which needs a DNS TXT record.
 - `scripts/ga4-admin.mjs apply` still disagrees with live. Do not run it.
+- Seven community title pins (see Follow-up PR above).
 
 Skills read: `docs/analytics/README.md`, `docs/TRACKING_POLICY.md`, built-in `code-review`.

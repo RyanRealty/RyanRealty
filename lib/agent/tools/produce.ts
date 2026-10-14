@@ -556,6 +556,9 @@ async function handleReviseAction(input: Record<string, unknown>, ctx: AgentCont
 
 // ── approve_action ───────────────────────────────────────────────────────────
 
+/** The text a broker gets when APPROVE lands on a video job while video publishing is frozen. */
+export const VIDEO_FROZEN_SMS = 'Video posts are paused while the new video process is set up. Nothing was posted.'
+
 const APPROVE_ACTION_SCHEMA = {
   type: 'object',
   properties: {
@@ -576,10 +579,14 @@ async function handleApproveAction(input: Record<string, unknown>, ctx: AgentCon
 
   const approved = await approveAction(job.id, { approvedBy: ctx.brokerEmail, assignedApprover: ctx.brokerSlug })
   if (!approved.ok) {
+    // The video freeze (Matt 2026-10-14) answers in plain words: the broker
+    // gets a text, not the internal freeze message with its doc path.
     const message =
-      approved.reason === 'not_ready'
-        ? `${jobLabel(job)} isn't ready to approve anymore — it's ${humanStatus(job)}.`
-        : `Couldn't approve that: ${approved.error}`
+      approved.reason === 'video_frozen'
+        ? VIDEO_FROZEN_SMS
+        : approved.reason === 'not_ready'
+          ? `${jobLabel(job)} isn't ready to approve anymore — it's ${humanStatus(job)}.`
+          : `Couldn't approve that: ${approved.error}`
     return { result: { ok: false, message } }
   }
 

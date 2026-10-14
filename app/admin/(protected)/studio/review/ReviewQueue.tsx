@@ -113,6 +113,12 @@ export function ReviewQueue({ drafts, remaining }: { drafts: DraftCardModel[]; r
         {draft.spendUsd != null ? ` · $${draft.spendUsd.toFixed(2)}` : ''}
       </p>
 
+      {draft.approvalFrozen ? (
+        <p className="av2-note" role="status">
+          {draft.approvalFrozen}
+        </p>
+      ) : null}
+
       {error ? <p className="av2-note" role="alert">{error}</p> : null}
 
       <div
@@ -136,9 +142,24 @@ export function ReviewQueue({ drafts, remaining }: { drafts: DraftCardModel[]; r
         >
           Kill
         </Button>
-        <Button onClick={() => decide('approved')} disabled={pending} style={{ flex: 1, minHeight: 52 }}>
-          {pending ? 'Saving…' : 'Approve'}
-        </Button>
+        {draft.approvalFrozen ? (
+          // Video is frozen, so there is no Approve: move on without deciding.
+          <Button
+            variant="quiet"
+            onClick={() => {
+              setError(null)
+              setIndex((i) => i + 1)
+            }}
+            disabled={pending}
+            style={{ flex: 1, minHeight: 52 }}
+          >
+            Skip
+          </Button>
+        ) : (
+          <Button onClick={() => decide('approved')} disabled={pending} style={{ flex: 1, minHeight: 52 }}>
+            {pending ? 'Saving…' : 'Approve'}
+          </Button>
+        )}
       </div>
     </div>
   )

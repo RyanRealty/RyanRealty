@@ -15,11 +15,11 @@
  */
 
 import { cityHref } from '@/lib/site/place-href'
-import { type pageMetadata } from '@/lib/site/page-metadata'
+import { fitTitle, type pageMetadata } from '@/lib/site/page-metadata'
 import { shareDescription } from '@/lib/share-metadata'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
 import { isSelfCityCommunity } from '@/lib/communities/self-city-community'
-import { preferPlaceHero } from '@/lib/geo-images'
+import { shareOgImagePath } from '@/lib/og/share-image-url'
 import {
   listingItemListFromHomes,
   type ListingItemListHome,
@@ -78,10 +78,18 @@ export function communitySerpTitle(input: {
   const { name, city } = input
   void input.slug
   void input.listedCount
-  // Matt 2026-10-13: one title on every /communities/[slug] page.
-  // Layout appends " | Ryan Realty". The city is this community's registry
-  // city (Bend, Sunriver, Redmond, Sisters, Powell Butte), never a guessed one.
-  return `${name} Homes for Sale | ${city}, OR`
+  // One title on every /communities/[slug] page (Matt 2026-10-13). Matt
+  // 2026-10-14: carry both searched phrases. Over 90 days Search Console showed
+  // about as many "<name> real estate" searches (2,624) as "<name> homes for
+  // sale" (2,421) across the seven resort pages. The 60-char budget (10-05)
+  // fits both phrases or the city, not all three, so fitTitle keeps the city
+  // only when it fits and a long recorded name keeps "Homes for Sale" alone.
+  // Layout appends " | Ryan Realty". The city is the registry city, never guessed.
+  return fitTitle(
+    `${name} Homes for Sale & Real Estate | ${city}, OR`,
+    `${name} Homes for Sale & Real Estate`,
+    `${name} Homes for Sale`,
+  )
 }
 
 function serpTownhomeMix(types: readonly PlaceBuyerGroup[]): string[] {
@@ -256,25 +264,6 @@ function datasetDescription(
   return `Single-family home market data for ${name} in ${cityName}, Oregon. ${sentence}. Sourced from the regional MLS via Ryan Realty.`
 }
 
-/** Curated KB hero photos. Verified to exist under public/images/kb/. */
-const KB_HERO: Record<string, string> = {
-  tetherow: '/images/kb/tetherow-golf-aerial.jpg',
-  'broken-top': '/images/kb/broken-top.jpg',
-  'northwest-crossing': '/images/kb/northwest-crossing.jpg',
-  'caldera-springs': '/images/kb/caldera-springs.jpg',
-  'three-rivers': '/images/kb/three-rivers.jpg',
-  'vandevert-ranch': '/images/kb/vandevert-ranch.jpg',
-}
-
-/** Curated community photos. Verified to exist under public/images/communities/. */
-const COMMUNITY_HERO: Record<string, string> = {
-  'broken-top': '/images/communities/broken-top.jpg',
-  'caldera-springs': '/images/communities/caldera-springs.jpg',
-  'northwest-crossing': '/images/communities/northwest-crossing.jpg',
-  'three-rivers': '/images/communities/three-rivers.jpg',
-  'vandevert-ranch': '/images/communities/vandevert-ranch.jpg',
-}
-
 export function communityMetadataInput(input: {
   slug: string
   name: string
@@ -306,10 +295,8 @@ export function communityMetadataInput(input: {
 }): Parameters<typeof pageMetadata>[0] {
   const { slug, name, city } = input
 
-  // Every community gets a community-specific OG image. Priority: curated KB
-  // hero photo, then curated community folder photo, then the generated card,
-  // which renders the name and city on the brand background so no community
-  // falls through to the generic /api/og?type=default card.
+  // Every community share card goes through /api/og so the real wordmark sits
+  // on that community's hero. The route resolves the photo from slug.
   // A COMPOUND SLUG IS NEVER CANONICAL, so it must not compete in the index.
   // Communities live at their bare registry slug (/communities/tetherow);
   // `<city>-<name>` is a legacy shape that middleware canonicalises when the
@@ -333,12 +320,7 @@ export function communityMetadataInput(input: {
   // else. (§0 — a degraded read is not evidence, in either direction.)
   const compoundNonCommunity = !isCanonicalCommunitySlug(slug)
 
-  const ogImage = preferPlaceHero(
-    input.heroImageUrl,
-    KB_HERO[slug] ??
-      COMMUNITY_HERO[slug] ??
-      `/api/og?type=community&name=${encodeURIComponent(name)}&city=${encodeURIComponent(city)}`,
-  )
+  const ogImage = shareOgImagePath({ type: 'community', slug, title: name })
 
   if (input.refused) {
     return {

@@ -15,6 +15,15 @@ import { normalizeVerdict } from '@/lib/grok/vision'
 import { captionFigures, produceStudioDraft, type StudioAdapters } from './produce'
 import type { MarketPulse } from '@/lib/data/types/market'
 
+// These tests cover the produce pipeline itself, so they run with the video
+// freeze lifted (lib/content/video-freeze.ts, Matt 2026-10-14). The freeze is
+// tested for real in produce.video-freeze.test.ts. Delete this mock when the
+// certificate check retires the freeze.
+vi.mock('@/lib/content/video-freeze', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/content/video-freeze')>()),
+  videoFreezeRefusal: () => null,
+}))
+
 const SPEC: ShotSpec = {
   lens: '35mm spherical, T2.8',
   framing: 'eye-level, wide',
