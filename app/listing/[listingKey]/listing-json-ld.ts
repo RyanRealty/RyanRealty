@@ -34,7 +34,7 @@ import { listingCanonicalHref } from '@/lib/slug'
 import type { PlaceCrumb } from '@/lib/site/place-trail'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import type { VideoEmbed } from '@/lib/data/types/video'
-import { publishListingVideoSchemas } from '@/lib/listing/publish-listing-video-schema'
+import { listingVideoDescription, publishListingVideoSchemas } from '@/lib/listing/publish-listing-video-schema'
 
 /** Photos in the RealEstateListing `image` list (lib/site/json-ld.ts caps at the same). */
 export const LISTING_JSONLD_IMAGE_CAP = 10
@@ -129,11 +129,10 @@ export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
   const videoPlace = street
     ? `${street}${listing.city ? `, ${listing.city}, OR` : ''}`
     : `listing ${listing.listNumber ?? listingKey}`
-  const office = input.listOfficeName?.trim()
   const videoSchemas = publishListingVideoSchemas({
     videos: input.videos ?? [],
     name: `Video tour of ${videoPlace}`,
-    description: `Video tour of ${videoPlace}, from the MLS listing.${office ? ` Listing courtesy of ${office}.` : ''}`,
+    description: listingVideoDescription(videoPlace, input.listOfficeName),
     pageUrl: listingCanonicalPath(listing),
     leadPhotoUrl: input.leadPhotoUrl ?? photoUrls[0] ?? null,
   })

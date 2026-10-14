@@ -186,10 +186,17 @@ function cleanPlainUrl(input: string): string | null {
 const MARKUP_URL_ATTR = /\b(src|href)\s*=\s*(["'])(.*?)\2/gi
 
 function cleanMarkup(html: string): string | null {
+  let links = 0
+  let kept = 0
   const cleaned = html.replace(MARKUP_URL_ATTR, (_m, attr: string, quote: string, value: string) => {
+    links++
     const next = cleanPlainUrl(value.replace(/&amp;/g, '&').trim())
+    if (next) kept++
     return `${attr}=${quote}${next ? next.replace(/&/g, '&amp;') : ''}${quote}`
   })
+  // Markup whose every link was unreadable is an empty player, not a video:
+  // null, so a caller moves on to the listing's next candidate.
+  if (links > 0 && kept === 0) return null
   return containsEmailAddress(cleaned) ? null : cleaned
 }
 

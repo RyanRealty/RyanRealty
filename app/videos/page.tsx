@@ -32,11 +32,23 @@
 
 import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
-import { getListingTiles, getCityListings, getListingMlsVideosByKeys, type ListingTile } from '@/lib/data'
+import {
+  getListingTiles,
+  getCityListings,
+  getListingMlsVideosByKeys,
+  getListingVideoPlacesByKeys,
+  type ListingTile,
+  type ListingVideoPlace,
+} from '@/lib/data'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildJsonLd } from '@/lib/site/json-ld'
 import { publishListingHeroVideo } from '@/lib/listing/publish-listing-hero-video'
-import { publishListingVideoSchemas } from '@/lib/listing/publish-listing-video-schema'
+import {
+  listingVideoDescription,
+  publishListingVideoSchemas,
+  publishListingVideos,
+} from '@/lib/listing/publish-listing-video-schema'
+import { LISTING_MOSAIC_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import type { VideoEmbed } from '@/lib/data/types/video'
 import { tileToCardData } from '@/lib/site/listing-card'
 import { listingsBrowsePath } from '@/lib/slug'
@@ -124,14 +136,27 @@ export default async function VideosPage({
     6000,
     'videos:mls-media',
   )
-  const videosByKey = new Map<string, VideoEmbed[]>()
-  const tiles: ListingTile[] = flaggedTiles.map((t) => {
-    const videos = mlsMedia.get(t.listingKey)?.videos ?? []
-    videosByKey.set(t.listingKey, videos)
+  const enriched = flaggedTiles.map((t) => {
+    const m = mlsMedia.get(t.listingKey)
+    const videos = m?.videos ?? []
     // The walkthrough reel the listing page leads with, else any playable tour.
     const playable = publishListingHeroVideo(videos) ?? videos.find((v) => v.embedType !== 'link') ?? null
-    return playable ? { ...t, tourUrl: playable.url } : t
+    const lead = m?.leadPhotoUrl ? listingRowPhotoSrc(m.leadPhotoUrl, LISTING_MOSAIC_LEAD_PHOTO_SIZE) : null
+    return { tile: playable ? { ...t, tourUrl: playable.url } : t, videos, lead }
   })
+  const tiles: ListingTile[] = enriched.map((e) => e.tile)
+  // A VideoObject names the street line the listing page prints and credits
+  // the brokerage; that read is only for the tiles whose video qualifies.
+  const qualifying = enriched.filter((e) => publishListingVideos(e.videos, e.lead, 1).length > 0)
+  const places =
+    qualifying.length > 0
+      ? await withTimeoutFallback(
+          getListingVideoPlacesByKeys(qualifying.map((e) => e.tile.listingKey)),
+          new Map<string, ListingVideoPlace>(),
+          4000,
+          'videos:places',
+        )
+      : new Map<string, ListingVideoPlace>()
 
   const videoItems: HideAwareVideoItem[] = tiles
     .map((t): HideAwareVideoItem | null => {
@@ -162,16 +187,18 @@ export default async function VideosPage({
 
   // One VideoObject per tile whose video is a YouTube or Vimeo player with a
   // dated MLS record; the listing page is the item's url.
-  const videoObjects = videoItems.flatMap((item) => {
-    const tile = tiles.find((t) => t.listingKey === item.ListingKey)
-    if (!tile) return []
-    const place = [item.card.addressLine, tile.city ? `${tile.city}, OR` : null].filter(Boolean).join(', ')
+  const hrefByKey = new Map(videoItems.map((v) => [v.ListingKey, v.card.href]))
+  const videoObjects = qualifying.flatMap((e) => {
+    const p = places.get(e.tile.listingKey)
+    const href = hrefByKey.get(e.tile.listingKey)
+    if (!p?.street || !href) return []
+    const place = `${p.street}${p.city ? `, ${p.city}, OR` : ''}`
     return publishListingVideoSchemas({
-      videos: videosByKey.get(tile.listingKey) ?? [],
+      videos: e.videos,
       name: `Video tour of ${place}`,
-      description: `Video tour of ${place}, from the MLS listing.`,
-      pageUrl: absoluteUrl(item.card.href) ?? item.card.href,
-      leadPhotoUrl: tile.photoUrl ?? null,
+      description: listingVideoDescription(place, p.listOfficeName),
+      pageUrl: absoluteUrl(href) ?? href,
+      leadPhotoUrl: e.lead,
       max: 1,
     }).map((schema) => buildJsonLd(schema))
   })

@@ -72,6 +72,18 @@ describe('pickFirstVideoFromDetails — mail-scanner rewrites (2026-10-14)', () 
     expect(pickFirstVideoFromListingRow({ virtual_tour_url: wrapped })?.url).toBe('https://vimeo.com/123456789')
   })
 
+  it('a wrapped first tour field does not hide a good link in the next one', () => {
+    expect(
+      pickFirstVideoFromDetails({
+        VirtualTourURLUnbranded: 'https://protect-us.mimecast.com/s/AbCdEf',
+        VirtualTourURL: 'https://my.matterport.com/show/?m=abc',
+      })?.url,
+    ).toBe('https://my.matterport.com/show/?m=abc')
+    expect(
+      pickFirstVideoFromDetails({ Videos: [{ ObjectHtml: '<iframe src="https://protect-us.mimecast.com/s/x" width="1"></iframe>' }, { Uri: 'https://youtu.be/dQw4w9WgXcQ' }] })?.url,
+    ).toBe('https://youtu.be/dQw4w9WgXcQ')
+  })
+
   it('skips an unreadable wrapper and takes the next candidate', () => {
     expect(
       pickFirstVideoFromDetails({

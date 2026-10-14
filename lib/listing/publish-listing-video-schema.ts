@@ -97,6 +97,16 @@ export function publishListingVideos(
   return out
 }
 
+/**
+ * The one description every surface gives a listing video tour: sourced to the
+ * MLS listing and crediting the listing brokerage (ODS §5-3 P), so the listing
+ * page, /videos and video.xml say the same thing.
+ */
+export function listingVideoDescription(place: string, listOfficeName: string | null | undefined): string {
+  const office = listOfficeName?.trim()
+  return `Video tour of ${place}, from the MLS listing.${office ? ` Listing courtesy of ${office}.` : ''}`
+}
+
 /** VideoObject inputs for a listing page; empty when no video qualifies. */
 export function publishListingVideoSchemas(input: ListingVideoSchemaInput): VideoInput[] {
   return publishListingVideos(input.videos, input.leadPhotoUrl, input.max ?? 3).map((v, i) => ({

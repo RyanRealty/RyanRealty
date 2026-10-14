@@ -40,6 +40,10 @@ describe('cleanListingMediaUrl', () => {
     expect(out).toBe(`<iframe src="${vimeo}" width="640"></iframe>`)
   })
 
+  it('returns null for markup whose only link is an unreadable wrapper (an empty player is no video)', () => {
+    expect(cleanListingMediaUrl('<iframe src="https://protect-us.mimecast.com/s/AbCdEf" width="640"></iframe>')).toBeNull()
+  })
+
   it('decodes Proofpoint urldefense v2 and v3', () => {
     expect(
       cleanListingMediaUrl(

@@ -42,9 +42,8 @@ import { getListingSitemapRows } from '@/lib/data/sitemap/getListingSitemapRows'
 import type { ListingSitemapRow } from '@/lib/data/sitemap/listing-sitemap-path'
 import { getListingSitemapPhotos } from '@/lib/data/sitemap/getListingSitemapPhotos'
 import { listingPhotoSitemapPart } from '@/lib/data/sitemap/listing-photo-sitemap'
-import { getListingMlsVideosByKeys, getListingTileAddressesByKeys } from '@/lib/data/videos/getListingMlsVideos'
-import { publishListingVideos } from '@/lib/listing/publish-listing-video-schema'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { getListingMlsVideosByKeys, getListingVideoPlacesByKeys } from '@/lib/data/videos/getListingMlsVideos'
+import { listingVideoDescription, publishListingVideos } from '@/lib/listing/publish-listing-video-schema'
 import { LISTING_MOSAIC_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { getIndexablePresetSlugs } from '@/lib/search-presets'
 import { createUniverseMemo } from '@/lib/sitemap-universe-memo'
@@ -100,12 +99,28 @@ export const getClassRows = unstable_cache(
 
 /**
  * The listings.xml listing set (Active, Active Under Contract, Pending, from
- * listing_tile_mv) with its ListingKeys, memoized per instance so the photo
- * parts and the video sitemap requested together share one read. A failed
- * read is never memoized.
+ * listing_tile_mv) with its ListingKeys, as compact [key, path, lastmod]
+ * tuples: ~1 MB for ~8,800 listings, under unstable_cache's 2 MB entry. Cached
+ * across instances for the hour, so the 24 photo parts and video.xml, each
+ * served by whichever instance takes the request, share one listing read
+ * instead of paging the set 25 times. A failed read throws and is not cached.
  */
+const getListingSitemapKeyTuples = unstable_cache(
+  async (): Promise<Array<[string, string, string]>> =>
+    (await getListingSitemapRows()).map((r) => [r.listingKey, r.path, r.lastModified]),
+  ['sitemap-listing-key-rows-v1'],
+  { revalidate: 3600 },
+)
+
+/** The keyed listing set, also memoized per instance (unstable_cache does not dedupe in-flight misses). */
 export const getListingSitemapRowsOnce = createUniverseMemo<ListingSitemapRow[]>(
-  () => getListingSitemapRows(),
+  async () =>
+    (await getListingSitemapKeyTuples()).map(([listingKey, path, lastModified]) => ({
+      listingKey,
+      path,
+      lastModified,
+      imageUrl: null,
+    })),
   UNIVERSE_TTL_MS,
 )
 
@@ -151,26 +166,27 @@ export async function getListingVideoSitemapEntries(): Promise<ListingVideoSitem
     rows.map((r) => r.listingKey),
     { onlyFlagged: true },
   )
-  const withVideo = rows.filter((r) => media.has(r.listingKey))
-  const addresses = await getListingTileAddressesByKeys(withVideo.map((r) => r.listingKey))
-  const out: ListingVideoSitemapEntry[] = []
-  for (const row of withVideo) {
-    const m = media.get(row.listingKey)!
+  const qualifying = rows.flatMap((row) => {
+    const m = media.get(row.listingKey)
+    if (!m) return []
     const lead = m.leadPhotoUrl ? listingRowPhotoSrc(m.leadPhotoUrl, LISTING_MOSAIC_LEAD_PHOTO_SIZE) : null
     const published = publishListingVideos(m.videos, lead, 3)
-    if (published.length === 0) continue
-    const a = addresses.get(row.listingKey)
-    const street = a
-      ? publishStreetLine({ streetNumber: a.streetNumber, streetName: a.streetName, streetSuffix: a.streetSuffix })
-      : null
-    if (!street) continue
-    const place = `${street}${a?.city ? `, ${a.city}, OR` : ''}`
+    return published.length > 0 ? [{ row, published }] : []
+  })
+  // The street line the listing page prints (MLS directionals and suffix) and
+  // the brokerage it credits, read only for the listings that qualify.
+  const places = await getListingVideoPlacesByKeys(qualifying.map((q) => q.row.listingKey))
+  const out: ListingVideoSitemapEntry[] = []
+  for (const { row, published } of qualifying) {
+    const p = places.get(row.listingKey)
+    if (!p?.street) continue
+    const place = `${p.street}${p.city ? `, ${p.city}, OR` : ''}`
     out.push({
       path: row.path,
       lastModified: row.lastModified,
       videos: published.map((v, i) => ({
         title: i === 0 ? `Video tour of ${place}` : `Video tour of ${place}, video ${i + 1}`,
-        description: `Video tour of ${place}, from the MLS listing.`,
+        description: listingVideoDescription(place, p.listOfficeName),
         playerUrl: v.player.embedUrl,
         thumbnailUrl: v.thumbnailUrl,
         publicationDate: v.uploadDate,

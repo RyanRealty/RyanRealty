@@ -5,7 +5,7 @@ import {
   listingVideosFromDetails,
   mlsMediaUploadDate,
 } from '@/lib/listing/listing-video-assembly'
-import { listingVideoPlayer, publishListingVideoSchemas } from './publish-listing-video-schema'
+import { listingVideoDescription, listingVideoPlayer, publishListingVideoSchemas } from './publish-listing-video-schema'
 
 const NOW = new Date('2026-10-14T18:00:00Z')
 const EPOCH = '1970-01-01T00:00:00Z'
@@ -155,5 +155,14 @@ describe('publishListingVideoSchemas', () => {
     )
     const schemas = publishListingVideoSchemas({ ...base, videos, max: 2 })
     expect(schemas.map((s) => s.name)).toEqual([base.name, `${base.name}, video 2`])
+  })
+})
+
+describe('listingVideoDescription', () => {
+  it('sources the tour to the MLS listing and credits the listing brokerage when known', () => {
+    expect(listingVideoDescription('16631 Serpentine Drive, La Pine, OR', 'John L Scott Bend')).toBe(
+      'Video tour of 16631 Serpentine Drive, La Pine, OR, from the MLS listing. Listing courtesy of John L Scott Bend.',
+    )
+    expect(listingVideoDescription('1 Main Street, Bend, OR', '  ')).toBe('Video tour of 1 Main Street, Bend, OR, from the MLS listing.')
   })
 })

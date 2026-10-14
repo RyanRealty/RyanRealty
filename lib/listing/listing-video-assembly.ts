@@ -226,45 +226,41 @@ export function createListingVideoCollector() {
   const out: VideoEmbed[] = []
   const seen = new Map<string, number>()
   const mediaKey = (u: string) => u.split('?')[0].split('#')[0]
-  return {
-    push(raw: string | null | undefined, hint: string | null | undefined, extra: Partial<VideoEmbed> = {}): void {
-      if (!raw) return
-      const norm = normalizeEmbed(raw, hint)
-      if (!norm) return
-      const key = mediaKey(norm.url)
-      const at = seen.get(key)
-      if (at !== undefined) {
-        const url = preferPlayableCopy(out[at].url, norm.url)
-        const uploadDate = out[at].uploadDate ?? extra.uploadDate
-        if (url !== out[at].url || uploadDate !== out[at].uploadDate) {
-          out[at] = { ...out[at], url, ...(uploadDate ? { uploadDate } : {}) }
-        }
-        return
+  const push = (raw: string | null | undefined, hint: string | null | undefined, extra: Partial<VideoEmbed> = {}): void => {
+    if (!raw) return
+    const norm = normalizeEmbed(raw, hint)
+    if (!norm) return
+    const key = mediaKey(norm.url)
+    const at = seen.get(key)
+    if (at !== undefined) {
+      const url = preferPlayableCopy(out[at].url, norm.url)
+      const uploadDate = out[at].uploadDate ?? extra.uploadDate
+      if (url !== out[at].url || uploadDate !== out[at].uploadDate) {
+        out[at] = { ...out[at], url, ...(uploadDate ? { uploadDate } : {}) }
       }
-      seen.set(key, out.length)
-      const entry: VideoEmbed = {
-        source: classifyListingVideoSource(norm.url, hint ?? undefined),
-        embedType: norm.embedType,
-        url: norm.url,
-        posterUrl: norm.posterUrl,
-        professional: true,
-        ...extra,
-      }
-      if (entry.uploadDate === undefined) delete entry.uploadDate
-      out.push(entry)
-    },
-    pushCandidates(candidates: readonly MlsVideoCandidate[]): void {
-      for (const c of candidates) {
-        this.push(c.raw, c.hint, {
-          ...(c.fromTours ? { isVirtualTour: c.isVirtualTour } : c.isVirtualTour ? { isVirtualTour: true } : {}),
-          ...(c.uploadDate ? { uploadDate: c.uploadDate } : {}),
-        })
-      }
-    },
-    list(): VideoEmbed[] {
-      return out
-    },
+      return
+    }
+    seen.set(key, out.length)
+    const entry: VideoEmbed = {
+      source: classifyListingVideoSource(norm.url, hint ?? undefined),
+      embedType: norm.embedType,
+      url: norm.url,
+      posterUrl: norm.posterUrl,
+      professional: true,
+      ...extra,
+    }
+    if (entry.uploadDate === undefined) delete entry.uploadDate
+    out.push(entry)
   }
+  const pushCandidates = (candidates: readonly MlsVideoCandidate[]): void => {
+    for (const c of candidates) {
+      push(c.raw, c.hint, {
+        ...(c.fromTours ? { isVirtualTour: c.isVirtualTour } : c.isVirtualTour ? { isVirtualTour: true } : {}),
+        ...(c.uploadDate ? { uploadDate: c.uploadDate } : {}),
+      })
+    }
+  }
+  return { push, pushCandidates, list: (): VideoEmbed[] => out }
 }
 
 /** True when a record of this kind would take a history date (one record, sentinel stamp). */

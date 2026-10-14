@@ -10,6 +10,13 @@
  * URLs live in listings.details (Videos[], VirtualTours[]) and the typed
  * virtual_tour_url (the cleaned scalar tour field, listing-mapper).
  *
+ * ONE DIFFERENCE FROM THE LISTING PAGE, on purpose. getListingVideos also reads
+ * the two scalar fields details.VirtualTourURLUnbranded / Branded; here the
+ * typed virtual_tour_url (the first of the two that cleans) stands in for
+ * them, which saves two more detoasts per row. Those scalars carry no date, so
+ * no VideoObject or video.xml entry depends on them; at worst a tile plays the
+ * branded copy of a tour the page shows unbranded.
+ *
  * TOAST (docs/TOAST_READ_DISCIPLINE.md): `details->Videos` and
  * `details->VirtualTours` detoast the ~10 KB document per row, so every read
  * is narrowed by primary key `.in('ListingKey', batch)`. With `onlyFlagged`
@@ -26,6 +33,7 @@
  */
 import { supabaseAnon } from '@/lib/data/client'
 import type { VideoEmbed } from '@/lib/data/types/video'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import {
   createListingVideoCollector,
   latestMediaHistoryDates,
@@ -145,13 +153,28 @@ async function readMediaHistoryDates(listingKeys: readonly string[], now: Date):
   if (!supabase || listingKeys.length === 0) return out
   // 20 listings a batch keeps a response far under PostgREST's 1,000-row cap
   // (a listing logs a few to a few dozen media events).
-  for (const batch of batches(listingKeys, 20)) {
-    const { data, error } = await supabase
-      .from('listing_history')
-      .select('listing_key, event, event_date')
-      .in('listing_key', batch)
-      .in('event', ['Video', 'VirtualTour'])
-      .limit(1000)
+  // Ten listings a batch, newest events first, so a response cut at the 1,000
+  // row cap drops the OLDEST events (a listing logs one per media write), never
+  // the latest one a date is taken from.
+  const all = batches(listingKeys, 10)
+  const pages: Array<{ data: unknown[] | null; error: unknown }> = []
+  for (let i = 0; i < all.length; i += BATCH_CONCURRENCY) {
+    pages.push(
+      ...(await Promise.all(
+        all.slice(i, i + BATCH_CONCURRENCY).map(async (batch) => {
+          const { data, error } = await supabase
+            .from('listing_history')
+            .select('listing_key, event, event_date')
+            .in('listing_key', batch)
+            .in('event', ['Video', 'VirtualTour'])
+            .order('event_date', { ascending: false })
+            .limit(1000)
+          return { data: (data ?? null) as unknown[] | null, error }
+        }),
+      )),
+    )
+  }
+  for (const { data, error } of pages) {
     if (error || !data) {
       console.error(`[getListingMlsVideos] listing_history batch failed, those videos stay undated: ${errorMessage(error)}`)
       continue
@@ -169,44 +192,67 @@ async function readMediaHistoryDates(listingKeys: readonly string[], now: Date):
   return out
 }
 
-export type ListingTileAddress = {
-  streetNumber: string | null
-  streetName: string | null
-  streetSuffix: string | null
+/** What a VideoObject names: the street line the listing page prints, its city, its brokerage. */
+export type ListingVideoPlace = {
+  street: string | null
   city: string | null
+  listOfficeName: string | null
 }
 
-/** Street bits for a set of listings, from listing_tile_mv (no details read). */
-export async function getListingTileAddressesByKeys(
-  listingKeys: readonly string[],
-): Promise<Map<string, ListingTileAddress>> {
+type PlaceRow = {
+  ListingKey: string | null
+  StreetNumber: string | null
+  StreetName: string | null
+  City: string | null
+  ListOfficeName: string | null
+  StreetDirPrefix: string | null
+  StreetSuffix: string | null
+  StreetDirSuffix: string | null
+}
+
+/**
+ * Street line (publishStreetLine with the MLS directionals and suffix, the
+ * same bits the listing page uses), city and listing brokerage for the few
+ * listings that carry a VideoObject. The directionals and suffix live only in
+ * details, so this is narrowed by ListingKey and called only for listings
+ * whose video qualifies.
+ */
+export async function getListingVideoPlacesByKeys(listingKeys: readonly string[]): Promise<Map<string, ListingVideoPlace>> {
   const supabase = supabaseAnon()
   if (!supabase) throw new Error('[getListingMlsVideos] NEXT_PUBLIC_SUPABASE_URL / ANON_KEY missing')
-  const out = new Map<string, ListingTileAddress>()
-  for (const batch of batches(listingKeys, 200)) {
-    const { data } = await withOneRetry(
-      () =>
-        supabase
-          .from('listing_tile_mv')
-          .select('listing_key, street_number, street_name, street_suffix, city')
-          .in('listing_key', batch),
-      'listing_tile_mv address batch',
+  const out = new Map<string, ListingVideoPlace>()
+  const all = batches(listingKeys, 50)
+  for (let i = 0; i < all.length; i += BATCH_CONCURRENCY) {
+    const pages = await Promise.all(
+      all.slice(i, i + BATCH_CONCURRENCY).map((batch) =>
+        withOneRetry(
+          () =>
+            supabase
+              .from('listings')
+              .select(
+                'ListingKey, StreetNumber, StreetName, City, ListOfficeName, StreetDirPrefix:details->>StreetDirPrefix, StreetSuffix:details->>StreetSuffix, StreetDirSuffix:details->>StreetDirSuffix',
+              )
+              .in('ListingKey', batch),
+          'listings place batch',
+        ),
+      ),
     )
-    for (const r of (data ?? []) as Array<{
-      listing_key: string | null
-      street_number: string | null
-      street_name: string | null
-      street_suffix: string | null
-      city: string | null
-    }>) {
-      const key = String(r.listing_key ?? '').trim()
-      if (!key || out.has(key)) continue
-      out.set(key, {
-        streetNumber: r.street_number,
-        streetName: r.street_name,
-        streetSuffix: r.street_suffix,
-        city: r.city,
-      })
+    for (const page of pages) {
+      for (const r of (page.data ?? []) as unknown as PlaceRow[]) {
+        const key = String(r.ListingKey ?? '').trim()
+        if (!key || out.has(key)) continue
+        out.set(key, {
+          street: publishStreetLine({
+            streetNumber: r.StreetNumber,
+            streetDirPrefix: r.StreetDirPrefix,
+            streetName: r.StreetName,
+            streetSuffix: r.StreetSuffix,
+            streetDirSuffix: r.StreetDirSuffix,
+          }),
+          city: r.City?.trim() || null,
+          listOfficeName: r.ListOfficeName?.trim() || null,
+        })
+      }
     }
   }
   return out

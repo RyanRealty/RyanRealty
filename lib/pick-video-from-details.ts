@@ -63,16 +63,12 @@ export function pickFirstVideoFromDetails(details: unknown): { url: string; sour
     firstVideoFromArray(d.VirtualTours, 'virtual_tour') ?? firstVideoFromArray(d.virtualTours, 'virtual_tour')
   if (fromTours) return fromTours
 
-  const fallbackTour = cleanListingMediaUrl(
-    String(
-      d.VirtualTourURLUnbranded ??
-        d.virtualTourURLUnbranded ??
-        d.VirtualTourURL ??
-        d.virtualTourURL ??
-        ''
-    )
-  )
-  if (fallbackTour) return { url: fallbackTour, source: 'virtual_tour' }
+  // Clean each field, then take the first that survives: an unreadable
+  // wrapper in the first field must not hide a good link in the next.
+  for (const field of [d.VirtualTourURLUnbranded, d.virtualTourURLUnbranded, d.VirtualTourURL, d.virtualTourURL]) {
+    const tour = typeof field === 'string' ? cleanListingMediaUrl(field) : null
+    if (tour) return { url: tour, source: 'virtual_tour' }
+  }
 
   return null
 }
@@ -83,10 +79,10 @@ export function pickFirstVideoFromListingRow(row: Record<string, unknown>): { ur
   if (fromDetails) return fromDetails
   const fromRaw = pickFirstVideoFromDetails(row.raw_data)
   if (fromRaw) return fromRaw
-  const vt = cleanListingMediaUrl(
-    String(row.virtual_tour_url ?? row.VirtualTourURL ?? row.VirtualTourURLUnbranded ?? '')
-  )
-  if (vt) return { url: vt, source: 'virtual_tour' }
+  for (const field of [row.virtual_tour_url, row.VirtualTourURL, row.VirtualTourURLUnbranded]) {
+    const vt = typeof field === 'string' ? cleanListingMediaUrl(field) : null
+    if (vt) return { url: vt, source: 'virtual_tour' }
+  }
   return null
 }
 

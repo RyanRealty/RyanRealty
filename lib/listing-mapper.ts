@@ -338,7 +338,9 @@ export function sparkToListingRow(
   const publicRemarks = toText(fields.PublicRemarks)
   // Stored cleaned (2026-10-14): a SafeLinks / Proofpoint rewrite of the
   // broker's link is unwrapped, and no stored tour URL carries an address.
-  const virtualTourUrl = cleanListingMediaUrl(toText(pick(fields, 'VirtualTourURLUnbranded', 'VirtualTourURLBranded')))
+  const virtualTourUrl =
+    cleanListingMediaUrl(toText(fields.VirtualTourURLUnbranded)) ??
+    cleanListingMediaUrl(toText(fields.VirtualTourURLBranded))
 
   // --- Compute Tier 1 ---
   const tier1 = computeTier1({
