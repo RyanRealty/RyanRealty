@@ -506,33 +506,51 @@ export async function createCmaRequest(
     }
 
     // GA4 Measurement Protocol mirror — fire valuation_requested server-side
-    // so ad-blocked clients still register a conversion. No cookies access
-    // here (this lib is also called from cron paths); the client_id falls
-    // back to a fresh uuid which still counts as a session-less conversion
-    // tied to the right event taxonomy. ONLY fired for genuine visitor
+    // so ad-blocked clients still register a conversion. The visitor sources
+    // below run inside the visitor's own request, so the event carries the
+    // browser's GA4 client_id + session and the page (lib/analytics/ga4-server-context.ts)
+    // and is skipped under GPC, a decline, or a request GA4 does not count.
+    // Outside a request (no cookies) it falls back to a session-less send. ONLY fired for genuine visitor
     // submissions (the two LPs) — broker kick-offs and cron builds are not
     // visitor conversions, and fabricating one corrupts ad attribution (§0).
     // Verified 2026-07-28: cron/rebuild paths had inflated GA4 to 90
     // valuation_requested/90d against ~10 real submissions.
     // 2026-09-07: the place-page field (SITE-01) is a visitor submission too.
-    if (requestSource === 'seller-lp' || requestSource === 'fsbo-lp' || requestSource === 'place-page') void fireGa4Event({
-      eventName: 'valuation_requested',
-      eventParams: {
-        cma_slug: slug,
-        lp_variant: requestSource === 'fsbo-lp' ? 'fsbo' : requestSource === 'place-page' ? 'place-page' : 'seller-home-value',
-        broker_slug: broker.slug,
-        lead_classification: input.leadClassification ?? undefined,
-        lead_type: 'seller',
-        subject_city: input.parsedCity ?? undefined,
-        subject_state: input.parsedState ?? undefined,
-      },
-      userProperties: {
-        // Short CRM slug (matt/rebecca/paul) — lead-tracking types this
-        // property in the short space; the cmas ROW keeps the full slug.
-        assigned_broker: broker.crmSlug ?? broker.slug,
-        lead_status: 'cma-draft',
-      },
-    })
+    if (requestSource === 'seller-lp' || requestSource === 'fsbo-lp' || requestSource === 'place-page') {
+      // Read the request before anything is detached from it.
+      let ga4Allowed = true
+      let clientId: string | undefined
+      let sessionParams: Record<string, string | number> = {}
+      try {
+        const { ga4ServerContext, ga4ServerSendAllowed, ga4SessionEventParams } = await import('@/lib/analytics/ga4-server-context')
+        const ga4 = await ga4ServerContext()
+        ga4Allowed = ga4ServerSendAllowed(ga4)
+        clientId = ga4.clientId
+        sessionParams = ga4SessionEventParams(ga4)
+      } catch {
+        // Not inside a request: no visitor cookies to read.
+      }
+      if (ga4Allowed) void fireGa4Event({
+        eventName: 'valuation_requested',
+        clientId,
+        eventParams: {
+          ...sessionParams,
+          cma_slug: slug,
+          lp_variant: requestSource === 'fsbo-lp' ? 'fsbo' : requestSource === 'place-page' ? 'place-page' : 'seller-home-value',
+          broker_slug: broker.slug,
+          lead_classification: input.leadClassification ?? undefined,
+          lead_type: 'seller',
+          subject_city: input.parsedCity ?? undefined,
+          subject_state: input.parsedState ?? undefined,
+        },
+        userProperties: {
+          // Short CRM slug (matt/rebecca/paul) — lead-tracking types this
+          // property in the short space; the cmas ROW keeps the full slug.
+          assigned_broker: broker.crmSlug ?? broker.slug,
+          lead_status: 'cma-draft',
+        },
+      })
+    }
 
     // Step 3 + 4: fire-and-forget the notification emails. We don't await —
     // the visitor sees a fast "we got it" response on the LP.

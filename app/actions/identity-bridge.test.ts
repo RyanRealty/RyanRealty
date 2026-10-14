@@ -44,6 +44,7 @@ vi.mock('@/lib/visitor-backfill', () => ({
 vi.mock('@/lib/ga4-measurement-protocol', () => ({
   fireGa4Event: state.ga4,
   readGa4ClientIdFromCookies: () => null,
+  readGa4SessionFromCookies: () => null,
 }))
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({ auth: { getUser: async () => ({ data: { user: state.user } }) } }),

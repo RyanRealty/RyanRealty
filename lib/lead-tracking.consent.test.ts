@@ -20,6 +20,7 @@ vi.mock('next/headers', () => ({
 vi.mock('@/lib/ga4-measurement-protocol', () => ({
   fireGa4Event: (args: unknown) => h.fireGa4Event(args),
   readGa4ClientIdFromCookies: () => '123.456',
+  readGa4SessionFromCookies: () => ({ sessionId: '1760400000', sessionNumber: 4 }),
 }))
 vi.mock('@/lib/data/analytics/gaClientId', () => ({
   rememberGaClientId: (personId: unknown, clientId: unknown) => h.rememberGaClientId(personId, clientId),
@@ -32,7 +33,10 @@ const LEAD = { lp_variant: 'contact', lead_type: 'buyer_question', form_id: 'con
 
 beforeEach(() => {
   h.cookies = {}
-  h.headers = { referer: 'https://ryan-realty.com/sell?utm_source=fb&gclid=G1&fbclid=F1' }
+  h.headers = {
+    referer: 'https://ryan-realty.com/sell?utm_source=fb&gclid=G1&fbclid=F1',
+    'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+  }
   h.fireGa4Event.mockReset()
   h.fireGa4Event.mockResolvedValue(undefined)
   h.rememberGaClientId.mockReset()
@@ -69,5 +73,49 @@ describe('server generate_lead honors GPC and a decline', () => {
     h.cookies[CONSENT_COOKIE] = encodeURIComponent(JSON.stringify({ analytics: false, marketing: false }))
     await fireLeadGenerated({ ...LEAD, crm_person_id: 64115 } as never)
     expect(h.rememberGaClientId).not.toHaveBeenCalled()
+  })
+})
+
+describe('server events join the visitor GA4 session (2026-10-14)', () => {
+  it('carries session_id, session_number and the page so GA4 credits the visit that produced the lead', async () => {
+    await fireLeadGenerated(LEAD as never)
+    const call = h.fireGa4Event.mock.calls[0][0]
+    expect(call.clientId).toBe('123.456')
+    expect(call.eventParams).toMatchObject({
+      session_id: '1760400000',
+      session_number: 4,
+      page_location: 'https://ryan-realty.com/sell?utm_source=fb&gclid=G1&fbclid=F1',
+    })
+  })
+
+  it('strips identity params from the page it sends', async () => {
+    h.headers.referer = 'https://ryan-realty.com/sell?_pid=abc&rr_doc=cma-x&utm_source=fb'
+    await fireLeadGenerated(LEAD as never)
+    expect(h.fireGa4Event.mock.calls[0][0].eventParams.page_location).toBe('https://ryan-realty.com/sell?utm_source=fb')
+  })
+
+  it("sends nothing from a broker's own browser (rr_internal), the browser loader's rule", async () => {
+    h.headers.cookie = 'rr_internal=1'
+    await fireLeadGenerated(LEAD as never)
+    await fireNonLeadEvent({ event_name: 'newsletter_signup' as never, form_id: 'newsletter', lp_variant: 'x' })
+    expect(h.fireGa4Event).not.toHaveBeenCalled()
+  })
+
+  it('sends nothing from a preview host or automation', async () => {
+    h.headers.referer = 'https://ryanrealty-git-x.vercel.app/sell'
+    await fireLeadGenerated(LEAD as never)
+    h.headers.referer = 'https://ryan-realty.com/sell'
+    h.headers['user-agent'] = 'Mozilla/5.0 HeadlessChrome/130.0.0.0'
+    await fireLeadGenerated(LEAD as never)
+    expect(h.fireGa4Event).not.toHaveBeenCalled()
+  })
+
+  it('a provider webhook (serverToServer) still sends, with no browser session', async () => {
+    h.headers = {}
+    await fireLeadGenerated({ ...LEAD, form_id: 'meta_lead_ad', lead_type: 'buyer_question', serverToServer: true } as never)
+    expect(h.fireGa4Event).toHaveBeenCalledTimes(1)
+    const p = h.fireGa4Event.mock.calls[0][0].eventParams
+    expect(p.session_id).toBeUndefined()
+    expect(p.page_location).toBeUndefined()
   })
 })

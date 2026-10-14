@@ -114,3 +114,25 @@ describe('fireGa4Event — per-visit session + campaign_details (TRACK-1, P7)', 
     expect(body.events).toHaveLength(1)
   })
 })
+
+describe('sessionFromGaStreamCookie (the _ga_<stream> cookie)', () => {
+  it('reads the GS1 format', async () => {
+    const { sessionFromGaStreamCookie } = await import('./ga4-measurement-protocol')
+    expect(sessionFromGaStreamCookie('GS1.1.1760400000.4.1.1760400123.0.0.0')).toEqual({ sessionId: '1760400000', sessionNumber: 4 })
+  })
+  it('reads the GS2 format', async () => {
+    const { sessionFromGaStreamCookie } = await import('./ga4-measurement-protocol')
+    expect(sessionFromGaStreamCookie('GS2.1.s1760400000$o12$g1$t1760400123$j60$l0$h0')).toEqual({ sessionId: '1760400000', sessionNumber: 12 })
+  })
+  it('returns null for a missing or malformed cookie', async () => {
+    const { sessionFromGaStreamCookie } = await import('./ga4-measurement-protocol')
+    expect(sessionFromGaStreamCookie(undefined)).toBeNull()
+    expect(sessionFromGaStreamCookie('')).toBeNull()
+    expect(sessionFromGaStreamCookie('GA1.1.123.456')).toBeNull()
+    expect(sessionFromGaStreamCookie('GS2.1.o3$g1')).toBeNull()
+  })
+  it('names the stream cookie from the measurement id', async () => {
+    const { gaStreamCookieName } = await import('./ga4-measurement-protocol')
+    expect(gaStreamCookieName('G-ST40W4WM6T')).toBe('_ga_ST40W4WM6T')
+  })
+})
