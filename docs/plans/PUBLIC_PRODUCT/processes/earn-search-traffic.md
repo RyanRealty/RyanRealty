@@ -108,7 +108,7 @@ index and its children share one host (`app/sitemaps/index.xml/route.ts:40-43`).
 | Artifact | SoR |
 |---|---|
 | The URL universe (every public URL worth indexing) | `buildAllUrls()` in `app/sitemap.ts:85-562` — the single builder both the sitemap children and the warmer consume; sourced from the DAL + curated registries (resort registry `:34,342-349`; neighborhoods table `:408-423`; `listing_tile_mv` actives `:451-500`; blog/report tables `:525-553`; static registries for events/venues/golf/trails/schools/parks `:168-220`) |
-| Per-class URL rows (what a crawler is actually served) | `unstable_cache` entries keyed `sitemap-class-urls-v2` + class arg, 3600s (`lib/sitemap-class-rows.ts:58-72`), fed by a 600s in-process universe memo (`:45-50`) |
+| Per-class URL rows (what a crawler is actually served) | `unstable_cache` entries keyed `sitemap-class-urls-v6` + class arg, 3600s (`lib/sitemap-class-rows.ts:58-72`), fed by a 600s in-process universe memo (`:45-50`) |
 | Class membership | `classifySitemapUrl()` — pure, total function over `SITEMAP_CLASSES` (`lib/data/sitemap/classify.ts:16-57`); union of children === the universe (documented measured 10,689 = 10,689, `app/sitemaps/index.xml/route.ts:15-21`) |
 | Crawl permissions | `app/robots.ts` (gated by `ci:ai-crawler-access`, `scripts/check-ai-crawler-access.mjs:1-18`) |
 | The AI-crawler content map | `app/llms.txt/route.ts` — same DAL sources as the sitemap; subdivision parity with the sitemap pinned by `lib/data/subdivisions/subdivision-index.test.ts` (`app/llms.txt/route.ts:29-32`) |
