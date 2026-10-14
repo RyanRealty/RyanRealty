@@ -31,6 +31,7 @@
  * ground (Redmond, Tumalo) cannot fail open across 97.
  */
 
+import { isAduSale } from '@/lib/pricing/adu-preference'
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data/cma/builderReads'
 import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from '@/lib/data/geo/subdivision-ring'
 import { getPlatFamilyFootprint } from '@/lib/data/subdivisions/getPlatFamilyFootprint'
@@ -446,6 +447,13 @@ export async function selectComps(
      *  staleness penalty in keepTightestByClosePrice applies on every path
      *  (review 2026-10-07). */
     asOf?: string
+    /**
+     * THE ADU-ONLY PASS (Matt 2026-10-14, lib/pricing/adu-preference.ts): an
+     * ADU home is priced from ADU sales first, so on this pass a sale whose
+     * remarks state no second unit is another product. selectCompsPreferringFacts
+     * runs this pass and falls back to the whole ladder under five.
+     */
+    aduSalesOnly?: boolean
   } = {},
 ): Promise<CompSelection> {
   const asOf = (opts.asOf ?? new Date().toISOString()).slice(0, 10)
@@ -1141,6 +1149,12 @@ export async function selectComps(
         rung.excluded.unusable_row++
         continue
       }
+      // THE ADU-ONLY PASS (Matt 2026-10-14, lib/pricing/adu-preference.ts): a
+      // sale whose remarks state no second unit is another product to an ADU
+      // home priced from ADU sales first. Skipped before any wall counts it,
+      // exactly as the facts walk skips it, so no total describes a sale the
+      // pass never admitted.
+      if (opts.aduSalesOnly && !isAduSale(comp)) continue
       if (communityByKey.has(comp.listingKey)) {
         comp.communityLocated = true
         comp.communitySlug = communityByKey.get(comp.listingKey) ?? null
@@ -1396,7 +1410,7 @@ export async function selectComps(
       // backstop apply (aduSaleRefused, lib/pricing/classes.ts). Not
       // symmetric: a subject with an ADU may use sales with and without one.
       // The sale is not held, so it is skipped like one that never qualified.
-      if (aduSaleRefused(subject.publicRemarks, comp.publicRemarks)) {
+      if (aduSaleRefused(subject.publicRemarks, comp.publicRemarks, subject.units?.aduYn)) {
         rung.excluded.adu_sale++
         continue
       }

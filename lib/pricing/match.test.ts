@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { distanceMiles } from '@/lib/cma/market-area'
-import { productClassFromFactsRow, SUBDIVISION_TIER_RATIO } from '@/lib/pricing/classes'
+import { aduFromRemarks, productClassFromFactsRow, SUBDIVISION_TIER_RATIO } from '@/lib/pricing/classes'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { CUSTOM_FACTS_POOL_MONTHS, DATE_RECOVERY_MONTHS, factsPoolCloseAfter, ORDINARY_FACTS_POOL_MONTHS } from '@/lib/pricing/ladder'
 import { nextRowSubdivisionSlugs, touchingPlatsForSearch } from '@/lib/data/geo/subdivision-ring'
@@ -3420,6 +3420,45 @@ describe('five price-setting sales is the floor, and a sale that does not set th
       expect(control.comps.map((c) => c.listingKey)).not.toContain('SMALL')
       expect(control.bench?.map((c) => c.listingKey)).toContain('SMALL')
       expect(control.aduSkipped).toBe(0)
+    })
+
+    it('a subject whose MLS details say ADU keeps the ADU sale even when its remarks are silent (aduYn on the wall, 2026-10-14)', () => {
+      const out = walkPricingLadder(plain({ publicRemarks: null, aduYn: true }), pool(), { asOf })
+      expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D', 'NORTON'])
+      expect(out.aduSkipped).toBe(0)
+      // An explicit MLS "No" changes nothing: the remarks still decide.
+      expect(walkPricingLadder(plain({ publicRemarks: null, aduYn: false }), pool(), { asOf }).comps.map((c) => c.listingKey)).not.toContain('NORTON')
+    })
+
+    it('the ADU-only pass admits ADU sales alone at the door and leaves the plain sales for the whole-pool walk (Matt 2026-10-14)', () => {
+      const subj = plain({ publicRemarks: 'Craftsman with a permitted detached ADU over the garage.' })
+      const first = walkPricingLadder(subj, pool(), { asOf, aduSalesOnly: true })
+      expect(first.comps.map((c) => c.listingKey)).toEqual(['NORTON'])
+      expect(first.bench ?? []).toHaveLength(0)
+      expect(first.aduSkipped).toBe(0)
+      // The same pool, whole: the five the ordinary walk seats.
+      const full = walkPricingLadder(subj, pool(), { asOf })
+      expect(full.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D', 'NORTON'])
+      // Five ADU sales on the pass are a set of their own.
+      const aduPool = ['P', 'Q', 'R', 'S', 'T'].map((k, i) => ({ ...own(k, i), address: `${i + 1} Adu Ln`, publicRemarks: NORTON }))
+      const five = walkPricingLadder(subj, [...pool(), ...aduPool], { asOf, aduSalesOnly: true })
+      expect(five.comps).toHaveLength(5)
+      expect(five.comps.every((c) => aduFromRemarks(c.publicRemarks))).toBe(true)
+      expect(five.comps.map((c) => c.listingKey)).not.toEqual(expect.arrayContaining(['A', 'B', 'C', 'D', 'E']))
+      for (const k of ['A', 'B', 'C', 'D', 'E']) expect(five.comps.map((c) => c.listingKey)).not.toContain(k)
+    })
+
+    it('the size bracket does not import a plain sale on the ADU-only pass', () => {
+      const larger = [0, 1, 2, 3, 4].map((i) => ({ ...own(`BIG${i}`, i), address: `${i + 10} Adu Ct`, publicRemarks: NORTON }))
+      const small = { ...own('SMALL', 5), address: '99 Plain Rd', publicRemarks: null, sqft: 1700, closePpsf: 700_000 / 1700 }
+      const subj = plain({ sqft: 1850, publicRemarks: 'Craftsman with a permitted detached ADU over the garage.' })
+      const out = walkPricingLadder(subj, [...larger, small], { asOf, aduSalesOnly: true })
+      expect(out.comps.map((c) => c.listingKey)).not.toContain('SMALL')
+      expect(out.bench?.map((c) => c.listingKey) ?? []).not.toContain('SMALL')
+      expect(out.comps).toHaveLength(5)
+      // Without the pass the plain smaller sale is admitted and sits on the bench.
+      const control = walkPricingLadder(subj, [...larger, small], { asOf })
+      expect(control.bench?.map((c) => c.listingKey)).toContain('SMALL')
     })
   })
 })

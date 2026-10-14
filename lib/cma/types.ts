@@ -824,6 +824,14 @@ export interface CmaBuildInput {
    */
   compKeys?: string[] | null
   /**
+   * AN ADU HOME FALLS BACK AFTER THE REVIEW TOO (Matt 2026-10-14,
+   * lib/pricing/adu-preference.ts). buildCma sets this on itself when the
+   * ADU-first set lost a sale in the comparability review and fell under
+   * five: the re-entered build selects on the ordinary pass (sales with or
+   * without an ADU) and the letter says so. Never set by a caller.
+   */
+  aduFallback?: { heldAfterReview: number } | null
+  /**
    * Broker-confirmed site facts that override the GIS-resolved values. §0 allows
    * a seller/broker-confirmed water source (e.g. a parcel converted off a private
    * well to a community supplier like Avion Water). Applied after resolveCmaSiteData.
