@@ -1,4 +1,8 @@
-# Current — 2026-10-14 (Cursor, Lighthouse artifact-poll retry)
+# Cross-agent handoff (frozen 2026-10-14)
+
+History only. New handoffs are one file per session in [`handoffs/`](handoffs/README.md). Do not add a Current block here.
+
+## Last shared block — 2026-10-14 (Cursor, Lighthouse artifact-poll retry)
 
 Surface: Cursor cloud. Branch `cursor/lhci-artifact-poll-4396` from origin/main `83d4fdf40` (#529 just merged). Nobody pushes main. Nothing sent. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true. CMA and email wording unchanged.
 

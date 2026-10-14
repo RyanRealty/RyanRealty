@@ -13,7 +13,13 @@ Branch `claude/blissful-franklin-tshl2h`, PR #563. Nobody pushes main. Nothing s
 - GA4 key events: Matt approved removing four that nothing sends: `schedule_showing`, `listing_showing_click`, `listing_inquiry`, `home_valuation_cta_click`. They were removed live on 2026-10-14 through `scripts/ga4-admin-setup.mjs`, which now matches the live property (9 key events).
 - Handoffs: Matt approved one file per session. Each session writes its own note in `docs/plans/handoffs/`. `CROSS_AGENT_HANDOFF.md` is frozen history.
 
-**Next.** Merge #563 when CI is green, then verify production with `npm run deploy:verify` and `npm run analytics:audit`. #560 (persist GA client id) edits the same lines in `fireLeadGenerated`: whichever lands second merges main and keeps both changes.
+**Live.** #563 merged `7994f4f07`; production deploy READY, ryan-realty.com 200, GTM loader present. First `analytics:audit` after it (07:42Z) still shows the old 28 days: 96% Unassigned, 102 of 103 `generate_lead` with no hostname. Re-run `npm run analytics:audit` once GA4 has processed leads that came in after the deploy; the hostname share should move.
+
+**Follow-up PR (same branch).** `deploy:verify` live SEO found 9 failures on main, none from #563:
+- `/communities/sunriver` lost `id="takeaways"` when #521 swapped `V3TakeawaysLead` for `CommunityFoldAnswer id="answer"`. Fixed: the fold answer carries `takeaways`.
+- `/homes-for-sale/<city>/on-golf-course` (golf landing) never emitted BreadcrumbList. Fixed in `GolfBranch.tsx`.
+- `CROSS_AGENT_HANDOFF.md` now carries the frozen header.
+- Seven community titles: #521 set "X Homes for Sale | City, OR" citing Matt 2026-10-13; `data/seo/decisions.json` still pins "X real estate" (Matt 09-22, 09-24, 10-04). Held for Matt; not changed.
 
 **Matt's calls, open.**
 - A Search Console Domain property, which needs a DNS TXT record.
