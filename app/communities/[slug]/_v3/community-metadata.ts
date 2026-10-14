@@ -15,7 +15,7 @@
  */
 
 import { cityHref } from '@/lib/site/place-href'
-import { fitTitle, type pageMetadata } from '@/lib/site/page-metadata'
+import { type pageMetadata } from '@/lib/site/page-metadata'
 import { shareDescription } from '@/lib/share-metadata'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
 import { isSelfCityCommunity } from '@/lib/communities/self-city-community'
@@ -75,32 +75,13 @@ export function communitySerpTitle(input: {
   city: string
   listedCount?: number | null
 }): string {
-  const { name, city, slug, listedCount } = input
-  // A compound slug is noindex and not a registered community: unchanged.
-  // A self-city community (Sunriver, Black Butte Ranch) took the inventory-only
-  // title while its /cities/<slug> twin held "{place} real estate" (SITE-187 /
-  // SITE-184). That twin now 301s here (Matt 2026-10-04), so this page carries
-  // both queries like every other registered community.
-  if (!isCanonicalCommunitySlug(slug)) {
-    return `${name} Homes for Sale | ${city}, OR`
-  }
-  // Per-slug SERP tails (SEO & AEO Desk 2026-10-08). Keep Matt's "{name} real
-  // estate" prefix. Black Butte Ranch is unchanged (regex locks the full
-  // string). Each form already fits TITLE_BUDGET (46) plus " | Ryan Realty".
-  if (slug === 'brasada-ranch') return `${name} real estate | Homes, Lots, Agent`
-  if (slug === 'tetherow' || slug === 'broken-top') return `${name} real estate | Bend Homes for Sale`
-  // Mountain High GSC: title at pos 5–15 with 0 CTR. Name the on-page listed
-  // count, or omit a count. Never a parent-city leak (SEO-58).
-  const homes =
-    slug === 'mountain-high' && listedCount != null && listedCount > 0
-      ? `${formatCount(listedCount)} ${listedCount === 1 ? 'Home' : 'Homes'} for Sale`
-      : 'Homes for Sale'
-  // "{name} real estate" is the other query for the same URL: Tetherow first
-  // (Matt 2026-09-22), every registered community since (Matt 2026-09-24).
-  // The heading stays "{name} homes for sale".
-  // Fit the 60-char SERP width (Matt 2026-10-05): the town tail goes first,
-  // then "| Homes for Sale"; "{name} real estate" always leads.
-  return fitTitle(`${name} real estate | ${homes} | ${city}, OR`, `${name} real estate | ${homes}`, `${name} real estate`)
+  const { name, city } = input
+  void input.slug
+  void input.listedCount
+  // Matt 2026-10-13: one title on every /communities/[slug] page.
+  // Layout appends " | Ryan Realty". The city is this community's registry
+  // city (Bend, Sunriver, Redmond, Sisters, Powell Butte), never a guessed one.
+  return `${name} Homes for Sale | ${city}, OR`
 }
 
 function serpTownhomeMix(types: readonly PlaceBuyerGroup[]): string[] {
@@ -379,10 +360,8 @@ export function communityMetadataInput(input: {
   }
 
   return {
-    // Title format: "[Community] real estate | Homes for Sale | [City], OR";
-    // a self-city community (Sunriver, Black Butte Ranch) and a compound slug
-    // keep "[Community] Homes for Sale | [City], OR". Mountain High names the
-    // on-page listed count when stock carries it. H1 stays "{Place} homes for sale".
+    // Title format: "[Community] Homes for Sale | [City], OR" (Matt 2026-10-13).
+    // Layout appends " | Ryan Realty". H1 is the same phrase.
     title: communitySerpTitle({
       slug,
       name,

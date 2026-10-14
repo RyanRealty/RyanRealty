@@ -25,8 +25,8 @@ import {
   ratioPct,
   addMonths,
 } from '../format'
-import { VERDICT_LABEL, VERDICT_RULE, floorsRule } from '../narrative'
-import type { EditionPayload, Kpis, MarketSection, MonthlySeries, Pt, SegmentKey, TableRow, Verdict } from '../types'
+import { VERDICT_RULE, floorsRule } from '../narrative'
+import type { EditionPayload, Kpis, MarketSection, MonthlySeries, Pt, SegmentKey, TableRow } from '../types'
 import { DTC_EARLIEST, FLOORS } from '../build-edition'
 import type { ReportAssets } from './assets'
 import { barChart, dotRows, esc, lineChart, monthXTick, quarterXTickSparse, type DotRow } from './charts'
@@ -38,16 +38,10 @@ const SEGMENT_TITLE: Record<SegmentKey, string> = {
   acreage: 'Single-family homes on one acre or more',
 }
 
-const VERDICT_SHORT: Record<Verdict, string> = {
-  seller: "Seller's",
-  balanced: 'Balanced',
-  buyer: "Buyer's",
-}
-
 const MOS_BANDS = [
-  { from: 0, to: MOS_SELLER_MAX, label: "Seller's" },
-  { from: MOS_SELLER_MAX, to: MOS_BALANCED_MAX, label: 'Balanced' },
-  { from: MOS_BALANCED_MAX, to: 60, label: "Buyer's" },
+  { from: 0, to: MOS_SELLER_MAX, label: `0 to ${MOS_SELLER_MAX} months` },
+  { from: MOS_SELLER_MAX, to: MOS_BALANCED_MAX, label: `${MOS_SELLER_MAX} to ${MOS_BALANCED_MAX} months` },
+  { from: MOS_BALANCED_MAX, to: 60, label: `${MOS_BALANCED_MAX}+ months` },
 ]
 
 const SOURCE = 'Oregon Data Share MLS data; Ryan Realty analysis'
@@ -71,8 +65,8 @@ function yoyCell(p: number | null): string {
   return `<span class="${cls}">${pctChange(p)}</span>`
 }
 
-function verdictCell(k: Kpis): string {
-  return k.verdict ? `<span class="pill">${VERDICT_SHORT[k.verdict]}</span>` : '<span class="na">–</span>'
+function supplyCell(k: Kpis): string {
+  return k.mos == null ? '<span class="na">–</span>' : esc(mosText(k.mos))
 }
 
 function figure(title: string, claim: string, body: string, source: string, cls = ''): string {
@@ -95,7 +89,7 @@ function kpiTiles(k: Kpis, opts: { twelve?: Kpis } = {}): string {
     tile(`Homes sold · ${when}`, esc(count(k.sales)), salesSub),
     tile('Median days to pending', esc(k.dtc.v == null ? '–' : String(Math.round(k.dtc.v))), k.dtcPrior.v != null ? `${Math.round(k.dtcPrior.v)} a year ago` : '&nbsp;'),
     tile('For sale at month end', esc(count(k.active)), k.medianActiveList.v != null ? `median first asking price ${esc(money(k.medianActiveList.v))}` : '&nbsp;'),
-    tile('Months of supply', esc(mosText(k.mos)), k.verdict ? esc(VERDICT_LABEL[k.verdict]) : '&nbsp;'),
+    tile('Months of supply', esc(mosText(k.mos)), '&nbsp;'),
     tile('Sale to list price', esc(ratioPct(k.stl.v)), k.priceCutShare.v != null ? `${esc(pct(k.priceCutShare.v))} had a price cut` : '&nbsp;'),
   ]
   const t = opts.twelve
@@ -156,8 +150,8 @@ function monthlyPages(sec: MarketSection): string {
   )
   const mosChart = figure(
     'Months of supply',
-    k.mos != null && k.verdict
-      ? `${mosText(k.mos)} months of supply at the end of ${monthName(k.period.end.slice(0, 7))}: ${VERDICT_LABEL[k.verdict]} by our measure.`
+    k.mos != null
+      ? `${mosText(k.mos)} months of supply at the end of ${monthName(k.period.end.slice(0, 7))}.`
       : '',
     lineChart({ series: [{ name: 'Months of supply', points: s.mos, style: 'subject' }], unit: 'months', xTick: monthXTick, heightIn: 1.75, bands: MOS_BANDS }),
     src(`homes for sale at month end ÷ average monthly sales over the six months through that month`),
@@ -266,7 +260,6 @@ function bandPage(sec: MarketSection): string {
   <td class="n">${count(r.active)}</td>
   <td class="barcell"><span class="b1" style="width:${w1}%"></span><span class="b2" style="width:${w2}%"></span></td>
   <td class="n">${r.mos == null ? '<span class="na">–</span>' : mosText(r.mos)}</td>
-  <td>${r.verdict ? `<span class="pill">${VERDICT_SHORT[r.verdict]}</span>` : ''}</td>
 </tr>`
     })
     .join('')
@@ -292,7 +285,7 @@ function bandPage(sec: MarketSection): string {
   <h3 class="h3big">Sales and homes for sale by price band</h3>
   <p class="claim">Dark bar: homes for sale at the end of ${esc(monthName(endKey))}. Light bar: homes sold in an average month over the six months through ${esc(monthName(endKey))}.</p>
   <table class="t bands">
-    <thead><tr><th>Price band</th><th class="n">Sold in ${esc(monthName(endKey).slice(0, 3))}</th><th class="n">Sold, 12 months</th><th class="n">For sale</th><th>For sale vs a month of sales</th><th class="n">Months</th><th>Market</th></tr></thead>
+    <thead><tr><th>Price band</th><th class="n">Sold in ${esc(monthName(endKey).slice(0, 3))}</th><th class="n">Sold, 12 months</th><th class="n">For sale</th><th>For sale vs a month of sales</th><th class="n">Months</th></tr></thead>
     <tbody>${body}</tbody>
   </table>
   <p class="src">${esc(`${sec.geo.label}, ${SEGMENT_TITLE[sec.segment].toLowerCase()} · sold by close price, for sale by asking price when listed · a band's months of supply needs 30 sales in six months · ${SOURCE}`)}</p>
@@ -312,13 +305,12 @@ function marketTable(rows: readonly TableRow[], opts: { period?: boolean } = {})
   <td class="n">${esc(count(k.sales))}</td>
   <td class="n">${k.dtc.v == null ? '<span class="na">–</span>' : Math.round(k.dtc.v)}</td>
   <td class="n">${esc(count(k.active))}</td>
-  <td class="n">${k.mos == null ? '<span class="na">–</span>' : mosText(k.mos)}</td>
-  <td>${verdictCell(k)}</td>
+  <td class="n">${supplyCell(k)}</td>
 </tr>`
     })
     .join('')
   return `<table class="t">
-  <thead><tr><th>Market</th>${opts.period ? '<th>Period</th>' : ''}<th class="n">Median price</th><th class="n">vs a year ago</th><th class="n">Sold</th><th class="n">Days to pending</th><th class="n">For sale</th><th class="n">Months of supply</th><th>Market</th></tr></thead>
+  <thead><tr><th>Market</th>${opts.period ? '<th>Period</th>' : ''}<th class="n">Median price</th><th class="n">vs a year ago</th><th class="n">Sold</th><th class="n">Days to pending</th><th class="n">For sale</th><th class="n">Months of supply</th></tr></thead>
   <tbody>${body}</tbody>
 </table>`
 }
@@ -426,7 +418,7 @@ function townsPage(p: EditionPayload): string {
     .map((t) => {
       const k = t.kpis
       const y = t.kpis12
-      return `<tr><th>${esc(t.geo.label)}</th><td class="n">${esc(money(k.median.v))}</td><td class="n">${esc(count(k.sales))}</td><td class="n">${k.dtc.v == null ? '<span class="na">–</span>' : Math.round(k.dtc.v)}</td><td class="n">${esc(money(y.median.v))}</td><td class="n">${yoyCell(y.medianYoY)}</td><td class="n">${esc(count(y.sales))}</td><td class="n">${esc(count(k.active))}</td><td class="n">${k.mos == null ? '<span class="na">–</span>' : mosText(k.mos)}</td><td>${verdictCell(k)}</td></tr>`
+      return `<tr><th>${esc(t.geo.label)}</th><td class="n">${esc(money(k.median.v))}</td><td class="n">${esc(count(k.sales))}</td><td class="n">${k.dtc.v == null ? '<span class="na">–</span>' : Math.round(k.dtc.v)}</td><td class="n">${esc(money(y.median.v))}</td><td class="n">${yoyCell(y.medianYoY)}</td><td class="n">${esc(count(y.sales))}</td><td class="n">${esc(count(k.active))}</td><td class="n">${supplyCell(k)}</td></tr>`
     })
     .join('')
   const first = p.towns[0]?.kpis
@@ -438,8 +430,8 @@ function townsPage(p: EditionPayload): string {
   <p class="claim">The last three months (${esc(window)}) beside the last twelve. Each town follows with twelve years of prices, sales and speed by quarter.</p>
   <table class="t">
     <thead>
-      <tr><th></th><th class="n" colspan="3">Last 3 months</th><th class="n" colspan="3">Last 12 months</th><th class="n" colspan="3">Supply</th></tr>
-      <tr><th>Town</th><th class="n">Median</th><th class="n">Sold</th><th class="n">Days to pending</th><th class="n">Median</th><th class="n">vs a year ago</th><th class="n">Sold</th><th class="n">For sale</th><th class="n">Months</th><th>Market</th></tr>
+      <tr><th></th><th class="n" colspan="3">Last 3 months</th><th class="n" colspan="3">Last 12 months</th><th class="n" colspan="2">Supply</th></tr>
+      <tr><th>Town</th><th class="n">Median</th><th class="n">Sold</th><th class="n">Days to pending</th><th class="n">Median</th><th class="n">vs a year ago</th><th class="n">Sold</th><th class="n">For sale</th><th class="n">Months</th></tr>
     </thead>
     <tbody>${rows}</tbody>
   </table>

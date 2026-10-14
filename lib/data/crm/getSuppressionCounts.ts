@@ -20,6 +20,7 @@
  */
 import { createServiceClient } from '@/lib/supabase/service'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
+import { whereActiveSuppression } from '@/lib/crm/suppression-lifecycle'
 
 export type SuppressionChannel = 'all' | 'email' | 'sms' | 'call'
 
@@ -63,11 +64,9 @@ export async function getSuppressionCounts(): Promise<SuppressionCounts> {
     channel: string | null
     reason: string | null
   }>((from, to) =>
-    sb
-      .from('crm_suppressions')
-      .select('person_id,channel,reason')
-      .order('id', { ascending: true })
-      .range(from, to),
+    whereActiveSuppression(
+      sb.from('crm_suppressions').select('person_id,channel,reason').order('id', { ascending: true }),
+    ).range(from, to),
   )
 
   if (error || !data) {

@@ -18,9 +18,9 @@ const mos = (at: number): V3AnswerScale => ({
   minLabel: '0 months',
   maxLabel: '12 months',
   bands: [
-    { to: 4, label: "seller's" },
-    { to: 6, label: 'balanced' },
-    { to: 12, label: "buyer's" },
+    { to: 4, label: '4 mo' },
+    { to: 6, label: '6 mo' },
+    { to: 12, label: '12 mo' },
   ],
 })
 
@@ -46,18 +46,18 @@ describe('answerScaleGeometry', () => {
   })
 
   it('lights the band lib/market/classify.ts would name, at every boundary', () => {
-    // Upper bound inclusive, matching marketVerdict: 4.0 is a seller's market,
-    // 6.0 is a buyer's. The drawn verdict and the printed word cannot disagree.
+    // Upper bound inclusive, matching marketVerdict: 4.0 sits in the 0–4 month
+    // band, 6.0 in the 4–6 band. Drawn bands are month labels, not market types.
     const active = (at: number) =>
       answerScaleGeometry(mos(at))?.bands.find((b) => b.active)?.label
-    expect(active(0)).toBe("seller's")
-    expect(active(3.9)).toBe("seller's")
-    expect(active(4)).toBe("seller's")
-    expect(active(4.02)).toBe('balanced')
-    expect(active(5.97)).toBe('balanced')
-    expect(active(6)).toBe('balanced')
-    expect(active(6.01)).toBe("buyer's")
-    expect(active(12)).toBe("buyer's")
+    expect(active(0)).toBe('4 mo')
+    expect(active(3.9)).toBe('4 mo')
+    expect(active(4)).toBe('4 mo')
+    expect(active(4.02)).toBe('6 mo')
+    expect(active(5.97)).toBe('6 mo')
+    expect(active(6)).toBe('6 mo')
+    expect(active(6.01)).toBe('12 mo')
+    expect(active(12)).toBe('12 mo')
   })
 
   it('refuses a value outside its own domain rather than pinning it to an end', () => {
@@ -179,11 +179,11 @@ describe('answerScaleReadAt', () => {
   })
 
   it('names the band the pointer is in, which is not always the band the value is in', () => {
-    // 4.9 months lands in "balanced"; the pointer at the far right is in
-    // "buyer's". The difference is the reason to run a pointer down the rule.
-    expect(answerScaleReadAt(mos(4.9), 0.9)?.band).toBe("buyer's")
-    expect(answerScaleReadAt(mos(4.9), 0.408)?.band).toBe('balanced')
-    expect(answerScaleReadAt(mos(4.9), 0)?.band).toBe("seller's")
+    // 4.9 months lands in the 4–6 month band; the pointer at the far right is
+    // in the 6–12 band. The difference is the reason to run a pointer down the rule.
+    expect(answerScaleReadAt(mos(4.9), 0.9)?.band).toBe('12 mo')
+    expect(answerScaleReadAt(mos(4.9), 0.408)?.band).toBe('6 mo')
+    expect(answerScaleReadAt(mos(4.9), 0)?.band).toBe('4 mo')
   })
 
   it('refuses to read a rule that cannot be drawn', () => {

@@ -91,7 +91,7 @@ describe('EXP-2: no submitted pair is a one-line page', () => {
 
   it('every EMITTED pair renders the section (the emit floor guarantees a closed count)', () => {
     for (const closedLifetime of [10, 11, 250]) {
-      const f = facts({ inventory: { mlsName: 'Cambria', closedLifetime, activeNow: 0 } })
+      const f = facts({ inventory: { mlsName: 'Cambria', closedLifetime, activeNow: 3 } })
       expect(decideBrowsePair(f).emit).toBe(true)
       expect(model(f)?.closed).toBe(closedLifetime)
     }

@@ -628,8 +628,8 @@ export default async function AnnualReviewPage() {
               verdict.kind === 'unknown'
                 ? 'The year in Central Oregon housing'
                 : mosText
-                  ? `A ${verdict.label} at ${mosText} months of supply`
-                  : `A ${verdict.label}`,
+                  ? `${mosText} months of supply`
+                  : 'The year in Central Oregon housing',
             )}
             figures={[firstRegionFigure, ...restRegionFigures]}
             /* SITE-101: one claim (verdict + MOS). MOS is V3MosBars drawing

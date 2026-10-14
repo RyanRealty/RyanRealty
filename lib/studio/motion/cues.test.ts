@@ -165,6 +165,7 @@ describe('figureLeaks (§0 backstop)', () => {
     const subject = market('4.1')
     const plan = planMotion({ spec: { lead: 'market', closer: 'brand' }, subject, duration: 6 })
     expect(figureLeaks(plan, subject)).toEqual([])
+    expect(figureLeaks(plan, subject, ['4.1 months of supply', '4 mo', '6 mo', '10 mo', '4', '6'])).toEqual([])
     const film = planMotion({
       spec: { lead: 'listing', closer: 'listing-agent' },
       subject: listing(MATT),

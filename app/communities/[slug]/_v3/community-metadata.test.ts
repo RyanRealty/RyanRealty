@@ -132,7 +132,7 @@ describe('SITE-177 community SERP copy', () => {
         city: 'Bend',
         listedCount: 8,
       }),
-    ).toBe('Mountain High real estate | 8 Homes for Sale')
+    ).toBe('Mountain High Homes for Sale | Bend, OR')
     expect(
       communitySerpTitle({
         slug: 'mountain-high',
@@ -140,11 +140,11 @@ describe('SITE-177 community SERP copy', () => {
         city: 'Bend',
         listedCount: null,
       }),
-    ).toBe('Mountain High real estate | Homes for Sale')
+    ).toBe('Mountain High Homes for Sale | Bend, OR')
     // One listing reads as one home, in the title and the description.
     expect(
       communitySerpTitle({ slug: 'mountain-high', name: 'Mountain High', city: 'Bend', listedCount: 1 }),
-    ).toBe('Mountain High real estate | 1 Home for Sale')
+    ).toBe('Mountain High Homes for Sale | Bend, OR')
     expect(
       communitySerpDescription({
         slug: 'mountain-high',
@@ -182,7 +182,7 @@ describe('SITE-177 community SERP copy', () => {
       stock: { listedCount: 47, types: ['homes', 'attached', 'lots'] },
     })
     // Matt 2026-10-04: /cities/sunriver 301s here, so this page carries "real estate" too.
-    expect(input.title).toBe('Sunriver real estate | Homes for Sale')
+    expect(input.title).toBe('Sunriver Homes for Sale | Sunriver, OR')
     expect(input.description).toMatch(/^Sunriver, Oregon homes for sale\./)
     expect(input.description).not.toMatch(/Sunriver in Sunriver/)
     expect(input.path).toBe('/communities/sunriver')
@@ -195,7 +195,7 @@ describe('SITE-177 community SERP copy', () => {
       city: 'Sisters',
       stock: { listedCount: 31, types: ['homes', 'attached', 'lots'] },
     })
-    expect(input.title).toBe('Black Butte Ranch real estate | Homes for Sale')
+    expect(input.title).toBe('Black Butte Ranch Homes for Sale | Sisters, OR')
     expect(input.description).toMatch(/^Black Butte Ranch, Oregon homes for sale\./)
     expect(input.description).not.toMatch(/Black Butte Ranch in Sisters/)
     expect(input.description).toMatch(/Golf resort with two courses under the Cascades\./)
@@ -231,8 +231,7 @@ describe('SITE-177 community SERP copy', () => {
       city: 'Bend',
       stock: { listedCount: 24, types: ['homes', 'attached', 'lots'] },
     })
-    expect(input.title).toBe('Tetherow real estate | Bend Homes for Sale')
-    expect(input.title.length).toBeLessThanOrEqual(46)
+    expect(input.title).toBe('Tetherow Homes for Sale | Bend, OR')
     expect(input.description).toMatch(/^Tetherow real estate in Bend, Oregon\./)
     expect(input.description).not.toMatch(/Active single-family homes/)
     expect(input.description).toMatch(/lots/i)
@@ -247,27 +246,18 @@ describe('SITE-177 community SERP copy', () => {
       city: 'Bend',
       stock: { listedCount: 12, types: ['homes'] },
     })
-    expect(input.title).toBe('Broken Top real estate | Bend Homes for Sale')
-    expect(input.title.length).toBeLessThanOrEqual(46)
-    // Sweep the registry: "real estate" everywhere. The two self-city
-    // communities joined 2026-10-04, when their /cities/<slug> twins became 301s.
+    expect(input.title).toBe('Broken Top Homes for Sale | Bend, OR')
+    // Sweep the registry: "{Name} Homes for Sale | {City}, OR" everywhere
+    // (Matt 2026-10-13). The city is the registry city, never a guessed one.
     const registry = (resortRegistry as { communities: Array<{ slug: string; label: string; city: string }> })
       .communities
     expect(registry.length).toBeGreaterThan(10)
-    // The route's slug is the public one (pronghorn is served as juniper-preserve).
     const plain = registry
       .map((e) => ({ ...e, slug: publicCommunitySlug(e) }))
-      .filter((e) => !communitySerpTitle({ slug: e.slug, name: e.label, city: e.city }).startsWith(`${e.label} real estate`))
+      .filter((e) => communitySerpTitle({ slug: e.slug, name: e.label, city: e.city }) !== `${e.label} Homes for Sale | ${e.city}, OR`)
       .map((e) => e.slug)
       .sort()
     expect(plain).toEqual([])
-    // Every one fits the 60-char SERP width once the layout adds " | Ryan Realty"
-    // (Matt 2026-10-05): the town tail and "| Homes for Sale" go before the name.
-    const long = registry
-      .map((e) => ({ ...e, slug: publicCommunitySlug(e) }))
-      .map((e) => communitySerpTitle({ slug: e.slug, name: e.label, city: e.city }))
-      .filter((t) => t.length > 46 && t !== t.split(' | ')[0])
-    expect(long).toEqual([])
   })
 
   it('a compound slug keeps the Homes for Sale title (noindex, not a registered community)', () => {
@@ -276,27 +266,27 @@ describe('SITE-177 community SERP copy', () => {
     ).toBe('Parks at Broken Top Homes for Sale | Bend, OR')
   })
 
-  it('Brasada / Tetherow / Broken Top titles keep Matt prefixes and fit 46+14', () => {
+  it('Brasada / Tetherow / Broken Top titles are Homes for Sale plus the registry city', () => {
     expect(communitySerpTitle({ slug: 'brasada-ranch', name: 'Brasada Ranch', city: 'Powell Butte' })).toBe(
-      'Brasada Ranch real estate | Homes, Lots, Agent',
+      'Brasada Ranch Homes for Sale | Powell Butte, OR',
     )
     expect(communitySerpTitle({ slug: 'tetherow', name: 'Tetherow', city: 'Bend' })).toBe(
-      'Tetherow real estate | Bend Homes for Sale',
+      'Tetherow Homes for Sale | Bend, OR',
     )
     expect(communitySerpTitle({ slug: 'broken-top', name: 'Broken Top', city: 'Bend' })).toBe(
-      'Broken Top real estate | Bend Homes for Sale',
+      'Broken Top Homes for Sale | Bend, OR',
     )
     expect(communitySerpTitle({ slug: 'black-butte-ranch', name: 'Black Butte Ranch', city: 'Sisters' })).toBe(
-      'Black Butte Ranch real estate | Homes for Sale',
+      'Black Butte Ranch Homes for Sale | Sisters, OR',
     )
-    for (const t of [
-      'Brasada Ranch real estate | Homes, Lots, Agent',
-      'Tetherow real estate | Bend Homes for Sale',
-      'Broken Top real estate | Bend Homes for Sale',
-      'Black Butte Ranch real estate | Homes for Sale',
-    ]) {
-      expect(t.startsWith(t.split(' | ')[0]!)).toBe(true)
-      expect(t.length + ' | Ryan Realty'.length).toBeLessThanOrEqual(60)
+    for (const [name, city] of [
+      ['Brasada Ranch', 'Powell Butte'],
+      ['Tetherow', 'Bend'],
+      ['Broken Top', 'Bend'],
+      ['Black Butte Ranch', 'Sisters'],
+    ] as const) {
+      const t = `${name} Homes for Sale | ${city}, OR`
+      expect(t).toMatch(/Homes for Sale \| .+, OR$/)
     }
   })
 

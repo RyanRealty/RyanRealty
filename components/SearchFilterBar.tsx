@@ -37,6 +37,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { useViewerListingState } from '@/components/search/use-viewer-listing-state'
 
 const STATUS_OPTIONS = SEARCH_STATUS_FILTER_CHIPS
 
@@ -151,6 +152,7 @@ function hasMoreActive(params: SearchFilterBarProps): boolean {
 type OpenKey = 'status' | 'price' | 'bedsbaths' | 'hometype' | null
 
 export default function SearchFilterBar(props: SearchFilterBarProps) {
+  const viewerState = useViewerListingState({ signedIn: props.signedIn })
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
@@ -606,7 +608,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
       {/* Save this search — always present. Signed-in users get the named/public
           save; guests get the email-capture path (native buyer lead, audience:buyer).
           Gating on props.signedIn hid the affordance from most visitors. */}
-      <SaveSearchButton user={!!props.signedIn} pathContext={props.pathContext} />
+      <SaveSearchButton user={viewerState.signedIn} pathContext={props.pathContext} />
         </div>
       </div>
 

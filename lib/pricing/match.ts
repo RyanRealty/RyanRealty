@@ -15,7 +15,7 @@ import { locationMatchFromFacts, type LocationMatch } from '@/lib/pricing/closed
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
 import { wholeBathPair } from '@/lib/pricing/bath-count'
-import { poolPlaceFromTier, rankBestPool, type BestPoolHome } from '@/lib/pricing/best-pool'
+import { amenityViewsFromListing, poolPlaceFromTier, rankBestPool, type BestPoolHome } from '@/lib/pricing/best-pool'
 import { roomCountsDecision, type RoomDecision } from '@/lib/pricing/room-ground'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
@@ -126,6 +126,12 @@ export type PricingSubject = {
   /** Zoning of record. Hard cut only when both sides have a non-empty string. */
   zoning?: string | null
   publicRemarks?: string | null
+  /**
+   * MLS view, as stored on the listing. The best-five rank reads lake, pond,
+   * river, creek, and golf from it. Unset means the view was not read, and a
+   * sale is not demoted for a view we did not see.
+   */
+  viewDescription?: string | null
   /** The MLS SeniorCommunityYN field. True is age-restriction evidence; false or null is not evidence. */
   seniorCommunityYn?: boolean | null
   /**
@@ -205,6 +211,8 @@ export type PricingSale = {
   closePpsf: number
   photoUrl: string | null
   publicRemarks: string | null
+  /** MLS view from listings. Facts do not carry it. Unset fails open in the rank. */
+  viewDescription?: string | null
   /**
    * The MLS SeniorCommunityYN field, read from listings (sale_pricing_facts
    * does not carry it). True is age-restriction evidence; false or null is not.
@@ -1719,6 +1727,8 @@ function bestPoolHomeFrom(subject: PricingSubject, comp: SelectedPricingComp): B
       { lat: subject.latitude, lng: subject.longitude },
       { lat: comp.latitude, lng: comp.longitude },
     ),
+    lotAcres: comp.lotAcres,
+    amenityViews: amenityViewsFromListing(comp.viewDescription),
   }
 }
 
@@ -2342,7 +2352,12 @@ export function walkPricingLadder(
   const poolById = new Map(poolComps.map((comp) => [comp.listingKey, comp]))
   const poolOrder = rankBestPool(
     poolComps.map((comp) => bestPoolHomeFrom(subject, comp)),
-    { sqft: subject.sqft, yearBuilt: subject.yearBuilt },
+    {
+      sqft: subject.sqft,
+      yearBuilt: subject.yearBuilt,
+      lotAcres: subject.lotAcres,
+      amenityViews: amenityViewsFromListing(subject.viewDescription),
+    },
     'sold',
     poolComps.length,
   )

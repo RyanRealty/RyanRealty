@@ -43,7 +43,7 @@ import {
   type V3AlertsSubmit,
   type V3AlertsTypeOption,
 } from '@/components/site/v3/V3AlertsStrip.client'
-import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
+import { submitSearchAlertSignup } from '@/lib/analytics/submit-alert-signup'
 import { readRrSessionId } from '@/lib/tracking'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'

@@ -52,11 +52,12 @@
  *      refuses to print (Oww, AspenB, Cascade Vill Mob HP): noindex,follow, not
  *      emitted, and the page never prints the code as a place name.
  *   4. sold history — >= BROWSE_PAIR_MIN_LIFETIME_SALES closed sales under the
- *      name in this city: indexable and emitted. The page always has content:
- *      the listings when there are any, and the sold-history section always.
- *   5. live only — fewer sales on record but homes for sale now: indexable
- *      while it has them, never emitted (the emitted SET is decided on lifetime
- *      depth alone, so it does not flap as listings come and go).
+ *      name in this city AND >= BROWSE_PAIR_MIN_ACTIVE homes for sale:
+ *      indexable and emitted. Fewer than 3 actives leaves geo.xml and is
+ *      noindex,follow even when sold history exists (2026-10-13).
+ *   5. live only — fewer sales on record but >= BROWSE_PAIR_MIN_ACTIVE homes
+ *      for sale now: indexable and emitted. A name only the active-listing
+ *      lookup knows (count unverified) stays indexable and is not emitted.
  *   6. thin — neither: noindex,follow, not emitted.
  *   7. unresolved — every source was read and none knows the area: the
  *      refusal page, noindex,follow, no canonical, not emitted.
@@ -98,6 +99,9 @@ import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
  * page need the same sold depth to be submitted.
  */
 export const BROWSE_PAIR_MIN_LIFETIME_SALES = SUBDIVISION_INDEX_MIN_LIFETIME_SALES
+
+/** Minimum verified homes for sale for a browse pair to stay in geo.xml and stay indexed. */
+export const BROWSE_PAIR_MIN_ACTIVE = 3
 
 /** Lifetime counts for one (MLS city, MLS SubdivisionName slug) pair. */
 export type BrowsePairInventory = {
@@ -250,15 +254,20 @@ export function decideBrowsePair(facts: BrowsePairFacts): BrowsePairDecision {
     const closed = facts.inventory?.closedLifetime ?? 0
     const active = facts.inventory?.activeNow ?? 0
     if (closed >= BROWSE_PAIR_MIN_LIFETIME_SALES) {
-      // platIndexable null (the plat set did not read) lands here too, and is
-      // emitted with a self canonical: the render reads the same cached set, so
-      // page and sitemap still agree, and that is exactly the pre-2026-09-23
-      // state for one cache window rather than ~770 URLs withdrawn for it.
-      return { kind: 'sold-history', index: true, emit: true, canonicalPath: self, publicName: published, filterName: mlsName }
+      // Sold history is unique content, but a pair with fewer than
+      // BROWSE_PAIR_MIN_ACTIVE homes for sale still leaves geo.xml and the
+      // index (2026-10-13 sitemap hygiene). platIndexable null (the plat set
+      // did not read) lands here too; page and sitemap still agree.
+      const fat = active >= BROWSE_PAIR_MIN_ACTIVE
+      return { kind: 'sold-history', index: fat, emit: fat, canonicalPath: self, publicName: published, filterName: mlsName }
     }
     // A name only the active-listing lookup knows is a subdivision that listed
-    // after the MV's last refresh: it has homes for sale by construction.
-    if (active > 0 || (!facts.inventory && facts.activeName)) {
+    // after the MV's last refresh: count is unknown, so index fail-open and
+    // do not emit. A verified count at the floor is unique inventory content.
+    if (active >= BROWSE_PAIR_MIN_ACTIVE) {
+      return { kind: 'live-only', index: true, emit: true, canonicalPath: self, publicName: published, filterName: mlsName }
+    }
+    if (!facts.inventory && facts.activeName) {
       return { kind: 'live-only', index: true, emit: false, canonicalPath: self, publicName: published, filterName: mlsName }
     }
     return { kind: 'thin', index: false, emit: false, canonicalPath: self, publicName: published, filterName: mlsName }

@@ -29,7 +29,26 @@ describe('validateUtm — lowercase and vocab', () => {
     expect(validateUtm({ source: 'referral-tiktok.com', medium: 'social', campaign: 'social-post' }).ok).toBe(true)
     expect(isUtmSource('referral-linkedin.com')).toBe(true)
     expect(isUtmSource('referral-')).toBe(false)
-    expect(isUtmSource('tiktok')).toBe(false)
+    expect(isUtmSource('tiktok')).toBe(true)
+    expect(isUtmSource('google')).toBe(true)
+  })
+
+  it('accepts named buyer campaign slugs and a later buyer-<angle> kebab', () => {
+    for (const campaign of [
+      'buyer-leverage',
+      'buyer-price-drops',
+      'buyer-what-it-buys',
+      'buyer-relocate',
+      'buyer-first-home',
+      'buyer-deal-report',
+    ]) {
+      expect(isUtmCampaign(campaign)).toBe(true)
+    }
+    expect(isUtmCampaign('listing-alerts')).toBe(true)
+    expect(isUtmCampaign('buyer-open-houses')).toBe(true)
+    expect(isUtmCampaign('buyer')).toBe(false)
+    expect(isUtmCampaign('buyer-')).toBe(false)
+    expect(isUtmCampaign('buyer-john-smith')).toBe(false)
   })
 
   it('accepts market-report-YYYY-MM and rejects a bare or malformed month', () => {
@@ -163,9 +182,60 @@ describe('buildTrackedUrl', () => {
       term: 'bend-sellers',
     })
     expect(new URL(paid).searchParams.get('utm_term')).toBe('bend-sellers')
+    const google = buildTrackedUrl(BASE, {
+      source: 'google',
+      medium: 'cpc',
+      campaign: 'buyer-leverage',
+      content: 'relocate-h3-v1',
+      term: 'bend-homes',
+    })
+    expect(new URL(google).searchParams.get('utm_source')).toBe('google')
+    expect(new URL(google).searchParams.get('utm_medium')).toBe('cpc')
+    expect(new URL(google).searchParams.get('utm_campaign')).toBe('buyer-leverage')
+    expect(new URL(google).searchParams.get('utm_term')).toBe('bend-homes')
     expect(() =>
       buildTrackedUrl(BASE, { source: 'crm', medium: 'email', campaign: 'listing-alerts', term: 'bend-sellers' }),
     ).toThrow(/utm_term is only allowed/)
+  })
+
+  it('stamps buyer traffic sources, mediums, and campaign slugs', () => {
+    const meta = buildTrackedUrl(BASE, {
+      source: 'facebook',
+      medium: 'paid_social',
+      campaign: 'buyer-price-drops',
+      content: 'reloc-h3-v1',
+    })
+    expect(new URL(meta).searchParams.get('utm_source')).toBe('facebook')
+    expect(new URL(meta).searchParams.get('utm_medium')).toBe('paid_social')
+    expect(new URL(meta).searchParams.get('utm_campaign')).toBe('buyer-price-drops')
+    expect(new URL(meta).searchParams.get('utm_content')).toBe('reloc-h3-v1')
+
+    const tiktok = buildTrackedUrl(BASE, {
+      source: 'tiktok',
+      medium: 'social',
+      campaign: 'buyer-first-home',
+      content: 'reel-20261013-hook',
+    })
+    expect(new URL(tiktok).searchParams.get('utm_source')).toBe('tiktok')
+    expect(new URL(tiktok).searchParams.get('utm_medium')).toBe('social')
+    expect(new URL(tiktok).searchParams.get('utm_campaign')).toBe('buyer-first-home')
+
+    const alerts = buildTrackedUrl(BASE, {
+      source: 'crm',
+      medium: 'email',
+      campaign: 'buyer-deal-report',
+      content: 'cta-top',
+    })
+    expect(new URL(alerts).searchParams.get('utm_campaign')).toBe('buyer-deal-report')
+    expect(new URL(alerts).searchParams.get('utm_content')).toBe('cta-top')
+
+    const listingAlerts = buildTrackedUrl(BASE, {
+      source: 'crm',
+      medium: 'email',
+      campaign: 'listing-alerts',
+      content: 'cta-top',
+    })
+    expect(new URL(listingAlerts).searchParams.get('utm_campaign')).toBe('listing-alerts')
   })
 
   it('throws in test/dev for an off-vocab value that is not a known alias', () => {
@@ -210,7 +280,7 @@ describe('helpers', () => {
     expect(prospectCampaign('fsbo')).toBe('fsbo-outreach')
     expect(platformUtmSource('instagram')).toBe('instagram')
     expect(platformUtmSource('google_business_profile')).toBe('gbp')
-    expect(platformUtmSource('tiktok')).toBe('referral-tiktok.com')
+    expect(platformUtmSource('tiktok')).toBe('tiktok')
   })
 
   it('recognizes a CMA document slug and not the program slug cma-letter', () => {

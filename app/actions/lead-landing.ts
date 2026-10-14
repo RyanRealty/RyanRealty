@@ -7,11 +7,19 @@ import type { LeadLandingAudience } from '@/lib/lead-landing-content'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { resolvePaidAttributionTags } from '@/lib/crm/lead-source'
-import { fireLeadGenerated } from '@/lib/lead-tracking'
+import {
+  attributionParamsFromSearch,
+  attributionQueryString,
+  fireLeadGenerated,
+  mergeLeadAttribution,
+  type LeadAttributionParams,
+} from '@/lib/lead-tracking'
+import type { LeadFormId, LeadType } from '@/lib/analytics/lead-event'
 import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
-import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
-import { cookies } from 'next/headers'
+import { ensureNativeLead, enrichNativeLead } from '@/lib/data/crm/ensureNativeLead'
+import { adMatchConsentCustom } from '@/lib/identity/form-ad-consent'
+import { cookies, headers } from 'next/headers'
 
 const SITE_URL = siteOrigin()
 
@@ -29,6 +37,8 @@ type LpContextInput = {
   lp_campaign?: string
   lp_content?: string
   lp_term?: string
+  gclid?: string
+  fbclid?: string
 }
 
 type SubmitLeadLandingInput = {
@@ -41,18 +51,36 @@ type SubmitLeadLandingInput = {
   phone?: string
   timeframe?: string
   message?: string
-  /** Attribution captured client-side: utm_* from the URL the form is
-   *  submitted on (getLpContext; its rr_lp_context fallback has had no writer
-   *  since 2026-09-09). When the visitor arrived from a Facebook ad,
-   *  lp_source='facebook'. The CRM person carries it as the channel:,
-   *  campaign: and ad-content: tags (paidTags below); sendEvent's `campaign`
-   *  field is accepted and not stored. */
+  /** Attribution captured client-side: utm_* / gclid / fbclid from the URL
+   *  the visitor arrived on (getLpContext + sessionStorage after
+   *  trackLandingPageView). Survives clicking around before submit. */
   lpContext?: LpContextInput
   /** Anonymous visitor session id (uuid v4) from localStorage. When present,
    *  we stitch this lead's prior browsing history to the CRM person and mark
    *  the visitor_sessions row identified — which is what the Marketing ROI
    *  dashboard counts as "matched to a name". */
   sessionId?: string
+  /** Override generate_lead form_id. Existing /buy/[intent] callers stay `lead_landing`. */
+  formId?: LeadFormId
+  /** Override generate_lead lead_type. Existing buyer callers stay `buyer_question`. */
+  leadType?: LeadType
+  /** Override generate_lead lp_variant. Existing callers stay `lead-landing-${audience}`. */
+  lpVariant?: string
+  /** #465 EU hashed-match box. Stored on the person; never on generate_lead. */
+  adMatchConsent?: boolean
+}
+
+function lpContextToAttribution(lp?: LpContextInput): LeadAttributionParams {
+  if (!lp) return {}
+  const out: LeadAttributionParams = {}
+  if (lp.lp_source?.trim()) out.lp_source = lp.lp_source.trim()
+  if (lp.lp_medium?.trim()) out.lp_medium = lp.lp_medium.trim()
+  if (lp.lp_campaign?.trim()) out.lp_campaign = lp.lp_campaign.trim()
+  if (lp.lp_content?.trim()) out.lp_content = lp.lp_content.trim()
+  if (lp.lp_term?.trim()) out.lp_term = lp.lp_term.trim()
+  if (lp.gclid?.trim()) out.gclid = lp.gclid.trim()
+  if (lp.fbclid?.trim()) out.fbclid = lp.fbclid.trim()
+  return out
 }
 
 export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Promise<{ error: string | null }> {
@@ -86,9 +114,28 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
       utmContent: input.lpContext?.lp_content,
     })
 
+    let refererAttr: LeadAttributionParams = {}
+    try {
+      const referer = (await headers()).get('referer') ?? ''
+      if (referer) refererAttr = attributionParamsFromSearch(new URL(referer).searchParams)
+    } catch {
+      // malformed referer
+    }
+    const attribution = mergeLeadAttribution(refererAttr, lpContextToAttribution(input.lpContext))
+    const attrQuery = attributionQueryString(attribution)
+
     const eventType = input.audience === 'seller' ? 'Seller Inquiry' : 'General Inquiry'
     const siteUrl = siteOrigin()
-    const sourceUrl = `${siteUrl}${input.pagePath}`
+    const sourceUrl = attrQuery ? `${siteUrl}${input.pagePath}?${attrQuery}` : `${siteUrl}${input.pagePath}`
+    const formId = input.formId ?? 'lead_landing'
+    const leadType: LeadType =
+      input.leadType ??
+      (input.audience === 'seller'
+        ? /valu|worth|cma|apprais/i.test(input.leadIntent)
+          ? 'seller_valuation'
+          : 'seller_listing'
+        : 'buyer_question')
+    const lpVariant = input.lpVariant ?? `lead-landing-${input.audience}`
     const details = [
       `intent=${input.leadIntent}`,
       timeframe ? `timeframe=${timeframe}` : null,
@@ -140,7 +187,6 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
     }
 
     const eventId = generateEventId()
-    const leadValue = input.audience === 'seller' ? 500 : 300
     {
       const sharing = await visitorCapiConsent()
       if (sharing.allowed) {
@@ -158,11 +204,9 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
             consentCookie: sharing.consentCookie,
             secGpc: sharing.secGpc,
             customData: {
-              content_name: `lead_landing_${input.audience}`,
-              lead_type: input.audience === 'seller' ? 'seller_inquiry' : 'buyer_inquiry',
+              content_name: formId,
+              lead_type: leadType,
               intent: input.leadIntent,
-              value: leadValue,
-              currency: 'USD',
             },
           }),
         }).catch((err) => {
@@ -203,6 +247,12 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
           rrVid,
           sessionId: input.sessionId && UUID_V4_RE.test(input.sessionId) ? input.sessionId : null,
         })
+        if (input.adMatchConsent != null) {
+          await enrichNativeLead({
+            personId: result.personId,
+            custom: adMatchConsentCustom(input.adMatchConsent === true, new Date().toISOString()),
+          })
+        }
       }
     } catch (err) {
       console.warn('[lead-landing] canonical tagging / session stitch failed (non-blocking):', err)
@@ -210,15 +260,17 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
 
     // GA4 Measurement Protocol mirror.
     await fireLeadGenerated({
-      lp_variant: `lead-landing-${input.audience}`,
+      lp_variant: lpVariant,
       lead_type:
-        input.audience === 'seller'
+        input.leadType ??
+        (input.audience === 'seller'
           ? /valu|worth|cma|apprais/i.test(input.leadIntent)
             ? 'seller_valuation'
             : 'seller_listing'
-          : 'buyer_question',
-      form_id: 'lead_landing',
+          : 'buyer_question'),
+      form_id: input.formId ?? 'lead_landing',
       event_id: eventId,
+      attribution,
       extra: {
         intent: input.leadIntent,
         page_path: input.pagePath,

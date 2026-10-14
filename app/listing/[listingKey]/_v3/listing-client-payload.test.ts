@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import type { Broker } from '@/lib/data/types/broker'
-import { pickPriceCtaListing, slimListingMedia, slimPublicBroker } from './listing-client-payload'
+import {
+  LISTING_SSR_PHOTO_CAP,
+  pickPriceCtaListing,
+  slimListingMedia,
+  slimPublicBroker,
+} from './listing-client-payload'
 
 describe('listing client payload', () => {
   it('picks the ask-strip fields and drops photos and remarks', () => {
@@ -30,6 +35,20 @@ describe('listing client payload', () => {
       { url: '/a.jpg', caption: 'Front', order: 0, width: 1600, height: 1200 },
     ])
     expect(slim).toEqual([{ url: '/a.jpg', caption: 'Front', order: 0 }])
+  })
+
+  it(`caps the flight gallery at ${LISTING_SSR_PHOTO_CAP} photographs`, () => {
+    const photos = Array.from({ length: LISTING_SSR_PHOTO_CAP + 12 }, (_, i) => ({
+      url: `/${i}.jpg`,
+      caption: null,
+      order: i,
+      width: 1600,
+      height: 1200,
+    }))
+    const slim = slimListingMedia(photos)
+    expect(slim).toHaveLength(LISTING_SSR_PHOTO_CAP)
+    expect(slim[0]).toEqual({ url: '/0.jpg', caption: null, order: 0 })
+    expect(slim.at(-1)?.order).toBe(LISTING_SSR_PHOTO_CAP - 1)
   })
 
   it('drops broker bios and Gmail signatures', () => {
