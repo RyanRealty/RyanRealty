@@ -22,9 +22,9 @@ import { formatPriceCents, formatPriceExact } from '@/lib/format/money'
 import {
   AMOUNT_HINT,
   AMOUNT_LABEL,
+  COMPARE_CLAIM,
   COMPARE_EYEBROW,
   COMPARE_HEADING,
-  HERO_LEDE,
   INPUTS_LABEL,
   LENDER_LINE,
   LOAN_TYPE_OPTIONS,
@@ -115,10 +115,14 @@ export function ConcessionsCompare({
   const advantage = result.monthlyAdvantage
   const verdict =
     advantage > 0.5
-      ? `Toward the rate saves ${formatPriceCents(advantage)} more a month, ${formatPriceExact(Math.round(result.fullTermAdvantage))} over 360 months if the loan is held the full term.`
+      ? `Toward the rate saves ${formatPriceCents(advantage)} more a month.`
       : advantage < -0.5
         ? `Off the price saves ${formatPriceCents(Math.abs(advantage))} more a month at these numbers.`
         : 'At these numbers the two come out about even.'
+  const verdictNote =
+    advantage > 0.5
+      ? `${formatPriceExact(Math.round(result.fullTermAdvantage))} over 360 months if the loan is held the full term.`
+      : undefined
 
   const status = result.withinCap
     ? {
@@ -168,7 +172,7 @@ export function ConcessionsCompare({
       id="calculator"
       eyebrow={COMPARE_EYEBROW}
       heading={COMPARE_HEADING}
-      claim={HERO_LEDE}
+      claim={COMPARE_CLAIM}
       amount={{
         label: AMOUNT_LABEL,
         value: dollars,
@@ -181,6 +185,7 @@ export function ConcessionsCompare({
       }}
       outcomes={outcomes}
       verdict={verdict}
+      verdictNote={verdictNote}
       status={status}
       inputs={{ label: INPUTS_LABEL, fields }}
       source={`${rateSourceLine} Payment math is principal and interest on a 30-year fixed loan; the buy-down assumes ${pointsPer025.toFixed(2)} point per 0.25% of rate, which varies by lender.`}

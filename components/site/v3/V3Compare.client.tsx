@@ -16,14 +16,16 @@
  * lands before the sentence is read (TASTE.md: a headline claim is drawn,
  * not said).
  *
- * THE FORM. The amount sits first, large, with its scrubber under it. The two
- * outcomes stand side by side past 48rem (stacked on a phone): a label, the
- * figure in the numeral face, its bar on the shared scale, one plain sentence
- * and one quiet detail. The larger outcome is the lead and its bar is full
- * ink; the other is drawn lighter so the margin reads as a length. The
- * verdict sentence under them says the margin in words. The inputs behind the
- * figures (price, down payment, rate, loan type) fold under one disclosure
- * so the fold shows the comparison, not a form.
+ * THE FORM. The answer precedes the control (PUBLIC_UI.md section 1): the two
+ * outcomes stand first, side by side past 48rem (stacked on a phone), each a
+ * label, the figure in the numeral face, its bar on the shared scale, one
+ * plain sentence and one quiet detail. The larger outcome is the lead and its
+ * bar is full ink; the other is drawn lighter so the margin reads as a
+ * length. The amount the reader moves sits under them, large, with its
+ * scrubber. The verdict says the margin in words, with a quieter note for
+ * the long-run figure. The inputs behind the figures (price, down payment,
+ * rate, loan type) fold under one disclosure so the fold shows the
+ * comparison, not a form.
  *
  * MOTION. The figures roll on every change the visitor makes (V3Number, which
  * publishes the settled face on the server and animates only on later
@@ -117,6 +119,8 @@ export type V3CompareProps = {
   outcomes: readonly [V3CompareOutcome, V3CompareOutcome]
   /** The margin in words: "Toward the rate saves $114 more a month." */
   verdict?: string
+  /** One quieter line under the verdict: the long-run figure, a condition. */
+  verdictNote?: string
   /** A status the figures depend on (a loan cap). `exception` paints it as a data exception. */
   status?: { text: string; exception?: boolean }
   /** The adjustable inputs behind the figures, folded under one disclosure. */
@@ -206,6 +210,7 @@ export function V3Compare({
   amount,
   outcomes,
   verdict,
+  verdictNote,
   status,
   inputs,
   source,
@@ -222,6 +227,7 @@ export function V3Compare({
   const contextLine = text(eyebrow)
   const claimLine = text(claim)
   const verdictLine = text(verdict)
+  const verdictNoteLine = text(verdictNote)
   const legalLine = text(legal)
   const rangeId = `${uid}-amount`
   const hintId = amount.hint ? `${uid}-amount-hint` : undefined
@@ -242,32 +248,6 @@ export function V3Compare({
         </V3Heading>
         {claimLine ? <p className="v3-compare__claim">{claimLine}</p> : null}
       </header>
-
-      <div className="v3-compare__amount">
-        <label htmlFor={rangeId} className="v3-compare__amount-label">
-          {amount.label}
-        </label>
-        <output htmlFor={rangeId} className="v3-compare__amount-value" aria-live="off">
-          {amount.formatted}
-        </output>
-        <input
-          id={rangeId}
-          type="range"
-          className="v3-compare__range"
-          min={amount.min}
-          max={amount.max}
-          step={amount.step}
-          value={amount.value}
-          aria-valuetext={amount.formatted}
-          aria-describedby={hintId}
-          onChange={(event) => amount.onChange(Number(event.target.value))}
-        />
-        {amount.hint ? (
-          <p id={hintId} className="v3-compare__amount-hint">
-            {amount.hint}
-          </p>
-        ) : null}
-      </div>
 
       <div className="v3-compare__outcomes">
         {sides.map((o) => {
@@ -304,10 +284,37 @@ export function V3Compare({
         })}
       </div>
 
+      <div className="v3-compare__amount">
+        <label htmlFor={rangeId} className="v3-compare__amount-label">
+          {amount.label}
+        </label>
+        <output htmlFor={rangeId} className="v3-compare__amount-value" aria-live="off">
+          {amount.formatted}
+        </output>
+        <input
+          id={rangeId}
+          type="range"
+          className="v3-compare__range"
+          min={amount.min}
+          max={amount.max}
+          step={amount.step}
+          value={amount.value}
+          aria-valuetext={amount.formatted}
+          aria-describedby={hintId}
+          onChange={(event) => amount.onChange(Number(event.target.value))}
+        />
+        {amount.hint ? (
+          <p id={hintId} className="v3-compare__amount-hint">
+            {amount.hint}
+          </p>
+        ) : null}
+      </div>
+
       {verdictLine ? (
-        <p className="v3-compare__verdict" aria-live="polite">
-          {verdictLine}
-        </p>
+        <div className="v3-compare__verdict-block" aria-live="polite">
+          <p className="v3-compare__verdict">{verdictLine}</p>
+          {verdictNoteLine ? <p className="v3-compare__verdict-note">{verdictNoteLine}</p> : null}
+        </div>
       ) : null}
 
       {status && text(status.text) ? (

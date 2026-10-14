@@ -197,6 +197,9 @@ export default async function BuyAlertsPage() {
   }
   sourceItems.push(
     { kind: 'prose', body: copy.source },
+    // The second ask: back to the slab, so a reader who scrolled past the
+    // fold still has one filled door to the alert at the foot of the page.
+    { label: BUY_ALERTS_COPY.startAlerts, href: '#signup', lead: true, detail: copy.formCadence },
     { label: BUY_ALERTS_COPY.linkFairHousing, href: BUY_ALERTS_LINKS.fairHousing },
     { label: BUY_ALERTS_COPY.linkPrivacy, href: BUY_ALERTS_LINKS.privacy },
   )
@@ -220,6 +223,7 @@ export default async function BuyAlertsPage() {
           id="answer"
           headingLevel={1}
           height="tall"
+          overlayStrength="deep"
           eyebrow={copy.eyebrow}
           headline={copy.h1}
           posterSrc={BUY_ALERTS_POSTER}
@@ -251,7 +255,7 @@ export default async function BuyAlertsPage() {
             <V3Heading id="newest-heading" level={2}>
               {BUY_ALERTS_COPY.newestHeading}
             </V3Heading>
-            <p className="buy-alerts-dial__lede">{copy.whatYouGet}</p>
+            <p className="buy-alerts-dial__lede">{BUY_ALERTS_COPY.newestLede}</p>
           </div>
           {newest.length >= DIAL_MIN ? (
             <V3ListingDial
@@ -263,6 +267,7 @@ export default async function BuyAlertsPage() {
             />
           ) : null}
           <div className="buy-alerts-dial__why">
+            <p>{copy.whatYouGet}</p>
             {copy.volume ? <p>{copy.volume}</p> : null}
             <p>
               {copy.dropsCount ? (

@@ -6,7 +6,8 @@
  * navy band, one action to the instrument), Compare (the ad's "Same $10,000"
  * as a live instrument: the seller dollars scrubbed, two outcomes rolling on
  * one drawn scale), Instrument (the two-year share chart), Quiet (caps), Ask
- * (lead), Quiet (phone, fair housing), Footer. No two adjacent patterns alike.
+ * (lead), Quiet (phone, fair housing), Footer; the caps are Answers, one row
+ * per loan family with its source. No two adjacent patterns alike.
  *
  * 2026-10-14 (Matt: "these are supposed to be landing pages"). The page used
  * to open on a cream Instrument and a six-field calculator grid built from the
@@ -38,10 +39,12 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
+  V3Answers,
   V3Instrument,
   V3Quiet,
   V3SectionTracker,
   V3Stage,
+  type V3Answer,
   type V3InstrumentFigure,
   type V3QuietItem,
   type V3StageFigure,
@@ -51,6 +54,7 @@ import { ConcessionsAsk } from './_v3/Ask.client'
 import { buildConcessionShareChart } from './_v3/chart'
 import { ConcessionsJsonLd } from './_v3/JsonLd'
 import {
+  CAP_ANSWERS,
   DESCRIPTION,
   HERO_HEADLINE,
   CAPS_INTRO,
@@ -59,7 +63,6 @@ import {
   PHONE_LABEL,
   POSTER,
   ROUTE_PATH,
-  RULES_REQUIRED_LINE,
   STAGE_EYEBROW,
   TITLE,
 } from './_v3/constants'
@@ -136,23 +139,12 @@ export default async function BuyConcessionsPage() {
     },
   ]
 
-  const capItems: V3QuietItem[] = [
-    {
-      kind: 'prose',
-      term: 'Conventional',
-      body: 'Principal residence or second home: LTV over 90% is 3%, 75.01% to 90% is 6%, 75% and under is 9%. Investment property is 2%. Based on the lower of price or appraised value. Seller-funded buy-downs count toward the cap. The credit cannot exceed actual closing costs; excess is treated as a sales concession deducted from price. Fannie Mae Selling Guide B3-4.1-02, fetched 2026-10-13.',
-    },
-    {
-      kind: 'prose',
-      term: 'FHA, VA, USDA',
-      body: 'FHA 6% of sales price (HUD Handbook 4000.1). VA 4% of reasonable value for concessions; normal buyer closing costs the seller pays are not counted toward that 4%. USDA 6%. Verify with your lender. Those three handbooks were not re-fetched this session.',
-    },
-    {
-      kind: 'prose',
-      term: 'RESPA',
-      body: 'No kickbacks or referral fees. Seller credits must be disclosed on the Closing Disclosure. We give information only, not loans.',
-    },
-  ]
+  const capAnswers: V3Answer[] = CAP_ANSWERS.map((cap, i) => ({
+    question: cap.question,
+    body: cap.body,
+    source: cap.source,
+    open: i === 0,
+  }))
 
   const callItems: V3QuietItem[] = [
     {
@@ -184,18 +176,23 @@ export default async function BuyConcessionsPage() {
           ]}
         />
 
+        {/* Compact with the band kept (the /buy form): the ad's two figures
+            in the instrument below break the 1440 fold instead of a cream
+            void under the photograph. The window is in the trace, so the band
+            carries no separate stamp (a wrapped "· as of" line at 375). */}
         <V3Stage
           id="answer"
           headingLevel={1}
+          height="compact"
+          bandWhenCompact
           eyebrow={STAGE_EYEBROW}
           headline={HERO_HEADLINE}
           posterSrc={POSTER}
           action={{ label: 'Compare a price cut to a concession', href: '#calculator' }}
           inventory={{
             figures: stageFigures,
-            source: CONCESSION_SOURCE,
+            source: `${CONCESSION_SOURCE} Query run ${CONCESSION_QUERY_RUN}.`,
             sourceName: 'Oregon Data Share',
-            updatedAt: CONCESSION_QUERY_RUN,
           }}
         />
 
@@ -224,17 +221,12 @@ export default async function BuyConcessionsPage() {
           asOf={CONCESSION_WINDOW_END}
         />
 
-        <V3Quiet
+        <V3Answers
           id="caps"
+          eyebrow="By loan type"
           heading="What the caps are"
-          headingLevel={2}
-          alert={{
-            title: LENDER_LINE,
-            description: RULES_REQUIRED_LINE,
-          }}
-          items={capItems}
-          note={CAPS_INTRO}
-          source="Fannie Mae Selling Guide B3-4.1-02 (fetched 2026-10-13). FHA HUD Handbook 4000.1, VA Lenders Handbook M26-7 ch.8, USDA HB-1-3555 ch.6, and RESPA 12 USC 2607 were not re-fetched this session; verify with your lender."
+          questions={capAnswers}
+          note={`${CAPS_INTRO} ${LENDER_LINE}`}
         />
 
         <ConcessionsAsk />

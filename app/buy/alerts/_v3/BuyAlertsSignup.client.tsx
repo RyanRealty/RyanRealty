@@ -15,7 +15,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { FormAdConsentNotice, FormAdCookieBox, useFormConsentRestricted } from '@/components/site/FormAdConsent'
-import { V3Button, V3Eyebrow, V3Heading } from '@/components/site/v3/atoms'
+import { V3Button, V3Eyebrow } from '@/components/site/v3/atoms'
 import { V3Input } from '@/components/site/v3/V3Input'
 import { formatPriceStop, V3_PRICE_STOPS } from '@/components/site/v3/V3Range.logic'
 import { writeFormAdConsent } from '@/lib/identity/form-ad-consent'
@@ -122,12 +122,12 @@ export function BuyAlertsSignup() {
   )
 
   return (
-    <div className="buy-alerts-slab" id="signup" aria-labelledby="signup-heading">
+    <div className="buy-alerts-slab" id="signup" aria-label={BUY_ALERTS_COPY.signupHeading}>
+      {/* The H1 over the slab already says what this is; the slab's own line is
+          the one fact a visitor weighs before typing (evaluator 2026-10-14: the
+          page named itself four times in the fold). */}
       <header className="buy-alerts-slab__head">
         <V3Eyebrow>{BUY_ALERTS_COPY.signupEyebrow}</V3Eyebrow>
-        <V3Heading id="signup-heading" level={2} size="field">
-          {BUY_ALERTS_COPY.signupHeading}
-        </V3Heading>
       </header>
 
       {status === 'sent' ? (

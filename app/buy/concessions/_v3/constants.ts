@@ -18,11 +18,9 @@ export const POSTER = '/images/homepage/bend-drake-park-aerial.jpg'
 /** Stage context line. One phrase, not a sentence. */
 export const STAGE_EYEBROW = 'Bend · last 90 days'
 
-// Draft copy from Writing Bot (Oct 13), pending Matt's OK.
+// Draft copy from Writing Bot (Oct 13), pending Matt's OK. The lede that used
+// to follow it is COMPARE_CLAIM below, under the instrument it describes.
 export const HERO_HEADLINE = 'Buyers have leverage in Bend.'
-
-export const HERO_LEDE =
-  "So, here's the thing. At least 1 in 2 Bend sales in the last 90 days came with a seller concession. Put toward your rate, that money can lower your payment more than the same dollars off the price."
 
 /** The compare instrument's heading: the ad's own line. */
 export const COMPARE_HEADING = 'Same $10,000, two ways'
@@ -42,8 +40,32 @@ export const ASK_LEDE =
 
 export const LENDER_LINE = 'Not lending advice. Talk to your lender.'
 
-export const RULES_REQUIRED_LINE =
-  'Not lending advice. Concession limits depend on loan type and down payment. Talk to your lender.'
+/** One sentence under the compare heading: the claim the figures prove. */
+export const COMPARE_CLAIM =
+  'At least 1 in 2 Bend sales in the last 90 days came with a seller concession. Put toward your rate, that money can lower your payment more than the same dollars off the price.'
+
+/**
+ * The caps, one answer per loan family. The sources are named on each row;
+ * the Fannie Mae guide was read 2026-10-13, the three handbooks are cited by
+ * chapter and the lender confirms the live limit.
+ */
+export const CAP_ANSWERS = [
+  {
+    question: 'Conventional loans',
+    body: 'Principal residence or second home: 3% of the price when the loan is over 90% of it, 6% from 75.01% to 90%, and 9% at 75% and under. Investment property: 2%. Measured on the lower of price or appraised value. Seller-funded buy-downs count toward the cap. The credit cannot exceed actual closing costs; anything over is treated as a sales concession and deducted from the price.',
+    source: 'Fannie Mae Selling Guide B3-4.1-02, read 2026-10-13.',
+  },
+  {
+    question: 'FHA, VA and USDA loans',
+    body: "FHA: 6% of the sales price. VA: 4% of reasonable value for concessions; the buyer's normal closing costs the seller pays are not counted toward that 4%. USDA: 6%. Your lender confirms the limit on your loan.",
+    source: 'HUD Handbook 4000.1; VA Lenders Handbook M26-7, chapter 8; USDA HB-1-3555, chapter 6.',
+  },
+  {
+    question: 'What RESPA requires',
+    body: 'No kickbacks or referral fees. Seller credits are disclosed on the Closing Disclosure. We give information only, not loans.',
+    source: 'RESPA, 12 USC 2607.',
+  },
+] as const
 
 export const POINTS_ASSUMPTION = 'assumption, varies by lender'
 

@@ -42,6 +42,20 @@
   border-top: var(--v3-rule-hairline);
 }
 
+/* The verdict block ------------------------------------------------------- */
+.v3.v3-compare .v3-compare__verdict-block {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  max-width: var(--v3-measure-text);
+}
+
+.v3.v3-compare .v3-compare__verdict-note {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
 .v3.v3-compare .v3-compare__amount-label {
   font-size: var(--v3-size-label);
   font-weight: var(--v3-weight-medium);
@@ -138,6 +152,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--v3-space-xl) var(--v3-space-2xl);
+  align-items: start;
   padding-top: var(--v3-space-lg);
   border-top: var(--v3-rule-hairline);
 }
@@ -150,8 +165,15 @@
 
 .v3.v3-compare .v3-compare__outcome {
   display: grid;
+  grid-template-rows: auto auto auto;
   gap: var(--v3-space-xs);
   min-width: 0;
+}
+
+/* The figure row is one fixed height so both bars sit on the same line
+   whatever the digits and the prefix do inside it. */
+.v3.v3-compare .v3-compare__figure {
+  min-height: 1.1em;
 }
 
 .v3.v3-compare .v3-compare__outcome-label {
@@ -243,7 +265,7 @@
   margin: 0;
   max-width: var(--v3-measure-text);
   font-family: var(--v3-font-display);
-  font-size: var(--v3-size-display-2);
+  font-size: var(--v3-size-num);
   font-weight: var(--v3-weight-display);
   letter-spacing: var(--v3-track-display);
   line-height: var(--v3-leading-heading);
