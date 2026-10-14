@@ -3,7 +3,8 @@ import { publicCountState } from '@/lib/listing-status-public'
 
 /**
  * Server-rendered active listing grid. Same rows the map dials use, filtered
- * to homes still for sale. A crawler and a no-JS reader see every card.
+ * to homes still for sale. The route seeds one SSR page (`SSR_GRID_PAGE`);
+ * remaining cards load after paint from `GET /api/place/homes`.
  */
 export function CommunityHomesGrid({
   placeName,

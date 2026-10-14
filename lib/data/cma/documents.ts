@@ -6,6 +6,7 @@
 
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -131,6 +132,82 @@ export async function getCmaProspectAsk(cmaId: string): Promise<number | null> {
   const expRow = (exp.data ?? [])[0] as { list_price?: unknown; original_list_price?: unknown } | undefined
   const fsboRow = (fsbo.data ?? [])[0] as { list_price?: unknown } | undefined
   return num(expRow?.list_price) ?? num(expRow?.original_list_price) ?? num(fsboRow?.list_price)
+}
+
+export type OutreachBuildProspect = {
+  kind: 'expired' | 'fsbo'
+  streetAddress: string | null
+  city: string | null
+  comparator: string | null
+  hardStop: boolean
+  flags: string[]
+  contactEmail: string | null
+  contactPhone: string | null
+}
+
+function flagList(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  return raw.filter((flag): flag is string => typeof flag === 'string')
+}
+
+/**
+ * The expired or FSBO row linked to this CMA, with only the fields the
+ * build gate needs. Expired wins when both exist. A read error throws.
+ */
+export async function getOutreachBuildProspect(cmaId: string): Promise<OutreachBuildProspect | null> {
+  const sb = client()
+  if (!sb) throw new Error('getOutreachBuildProspect: Supabase not configured')
+  const id = String(cmaId ?? '').trim()
+  if (!id) return null
+  const [exp, fsbo] = await Promise.all([
+    sb
+      .from('expired_listings')
+      .select(
+        'street_address, city, status_change_timestamp, compliance_hard_stop, compliance_flags, contact_email, contact_phone',
+      )
+      .eq('cma_id', id)
+      .limit(1),
+    sb
+      .from('fsbo_listings')
+      .select(
+        'street_address, city, detected_at, compliance_hard_stop, compliance_flags, contact_email, contact_phone',
+      )
+      .eq('cma_id', id)
+      .limit(1),
+  ])
+  if (exp.error) throw new Error(`getOutreachBuildProspect expired failed: ${exp.error.message}`)
+  if (fsbo.error) throw new Error(`getOutreachBuildProspect fsbo failed: ${fsbo.error.message}`)
+  const expRow = (exp.data ?? [])[0] as Record<string, unknown> | undefined
+  const fsboRow = (fsbo.data ?? [])[0] as Record<string, unknown> | undefined
+  const row = expRow ?? fsboRow
+  if (!row) return null
+  return {
+    kind: expRow ? 'expired' : 'fsbo',
+    streetAddress: (row.street_address as string | null) ?? null,
+    city: (row.city as string | null) ?? null,
+    comparator: ((expRow ? row.status_change_timestamp : row.detected_at) as string | null) ?? null,
+    hardStop: row.compliance_hard_stop === true,
+    flags: flagList(row.compliance_flags),
+    contactEmail: (row.contact_email as string | null) ?? null,
+    contactPhone: (row.contact_phone as string | null) ?? null,
+  }
+}
+
+/** Parcel on the listings row. A read error throws. A blank parcel is null. */
+export async function getListingParcelNumber(listingKey: string): Promise<string | null> {
+  const sb = client()
+  if (!sb) throw new Error('getListingParcelNumber: Supabase not configured')
+  const key = listingKey.trim()
+  if (!key) return null
+  const canonicalKey = await resolveCanonicalListingKey(key)
+  const { data, error } = await sb
+    .from('listings')
+    .select('parcel_number')
+    .eq('ListingKey', canonicalKey)
+    .maybeSingle()
+  if (error) throw new Error(`getListingParcelNumber failed: ${error.message}`)
+  const parcel = ((data as { parcel_number?: string | null } | null)?.parcel_number ?? '').trim()
+  return parcel || null
 }
 
 /**

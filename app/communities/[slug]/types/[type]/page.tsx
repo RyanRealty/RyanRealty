@@ -34,6 +34,7 @@ import {
 } from '@/lib/data'
 import { fitTitle, pageMetadata } from '@/lib/site/page-metadata'
 import { runPublishedPageRender } from '@/lib/site/degraded-isr'
+import { refuseUnavailableListings } from '@/lib/site/listings-unavailable'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { formatDateTime } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
@@ -238,10 +239,23 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
     ),
   ])
 
+  // A listings read that timed out used to render "Homes for sale" with no
+  // rows as a cacheable 200. Retry once, then throw so ISR keeps the last
+  // good list (same contract as /communities/[slug]).
+  const listSettled = listRead.ok
+    ? listRead
+    : await withTimeoutFallbackResult(
+        getListingTiles({ ...scope, sort: 'newest', limit: 120 }),
+        [],
+        4500,
+        'comm-type:list',
+      )
+  refuseUnavailableListings(listSettled.ok, `comm-type:list ${slug}/${type}`)
+
   const activeCount: number | null =
     countRead.ok && countRead.value != null && countRead.value > 0 ? countRead.value : null
   const measuredEmpty =
-    countRead.ok && countRead.value === 0 && listRead.ok && listRead.value.length === 0
+    countRead.ok && countRead.value === 0 && listSettled.ok && listSettled.value.length === 0
   const lowAsk = lowRead.ok ? (lowRead.value[0]?.listPrice ?? null) : null
   const highAsk = highRead.ok ? (highRead.value[0]?.listPrice ?? null) : null
   const p90Ask = (() => {
@@ -286,8 +300,8 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
 
   const headline = placeTypeHeadline(spec, publicName)
   const copy = placeTypeMetadataCopy({ spec, placeName: publicName, count: activeCount })
-  const listOk = listRead.ok
-  const rows = listOk ? placeTypeListingRows(listRead.value) : []
+  const listOk = listSettled.ok
+  const rows = listOk ? placeTypeListingRows(listSettled.value) : []
   /* The homes at the claim's two ends (the lowest ask, and the ask at nine in
      ten), so the film's strip runs between the same two prices the sentence
      names (2026-09-29: the newest 120 did not hold the $379,500 floor, and the

@@ -38,9 +38,11 @@ vi.mock('@/lib/lead-tracking', async (importOriginal) => {
   }
 })
 vi.mock('@/lib/meta-pixel-helpers', () => ({ generateEventId: () => 'evt-1' }))
+vi.mock('@/lib/meta-capi-visitor', () => ({
+  visitorCapiConsent: async () => ({ allowed: true, consentCookie: 'granted' }),
+}))
 vi.mock('next/headers', () => ({
   cookies: async () => ({ get: () => undefined }),
-  // visitorCapiConsent (main, PR #437) reads Sec-GPC; no consent cookie, so it fails closed.
   headers: async () => new Headers(),
 }))
 
@@ -130,7 +132,6 @@ describe('submitLeadLandingForm paid attribution', () => {
       formId: 'buyer_leverage_lp',
       leadType: 'buyer_alerts',
       lpVariant: 'buy-leverage',
-      omitCapiValue: true,
     })
     expect(fireLeadGenerated).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -142,5 +143,28 @@ describe('submitLeadLandingForm paid attribution', () => {
     const payload = fireLeadGenerated.mock.calls[0]?.[0] as Record<string, unknown>
     expect(JSON.stringify(payload)).not.toMatch(/"value"/)
     expect(JSON.stringify(payload)).not.toMatch(/currency/)
+  })
+
+  it('sends Meta CAPI Lead with lead_type and content_name, never value or currency', async () => {
+    await submitLeadLandingForm({
+      ...input(),
+      formId: 'buyer_leverage_lp',
+      leadType: 'buyer_alerts',
+      lpVariant: 'buy-leverage',
+    })
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>
+    const capiCall = fetchMock.mock.calls.find((call) => String(call[0]).includes('/api/meta-capi'))
+    expect(capiCall).toBeTruthy()
+    const body = JSON.parse(String((capiCall?.[1] as { body?: string })?.body)) as {
+      eventName: string
+      customData: Record<string, unknown>
+    }
+    expect(body.eventName).toBe('Lead')
+    expect(body.customData).toMatchObject({
+      content_name: 'buyer_leverage_lp',
+      lead_type: 'buyer_alerts',
+    })
+    expect(body.customData).not.toHaveProperty('value')
+    expect(body.customData).not.toHaveProperty('currency')
   })
 })

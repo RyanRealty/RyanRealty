@@ -15,6 +15,7 @@
  */
 import { CENTRAL_OREGON_BOUNDS } from '@/lib/map-constants'
 import { bboxFromSearchParam, type MapBbox } from '@/lib/search/publish-map-bbox'
+import { SSR_GRID_PAGE } from '@/lib/site/ssr-grid-page'
 
 export type SearchView = 'split' | 'map' | 'list'
 
@@ -25,9 +26,10 @@ export const DEFAULT_SEARCH_VIEW: SearchView = 'split'
  * Split-view cards per page, and the SSR seed of the regional frame. The server
  * renders this many list cards (real <a href> links, the ItemList source); the
  * rest of the frame's pins are read after hydration (see MapSearchView), so the
- * served HTML never carries the whole pin set.
+ * served HTML never carries the whole pin set. Same cap as every other public
+ * grid (SSR_GRID_PAGE).
  */
-export const SPLIT_CARD_PAGE = 48
+export const SPLIT_CARD_PAGE = SSR_GRID_PAGE
 
 /** The place the regional frame names. Matches the page's H1 and title. */
 export const REGIONAL_FRAME_LABEL = 'Central Oregon'

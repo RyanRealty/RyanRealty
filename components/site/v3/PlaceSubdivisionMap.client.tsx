@@ -19,7 +19,7 @@
  * page passes it while its class is below its taste mark with the dial
  * (/communities/[slug]); the default is the dial.
  */
-import { createContext, useContext, useId, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useId, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { formatCount } from '@/lib/format/count'
@@ -62,6 +62,8 @@ type PlaceMapState = {
   placeName: string
   rail: readonly SubdivisionRailEntry[]
   homes: readonly V3ListingRowData[]
+  /** Whole-place count while `homes` is still a seed page. */
+  homesCountLabel: string | null
   /** Commercial leases in the place, apart from `homes` (never for sale). */
   leases: readonly V3ListingRowData[]
   keysBySlug: Readonly<Record<string, readonly string[]>>
@@ -85,6 +87,8 @@ export function PlaceSubdivisionMap({
   placeName,
   rail,
   homes,
+  homesSrc,
+  homesCountLabel = null,
   leases = NO_LEASES,
   keysBySlug,
   source,
@@ -95,6 +99,17 @@ export function PlaceSubdivisionMap({
   placeName: string
   rail: readonly SubdivisionRailEntry[]
   homes: readonly V3ListingRowData[]
+  /**
+   * When the page seeded only the first card page, the remaining homes load
+   * from this URL after paint (GET /api/place/homes). Omit when `homes` is
+   * already the full population.
+   */
+  homesSrc?: string
+  /**
+   * Honest whole-place count (SITE-193) while `homes` is still a seed page.
+   * Dropped once the fetch lands, and while a subdivision is selected.
+   */
+  homesCountLabel?: string | null
   /** Commercial leases (placeLeaseSectionFromTiles rows). Shown last, never counted for sale. */
   leases?: readonly V3ListingRowData[]
   keysBySlug: Readonly<Record<string, readonly string[]>>
@@ -105,9 +120,52 @@ export function PlaceSubdivisionMap({
   children: ReactNode
 }) {
   const [selectedId, setSelected] = useState<string | null>(null)
+  const [loadedHomes, setLoadedHomes] = useState<readonly V3ListingRowData[] | null>(null)
+  useEffect(() => {
+    const src = homesSrc?.trim()
+    if (!src) return
+    let cancelled = false
+    fetch(src)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { homes?: V3ListingRowData[] } | null) => {
+        if (cancelled || !Array.isArray(data?.homes)) return
+        setLoadedHomes(data.homes)
+      })
+      .catch(() => {
+        /* Seed cards stay; the count label already names the full set. */
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [homesSrc])
+  const resolvedHomes = loadedHomes ?? homes
   const value = useMemo(
-    () => ({ layout, placeName, rail, homes, leases, keysBySlug, source, asOf, selectedId, setSelected }),
-    [layout, placeName, rail, homes, leases, keysBySlug, source, asOf, selectedId],
+    () => ({
+      layout,
+      placeName,
+      rail,
+      homes: resolvedHomes,
+      homesCountLabel: loadedHomes ? null : homesCountLabel,
+      leases,
+      keysBySlug,
+      source,
+      asOf,
+      selectedId,
+      setSelected,
+    }),
+    [
+      layout,
+      placeName,
+      rail,
+      resolvedHomes,
+      loadedHomes,
+      homesCountLabel,
+      leases,
+      keysBySlug,
+      source,
+      asOf,
+      selectedId,
+    ],
   )
   return <PlaceMapContext.Provider value={value}>{children}</PlaceMapContext.Provider>
 }
@@ -392,7 +450,7 @@ export function PlaceSubdivisionHomes({
    */
   countScope?: string
 }) {
-  const { layout, placeName, rail, homes, leases, keysBySlug, source, asOf, selectedId } = usePlaceMap()
+  const { layout, placeName, rail, homes, homesCountLabel, leases, keysBySlug, source, asOf, selectedId } = usePlaceMap()
   const selected = rail.find((entry) => entry.id === selectedId) ?? null
   const title = selected?.name ?? placeName
   const visible = useMemo(() => {
@@ -412,7 +470,10 @@ export function PlaceSubdivisionHomes({
   const typeSections = useMemo(() => homesByBuyerGroup(visible), [visible])
   // For sale is Active, under contract is Active Under Contract: the buckets
   // the map above draws its marks in (placeHomesCountLabel, SITE-193).
-  const countLabel = placeHomesCountLabel(visible, selectedId ? null : countScope)
+  const countLabel =
+    !selectedId && homesCountLabel
+      ? homesCountLabel
+      : placeHomesCountLabel(visible, selectedId ? null : countScope)
   const typed = typeSections.length > 1
   const dialKey = selectedId ?? 'all'
   // The lease dial comes after every for-sale dial drawn above it.
