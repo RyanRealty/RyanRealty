@@ -46,6 +46,12 @@ const SCAN_DIRS = [
   'app/admin/(protected)/people/[id]/PersonRelationships.tsx',
   'app/admin/(protected)/people/[id]/PersonNotesAdd.tsx',
   'app/admin/(protected)/people/[id]/PersonWorkspace.tsx',
+  // lead-page-v3 (2026-10-13): flag-gated person fold. BARE DIR so a new file
+  // under it is covered the day it lands. PersonWorkspaceV3 is the route-local
+  // layout; email-send-ready is the empty-send helper EmailComposer imports.
+  'app/admin/(protected)/people/[id]/PersonWorkspaceV3.tsx',
+  'components/admin/crm/lead-page-v3',
+  'components/admin/crm/email-send-ready.ts',
   'app/admin/(protected)/people/[id]/PersonIdentityHeader.tsx',
   'app/admin/(protected)/people/[id]/PersonAddressEditor.tsx',
   'app/admin/(protected)/people/[id]/PersonRelationships.tsx',

@@ -6,8 +6,11 @@ export type BuyerAnswerKind =
   | 'vs'
   | 'preset'
   | 'new-construction'
+  | 'from-out-of-state'
+  | 'second-home'
+  | 'buying'
 
-export type BuyerAnswerPlaceKind = 'community' | 'city'
+export type BuyerAnswerPlaceKind = 'community' | 'city' | 'neighborhood'
 
 export type BuyerAnswerTableRow = {
   label: string

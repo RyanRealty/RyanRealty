@@ -18,9 +18,11 @@ import { Button, SectionHead, TextField } from '@/components/admin/v2'
 export function PersonRelationships({
   personId,
   relationships,
+  hideHeading = false,
 }: {
   personId: number
   relationships: ContactRelationship[]
+  hideHeading?: boolean
 }) {
   const router = useRouter()
   // Closed on first paint (Matt 2026-08-25). It opened by default from the
@@ -71,8 +73,8 @@ export function PersonRelationships({
   }
 
   return (
-    <section aria-label="Related people" style={{ margin: '0 0 20px' }}>
-      <SectionHead>Related people</SectionHead>
+    <section aria-label="Related people" style={{ margin: hideHeading ? 0 : '0 0 20px' }}>
+      {hideHeading ? null : <SectionHead>Related people</SectionHead>}
       <ul className="av2-quietlist">
         {relationships.map((r) => (
           <li key={r.id} className="av2-quiet">

@@ -113,6 +113,20 @@ describe('buildPresetFaq', () => {
     expect(result.faqs[1]!.answer).toContain(`built in ${year} or later`)
   })
 
+  it('adds region buyer-answer extras for Central Oregon acreage', () => {
+    const result = buildPresetFaq('Central Oregon', preset('acreage'), 88, {
+      grain: 'region',
+      source: 'pulse',
+      medianListPrice: 699_000,
+      medianDaysToPending: 33,
+      refreshedAt: PULSE.refreshedAt,
+    })!
+    expect(result.buyerAnswer?.hub.href).toBe('/housing-market/central-oregon')
+    expect(result.buyerAnswer?.byline.href).toBe('/team/matthew-ryan')
+    expect(result.buyerAnswer?.table.rows.some((row) => row.label.includes('region-wide'))).toBe(true)
+    expect(result.intro).toContain('Oregon Data Share MLS')
+  })
+
   it('produces brand-voice-clean strings (no em-dash, semicolon, or exclamation)', () => {
     for (const p of SEARCH_PRESETS) {
       if (isSortOnlyPreset(p)) continue

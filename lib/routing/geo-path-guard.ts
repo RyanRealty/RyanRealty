@@ -27,7 +27,7 @@ const HOUSING_MARKET_RESERVED = new Set([
 const BEND_HOODS: ReadonlySet<string> = new Set(BEND_NEIGHBORHOOD_DISTRICTS.map((d) => d.slug))
 
 /** Real /cities/<city>/<segment> routes that are not a Bend NA district. */
-const CITY_CHILD_RESERVED = new Set(['living', 'cost', 'vs', 'types'])
+const CITY_CHILD_RESERVED = new Set(['living', 'cost', 'vs', 'types', 'from-out-of-state', 'buying'])
 
 export type GeoPathDecision =
   | { kind: 'pass' }
@@ -82,7 +82,7 @@ export function resolveHousingMarketPath(pathname: string): GeoPathDecision | nu
 /**
  * /cities/<city>/<hood>. null when this is not a two-segment city path,
  * or when the second segment is a reserved child route (living, cost,
- * vs, types) that the App Router owns.
+ * vs, types, from-out-of-state, buying) that the App Router owns.
  *
  * Out-of-market city: 308 /oregon/<city>. Bend NA district: pass. Unknown
  * hood: 404. Registry communities under /cities are hopped earlier.
