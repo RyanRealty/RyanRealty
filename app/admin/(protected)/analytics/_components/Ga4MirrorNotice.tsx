@@ -25,6 +25,7 @@ import {
   ga4WindowNeedsTrafficCaveat,
 } from '@/lib/analytics/ga4-mirror'
 import { HEALTH_METRIC } from '@/lib/analytics/ga4-tracking-health'
+import { formatCalendarDay } from '@/lib/format/date'
 
 type LatestHealth = { date: string; ok: boolean; failures: string[] }
 
@@ -52,12 +53,7 @@ async function readLatestHealth(): Promise<LatestHealth | null> {
 
 /** "2026-10-12" → "Oct 12, 2026". */
 function day(date: string): string {
-  return new Date(`${date}T00:00:00.000Z`).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
+  return formatCalendarDay(date)
 }
 
 function thirtyDaysAgo(): string {

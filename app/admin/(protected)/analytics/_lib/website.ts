@@ -11,6 +11,7 @@
  * (windowEndingOn).
  */
 import type { ChannelGroup } from '@/lib/data/analytics/channel-grouping'
+import { formatCalendarDay, zonedDateKey, zonedMinutes } from '@/lib/format/date'
 
 export type DayWindow = {
   /** Inclusive YYYY-MM-DD bounds, Pacific calendar days. */
@@ -34,33 +35,21 @@ function ymd(ms: number): string {
 
 /** How far `tz` is from UTC at an instant, in ms (Pacific: -7 h in summer, -8 h in winter). */
 function tzOffsetMs(utcMs: number, tz: string): number {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: tz,
-    hourCycle: 'h23',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).formatToParts(new Date(utcMs))
-  const p = Object.fromEntries(parts.map((x) => [x.type, x.value]))
-  const asUtc = Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), Number(p.hour), Number(p.minute), Number(p.second))
-  return asUtc - Math.floor(utcMs / 1000) * 1000
+  const localDay = zonedDateKey(utcMs, tz)
+  const localMinutes = zonedMinutes(utcMs, tz)
+  return Date.parse(`${localDay}T00:00:00.000Z`) + localMinutes * 60_000 - Math.floor(utcMs / 60_000) * 60_000
 }
 
 /** The calendar day (YYYY-MM-DD) an instant falls on in `tz`. */
 export function dayInZone(at: string | number, tz: string = SITE_TIME_ZONE): string {
-  const ms = typeof at === 'number' ? at : Date.parse(at)
-  return ymd(ms + tzOffsetMs(ms, tz))
+  return zonedDateKey(at, tz)
 }
 
 /** The instant (ms) of midnight starting `date` in `tz`, DST included. */
 export function zonedMidnightMs(date: string, tz: string = SITE_TIME_ZONE): number {
   const guess = Date.parse(`${date}T00:00:00.000Z`)
   const first = guess - tzOffsetMs(guess, tz)
-  const second = guess - tzOffsetMs(first, tz)
-  return second
+  return guess - tzOffsetMs(first, tz)
 }
 
 function dayWindow(startDate: string, days: number, tz: string): DayWindow {
@@ -98,11 +87,7 @@ export function addDays(date: string, days: number): string {
 
 /** "2026-10-07" → "Oct 7". */
 export function shortDay(date: string): string {
-  return new Date(`${date}T00:00:00.000Z`).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    timeZone: 'UTC',
-  })
+  return formatCalendarDay(date, { year: undefined })
 }
 
 /** "Oct 7 to Oct 13". */
