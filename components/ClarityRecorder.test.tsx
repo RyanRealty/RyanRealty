@@ -211,6 +211,21 @@ describe('ClarityRecorder: after it loads', () => {
     expect(queue().slice(-2)).toEqual([['start'], ['consentv2', { ad_Storage: 'denied', analytics_Storage: 'granted' }]])
   })
 
+  it('stops in the same tick as a client navigation into a personal area or /admin, before any effect runs', async () => {
+    document.cookie = 'rr_cr=0; path=/'
+    await mount()
+    let before = queue().length
+    history.pushState(null, '', '/homes-for-sale/redmond')
+    expect(queue().length).toBe(before)
+    history.pushState(null, '', '/account/saved-homes')
+    expect(queue().slice(before)).toEqual([['stop']])
+    // Already halted: a further walk into /admin sends nothing new.
+    before = queue().length
+    history.pushState(null, '', '/admin/crm')
+    expect(queue().length).toBe(before)
+    history.replaceState(null, '', '/')
+  })
+
   it('stops when it unmounts (a walk into /admin)', async () => {
     document.cookie = 'rr_cr=0; path=/'
     await mount()

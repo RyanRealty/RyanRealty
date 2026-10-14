@@ -183,11 +183,14 @@ function mountSellStreetFrame(address: string, pin: SellPin | null) {
     media.querySelector('.sell-stage-street-plate')?.remove()
     return
   }
-  root.setAttribute('data-sell-street', address.trim())
+  // A marker only: the typed address stays out of attributes a recorder reads.
+  root.setAttribute('data-sell-street', '')
   let plate = media.querySelector<HTMLParagraphElement>('.sell-stage-street-plate')
   if (!plate) {
     plate = document.createElement('p')
     plate.className = 'sell-stage-street-plate'
+    // Masked before it enters the page, so Clarity never records the address.
+    plate.setAttribute('data-clarity-mask', 'True')
     media.appendChild(plate)
   }
   plate.textContent = address.trim()
@@ -197,6 +200,8 @@ function mountSellStreetFrame(address: string, pin: SellPin | null) {
   if (!img) {
     img = document.createElement('img')
     img.className = 'sell-stage-street'
+    // Its src carries the address; masked, Clarity records no src.
+    img.setAttribute('data-clarity-mask', 'True')
     img.alt = ''
     img.decoding = 'async'
     media.appendChild(img)

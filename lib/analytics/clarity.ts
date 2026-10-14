@@ -15,9 +15,10 @@
  *     unsubscribe pages) and is not a signed-in personal area (/account,
  *     /dashboard: the visitor's own name, saved homes and transactions are on
  *     screen);
- *   - the address names no person (CLARITY_BLOCKING_PARAMS: Clarity sends the
- *     full page address, so a `?_pid=` arrival is not recorded until the identity
- *     bridge has cleaned the address bar);
+ *   - the address names no person and carries nothing typed
+ *     (CLARITY_BLOCKING_PARAMS: Clarity sends the full page address, so a `?_pid=`
+ *     arrival is not recorded until the identity bridge has cleaned the address
+ *     bar, and `/sell?address=` / `/contact?inquiry=` are not recorded at all);
  *   - analytics consent under the SAME rule GA4 uses (hasAnalyticsConsent in
  *     components/CookieConsentBanner.tsx): no Global Privacy Control, a stored
  *     banner answer with analytics on, or no answer outside a restricted region.
@@ -34,6 +35,12 @@
  * call dispatches to (src/clarity.ts, src/queue.ts); a stop sent while Clarity is
  * between pages is queued and runs when it restarts. A withdrawn page is never
  * reloaded: the next full page load decides again.
+ *
+ * NAVIGATION. clarity-js restarts itself on every address change, and its stop
+ * sends a final upload, so a halt decided after a navigation would still send
+ * the excluded page's address and title. installNavigationGuard judges each
+ * pushState / replaceState / popstate destination BEFORE the address changes and
+ * stops Clarity first; a later public page starts it again (`start`).
  *
  * TAGS. clarity-js resets custom tags and the identify id at the start of every
  * Clarity page, and treats every address change (a ?bbox= map move included) as
@@ -53,7 +60,7 @@
  * its children, so typed answers echoed back on the page are not recorded either.
  */
 import { decideGaSuppression, PRODUCTION_HOST, type GaSuppressionReason } from './ga-suppression'
-import { isPrivatePath } from './private-paths'
+import { isPrivatePath, SECRET_URL_PARAMS } from './private-paths'
 import { PAGE_TYPES, pageTypeFromPath } from './page-type'
 import { MARKET_SLUG_MAX, VISITOR_INTENTS } from './visitor-intent'
 import { GA4_STRIP_PARAMS } from '@/app/api/visitors/track/strip-identity'
@@ -79,22 +86,25 @@ export const CLARITY_COOKIES = ['_clck', '_clsk'] as const
 export const CLARITY_EXCLUDED_PREFIXES = ['account', 'dashboard'] as const
 
 /**
- * Query parameters that name a person or carry a secret. Clarity sends the full
- * page address, so a page whose address holds one is not recorded. The identity
- * params GA4 never sees, the secret-bearing ones private-paths.ts scrubs from
- * error reports, and a raw email or phone.
+ * Query parameters that name a person, carry a secret or carry what a visitor
+ * typed. Clarity sends the full page address, so a page whose address holds one
+ * is not recorded: the identity params GA4 never sees, the secret-bearing ones
+ * private-paths.ts scrubs from error reports, Supabase's email-link token, a raw
+ * email or phone, and the free text two public forms put in the address (the
+ * home page's value box sends `/sell?address=`, the /about box `/contact?inquiry=`).
  */
-export const CLARITY_BLOCKING_PARAMS = [
-  ...GA4_STRIP_PARAMS,
-  'token',
-  't',
-  'code',
-  'key',
-  'sig',
-  'signature',
-  'email',
-  'phone',
-] as const
+export const CLARITY_BLOCKING_PARAMS: readonly string[] = [
+  ...new Set<string>([
+    ...GA4_STRIP_PARAMS,
+    ...SECRET_URL_PARAMS,
+    'token_hash',
+    'email',
+    'phone',
+    'address',
+    'inquiry',
+    'message',
+  ]),
+]
 
 export type ClarityBlockReason =
   | 'no-project-id'
@@ -153,7 +163,7 @@ export function hasClarityBlockingParam(search: string | null | undefined): bool
     return true
   }
   for (const key of params.keys()) {
-    if ((CLARITY_BLOCKING_PARAMS as readonly string[]).includes(key.toLowerCase())) return true
+    if (CLARITY_BLOCKING_PARAMS.includes(key.toLowerCase())) return true
   }
   return false
 }
@@ -178,11 +188,6 @@ export function decideClarity(input: ClarityDecisionInput): ClarityDecision {
   if (input.gpc) return no('gpc')
   if (!input.analyticsConsent) return no('no-analytics-consent')
   return { load: true, reason: null }
-}
-
-/** True when the reason is a consent answer, not the page or the browser. */
-export function isConsentReason(reason: ClarityBlockReason | null): boolean {
-  return reason === 'gpc' || reason === 'no-analytics-consent'
 }
 
 // ── Values sent to Clarity ───────────────────────────────────────────────────
@@ -248,6 +253,10 @@ type ClarityFn = ((...args: unknown[]) => unknown) & { q?: unknown[]; v?: unknow
 export type ClarityWindow = {
   clarity?: ClarityFn
   document: Pick<Document, 'createElement' | 'getElementsByTagName' | 'getElementById' | 'head' | 'cookie'>
+  history: History
+  location: Pick<Location, 'href'>
+  addEventListener: Window['addEventListener']
+  removeEventListener: Window['removeEventListener']
 }
 
 export type ClarityState = 'off' | 'running' | 'halted' | 'withdrawn'
@@ -258,9 +267,21 @@ type Runtime = {
   consent: ClarityConsent | null
   userId: string | null
   pageContext: (() => ClarityPageContext) | null
+  /** decideClarity for a destination address, from the component. */
+  mayRecord: ((url: URL) => boolean) | null
+  /** Undoes the navigation guard (tests only). */
+  unguard: (() => void) | null
 }
 
-const runtime: Runtime = { state: 'off', win: null, consent: null, userId: null, pageContext: null }
+const runtime: Runtime = {
+  state: 'off',
+  win: null,
+  consent: null,
+  userId: null,
+  pageContext: null,
+  mayRecord: null,
+  unguard: null,
+}
 
 const SCRIPT_ID = 'clarity-script'
 
@@ -270,11 +291,14 @@ export function clarityState(): ClarityState {
 
 /** Tests only. */
 export function resetClarityRuntime(): void {
+  runtime.unguard?.()
   runtime.state = 'off'
   runtime.win = null
   runtime.consent = null
   runtime.userId = null
   runtime.pageContext = null
+  runtime.mayRecord = null
+  runtime.unguard = null
 }
 
 function call(...args: unknown[]): void {
@@ -308,6 +332,62 @@ function injectTag(w: ClarityWindow, projectId: string): void {
   else d.head.appendChild(t)
 }
 
+/**
+ * Stop Clarity BEFORE it can record a page it may not see.
+ *
+ * clarity-js wraps history.pushState / replaceState and listens for popstate;
+ * on any address change it stops and schedules its own restart on the new
+ * address 250 ms later (src/core/history.ts). A stop sent from a React effect
+ * after the navigation lands while Clarity is between pages, is queued, and runs
+ * only after that restart, whose stop sends a final upload (src/data/upload.ts
+ * stop) carrying the new page's address and title. So the destination is judged
+ * here, synchronously, before the address changes: stopping first means Clarity's
+ * own wrapper sees an inactive Clarity and schedules nothing. Installed once,
+ * before the tag loads, so this listener precedes Clarity's in registration order
+ * as well as by the capture phase.
+ */
+function installNavigationGuard(w: ClarityWindow): void {
+  if (runtime.unguard) return
+  const h = w.history
+  const restores: (() => void)[] = []
+  const guard = (target: string | URL | null | undefined) => {
+    if (runtime.state !== 'running' || !runtime.mayRecord) return
+    let dest: URL
+    try {
+      dest = new URL(target == null ? w.location.href : String(target), w.location.href)
+    } catch {
+      return
+    }
+    let allowed = false
+    try {
+      allowed = runtime.mayRecord(dest)
+    } catch {
+      allowed = false
+    }
+    if (!allowed) haltClarity()
+  }
+  for (const method of ['pushState', 'replaceState'] as const) {
+    const inner = h[method]
+    if (typeof inner !== 'function') continue
+    const wrapped = function (this: History, data: unknown, unused: string, url?: string | URL | null) {
+      guard(url)
+      return inner.call(this, data, unused, url)
+    }
+    try {
+      h[method] = wrapped
+      restores.push(() => {
+        if (h[method] === wrapped) h[method] = inner
+      })
+    } catch {
+      /* a read-only history (some WebViews): the effect still halts it */
+    }
+  }
+  const onPopState = () => guard(null)
+  w.addEventListener('popstate', onPopState, true)
+  restores.push(() => w.removeEventListener('popstate', onPopState, true))
+  runtime.unguard = () => restores.forEach((r) => r())
+}
+
 /** identify + tags for the page Clarity is on. */
 function applyPageContext(): void {
   if (runtime.state !== 'running') return
@@ -329,13 +409,21 @@ function sameConsent(a: ClarityConsent | null, b: ClarityConsent): boolean {
  */
 export function startClarity(
   w: ClarityWindow,
-  opts: { projectId: string; consent: ClarityConsent; pageContext: () => ClarityPageContext },
+  opts: {
+    projectId: string
+    consent: ClarityConsent
+    pageContext: () => ClarityPageContext
+    /** The same decision for a destination address; Clarity stops before it goes there. */
+    mayRecord: (url: URL) => boolean
+  },
 ): void {
   if (runtime.state === 'withdrawn') return
   runtime.win = w
   runtime.pageContext = opts.pageContext
+  runtime.mayRecord = opts.mayRecord
   if (runtime.state === 'off') {
     if (!isClarityProjectId(opts.projectId)) return
+    installNavigationGuard(w)
     injectTag(w, opts.projectId)
     runtime.state = 'running'
     runtime.consent = opts.consent
@@ -380,25 +468,30 @@ export function eraseClarityCookies(doc: Pick<Document, 'cookie'>, host: string 
 /**
  * Analytics consent was withdrawn (a decline, Global Privacy Control). Tell
  * Clarity the documented way, stop it, and delete its cookies. It stays off for
- * the rest of this page's life; the next full page load decides again.
+ * the rest of this page's life; the next full page load decides again. Sent
+ * from a halt too: if Clarity is between pages the calls wait in its queue and
+ * run the moment anything restarts it.
  */
 export function withdrawClarity(doc: Pick<Document, 'cookie'>, host: string | null | undefined): void {
-  if (runtime.state === 'running') {
+  if (runtime.state === 'running' || runtime.state === 'halted') {
     call('consentv2', { ...CLARITY_CONSENT_DENIED })
     call('stop')
+    runtime.state = 'withdrawn'
   }
-  if (runtime.state === 'running' || runtime.state === 'halted') runtime.state = 'withdrawn'
   eraseClarityCookies(doc, host)
 }
 
 /**
  * The hashed CRM id for a known contact (AnalyticsIdentityBridge, the same value
  * GA4 gets as user_id). Kept for every later Clarity page and sent now when
- * Clarity is recording. Anything but a hashed id is dropped.
+ * Clarity is recording. Anything but a hashed id (null when the visitor is not
+ * known, after a sign-out) forgets the id, so later pages are not filed under a
+ * contact who has left the browser. Clarity has no call to take back an id it was
+ * given on the current page.
  */
 export function rememberClarityUserId(hashedUserId: unknown): void {
   const id = clarityUserId(hashedUserId)
-  if (!id || id === runtime.userId) return
+  if (id === runtime.userId) return
   runtime.userId = id
-  if (runtime.state === 'running') call('identify', id)
+  if (id && runtime.state === 'running') call('identify', id)
 }

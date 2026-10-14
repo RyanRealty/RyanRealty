@@ -72,10 +72,10 @@ async function fetchIdentity(): Promise<IdentityPayload | null> {
 }
 
 async function applyIdentity(payload: IdentityPayload): Promise<void> {
-  if (!payload.identified) return
-
   // The same hashed id GA4 gets as user_id; never an email, name or phone.
-  rememberClarityUserId(payload.hashedUserId)
+  // An unknown visitor (a sign-out, another person on the device) clears it.
+  rememberClarityUserId(payload.identified ? payload.hashedUserId : null)
+  if (!payload.identified) return
 
   if (GA4_ID && payload.hashedUserId) {
     const gtag = await waitForGlobal(() => window.gtag)

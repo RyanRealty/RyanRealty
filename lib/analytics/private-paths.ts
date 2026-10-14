@@ -26,8 +26,13 @@ export function isPrivatePath(pathname: string | null | undefined): boolean {
  */
 export const PRIVATE_PATH_JS = `${PRIVATE_PATH_RE.toString()}.test(location.pathname)`
 
-/** Query parameters that carry a secret or a person's identity token. */
-const SECRET_PARAMS = /([?&](?:token|_pid|t|code|key|sig|signature)=)[^&#\s"']+/gi
+/**
+ * Query parameters that carry a secret or a person's identity token. Shared with
+ * lib/analytics/clarity.ts, which never records an address that holds one.
+ */
+export const SECRET_URL_PARAMS = ['token', '_pid', 't', 'code', 'key', 'sig', 'signature'] as const
+
+const SECRET_PARAMS = new RegExp(`([?&](?:${SECRET_URL_PARAMS.join('|')})=)[^&#\\s"']+`, 'gi')
 
 /**
  * An address, or any text holding one, with its secrets replaced: the signing
