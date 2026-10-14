@@ -194,7 +194,11 @@ export default async function HomesUnder500kCentralOregonPage() {
             {copy.methodLine}{' '}
             <Link href={LINKS.method}>How we get our numbers</Link>.
           </p>
-          <V3SourceLine sourceName={MLS_SOURCE} asOf={snap.asOfLabel} source={copy.methodLine} />
+          <V3SourceLine
+            sourceName={MLS_SOURCE}
+            asOf={snap.published && snap.asOfIso ? snap.asOfIso : undefined}
+            source={copy.methodLine}
+          />
         </section>
 
         <section id="towns" className="v3-net-section" aria-labelledby="towns-heading">

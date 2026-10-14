@@ -1,8 +1,8 @@
 # Current — 2026-10-14 (Cursor, /buy/homes-under-500k-central-oregon)
 
-Surface: Cursor cloud. Branch `cursor/homes-under-500k-central-oregon-6180` from origin/main. New page is in progress. Leave the PR open and unmerged for review. Nothing sent. Nobody pushes main.
+Surface: Cursor cloud. Branch `cursor/homes-under-500k-central-oregon-6180` from origin/main. PR left open and unmerged for review. Nothing sent. Nobody pushes main.
 
-**This pass.** Build `/buy/homes-under-500k-central-oregon` from the 2026-10-13 brief. Live residential under-$500K counts from `getUnder500kCityInventory` (listing_search_mv). Sisters/Sunriver are footnote rows. Do not link `/buy/alerts`, `/buy/leverage`, or `/buy/first-time`. Bend SFR median is the Query B figure, never pulse $745K.
+**This pass.** `/buy/homes-under-500k-central-oregon` from the 2026-10-13 brief. Live counts from `getUnder500kCityInventory` (listing_search_mv). Rendered 2026-10-14: 602 residential / 288 SFR; Redmond 180, Bend 158, La Pine 144, Prineville 120; Bend SFR median $852,450 (never $745K). Sisters/Sunriver are footnote rows. Do not link `/buy/alerts`, `/buy/leverage`, or `/buy/first-time`.
 
 **Not this change.** Do not send. Do not merge this PR. Do not fix the on-main CLAUDE.md budget, unit (2), or `/sell` content-floor (3). Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Hold #452 and #471.
 

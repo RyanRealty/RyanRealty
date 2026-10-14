@@ -111,6 +111,15 @@ export function Under500kTable({
     () => [...headline].sort((a, b) => compareRows(a, b, sortKey, sortDir)),
     [headline, sortKey, sortDir],
   )
+  const withheld = useMemo(
+    () =>
+      [...headline, ...footnotes].some(
+        (row) =>
+          moneyLabel(row.sfrMedianList) === CELL_UNPUBLISHED ||
+          daysLabel(row.daysToOffer90) === CELL_UNPUBLISHED,
+      ),
+    [headline, footnotes],
+  )
 
   function onSort(key: SortKey) {
     if (key === sortKey) {
@@ -152,7 +161,9 @@ export function Under500kTable({
           ))}
         </tfoot>
       </table>
-      <p className="v3-under500-unpublished">{`A cell that reads ${CELL_UNPUBLISHED} was withheld on this refresh.`}</p>
+      {withheld ? (
+        <p className="v3-under500-unpublished">{`A cell that reads ${CELL_UNPUBLISHED} was withheld on this refresh.`}</p>
+      ) : null}
     </div>
   )
 }
