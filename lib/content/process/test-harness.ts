@@ -1,4 +1,5 @@
 /**
+ * reachability: entry-point test-support: rules.test.ts, run.test.ts and board.test.ts run on these fakes.
  * lib/content/process/test-harness.ts - the fakes every rule's fixture runs on.
  * Tests only: nothing in the product imports this file.
  *
