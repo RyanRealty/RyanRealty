@@ -218,18 +218,162 @@ export function alignCaption(captionText: string, spokenWords: string[]): AlignR
 const LOCKED_PHONE = /(?:\+?1[\s.-]*)?\(?541\)?[\s.-]*703[\s.-]*3095/g
 
 /**
- * Number tokens in a string: digits with an optional leading $, thousands commas,
- * a decimal part and a trailing % or K or M. The locked end card phone number is
- * not a figure and is skipped. A digit glued to a letter on its left (Q3, H2) is
- * part of a word, not a figure.
+ * Number tokens in a string, each WITH its own unit or prefix, so a row covers a
+ * token only when they are the same figure: "$475K" is not "$475", "4 mo" is not
+ * "4". A token is digits with an optional leading $ or # (a rank: "#1"),
+ * thousands commas, a decimal part, and a trailing %, K, M or " mo". The locked
+ * end card phone number is not a figure and is skipped. A digit glued to a
+ * letter on its left (Q3, H2) is part of a word, not a figure; a digit after
+ * punctuation glued to a word ("fell,12%") is a figure.
  */
 export function extractNumberTokens(text: string): string[] {
   const cleaned = text.replace(LOCKED_PHONE, ' ')
-  const re = /(?<![A-Za-z0-9$.,#])\$?\d[\d,]*(?:\.\d+)?(?:%|[KkMm](?![A-Za-z]))?/g
+  const re = /(?<![A-Za-z0-9$#])(?<!\d[.,])[#$]?\d[\d,]*(?:\.\d+)?(?:%|[KkMm](?![A-Za-z])|\s?[Mm][Oo]\b)?/g
   return [...cleaned.matchAll(re)].map((m) => m[0].replace(/[.,]+$/, ''))
 }
 
-/** Case and space insensitive form used to ask whether a numbers row covers a token. */
+/** Case and space insensitive form of a figure token: two tokens cover each other only when these are equal. */
 export function squash(s: string): string {
   return s.toLowerCase().replace(/\s+/g, '')
+}
+
+// ---------------------------------------------------------------------------
+// Spoken figures (check 9): a number said in words is a figure too
+
+/**
+ * Ordinal words are figures too ("the third month in a row"). "first" and
+ * "second" are not read as figures: "first" is on the allowlist below and
+ * "second" is far more often the unit of time ("give it a second").
+ */
+const ORDINALS: Record<string, number> = {
+  third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7, eighth: 8, ninth: 9, tenth: 10,
+  eleventh: 11, twelfth: 12, thirteenth: 13, fourteenth: 14, fifteenth: 15, sixteenth: 16,
+  seventeenth: 17, eighteenth: 18, nineteenth: 19, twentieth: 20, thirtieth: 30, fortieth: 40,
+  fiftieth: 50, sixtieth: 60, seventieth: 70, eightieth: 80, ninetieth: 90, hundredth: 100,
+}
+
+/**
+ * Number words that are not a statistic, each with the words around it that
+ * make it so. Kept short on purpose: anything else said as a number must be
+ * shown as a sourced figure. Each entry has its own test (spoken.test.ts).
+ *  - "one of", "one more": a member of a set, not a count.
+ *  - "this one", "the one", "no one", "that one": a pronoun.
+ *  - "first" and "second" are never read as figures (see ORDINALS).
+ */
+export const NON_STATISTICAL_SPOKEN: ReadonlyArray<{ word: string; before?: readonly string[]; after?: readonly string[] }> = [
+  { word: 'one', after: ['of', 'more'] },
+  { word: 'one', before: ['this', 'the', 'no', 'that'] },
+]
+
+export interface SpokenFigure {
+  /** Indices into the words given, first and last. */
+  first: number
+  last: number
+  /** The words as said ("twelve percent"). */
+  said: string
+  /** Every value the words can mean (a count, or a spoken year). */
+  values: number[]
+  unit: NumberUnit
+}
+
+const DIGIT_WORDS: Record<string, string> = {
+  zero: '0', oh: '0', one: '1', two: '2', three: '3', four: '4', five: '5', six: '6', seven: '7', eight: '8', nine: '9',
+}
+
+/** Where the locked phone, read out digit by digit, sits in a run of number words: [from, to) or null. */
+function phoneSpan(tokens: readonly string[]): [number, number] | null {
+  const at = tokens.map((t) => DIGIT_WORDS[t] ?? '-').join('').indexOf('5417033095')
+  return at < 0 ? null : [at, at + 10]
+}
+
+/** Words that may not start a figure: they only join or close one. */
+const NOT_A_START = new Set(['and', 'a', 'point', 'half', 'oh', ...PERCENT_WORDS, ...DOLLAR_WORDS])
+
+/**
+ * Every number said in words, with the word indices that say it. A word such
+ * as "sixty-three" is two tokens of one word. Runs of number words are read
+ * greedily, longest first ("three and a half months" is one figure, 3.5); "a"
+ * counts as one only before hundred or a scale ("a hundred homes"). An ordinal
+ * from "third" up is a figure. The locked phone read out digit by digit, and
+ * the short allowlist above, are not figures.
+ */
+export function spokenFigures(words: readonly string[]): SpokenFigure[] {
+  const tokens: string[] = []
+  const owner: number[] = []
+  words.forEach((w, wi) => {
+    for (const t of tokenizeWords(w)) {
+      tokens.push(t)
+      owner.push(wi)
+    }
+  })
+  const out: SpokenFigure[] = []
+  const push = (from: number, to: number, values: number[], unit: NumberUnit) => {
+    const first = owner[from]
+    const last = owner[to]
+    out.push({ first, last, said: words.slice(first, last + 1).join(' '), values, unit })
+  }
+  let i = 0
+  while (i < tokens.length) {
+    const tok = tokens[i]
+    if (tok in ORDINALS) {
+      push(i, i, [ORDINALS[tok]], null)
+      i++
+      continue
+    }
+    const leadsScale = tok === 'a' && (tokens[i + 1] === 'hundred' || tokens[i + 1] in SCALES)
+    if (!isNumberWord(tok) || (NOT_A_START.has(tok) && !leadsScale)) {
+      i++
+      continue
+    }
+    let end = i
+    while (end < tokens.length && (isNumberWord(tokens[end]) || tokens[end] === 'oh')) end++
+    const run = tokens.slice(i, end)
+    // The locked phone read out is not a figure; the words around it still are.
+    const phone = phoneSpan(run)
+    let p = 0
+    while (p < run.length) {
+      if (phone && p >= phone[0] && p < phone[1]) {
+        p = phone[1]
+        continue
+      }
+      const stop = phone && p < phone[0] ? phone[0] : run.length
+      let taken = 0
+      for (let k = stop - p; k >= 1; k--) {
+        const piece = run.slice(p, p + k).map((t, n) => (t === 'a' && n === 0 && (run[p + 1] === 'hundred' || run[p + 1] in SCALES) ? 'one' : t))
+        // A figure starts on a number, never on a joining word or a unit word.
+        if (NOT_A_START.has(run[p]) && piece[0] !== 'one') continue
+        const got = parseSpokenNumber(piece)
+        if (!got) continue
+        const from = i + p
+        const to = i + p + k - 1
+        const before = tokens[from - 1]
+        const after = tokens[to + 1]
+        const allowed =
+          k === 1 &&
+          NON_STATISTICAL_SPOKEN.some(
+            (rule) =>
+              rule.word === piece[0] &&
+              ((rule.after !== undefined && after !== undefined && rule.after.includes(after)) ||
+                (rule.before !== undefined && before !== undefined && rule.before.includes(before))),
+          )
+        if (!allowed) push(from, to, got.values, got.unit)
+        taken = k
+        break
+      }
+      p += taken || 1
+    }
+    i = end
+  }
+  return out
+}
+
+/** Two values are the same figure (to a millionth of the larger). */
+export function sameValue(a: number, b: number): boolean {
+  return Math.abs(a - b) <= 1e-6 * Math.max(1, Math.abs(a), Math.abs(b))
+}
+
+/** Does a figure token ("12%", "$475K", "3.5") show this spoken figure? Same value and same unit. */
+export function tokenShowsSpoken(token: string, figure: Pick<SpokenFigure, 'values' | 'unit'>): boolean {
+  const n = parseCaptionNumber(token)
+  return n !== null && n.unit === figure.unit && figure.values.some((v) => sameValue(v, n.value))
 }

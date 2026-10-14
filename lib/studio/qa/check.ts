@@ -2,9 +2,15 @@
  * lib/studio/qa/check.ts - the measured output check (`npm run video:check`).
  *
  * checkVideo opens the finished MP4, measures it, and holds it to the contract in
- * docs/plans/STUDIO_ONE_FACTORY.md: the sixteen checks in its table, numbered as
- * there. The review (14) runs only with `final: true`; on a final pass the film
- * is also recorded in the film ledger (see ledger.ts).
+ * docs/plans/STUDIO_ONE_FACTORY.md: the seventeen checks in its table, numbered
+ * as there. The review (14) runs only with `final: true`; on a final pass the
+ * film is also recorded in the film ledger (see ledger.ts). Check 17 reads the
+ * pixels back against the manifest (pixels.ts), so a hand-written manifest
+ * cannot claim what the film does not show.
+ *
+ * A final run uses the committed golden still, ledger, registry and type rules
+ * only: an override path is refused with --final, and recorded in the report
+ * when used on a draft run.
  *
  * Rule that outranks all others here: a check that cannot be measured FAILS. Any
  * missing input (no manifest, no brief where one is needed, no golden still, an
@@ -14,11 +20,19 @@
  * Measurement goes through an injected `Measure`, so the logic is tested with
  * fakes (check.test.ts) and against real ffmpeg (check.int.test.ts).
  */
+import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
 import {
   captionProblems,
+  beatHoldProblems,
+  captionPresenceProblem,
   computeShots,
+  endcardStartFromPixels,
+  evaluateLength,
+  missingVoiceProblem,
+  requiredPartProblem,
+  shotsCutoff,
   evaluateCaptions,
   evaluateCopy,
   evaluateVerdictWords,
@@ -28,20 +42,34 @@ import {
   evaluateReview,
   evaluateSafeArea,
   judgeLoudness,
+  numberProblems,
   round,
   shortHolds,
   silentFilmDeclared,
+  voiceoverRequired,
   type ReviewFile,
 } from './evaluate'
-import { appendLedgerEntry, buildLedgerEntry, comparedCount, findRepeat, readLedger, type LedgerEntry } from './ledger'
+import { appendLedgerEntry, buildLedgerEntry, comparedCount, findRepeat, readLedger, repeatProblem, unusedCombinations, type LedgerEntry } from './ledger'
 import {
   MANIFEST_FACTORY,
   formatManifestIssues,
   parseManifestJson,
+  safeSlug,
   type Manifest,
 } from './manifest'
 import { measure as realMeasure, type Measure, type ProbeResult } from './measure'
-import { evaluateTechniques, loadTechniqueRegistry, type TechniqueRegistry } from './techniques'
+import { checkName } from './phases'
+import {
+  boxClaims,
+  captionsWithoutBoxes,
+  claimConfirmed,
+  createPixelProbe,
+  gateFindings,
+  listedFigures,
+  unlistedFigures,
+  type PixelProbe,
+} from './pixels'
+import { evaluateTechniques, loadTechniqueRegistry, techniqueProblems, type TechniqueRegistry } from './techniques'
 import {
   FILM_LEDGER_PATH,
   LEDGER_WINDOW,
@@ -80,17 +108,30 @@ export interface CheckOptions {
   golden?: string
   /** Defaults to `<name>.review.json` beside the MP4. */
   reviewPath?: string
-  /** Defaults to data/studio/film-ledger.jsonl. */
+  /** Defaults to data/studio/film-ledger.jsonl. Refused with `final`. */
   ledgerPath?: string
   /** On a final pass, append the film to the ledger (default true). */
   recordInLedger?: boolean
+  /** Refused with `final`. */
   typesPath?: string
+  /** Refused with `final`. */
   registryPath?: string
 }
 
+/** The four paths a final run may not override: the golden still, the ledger, the registry, the type rules. */
+export const FINAL_LOCKED_OPTIONS = ['golden', 'ledgerPath', 'registryPath', 'typesPath'] as const
+
 export interface CheckDeps {
   measure?: Measure
+  /** Check 17's OCR and render gate. Default: python3 + opencv + tesseract. */
+  pixels?: PixelProbe
   now?: () => Date
+  /**
+   * Test seam only (never reachable from the command line): stand-in paths for
+   * the golden still, ledger, registry and type rules, allowed on a final run
+   * so the tests can record into a scratch ledger.
+   */
+  testPaths?: { golden?: string; ledgerPath?: string; registryPath?: string; typesPath?: string }
 }
 
 export interface CheckReport {
@@ -103,6 +144,8 @@ export interface CheckReport {
   sha256: string | null
   checks: CheckResult[]
   ledger: { path: string; appended: boolean; entry: LedgerEntry } | null
+  /** Override paths this run used instead of the committed ones (never on a final run). */
+  overrides: Record<string, string>
 }
 
 interface Body {
@@ -125,6 +168,8 @@ class Ctx {
   manifestProblem = ''
   briefPath: string | null = null
   brief: Record<string, unknown> | null = null
+  /** sha256 of the brief file's bytes, as read. */
+  briefSha256: string | null = null
   briefProblem = ''
   types: VideoTypesFile | null = null
   typesProblem = ''
@@ -158,7 +203,9 @@ class Ctx {
     if (explicit || existsSync(candidate)) {
       this.briefPath = candidate
       try {
-        const raw = JSON.parse(readFileSync(candidate, 'utf8')) as unknown
+        const bytes = readFileSync(candidate)
+        this.briefSha256 = createHash('sha256').update(bytes).digest('hex')
+        const raw = JSON.parse(bytes.toString('utf8')) as unknown
         if (raw && typeof raw === 'object' && !Array.isArray(raw)) this.brief = raw as Record<string, unknown>
         else this.briefProblem = `${candidate} is not a JSON object`
       } catch (e) {
@@ -166,6 +213,7 @@ class Ctx {
       }
     }
 
+    if (!this.brief && !this.briefProblem) this.briefProblem = `no brief beside the film (${candidate})`
     try {
       this.types = loadVideoTypes(this.opts.typesPath)
     } catch (e) {
@@ -226,6 +274,21 @@ class Ctx {
     })
   }
 
+  /**
+   * Where the pixels show the end card starting (evaluate.ts
+   * endcardStartFromPixels), measured once for checks 5 and 12. Null when the
+   * manifest has no end card or the golden probe frame is not the cream card.
+   */
+  endcardFromPixels(): Promise<number | null> {
+    return this.once('endcardFromPixels', async () => {
+      const ec = this.manifest?.endcard
+      if (!ec) return null
+      const probeT = ec.call + T.endcard.callProbeOffsetSeconds
+      const fractions = await this.measure.creamFractions(this.opts.mp4Path, Math.max(0, probeT - 8), probeT + 0.05)
+      return endcardStartFromPixels(fractions, probeT)
+    })
+  }
+
   noManifest(expected: CheckValue): Body {
     return bad(null, expected, `cannot be measured: no valid manifest (${this.manifestProblem})`)
   }
@@ -233,22 +296,39 @@ class Ctx {
   noRules(expected: CheckValue): Body {
     return bad(null, expected, `cannot be measured: ${this.rulesProblem}`)
   }
+
+  /** Does this film need a voiceover (its type, or its brief's spec_rules.voiceover)? */
+  voiceRequired(): boolean {
+    return voiceoverRequired(this.rules, this.brief)
+  }
 }
 
 // ---------------------------------------------------------------------------
 // The checks
 
 async function provenance(c: Ctx): Promise<Body> {
-  const expected = { manifest: 'present and valid', sha256: 'equals manifest.video.sha256', factory: MANIFEST_FACTORY }
+  const expected = { manifest: 'present and valid', sha256: 'equals manifest.video.sha256', briefSha256: 'equals manifest.briefSha256', factory: MANIFEST_FACTORY }
   const m = c.manifest
   if (!m) return c.noManifest(expected)
   const actual = await c.sha()
   const problems: string[] = []
   if (actual !== m.video.sha256) problems.push(`the file's sha256 ${actual.slice(0, 12)} differs from the manifest's ${m.video.sha256.slice(0, 12)}`)
   if (m.factory !== MANIFEST_FACTORY) problems.push(`factory is "${m.factory}", not "${MANIFEST_FACTORY}"`)
-  const briefType = c.brief?.video_type
-  if (typeof briefType === 'string' && briefType !== m.videoType) problems.push(`the brief says video_type "${briefType}" but the manifest says "${m.videoType}"`)
-  return verdict(problems, { sha256: actual, manifestSha256: m.video.sha256, factory: m.factory, videoType: m.videoType }, expected, `hash matches, built by ${m.factory}`)
+  // The brief the film was rendered from, unchanged since.
+  if (!c.brief || !c.briefSha256) problems.push(`no brief to hold the film to: ${c.briefProblem}`)
+  else {
+    if (c.briefSha256 !== m.briefSha256) problems.push(`the brief's sha256 ${c.briefSha256.slice(0, 12)} differs from the one the film was rendered from (${m.briefSha256.slice(0, 12)}): the brief changed after the render`)
+    const briefType = c.brief.video_type
+    if (briefType !== m.videoType) problems.push(`the brief says video_type ${JSON.stringify(briefType ?? null)} but the manifest says "${m.videoType}"`)
+    const slugFrom = typeof c.brief.slug === 'string' ? c.brief.slug : typeof c.brief.title === 'string' ? c.brief.title : ''
+    if (slugFrom && safeSlug(slugFrom) !== m.slug) problems.push(`the manifest's slug "${m.slug}" is not the brief's ("${safeSlug(slugFrom)}")`)
+  }
+  return verdict(
+    problems,
+    { sha256: actual, manifestSha256: m.video.sha256, briefSha256: c.briefSha256, manifestBriefSha256: m.briefSha256, factory: m.factory, videoType: m.videoType, slug: m.slug },
+    expected,
+    `hash matches, brief unchanged since the render, built by ${m.factory}`,
+  )
 }
 
 async function format(c: Ctx): Promise<Body> {
@@ -275,13 +355,8 @@ async function length(c: Ctx): Promise<Body> {
   const expected = { min_s: r.min_s, max_s: r.max_s, hard_max_s: r.hard_max_s }
   const p = await c.probe()
   const d = p.duration
-  const problems: string[] = []
   const reason = typeof c.brief?.length_reason === 'string' ? c.brief.length_reason.trim() : ''
-  if (d < r.min_s) problems.push(`runs ${round(d)}s, under the ${r.min_s}s minimum`)
-  if (d > r.hard_max_s) problems.push(`runs ${round(d)}s, over the ${r.hard_max_s}s hard maximum`)
-  else if (d > r.max_s && reason === '') {
-    problems.push(`runs ${round(d)}s, over ${r.max_s}s, with no length_reason in the brief${c.brief ? '' : ` (${c.briefProblem || 'no brief supplied'})`}`)
-  }
+  const problems = evaluateLength(d, r, reason).map((x) => (x.includes('length_reason') && !c.brief ? `${x} (${c.briefProblem || 'no brief supplied'})` : x))
   return verdict(problems, { duration: round(d), length_reason: reason || null }, expected, `${round(d)}s is inside ${r.min_s} to ${r.max_s}s${d > r.max_s ? ' with a length_reason' : ''}`)
 }
 
@@ -313,15 +388,15 @@ async function holds(c: Ctx): Promise<Body> {
   const cuts = await c.once('cuts', () => c.measure.sceneCuts(c.opts.mp4Path, T.sceneCutScore))
   const beats = m.beats.map((b) => ({ id: b.id, duration: round(b.end - b.start) }))
   const shortBeats = shortHolds(beats, r.min_hold_s)
-  const { shots, ignoredCuts } = computeShots(cuts, p.duration, m.endcard ? m.endcard.start : null)
+  const beatProblems = beatHoldProblems(m.beats, r.min_hold_s)
+  // The end card start the PIXELS support, not the manifest's word alone (evaluate.ts shotsCutoff).
+  const measuredStart = m.endcard ? await c.endcardFromPixels() : null
+  const { shots, ignoredCuts } = computeShots(cuts, p.duration, shotsCutoff(m.endcard ? m.endcard.start : null, measuredStart))
   const shortShots = shortHolds(shots, r.min_hold_s)
-  const problems = [
-    ...shortBeats.map((b) => `beat "${b.id}" holds ${b.duration}s`),
-    ...shortShots.map((s) => `shot ${s.start}s to ${s.end}s holds ${s.duration}s`),
-  ]
+  const problems = [...beatProblems, ...shortShots.map((s) => `shot ${s.start}s to ${s.end}s holds ${s.duration}s (minimum ${r.min_hold_s}s)`)]
   const shortest = shots.length ? Math.min(...shots.map((s) => s.duration)) : null
   return verdict(
-    problems.map((x) => `${x} (minimum ${r.min_hold_s}s)`),
+    problems,
     { beats: beats.length, shortBeats: shortBeats.map((b) => b.id), shots: shots.length, shortestShot: shortest, shortShots: shortShots.map((s) => `${s.start}-${s.end}`), cuts: cuts.map((t) => round(t)), endcardWordPops: ignoredCuts },
     expected,
     `${beats.length} beats and ${shots.length} shots, all at least ${r.min_hold_s}s${ignoredCuts.length ? ` (${ignoredCuts.length} end card cut(s) ignored)` : ''}`,
@@ -343,18 +418,23 @@ async function motion(c: Ctx): Promise<Body> {
 
 async function sound(c: Ctx): Promise<Body> {
   const a = T.audio
-  const expected = { lufs: `${a.lufsMin} to ${a.lufsMax}`, truePeakDbAtMost: a.truePeakMaxDb }
+  const expected = { lufs: `${a.lufsMin} to ${a.lufsMax}`, truePeakDbAtMost: a.truePeakMaxDb, voiceover: 'present when the type or brief asks for one' }
   const p = await c.probe()
   const m = c.manifest
+  if (!m) return bad({ audioStream: p.hasAudio }, expected, `cannot be measured: no valid manifest (${c.manifestProblem})`)
+  if (!c.rules) return c.noRules(expected)
+  const required = c.voiceRequired()
+  const voiceProblem = missingVoiceProblem(m.voice, required, m.videoType)
   if (!p.hasAudio) {
-    if (m && silentFilmDeclared(m.voice, m.audio)) return done({ audioStream: false }, expected, 'a silent film, declared silent in the manifest, with no voice')
-    const why = !m ? `no valid manifest to say the film is silent (${c.manifestProblem})` : m.voice ? 'the film has a voiceover' : 'the manifest does not declare the film silent'
-    return bad({ audioStream: false }, expected, `no audio stream in the file; ${why}`)
+    if (silentFilmDeclared(m.voice, m.audio, required)) return done({ audioStream: false, voiceRequired: false }, expected, 'a silent film, declared silent in the manifest, of a type and brief that ask for no voiceover')
+    const why = voiceProblem ?? (m.voice ? 'the film has a voiceover' : required ? 'the type or brief asks for a voiceover' : 'the manifest does not declare the film silent')
+    return bad({ audioStream: false, voiceRequired: required }, expected, `no audio stream in the file; ${why}`)
   }
-  if (m && m.audio.silent) return bad({ audioStream: true }, expected, 'the manifest says the film is silent but the file has an audio stream')
+  if (m.audio.silent) return bad({ audioStream: true }, expected, 'the manifest says the film is silent but the file has an audio stream')
   const l = await c.once('loudness', () => c.measure.loudness(c.opts.mp4Path))
   const j = judgeLoudness(l.integratedLufs, l.truePeakDb)
-  return verdict(j.problems, { integratedLufs: l.integratedLufs, truePeakDb: l.truePeakDb }, expected, `${l.integratedLufs} LUFS, true peak ${l.truePeakDb} dBTP`)
+  const problems = [...(voiceProblem ? [voiceProblem] : []), ...j.problems]
+  return verdict(problems, { integratedLufs: l.integratedLufs, truePeakDb: l.truePeakDb, voiceRequired: required, voice: m.voice !== null }, expected, `${l.integratedLufs} LUFS, true peak ${l.truePeakDb} dBTP${m.voice ? ', with its voiceover' : ''}`)
 }
 
 async function captions(c: Ctx): Promise<Body> {
@@ -362,30 +442,45 @@ async function captions(c: Ctx): Promise<Body> {
   const k = T.caption
   const expected = { maxWords: k.maxWords, minSeconds: k.minSeconds, syncSeconds: k.syncSeconds, everySpokenWordShown: true }
   if (!m) return c.noManifest(expected)
-  if (m.voice === null) return done({ voice: null }, expected, 'no voiceover, so there are no spoken words to caption')
+  if (!c.rules) return c.noRules(expected)
+  const required = c.voiceRequired()
+  const presence = captionPresenceProblem(m.voice, m.captions, required, m.videoType)
+  if (presence) return bad({ voice: m.voice ? m.voice.words.length : null, captions: m.captions.length }, expected, presence)
+  if (m.voice === null) return done({ voice: null }, expected, 'a type and brief with no voiceover, so there are no spoken words to caption')
   const f = evaluateCaptions(m.voice, m.captions)
   return verdict(captionProblems(f), { ...f }, expected, `${f.captions} captions cover all ${f.spokenWords} spoken words, in sync`)
 }
 
 async function numbers(c: Ctx): Promise<Body> {
   const m = c.manifest
-  const expected = { everyFigureHasARow: true, rowFields: 'source, window, geography, definition' }
+  const expected = { everyFigureHasARowThatIsThatFigure: true, spokenFiguresShownAsSourcedFigures: true, rowFields: 'source, window, geography, definition' }
   if (!m) return c.noManifest(expected)
-  const f = evaluateNumbers(m.texts, m.captions, m.numbers)
-  const problems = [...f.unmatched.map((t) => `figure "${t}" has no numbers row`), ...f.incompleteRows]
-  return verdict(problems, { ...f }, expected, f.tokens.length ? `${f.tokens.length} figure(s), each with a complete numbers row` : 'no figures on screen')
+  const f = evaluateNumbers(m.texts, m.captions, m.numbers, m.voice)
+  return verdict(
+    numberProblems(f),
+    { ...f },
+    expected,
+    f.tokens.length || f.spoken.length
+      ? `${f.tokens.length} figure(s) on screen and ${f.spoken.length} said in words, each with its own complete numbers row`
+      : 'no figures on screen or in the voice',
+  )
 }
 
 async function copy(c: Ctx): Promise<Body> {
   const m = c.manifest
-  const expected = { dashes: 0, bannedPhrases: 0 }
+  const expected = { dashes: 0, bannedPhrases: 0, fairHousingFlags: 0, addresses: 0, names: 0 }
   if (!m) return c.noManifest(expected)
   if (!c.types) return bad(null, expected, `cannot be measured: ${c.typesProblem}`)
   const hits = [
-    ...evaluateCopy(m.texts, m.captions, m.voice, bannedPhrases(c.types)),
+    ...evaluateCopy(m.texts, m.captions, m.voice, bannedPhrases(c.types), c.types.fair_housing_flags),
     ...evaluateVerdictWords(m.numbers, m.texts, m.captions, m.voice),
   ]
-  return verdict(hits.map((h) => `${h.what} in ${h.where}`), { hits: hits.map((h) => `${h.what} in ${h.where}`) }, expected, 'no dashes, no banned phrases, and no verdict words that disagree with a months-of-supply figure')
+  return verdict(
+    hits.map((h) => `${h.what} in ${h.where}`),
+    { hits: hits.map((h) => `${h.what} in ${h.where}`) },
+    expected,
+    'no dashes, banned phrases, fair housing flags, addresses or names, and no verdict words that disagree with a months-of-supply figure',
+  )
 }
 
 async function safeArea(c: Ctx): Promise<Body> {
@@ -403,17 +498,20 @@ function goldenPathFor(c: Ctx): string {
 async function endCard(c: Ctx): Promise<Body> {
   const m = c.manifest
   const e = T.endcard
-  const expected = { order: 'start, Quality, Local, Service, Call now, out', wordPopsAtMost: e.wordPopBudgetSeconds, callHoldAtLeast: e.callHoldMinSeconds, ssimAtLeast: e.ssimMin }
+  const expected = { order: 'start, Quality, Local, Service, Call now, out', startIsTheEndCardBeat: true, startNotBeforeThePixels: true, wordPopsAtMost: e.wordPopBudgetSeconds, callHoldAtLeast: e.callHoldMinSeconds, ssimAtLeast: e.ssimMin }
   if (!m) return c.noManifest(expected)
   if (!c.rules) return c.noRules(expected)
   if (!m.endcard) {
-    return c.rules.requires_end_card
-      ? bad({ endcard: null }, expected, `the manifest has no end card and ${m.videoType} requires one`)
-      : done({ endcard: null }, expected, `${m.videoType} does not require an end card`)
+    const missing = requiredPartProblem('end card', false, c.rules.requires_end_card, m.videoType)
+    return missing ? bad({ endcard: null }, expected, missing) : done({ endcard: null }, expected, `${m.videoType} does not require an end card`)
   }
   const p = await c.probe()
   const timing = evaluateEndcardTiming(m.endcard, m.beats, p.videoDuration)
   const problems = [...timing.problems]
+  // The card's start as the pixels show it: a start claimed earlier would let check 5 skip real cuts.
+  const fromPixels = await c.endcardFromPixels()
+  if (fromPixels === null) problems.push(`the frame at Call now + ${e.callProbeOffsetSeconds}s is not the cream end card`)
+  else if (m.endcard.start < fromPixels - 0.1) problems.push(`the manifest starts the end card at ${round(m.endcard.start)}s but the pixels show it from ${round(fromPixels)}s`)
   const golden = goldenPathFor(c)
   let score: number | null = null
   if (!existsSync(golden)) {
@@ -425,7 +523,7 @@ async function endCard(c: Ctx): Promise<Body> {
   }
   return verdict(
     problems,
-    { wordsSpan: timing.wordsSpan, callHold: timing.callHold, ssim: score === null ? null : round(score, 4), golden },
+    { wordsSpan: timing.wordsSpan, callHold: timing.callHold, startFromPixels: fromPixels, ssim: score === null ? null : round(score, 4), golden },
     expected,
     `end card in order, words ${timing.wordsSpan}s, Call now held ${timing.callHold}s, SSIM ${score === null ? 'n/a' : round(score, 4)}`,
   )
@@ -437,9 +535,8 @@ async function loop(c: Ctx): Promise<Body> {
   if (!m) return c.noManifest(expected)
   if (!c.rules) return c.noRules(expected)
   if (!m.loop) {
-    return c.rules.requires_loop
-      ? bad({ loop: null }, expected, `the manifest has no loop and ${m.videoType} requires one`)
-      : done({ loop: null }, expected, `${m.videoType} does not require a loop`)
+    const missing = requiredPartProblem('loop', false, c.rules.requires_loop, m.videoType)
+    return missing ? bad({ loop: null }, expected, missing) : done({ loop: null }, expected, `${m.videoType} does not require a loop`)
   }
   const score = await c.measure.ssim(await c.lastFrame(), await c.frame(0))
   return verdict(
@@ -483,12 +580,7 @@ async function techniquesRan(c: Ctx): Promise<Body> {
   }
   const registry = loadRegistry(c)
   const ev = evaluateTechniques(briefList, m.techniques, registry)
-  const problems: string[] = []
-  if (ev.noCategories) problems.push('registry has no categories')
-  if (briefList.length === 0) problems.push('the brief names no techniques')
-  if (ev.notRun.length) problems.push(`brief technique(s) the renderer never ran: ${ev.notRun.join(', ')}`)
-  if (ev.unknown.length) problems.push(`manifest technique(s) not in the registry: ${ev.unknown.join(', ')}`)
-  if (!ev.noCategories && ev.missingCategories.length) problems.push(`no ${ev.missingCategories.join(', ')} technique ran`)
+  const problems = techniqueProblems(briefList, m.techniques, registry)
   return verdict(
     problems,
     { briefTechniques: briefList, ran: m.techniques, byCategory: ev.byCategory as CheckValue, notRun: ev.notRun, missingCategories: ev.missingCategories },
@@ -499,11 +591,11 @@ async function techniquesRan(c: Ctx): Promise<Body> {
 
 async function notARepeat(c: Ctx): Promise<Body> {
   const m = c.manifest
-  const expected = { notSameHookAndSceneSetAsLast: LEDGER_WINDOW, sameVideoType: true }
+  const expected = { notSameHookAndSceneSetAsLast: LEDGER_WINDOW, sameVideoType: true, revisionsOfTheSameSlug: 'not a repeat' }
   if (!m) return c.noManifest(expected)
   const registry = loadRegistry(c)
   const sha = await c.sha()
-  const built = buildLedgerEntry({ sha256: sha, videoType: m.videoType, techniques: m.techniques, checkedAt: c.now().toISOString() }, registry)
+  const built = buildLedgerEntry({ sha256: sha, slug: m.slug, videoType: m.videoType, techniques: m.techniques, checkedAt: c.now().toISOString() }, registry)
   if (!built.ok) return bad({ hookDevice: null, sceneSet: [] }, expected, `cannot be compared: ${built.reason}`)
   const ledgerPath = c.opts.ledgerPath ?? FILM_LEDGER_PATH
   const ledger = readLedger(ledgerPath)
@@ -511,15 +603,88 @@ async function notARepeat(c: Ctx): Promise<Body> {
   c.ledgerEntry = built.entry
   const repeat = findRepeat(built.entry, ledger.entries)
   const compared = comparedCount(built.entry, ledger.entries)
-  const measured = { hookDevice: built.entry.hookDevice, sceneSet: built.entry.sceneSet, compared, repeatOf: repeat ? repeat.sha256.slice(0, 12) : null }
-  if (repeat) {
-    return bad(measured, expected, `same hook device "${repeat.hookDevice}" and scene set [${repeat.sceneSet.join(', ')}] as film ${repeat.sha256.slice(0, 12)} (${repeat.checkedAt}), one of the last ${LEDGER_WINDOW} ${m.videoType} films`)
+  const measured = { hookDevice: built.entry.hookDevice, sceneSet: built.entry.sceneSet, slug: m.slug, compared, repeatOf: repeat ? repeat.sha256.slice(0, 12) : null }
+  const problem = repeatProblem(built.entry, ledger.entries, registry)
+  if (problem) return bad({ ...measured, unusedReadyCombinations: unusedCombinations(built.entry, ledger.entries, registry) }, expected, problem)
+  return done(measured, expected, `hook "${built.entry.hookDevice}" with scenes [${built.entry.sceneSet.join(', ')}] differs from the last ${compared} other ${m.videoType} film(s)`)
+}
+
+async function pixels(c: Ctx, probe: PixelProbe): Promise<Body> {
+  const m = c.manifest
+  const expected = { renderGate: 'passes (LENGTH is check 3)', claimedTextsReadOffTheirBoxes: 'all', unlistedFiguresInThePixels: 0, ocrTooling: 'installed' }
+  if (!m) return c.noManifest(expected)
+  if (!c.rules) return c.noRules(expected)
+  const missing = await probe.missingTooling()
+  if (missing) return bad({ ocrTooling: 'missing' }, expected, `cannot be measured, so it fails: ${missing}`)
+  const words = m.voice?.words ?? []
+  const silent = m.voice === null && m.audio.silent && !c.voiceRequired()
+  const gate = await probe.gate(c.opts.mp4Path, {
+    videoType: m.videoType,
+    silent,
+    voStart: words.length ? words[0].start : null,
+    voEnd: words.length ? words[words.length - 1].end : null,
+  })
+  const { kept, dropped } = gateFindings(gate.fails, m, c.rules)
+  const problems = kept.map((f) => `render gate: ${f}`)
+
+  // Every claimed text, read off its own box at its own time.
+  const claims = boxClaims(m)
+  const notShown: string[] = []
+  for (const claim of claims) {
+    const reading = await probe.readBox(c.opts.mp4Path, claim.t, claim.box, claim.mode)
+    if (!claimConfirmed(reading, claim.text)) notShown.push(`${claim.kind} "${claim.text}" at ${claim.t}s (read "${reading.slice(0, 60)}")`)
   }
-  return done(measured, expected, `hook "${built.entry.hookDevice}" with scenes [${built.entry.sceneSet.join(', ')}] differs from the last ${compared} ${m.videoType} film(s)`)
+  problems.push(...notShown.map((x) => `the pixels do not show ${x}`))
+  const boxless = captionsWithoutBoxes(m)
+  problems.push(...boxless.map((t) => `caption "${t}" has no drawn box in texts, so the pixels cannot confirm it`))
+
+  // Figures the pixels show that the manifest does not list.
+  const unlisted = unlistedFigures(gate.samples, listedFigures(m), m.endcard ? m.endcard.start : null)
+  problems.push(...unlisted.map((u) => `the pixels show a figure the manifest does not list: ${u}`))
+
+  return verdict(
+    problems,
+    {
+      gateFails: kept,
+      gateDropped: dropped,
+      claims: claims.length,
+      confirmed: claims.length - notShown.length,
+      notShown,
+      captionsWithoutBoxes: boxless,
+      unlistedFigures: unlisted,
+      samples: gate.samples.length,
+    },
+    expected,
+    `render gate passed${dropped.length ? ` (${dropped.length} finding(s) left to other checks)` : ''}; all ${claims.length} claimed texts read off their boxes; no unlisted figure in ${gate.samples.length} OCR samples`,
+  )
 }
 
 // ---------------------------------------------------------------------------
 // Orchestration
+
+/** Every check, by its number in the contract (phases.ts classifies each as preflight or file-only). */
+const RUNNERS: Record<number, (c: Ctx, probe: PixelProbe) => Promise<Body>> = {
+  1: provenance,
+  2: format,
+  3: length,
+  4: hook,
+  5: holds,
+  6: motion,
+  7: sound,
+  8: captions,
+  9: numbers,
+  10: copy,
+  11: safeArea,
+  12: endCard,
+  13: loop,
+  14: review,
+  15: techniquesRan,
+  16: notARepeat,
+  17: pixels,
+}
+
+/** The check numbers video:check runs, in order (14 only with final). */
+export const CHECK_IDS: readonly number[] = Object.keys(RUNNERS).map(Number).sort((a, b) => a - b)
 
 async function runCheck(id: number, name: string, fn: () => Promise<Body>): Promise<CheckResult> {
   try {
@@ -532,26 +697,20 @@ async function runCheck(id: number, name: string, fn: () => Promise<Body>): Prom
 /** Open the MP4, measure it, and judge it against the contract. */
 export async function checkVideo(opts: CheckOptions, deps: CheckDeps = {}): Promise<CheckReport> {
   const now = deps.now ?? (() => new Date())
-  const c = new Ctx(opts, deps.measure ?? realMeasure, now)
+  const overrides: Record<string, string> = {}
+  for (const key of FINAL_LOCKED_OPTIONS) {
+    const v = opts[key]
+    if (typeof v === 'string' && v !== '') overrides[key] = v
+  }
+  if (opts.final && Object.keys(overrides).length) {
+    throw new Error(`a final check uses the committed golden still, ledger, registry and type rules; refusing ${Object.keys(overrides).join(', ')} with final`)
+  }
+  const effective: CheckOptions = { ...opts, ...(deps.testPaths ?? {}) }
+  const c = new Ctx(effective, deps.measure ?? realMeasure, now)
   c.load()
+  const probe = deps.pixels ?? createPixelProbe()
 
-  const plan: Array<[number, string, () => Promise<Body>]> = [
-    [1, 'Provenance', () => provenance(c)],
-    [2, 'Format', () => format(c)],
-    [3, 'Length', () => length(c)],
-    [4, 'Hook', () => hook(c)],
-    [5, 'Holds', () => holds(c)],
-    [6, 'Motion', () => motion(c)],
-    [7, 'Sound', () => sound(c)],
-    [8, 'Captions', () => captions(c)],
-    [9, 'Numbers', () => numbers(c)],
-    [10, 'Copy', () => copy(c)],
-    [11, 'Safe area', () => safeArea(c)],
-    [12, 'End card', () => endCard(c)],
-    [13, 'Loop', () => loop(c)],
-  ]
-  if (opts.final) plan.push([14, 'Review', () => review(c)])
-  plan.push([15, 'Techniques ran', () => techniquesRan(c)], [16, 'Not a repeat', () => notARepeat(c)])
+  const plan = CHECK_IDS.filter((id) => id !== 14 || opts.final).map((id) => [id, checkName(id), () => RUNNERS[id](c, probe)] as const)
 
   const checks: CheckResult[] = []
   for (const [id, name, fn] of plan) checks.push(await runCheck(id, name, fn))
@@ -566,7 +725,7 @@ export async function checkVideo(opts: CheckOptions, deps: CheckDeps = {}): Prom
 
   let ledger: CheckReport['ledger'] = null
   if (opts.final && pass && opts.recordInLedger !== false && c.ledgerEntry) {
-    const path = opts.ledgerPath ?? FILM_LEDGER_PATH
+    const path = effective.ledgerPath ?? FILM_LEDGER_PATH
     ledger = { path, appended: appendLedgerEntry(c.ledgerEntry, path), entry: c.ledgerEntry }
   }
 
@@ -579,5 +738,6 @@ export async function checkVideo(opts: CheckOptions, deps: CheckDeps = {}): Prom
     sha256: sha,
     checks,
     ledger,
+    overrides,
   }
 }

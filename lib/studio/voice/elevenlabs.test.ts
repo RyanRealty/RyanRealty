@@ -199,6 +199,25 @@ describe('synthesizeWithTimestamps: failures', () => {
     expect(result.audio.length).toBeGreaterThan(0)
   })
 
+  it('aborts a body that stalls after the headers, and retries (the timeout covers the body read)', async () => {
+    // review finding: the timer was cleared before res.text(), so a stalled body hung the render
+    let calls = 0
+    const stalling: typeof globalThis.fetch = async (_url, init) => {
+      calls++
+      if (calls > 1) return ok()
+      const signal = (init as RequestInit).signal!
+      const body = new ReadableStream({
+        start(controller) {
+          signal.addEventListener('abort', () => controller.error(new Error('the body was aborted')))
+        },
+      })
+      return new Response(body, { status: 200 })
+    }
+    const result = await synthesizeWithTimestamps({ text: 'Okay', voiceId: VOICE }, { apiKey: KEY, fetch: stalling, sleep: noSleep, timeoutMs: 50 })
+    expect(calls).toBe(2)
+    expect(result.audio.length).toBeGreaterThan(0)
+  })
+
   it('never puts the key in an error', async () => {
     const fetch = mockFetch(failing(422, `bad request for key ${KEY} and more`))
     const error = await synthesizeWithTimestamps({ text: 'Okay', voiceId: VOICE, outputFormats: ['pcm_48000'] }, { apiKey: KEY, fetch }).catch((e) => e)

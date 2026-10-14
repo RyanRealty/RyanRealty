@@ -1,6 +1,12 @@
 {
  "video_type": "buyer_ad",
  "title": "Bend: go in with a plan",
+ "creative": {
+  "feel": "satisfying",
+  "constraint": "one figure per beat, navy and cream only, every move eased on the brand curve",
+  "lineage": "Swiss International Typographic Style posters (Josef Muller-Brockmann)",
+  "one_sentence": "Bend's 3.5 months of supply, read on a ruler, tells a buyer to go in with a plan."
+ },
  "hook": {
   "text": "3.5 months of homes for sale",
   "time_s": 0.5
@@ -26,6 +32,15 @@
     "fetched_at": "2026-10-13T23:59:44.654Z",
     "computed_at": "2026-10-13T18:22:17.097625+00:00"
    }
+  },
+  {
+   "key": "mos_seller_max",
+   "on_screen": "4",
+   "value": 4,
+   "definition": "The months-of-supply threshold under which a market favors sellers: at or under 4 months is a seller's market, 4 to 6 balanced, 6 or more a buyer's market (CLAUDE.md §0 market-data thresholds; lib/market/classify.ts MOS_SELLER_MAX = 4). A fixed threshold, not a measurement.",
+   "window": "none: a fixed threshold, not a measurement",
+   "geography": "every market (the same threshold for every place)",
+   "source": "lib/market/classify.ts MOS_SELLER_MAX (CLAUDE.md §0: months of supply <= 4 seller's, 4 to 6 balanced, >= 6 buyer's; enforced by scripts/check-market-formula.mjs)"
   }
  ],
  "footage": [

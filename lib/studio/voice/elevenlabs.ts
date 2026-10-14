@@ -244,8 +244,20 @@ export async function synthesizeWithTimestamps(options: SynthesizeOptions, deps:
         })
         continue
       }
-      clearTimeout(timer)
-      const raw = await res.text()
+      // The timeout covers the body too: a server that sends headers and then
+      // stalls must not hold the render forever.
+      let raw: string
+      try {
+        raw = await res.text()
+      } catch (cause) {
+        lastError = new ElevenLabsError('ElevenLabs response body did not arrive', {
+          status: res.status,
+          detail: safeDetail(cause instanceof Error ? cause.message : String(cause), apiKey),
+        })
+        continue
+      } finally {
+        clearTimeout(timer)
+      }
       if (!res.ok) {
         const error = new ElevenLabsError(`ElevenLabs HTTP ${res.status} (${format}, ${model})`, {
           status: res.status,

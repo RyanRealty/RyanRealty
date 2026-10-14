@@ -90,7 +90,7 @@ describe('planFilm on the sample (Bend months of supply)', () => {
       'has 3.5 months',
       'of homes for sale',
       'right now.',
-      'Under four months,',
+      'Under 4 months,',
       'sellers still have',
       'the edge',
       'so go',
@@ -121,9 +121,18 @@ describe('planFilm on the sample (Bend months of supply)', () => {
     expect(dollar.proofs).toEqual([{ t: 1, cue: 'hook-number', text: '3.5' }])
   })
 
-  it('carries the brief row and a row for every authored digit beside it (scale marks, as-of date)', () => {
-    expect(film.numbers.map((n) => n.onScreen)).toEqual(['3.5', 'As of Oct 13, 2026', '4 mo', '6 mo', '10 mo'])
+  it('carries the brief rows and a row for every authored digit beside them (ticks, scale marks, as-of date)', () => {
+    expect(film.numbers.map((n) => n.onScreen)).toEqual(['3.5', '4', 'As of Oct 13, 2026', '6', '4 mo', '6 mo', '10 mo'])
     for (const n of film.numbers) for (const k of ['source', 'window', 'geography', 'definition'] as const) expect(n[k]?.trim()).toBeTruthy()
+  })
+
+  it('ties each authored row to the cues that draw it, and leaves brief rows free', () => {
+    const cues = Object.fromEntries(film.numbers.map((n) => [n.onScreen, n.cues ?? null]))
+    expect(cues['3.5']).toBeNull()
+    expect(cues['4']).toBeNull()
+    expect(cues['As of Oct 13, 2026']).toEqual(['hook-number', 'supply-meter'])
+    expect(cues['4 mo']).toEqual(['supply-meter'])
+    expect(cues['6']).toEqual(['supply-meter'])
   })
 
   it('passes the §0 backstop, and an unsourced number on a card is caught', () => {
@@ -172,6 +181,53 @@ describe('planFilm refuses what it cannot draw honestly', () => {
         b.techniques = b.techniques.filter((x: string) => x !== 'meter_fill_verdict')
       }).join(' '),
     ).toMatch(/needs a months-of-supply figure/)
+  })
+})
+
+describe('outline_draw_zoom: a place\'s recorded outline drawn on paper', () => {
+  const square: Array<[number, number]> = [[-121.32, 44.05], [-121.3, 44.05], [-121.3, 44.07], [-121.32, 44.07], [-121.32, 44.05]]
+  const around: Array<[number, number]> = [[-121.4, 44.0], [-121.22, 44.0], [-121.22, 44.12], [-121.4, 44.12], [-121.4, 44.0]]
+  type Outlines = Record<string, { subject: Array<Array<[number, number]>>; context: Array<Array<[number, number]>> | null }>
+  const withOutline = (b: Record<string, any>, t: Record<string, any>) => {
+    b.techniques = [...b.techniques, 'outline_draw_zoom']
+    b.outlines = [{ key: 'bend', geo_type: 'neighborhood', geo_slug: 'test-square', context: { geo_type: 'city', geo_slug: 'bend' }, source: 'boundaries table (test ring)' }]
+    delete t.beats[2].footage
+    delete t.beats[2].cards
+    t.beats[2].end = 9.5
+    t.cta.start = 9.5
+    t.beats[2].scene = { kind: 'outline_draw_zoom', outline: 'bend', line: 'Go in with a plan', eyebrow: 'Bend' }
+  }
+  const planWith = (mutate: (b: Record<string, any>, t: Record<string, any>) => void, outlines: Outlines = { bend: { subject: [square], context: [around] } }) => {
+    const { brief, timeline } = sample((b, t) => { withOutline(b, t); mutate(b, t) })
+    return planFilm({ brief, timeline, voice: voiceFor(timeline), footage: footageFor(timeline), scored: true, outlines })
+  }
+  const problems = (mutate: (b: Record<string, any>, t: Record<string, any>) => void, outlines?: Outlines) => {
+    try {
+      planWith(mutate, outlines)
+    } catch (e) {
+      if (e instanceof PlanError) return e.problems
+      throw e
+    }
+    return []
+  }
+
+  it('plans a map cue on cream paper, with the heading as its proof', () => {
+    const film = planWith(() => undefined)
+    const map = byKind(film.plan.cues, 'map')[0]
+    expect(map).toMatchObject({ id: 'plan-map', start: 6, line: 'Go in with a plan', eyebrow: 'Bend', zoomStart: 6.3, zoomSeconds: 1.6, drawStart: 7.26, figureKeys: [] })
+    expect(film.segments[2]).toMatchObject({ kind: 'paper', label: 'plan' })
+    const tech = film.techniques.find((x) => x.name === 'outline_draw_zoom')!
+    expect(tech.proofs).toEqual([{ t: expect.any(Number), cue: 'plan-map', text: 'Go in with a plan' }])
+    expect(figureLeaks(film.plan, film.subject)).toEqual([])
+  })
+
+  it('refuses footage under it, a missing outline row, an outline the boundaries table did not return, and a beat too short to draw it', () => {
+    expect(problems((_b, t) => { t.beats[2].footage = t.beats[1].footage })).toContain('beat "plan": outline_draw_zoom draws on cream paper; the beat takes no footage')
+    expect(problems((b) => { b.outlines = [] })).toContain('beat "plan": outline "bend" has no brief.outlines row')
+    expect(problems(() => undefined, {})).toContain('beat "plan": outline "bend" was not read from the boundaries table')
+    expect(problems((_b, t) => { t.beats[2].end = 8.6; t.cta.start = 8.6 }).join()).toMatch(/the outline draws until/)
+    // No context: the hairline draws with no camera move, a still frame to check 6.
+    expect(problems(() => undefined, { bend: { subject: [square], context: null } }).join()).toMatch(/no context to move in from/)
   })
 })
 

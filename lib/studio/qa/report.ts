@@ -42,6 +42,10 @@ export function parseArgs(argv: readonly string[]): CliArgs {
     else throw new Error(`unexpected argument ${a}`)
   }
   if (out.mp4Path === '') throw new Error('the path to the MP4 is required')
+  if (out.final) {
+    const locked = [out.golden && '--golden', out.ledgerPath && '--ledger', out.registryPath && '--registry'].filter(Boolean)
+    if (locked.length) throw new Error(`${locked.join(', ')} cannot be used with --final: a final check uses the committed golden still, ledger and registry`)
+  }
   return out
 }
 
@@ -77,6 +81,8 @@ export function formatReport(report: CheckReport, contact?: ContactResult | { er
     }
   }
   lines.push('')
+  const overrides = Object.entries(report.overrides ?? {})
+  if (overrides.length) lines.push(`overrides used (draft run only): ${overrides.map(([k, v]) => `${k}=${v}`).join(', ')}`)
   if (contact && 'error' in contact) lines.push(`contact sheet: not written (${contact.error})`)
   else if (contact) lines.push(`contact sheet: ${contact.path}${contact.labelled ? '' : ` (${contact.note ?? 'no labels'})`}`)
   if (report.ledger) lines.push(`ledger: ${report.ledger.appended ? 'added this film to' : 'this film was already in'} ${report.ledger.path}`)

@@ -11,7 +11,7 @@ const base = (techniques, extra = {}) => ({
   readRecipe: () => '# recipe\n',
   ...extra,
 })
-const ready = { file: 'a.md', category: 'scene', kind: 'code', status: 'ready', module: 'lib/studio/motion/chart.ts', test: 'lib/studio/motion/paper.test.ts' }
+const ready = { file: 'a.md', category: 'scene', kind: 'code', status: 'ready', tier: 'signature', module: 'lib/studio/motion/chart.ts', test: 'lib/studio/motion/paper.test.ts' }
 
 describe('ci:studio-techniques', () => {
   it('passes the committed registry against the real code', () => {
@@ -36,8 +36,38 @@ describe('ci:studio-techniques', () => {
   })
 
   it('refuses a planned technique with no home', () => {
-    const problems = registryProblems(base({ a: { file: 'a.md', category: 'hook', kind: 'code', status: 'planned' } }))
+    const problems = registryProblems(base({ a: { file: 'a.md', category: 'hook', kind: 'code', status: 'planned', tier: 'base' } }))
     expect(problems.join('\n')).toMatch(/planned with no "home"/)
+  })
+
+  it('accepts an approved technique only with approved_by matt, an ISO approved_on and a reel', () => {
+    const approved = { ...ready, status: 'approved', approved_by: 'matt', approved_on: '2026-10-20', reel: 'out/studio/reels/a.mp4' }
+    expect(registryProblems(base({ a: approved }))).toEqual([])
+    const out = registryProblems(base({ a: { ...approved, approved_by: 'claude', approved_on: 'last week', reel: ' ' } })).join('\n')
+    expect(out).toMatch(/approved_by is "claude", not "matt"/)
+    expect(out).toMatch(/no approved_on ISO date/)
+    expect(out).toMatch(/no reel/)
+    expect(registryProblems(base({ a: { ...ready, approved_by: 'matt' } })).join('\n')).toMatch(/carries approval fields but its status is "ready"/)
+    expect(registryProblems(base({ a: { ...approved, module: 'lib/x.ts' } })).join('\n')).toMatch(/module lib\/x\.ts does not exist/)
+  })
+
+  it('approves nothing on an agent\'s word: the committed registry has no approved technique', async () => {
+    const { readFileSync } = await import('node:fs')
+    const reg = JSON.parse(readFileSync('.claude/skills/ryan-studio/techniques/registry.json', 'utf8')).techniques
+    for (const [name, t] of Object.entries(reg)) if (t.status === 'approved') expect(t.approved_by, name).toBe('matt')
+  })
+
+  it('refuses a missing or unknown tier', () => {
+    expect(registryProblems(base({ a: { ...ready, tier: undefined } })).join('\n')).toMatch(/technique "a": no tier \(one of signature, base\)/)
+    expect(registryProblems(base({ a: { ...ready, tier: 'showpiece' } })).join('\n')).toMatch(/tier "showpiece" must be one of signature, base/)
+  })
+
+  it('carries the signature tier on the researched showpieces, and base on the rest', async () => {
+    const { readFileSync } = await import('node:fs')
+    const reg = JSON.parse(readFileSync('.claude/skills/ryan-studio/techniques/registry.json', 'utf8')).techniques
+    const signature = Object.entries(reg).filter(([, t]) => t.tier === 'signature').map(([n]) => n).sort()
+    expect(signature).toEqual(['bucket_drain', 'collision_notes', 'line_draw_riding_dot', 'map_pins_pop', 'milestone_timeline', 'one_dot_thread', 'outline_draw_zoom', 'paper_cutout_layers', 'words_become_structure'])
+    for (const name of ['eased_number_reveal', 'meter_fill_verdict', 'tiktok_caption_burn', 'dollar_first_hook', 'loop_seam_edit', 'composed_score', 'imagine_official_prompt']) expect(reg[name].tier).toBe('base')
   })
 
   it('refuses a category video:check does not know', () => {

@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { evaluateTechniques, loadTechniqueRegistry, type TechniqueRegistry } from './techniques'
+import { SIGNATURE_FLOOR_MESSAGE, evaluateTechniques, loadTechniqueRegistry, notReadyTechniques, signatureFloorProblem, techniqueProblems, unusableReason, usableTechnique, type TechniqueRegistry } from './techniques'
 
 const registry: TechniqueRegistry = {
   hasCategories: true,
@@ -93,5 +93,49 @@ describe('loadTechniqueRegistry', () => {
   it('reads the real registry without throwing', () => {
     const real = loadTechniqueRegistry()
     expect(real.categories.size).toBeGreaterThan(0)
+  })
+})
+
+describe('the approval rungs and the signature floor (Matt 2026-10-14)', () => {
+  const rungs: TechniqueRegistry = {
+    ...registry,
+    status: new Map([
+      ['dollar_first_hook', 'ready'],
+      ['subframe_motion_blur', 'ready'],
+      ['eased_number_reveal', 'approved'],
+      ['measured_drop_sync', 'planned'],
+    ]),
+    tier: new Map([['subframe_motion_blur', 'signature']]),
+  }
+  const approvedSig: TechniqueRegistry = { ...rungs, status: new Map([...rungs.status!, ['subframe_motion_blur', 'approved']]) }
+
+  it('lets a base technique run when ready or approved, and a signature only when approved', () => {
+    expect(usableTechnique('dollar_first_hook', rungs)).toBe(true)
+    expect(usableTechnique('eased_number_reveal', rungs)).toBe(true)
+    expect(usableTechnique('measured_drop_sync', rungs)).toBe(false)
+    expect(usableTechnique('subframe_motion_blur', rungs)).toBe(false)
+    expect(usableTechnique('subframe_motion_blur', approvedSig)).toBe(true)
+    expect(usableTechnique('invented', rungs)).toBe(false)
+  })
+
+  it('names why a technique cannot be used', () => {
+    expect(notReadyTechniques(['dollar_first_hook', 'subframe_motion_blur', 'measured_drop_sync'], rungs)).toEqual(['subframe_motion_blur', 'measured_drop_sync'])
+    expect(unusableReason('subframe_motion_blur', rungs)).toContain('is ready, not approved')
+    expect(unusableReason('measured_drop_sync', rungs)).toContain('is planned, not ready')
+    expect(unusableReason('invented', rungs)).toContain('not in the registry')
+  })
+
+  it('holds the floor: at least one approved signature technique, worded as a floor', () => {
+    expect(signatureFloorProblem(['dollar_first_hook', 'subframe_motion_blur'], rungs)).toBe(SIGNATURE_FLOOR_MESSAGE)
+    expect(signatureFloorProblem(['dollar_first_hook', 'subframe_motion_blur'], approvedSig)).toBeNull()
+    expect(SIGNATURE_FLOOR_MESSAGE).toContain('at least one approved signature technique')
+    expect(techniqueProblems(['dollar_first_hook', 'subframe_motion_blur', 'eased_number_reveal'], ['dollar_first_hook', 'subframe_motion_blur', 'eased_number_reveal'], rungs)).toEqual([SIGNATURE_FLOOR_MESSAGE])
+  })
+
+  it('reads tier and status from the registry file', () => {
+    const r = loadTechniqueRegistry()
+    expect(r.tier?.get('outline_draw_zoom')).toBe('signature')
+    expect(r.tier?.get('meter_fill_verdict')).toBe('base')
+    expect(r.status?.get('outline_draw_zoom')).toMatch(/^(ready|approved)$/)
   })
 })

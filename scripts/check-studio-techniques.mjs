@@ -9,9 +9,13 @@
  * makes a technique selectable only when it exists:
  *
  *   - every technique has a known category, a kind (code | prompt | process),
- *     a status (ready | planned) and a recipe file;
- *   - a READY code technique names its lib/studio module and the test that
- *     holds it, and both files exist;
+ *     a status (ready | planned), a tier (signature | base: Matt 2026-10-14,
+ *     every film runs at least one ready signature technique) and a recipe file;
+ *   - a READY or APPROVED code technique names its lib/studio module and the
+ *     test that holds it, and both files exist;
+ *   - an APPROVED technique carries approved_by "matt", approved_on (an ISO
+ *     date) and reel (the showcase render Matt saw). Nothing is approved by
+ *     an agent: Matt approves after watching the reel (Matt 2026-10-14);
  *   - a PLANNED technique names its home, so the idea has a place to land
  *     (video_gate refuses planned techniques in a brief);
  *   - every category is one video:check knows (lib/studio/qa/thresholds.ts);
@@ -25,7 +29,10 @@ import { fileURLToPath } from 'node:url'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const TECH_DIR = '.claude/skills/ryan-studio/techniques'
 const KINDS = ['code', 'prompt', 'process']
-const STATUSES = ['ready', 'planned']
+/** planned (an idea with a home) -> ready (code + test, built) -> approved (Matt saw its showcase reel and said yes). */
+const STATUSES = ['planned', 'ready', 'approved']
+/** signature: the visible craft from the research; base: spine and polish. */
+export const TIERS = ['signature', 'base']
 
 /** The categories video:check accepts, read from its own source so the two cannot drift. */
 export function checkCategories(thresholdsSource) {
@@ -58,12 +65,21 @@ export function registryProblems({ registry, knownCategories, exists, recipeFile
     if (!declared.includes(t.category)) problems.push(`${where}: category "${t.category}" is not in registry.categories`)
     if (!KINDS.includes(t.kind)) problems.push(`${where}: kind "${t.kind}" must be one of ${KINDS.join(', ')}`)
     if (!STATUSES.includes(t.status)) problems.push(`${where}: status "${t.status}" must be one of ${STATUSES.join(', ')}`)
+    if (t.tier === undefined) problems.push(`${where}: no tier (one of ${TIERS.join(', ')})`)
+    else if (!TIERS.includes(t.tier)) problems.push(`${where}: tier "${t.tier}" must be one of ${TIERS.join(', ')}`)
     if (typeof t.file !== 'string' || !t.file) problems.push(`${where}: no recipe file`)
     else {
       files.add(t.file)
       if (!recipeFiles.includes(t.file)) problems.push(`${where}: recipe ${t.file} does not exist`)
     }
-    if (t.status === 'ready' && t.kind === 'code') {
+    if (t.status === 'approved') {
+      if (t.approved_by !== 'matt') problems.push(`${where} is approved but approved_by is ${JSON.stringify(t.approved_by ?? null)}, not "matt"`)
+      if (!(typeof t.approved_on === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.approved_on) && !Number.isNaN(Date.parse(t.approved_on)))) problems.push(`${where} is approved with no approved_on ISO date (YYYY-MM-DD)`)
+      if (!(typeof t.reel === 'string' && t.reel.trim())) problems.push(`${where} is approved with no reel (the path or URL of the showcase render Matt saw)`)
+    } else if (t.approved_by !== undefined || t.approved_on !== undefined) {
+      problems.push(`${where} carries approval fields but its status is "${t.status}"`)
+    }
+    if ((t.status === 'ready' || t.status === 'approved') && t.kind === 'code') {
       if (!t.module || !exists(t.module)) problems.push(`${where} is ready but its module ${t.module ?? '(none)'} does not exist`)
       if (!t.test || !exists(t.test)) problems.push(`${where} is ready but its test ${t.test ?? '(none)'} does not exist`)
     }
@@ -96,14 +112,16 @@ function main() {
     readRecipe: (f) => readFileSync(join(dir, f), 'utf8'),
   })
   const entries = Object.values(registry.techniques)
-  const ready = entries.filter((t) => t.status === 'ready').length
+  const ready = entries.filter((t) => t.status === 'ready' || t.status === 'approved').length
+  const approved = entries.filter((t) => t.status === 'approved').length
+  const signatures = entries.filter((t) => t.tier === 'signature' && t.status === 'approved').length
   if (problems.length) {
     console.error('ci:studio-techniques FAILED\n')
     for (const p of problems) console.error(`  - ${p}`)
     console.error(`\nFix the registry (${TECH_DIR}/registry.json) or build the code. A technique is on the menu only when it is real.`)
     process.exit(1)
   }
-  console.log(`✓ ci:studio-techniques: ${entries.length} techniques, ${ready} ready, ${entries.length - ready} planned; every ready code technique has its module and test.`)
+  console.log(`✓ ci:studio-techniques: ${entries.length} techniques, ${ready} built (${approved} approved, ${signatures} of them signature), ${entries.length - ready} planned; every built code technique has its module and test, every technique a tier.`)
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main()

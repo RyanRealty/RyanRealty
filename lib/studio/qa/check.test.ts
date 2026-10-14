@@ -2,13 +2,15 @@
  * checkVideo with a fake Measure: every check's pass path and its fail paths,
  * with no ffmpeg. The real-binary version is check.int.test.ts.
  */
+import { createHash } from 'node:crypto'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { checkVideo, type CheckReport } from './check'
+import { checkVideo, type CheckDeps, type CheckReport } from './check'
 import type { Interval, Loudness, Measure, ProbeResult } from './measure'
-import { loadVideoTypes, typeRulesFor } from './thresholds'
+import type { GateRun, PixelProbe } from './pixels'
+import { VIDEO_TYPES_PATH, loadVideoTypes, typeRulesFor } from './thresholds'
 
 const SHA = 'c'.repeat(64)
 const GOLDEN_BYTES = Buffer.from('GOLDEN')
@@ -23,6 +25,8 @@ interface Fake {
   endcardSsim: number
   loopSsim: number
   failFrame: boolean
+  /** Where the cream end card starts in the pixels; null when no frame is the card. */
+  endcardFrom: number | null
 }
 
 const defaultFake = (): Fake => ({
@@ -35,6 +39,7 @@ const defaultFake = (): Fake => ({
   endcardSsim: 0.97,
   loopSsim: 0.9,
   failFrame: false,
+  endcardFrom: 24.45,
 })
 
 function fakeMeasure(f: Fake, frameCalls: number[] = []): Measure {
@@ -53,7 +58,40 @@ function fakeMeasure(f: Fake, frameCalls: number[] = []): Measure {
     },
     async ssim(a, b) { return a.equals(GOLDEN_BYTES) || b.equals(GOLDEN_BYTES) ? f.endcardSsim : f.loopSsim },
     async lumaStats() { return { mean: 120, variance: f.hookVariance } },
+    async creamFractions(_p, from, to) {
+      const out: Array<{ t: number; fraction: number }> = []
+      for (let t = from; t <= to + 1e-9; t += 1 / 30) {
+        const at = Math.round(t * 1000) / 1000
+        out.push({ t: at, fraction: f.endcardFrom !== null && at >= f.endcardFrom - 1e-6 ? 0.9 : 0.001 })
+      }
+      return out
+    },
     async sha256() { return f.sha },
+  }
+}
+
+interface FakePixels {
+  missing: string | null
+  gate: GateRun | Error
+  /** Override what a box reads; default: the manifest text drawn in that box at that time. */
+  read?: (t: number, text: string | undefined) => string
+}
+
+const defaultPixels = (): FakePixels => ({ missing: null, gate: { fails: [], info: {}, samples: [] } })
+
+/** A pixel probe that reads back exactly what the manifest says was drawn (the honest case). */
+function fakePixels(manifest: Json, p: FakePixels, calls: string[] = []): PixelProbe {
+  return {
+    async missingTooling() { return p.missing },
+    async gate() {
+      if (p.gate instanceof Error) throw p.gate
+      return p.gate
+    },
+    async readBox(_mp4, t, box) {
+      const hit = (manifest.texts as Json[]).find((x) => x.box.x === box.x && x.box.y === box.y && x.box.w === box.w && t >= x.start && t <= x.end)
+      calls.push(`${t}:${hit?.text ?? ''}`)
+      return p.read ? p.read(t, hit?.text) : hit?.text ?? ''
+    },
   }
 }
 
@@ -62,7 +100,7 @@ type Json = Record<string, any>
 function goodManifest(): Json {
   return {
     factory: 'lib/studio',
-    manifestVersion: 1,
+    manifestVersion: 2,
     video: { file: 'final.mp4', sha256: SHA, width: 1080, height: 1920, fps: 30, duration: 27.5 },
     videoType: 'listing',
     techniques: ['dollar_first_hook', 'subframe_motion_blur', 'eased_number_reveal'],
@@ -100,22 +138,36 @@ function goodManifest(): Json {
     endcard: { start: 24.45, quality: 24.45, local: 24.85, service: 25.25, call: 25.7, out: 27.5 },
     loop: { seconds: 0.3 },
     builtBy: 'claude',
+    briefSha256: 'e'.repeat(64),
+    slug: 'test-film',
+    creative: { feel: 'satisfying', constraint: 'one figure per beat', lineage: 'Swiss typographic posters', one_sentence: 'One number, read on a ruler.' },
   }
 }
 
 const goodBrief = (): Json => ({
   video_type: 'listing',
+  title: 'Test film',
   techniques: ['dollar_first_hook', 'subframe_motion_blur', 'eased_number_reveal'],
 })
 
+const sha256 = (text: string) => createHash('sha256').update(text).digest('hex')
+
+/** video_types.json with one type's rules changed. */
+function typesWith(type: string, over: Json): Json {
+  const raw = JSON.parse(readFileSync(VIDEO_TYPES_PATH, 'utf8'))
+  raw.types[type] = { ...raw.types[type], ...over }
+  return raw
+}
+
+/** A test-only registry: subframe_motion_blur stands in as an approved signature scene. Never the committed file. */
 const REGISTRY = {
   techniques: {
-    dollar_first_hook: { category: 'hook' },
-    question_secret_hook: { category: 'hook' },
-    subframe_motion_blur: { category: 'scene' },
-    loop_seam_edit: { category: 'scene' },
-    eased_number_reveal: { category: 'type' },
-    measured_drop_sync: { category: 'sound' },
+    dollar_first_hook: { category: 'hook', status: 'ready', tier: 'base' },
+    question_secret_hook: { category: 'hook', status: 'ready', tier: 'base' },
+    subframe_motion_blur: { category: 'scene', status: 'approved', tier: 'signature' },
+    loop_seam_edit: { category: 'scene', status: 'ready', tier: 'base' },
+    eased_number_reveal: { category: 'type', status: 'ready', tier: 'base' },
+    measured_drop_sync: { category: 'sound', status: 'ready', tier: 'base' },
   },
 }
 
@@ -130,6 +182,10 @@ interface Setup {
   golden?: boolean
   rawManifest?: string | null
   explicitBrief?: boolean
+  pixels?: (p: FakePixels) => void
+  types?: Json
+  /** Extra options passed straight to checkVideo (overrides). */
+  options?: Json
 }
 
 let dir = ''
@@ -140,44 +196,58 @@ afterEach(() => {
   rmSync(dir, { recursive: true, force: true })
 })
 
-async function run(s: Setup = {}): Promise<{ report: CheckReport; frames: number[]; ledgerPath: string }> {
+async function run(s: Setup = {}): Promise<{ report: CheckReport; frames: number[]; ledgerPath: string; reads: string[] }> {
   const mp4 = join(dir, 'final.mp4')
   writeFileSync(mp4, 'not really a video')
   const m = goodManifest()
-  s.manifest?.(m)
-  if (s.rawManifest !== null) writeFileSync(join(dir, 'final.manifest.json'), s.rawManifest ?? JSON.stringify(m))
   if (s.brief !== null) {
     const b = goodBrief()
     s.brief?.(b)
-    writeFileSync(join(dir, 'final.brief.json'), JSON.stringify(b))
+    const text = JSON.stringify(b)
+    writeFileSync(join(dir, 'final.brief.json'), text)
+    m.briefSha256 = sha256(text)
   }
+  s.manifest?.(m)
+  if (s.rawManifest !== null) writeFileSync(join(dir, 'final.manifest.json'), s.rawManifest ?? JSON.stringify(m))
   const registryPath = join(dir, 'registry.json')
   if (s.registry !== null) writeFileSync(registryPath, JSON.stringify(s.registry ?? REGISTRY))
   const ledgerPath = join(dir, 'film-ledger.jsonl')
   writeFileSync(ledgerPath, s.ledger ?? '')
   const goldenPath = join(dir, 'golden.png')
   if (s.golden !== false) writeFileSync(goldenPath, GOLDEN_BYTES)
+  let typesPath: string | undefined
+  if (s.types) {
+    typesPath = join(dir, 'video_types.json')
+    writeFileSync(typesPath, JSON.stringify(s.types))
+  }
   if (s.review) writeFileSync(join(dir, 'final.review.json'), JSON.stringify(s.review))
   const fake = defaultFake()
   s.fake?.(fake)
+  const pix = defaultPixels()
+  s.pixels?.(pix)
   const frames: number[] = []
-  const report = await checkVideo(
-    { mp4Path: mp4, golden: goldenPath, registryPath, ledgerPath, final: s.final },
-    { measure: fakeMeasure(fake, frames), now: () => new Date('2026-10-13T12:00:00.000Z') },
-  )
-  return { report, frames, ledgerPath }
+  const reads: string[] = []
+  const deps: CheckDeps = {
+    measure: fakeMeasure(fake, frames),
+    pixels: fakePixels(m, pix, reads),
+    now: () => new Date('2026-10-13T12:00:00.000Z'),
+    testPaths: { golden: goldenPath, registryPath, ledgerPath, ...(typesPath ? { typesPath } : {}) },
+  }
+  const report = await checkVideo({ mp4Path: mp4, final: s.final, ...(s.options ?? {}) }, deps)
+  return { report, frames, ledgerPath, reads }
 }
 
 const get = (r: CheckReport, id: number) => r.checks.find((c) => c.id === id)!
 const failIds = (r: CheckReport) => r.checks.filter((c) => !c.pass).map((c) => c.id)
 
 describe('a good film', () => {
-  it('passes checks 1 to 13, 15 and 16 and lists them in order, without the review', async () => {
+  it('passes checks 1 to 13 and 15 to 17 and lists them in order, without the review', async () => {
     const { report } = await run()
     expect(failIds(report)).toEqual([])
     expect(report.pass).toBe(true)
     expect(report.final).toBe(false)
-    expect(report.checks.map((c) => c.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16])
+    expect(report.overrides).toEqual({})
+    expect(report.checks.map((c) => c.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17])
     for (const c of report.checks) {
       expect(c.name.length).toBeGreaterThan(0)
       expect(c.detail.length).toBeGreaterThan(0)
@@ -230,9 +300,26 @@ describe('1 Provenance', () => {
     expect(get(report, 1).detail).toContain('brand_film')
   })
 
+  it('fails when the brief changed after the render (its sha256 is not the manifest\'s)', async () => {
+    // review finding: the manifest was unsigned paperwork; nothing tied it to the brief
+    const { report } = await run({ manifest: (m) => { m.briefSha256 = 'b'.repeat(64) } })
+    expect(get(report, 1).pass).toBe(false)
+    expect(get(report, 1).detail).toContain('the brief changed after the render')
+  })
+
+  it('fails with no brief beside the film', async () => {
+    const { report } = await run({ brief: null })
+    expect(get(report, 1).detail).toContain('no brief to hold the film to')
+  })
+
+  it('fails a slug that is not the brief\'s', async () => {
+    const { report } = await run({ manifest: (m) => { m.slug = 'another-film' } })
+    expect(get(report, 1).detail).toContain('slug "another-film" is not the brief\'s ("test-film")')
+  })
+
   it('makes every manifest-dependent check fail rather than pass when the manifest is missing', async () => {
     const { report } = await run({ rawManifest: null })
-    for (const id of [1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 13, 15, 16]) {
+    for (const id of [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17]) {
       expect(get(report, id).pass, `check ${id}`).toBe(false)
       expect(get(report, id).detail, `check ${id}`).toContain('cannot be measured')
     }
@@ -307,7 +394,7 @@ describe('3 Length', () => {
 
   it('fails over max when there is no brief at all', async () => {
     const r = await at(rules.max_s + 2, { brief: null })
-    expect(get(r.report, 3).detail).toContain('no brief supplied')
+    expect(get(r.report, 3).detail).toContain('no brief beside the film')
   })
 
   it('fails a video type video_types.json does not list', async () => {
@@ -414,9 +501,35 @@ describe('7 Sound', () => {
     expect(get(r.report, 7).detail).toContain('cannot be measured: ebur128 printed no summary')
   })
 
-  it('passes a film declared silent with no voice and no audio stream', async () => {
-    const r = await run({ manifest: (m) => { m.voice = null; m.captions = []; m.audio = { lufs: null, truePeakDb: null, silent: true } }, fake: (f) => { f.probe.hasAudio = false } })
+  it('passes a film declared silent with no voice and no audio stream, for a type and brief with no voiceover', async () => {
+    const r = await run({
+      types: typesWith('listing', { requires_voiceover: false }),
+      manifest: (m) => { m.voice = null; m.captions = []; m.audio = { lufs: null, truePeakDb: null, silent: true } },
+      fake: (f) => { f.probe.hasAudio = false },
+    })
     expect(get(r.report, 7).pass).toBe(true)
+  })
+
+  it('fails a silent film when the type or the brief asks for a voiceover', async () => {
+    // review finding: a silent film passed checks 7 and 8 by declaring itself silent
+    const silent = (m: Json) => { m.voice = null; m.captions = []; m.audio = { lufs: null, truePeakDb: null, silent: true } }
+    const byType = await run({ manifest: silent, fake: (f) => { f.probe.hasAudio = false } })
+    expect(get(byType.report, 7).detail).toContain('asks for a voiceover')
+    expect(get(byType.report, 8).detail).toContain('asks for a voiceover')
+    const byBrief = await run({
+      types: typesWith('listing', { requires_voiceover: false }),
+      brief: (b) => { b.spec_rules = { voiceover: { engine: 'elevenlabs_v3' } } },
+      manifest: silent,
+      fake: (f) => { f.probe.hasAudio = false },
+    })
+    expect(get(byBrief.report, 7).pass).toBe(false)
+    expect(get(byBrief.report, 8).pass).toBe(false)
+  })
+
+  it('fails a voiced type whose manifest drops the voice but keeps the audio', async () => {
+    const r = await run({ manifest: (m) => { m.voice = null; m.captions = [] } })
+    expect(get(r.report, 7).detail).toContain('the manifest carries none')
+    expect(get(r.report, 8).detail).toContain('no voice words')
   })
 
   it('fails a film that says silent but carries an audio stream', async () => {
@@ -426,10 +539,15 @@ describe('7 Sound', () => {
 })
 
 describe('8 Captions', () => {
-  it('passes with no voiceover and says why', async () => {
-    const r = await run({ manifest: (m) => { m.voice = null; m.captions = []; m.audio.silent = false } })
+  it('passes with no voiceover only for a type and brief that ask for none, and says why', async () => {
+    const r = await run({ types: typesWith('listing', { requires_voiceover: false }), manifest: (m) => { m.voice = null; m.captions = []; m.audio.silent = false } })
     expect(get(r.report, 8).pass).toBe(true)
     expect(get(r.report, 8).detail).toContain('no voiceover')
+  })
+
+  it('fails a voiced film with no captions', async () => {
+    const r = await run({ manifest: (m) => { m.captions = [] } })
+    expect(get(r.report, 8).detail).toContain('no captions')
   })
 
   it('fails a caption over four words', async () => {
@@ -461,7 +579,14 @@ describe('8 Captions', () => {
 describe('9 Numbers', () => {
   it('fails a figure with no numbers row', async () => {
     const r = await run({ manifest: (m) => { m.texts[0].text = '63% cut, 12 days' } })
-    expect(get(r.report, 9).detail).toContain('figure "12" has no numbers row')
+    expect(get(r.report, 9).detail).toContain('figure "12" in texts[0] "63% cut, 12 days" has no numbers row')
+  })
+
+  it('fails a figure a row only contains, and a spoken figure no sourced caption shows', async () => {
+    const sub = await run({ manifest: (m) => { m.texts[0].text = '63 homes'; m.numbers[0].onScreen = '63 mo' } })
+    expect(get(sub.report, 9).detail).toContain('"63" in texts[0]')
+    const said = await run({ manifest: (m) => { m.voice.words[6].word = 'twelve'; m.voice.words[7].word = 'percent'; m.captions[2].text = 'TWELVE PERCENT' } })
+    expect(get(said.report, 9).detail).toContain('spoken "twelve percent" is not shown as a figure')
   })
 
   it('fails a row missing source, window, geography or definition', async () => {
@@ -471,6 +596,11 @@ describe('9 Numbers', () => {
     }
     const blank = await run({ manifest: (m) => { m.numbers[0].source = '   ' } })
     expect(get(blank.report, 9).pass).toBe(false)
+  })
+
+  it('passes a spoken figure shown as its sourced figure', async () => {
+    const { report } = await run()
+    expect((get(report, 9).measured as any).spoken).toEqual(['"sixty three percent" shown as "63%"'])
   })
 
   it('does not count the locked phone number as a figure', async () => {
@@ -488,6 +618,15 @@ describe('10 Copy', () => {
   it('fails a banned phrase from video_types.json', async () => {
     const r = await run({ manifest: (m) => { m.texts[0].text = '63% cut, nestled in Bend' } })
     expect(get(r.report, 10).detail).toContain('banned phrase "nestled"')
+  })
+
+  it('fails a fair housing flag on a card and in the voice, an address and a name', async () => {
+    const card = await run({ manifest: (m) => { m.texts[0].text = 'Perfect for young professionals' ; m.numbers = [] } })
+    expect(get(card.report, 10).detail).toContain('fair housing flag "young professionals" (describe homes and places, never people) in texts[0]')
+    const vo = await run({ manifest: (m) => { m.voice.words[7].word = 'family-friendly' } })
+    expect(get(vo.report, 10).detail).toContain('fair housing flag "family-friendly" (describe homes and places, never people) in voice')
+    const place = await run({ manifest: (m) => { m.captions[0].text = '123 Main Street' } })
+    expect(get(place.report, 10).detail).toContain('an address "123 Main Street"')
   })
 
   it('fails "top team" and "buyer\'s market" in the voice', async () => {
@@ -550,6 +689,27 @@ describe('12 End card', () => {
     const { frames } = await run()
     expect(frames).toContain(26.2)
   })
+
+  it('fails an endcard.start that is not the end card beat\'s start', async () => {
+    const r = await run({ manifest: (m) => { m.endcard.start = 20 } })
+    expect(get(r.report, 12).detail).toContain("is not the end card beat's start 24.45s")
+  })
+
+  it('fails a start earlier than the pixels show the card, and check 5 still counts the cuts it would hide', async () => {
+    // review finding: computeShots ignored every cut after a claimed early start
+    const early = (m: Json) => {
+      m.endcard.start = 9
+      m.beats = [m.beats[0], m.beats[1], { id: 'payoff', role: 'payoff', start: 8, end: 9 }, { id: 'end', role: 'endcard', start: 9, end: 27.5 }]
+    }
+    const r = await run({ manifest: early, fake: (f) => { f.cuts = [14, 15.2] } })
+    expect(get(r.report, 12).detail).toMatch(/the pixels show it from 24\.4\d*s/)
+    expect(get(r.report, 5).detail).toContain('shot 14s to 15.2s holds 1.2s')
+  })
+
+  it('fails when the golden probe frame is not the cream card', async () => {
+    const r = await run({ fake: (f) => { f.endcardFrom = null } })
+    expect(get(r.report, 12).detail).toContain('is not the cream end card')
+  })
 })
 
 describe('13 Loop', () => {
@@ -573,7 +733,7 @@ describe('13 Loop', () => {
     writeFileSync(join(dir, 'film-ledger.jsonl'), '')
     writeFileSync(join(dir, 'registry.json'), JSON.stringify(REGISTRY))
     writeFileSync(join(dir, 'golden.png'), GOLDEN_BYTES)
-    const report = await checkVideo({ mp4Path: join(dir, 'final.mp4'), golden: join(dir, 'golden.png'), registryPath: join(dir, 'registry.json'), ledgerPath: join(dir, 'film-ledger.jsonl') }, { measure: m })
+    const report = await checkVideo({ mp4Path: join(dir, 'final.mp4'), golden: join(dir, 'golden.png'), registryPath: join(dir, 'registry.json'), ledgerPath: join(dir, 'film-ledger.jsonl') }, { measure: m, pixels: fakePixels(goodManifest(), defaultPixels()) })
     expect(get(report, 13).pass).toBe(true)
   })
 })
@@ -604,9 +764,11 @@ describe('14 Review (final only)', () => {
     expect(get(report, 14).detail).toContain('different file')
   })
 
-  it('fails the same author as the build', async () => {
+  it('fails the same author as the build, or a reviewer id that starts with it', async () => {
     const { report } = await run({ final: true, review: review({ reviewer: 'Claude' }) })
-    expect(get(report, 14).detail).toContain('built the film')
+    expect(get(report, 14).detail).toContain('is the builder')
+    const prefixed = await run({ final: true, review: review({ reviewer: 'claude-review' }) })
+    expect(get(prefixed.report, 14).detail).toContain('may not equal or start with')
   })
 
   it('fails when not watched, not listened, or the verdict is not ship', async () => {
@@ -632,7 +794,7 @@ describe('14 Review (final only)', () => {
     writeFileSync(join(dir, 'final.manifest.json'), JSON.stringify(goodManifest()))
     writeFileSync(join(dir, 'registry.json'), JSON.stringify(REGISTRY))
     writeFileSync(join(dir, 'film-ledger.jsonl'), '')
-    const report = await checkVideo({ mp4Path: mp4, final: true, registryPath: join(dir, 'registry.json'), ledgerPath: join(dir, 'film-ledger.jsonl') }, { measure: fakeMeasure(defaultFake()) })
+    const report = await checkVideo({ mp4Path: mp4, final: true }, { measure: fakeMeasure(defaultFake()), pixels: fakePixels(goodManifest(), defaultPixels()), testPaths: { registryPath: join(dir, 'registry.json'), ledgerPath: join(dir, 'film-ledger.jsonl') } })
     expect(get(report, 14).detail).toContain('could not read the review')
   })
 })
@@ -668,6 +830,11 @@ describe('15 Techniques ran', () => {
     expect(get(noHook.report, 15).detail).toContain('no hook technique ran')
     const noType = await run({ manifest: (m) => { m.techniques = ['dollar_first_hook', 'subframe_motion_blur'] }, brief: (b) => { b.techniques = ['dollar_first_hook'] } })
     expect(get(noType.report, 15).detail).toContain('no type technique ran')
+  })
+
+  it('fails a film where no approved signature technique ran (the floor)', async () => {
+    const r = await run({ registry: { techniques: { ...REGISTRY.techniques, subframe_motion_blur: { category: 'scene', status: 'ready', tier: 'signature' } } } })
+    expect(get(r.report, 15).detail).toContain('at least one approved signature technique')
   })
 
   it('fails a manifest technique that is not in the registry', async () => {
@@ -710,6 +877,31 @@ describe('16 Not a repeat', () => {
     expect(get(report, 16).pass).toBe(true)
   })
 
+  it('treats a revision of the same film (the same slug) as not a repeat', async () => {
+    const { report } = await run({ ledger: line({ slug: 'test-film' }) })
+    expect(get(report, 16).pass).toBe(true)
+    expect(get((await run({ ledger: line({ slug: 'other-film' }) })).report, 16).pass).toBe(false)
+  })
+
+  it('lists the ready hook and scene pairs the type has not used lately', async () => {
+    const registry = {
+      techniques: {
+        dollar_first_hook: { category: 'hook', status: 'ready' },
+        question_secret_hook: { category: 'hook', status: 'ready' },
+        subframe_motion_blur: { category: 'scene', status: 'ready' },
+        line_draw_riding_dot: { category: 'scene', status: 'ready' },
+        map_pins_pop: { category: 'scene', status: 'planned' },
+        eased_number_reveal: { category: 'type', status: 'ready' },
+      },
+    }
+    const { report } = await run({ registry, ledger: line() })
+    const d = get(report, 16).detail
+    expect(d).toContain('dollar_first_hook + line_draw_riding_dot')
+    expect(d).toContain('question_secret_hook + subframe_motion_blur')
+    expect(d).not.toContain('dollar_first_hook + subframe_motion_blur;')
+    expect(d).not.toContain('map_pins_pop')
+  })
+
   it('looks only at the last five films of the same type', async () => {
     const filler = Array.from({ length: 5 }, (_, i) => line({ sha256: String(i).repeat(64), hookDevice: 'question_secret_hook' })).join('')
     const old = line({ sha256: 'a'.repeat(64) })
@@ -749,6 +941,67 @@ describe('16 Not a repeat', () => {
     expect(again.report.pass).toBe(true)
     expect(readFileSync(again.ledgerPath, 'utf8').trim().split('\n')).toHaveLength(1)
     expect(again.report.ledger?.appended).toBe(false)
+  })
+})
+
+describe('17 Pixels', () => {
+  it('passes when the gate passes and every claimed text reads back off its box', async () => {
+    const { report, reads } = await run()
+    expect(get(report, 17).pass).toBe(true)
+    expect(get(report, 17).measured).toMatchObject({ claims: 4, confirmed: 4 })
+    expect(reads).toContain('1.225:63% CUT')
+  })
+
+  it('fails, with the install line, when the OCR tooling is missing', async () => {
+    const r = await run({ pixels: (p) => { p.missing = 'tesseract is not installed: install the OCR tooling' } })
+    expect(get(r.report, 17).pass).toBe(false)
+    expect(get(r.report, 17).detail).toContain('cannot be measured, so it fails: tesseract is not installed')
+  })
+
+  it('fails when the gate cannot run', async () => {
+    const r = await run({ pixels: (p) => { p.gate = new Error('the render gate could not run: cannot open') } })
+    expect(get(r.report, 17).detail).toContain('cannot be measured: the render gate could not run')
+  })
+
+  it('keeps the gate\'s findings, but leaves its 15 to 30 s LENGTH to check 3', async () => {
+    const r = await run({ pixels: (p) => { p.gate = { fails: ['LENGTH: runs 40.00s; must be 15-30 s.', 'TOP TEAM: \'top team\' wording on screen at [3.0] s.'], info: {}, samples: [] } } })
+    expect(get(r.report, 17).detail).toContain('render gate: TOP TEAM')
+    expect(get(r.report, 17).detail).not.toContain('LENGTH')
+    expect((get(r.report, 17).measured as any).gateDropped[0]).toContain('check 3 holds')
+  })
+
+  it('fails a caption or a figure the manifest claims but the pixels do not show', async () => {
+    // review finding: a hand-written manifest could claim captions and figures the film never drew
+    const r = await run({ pixels: (p) => { p.read = (_t, text) => (text === '63% CUT' ? 'CUT' : text === '63% cut their price' ? '68% cut their price' : text ?? '') } })
+    const d = get(r.report, 17).detail
+    expect(d).toContain('the pixels do not show caption "63% CUT"')
+    expect(d).toContain('the pixels do not show card "63% cut their price"')
+  })
+
+  it('fails a caption with no drawn box', async () => {
+    const r = await run({ manifest: (m) => { m.texts.splice(2, 1) } })
+    expect(get(r.report, 17).detail).toContain('caption "63% CUT" has no drawn box')
+  })
+
+  it('fails a figure the pixels show twice running that the manifest does not list', async () => {
+    const samples = [{ t: 4, text: 'homes $612K closed' }, { t: 4.5, text: 'homes $612K closed' }, { t: 5, text: 'noise 3.5' }, { t: 6, text: 'once 88%' }]
+    const r = await run({ pixels: (p) => { p.gate = { fails: [], info: {}, samples } } })
+    expect(get(r.report, 17).detail).toContain('a figure the manifest does not list: "$612K" at 4s and 4.5s')
+    expect(get(r.report, 17).detail).not.toContain('88%')
+  })
+})
+
+describe('final runs use the committed paths only', () => {
+  it('refuses --golden, --ledger, --registry and --types with final', async () => {
+    writeFileSync(join(dir, 'final.mp4'), 'x')
+    for (const key of ['golden', 'ledgerPath', 'registryPath', 'typesPath']) {
+      await expect(checkVideo({ mp4Path: join(dir, 'final.mp4'), final: true, [key]: join(dir, 'x') }, { measure: fakeMeasure(defaultFake()) })).rejects.toThrow(`refusing ${key} with final`)
+    }
+  })
+
+  it('records the overrides a draft run used', async () => {
+    const { report } = await run({ options: { golden: join(dir, 'golden.png') } })
+    expect(report.overrides).toEqual({ golden: join(dir, 'golden.png') })
   })
 })
 

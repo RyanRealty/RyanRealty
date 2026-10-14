@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { formatManifestIssues, parseManifest, parseManifestJson } from './manifest'
+import { formatManifestIssues, parseManifest, parseManifestJson, safeSlug } from './manifest'
 
 function validManifestJson(): Record<string, unknown> {
   return {
     factory: 'lib/studio',
-    manifestVersion: 1,
+    manifestVersion: 2,
     video: { file: 'final.mp4', sha256: 'A'.repeat(64), width: 1080, height: 1920, fps: 30, duration: 27.5 },
     videoType: 'buyer_ad',
     techniques: ['eased_number_reveal'],
@@ -20,6 +20,10 @@ function validManifestJson(): Record<string, unknown> {
     audio: { lufs: -14.0, truePeakDb: -1.7, silent: false },
     endcard: { start: 24.45, quality: 24.45, local: 24.85, service: 25.25, call: 25.7, out: 27.5 },
     loop: { seconds: 0.3 },
+    builtBy: 'claude',
+    briefSha256: 'B'.repeat(64),
+    slug: 'bend-go-in-with-a-plan',
+    creative: { feel: 'satisfying', constraint: 'one figure per beat', lineage: 'Swiss typographic posters', one_sentence: 'One number, read on a ruler.' },
   }
 }
 
@@ -44,13 +48,35 @@ describe('parseManifest', () => {
     expect(parseManifest(m).ok).toBe(true)
   })
 
-  it('accepts builtBy and briefTechniques', () => {
+  it('accepts builtBy and briefTechniques, and lowercases the brief hash', () => {
     const r = parseManifest({ ...validManifestJson(), builtBy: 'claude', briefTechniques: ['a'] })
     expect(r.ok).toBe(true)
     if (r.ok) {
       expect(r.manifest.builtBy).toBe('claude')
       expect(r.manifest.briefTechniques).toEqual(['a'])
+      expect(r.manifest.briefSha256).toBe('b'.repeat(64))
+      expect(r.manifest.slug).toBe('bend-go-in-with-a-plan')
     }
+  })
+
+  it('requires builtBy, the brief hash and a clean slug', () => {
+    const m = validManifestJson() as any
+    delete m.builtBy
+    delete m.briefSha256
+    m.slug = '../Public'
+    expect(paths(m)).toEqual(expect.arrayContaining(['missing:builtBy', 'missing:briefSha256', 'range:slug']))
+    expect(paths({ ...validManifestJson(), briefSha256: 'abc' })).toContain('range:briefSha256')
+  })
+
+  it('reads an authored row\'s boxes and refuses an empty list', () => {
+    const m = validManifestJson() as any
+    m.numbers.push({ onScreen: '4 mo', source: 's', window: 'none: x', geography: 'g', definition: 'd', boxes: [{ x: 1, y: 2, w: 3, h: 4 }] })
+    const r = parseManifest(m)
+    expect(r.ok && r.manifest.numbers[1].boxes).toEqual([{ x: 1, y: 2, w: 3, h: 4 }])
+    m.numbers[1].boxes = []
+    expect(paths(m)).toContain('range:numbers[1].boxes')
+    m.numbers[1].boxes = [{ x: 1 }]
+    expect(paths(m)).toContain('missing:numbers[1].boxes[0].y')
   })
 
   it('rejects a root that is not an object', () => {
@@ -81,7 +107,7 @@ describe('parseManifest', () => {
 
   it('rejects an unknown manifest version, a short hash and an unknown role or kind', () => {
     const m = validManifestJson() as any
-    m.manifestVersion = 2
+    m.manifestVersion = 1
     m.video.sha256 = 'abc'
     m.beats[0].role = 'intermission'
     m.texts[0].kind = 'sticker'
@@ -152,6 +178,16 @@ describe('parseManifestJson', () => {
 
   it('parses valid text', () => {
     expect(parseManifestJson(JSON.stringify(validManifestJson())).ok).toBe(true)
+  })
+})
+
+describe('safeSlug', () => {
+  it('keeps a to z, 0 to 9 and single dashes, and never returns a path', () => {
+    expect(safeSlug('Bend: go in with a plan')).toBe('bend-go-in-with-a-plan')
+    expect(safeSlug('../../public/x')).toBe('public-x')
+    expect(safeSlug('..')).toBe('film')
+    expect(safeSlug('a'.repeat(80))).toHaveLength(60)
+    expect(safeSlug(`${'a'.repeat(59)}-b`)).toBe('a'.repeat(59))
   })
 })
 

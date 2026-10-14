@@ -21,6 +21,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { checkVideo, type CheckReport } from './check'
 import { findFont, writeContactSheet } from './contact'
 import { createMeasure, resolveBinary, runBinary } from './measure'
+import { createPixelProbe, type PixelProbe } from './pixels'
 import { loadVideoTypes, typeRulesFor } from './thresholds'
 
 const execFileAsync = promisify(execFile)
@@ -30,13 +31,27 @@ const hasMedia = spawnSync(ffmpeg, ['-version']).status === 0 && spawnSync(ffpro
 if (!hasMedia) console.warn('[check.int] ffmpeg or ffprobe not found: skipping. Set FFMPEG_PATH and FFPROBE_PATH.')
 
 const measure = createMeasure()
+/**
+ * Checks 1 to 16 are about the file's measurements; the synthetic film draws
+ * no type, so check 17 reads back what the manifest claims through this stand
+ * in. The real OCR runs once, below, and in the CLI tests.
+ */
+const honestPixels = (mp4: string): PixelProbe => ({
+  async missingTooling() { return null },
+  async gate() { return { fails: [], info: {}, samples: [] } },
+  async readBox(_p, t, box) {
+    const m = JSON.parse(readFileSync(mp4.replace(/\.mp4$/, '.manifest.json'), 'utf8')) as { texts: Array<{ text: string; start: number; end: number; box: { x: number; y: number } }> }
+    return m.texts.find((x) => x.box.x === box.x && x.box.y === box.y && t >= x.start && t <= x.end)?.text ?? ''
+  },
+})
 const TYPE = 'story_teaser'
 const TECHNIQUES = ['dollar_first_hook', 'subframe_motion_blur', 'eased_number_reveal']
+/** A test-only registry: subframe_motion_blur stands in as an approved signature scene. Never the committed file. */
 const REGISTRY = {
   techniques: {
-    dollar_first_hook: { category: 'hook' },
-    subframe_motion_blur: { category: 'scene' },
-    eased_number_reveal: { category: 'type' },
+    dollar_first_hook: { category: 'hook', status: 'ready', tier: 'base' },
+    subframe_motion_blur: { category: 'scene', status: 'approved', tier: 'signature' },
+    eased_number_reveal: { category: 'type', status: 'ready', tier: 'base' },
   },
 }
 
@@ -85,7 +100,7 @@ async function synth(out: string, wav: string, freezeFromThree: boolean): Promis
 function manifestFor(mp4: string, sha256: string): Record<string, unknown> {
   return {
     factory: 'lib/studio',
-    manifestVersion: 1,
+    manifestVersion: 2,
     video: { file: 'final.mp4', sha256, width: 1080, height: 1920, fps: 30, duration: 9 },
     videoType: TYPE,
     techniques: TECHNIQUES,
@@ -106,11 +121,18 @@ function manifestFor(mp4: string, sha256: string): Record<string, unknown> {
     endcard: { start: 6, quality: 6, local: 6.4, service: 6.8, call: 7.25, out: 9 },
     loop: { seconds: 0.3 },
     builtBy: 'claude',
+    briefSha256: '0'.repeat(64),
+    slug: 'synthetic-teaser',
+    creative: { feel: 'satisfying', constraint: 'one figure per beat', lineage: 'Swiss typographic posters', one_sentence: 'One number, read on a ruler.' },
   }
 }
 
+/** The film's brief and manifest beside it, the manifest bound to the brief's bytes. */
 async function writeManifest(mp4: string, mutate?: (m: Record<string, any>) => void): Promise<void> {
+  const brief = JSON.stringify({ video_type: TYPE, title: 'Synthetic teaser', techniques: TECHNIQUES })
+  writeFileSync(mp4.replace(/\.mp4$/, '.brief.json'), brief)
   const m = manifestFor(mp4, createHash('sha256').update(readFileSync(mp4)).digest('hex'))
+  m.briefSha256 = createHash('sha256').update(brief).digest('hex')
   mutate?.(m)
   writeFileSync(mp4.replace(/\.mp4$/, '.manifest.json'), JSON.stringify(m))
 }
@@ -121,7 +143,7 @@ function pngSize(png: Buffer): { width: number; height: number } {
 }
 
 const run = (mp4: string, over: Partial<Parameters<typeof checkVideo>[0]> = {}): Promise<CheckReport> =>
-  checkVideo({ mp4Path: mp4, golden, registryPath: registry, ledgerPath: ledger, ...over }, { measure })
+  checkVideo({ mp4Path: mp4, ...over }, { measure, pixels: honestPixels(mp4), testPaths: { golden, registryPath: registry, ledgerPath: ledger, ...(over.golden ? { golden: over.golden } : {}) } })
 
 const get = (r: CheckReport, id: number) => r.checks.find((c) => c.id === id)!
 const failing = (r: CheckReport) => r.checks.filter((c) => !c.pass).map((c) => `${c.id} ${c.name}: ${c.detail}`)
@@ -215,7 +237,6 @@ describe.skipIf(!hasMedia)('video:check against real files', () => {
 
   describe('checkVideo on the good film', () => {
     it('passes every check', async () => {
-      writeFileSync(join(dir, 'good.brief.json'), JSON.stringify({ video_type: TYPE, techniques: TECHNIQUES }))
       const r = await run(good)
       expect(failing(r)).toEqual([])
       expect(r.pass).toBe(true)
@@ -225,6 +246,7 @@ describe.skipIf(!hasMedia)('video:check against real files', () => {
       expect((get(r, 12).measured as any).ssim).toBeGreaterThanOrEqual(0.92)
       expect((get(r, 13).measured as any).ssim).toBeGreaterThanOrEqual(0.85)
       expect(get(r, 5).measured).toMatchObject({ shots: 1 })
+      expect(get(r, 12).measured).toMatchObject({ startFromPixels: 6 })
     }, 60_000)
 
     it('passes --final with a review by someone else, and records the film in the ledger', async () => {
@@ -290,6 +312,24 @@ describe.skipIf(!hasMedia)('video:check against real files', () => {
       for (const id of [2, 3, 4, 5, 6, 12, 13]) expect(get(r, id).pass, `check ${id}`).toBe(false)
     }, 60_000)
 
+    it('fails the End card and keeps the shots honest when the manifest claims the card started early', async () => {
+      await writeManifest(good, (m) => {
+        m.beats = [{ id: 'hook', role: 'hook', start: 0, end: 3 }, { id: 'end', role: 'endcard', start: 3, end: 9 }]
+        m.endcard = { start: 3, quality: 6, local: 6.4, service: 6.8, call: 7.25, out: 9 }
+      })
+      const r = await run(good)
+      expect(get(r, 12).detail).toMatch(/the pixels show it from 6(\.0+)?s/)
+      await writeManifest(good)
+    }, 60_000)
+
+    it('fails Provenance when the brief was edited after the render', async () => {
+      await writeManifest(good)
+      writeFileSync(good.replace(/\.mp4$/, '.brief.json'), JSON.stringify({ video_type: TYPE, title: 'Synthetic teaser', techniques: TECHNIQUES, length_reason: 'edited' }))
+      const r = await run(good)
+      expect(get(r, 1).detail).toContain('the brief changed after the render')
+      await writeManifest(good)
+    }, 60_000)
+
     it('fails with no manifest beside the file', async () => {
       const orphan = join(dir, 'orphan.mp4')
       writeFileSync(orphan, readFileSync(good))
@@ -297,6 +337,39 @@ describe.skipIf(!hasMedia)('video:check against real files', () => {
       expect(get(r, 1).pass).toBe(false)
       expect(get(r, 1).detail).toContain('does not exist')
     }, 60_000)
+  })
+
+  describe('check 17 on the real pixels', () => {
+    // Tesseract spends over a minute on each testsrc2 frame, so the OCR here runs on
+    // plain films: the gate on a short one, the claimed boxes on a blank one.
+    it('runs the render gate and hands back its OCR samples', async () => {
+      const probe = createPixelProbe()
+      const missing = await probe.missingTooling()
+      if (missing) {
+        expect(missing).toContain('brew install tesseract')
+        return
+      }
+      const plain = join(dir, 'plain.mp4')
+      await ff(['-f', 'lavfi', '-i', 'color=c=0xfaf8f4:s=1080x1920:r=30:d=3', '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', plain])
+      const run = await probe.gate(plain, { videoType: TYPE, silent: true, voStart: null, voEnd: null })
+      expect(run.fails.join('\n')).toMatch(/LENGTH/)
+      expect(run.samples.map((x) => x.t)).toEqual([0, 0.5, 1, 1.5, 2, 2.5])
+    }, 240_000)
+
+    it('reads the claimed boxes off the film and fails it: a film that draws none of the texts its manifest claims', async () => {
+      const real = createPixelProbe()
+      const missing = await real.missingTooling()
+      const probe: PixelProbe = { ...real, gate: async () => ({ fails: [], info: {}, samples: [] }) }
+      // Plain cream with the good film's manifest: every claimed text is absent from the pixels.
+      const blankFilm = join(dir, 'blank-film.mp4')
+      await ff(['-f', 'lavfi', '-i', 'color=c=0xfaf8f4:s=1080x1920:r=30:d=9', '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', blankFilm])
+      await writeManifest(blankFilm)
+      const r = await checkVideo({ mp4Path: blankFilm }, { measure, pixels: probe, testPaths: { golden, registryPath: registry, ledgerPath: ledger } })
+      const c17 = get(r, 17)
+      expect(c17.pass).toBe(false)
+      if (missing) expect(c17.detail).toContain('brew install tesseract')
+      else expect(c17.detail).toContain('the pixels do not show card "Bend homes"')
+    }, 240_000)
   })
 
   describe('contact sheet', () => {
@@ -320,31 +393,39 @@ describe.skipIf(!hasMedia)('video:check against real files', () => {
 
   describe('npm run video:check', () => {
     const tsx = resolve(process.cwd(), 'node_modules/.bin/tsx')
+    // The CLI's check 17 runs with tesseract pointed at nothing: it must FAIL with the
+    // install line (never pass), quickly, so these tests prove the rest of the run.
     const cli = (mp4: string, ...extra: string[]) =>
-      execFileAsync(tsx, ['scripts/video-check.ts', mp4, '--golden', golden, '--registry', registry, '--ledger', join(dir, 'cli-ledger.jsonl'), ...extra], { cwd: process.cwd() })
+      execFileAsync(tsx, ['scripts/video-check.ts', mp4, '--golden', golden, '--registry', registry, '--ledger', join(dir, 'cli-ledger.jsonl'), ...extra], {
+        cwd: process.cwd(),
+        maxBuffer: 16 * 1024 * 1024,
+        env: { ...process.env, TESSERACT_PATH: join(dir, 'no-tesseract-here') },
+      })
         .then((r) => ({ code: 0, out: r.stdout }))
         .catch((e: { code?: number; stdout?: string }) => ({ code: e.code ?? 1, out: e.stdout ?? '' }))
 
-    it('exits 0 on the good film, writes the report and the contact sheet, and prints the table', async () => {
+    it('runs every check on the real film, writes the report and the contact sheet, and fails only the pixels (no OCR here: it fails, never passes)', async () => {
       const r = await cli(good)
-      expect(r.code).toBe(0)
+      expect(r.code).toBe(1)
       expect(r.out).toContain('Provenance')
-      expect(r.out).toContain('PASS: ')
-      const report = JSON.parse(readFileSync(join(dir, 'good.check.json'), 'utf8'))
-      expect(report.pass).toBe(true)
+      const report = JSON.parse(readFileSync(join(dir, 'good.check.json'), 'utf8')) as CheckReport
+      expect(failing(report).map((x) => x.split(':')[0])).toEqual(['17 Pixels'])
+      expect(report.checks.find((c) => c.id === 17)?.detail).toContain('tesseract is not installed')
+      expect(report.overrides).toEqual({ golden, ledgerPath: join(dir, 'cli-ledger.jsonl'), registryPath: registry })
+      expect(r.out).toContain('overrides used (draft run only)')
       expect(existsSync(join(dir, 'good.contact.png'))).toBe(true)
-    }, 90_000)
+    }, 120_000)
 
     it('exits 1 on the frozen film and says which check failed', async () => {
       const r = await cli(frozen)
       expect(r.code).toBe(1)
       expect(r.out).toMatch(/6\s+Motion\s+FAIL/)
       expect(JSON.parse(readFileSync(join(dir, 'frozen.check.json'), 'utf8')).pass).toBe(false)
-    }, 90_000)
+    }, 120_000)
 
-    it('exits 2 for bad usage', async () => {
-      const r = await cli(join(dir, 'missing.mp4'))
-      expect(r.code).toBe(2)
+    it('exits 2 for bad usage, including an override with --final', async () => {
+      expect((await cli(join(dir, 'missing.mp4'))).code).toBe(2)
+      expect((await cli(good, '--final')).code).toBe(2)
     }, 30_000)
   })
 })

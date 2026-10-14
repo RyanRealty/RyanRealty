@@ -4,9 +4,17 @@ import { formatReport, formatValue, parseArgs } from './report'
 
 describe('parseArgs', () => {
   it('reads the path and every option', () => {
-    expect(parseArgs(['out/final.mp4', '--manifest', 'm.json', '--brief', 'b.json', '--final', '--golden', 'g.png', '--review', 'r.json', '--ledger', 'l.jsonl', '--registry', 'reg.json', '--no-contact'])).toEqual({
-      mp4Path: 'out/final.mp4', manifestPath: 'm.json', briefPath: 'b.json', golden: 'g.png', reviewPath: 'r.json', ledgerPath: 'l.jsonl', registryPath: 'reg.json', final: true, contact: false,
+    expect(parseArgs(['out/final.mp4', '--manifest', 'm.json', '--brief', 'b.json', '--golden', 'g.png', '--review', 'r.json', '--ledger', 'l.jsonl', '--registry', 'reg.json', '--no-contact'])).toEqual({
+      mp4Path: 'out/final.mp4', manifestPath: 'm.json', briefPath: 'b.json', golden: 'g.png', reviewPath: 'r.json', ledgerPath: 'l.jsonl', registryPath: 'reg.json', final: false, contact: false,
     })
+    expect(parseArgs(['out/final.mp4', '--final', '--review', 'r.json'])).toEqual({ mp4Path: 'out/final.mp4', reviewPath: 'r.json', final: true, contact: true })
+  })
+
+  it('refuses --golden, --ledger and --registry with --final', () => {
+    // review finding: a final run could be pointed at a scratch ledger or a fake golden still
+    expect(() => parseArgs(['a.mp4', '--final', '--golden', 'g.png'])).toThrow(/--golden cannot be used with --final/)
+    expect(() => parseArgs(['a.mp4', '--ledger', 'l.jsonl', '--final'])).toThrow(/--ledger cannot be used with --final/)
+    expect(() => parseArgs(['a.mp4', '--final', '--registry', 'r.json', '--golden', 'g'])).toThrow(/--golden, --registry cannot/)
   })
 
   it('defaults to a non-final run with a contact sheet', () => {
@@ -32,7 +40,7 @@ describe('formatValue', () => {
 
 describe('formatReport', () => {
   const report = (pass: boolean): CheckReport => ({
-    pass, final: false, mp4: 'out/final.mp4', manifest: 'out/final.manifest.json', checkedAt: 'now', sha256: 'a'.repeat(64), ledger: null,
+    pass, final: false, mp4: 'out/final.mp4', manifest: 'out/final.manifest.json', checkedAt: 'now', sha256: 'a'.repeat(64), ledger: null, overrides: {},
     checks: [
       { id: 1, name: 'Provenance', pass: true, measured: { sha256: 'abc' }, expected: 'x', detail: 'ok' },
       { id: 6, name: 'Motion', pass, measured: { frozen: [] }, expected: { frozenStretchUnder: 1.2 }, detail: 'frozen from 6s to 8s (2s)' },
@@ -60,6 +68,11 @@ describe('formatReport', () => {
     expect(formatReport(r, { path: 'a.png', frames: [], labelled: true, note: null })).toContain('contact sheet: a.png')
     expect(formatReport(r, { path: 'a.png', frames: [], labelled: false, note: 'labels skipped: no font file found' })).toContain('labels skipped: no font')
     expect(formatReport(r, { error: 'boom' })).toContain('not written (boom)')
+  })
+
+  it('lists the overrides a draft run used', () => {
+    expect(formatReport({ ...report(true), overrides: { golden: 'g.png' } })).toContain('overrides used (draft run only): golden=g.png')
+    expect(formatReport(report(true))).not.toContain('overrides used')
   })
 
   it('mentions the ledger on a recorded final pass', () => {

@@ -14,25 +14,82 @@ import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { createReadStream, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { QA_THRESHOLDS } from './thresholds'
 
 // ---------------------------------------------------------------------------
 // Binaries
 
+/** Where a Studio binary is looked for when no environment variable names it, in order. */
+export const BINARY_DIRS: readonly string[] = ['/usr/bin', '/opt/homebrew/bin', '/usr/local/bin']
+
+function onPath(name: string, env: NodeJS.ProcessEnv, exists: (p: string) => boolean): string | null {
+  for (const dir of (env.PATH ?? '').split(':')) {
+    if (dir && exists(join(dir, name))) return join(dir, name)
+  }
+  return null
+}
+
 /**
- * Env FFMPEG_PATH / FFPROBE_PATH, else /usr/bin/<name> when it exists, else the
- * bare name on PATH. `env` and `exists` are parameters so tests need no binary.
+ * The ONE resolver for the binaries that make and measure a film, so the film
+ * is made and measured by the same build:
+ *  - ffmpeg: FFMPEG_PATH when set (it must exist: a set path that is missing
+ *    fails, it never falls back), else the first of BINARY_DIRS that has it,
+ *    else PATH.
+ *  - ffprobe: FFPROBE_PATH when set (it must exist), else the ffprobe beside
+ *    the resolved ffmpeg. Never a different build found somewhere else.
+ * Throws with what to set when either is missing.
  */
+export function studioBinaries(
+  env: NodeJS.ProcessEnv = process.env,
+  exists: (p: string) => boolean = existsSync,
+): { ffmpeg: string; ffprobe: string } {
+  const pick = (envKey: 'FFMPEG_PATH' | 'FFPROBE_PATH'): string | null => {
+    const set = env[envKey]?.trim()
+    if (set) {
+      if (!exists(set)) throw new Error(`${envKey} is set to ${set}, which does not exist; fix it or unset it`)
+      return set
+    }
+    return null
+  }
+  let ffmpeg = pick('FFMPEG_PATH')
+  if (!ffmpeg) {
+    ffmpeg = BINARY_DIRS.map((d) => join(d, 'ffmpeg')).find((p) => exists(p)) ?? onPath('ffmpeg', env, exists)
+    if (!ffmpeg) throw new Error(`ffmpeg was not found in ${BINARY_DIRS.join(', ')} or on PATH; install it or set FFMPEG_PATH`)
+  }
+  let ffprobe = pick('FFPROBE_PATH')
+  if (!ffprobe) {
+    const beside = join(dirname(ffmpeg), 'ffprobe')
+    if (!exists(beside)) throw new Error(`no ffprobe beside ${ffmpeg}; install the same build's ffprobe or set FFPROBE_PATH`)
+    ffprobe = beside
+  }
+  return { ffmpeg, ffprobe }
+}
+
+/** One of the pair from studioBinaries. Kept for callers that need one name. */
 export function resolveBinary(
   name: 'ffmpeg' | 'ffprobe',
   env: NodeJS.ProcessEnv = process.env,
   exists: (p: string) => boolean = existsSync,
 ): string {
-  const fromEnv = env[name === 'ffmpeg' ? 'FFMPEG_PATH' : 'FFPROBE_PATH']?.trim()
-  if (fromEnv) return fromEnv
-  const usr = `/usr/bin/${name}`
-  return exists(usr) ? usr : name
+  return studioBinaries(env, exists)[name]
+}
+
+/**
+ * tesseract for check 17: TESSERACT_PATH when set (it must exist), else the
+ * first of BINARY_DIRS that has it, else PATH. Null when it is not installed.
+ */
+export function resolveTesseract(env: NodeJS.ProcessEnv = process.env, exists: (p: string) => boolean = existsSync): string | null {
+  const set = env.TESSERACT_PATH?.trim()
+  if (set) return exists(set) ? set : null
+  return BINARY_DIRS.map((d) => join(d, 'tesseract')).find((p) => exists(p)) ?? onPath('tesseract', env, exists)
+}
+
+/** python3 for check 17's render gate: PYTHON3_PATH when set, else BINARY_DIRS, else PATH. Null when missing. */
+export function resolvePython(env: NodeJS.ProcessEnv = process.env, exists: (p: string) => boolean = existsSync): string | null {
+  const set = env.PYTHON3_PATH?.trim()
+  if (set) return exists(set) ? set : null
+  return BINARY_DIRS.map((d) => join(d, 'python3')).find((p) => exists(p)) ?? onPath('python3', env, exists)
 }
 
 export interface RunResult {
@@ -42,9 +99,27 @@ export interface RunResult {
 }
 
 /** Run a binary without a shell. Rejects only when it cannot start. */
-export function runBinary(bin: string, args: string[], opts: { input?: Buffer; maxBytes?: number } = {}): Promise<RunResult> {
+export function runBinary(
+  bin: string,
+  args: string[],
+  opts: { input?: Buffer; maxBytes?: number; timeoutMs?: number; env?: NodeJS.ProcessEnv; group?: boolean } = {},
+): Promise<RunResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn(bin, args, { stdio: ['pipe', 'pipe', 'pipe'] })
+    // group: the child leads its own process group, so a timeout also stops what it
+    // spawned (the render gate's tesseract runs), never leaving them orphaned.
+    const child = spawn(bin, args, { stdio: ['pipe', 'pipe', 'pipe'], ...(opts.env ? { env: opts.env } : {}), ...(opts.group ? { detached: true } : {}) })
+    const stop = () => {
+      if (opts.group && child.pid) {
+        try {
+          process.kill(-child.pid, 'SIGKILL')
+          return
+        } catch {
+          /* the group is gone; fall through */
+        }
+      }
+      child.kill('SIGKILL')
+    }
+    const timer = opts.timeoutMs ? setTimeout(stop, opts.timeoutMs) : null
     const out: Buffer[] = []
     const err: Buffer[] = []
     let outBytes = 0
@@ -56,9 +131,11 @@ export function runBinary(bin: string, args: string[], opts: { input?: Buffer; m
     })
     child.stderr.on('data', (d: Buffer) => err.push(d))
     child.on('error', (e: NodeJS.ErrnoException) => {
+      if (timer) clearTimeout(timer)
       reject(new Error(e.code === 'ENOENT' ? `${bin} was not found; set FFMPEG_PATH or FFPROBE_PATH` : `${bin} failed to start: ${e.message}`))
     })
     child.on('close', (code) => {
+      if (timer) clearTimeout(timer)
       resolve({ code: code ?? -1, stdout: Buffer.concat(out), stderr: Buffer.concat(err).toString('utf8') })
     })
     child.stdin.on('error', () => {
@@ -83,6 +160,8 @@ export interface ProbeResult {
   duration: number
   /** Video stream duration, falling back to the container's. */
   videoDuration: number
+  /** Frames in the video stream as the container records them (nb_frames); null when it does not say. */
+  frames?: number | null
   hasAudio: boolean
 }
 
@@ -120,6 +199,8 @@ export interface Measure {
   frameAt(path: string, t: number): Promise<Buffer>
   ssim(pngA: Buffer, pngB: Buffer): Promise<number>
   lumaStats(png: Buffer): Promise<LumaStats>
+  /** Share of each frame from `from` to `to` that is the end card's cream field (check 12, check 5). */
+  creamFractions(path: string, from: number, to: number): Promise<Array<{ t: number; fraction: number }>>
   sha256(path: string): Promise<string>
 }
 
@@ -146,6 +227,7 @@ interface RawStream {
   avg_frame_rate?: string
   r_frame_rate?: string
   duration?: string
+  nb_frames?: string
 }
 
 /** Parse `ffprobe -print_format json -show_streams -show_format`. Throws when it holds no video. */
@@ -165,6 +247,7 @@ export function parseProbe(json: string): ProbeResult {
   if (!Number.isFinite(duration) || duration <= 0) throw new Error('ffprobe reported no duration')
   if (!video.width || !video.height) throw new Error('ffprobe reported no frame size')
   const vd = Number(video.duration)
+  const nb = Number(video.nb_frames)
   return {
     width: video.width,
     height: video.height,
@@ -173,6 +256,7 @@ export function parseProbe(json: string): ProbeResult {
     pixFmt: video.pix_fmt ?? '',
     duration,
     videoDuration: Number.isFinite(vd) && vd > 0 ? vd : duration,
+    frames: Number.isInteger(nb) && nb > 0 ? nb : null,
     hasAudio: streams.some((s) => s.codec_type === 'audio'),
   }
 }
@@ -263,6 +347,24 @@ export function lumaStatsFromGray(gray: Uint8Array): LumaStats {
   return { mean, variance: sq / gray.length }
 }
 
+/** A cream pixel (#faf8f4 after the codec): light and nearly unsaturated. */
+export function isCream(r: number, g: number, b: number): boolean {
+  const lo = Math.min(r, g, b)
+  return lo >= 215 && Math.max(r, g, b) - lo <= 24
+}
+
+/** Share of cream pixels in each frame of packed rgb24 frames of w x h, timed from `from` at `fps`. */
+export function creamFractionsFromRgb(raw: Uint8Array, w: number, h: number, from: number, fps: number): Array<{ t: number; fraction: number }> {
+  const size = w * h * 3
+  const out: Array<{ t: number; fraction: number }> = []
+  for (let f = 0; (f + 1) * size <= raw.length; f++) {
+    let cream = 0
+    for (let i = f * size; i < (f + 1) * size; i += 3) if (isCream(raw[i], raw[i + 1], raw[i + 2])) cream++
+    out.push({ t: Math.round((from + f / fps) * 1000) / 1000, fraction: Math.round((cream / (w * h)) * 1000) / 1000 })
+  }
+  return out
+}
+
 // ---------------------------------------------------------------------------
 // Wrappers
 
@@ -280,8 +382,8 @@ const PREVIEW_W = 270
 const PREVIEW_H = 480
 
 export function createMeasure(env: NodeJS.ProcessEnv = process.env): Measure {
-  const ffmpeg = () => resolveBinary('ffmpeg', env)
-  const ffprobe = () => resolveBinary('ffprobe', env)
+  const ffmpeg = () => studioBinaries(env).ffmpeg
+  const ffprobe = () => studioBinaries(env).ffprobe
 
   /** Run a filter over the whole file and return the log. */
   async function filterLog(path: string, args: string[]): Promise<string> {
@@ -361,10 +463,26 @@ export function createMeasure(env: NodeJS.ProcessEnv = process.env): Measure {
       return lumaStatsFromGray(r.stdout)
     },
 
+    async creamFractions(path, from, to) {
+      const info = await m.probe(path)
+      const start = Math.floor(Math.max(0, from) * 1000) / 1000
+      const r = await runBinary(ffmpeg(), [
+        '-hide_banner', '-loglevel', 'error',
+        '-ss', start.toFixed(3), '-to', Math.max(start, to).toFixed(3), '-i', path,
+        '-vf', `scale=${CREAM_W}:${CREAM_H}:flags=area,format=rgb24`,
+        '-f', 'rawvideo', 'pipe:1',
+      ])
+      if (r.code !== 0) throw new Error(`ffmpeg exited ${r.code}: ${lastLines(r.stderr)}`)
+      return creamFractionsFromRgb(r.stdout, CREAM_W, CREAM_H, Math.round(start * info.fps) / info.fps, info.fps)
+    },
+
     sha256: sha256File,
   }
   return m
 }
+
+const CREAM_W = 54
+const CREAM_H = 96
 
 function lastLines(text: string, n = 3): string {
   return text.trim().split(/\r?\n/).slice(-n).join(' | ')

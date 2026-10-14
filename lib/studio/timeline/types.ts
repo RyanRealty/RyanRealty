@@ -43,18 +43,32 @@ export type TimelineCard =
   | { kind: 'turn'; text: string }
 
 /** The picture device a beat carries: a registry scene technique and its params. */
-export type TimelineScene = {
-  kind: 'meter_fill_verdict'
-  /** The brief.numbers key of a months-of-supply figure. */
-  number: string
-  eyebrow?: string
-  /**
-   * false: the meter drops its big value row and the marker carries the
-   * reading against the 4 and 6 month marks (use it when the hook card has
-   * just shown the figure). Default true.
-   */
-  show_value?: boolean
-}
+export type TimelineScene =
+  | {
+      kind: 'meter_fill_verdict'
+      /** The brief.numbers key of a months-of-supply figure. */
+      number: string
+      eyebrow?: string
+      /**
+       * false: the meter drops its big value row and the marker carries the
+       * reading against the 4 and 6 month marks (use it when the hook card has
+       * just shown the figure). Default true.
+       */
+      show_value?: boolean
+    }
+  | {
+      /**
+       * The place's recorded outline drawn on (and, with a context outline, the
+       * camera moving in from it) on cream paper: the beat takes no footage.
+       * Every coordinate is the boundaries table's (brief.outlines).
+       */
+      kind: 'outline_draw_zoom'
+      /** The brief.outlines key. */
+      outline: string
+      /** The heading over the map, display words (Amboqia), no digits. */
+      line: string
+      eyebrow?: string
+    }
 
 export type TimelineBeat = {
   id: string
@@ -127,12 +141,49 @@ export type BriefNumber = {
   citation?: Record<string, unknown>
 }
 
+/** Geo types an outline may come from (lib/data/geo/getBoundaryGeoJSON BoundaryGeoJSONInput). */
+export const OUTLINE_GEO_TYPES = ['city', 'neighborhood', 'subdivision', 'park', 'school', 'school_district', 'zip'] as const
+export type OutlineGeoType = (typeof OUTLINE_GEO_TYPES)[number]
+
+/**
+ * A place's outline, named by the brief and read from the `boundaries` table
+ * at render time (getBoundaryGeoJSON: City of Bend GIS, Deschutes County DIAL,
+ * Oregon GEO, Census TIGER). Never drawn by hand.
+ */
+export type BriefOutline = {
+  key: string
+  geo_type: OutlineGeoType
+  geo_slug: string
+  /** The wider place the camera opens on (the city around a neighborhood). Optional: without it the outline draws at once. */
+  context?: { geo_type: OutlineGeoType; geo_slug: string }
+  /** Where the coordinates come from, as the brief author verified it. */
+  source: string
+}
+
+/**
+ * The creative-brain piece brief (.claude/skills/creative-brain, Matt 2026-10-14),
+ * chosen before the story and carried into the manifest for the reviewer.
+ */
+export type CreativeBrief = {
+  /** One target emotion, chosen first. */
+  feel: string
+  /** One formal constraint chosen before the story. */
+  constraint: string
+  /** The non-AI artistic lineage it borrows from. */
+  lineage: string
+  /** The idea in one sentence. */
+  one_sentence: string
+}
+
 /** The parts of a ryan-studio brief the renderer reads. Everything else passes through untouched. */
 export type StudioBrief = {
   video_type: string
   title: string
+  creative: CreativeBrief
   techniques: string[]
   numbers: BriefNumber[]
+  /** Outlines a scene draws (outline_draw_zoom), each read from the boundaries table at render time. */
+  outlines?: BriefOutline[]
   hook?: { text?: string; time_s?: number }
   length_s?: number
   length_reason?: string

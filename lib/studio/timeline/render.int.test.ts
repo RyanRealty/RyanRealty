@@ -1,13 +1,16 @@
 /**
  * The timeline renderer end to end, against real Chromium and real ffmpeg,
- * with no network and no paid API.
+ * with no network and no paid API. Its signature technique is a stub: the
+ * meter, marked an approved signature only in a test-only registry copy.
  *
- * A 1920x1080 clip is synthesized (ffmpeg testsrc2, so the plate must cover and
+ * A 1920x1080 clip is synthesized (a flat colour with a moving block, so the plate must cover and
  * crop it to 9:16), the voice is a stub that returns a fixture alignment and a
  * synthesized tone, and the film runs the question + secret hook, burned-in
  * captions, the composed score, the locked end card and the loop seam. The
  * finished MP4 then goes through video:check, which must pass checks 1 to 13
- * on the file itself.
+ * on the file itself, and check 17: the render gate and the OCR read the
+ * claimed cards and captions back off the real pixels (or, on a machine
+ * without tesseract and opencv, fail with the install line).
  *
  * Skips loudly without Chromium or ffmpeg, like the other media int tests.
  */
@@ -20,6 +23,7 @@ import { launchMotionChrome, motionChromePath } from '../motion/endcard-render'
 import { checkVideo } from '../qa/check'
 import { parseManifestJson } from '../qa/manifest'
 import { resolveBinary } from '../qa/measure'
+import { createPixelProbe } from '../qa/pixels'
 import type { CharacterAlignment, Synthesis } from '../voice'
 import { renderTimelineFilm } from './render'
 import type { VoiceProvider } from './voice'
@@ -111,14 +115,20 @@ const stubVoice: VoiceProvider = async (request) => {
 let dir = ''
 let clip = ''
 
-describe.skipIf(!hasMedia || !hasChrome)('studio:render, a 7.5 s film with no network and no paid API', () => {
+describe.skipIf(!hasMedia || !hasChrome)('studio:render, a 10.5 s film with no network and no paid API', () => {
   beforeAll(() => {
     dir = mkdtempSync(join(tmpdir(), 'rr-timeline-int-'))
     clip = join(dir, 'clip.mp4')
     const r = spawnSync(ffmpeg, [
       '-hide_banner', '-loglevel', 'error', '-y',
-      '-f', 'lavfi', '-i', 'testsrc2=s=1920x1080:r=30:d=6',
+      // A flat colour with a block crossing it, not testsrc2 or gradients: full-frame
+      // tesseract (check 17's render gate, a frame every 0.5 s) spends minutes on each
+      // frame of a busy synthetic pattern, and seconds on real footage or flat colour.
+      '-f', 'lavfi', '-i', 'color=c=0x4a6a8a:s=1920x1080:r=30:d=6',
+      '-f', 'lavfi', '-i', 'color=c=0x8fb0c9:s=240x240:r=30:d=6',
       '-f', 'lavfi', '-i', 'sine=frequency=1000:d=6',
+      '-filter_complex', "[0:v][1:v]overlay=x='mod(t*420\\,1680)':y=420[v]",
+      '-map', '[v]', '-map', '2:a',
       '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-c:a', 'aac', clip,
     ])
     if (r.status !== 0) throw new Error(`could not synthesize the clip: ${r.stderr}`)
@@ -128,12 +138,37 @@ describe.skipIf(!hasMedia || !hasChrome)('studio:render, a 7.5 s film with no ne
     if (dir) rmSync(dir, { recursive: true, force: true })
   })
 
-  it('renders through lib/studio and passes video:check checks 1 to 13 on the file', async () => {
+  it('renders through lib/studio and passes every video:check check but the review, the pixel check included', async () => {
+    // A TEST-ONLY registry: the meter stands in as an approved signature (a stub), so the
+    // pipeline stays tested while nothing in the committed registry is approved and the
+    // real meter stays a base technique.
+    const raw = JSON.parse(readFileSync(join(process.cwd(), '.claude/skills/ryan-studio/techniques/registry.json'), 'utf8'))
+    raw.techniques.meter_fill_verdict = { ...raw.techniques.meter_fill_verdict, tier: 'signature', status: 'approved', approved_by: 'test-only stub', approved_on: '2026-10-14', reel: 'none' }
+    const registry = join(dir, 'registry.test-only.json')
+    writeFileSync(registry, JSON.stringify(raw))
+    const ledger = join(dir, 'ledger.jsonl')
+    writeFileSync(ledger, '')
     const brief = {
       video_type: 'story_teaser',
       title: 'Timeline int film',
-      techniques: ['question_secret_hook', 'tiktok_caption_burn', 'loop_seam_edit', 'composed_score'],
-      numbers: [],
+      creative: {
+        feel: 'satisfying',
+        constraint: 'one question, then one ruler',
+        lineage: 'Swiss typographic posters',
+        one_sentence: 'A question over a real street, then the answer on a ruler.',
+      },
+      techniques: ['question_secret_hook', 'meter_fill_verdict', 'tiktok_caption_burn', 'loop_seam_edit', 'composed_score'],
+      // A test fixture value on a synthetic film, not a market figure.
+      numbers: [
+        {
+          key: 'mos',
+          on_screen: '3.5',
+          definition: 'Months of supply (test fixture value on a synthetic film, not a market figure)',
+          window: 'test fixture',
+          geography: 'Test place',
+          source: 'lib/studio/timeline/render.int.test.ts fixture',
+        },
+      ],
       spec_rules: { loopable: true, voiceover: { engine: 'elevenlabs_v3', script: SCRIPT } },
     }
     const timeline = {
@@ -152,13 +187,14 @@ describe.skipIf(!hasMedia || !hasChrome)('studio:render, a 7.5 s film with no ne
             { kind: 'turn', text: 'Here is what most buyers miss.' },
           ],
         },
-        { id: 'end', role: 'endcard', start: 4.4, end: 7.45 },
+        { id: 'supply', role: 'payoff', start: 4.4, end: 7.4, footage: { src: 'clip.mp4', in: 2.8 }, scene: { kind: 'meter_fill_verdict', number: 'mos' } },
+        { id: 'end', role: 'endcard', start: 7.4, end: 10.45 },
       ],
     }
     const outDir = join(dir, 'film')
     const result = await renderTimelineFilm(
-      { brief, timeline, baseDir: dir, outDir, cacheDir: join(dir, 'cache'), builtBy: 'int-test', voiceId: 'stub-voice' },
-      { ffmpeg, voiceProvider: stubVoice, launchBrowser: launchMotionChrome },
+      { brief, timeline, baseDir: dir, outDir, cacheDir: join(dir, 'cache'), builtBy: 'int-test', voiceId: 'stub-voice', ledgerPath: ledger },
+      { ffmpeg, voiceProvider: stubVoice, launchBrowser: launchMotionChrome, registryPath: registry },
     )
 
     // The plate covered and cropped the 16:9 clip at one scale, and said so.
@@ -175,17 +211,31 @@ describe.skipIf(!hasMedia || !hasChrome)('studio:render, a 7.5 s film with no ne
     expect(result.manifest.captions.length).toBeGreaterThan(1)
     expect(result.manifest.voice?.words.map((w) => w.word)).toEqual(WORDS.map(([w]) => w))
     expect(result.manifest.voice?.words[0].start).toBeCloseTo(0.35, 3)
+    // The renderer always signs the film with its builder and binds it to its brief.
+    expect(result.manifest.builtBy).toBe('int-test')
+    expect(result.manifest.slug).toBe('timeline-int-film')
+    expect(result.manifest.briefSha256).toMatch(/^[0-9a-f]{64}$/)
 
-    const report = await checkVideo({
-      mp4Path: result.mp4Path,
-      manifestPath: result.manifestPath,
-      briefPath: result.briefPath,
-      ledgerPath: join(dir, 'ledger.jsonl'),
-    })
+    const probe = createPixelProbe()
+    const missing = await probe.missingTooling()
+    expect(result.manifest.creative).toEqual(brief.creative)
+    expect(result.manifest.techniques).toContain('meter_fill_verdict')
+
+    const report = await checkVideo(
+      { mp4Path: result.mp4Path, manifestPath: result.manifestPath, briefPath: result.briefPath },
+      { pixels: probe, testPaths: { ledgerPath: ledger, registryPath: registry } },
+    )
     writeFileSync(join(dir, 'report.json'), JSON.stringify(report, null, 2))
-    const failing = report.checks.filter((c) => c.id <= 13 && !c.pass).map((c) => `${c.id} ${c.name}: ${c.detail}`)
+    const failing = report.checks.filter((c) => c.id !== 17 && !c.pass).map((c) => `${c.id} ${c.name}: ${c.detail}`)
     expect(failing).toEqual([])
-    for (const id of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]) expect(report.checks.find((c) => c.id === id)?.pass, `check ${id}`).toBe(true)
-    expect(report.checks.find((c) => c.id === 15)?.pass).toBe(false) // no scene device in this tiny film: check 15 says so
-  }, 300_000)
+    for (const id of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16]) expect(report.checks.find((c) => c.id === id)?.pass, `check ${id}`).toBe(true)
+    const pixels = report.checks.find((c) => c.id === 17)!
+    if (missing) expect(pixels.detail).toContain('brew install tesseract')
+    else {
+      expect(pixels.detail).toContain('all')
+      expect(pixels.pass, pixels.detail).toBe(true)
+      // The gate's 15 to 30 s LENGTH is left to check 3 (this teaser runs 10.5 s).
+      expect((pixels.measured as { gateDropped: string[] }).gateDropped.join()).toContain('LENGTH')
+    }
+  }, 600_000)
 })

@@ -20,6 +20,10 @@
 import { MOS_BALANCED_MAX, MOS_SELLER_MAX, MOS_PLAIN_LABEL, marketVerdict } from '@/lib/market/classify'
 import {
   ENTER_SECONDS,
+  MAP_DRAW_OVERLAP,
+  MAP_DRAW_SECONDS,
+  MAP_ZOOM_SECONDS,
+  MAP_ZOOM_START,
   MIN_CARD_SECONDS,
   endcardCue,
   figureAsOf,
@@ -27,9 +31,11 @@ import {
   frameState,
   stillTimes,
   type MotionCue,
+  type MotionOutline,
   type MotionPlan,
   type MotionSubject,
 } from '../motion/cues'
+import { mapGeometry } from '../motion/map'
 import { ENDCARD, type EndcardTimes } from '../motion/endcard'
 import { HOLD_DRIFT_PX, REVEAL_SECONDS } from '../motion/reveal'
 import type { PlateSegment } from '@/lib/video/plate'
@@ -48,7 +54,7 @@ import {
 } from './hooks'
 import { LOOP_SECONDS, echoFrom, filmFrames } from './seam'
 import type { BriefNumber, StudioBrief, Timeline, TimelineBeat, TimelineCard, TimelineFootage } from './types'
-import { findNumber } from './validate'
+import { findNumber, findOutline } from './validate'
 
 export const FILM_FPS = 30
 
@@ -61,6 +67,7 @@ export const RENDERER_TECHNIQUES = [
   'loop_seam_edit',
   'tiktok_caption_burn',
   'meter_fill_verdict',
+  'outline_draw_zoom',
   'composed_score',
 ] as const
 export type RendererTechnique = (typeof RENDERER_TECHNIQUES)[number]
@@ -90,6 +97,13 @@ export type PlannedTechnique = {
   detail: string
 }
 
+/**
+ * A manifest numbers row as planned. An authored row (a scale mark, an as-of
+ * date) names the cues that draw it; the renderer turns those into the drawn
+ * boxes the row may cover (manifest numbers[].boxes) and drops `cues`.
+ */
+export type PlannedNumber = ManifestNumber & { cues?: string[] }
+
 export type FilmPlan = {
   plan: MotionPlan
   subject: MotionSubject
@@ -98,7 +112,7 @@ export type FilmPlan = {
   endcard: EndcardTimes | null
   loop: { seconds: number } | null
   techniques: PlannedTechnique[]
-  numbers: ManifestNumber[]
+  numbers: PlannedNumber[]
   frames: number
   duration: number
   fps: number
@@ -176,6 +190,16 @@ function authoredRows(cue: MotionCue, row: BriefNumber | undefined): ManifestNum
   const out: ManifestNumber[] = []
   if (cue.kind === 'meter') {
     const [low, high] = cue.thresholds
+    // The tick labels over the track (page.ts meterSvg): the bare thresholds.
+    for (const [v, name, range] of [[low, 'MOS_SELLER_MAX', "the top of the seller's range"], [high, 'MOS_BALANCED_MAX', 'the top of the balanced range']] as const) {
+      out.push({
+        onScreen: String(v),
+        source: `lib/market/classify.ts ${name} (CLAUDE.md §0 months-of-supply thresholds)`,
+        window: 'none: a fixed tick on the meter, not a measurement',
+        geography: 'the meter scale, the same for every place',
+        definition: `tick at ${v} months of supply, ${range}`,
+      })
+    }
     out.push({
       onScreen: `${low} mo`,
       source: 'lib/market/classify.ts MOS_SELLER_MAX (CLAUDE.md §0 months-of-supply thresholds)',
@@ -228,6 +252,8 @@ export function planFilm(input: {
   footage: Record<string, ResolvedFootage>
   /** True when a score will be composed and mixed in (the renderer decides; the planner records it). */
   scored?: boolean
+  /** The brief's outlines as read from the boundaries table, by key (outline_draw_zoom). */
+  outlines?: Record<string, MotionOutline>
   fps?: number
 }): FilmPlan {
   const { brief, timeline, voice, footage } = input
@@ -283,7 +309,7 @@ export function planFilm(input: {
   const words = voice?.words ?? []
   content.forEach((beat) => {
     try {
-      built.push(...beatCards(beat, brief, subject, words, fps, problems))
+      built.push(...beatCards(beat, brief, subject, words, fps, problems, input.outlines ?? {}))
     } catch (e) {
       if (e instanceof HookError) problems.push(`beat "${beat.id}": ${e.message}`)
       else throw e
@@ -337,7 +363,7 @@ export function planFilm(input: {
 
   // Technique requirements the brief makes and the timeline must meet.
   const ran = new Set(built.flatMap((b) => Object.keys(b.proofs)))
-  for (const name of ['dollar_first_hook', 'question_secret_hook', 'eased_number_reveal', 'meter_fill_verdict'] as const) {
+  for (const name of ['dollar_first_hook', 'question_secret_hook', 'eased_number_reveal', 'meter_fill_verdict', 'outline_draw_zoom'] as const) {
     if (wanted.has(name) && !ran.has(name)) problems.push(`the brief names ${name} but no beat sets it up (${setupHint(name)})`)
   }
   if (wanted.has('loop_seam_edit') && !endcard) problems.push('the brief names loop_seam_edit but the film has no end card to open the seam')
@@ -391,7 +417,7 @@ export function planFilm(input: {
   // Techniques and the proof each must leave on the page.
   const techniques: PlannedTechnique[] = []
   const proofsFor = (name: RendererTechnique) => built.flatMap((b) => b.proofs[name] ?? [])
-  for (const name of ['dollar_first_hook', 'question_secret_hook', 'eased_number_reveal', 'meter_fill_verdict', 'send_invite_hook'] as const) {
+  for (const name of ['dollar_first_hook', 'question_secret_hook', 'eased_number_reveal', 'meter_fill_verdict', 'outline_draw_zoom', 'send_invite_hook'] as const) {
     const proofs = proofsFor(name)
     if (proofs.length) techniques.push({ name, proofs, detail: detailFor(name) })
   }
@@ -406,11 +432,15 @@ export function planFilm(input: {
   if (loop && endcard) techniques.push({ name: 'loop_seam_edit', proofs: [], detail: `iris over the last ${LOOP_SECONDS}s opens onto frame 0 (plate and type)` })
   if (input.scored) techniques.push({ name: 'composed_score', proofs: [], detail: 'code-composed score, ducked under the voice, mastered to -14 LUFS' })
 
-  // The manifest's numbers: the brief's rows, then the authored digits each card draws beside them.
-  const numbers = briefNumbersToManifest(brief)
+  // The manifest's numbers: the brief's rows (they cover their figure anywhere),
+  // then the authored digits each card draws beside them, each tied to the cues
+  // that draw it (the renderer turns those into the boxes the row may cover).
+  const numbers: PlannedNumber[] = briefNumbersToManifest(brief)
   for (const b of built) {
     for (const row of authoredRows(b.cue, b.row)) {
-      if (!numbers.some((n) => n.onScreen === row.onScreen)) numbers.push(row)
+      const same = numbers.find((n) => n.onScreen === row.onScreen)
+      if (!same) numbers.push({ ...row, cues: [b.cue.id] })
+      else if (same.cues && !same.cues.includes(b.cue.id)) same.cues.push(b.cue.id)
     }
   }
 
@@ -440,6 +470,8 @@ function setupHint(name: string): string {
       return 'a number card on any beat'
     case 'meter_fill_verdict':
       return 'a beat with scene { kind: "meter_fill_verdict", number }'
+    case 'outline_draw_zoom':
+      return 'a beat with no footage and scene { kind: "outline_draw_zoom", outline, line }'
     default:
       return ''
   }
@@ -455,6 +487,8 @@ function detailFor(name: RendererTechnique): string {
       return 'scale 0.92 to 1 and opacity over 12 frames on the brand ease, then the hold drift'
     case 'meter_fill_verdict':
       return 'the months-of-supply meter filling to its value, zone from marketVerdict'
+    case 'outline_draw_zoom':
+      return "the place's recorded outline (boundaries table) drawn on over cream paper, the camera in from its context when there is one"
     case 'send_invite_hook':
       return 'a spoken share line on its own card before the end card'
     default:
@@ -475,6 +509,7 @@ function beatCards(
   words: readonly SpokenWord[],
   fps: number,
   problems: string[],
+  outlines: Record<string, MotionOutline>,
 ): BuiltCard[] {
   const out: BuiltCard[] = []
   const start = frameOf(beat.start, fps) / fps
@@ -494,6 +529,57 @@ function beatCards(
   }
   if (beat.scene && cards.length) problems.push(`beat "${beat.id}": a beat with a scene carries no other card (one idea per beat)`)
   if (cards.length > 2) problems.push(`beat "${beat.id}" has ${cards.length} cards; at most two (one idea per beat, about 4 words of label)`)
+
+  if (beat.scene?.kind === 'outline_draw_zoom') {
+    const scene = beat.scene
+    const outline = outlines[scene.outline]
+    if (!findOutline(brief, scene.outline)) {
+      problems.push(`beat "${beat.id}": outline "${scene.outline}" has no brief.outlines row`)
+      return out
+    }
+    if (!outline) {
+      problems.push(`beat "${beat.id}": outline "${scene.outline}" was not read from the boundaries table`)
+      return out
+    }
+    if (beat.footage) problems.push(`beat "${beat.id}": outline_draw_zoom draws on cream paper; the beat takes no footage`)
+    const geometry = mapGeometry(outline)
+    if (!geometry) {
+      problems.push(`beat "${beat.id}": outline "${scene.outline}" has no drawable ring`)
+      return out
+    }
+    // Over a timeline film the camera must move: a hairline drawing on with no
+    // move is a still frame to freezedetect (check 6, RULEBOOK: everything
+    // animated), so the beat needs the wider outline the camera comes in from.
+    if (!outline.context || geometry.open.s === geometry.arrive.s) {
+      problems.push(`beat "${beat.id}": outline "${scene.outline}" has no context to move in from (brief.outlines context); with no camera move the beat holds still past 1.2 s and check 6 fails`)
+      return out
+    }
+    const zoomSeconds = MAP_ZOOM_SECONDS
+    const zoomStart = r3(start + MAP_ZOOM_START)
+    const drawStart = r3(zoomStart + zoomSeconds * MAP_DRAW_OVERLAP)
+    const cardEnd = r3(end - CARD_CUT_MARGIN_SECONDS)
+    const settled = r3(drawStart + MAP_DRAW_SECONDS + ENTER_SECONDS)
+    if (settled > cardEnd - 0.35 + 1e-9) {
+      problems.push(`beat "${beat.id}": the outline draws until ${settled}s and holds to ${cardEnd}s; give the beat ${r3(settled + 0.35 - cardEnd)}s more`)
+    }
+    const cue: MotionCue = {
+      kind: 'map',
+      id: `${beat.id}-map`,
+      start,
+      end: cardEnd,
+      eyebrow: scene.eyebrow ?? '',
+      line: scene.line,
+      geometry,
+      zoomStart,
+      zoomSeconds,
+      drawStart,
+      drawSeconds: MAP_DRAW_SECONDS,
+      figureKeys: [],
+    }
+    // The proof: the heading over the finished outline, read back off the page.
+    out.push({ cue, proofs: { outline_draw_zoom: [{ t: Math.min(settled, r3(cardEnd - 0.35)), cue: cue.id, text: scene.line }] } })
+    return out
+  }
 
   if (beat.scene) {
     const row = findNumber(brief, beat.scene.number)

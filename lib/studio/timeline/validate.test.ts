@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { findNumber, formatIssues, parseBrief, parseTimeline } from './validate'
+import { findNumber, findOutline, formatIssues, parseBrief, parseTimeline } from './validate'
 
 const repo = join(__dirname, '..', '..', '..')
 const read = (p: string) => JSON.parse(readFileSync(join(repo, p), 'utf8'))
@@ -33,7 +33,8 @@ describe('parseTimeline', () => {
     expect(r.value.beats[1].scene).toMatchObject({ kind: 'meter_fill_verdict', number: 'bend_sfr_mos' })
     expect(r.value.voice).toMatchObject({ voice: 'ellen', start: 0.25, display: { 'three and a half': '3.5' } })
     expect(r.value.cta).toMatchObject({ kind: 'send_invite', start: 8.7, end: 12.2 })
-    expect(r.value.beats[1].scene?.show_value).toBe(false)
+    const scene = r.value.beats[1].scene
+    expect(scene?.kind === 'meter_fill_verdict' && scene.show_value).toBe(false)
     expect(r.value.score).toBe('measured')
   })
 
@@ -130,4 +131,45 @@ describe('parseBrief', () => {
     expect(issues).toContainEqual('numbers[0].window: is required')
     expect(issues).toContainEqual(expect.stringMatching(/^techniques: is required/))
   })
+
+  it('requires the creative-brain piece brief: four non-empty lines of at most 200 characters', () => {
+    const r = parseBrief(sampleBrief())
+    expect(r.ok && r.value.creative.feel).toBe('satisfying')
+    const issues = (mutate: (b: Record<string, any>) => void) => {
+      const b = sampleBrief()
+      mutate(b)
+      const p = parseBrief(b)
+      return p.ok ? [] : p.issues.map((i) => `${i.path}: ${i.message}`)
+    }
+    expect(issues((b) => { delete b.creative })).toContainEqual(expect.stringMatching(/^creative: is required/))
+    expect(issues((b) => { b.creative.lineage = '   ' })).toContain('creative.lineage: must be a non-empty string')
+    expect(issues((b) => { b.creative.one_sentence = 'x'.repeat(201) })).toContain('creative.one_sentence: runs 201 characters; keep it to 200')
+    expect(issues((b) => { b.creative.vibe = 'x' })).toContainEqual(expect.stringMatching(/^creative.vibe: unknown key/))
+    expect(issues((b) => { b.creative.feel = 'awe \u2014 chills' })).toContainEqual(expect.stringMatching(/^creative.feel: has an em or en dash/))
+  })
+
+  it('reads outlines by key and refuses an unknown geo type or a repeated key', () => {
+    const b = sampleBrief()
+    b.outlines = [{ key: 'bend', geo_type: 'city', geo_slug: 'bend', source: 'boundaries', context: { geo_type: 'zip', geo_slug: '97701' } }]
+    const r = parseBrief(b)
+    expect(r.ok && findOutline(r.value, 'bend')).toMatchObject({ geo_type: 'city', context: { geo_type: 'zip' } })
+    b.outlines.push({ key: 'bend', geo_type: 'county', geo_slug: 'x', source: 's' })
+    const bad = parseBrief(b)
+    const issues = bad.ok ? [] : bad.issues.map((i) => i.path)
+    expect(issues).toEqual(expect.arrayContaining(['outlines[1].geo_type', 'outlines[1].key']))
+  })
 })
+
+describe('the outline scene', () => {
+  it('reads outline_draw_zoom with its outline key and display line, and keeps digits off the line', () => {
+    const t = sampleTimeline()
+    delete t.beats[2].footage
+    delete t.beats[2].cards
+    t.beats[2].scene = { kind: 'outline_draw_zoom', outline: 'bend', line: 'Go in with a plan' }
+    const r = parseTimeline(t)
+    expect(r.ok && r.value.beats[2].scene).toEqual({ kind: 'outline_draw_zoom', outline: 'bend', line: 'Go in with a plan' })
+    t.beats[2].scene.line = '3 ways in'
+    expect(issuesOf(t).join()).toMatch(/scene.line: has a digit/)
+  })
+})
+

@@ -7,7 +7,7 @@ import { ManifestWriteError, serializeManifest, writeManifest } from './manifest
 
 const good = (): Manifest => ({
   factory: 'lib/studio',
-  manifestVersion: 1,
+  manifestVersion: 2,
   video: { file: 'final.mp4', sha256: 'a'.repeat(64), width: 1080, height: 1920, fps: 30, duration: 16.3 },
   videoType: 'buyer_ad',
   techniques: ['dollar_first_hook', 'meter_fill_verdict', 'eased_number_reveal'],
@@ -23,6 +23,9 @@ const good = (): Manifest => ({
   endcard: { start: 13.2, quality: 13.2, local: 13.6, service: 14, call: 14.45, out: 16.25 },
   loop: { seconds: 0.3 },
   builtBy: 'claude',
+  briefSha256: 'b'.repeat(64),
+  slug: 'bend-go-in-with-a-plan',
+  creative: { feel: 'satisfying', constraint: 'one figure per beat', lineage: 'Swiss typographic posters', one_sentence: 'One number, read on a ruler.' },
   briefTechniques: ['dollar_first_hook'],
 })
 

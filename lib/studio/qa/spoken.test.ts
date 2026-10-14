@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { alignCaption, extractNumberTokens, parseCaptionNumber, parseSpokenNumber, squash, tokenizeWords } from './spoken'
+import { NON_STATISTICAL_SPOKEN, alignCaption, extractNumberTokens, parseCaptionNumber, parseSpokenNumber, spokenFigures, squash, tokenShowsSpoken, tokenizeWords } from './spoken'
 
 const words = (s: string) => s.split(' ')
 
@@ -143,6 +143,80 @@ describe('extractNumberTokens', () => {
   it('strips a trailing comma and returns nothing for plain words', () => {
     expect(extractNumberTokens('Sold 12, then')).toEqual(['12'])
     expect(extractNumberTokens('no figures here')).toEqual([])
+  })
+
+  it('keeps each figure with its unit or prefix, so "4 mo" is never "4"', () => {
+    expect(extractNumberTokens('4 mo, 6 mo, 10 mo')).toEqual(['4 mo', '6 mo', '10 mo'])
+    expect(extractNumberTokens('under 4 months')).toEqual(['4'])
+    expect(extractNumberTokens('4 MO')).toEqual(['4 MO'])
+    expect(extractNumberTokens('4 more homes')).toEqual(['4'])
+  })
+
+  it('reads a rank (#1) and a figure glued to punctuation (fell,12%)', () => {
+    // review finding: extractNumberTokens missed "#1" and "fell,12%"
+    expect(extractNumberTokens('#1 in Bend')).toEqual(['#1'])
+    expect(extractNumberTokens('prices fell,12% this year')).toEqual(['12%'])
+    expect(extractNumberTokens('up;7% and (9) and "15"')).toEqual(['7%', '9', '15'])
+  })
+
+  it('does not split one figure into two', () => {
+    expect(extractNumberTokens('3.5 and 1,250')).toEqual(['3.5', '1,250'])
+  })
+})
+
+describe('spokenFigures (a number said in words is a figure)', () => {
+  const w = (s: string) => s.split(' ')
+
+  it('finds counts, percents, dollars, decimals, halves, years and ordinals with their word indices', () => {
+    expect(spokenFigures(w('prices fell twelve percent'))).toEqual([{ first: 2, last: 3, said: 'twelve percent', values: [12], unit: 'percent' }])
+    expect(spokenFigures(w('Bend has three and a half months')).map((f) => [f.said, f.values])).toEqual([['three and a half', [3.5]]])
+    expect(spokenFigures(w('a hundred homes sold')).map((f) => [f.said, f.values])).toEqual([['a hundred', [100]]])
+    expect(spokenFigures(w('four hundred seventy five thousand dollars')).map((f) => [f.values, f.unit])).toEqual([[[475000], 'dollar']])
+    expect(spokenFigures(w('since twenty twenty six,')).map((f) => f.values)).toEqual([[2026]])
+    expect(spokenFigures(w('the third month in a row')).map((f) => f.values)).toEqual([[3]])
+  })
+
+  it('reads a hyphenated number as one figure of one word', () => {
+    expect(spokenFigures(w('sixty-three homes'))).toEqual([{ first: 0, last: 0, said: 'sixty-three', values: [63], unit: null }])
+  })
+
+  it('does not read "a" or "and" alone as a number', () => {
+    expect(spokenFigures(w('go in with a plan and a budget'))).toEqual([])
+  })
+
+  it('skips the locked phone read digit by digit, and still reads the words around it', () => {
+    expect(spokenFigures(w('call five four one seven oh three three oh nine five today'))).toEqual([])
+    expect(spokenFigures(w('call five four one seven oh three three oh nine five twelve times')).map((f) => f.values)).toEqual([[12]])
+  })
+
+  it('allows "one of" and "one more" (a member of a set)', () => {
+    expect(NON_STATISTICAL_SPOKEN.some((r) => r.word === 'one' && r.after?.includes('of'))).toBe(true)
+    expect(spokenFigures(w('one of the best'))).toEqual([])
+    expect(spokenFigures(w('one more thing'))).toEqual([])
+  })
+
+  it('allows "this one", "the one", "no one" and "that one" (a pronoun)', () => {
+    for (const before of ['this', 'the', 'no', 'that']) expect(spokenFigures(w(`${before} one`))).toEqual([])
+  })
+
+  it('never reads "first" or "second" as a figure ("give it a second")', () => {
+    expect(spokenFigures(w('your first home'))).toEqual([])
+    expect(spokenFigures(w('give it a second'))).toEqual([])
+  })
+
+  it('still flags "one" anywhere else, and "twenty one of them"', () => {
+    expect(spokenFigures(w('one home sold')).map((f) => f.values)).toEqual([[1]])
+    expect(spokenFigures(w('twenty one of them')).map((f) => f.values)).toEqual([[21]])
+  })
+})
+
+describe('tokenShowsSpoken', () => {
+  it('needs the same value and the same unit', () => {
+    expect(tokenShowsSpoken('12%', { values: [12], unit: 'percent' })).toBe(true)
+    expect(tokenShowsSpoken('12', { values: [12], unit: 'percent' })).toBe(false)
+    expect(tokenShowsSpoken('$475K', { values: [475000], unit: 'dollar' })).toBe(true)
+    expect(tokenShowsSpoken('3.5', { values: [3.5], unit: null })).toBe(true)
+    expect(tokenShowsSpoken('4 mo', { values: [4], unit: null })).toBe(false)
   })
 })
 

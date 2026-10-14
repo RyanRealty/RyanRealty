@@ -12,8 +12,8 @@ const ROLES = ['hook', 'intro', 'body', 'payoff', 'endcard'];
 const REAL = new Set(['mls_photo', 'listing_photo', 'phone_footage', 'public_meeting', 'stock_licensed', 'other']);
 const PHOTO = new Set(['mls_photo', 'listing_photo']);
 const SAFE = { maxX: 960, maxY: 1640 };
-const ADDRESS = /\b\d{2,6}\s+(?:[NSEW]\.?\s+)?[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*\s+(?:St|Street|Ave|Avenue|Rd|Road|Dr|Drive|Ln|Lane|Way|Ct|Court|Blvd|Boulevard|Pl|Place|Loop|Cir|Circle|Pkwy|Hwy|Trl|Trail|Ter)\b\.?/;
-const NAMEISH = /\b(?:Mr|Mrs|Ms|Dr)\.?\s+[A-Z][a-z]+|\bthe\s+[A-Z][a-z]+s\b(?=\s+(?:family|sold|bought|closed|purchased))/;
+export const ADDRESS = /\b\d{2,6}\s+(?:[NSEW]\.?\s+)?[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*\s+(?:St|Street|Ave|Avenue|Rd|Road|Dr|Drive|Ln|Lane|Way|Ct|Court|Blvd|Boulevard|Pl|Place|Loop|Cir|Circle|Pkwy|Hwy|Trl|Trail|Ter)\b\.?/;
+export const NAMEISH = /\b(?:Mr|Mrs|Ms|Dr)\.?\s+[A-Z][a-z]+|\bthe\s+[A-Z][a-z]+s\b(?=\s+(?:family|sold|bought|closed|purchased))/;
 
 
 // Spoken-voice check (Matt, 2026-10-13): VO must read like a person talking on camera, not prose or an ad.
@@ -47,7 +47,17 @@ export function spokenVoiceCheck(script) {
   function fail(m) { fails.push(`Spoken voice: ${m}`); }
 }
 
-export function gate(brief, timeline, cfg) {
+export const SIGNATURE_FLOOR = 'this film has no approved signature technique; every film runs at least one approved signature technique (pick one from the registry, or build one and have Matt approve its reel)';
+export const CREATIVE_FIELDS = ['feel', 'constraint', 'lineage', 'one_sentence'];
+const CREATIVE_HELP = {
+  feel: 'one target emotion, chosen first',
+  constraint: 'one formal constraint chosen before the story',
+  lineage: 'the non-AI artistic lineage it borrows from',
+  one_sentence: 'the idea in one sentence',
+};
+
+/** `registry` (the techniques object) is for tests; the CLI reads techniques/registry.json. */
+export function gate(brief, timeline, cfg, registry) {
   const fails = [], warns = [];
   const fail = (m) => fails.push(m), warn = (m) => warns.push(m);
   const req = ['video_type', 'title', 'hook', 'length_s', 'numbers', 'footage', 'end_card', 'caption'];
@@ -171,10 +181,29 @@ export function gate(brief, timeline, cfg) {
     if (!rl[src]) fail(`Footage ${f.path}: source "${src}" is not in rights/footage_rights.json.`);
     else if (!(rl[src].cleared_for || []).includes(use)) fail(`Footage ${f.path}: ${rl[src].name} is not cleared for ${use}.`);
   }
-  // Technique library
-  let reg = {}; try { reg = JSON.parse(readFileSync(join(here, '..', 'techniques', 'registry.json'), 'utf8')).techniques || {}; } catch { fail('techniques/registry.json missing.'); }
+  // Technique library (Matt 2026-10-14): planned -> ready (built) -> approved (Matt saw its reel).
+  // Base techniques need ready or approved; a signature technique needs approved; every film runs
+  // at least one approved signature technique. The render preflight and video:check check 15 hold the same floor.
+  let reg = registry;
+  if (!reg) { try { reg = JSON.parse(readFileSync(join(here, '..', 'techniques', 'registry.json'), 'utf8')).techniques || {}; } catch { reg = {}; fail('techniques/registry.json missing.'); } }
   if (!Array.isArray(brief.techniques) || !brief.techniques.length) fail('Brief needs "techniques": names from techniques/registry.json.');
-  else for (const n of brief.techniques) { if (!reg[n]) fail(`Technique "${n}" is not in techniques/registry.json.`); else if (reg[n].status === 'planned') fail(`Technique "${n}" is planned, not built yet (home: ${reg[n].home || 'unnamed'}). Pick a ready technique; the renderer can only run code that exists.`); }
+  else {
+    for (const n of brief.techniques) {
+      const e = reg[n];
+      if (!e) fail(`Technique "${n}" is not in techniques/registry.json.`);
+      else if (e.status === 'planned') fail(`Technique "${n}" is planned, not built yet (home: ${e.home || 'unnamed'}). Pick a ready technique; the renderer can only run code that exists.`);
+      else if (e.tier === 'signature' && e.status !== 'approved') fail(`Signature technique "${n}" is ${e.status}, not approved: Matt approves a signature technique after seeing its showcase reel.`);
+    }
+    if (!brief.techniques.some((n) => reg[n] && reg[n].tier === 'signature' && reg[n].status === 'approved')) fail(SIGNATURE_FLOOR);
+  }
+  // Creative brain piece brief (Matt 2026-10-14): chosen before the story, carried into the manifest.
+  const cr = brief.creative;
+  if (!cr || typeof cr !== 'object') fail('Brief needs a "creative" block: feel, constraint, lineage, one_sentence (.claude/skills/creative-brain).');
+  else for (const k of CREATIVE_FIELDS) {
+    const v = cr[k];
+    if (typeof v !== 'string' || !v.trim()) fail(`creative.${k} is empty (${CREATIVE_HELP[k]}).`);
+    else if (v.length > 200) fail(`creative.${k} runs ${v.length} characters; keep it to 200.`);
+  }
 
   // Type specifics
   if (t.requires_sources && !(brief.sources || []).length) fail('Civic piece needs sources (meeting, date, clip id, documents).');

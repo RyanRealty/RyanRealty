@@ -88,5 +88,11 @@
   "line_draw_riding_dot",
   "tiktok_caption_burn",
   "contact_sheet_review"
- ]
+ ],
+ "creative": {
+  "feel": "satisfying",
+  "constraint": "one line, drawn left to right in one pass, never lifted",
+  "lineage": "Norman McLaren's drawn-on-film line animation",
+  "one_sentence": "A single navy line draws the year's prices and stops on today."
+ }
 }

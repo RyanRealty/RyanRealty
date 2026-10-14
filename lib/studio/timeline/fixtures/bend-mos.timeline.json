@@ -9,7 +9,8 @@
   "start": 0.25,
   "seed": 1013,
   "display": {
-   "three and a half": "3.5"
+   "three and a half": "3.5",
+   "four": "4"
   }
  },
  "beats": [
@@ -29,7 +30,7 @@
      "kind": "number",
      "number": "bend_sfr_mos",
      "unit": "months of homes for sale",
-     "footer": "Listings now vs. the last six months of sales"
+     "footer": "Listings now vs. an average month of sales"
     }
    ]
   },

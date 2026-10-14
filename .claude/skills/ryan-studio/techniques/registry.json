@@ -1,6 +1,6 @@
 {
  "version": "2026-10-13c",
- "_doc": "One factory (docs/plans/STUDIO_ONE_FACTORY.md). A technique is on the menu only when it is real: status 'ready' and, for kind 'code', a lib/studio module plus the test that holds it (ci:studio-techniques checks both exist). 'planned' techniques are ideas with a named home; video_gate refuses them in a brief. Categories feed video:check checks 15 and 16: every film needs one ready hook, scene and type technique, and its hook + scene set may not repeat any of the last five films.",
+ "_doc": "One factory (docs/plans/STUDIO_ONE_FACTORY.md). A technique is on the menu only when it is real: status 'ready' and, for kind 'code', a lib/studio module plus the test that holds it (ci:studio-techniques checks both exist). 'planned' techniques are ideas with a named home; video_gate refuses them in a brief. Categories feed video:check checks 15 and 16: every film needs one ready hook, scene and type technique, and its hook + scene set may not repeat any of the last five films. Every technique has a tier: 'signature' (the visible craft from the research) or 'base' (spine and polish); every film runs at least one ready signature technique (video_gate, the render preflight and check 15 refuse one that does not).",
  "categories": {
   "hook": "How the first 1 to 2 s stops the scroll.",
   "scene": "The picture device that carries the story (a chart drawn on, a map, pins, footage moves).",
@@ -19,6 +19,7 @@
    "category": "type",
    "kind": "code",
    "status": "ready",
+   "tier": "base",
    "module": "lib/studio/motion/reveal.ts",
    "test": "lib/studio/motion/reveal.test.ts"
   },
@@ -29,6 +30,7 @@
    "category": "transition",
    "kind": "code",
    "status": "planned",
+   "tier": "base",
    "home": "lib/studio/motion/render.ts (subframes per output frame)"
   },
   "draft_then_master": {
@@ -37,7 +39,8 @@
    "source": "round4 #3 (@imagine 2026-09-18)",
    "category": "process",
    "kind": "process",
-   "status": "ready"
+   "status": "ready",
+   "tier": "base"
   },
   "imagine_official_prompt": {
    "name": "Imagine official 30-60 word prompt",
@@ -45,7 +48,8 @@
    "source": "round4 #1 (@imagine 2026-09-18)",
    "category": "footage",
    "kind": "prompt",
-   "status": "ready"
+   "status": "ready",
+   "tier": "base"
   },
   "imagine_first_last_keyframe": {
    "name": "Imagine first/last frame plate",
@@ -53,7 +57,8 @@
    "source": "video-skills-research #3, round2 playbook (@imagine 2026-09-08, @XFreeze 2026-09-23)",
    "category": "footage",
    "kind": "prompt",
-   "status": "ready"
+   "status": "ready",
+   "tier": "base"
   },
   "imagine_seamless_loop": {
    "name": "Imagine seamless loop (Loop role)",
@@ -61,7 +66,8 @@
    "source": "round4 seasonal loop; @imagine 2026-09-08",
    "category": "footage",
    "kind": "prompt",
-   "status": "ready"
+   "status": "ready",
+   "tier": "base"
   },
   "loop_seam_edit": {
    "name": "Loopable edit seam",
@@ -70,6 +76,7 @@
    "category": "transition",
    "kind": "code",
    "status": "ready",
+   "tier": "base",
    "module": "lib/studio/timeline/seam.ts",
    "test": "lib/studio/timeline/seam.test.ts"
   },
@@ -79,7 +86,8 @@
    "source": "round4 #4 (@imagine Odyssey 2026-09-29)",
    "category": "footage",
    "kind": "prompt",
-   "status": "ready"
+   "status": "ready",
+   "tier": "base"
   },
   "behavior_not_emotion": {
    "name": "Describe behavior, not emotion",
@@ -87,7 +95,8 @@
    "source": "round4 #6 (PJ Ace 2026-09-16, Heavy Pulp)",
    "category": "footage",
    "kind": "prompt",
-   "status": "ready"
+   "status": "ready",
+   "tier": "base"
   },
   "tiktok_caption_burn": {
    "name": "TikTok burned-in captions",
@@ -96,6 +105,7 @@
    "category": "type",
    "kind": "code",
    "status": "ready",
+   "tier": "base",
    "module": "lib/studio/voice/captions.ts",
    "test": "lib/studio/voice/captions.test.ts"
   },
@@ -106,6 +116,7 @@
    "category": "process",
    "kind": "code",
    "status": "ready",
+   "tier": "base",
    "module": "lib/studio/qa/contact.ts",
    "test": "lib/studio/qa/contact.test.ts"
   },
@@ -116,6 +127,7 @@
    "category": "sound",
    "kind": "code",
    "status": "planned",
+   "tier": "base",
    "home": "lib/studio/motion/sound.ts (drop time from band energy, hero number placed on it)"
   },
   "dollar_first_hook": {
@@ -125,6 +137,7 @@
    "category": "hook",
    "kind": "code",
    "status": "ready",
+   "tier": "base",
    "module": "lib/studio/timeline/hooks.ts",
    "test": "lib/studio/timeline/hooks.test.ts"
   },
@@ -135,6 +148,7 @@
    "category": "hook",
    "kind": "code",
    "status": "ready",
+   "tier": "base",
    "module": "lib/studio/timeline/hooks.ts",
    "test": "lib/studio/timeline/hooks.test.ts"
   },
@@ -145,6 +159,7 @@
    "category": "cta",
    "kind": "code",
    "status": "ready",
+   "tier": "base",
    "module": "lib/studio/timeline/hooks.ts",
    "test": "lib/studio/timeline/hooks.test.ts"
   },
@@ -155,6 +170,7 @@
    "category": "scene",
    "kind": "code",
    "status": "ready",
+   "tier": "signature",
    "module": "lib/studio/motion/chart.ts",
    "test": "lib/studio/motion/paper.test.ts"
   },
@@ -165,6 +181,7 @@
    "category": "scene",
    "kind": "code",
    "status": "ready",
+   "tier": "signature",
    "module": "lib/studio/motion/map.ts",
    "test": "lib/studio/motion/paper.test.ts"
   },
@@ -175,6 +192,7 @@
    "category": "scene",
    "kind": "code",
    "status": "ready",
+   "tier": "base",
    "module": "lib/studio/motion/cues.ts",
    "test": "lib/studio/motion/cues.test.ts"
   },
@@ -185,6 +203,7 @@
    "category": "footage",
    "kind": "code",
    "status": "ready",
+   "tier": "base",
    "module": "lib/video/pan.ts",
    "test": "lib/video/pan.test.ts"
   },
@@ -195,6 +214,7 @@
    "category": "sound",
    "kind": "code",
    "status": "ready",
+   "tier": "base",
    "module": "lib/studio/motion/sound.ts",
    "test": "lib/studio/motion/sound.test.ts"
   },
@@ -205,6 +225,7 @@
    "category": "sound",
    "kind": "code",
    "status": "ready",
+   "tier": "base",
    "module": "lib/studio/score/compose.ts",
    "test": "lib/studio/score/score.test.ts"
   },
@@ -215,6 +236,7 @@
    "category": "scene",
    "kind": "code",
    "status": "planned",
+   "tier": "signature",
    "home": "lib/studio/motion/pins.ts"
   },
   "one_dot_thread": {
@@ -224,6 +246,7 @@
    "category": "scene",
    "kind": "code",
    "status": "planned",
+   "tier": "signature",
    "home": "lib/studio/motion (a persistent dot carried across cues)"
   },
   "bucket_drain": {
@@ -233,6 +256,7 @@
    "category": "scene",
    "kind": "code",
    "status": "planned",
+   "tier": "signature",
    "home": "lib/studio/motion/bucket.ts"
   },
   "words_become_structure": {
@@ -242,6 +266,7 @@
    "category": "type",
    "kind": "code",
    "status": "planned",
+   "tier": "signature",
    "home": "lib/studio/motion (kinetic type that builds the scene)"
   },
   "collision_notes": {
@@ -251,6 +276,7 @@
    "category": "scene",
    "kind": "code",
    "status": "planned",
+   "tier": "signature",
    "home": "lib/studio/motion + lib/studio/motion/sound.ts"
   },
   "milestone_timeline": {
@@ -260,6 +286,7 @@
    "category": "scene",
    "kind": "code",
    "status": "planned",
+   "tier": "signature",
    "home": "lib/studio/motion/timeline-scene.ts"
   },
   "paper_cutout_layers": {
@@ -269,7 +296,12 @@
    "category": "scene",
    "kind": "code",
    "status": "planned",
+   "tier": "signature",
    "home": "lib/studio/motion (navy cut-paper layers from owned references)"
   }
+ },
+ "tiers": {
+  "signature": "The visible craft from the research: the showpiece a viewer remembers. Every film runs at least one READY signature technique.",
+  "base": "Spine and polish: hooks, type, captions, the meter, the loop, the score, footage and process."
  }
 }

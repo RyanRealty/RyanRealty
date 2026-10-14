@@ -105,6 +105,8 @@ export interface TypeRules {
   requires_end_card: boolean
   requires_real_footage: boolean
   requires_loop: boolean
+  /** The film must carry a voiceover with captions (checks 7 and 8). */
+  requires_voiceover: boolean
   requires_sources?: boolean
   requires_special_ad_category?: string
   requires_persona?: boolean
@@ -114,6 +116,8 @@ export interface VideoTypesFile {
   defaults: Partial<TypeRules>
   types: Record<string, Partial<TypeRules>>
   banned_phrases: string[]
+  /** video_gate's fair housing words (check 10 and the renderer read the same list). */
+  fair_housing_flags: string[]
 }
 
 /**
@@ -138,6 +142,7 @@ const REQUIRED_RULE_KEYS: ReadonlyArray<keyof TypeRules> = [
   'min_hold_s',
   'requires_end_card',
   'requires_loop',
+  'requires_voiceover',
 ]
 
 let cached: { path: string; file: VideoTypesFile } | null = null
@@ -146,10 +151,10 @@ let cached: { path: string; file: VideoTypesFile } | null = null
 export function loadVideoTypes(path: string = VIDEO_TYPES_PATH): VideoTypesFile {
   if (cached && cached.path === path) return cached.file
   const raw = JSON.parse(readFileSync(path, 'utf8')) as Partial<VideoTypesFile>
-  if (!raw || typeof raw !== 'object' || !raw.defaults || !raw.types || !Array.isArray(raw.banned_phrases)) {
-    throw new Error(`${path} must hold defaults, types and banned_phrases`)
+  if (!raw || typeof raw !== 'object' || !raw.defaults || !raw.types || !Array.isArray(raw.banned_phrases) || !Array.isArray(raw.fair_housing_flags)) {
+    throw new Error(`${path} must hold defaults, types, banned_phrases and fair_housing_flags`)
   }
-  const file: VideoTypesFile = { defaults: raw.defaults, types: raw.types, banned_phrases: raw.banned_phrases }
+  const file: VideoTypesFile = { defaults: raw.defaults, types: raw.types, banned_phrases: raw.banned_phrases, fair_housing_flags: raw.fair_housing_flags }
   cached = { path, file }
   return file
 }

@@ -8,10 +8,12 @@ const here = dirname(fileURLToPath(import.meta.url));
 const gate = join(here, '..', 'video_gate.mjs');
 const run = (n) => spawnSync(process.execPath, [gate, join(here, 'fixtures', `${n}.brief.json`), join(here, 'fixtures', `${n}.timeline.json`)], { encoding: 'utf8' });
 
-test('compliant market update passes', () => {
+test('the committed registry approves nothing, so even a compliant brief is refused at the signature floor', () => {
+  // Matt 2026-10-14: no film is built from a signature technique he has not seen.
   const r = run('pass');
-  assert.equal(r.status, 0, r.stdout + r.stderr);
-  assert.match(r.stdout, /VIDEO GATE PASSED/);
+  assert.equal(r.status, 1, r.stdout + r.stderr);
+  assert.match(r.stdout, /at least one approved signature technique/);
+  assert.match(r.stdout, /Signature technique "line_draw_riding_dot" is ready, not approved/);
 });
 
 test('broken buyer ad fails with plain reasons', () => {
@@ -30,7 +32,29 @@ import { gate as g, spokenVoiceCheck } from '../video_gate.mjs';
 const load = (f) => JSON.parse(readFileSync(join(here, 'fixtures', f), 'utf8'));
 const cfg = JSON.parse(readFileSync(join(here, '..', 'video_types.json'), 'utf8'));
 const pb = () => load('pass.brief.json'), pt = load('pass.timeline.json');
-const fails = (b) => g(b, pt, cfg).fails.join('\n');
+// A test-only registry: the real one with line_draw_riding_dot approved. Never the committed file.
+const realReg = JSON.parse(readFileSync(join(here, '..', '..', 'techniques', 'registry.json'), 'utf8')).techniques;
+const testReg = { ...realReg, line_draw_riding_dot: { ...realReg.line_draw_riding_dot, status: 'approved', approved_by: 'matt', approved_on: '2026-10-20', reel: 'test-only' } };
+const fails = (b, reg = testReg) => g(b, pt, cfg, reg).fails.join('\n');
+test('compliant market update passes (with its signature technique approved, test registry)', () => {
+  assert.equal(fails(pb()), '');
+});
+test('techniques: a signature needs approved, a base needs ready, and every film has one approved signature', () => {
+  assert.match(fails(pb(), realReg), /Signature technique "line_draw_riding_dot" is ready, not approved/);
+  const noSig = pb(); noSig.techniques = ['tiktok_caption_burn', 'contact_sheet_review'];
+  assert.match(fails(noSig), /no approved signature technique; every film runs at least one approved signature technique/);
+  assert.doesNotMatch(fails(pb()), /signature/);
+});
+test('creative: the piece brief is required, each field non-empty and at most 200 characters', () => {
+  const none = pb(); delete none.creative;
+  assert.match(fails(none), /needs a "creative" block/);
+  for (const k of ['feel', 'constraint', 'lineage', 'one_sentence']) {
+    const b = pb(); b.creative[k] = '  ';
+    assert.match(fails(b), new RegExp(`creative\\.${k} is empty`));
+  }
+  const long = pb(); long.creative.lineage = 'x'.repeat(201);
+  assert.match(fails(long), /creative\.lineage runs 201 characters/);
+});
 test('spec rules: each mandatory rule blocks', () => {
   const cases = [
     [(b) => { delete b.spec_rules; }, /spec_rules/],

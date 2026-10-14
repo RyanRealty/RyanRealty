@@ -11,13 +11,42 @@ import {
   evaluateReview,
   evaluateSafeArea,
   judgeLoudness,
+  endcardStartFromPixels,
+  leadingNumber,
+  shotsCutoff,
+  numberProblems,
   shortHolds,
   silentFilmDeclared,
+  voiceoverRequired,
 } from './evaluate'
 import type { ManifestBeat, ManifestCaption, ManifestEndcard, ManifestText, ManifestVoice } from './manifest'
 
 const card = (over: Partial<ManifestText> = {}): ManifestText => ({
   text: '63% cut their price', start: 0.2, end: 3.1, box: { x: 90, y: 400, w: 860, h: 220 }, kind: 'card', ...over,
+})
+
+describe('the end card start the pixels show (checks 5 and 12)', () => {
+  const frames = (from: number, values: number[]) => values.map((fraction, i) => ({ t: Math.round((from + i / 10) * 1000) / 1000, fraction }))
+
+  it('is the start of the cream run that holds the golden probe', () => {
+    const f = frames(11.9, [0.001, 0.001, 0.001, 0.997, 0.93, 0.93, 0.86, 0.85, 0.85])
+    expect(endcardStartFromPixels(f, 12.6)).toBe(12.2)
+  })
+
+  it('is null when the probe frame is not the cream card', () => {
+    expect(endcardStartFromPixels(frames(0, [0.9, 0.9, 0.1, 0.1]), 0.3)).toBeNull()
+    expect(endcardStartFromPixels([], 1)).toBeNull()
+  })
+
+  it('never lets a start claimed early hide real cuts', () => {
+    // review finding: computeShots trusted manifest.endcard.start, so an early start ignored every later cut
+    expect(shotsCutoff(2, 12.2)).toBe(12.2)
+    expect(shotsCutoff(12.25, 12.2)).toBe(12.25)
+    expect(shotsCutoff(12.2, null)).toBeNull()
+    expect(shotsCutoff(null, 12.2)).toBeNull()
+    const cuts = [3.3, 6, 7.2, 8.7, 12.2, 12.6, 13]
+    expect(computeShots(cuts, 15.3, shotsCutoff(2, 12.2)).shots.map((x) => x.duration)).toContain(1.2)
+  })
 })
 
 describe('evaluateHook', () => {
@@ -110,10 +139,27 @@ describe('judgeLoudness', () => {
 
 describe('silentFilmDeclared', () => {
   const audio = { lufs: null, truePeakDb: null, silent: true }
-  it('needs no voice and a silent audio block', () => {
-    expect(silentFilmDeclared(null, audio)).toBe(true)
-    expect(silentFilmDeclared(null, { ...audio, silent: false })).toBe(false)
-    expect(silentFilmDeclared({ engine: 'e', model: 'm', voiceId: 'v', words: [] }, audio)).toBe(false)
+  it('needs no voice, a silent audio block, and a type and brief that ask for no voiceover', () => {
+    expect(silentFilmDeclared(null, audio, false)).toBe(true)
+    expect(silentFilmDeclared(null, { ...audio, silent: false }, false)).toBe(false)
+    expect(silentFilmDeclared({ engine: 'e', model: 'm', voiceId: 'v', words: [] }, audio, false)).toBe(false)
+  })
+
+  it('never passes a silent film when a voiceover is required', () => {
+    expect(silentFilmDeclared(null, audio, true)).toBe(false)
+  })
+})
+
+describe('voiceoverRequired', () => {
+  it('is required by default, by the type, or by the brief', () => {
+    expect(voiceoverRequired({ requires_voiceover: true }, null)).toBe(true)
+    expect(voiceoverRequired(null, null)).toBe(true)
+    expect(voiceoverRequired({ requires_voiceover: false }, { spec_rules: { voiceover: { engine: 'elevenlabs_v3' } } })).toBe(true)
+  })
+
+  it('is not required only when the type says so and the brief names none', () => {
+    expect(voiceoverRequired({ requires_voiceover: false }, { spec_rules: {} })).toBe(false)
+    expect(voiceoverRequired({ requires_voiceover: false }, null)).toBe(false)
   })
 })
 
@@ -192,35 +238,92 @@ describe('evaluateCaptions', () => {
 
 describe('evaluateNumbers', () => {
   const row = { onScreen: '63%', source: 'Supabase', window: '2026-07-01..2026-09-30', geography: 'Bend', definition: 'x' }
+  const trace = { source: 's', window: 'w', geography: 'g', definition: 'd' }
+  const voiceOf = (text: string): ManifestVoice => ({
+    engine: 'elevenlabs', model: 'eleven_v3', voiceId: 'v',
+    words: text.split(' ').map((word, i) => ({ word, start: i * 0.3, end: i * 0.3 + 0.25 })),
+  })
 
   it('passes figures with complete rows and ignores the locked phone', () => {
-    const f = evaluateNumbers([card(), card({ kind: 'endcard', text: 'Call now 541.703.3095' })], [], [row])
+    const f = evaluateNumbers([card(), card({ kind: 'endcard', text: 'Call now 541.703.3095' })], [], [row], null)
     expect(f.tokens).toEqual(['63%'])
-    expect(f.unmatched).toEqual([])
-    expect(f.incompleteRows).toEqual([])
+    expect(numberProblems(f)).toEqual([])
   })
 
   it('reads captions too', () => {
-    const f = evaluateNumbers([], [{ text: '$475K', start: 0, end: 1, words: [0] }], [row])
-    expect(f.unmatched).toEqual(['$475K'])
+    const f = evaluateNumbers([], [{ text: '$475K', start: 0, end: 1, words: [0] }], [row], null)
+    expect(f.unmatched).toEqual(['"$475K" in captions[0] "$475K"'])
   })
 
-  it('matches a token inside a longer onScreen string, ignoring case and spaces', () => {
-    const f = evaluateNumbers([card({ text: '$475K median' })], [], [{ ...row, onScreen: '$475 K median' }])
-    expect(f.unmatched).toEqual([])
+  it('matches whole tokens with their unit or prefix, never a substring', () => {
+    // review finding: "4" passed against "4 mo", "10" against "10 mo", "$475" against "$475K"
+    expect(evaluateNumbers([card({ text: 'under 4 months' })], [], [{ ...row, onScreen: '4 mo' }], null).unmatched).toHaveLength(1)
+    expect(evaluateNumbers([card({ text: '10 homes' })], [], [{ ...row, onScreen: '10 mo' }], null).unmatched).toHaveLength(1)
+    expect(evaluateNumbers([card({ text: '$475 down' })], [], [{ ...row, onScreen: '$475K' }], null).unmatched).toHaveLength(1)
+    expect(evaluateNumbers([card({ text: '$475K median' })], [], [{ ...row, onScreen: 'median $475K' }], null).unmatched).toEqual([])
+    expect(evaluateNumbers([card({ text: '4 mo' })], [], [{ ...row, onScreen: '4 MO' }], null).unmatched).toEqual([])
+  })
+
+  it('lets an authored row cover only its own drawn box, never a caption, the voice or another box', () => {
+    const box = { x: 243, y: 510, w: 70, h: 39 }
+    const mark = { onScreen: '4 mo', ...trace, boxes: [box] }
+    expect(numberProblems(evaluateNumbers([card({ text: '4 mo', box })], [], [mark], null))).toEqual([])
+    expect(evaluateNumbers([card({ text: '4 mo', box: { ...box, y: 900 } })], [], [mark], null).unmatched).toHaveLength(1)
+    const cap = evaluateNumbers([], [{ text: 'under 4 mo', start: 0, end: 1, words: [0, 1, 2] }], [mark], voiceOf('under four months'))
+    expect(cap.unmatched).toEqual(['"4 mo" in captions[0] "under 4 mo"'])
+    expect(evaluateNumbers([], [], [mark], voiceOf('it is 4 mo')).unmatched).toEqual(['"4 mo" in the voice'])
+  })
+
+  it('reads ranks and figures glued to punctuation', () => {
+    expect(evaluateNumbers([card({ text: '#1 in Bend' })], [], [row], null).unmatched).toEqual(['"#1" in texts[0] "#1 in Bend"'])
+    expect(evaluateNumbers([card({ text: 'prices fell,12%' })], [], [row], null).unmatched).toEqual(['"12%" in texts[0] "prices fell,12%"'])
   })
 
   it('fails a figure with no row', () => {
-    expect(evaluateNumbers([card({ text: '12 days' })], [], [row]).unmatched).toEqual(['12'])
+    expect(evaluateNumbers([card({ text: '12 days' })], [], [row], null).unmatched).toEqual(['"12" in texts[0] "12 days"'])
+  })
+
+  it('fails a figure said in words that no caption shows as a sourced figure', () => {
+    // review finding: "prices fell twelve percent" with no display rule and no row passed
+    const voice = voiceOf('prices fell twelve percent')
+    const caps: ManifestCaption[] = [{ text: 'prices fell twelve percent', start: 0, end: 1.2, words: [0, 1, 2, 3] }]
+    const f = evaluateNumbers([], caps, [row], voice)
+    expect(f.spokenUnsourced[0]).toContain('"twelve percent" is not shown as a figure')
+    expect(f.wordsOnScreen).toEqual(['"twelve percent" in captions[0] "prices fell twelve percent"'])
+    const shown = evaluateNumbers([], [{ ...caps[0], text: 'prices fell 12%' }], [row], voice)
+    expect(shown.spokenUnsourced[0]).toContain('shown as "12%", which no brief numbers row covers')
+    const sourced = evaluateNumbers([], [{ ...caps[0], text: 'prices fell 12%' }], [{ ...row, onScreen: '12%' }], voice)
+    expect(numberProblems(sourced)).toEqual([])
+    expect(sourced.spoken).toEqual(['"twelve percent" shown as "12%"'])
+  })
+
+  it('does not let an authored row source a spoken figure', () => {
+    const voice = voiceOf('under four months')
+    const caps: ManifestCaption[] = [{ text: 'under 4 months', start: 0, end: 1, words: [0, 1, 2] }]
+    const f = evaluateNumbers([], caps, [{ onScreen: '4', ...trace, boxes: [{ x: 0, y: 0, w: 10, h: 10 }] }], voice)
+    expect(f.spokenUnsourced[0]).toContain('no brief numbers row covers')
+    expect(numberProblems(evaluateNumbers([], caps, [{ onScreen: '4', ...trace }], voice))).toEqual([])
+  })
+
+  it('fails a spoken figure on no caption, and a figure written in words on a card', () => {
+    const f = evaluateNumbers([card({ text: 'Up three hundred homes' })], [], [row], voiceOf('three hundred homes'))
+    expect(f.spokenUnsourced[0]).toContain('is on no caption')
+    expect(f.wordsOnScreen).toEqual(['"three hundred" in texts[0] "Up three hundred homes"'])
+  })
+
+  it('allows the short list of non-statistical number words', () => {
+    const voice = voiceOf('one of the best and this one')
+    const f = evaluateNumbers([card({ text: 'One of a kind' })], [{ text: 'one of the best', start: 0, end: 1, words: [0, 1, 2, 3] }, { text: 'and this one', start: 1, end: 2, words: [4, 5, 6] }], [], voice)
+    expect(numberProblems(f)).toEqual([])
   })
 
   it('names the missing trace fields, including blank ones', () => {
-    const f = evaluateNumbers([card()], [], [{ onScreen: '63%', source: 'x', window: ' ', definition: 'y' }])
+    const f = evaluateNumbers([card()], [], [{ onScreen: '63%', source: 'x', window: ' ', definition: 'y' }], null)
     expect(f.incompleteRows).toEqual(['"63%" is missing window, geography'])
   })
 
   it('passes a film with no figures', () => {
-    expect(evaluateNumbers([card({ text: 'Bend homes' })], [], [])).toEqual({ tokens: [], unmatched: [], incompleteRows: [] })
+    expect(numberProblems(evaluateNumbers([card({ text: 'Bend homes' })], [], [], null))).toEqual([])
   })
 })
 
@@ -252,6 +355,18 @@ describe('evaluateCopy', () => {
   it('reports where each hit is', () => {
     const hits = evaluateCopy([card(), card({ text: 'explore' })], [{ text: 'nestled', start: 0, end: 1, words: [] }], null, banned)
     expect(hits.map((h) => h.where)).toEqual(['texts[1]', 'captions[0]'])
+  })
+
+  it('scans every text, caption and the voice with video_gate\'s fair housing, address and name lists', () => {
+    const flags = ['family-friendly', 'young professionals']
+    const voice: ManifestVoice = { engine: 'e', model: 'm', voiceId: 'v', words: ['A', 'family-friendly', 'street'].map((word, i) => ({ word, start: i, end: i + 1 })) }
+    const hits = evaluateCopy([card({ text: 'Perfect for young professionals' })], [{ text: 'Mr Smith sold', start: 0, end: 1, words: [] }, { text: '123 Main Street', start: 1, end: 2, words: [] }], voice, banned, flags)
+    expect(hits).toEqual([
+      { where: 'texts[0]', what: 'fair housing flag "young professionals" (describe homes and places, never people)' },
+      { where: 'captions[0]', what: 'a person\'s name "Mr Smith" (no buyer or seller names)' },
+      { where: 'captions[1]', what: 'an address "123 Main Street" (no addresses anywhere)' },
+      { where: 'voice', what: 'fair housing flag "family-friendly" (describe homes and places, never people)' },
+    ])
   })
 })
 
@@ -285,6 +400,26 @@ describe('evaluateVerdictWords', () => {
   it('reads only the measured figure, not the meter scale marks', () => {
     const mark = { onScreen: '4 mo', window: 'none: a fixed scale mark on the meter, not a measurement', definition: 'scale mark at 4 months of supply' }
     expect(evaluateVerdictWords([mark], say("Seller's market"), [], null)).toEqual([])
+  })
+
+  it('parses the leading number of a figure such as "3.5 months"', () => {
+    // review finding: the check skipped "3.5 months" because it wanted a bare number
+    expect(leadingNumber('3.5 months')).toBe(3.5)
+    expect(leadingNumber('Bend 3.5')).toBeNull()
+    expect(evaluateVerdictWords([mos('3.5 months')], say('Buyers have leverage'), [], null)).toHaveLength(1)
+  })
+
+  it('knows the other ways to say who the market favors', () => {
+    expect(evaluateVerdictWords([mos('3.5')], say('The market favors buyers'), [], null)).toHaveLength(1)
+    expect(evaluateVerdictWords([mos('3.5')], say('A buyer-friendly spring'), [], null)).toHaveLength(1)
+    expect(evaluateVerdictWords([mos('7')], say('A seller-friendly spring'), [], null)).toHaveLength(1)
+    expect(evaluateVerdictWords([mos('7')], say('Sellers are in control'), [], null)).toHaveLength(1)
+    expect(evaluateVerdictWords([mos('7')], say('The market favors sellers'), [], null)).toHaveLength(1)
+    expect(evaluateVerdictWords([mos('5')], say('Buyers are in control'), [], null)).toHaveLength(1)
+  })
+
+  it('reads only brief rows, not authored rows with boxes', () => {
+    expect(evaluateVerdictWords([{ ...mos('3.5'), boxes: [{ x: 0, y: 0, w: 1, h: 1 }] }], say('Buyers have leverage'), [], null)).toEqual([])
   })
 
   it('ignores films with no months-of-supply figure', () => {
@@ -321,8 +456,16 @@ describe('evaluateEndcardTiming', () => {
   })
 
   it('passes the spec defaults, and the song cue example', () => {
-    expect(evaluateEndcardTiming({ start: 0, quality: 0, local: 0.4, service: 0.8, call: 1.25, out: 3.05 }, beats, 3.05).problems).toEqual([])
-    expect(evaluateEndcardTiming({ start: 34.521, quality: 34.521, local: 34.93, service: 35.34, call: 36.165, out: 39.452 }, beats, 39.452).problems).toEqual([])
+    const at = (start: number): ManifestBeat[] => [{ id: 'b', role: 'body', start: 0, end: start || 1 }, { id: 'e', role: 'endcard', start, end: start + 3 }]
+    expect(evaluateEndcardTiming({ start: 0, quality: 0, local: 0.4, service: 0.8, call: 1.25, out: 3.05 }, at(0), 3.05).problems).toEqual([])
+    expect(evaluateEndcardTiming({ start: 34.521, quality: 34.521, local: 34.93, service: 35.34, call: 36.165, out: 39.452 }, at(34.521), 39.452).problems).toEqual([])
+  })
+
+  it('fails an endcard.start that is not the end card beat\'s start', () => {
+    // review finding: endcard.start was a free claim, separate from the beats
+    const early = { ...ec, start: 2 }
+    expect(evaluateEndcardTiming(early, beats, 27.5).problems.join()).toContain("is not the end card beat's start 24.45s")
+    expect(evaluateEndcardTiming({ ...ec, start: 24.45 + 1 / 30 }, beats, 27.5).problems.join()).not.toContain('beat')
   })
 
   it('fails steps out of order', () => {
@@ -361,15 +504,22 @@ describe('evaluateReview', () => {
   })
 
   it('fails each way a review can be wrong', () => {
-    expect(evaluateReview({ ...ok, sha256: 'b'.repeat(64) }, sha, undefined, true)[0]).toContain('different file')
-    expect(evaluateReview({ ...ok, reviewer: '  ' }, sha, undefined, true)[0]).toContain('no reviewer')
-    expect(evaluateReview({ ...ok, reviewer: 'Claude ' }, sha, 'claude', true)[0]).toContain('built the film')
-    expect(evaluateReview({ ...ok, watched: false }, sha, undefined, true)[0]).toContain('not watched')
-    expect(evaluateReview({ ...ok, verdict: 'fix' }, sha, undefined, true)[0]).toContain('"ship"')
-    expect(evaluateReview({}, sha, undefined, true).length).toBeGreaterThanOrEqual(4)
+    expect(evaluateReview({ ...ok, sha256: 'b'.repeat(64) }, sha, 'claude', true)[0]).toContain('different file')
+    expect(evaluateReview({ ...ok, reviewer: '  ' }, sha, 'claude', true)[0]).toContain('no reviewer')
+    expect(evaluateReview({ ...ok, reviewer: 'Claude ' }, sha, 'claude', true)[0]).toContain('is the builder')
+    expect(evaluateReview({ ...ok, watched: false }, sha, 'claude', true)[0]).toContain('not watched')
+    expect(evaluateReview({ ...ok, verdict: 'fix' }, sha, 'claude', true)[0]).toContain('"ship"')
+    expect(evaluateReview({}, sha, 'claude', true).length).toBeGreaterThanOrEqual(4)
+  })
+
+  it('refuses a reviewer id that starts with the builder\'s, and a manifest with no builder', () => {
+    expect(evaluateReview({ ...ok, reviewer: 'claude-reviewer' }, sha, 'claude', true)[0]).toContain('may not equal or start with')
+    expect(evaluateReview({ ...ok, reviewer: 'grok' }, sha, 'claude-2', true)).toEqual([])
+    expect(evaluateReview(ok, sha, undefined, true)[0]).toContain('names no builder')
+    expect(evaluateReview(ok, sha, '  ', true)[0]).toContain('names no builder')
   })
 
   it('compares the hash case insensitively', () => {
-    expect(evaluateReview({ ...ok, sha256: sha.toUpperCase() }, sha, undefined, true)).toEqual([])
+    expect(evaluateReview({ ...ok, sha256: sha.toUpperCase() }, sha, 'claude', true)).toEqual([])
   })
 })

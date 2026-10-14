@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from 'no
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appendLedgerEntry, buildLedgerEntry, comparedCount, findRepeat, parseLedger, readLedger, type LedgerEntry } from './ledger'
+import { appendLedgerEntry, buildLedgerEntry, comparedCount, findRepeat, parseLedger, readLedger, unusedCombinations, type LedgerEntry } from './ledger'
 import type { TechniqueRegistry } from './techniques'
 
 const registry: TechniqueRegistry = {
@@ -108,6 +108,42 @@ describe('findRepeat', () => {
     ]
     expect(findRepeat(me, [old, ...noise])).toBe(old)
     expect(comparedCount(me, [old, ...noise])).toBe(5)
+  })
+})
+
+describe('revisions and what is left', () => {
+  it('treats a later render of the same slug as a revision, not a repeat', () => {
+    // review finding: two hook devices by one scene locked the type after two finals, revisions included
+    const first = entry({ slug: 'bend-plan' })
+    expect(findRepeat(entry({ slug: 'bend-plan' }), [first])).toBeNull()
+    expect(comparedCount(entry({ slug: 'bend-plan' }), [first])).toBe(0)
+    expect(findRepeat(entry({ slug: 'redmond-plan' }), [first])).toBe(first)
+    expect(findRepeat(entry(), [entry()])).not.toBeNull()
+  })
+
+  it('builds the slug into the entry and reads it back', () => {
+    const r = buildLedgerEntry({ sha256: 'f'.repeat(64), slug: 'bend-plan', videoType: 'listing', techniques: ['dollar_first_hook', 'map_zoom'], checkedAt: 'now' }, registry)
+    expect(r.ok && r.entry.slug).toBe('bend-plan')
+    const back = parseLedger(`${JSON.stringify(r.ok ? r.entry : {})}\n`)
+    expect(back.entries[0].slug).toBe('bend-plan')
+    expect(parseLedger('{"sha256":"a","slug":7,"videoType":"x","hookDevice":"h","sceneSet":[],"techniques":[],"checkedAt":"t"}\n').errors[0]).toContain('slug')
+  })
+
+  it('lists the ready hook and single-scene pairs the type has not used lately', () => {
+    const status = new Map<string, string | null>([...registry.categories.keys()].map((k) => [k, k === 'map_zoom' ? 'planned' : 'ready']))
+    const withStatus: TechniqueRegistry = { ...registry, status }
+    const ledger = [entry({ hookDevice: 'dollar_first_hook', sceneSet: ['subframe_motion_blur'] })]
+    const left = unusedCombinations(entry(), ledger, withStatus)
+    expect(left).toContain('question_secret_hook + subframe_motion_blur')
+    expect(left).toContain('dollar_first_hook + loop_seam_edit')
+    expect(left).not.toContain('dollar_first_hook + subframe_motion_blur')
+    expect(left.some((x) => x.includes('map_zoom'))).toBe(false)
+    // A signature scene is listed only once Matt has approved it.
+    const tier = new Map<string, string | null>([['loop_seam_edit', 'signature']])
+    expect(unusedCombinations(entry(), ledger, { ...withStatus, tier }).some((x) => x.includes('loop_seam_edit'))).toBe(false)
+    const approved = new Map(status)
+    approved.set('loop_seam_edit', 'approved')
+    expect(unusedCombinations(entry(), ledger, { ...withStatus, tier, status: approved })).toContain('dollar_first_hook + loop_seam_edit')
   })
 })
 

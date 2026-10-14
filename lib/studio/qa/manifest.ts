@@ -7,8 +7,15 @@
  * that is wrong is reported wrong, so the check fails instead of guessing.
  *
  * Small supersets of the contract, all deliberate:
- *  - `builtBy` (optional string): who built the film, so check 14 can refuse a
- *    review by the same author.
+ *  - `builtBy` (required): who built the film, so check 14 can refuse a review
+ *    by the same author. The renderer always writes it.
+ *  - `briefSha256` (required): the sha256 of the brief file the film was
+ *    rendered from, so a brief edited after the render fails check 1.
+ *  - `slug` (required): the film's slug, [a-z0-9-] only. A later render with
+ *    the same slug is a revision of the same film, not a repeat (check 16).
+ *  - `numbers[].boxes` (optional): an authored figure (a scale mark, an as-of
+ *    date) covers only the drawn text boxes listed here, never a caption or
+ *    the voice (check 9).
  *  - `briefTechniques` (optional string[]): the brief's technique names, so check
  *    15 can run without a brief file.
  *  - `endcard` and `loop` may be null (a type with requires_end_card or
@@ -17,7 +24,7 @@
  */
 
 export const MANIFEST_FACTORY = 'lib/studio'
-export const MANIFEST_VERSION = 1
+export const MANIFEST_VERSION = 2
 
 export const BEAT_ROLES = ['hook', 'intro', 'body', 'payoff', 'cta', 'endcard'] as const
 export type BeatRole = (typeof BEAT_ROLES)[number]
@@ -62,6 +69,12 @@ export interface ManifestNumber {
   window?: string
   geography?: string
   definition?: string
+  /**
+   * An authored figure (a meter scale mark, an as-of date read from a trace):
+   * the drawn boxes it may cover. A row with boxes never covers a caption, the
+   * voice, or a box it does not list. A brief row has none.
+   */
+  boxes?: ManifestBox[]
 }
 
 export interface ManifestVoiceWord {
@@ -118,9 +131,34 @@ export interface Manifest {
   audio: ManifestAudio
   endcard: ManifestEndcard | null
   loop: ManifestLoop | null
-  builtBy?: string
+  builtBy: string
+  /** sha256 of the brief file the film was rendered from (check 1). */
+  briefSha256: string
+  /** The film's slug, [a-z0-9-]: a later render with the same slug is a revision (check 16). */
+  slug: string
+  /** The creative-brain piece brief, for the reviewer: feel, constraint, lineage, one_sentence. */
+  creative: ManifestCreative
   /** The brief's technique names, when the renderer carries them (check 15 without a brief file). */
   briefTechniques?: string[]
+}
+
+/** The creative-brain piece brief the film was made to (copied from the brief, for the reviewer). */
+export interface ManifestCreative {
+  feel: string
+  constraint: string
+  lineage: string
+  one_sentence: string
+}
+
+/** A slug safe for a folder name: lowercase a to z, 0 to 9 and single dashes, at most 60 characters. Never empty. */
+export function safeSlug(text: string): string {
+  const s = text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+    .replace(/-+$/g, '')
+  return s || 'film'
 }
 
 export type ManifestIssueCode = 'json' | 'not_object' | 'missing' | 'type' | 'range' | 'enum' | 'unknown_key' | 'order'
@@ -329,18 +367,29 @@ function readTexts(r: Reader, root: Obj): ManifestText[] | undefined {
     if (start !== undefined && end !== undefined && !(end > start)) r.add('range', `${path}.end`, `${path}.end must be after start`)
     const kind = r.oneOf(o, 'kind', path, TEXT_KINDS)
     const b = r.object(o.box, `${path}.box`)
-    let box: ManifestBox | undefined
-    if (b) {
-      r.exact(b, `${path}.box`, ['x', 'y', 'w', 'h'])
-      const x = r.num(b, 'x', `${path}.box`)
-      const y = r.num(b, 'y', `${path}.box`)
-      const w = r.num(b, 'w', `${path}.box`, { min: 0 })
-      const h = r.num(b, 'h', `${path}.box`, { min: 0 })
-      if (x !== undefined && y !== undefined && w !== undefined && h !== undefined) box = { x, y, w, h }
-    }
+    const box = b ? readBox(r, b, `${path}.box`) : undefined
     if (text !== undefined && start !== undefined && end !== undefined && kind !== undefined && box) out.push({ text, start, end, box, kind })
   })
   return out
+}
+
+function readBox(r: Reader, b: Obj, path: string): ManifestBox | undefined {
+  r.exact(b, path, ['x', 'y', 'w', 'h'])
+  const x = r.num(b, 'x', path)
+  const y = r.num(b, 'y', path)
+  const w = r.num(b, 'w', path, { min: 0 })
+  const h = r.num(b, 'h', path, { min: 0 })
+  return x !== undefined && y !== undefined && w !== undefined && h !== undefined ? { x, y, w, h } : undefined
+}
+
+function readCreative(r: Reader, root: Obj): ManifestCreative | undefined {
+  const o = r.object(root.creative, 'creative')
+  if (!o) return undefined
+  r.exact(o, 'creative', ['feel', 'constraint', 'lineage', 'one_sentence'])
+  const vals = (['feel', 'constraint', 'lineage', 'one_sentence'] as const).map((k) => r.str(o, k, 'creative', { nonEmpty: true }))
+  if (vals.some((v) => v === undefined)) return undefined
+  const [feel, constraint, lineage, one_sentence] = vals as string[]
+  return { feel, constraint, lineage, one_sentence }
 }
 
 function readNumbers(r: Reader, root: Obj): ManifestNumber[] | undefined {
@@ -351,7 +400,7 @@ function readNumbers(r: Reader, root: Obj): ManifestNumber[] | undefined {
     const path = `numbers[${i}]`
     const o = r.object(item, path)
     if (!o) return
-    r.exact(o, path, ['onScreen', 'source', 'window', 'geography', 'definition'])
+    r.exact(o, path, ['onScreen', 'source', 'window', 'geography', 'definition', 'boxes'])
     const onScreen = r.str(o, 'onScreen', path, { nonEmpty: true })
     // The four trace fields may be absent here: check 9 reports an absent or
     // blank one by name, which is more useful than rejecting the whole manifest.
@@ -359,6 +408,19 @@ function readNumbers(r: Reader, root: Obj): ManifestNumber[] | undefined {
     for (const key of ['source', 'window', 'geography', 'definition'] as const) {
       const v = r.str(o, key, path, { optional: true })
       if (v !== undefined) row[key] = v
+    }
+    if ('boxes' in o) {
+      const arr = r.array(o, 'boxes', path)
+      if (arr && arr.length === 0) r.add('range', `${path}.boxes`, `${path}.boxes must list at least one box (leave it out for a brief row)`)
+      const boxes: ManifestBox[] = []
+      arr?.forEach((b, j) => {
+        const bp = `${path}.boxes[${j}]`
+        const bo = r.object(b, bp)
+        if (!bo) return
+        const box = readBox(r, bo, bp)
+        if (box) boxes.push(box)
+      })
+      if (arr && arr.length) row.boxes = boxes
     }
     if (onScreen !== undefined) out.push(row)
   })
@@ -453,7 +515,7 @@ export function parseManifest(raw: unknown, opts: ParseOptions = {}): ManifestPa
   if (!isObj(raw)) return { ok: false, errors: [{ code: 'not_object', path: '', message: 'manifest must be a JSON object' }] }
   r.exact(raw, '', [
     'factory', 'manifestVersion', 'video', 'videoType', 'techniques', 'beats', 'texts', 'numbers',
-    'voice', 'captions', 'audio', 'endcard', 'loop', 'builtBy', 'briefTechniques',
+    'voice', 'captions', 'audio', 'endcard', 'loop', 'builtBy', 'briefSha256', 'slug', 'creative', 'briefTechniques',
   ])
 
   const factory = r.str(raw, 'factory', '', { nonEmpty: true })
@@ -473,7 +535,12 @@ export function parseManifest(raw: unknown, opts: ParseOptions = {}): ManifestPa
   const audio = readAudio(r, raw)
   const endcard = 'endcard' in raw ? readEndcard(r, raw) : (r.add('missing', 'endcard', 'endcard is required (null only for a type with no end card)'), undefined)
   const loop = 'loop' in raw ? readLoop(r, raw) : (r.add('missing', 'loop', 'loop is required (null only for a type with no loop)'), undefined)
-  const builtBy = r.str(raw, 'builtBy', '', { optional: true, nonEmpty: true })
+  const builtBy = r.str(raw, 'builtBy', '', { nonEmpty: true })
+  const briefSha256 = r.str(raw, 'briefSha256', '')
+  if (briefSha256 !== undefined && !/^[0-9a-f]{64}$/i.test(briefSha256)) r.add('range', 'briefSha256', 'briefSha256 must be 64 hex characters')
+  const slug = r.str(raw, 'slug', '', { nonEmpty: true })
+  if (slug !== undefined && slug !== safeSlug(slug)) r.add('range', 'slug', `slug must be lowercase a to z, 0 to 9 and dashes (got "${slug}")`)
+  const creative = readCreative(r, raw)
 
   if (r.issues.length > 0) return { ok: false, errors: r.issues }
   const manifest: Manifest = {
@@ -490,8 +557,11 @@ export function parseManifest(raw: unknown, opts: ParseOptions = {}): ManifestPa
     audio: audio as ManifestAudio,
     endcard: endcard as ManifestEndcard | null,
     loop: loop as ManifestLoop | null,
+    builtBy: builtBy as string,
+    briefSha256: (briefSha256 as string).toLowerCase(),
+    slug: slug as string,
+    creative: creative as ManifestCreative,
   }
-  if (builtBy !== undefined) manifest.builtBy = builtBy
   if (briefTechniques !== undefined) manifest.briefTechniques = briefTechniques
   return { ok: true, manifest }
 }

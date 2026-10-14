@@ -140,7 +140,7 @@ ${g.rings.map((ring) => `<path d="${ring.d}" class="place" pathLength="1" stroke
 </g>
 </svg>
 </section>
-<header class="head" id="${cue.id}-head">${textEl('p', 'eyebrow', cue.eyebrow || null)}${textEl('h1', 'line', cue.line)}</header>`
+<header class="head" id="${cue.id}-head" data-cue="${cue.id}">${textEl('p', 'eyebrow', cue.eyebrow || null)}${textEl('h1', 'line', cue.line)}</header>`
 }
 
 /**
@@ -510,8 +510,7 @@ html,body{background:${CREAM}}
 .card.figure{top:${px(1150)};bottom:auto}
 .meter-track .tick,.meter-track .zone{fill:${NAVY}}
 .closer.brand{background:transparent;box-shadow:none}
-.head{position:absolute;left:${px(90)};top:${px(300)};width:${px(900)};opacity:0;will-change:transform,opacity;color:${NAVY}}
-.chart,.map{position:absolute;left:0;top:0;width:${px(1080)};height:${px(1920)};opacity:0}
+.chart{position:absolute;left:0;top:0;width:${px(1080)};height:${px(1920)};opacity:0}
 .chart .plot{position:absolute;left:0;top:0;width:${px(1080)};height:${px(1920)};overflow:visible}
 .chart .grid{stroke:rgba(16,39,66,0.14);stroke-width:2}
 .chart .scale{font:500 24px 'RR Geist',sans-serif;fill:rgba(16,39,66,0.62)}
@@ -524,13 +523,25 @@ html,body{background:${CREAM}}
 .chart .chartfoot{position:absolute;left:${px(TEXT_LEFT)};top:${px(CHART_BOX.top + CHART_BOX.height + 44)};width:${px(900)}}
 .chart .scope{font:500 ${px(28)}/1.3 'RR Geist',sans-serif;color:${NAVY}}
 .chart .asof{font:400 ${px(24)}/1.3 'RR Geist',sans-serif;color:rgba(16,39,66,0.62);margin-top:${px(8)}}
+`
+    : ''
+  // The map (and the paper films' heading) on cream: a paper film, or a timeline
+  // film's outline_draw_zoom beat, which sits on a cream paper plate. Over a
+  // timeline film the heading stops at x 960, the safe line video:check holds.
+  const hasMap = plan.cues.some((cue) => cue.kind === 'map')
+  const mapCss =
+    paper || hasMap
+      ? `
+.head{position:absolute;left:${px(90)};top:${px(300)};width:${px(paper ? 900 : 870)};opacity:0;will-change:transform,opacity;color:${NAVY}}
+.head .eyebrow{color:rgba(16,39,66,0.72)}
+.map{position:absolute;left:0;top:0;width:${px(1080)};height:${px(1920)};opacity:0}
 .map .mapview{position:absolute;left:${px(MAP_BOX.left)};top:${px(MAP_BOX.top)};width:${px(MAP_BOX.width)};height:${px(MAP_BOX.height)};overflow:hidden}
 .map .context,.map .ghost{fill:none;stroke:${NAVY};stroke-opacity:0.32;stroke-linejoin:round}
 .map .place{fill:none;stroke:${NAVY};stroke-linejoin:round;stroke-linecap:round}
 .map .placefill{fill:${NAVY};fill-opacity:0.15;stroke:none}
 .map .locator{fill:${NAVY}}
 `
-    : ''
+      : ''
   const endcard = plan.cues.find((cue): cue is Extract<MotionCue, { kind: 'endcard' }> => cue.kind === 'endcard')
   const endCss = endcard ? endcardCss(endcard, s, paper) : ''
   const timeline = plan.cues.some((cue) => cue.kind === 'text' || cue.kind === 'number' || cue.kind === 'cta' || cue.kind === 'caption')
@@ -545,5 +556,5 @@ html,body{background:${CREAM}}
   const timelineCss = timeline ? timelineCardCss(px) : ''
   const classes = [paper ? 'paper' : '', plan.layout === 'captioned' ? 'layout-captioned' : ''].filter(Boolean).join(' ')
   const body = plan.cues.map((cue) => cardHtml(cue, assets, paper, s)).join('\n')
-  return `<!doctype html><html><head><meta charset="utf-8"><style>${boldFace}${css}${paperCss}${timelineCss}${endCss}</style></head><body${classes ? ` class="${classes}"` : ''}>${body}<script>${RUNTIME}</script></body></html>`
+  return `<!doctype html><html><head><meta charset="utf-8"><style>${boldFace}${css}${paperCss}${mapCss}${timelineCss}${endCss}</style></head><body${classes ? ` class="${classes}"` : ''}>${body}<script>${RUNTIME}</script></body></html>`
 }

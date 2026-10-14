@@ -57,14 +57,6 @@ function parseArgs(argv: string[]): Args {
   return { brief: positional[0], timeline: positional[1], ...out } as Args
 }
 
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60) || 'film'
-}
-
 async function main(): Promise<number> {
   let args: Args
   try {
@@ -90,7 +82,7 @@ async function main(): Promise<number> {
     return 1
   }
 
-  const { renderTimelineFilm, readJson, RenderError } = await import('../lib/studio/timeline/render')
+  const { renderTimelineFilm, readJson, RenderError, assertNotPublic } = await import('../lib/studio/timeline/render')
   const { elevenLabsProvider } = await import('../lib/studio/timeline/voice')
   const { studioFfmpeg } = await import('../lib/studio/timeline/ffmpeg')
   const { launchMotionChrome } = await import('../lib/studio/motion/endcard-render')
@@ -98,12 +90,21 @@ async function main(): Promise<number> {
   const { writeContactSheet } = await import('../lib/studio/qa/contact')
   const { formatReport } = await import('../lib/studio/qa/report')
   const { typeRulesFor } = await import('../lib/studio/qa/thresholds')
+  const { safeSlug } = await import('../lib/studio/qa/manifest')
 
   const brief = readJson(args.brief) as { title?: string; slug?: string }
   const timeline = readJson(args.timeline)
-  const slug = args.slug ?? (typeof brief.slug === 'string' ? brief.slug : slugify(String(brief.title ?? 'film')))
+  // [a-z0-9-] only, whatever the brief or the flag says: a slug is never a path.
+  // --slug names the folder; the manifest's slug is always the brief's own (check 1).
+  const slug = safeSlug(args.slug ?? (typeof brief.slug === 'string' ? brief.slug : String(brief.title ?? 'film')))
   const outDir = path.resolve(args.out ?? path.join(root, 'out', 'studio', slug))
   const cacheDir = path.join(root, 'out', 'studio', '.cache')
+  try {
+    assertNotPublic(outDir)
+  } catch (e) {
+    console.error((e as Error).message)
+    return 2
+  }
   mkdirSync(outDir, { recursive: true })
 
   const ffmpeg = await studioFfmpeg()
@@ -125,11 +126,19 @@ async function main(): Promise<number> {
         voiceProvider: elevenLabsProvider(),
         launchBrowser: launchMotionChrome,
         log: (line) => console.log(`  ${line}`),
+        // Outlines come from the boundaries table through the DAL, never drawn by hand.
+        resolveOutline: async ({ geoType, geoSlug }) => {
+          const { getBoundaryGeoJSON } = await import('../lib/data/geo/getBoundaryGeoJSON')
+          const geometry = await getBoundaryGeoJSON({ geoType, geoSlug })
+          if (!geometry) return null
+          const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates
+          return polygons.flatMap((polygon) => polygon.map((ring) => ring.map(([lng, lat]) => [lng, lat] as [number, number])))
+        },
       },
     )
   } catch (e) {
     // Every refusal says why in plain words; an unexpected failure also gets its stack.
-    const known = e instanceof RenderError || ['PlanError', 'PlateError', 'HookError', 'CaptionRuleError', 'ElevenLabsError', 'ManifestWriteError'].includes((e as Error).name)
+    const known = e instanceof RenderError || ['PreflightError', 'PlanError', 'PlateError', 'HookError', 'CaptionRuleError', 'ElevenLabsError', 'ManifestWriteError'].includes((e as Error).name)
     console.error(`\nRender refused: ${(e as Error).message}`)
     if (!known && e instanceof Error && e.stack) console.error(e.stack)
     return 1

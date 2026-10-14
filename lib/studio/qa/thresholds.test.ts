@@ -70,6 +70,7 @@ describe('type rules', () => {
     expect(buyer.hook_max_s).toBe(file.types.buyer_ad.hook_max_s)
     expect(buyer.min_hold_s).toBe(file.defaults.min_hold_s)
     expect(buyer.requires_end_card).toBe(true)
+    expect(buyer.requires_voiceover).toBe(true)
     const teaser = typeRulesFor('story_teaser', file)!
     expect(teaser.min_s).toBe(file.types.story_teaser.min_s)
     expect(teaser.hook_max_s).toBe(file.defaults.hook_max_s)
@@ -95,10 +96,11 @@ describe('type rules', () => {
 
     it('throws when the file lacks a section', () => {
       expect(() => loadVideoTypes(write({ defaults: {}, types: {} }))).toThrow(/banned_phrases/)
+      expect(() => loadVideoTypes(write({ defaults: {}, types: {}, banned_phrases: [] }))).toThrow(/fair_housing_flags/)
     })
 
     it('throws when a merged rule set lacks a key the check needs', () => {
-      const file = loadVideoTypes(write({ defaults: { min_s: 1 }, types: { x: {} }, banned_phrases: [] }))
+      const file = loadVideoTypes(write({ defaults: { min_s: 1 }, types: { x: {} }, banned_phrases: [], fair_housing_flags: [] }))
       expect(() => typeRulesFor('x', file)).toThrow(/hook_max_s/)
     })
   })

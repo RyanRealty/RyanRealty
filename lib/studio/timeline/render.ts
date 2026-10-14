@@ -20,12 +20,16 @@
  * called: footage comes in as files or URLs.
  */
 import 'server-only'
+import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { extname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type { Browser } from 'puppeteer-core'
-import { REPO_ROOT } from '../qa/thresholds'
-import { MANIFEST_FACTORY, MANIFEST_VERSION, type Manifest, type ManifestText, type TextKind } from '../qa/manifest'
+import { FILM_LEDGER_PATH, REPO_ROOT, loadVideoTypes, typeRulesFor } from '../qa/thresholds'
+import { MANIFEST_FACTORY, MANIFEST_VERSION, safeSlug, type Manifest } from '../qa/manifest'
+import { layoutPreflight, planPreflight, plannedManifest, refuse, textPreflight, type PreflightContext } from './preflight'
+import { readLedger } from '../qa/ledger'
+import { loadTechniqueRegistry } from '../qa/techniques'
 import { createMeasure, type Measure } from '../qa/measure'
 import { composeScore, SAMPLE_RATE } from '../score'
 import { parseWav } from '../voice/decode'
@@ -33,16 +37,20 @@ import { mixVoiceOverScore } from '../voice/mix'
 import { manifestVoice } from '../voice/elevenlabs'
 import type { StereoAudio } from '../voice/types'
 import { loadMotionAssets, type MotionAssets } from '../motion/assets'
-import { figureLeaks, frameState, stillTimes, type MotionCue } from '../motion/cues'
+import { figureLeaks, stillTimes } from '../motion/cues'
 import { buildMotionPage } from '../motion/page'
-import { renderMotion, type DrawnText } from '../motion/render'
+import { probeMotionLayout, renderMotion, type DrawnText } from '../motion/render'
 import { scoreFor } from '../motion/sound'
 import { buildPlate, type PlateRecord } from '@/lib/video/plate'
 import { endcardStartSeconds, planFilm, type FilmPlan, type PlannedTechnique, type ResolvedFootage } from './plan'
-import type { StudioBrief, Timeline, TimelineFootage } from './types'
-import { formatIssues, parseBrief, parseTimeline } from './validate'
+import type { OutlineGeoType, StudioBrief, Timeline, TimelineFootage } from './types'
+import { findOutline, formatIssues, parseBrief, parseTimeline } from './validate'
+import type { LngLatRing, MotionOutline } from '../motion/map'
 import { speakTimeline, type FilmVoice, type VoiceProvider } from './voice'
 import { writeManifest } from './manifest'
+import { boundNumbers, squash, textsFromDrawn, textsFromProbes, visibleSpans } from './texts'
+
+export { boundNumbers, textsFromDrawn, textsFromProbes, visibleSpans }
 
 export const FILM_WIDTH = 1080
 export const FILM_HEIGHT = 1920
@@ -64,6 +72,18 @@ export type RenderDeps = {
   download?: (url: string, dest: string) => Promise<void>
   env?: NodeJS.ProcessEnv
   log?: (line: string) => void
+  /** Test seam: speak the timeline (default speakTimeline: the provider, the cache, ffmpeg decode). */
+  speak?: typeof speakTimeline
+  /** Test seam: the layout probe (default probeMotionLayout in Chromium). */
+  layoutProbe?: typeof probeMotionLayout
+  /**
+   * Read a place's recorded outline (boundaries table) as [lng, lat] rings, or
+   * null when it has none. The CLI passes the DAL's getBoundaryGeoJSON; a film
+   * with an outline scene and no resolver is refused.
+   */
+  resolveOutline?: (geo: { geoType: OutlineGeoType; geoSlug: string }) => Promise<LngLatRing[] | null>
+  /** Test seam only (the CLI never sets it): a stand-in technique registry for the preflight. */
+  registryPath?: string
 }
 
 export type RenderOptions = {
@@ -75,10 +95,12 @@ export type RenderOptions = {
   outDir: string
   /** Footage downloads and voice syntheses are cached here across films. */
   cacheDir: string
-  /** Who built the film (check 14 refuses a review by the same author). */
+  /** Who built the film (check 14 refuses a review by the same author, or one whose id starts with it). Default "claude". */
   builtBy?: string
   /** Override the voice id (tests); otherwise the named voice's environment variable. */
   voiceId?: string
+  /** The film ledger the repeat rule reads (default data/studio/film-ledger.jsonl). */
+  ledgerPath?: string
 }
 
 export type TechniqueRecord = { name: string; ran: boolean; detail: string; why?: string }
@@ -98,11 +120,45 @@ export type RenderResult = {
   ms: number
 }
 
-/** Refuse any output path under the repo's public/ folder: drafts never land where the site serves them. */
-export function assertNotPublic(path: string): void {
-  const rel = relative(REPO_ROOT, resolve(path))
-  if (!rel.startsWith('..') && !isAbsolute(rel) && (rel === 'public' || rel.startsWith(`public${sep}`))) {
-    throw new RenderError(`refusing to write a render under public/ (${path}); drafts go to out/`)
+/** The real path of p: the nearest existing ancestor resolved through symlinks, the rest appended. */
+export function realPathOf(p: string): string {
+  let head = resolve(p)
+  const tail: string[] = []
+  for (;;) {
+    try {
+      return join(realpathSync(head), ...tail.reverse())
+    } catch {
+      const parent = dirname(head)
+      if (parent === head) return resolve(p)
+      tail.push(basename(head))
+      head = parent
+    }
+  }
+}
+
+/** The repo roots a render must stay out of the public/ folder of: this checkout, and the main checkout of a worktree. */
+export function checkoutRoots(repoRoot: string = REPO_ROOT): string[] {
+  const roots = new Set<string>([realPathOf(repoRoot)])
+  const r = spawnSync('git', ['-C', repoRoot, 'rev-parse', '--git-common-dir'], { encoding: 'utf8' })
+  // A worktree's common dir is the main checkout's .git; its parent is the main checkout.
+  if (r.status === 0 && r.stdout.trim()) roots.add(realPathOf(dirname(resolve(repoRoot, r.stdout.trim()))))
+  return [...roots]
+}
+
+/**
+ * Refuse any output path with a `public` segment under the repo root or the
+ * main checkout's root: drafts never land where the site serves them. The path
+ * is resolved through symlinks first and compared without case (macOS disks
+ * are case-insensitive, so Public/ is public/).
+ */
+export function assertNotPublic(path: string, roots: readonly string[] = checkoutRoots()): void {
+  const real = realPathOf(path).toLowerCase()
+  for (const root of roots) {
+    const rel = relative(root.toLowerCase(), real)
+    if (rel === '' || rel.startsWith('..') || isAbsolute(rel)) continue
+    if (rel.split(sep).includes('public')) {
+      throw new RenderError(`refusing to write a render under a public/ folder of the repo (${path}); drafts go to out/`)
+    }
   }
 }
 
@@ -147,105 +203,6 @@ async function resolveFootage(
   return out
 }
 
-const opacityTables = new WeakMap<FilmPlan, Array<Map<string, number>>>()
-
-/** Every element's opacity on every frame, computed once per film from the same frameState the page applied. */
-function opacityTable(film: FilmPlan): Array<Map<string, number>> {
-  let table = opacityTables.get(film)
-  if (!table) {
-    table = []
-    for (let i = 0; i < film.frames; i++) table.push(new Map(frameState(film.plan, i / film.fps).map((s) => [s.id, s.opacity])))
-    opacityTables.set(film, table)
-  }
-  return table
-}
-
-/** Contiguous runs of frames on which an element is readable (opacity at least 0.5). */
-export function visibleSpans(film: FilmPlan, elementId: string): Array<{ start: number; end: number }> {
-  const table = opacityTable(film)
-  const spans: Array<{ start: number; end: number }> = []
-  let open: number | null = null
-  for (let i = 0; i < film.frames; i++) {
-    const on = (table[i].get(elementId) ?? 0) >= 0.5
-    if (on && open === null) open = i
-    if (!on && open !== null) {
-      spans.push({ start: open / film.fps, end: i / film.fps })
-      open = null
-    }
-  }
-  if (open !== null) spans.push({ start: open / film.fps, end: film.frames / film.fps })
-  return spans.map((s) => ({ start: round3(s.start), end: round3(s.end) }))
-}
-
-const round3 = (n: number) => Math.round(n * 1000) / 1000
-const squash = (s: string) => s.replace(/\s+/g, ' ').trim()
-
-function kindFor(cue: MotionCue): TextKind {
-  if (cue.kind === 'caption') return 'caption'
-  if (cue.kind === 'cta') return 'cta'
-  if (cue.kind === 'endcard') return 'endcard'
-  return 'card'
-}
-
-/** The probe times: each card's settled still, each caption's middle, the end card's golden frame, every proof. */
-function probeTimes(film: FilmPlan): Map<string, number> {
-  const times = new Map<string, number>()
-  for (const s of stillTimes(film.plan)) times.set(s.cueId, s.t)
-  return times
-}
-
-/**
- * The manifest's texts from what the page drew: every visible text node of
- * each cue at its settled still, with its box; its time on screen from the
- * plan's own curves (the same frameState the page applied).
- */
-export function textsFromProbes(
-  film: FilmPlan,
-  probed: Array<{ t: number; texts: DrawnText[] }>,
-): { texts: ManifestText[]; missing: string[] } {
-  const stills = probeTimes(film)
-  const texts: ManifestText[] = []
-  const missing: string[] = []
-  for (const cue of film.plan.cues) {
-    const t = stills.get(cue.id)
-    const probe = t === undefined ? undefined : probed.find((p) => Math.abs(p.t - t) < 1e-9)
-    const drawn = probe ? probe.texts.filter((d) => d.cue === cue.id) : []
-    if (drawn.length === 0) {
-      missing.push(`${cue.id} (${cue.kind}) drew no text at ${t}s`)
-      continue
-    }
-    if (cue.kind === 'endcard') {
-      const T = cue.times
-      const when: Record<string, number> = {
-        [cue.words[0]]: T.quality,
-        [cue.words[1]]: T.local,
-        [cue.words[2]]: T.service,
-        [cue.cta]: T.call,
-        [cue.phone]: T.call,
-      }
-      for (const d of drawn) {
-        const start = when[squash(d.text)] ?? T.start
-        texts.push({ text: squash(d.text), start: round3(start), end: round3(T.out), box: boxOf(d), kind: 'endcard' })
-      }
-      continue
-    }
-    const spans =
-      cue.kind === 'caption' ? [{ start: cue.start, end: cue.end }] : visibleSpans(film, `${cue.id}-card`)
-    for (const span of spans) {
-      for (const d of drawn) {
-        const text = squash(d.text)
-        if (!text) continue
-        texts.push({ text, start: round3(span.start), end: round3(span.end), box: boxOf(d), kind: kindFor(cue) })
-      }
-    }
-  }
-  return { texts: texts.sort((a, b) => a.start - b.start), missing }
-}
-
-function boxOf(d: DrawnText): ManifestText['box'] {
-  return { x: round3(d.x), y: round3(d.y), w: round3(d.w), h: round3(d.h) }
-}
-
 /** A technique counts only when every proof text was on the page at its time. */
 export function proveTechniques(
   planned: PlannedTechnique[],
@@ -271,6 +228,28 @@ export function proveTechniques(
   })
 }
 
+/** The outlines the timeline's scenes draw, read from the boundaries table by the injected resolver. */
+async function resolveOutlines(
+  brief: StudioBrief,
+  timeline: Timeline,
+  resolve: RenderDeps['resolveOutline'],
+): Promise<Record<string, MotionOutline>> {
+  const keys = [...new Set(timeline.beats.flatMap((b) => (b.scene?.kind === 'outline_draw_zoom' ? [b.scene.outline] : [])))]
+  const out: Record<string, MotionOutline> = {}
+  if (keys.length === 0) return out
+  if (!resolve) throw new RenderError('the timeline draws an outline but no outline resolver was given (the CLI reads the boundaries table)')
+  for (const key of keys) {
+    const row = findOutline(brief, key)
+    if (!row) continue // planFilm names the missing row
+    const subject = await resolve({ geoType: row.geo_type, geoSlug: row.geo_slug })
+    if (!subject || subject.length === 0) throw new RenderError(`no recorded outline for ${row.geo_type} "${row.geo_slug}" in the boundaries table`)
+    const context = row.context ? await resolve({ geoType: row.context.geo_type, geoSlug: row.context.geo_slug }) : null
+    if (row.context && !context) throw new RenderError(`no recorded outline for the context ${row.context.geo_type} "${row.context.geo_slug}"`)
+    out[key] = { subject, context: context && context.length ? context : null }
+  }
+  return out
+}
+
 export async function renderTimelineFilm(opts: RenderOptions, deps: RenderDeps): Promise<RenderResult> {
   const started = Date.now()
   const log = deps.log ?? (() => undefined)
@@ -290,6 +269,19 @@ export async function renderTimelineFilm(opts: RenderOptions, deps: RenderDeps):
     throw new RenderError('the brief approved one voiceover script (spec_rules.voiceover.script) and the timeline speaks another; make them identical')
   }
 
+  // The rules refuse before render (preflight.ts; the step table is lib/studio/qa/phases.ts).
+  const types = loadVideoTypes()
+  const rules = typeRulesFor(brief.video_type, types)
+  if (!rules) throw new RenderError(`video_type "${brief.video_type}" is not in video_types.json`)
+  // The film's slug comes from its brief alone (its slug, else its title), so check 1 can hold it to the brief.
+  const slug = safeSlug(typeof brief.slug === 'string' ? brief.slug : brief.title)
+  const ledger = readLedger(opts.ledgerPath ?? FILM_LEDGER_PATH)
+  if (ledger.errors.length) throw new RenderError(`the film ledger is damaged: ${ledger.errors.slice(0, 3).join('; ')}`)
+  const ctx: PreflightContext = { types, rules, registry: loadTechniqueRegistry(deps.registryPath), ledger: ledger.entries, slug }
+  // b: the script and every authored string, before any download or the paid voice.
+  refuse('text', textPreflight(brief, timeline, ctx))
+  log('preflight b (script and authored strings): clear')
+
   mkdirSync(opts.outDir, { recursive: true })
   const work = join(opts.outDir, 'work')
   mkdirSync(work, { recursive: true })
@@ -300,7 +292,7 @@ export async function renderTimelineFilm(opts: RenderOptions, deps: RenderDeps):
   // The voice and its captions, on the film clock.
   let voice: FilmVoice | null = null
   if (timeline.voice) {
-    voice = await speakTimeline(timeline.voice, {
+    voice = await (deps.speak ?? speakTimeline)(timeline.voice, {
       provider: deps.voiceProvider,
       cacheDir: join(opts.cacheDir, 'voice'),
       ffmpeg: deps.ffmpeg,
@@ -312,12 +304,32 @@ export async function renderTimelineFilm(opts: RenderOptions, deps: RenderDeps):
   }
 
   const scored = Boolean(timeline.score)
-  const film = planFilm({ brief, timeline, voice, footage, scored })
+  const outlines = await resolveOutlines(brief, timeline, deps.resolveOutline)
+  const film = planFilm({ brief, timeline, voice, footage, scored, outlines })
   const notes = [...film.notes]
 
   // §0: no number on screen without a brief.numbers row.
   const planned = figureLeaks(film.plan, film.subject)
   if (planned.length) throw new RenderError(`unverified number on screen (no brief.numbers row): ${planned.join(', ')}`)
+
+  // c: the planned manifest, before any frame.
+  const draft = plannedManifest(film, brief, voice)
+  refuse('plan', planPreflight(draft, brief, ctx))
+  log('preflight c (planned manifest): clear')
+
+  // d: the layout probe, the same page read back at each card's still, no frames encoded.
+  const assets = await (deps.loadAssets ?? (() => loadMotionAssets()))()
+  const html = buildMotionPage({ plan: film.plan, width: FILM_WIDTH, height: FILM_HEIGHT, assets })
+  const layout = await (deps.layoutProbe ?? probeMotionLayout)({
+    plan: film.plan,
+    html,
+    width: FILM_WIDTH,
+    height: FILM_HEIGHT,
+    times: [...new Set(stillTimes(film.plan).map((x) => x.t))].sort((a, c) => a - c),
+    launchBrowser: deps.launchBrowser,
+  })
+  refuse('layout', layoutPreflight(draft, film, layout, textsFromProbes))
+  log('preflight d (layout probe): clear')
 
   // The plate.
   const plate = await buildPlate({ ffmpeg: deps.ffmpeg, segments: film.segments, outPath: join(work, 'plate.mp4') })
@@ -356,9 +368,7 @@ export async function renderTimelineFilm(opts: RenderOptions, deps: RenderDeps):
     notes.push(...mixed.report.warnings.map((w) => `mix: ${w}`))
   }
 
-  // Draw: the existing motion stage over the plate.
-  const assets = await (deps.loadAssets ?? (() => loadMotionAssets()))()
-  const html = buildMotionPage({ plan: film.plan, width: FILM_WIDTH, height: FILM_HEIGHT, assets })
+  // e: only now the full render, the existing motion stage over the plate.
   const probes = new Set<number>()
   for (const s of stillTimes(film.plan)) probes.add(s.t)
   for (const p of film.techniques) for (const proof of p.proofs) probes.add(proof.t)
@@ -375,7 +385,7 @@ export async function renderTimelineFilm(opts: RenderOptions, deps: RenderDeps):
     probes: [...probes].sort((a, c) => a - c),
     launchBrowser: deps.launchBrowser,
   })
-  if (rendered.frames !== film.frames) throw new RenderError(`rendered ${rendered.frames} frames, planned ${film.frames}`)
+  if (rendered.frames !== film.frames) throw new RenderError(`wrote ${rendered.frames} frames to ffmpeg, planned ${film.frames}`)
   const probed = rendered.probed ?? []
 
   // §0 again, on what the page actually drew.
@@ -385,8 +395,9 @@ export async function renderTimelineFilm(opts: RenderOptions, deps: RenderDeps):
   const mp4Path = join(opts.outDir, 'final.mp4')
   writeFileSync(mp4Path, rendered.body)
 
-  // Measure the file, not the plan.
+  // Measure the file, not the plan. A short encode is refused here, not shipped.
   const probe = await measure.probe(mp4Path)
+  if (probe.frames != null && probe.frames !== film.frames) throw new RenderError(`the encoded film has ${probe.frames} frames; the plan has ${film.frames}`)
   const sha256 = await measure.sha256(mp4Path)
   let lufs: number | null = null
   let truePeakDb: number | null = null
@@ -413,8 +424,14 @@ export async function renderTimelineFilm(opts: RenderOptions, deps: RenderDeps):
   const techniques = proveTechniques(film.techniques, probed, { scored: scoreRan && Boolean(audioPath), loopRan: Boolean(film.loop) })
   for (const tech of techniques.filter((x) => !x.ran)) notes.push(`technique ${tech.name} did not run: ${tech.why}`)
 
-  const { texts, missing } = textsFromProbes(film, probed)
+  const { texts, cues, missing } = textsFromProbes(film, probed)
   if (missing.length) throw new RenderError(`the page did not draw what the plan asked: ${missing.join('; ')}`)
+  const numbers = boundNumbers(film.numbers, texts, cues)
+  if (!numbers.ok) throw new RenderError(`an authored figure was not drawn where the plan put it: ${numbers.missing.join('; ')}`)
+
+  // The brief exactly as written beside the film; its sha256 binds the two (check 1).
+  const briefText = `${JSON.stringify(opts.brief, null, 2)}\n`
+  const briefSha256 = createHash('sha256').update(briefText).digest('hex')
 
   const manifest: Manifest = {
     factory: MANIFEST_FACTORY,
@@ -424,7 +441,7 @@ export async function renderTimelineFilm(opts: RenderOptions, deps: RenderDeps):
     techniques: techniques.filter((x) => x.ran).map((x) => x.name),
     beats: film.beats,
     texts,
-    numbers: film.numbers,
+    numbers: numbers.rows,
     voice: voice ? manifestVoice(voice, voice.words) : null,
     captions: voice ? voice.captions : [],
     audio: { lufs, truePeakDb, silent: !probe.hasAudio },
@@ -432,13 +449,16 @@ export async function renderTimelineFilm(opts: RenderOptions, deps: RenderDeps):
       ? { start: film.endcard.start, quality: film.endcard.quality, local: film.endcard.local, service: film.endcard.service, call: film.endcard.call, out: film.endcard.out }
       : null,
     loop: film.loop,
-    builtBy: opts.builtBy ?? 'claude',
+    builtBy: opts.builtBy?.trim() || 'claude',
+    briefSha256,
+    slug,
+    creative: { ...brief.creative },
     briefTechniques: brief.techniques,
   }
   const manifestPath = join(opts.outDir, 'final.manifest.json')
   writeManifest(manifestPath, manifest)
   const briefPath = join(opts.outDir, 'final.brief.json')
-  writeFileSync(briefPath, `${JSON.stringify(opts.brief, null, 2)}\n`)
+  writeFileSync(briefPath, briefText)
   writeFileSync(join(work, 'plate.json'), `${JSON.stringify(plate.records, null, 2)}\n`)
 
   return {

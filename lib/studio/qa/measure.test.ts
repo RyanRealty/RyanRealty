@@ -7,7 +7,13 @@ import {
   parseProbe,
   parseSceneCuts,
   parseSsim,
+  creamFractionsFromRgb,
+  isCream,
   resolveBinary,
+  resolvePython,
+  resolveTesseract,
+  runBinary,
+  studioBinaries,
 } from './measure'
 
 // Captured from ffmpeg 6.1.1 on 2026-10-13.
@@ -44,20 +50,60 @@ const SHOWINFO = `[Parsed_showinfo_1 @ 0x561d2d212400] config in time_base: 1/15
 [Parsed_showinfo_1 @ 0x561d2d212400] n:   1 pts: 240000 pts_time:15.625 duration:    512 duration_time:0.0333333 fmt:yuv420p
 `
 
-describe('resolveBinary', () => {
-  it('prefers the env var', () => {
-    expect(resolveBinary('ffmpeg', env({ FFMPEG_PATH: '/opt/ff/ffmpeg' }), () => true)).toBe('/opt/ff/ffmpeg')
-    expect(resolveBinary('ffprobe', env({ FFPROBE_PATH: ' /opt/ff/ffprobe ' }), () => true)).toBe('/opt/ff/ffprobe')
+describe('studioBinaries (one resolver for the film and its check)', () => {
+  it('takes FFMPEG_PATH and FFPROBE_PATH when they exist', () => {
+    expect(studioBinaries(env({ FFMPEG_PATH: '/opt/ff/ffmpeg', FFPROBE_PATH: ' /opt/ff/ffprobe ' }), () => true)).toEqual({ ffmpeg: '/opt/ff/ffmpeg', ffprobe: '/opt/ff/ffprobe' })
+    expect(resolveBinary('ffprobe', env({ FFMPEG_PATH: '/opt/ff/ffmpeg', FFPROBE_PATH: '/opt/ff/ffprobe' }), () => true)).toBe('/opt/ff/ffprobe')
   })
 
-  it('does not mix up the two env vars', () => {
-    expect(resolveBinary('ffprobe', env({ FFMPEG_PATH: '/opt/ff/ffmpeg' }), () => false)).toBe('ffprobe')
+  it('fails when FFMPEG_PATH or FFPROBE_PATH is set but missing, never falling back', () => {
+    expect(() => studioBinaries(env({ FFMPEG_PATH: '/nope/ffmpeg' }), (p) => p.startsWith('/usr/bin/'))).toThrow(/FFMPEG_PATH is set to \/nope\/ffmpeg/)
+    expect(() => studioBinaries(env({ FFPROBE_PATH: '/nope/ffprobe' }), (p) => p.startsWith('/usr/bin/'))).toThrow(/FFPROBE_PATH/)
   })
 
-  it('falls back to /usr/bin when it exists, else the bare name', () => {
-    expect(resolveBinary('ffmpeg', env({}), (p) => p === '/usr/bin/ffmpeg')).toBe('/usr/bin/ffmpeg')
-    expect(resolveBinary('ffprobe', env({}), () => false)).toBe('ffprobe')
-    expect(resolveBinary('ffmpeg', env({ FFMPEG_PATH: '  ' }), () => false)).toBe('ffmpeg')
+  it('takes ffprobe from beside the resolved ffmpeg, so both are one build', () => {
+    expect(studioBinaries(env({ FFMPEG_PATH: '/opt/ff/ffmpeg' }), (p) => p.startsWith('/opt/ff/') || p.startsWith('/usr/bin/'))).toEqual({ ffmpeg: '/opt/ff/ffmpeg', ffprobe: '/opt/ff/ffprobe' })
+    expect(() => studioBinaries(env({ FFMPEG_PATH: '/opt/ff/ffmpeg' }), (p) => p === '/opt/ff/ffmpeg' || p === '/usr/bin/ffprobe')).toThrow(/no ffprobe beside \/opt\/ff\/ffmpeg/)
+  })
+
+  it('looks in /usr/bin, then Homebrew, then /usr/local/bin, then PATH', () => {
+    expect(studioBinaries(env({}), (p) => p.startsWith('/usr/bin/'))).toEqual({ ffmpeg: '/usr/bin/ffmpeg', ffprobe: '/usr/bin/ffprobe' })
+    expect(studioBinaries(env({}), (p) => p.startsWith('/opt/homebrew/bin/')).ffmpeg).toBe('/opt/homebrew/bin/ffmpeg')
+    expect(studioBinaries(env({ PATH: '/a:/b' }), (p) => p.startsWith('/b/')).ffprobe).toBe('/b/ffprobe')
+    expect(() => studioBinaries(env({ PATH: '/a' }), () => false)).toThrow(/ffmpeg was not found/)
+  })
+
+  it('finds tesseract and python3 the same way, or reports them missing', () => {
+    expect(resolveTesseract(env({}), (p) => p === '/usr/bin/tesseract')).toBe('/usr/bin/tesseract')
+    expect(resolveTesseract(env({ TESSERACT_PATH: '/x/tesseract' }), () => false)).toBeNull()
+    expect(resolveTesseract(env({ PATH: '/a' }), () => false)).toBeNull()
+    expect(resolvePython(env({ PATH: '/a' }), (p) => p === '/a/python3')).toBe('/a/python3')
+  })
+})
+
+describe('runBinary timeouts', () => {
+  it('stops a child and everything it spawned when the time runs out', async () => {
+    const started = Date.now()
+    const r = await runBinary('sh', ['-c', 'sleep 30 & sleep 30; echo never'], { timeoutMs: 300, group: true })
+    expect(Date.now() - started).toBeLessThan(5000)
+    expect(r.code).not.toBe(0)
+    expect(r.stdout.toString()).toBe('')
+  })
+})
+
+describe('creamFractionsFromRgb (where the end card is, from the pixels)', () => {
+  it('reads cream as cream and footage as not', () => {
+    expect(isCream(250, 248, 244)).toBe(true)
+    expect(isCream(226, 224, 220)).toBe(true)
+    expect(isCream(16, 39, 66)).toBe(false)
+    expect(isCream(250, 200, 150)).toBe(false)
+  })
+
+  it('gives each frame its share of cream pixels, timed from the start', () => {
+    const frameA = [250, 248, 244, 250, 248, 244, 16, 39, 66, 16, 39, 66]
+    const frameB = Array(4).fill([250, 248, 244]).flat()
+    const raw = new Uint8Array([...frameA, ...frameB, 1, 2])
+    expect(creamFractionsFromRgb(raw, 2, 2, 12.2, 30)).toEqual([{ t: 12.2, fraction: 0.5 }, { t: 12.233, fraction: 1 }])
   })
 })
 
@@ -93,6 +139,11 @@ describe('parseProbe', () => {
     const p = parseProbe(JSON.stringify({ streams: [{ ...base.streams[0], duration: undefined }], format: base.format }))
     expect(p.hasAudio).toBe(false)
     expect(p.videoDuration).toBe(27.5)
+  })
+
+  it('reads the frame count the container records, so a short encode is caught', () => {
+    expect(parseProbe(JSON.stringify({ streams: [{ ...base.streams[0], nb_frames: '459' }], format: base.format })).frames).toBe(459)
+    expect(parseProbe(JSON.stringify(base)).frames).toBeNull()
   })
 
   it('uses r_frame_rate when avg is zero', () => {

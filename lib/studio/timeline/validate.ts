@@ -8,8 +8,11 @@
  * loop_seam, a beat's text, number and boxes) are accepted as they are today.
  */
 import {
+  OUTLINE_GEO_TYPES,
   TIMELINE_ROLES,
   type BriefNumber,
+  type BriefOutline,
+  type CreativeBrief,
   type StudioBrief,
   type Timeline,
   type TimelineBeat,
@@ -161,7 +164,15 @@ function readScene(r: Reader, raw: unknown, path: string): TimelineScene | undef
     r.add(path, 'must be an object { kind, ...params }')
     return undefined
   }
-  const kind = r.oneOf(raw, 'kind', path, ['meter_fill_verdict'] as const)
+  const kind = r.oneOf(raw, 'kind', path, ['meter_fill_verdict', 'outline_draw_zoom'] as const)
+  if (kind === 'outline_draw_zoom') {
+    r.exact(raw, path, ['kind', 'outline', 'line', 'eyebrow'])
+    const outline = r.str(raw, 'outline', path)
+    const line = r.str(raw, 'line', path, { copy: true, words: true })
+    const eyebrow = r.str(raw, 'eyebrow', path, { optional: true, copy: true, words: true })
+    if (!outline || !line) return undefined
+    return { kind, outline, line, ...(eyebrow ? { eyebrow } : {}) }
+  }
   if (kind !== 'meter_fill_verdict') return undefined
   r.exact(raw, path, ['kind', 'number', 'eyebrow', 'show_value'])
   const number = r.str(raw, 'number', path)
@@ -376,6 +387,66 @@ function readNumber(r: Reader, raw: unknown, path: string): BriefNumber | undefi
   return out as BriefNumber
 }
 
+function readOutlines(r: Reader, raw: unknown): BriefOutline[] | undefined {
+  if (!Array.isArray(raw)) {
+    r.add('outlines', 'must be an array of { key, geo_type, geo_slug, context?, source }')
+    return undefined
+  }
+  const out: BriefOutline[] = []
+  const keys = new Set<string>()
+  raw.forEach((o, i) => {
+    const path = `outlines[${i}]`
+    if (!isObj(o)) {
+      r.add(path, 'must be an object')
+      return
+    }
+    r.exact(o, path, ['key', 'geo_type', 'geo_slug', 'context', 'source'])
+    const key = r.str(o, 'key', path)
+    const geoType = r.oneOf(o, 'geo_type', path, OUTLINE_GEO_TYPES)
+    const geoSlug = r.str(o, 'geo_slug', path)
+    const source = r.str(o, 'source', path)
+    let context: BriefOutline['context']
+    if (o.context !== undefined) {
+      if (!isObj(o.context)) r.add(join(path, 'context'), 'must be { geo_type, geo_slug }')
+      else {
+        r.exact(o.context, join(path, 'context'), ['geo_type', 'geo_slug'])
+        const ct = r.oneOf(o.context, 'geo_type', join(path, 'context'), OUTLINE_GEO_TYPES)
+        const cs = r.str(o.context, 'geo_slug', join(path, 'context'))
+        if (ct && cs) context = { geo_type: ct, geo_slug: cs }
+      }
+    }
+    if (key && keys.has(key)) r.add(join(path, 'key'), `"${key}" names two outlines`)
+    if (key) keys.add(key)
+    if (key && geoType && geoSlug && source) out.push({ key, geo_type: geoType, geo_slug: geoSlug, source, ...(context ? { context } : {}) })
+  })
+  return out
+}
+
+/** The brief outline a scene names by key. */
+export function findOutline(brief: StudioBrief, key: string): BriefOutline | undefined {
+  return brief.outlines?.find((o) => o.key === key)
+}
+
+export const CREATIVE_FIELDS = ['feel', 'constraint', 'lineage', 'one_sentence'] as const
+export const CREATIVE_MAX_CHARS = 200
+
+/** The creative-brain piece brief: four non-empty lines of at most 200 characters, chosen before the story. */
+function readCreative(r: Reader, raw: unknown): CreativeBrief | undefined {
+  const path = 'creative'
+  if (!isObj(raw)) {
+    r.add(path, 'is required: { feel, constraint, lineage, one_sentence } from the creative brain (.claude/skills/creative-brain), chosen before the story')
+    return undefined
+  }
+  r.exact(raw, path, CREATIVE_FIELDS)
+  const out: Partial<CreativeBrief> = {}
+  for (const k of CREATIVE_FIELDS) {
+    const v = r.str(raw, k, path, { copy: true })
+    if (v !== undefined && v.length > CREATIVE_MAX_CHARS) r.add(join(path, k), `runs ${v.length} characters; keep it to ${CREATIVE_MAX_CHARS}`)
+    else if (v !== undefined) out[k] = v.trim()
+  }
+  return CREATIVE_FIELDS.every((k) => out[k]) ? (out as CreativeBrief) : undefined
+}
+
 /** Validate the brief fields the renderer depends on. video_gate checks the rest of the paperwork. */
 export function parseBrief(raw: unknown): Parsed<StudioBrief> {
   const r = new Reader()
@@ -390,6 +461,8 @@ export function parseBrief(raw: unknown): Parsed<StudioBrief> {
       else techniques.push(t)
     })
   }
+  const creative = readCreative(r, raw.creative)
+  const outlines = raw.outlines === undefined ? undefined : readOutlines(r, raw.outlines)
   const numbers: BriefNumber[] = []
   if (!Array.isArray(raw.numbers)) r.add('numbers', 'is required: an array (empty when nothing on screen is a figure)')
   else raw.numbers.forEach((n, i) => {
@@ -403,8 +476,8 @@ export function parseBrief(raw: unknown): Parsed<StudioBrief> {
       keys.set(k, i)
     }
   })
-  if (r.issues.length || !videoType || !title) return { ok: false, issues: r.issues }
-  return { ok: true, value: { ...(raw as Obj), video_type: videoType, title, techniques, numbers } as StudioBrief }
+  if (r.issues.length || !videoType || !title || !creative) return { ok: false, issues: r.issues }
+  return { ok: true, value: { ...(raw as Obj), video_type: videoType, title, creative, techniques, numbers, ...(outlines ? { outlines } : {}) } as StudioBrief }
 }
 
 /** The brief row a timeline key names: its `key`, else its `on_screen`. */

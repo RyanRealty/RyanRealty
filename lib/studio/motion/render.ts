@@ -29,7 +29,7 @@ import { existsSync } from 'node:fs'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { Browser } from 'puppeteer-core'
+import type { Browser, Page } from 'puppeteer-core'
 import { frameState, type MotionPlan } from './cues'
 
 export type VideoProbe = { duration: number; width: number; height: number }
@@ -178,12 +178,71 @@ export type RenderMotionResult = {
   /** What the page drew at each probe time (RenderMotionInput.probes), in order. Always set by renderMotion. */
   probed?: Array<{ t: number; frame: number; texts: DrawnText[] }>
   fonts: Array<{ family: string; weight: string; status: string }>
+  /** Frames actually written to ffmpeg (a planned count would hide a short film). */
   frames: number
   captured: number
   ms: number
 }
 
 type FontFaceReport = { family: string; weight: string; status: string }
+
+/** Open the motion page, wait for every font and image, and prepare it. Throws when a font did not load or the page errored. */
+async function openMotionPage(browser: Browser, html: string, width: number, height: number): Promise<{ page: Page; fonts: FontFaceReport[] }> {
+  const problems: string[] = []
+  const page = await browser.newPage()
+  await page.setViewport({ width, height, deviceScaleFactor: 1 })
+  page.on('pageerror', (err) => problems.push(`pageerror: ${err instanceof Error ? err.message : String(err)}`))
+  page.on('requestfailed', (req) => problems.push(`requestfailed: ${req.url().slice(0, 80)}`))
+  await page.setContent(html, { waitUntil: 'load', timeout: 30_000 })
+
+  const fonts = (await page.evaluate(async () => {
+    const faces = Array.from(document.fonts)
+    await Promise.all(faces.map((face) => face.load().catch(() => face)))
+    await document.fonts.ready
+    await Promise.all(Array.from(document.images).map((img) => img.decode().catch(() => undefined)))
+    return faces.map((face) => ({ family: face.family, weight: String(face.weight), status: face.status }))
+  })) as FontFaceReport[]
+  const unloaded = fonts.filter((f) => f.status !== 'loaded')
+  if (fonts.length === 0 || unloaded.length > 0) {
+    throw new Error(
+      `Fonts did not load: ${unloaded.map((f) => `${f.family} ${f.weight} (${f.status})`).join(', ') || 'none declared'}`,
+    )
+  }
+  if (problems.length) throw new Error(problems.join('; '))
+  await page.evaluate(() => (window as unknown as { __rrPrepare: () => void }).__rrPrepare())
+  return { page, fonts }
+}
+
+/**
+ * The layout probe: the same page the film is drawn with, set to each of
+ * `times` and read back (every visible text with its box), with no frame
+ * captured and no ffmpeg. The timeline renderer runs it before the render so
+ * a box outside the safe area refuses the film before a frame exists.
+ */
+export async function probeMotionLayout(input: {
+  plan: MotionPlan
+  html: string
+  width: number
+  height: number
+  times: number[]
+  launchBrowser: (viewport: { width: number; height: number }) => Promise<Browser>
+}): Promise<Array<{ t: number; texts: DrawnText[] }>> {
+  const scale = input.width / 1080
+  let browser: Browser | null = null
+  try {
+    browser = await input.launchBrowser({ width: input.width, height: input.height })
+    const { page } = await openMotionPage(browser, input.html, input.width, input.height)
+    const out: Array<{ t: number; texts: DrawnText[] }> = []
+    for (const t of input.times) {
+      await page.evaluate((s) => (window as unknown as { __rrApply: (x: unknown) => void }).__rrApply(s), frameState(input.plan, t, scale))
+      const texts = (await page.evaluate(() => (window as unknown as { __rrTextBoxes: () => DrawnText[] }).__rrTextBoxes())) as DrawnText[]
+      out.push({ t, texts })
+    }
+    return out
+  } finally {
+    await browser?.close().catch(() => undefined)
+  }
+}
 
 export async function renderMotion(input: RenderMotionInput): Promise<RenderMotionResult> {
   const started = Date.now()
@@ -192,31 +251,10 @@ export async function renderMotion(input: RenderMotionInput): Promise<RenderMoti
   const scale = width / 1080
   const dir = await mkdtemp(join(tmpdir(), 'studio-motion-'))
   const outPath = join(dir, 'final.mp4')
-  const problems: string[] = []
   let browser: Browser | null = null
   try {
     browser = await input.launchBrowser({ width, height })
-    const page = await browser.newPage()
-    await page.setViewport({ width, height, deviceScaleFactor: 1 })
-    page.on('pageerror', (err) => problems.push(`pageerror: ${err instanceof Error ? err.message : String(err)}`))
-    page.on('requestfailed', (req) => problems.push(`requestfailed: ${req.url().slice(0, 80)}`))
-    await page.setContent(input.html, { waitUntil: 'load', timeout: 30_000 })
-
-    const fonts = (await page.evaluate(async () => {
-      const faces = Array.from(document.fonts)
-      await Promise.all(faces.map((face) => face.load().catch(() => face)))
-      await document.fonts.ready
-      await Promise.all(Array.from(document.images).map((img) => img.decode().catch(() => undefined)))
-      return faces.map((face) => ({ family: face.family, weight: String(face.weight), status: face.status }))
-    })) as FontFaceReport[]
-    const unloaded = fonts.filter((f) => f.status !== 'loaded')
-    if (fonts.length === 0 || unloaded.length > 0) {
-      throw new Error(
-        `Fonts did not load: ${unloaded.map((f) => `${f.family} ${f.weight} (${f.status})`).join(', ') || 'none declared'}`,
-      )
-    }
-    if (problems.length) throw new Error(problems.join('; '))
-    await page.evaluate(() => (window as unknown as { __rrPrepare: () => void }).__rrPrepare())
+    const { page, fonts } = await openMotionPage(browser, input.html, width, height)
 
     const cdp = await page.createCDPSession()
     await cdp.send('Emulation.setDefaultBackgroundColorOverride', { color: { r: 0, g: 0, b: 0, a: 0 } })
@@ -284,6 +322,7 @@ export async function renderMotion(input: RenderMotionInput): Promise<RenderMoti
     let previous = ''
     let png: Buffer | null = null
     let captured = 0
+    let written = 0
     let firstColourType: number | null = null
     for (let i = 0; i < frames; i++) {
       if (ffBroken || ffClosed) break
@@ -325,7 +364,9 @@ export async function renderMotion(input: RenderMotionInput): Promise<RenderMoti
         for (const t of probeTimes) probed.push({ t, frame: i, texts })
         renderedText.push(...texts.map((d) => d.text))
       }
-      if (!ff.stdin?.write(png) && !ffClosed) {
+      const accepted = ff.stdin?.write(png)
+      written++
+      if (!accepted && !ffClosed) {
         // Back-pressure: wait for ffmpeg to drain, to exit, or for its stdin to
         // break, then drop the listeners so a long film does not pile them up.
         await new Promise<void>((resolve) => {
@@ -361,7 +402,7 @@ export async function renderMotion(input: RenderMotionInput): Promise<RenderMoti
       if (pulled.code === 0) stills.push({ ...still, jpg: await readFile(jpgPath) })
     }
 
-    return { body, stills, renderedText, probed, fonts, frames, captured, ms: Date.now() - started }
+    return { body, stills, renderedText, probed, fonts, frames: written, captured, ms: Date.now() - started }
   } finally {
     await browser?.close().catch(() => undefined)
     await rm(dir, { recursive: true, force: true }).catch(() => undefined)
