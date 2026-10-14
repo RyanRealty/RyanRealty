@@ -45,6 +45,7 @@ function executeResult(over: Partial<ExecuteRunResult> = {}): ExecuteRunResult {
     skippedFinalized: 0,
     reopenedFinalized: 0,
     expired: null,
+    indexNow: { urls: 0, submitted: 0, ok: true, skipped: 'disabled' },
     ...over,
   }
 }
@@ -108,6 +109,7 @@ describe('POST /api/admin/sync/delta', () => {
     expect(body.summary).toContain('1 price changes')
     expect(body.totalUpserted).toBe(3)
     expect(body.sinceIso).toBe('2026-08-18T00:00:00.000Z')
+    expect(body.indexNow).toEqual({ urls: 0, submitted: 0, ok: true, skipped: 'disabled' })
   })
 
   it('returns 500 when the live core throws', async () => {

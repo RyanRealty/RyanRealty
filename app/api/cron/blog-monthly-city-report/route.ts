@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
+import { indexNowUrl, submitIndexNow } from '@/lib/seo/indexnow'
 import { getPublicDetachedMonthly, leftoverMonthlyToCacheShape } from '@/lib/data/market-truth/public-monthly'
 import { getCityReportSnapshot } from '@/lib/data/market/getCityReportSnapshot'
 import { publishBlogPost } from '@/lib/data/blog/blogPostWrites'
@@ -40,6 +42,7 @@ export async function GET(request: Request) {
   const dry = url.searchParams.get('dry') === '1'
   const builtAt = new Date().toISOString()
   const results: Array<Record<string, unknown>> = []
+  const publishedPaths: string[] = []
 
   for (const city of MONTHLY_REPORT_CITIES) {
     try {
@@ -83,6 +86,17 @@ export async function GET(request: Request) {
         seoTitle: built.post.seoTitle,
         seoDescription: built.post.seoDescription,
       })
+      if (published.ok) {
+        // The post page caches for a day; refresh it before IndexNow sends a
+        // crawler to it, so the engine reads this month's report.
+        const path = `/blog/${encodeURIComponent(published.slug)}`
+        try {
+          revalidatePath(path)
+        } catch (e) {
+          console.warn('[blog-monthly-city-report] revalidate failed (non-fatal)', path, e)
+        }
+        publishedPaths.push(path)
+      }
       results.push(
         published.ok
           ? { city: city.slug, month, ok: true, slug: published.slug, created: published.created, url: `/blog/${published.slug}` }
@@ -92,6 +106,12 @@ export async function GET(request: Request) {
       results.push({ city: city.slug, month, ok: false, reason: e instanceof Error ? e.message : String(e) })
     }
   }
+  // Tell Bing and the engines behind it about the posts just written. Never
+  // throws; production only (lib/seo/indexnow.ts).
+  const indexNow = publishedPaths.length > 0 ? await submitIndexNow(publishedPaths.map(indexNowUrl)) : null
   const ok = results.every((r) => r.ok)
-  return NextResponse.json({ ok, month, results }, { status: ok ? 200 : 500 })
+  return NextResponse.json(
+    { ok, month, results, indexNow: indexNow && { submitted: indexNow.submitted, ok: indexNow.ok, skipped: indexNow.skipped } },
+    { status: ok ? 200 : 500 },
+  )
 }
