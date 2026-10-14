@@ -112,10 +112,17 @@ const TITLE_WORD_RE =
 const ENTITY_EXTRA_RE =
   /\b(?:PROPERTIES|HOLDINGS|BANK|HOA|ASSOC|ASSOCIATION|COMPANY|PARTNERS|PARTNERSHIP|CITY OF|COUNTY OF|STATE OF|UNITED STATES|FOUNDATION|DISTRICT|INVESTMENTS?|VENTURES|ENTERPRISES|RENTALS|DEVELOPMENT|MINISTRIES|COOPERATIVE|AUTHORITY)\b/
 
+// "BLACKWOOD & SONS", "SMITH AND SON": a business, not a couple.
+const AND_SONS_RE = /(?:&|\bAND)\s+SONS?\b/
+
+function isEntityText(text: string): boolean {
+  return isCompanyOwnedEntity(text) || ENTITY_EXTRA_RE.test(text) || AND_SONS_RE.test(text)
+}
+
 export function ownerKindOf(raw: string): OwnerKind {
   const text = foldText(raw)
   if (!text) return 'person'
-  if (isCompanyOwnedEntity(text) || ENTITY_EXTRA_RE.test(text)) return 'entity'
+  if (isEntityText(text)) return 'entity'
   if (TRUST_RE.test(text)) return 'trust'
   return 'person'
 }
@@ -385,6 +392,8 @@ function contactPerson(givenTokens: string[], lastTokens: string[], suffix: stri
   const last = nameKey(lastTokens.join(''))
   if (!isNameWord(first) || last.length < 2) return null
   const first_ = nameKey(first)
+  // "Smith Smith" is a broken record, not a person.
+  if (first_ === last) return null
   return { first: first_, middles: given.slice(1).map(nameKey).filter(Boolean), last, suffix, display: '' }
 }
 
@@ -420,7 +429,7 @@ export function parseContactName(input: {
   const firstField = foldText(input.first_name)
   const lastField = foldText(input.last_name)
   const full = foldText(input.name) || [firstField, lastField].filter(Boolean).join(' ')
-  if (full && (isCompanyOwnedEntity(full) || ENTITY_EXTRA_RE.test(full))) {
+  if (full && isEntityText(full)) {
     return { people: [], entityKey: entityKeyOf(full), reversed: [] }
   }
   if (full && TRUST_RE.test(full)) {

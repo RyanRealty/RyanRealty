@@ -252,10 +252,12 @@ export function westsideOrFilter(personId: number, q: CountyOwnerQuery): string 
     const first = clean(n.first)
     const last = clean(n.last)
     if (first.length < 2 || last.length < 2) continue
-    parts.push(`and(owner1_last.ilike."*${last}*",owner1_first.ilike."${first}*")`)
-    parts.push(`and(owner2_last.ilike."*${last}*",owner2_first.ilike."${first}*")`)
+    // A short family name ("LI") is matched whole; "*LI*" would read half the export.
+    const lastPattern = last.length >= 4 ? `*${last}*` : last
+    parts.push(`and(owner1_last.ilike."${lastPattern}",owner1_first.ilike."${first}*")`)
+    parts.push(`and(owner2_last.ilike."${lastPattern}",owner2_first.ilike."${first}*")`)
     // A trust or company is written whole into owner1_first.
-    parts.push(`and(owner1_first.ilike."*${first}*",owner1_first.ilike."*${last}*")`)
+    if (first.length >= 3 && last.length >= 4) parts.push(`and(owner1_first.ilike."*${first}*",owner1_first.ilike."*${last}*")`)
   }
   for (const a of q.addresses) {
     const num = clean(a.number)

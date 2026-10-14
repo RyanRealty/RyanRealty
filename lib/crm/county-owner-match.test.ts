@@ -192,6 +192,13 @@ describe('parseContactName', () => {
     expect(parseContactName({ first_name: 'John & Jane', last_name: 'Pellworth' }).reversed).toEqual([])
   })
 
+  it('a business "& Son" is not a couple, and "Son Son" is not a person', () => {
+    expect(parseContactName({ name: 'Blackwood & Son' }).people).toEqual([])
+    expect(parseContactName({ name: 'Blackwood & Son' }).entityKey).toBe('BLACKWOODSON')
+    expect(parseOwnerOfRecord('BLACKWOOD & SONS', 'comma').kind).toBe('entity')
+    expect(parseContactName({ first_name: 'Pellworth', last_name: 'Pellworth' }).people).toEqual([])
+  })
+
   it('a single word names nobody', () => {
     expect(parseContactName({ name: 'Pellworth' }).people).toEqual([])
     expect(parseContactName({}).people).toEqual([])

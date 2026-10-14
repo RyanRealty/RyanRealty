@@ -134,6 +134,11 @@ describe('buildContactQuery + westsideOrFilter', () => {
     )
   })
 
+  it('matches a short family name whole in the export, never as a substring', () => {
+    const f = westsideOrFilter(1, { names: [{ first: 'JO', last: 'LI' }], addresses: [], accounts: [] })
+    expect(f).toBe('person_id.eq.1,and(owner1_last.ilike."LI",owner1_first.ilike."JO*"),and(owner2_last.ilike."LI",owner2_first.ilike."JO*")')
+  })
+
   it('searches the name as the record spells it: hyphens and particles', () => {
     const maryJo = { ...person, first_name: 'Mary-Jo', last_name: 'Pellworth', name: 'Mary-Jo Pellworth', addresses: [] }
     expect(buildContactQuery(maryJo, parseContactName(maryJo), [], []).names).toEqual([{ first: 'MARY', last: 'PELLWORTH' }])
