@@ -7,9 +7,11 @@
  * social channel by the old studio path (/admin/studio -> lib/studio/produce.ts
  * -> approveStudioDraft -> publisher-sweep -> /api/social/publish), nor by the
  * doors beside it that feed the same sweep (Today's Imagine listing clip, the
- * approval queue, the SMS APPROVE). lib/content/video-freeze.ts answers "is
- * this video?" (failing closed); this gate fails if any choke point stops
- * asking, so the freeze cannot be quietly removed.
+ * approval queue, the SMS APPROVE), nor by the scripts that post video to a
+ * platform directly (scripts/upload-youtube.mjs, scripts/create-fb-ad.mjs and
+ * lib/meta-marketing-api.mjs). lib/content/video-freeze.ts answers "is this
+ * video?" (failing closed); this gate fails if any choke point stops asking,
+ * so the freeze cannot be quietly removed.
  *
  * RETIRED WHEN the server-signed certificate check replaces the freeze at the
  * same choke points: delete this gate, its package.json/ci-lanes.json entries,
@@ -18,14 +20,24 @@
  * Rules (TypeScript AST, so a comment or a string cannot satisfy them):
  *   R0  lib/content/video-freeze.ts exports VIDEO_PUBLISH_FROZEN initialised
  *       to the literal `true`, Matt's message, and the guard functions.
- *   R1  Each choke-point file imports the guard it calls from
- *       '@/lib/content/video-freeze' (a local look-alike does not count).
+ *   R1  Each choke-point file imports the guard it calls from the module,
+ *       as '@/lib/content/video-freeze' or a relative path to
+ *       lib/content/video-freeze.ts (a local look-alike does not count).
  *   R2  In each choke point, an `if` whose condition is a guard call (or a
- *       const initialised from one) exits (return / continue / throw) and
- *       DOMINATES every guarded write: it sits earlier in a block that
- *       encloses the write, so the write cannot run first or around it.
+ *       const initialised from one) exits (return / continue / throw /
+ *       process.exit) and DOMINATES every guarded write: it sits earlier in a
+ *       block that encloses the write, so the write cannot run first or around it.
  *   R3  The publish route's refusal answers 423 Locked.
  *   R4  The bulk approve writes only ids that came out of splitVideoFrozen.
+ *   R5  The retired one-off May rollout scripts, which posted Reels straight to
+ *       the Graph API, stay deleted.
+ *   R6  A direct video-post endpoint ('REELS', /advideos, video_reels,
+ *       post/publish/, upload/youtube/v3/videos, tweet_video, videos.insert)
+ *       appears only in a guarded choke point or a platform client, so a new
+ *       script cannot open a door around the freeze.
+ *   R7  The platform clients' video functions (publishReel, directPostVideo,
+ *       uploadYouTubeVideoFromUrl, ...) are imported only by the publish
+ *       route, which refuses video (R2, R3).
  *
  * Usage:
  *   node scripts/check-video-freeze.mjs            # check (exit 1 on a violation)
@@ -34,15 +46,16 @@
  *
  * Break-tests: scripts/__tests__/check-video-freeze.test.mjs.
  */
+import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, posix } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 
 export const GUARD_MODULE = 'lib/content/video-freeze.ts'
 export const GUARD_SPECIFIER = '@/lib/content/video-freeze'
 export const FREEZE_MESSAGE =
-  'Video publishing is frozen until the content process is live (Matt 2026-10-14). Videos go through npm run studio and need a server-signed certificate.'
+  'Video publishing is frozen until the content process is live (Matt 2026-10-14). Videos go through the content process (docs/plans/STUDIO_ONE_FACTORY.md) and need a server-signed certificate.'
 const GUARD_EXPORTS = ['isVideoMedia', 'videoFreezeRefusal', 'rowVideoFreezeRefusal', 'splitVideoFrozen', 'VIDEO_FREEZE_MESSAGE']
 
 /**
@@ -52,6 +65,7 @@ const GUARD_EXPORTS = ['isVideoMedia', 'videoFreezeRefusal', 'rowVideoFreezeRefu
  *   { callee: 'update', approves }  every .update(...) that sets status 'approved'
  */
 export const CHOKE_POINTS = [
+  // scope: null means the module's top level (a plain-node script).
   {
     file: 'lib/studio/produce.ts',
     scope: 'produceStudioDraft',
@@ -109,10 +123,99 @@ export const CHOKE_POINTS = [
     writes: { calleePattern: /^publishTo/ },
     status423: true,
   },
+  {
+    file: 'scripts/upload-youtube.mjs',
+    scope: null,
+    what: 'uploading an MP4 to the YouTube channel (private included)',
+    guard: 'videoFreezeRefusal',
+    writes: { callee: 'insert' },
+  },
+  {
+    file: 'scripts/create-fb-ad.mjs',
+    scope: 'main',
+    what: 'creating a video lead-gen ad (upload, campaign, ad set, form, creative, ad)',
+    guard: 'videoFreezeRefusal',
+    writes: { calleePattern: /^(uploadVideo|getOrCreateForm|createCampaign|createAdSet|createAdCreative|createAd|setAdStatus)$/ },
+  },
+  {
+    file: 'lib/meta-marketing-api.mjs',
+    scope: 'uploadVideo',
+    what: 'uploading a video to the Meta ad account (/advideos)',
+    guard: 'videoFreezeRefusal',
+    writes: { callee: 'fetch' },
+  },
+  {
+    file: 'lib/meta-marketing-api.mjs',
+    scope: 'createAdCreative',
+    what: 'building a video_data ad creative',
+    guard: 'videoFreezeRefusal',
+    writes: { callee: 'apiPost' },
+  },
 ]
 
+/** R5: one-off scripts that posted video around every gate. Deleted 2026-10-14; they stay deleted. */
+export const RETIRED_SCRIPTS = ['scripts/publish-2026-05-14-fixes.mjs', 'scripts/publish-2026-05-14-rollout.mjs']
+
+/** R6: string pieces that only a direct video post uses. */
+const VIDEO_POST_EXACT = new Set(['REELS', 'tweet_video'])
+const VIDEO_POST_PARTS = ['/advideos', 'video_reels', 'post/publish/', 'upload/youtube/v3/videos']
+
+/** R6: where those may appear, and why that is safe. */
+export const VIDEO_POST_ALLOWED = new Map([
+  ['lib/meta-graph.ts', 'platform client; its video functions are imported only by the publish route (R7)'],
+  ['lib/tiktok.ts', 'platform client; its video functions are imported only by the publish route (R7)'],
+  ['lib/x.ts', 'platform client; its video functions are imported only by the publish route (R7)'],
+  ['lib/youtube.ts', 'platform client; its video functions are imported only by the publish route (R7)'],
+  ['lib/meta-marketing-api.mjs', 'uploadVideo and createAdCreative refuse video (choke points above)'],
+  ['scripts/upload-youtube.mjs', 'refuses every upload at the top (choke point above)'],
+])
+
+/** R7: each platform client's video functions, which only the publish route may import. */
+export const PLATFORM_VIDEO_FUNCTIONS = new Map([
+  ['lib/meta-graph', ['publishReel', 'publishFacebookReel', 'publishFacebookVideo']],
+  ['lib/tiktok', ['initVideoUpload', 'uploadVideoChunk', 'publishVideo', 'directPostVideo']],
+  ['lib/youtube', ['uploadYouTubeVideoFromUrl']],
+  ['lib/linkedin', ['publishLinkedInVideoFromUrl']],
+  ['lib/x', ['uploadVideoToX']],
+  ['lib/pinterest', ['createPinterestVideoPin']],
+  ['lib/threads', ['publishThreadsVideo']],
+])
+export const PUBLISH_ROUTE = 'app/api/social/publish/route.ts'
+
+/** Raw text a file must hold before R6/R7 bother parsing it (parsing every file costs ~10s). */
+// `.videos` covers `youtube.videos.insert(` and the same chain split across lines.
+const R6_HINTS = [...VIDEO_POST_EXACT, ...VIDEO_POST_PARTS, '.videos']
+const R7_HINTS = [...PLATFORM_VIDEO_FUNCTIONS.keys()].flatMap((mod) => {
+  const base = mod.slice(mod.lastIndexOf('/'))
+  return [`${base}'`, `${base}"`, `${base}.ts'`, `${base}.ts"`]
+})
+
+/** Code this gate scans for R6 and R7: source under app/, lib/, components/, scripts/; never tests or this gate. */
+export function isScannedCode(rel) {
+  if (!/^(app|lib|components|scripts)\//.test(rel)) return false
+  if (!/\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/.test(rel) || rel.endsWith('.d.ts')) return false
+  if (/\.(test|spec)\.[cm]?[jt]sx?$/.test(rel) || rel.includes('/__tests__/')) return false
+  return rel !== 'scripts/check-video-freeze.mjs'
+}
+
 function parse(rel, src) {
-  return ts.createSourceFile(rel, src, ts.ScriptTarget.Latest, true, rel.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
+  const kind = /\.[cm]?jsx?$/.test(rel)
+    ? rel.endsWith('x')
+      ? ts.ScriptKind.JSX
+      : ts.ScriptKind.JS
+    : rel.endsWith('x')
+      ? ts.ScriptKind.TSX
+      : ts.ScriptKind.TS
+  return ts.createSourceFile(rel, src, ts.ScriptTarget.Latest, true, kind)
+}
+
+/** The repo path an import specifier points at, without extension, or null for a package. */
+function resolveSpecifier(fromRel, spec) {
+  let target
+  if (spec.startsWith('@/')) target = spec.slice(2)
+  else if (spec.startsWith('.')) target = posix.normalize(posix.join(posix.dirname(fromRel), spec))
+  else return null
+  return target.replace(/\.(ts|tsx|mts|js|mjs|jsx)$/, '').replace(/\/index$/, '')
 }
 
 function walk(node, visit) {
@@ -127,8 +230,9 @@ function calleeName(call) {
   return null
 }
 
-/** The function (declaration or `const name = (...) =>`) called `name`, or null. */
+/** The function (declaration or `const name = (...) =>`) called `name`, or null. A null name is the module itself. */
 function findScope(sf, name) {
+  if (name === null) return sf
   let found = null
   walk(sf, (node) => {
     if (found) return
@@ -146,12 +250,13 @@ function findScope(sf, name) {
   return found
 }
 
-/** Names imported from the guard module. */
-function guardImports(sf) {
+/** Names imported from the guard module (by alias or by a relative path to it). */
+function guardImports(sf, rel) {
   const names = new Set()
+  const guardPath = GUARD_MODULE.replace(/\.ts$/, '')
   for (const stmt of sf.statements) {
     if (!ts.isImportDeclaration(stmt) || !ts.isStringLiteral(stmt.moduleSpecifier)) continue
-    if (stmt.moduleSpecifier.text !== GUARD_SPECIFIER) continue
+    if (resolveSpecifier(rel, stmt.moduleSpecifier.text) !== guardPath) continue
     const bindings = stmt.importClause?.namedBindings
     if (bindings && ts.isNamedImports(bindings)) {
       for (const el of bindings.elements) {
@@ -197,7 +302,8 @@ function isGuardValue(node, guard) {
   const n = unwrap(node)
   if (isGuardCall(n, guard)) return true
   if (n && ts.isConditionalExpression(n)) {
-    return isGuardCall(n.whenTrue, guard) && unwrap(n.whenFalse)?.kind === ts.SyntaxKind.NullKeyword
+    const isNull = (e) => unwrap(e)?.kind === ts.SyntaxKind.NullKeyword
+    return (isGuardCall(n.whenTrue, guard) && isNull(n.whenFalse)) || (isNull(n.whenTrue) && isGuardCall(n.whenFalse, guard))
   }
   return false
 }
@@ -249,6 +355,16 @@ function exits(stmt) {
   walk(stmt, (n) => {
     if (found) return
     if (ts.isReturnStatement(n) || ts.isContinueStatement(n) || ts.isThrowStatement(n)) found = true
+    // A plain-node script leaves with process.exit(...).
+    if (
+      ts.isCallExpression(n) &&
+      ts.isPropertyAccessExpression(n.expression) &&
+      n.expression.name.text === 'exit' &&
+      ts.isIdentifier(n.expression.expression) &&
+      n.expression.expression.text === 'process'
+    ) {
+      found = true
+    }
   })
   return found
 }
@@ -374,9 +490,103 @@ function checkBulkIds(sf, scope, guard, rel, problems) {
   }
 }
 
-/** Run every rule against `read(rel) -> source | null`. Returns the problems found. */
-export function checkVideoFreeze(read) {
+/** R6: does this file hold a direct video-post endpoint? Returns the first hit's line, or null. */
+function videoPostSignature(sf) {
+  let hit = null
+  walk(sf, (node) => {
+    if (hit) return
+    let text = null
+    if (ts.isStringLiteralLike(node)) text = node.text
+    else if (ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node)) text = node.text
+    if (text != null && (VIDEO_POST_EXACT.has(text) || VIDEO_POST_PARTS.some((part) => text.includes(part)))) {
+      hit = { line: line(sf, node), what: text.length > 60 ? `${text.slice(0, 60)}...` : text }
+      return
+    }
+    // youtube.videos.insert(...)
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'insert' &&
+      ts.isPropertyAccessExpression(node.expression.expression) &&
+      node.expression.expression.name.text === 'videos'
+    ) {
+      hit = { line: line(sf, node), what: 'videos.insert(...)' }
+    }
+  })
+  return hit
+}
+
+/** R7: platform video functions this file imports or re-exports, as `module.fn`. */
+function importedPlatformVideoFunctions(sf, rel) {
+  const out = []
+  walk(sf, (node) => {
+    let spec = null
+    let names = []
+    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+      spec = node.moduleSpecifier.text
+      const bindings = node.importClause?.namedBindings
+      if (bindings && ts.isNamedImports(bindings)) names = bindings.elements.map((el) => (el.propertyName ?? el.name).text)
+      if (bindings && ts.isNamespaceImport(bindings)) names = ['*']
+    } else if (ts.isExportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+      spec = node.moduleSpecifier.text
+      names =
+        node.exportClause && ts.isNamedExports(node.exportClause)
+          ? node.exportClause.elements.map((el) => (el.propertyName ?? el.name).text)
+          : ['*']
+    }
+    if (spec == null) return
+    const target = resolveSpecifier(rel, spec)
+    const fns = target ? PLATFORM_VIDEO_FUNCTIONS.get(target) : null
+    if (!fns) return
+    for (const name of names) {
+      if (name === '*' || fns.includes(name)) out.push(`${target}.${name}`)
+    }
+  })
+  return out
+}
+
+/**
+ * Run every rule against `read(rel) -> source | null`. `files` is the repo's
+ * file list for the whole-tree rules (R6, R7); without it those are skipped.
+ * Returns the problems found.
+ */
+export function checkVideoFreeze(read, files = null) {
   const problems = []
+
+  // R5: the retired May rollout scripts stay deleted.
+  for (const rel of RETIRED_SCRIPTS) {
+    if (read(rel) != null) {
+      problems.push(
+        `${rel}: is back. It posted Reels straight to the Graph API around every gate and was deleted for the video freeze (R5).`,
+      )
+    }
+  }
+
+  // R6, R7: no new door around the freeze.
+  if (files) {
+    for (const rel of files) {
+      if (!isScannedCode(rel)) continue
+      const src = read(rel)
+      if (src == null) continue
+      const wantsR6 = !VIDEO_POST_ALLOWED.has(rel) && R6_HINTS.some((h) => src.includes(h))
+      const wantsR7 = rel !== PUBLISH_ROUTE && R7_HINTS.some((h) => src.includes(h))
+      if (!wantsR6 && !wantsR7) continue
+      const sf = parse(rel, src)
+      if (wantsR6) {
+        const hit = videoPostSignature(sf)
+        if (hit) {
+          problems.push(
+            `${rel}:${hit.line}: posts video to a platform directly (\`${hit.what}\`) outside a guarded choke point. Route it through /api/social/publish, or guard it with lib/content/video-freeze.ts and add it to CHOKE_POINTS (R6).`,
+          )
+        }
+      }
+      if (wantsR7) {
+        for (const fn of importedPlatformVideoFunctions(sf, rel)) {
+          problems.push(`${rel}: imports ${fn}, a platform video function only ${PUBLISH_ROUTE} may call (it refuses video) (R7).`)
+        }
+      }
+    }
+  }
 
   // R0 — the guard module.
   const guardSrc = read(GUARD_MODULE)
@@ -420,8 +630,10 @@ export function checkVideoFreeze(read) {
     }
     const sf = parse(rel, src)
 
+    const scopeName = point.scope ?? 'the module'
+
     // R1
-    if (!guardImports(sf).has(point.guard)) {
+    if (!guardImports(sf, rel).has(point.guard)) {
       problems.push(`${rel}: does not import \`${point.guard}\` from '${GUARD_SPECIFIER}' (R1, ${point.what}).`)
       continue
     }
@@ -444,12 +656,12 @@ export function checkVideoFreeze(read) {
     // R2
     const writes = writeCalls(scope, point.writes, sf)
     if (writes.length === 0) {
-      problems.push(`${rel}: \`${point.scope}\` has no guarded write to check (${JSON.stringify(point.writes, (k, v) => (v instanceof RegExp ? String(v) : v))}). It moved; update CHOKE_POINTS.`)
+      problems.push(`${rel}: \`${scopeName}\` has no guarded write to check (${JSON.stringify(point.writes, (k, v) => (v instanceof RegExp ? String(v) : v))}). It moved; update CHOKE_POINTS.`)
       continue
     }
     const ifs = guardIfs(scope, point.guard)
     if (ifs.length === 0) {
-      problems.push(`${rel}: \`${point.scope}\` never refuses on \`${point.guard}(...)\` (no if that tests it and returns/continues/throws) (R2, ${point.what}).`)
+      problems.push(`${rel}: \`${scopeName}\` never refuses on \`${point.guard}(...)\` (no if that tests it and returns/continues/throws) (R2, ${point.what}).`)
       continue
     }
     for (const write of writes) {
@@ -485,18 +697,29 @@ export function checkVideoFreeze(read) {
   return problems
 }
 
-function readFromDisk(root) {
+export function readFromDisk(root) {
   return (rel) => {
     const p = join(root, rel)
     return existsSync(p) ? readFileSync(p, 'utf8') : null
   }
 }
 
+/** Tracked files plus untracked-but-not-ignored ones: what a commit could carry. */
+export function listRepoFiles(root) {
+  const r = spawnSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], {
+    cwd: root,
+    encoding: 'utf8',
+    maxBuffer: 256 * 1024 * 1024,
+  })
+  if (r.status !== 0) throw new Error(`file listing failed in ${root}: ${(r.stderr || '').trim()}`)
+  return [...new Set(r.stdout.split('\0').filter(Boolean))].filter((rel) => existsSync(join(root, rel)))
+}
+
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]
 if (isMain) {
   const REPORT = process.argv.includes('--report')
   const JSON_OUT = process.argv.includes('--json')
-  const problems = checkVideoFreeze(readFromDisk(process.cwd()))
+  const problems = checkVideoFreeze(readFromDisk(process.cwd()), listRepoFiles(process.cwd()))
   if (JSON_OUT) {
     console.log(JSON.stringify({ ok: problems.length === 0, chokePoints: CHOKE_POINTS.length, problems }, null, 2))
     process.exit(problems.length && !REPORT ? 1 : 0)
@@ -506,5 +729,7 @@ if (isMain) {
     for (const p of problems) console.error(`  ✗ ${p}`)
     process.exit(REPORT ? 0 : 1)
   }
-  console.log(`✓ ci:video-freeze passed: ${CHOKE_POINTS.length} choke points refuse video before they write (lib/content/video-freeze.ts).`)
+  console.log(
+    `✓ ci:video-freeze passed: ${CHOKE_POINTS.length} choke points refuse video before they write; no direct video-post door outside them (lib/content/video-freeze.ts).`,
+  )
 }

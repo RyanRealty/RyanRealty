@@ -16,7 +16,7 @@ describe('video freeze switch and message', () => {
   it('is on, with Matt’s wording', () => {
     expect(VIDEO_PUBLISH_FROZEN).toBe(true)
     expect(VIDEO_FREEZE_MESSAGE).toBe(
-      'Video publishing is frozen until the content process is live (Matt 2026-10-14). Videos go through npm run studio and need a server-signed certificate.',
+      'Video publishing is frozen until the content process is live (Matt 2026-10-14). Videos go through the content process (docs/plans/STUDIO_ONE_FACTORY.md) and need a server-signed certificate.',
     )
   })
 })

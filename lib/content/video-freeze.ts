@@ -14,8 +14,12 @@
  * WHAT. One question, "is this video?", asked at every choke point on that
  * path: producing a draft (lib/studio/produce.ts, lib/social/imagine-produce.ts),
  * approving one (approveStudioDraft, approveAction, the approval-queue routes),
- * the publisher sweep, and the publish route (423 Locked). Image and text
- * posts are not frozen.
+ * the publisher sweep, and the publish route (423 Locked); and at the scripts
+ * that post video to a platform directly (scripts/upload-youtube.mjs,
+ * scripts/create-fb-ad.mjs, lib/meta-marketing-api.mjs uploadVideo and
+ * createAdCreative), which import this file as '../lib/content/video-freeze.ts'
+ * (plain Node strips the types, so keep this file free of imports and of
+ * syntax that needs a compile step). Image and text posts are not frozen.
  *
  * FAIL CLOSED. When nothing says what the media is, it is video.
  *
@@ -29,7 +33,7 @@
 export const VIDEO_PUBLISH_FROZEN: boolean = true
 
 export const VIDEO_FREEZE_MESSAGE =
-  'Video publishing is frozen until the content process is live (Matt 2026-10-14). Videos go through npm run studio and need a server-signed certificate.'
+  'Video publishing is frozen until the content process is live (Matt 2026-10-14). Videos go through the content process (docs/plans/STUDIO_ONE_FACTORY.md) and need a server-signed certificate.'
 
 /**
  * What the codebase records about a piece of media. Every field is optional

@@ -2,6 +2,7 @@
   "version": 1,
   "always": [
     "ci:studio-rules",
+    "ci:video-freeze",
     "ci:private-remarks",
     "ci:deals-copy",
     "ci:imagine-no-paid-api",
@@ -293,20 +294,6 @@
       "app/api/cron/publisher-sweep/**",
       "app/api/social/publish/**",
       "lib/social/**"
-    ],
-    "ci:video-freeze": [
-      "lib/content/**",
-      "lib/studio/**",
-      "lib/social/**",
-      "lib/data/studio/**",
-      "lib/data/agent/**",
-      "app/api/admin/approval-queue/**",
-      "app/api/cron/publisher-sweep/**",
-      "app/api/social/publish/**",
-      "scripts/check-video-freeze.mjs",
-      "scripts/__tests__/check-video-freeze.test.mjs",
-      "package.json",
-      "scripts/ci-lanes.json"
     ],
     "ci:asset-register-dedup": [
       "lib/asset-library.mjs",
