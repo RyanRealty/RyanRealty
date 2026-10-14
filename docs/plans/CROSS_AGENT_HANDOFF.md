@@ -8,6 +8,14 @@ Surface: Cursor cloud. Branch `cursor/persist-ga-client-id-3b48`. Nothing sent. 
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
+## Earlier — 2026-10-14 (Claude, the two buyer landing pages look like landing pages)
+
+Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b`. PR #548. `/buy/concessions` and `/buy/alerts` now open like `/sell`: Stage photograph, sourced figures, ask in the first viewport. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, GA4 offline conversions)
+
+#543 landed. Daily cron sends GA4 MP `qualify_lead` / `close_convert_lead`. Live audit: 0 of 23,909 contacts had a usable client_id — that is why this persist pass exists.
+
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 
 Surface: Cursor cloud. Branch `cursor/listings-failure-no-cache-fd1f` landed on main via #511. Community and resort pages throw `ListingsUnavailableError` after one retry. A cold miss is HTTP 500 + noindex. `CommunityDegraded` is deleted.
