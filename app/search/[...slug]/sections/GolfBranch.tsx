@@ -1,4 +1,4 @@
-import { V3Footer, V3_FOOTER_COLUMNS } from '@/components/site/v3'
+import { V3Footer, V3JsonLd, V3_FOOTER_COLUMNS } from '@/components/site/v3'
 import { cityEntityKey, homesForSalePath, listingTileHref } from '../../../../lib/slug'
 import { type ListingCardData } from '@/components/site/ListingCard'
 import { GolfLanding } from '@/components/site/golf/GolfLanding'
@@ -7,7 +7,7 @@ import { getGolfImages, pickGolfImage, getGolfHomesForLanding } from '@/lib/data
 import { withTimeout, withTimeoutSettled } from '../fetch-guards'
 
 /** The on-golf-course preset's purpose-built landing render (see page.tsx call site). */
-export async function renderGolfLanding(city: string) {
+export async function renderGolfLanding(city: string, presetLabel: string) {
   const [golfHomesSettled, golfImages] = await Promise.all([
     // Lightweight golf-homes fetch (search_golf_homes RPC, no full_count window)
     // returns in well under a second. The full search RPC's count(*) OVER ()
@@ -50,8 +50,22 @@ export async function renderGolfLanding(city: string) {
   const cityCommunities = GOLF_COMMUNITIES.filter((c) => c.citySlug === citySlug)
   const communities = cityCommunities.length ? cityCommunities : GOLF_COMMUNITIES
   const allHomesHref = `${homesForSalePath(city)}/on-golf-course?all=1`
+  // The same trail every other /homes-for-sale branch publishes (page.tsx
+  // searchBreadcrumbItems). The live SEO audit fails a page without it.
+  const cityPath = homesForSalePath(city)
   return (
     <>
+      <V3JsonLd
+        schema={{
+          type: 'breadcrumb',
+          items: [
+            { name: 'Home', url: '/' },
+            { name: 'Homes for sale', url: '/homes-for-sale' },
+            { name: city, url: cityPath },
+            { name: presetLabel, url: `${cityPath}/on-golf-course` },
+          ],
+        }}
+      />
       <GolfLanding
         city={city}
         heroImage={heroImage}

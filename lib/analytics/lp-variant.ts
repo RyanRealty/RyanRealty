@@ -1,3 +1,5 @@
+import { isKnownBuyPublicSlug } from '@/lib/routing/buy-public-slugs'
+
 /**
  * The landing-page variant a visit's landing path belongs to, or null when the
  * path is not a landing page. One reading for the LP leaderboard
@@ -19,14 +21,8 @@
  * GA4 column on the form variant and its sessions on paths.
  */
 export function lpVariantFromPath(pathOrUrl: string | null | undefined): string | null {
-  if (!pathOrUrl) return null
-  let p = pathOrUrl
-  try {
-    p = new URL(pathOrUrl).pathname
-  } catch {
-    /* already a path */
-  }
-  p = (p.split(/[?#]/)[0] ?? '').toLowerCase().replace(/\/+$/, '')
+  const p = landingPath(pathOrUrl)
+  if (!p) return null
   if (p === '/sell' || p === '/sell/valuation' || p === '/home-valuation') return 'seller-home-value'
   if (p === '/sell/expired-listings') return 'expired-listing'
   if (p === '/sell/for-sale-by-owner') return 'fsbo'
@@ -34,6 +30,41 @@ export function lpVariantFromPath(pathOrUrl: string | null | undefined): string 
   if (buy) return `buy-${buy[1]}`
   const lp = p.match(/^\/lp\/([a-z0-9-]+)/)
   return lp ? lp[1] : null
+}
+
+/** The live seller landing pages (each keeps its /lp page's variant). */
+const LIVE_SELL_PATHS: ReadonlySet<string> = new Set([
+  '/sell',
+  '/sell/valuation',
+  '/sell/expired-listings',
+  '/sell/for-sale-by-owner',
+])
+
+/**
+ * The variant of a landing page that is live, or null: the four /sell pages and
+ * each /buy/<slug> page that exists (lib/routing/buy-public-slugs.ts). Any other
+ * /buy/<slug>, and an /lp/<slug> or /home-valuation address that reaches a page
+ * at all, renders the 404 page (the live /lp pages 308 since 2026-09-06), and a
+ * 404 is not a landing-page view. view_landing_page reads this; the session
+ * reports keep lpVariantFromPath, which also names the /lp history. Pure.
+ */
+export function liveLandingVariant(pathOrUrl: string | null | undefined): string | null {
+  const p = landingPath(pathOrUrl)
+  if (LIVE_SELL_PATHS.has(p)) return lpVariantFromPath(p)
+  const buy = p.match(/^\/buy\/([a-z0-9-]+)$/)
+  return buy && isKnownBuyPublicSlug(buy[1]!) ? `buy-${buy[1]}` : null
+}
+
+/** A path or URL as the page path: lowercased, no query or hash, no trailing slash. */
+function landingPath(pathOrUrl: string | null | undefined): string {
+  if (!pathOrUrl) return ''
+  let p = pathOrUrl
+  try {
+    p = new URL(pathOrUrl).pathname
+  } catch {
+    /* already a path */
+  }
+  return (p.split(/[?#]/)[0] ?? '').toLowerCase().replace(/\/+$/, '')
 }
 
 /** Live pages for the variants whose /lp page 308s or never existed. */

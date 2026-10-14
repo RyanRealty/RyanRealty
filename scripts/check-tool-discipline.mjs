@@ -6,8 +6,8 @@
  * Replicate calls with drifted settings instead of the shared helpers. This gate
  * bans NEW inline callers while grandfathering the known current ones via a
  * baseline that may only SHRINK (same ratchet pattern as G3/G6/G8).
- *   - All VO must go through scripts/_voice_lib.py (CLAUDE.md
- *     "every VO call goes through scripts/_voice_lib.py").
+ *   - All VO must go through a shared voice library: scripts/_voice_lib.py for
+ *     the Python producers, lib/studio/voice/elevenlabs.ts for lib/studio.
  *   - All Replicate video must go through the shared video helper.
  *
  * HISTORY: this gate originally also carried a "Layer 1" skill-auto-load contract
@@ -43,6 +43,7 @@ export const INLINE_RULES = [
     // …is allowed ONLY inside the shared voice libraries.
     allowedHomes: [
       'scripts/_voice_lib.py',
+      'lib/studio/voice/elevenlabs.ts', // the Studio's client (text-to-speech WITH timestamps); lib/studio/voice/ imports it
       'scripts/check-tool-discipline.mjs', // this file names the API in comments
     ],
   },

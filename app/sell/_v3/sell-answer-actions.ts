@@ -169,7 +169,9 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
     () => null,
   )
   const subject = resolved?.subject ?? null
-  const selection = subject
+  // A multi-unit home is not walked on the single-family ladder (rule 23); the
+  // place still answers from the subject's city and plat.
+  const selection = subject && !resolved?.refusal
     ? await selectCompsPreferringFacts(subject).catch(() => null)
     : null
   const candidates = grainCandidates({

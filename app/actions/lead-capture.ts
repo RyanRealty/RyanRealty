@@ -1,6 +1,6 @@
 'use server'
 
-import { siteHost, siteOrigin } from '@/lib/site-origin'
+import { siteOrigin } from '@/lib/site-origin'
 import { sendEvent, type LeadEventPerson } from '@/lib/crm/send-event'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { cookies } from 'next/headers'
@@ -10,6 +10,10 @@ import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger
 import { fireLeadGenerated, fireNonLeadEvent, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 
 const SITE_URL = siteOrigin()
+
+/** The page CTA's door labels (housing-market and FAQ inquiry sheets), as crm_people.source and the canonical tag. */
+const PAGE_CTA_DOOR = 'homepage-cta' satisfies LeadSource
+const PAGE_CTA_NEWSLETTER_DOOR = 'blog-email' satisfies LeadSource
 
 async function fireCapiLead(args: {
   eventName: 'Lead' | 'ViewContent'
@@ -57,10 +61,6 @@ type CampaignInput = {
   content?: string
 }
 
-/** The site's own host as the lead source: 'ryan-realty.com' in production, never the Vercel alias. */
-function websiteSource(): string {
-  return siteHost()
-}
 
 /**
  * Submit a contextual page CTA lead (email/phone capture from city, community, or content pages).
@@ -113,11 +113,14 @@ export async function submitPageCTA(input: {
     }
 
     const eventType = input.leadType === 'seller' ? 'Seller Inquiry' : 'General Inquiry'
+    // crm_people.source is the door, not the site host (FUNNEL-4, 2026-09-23):
+    // the same label the canonical tag below writes.
+    const pageCtaDoor: LeadSource = input.leadType === 'newsletter' ? PAGE_CTA_NEWSLETTER_DOOR : PAGE_CTA_DOOR
 
     const result = await sendEvent({
       type: eventType,
       person,
-      source: websiteSource(),
+      source: pageCtaDoor,
       sourceUrl: `${SITE_URL}/`,
       pageTitle: `Page CTA${input.area ? ` — ${input.area}` : ''}`,
       message: input.context ?? 'page-cta',
@@ -137,15 +140,10 @@ export async function submitPageCTA(input: {
     try {
       if (result.ok && result.personId) {
         const audience = input.leadType === 'seller' ? 'seller' : 'buyer'
-        const source: LeadSource = input.leadType === 'seller'
-          ? 'homepage-cta'
-          : input.leadType === 'newsletter'
-            ? 'blog-email'
-            : 'homepage-cta'
         await canonicallyTagLead({
           fubPersonId: result.personId,
           audience,
-          source,
+          source: pageCtaDoor,
         })
       }
     } catch (err) {
@@ -240,7 +238,8 @@ export async function submitRentalLead(input: {
     const result = await sendEvent({
       type: 'General Inquiry',
       person,
-      source: websiteSource(),
+      // The door (FUNNEL-4), never the site host; GA4 sends the same name as lp_variant.
+      source: 'rental-calculator',
       sourceUrl: pageUrl,
       pageUrl,
       pageTitle: 'Rental Property Calculator',
@@ -369,7 +368,9 @@ export async function submitTetherowLead(input: {
     const result = await sendEvent({
       type: eventType,
       person,
-      source: websiteSource(),
+      // The door (FUNNEL-4): this endpoint, not /sell or /buy, whose report rows
+      // count seller-lp and buyer-lp. The canonical tag below keeps the LP audience.
+      source: isSeller ? 'tetherow-seller-lp' : 'tetherow-buyer-lp',
       sourceUrl: pageUrl,
       pageUrl,
       pageTitle: 'Tetherow Landing Page',

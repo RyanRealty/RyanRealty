@@ -43,7 +43,7 @@ ideas, never a second renderer (CLAUDE.md §4). A film is one of two kinds:
 4. **Frame 0 is the whole opening picture** (the heading, the scale, the first month on its ring; the city, the place's name, the locator), never blank paper or a footnote. Content text is up by 1.0s; the first number by 3s.
 5. **No frame of a move is empty, and nothing is cut by a box.** A camera zoom carries the place's faint outline the whole way (the map film's first cut had a second of nothing), and the city fades while the camera leaves it so no line is seen ending on the map's edge. Beats overlap: the outline starts drawing at 60% of the move.
 6. **Entrances decay, exits accelerate.** Brand ease-out `cubic-bezier(.22,.61,.36,1)` for type, `(.65,0,.35,1)` for a draw or a camera. Zoom in log space about the fixed point. Overshoot only on a true landing, at most two per film.
-7. **Nothing readable for less than 2.5s; the logo is a closer, not an opener.** The end card is the final 2.5s (Matt 2026-10-07).
+7. **Nothing readable for less than 2.5s; the logo is a closer, not an opener.** A film that carries the brand closes on Matt's locked end card (`lib/studio/motion/endcard.ts`, END_CARD_SPEC, locked 2026-10-08): 3.05s, appended after the footage, every number in its `ENDCARD` config, held to `endcard.golden.png` (regenerate with `npm run studio:endcard-golden` only when the card changes on purpose).
 8. **Shape is sacred.** A photo is scaled uniformly and cropped, never stretched (`lib/video/pan.ts`). A generated still must already be the clip's shape.
 
 ## Numbers (§0, absolute)

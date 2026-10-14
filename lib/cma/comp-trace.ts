@@ -29,6 +29,7 @@
  *     ->>'product_type')::int) from cmas;
  */
 
+import type { AduPreference } from '@/lib/pricing/adu-preference'
 import type { NotSettingSale } from '@/lib/pricing/price-set'
 
 /** Every reason a candidate row can be dropped, counted per tier and in total. */
@@ -239,6 +240,13 @@ export interface CompSelectionDiagnostics {
    * from the same rung; lib/cma/review-refill.ts). Absent on a broker-picked set.
    */
   refill_bench?: { rung: string | null; widening: boolean; held: number }
+  /**
+   * AN ADU HOME PRICES FROM ADU SALES FIRST (Matt 2026-10-14): the pass that
+   * ran, how many ADU sales set the price, and the sentence the letter prints
+   * (lib/pricing/adu-preference.ts). Absent when the subject has no ADU and
+   * on rows stored before it landed.
+   */
+  adu_preference?: AduPreference
   /**
    * How many homes sold on the subject's own ground (its plat, phases and
    * family, or its MLS name off any polygon) over the widest own-subdivision

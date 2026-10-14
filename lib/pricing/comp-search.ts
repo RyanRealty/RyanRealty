@@ -75,6 +75,8 @@ export type CompSearch = {
   sentence: string
   /** On acreage: the splits that set sales aside, as one sentence (lib/pricing/rural.ts). */
   ruralSentence?: string | null
+  /** An ADU home: which sales set its price, one sentence (lib/pricing/adu-preference.ts, Matt 2026-10-14). */
+  aduSentence?: string | null
   /**
    * Homes that sold on the subject's own ground over the own rungs' window,
    * any size. Null when that was not read.
@@ -187,6 +189,8 @@ export function buildCompSearch(input: {
   keptComps: readonly CompSearchKeptComp[]
   /** On acreage: the subject's zone and the split counts, for the reader's sentence. */
   rural?: { subjectZone: string | null | undefined; counts: Partial<RuralSplitCounts> | null | undefined } | null
+  /** An ADU home's pass (CompSelectionDiagnostics.adu_preference): the sentence the letter prints after the search story. */
+  aduSentence?: string | null
   /**
    * Homes that sold on the subject's own ground over the own rungs' widest
    * window, any size (CompSelectionDiagnostics.own_ground_sold, read only when
@@ -279,6 +283,7 @@ export function buildCompSearch(input: {
     keptBySubdivision,
     sentence,
     ruralSentence: input.rural ? ruralSplitsSentence(input.rural) : null,
+    aduSentence: input.aduSentence ?? null,
     ownGroundSold: ownSearch?.sold ?? null,
   }
 }

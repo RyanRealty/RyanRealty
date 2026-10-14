@@ -73,8 +73,10 @@ export function configuredSiteOrigin(raw: string | null | undefined = process.en
 }
 
 /**
- * The bare host of siteOrigin() (port kept for localhost), for labels such as
- * the CRM lead `source`: 'ryan-realty.com' in production.
+ * The bare host of siteOrigin() (port kept for localhost): 'ryan-realty.com' in
+ * production. Not a lead source: every door writes its own label as
+ * crm_people.source (FUNNEL-4; scripts/check-crm-lead-integrity.mjs holds it).
+ * CTA-click activity on an identified person still records it.
  */
 export function siteHost(raw: string | null | undefined = process.env.NEXT_PUBLIC_SITE_URL): string {
   return new URL(siteOrigin(raw)).host

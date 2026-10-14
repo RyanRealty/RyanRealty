@@ -69,7 +69,7 @@ describe('community fold answer, sold table, and broker (2026-10-13)', () => {
     expect(PAGE).toMatch(/<CommunityFoldAnswer/)
     expect(PAGE).toMatch(/communityFoldAnswer\(\{/)
     expect(PAGE).toMatch(/communityFoldDaysToContract\(hud\.daysToPending, publicPace\.daysToContract\)/)
-    expect(PAGE).toMatch(/<CommunityFoldAnswer id="answer"/)
+    expect(PAGE).toMatch(/<CommunityFoldAnswer id="takeaways"/)
     expect(PAGE).toMatch(/<CommunityHomesGrid id="homes"/)
     expect(PAGE).toMatch(/loadCommunitySoldTiles/)
     expect(PAGE).toMatch(/id="sold"/)

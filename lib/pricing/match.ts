@@ -3,6 +3,7 @@
  * walk the 3/6/9 → distance → similar-subdivision ladder. No I/O.
  */
 
+import type { AduPreference } from '@/lib/pricing/adu-preference'
 import { realSubdivision } from '@/lib/cma/comp-tiers'
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { saleInsideSubjectCommunity, saleSearchCommunitySlug, searchCommunitySlug } from '@/lib/cma/community-location'
@@ -22,6 +23,7 @@ import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
 import {
   aduSaleRefused,
+  isAduSale,
   classifyAgeBand,
   customLotCompatible,
   hoaCompatible,
@@ -126,6 +128,12 @@ export type PricingSubject = {
   /** Zoning of record. Hard cut only when both sides have a non-empty string. */
   zoning?: string | null
   publicRemarks?: string | null
+  /**
+   * The MLS details' ADU reading (Accessory Dwelling Unit YN) when the caller
+   * has it. True makes this an ADU home on the wall even with silent remarks,
+   * and runs the ADU-first pass (lib/pricing/adu-preference.ts, 2026-10-14).
+   */
+  aduYn?: boolean | null
   /**
    * MLS view, as stored on the listing. The best-five rank reads lake, pond,
    * river, creek, and golf from it. Unset means the view was not read, and a
@@ -348,6 +356,12 @@ export type PricingMatchResult = {
    * an ADU, since then nothing is skipped (aduSaleRefused).
    */
   aduSkipped?: number
+  /**
+   * AN ADU HOME PRICES FROM ADU SALES FIRST (Matt 2026-10-14): the pass that
+   * produced this result and the sentence the letter prints. Null when the
+   * subject has no ADU (lib/pricing/adu-preference.ts).
+   */
+  aduPreference?: AduPreference | null
   /**
    * Closed sales held from own-street / own-plat / street-cluster rungs.
    * Geography widening is skipped when closed+pending is a tight set.
@@ -1229,7 +1243,7 @@ function bracketEligible(
   // and a one-room sale it keeps goes in carrying that decision (toSelected).
   if (!pickerRoomDecision(subject, sale).ok) return false
   // The ADU wall (Matt 2026-10-08), the same one every rung applies at the door.
-  if (aduSaleRefused(subject.publicRemarks, sale.publicRemarks)) return false
+  if (aduSaleRefused(subject.publicRemarks, sale.publicRemarks, subject.aduYn)) return false
   const customOrNew = isCustomOrNewSubject(
     {
       yearBuilt: subject.yearBuilt,
@@ -1980,6 +1994,13 @@ export function walkPricingLadder(
      * it, so the window it states is the one the pool was read over.
      */
     anchorWindowMonths?: number
+    /**
+     * THE ADU-ONLY PASS (Matt 2026-10-14, lib/pricing/adu-preference.ts): an
+     * ADU home is priced from ADU sales first. The price anchor, the pocket,
+     * the plat baselines and the 55+ share still read the whole pool; only
+     * the door and the size bracket admit ADU sales alone.
+     */
+    aduSalesOnly?: boolean
   },
 ): PricingMatchResult {
   const recordedPlat = subjectHasRecordedSubdivision(rawSubject)
@@ -2390,6 +2411,13 @@ export function walkPricingLadder(
       const unit = (sale.unitNumber ?? '').trim().toLowerCase()
       const saleKey = `${sale.address.trim().toLowerCase()}|${unit}|${(sale.city ?? '').trim().toLowerCase()}|${Math.round(sale.closePrice)}`
       if (bySale.has(saleKey)) continue
+      // THE ADU-ONLY PASS (Matt 2026-10-14, lib/pricing/adu-preference.ts): an
+      // ADU home is priced from ADU sales first, so on this pass a sale whose
+      // remarks state no second unit is another product. Skipped before any
+      // wall reads it, so no count (price line, rooms, the ADU wall) and no
+      // rung line describes a sale the pass never admitted; not marked seen,
+      // so the whole-pool walk that may follow reads it fresh.
+      if (opts.aduSalesOnly && !isAduSale(sale)) continue
       const { ok, why, roomDecision, sewerNote, priceTier } = passesTier(
         subject,
         sale,
@@ -2439,7 +2467,7 @@ export function walkPricingLadder(
       // listings ladder apply too). The rung would have taken it; it is
       // skipped like a sale that never qualified, so it is not marked seen,
       // does not count toward the five, and the walk goes on in order.
-      if (aduSaleRefused(subject.publicRemarks, sale.publicRemarks)) {
+      if (aduSaleRefused(subject.publicRemarks, sale.publicRemarks, subject.aduYn)) {
         rungAduSkipped++
         aduSkippedKeys.add(sale.listingKey)
         continue
@@ -2610,7 +2638,18 @@ export function walkPricingLadder(
   // later-rung sale into that set. A short pool still may.
   const bracketed = poolFull
     ? { comps: sliced, note: null as string | null }
-    : bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder, setsPrice, tiers)
+    : bracketGla(
+        subject,
+        sliced,
+        // The size bracket is the walk's other door; on the ADU-only pass it reads ADU sales alone.
+        opts.aduSalesOnly ? pool.filter(isAduSale) : pool,
+        asOf,
+        priceAnchor,
+        cells,
+        customLadder,
+        setsPrice,
+        tiers,
+      )
   if (bracketed.note) {
     if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')
     trace.push(bracketed.note)

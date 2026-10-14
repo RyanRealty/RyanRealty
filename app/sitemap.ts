@@ -2,7 +2,7 @@ import { siteOrigin } from '@/lib/site-origin'
 import type { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { cityEntityKey, cityNeighborhoodPath, listingsBrowsePath, teamPath, valuationPath } from '../lib/slug'
-import { finalizeSitemapEntries } from '../lib/sitemap-guard'
+import { dropEmptyOpenHouseCities, finalizeSitemapEntries } from '../lib/sitemap-guard'
 import { LLMS_ZIPS } from '@/lib/site/llms-geo'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { getIndexablePresetSlugs } from '../lib/search-presets'
@@ -38,6 +38,7 @@ import { CO_TRAILS } from '@/data/co-trails'
 import { CO_SCHOOLS } from '@/data/co-schools'
 import { CO_PARKS } from '@/data/co-parks'
 import { CORE_MARKET_PATHS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
+import { openHouseCitySlugsWithEvents } from '@/app/open-houses/_v3/oh-index'
 import { buyerAnswerSitemapPaths } from '@/lib/buyer-answers'
 
 // The ONLY slugs with a real /communities/[slug] page — derived directly from
@@ -319,6 +320,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     })
   }
 
+  let openHouseCities: Set<string> | null = null
   try {
     // Every leg is an independent read (none takes another's result), so all
     // of them START here, together, and the body below awaits each where it
@@ -356,6 +358,9 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
         [] as string[],
       ),
       'indexable-subdivisions': leg('indexable-subdivisions', getIndexableSubdivisions(), []),
+      // The cities whose /open-houses/<city> page is indexable this week (it is
+      // noindex on an empty calendar, SITE-27). null = unknown: keep them all.
+      'open-house-cities': leg('open-house-cities', openHouseCitySlugsWithEvents(), null as Set<string> | null),
       'neighborhoods': leg('neighborhoods', getAllNeighborhoodsWithCity(), []),
       'search-matrix': leg('search-matrix', getSearchMatrixSitemapEntries(baseUrl, now), []),
       'out-of-area-cities': leg('out-of-area-cities', getOutOfAreaCitySitemapEntries(), []),
@@ -707,6 +712,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
         })
       }
     }
+    openHouseCities = await started['open-house-cities']
   } catch (e) {
     console.error('[sitemap] Error generating dynamic pages:', e)
     // Return static pages only if database query fails
@@ -721,5 +727,8 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
   // page), and emit each URL once (the static seed and the city loop both
   // pushed /cities/{c}, /homes-for-sale/{c}, /open-houses/{c}: 30 duplicates
   // on 2026-09-22). Inspects final URL strings.
-  return finalizeSitemapEntries([...staticPages, ...dynamicPages], allowedNeighborhoodPaths)
+  return finalizeSitemapEntries(
+    dropEmptyOpenHouseCities([...staticPages, ...dynamicPages], openHouseCities),
+    allowedNeighborhoodPaths,
+  )
 }

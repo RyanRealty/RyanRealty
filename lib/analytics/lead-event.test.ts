@@ -255,10 +255,12 @@ describe('generate_lead is server-only and sent in one place', () => {
     const src = readFileSync(join(ROOT, 'lib/lead-tracking.ts'), 'utf8')
     expect(src).toContain('rememberGaClientId')
     expect(src).toContain('persistGaClientIdFromCookies')
-    expect(src).toMatch(/rememberGaClientId\(params\.crm_person_id \?\? params\.fub_person_id, clientId\)/)
-    // Persist is first-party CRM state and runs before the consent return.
-    const persistAt = src.indexOf('await rememberGaClientId(params.crm_person_id')
-    const declineAt = src.indexOf('if (!analyticsAllowed)')
+    // fireLeadGenerated persists through the shared helper (which reads the
+    // _ga cookie and calls rememberGaClientId), on the lead's CRM person.
+    expect(src).toMatch(/await persistGaClientIdFromCookies\(params\.crm_person_id \?\? params\.fub_person_id\)/)
+    // Persist is first-party CRM state and runs before the consent / suppression return.
+    const persistAt = src.indexOf('await persistGaClientIdFromCookies(params.crm_person_id')
+    const declineAt = src.indexOf('const req = await requestContext({ serverToServer')
     expect(persistAt).toBeGreaterThan(0)
     expect(declineAt).toBeGreaterThan(persistAt)
   })

@@ -48,7 +48,8 @@ export const maxDuration = 60
 type CheckStatus = 'green' | 'yellow' | 'red' | 'info'
 interface Check { name: string; status: CheckStatus; value: string; note?: string }
 
-const CHANNELS = ['ga4', 'gsc', 'meta_page', 'instagram', 'x', 'youtube', 'linkedin', 'tiktok', 'gbp']
+// LinkedIn was removed as a platform (Matt 2026-10-14): not a channel, not parked work.
+const CHANNELS = ['ga4', 'gsc', 'meta_page', 'instagram', 'x', 'youtube', 'tiktok', 'gbp']
 
 export async function GET(req: NextRequest) {
   const denied = requireCronAuth(req)
@@ -72,8 +73,7 @@ export async function GET(req: NextRequest) {
       .limit(1)
       .maybeSingle()
     if (!data?.fetched_at) {
-      const parked = chan === 'linkedin' ? 'PARKED — reconnect is Matt-gated (§1)' : 'OAuth not completed for this platform'
-      push(`snapshot:${chan}`, chan === 'linkedin' ? 'yellow' : 'red', 'no rows ever', parked)
+      push(`snapshot:${chan}`, 'red', 'no rows ever', 'OAuth not completed for this platform')
       continue
     }
     const hours = (Date.now() - new Date(data.fetched_at).getTime()) / 3600000

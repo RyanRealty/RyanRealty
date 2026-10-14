@@ -118,10 +118,16 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       await recordFailure(slug, resolved.trace)
       return { ok: false, error: resolved.trace, slug }
     }
+    // A multi-unit home is never priced from single-family sales (rule 23,
+    // Matt 2026-10-14); the CMA build refuses on the same field.
+    if (resolved.refusal) {
+      await recordFailure(slug, resolved.refusal)
+      return { ok: false, error: resolved.refusal, slug }
+    }
     const subject = resolved.subject
 
     // 2. Comps + market context in parallel (shared CMA engine).
-    const { selection, market, site, marketIndex } = await loadBpoEngineInputs(subject)
+    const { selection, market, site, marketIndex } = await loadBpoEngineInputs(subject, { aduFallback: input.aduFallback ?? null })
     void selectComps
     if (selection.comps.length < MIN_COMPS) {
       // The CMA build's sentence: it leads with the path that held the most
@@ -166,6 +172,14 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     {
       const gated = review.gated
       if (gated.shortage) {
+        // An ADU-first set that lost a sale in the review re-enters once on the
+        // ordinary pass (Matt 2026-10-14; see the CMA build). Nothing recorded yet.
+        if (!input.aduFallback && selection.diagnostics.adu_preference?.outcome === 'adu-sales') {
+          console.log(
+            `[bpo/build] ${slug}: the ADU-first set held ${gated.comps.length} of ${MIN_COMPS} after the review; rebuilding on the ordinary set`,
+          )
+          return buildBpo({ ...input, aduFallback: { heldAfterReview: gated.comps.length } })
+        }
         const err =
           gated.droppedProduct > 0
             ? `Not enough sales of the same product type to price this home. ${gated.comps.length} of ${selection.comps.length} candidates matched, and this home needs ${MIN_COMPS}.`

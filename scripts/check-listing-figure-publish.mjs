@@ -504,9 +504,13 @@ const WIRED = [
   ['lib/listing/publish-listing-share.ts', 'publishPricePerSqft'],
   ['lib/listing/publish-listing-ask.ts', 'publishSaleAskAmount'],
   // The whole-property surfaces. Each one makes a claim about the DWELLING —
-  // its yield, its monthly cost, its machine-readable offer, its share card,
-  // its price-band promise — so each takes the whole-property price, never the
-  // ask. MLS 220190868 asks $1 for a fractional interest at Eagle Crest.
+  // its yield, its monthly cost, its machine-readable offer, its price-band
+  // promise — so each takes the whole-property price, never the ask. MLS
+  // 220190868 asks $1 for a fractional interest at Eagle Crest.
+  //
+  // /api/og share cards (2026-10-14) print a photo, the wordmark, and a short
+  // title. They do not print a list price, so they are not a whole-property
+  // surface. Keep them off this list unless a dollar figure returns.
   //
   // RentalAnalysis.tsx (the listing-page rental section this row once pinned)
   // was deleted 2026-09-09 (ci:reachable-exports): the 12-section listing
@@ -515,7 +519,6 @@ const WIRED = [
   // for rental math — /tools/rental-property-calculator's RentalCalculator
   // takes `initialPrice` from a free-form query param, never a ListingDetail,
   // so the fractional-interest risk this row guarded has no live surface.
-  ['app/api/og/route.tsx', 'publishWholePropertyAmount'],
   // SITE-20 (2026-09-08). The listing detail page and its price strip reach
   // the whole-property rule through publishListingPublishedWholePropertyPrice,
   // which is publishWholePropertyAmount plus ONE rule: a Closed listing

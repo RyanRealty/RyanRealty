@@ -43,7 +43,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 # ── system packages ─────────────────────────────────────────────────────────
-# ffmpeg is required by the video pipeline (Remotion post-mix, whisper align).
+# ffmpeg and tesseract are required by the video pipeline (lib/studio render and video:check).
 # fontconfig lets the brand fonts register for headless Chromium text render.
 # Skippable with CLOUD_SETUP_SKIP_DEPS=1 (mid-session fonts+browser lane —
 # see MID-SESSION GAP above); the fast path assumes a prior full run already
@@ -55,10 +55,13 @@ else
   if command -v apt-get >/dev/null 2>&1; then
     sudo apt-get update -qq >/dev/null 2>&1 || true
     sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-      ffmpeg fontconfig >/dev/null 2>&1 || echo "  ! apt install failed (non-fatal)"
+      ffmpeg fontconfig tesseract-ocr >/dev/null 2>&1 || echo "  ! apt install failed (non-fatal)"
   fi
 fi
 command -v ffmpeg >/dev/null 2>&1 && echo "  ffmpeg $(ffmpeg -version 2>/dev/null | head -1 | cut -d' ' -f3)" || echo "  ! ffmpeg missing"
+# OpenCV + numpy: the video check reads frames with them (one factory, Matt 2026-10-13).
+python3 -c "import cv2, numpy" >/dev/null 2>&1 || python3 -m pip install -q opencv-python-headless numpy >/dev/null 2>&1 || echo "  ! OpenCV install failed (video:check cannot read frames)"
+command -v tesseract >/dev/null 2>&1 && echo "  tesseract $(tesseract --version 2>/dev/null | head -1 | cut -d' ' -f2)" || echo "  ! tesseract missing (video:check cannot read text off frames)"
 
 # ── brand fonts ─────────────────────────────────────────────────────────────
 # Shipped in-repo, so this is a copy, not a download. Amboqia is the display

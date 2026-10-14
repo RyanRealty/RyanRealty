@@ -13,6 +13,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { StudioFormatId } from '@/lib/studio/formats'
+import { rowVideoFreezeRefusal } from '@/lib/content/video-freeze'
 
 const BUCKET = 'banners'
 const PREFIX = 'studio'
@@ -258,7 +259,8 @@ export async function killStudioDraft(
 /**
  * ready -> approved, with the human stamp publisher-sweep and the publish
  * route both verify. This is the one write in the studio that authorises a
- * post, so it is deliberately the only place approved_by is set.
+ * post, so it is deliberately the only place approved_by is set. A video
+ * draft is refused while video publishing is frozen (lib/content/video-freeze.ts).
  */
 export async function approveStudioDraft(input: {
   id: string
@@ -273,10 +275,14 @@ export async function approveStudioDraft(input: {
     const sb = createServiceClient()
     const { data: existing, error: fetchErr } = await sb
       .from('marketing_brain_actions')
-      .select('payload, executor_response, status')
+      .select('action_type, format, payload, executor_response, status')
       .eq('id', id)
       .maybeSingle()
     if (fetchErr || !existing) return { ok: false, error: fetchErr?.message ?? 'row not found' }
+    // The video freeze (Matt 2026-10-14): a video draft is never stamped, so
+    // publisher-sweep never sees it. Retired by the certificate check.
+    const frozen = rowVideoFreezeRefusal(existing)
+    if (frozen) return { ok: false, error: frozen }
     if (existing.status !== 'ready') return { ok: false, error: `Draft is ${existing.status}, not ready` }
 
     const executor = asRecord(existing.executor_response)

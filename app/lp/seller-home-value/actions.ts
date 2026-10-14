@@ -232,7 +232,9 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     const name = submission.name?.trim() ?? ''
     const phone = submission.phone?.trim() ?? ''
     const timeline = submission.timeline
-    const lpSource = submission.source ?? 'seller-lp'
+    // The door (FUNNEL-4), picked here from the two this form knows: a server
+    // action's argument is whatever the client sends.
+    const lpSource = submission.source === 'list-now-lp' ? 'list-now-lp' : 'seller-lp'
     const isListNowLp = lpSource === 'list-now-lp'
     const { classification, tierTag } = classifyTimeline(timeline)
     // SITE-05: the control that sent the visitor here, kept to the closed set
