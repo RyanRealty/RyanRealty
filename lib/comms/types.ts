@@ -72,8 +72,9 @@ export type GovernedSmsRequest = {
   /** A6: only a manual, human-typed 1:1 reply may override quiet hours. */
   overrideQuietHours?: boolean
   /**
-   * Broker CRM compose only: skip hard-stop / channel suppression.
-   * Consent, marketing opt-in, and STOP-list gates stay on bulk rails.
+   * Broker CRM 1:1 compose only: skip a soft consent / marketing-opt-in row.
+   * STOP, bounce, complaint, unsubscribe, GPC, hard-stop, and a failed read
+   * always hold. Bulk, marketing, drip, and system sends cannot set this.
    */
   skipSuppression?: boolean
   /** crm_timeline.source — defaults to 'app'. */
