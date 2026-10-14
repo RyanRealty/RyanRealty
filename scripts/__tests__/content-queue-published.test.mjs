@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { publicUrl } from '../content-queue/publish.mjs'
+import { buildRequest, publicUrl, validateRequest } from '../content-queue/publish.mjs'
 import {
   claimSlot,
   isDue,
@@ -93,6 +93,21 @@ describe('content-queue published log', () => {
   it('builds public URLs from platform responses', () => {
     expect(publicUrl('x-post-1', '{"data":{"id":"123"}}')).toBe('https://x.com/i/web/status/123')
     expect(publicUrl('gbp', '{"searchUrl":"https://g.page/r/example"}')).toBe('https://g.page/r/example')
+  })
+
+  it('GBP posts accept bare numeric account and location ids', () => {
+    const link = 'https://ryan-realty.com/blog/t?utm_source=gbp&utm_medium=social&utm_campaign=t'
+    const prefixed = buildRequest('gbp', `Body ${link} Ryan Realty LLC`, { link }, {
+      GOOGLE_BUSINESS_PROFILE_ACCOUNT_ID: 'accounts/109876549821',
+      GOOGLE_BUSINESS_PROFILE_LOCATION_ID: 'locations/1234564753',
+    })
+    const bare = buildRequest('gbp', `Body ${link} Ryan Realty LLC`, { link }, {
+      GOOGLE_BUSINESS_PROFILE_ACCOUNT_ID: '109876549821',
+      GOOGLE_BUSINESS_PROFILE_LOCATION_ID: '1234564753',
+    })
+    expect(bare.url).toBe('https://mybusiness.googleapis.com/v4/accounts/109876549821/locations/1234564753/localPosts')
+    expect(bare.url).toBe(prefixed.url)
+    expect(validateRequest('gbp', bare)).toEqual([])
   })
 
   it('gate-passing drafts are due without an approved flag', () => {
