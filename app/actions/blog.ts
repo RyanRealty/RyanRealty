@@ -1,6 +1,8 @@
 'use server'
 
+import { after } from 'next/server'
 import { BLOG_CATEGORIES } from '@/lib/blog/categories'
+import { indexNowUrl, submitIndexNow } from '@/lib/seo/indexnow'
 import { createServiceClient } from '@/lib/supabase/service'
 import { checkAdminAction } from '@/lib/admin/require-admin'
 
@@ -140,10 +142,21 @@ export async function saveBlogPost(input: {
     resourceId: String(payload.slug),
     details: { status: input.status, id: input.id ?? null, title: input.title },
   })
-  // Revalidate public and admin blog routes after save/update
+  // Revalidate public and admin blog routes after save/update. The post page
+  // itself caches for a day, so it is refreshed too: an edit shows at once,
+  // and the crawler IndexNow sends below reads the saved post.
   const { revalidatePath } = await import('next/cache')
+  const postPath = `/blog/${encodeURIComponent(String(payload.slug))}`
   revalidatePath('/blog')
+  revalidatePath(postPath)
   revalidatePath('/admin/blog')
+  // A published post is new or changed: tell Bing and the engines behind it,
+  // after the response (lib/seo/indexnow.ts: production only, never throws).
+  if (input.status === 'published') {
+    after(async () => {
+      await submitIndexNow([indexNowUrl(postPath)])
+    })
+  }
   return { ok: true }
 }
 
