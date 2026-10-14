@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { SolicitScreen } from '@/lib/cma/solicit-screen'
 
 /**
  * sendCmaToLead's two rails: the broker's own Gmail first, Resend when Gmail
@@ -21,8 +22,8 @@ const h = vi.hoisted(() => ({
   recordEmailEvent: vi.fn(),
   ensureNativeLead: vi.fn(),
   stampCmaPersonId: vi.fn(),
-  screenAddressForSolicitation: vi.fn(async () => ({
-    ok: true as const,
+  screenAddressForSolicitation: vi.fn(async (): Promise<SolicitScreen> => ({
+    ok: true,
     checked: 1,
     detail: 'clear',
   })),
