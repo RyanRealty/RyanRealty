@@ -436,6 +436,7 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | `lib/analytics/submit-alert-signup.ts` | Client wrappers for the alert-capture actions; push `sign_up` only on a counted submit |
 | `lib/analytics/ga-suppression.ts` | The one "may this reach GA4" rule, browser and server |
 | `lib/analytics/automation.ts` | Automation and crawler classifier |
+| `lib/analytics/chrome-releases.ts` | Chrome stable release dates (Chromium schedule) the automation classifier's stale-browser rule reads |
 | `lib/analytics/internal-user-cookie.ts` | `rr_internal` cookie (broker browsers) |
 | `lib/analytics/non-production-build.ts` | No Google tag on dev or preview builds |
 | `lib/analytics/non-production-host.ts` | No GA4 hits from non-production hosts |
