@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createBuildReadMemo } from '@/lib/data/cache/build-read-memo'
+import { createBuildReadMemo } from '@/lib/build/build-read-memo'
 
 function memoAt(clock: { now: number }, limits = { maxChars: 1_000_000, maxEntryChars: 100_000 }) {
   return createBuildReadMemo({ ...limits, now: () => clock.now })

@@ -33,9 +33,9 @@
  *
  * ONE READ PER BUILD WORKER (2026-10-14). During `next build` the callback
  * Next runs on a miss goes through the build read memo
- * (./build-read-memo.ts): a read already made in this worker and still inside
- * its `revalidate` window is answered from memory, and a read already in
- * flight is joined instead of repeated. Next's unstable_cache shares neither
+ * (lib/build/build-read-memo.ts): a read already made in this worker and
+ * still inside its `revalidate` window is answered from memory, and a read
+ * already in flight is joined instead of repeated. Next's unstable_cache shares neither
  * (no in-flight sharing, and a cached read nested in another cached read's
  * callback always reads live), which is how one solo production build sent
  * 4,562 repeat GETs to Supabase. The memo is keyed by the same invocation key
@@ -44,7 +44,7 @@
  * the callback's own source, so Next's entry keys do not move.
  */
 import { unstable_cache as nextUnstableCache } from 'next/cache'
-import { createBuildReadMemo, type BuildReadMemo } from '@/lib/data/cache/build-read-memo'
+import { createBuildReadMemo, type BuildReadMemo } from '@/lib/build/build-read-memo'
 
 /**
  * Sized against the worker heap, not the data: at most 48M characters of JSON

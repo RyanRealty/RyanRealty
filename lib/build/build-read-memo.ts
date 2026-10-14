@@ -25,8 +25,9 @@
  * lines and the ListingsUnavailableError prerenders that failed four
  * production builds that day.
  *
- * WHAT IT DOES. During `next build` only, the door (./next-cache.ts) runs
- * every cached callback through `read(key, ttlMs, run)`:
+ * WHAT IT DOES. During `next build` only, the door
+ * (lib/data/cache/next-cache.ts) runs every cached callback through
+ * `read(key, ttlMs, run)`:
  *   - a key already read and still inside its window answers from memory;
  *   - a key being read right now joins that read instead of starting another;
  *   - anything else reads, and a success is kept for the entry's own
@@ -45,6 +46,10 @@
  *
  * BOUNDED. Values are kept as their JSON text, at most `maxEntryChars` each
  * and `maxChars` in all, least recently used out first.
+ *
+ * Kept out of lib/data/cache/ on purpose: it is a pure in-memory structure
+ * (no database, no Next import), and ci:dal-boundary reads every `.delete(`
+ * under lib/data/cache/ as a Supabase write on a cached-read path.
  */
 
 export type BuildReadMemoOptions = {
