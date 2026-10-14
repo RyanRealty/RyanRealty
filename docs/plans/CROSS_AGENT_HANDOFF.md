@@ -8,6 +8,16 @@ Surface: Cursor cloud. Landing #485 then #488 then #489 onto origin/main. Closed
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
+## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
+
+Surface: Cursor cloud. Branch `cursor/listings-failure-no-cache-fd1f` landed on main via #511. Community and resort pages throw `ListingsUnavailableError` after one retry. A cold miss is HTTP 500 + noindex. `CommunityDegraded` is deleted.
+
+## Earlier — 2026-10-14 (Cursor, make main CI green)
+
+Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` landed on main via #539. Nothing sent. Nobody pushes main.
+
+**What that commit did.** `ci:studio-rules` names both studio node tests. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150) so content-floor stays 3780. After #521, type links jump to `#homes-dial-<group>`. After #528, `serve.ts` re-exports `V3Footer`. After #498, `/buy/concessions` takes the 30-yr rate from `getLiveMortgageRate` / `getCalculatorDefaults` and points are `dollars / loan * 100` so `ci:stat-source` stays one engine.
+
 ## Earlier — 2026-10-11 (Grok, CMA outreach build gate + 13 approved sends)
 
 
