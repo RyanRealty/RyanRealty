@@ -21,6 +21,7 @@ import {
   computeShots,
   evaluateCaptions,
   evaluateCopy,
+  evaluateVerdictWords,
   evaluateEndcardTiming,
   evaluateHook,
   evaluateNumbers,
@@ -380,8 +381,11 @@ async function copy(c: Ctx): Promise<Body> {
   const expected = { dashes: 0, bannedPhrases: 0 }
   if (!m) return c.noManifest(expected)
   if (!c.types) return bad(null, expected, `cannot be measured: ${c.typesProblem}`)
-  const hits = evaluateCopy(m.texts, m.captions, m.voice, bannedPhrases(c.types))
-  return verdict(hits.map((h) => `${h.what} in ${h.where}`), { hits: hits.map((h) => `${h.what} in ${h.where}`) }, expected, 'no dashes and no banned phrases in texts, captions or voice')
+  const hits = [
+    ...evaluateCopy(m.texts, m.captions, m.voice, bannedPhrases(c.types)),
+    ...evaluateVerdictWords(m.numbers, m.texts, m.captions, m.voice),
+  ]
+  return verdict(hits.map((h) => `${h.what} in ${h.where}`), { hits: hits.map((h) => `${h.what} in ${h.where}`) }, expected, 'no dashes, no banned phrases, and no verdict words that disagree with a months-of-supply figure')
 }
 
 async function safeArea(c: Ctx): Promise<Body> {

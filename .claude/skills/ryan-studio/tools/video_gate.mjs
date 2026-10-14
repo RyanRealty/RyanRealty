@@ -181,7 +181,7 @@ export function gate(brief, timeline, cfg) {
   if (t.requires_special_ad_category && brief.special_ad_category !== t.requires_special_ad_category) fail('Buyer ad must declare special_ad_category "housing" (no age, gender or ZIP targeting).');
   if (t.requires_persona && !brief.persona) fail('Buyer ad needs a persona (relocator, first_time, move_up, second_home). The hook picks the buyer.');
   if (/\btop[- ]team\b/i.test(all)) fail('"Top team" wording is banned.');
-  if (/buyer'?s market/i.test(all)) warn('"Buyer\'s market" wording: only when months of supply is 6 or more for that geography. Bend is about 3; say "buyers have leverage".');
+  if (/buyer'?s market/i.test(all)) warn('"Buyer\'s market" wording: only when months of supply is 6 or more for that geography. Bend is about 3.5. "Buyers have leverage" needs leverage figures (price cuts, concessions) and never sits beside a months-of-supply reading under 6.');
   if (beats.some((b) => (b.end - b.start) <= 3 && /\$\s?\d/.test(b.text || '') && /closed|sold/i.test((b.text || '') + ' ' + beats.map((x) => x.text || '').join(' ')) && brief.video_type === 'closing') || (brief.video_type === 'closing' && dur <= 3)) fail('Closings are never a 3 second price + closed clip.');
   if (brief.music && brief.music.song && !brief.music.picker_start) warn('Music set but no IG picker start time (m:ss).');
   if (t.requires_loop && !timeline.loop_seam) warn('Timeline has no loop_seam note (last frame should flow back into frame 0).');

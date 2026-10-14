@@ -98,7 +98,7 @@ don't want every video to look the same, but it has to have the same underlying 
 | 7 | Sound | ffmpeg `ebur128` on the file | integrated outside -15..-13 LUFS, true peak above -1.0 dBTP, or no audio stream on a voiced type |
 | 8 | Captions | `voice.words` vs `captions` | a caption over 4 words or under 0.4 s, a caption starting more than 0.08 s off its first word, a spoken word no caption shows, caption text that is not the spoken words |
 | 9 | Numbers | every number token in `texts` and `captions` | a figure with no `numbers` row, or a row missing source, window, geography or definition |
-| 10 | Copy | `texts`, `captions`, voice words | em or en dash, `banned_phrases` from video_types.json, "top team", "buyer's market" |
+| 10 | Copy | `texts`, `captions`, voice words | em or en dash, `banned_phrases` from video_types.json, "top team", "buyer's market"; verdict words that disagree with a months-of-supply reading's band (lib/market/classify.ts) |
 | 11 | Safe area | every non-endcard `texts` box | box beyond x 960 or y 1640 |
 | 12 | End card | manifest times vs END_CARD_SPEC; the frame at `endcard.call + 0.5 s` vs the locked golden still (SSIM) | missing, out of order, words over ~1.2 s, call hold under 1.5 s, SSIM below 0.92 |
 | 13 | Loop | SSIM of the last frame vs frame 0 | below 0.85 |

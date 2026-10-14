@@ -4,6 +4,7 @@ import {
   computeShots,
   evaluateCaptions,
   evaluateCopy,
+  evaluateVerdictWords,
   evaluateEndcardTiming,
   evaluateHook,
   evaluateNumbers,
@@ -251,6 +252,43 @@ describe('evaluateCopy', () => {
   it('reports where each hit is', () => {
     const hits = evaluateCopy([card(), card({ text: 'explore' })], [{ text: 'nestled', start: 0, end: 1, words: [] }], null, banned)
     expect(hits.map((h) => h.where)).toEqual(['texts[1]', 'captions[0]'])
+  })
+})
+
+describe('evaluateVerdictWords', () => {
+  const mos = (onScreen: string) => ({ onScreen, source: "market_metric stat_id='months_of_supply'", definition: 'Months of supply: active / (closed_180d / 6)' })
+  const say = (text: string) => [card({ text })]
+
+  it('refuses buyer-side words beside a seller-band figure (the 3.5 leverage film)', () => {
+    expect(evaluateVerdictWords([mos('3.5')], say('Buyers have leverage'), [], null)).toEqual([
+      { where: 'texts[0]', what: '"buyers have leverage" beside 3.5 months of supply, which is the sellers band' },
+    ])
+  })
+
+  it('refuses a seller verdict beside a balanced figure, as in the 4.3 example', () => {
+    expect(evaluateVerdictWords([mos('4.3')], say("A seller\u2019s market"), [], null).map((h) => h.what)).toEqual([
+      '"seller\'s market" beside 4.3 months of supply, which is the balanced band',
+    ])
+  })
+
+  it('reads captions and the voice too', () => {
+    const voice: ManifestVoice = { engine: 'e', model: 'm', voiceId: 'v', words: ['Buyers', 'have', 'leverage.'].map((word, i) => ({ word, start: i, end: i + 1 })) }
+    const hits = evaluateVerdictWords([mos('3.5')], [], [{ text: 'buyers have leverage', start: 0, end: 1, words: [] }], voice)
+    expect(hits.map((h) => h.where)).toEqual(['captions[0]', 'voice'])
+  })
+
+  it('passes words that agree with the band', () => {
+    expect(evaluateVerdictWords([mos('7.1')], say('Buyers have leverage'), [], null)).toEqual([])
+    expect(evaluateVerdictWords([mos('3.5')], say('Sellers have the edge'), [], null)).toEqual([])
+  })
+
+  it('reads only the measured figure, not the meter scale marks', () => {
+    const mark = { onScreen: '4 mo', window: 'none: a fixed scale mark on the meter, not a measurement', definition: 'scale mark at 4 months of supply' }
+    expect(evaluateVerdictWords([mark], say("Seller's market"), [], null)).toEqual([])
+  })
+
+  it('ignores films with no months-of-supply figure', () => {
+    expect(evaluateVerdictWords([{ onScreen: '63%', definition: 'share of listings with a price cut' }], say('Buyers have leverage'), [], null)).toEqual([])
   })
 })
 

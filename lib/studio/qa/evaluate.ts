@@ -16,6 +16,7 @@ import type {
   ManifestVoice,
 } from './manifest'
 import { QA_THRESHOLDS } from './thresholds'
+import { marketVerdict } from '@/lib/market/classify'
 
 const T = QA_THRESHOLDS
 const EPS = T.epsilon
@@ -221,6 +222,53 @@ export function evaluateCopy(
     for (const phrase of banned) {
       const re = new RegExp(`(?<![A-Za-z0-9])${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+')}(?![A-Za-z0-9])`, 'i')
       if (re.test(low)) hits.push({ where: s.where, what: `banned phrase "${phrase}"` })
+    }
+  }
+  return hits
+}
+
+/**
+ * Verdict words must agree with the months-of-supply figure on screen (§0:
+ * "a seller's market verdict next to 4.3 months of supply is a fail"). The
+ * first buyer ad put "Buyers have leverage" right after a meter reading 3.5,
+ * the seller's band, because a rule card named that line for Bend. Leverage
+ * may be true (price cuts, concessions), but a film that shows 3.5 months
+ * cannot also say buyers have the edge: the viewer reads the two together.
+ * Bands come from lib/market/classify.ts (<= 4 sellers, 4 to 6 balanced,
+ * >= 6 buyers). In a balanced band neither side's line agrees.
+ */
+const BUYER_SIDE = ['buyers have leverage', "buyer's market", "buyers' market", 'buyers market', 'buyers have the edge', 'buyers have the upper hand']
+const SELLER_SIDE = ["seller's market", "sellers' market", 'sellers market', 'sellers have leverage', 'sellers have the edge', 'sellers have the upper hand']
+
+export function evaluateVerdictWords(
+  numbers: readonly ManifestNumber[],
+  texts: readonly ManifestText[],
+  captions: readonly ManifestCaption[],
+  voice: ManifestVoice | null,
+): CopyHit[] {
+  // A reading, not a scale mark: the figure is a bare number and its window is
+  // a measurement window (scale marks such as "4 mo" record window "none: ...").
+  const supply = numbers
+    .filter((n) => /months?[\s_]of[\s_]supply/i.test(`${n.definition ?? ''} ${n.source ?? ''}`))
+    .filter((n) => /^\d+(\.\d+)?$/.test(n.onScreen.trim()) && !/^\s*none\b/i.test(n.window ?? ''))
+    .map((n) => ({ shown: n.onScreen.trim(), value: Number.parseFloat(n.onScreen) }))
+  if (!supply.length) return []
+  const sources: Array<{ where: string; text: string }> = [
+    ...texts.map((t, i) => ({ where: `texts[${i}]`, text: t.text })),
+    ...captions.map((c, i) => ({ where: `captions[${i}]`, text: c.text })),
+  ]
+  if (voice) sources.push({ where: 'voice', text: voice.words.map((w) => w.word).join(' ') })
+  const hits: CopyHit[] = []
+  for (const { shown, value } of supply) {
+    const { kind } = marketVerdict(value)
+    const wrong = kind === 'sellers' ? BUYER_SIDE : kind === 'buyers' ? SELLER_SIDE : [...BUYER_SIDE, ...SELLER_SIDE]
+    for (const s of sources) {
+      const low = s.text.toLowerCase().replace(/[‘’]/g, "'").replace(/\s+/g, ' ')
+      for (const phrase of wrong) {
+        if (low.includes(phrase)) {
+          hits.push({ where: s.where, what: `"${phrase}" beside ${shown} months of supply, which is the ${kind} band` })
+        }
+      }
     }
   }
   return hits
