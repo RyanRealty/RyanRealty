@@ -2,8 +2,6 @@
 
 import { useCallback, useState } from 'react'
 import { V3Ask, type V3AskField, type V3AskResult } from '@/components/site/v3/V3Ask.client'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import { FormAdConsentNotice, FormAdCookieBox, useFormConsentRestricted } from '@/components/site/FormAdConsent'
 import { writeFormAdConsent } from '@/lib/identity/form-ad-consent'
@@ -100,8 +98,8 @@ export function ConcessionsAsk() {
         consent={
           <>
             <div className="concessions-ask__trap" aria-hidden="true">
-              <Label htmlFor="concessions-trap">{TRAP.label}</Label>
-              <Input
+              <label htmlFor="concessions-trap">{TRAP.label}</label>
+              <input
                 id="concessions-trap"
                 name={TRAP.name}
                 type="text"
