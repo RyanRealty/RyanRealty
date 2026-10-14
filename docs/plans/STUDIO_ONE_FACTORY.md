@@ -65,16 +65,16 @@ don't want every video to look the same, but it has to have the same underlying 
     { "id": "hook", "role": "hook", "start": 0, "end": 3.1 }
   ],
   "texts": [                                      // every word drawn on screen, with when and where
-    { "text": "63% cut their price", "start": 0.2, "end": 3.1, "box": { "x": 90, "y": 400, "w": 860, "h": 220 }, "kind": "card|caption|endcard|cta|label" }
+    { "text": "<FIGURE> <words>", "start": 0.2, "end": 3.1, "box": { "x": 90, "y": 400, "w": 860, "h": 220 }, "kind": "card|caption|endcard|cta|label" }
   ],
   "numbers": [                                    // every figure on screen or in a caption
-    { "onScreen": "63%", "source": "Supabase ...", "window": "2026-07-01..2026-09-30", "geography": "Bend", "definition": "..." }
+    { "onScreen": "<FIGURE>", "source": "<table + filter>", "window": "<date range>", "geography": "<place>", "definition": "<what was counted>" }
   ],
   "voice": {                                      // null for a film with no voiceover
     "engine": "elevenlabs", "model": "eleven_v3", "voiceId": "<id>",
     "words": [ { "word": "Okay,", "start": 0.12, "end": 0.41 } ]
   },
-  "captions": [ { "text": "63% CUT", "start": 0.12, "end": 0.71, "words": [0, 1] } ],
+  "captions": [ { "text": "<FIGURE> <WORD>", "start": 0.12, "end": 0.71, "words": [0, 1] } ],
   "audio": { "lufs": -14.0, "truePeakDb": -1.7, "silent": false },
   "endcard": { "start": 24.45, "quality": 24.45, "local": 24.85, "service": 25.25, "call": 25.7, "out": 27.5 },
   "loop": { "seconds": 0.3 }                      // the last 0.3 s carries the cut back into frame 0

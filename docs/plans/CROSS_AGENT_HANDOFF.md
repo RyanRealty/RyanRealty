@@ -1,6 +1,26 @@
-# Current — 2026-10-14 (Cursor, make main CI green)
+# Current — 2026-10-14 (Claude Code, one video factory + buyer ad)
 
-Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` merged origin/main `29fd04d93` (#536, #538). PR #532. Finish remaining red checks, then squash-merge. Nothing sent. Nobody pushes main.
+Surface: Claude Code cloud. Branch `claude/nifty-rubin-70dvwc`, PR #529: footer gate follows imports two levels, studio-rules guard test, `docs/plans/STUDIO_ONE_FACTORY.md`. The factory itself (`npm run studio:render`, `npm run video:check`, locked end card, voice and captions, technique registry with `ci:studio-techniques`, the one-factory canon for every bot) sits on branch `integ/one-factory` while it is fixed against an independent code review; it lands after #529. Until then Grok and Imagine make footage only and no finished cut goes to Matt. Nothing sent, nothing posted.
+
+**Buyer ad, Matt's calls 2026-10-14.** Lead with the $10,000 typical seller credit. Count Bend single-family homes (MLS city `bend`, segment detached). Payoff line "Sellers are paying to close". A map of this summer's price-cut and credit sales closes it, then "Bend's Best Deals, link in bio", then the locked end card.
+
+Verified (Bend SFR, Jul-Sep, `market_report_series` mr-v1, computed 2026-10-13):
+- Sold after a price cut: 281 of 625 = 45%. Same quarter 2025: 319 of 662 = 48%. 2021: 188 of 903 = 21%.
+- Reported a seller credit: at least 276 of 625 = 44%. 2025: 245 of 662 = 37%. 2021: at least 173 of 903 = 19% ('No' was not coded before 2023, so 2021 is a lower bound).
+- Median credit: $10,000. 2025: $8,500. 2021: $2,500.
+- $10K toward the rate: $169.07 a month at 7.40% (`market_history_weekly` week 2026-10-12), on $695,850 with 20% down and 1 point per 0.25%.
+
+Do not use:
+- "63% cut their price": a placeholder in the contract doc, now removed.
+- "Typical cut $50K": unverifiable. The verified figure is 5.6% of the first ask.
+- "More inventory": 713 for sale at Sep 30 vs 794 a year earlier, down 10%. Sep 2021's 334 is 297 inferred.
+- "Buyers have leverage" beside months of supply 3.5: video:check check 10 now fails it.
+
+Skills read: `.claude/skills/ryan-studio/SKILL.md`, `references/RULEBOOK.md`, `rules/VIDEO_TYPES.md`, `.claude/skills/motion-design/SKILL.md`, `.claude/skills/creative-brain/SKILL.md`, CLAUDE.md §0 and §7.
+
+## Earlier — 2026-10-14 (Cursor, make main CI green)
+
+Surface: Cursor cloud. Landed on main via #539. Branch `cursor/fix-main-ci-db9c` merged origin/main `29fd04d93` (#536, #538). PR #532. Finish remaining red checks, then squash-merge. Nothing sent. Nobody pushes main.
 
 **What this commit does.** `ci:studio-rules` names both studio node tests. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150) so content-floor stays 3780. After #521, type links jump to `#homes-dial-<group>`. After #528, `serve.ts` re-exports `V3Footer`. After #498, `/buy/concessions` takes the 30-yr rate from `getLiveMortgageRate` / `getCalculatorDefaults` and points are `dollars / loan * 100` so `ci:stat-source` stays one engine.
 
