@@ -4,7 +4,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **PRs only.** Never push or fast-forward to `main`. Branch, open a PR, merge. Unfinished work is `npm run push` only.
 
-**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except PRs labeled `hold-for-matt`. Workflows enqueue that.
+**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except `hold-for-matt` without `approved-by-matt`. Approval (label or `.github/approved-prs`) unholds and merges when `merge-gate` is green.
 
 **Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason. The stale job keeps the branch.
 
@@ -41,7 +41,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 `CLAUDE.md` and `.cursor/rules` point here. Domain canon (data accuracy, voice, design, CMA rulings) stays in the file that owns the surface. Process does not.
 
 1. **PRs only.** Never `git push` `main`. Never fast-forward `main`. Branch from current `origin/main`, open a PR, merge that PR.
-2. **Auto-merge.** After opening a PR, run `gh pr merge --auto --squash --delete-branch` unless it is labeled `hold-for-matt`. Never run `gh pr merge` on a `hold-for-matt` PR, including `--auto`. `--auto` squash-merges immediately when Allow auto-merge is off and the PR is MERGEABLE. Create that label if it is missing. Enable "Allow auto-merge" and "Automatically delete head branches" on the GitHub repo if they are off. `.github/workflows/pr-auto-merge.yml` queues the same command, drops auto-merge when `hold-for-matt` is added, and squash-merges after `merge-gate` + `security-scan` when the repo setting is still off.
+2. **Auto-merge.** After opening a PR, run `gh pr merge --auto --squash --delete-branch` unless it is labeled `hold-for-matt` without `approved-by-matt`. Never run `gh pr merge` on a `hold-for-matt` PR, including `--auto`, unless that PR is approved. `--auto` squash-merges immediately when Allow auto-merge is off and the PR is MERGEABLE. Create `hold-for-matt` and `approved-by-matt` if they are missing. Enable "Allow auto-merge" and "Automatically delete head branches" on the GitHub repo if they are off. `.github/workflows/pr-auto-merge.yml` queues the same command, drops auto-merge when `hold-for-matt` is added without approval, removes the hold and stops a title re-hold when `approved-by-matt` (or `.github/approved-prs`) is present, and squash-merges after `merge-gate` + `security-scan` when the repo setting is still off.
 3. **Stale PRs.** A PR older than 3 days is rebased and merged, or closed with a written reason. `.github/workflows/pr-stale.yml` (daily + `workflow_dispatch`) labels `stale` at 3 days and closes after 2 more days, keeping the branch so the work is not lost. Skip `hold-for-matt`.
 4. **Done.** The PR is merged, the Vercel production deploy for that SHA is **READY**, and the live URL is checked. `npm run ship` is the land path. Unfinished work is `npm run push` plus your note in `docs/plans/handoffs/`.
 5. **Payload.** Public pages respect the page payload budgets (`SSR_GRID_PAGE` in `lib/site/ssr-grid-page.ts`, `ci:page-payload`, Atlas props budget). Cap grids and schema lists. Never serialize the same listing or schema payload twice.
