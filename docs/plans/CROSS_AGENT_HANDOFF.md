@@ -59,15 +59,36 @@ Skills read: none. The send used `sendCmaToLead` after the live gate. Git commit
 
 Surface: Cursor cloud. Landed on main via #525. Sitewide footer column "Homes for sale by area" plus listing city/community doors. Nothing sent.
 
+## Earlier — 2026-10-14 (Cursor, HTML payload budget)
+
+Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `a4b308804` (merged, not rebased: #525 by-area links, #511 listings-failure, #539 CI reds, #536, #538, #528, #533, #521). Land path is `gh pr merge 527 --squash` after this PR's own CI. Nobody pushes main. Nothing sent.
+
+**What this branch does.** Caps public listing SSR grids at 24 cards (`SSR_GRID_PAGE`; home rails 36). Community fold grid and map homes past 24 load from `GET /api/place/homes`. Search SSR no longer reads cookies (`getSession` / saved / liked); viewer state hydrates after paint so `/homes-for-sale/bend` can use the public `s-maxage=60` header. Listing media flight capped at 24 photos. `ci:page-payload` shrink-only ratchet plus a 200 KB hard fail when serialized unique listing cards exceed one grid page. `/search` content-floor words lowered 819 → 750 because the 24-card seed has fewer address words (CI measured 763). #525 Bend leftover intro and footer by-area column stay from main.
+
+**Not this change.** Do not merge `cursor/ai-voiceover-scripts-8a9c` unless Matt asks. Do not merge the SMS suppression branch. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill. Do not send. Do not merge `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters.
+
+**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool`. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `docs/RUN_LOOP.md` (this is payload plumbing, not a site-queue look change).
+
+## Earlier — 2026-10-14 (Cursor, homes-for-sale-by-area internal links)
+
+Surface: Cursor cloud. Branch `cursor/homes-for-sale-by-area-f550` landed on main via #525. Nobody pushes main. Nothing sent.
+
+**What that branch did.** Sitewide footer column "Homes for sale by area" with exact-match anchors to `/homes-for-sale/{bend,redmond,sisters,sunriver,la-pine}` plus the top eight community hubs. `/homes-for-sale/bend` server-renders live inventory takeaways after the H1.
+
+## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
+
+Surface: Cursor cloud. Landed on main via #511 at `ab4342b1d`. Community and resort pages throw `ListingsUnavailableError` after one retry when the listings or community read does not answer.
+
+## Earlier — 2026-10-14 (Cursor, make main CI green)
+
+Surface: Cursor cloud. Landed on main via #539 at `5293aa46c`. `ci:stat-source` one engine; `#homes-dial-` type links; `V3Footer` re-export.
+
+
 ## Earlier — 2026-10-14 (Cursor, city buyer-answer geo-guard)
 
-Surface: Cursor cloud. Landed on main via #538 at `e534ef5a4`. Nobody pushes main. Nothing sent.
-
-**What landed.** `resolveCityNeighborhoodPath` treated `/cities/<city>/living` and `/cost` as unknown neighborhoods and hard-404ed them at the edge. Reserved child segments (`living`, `cost`, `vs`, `types`) now pass through to the App Router. Out-of-market towns still 308 to `/oregon/<town>`. Unknown hoods still 404.
-
-## Earlier — 2026-10-13 (Cursor, buyer answer pages)
-
-Surface: Cursor cloud. Landed on main via #528 at `65f98dd2a`. Child routes under community and city hubs plus extras on search routes. Live MLS answers cited as Oregon Data Share MLS.
+Surface: Cursor cloud. Landed on main via #538. Reserved child segments (`living`, `cost`, `vs`, `types`) pass through to the App Router.
 
 ## Earlier — 2026-10-13 (Cursor, sitemap + listing index hygiene)
 

@@ -11,12 +11,9 @@ import type { Metadata } from 'next'
 import { getSearchListings, getSearchMapListings, getViewportSearch } from '@/app/actions/search'
 import { getCityBoundary } from '@/app/actions/cities'
 import { getGeocodedListings } from '@/app/actions/geocode'
-import { getSession } from '@/app/actions/auth'
 import type { SearchFilters as SearchFiltersState } from '@/app/actions/search'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { appendIndexableSearchParams, shouldNoIndexSearchVariant } from '@/lib/seo-routing'
-import { getSavedListingKeys } from '@/app/actions/saved-listings'
-import { getLikedListingKeys } from '@/app/actions/likes'
 import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
 import { getBoundaryGeoJSON } from '@/lib/data'
 import {
@@ -129,7 +126,7 @@ import { SplitViewBodyLock } from '@/components/search/SplitViewBodyLock'
 
 /**
  * Resolve a data promise to a fallback if it rejects OR exceeds the budget.
- * Used for non-count reads (session, boundaries, saved keys) where empty is
+ * Used for non-count reads (boundaries) where empty is
  * a safe silent fallback. Prefer `withTimeoutSettled` for any value that
  * feeds a published inventory count — see §0 unknown-is-not-zero.
  */
@@ -336,9 +333,9 @@ export default async function SearchPage({
   // Initial bounds come from the city's authoritative boundary bbox (DAL); the
   // map refines to the real viewport on first idle.
   //
-  // Perf (SEARCH_UX_WAVE3 P1): session and place boundary do not depend on each
-  // other — run them in parallel so anonymous TTFB is not auth+boundary serial.
-  // Saved/liked still wait on session (signed-in only).
+  // Place boundary and open-house labels do not depend on each other.
+  // Saved / liked / signed-in hydrate after paint so this HTML stays
+  // visitor-independent and the s-maxage=60 CDN header can hold.
   // Places multi-select: finest grain (neighborhood → community/subdivision →
   // city) drives the ring + camera. City-only was FAIL for Southern Crossing
   // (pins without the district polygon).
@@ -351,8 +348,7 @@ export default async function SearchPage({
   const boundaryCityName =
     effectiveFilters.city?.split(',')[0]?.trim() ||
     (placeBoundaryTarget?.kind === 'neighborhood' ? 'Bend' : undefined)
-  const [session, placeBoundaryGeo, openHouseLabels] = await Promise.all([
-    getSession(),
+  const [placeBoundaryGeo, openHouseLabels] = await Promise.all([
     view !== 'list' && placeBoundaryTarget
       ? withTimeout(
           getBoundaryGeoJSON({
@@ -365,13 +361,8 @@ export default async function SearchPage({
       : Promise.resolve(null),
     loadOpenHouseBadgeLabels(boundaryCityName),
   ])
-  const [savedKeys, likedKeys] =
-    session?.user
-      ? await Promise.all([
-          withTimeout(getSavedListingKeys(), [] as string[], 1500),
-          withTimeout(getLikedListingKeys(), [] as string[], 1500),
-        ])
-      : [[], [] as string[]]
+  const savedKeys: string[] = []
+  const likedKeys: string[] = []
 
   // URL bbox, then the place's recorded boundary, then all of Central Oregon.
   // The source rides along: the map-only view fits the regional box at
@@ -600,7 +591,7 @@ export default async function SearchPage({
             same escape here so buyers are never stuck without a Map door. */}
         <SearchFilters
           initialFilters={initialFiltersFromUrl}
-          signedIn={!!session?.user}
+          signedIn={false}
           hideViewToggle={view === 'split'}
         />
       </div>
@@ -609,7 +600,7 @@ export default async function SearchPage({
           so the source contract still sees the capture. */}
       <div className={isAppFrame ? 'hidden' : 'hidden sm:block'}>
       <SearchAlertCapture
-        signedIn={!!session?.user}
+        signedIn={false}
         defaultCity={effectiveFilters.city ?? ''}
         variant={isAppFrame ? 'inline' : 'sticky'}
       />
