@@ -151,6 +151,12 @@ export function SmsComposer(props: {
   onQuietChange?: (quiet: boolean) => void
   /** Externally gate the send button (e.g. a review-ack checkbox in the host). */
   sendDisabled?: boolean
+  /** Person-page v3: hide the paperclip; keep the file input for Attach. */
+  hideAttachmentTrigger?: boolean
+  /** Appended once when the host insert (tracking link, merge token) changes. */
+  externalInsert?: string | null
+  /** File-input id the host Attach ▸ File click targets. */
+  attachmentInputId?: string
 }) {
   const [body, setBody] = useState(props.initialBody)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
@@ -164,6 +170,11 @@ export function SmsComposer(props: {
     const pre = consumeSuggestedReply('sms')
     if (pre) setBody((b) => (b.trim() ? b : pre.body))
   }, [preloadPersonId])
+  useEffect(() => {
+    const insert = props.externalInsert
+    if (!insert) return
+    setBody((b) => (b.includes(insert) ? b : b ? `${b}\n${insert}` : insert))
+  }, [props.externalInsert])
   const unresolved = useMemo(() => findUnresolvedMergeTokens(body), [body])
 
   // Same-tick double-submit guard (Pain #2, 2026-07-17) — full mechanism note
@@ -340,12 +351,14 @@ export function SmsComposer(props: {
         {!hideMerge ? (
           <MergeFieldInserter channel="sms" customFields={props.customFields} onInsert={handleInsertToken} iconOnly />
         ) : null}
-        {!hideAttach ? (
+        {!hideAttach || props.hideAttachmentTrigger ? (
           <AttachmentControl
             attachments={attachments}
             accept={MMS_ACCEPT_ATTR}
             ariaLabel="Attach images or PDFs"
             iconClassName="h-5 w-5"
+            hideTrigger={props.hideAttachmentTrigger || hideAttach}
+            inputId={props.attachmentInputId}
           />
         ) : null}
         <textarea
@@ -385,13 +398,15 @@ export function SmsComposer(props: {
 
       {/* Quiet-hours override + live segment count, quiet under the bar. */}
       <div className="flex items-center justify-between gap-3 px-1">
-        {!hideQuiet ? (
+        {!hideQuiet && quietNow ? (
           <ToolbarCheck
             id="overrideQuietHours"
             name="overrideQuietHours"
             value="1"
             label="Send anyway (quiet hours)"
           />
+        ) : !hideQuiet ? (
+          <span />
         ) : isGroup ? (
           <span />
         ) : (
