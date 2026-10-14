@@ -12,6 +12,9 @@
  *   npx tsx scripts/audit-visitor-automation.ts              # the 14 days to now
  *   npx tsx scripts/audit-visitor-automation.ts --days 30
  *   npx tsx scripts/audit-visitor-automation.ts --since 2026-10-07 --until 2026-10-14
+ *   ... --reflag-csv out/reflag.csv   # also write session_id,reason for every session the
+ *                                     # replay flags that is not flagged today (gitignored out/;
+ *                                     # input to the re-flag proposal, which only Matt approves)
  *
  * How a rule is replayed on history. The track route classifies a session from
  * the request's User-Agent and IP geo headers at every consent tier, but stores
@@ -110,6 +113,7 @@ async function main() {
   type Tally = { birth: number; end: number; endOnUnflagged: number; towns: Map<string, number>; browsers: Map<string, number> }
   const rule = new Map<string, Tally>()
   const clearedBy = new Map<string, number>()
+  const reflag: Array<{ sessionId: string; reason: string }> = []
 
   for (const s of w.sessions) {
     const evs = w.events.get(s.session_id) ?? []
@@ -153,7 +157,10 @@ async function main() {
       continue
     }
     t.end++
-    if (!s.is_automated) t.endOnUnflagged++
+    if (!s.is_automated) {
+      t.endOnUnflagged++
+      reflag.push({ sessionId: s.session_id, reason: shape.reason })
+    }
     if (person) peopleEndFlagged++
     bump(t.towns, `${s.ip_city ?? '(no town)'}, ${s.ip_region ?? '-'} ${s.ip_country ?? ''}`.trim())
     bump(t.browsers, browserFamily(s.user_agent))
@@ -184,6 +191,15 @@ async function main() {
   console.log(`  flagged at birth by a provisional rule: ${peopleBirthFlagged}`)
   console.log(`  still flagged at the end: ${peopleEndFlagged}${peopleEndFlagged === 0 ? '  (PASS)' : '  (FAIL)'}`)
   if (peopleEndFlagged > 0) process.exitCode = 1
+
+  const csv = arg('--reflag-csv')
+  if (csv) {
+    const { writeFileSync, mkdirSync } = await import('node:fs')
+    const { dirname } = await import('node:path')
+    mkdirSync(dirname(csv), { recursive: true })
+    writeFileSync(csv, ['session_id,reason', ...reflag.map((r) => `${r.sessionId},${r.reason}`)].join('\n') + '\n')
+    console.log(`\nWrote ${reflag.length} rows to ${csv} (session_id,reason; nothing written to the database)`)
+  }
 }
 
 main().catch((e) => {

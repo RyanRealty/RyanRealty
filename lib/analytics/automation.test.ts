@@ -179,6 +179,7 @@ describe('classifyArrivalShape — stale-browser (provisional)', () => {
     expect(cold({ userAgent: old, landingPage: `${HOME}?_pid=64115.email.abcdefghijklmnopqrstuv` }).automated).toBe(false)
     expect(cold({ userAgent: old, landingPage: `${HOME}?rr_doc=cma-2465-ne-7th` }).automated).toBe(false)
     expect(cold({ userAgent: old, landingPage: `${HOME}?msclkid=abc` }).automated).toBe(false)
+    expect(cold({ userAgent: old, landingPage: `${HOME}?_gl=1*abc*_ga*MTI3` }).automated).toBe(false)
     expect(cold({ userAgent: old, hasToken: true }).automated).toBe(false)
   })
 

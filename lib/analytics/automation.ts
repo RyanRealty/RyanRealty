@@ -196,8 +196,8 @@ export function sessionBlocksIdentification(
   return !IDENTIFIABLE_SESSION.some((t) => termHolds(t, row as Record<string, unknown>))
 }
 
-/** Campaign, click-id and link parameters: a landing URL carrying one is a click we can name. */
-const ARRIVAL_PARAM_RE = /^(utm_.+|fbclid|gclid|msclkid|ttclid|_pid|agent|rr_doc)$/
+/** Campaign, click-id, Google-linker and link parameters: a landing URL carrying one is a click we can name. */
+const ARRIVAL_PARAM_RE = /^(utm_.+|fbclid|gclid|msclkid|ttclid|_gl|_pid|agent|rr_doc)$/
 
 /**
  * `?agent=` names the broker, not the click: the site stamps it on its own

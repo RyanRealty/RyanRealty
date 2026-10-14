@@ -209,7 +209,8 @@ page moves the hot-lead count, which is a scoring decision and not a tracking fi
 **The automation class is recorded at every storing tier from the request's user-agent
 HEADER and `navigator.webdriver`, and only the class label is stored**
 (`visitor_sessions.is_automated` / `automation_reason`: `declared-crawler`, `tool`,
-`headless`, `webdriver`, `empty-ua`; `lib/analytics/automation.ts`). Reading the header
+`headless` (the user agent, or a `Sec-CH-UA` brand of `HeadlessChrome`), `webdriver`,
+`empty-ua`, `marker`; the provisional cold-arrival classes below; `lib/analytics/automation.ts`). Reading the header
 to classify is not keeping it. A UA-flagged session is still counted, but it is never
 identified to a contact, never shown in the known-people view, and never mirrored to GA4.
 Since 2026-09-29 the class is honored everywhere, not only by the track route:
@@ -235,8 +236,8 @@ Since 2026-09-29 the class is honored everywhere, not only by the track route:
   form-submit stitch (`stitchFormSubmitIdentity`). The browser back-stitch
   (`stitchVisitorIdentity`, run when a person identifies) leaves every flagged session on
   the same `rr_vid` unidentified, and a back-stitch or identity-map write that fails is
-  logged, never skipped in silence; the provisional `contact-deep-link` shape is stitched
-  like any session. Which sessions automation blocks is ONE rule
+  logged, never skipped in silence; a provisional cold-arrival class is stitched
+  like any session, and identification clears it. Which sessions automation blocks is ONE rule
   (`lib/analytics/automation.ts`, `sessionBlocksIdentification` and the PostgREST filter
   `IDENTIFIABLE_SESSION_FILTER` built from the same terms), read by the identify paths,
   the back-stitch and the Known people view alike. The contact a form creates exists either way. Every tracker post
@@ -264,15 +265,98 @@ Since 2026-09-29 the class is honored everywhere, not only by the track route:
   with the deploy); until it is applied the insert fails, is logged, and the visitor is
   still redirected, so an automated click is recorded nowhere and never as a `click`.
 
-One behavioural reason is **provisional**: `contact-deep-link`, a brand-new session whose
-first page is `/contact?listingKey=<mls>` with no referrer, no campaign params and no
-identity token. People reach that form from a listing page, so their session already
-exists. Measured 2026-09-23T06:09Z over the 7 days from 2026-09-16T06:09Z
-(`visitor_sessions`, supabase-js read): 882 sessions landed that way, each on its own new
-`rr_vid`, none lasting over 10 seconds, none identified, and all 300 sampled had exactly
-one event. The UA classifier cannot see that crawler because the UA is not stored at
-essential. The flag is set at birth and **cleared by the session's next event**; it keeps
-that first view out of the GA4 mirror and the counts, and never blocks identification.
+**Automation is flagged, never deleted, and every visitor count leaves it out (Matt
+2026-10-14, pinned in `data/analytics/decisions.json` as `automation-flagged-not-deleted`).**
+A flagged session keeps its row and its events, with `is_automated = true` and an
+`automation_reason`, so the call stays auditable and reversible; a count of visitors,
+sessions, sources or funnels must read only `is_automated = false` (a signed-in broker's
+browser, `internal`, is a person but not an outside visitor, so it is left out too).
+
+### Cold arrivals that read as a machine (provisional, 2026-10-14)
+
+Three classes are **provisional**: set at session birth on a COLD arrival (no referrer, no
+campaign or click id on the landing URL, no identity token), never blocking identification,
+and **cleared by the session's first sign of a person** (`isPersonEvidence`: a scroll, a
+search, a click, a save, a form, sign-in, or a view of another page) **or by
+identification** (every identify path: the track route, `backfillSessionToFub`, the browser
+back-stitch). A section rendering in view and a repeat view of the landing page do not
+clear one: a headless browser's tall viewport fires those on load. The first view of a
+provisional session is never mirrored to GA4. The route reads the user agent and the IP
+geo headers to classify at every tier and stores neither at essential.
+
+- **`contact-deep-link`**: the first page is `/contact?listingKey=<mls>`. People reach that
+  form from a listing page, so their session already exists. Measured 2026-09-23T06:09Z
+  over the 7 days from 2026-09-16T06:09Z (`visitor_sessions`, supabase-js read): 882
+  sessions landed that way, each on its own new `rr_vid`, none lasting over 10 seconds,
+  none identified, and all 300 sampled had exactly one event. Until 2026-10-14 any second
+  event cleared it; now only a sign of a person does.
+- **`stale-browser`**: desktop Google Chrome (Windows, macOS or Linux; not phones, not
+  ChromeOS, not Edge or Opera) whose major version was superseded by the next stable
+  release more than **45 days** before the request. The release dates are the Chromium
+  schedule (chromiumdash `fetch_milestone_schedule`, `stable_date`, milestones 138 to 160,
+  fetched 2026-10-14) in `lib/analytics/chrome-releases.ts`; Chrome moved to a two-week
+  cadence at 153, so no formula stands in for the table. A milestone newer than the table
+  is never judged stale (refresh the table before 160's successor ships, January 2027).
+  Desktop Chrome updates itself; these crawlers pin a build and rotate a handful of
+  user-agent strings.
+- **`datacenter-geo`**: the IP geolocates (Vercel `x-vercel-ip-city` and
+  `x-vercel-ip-country-region`, US) to a town whose traffic here is cloud egress: Santa
+  Clara CA, Ashburn VA, Council Bluffs IA, Boardman OR, The Dalles OR, Moncks Corner SC.
+  Prineville OR hosts Meta and Apple datacenters and is left out on purpose: it is a town
+  we serve.
+- `?agent=` alone does not make an arrival warm for `stale-browser` or `datacenter-geo`:
+  the site stamps it on its own Book-a-tour links (`/book?agent=<slug>&listing=<mls>`), and
+  the Linux Chrome 150 crawler followed those 107 times in 14 days. It still exempts
+  `contact-deep-link`, as before.
+
+One more permanent signal: a `Sec-CH-UA` client hint naming `HeadlessChrome` is
+`headless`, whatever the user agent says (no browser a person uses sends it; the header
+is not stored, so its hits on history cannot be counted). `Google-NotebookLM` is a
+declared agent.
+
+**Measured 2026-10-14** with `npx tsx scripts/audit-visitor-automation.ts --since
+2026-09-30 --until 2026-10-14` (read-only; it replays the classifier in
+`lib/analytics/automation.ts` over the rows `lib/data/analytics/visitorAutomationAudit.ts`
+returns). Window `visitor_sessions.first_seen_at` in [2026-09-30T00:00Z, 2026-10-14T00:00Z):
+31,480 sessions, 27,067 flagged and 4,413 not flagged as stored.
+
+| Rule | Set at birth | Still flagged after the session's events | Newly flagged (not flagged as stored) |
+|---|---|---|---|
+| `stale-browser` | 1,377 | 1,375 | 1,375 |
+| `contact-deep-link` (now cleared only by a sign of a person) | 434 | 434 | 43 |
+| `datacenter-geo` | 11 | 9 | 9 |
+| **All** | | | **1,427**: not flagged goes from 4,413 to 2,986 |
+
+The clusters `stale-browser` catches: Linux Chrome 150 (774 sessions, one exact user-agent
+string, from Wilmington DE, New York, Princeton, Boston, Dallas and dozens more towns, all
+with no referrer), Windows and macOS Chrome 148, 149 and 150 (490 sessions on six exact
+strings, almost all from Santa Clara CA and Mexico City), Windows Chrome 151 (55) and 144
+(52) from scattered residential-proxy towns. By town: Santa Clara 311, Mexico City 111,
+Wilmington DE 98, New York 92, Princeton NJ 83, Boston 73, Dallas 52. One page, no
+referrer, gone in under two seconds, none identified. `datacenter-geo` adds Council Bluffs
+4, Moncks Corner 2, Santa Clara 2, Ashburn 1 (among them four Android 6 Nexus 5X renders
+in the same minute and a spoofed iOS 16 user agent with Safari 26.5).
+
+The stale-browser and datacenter-geo rules replay only where the user agent or town was
+stored (1,738 sessions); 3,066 sessions in the window were stored at the essential tier
+without them, almost all before the region defaults of 2026-10-08. Since then the effect is
+larger: for [2026-10-09, 2026-10-14) not flagged goes from 1,822 to 429.
+
+**People check (the rules must not flag a person).** A session proved a person when it is
+stamped with a CRM contact, its browser is in `visitor_identity_map` with a contact, or it
+carries a form, opt-in, save or click event. 14 days: 88 such sessions; 1 was flagged at
+birth (`datacenter-geo`, Ashburn VA), then cleared by identification; **0 end flagged**.
+90 days ([2026-07-16, 2026-10-14)): 355 people, the same 1 flagged at birth, **0 end
+flagged**. Identified contacts on old Chrome builds exist (macOS 128 and 131, Windows 140
+to 142); they arrived with a referrer or a campaign, or showed a person on their first
+event, and none is flagged. The 90-day replay also flags 1,094 macOS Chrome 124 sessions,
+the user agent our own capture tool used before the `rr_automation` marker (Matt
+2026-10-05).
+
+**History is not re-flagged.** The rules apply to sessions born after the deploy. A
+one-time re-flag of the measured window is proposed to Matt in the pull request (the 1,427
+session ids come from `--reflag-csv`; the update touches only rows still unflagged and with
+no contact); nothing has run.
 
 ## Sessions (Matt 2026-09-29)
 
