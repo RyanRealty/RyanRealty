@@ -25,6 +25,7 @@ import { lookupCaller } from '@/lib/crm/lookup'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
 import { ackTwilioWebhook, withAckBudget, TWILIO_RAW_PERSIST_MS } from '@/lib/crm/twilio-webhook-ack'
+import { applyInboundConsentClear } from '@/lib/data/crm/applyInboundConsentClear'
 
 function rejectResponse(): NextResponse {
   return xml('<?xml version="1.0" encoding="UTF-8"?>\n<Response><Reject reason="rejected"/></Response>')
@@ -158,6 +159,16 @@ export async function processVoiceInbound(params: Record<string, string>): Promi
             detail: `Calling now from ${from}`,
           }),
         })
+      }
+      try {
+        await applyInboundConsentClear({
+          personId: match.personId,
+          event: 'call',
+          eventId: params.CallSid ?? null,
+          broker: forwardingBroker,
+        })
+      } catch (e) {
+        console.warn('[twilio/voice] inbound consent clear failed', e)
       }
     } catch (e) {
       console.error('[twilio/voice] timeline/alert write failed:', e)

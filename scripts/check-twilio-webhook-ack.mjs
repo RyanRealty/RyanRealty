@@ -53,6 +53,9 @@ if (!/addSuppression/.test(sms) || !/STOP_WORDS/.test(sms)) {
 if (!/clearNonOptOutSuppressions/.test(sms)) {
   fails.push('inbound-sms must keep DNC / non-opt-out auto-clear in the after-ack processor')
 }
+if (!/applyInboundConsentClear/.test(sms) || !/applyInboundConsentClear/.test(voice) || !/applyInboundConsentClear/.test(complete)) {
+  fails.push('SMS / voice / voicemail processors must keep inbound DNC consent-clear after the ack')
+}
 if (!/applyInboundMessageEnrichment/.test(sms) || !/applyInboundMessageEnrichment/.test(recording)) {
   fails.push('SMS + recording processors must still enrich CRM people')
 }
