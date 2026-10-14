@@ -1,0 +1,12 @@
+{
+  "rule": "R-189",
+  "step": "brief",
+  "what": "A buyer ad puts the word percentage on screen",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.2.scene.line",
+      "set": "Go in with a plan, not a percentage"
+    }
+  ]
+}

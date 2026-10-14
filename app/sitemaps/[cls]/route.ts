@@ -25,6 +25,7 @@
  */
 import { SITEMAP_CLASSES, type SitemapClass } from '@/lib/data/sitemap/classify'
 import { getClassRows, siteBaseUrl } from '@/lib/sitemap-class-rows'
+import { escapeXml } from '@/lib/sitemap-xml'
 
 export const revalidate = 3600
 
@@ -56,15 +57,6 @@ export const dynamicParams = true
 // invocation with its own module scope, so all five classes paid a full
 // ~10.7K-URL fan-out and three of them 504'd at maxDuration in production.
 
-function escapeXml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;')
-}
-
 export async function GET(_req: Request, ctx: { params: Promise<{ cls: string }> }) {
   const { cls } = await ctx.params
   const clean = cls.replace(/\.xml$/, '') as SitemapClass
@@ -81,7 +73,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ cls: string }>
       const lastmod = lastmodIso ? `<lastmod>${lastmodIso}</lastmod>` : ''
       // A listing's lead photo, so Google Images can tie the MLS photograph to
       // the listing page (SEO review 2026-10-04). It comes from the Spark CDN,
-      // not our path builders, so it is escaped.
+      // not our path builders, so it is escaped. The rest of each gallery is in
+      // /sitemaps/listing-photos/{n}.xml (2026-10-14).
       const image = imageUrl ? `<image:image><image:loc>${escapeXml(imageUrl)}</image:loc></image:image>` : ''
       return `<url><loc>${loc}</loc>${lastmod}${image}</url>`
     })

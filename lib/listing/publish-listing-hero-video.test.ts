@@ -80,3 +80,12 @@ describe('publishTourEmbedFromUrl', () => {
     expect(embed?.url).toContain('matterport')
   })
 })
+
+describe('publishTourEmbedFromUrl — a card tour URL is cleaned (2026-10-14)', () => {
+  it('unwraps a SafeLinks tour and never frames the wrapper', () => {
+    const wrapped =
+      'https://nam12.safelinks.protection.outlook.com/?url=https%3A%2F%2Fmy.matterport.com%2Fshow%2F%3Fm%3DAbC123xyz&data=05%7C02%7Cbroker%40example.com&reserved=0'
+    expect(publishTourEmbedFromUrl(wrapped)?.url).toBe('https://my.matterport.com/show/?m=AbC123xyz')
+    expect(publishTourEmbedFromUrl('https://protect-us.mimecast.com/s/AbC')).toBeNull()
+  })
+})

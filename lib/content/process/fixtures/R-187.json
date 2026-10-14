@@ -1,0 +1,12 @@
+{
+  "rule": "R-187",
+  "step": "brief",
+  "what": "The whiteboard names a figure ID that has no row in brief.numbers",
+  "edits": [
+    {
+      "in": "whiteboard",
+      "path": "figures.1",
+      "set": "bend_median_seller_credit"
+    }
+  ]
+}

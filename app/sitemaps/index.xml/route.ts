@@ -27,9 +27,11 @@
  * marked force-dynamic so it never prerenders.
  *
  * No XML escaping is needed: every loc is built from SITEMAP_CLASSES (lowercase
- * a-z only) and the site base URL, and lastmod is an ISO timestamp.
+ * a-z only), the fixed media paths (a-z, digits, hyphens) and the site base
+ * URL, and lastmod is an ISO timestamp.
  */
 import { SITEMAP_CLASSES } from '@/lib/data/sitemap/classify'
+import { LISTING_PHOTO_SITEMAP_PARTS } from '@/lib/data/sitemap/listing-photo-sitemap'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 
 // Cheap enough to prerender (no database work at all) and refreshed on the same
@@ -47,9 +49,18 @@ export async function GET() {
   // timestamp that bounds theirs — not an invented freshness claim (§0).
   const lastmod = new Date().toISOString()
 
-  const entries = SITEMAP_CLASSES.map(
-    (cls) => `<sitemap><loc>${baseUrl}/sitemaps/${cls}.xml</loc><lastmod>${lastmod}</lastmod></sitemap>`,
-  ).join('\n')
+  // The five URL classes first (their union is every URL), then the media
+  // sitemaps that re-list listing URLs with their photos and video tours
+  // (2026-10-14). The photo part count is a constant, so this route still
+  // reads nothing.
+  const childPaths = [
+    ...SITEMAP_CLASSES.map((cls) => `/sitemaps/${cls}.xml`),
+    ...Array.from({ length: LISTING_PHOTO_SITEMAP_PARTS }, (_, i) => `/sitemaps/listing-photos/${i + 1}.xml`),
+    '/sitemaps/video.xml',
+  ]
+  const entries = childPaths
+    .map((path) => `<sitemap><loc>${baseUrl}${path}</loc><lastmod>${lastmod}</lastmod></sitemap>`)
+    .join('\n')
 
   const body = [
     '<?xml version="1.0" encoding="UTF-8"?>',

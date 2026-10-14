@@ -51,6 +51,7 @@ const SCAN_DIRS = [
   // layout; email-send-ready is the empty-send helper EmailComposer imports.
   'app/admin/(protected)/people/[id]/PersonWorkspaceV3.tsx',
   'components/admin/crm/lead-page-v3',
+  'components/admin/crm/PersonIdentityEditor.tsx',
   'components/admin/crm/email-send-ready.ts',
   'app/admin/(protected)/people/[id]/PersonIdentityHeader.tsx',
   'app/admin/(protected)/people/[id]/PersonAddressEditor.tsx',

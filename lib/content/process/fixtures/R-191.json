@@ -1,0 +1,17 @@
+{
+  "rule": "R-191",
+  "step": "brief",
+  "what": "The whiteboard's audience and context share no words with the opening, so the ad would start in the middle of a concept",
+  "edits": [
+    {
+      "in": "whiteboard",
+      "path": "audience",
+      "set": "Out-of-town visitors planning a ski trip"
+    },
+    {
+      "in": "whiteboard",
+      "path": "context",
+      "set": "Ski season opens soon on the mountain"
+    }
+  ]
+}

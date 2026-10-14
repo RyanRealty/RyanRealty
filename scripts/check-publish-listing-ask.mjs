@@ -114,6 +114,11 @@ checks.push({
     publisher.includes('https://schema.org/OutOfStock'),
 })
 
+// 2026-10-14: the description moved out of generateMetadata into
+// listingMetaDescription (lib/listing/listing-meta-description.ts) so sibling
+// lots could be made unique and tested without a route. The status word must
+// still reach listingShareSummary through it.
+const metaDescription = src('lib/listing/listing-meta-description.ts')
 checks.push({
   // SITE-99 moved the title into listingDocumentTitle (beds/baths + street) but
   // statusWord still leads for off-market rows — the old inline ternary is gone.
@@ -121,7 +126,8 @@ checks.push({
   ok:
     /publishListingStatusWord\(listing\.status\)/.test(page) &&
     /listingDocumentTitle\(\{[^}]*statusWord/s.test(page) &&
-    /listingShareSummary\(\{[\s\S]*?statusWord,/s.test(page) &&
+    /listingMetaDescription\(\{[\s\S]*?statusWord,/s.test(page) &&
+    /listingShareSummary\(\{[\s\S]*?statusWord: input\.statusWord,/s.test(metaDescription) &&
     /statusWord,/.test(page),
 })
 

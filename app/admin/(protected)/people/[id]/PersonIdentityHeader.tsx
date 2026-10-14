@@ -1,8 +1,14 @@
 import { EntityTitle, StateWord } from '@/components/admin/v2'
 import type { PersonWhoLabel } from '@/lib/crm/person-who-labels'
+import type { PersonLeadType } from '@/lib/crm/person-identity-edit'
+import { PersonIdentityEditor } from '@/components/admin/crm/PersonIdentityEditor'
 
 type PersonIdentityHeaderProps = {
   name: string | null
+  firstName: string
+  lastName: string
+  leadType: PersonLeadType
+  updateIdentity: (formData: FormData) => Promise<void>
   whoLabels: PersonWhoLabel[]
   stage: string
   assignedBroker: string | null
@@ -21,6 +27,10 @@ type PersonIdentityHeaderProps = {
 
 export function PersonIdentityHeader({
   name,
+  firstName,
+  lastName,
+  leadType,
+  updateIdentity,
   whoLabels,
   stage,
   assignedBroker,
@@ -58,6 +68,13 @@ export function PersonIdentityHeader({
           <span style={{ color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)' }}>assigned {assignedBroker}</span>
         ) : null}
       </div>
+      <PersonIdentityEditor
+        firstName={firstName}
+        lastName={lastName}
+        leadType={leadType}
+        layout="2"
+        action={updateIdentity}
+      />
       {nextLine || nowLine ? (
         <div style={{ margin: '8px 0 4px', fontSize: 'var(--a-text-sm)', display: 'flex', flexDirection: 'column', gap: 4 }}>
           {nextLine ? (
