@@ -74,11 +74,15 @@ const RULES: ReadonlyArray<{ channel: LeadChannel; test: (s: string) => boolean 
   // landing page — a real inbound lead) is not mistaken for the "Expired
   // Listing" / "FSBO" prospecting LISTS we build ourselves (matched below).
   // The site's door labels (FUNNEL-4, 2026-09-23: crm_people.source is the door,
-  // not the host): 'idx-registration' (alerts sheet), 'place-page', 'join'.
+  // not the host): 'idx-registration' (alerts sheet), 'place-page', 'join', and
+  // since 2026-10-14 'listing-pricing-read', 'listing-payment-email',
+  // 'homepage-cta' (page CTA) and 'blog-email' (its newsletter signup), which
+  // wrote the host until then. Specific phrases only: this rule runs before the
+  // prospecting rules, so a bare 'listing' would catch 'Expired Listing'.
   {
     channel: 'web',
     test: (s) =>
-      /\blp\b|lp form|landing|contact form|home valuation|valuation|\bcma\b|rental calculator|exit intent|signup|sign up|newsletter|listing alert|saved search|\bidx\b|place page|^join$/.test(
+      /\blp\b|lp form|landing|contact form|home valuation|valuation|\bcma\b|rental calculator|exit intent|signup|sign up|newsletter|listing alert|saved search|\bidx\b|place page|^join$|pricing read|payment email|homepage cta|page cta|blog email/.test(
         s,
       ),
   },
