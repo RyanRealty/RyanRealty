@@ -163,7 +163,7 @@ export default async function SearchPage({
   // real golf homes + FAQ). `?all=1` falls through to the standard filterable
   // list+map view of the same golf-filtered homes.
   if (preset?.landing === 'golf' && city && sp.all !== '1') {
-    return renderGolfLanding(city)
+    return renderGolfLanding(city, preset.shortLabel)
   }
 
   const effectiveStatusFilter = (filterOpts.statusFilter && ['active', 'active_and_pending', 'pending', 'closed', 'all'].includes(filterOpts.statusFilter))

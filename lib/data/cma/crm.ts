@@ -251,3 +251,56 @@ export async function attachCmaToPerson(
     return { ok: false, error: 'Could not link this CMA to the person.' }
   }
 }
+
+export type ExpiredOwnerOfRecord = {
+  enrichmentNotes: string | null
+  ownerName: string | null
+  contactEmail: string | null
+  streetAddress: string | null
+  city: string | null
+}
+
+/**
+ * The expired row linked to this CMA, with the county notes the greeting
+ * check parses (lib/cma/owner-of-record.ts). Null when no row links to the
+ * document or the service client is unavailable.
+ */
+export async function getOwnerOfRecordForCma(cmaId: string): Promise<ExpiredOwnerOfRecord | null> {
+  const id = cmaId.trim()
+  if (!id) return null
+  const sb = client()
+  if (!sb) return null
+  // The expired lane first, then the FSBO lane: both run the same county
+  // lookup, write the same notes, and link by cma_id.
+  let data: Record<string, unknown> | null = null
+  for (const table of ['expired_listings', 'fsbo_listings'] as const) {
+    const res = await sb
+      .from(table)
+      .select('enrichment_notes, owner_name, contact_email, street_address, full_address, city')
+      .eq('cma_id', id)
+      .order('detected_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (!res.error && res.data) {
+      data = res.data as Record<string, unknown>
+      break
+    }
+  }
+  if (!data) return null
+  const row = data as {
+    enrichment_notes?: unknown
+    owner_name?: unknown
+    contact_email?: unknown
+    street_address?: unknown
+    full_address?: unknown
+    city?: unknown
+  }
+  const street = cleanContact(row.street_address) ?? cleanContact(row.full_address)?.split(',')[0]?.trim() ?? null
+  return {
+    enrichmentNotes: cleanContact(row.enrichment_notes),
+    ownerName: cleanContact(row.owner_name),
+    contactEmail: cleanContact(row.contact_email)?.toLowerCase() ?? null,
+    streetAddress: street || null,
+    city: cleanContact(row.city),
+  }
+}

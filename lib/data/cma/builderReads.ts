@@ -100,6 +100,15 @@ const LISTING_CMA_COLUMNS = [
   'senior_community_yn',
 ].join(', ')
 
+/**
+ * The subject rows also carry the Spark `details` blob: NumberOfUnitsTotal,
+ * "Accessory Dwelling Unit YN", "ADU SqFt" and "ADU Type" live only there
+ * (keys with spaces cannot be projected one at a time), and the unit reading
+ * (lib/cma/subject-units.ts) needs them on every row at the address. Subject
+ * lookups return at most 15 rows; the comp pools keep the narrow projection.
+ */
+const SUBJECT_CMA_COLUMNS = `${LISTING_CMA_COLUMNS}, details`
+
 export type CmaListingRow = Record<string, unknown>
 
 /** Resolve candidate subject rows by MLS number / ListingKey. */
@@ -110,7 +119,7 @@ export async function findCmaSubjectByMls(mls: string): Promise<CmaListingRow[]>
   if (!key) return []
   const { data, error } = await sb
     .from('listings')
-    .select(LISTING_CMA_COLUMNS)
+    .select(SUBJECT_CMA_COLUMNS)
     .or(`ListNumber.eq.${key},ListingKey.eq.${key}`)
     .order('ModificationTimestamp', { ascending: false })
     .limit(5)
@@ -132,7 +141,7 @@ export async function findCmaSubjectByAddress(opts: {
   if (!sb) return []
   let q = sb
     .from('listings')
-    .select(LISTING_CMA_COLUMNS)
+    .select(SUBJECT_CMA_COLUMNS)
     .eq('StreetNumber', opts.streetNumber)
     .ilike('StreetName', opts.streetNameIlike)
   if (opts.cityIlike?.trim()) q = q.ilike('City', opts.cityIlike.trim())

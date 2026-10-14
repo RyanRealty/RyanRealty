@@ -13,7 +13,7 @@ Last curated: 2026-04-21 (governance purge ch.3). Obsolete/snapshot docs moved t
 | What the site does today (feature inventory) | `docs/FEATURES.md` |
 | How the Supabase schema works | `docs/DATABASE_FOR_AI_AGENTS.md` |
 | Work standards + design system + skill routing | `/CLAUDE.md` (root) |
-| Cross-tool handoff state (Cursor ↔ Claude Code) | `docs/plans/CROSS_AGENT_HANDOFF.md` |
+| Cross-tool handoff state (Cursor ↔ Claude Code) | `docs/plans/handoffs/` (one note per session) |
 
 ## Active docs by topic
 

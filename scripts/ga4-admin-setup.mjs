@@ -88,18 +88,23 @@ const DESIRED_CUSTOM_DIMENSIONS = [
   { parameterName: 'assigned_broker',    displayName: 'Assigned Broker',    scope: 'USER',  description: 'Broker the lead has been routed to (from canonical-lead-tagger)' },
 ]
 
+// Key events = the live property's list (read 2026-10-14 by npm run analytics:audit),
+// so a run never re-adds a retired one. `purchase` is GA4's built-in and is left alone.
 const DESIRED_CONVERSION_EVENTS = [
-  'generate_lead',           // canonical lead — fires from every form via fireLeadGenerated
-  'listing_inquiry',         // listing-detail Schedule showing / Ask a question
-  'home_valuation_cta_click', // mid-funnel: visitor clicked the home-value CTA
-  'valuation_requested',     // legacy alias the home-valuation form still fires
-  'tour_requested',          // listing tour request
-  'contact_agent',           // contact-agent button click
-  'cma_downloaded',          // CMA PDF delivered (uncommon but worth marking)
-  'newsletter_signup',       // pulse signup
-  'schedule_showing',        // listing detail
-  'property_inquiry',        // catch-all for buyer interest
+  'generate_lead',      // the one lead event, server-only (lib/lead-tracking.ts)
+  'qualify_lead',       // offline: Buyer Contract / Pending (lib/marketing/send-offline-ga4.ts)
+  'close_convert_lead', // offline: Closed
+  'call_initiated',     // tap-to-call (browser, via GTM)
+  'email_agent',        // mailto an agent (browser, via GTM)
+  'cma_anchor_click',   // CMA call to action (browser, via GTM)
+  'cma_downloaded',     // CMA document delivered (browser, via GTM)
+  'tour_requested',     // listing tour request (browser, via GTM)
 ]
+
+// Key events nothing sends, unmarked by Matt's decision 2026-10-14 (no code
+// emits these names; listing_inquiry is a lead_type, not an event). Marking one
+// again needs a sender first. GA4 keeps their history.
+const RETIRED_KEY_EVENTS = ['schedule_showing', 'listing_showing_click', 'listing_inquiry', 'home_valuation_cta_click']
 
 // 90 days matches what we tag in marketing_assignments + real-estate sales cycle.
 const DESIRED_ACQ_LOOKBACK = 'ACQUISITION_CONVERSION_EVENT_LOOKBACK_WINDOW_30_DAYS'  // Max allowed for acquisition is 30 days per API.
@@ -170,9 +175,10 @@ async function ensureCustomDimensions() {
 }
 
 async function ensureConversionEvents() {
-  console.log('\n## Conversion Events (Key Events)')
-  const cur = await api('GET', `/v1beta/properties/${PROPERTY_ID}/conversionEvents`)
-  const existing = new Set((cur.body.conversionEvents ?? []).map((c) => c.eventName))
+  console.log('\n## Key Events')
+  const cur = await api('GET', `/v1beta/properties/${PROPERTY_ID}/keyEvents?pageSize=200`)
+  const rows = cur.body.keyEvents ?? []
+  const existing = new Set(rows.map((c) => c.eventName))
   console.log(`  existing: ${existing.size}`)
   for (const want of DESIRED_CONVERSION_EVENTS) {
     if (existing.has(want)) {
@@ -181,15 +187,28 @@ async function ensureConversionEvents() {
       continue
     }
     actionsPlanned++
-    console.log(`  ⚡ PLAN: mark ${want} as conversion event`)
+    console.log(`  ⚡ PLAN: mark ${want} as a key event`)
     if (DRY_RUN) continue
-    const res = await api('POST', `/v1beta/properties/${PROPERTY_ID}/conversionEvents`, { eventName: want })
+    const res = await api('POST', `/v1beta/properties/${PROPERTY_ID}/keyEvents`, { eventName: want, countingMethod: 'ONCE_PER_EVENT' })
     if (res.ok) {
       console.log(`    ✓ APPLIED`)
       actionsApplied++
     } else {
       console.log(`    ✗ FAILED: HTTP ${res.status} ${JSON.stringify(res.body).slice(0, 200)}`)
-      errors.push(`conversionEvents.create ${want}: HTTP ${res.status}`)
+      errors.push(`keyEvents.create ${want}: HTTP ${res.status}`)
+    }
+  }
+  for (const row of rows.filter((r) => RETIRED_KEY_EVENTS.includes(r.eventName))) {
+    actionsPlanned++
+    console.log(`  ⚡ PLAN: unmark retired key event ${row.eventName}`)
+    if (DRY_RUN) continue
+    const res = await api('DELETE', `/v1beta/${row.name}`)
+    if (res.ok) {
+      console.log(`    ✓ APPLIED`)
+      actionsApplied++
+    } else {
+      console.log(`    ✗ FAILED: HTTP ${res.status} ${JSON.stringify(res.body).slice(0, 200)}`)
+      errors.push(`keyEvents.delete ${row.eventName}: HTTP ${res.status}`)
     }
   }
 }

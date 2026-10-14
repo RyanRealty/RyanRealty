@@ -366,3 +366,12 @@ describe('the queue list line leads with the hold (review, 2026-10-07)', () => {
     expect(cmaQueueListReason({ state: 'flagged', reviewReason: null })).toBe('Flagged for review.')
   })
 })
+
+describe('a multi-unit subject files under its own reason (Matt 2026-10-14, 429 Irving)', () => {
+  it('reads the refusal sentence lib/cma/subject-units.ts writes', () => {
+    const err =
+      'Multi-unit home: an earlier MLS record at this address (MLS 2005001, closed 2005-07-07) is typed Duplex, 2 units, 2,300 sq ft, built 2003, the same structure the current record lists as Single Family Residence at 1,629 sq ft with a 520 sq ft ADU. A multi-unit home is priced from multi-unit sales only (rule 23), and the comp pool holds single-family sales, so this letter is not built. Matt prices it by hand.'
+    expect(cmaQueueWhy({ state: 'failed', buildError: err })).toBe('multi-unit')
+    expect(CMA_QUEUE_WHY_LABEL['multi-unit']).toBe('Multi-unit home')
+  })
+})

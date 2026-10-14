@@ -197,7 +197,7 @@ import {
   isGeneratedHoaQuestion,
   stockRailAsk,
 } from './_v3/community-authored-faqs'
-import { communityTypeDownLinks, isCommunityLedeSlug } from './_v3/community-type-links'
+import { communityTypeDownLinks } from './_v3/community-type-links'
 
 import {
   PLACE_NEAR_RECREATION_TRACE,
@@ -1106,24 +1106,6 @@ async function renderCommunityDetail({ params }: Props) {
     listedCount: placeHomes.length > 0 ? placeHomes.length : null,
     types: communityStockTypesFromListings(placeHomes),
   }
-  const communityLede = isCommunityLedeSlug(slug)
-    ? placeTakeaways({
-        variant: 'community',
-        communitySlug: slug,
-        place: publicName,
-        asOfLabel: mosAsOf,
-        medianList: hud.medianList,
-        saleMedian:
-          publicPace.medianClose != null && publicPace.medianClose > 0
-            ? { value: publicPace.medianClose, when: 'over the last 12 months' }
-            : null,
-        yoyMedian: publicPace.yoyMedian,
-        cashShare: publicPace.cashShare,
-        cityCashShare: cityPace.cashShare,
-        hasTownhomes: listedStock.types.includes('attached'),
-        hasLots: listedStock.types.includes('lots'),
-      })
-    : []
   const communityAnswerLink = communityAnswerMarketLink({
     name: publicName,
     cityName,
@@ -1253,7 +1235,9 @@ async function renderCommunityDetail({ params }: Props) {
           </div>
         </div>
 
-        <CommunityFoldAnswer id="answer" answer={foldAnswer} link={communityAnswerLink} />
+        {/* id="takeaways": the answer's anchor and the pinned SEO decision
+            aeo-community-takeaways (data/seo/decisions.json). */}
+        <CommunityFoldAnswer id="takeaways" answer={foldAnswer} link={communityAnswerLink} />
         <CommunityHomesGrid id="homes" placeName={publicName} homes={placeHomes.slice(0, SSR_GRID_PAGE)} />
         {soldLedger ? (
           <V3Ledger
@@ -1340,7 +1324,7 @@ async function renderCommunityDetail({ params }: Props) {
             </div>
           </div>
           <V3Takeaways
-            id={communityLede.length >= 2 ? 'glance' : 'takeaways'}
+            id={foldAnswer.sentences.length > 0 || foldAnswer.fallback ? 'glance' : 'takeaways'}
             heading={`${publicName} at a glance`}
             items={takeaways}
             source={mosAsOf ? `Single-family homes, Oregon Data Share MLS, as of ${mosAsOf}.` : null}

@@ -39,6 +39,7 @@ export type CmaQueueWhy =
   | 'judge-unstable'
   | 'no-sales'
   | 'price-outside'
+  | 'multi-unit'
   | 'audit'
   | 'other'
 
@@ -57,6 +58,7 @@ export const CMA_QUEUE_WHY_LABEL: Record<Exclude<CmaQueueWhy, 'none'>, string> =
   'judge-unstable': 'Comps did not agree',
   'no-sales': 'No closed sale nearby',
   'price-outside': 'Price outside the sales',
+  'multi-unit': 'Multi-unit home',
   audit: 'Audit failed',
   other: 'Other hold',
 }
@@ -226,6 +228,9 @@ export function cmaQueueWhy(r: {
   if (r.state === 'failed') {
     const err = (r.buildError ?? '').toLowerCase()
     if (err.includes('judge_unstable') || err.includes('did not agree')) return 'judge-unstable'
+    // A duplex or other multi-unit subject (lib/cma/subject-units.ts, Matt
+    // 2026-10-14) is refused before comps and filed as its own reason.
+    if (err.startsWith('multi-unit home:')) return 'multi-unit'
     if (err.includes('no closed sale')) return 'no-sales'
     if (err.includes('outside the sales')) return 'price-outside'
     // Every comp-shortage sentence the build writes: brokerCompRefusal, the

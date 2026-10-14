@@ -13,7 +13,7 @@
  * G-rows stay a class of one), completes each node with evidence, updates
  * the handoff, ships once.
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'
 import { DOMAIN_REQUIRED_READS, type CompanyImprovementDomain } from '../lib/data/loop/domains'
@@ -54,41 +54,27 @@ function gapOrder(gap: string | null): number {
   return n ? Number(n) : 9999
 }
 
-// The WHOLE Current block, never a line cap: on 2026-09-22 an 18-line slice of
-// a 52-block stack hid six of Matt's ten directives at boot (PROCESS-8). The
-// file holds one block (ci:handoff-current); it runs from `# Current` to the
-// next top-level `# ` heading outside a code fence (a `# comment` in a fenced
-// shell snippet is not a heading). Same rule as scripts/lib/handoff-current.mjs.
+// Handoff = one note per session in docs/plans/handoffs/ (Matt 2026-10-14;
+// scripts/lib/handoff-notes.mjs). Printed whole, never line-capped: on 2026-09-22
+// an 18-line slice hid six of Matt's ten directives at boot (PROCESS-8). The
+// standing holds come first, then the newest notes, newest first.
+const HANDOFF_NOTES_DIR = 'docs/plans/handoffs'
+const HANDOFF_NOTE_RE = /^\d{4}-\d{2}-\d{2}T\d{4}Z-[a-z0-9][a-z0-9._-]*\.md$/
+const HANDOFF_NOTES_SHOWN = 3
 function handoffCurrent(): string {
   try {
-    const lines = readFileSync('docs/plans/CROSS_AGENT_HANDOFF.md', 'utf8').split('\n')
-    let fence: string | null = null
-    const fenced = lines.map((l) => {
-      const m = /^\s{0,3}(```|~~~)/.exec(l)
-      if (m) {
-        if (fence == null) fence = m[1]
-        else if (m[1] === fence) fence = null
-        return true
-      }
-      return fence != null
-    })
-    const isCurrent = (i: number) => !fenced[i] && /^# Current\b/.test(lines[i])
-    const start = lines.findIndex((_, i) => isCurrent(i))
-    if (start < 0) return 'UNREADABLE: no "# Current" block in docs/plans/CROSS_AGENT_HANDOFF.md'
-    let end = lines.length
-    for (let i = start + 1; i < lines.length; i += 1) {
-      if (!fenced[i] && /^# \S/.test(lines[i])) {
-        end = i
-        break
-      }
-    }
-    const stacked = lines.filter((_, i) => isCurrent(i)).length
-    const block = lines.slice(start, end).join('\n').trim()
-    return stacked > 1
-      ? `${block}\n\nWARNING: ${stacked} "# Current" blocks in the handoff; only the first is shown. ci:handoff-current fails this.`
-      : block
+    const readme = readFileSync(`${HANDOFF_NOTES_DIR}/README.md`, 'utf8')
+    const holdsAt = readme.indexOf('## Standing holds')
+    const holds = holdsAt >= 0 ? readme.slice(holdsAt).trim() : 'UNREADABLE: no "## Standing holds" in docs/plans/handoffs/README.md'
+    const notes = readdirSync(HANDOFF_NOTES_DIR)
+      .filter((n) => HANDOFF_NOTE_RE.test(n))
+      .sort()
+      .reverse()
+      .slice(0, HANDOFF_NOTES_SHOWN)
+    const shown = notes.map((n) => `### ${n}\n${readFileSync(`${HANDOFF_NOTES_DIR}/${n}`, 'utf8').trim()}`)
+    return [holds, '', `## Newest ${notes.length} handoff note(s) (${HANDOFF_NOTES_DIR}/)`, ...shown].join('\n\n')
   } catch {
-    return 'UNREADABLE: docs/plans/CROSS_AGENT_HANDOFF.md'
+    return `UNREADABLE: ${HANDOFF_NOTES_DIR}/ (one note per session; README.md holds the standing holds)`
   }
 }
 
@@ -280,7 +266,7 @@ async function main() {
   push(`version: ${manifestStatus()}`)
   push(`demand:  ${requirementsSummary()}`)
   push('')
-  push('--- HANDOFF (Current) ---')
+  push('--- HANDOFF (standing holds + newest notes) ---')
   push(handoffCurrent())
   push('')
   push('--- SCOREBOARD HEADLINE ---')
@@ -630,7 +616,7 @@ async function main() {
   push('1. One ship class per cycle. Claim the whole class before working; evidence before done.')
   push('2. Same-category fleet findings share ONE npm run push and ONE deploy:verify. Do not rebuild after each finding.')
   push('3. Only environment-verified facts enter durable state (probe rows, screenshots, deploy READY).')
-  push('4. Update CROSS_AGENT_HANDOFF Current before stopping. The chat is disposable; the graph is not.')
+  push('4. Write your handoff note in docs/plans/handoffs/ before stopping. The chat is disposable; the graph is not.')
   push('5. Matt gates: outbound to real people, public posts, ad spend, OAuth grants. Nothing else waits.')
   push('============================================')
 

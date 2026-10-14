@@ -262,11 +262,11 @@ function checkRefusalBody(body) {
 
 async function checkRefusal(route, url) {
   try {
-    const { status, body } = await fetchWithTimeout(url, timeoutFor(route.path))
+    const { status, body, lookup } = await fetchWithTimeout(url, timeoutFor(route.path))
     // 404 is the ideal status and 200 is what the streamed shell forces; both
     // are acceptable as long as a body came with it. 5xx never is.
     if (status >= 500 || status === 0) {
-      return { ...route, url, ok: false, status, reasons: [`HTTP ${status}`], title: null }
+      return { ...route, url, ok: false, status, reasons: [`HTTP ${status}`], title: null, lookup }
     }
     const c = checkRefusalBody(body)
     const titleMatch = body.match(/<title>([^<]*)<\/title>/i)
@@ -292,11 +292,15 @@ async function fetchWithTimeout(url, ms, init = {}) {
       headers: { ...CI_PROBE_HEADERS },
       ...init,
     })
+    // middleware.ts stamps x-listing-lookup: unavailable on the 503 it answers
+    // when the edge listing read got no answer from the database
+    // (lib/routing/listing-unavailable.ts). main() gives that one serial retry.
+    const lookup = res.headers.get('x-listing-lookup')
     if (init.redirect === 'manual') {
-      return { status: res.status, body: '', location: res.headers.get('location') }
+      return { status: res.status, body: '', location: res.headers.get('location'), lookup }
     }
     const body = await res.text()
-    return { status: res.status, body, location: null }
+    return { status: res.status, body, location: null, lookup }
   } finally {
     clearTimeout(t)
   }
@@ -428,7 +432,7 @@ async function discoverResolvingListingKey() {
  */
 async function checkListingCanonicalHop(route, url) {
   try {
-    const { status, location } = await fetchWithTimeout(url, timeoutFor(route.path), { redirect: 'manual' })
+    const { status, location, lookup } = await fetchWithTimeout(url, timeoutFor(route.path), { redirect: 'manual' })
     const pathname = locationPathname(location)
     const reasons = []
     if (status !== 308) reasons.push(`HTTP ${status} (want 308 — a non-canonical listing path must hop before render)`)
@@ -441,7 +445,7 @@ async function checkListingCanonicalHop(route, url) {
         reasons.push(`the canonical ${pathname} redirects again (HTTP ${again.status} -> ${locationPathname(again.location)})`)
       }
     }
-    return { ...route, url, status, ok: reasons.length === 0, reasons, title: pathname || null }
+    return { ...route, url, status, ok: reasons.length === 0, reasons, title: pathname || null, lookup }
   } catch (e) {
     return { ...route, url, ok: false, status: 0, reasons: [String(e?.message ?? e)], title: null }
   }
@@ -449,7 +453,7 @@ async function checkListingCanonicalHop(route, url) {
 
 async function checkResolvingRedirect(route, url) {
   try {
-    const { status, location } = await fetchWithTimeout(url, timeoutFor(route.path), {
+    const { status, location, lookup } = await fetchWithTimeout(url, timeoutFor(route.path), {
       redirect: 'manual',
     })
     const reasons = []
@@ -459,7 +463,7 @@ async function checkResolvingRedirect(route, url) {
     if (!location) reasons.push('no Location header (the shell flushed before the redirect threw)')
     const pathname = locationPathname(location)
     if (pathname && pathname === route.path) reasons.push(`Location points back at itself (${pathname})`)
-    return { ...route, url, status, ok: reasons.length === 0, reasons, title: pathname || null }
+    return { ...route, url, status, ok: reasons.length === 0, reasons, title: pathname || null, lookup }
   } catch (e) {
     return { ...route, url, ok: false, status: 0, reasons: [String(e?.message ?? e)], title: null }
   }
@@ -595,11 +599,29 @@ async function main() {
   // in 0.4s cold on its own. It gets the same one serial retry a timed-out
   // full page gets. A broken hop still fails: it passes through both times.
   const hopPassedThrough = (r, route) => Boolean(route.listingSegment) && !r.ok && r.status === 200
-  const needsSerial = (i) => timedOutFullPage(results[i]) || hopPassedThrough(results[i], toCheck[i])
+  // The same edge lookup answers 503 + Retry-After when the database gives it
+  // no answer inside its 1.5s budget and one 4s retry (middleware.ts (0e'),
+  // lib/routing/listing-unavailable.ts, 2026-10-05), and it marks that 503
+  // x-listing-lookup: unavailable. Inside the concurrent pass that read sits
+  // behind the same ~150 cold renders: run 38515151760 attempt 2 (2026-10-14)
+  // answered 503 on the canonical-URL refusal probe after attempt 1 of the
+  // same commit had passed all 151. It gets the one serial retry the hop and a
+  // timed-out page get. A database that is really not answering 503s again
+  // with the server to itself, and that still fails.
+  const lookupUnavailable = (r) => !r.ok && r.status === 503 && r.lookup === 'unavailable'
+  const needsSerial = (i) =>
+    timedOutFullPage(results[i]) || hopPassedThrough(results[i], toCheck[i]) || lookupUnavailable(results[i])
   // The server keeps rendering a page after the client gives up on it, so the
   // renders the pool abandoned drain before the serial retries begin.
   if (results.some((_, i) => needsSerial(i))) await new Promise((r) => setTimeout(r, RETRY_SETTLE_MS))
   for (let i = 0; i < results.length; i += 1) {
+    if (lookupUnavailable(results[i])) {
+      const retry = await checkRoute(toCheck[i])
+      results[i] = retry.ok
+        ? { ...retry, title: `${retry.title ?? ''} (answered on a serial retry; the edge listing lookup got no database answer inside the concurrent pass)` }
+        : retry
+      continue
+    }
     if (hopPassedThrough(results[i], toCheck[i])) {
       const retry = await checkRoute(toCheck[i])
       results[i] = retry.ok
