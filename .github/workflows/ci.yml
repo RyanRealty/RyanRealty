@@ -20,18 +20,10 @@ concurrency:
 #   lint · gates (ci:gates + type check) ·        start at once, no build needed
 #     test:unit (3 shards)
 #   build                                         one production build, packed
-#   smoke · content-floor (4) · a11y ·            start AFTER the build (needs:
-#     lighthouse (4) · e2e                        build), unpack it, start a server
+#   smoke · content-floor (4) · a11y ·            start with the build (checkout,
+#     lighthouse (4) · e2e                        npm ci, browsers), then unpack
+#                                                 it and start a fresh server
 #   lint-and-build                                fails if ANY job above failed
-#
-# WHY the runtime jobs wait for `build` instead of starting beside it
-# (2026-10-14). Started beside it, the 11 runtime jobs per PR each took a
-# runner at once and polled for the artifact. With several bot PRs open, those
-# pollers filled the account's concurrent-runner pool, so the `build` jobs they
-# waited on never got a runner: on #563 `build` sat queued 40 minutes while
-# its own lighthouse / content-floor jobs held runners, hit their 15-minute
-# timeout and were cancelled. Overlapping npm ci with the build saved about a
-# minute per job; holding a runner for nothing cost the whole run.
 #
 # Shards split the work, never the bar: vitest --shard runs every test file
 # exactly once across the shards; LHCI_SHARD and CONTENT_FLOOR_SHARD split the

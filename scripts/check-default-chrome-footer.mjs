@@ -20,7 +20,7 @@
  *       - a v3 page (renders V3_ROOT_CLASS / V3Footer, the public-product
  *         destination register locked 2026-08-11), or
  *       - SiteFooter in the page itself or an ancestor layout.tsx, or
- *       - a one-level local import that provides either of the above
+ *       - a local import (two levels) that provides either of the above
  *         (delegating pages), or
  *       - the explicit no-footer allowlist (redirect-only pages).
  *  3. A pure KB page must NOT also render SiteFooter (double footer). The
@@ -104,8 +104,14 @@ const hasKb = (c) => /kb-root/.test(c) || /\bKbFooter\b/.test(c)
 const hasV3 = (c) => /\bV3Footer\b/.test(c) || /\bV3_ROOT_CLASS\b/.test(c)
 const hasSiteFooter = (c) => /\bSiteFooter\b/.test(c)
 
-/** Resolve a page's local imports one level deep and return their code. */
-function importedCode(file, src) {
+/**
+ * Resolve a page's local imports and return their code, two levels deep. Two,
+ * not one (2026-10-14): the buyer-answer pages (#528) call a shared route
+ * helper (app/_v3/buyer-answer/serve.ts) that renders BuyerAnswerPage, which
+ * carries V3Footer. One level stopped at serve.ts and failed 8 pages that do
+ * render the footer.
+ */
+function importedCode(file, src, depth = 2, seen = new Set([file])) {
   const dir = dirname(file)
   const out = []
   for (const m of src.matchAll(/from\s+['"]([^'"]+)['"]/g)) {
@@ -115,7 +121,11 @@ function importedCode(file, src) {
     else continue
     for (const cand of [spec, `${spec}.tsx`, `${spec}.ts`, join(spec, 'index.tsx'), join(spec, 'page.tsx')]) {
       if (existsSync(cand) && statSync(cand).isFile()) {
-        out.push(code(readFileSync(cand, 'utf8')))
+        if (seen.has(cand)) break
+        seen.add(cand)
+        const c = code(readFileSync(cand, 'utf8'))
+        out.push(c)
+        if (depth > 1) out.push(importedCode(cand, c, depth - 1, seen))
         break
       }
     }
@@ -168,7 +178,7 @@ for (const file of pageFiles(ROOT)) {
   }
   if (kb || v3 || site) continue
   if (ancestorLayoutHasFooter(file)) continue
-  // Delegating pages: follow local imports one level.
+  // Delegating pages: follow local imports two levels.
   const imported = importedCode(file, c)
   if (hasKb(imported) || hasV3(imported) || hasSiteFooter(imported)) continue
 

@@ -8,6 +8,16 @@ Surface: Cursor cloud. Branch `cursor/agent-rules-main-db-136e` from origin/main
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
+## Earlier — 2026-10-14 (Claude, CMA multi-unit guard + greeting names the person at the address)
+
+Surface: Claude Code cloud. Branch `claude/lucid-galileo-rcafq4` landed on main via #561 at `9f788f38` (squash by the auto-merge workflow). Nothing sent. No rebuild. Prod Supabase read-only this session.
+
+**What landed.** The 429 Irving letter priced a duplex on single-family sales and opened with the co-owner's first name instead of the recipient's. `lib/cma/subject-units.ts` reads every MLS row at the subject's address (PropertyType C, duplex and multi-family sub types, `NumberOfUnitsTotal` 2 to 4 on a house or income record, duplex remarks, an earlier record of the same structure) and `resolveCmaSubject` returns a refusal that stops the CMA build, the BPO build, the fleet dry run, the `/sell` answer and the place comps count; the queue files it as "Multi-unit home" (CMA SKILL rule 23 extended). `lib/crm/household-names.ts` parses the county owner string into its people and matches the email's local part: the lookup files the lead under the person the email belongs to and writes `Owner of record:` into the notes; compose time (`cmaFirstContactFactsForSend`, the Review preview, every send) runs the same rule against the address the send goes to; a multi-party record whose email names nobody greets "Hi there," (CMA SKILL rule 34). Carried in while driving the PR green: the #553 Tetherow page-payload baseline, and `scripts/check-route-smoke.mjs` gives a listing probe that answers 503 with `x-listing-lookup: unavailable` the one serial retry a timed-out page already gets.
+
+**Open for Matt.** Whether a house with an ADU and no multi-unit record prices only from ADU sales (today it stays a detached home, rule 23 as ruled 2026-10-08). The CRM person and the `cmas` row for 429 Irving still carry the co-owner's first name. The owner's reply left a phone number and is a warm lead; nothing drafted or sent.
+
+Skills read: `marketing_brain_skills/producers/cma/SKILL.md`, built-in `code-review`.
+
 ## Earlier — 2026-10-14 (Cursor, revert #469 hold-for-matt)
 
 Surface: Cursor cloud. Branch `cursor/revert-pr-469-6f1e` from origin/main `ef24a6b5f`. Reverts #469. Nobody pushes main. Nothing sent.
