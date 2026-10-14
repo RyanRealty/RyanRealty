@@ -5,21 +5,21 @@ Surface: Cursor cloud. Matt approved merge once checks pass. Landing in order: #
 **This pass.**
 - #546 `cursor/intake-mobile-sms-gate-3e28` — mobile-only intake skipped SMS suppression
 - #547 `cursor/skip-suppression-opt-out-3e28` — skipSuppression bypassed STOP/opt-outs
-- #550 `cursor/same-sync-relist-race-3e28` — same-sync Active relist missed by `>` compare
+- #550 `cursor/same-sync-relist-race-3e28` — same-sync Active relist missed by `>` compare. #452 (`fix/relist-blip`) landed on main and still uses `>`; this PR keeps `>=` and the unstamped live listing hit.
 
 `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true. CMA and email wording unchanged. Known main flakes that may fail: `/sell` content-floor, `/communities/tetherow` page-payload, Lighthouse JSON.
 
-**Held.** #452 stays open: the body requires a rule-25 fleet score before merge (stretch clocks). #471 stays open: merge conflicts with later main and would drop `loadCmaMapTile` / `CMA_MAP_MS`; lint-and-build is already red. The unique `idx_listings_parcel_number` migration is not on main.
+**Held.** #471 stays open: merge conflicts with later main and would drop `loadCmaMapTile` / `CMA_MAP_MS`. The unique `idx_listings_parcel_number` migration is not on main.
 
 **Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`.
 
 Skills read: `.cursor/rules/git-commit.mdc`.
 
-## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
+## Earlier — 2026-10-14 (Claude, the two buyer landing pages look like landing pages)
 
-Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489), which includes #485 (`fe948f648`) and #488 (`2167f8f71`). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
+Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b` from origin/main `5293aa46`. Landed via #548. Nothing sent. Nobody pushes main.
 
-**What landed.** #485 refuses an expired/FSBO CMA build when the home is on the market or has no sendable email. #488 ranks closer lots and matching views ahead of a mismatched sale. #489 seats a same-generation half-mile sale ahead of a stale neighbor.
+**What that commit did.** `/buy/concessions` and `/buy/alerts` open like `/sell`: a `V3Stage` photograph with the H1, sourced figures on the navy band, and the ask in the first viewport.
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 
