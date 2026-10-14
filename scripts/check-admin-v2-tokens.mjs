@@ -60,6 +60,8 @@ const SCAN_DIRS = [
   'app/admin/(protected)/people/[id]/FieldEditors.tsx',
   'app/admin/(protected)/people/[id]/TasksSection.tsx',
   'app/admin/(protected)/people/[id]/HomesSection.tsx',
+  // CRM homeowner check (Matt 2026-10-14): the county owner-of-record section.
+  'app/admin/(protected)/people/[id]/CountyRecordsSection.tsx',
   // P7 identity loop (2026-09-23): "On the site" + the personal-link copy control.
   'app/admin/(protected)/people/[id]/SiteActivitySection.tsx',
   'app/admin/(protected)/people/[id]/PersonalLinkCopy.tsx',
