@@ -307,7 +307,14 @@ export function parseStructuredOwner(row: {
 
 // ── The contact ───────────────────────────────────────────────────────────────
 
-export type ContactPerson = { first: string; middles: string[]; last: string; suffix: string | null }
+export type ContactPerson = {
+  first: string
+  middles: string[]
+  last: string
+  suffix: string | null
+  /** The name as the contact record spells it ("Jane O'Pellworth"), for display only. */
+  display: string
+}
 
 export type ContactIdentity = {
   /** The people a contact name carries ("John & Jane Smith" is two). */
@@ -321,7 +328,27 @@ function contactPerson(givenTokens: string[], lastTokens: string[], suffix: stri
   const first = given[0]
   const last = nameKey(lastTokens.join(''))
   if (!isNameWord(first) || last.length < 2) return null
-  return { first: nameKey(first), middles: given.slice(1).map(nameKey).filter(Boolean), last, suffix }
+  const first_ = nameKey(first)
+  return { first: first_, middles: given.slice(1).map(nameKey).filter(Boolean), last, suffix, display: '' }
+}
+
+/** Title-case a name piece only when the record wrote it all in one case. */
+function displayCase(s: string): string {
+  if (s !== s.toUpperCase() && s !== s.toLowerCase()) return s
+  return s.toLowerCase().replace(/(^|[\s'’-])([a-z])/g, (_m, a: string, b: string) => a + b.toUpperCase())
+}
+
+/** The record's own spelling of a name key: a word, two adjacent words, or the whole field. */
+function rawSpelling(key: string, input: { first_name?: string | null; last_name?: string | null; name?: string | null }): string {
+  const fields = [input.last_name, input.first_name, input.name].map((f) => String(f ?? '').trim()).filter(Boolean)
+  const pool: string[] = [...fields]
+  for (const f of fields) {
+    const ws = f.split(/[\s&/;,]+/).map((w) => w.replace(/[.,]+$/, '')).filter(Boolean)
+    pool.push(...ws)
+    for (let i = 0; i + 1 < ws.length; i++) pool.push(`${ws[i]} ${ws[i + 1]}`)
+  }
+  const hit = pool.find((w) => nameKey(w) === key)
+  return displayCase(hit ?? key)
 }
 
 function entityKeyOf(text: string): string {
@@ -352,7 +379,7 @@ export function parseContactName(input: {
       const given = stripAffixes(words(seg))
       add(contactPerson(given.tokens, last.tokens, given.suffix ?? last.suffix))
     }
-    return { people, entityKey: null }
+    return { people: withDisplay(people, input), entityKey: null }
   }
 
   if (!full) return { people, entityKey: null }
@@ -363,12 +390,21 @@ export function parseContactName(input: {
   const sharedLast = shared ? shared[shared.length - 1]! : null
   for (const seg of segs) {
     if (seg.tokens.length >= 2) {
-      add(contactPerson(seg.tokens.slice(0, -1), [seg.tokens[seg.tokens.length - 1]!], seg.suffix))
+      // "Marta Van Doren": a particle before the last word belongs to the family name.
+      const cut = seg.tokens.length >= 3 && SURNAME_PARTICLES.has(seg.tokens[seg.tokens.length - 2]!) ? 2 : 1
+      add(contactPerson(seg.tokens.slice(0, -cut), seg.tokens.slice(-cut), seg.suffix))
     } else if (seg.tokens.length === 1 && sharedLast) {
       add(contactPerson(seg.tokens, [sharedLast], seg.suffix))
     }
   }
-  return { people, entityKey: null }
+  return { people: withDisplay(people, input), entityKey: null }
+}
+
+function withDisplay(
+  people: ContactPerson[],
+  input: { first_name?: string | null; last_name?: string | null; name?: string | null },
+): ContactPerson[] {
+  return people.map((p) => ({ ...p, display: `${rawSpelling(p.first, input)} ${rawSpelling(p.last, input)}` }))
 }
 
 /** True when this owner-record party is this contact person. */
@@ -620,8 +656,25 @@ export function classifyParcel(
   return { strength: 'resident', named: null, siteAddressLabel, mailingAddressLabel, sharesFamilyName, namesRelated }
 }
 
+/**
+ * The longest run of letters in a raw name, apostrophes and hyphens as breaks:
+ * "O'Darragh" -> "DARRAGH", "Smith-Jones" -> "SMITH". A county may write the
+ * apostrophe or the space the contact record dropped, so the search looks for
+ * this run and the matcher (which compares letters-only keys) decides.
+ */
+export function longestLetterRun(raw: string | null | undefined): string {
+  const runs = String(raw ?? '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .match(/[A-Z]+/g)
+  if (!runs) return ''
+  return runs.reduce((best, r) => (r.length > best.length ? r : best), '')
+}
+
 /** Display a contact person the way the record matched them: "Margo Kremers". */
 export function contactPersonLabel(p: ContactPerson): string {
+  if (p.display) return p.display
   const cap = (s: string) => s.charAt(0) + s.slice(1).toLowerCase()
   return `${cap(p.first)} ${cap(p.last)}`
 }

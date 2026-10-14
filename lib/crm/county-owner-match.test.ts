@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   classifyParcel,
   describeMatch,
+  longestLetterRun,
   ownerNamesContact,
   parseContactName,
   parseOwnerOfRecord,
@@ -139,13 +140,20 @@ describe('parseContactName', () => {
 
   it('reads a name-only contact with a title and a suffix', () => {
     const c = parseContactName({ name: 'Dr. John A. Pellworth Jr.' })
-    expect(c.people).toEqual([{ first: 'JOHN', middles: ['A'], last: 'PELLWORTH', suffix: 'JR' }])
+    expect(c.people).toEqual([{ first: 'JOHN', middles: ['A'], last: 'PELLWORTH', suffix: 'JR', display: 'John Pellworth' }])
   })
 
   it('reads a couple in the name field', () => {
     const c = parseContactName({ name: 'John and Jane Pellworth' })
     expect(c.people.map((p) => p.first)).toEqual(['JOHN', 'JANE'])
     expect(c.people.every((p) => p.last === 'PELLWORTH')).toBe(true)
+  })
+
+  it('keeps the record spelling for display', () => {
+    expect(parseContactName({ first_name: 'Jane', last_name: "O'Pellworth" }).people[0]!.display).toBe("Jane O'Pellworth")
+    expect(parseContactName({ name: 'MARTA VAN DOREN' }).people[0]!.display).toBe('Marta Van Doren')
+    expect(named('VAN DOREN, MARTA', 'comma', { name: 'Marta Van Doren' })).toBe(true)
+    expect(parseContactName({ first_name: 'marta', last_name: 'van doren' }).people[0]!.display).toBe('Marta Van Doren')
   })
 
   it('a single word names nobody', () => {
@@ -297,5 +305,14 @@ describe('classifyParcel', () => {
     const c = classifyParcel(contact, [home], { owner: parseOwnerOfRecord('JOHN & JANE PELLWORTH REV TRUST', 'comma'), situs, mailing: situs })
     expect(c?.strength).toBe('high')
     expect(describeMatch(c!, 'JOHN & JANE PELLWORTH REV TRUST', 'trust')).toContain('a trust that names Jane Pellworth')
+  })
+})
+
+describe('longestLetterRun', () => {
+  it('breaks on apostrophes and hyphens and folds accents', () => {
+    expect(longestLetterRun("O'Darragh")).toBe('DARRAGH')
+    expect(longestLetterRun('Smith-Jones')).toBe('SMITH')
+    expect(longestLetterRun('Núñez')).toBe('NUNEZ')
+    expect(longestLetterRun('')).toBe('')
   })
 })
