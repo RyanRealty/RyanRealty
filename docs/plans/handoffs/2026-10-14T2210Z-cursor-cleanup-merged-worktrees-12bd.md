@@ -6,7 +6,7 @@ Branch: `cursor/cleanup-merged-worktrees-12bd`. PR opening this session.
 
 **Matt once on the Mini:** `bash scripts/install-cleanup-launchd.sh` from the primary checkout. Hourly launchd is what cleans leftovers when no session is pulling.
 
-**Next.** Merge this PR. Load the launchd job on the Mini. Then `npm run wt:cleanup:dry` there.
+**Next.** Merge this PR after the CI skip lands (product-diff `changes` job; scripts-only package.json does not prerender Next). Load the launchd job on the Mini. Then `npm run wt:cleanup:dry` there.
 
 **Held.** Standing holds unchanged. No sends.
 

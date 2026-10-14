@@ -113,9 +113,9 @@ if [ -f scripts/cleanup-merged-worktrees.sh ]; then
 fi
 
 kind=$(node --input-type=module -e '
-import { listChangedFiles, classifyDiff, isVercelSkippable } from "./scripts/lib/product-diff.mjs"
+import { listChangedFiles, classifyProductDiff, isVercelSkippable } from "./scripts/lib/product-diff.mjs"
 const files = listChangedFiles({ prev: process.argv[1], head: "origin/main" })
-const result = classifyDiff(files, { skippable: isVercelSkippable })
+const result = classifyProductDiff(files, { skippable: isVercelSkippable, prev: process.argv[1], head: "origin/main" })
 console.log(result.status)
 for (const f of result.blockers.slice(0, 15)) console.log(f)
 ' "$old_main")
