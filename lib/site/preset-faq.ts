@@ -429,6 +429,7 @@ export function buildPresetFaq(
   }
 
   const citySlug = cityEntityKey(city)
+  const isRegion = citySlug === 'central-oregon'
   const buyerAnswer = !area && citySlug && isBuyerAnswerPreset(citySlug, preset.slug)
     ? {
         citation: mlsCitation(label),
@@ -437,13 +438,23 @@ export function buildPresetFaq(
           rows: [
             { label: copy.plural, value: String(count) },
             ...(cityPulse?.medianListPrice != null && cityPulse.medianListPrice > 0
-              ? [{ label: `${city} median list (city-wide)`, value: formatUsd(cityPulse.medianListPrice) }]
+              ? [{
+                  label: isRegion ? `${city} median list (region-wide)` : `${city} median list (city-wide)`,
+                  value: formatUsd(cityPulse.medianListPrice),
+                }]
               : []),
-            ...(cityDays ? [{ label: `${city} days to pending (city-wide)`, value: cityDays }] : []),
+            ...(cityDays
+              ? [{
+                  label: isRegion ? `${city} days to pending (region-wide)` : `${city} days to pending (city-wide)`,
+                  value: cityDays,
+                }]
+              : []),
           ],
         },
         byline: buyerAnswerByline(),
-        hub: { href: `/cities/${citySlug}`, label: `${city} city page` },
+        hub: isRegion
+          ? { href: '/housing-market/central-oregon', label: 'Central Oregon market' }
+          : { href: `/cities/${citySlug}`, label: `${city} city page` },
         buyLinks: [...BUY_LINKS],
       }
     : undefined

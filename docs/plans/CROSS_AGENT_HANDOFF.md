@@ -1,6 +1,6 @@
 # Current — 2026-10-14 (Cursor, persist GA client id on lead forms)
 
-Surface: Cursor cloud. Branch `cursor/persist-ga-client-id-3b48`. Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. Branch `cursor/persist-ga-client-id-3b48` / PR #560. Nothing sent. Nobody pushes main. No rebuild.
 
 **This pass.** Every lead form fill now first-touch writes `crm_people.custom.gaClientId` from the `_ga` cookie (last two numeric dot parts). `fireLeadGenerated` persists even when GPC or a decline blocks `generate_lead`, and each form action also calls `persistGaClientIdFromCookies` and passes `crm_person_id` (buyer_alerts_lp, buyer_leverage_lp, contact, seller valuation, lead-landing, page-cta, search-alert, concessions, place-value, and the other capture doors). Same cookie id is what the server `generate_lead` MP call uses. Follow-up to #543 so the daily offline cron has a client_id to send.
 
@@ -8,17 +8,41 @@ Surface: Cursor cloud. Branch `cursor/persist-ga-client-id-3b48`. Nothing sent. 
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
+## Earlier — 2026-10-14 (Cursor, buyer-answers batch 2)
+
+Surface: Cursor cloud. Branch `cursor/buyer-answers-batch-2-41c4` landed on main via #557 at `63d924ee5`. Living+cost buyer-answer pages, luxury/acreage/under-500k presets. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, lead page v3)
+
+Surface: Cursor cloud. Branch `cursor/lead-page-v3-d7f6` landed on main via #506 at `a00d7c3ca`. Admin person page v3 behind `lead-page-v3`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, analytics SoT)
+
+Surface: Cursor cloud. Branch `cursor/analytics-sot-readme-5e14` landed on main via #558 at `ee189e044`. `docs/analytics/README.md` is the analytics source of truth. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, STOP cell intake)
+
+Surface: Cursor cloud. PR #546 landed. Skip a STOP'd cell on the mobile-only intake path. Nothing sent.
+
 ## Earlier — 2026-10-14 (Cursor, reader-5 leftover reads)
 
-Surface: Cursor cloud. Branch `cursor/reader-5-leftover-reads-52cc` / PR #559 landed. Thin-window own-listing-unsold and own-ground sold count. Nothing sent. No CMA rows written.
+Surface: Cursor cloud. PR #559 landed. Thin-window own-listing-unsold and own-ground sold count. Closed stale #552. Nothing sent.
 
-## Earlier — 2026-10-14 (Claude, the two buyer landing pages look like landing pages)
+## Earlier — 2026-10-14 (Claude, buyer landing pages)
 
-Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b`. PR #548 landed. `/buy/concessions` and `/buy/alerts` now open like `/sell`. Nothing sent.
+Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b` landed on main via #548 at `befee8c88`. `/buy/concessions` and `/buy/alerts` now open with a `V3Stage` photograph. Nothing sent. Nobody pushes main.
 
-## Earlier — 2026-10-14 (Cursor, GA4 offline conversions)
+## Earlier — 2026-10-14 (Cursor, relist blip)
 
-#543 landed. Daily cron sends GA4 MP `qualify_lead` / `close_convert_lead`. Live audit: 0 of 23,909 contacts had a usable client_id — that is why this persist pass exists.
+Surface: Cursor cloud. Branch `fix/relist-blip` landed on main via #452 at `608fd879b`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, offline GA4 conversions live)
+
+Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-41c4` landed on main via #543. Offline conversions cron reads `ga_client_id` and posts GA4 Measurement Protocol hits. Live audit: 0 of 23,909 contacts had a usable client_id — that is why the persist pass exists. Production SHA `e532597d8`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
+
+Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 

@@ -55,6 +55,7 @@ import { aiEmailDraftAction, getCcSelfAddressAction } from '@/app/actions/crm-in
 import { type AiEmailDraftKind } from '@/components/admin/crm/ai-email-draft'
 import { consumeSuggestedReply } from '@/components/admin/crm/composer-preload'
 import { createSubmitGuard } from '@/components/admin/crm/composer-submit-guard'
+import { emailSendBlocked } from '@/components/admin/crm/email-send-ready'
 import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
 import type { CustomFieldToken } from '@/components/admin/crm/MergeFieldInserter'
 import { RecipientField, type RecipientOption } from '@/components/admin/crm/RecipientField'
@@ -242,6 +243,14 @@ export function EmailComposer(props: {
   /** Hide the AI draft pill strip (shown by default on contact-scoped composes). */
   hideAiDrafts?: boolean
   submitLabel?: string
+  /** Person-page v3: hide Cc/Bcc/Cc me until More is opened. Send fields still post. */
+  compactChrome?: boolean
+  /** Person-page v3: hide the paperclip trigger but keep the file input for Attach. */
+  hideAttachmentTrigger?: boolean
+  /** Appended once when the host insert (tracking link, merge token) changes. */
+  externalInsert?: string | null
+  /** File-input id the host Attach ▸ File click targets. */
+  attachmentInputId?: string
 }) {
   const [subject, setSubject] = useState(props.initialSubject)
   const [body, setBody] = useState(props.initialBody)
@@ -307,6 +316,21 @@ export function EmailComposer(props: {
     if (pre.subject) setSubject((s) => (s.trim() ? s : pre.subject!))
   }, [props.personId])
 
+  useEffect(() => {
+    const insert = props.externalInsert
+    if (!insert) return
+    setBody((b) => (b.includes(insert) ? b : b ? `${b}\n${insert}` : insert))
+  }, [props.externalInsert])
+
+  const [moreOpen, setMoreOpen] = useState(false)
+  const showEmailExtras = !props.compactChrome || moreOpen
+  const emailBlocked = emailSendBlocked({
+    subject,
+    body,
+    uploading: attachments.uploading,
+    sendDisabled: props.sendDisabled,
+  })
+
   return (
     <form
       action={props.sendAction}
@@ -332,15 +356,21 @@ export function EmailComposer(props: {
             />
           </div>
           <div className="mt-1.5 flex shrink-0 items-center gap-2">
-            {!showCc ? (
+            {props.compactChrome && !moreOpen ? (
+              <Button type="button" variant="quiet" className="av2-textlink" onClick={() => setMoreOpen(true)}>
+                More
+              </Button>
+            ) : null}
+            {showEmailExtras && !showCc ? (
               <Button type="button" variant="quiet" className="av2-textlink" onClick={() => setShowCc(true)}>Cc</Button>
             ) : null}
-            {!showBcc ? (
+            {showEmailExtras && !showBcc ? (
               <Button type="button" variant="quiet" className="av2-textlink" onClick={() => setShowBcc(true)}>Bcc</Button>
             ) : null}
             {/* Cc me — copies the send to the broker's own mailbox. The primitive
                 owns the wrapping label element, so the visible caption and the
                 accessible name both survive the swap. */}
+            {showEmailExtras ? (
             <Switch
               label="Cc me on this email"
               stateText="Cc me"
@@ -349,6 +379,7 @@ export function EmailComposer(props: {
               onChange={(e) => toggleCcMe(e.target.checked)}
               disabled={ccSelfPending}
             />
+            ) : null}
           </div>
         </div>
         {showCc ? (
@@ -383,10 +414,16 @@ export function EmailComposer(props: {
         onBodyChange={setBody}
         signatureHtml={props.signatureHtml}
         hideMergeFields={props.hideMergeFields}
+        hideFormatToggle={props.compactChrome && !moreOpen}
         customFields={props.customFields}
         toolbarExtra={
-          !props.hideAttachments ? (
-            <AttachmentControl attachments={attachments} ariaLabel="Attach files" />
+          !props.hideAttachments || props.hideAttachmentTrigger ? (
+            <AttachmentControl
+              attachments={attachments}
+              ariaLabel="Attach files"
+              hideTrigger={props.hideAttachmentTrigger || props.hideAttachments}
+              inputId={props.attachmentInputId}
+            />
           ) : null
         }
       />
@@ -412,7 +449,7 @@ export function EmailComposer(props: {
           ) : null}
           <div className="flex items-center gap-1">
             <EmailSendButton
-              disabled={Boolean(attachments.uploading || props.sendDisabled)}
+              disabled={emailBlocked}
               uploading={attachments.uploading}
               label={props.submitLabel ?? 'Send email'}
               onSettled={() => {
