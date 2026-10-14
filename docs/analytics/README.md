@@ -357,7 +357,7 @@ One set per URL, via `buildTrackedUrl` in `lib/analytics/utm.ts`. Existing `utm_
 
 - **Property:** `https://ryan-realty.com/`, a URL-prefix property. The service account is a site owner. No `sc-domain:` property is visible to it, and the domain has no Google TXT record. A Domain property would also cover `www.` and the `seller.` / `buyer.` subdomains. Verifying one needs a DNS TXT record, which is Matt's call.
 - **Sitemaps:** the index `/sitemap.xml` plus five children: `core`, `geo`, `listings`, `matrix`, `content`. All are submitted, with 0 errors and 0 warnings, read 2026-10-14. The Sitemaps API's `indexed` field always reads 0 because Google stopped reporting it. Never report that as "nothing indexed". Use URL Inspection (`lib/crawl-probe/gsc.ts`) for index state. Resubmit with `scripts/seo-gsc-sitemap-submit.mjs`.
-- **Daily data:** `/api/cron/snapshot-channels` (12:20 UTC) runs `marketing-snapshot-gsc`. It writes `marketing_channel_daily` with `channel = 'gsc'` and `source = 'gsc_search_analytics_api'`: account totals plus the top 25 queries and pages per day.
+- **Daily data:** `/api/cron/snapshot-channels` (12:20 UTC) runs `marketing-snapshot-gsc`. It writes `marketing_channel_daily` with `channel = 'gsc'` and `source = 'gsc_search_analytics_api'`: account totals plus the top 25 queries and pages per day. Each run re-pulls today-9 to today-2, but first asks Google for the latest date it has final data for and writes only days on or before it (`lib/marketing-brain/gsc-reported-days.ts`). A day Google has not finished has no row, never a row of zeros. Before 2026-10-14 the newest day was stored as zeros until the next run (2026-10-12 was, and read as a click drop). Readers should still end a comparison window at the latest stored date, not today.
 - **Weekly data:** `/api/cron/loop-weekly-measure` (Mondays 13:00 UTC) writes the full page and query × page tables `gsc_page_daily` and `gsc_query_page_daily` (`lib/data/loop/gsc-api.ts`, `gsc-store.ts`).
 - **Crawl probe:** `/api/cron/crawl-probe` (11:55 UTC) checks the sitemaps against GSC and samples URL Inspection. It writes `marketing_channel_daily` with `channel = 'crawl_probe'`.
 - **Admin panel:** `app/actions/search-console-report.ts`.
@@ -403,7 +403,7 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | File | Role |
 |---|---|
 | `app/actions/ga4-report.ts` | GA4 Data API reports for admin and the daily GA4 snapshot |
-| `app/actions/ga4-demographics.ts` | GA4 demographics panel |
+| `app/actions/ga4-demographics.ts` | GA4 demographics panel. Each report is its own section (ok, withheld, empty, error). Age and gender are Google Signals data that GA4 thresholds; read 2026-10-14, every age and gender report for the last 30 days came back withheld. `userAgeBracket` is incompatible with `sessionSourceMedium`; the age cross-tab uses `sessionDefaultChannelGroup`. |
 | `lib/marketing-brain/ga4-health-counts.ts` | Exact daily `session_start` / `first_visit` counts (outage canary) |
 | `lib/analytics/ga4-internal-traffic-qa.ts` | Daily read-only check that internal and automated traffic stays out |
 | `app/actions/search-console-report.ts` | Search Console summary for the admin panel |
@@ -438,6 +438,7 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | `lib/analytics/automation.ts` | Automation and crawler classifier |
 | `lib/analytics/internal-user-cookie.ts` | `rr_internal` cookie (broker browsers) |
 | `lib/analytics/non-production-build.ts` | No Google tag on dev or preview builds |
+| `lib/analytics/ga4-demographic-sections.ts` | GA4 report states for the demographics page: withheld when Google's privacy thresholds remove every group, never a 0 or an error |
 | `lib/analytics/non-production-host.ts` | No GA4 hits from non-production hosts |
 | `lib/analytics/private-paths.ts` | Pages whose address is a secret never load a tag |
 | `lib/analytics/consent-defaults.ts` | Consent Mode v2 default script |
