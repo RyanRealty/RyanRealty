@@ -8,6 +8,13 @@
  *   node scripts/ga4-admin.mjs apply-audiences  → the audience step only: create missing
  *                                                 audiences and rebuild REBUILT_AUDIENCES.
  *                                                 Touches no key event or dimension.
+ *   node scripts/ga4-admin.mjs apply-audiences --dry-run
+ *                                               → reads the live audiences and prints what
+ *                                                 the step WOULD rename and create (each
+ *                                                 request body), changing nothing.
+ *   ... apply-audiences --group=visitor-intent  → only the audiences in that group (the
+ *                                                 buyer / seller / visitor-intent set, Matt
+ *                                                 2026-10-14). Combine with --dry-run.
  *
  * Auth: reuses GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL + GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
  *       from .env.local, else from the process environment (a cloud session).
@@ -235,7 +242,76 @@ const AUDIENCES = [
     membershipDurationDays: 540,
     spec: { kind: 'real_site_traffic' },
   },
+
+  // ── Buyers and sellers (Matt 2026-10-14) ────────────────────────────────────
+  // BEHAVIOR ONLY, for fair housing: these audiences can feed housing ads, so
+  // none may use age, gender, interests, ZIP, city or any other geography or
+  // demographic condition. Only events this site sends and the visitor_intent
+  // user property (itself built only from pages and actions:
+  // lib/analytics/visitor-intent.ts). FAIR_HOUSING_BANNED_FIELDS below fails the
+  // payload builder if a condition here ever names one.
+  {
+    displayName: 'Buyers - active',
+    description: 'Behavior only: 3+ view_listing or a save_listing. No demographic or place terms.',
+    membershipDurationDays: 30,
+    group: 'visitor-intent',
+    spec: { kind: 'buyers_active' },
+  },
+  {
+    displayName: 'Buyers - hot',
+    description: 'Behavior only: schedule_tour_click, ask_question_click or call_initiated in 30 days.',
+    membershipDurationDays: 30,
+    group: 'visitor-intent',
+    spec: { kind: 'buyers_hot' },
+  },
+  {
+    displayName: 'Sellers - interested',
+    description: 'Behavior only: a page_view with page_type sell, address_submit or place_value_answer.',
+    membershipDurationDays: 30,
+    group: 'visitor-intent',
+    spec: { kind: 'sellers_interested' },
+  },
+  {
+    displayName: 'Sellers - started valuation',
+    description: 'Behavior only: address_submit with no generate_lead. Started a home value, did not finish.',
+    membershipDurationDays: 30,
+    group: 'visitor-intent',
+    spec: { kind: 'sellers_started_valuation' },
+  },
+  {
+    displayName: 'Visitor intent: buyer',
+    description: 'User property visitor_intent is buyer (lib/analytics/visitor-intent.ts). Behavior only.',
+    membershipDurationDays: 30,
+    group: 'visitor-intent',
+    spec: { kind: 'visitor_intent', value: 'buyer' },
+  },
+  {
+    displayName: 'Visitor intent: seller',
+    description: 'User property visitor_intent is seller (lib/analytics/visitor-intent.ts). Behavior only.',
+    membershipDurationDays: 30,
+    group: 'visitor-intent',
+    spec: { kind: 'visitor_intent', value: 'seller' },
+  },
+  {
+    displayName: 'Visitor intent: both',
+    description: 'User property visitor_intent is both: buyer and seller signals. Behavior only.',
+    membershipDurationDays: 30,
+    group: 'visitor-intent',
+    spec: { kind: 'visitor_intent', value: 'both' },
+  },
 ]
+
+/**
+ * Fields a buyer or seller audience may never filter on (fair housing: an
+ * audience that can target housing ads is built from behavior only). Demographics
+ * (age, gender, interests, language) and every place field, GA4's geography
+ * dimensions and this site's own place parameters and user property
+ * (primary_market, city, city_slug, community_slug, place), with or without a
+ * customUser: / customEvent: prefix. Matched against every fieldName in a
+ * 'visitor-intent' group payload; the builder throws on a match.
+ */
+const FAIR_HOUSING_BANNED_FIELDS =
+  /^(?:customUser:|customEvent:)?(userAgeBracket|userGender|age|gender|brandingInterest|interests?|language|languageCode|city|cityId|city_slug|community_slug|place|place_slug|primary_market|region|country|countryId|continent|continentId|subContinent|subContinentCode|metro|postalCode|postal_code|zip)$/i
 
 /**
  * Audiences whose filters were rebuilt. GA4 keeps an audience's filters
@@ -556,10 +632,95 @@ function buildAudiencePayload(parent, audience) {
       ]
       break
 
+    case 'buyers_active':
+      // 3+ view_listing (eventCount > 2, the form the repeat_visitors audience
+      // uses; GREATER_THAN_OR_EQUAL intermittently fails validation), or any
+      // save_listing. One INCLUDE clause, the two ORed.
+      base.requestBody.filterClauses = [
+        includeMultiOr([
+          {
+            eventFilter: {
+              eventName: 'view_listing',
+              eventParameterFilterExpression: {
+                andGroup: {
+                  filterExpressions: [
+                    {
+                      orGroup: {
+                        filterExpressions: [
+                          {
+                            dimensionOrMetricFilter: {
+                              fieldName: 'eventCount',
+                              // GA4 rejects eventCount without atAnyPointInTime
+                              // ("does not support dynamic evaluation"), and that
+                              // flag rules out inAnyNDayPeriod. So the count is over
+                              // the user's history; the 30-day membership drops a
+                              // buyer who stops coming back.
+                              atAnyPointInTime: true,
+                              numericFilter: { operation: 'GREATER_THAN', value: { int64Value: '2' } },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+          eventFilter('save_listing'),
+        ]),
+      ]
+      break
+
+    case 'buyers_hot':
+      base.requestBody.filterClauses = [
+        includeMultiOr([eventFilter('schedule_tour_click'), eventFilter('ask_question_click'), eventFilter('call_initiated')]),
+      ]
+      break
+
+    case 'sellers_interested':
+      // page_type is the flat page context both GA4 tags send (bare event
+      // parameter name, as high_intent_sellers filters it).
+      base.requestBody.filterClauses = [
+        includeMultiOr([
+          eventFilter('page_view', [dimensionFilterStringEquals('page_type', 'sell')]),
+          eventFilter('address_submit'),
+          eventFilter('place_value_answer'),
+        ]),
+      ]
+      break
+
+    case 'sellers_started_valuation':
+      base.requestBody.filterClauses = [
+        includeAcrossAllSessions(eventFilter('address_submit')),
+        excludeAcrossAllSessions(eventFilter('generate_lead')),
+      ]
+      break
+
+    case 'visitor_intent':
+      // The user-scoped custom dimension visitor_intent (scripts/ga4-admin-setup.mjs
+      // registers it; it must exist before this audience is created).
+      base.requestBody.filterClauses = [includeMultiOr([dimensionFilterStringEquals('customUser:visitor_intent', audience.spec.value)])]
+      break
+
     default:
       throw new Error(`Unknown audience spec.kind: ${audience.spec.kind}`)
   }
+  if (audience.group === 'visitor-intent') {
+    const banned = fieldNamesIn(base.requestBody.filterClauses).filter((f) => FAIR_HOUSING_BANNED_FIELDS.test(f))
+    if (banned.length) throw new Error(`${audience.displayName}: a buyer or seller audience may not filter on ${banned.join(', ')} (fair housing: behavior only)`)
+  }
   return base
+}
+
+/** Every fieldName anywhere in a filter tree. */
+function fieldNamesIn(node, out = []) {
+  if (Array.isArray(node)) for (const n of node) fieldNamesIn(n, out)
+  else if (node && typeof node === 'object') {
+    if (typeof node.fieldName === 'string') out.push(node.fieldName)
+    for (const v of Object.values(node)) fieldNamesIn(v, out)
+  }
+  return out
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -778,15 +939,28 @@ async function apply() {
  * create the spec's definition. The new audience is created only after the
  * rename lands, so two audiences never share a name.
  */
-async function applyAudiences(admin, parent, log) {
+async function applyAudiences(admin, parent, log, { dryRun = false, group = null } = {}) {
   const existingAudiences = await listAllAudiences(admin, parent)
   for (const audience of AUDIENCES) {
+    if (group && audience.group !== group) continue
     const live = existingAudiences.find((a) => a.displayName === audience.displayName)
     const rebuild = REBUILT_AUDIENCES[audience.displayName]
     const stale = live && rebuild && Date.parse(live.createTime) < Date.parse(rebuild.rebuiltOn)
     if (live && !stale) {
       log.skipped.push(`audience:${audience.displayName} (already exists)`)
       console.log(`  [skip] audience already exists: ${audience.displayName}`)
+      continue
+    }
+    if (dryRun) {
+      // Build the payload anyway, so a malformed or non-compliant definition fails here.
+      const payload = buildAudiencePayload(parent, audience)
+      if (stale) {
+        log.planned.push(`audience-rename:${live.name} -> ${rebuild.retiredAs}`)
+        console.log(`  [plan] rename ${live.name} to: ${rebuild.retiredAs}`)
+      }
+      log.planned.push(`audience:${audience.displayName}`)
+      console.log(`  [plan] create audience: ${audience.displayName}`)
+      console.log(JSON.stringify(payload.requestBody, null, 2).replace(/^/gm, '         '))
       continue
     }
     try {
@@ -811,12 +985,23 @@ async function applyAudiences(admin, parent, log) {
   }
 }
 
-async function applyAudiencesOnly() {
+async function applyAudiencesOnly({ dryRun = false, group = null } = {}) {
   const admin = getAdminClient()
   const parent = `properties/${PROPERTY_ID}`
-  console.log(`Applying the audience step to GA4 property ${PROPERTY_ID}…`)
+  const scope = group ? ` (group ${group})` : ''
+  if (dryRun) {
+    console.log(`DRY RUN: the audience step${scope} for GA4 property ${PROPERTY_ID}. Reads only; nothing is created or renamed.`)
+    const log = { planned: [], skipped: [], errors: [] }
+    await applyAudiences(admin, parent, log, { dryRun: true, group })
+    console.log('')
+    console.log('Dry-run summary:')
+    console.log(`  would create or rename: ${log.planned.length}`)
+    console.log(`  skipped: ${log.skipped.length} (already exist)`)
+    return log
+  }
+  console.log(`Applying the audience step${scope} to GA4 property ${PROPERTY_ID}…`)
   const log = { applied: [], skipped: [], errors: [] }
-  await applyAudiences(admin, parent, log)
+  await applyAudiences(admin, parent, log, { group })
   return finishApply(log)
 }
 
@@ -843,14 +1028,25 @@ function finishApply(log) {
 
 async function main() {
   const mode = (process.argv[2] || '').trim()
+  const flags = process.argv.slice(3)
+  const dryRun = flags.includes('--dry-run')
+  const group = (flags.find((f) => f.startsWith('--group=')) || '').slice('--group='.length) || null
+  if (group && !AUDIENCES.some((a) => a.group === group)) {
+    console.error(`Unknown audience group: ${group}`)
+    process.exit(1)
+  }
   if (mode === 'audit') {
     await audit()
   } else if (mode === 'apply') {
+    if (dryRun) {
+      console.error('apply has no dry run; use apply-audiences --dry-run (audiences) or ga4-admin-setup.mjs --dry-run (dimensions, key events).')
+      process.exit(1)
+    }
     await apply()
   } else if (mode === 'apply-audiences') {
-    await applyAudiencesOnly()
+    await applyAudiencesOnly({ dryRun, group })
   } else {
-    console.error('Usage: node scripts/ga4-admin.mjs <audit|apply|apply-audiences>')
+    console.error('Usage: node scripts/ga4-admin.mjs <audit|apply|apply-audiences [--dry-run] [--group=visitor-intent]>')
     process.exit(1)
   }
 }

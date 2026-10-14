@@ -101,6 +101,30 @@
       "manual": "Google tag (GT-P3MG72KR) > Configure your domains"
     },
     {
+      "id": "visitor-intent-definition",
+      "decided": "Matt 2026-10-14",
+      "why": "GA4 segments visitors as buyer, seller, both or browsing with ONE definition, the page categories the CRM and sales funnel already use (visitorPageCategoryFromPath). Seller: any seller_intent page or address_submit / place_value_answer. Buyer: 3+ listing_detail views in 30 days, any buyer_intent page, or save_listing / schedule_tour_click / ask_question_click / tour_requested. Sent as the GA4 user property visitor_intent; stored in the browser only with analytics consent.",
+      "code": "lib/analytics/visitor-intent.ts"
+    },
+    {
+      "id": "primary-market",
+      "decided": "Matt 2026-10-14",
+      "why": "GA4 segments visitors by the market they shop: the Central Oregon service-area city or the community slug they viewed most, as the user property primary_market. Subdivisions count no market (a plat is finer than a market). A tie keeps the market reported before, so the value does not flip-flop.",
+      "code": "lib/analytics/visitor-intent.test.ts"
+    },
+    {
+      "id": "content-group-is-page-type",
+      "decided": "Matt 2026-10-14",
+      "why": "GA4's built-in Content group is page_type, so the standard reports group pages by the site's own taxonomy (lib/analytics/page-type.ts) with no second mapping. Both GA4 Event tags send content_group = {{DLV - ga4 page_type}} since GTM version 10; npm run analytics:audit also fails if a tag stops sending it.",
+      "manual": "GTM tags 'GA4 - page_view' and 'GA4 - dataLayer events' > Event Parameters > content_group"
+    },
+    {
+      "id": "buyer-seller-audiences-behavior-only",
+      "decided": "Matt 2026-10-14",
+      "why": "Buyer and seller audiences (Buyers - active / hot, Sellers - interested / started valuation, Visitor intent: buyer / seller / both) use only site behavior and the visitor_intent user property. Never age, gender, interests, ZIP, city or other geography: they can feed housing ads, and fair housing forbids targeting on those. scripts/ga4-admin.mjs refuses to build one that names such a field.",
+      "manual": "GA4 Admin > Data display > Audiences (each Buyers -, Sellers - and Visitor intent: audience's conditions)"
+    },
+    {
       "id": "one-dashboard-plus-ga4-view",
       "decided": "Matt 2026-10-14",
       "why": "One plain-English admin dashboard (leads from the CRM, sources, what visitors look at, buyer vs seller intent, markets, Google search) replaces the scattered report pages, and the same view exists inside GA4 as a custom report collection.",
