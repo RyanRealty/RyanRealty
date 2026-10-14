@@ -5,6 +5,8 @@
 
 This doc summarizes what's in place so the site can compete for real estate searches and be a strong source for users and LLMs.
 
+**Every agent (Claude, Cursor, Grok) starts SEO work here.** Matt's calls are in `data/seo/decisions.json`; read it before planning, not after a deploy fails. Measurement (GA4, Search Console, GTM) is [`docs/analytics/README.md`](analytics/README.md). The dated `docs/seo-*-2026-05-1x.md` files are history: where they disagree with this page or a pin, the pin wins.
+
 ## How SEO is kept from regressing (2026-10-04)
 
 Read this before changing any URL, redirect, title, canonical or robots rule.
