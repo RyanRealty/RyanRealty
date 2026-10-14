@@ -3,13 +3,14 @@
  * The market question, on every place grain (Matt, 2026-08-26).
  *
  * THE RULE. Every place grain that renders the market HUD/Instrument renders
- * the question a reader actually types — `Is {place} a buyer's or seller's
- * market?` — with the live verdict as the answer beneath it. Audit item 10
- * (2026-08-02) put the question on all five place grains; the 2026-08-26 v3
- * rebuild of /zip/[zip] dropped it on one grain and kept it on the other four,
- * so the site disagreed with itself. Matt ruled the same day: the question
- * stays on ALL FIVE. This gate makes the family consistency mechanical so a
- * future per-route rebuild cannot silently drop it on one grain again.
+ * the months-of-supply question — `How many months of supply does {place}
+ * have?` — with the live figure as the answer beneath it. Audit item 10
+ * (2026-08-02) put a market question on all five place grains; the 2026-08-26
+ * v3 rebuild of /zip/[zip] dropped it on one grain and kept it on the other
+ * four, so the site disagreed with itself. The question stays on ALL FIVE,
+ * now as the months-of-supply line rather than a market-type label. This gate
+ * makes the family consistency mechanical so a future per-route rebuild cannot
+ * silently drop it on one grain again.
  *
  * WHAT COUNTS AS RENDERING THE QUESTION, per grain (comment-stripped source):
  *   a. KB idiom — the page mounts `<KbMarketHud … geoName={…}>`. The component
@@ -60,8 +61,8 @@ function src(path) {
 const stripComments = (text) =>
   text.replace(/(^|[^:])\/\/.*$/gm, '$1').replace(/\/\*[\s\S]*?\*\//g, '')
 
-/** The established site copy, straight or typographic apostrophes. */
-const QUESTION = /Is [^\n]{0,120}buyer(?:'|’|&rsquo;)s or seller(?:'|’|&rsquo;)s market\?/
+/** The established site copy. */
+const QUESTION = /How many months of supply does [^\n]{0,120} have\?/
 
 /** Every parsable file in a route-local directory (no recursion needed today). */
 function routeLocalSources(dir) {
@@ -81,20 +82,20 @@ function routeLocalSources(dir) {
 const faq = stripComments(src('lib/site/market-faq.ts'))
 checks.push({
   label: 'buildMarketFaq templates the same question for the FAQ surfaces',
-  ok: faq.includes("`Is ${geoName} a buyer's or seller's market?`"),
+  ok: faq.includes('`How many months of supply does ${geoName} have?`'),
 })
 
 const placeAnswers = stripComments(src('lib/site/place-answers.ts'))
 checks.push({
   label: 'buildPlaceAnswers templates the same question for the place answer sets',
-  ok: placeAnswers.includes("`Is ${place} a buyer's or seller's market?`"),
+  ok: placeAnswers.includes('`How many months of supply does ${place} have?`'),
 })
 checks.push({
   label: 'buildPlaceAnswers still asks it where no verdict can publish',
   // Two emitters: one behind the published months-of-supply, one behind the
   // closed count that explains the refusal. A single emitter would mean the
   // question disappears on exactly the grains that most need the honest answer.
-  ok: (placeAnswers.match(/`Is \$\{place\} a buyer's or seller's market\?`/g) ?? []).length >= 2,
+  ok: (placeAnswers.match(/`How many months of supply does \$\{place\} have\?`/g) ?? []).length >= 2,
 })
 
 // ── The five place grains ──────────────────────────────────────────────────
@@ -143,7 +144,7 @@ for (const c of checks) {
 if (failed.length) {
   console.error(
     `\nmarket-question: ${failed.length} check(s) failed. The question heading ` +
-      `"Is {place} a buyer's or seller's market?" stays on all five place grains ` +
+      `"How many months of supply does {place} have?" stays on all five place grains ` +
       `(Matt, 2026-08-26) — render it via KbMarketHud geoName, a v3 headline, or the ` +
       `visible market FAQ; never drop it on one grain.`,
   )

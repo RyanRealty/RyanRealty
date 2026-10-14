@@ -1,7 +1,7 @@
 import type { PriceDropFieldItem } from './drops-field-items'
 import { DROPS_CITY_SLUGS, cityLabel } from './drops-constants'
 
-export type PriceDropBandKey = 'all' | 'under-5' | '5-10' | '10-plus'
+export type PriceDropBandKey = 'under-5' | '5-10' | '10-plus'
 
 export type PriceDropBand = {
   key: PriceDropBandKey
@@ -23,7 +23,6 @@ const BANDS: ReadonlyArray<{
   label: string
   match: (pct: number | null | undefined) => boolean
 }> = [
-  { key: 'all', label: 'All cuts', match: () => true },
   {
     key: 'under-5',
     label: 'Under 5%',
@@ -42,16 +41,17 @@ const BANDS: ReadonlyArray<{
 ]
 
 /**
- * Cut-size bands for the opening switch. `All cuts` always leads. Empty
- * bands are omitted so a week with no 10% markdowns does not offer a door
- * into nothing.
+ * Cut-size bands for the opening switch. Each home sits in exactly one band
+ * so the dials do not repeat the same address (2026-10-13 review: All cuts
+ * plus the three size bands reprinted every house). Empty bands are omitted
+ * so a week with no 10% markdowns does not offer a door into nothing.
  */
 export function priceDropBands(items: readonly PriceDropFieldItem[]): PriceDropBand[] {
   return BANDS.map((band) => ({
     key: band.key,
     label: band.label,
-    items: band.key === 'all' ? [...items] : items.filter((item) => band.match(item.cutPct)),
-  })).filter((band) => band.key === 'all' || band.items.length > 0)
+    items: items.filter((item) => band.match(item.cutPct)),
+  })).filter((band) => band.items.length > 0)
 }
 
 /**

@@ -158,7 +158,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const verdictMeta = marketVerdict(mosRawMeta)
   const supplyClause =
     mosRawMeta != null && verdictMeta.kind !== 'unknown'
-      ? `${formatMonthsOfSupply(mosRawMeta)} months of supply, a ${verdictMeta.label}. `
+      ? `${formatMonthsOfSupply(mosRawMeta)} months of supply. `
       : ''
   // SITE-178: this URL is the one indexable regional housing-market page.
   // /housing-market/central-oregon is the report twin (noindex, follow).
@@ -517,7 +517,7 @@ export default async function HousingMarketHubPage() {
         detail:
           verdict.kind === 'unknown'
             ? 'What the number means, and how it is worked out.'
-            : `Central Oregon reads as a ${verdict.label} at that pace.`,
+            : `Central Oregon has ${mosText} months of supply at that pace.`,
         ...(mosText != null
           ? {
               figure: {
@@ -660,7 +660,7 @@ export default async function HousingMarketHubPage() {
             className="hm-tremor"
             eyebrow={v3Text('Central Oregon')}
             headline={v3Text(
-              `Central Oregon housing market${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
+              `Central Oregon housing market${verdict.kind === 'unknown' || mosText == null ? '' : `: ${mosText} months of supply`}`,
             )}
             figures={[firstSfrFigure, ...restSfrFigures]}
             /* SITE-100. THE FOLD IS THE CATALOG CONTROL, THEN THE TWO BARS,

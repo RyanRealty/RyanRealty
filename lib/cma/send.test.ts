@@ -66,6 +66,7 @@ vi.mock('@/lib/data', async (importOriginal) => ({
   getCmaAdminRowBySlug: vi.fn(async () => h.row),
   getCmaBrokerBySlugOrEmail: vi.fn(async () => h.broker),
   getCmaProspectAsk: vi.fn(async () => null),
+  getCmaProspectEnrichmentNotes: vi.fn(async () => null),
   updateCmaRowFieldsBySlug: h.updateCmaRowFieldsBySlug,
   findCrmPersonIdByEmail: vi.fn(async () => 42),
   stampCmaLinkOnPerson: vi.fn(async () => undefined),
@@ -136,6 +137,8 @@ describe('sendCmaToLead', () => {
     const res = await sendCmaToLead(SLUG)
 
     expect(res).toMatchObject({ ok: true, transport: 'gmail', mailbox: 'matt@ryan-realty.com', gmailMessageId: 'msg-1' })
+    const { getCmaProspectEnrichmentNotes } = await import('@/lib/data')
+    expect(getCmaProspectEnrichmentNotes).not.toHaveBeenCalled()
     expect(h.gmailSend).toHaveBeenCalledTimes(1)
     expect(h.sendEmail).not.toHaveBeenCalled()
     expect(h.updateCmaRowFieldsBySlug).toHaveBeenCalledWith(SLUG, expect.objectContaining({ status: 'delivered' }))
@@ -286,6 +289,51 @@ describe('sendCmaToLead', () => {
       sinceIso: null,
       subjectListingKey: 'ZZTESTKEYLOT33',
     })
+  })
+
+  it('refuses a cold send when the county owner is a company and does not mail', async () => {
+    const { getCmaAdminRowBySlug, getCmaProspectEnrichmentNotes } = await import('@/lib/data')
+    vi.mocked(getCmaAdminRowBySlug).mockResolvedValueOnce({
+      ...h.row,
+      request_source: 'expired-outreach-queue',
+      doc_type: 'expired-audit',
+      subject_address: '3802 Petrosa, Bend, OR 97701',
+      subject_city: 'Bend',
+      subject_listing_key: 'ZZPETROSA',
+    })
+    vi.mocked(getCmaProspectEnrichmentNotes).mockResolvedValueOnce(
+      'Legal owner (entity): PAHLISCH HOMES AT PETROSA LP. Skip-trace resolved contact: Someone Else. Mailing: 210 SW Wilson Ave.',
+    )
+
+    const res = await sendCmaToLead(SLUG)
+
+    expect(res).toEqual({
+      ok: false,
+      error: 'County owner is a company (PAHLISCH HOMES AT PETROSA LP). Cold outreach stays held.',
+    })
+    expect(h.gmailSend).not.toHaveBeenCalled()
+    expect(h.sendEmail).not.toHaveBeenCalled()
+    expect(h.ensureNativeLead).not.toHaveBeenCalled()
+  })
+
+  it('still sends a cold letter when the county owner is a family trust', async () => {
+    const { getCmaAdminRowBySlug, getCmaProspectEnrichmentNotes } = await import('@/lib/data')
+    vi.mocked(getCmaAdminRowBySlug).mockResolvedValueOnce({
+      ...h.row,
+      request_source: 'expired-outreach-queue',
+      doc_type: 'expired-audit',
+      subject_address: '2462 Lynda, Bend, OR 97703',
+      subject_city: 'Bend',
+      subject_listing_key: 'ZZLYNDA',
+    })
+    vi.mocked(getCmaProspectEnrichmentNotes).mockResolvedValueOnce(
+      'Legal owner (entity): FRANK N SERBUS TRUST. Skip-trace resolved contact: Frank N Serbus.',
+    )
+
+    const res = await sendCmaToLead(SLUG)
+
+    expect(res).toMatchObject({ ok: true, transport: 'gmail' })
+    expect(h.gmailSend).toHaveBeenCalledTimes(1)
   })
 
   it('passes null when the expired row has no subject listing key', async () => {

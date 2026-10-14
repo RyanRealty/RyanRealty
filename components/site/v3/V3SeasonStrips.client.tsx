@@ -69,7 +69,7 @@ export type V3SeasonCell = {
   tick: V3Text
   /** The figure, preformatted by the caller's own formatter: "4.8 months". */
   label: V3Text
-  /** The caller's call on the figure, preformatted: "a balanced market". */
+  /** Optional extra clause on the reading, preformatted. */
   note?: V3Text
 }
 
@@ -113,7 +113,7 @@ export type V3SeasonStripsProps = {
   className?: string
 }
 
-/** One reading as a sentence fragment: "May 2026: 4.8 months, a balanced market". */
+/** One reading as a sentence fragment: "May 2026: 4.8 months". */
 function readingOf(cell: V3SeasonCell, joiner: string): string {
   return `${cell.tick}${joiner}${cell.label}${cell.note ? `, ${cell.note}` : ''}`
 }

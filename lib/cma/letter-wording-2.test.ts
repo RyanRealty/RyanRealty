@@ -39,8 +39,8 @@ import { adjustedWorthSentence, neutralAskReading } from '@/lib/cma/ask-story'
 import { WEIGHT_AMONG_SALES_ROW_LABEL, WEIGHT_IN_PRICE_ROW_LABEL, salesSetOnlyTheRange, weightRowLabel } from '@/lib/cma/sales-role'
 import { streetAnchorRead } from '@/lib/cma/street-anchor'
 import {
-  HELD_SALES_HEADING,
   RANGE_SALES_HEADING,
+  SALES_THAT_SET_IT_HEADING,
   WHAT_ITS_WORTH_CHAPTER,
   pricingPage,
   salesThatSetItHeading,
@@ -261,7 +261,13 @@ describe('4 and 10. on a cover the weights did not make, the sales set the range
     const input = { subject: SAGINAW, comps: SAGINAW_COMPS, market: null, pricing: p, tiersUsed: [] }
     const price = visible(pricingPage(input).body)
     expect(price.match(/The price on the cover is held to 536 Saginaw/g)?.length).toBe(1)
-    expect(price).toContain('The four sales that set the range support $727,148 to $1,113,820.')
+    // $800,000 is under the $925,000 ask and within 15%, so the letter is the
+    // recommendation, not a hold. The street sale still sets only the range.
+    expect(price).toContain(
+      "The four sales, after seller concessions and adjusted to today's market and your home's size, run from $727,148 to $1,113,820.",
+    )
+    expect(price).toContain('List in that range.')
+    expect(price).not.toContain('The four sales that set the range support')
     const sales = salesThatSetItPage(input)!
     const text = visible(sales.body)
     expect(text).toContain('The sales that set the range.')
@@ -274,12 +280,13 @@ describe('4 and 10. on a cover the weights did not make, the sales set the range
     expect(text).not.toMatch(/sales behind this price|behind this number/)
   })
 
-  it('a rule 26 hold: the sales set the range, never the cover, and the held-in-band letter keeps its own heading', () => {
+  it('a rule 26 hold sets the range, and an ask-in-band within 15% uses the recommendation heading', () => {
     const below = saginawPricing({ streetAnchor: null, hold: { kind: 'ask-below-band', ask: 599_900, reason: 'test' } })
     expect(salesThatSetItHeading(below, SAGINAW_COMPS)).toBe(RANGE_SALES_HEADING)
     expect(weightRowLabel(below, SAGINAW_COMPS)).toBe(WEIGHT_AMONG_SALES_ROW_LABEL)
+    // $800,000 against the $925,000 ask is under it and within 15%. Not held.
     const inBand = saginawPricing({ streetAnchor: null })
-    expect(salesThatSetItHeading(inBand, SAGINAW_COMPS)).toBe(HELD_SALES_HEADING)
+    expect(salesThatSetItHeading(inBand, SAGINAW_COMPS)).toBe(SALES_THAT_SET_IT_HEADING)
     expect(weightRowLabel(inBand, SAGINAW_COMPS)).toBe(WEIGHT_IN_PRICE_ROW_LABEL)
   })
 

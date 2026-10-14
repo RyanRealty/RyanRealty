@@ -35,6 +35,7 @@ import {
   type BulkResult,
 } from '@/lib/crm/bulk-jobs'
 import { isSuppressed } from '@/lib/crm/suppressions'
+import { isIndustryContact } from '@/lib/crm/industry-contact'
 import { sendEmail } from '@/lib/resend'
 import { prepareDeliverableEmail } from '@/lib/email/prepare'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
@@ -228,6 +229,9 @@ export async function sendOneCohortEmail(
   const gate = await isSuppressed(recipient.id, 'email')
   if (gate.suppressed) {
     return { kind: 'skipped', bucket: suppressionBucket(gate.reasons) }
+  }
+  if (isIndustryContact({ tags: recipient.tags, stage: recipient.stage })) {
+    return { kind: 'skipped', bucket: 'industry-contact' }
   }
 
   // 2) Render: merge the contact's fields into subject + body. The context

@@ -499,6 +499,43 @@ export async function getRecipientOptOut(recipient: string, sender: string): Pro
 }
 
 /**
+ * Every message on the account in the trailing window, as Twilio recorded it:
+ * the inbound texts we should have handled and the delivery status of every
+ * outbound (including the forwards to broker cells). null = Twilio not
+ * configured or the read failed.
+ */
+export async function getRecentTwilioMessages(
+  sinceHours: number,
+  now: Date = new Date(),
+): Promise<Array<{ sid: string; direction: string; from: string; to: string; status: string; dateCreated: string }> | null> {
+  const c = creds()
+  if (!c) return null
+  const headers = { Authorization: authHeader(c) }
+  const since = new Date(now.getTime() - sinceHours * 3600 * 1000)
+  const day = since.toISOString().slice(0, 10)
+  try {
+    const out: Array<{ sid: string; direction: string; from: string; to: string; status: string; dateCreated: string }> = []
+    let next: string | null = `${API}/Accounts/${c.sid}/Messages.json?${new URLSearchParams({ 'DateSent>=': day, PageSize: '1000' })}`
+    for (let page = 0; next && page < 5; page++) {
+      const res = await resilientFetch(next, { headers, cache: 'no-store' })
+      if (!res.ok) return null
+      const data = (await res.json()) as {
+        messages?: Array<{ sid: string; direction: string; from: string; to: string; status: string; date_created: string }>
+        next_page_uri?: string | null
+      }
+      for (const m of data.messages ?? []) {
+        if (new Date(m.date_created).getTime() < since.getTime()) continue
+        out.push({ sid: m.sid, direction: m.direction, from: m.from, to: m.to, status: m.status, dateCreated: m.date_created })
+      }
+      next = data.next_page_uri ? `https://api.twilio.com${data.next_page_uri}` : null
+    }
+    return out
+  } catch {
+    return null
+  }
+}
+
+/**
  * Inbound webhook health, as Twilio reports it: numbers whose SMS or voice
  * webhook no longer points at our /api/twilio routes, and failed webhook
  * deliveries (Monitor alerts, 11200 / 12100 families) in the trailing window.

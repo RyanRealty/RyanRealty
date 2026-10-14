@@ -99,7 +99,7 @@ export function RegionCityMos({ cities, className }: RegionCityMosProps) {
               <Link
                 href={city.href}
                 className="region-city-mos__door"
-                aria-label={`${city.name}: ${city.mosText} months of supply, a ${verdict.label}. ${city.homesLabel} for sale, ${city.salesLabel} sold in a month.`}
+                aria-label={`${city.name}: ${city.mosText} months of supply. ${city.homesLabel} for sale, ${city.salesLabel} sold in a month.`}
               >
                 <span className="region-city-mos__name">{city.name}</span>
                 <span className="region-city-mos__track">

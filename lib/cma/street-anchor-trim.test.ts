@@ -158,12 +158,12 @@ describe('915 Saginaw: the street sale is the low end and stays in the price, so
     reclassifyFailedAskOnPrintedBand(p, 925_000)
     expect(p.failedAskBelowRange).toBe(false)
     applyAskInBandHold(p, { lastCycleFailed: true, lastListPrice: 925_000, auditVerdict: 'pass' })
-    expect(p.hold?.kind).toBe('ask-in-band')
-    expect(p.hold).toMatchObject({ ask: 925_000, bandLow: 727_000, bandHigh: 1_300_000 })
-    expect(p.hold?.reason).toContain('sits inside the sales range of $727,000 to $1,300,000')
+    // $800,000 is under $925,000 and within 15%, so the ask inside the band is not a hold.
+    expect(p.askInBandMeasured).toBe(true)
+    expect(p.hold ?? null).toBeNull()
     const res = applyAskBelowBandHold(p, { lastListPrice: 925_000, auditVerdict: 'pass' })
     expect(res.ok).toBe(true)
-    expect(p.hold?.kind).toBe('ask-in-band')
+    expect(p.hold ?? null).toBeNull()
   })
 })
 

@@ -9,7 +9,7 @@
  * THE PAGE CONTRACT, carried across unchanged: metadata through pageMetadata,
  * MetadataBlock JSON-LD (BreadcrumbList + Dataset + webPage), a rendered
  * V3SectionTracker with pageType="price-drops", TrackSearchView, revalidate 1800,
- * getPriceDrops({ limit: 48, days: 7 }) with no .catch() empty swallow.
+ * getPriceDrops({ limit: PRICE_DROPS_LIST_LIMIT, days: 7 }) with no .catch() empty swallow.
  *
  * A READ THAT DID NOT ANSWER IS NOT AN EMPTY WEEK (§0). getPriceDrops never
  * rejects; when its read fails it answers `degraded: true` with no rows. The
@@ -45,13 +45,14 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { PriceDropAlertsSheet } from './_v3/PriceDropAlertsSheet.client'
+import { PriceDropCatalog } from './_v3/PriceDropCatalog.client'
 import {
   DROPS_ALERT_FILTERS,
   DROPS_CITY_SLUGS,
+  PRICE_DROPS_LIST_LIMIT,
   cityLabel,
   dropsTrace,
   dropsUnavailable,
-  medianPositive,
 } from './_v3/drops-constants'
 import { priceDropFieldItems } from './_v3/drops-field-items'
 import { priceDropDistribution } from './_v3/drops-drawing'
@@ -85,19 +86,14 @@ export const metadata: Metadata = pageMetadata({
  * times and never explained"). The drawing's trace says the pull is capped
  * and how many cuts that leaves off the page, from the `cap` the read reports.
  */
-const PRICE_DROPS_LIMIT = 48
-
 export default async function PriceDropsRegionPage() {
-  const { drops, total, cap, fetchedAt, degraded } = await getPriceDrops({
-    limit: PRICE_DROPS_LIMIT,
+  const { drops, total, cap, totalReduced, medianDropPct, fetchedAt, degraded } = await getPriceDrops({
+    limit: PRICE_DROPS_LIST_LIMIT,
     days: 7,
   })
 
   // Unknown is not empty: this copy stands for a minute, not the whole window.
   if (degraded) await refuseDegradedIsr('price-drops', ['getPriceDrops'])
-
-  const totalReduced = drops.reduce((sum, d) => sum + (d.lastDropAmount ?? 0), 0)
-  const medianDropPct = medianPositive(drops.map((d) => d.lastDropPct))
   const fieldItems = priceDropFieldItems(drops)
   // SITE-49: the distribution the count implies, above the grid. Every mark is
   // a row the grid renders; a row with no percent is not plotted (§0).
@@ -170,6 +166,7 @@ export default async function PriceDropsRegionPage() {
       body: 'Active single-family homes whose asking price fell in the last 7 days. Drop is previous list price to current list price. Recovered and relisted prices stay off this list.',
     },
     { label: 'All Central Oregon homes for sale', href: listingsBrowsePath() },
+    { label: 'Listing alerts', href: '/buy/alerts' },
     { label: 'Open houses this week', href: '/open-houses' },
     ...cityItems,
   ]
@@ -226,6 +223,7 @@ export default async function PriceDropsRegionPage() {
                   label="This week's price cuts by how far the ask came down"
                 />
               ) : null}
+              <PriceDropCatalog id="all-cuts" items={fieldItems} />
             </div>
             <V3SourceLine
               className={`${V3_ROOT_CLASS} pd-source`}

@@ -646,7 +646,7 @@ export {
   getListingWaterSource,
 } from '@/lib/data/pricing/facts'
 export {
-  getCmaAdminRowBySlug, getCmaAdminReviewRowBySlug, getCmaProspectAsk, getOutreachBuildProspect, getListingParcelNumber, getCmaServeHead,
+  getCmaAdminRowBySlug, getCmaAdminReviewRowBySlug, getCmaProspectAsk, getCmaProspectEnrichmentNotes, getOutreachBuildProspect, getListingParcelNumber, getCmaServeHead,
   getCmaStoredHtmlBySlug, getCmaRenderSourceBySlug, getCmaHtmlBySlug,
   getCmaAccessIdentity, updateCmaRowFieldsBySlug, deleteCmaRowById, replaceCmaComps,
   snapshotCmaVersion, getCmaBuildSummaryBySlug,

@@ -210,6 +210,35 @@ export async function getListingParcelNumber(listingKey: string): Promise<string
   return parcel || null
 }
 
+/**
+ * County notes on the expired or FSBO row linked to this CMA.
+ * Null when no prospect row is linked (an asked CMA). Throws when the read
+ * fails so a cold send can fail closed instead of guessing the owner.
+ */
+export async function getCmaProspectEnrichmentNotes(cmaId: string): Promise<string | null> {
+  const sb = client()
+  if (!sb) throw new Error('getCmaProspectEnrichmentNotes: Supabase not configured')
+  const id = String(cmaId ?? '').trim()
+  if (!id) return null
+  const [exp, fsbo] = await Promise.all([
+    sb.from('expired_listings').select('enrichment_notes').eq('cma_id', id).limit(1),
+    sb.from('fsbo_listings').select('enrichment_notes').eq('cma_id', id).limit(1),
+  ])
+  if (exp.error) {
+    console.error('[getCmaProspectEnrichmentNotes] expired', exp.error.message)
+    throw new Error(`getCmaProspectEnrichmentNotes expired failed: ${exp.error.message}`)
+  }
+  if (fsbo.error) {
+    console.error('[getCmaProspectEnrichmentNotes] fsbo', fsbo.error.message)
+    throw new Error(`getCmaProspectEnrichmentNotes fsbo failed: ${fsbo.error.message}`)
+  }
+  const expRow = (exp.data ?? [])[0] as { enrichment_notes?: unknown } | undefined
+  const fsboRow = (fsbo.data ?? [])[0] as { enrichment_notes?: unknown } | undefined
+  const row = expRow ?? fsboRow
+  if (!row) return null
+  return typeof row.enrichment_notes === 'string' ? row.enrichment_notes : null
+}
+
 /** Tiny existence + status read. Used so a wrong slug 404s instead of hanging. */
 export async function getCmaServeHead(slug: string): Promise<CmaServeHead | null> {
   const sb = client()

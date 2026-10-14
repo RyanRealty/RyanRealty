@@ -67,6 +67,7 @@ vi.mock('@/lib/data', async (importOriginal) => ({
   getCmaAdminRowBySlug: vi.fn(async () => h.state.row),
   getCmaBrokerBySlugOrEmail: vi.fn(async () => h.broker),
   getCmaProspectAsk: vi.fn(async () => null),
+  getCmaProspectEnrichmentNotes: vi.fn(async () => null),
   updateCmaRowFieldsBySlug: h.updateCmaRowFieldsBySlug,
   findCrmPersonIdByEmail: vi.fn(async () => 42),
   stampCmaLinkOnPerson: vi.fn(async () => undefined),

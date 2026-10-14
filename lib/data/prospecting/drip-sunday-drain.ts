@@ -53,6 +53,7 @@ const DEQUEUE_CODES: ReadonlySet<SendGuardCode> = new Set<SendGuardCode>([
   'already-sent',
   'no-doc',
   'not-found',
+  'company-owned',
 ])
 
 export async function drainSundayFirstTouchQueue(now: Date = new Date()): Promise<SundayDrainResult> {

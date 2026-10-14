@@ -24,7 +24,7 @@ import { KB_TOP_NAV } from '@/lib/site-nav'
 import { getAllCitySnapshots, getMarketPulse } from '@/lib/data'
 import { slugify } from '@/lib/slug'
 import { buildPlaceAtlas } from '@/lib/atlas/build-place-atlas'
-import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { formatDateTime } from '@/lib/format/date'
 import type { V3ChromeLive, V3ChromeLiveGroup } from '@/components/site/v3/V3Chrome'
@@ -97,10 +97,9 @@ export function composeChromeLive(input: ChromeLiveInputs): V3ChromeLive {
       facts.push({ figure: moneyShort(input.region.medianListPrice), label: 'median list price' })
     }
     if (input.region.monthsOfSupply != null) {
-      const verdict = monthsOfSupplyVerdict(input.region.monthsOfSupply)
       facts.push({
         figure: formatMonthsOfSupply(input.region.monthsOfSupply),
-        label: verdict ? `months of supply, ${verdict.label.toLowerCase()}` : 'months of supply',
+        label: 'months of supply',
       })
     }
     if (input.region.medianDaysToPending != null) {

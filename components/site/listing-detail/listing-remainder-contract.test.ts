@@ -185,6 +185,7 @@ describe('listing remainder composition', () => {
     // mount and call the on-market page reordered when it is not.
     const order = [
       '<PriceCtaStrip',
+      '<ListingQuickFacts',
       '<PropertySpecs',
       '<DescriptionBlock',
       '<MortgageCalculator',
@@ -217,6 +218,7 @@ describe('listing remainder composition', () => {
     const order = [
       '<PriceCtaStrip',
       '<ListingOffMarketFacts',
+      '<ListingQuickFacts',
       '<ListingSimilarStrip',
       '<ListingLikeThisAlerts',
       '<PropertySpecs',
@@ -337,5 +339,16 @@ describe('listing remainder composition', () => {
     expect(PAGE).toMatch(/id="other-subdivs"/)
     expect(PAGE).toMatch(/nameOnly/)
     expect(PAGE).toMatch(/listingAtlas\.otherSubdivs/)
+  })
+
+  it('puts the community door under the price strip, not in Quick facts', () => {
+    expect(PAGE).toMatch(/listingCommunityDoor/)
+    expect(PAGE).toMatch(/<ListingCommunityDoor door=\{communityDoor\}/)
+    const main = PAGE.slice(PAGE.indexOf('const main = ('), PAGE.indexOf('const floating ='))
+    expect(main.indexOf('<PriceCtaStrip')).toBeLessThan(main.indexOf('<ListingCommunityDoor'))
+    expect(main.indexOf('<ListingCommunityDoor')).toBeLessThan(main.indexOf('<PropertySpecs'))
+    expect(PAGE).toMatch(/listingIndexPolicy/)
+    expect(PAGE).toMatch(/noindex: indexPolicy\.noindex/)
+    expect(PAGE).toMatch(/path: indexPolicy\.canonicalPath/)
   })
 })

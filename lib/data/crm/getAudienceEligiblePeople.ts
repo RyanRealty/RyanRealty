@@ -41,6 +41,8 @@
 
 import { createServiceClient } from '@/lib/supabase/service'
 import type { AudiencePerson } from '@/lib/meta/audienceHash'
+import { isIndustryContact } from '@/lib/crm/industry-contact'
+import { whereActiveSuppression } from '@/lib/crm/suppression-lifecycle'
 
 /** One eligible person plus the id, so the uploader can log/segment by id. */
 export type AudienceEligiblePerson = AudiencePerson & {
@@ -58,11 +60,9 @@ async function getSuppressedPersonIds(
   const PAGE = 1000
   let offset = 0
   for (;;) {
-    const { data, error } = await sb
-      .from('crm_suppressions')
-      .select('person_id')
-      .not('person_id', 'is', null)
-      .range(offset, offset + PAGE - 1)
+    const { data, error } = await whereActiveSuppression(
+      sb.from('crm_suppressions').select('person_id').not('person_id', 'is', null),
+    ).range(offset, offset + PAGE - 1)
     // FAIL CLOSED: a mid-pagination error must NOT be read as "that's everyone" —
     // a partial suppressed set silently un-suppresses people on later pages. Throw
     // so the whole audience build aborts rather than sending to a suppressed person.
@@ -89,9 +89,12 @@ export const AUDIENCE_EXCLUDED_TAG_PATTERNS: readonly RegExp[] = [/realtor/i]
 
 /**
  * Pure (unit-tested): true when ANY of a person's tags matches an audience
- * exclusion pattern. Non-array / non-string-element input is treated as no match.
+ * exclusion pattern, or the durable industry-contact helper flags them.
+ * Non-array / non-string-element input is treated as no match for the regex
+ * path; isIndustryContact still reads exact tags.
  */
-export function isAudienceExcludedByTag(tags: unknown): boolean {
+export function isAudienceExcludedByTag(tags: unknown, stage?: string | null): boolean {
+  if (isIndustryContact({ tags, stage })) return true
   if (!Array.isArray(tags)) return false
   for (const t of tags) {
     if (typeof t !== 'string') continue
@@ -153,7 +156,7 @@ export async function getAudienceEligiblePeople(
   for (;;) {
     const { data, error } = await sb
       .from('crm_people')
-      .select('id,first_name,last_name,emails,phones,deleted,tags')
+      .select('id,first_name,last_name,emails,phones,deleted,tags,stage')
       .eq('deleted', false)
       .range(offset, offset + PAGE - 1)
     // FAIL CLOSED: a partial people scan would silently shrink the excluded set and
@@ -178,7 +181,7 @@ export async function getAudienceEligiblePeople(
 
       // Targeting gate: realtors/agents are never advertised to, independent of
       // consent. Counted separately so the dry-run can report "0 realtors".
-      if (isAudienceExcludedByTag(row.tags)) {
+      if (isAudienceExcludedByTag(row.tags, (row.stage as string | null) ?? null)) {
         excludedRealtors += 1
         continue
       }

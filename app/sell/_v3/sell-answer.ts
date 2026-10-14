@@ -54,7 +54,7 @@ export type SellAnswerData = {
   grain: 'city' | 'neighborhood'
   /** Door to the full market report for this place, when one exists. */
   placeHref: string | null
-  /** From marketVerdict(): "seller's market". Null when MOS cannot publish here. */
+  /** From marketVerdict(): public months-of-supply line. Null when MOS cannot publish here. */
   verdictLabel: string | null
   /** From formatMonthsOfSupply(): "3.9". Never computed on this side. */
   monthsOfSupply: string | null
@@ -97,7 +97,7 @@ export type SellAnswerData = {
  */
 export function sellAnswerClaim(d: SellAnswerData): string {
   if (d.verdictLabel && d.monthsOfSupply) {
-    return `${d.placeLabel} is a ${d.verdictLabel} right now.`
+    return `${d.placeLabel} has ${d.monthsOfSupply} months of supply right now.`
   }
   if (d.compCount != null && d.compCount > 0) {
     return `We found ${d.compCount} recent ${d.placeLabel} ${d.compCount === 1 ? 'sale' : 'sales'} to price ${d.street} against.`

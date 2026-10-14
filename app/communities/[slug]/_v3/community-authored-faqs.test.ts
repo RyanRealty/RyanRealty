@@ -166,6 +166,56 @@ describe('communityAuthoredFaqs, Oct 8 render', () => {
   })
 })
 
+describe('communityAuthoredFaqs, ChatGPT landing communities', () => {
+  it('Sunriver names the SROA 2026 fee already on the page and binds sale figures', () => {
+    const faqs = communityAuthoredFaqs(
+      base({
+        slug: 'sunriver',
+        name: 'Sunriver',
+        medianSale12: 800_000,
+        medianList: 850_000,
+        closedCount12: 40,
+        activeSfr: 22,
+      }),
+    )
+    expect(faqs.map((f) => f.question)).toEqual([
+      'Where is Sunriver?',
+      'How much are Sunriver homes for sale?',
+      'What are HOA dues in Sunriver?',
+    ])
+    expect(faqs[0]?.answer).toMatch(/15 miles south of Bend/)
+    expect(faqs[1]?.answer).toBe(
+      'On Oct 8, 2026, 22 single-family homes were for sale in Sunriver at a median asking price of $850,000. Over the last 12 months 40 sold, at a median $800,000.',
+    )
+    expect(faqs[2]?.answer).toMatch(/\$172\.94 a month/)
+    expect(faqs[2]?.answer).toMatch(/\$2,075\.28 a year/)
+    expect(dropsGeneratedHoaQuestion(faqs)).toBe(true)
+    for (const f of faqs) expect(f.answer).not.toMatch(/\u2014|\u2013| -- /)
+  })
+
+  it('Mountain High drops a missing sale median and names the public course', () => {
+    const faqs = communityAuthoredFaqs(
+      base({
+        slug: 'mountain-high',
+        name: 'Mountain High',
+        medianList: null,
+        medianSale12: null,
+        closedCount12: 8,
+        activeSfr: 5,
+        hoaMonthly: 210,
+        hoaAnnual: 2520,
+        hoaReported: 45,
+      }),
+    )
+    expect(faqs[0]?.answer).toMatch(/Old Back Nine/)
+    expect(faqs.find((f) => f.question.startsWith('How much'))?.answer).toBe(
+      'On Oct 8, 2026, 5 single-family homes were for sale in Mountain High. Over the last 12 months 8 sold.',
+    )
+    expect(faqs.find((f) => f.question.startsWith('What are HOA'))?.answer).toMatch(/\$210 a month/)
+    expect(faqs.find((f) => f.question.startsWith('Is the golf'))?.answer).toMatch(/public nine-hole/)
+  })
+})
+
 describe('stockRailAsk', () => {
   it('counts for-sale rows and the ask range, skipping under contract', () => {
     expect(

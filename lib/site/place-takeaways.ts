@@ -51,8 +51,9 @@ export type PlaceTakeawaysInput = {
    * 'market' is the /housing-market/<city> answer block (SEO & AEO Desk brief
    * 2026-10-08): sale price first, then the 12-month change, pace, and supply,
    * written to be quoted on its own. The inputs below are read only by it.
-   * 'community' is the four resort community pages (same brief): identity
-   * first, then sale/ask, then cash or types. Keep 'place' byte-identical.
+   * 'community' is the resort community pages plus Sunriver and Mountain High:
+   * identity first, then sale/ask, then cash, types, or belonging. Keep 'place'
+   * byte-identical.
    */
   variant?: 'place' | 'market' | 'community'
   /** Registry slug; required for variant 'community'. */
@@ -77,9 +78,9 @@ export type PlaceTakeawaysInput = {
 }
 
 const MEANING: Record<string, string> = {
-  sellers: 'sellers have the edge',
-  balanced: 'neither buyers nor sellers have a clear edge',
-  buyers: 'buyers have room to negotiate',
+  sellers: 'listings are getting absorbed faster than they are replaced',
+  balanced: 'the sales pace and the listings on the market are close',
+  buyers: 'buyers have leverage',
 }
 
 function count(n: number, one: string, many: string): string {
@@ -99,9 +100,9 @@ function days(n: number | null | undefined): string | null {
 }
 
 const THRESHOLD_CLAUSE: Record<string, string> = {
-  sellers: '4 months or less favors sellers',
-  balanced: 'between 4 and 6 months is balanced',
-  buyers: '6 months or more favors buyers',
+  sellers: 'listings are getting absorbed faster than they are replaced',
+  balanced: 'the sales pace and the listings on the market are close',
+  buyers: 'buyers have leverage',
 }
 
 /**
@@ -164,7 +165,7 @@ function marketTakeaways(place: string, input: PlaceTakeawaysInput): string[] {
   const verdict = marketVerdict(input.monthsOfSupply)
   if (input.monthsOfSupply != null && THRESHOLD_CLAUSE[verdict.kind]) {
     out.push(
-      `${place} has ${formatMonthsOfSupply(input.monthsOfSupply)} months of supply, which makes it a ${verdict.label} (${THRESHOLD_CLAUSE[verdict.kind]}).`,
+      `${place} has ${formatMonthsOfSupply(input.monthsOfSupply)} months of supply (${THRESHOLD_CLAUSE[verdict.kind]}).`,
     )
   }
 
@@ -196,7 +197,7 @@ export function placeTakeaways(input: PlaceTakeawaysInput): string[] {
   const verdict = marketVerdict(input.monthsOfSupply)
   if (input.monthsOfSupply != null && verdict.kind !== 'unknown' && MEANING[verdict.kind]) {
     const mos = formatMonthsOfSupply(input.monthsOfSupply)
-    out.push(`${place} has ${mos} months of supply, a ${verdict.label}, so ${MEANING[verdict.kind]}.`)
+    out.push(`${place} has ${mos} months of supply, so ${MEANING[verdict.kind]}.`)
   }
 
   if (input.saleMedian && input.saleMedian.value > 0 && input.saleMedian.when.trim()) {

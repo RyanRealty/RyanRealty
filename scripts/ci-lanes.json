@@ -1,6 +1,10 @@
 {
   "version": 1,
   "always": [
+    "ci:studio-rules",
+    "ci:private-remarks",
+    "ci:deals-copy",
+    "ci:imagine-no-paid-api",
     "ci:broker-own-book",
     "ci:commit-compiles",
     "ci:count-degraded-read",
@@ -693,6 +697,7 @@
       "scripts/ci-lanes.json",
       "scripts/check-tests-wired.mjs",
       "scripts/check-gates-wired.mjs",
+      ".claude/skills/ryan-studio/tools/tests/**",
       ".husky/**",
       ".github/workflows/**"
     ],

@@ -12,6 +12,7 @@ import { CORE_MARKET_PATHS } from '@/app/housing-market/[...slug]/_v3/geo-consta
 import { BLOG_HOUSING_MARKET_GUIDE_REDIRECTS } from '@/lib/routing/blog-market-guide-redirects'
 import { cityTypeLlmsLines, dedupeLlmsLines, marketCityLlmsLines, zipLlmsLines, LLMS_SUBDIVISIONS_PATH } from '@/lib/site/llms-geo'
 import { BRAND, CONTACT } from '@/lib/brand/contact'
+import { BUYER_ANSWER_DEFS } from '@/lib/buyer-answers'
 
 const SITE_URL = siteOrigin()
 
@@ -81,7 +82,9 @@ export async function GET() {
     `- Open houses: ${SITE_URL}/open-houses`,
     `- New construction in Bend: ${SITE_URL}/new-construction`,
     `- Price Drop Radar (Central Oregon): ${SITE_URL}/price-drops`,
+    `- Buyers have leverage in Bend (live MLS numbers): ${SITE_URL}/buy/leverage`,
     `- Bend price drops: ${SITE_URL}/price-drops/bend`,
+    `- Listing alerts: ${SITE_URL}/buy/alerts`,
     `- Redmond price drops: ${SITE_URL}/price-drops/redmond`,
     `- Sisters price drops: ${SITE_URL}/price-drops/sisters`,
     ...pillars('listings'),
@@ -106,6 +109,10 @@ export async function GET() {
     ...getAllResortCommunities().map(
       (c) => `- ${c.label} (${c.city}): ${SITE_URL}/communities/${publicCommunitySlug(c)}`,
     ),
+  ])
+  const buyerAnswerLines = lines([
+    ...pillars('buyer-answers'),
+    ...BUYER_ANSWER_DEFS.map((def) => `- ${def.query}: ${SITE_URL}${def.path}`),
   ])
   const neighborhoodLines = lines(
     neighborhoods
@@ -190,6 +197,9 @@ One page per property type in each city: the ones for sale now, live from the re
 ## Cities${cityLines}
 
 ## Communities${communityLines}
+
+## Buyer answers
+Long-tail buyer questions answered with live Oregon Data Share MLS figures, a table, listings, and FAQPage schema.${buyerAnswerLines}
 
 ## Neighborhoods${neighborhoodLines}
 

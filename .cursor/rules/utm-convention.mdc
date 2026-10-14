@@ -14,9 +14,9 @@ Signature: `buildTrackedUrl(url, { source, medium, campaign, content?, term?, te
 
 | Param | Allowed values |
 |---|---|
-| utm_source | `crm`, `cma`, `gbp`, `facebook`, `instagram`, `x`, `youtube`, `newsletter`, `zillow`, `realtor`, `referral-<domain>` |
+| utm_source | `crm`, `cma`, `gbp`, `facebook`, `instagram`, `x`, `youtube`, `tiktok`, `google`, `newsletter`, `zillow`, `realtor`, `referral-<domain>` |
 | utm_medium | `email`, `sms`, `organic`, `social`, `paid_social`, `cpc`, `document`, `referral`, `qr` |
-| utm_campaign | `cma-letter`, `expired-outreach`, `fsbo-outreach`, `market-report-YYYY-MM`, `open-house-weekly`, `listing-launch`, `listing-alerts`, `gbp-profile`, `newsletter`, `social-post`, `crm-outbound` |
+| utm_campaign | `cma-letter`, `expired-outreach`, `fsbo-outreach`, `market-report-YYYY-MM`, `open-house-weekly`, `listing-launch`, `listing-alerts`, `gbp-profile`, `newsletter`, `social-post`, `crm-outbound`, `buyer-leverage`, `buyer-price-drops`, `buyer-what-it-buys`, `buyer-relocate`, `buyer-first-home`, `buyer-deal-report`, plus `buyer-<angle>` |
 | utm_content | `v2`, `cta-top`, `why-list`, `listing-<listing_key>`, `agent-<slug>` (an ID, never an address) |
 | utm_term | paid keyword only (medium `cpc` or `paid_social`) |
 
@@ -28,5 +28,6 @@ Signature: `buildTrackedUrl(url, { source, medium, campaign, content?, term?, te
 4. **Validation.** Throws in test/dev. In production, falls back to a known-good value and `console.warn` — a send or render must not fail because a UTM was off-vocab.
 5. **CMA open attribution.** Document identity is `rr_doc=<cmas.slug>` (not `utm_campaign`). `cmaCampaignFromUrl` reads `rr_doc` first, then the legacy `utm_campaign=<slug>` form. `stripGa4UrlParams` removes `rr_doc` from URLs sent to GA4; stored first-party URLs keep it.
 6. **email-click** is identity (`identify_source`), not a UTM source. Links use `crm` / `email`. Medium `doc` is `document`.
+7. **Buyer traffic.** Paid and organic buyer links follow [`docs/analytics/buyer-utm-spec.md`](../../docs/analytics/buyer-utm-spec.md) (`google` / `tiktok` sources, `cpc` / `paid_social` / `social` / `email` mediums, `buyer-<angle>` campaigns).
 
 Do not change visible email, letter, SMS, or page wording. Tracking lives only in the href.

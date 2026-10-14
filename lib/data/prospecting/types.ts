@@ -158,6 +158,8 @@ export interface ProspectRow {
   // contact (admin surface — raw is acceptable; UI masks for display)
   contactPhone: string | null
   contactEmail: string | null
+  /** County lookup notes. The company-owner hold reads the legal-owner sentence here. */
+  enrichmentNotes: string | null
 
   doc: ProspectDocState
   compliance: ProspectComplianceState
@@ -220,7 +222,6 @@ export interface ProspectDetail extends ProspectRow {
   cumulativeDaysOnMarket: number | null
   contactSource: string | null
   ownerLookupStatus: string | null
-  enrichmentNotes: string | null
   /**
    * Whole years the owner has held the property, when a source proves it.
    * Source priority (get.ts deriveOwnershipSince): crm_people.custom
@@ -386,6 +387,13 @@ export type SendGuardCode =
   | 'merge-unresolved'
   | 'send-failed'
   | 'not-found'
+  /**
+   * County legal owner is a company (LLC, LP, LLP, Inc, Corp). Cold email and
+   * SMS stay held. Family trusts are not this code. Both drains dequeue it.
+   */
+  | 'company-owned'
+  /** Broker, lender, or vendor — marketing outreach only. 1:1 composer stays open. */
+  | 'industry-contact'
 
 export type SendIntroResult =
   | { ok: true; sid: string; personId: number; sentAt: string }
