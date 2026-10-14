@@ -1,12 +1,16 @@
-# Current — 2026-10-14 (Cursor, persist GA client id on lead forms)
+# Current — 2026-10-14 (Cursor, persist GA client id live)
 
-Surface: Cursor cloud. Branch `cursor/persist-ga-client-id-3b48` / PR #560. Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. PR #560 landed on `main` at `482727cb7`. Production deploy `dpl_6jzv89htyXxpANcfw244o7XV9njj` READY. Nobody pushes main. No rebuild.
 
-**This pass.** Every lead form fill now first-touch writes `crm_people.custom.gaClientId` from the `_ga` cookie (last two numeric dot parts). `fireLeadGenerated` persists even when GPC or a decline blocks `generate_lead`, and each form action also calls `persistGaClientIdFromCookies` and passes `crm_person_id` (buyer_alerts_lp, buyer_leverage_lp, contact, seller valuation, lead-landing, page-cta, search-alert, concessions, place-value, and the other capture doors). Same cookie id is what the server `generate_lead` MP call uses. Follow-up to #543 so the daily offline cron has a client_id to send.
+**This pass.** A production `/contact` submit with `_ga=GA1.1.4827270001.1760419200` first-touch wrote `crm_people.custom.gaClientId = 4827270001.1760419200` on person 64812. That row, enrollment 213, conversation, timeline, contact points, and suppressions were deleted after the check. No sequence send. No broker alert.
 
 **Still open.** Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`). #452 landed. Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. The unique `idx_listings_parcel_number` migration is not on main.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+
+## Earlier — 2026-10-14 (Cursor, persist GA client id on lead forms)
+
+Surface: Cursor cloud. Branch `cursor/persist-ga-client-id-3b48` landed on main via #560 at `482727cb7`. Every lead form fill first-touch writes `crm_people.custom.gaClientId` from the `_ga` cookie. Follow-up to #543. Nobody pushes main. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, G46 commit-compiles process tree)
 
