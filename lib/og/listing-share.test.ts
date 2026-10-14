@@ -68,7 +68,7 @@ describe('listing share image', () => {
       `/api/og?type=listing&id=${encodeURIComponent(EVIE.listingKey)}`,
     )
     expect(listingHasSharePhoto(null)).toBe(false)
-    expect(listingOgImagePath({ listingKey: EVIE.listingKey, photoUrl: null })).toBe(
+    expect(listingOgImagePath({ listingKey: EVIE.listingKey })).toBe(
       `/api/og?type=listing&id=${encodeURIComponent(EVIE.listingKey)}`,
     )
   })
@@ -98,7 +98,7 @@ describe('listing share image', () => {
       title: '1 Oak, Bend',
       description: 'A home with no MLS photo.',
       path: '/listing/220000001',
-      ogImage: listingOgImagePath({ listingKey: 'k', photoUrl: null }),
+      ogImage: listingOgImagePath({ listingKey: 'k' }),
     })
     const image = Array.isArray(meta.openGraph?.images) ? meta.openGraph.images[0] : null
     const url = image && typeof image === 'object' && 'url' in image ? String(image.url) : ''
