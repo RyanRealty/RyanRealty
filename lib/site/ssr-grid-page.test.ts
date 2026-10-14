@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { SSR_GRID_PAGE, seedPage } from './ssr-grid-page'
+import { COMMUNITY_SSR_GRID_PAGE, SSR_GRID_PAGE, SSR_MAP_SEED_HOMES, seedPage } from './ssr-grid-page'
 
 describe('SSR_GRID_PAGE', () => {
   it('is one page of 24 cards', () => {
     expect(SSR_GRID_PAGE).toBe(24)
+  })
+
+  it('seeds a shorter community fold and an empty map prop', () => {
+    expect(COMMUNITY_SSR_GRID_PAGE).toBe(12)
+    expect(COMMUNITY_SSR_GRID_PAGE).toBeLessThan(SSR_GRID_PAGE)
+    expect(SSR_MAP_SEED_HOMES).toEqual([])
   })
 
   it('seeds only the first page and leaves a short list alone', () => {

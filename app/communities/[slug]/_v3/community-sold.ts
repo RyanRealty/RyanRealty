@@ -15,7 +15,8 @@ import { listingTileHref } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
 export const COMMUNITY_SOLD_WINDOW_MONTHS = 6
-export const COMMUNITY_SOLD_TABLE_CAP = 40
+/** Eight address rows. Photos stay off the ledger so Tetherow does not ship 40 thumbs. */
+export const COMMUNITY_SOLD_TABLE_CAP = 8
 /** Own names plus a few child plats. The neighborhood query carries the rest. */
 export const COMMUNITY_SOLD_ALIAS_CAP = 8
 
@@ -42,7 +43,6 @@ export type CommunitySoldRow = {
   closeDateLabel: string
   closeDay: string
   detail: string | null
-  photoSrc: string | null
 }
 
 export function communitySoldWindowStart(asOf: Date): string {
@@ -119,7 +119,6 @@ export function communitySoldRows(input: {
       closeDateLabel: when,
       closeDay: day,
       detail: soldDetail(tile),
-      photoSrc: tile.photoUrl?.trim() || null,
     })
   }
   return rows
@@ -139,7 +138,6 @@ export function communitySoldLedgerRows(
     value: v3Text(row.closePriceLabel),
     when: v3Text(row.closeDateLabel),
     detail: row.detail ? v3Text(row.detail) : undefined,
-    media: row.photoSrc ? { src: row.photoSrc } : undefined,
   }))
   return [mapped[0]!, ...mapped.slice(1)]
 }

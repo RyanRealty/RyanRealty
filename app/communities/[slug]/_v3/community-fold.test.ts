@@ -15,7 +15,7 @@ describe('SITE-129 community fold inventory', () => {
   })
 
   it('keeps typed stock on the page and does not remount Split search', () => {
-    expect(PAGE).toMatch(/homes:\s*placeHomes/)
+    expect(PAGE).toMatch(/homes:\s*placeHomes\.filter/)
     expect(PAGE).toMatch(/<PlaceSubdivisionHomes/)
     expect(PAGE).toMatch(/placeStockSectionsFromTiles/)
     expect(PAGE).toMatch(/community-field-types/)
@@ -25,9 +25,9 @@ describe('SITE-129 community fold inventory', () => {
   })
 
   it('seeds one SSR card page and fetches the rest after paint', () => {
-    expect(PAGE).toMatch(/<CommunityHomesGrid[\s\S]*?homes=\{placeHomes\.slice\(0, SSR_GRID_PAGE\)\}/)
-    expect(PAGE).toMatch(/homes=\{placeHomes\.slice\(0, SSR_GRID_PAGE\)\}/)
-    expect(PAGE).toMatch(/homesSrc=\{placeHomes\.length > SSR_GRID_PAGE \? communityHomesSrc\(slug\)/)
+    expect(PAGE).toMatch(/<CommunityHomesGrid[\s\S]*?homes=\{placeHomes\.slice\(0, COMMUNITY_SSR_GRID_PAGE\)\}/)
+    expect(PAGE).toMatch(/homes=\{SSR_MAP_SEED_HOMES\}/)
+    expect(PAGE).toMatch(/homesSrc=\{placeHomes\.length > 0 \? communityHomesSrc\(slug\)/)
     expect(PAGE).toMatch(/homesCountLabel=\{placeHomesCountLabel\(placeHomes\)\}/)
   })
 

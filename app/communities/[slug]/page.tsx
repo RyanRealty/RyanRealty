@@ -157,7 +157,8 @@ import { regionsFromChildCells } from '@/lib/place/child-rings'
 import { placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
 import { placeHomesCountLabel } from '@/lib/place/place-count-label'
 import { communityHomesSrc } from '@/lib/place/place-homes-src'
-import { SSR_GRID_PAGE } from '@/lib/site/ssr-grid-page'
+import { COMMUNITY_SSR_GRID_PAGE, SSR_MAP_SEED_HOMES } from '@/lib/site/ssr-grid-page'
+import { LISTING_ITEM_LIST_CAP } from '@/lib/site/json-ld'
 import { loadPlaceLeaseSection } from '@/lib/place/place-lease-stock'
 import { placeBoundaryClause, placeInventorySource } from '@/lib/place/place-inventory-source'
 import { childListingKeys, slugFromPlaceHref, subdivisionRailEntries } from '@/lib/place/place-child-stock'
@@ -1152,7 +1153,7 @@ async function renderCommunityDetail({ params }: Props) {
     // sentence the page does not print.
     faqs: answerFaqs,
     amenityItems: amenityBoard ? amenityItemListItems(amenityBoard, `/communities/${slug}`) : undefined,
-    homes: placeHomes,
+    homes: placeHomes.filter((home) => home.photoUrl?.trim()).slice(0, LISTING_ITEM_LIST_CAP),
     stock: listedStock,
     medianSale12: publicPace.medianClose,
     yoyMedian: publicPace.yoyMedian,
@@ -1254,7 +1255,7 @@ async function renderCommunityDetail({ params }: Props) {
         </div>
 
         <CommunityFoldAnswer id="answer" answer={foldAnswer} link={communityAnswerLink} />
-        <CommunityHomesGrid id="homes" placeName={publicName} homes={placeHomes.slice(0, SSR_GRID_PAGE)} />
+        <CommunityHomesGrid id="homes" placeName={publicName} homes={placeHomes.slice(0, COMMUNITY_SSR_GRID_PAGE)} />
         {soldLedger ? (
           <V3Ledger
             id="sold"
@@ -1272,8 +1273,8 @@ async function renderCommunityDetail({ params }: Props) {
         <PlaceSubdivisionMap
           placeName={publicName}
           rail={railEntries}
-          homes={placeHomes.slice(0, SSR_GRID_PAGE)}
-          homesSrc={placeHomes.length > SSR_GRID_PAGE ? communityHomesSrc(slug) : undefined}
+          homes={SSR_MAP_SEED_HOMES}
+          homesSrc={placeHomes.length > 0 ? communityHomesSrc(slug) : undefined}
           homesCountLabel={placeHomesCountLabel(placeHomes)}
           leases={leaseSection?.rows ?? []}
           keysBySlug={homesByChild}

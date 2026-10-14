@@ -9,6 +9,17 @@
  */
 export const SSR_GRID_PAGE = 24
 
+/**
+ * Community fold grid. Tetherow's 22 on-market homes already sat under
+ * SSR_GRID_PAGE, so #527 never attached homesSrc and the same rows shipped
+ * twice (grid HTML + PlaceSubdivisionMap RSC). Twelve photographed cards
+ * is one fold; the map dials load the rest from GET /api/place/homes.
+ */
+export const COMMUNITY_SSR_GRID_PAGE = 12
+
+/** Stable empty seed so the map client does not reserialize the fold grid. */
+export const SSR_MAP_SEED_HOMES = [] as const
+
 export function seedPage<T>(rows: readonly T[], cap: number = SSR_GRID_PAGE): T[] {
   return rows.slice(0, Math.max(0, cap))
 }

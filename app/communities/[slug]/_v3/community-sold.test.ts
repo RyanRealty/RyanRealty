@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ListingTile } from '@/lib/data/types/listing'
 import {
   COMMUNITY_SOLD_ALIAS_CAP,
+  COMMUNITY_SOLD_TABLE_CAP,
   COMMUNITY_SOLD_WINDOW_MONTHS,
   communitySoldAliasList,
   communitySoldLedgerRows,
@@ -130,5 +131,21 @@ describe('communitySoldRows', () => {
     expect(ledger?.map((row) => String(row.value))).toEqual(['$2,100,000', '$1,850,000'])
     expect(ledger?.every((row) => String(row.value).startsWith('$'))).toBe(true)
     expect(ledger?.some((row) => String(row.value) === '$0')).toBe(false)
+    expect(ledger?.every((row) => row.media == null)).toBe(true)
+  })
+
+  it(`caps the sold table at ${COMMUNITY_SOLD_TABLE_CAP} rows`, () => {
+    const tiles = Array.from({ length: COMMUNITY_SOLD_TABLE_CAP + 5 }, (_, i) =>
+      tile({
+        listingKey: `sold-${i}`,
+        closeDate: `2026-09-${String((i % 28) + 1).padStart(2, '0')}`,
+        closePrice: 1_800_000 + i * 1000,
+      }),
+    )
+    const rows = communitySoldRows({ ...WINDOW, tiles })
+    expect(rows).toHaveLength(COMMUNITY_SOLD_TABLE_CAP)
+    const ledger = communitySoldLedgerRows(rows)
+    expect(ledger).toHaveLength(COMMUNITY_SOLD_TABLE_CAP)
+    expect(ledger?.every((row) => row.media == null)).toBe(true)
   })
 })
