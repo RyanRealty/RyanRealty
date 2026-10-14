@@ -88,6 +88,15 @@ function codeList(file, exportName) {
   return [...body.matchAll(/^\s*'([A-Za-z_]+)'/gm)].map((m) => m[1])
 }
 const BROWSER_EVENTS = codeList('lib/analytics/ga4-browser-events.ts', 'GA4_BROWSER_EVENTS')
+// `{ name, from }` tables (GA4_USER_PROPERTIES, GA4_PAGE_VIEW_PARAMS), read from source the same way.
+function codeMappings(file, exportName) {
+  const src = readFileSync(file, 'utf8')
+  const start = src.indexOf(`export const ${exportName}`)
+  if (start < 0) return []
+  const body = src.slice(start, src.indexOf('] as const', start))
+  return [...body.matchAll(/\{\s*name:\s*'([A-Za-z_]+)',\s*from:\s*'([A-Za-z_.]+)'\s*\}/g)].map((m) => ({ name: m[1], from: m[2] }))
+}
+const USER_PROPERTIES = codeMappings('lib/analytics/ga4-browser-events.ts', 'GA4_USER_PROPERTIES')
 
 // ── GA4 configuration ───────────────────────────────────────────────────────
 const cfg = {}
@@ -243,6 +252,34 @@ if (!container) {
       finding('FAIL', 'ga4', 'Enhanced measurement "page changes based on browser history events" is on while the dataLayer owns page_view: every client-side navigation and every ?bbox= map move counts twice. Turn it off in GA4 Admin > Data streams.')
     else if (googleTagSendsPageView && historyPageViews === false)
       finding('WARN', 'ga4', 'The Google tag owns page_view but enhanced measurement history page views are off: client-side navigations send no page_view.')
+    // GTM version 10 (2026-10-14): both GA4 Event tags send content_group (= page_type)
+    // and the user properties in GA4_USER_PROPERTIES (visitor_intent, primary_market),
+    // each from its flat dataLayer key through a "DLV - ga4 <key>" variable.
+    const listRows = (t, key, k, v) =>
+      Object.fromEntries((param(t, key)?.list || []).map((row) => {
+        const m = Object.fromEntries((row.map || []).map((x) => [x.key, x.value]))
+        return [m[k], m[v]]
+      }))
+    const dlvByName = Object.fromEntries(
+      (live.variable || []).filter((v) => v.type === 'v').map((v) => [v.name, (v.parameter || []).find((p) => p.key === 'name')?.value]),
+    )
+    const readsKey = (ref, key) => {
+      const m = /^\{\{(.+)\}\}$/.exec(String(ref ?? ''))
+      return !!m && dlvByName[m[1]] === key
+    }
+    gtm.userProperties = {}
+    for (const tagName of ['GA4 - page_view', 'GA4 - dataLayer events']) {
+      const t = (live.tag || []).find((x) => x.type === 'gaawe' && x.name === tagName)
+      if (!t) continue
+      const ups = listRows(t, 'userProperties', 'name', 'value')
+      const params = listRows(t, 'eventSettingsTable', 'parameter', 'parameterValue')
+      gtm.userProperties[tagName] = Object.keys(ups)
+      const missing = USER_PROPERTIES.filter((u) => !readsKey(ups[u.name], u.from)).map((u) => u.name)
+      if (missing.length)
+        finding('FAIL', 'gtm', `"${tagName}" does not set user properties ${missing.join(', ')} from their dataLayer keys (GA4_USER_PROPERTIES, GTM version 10).`)
+      if (!readsKey(params.content_group, 'page_type'))
+        finding('FAIL', 'gtm', `"${tagName}" does not send content_group from page_type (GTM version 10).`)
+    }
     const regexTrigger = (live.trigger || []).find((t) => t.name === 'CE - GA4 browser events')
     const regex = regexTrigger?.customEventFilter?.[0]?.parameter?.find((p) => p.key === 'arg1')?.value || ''
     const live_names = new Set((regex.match(/^\^\((.*)\)\$$/)?.[1] || '').split('|').filter(Boolean))

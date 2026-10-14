@@ -9,6 +9,8 @@ import { resolveClientVisitBroker, visitBrokerGa4Fields } from '@/lib/analytics/
 import { trackEventWithCAPI } from '@/lib/meta-pixel-helpers'
 import { readSessionId } from '@/lib/analytics/visitor-session'
 import { pushDataLayerEvent } from '@/lib/analytics/ga4-browser-events'
+import { isVisitorIntentEvent, recordIntentEvent } from '@/lib/analytics/visitor-intent'
+import { hasAnalyticsConsent } from '@/components/CookieConsentBanner'
 import { CONSENT_COOKIE, gpcFromNavigator, marketingSharingAllowed } from '@/lib/identity/consent'
 import {
   CONTEXTUAL_CONSENT_ASK_EVENT,
@@ -151,12 +153,35 @@ const GOOGLE_ADS_CONVERSION_SIGNUP = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSI
  * GTM tag is published, a gtag copy would be the double count.
  */
 export function trackEvent(eventName: EventName, params: Record<string, unknown> = {}) {
+  noteVisitorIntentEvent(eventName)
   pushDataLayerEvent(eventName, params)
   if (eventName === 'generate_lead' && GOOGLE_ADS_CONVERSION_LEAD) {
     fireGoogleAdsConversion(GOOGLE_ADS_CONVERSION_LEAD)
   }
   if (typeof window !== 'undefined' && isContextualConsentEvent(eventName)) {
     window.dispatchEvent(new CustomEvent(CONTEXTUAL_CONSENT_ASK_EVENT))
+  }
+}
+
+/**
+ * A buyer or seller event (lib/analytics/visitor-intent.ts BUYER_INTENT_EVENTS,
+ * SELLER_INTENT_EVENTS) updates the browser's visitor-intent memory. When the
+ * label changes, the new `visitor_intent` is pushed flat BEFORE the event itself,
+ * so the GA4 hit for that event already carries the new user property (GTM
+ * version 10 maps the flat key on both GA4 tags). Pushed after, the event that
+ * made someone a seller would still say "browsing", and a visitor who leaves
+ * right after it would never send the new label at all.
+ *
+ * Cheap for every other event: the name check runs first. Storage is written only
+ * with analytics consent. Never throws.
+ */
+function noteVisitorIntentEvent(eventName: string): void {
+  if (typeof window === 'undefined' || !isVisitorIntentEvent(eventName)) return
+  try {
+    const update = recordIntentEvent(eventName, { consent: hasAnalyticsConsent() })
+    if (update.changed && update.visitor_intent) pushDataLayer({ visitor_intent: update.visitor_intent })
+  } catch {
+    /* tracking never breaks a page */
   }
 }
 
