@@ -23,6 +23,7 @@ import {
 } from '@/lib/data'
 import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
 import { applySubjectFactOverrides, resolveCmaSubject } from '@/lib/cma/subject'
+import { multiUnitSubjectRefusal } from '@/lib/cma/subject-units'
 import { applyReconciledRoomCounts, reconcileSubjectRoomCounts } from '@/lib/cma/subject-room-conflict'
 import { pickCoverPhoto } from '@/lib/cma/cover-photo'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
@@ -316,6 +317,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       },
       input.subjectFacts,
     )
+    // A duplex or other multi-unit home is refused before a single comp is
+    // read (Matt 2026-10-14, 429 Irving: a duplex by its own listing history,
+    // priced on five single-family sales). Rule 23 prices like from like, and
+    // the pool holds no multi-unit sales, so the queue files it for Matt. The
+    // resolver decides (every pricing build reads the same field); the
+    // overrides above never change a unit count.
+    const unitRefusal = resolved.refusal ?? multiUnitSubjectRefusal(subject)
+    if (unitRefusal) {
+      await recordBuildFailure(slug, unitRefusal, { stage: 'subject', docType, trace: [resolved.trace] })
+      return { ok: false, error: unitRefusal, slug }
+    }
     // The cover (Matt 2026-09-09): the best exterior among the listing's own
     // photos, graded once each, the MLS hero kept when it already is one.
     const coverPhoto = await pickCoverPhoto({ listingKey: subject.listingKey, heroUrl: subject.photoUrl })
