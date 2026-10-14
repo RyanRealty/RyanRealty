@@ -432,6 +432,40 @@ jobs:
           path: e2e/visual-diffs/
           retention-days: 7
 
+  # Required land-path rollup (Matt 2026-10-14). Lighthouse and content-floor
+  # flake on main and must not jam the merge queue. lint / gates / unit always
+  # run; build / e2e / a11y run on app PRs. security-scan is a sibling workflow.
+  merge-gate:
+    if: always()
+    needs: [changes, lint, gates, unit, build, e2e, a11y]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Required checks passed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          APP: ${{ needs.changes.outputs.app }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          for key in lint gates unit; do
+            result=$(echo "$RESULTS" | jq -r --arg k "$key" '.[$k].result')
+            if [ "$result" != "success" ]; then
+              echo "::error::$key is $result"
+              exit 1
+            fi
+          done
+          if [ "$EVENT" = "pull_request" ] && [ "$APP" != "false" ]; then
+            for key in build e2e a11y; do
+              result=$(echo "$RESULTS" | jq -r --arg k "$key" '.[$k].result')
+              if [ "$result" != "success" ]; then
+                echo "::error::$key is $result on an app PR"
+                exit 1
+              fi
+            done
+          fi
+          echo "merge-gate green"
+
   # The one check to read: green only when every job above passed (or was
   # skipped by design: the build and its server jobs on pushes to main and on
   # docs-only PRs). A failed, cancelled or timed-out job turns it red.

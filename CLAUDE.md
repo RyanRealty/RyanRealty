@@ -4,9 +4,9 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **PRs only.** Never push or fast-forward to `main`. Branch, open a PR, merge. Unfinished work is `npm run push` only.
 
-**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except PRs labeled `hold-for-matt`.
+**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except PRs labeled `hold-for-matt`. Workflows enqueue that.
 
-**Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason and delete the branch.
+**Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason. The stale job keeps the branch.
 
 **Done.** Merged, Vercel production **READY**, and the live URL checked. `npm run ship` is the land path.
 
@@ -36,7 +36,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 ---
 
-Process (git, PRs, ship, DB writes, payload, waits): **[AGENTS.md](AGENTS.md)**. This file is the Claude-session domain canon. Do not copy process rules back here.
+Process: **[AGENTS.md](AGENTS.md)**. Domain canon stays here. Do not copy process rules back.
 
 # Ryan Realty — agent canon
 

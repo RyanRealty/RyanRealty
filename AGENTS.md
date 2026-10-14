@@ -4,9 +4,9 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **PRs only.** Never push or fast-forward to `main`. Branch, open a PR, merge. Unfinished work is `npm run push` only.
 
-**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except PRs labeled `hold-for-matt`.
+**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except PRs labeled `hold-for-matt`. Workflows enqueue that.
 
-**Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason and delete the branch.
+**Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason. The stale job keeps the branch.
 
 **Done.** Merged, Vercel production **READY**, and the live URL checked. `npm run ship` is the land path.
 
@@ -41,13 +41,14 @@ These outrank every later line in this file, every skill, and every handoff or p
 `CLAUDE.md` and `.cursor/rules` point here. Domain canon (data accuracy, voice, design, CMA rulings) stays in the file that owns the surface. Process does not.
 
 1. **PRs only.** Never `git push` `main`. Never fast-forward `main`. Branch from current `origin/main`, open a PR, merge that PR.
-2. **Auto-merge.** After opening a PR, run `gh pr merge --auto --squash --delete-branch` unless it is labeled `hold-for-matt`. Create that label if it is missing. Enable "Allow auto-merge" on the GitHub repo if it is off.
-3. **Stale PRs.** A PR older than 3 days is rebased and merged, or closed with a written reason and its branch deleted.
+2. **Auto-merge.** After opening a PR, run `gh pr merge --auto --squash --delete-branch` unless it is labeled `hold-for-matt`. Create that label if it is missing. Enable "Allow auto-merge" and "Automatically delete head branches" on the GitHub repo if they are off. `.github/workflows/pr-auto-merge.yml` queues the same command, drops auto-merge when `hold-for-matt` is added, and squash-merges after `merge-gate` + `security-scan` when the repo setting is still off.
+3. **Stale PRs.** A PR older than 3 days is rebased and merged, or closed with a written reason. `.github/workflows/pr-stale.yml` (daily + `workflow_dispatch`) labels `stale` at 3 days and closes after 2 more days, keeping the branch so the work is not lost. Skip `hold-for-matt`.
 4. **Done.** The PR is merged, the Vercel production deploy for that SHA is **READY**, and the live URL is checked. `npm run ship` is the land path. Unfinished work is `npm run push` plus a Current line in `docs/plans/CROSS_AGENT_HANDOFF.md`.
 5. **Payload.** Public pages respect the page payload budgets (`SSR_GRID_PAGE` in `lib/site/ssr-grid-page.ts`, `ci:page-payload`, Atlas props budget). Cap grids and schema lists. Never serialize the same listing or schema payload twice.
 6. **Waits.** No `sleep` polls. Use `gh pr checks --watch` or the CI wait the tool already has. R-221 still bans sitting on `gh run view` in a loop. **R-221:** do not poll GitHub Actions.
 7. **New process rules.** A standing process rule Matt issues lands in this file in the same PR as the work it governs.
 8. **DB writes.** Bots may write to the Ryan Realty Supabase DB when a task Matt asked for needs it. Sends stay drafts. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` in `lib/data/prospecting/drip-schedule.ts` stays `true`. Approved CMA and email wording do not change without Matt's sign-off.
+9. **merge-gate.** CI job `merge-gate` is the required land-path rollup: lint, gates, unit, and on app PRs build / e2e / a11y. Do not require Lighthouse or content-floor. A ruleset or branch protection on `main` should require `merge-gate` + `security-scan`, block direct pushes and force-pushes, require a PR, and let repository admins bypass in an emergency. This session's GitHub App token 403s Administration (`Resource not accessible by integration`); do not push an empty commit to `main` until the API shows protection is active.
 
 ---
 

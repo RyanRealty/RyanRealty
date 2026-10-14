@@ -5,7 +5,7 @@
 **Dispositions:** LOCKED (standing rule in force) · VERIFIED (built; per the source doc or map evidence) · PARTIAL · MISSING (not built — must cite a covering gap G-row) · PARKED (deliberate not-now) · GATED (waits on a Matt per-action approval) · SUPERSEDED.
 **Honesty:** VERIFIED here inherits from source docs and map evidence statuses. The v1 certification pass (VERSION-1) re-verifies; a disposition an accept test contradicts gets corrected, never argued with.
 **Covers column:** MISSING/PARTIAL rows cite the VERSION-1 gap (G-row) or owner that carries them. Ad-hoc work that touches a row updates it in the same change.
-**Max:** R-236 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
+**Max:** R-239 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
 
 ## The animals (what each is, how it improves)
 
@@ -65,7 +65,7 @@
 | R-030 | Full autonomy post-hoc for reversible work; per-action approval for outbound/publish/spend/OAuth only | CLAUDE.md §1 (Matt 2026-07-21) | LOCKED | — |
 | R-031 | Broker self-approval: content the broker initiates on the SMS line, APPROVE = stamp, Matt digest | CLAUDE.md §1 (2026-08-01) | LOCKED | — |
 | R-032 | Every rule that keeps being violated becomes a mechanical gate, not more prose | DECISIONS-RECORDED §9 | LOCKED | catalog `docs/MECHANICAL_GATES.md` |
-| R-033 | Production truth is origin/main; PRs only, never git push or fast-forward main; open every PR with auto-merge (squash, delete branch) except hold-for-matt; agents merge once checks pass; Done = merged + production READY + live URL checked; migrations same delivery | AGENTS.md CORE RULES; production-parity; Matt 2026-10-13/14 | LOCKED | — |
+| R-033 | Production truth is origin/main; PRs only, never git push or fast-forward main; open every PR with auto-merge (squash, delete branch) except hold-for-matt; agents merge once checks pass; Done = merged + production READY + live URL checked; migrations same delivery; workflows enqueue auto-merge and close stale PRs | AGENTS.md CORE RULES; production-parity; Matt 2026-10-13/14 | LOCKED | `.github/workflows/pr-auto-merge.yml`, `pr-stale.yml`; merge-gate |
 | R-034 | Done = merged + Vercel production READY + live URL checked (+ build, real data, screenshots 390/1280 on UI); per-class accept by goal type | AGENTS.md CORE RULES; definition-of-done; COMPANY_IMPROVEMENT §Accept; Matt 2026-10-14 | LOCKED | — |
 | R-035 | One recursive company process (THE LOOP); versions certify the whole; conditions never dates | Matt 2026-08-15; DEVELOPMENT_PROCESS | VERIFIED | v1.4.0 shipped |
 | R-036 | Everything remembered: durable work graph is the source of record; chat is disposable | Matt 2026-08-15 | VERIFIED | `loop_work_nodes` + loop-brief |
@@ -324,6 +324,9 @@
 | R-234 | No sleep-based waits. Use `gh pr checks --watch` or CI waits | Matt 2026-10-14 ADD | LOCKED | AGENTS.md CORE RULES |
 | R-235 | New process rules go into AGENTS.md in the same PR | Matt 2026-10-14 ADD | LOCKED | AGENTS.md CORE RULES |
 | R-236 | AGENTS.md is the single process-rule source; CLAUDE.md and .cursor/rules point to it instead of duplicating | Matt 2026-10-14 ADD | LOCKED | AGENTS.md; ci:core-rules-prefix (shared CORE RULES prefix for Grok's 10k cutoff) |
+| R-237 | Main is protected by a ruleset or branch protection: block direct pushes and force-pushes, require a PR, require merge-gate + security-scan (lint, gates, unit, and on app PRs build / e2e / a11y). Do not require Lighthouse or content-floor. Repository admins may bypass in an emergency | Matt 2026-10-14 ADD | PARTIAL | AGENTS.md process land path 9; this session's GitHub App 403s POST rulesets and PUT branch protection (`Resource not accessible by integration`) |
+| R-238 | Repo Allow auto-merge and delete-branch-on-merge stay on. `.github/workflows/pr-auto-merge.yml` runs `gh pr merge --auto --squash` unless hold-for-matt, and removes auto-merge when that label is added | Matt 2026-10-14 ADD | PARTIAL | Workflow shipped; PATCH allow_auto_merge 403s from the GitHub App (`Resource not accessible by integration`) |
+| R-239 | Daily stale-PR workflow (plus workflow_dispatch) labels open PRs older than 3 days `stale` (not hold-for-matt), then closes them after 2 more days with a reason and keeps the branch | Matt 2026-10-14 ADD | LOCKED | `.github/workflows/pr-stale.yml`; `scripts/pr-stale.mjs` |
 
 ## Standing Matt gates (never agent-closed)
 
