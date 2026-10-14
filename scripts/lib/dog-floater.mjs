@@ -2,8 +2,9 @@
  * dog-floater.mjs — SITE-153 floating dog CTA lock (crop: SITE-146).
  *
  * Matt 2026-09-21: mid-end (not the cream-on-cream cookie corner), brief
- * flip/spin/invert (not a continuous idle), six doors, click the dog to
- * toggle, no Close link. Inner head crop stays the SITE-146 lock.
+ * flip/spin/invert (not a continuous idle), six doors, click the disc to
+ * toggle, no Close link. The face is the attributed broker's existing
+ * headshot (Matt when the visit is not attributed).
  * Header Work with us is SITE-155 — this gate does not police V3Chrome.
  * Matt 2026-09-25 (SITE-210): a finger's look is released, so on a phone
  * the head always goes back to its normal pose.
@@ -35,9 +36,13 @@ const PATHS = Object.freeze({
   dock: 'components/site/v3/V3PhoneDock.client.tsx',
   stickyCss: 'components/site/v3/V3StickyAsk.css',
   listingPage: 'app/listing/[listingKey]/page.tsx',
+  helper: 'lib/site/floater-broker.ts',
   builder: 'scripts/build-jax-head.mjs',
   assetNavy: 'public/brand/jax-head-navy.png',
   assetCream: 'public/brand/jax-head-cream.png',
+  brokerMatt: 'public/images/brokers/ryan-matt.png',
+  brokerRebecca: 'public/images/brokers/peterson-rebecca.png',
+  brokerPaul: 'public/images/brokers/stevenson-paul.png',
   sealNavy: 'public/brand/jax-navy.png',
   sealWhite: 'public/brand/jax-white.png',
 })
@@ -73,6 +78,7 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   const dock = readRel(root, PATHS.dock, files.dock)
   const stickyCss = readRel(root, PATHS.stickyCss, files.stickyCss)
   const listingPage = readRel(root, PATHS.listingPage, files.listingPage)
+  const helper = readRel(root, PATHS.helper, files.helper)
   const builder = readRel(root, PATHS.builder, files.builder)
   const gazeTest = readRel(root, PATHS.gazeTest, files.gazeTest)
 
@@ -123,11 +129,42 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   if (!/tel:\$\{CONTACT\.phoneDirectTel\}/.test(floater)) {
     p.push(`${PATHS.floater}: Give us a call door must be tel:\${CONTACT.phoneDirectTel}.`)
   }
-  if (!floater.includes('/brand/jax-head-navy.png') || !floater.includes('/brand/jax-head-cream.png')) {
-    p.push(`${PATHS.floater}: must paint the inner dog-head crop (jax-head-navy / jax-head-cream), not the wordmark seal.`)
+  if (floater.includes('/brand/jax-head-navy.png') || floater.includes('/brand/jax-head-cream.png')) {
+    p.push(`${PATHS.floater}: FAB icon is the attributed broker headshot, not the dog head.`)
+  }
+  if (!floater.includes("from '@/lib/site/floater-broker'")) {
+    p.push(`${PATHS.floater}: must resolve the icon from lib/site/floater-broker (visit attribution, Matt default).`)
+  }
+  if (!floater.includes('floaterBrokerHeadshot') || !floater.includes('floaterBrokerSlug')) {
+    p.push(`${PATHS.floater}: must paint floaterBrokerHeadshot(broker) from floaterBrokerSlug.`)
+  }
+  if (!floater.includes('DEFAULT_FLOATER_BROKER')) {
+    p.push(`${PATHS.floater}: first paint must be DEFAULT_FLOATER_BROKER (Matt) so the static shell never reads cookies.`)
+  }
+  if (helper == null) {
+    p.push(`${PATHS.helper}: missing — floater broker icon resolver.`)
+  } else {
+    if (
+      !helper.includes('/images/brokers/ryan-matt.png') ||
+      !helper.includes('/images/brokers/peterson-rebecca.png') ||
+      !helper.includes('/images/brokers/stevenson-paul.png')
+    ) {
+      p.push(
+        `${PATHS.helper}: must map matt / rebecca / paul onto the existing public/images/brokers PNG headshots.`,
+      )
+    }
+    if (!/DEFAULT_FLOATER_BROKER[^=]*=\s*['"]matt['"]/.test(helper)) {
+      p.push(`${PATHS.helper}: DEFAULT_FLOATER_BROKER must be matt.`)
+    }
+    if (!helper.includes('resolveVisitBrokerSlug')) {
+      p.push(`${PATHS.helper}: must reuse resolveVisitBrokerSlug (?agent= → cookie → utm), not a second attribution path.`)
+    }
+    if (/profile-512/.test(helper)) {
+      p.push(`${PATHS.helper}: use the 800x1200 cutouts, not the tight 512 profile squares (those clip the crown in a circle).`)
+    }
   }
   if (/\bsrc=\{?['"`]\/brand\/jax-(white|navy)\.png/.test(stripComments(floater))) {
-    p.push(`${PATHS.floater}: FAB must be the inner dog-head circle, not the full RYAN REALTY seal.`)
+    p.push(`${PATHS.floater}: FAB must be the broker headshot, not the full RYAN REALTY seal.`)
   }
   if (/brand-kit\/rasta|blue-dog-transparent|white-dog-trans/.test(floater)) {
     p.push(`${PATHS.floater}: crop source is public/brand/jax-navy.png + jax-white.png. brand-kit/rasta is not on this tree.`)
@@ -177,11 +214,19 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
       p.push(`${PATHS.css}: notice motion must be ease-in-out, not a bounce ease.`)
     }
     p.push(...noticeMotionProblems(css, PATHS.css))
-    if (/object-fit:\s*cover/.test(css)) {
-      p.push(`${PATHS.css}: object-fit:cover crops muzzle/ears — use contain.`)
+    if (/object-fit:\s*fill/.test(css)) {
+      p.push(`${PATHS.css}: do not stretch the broker photo (no object-fit:fill).`)
     }
-    if (!/\.v3-dog-floater__dog\s*\{[^}]*object-fit:\s*contain/.test(css)) {
-      p.push(`${PATHS.css}: dog image must use object-fit:contain so the full head stays readable.`)
+    const brokerRule = css.match(/\.v3-dog-floater__broker\s*\{([^}]*)\}/)
+    if (!brokerRule) {
+      p.push(`${PATHS.css}: broker photo must be .v3-dog-floater__broker.`)
+    } else {
+      if (!/object-fit:\s*cover/.test(brokerRule[1])) {
+        p.push(`${PATHS.css}: broker photo must use object-fit:cover so the face fills the circle without stretching.`)
+      }
+      if (!/object-position:/.test(brokerRule[1])) {
+        p.push(`${PATHS.css}: broker photo must set object-position so the head sits inside the circle.`)
+      }
     }
     const headRule = css.match(/\.v3-dog-floater__head\s*\{([^}]*)\}/)
     if (headRule && /overflow:\s*hidden/.test(headRule[1]) && /animation:/.test(headRule[1])) {
@@ -233,6 +278,11 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   }
   if (!existsSync(join(root, PATHS.assetCream))) {
     p.push(`${PATHS.assetCream}: missing inner cream dog-head crop.`)
+  }
+  for (const rel of [PATHS.brokerMatt, PATHS.brokerRebecca, PATHS.brokerPaul]) {
+    if (!existsSync(join(root, rel))) {
+      p.push(`${rel}: missing canonical broker headshot for the floater.`)
+    }
   }
   p.push(...sealSourceProblems(builder, PATHS.builder))
 

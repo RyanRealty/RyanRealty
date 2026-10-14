@@ -27,7 +27,7 @@ This loop owns the layer the growth-loop does NOT: Google Business Profile, the 
 | Citation phone | 541.703.3095 (tracked inbound bio phone — canonical on GBP + every directory so inbound attributes) | design system §Voice; `lib/listing-cta.ts` |
 | Website | https://ryan-realty.com | canon |
 | Email | matt@ryan-realty.com | canon |
-| Business license | Ryan Realty LLC #201253677, founded 2023-06-21 (OREA-authoritative) | memory `reference_orea_license_records` |
+| Business license | Ryan Realty LLC, OREA registered business name 201253677; Matt's principal-broker affiliation 2023-06-21 = Bend office opened. Founded 2014 (Matt 2026-10-08); JSON-LD foundingDate '2014'. Never print 2023 as the founding. | OREA License Lookup 2026-10-08; `lib/brand/contact.ts` (`llcSince`, `bendOfficeOpened`, `firmLicense`) |
 | Brokers | Matt Ryan PB #201206613 · Paul Stevenson #201259123 · Rebecca Peterson #201254727 | same |
 | Service areas | Bend, Redmond, Sisters, Sunriver, Tumalo, Terrebonne, La Pine, Prineville, Madras (16-city region in `market_pulse_live`) | gbp SKILL §2b |
 | Socials (sameAs) | @ryanrealtybend on every platform; /ryanrealtybend on FB + LinkedIn | design system, locked 2026-05-13 |

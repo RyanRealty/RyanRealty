@@ -30,8 +30,10 @@ import {
   type PricePath,
 } from '@/lib/cma/price-path'
 import { collapseExpiredPeerCycles, peerMatchesSubject } from '@/lib/cma/market-status'
+import { listingStretchRead } from '@/lib/cma/last-stretch'
 import { readAskOutcome } from '@/lib/cma/market-area-chapters'
 import { FAILED_ASK_BACKTEST, askAgainstRangeSentence } from '@/lib/cma/expired-audit'
+import { measuresLastOfSeveralAsks } from '@/lib/cma/ask-story'
 import { SOLD_PPSF_NET_ROW_LABEL, subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
 import { salesAreaIsBounded } from '@/lib/pricing/comp-area'
 import { comparisonSalePrice, concessionOnSale } from '@/lib/pricing/seller-net'
@@ -53,10 +55,20 @@ export const DID_NOT_SELL_HEADING = 'The listings near you that did not sell.'
  * when the seller's own listing is the one that came off, and "like yours"
  * because the search reads the subject's own type and price band, and an
  * area can hold unsold homes that are not like it (Jackson's two).
+ *
+ * When the chapter's sentence counts homes that did come off unsold and are
+ * not like this one, the heading says that, not that none came off: 1355
+ * Jacksonville printed "No other listing like yours near you came off
+ * unsold." directly over "One home ... came off the market without selling"
+ * (reader review 2026-10-08), which read as a contradiction.
  */
-export function didNotSellHeading(input: { shown: number; ownFailed: boolean }): string {
+export function didNotSellHeading(input: { shown: number; ownFailed: boolean; unlikeCount?: number }): string {
   if (input.shown > 0) return DID_NOT_SELL_HEADING
-  return `No ${input.ownFailed ? 'other ' : ''}listing like yours near you came off unsold.`
+  const other = input.ownFailed ? 'other ' : ''
+  const unlike = input.unlikeCount ?? 0
+  if (unlike === 1) return `The ${other}listing near you that did not sell is not like yours.`
+  if (unlike > 1) return `The ${other}listings near you that did not sell are not like yours.`
+  return `No ${other}listing like yours near you came off unsold.`
 }
 
 /**
@@ -317,7 +329,13 @@ export function didNotSellStories(a: DidNotSellArgs): Story[] {
       // when chapter 1 is not in this document to carry it.
       lead: a.askVerdictInChapterOne
         ? ''
-        : askAgainstRangeSentence(s.lastListPrice ?? null, a.rangeLow ?? null, a.rangeHigh ?? null),
+        : askAgainstRangeSentence(s.lastListPrice ?? null, a.rangeLow ?? null, a.rangeHigh ?? null, {
+            // Measured on the last ask: say so when the period opened at another price.
+            lastOfSeveral: measuresLastOfSeveralAsks(s.lastListPrice ?? null, [
+              ...(a.finalCycle?.initialAsk != null ? [a.finalCycle.initialAsk] : []),
+              ...(a.finalCycle?.cuts ?? []).map((c) => c.ask),
+            ]),
+          }),
     })
   }
   const peers = collapseExpiredPeerCycles(
@@ -345,7 +363,8 @@ export function didNotSellStories(a: DidNotSellArgs): Story[] {
       path: pricePathFromListing({
         address: p.address,
         listPrice: p.listPrice,
-        originalListPrice: p.originalListPrice,
+        // The first ask of the stretch its days count (Matt 2026-10-08).
+        originalListPrice: listingStretchRead(p).firstAsk,
         onMarketDate: p.onMarketDate,
         daysOnMarket: p.daysOnMarket,
         status: p.status,

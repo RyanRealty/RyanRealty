@@ -153,6 +153,7 @@ describe('the plat page wires the family both ways (the lock, Matt 2026-09-23)',
     expect(page).toMatch(/trail=\{withFamilyCrumb\(/)
     expect(page).toMatch(/\{ name: familyUp\.label, url: familyUp\.href \}/)
     expect(page).toMatch(/<a href=\{familyLine\.href\}>\{familyLine\.linkLabel\}<\/a>/)
+    expect(page).toMatch(/All \{resortLabel\} real estate/)
   })
 
   it('lists every phase down from the family page', () => {

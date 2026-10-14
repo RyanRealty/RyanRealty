@@ -43,6 +43,7 @@ import { ActionSwapText } from '@/components/motion/action-swap'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
 import { PriceDropMark } from './PriceDropMark'
+import { ListingFoldActions } from './ListingFoldActions'
 
 /**
  * PriceCtaStrip — price + address + pill row + CTA hierarchy under the hero.
@@ -126,6 +127,11 @@ type Props = {
   onShare?: (listingKey: string) => void
   /** Override the default contact-tour href. */
   scheduleHref?: string
+  /**
+   * /book for this listing's broker. Mobile "Walk through it" uses this when
+   * set, matching V3ListingClose. Falls back to the contact-tour href.
+   */
+  bookHref?: string
   /** Override the default ask-question href. */
   askHref?: string
   /**
@@ -185,6 +191,7 @@ export function PriceCtaStrip({
   signedIn = false,
   onShare,
   scheduleHref,
+  bookHref,
   askHref,
   ratePct,
   showEstPayment = true,
@@ -379,7 +386,7 @@ export function PriceCtaStrip({
   const shareTitle = street || `Listing ${listing.listNumber ?? listing.listingKey}`
 
   return (
-    <div className={cn('listing-face', className)}>
+    <div className={cn('listing-face', !offMarket && 'listing-face--has-fold', className)}>
       <div>
       <div className="listing-face__title">
       <h1 className="listing-ask">
@@ -451,6 +458,14 @@ export function PriceCtaStrip({
         )}
       </ButtonGroup>
       </div>
+      {!offMarket ? (
+        <ListingFoldActions
+          listingKey={listing.listingKey}
+          addressLine={street}
+          askHref={askHrefResolved}
+          walkHref={bookHref ?? tourHref}
+        />
+      ) : null}
       {listedBy ? (
         <div className="listing-face__listed">
           {listedBy}

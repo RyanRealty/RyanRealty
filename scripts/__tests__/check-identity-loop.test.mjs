@@ -94,9 +94,8 @@ describe('check-identity-loop — rules 4-7: wiring on the real tree', () => {
     ['lib/visitor-backfill.ts', '.or(NOT_AUTOMATION_FILTER)', '', 'the browser back-stitch identifies sessions flagged as automation'],
     ['public/rr-doc-tracker.js', 'if (gpcOn()) {', 'if (false) {', 'the client-document tracker posts or grants for a browser sending Global Privacy Control'],
     ['public/rr-doc-tracker.js', "var automated = navigator.webdriver === true ? '&webdriver=1' : ''", "var automated = ''", 'the client-document tracker no longer tells the identify ping the browser is automated'],
-    ['components/CookieConsentBanner.tsx', "gpc: gpcFromNavigator(typeof navigator !== 'undefined' ? navigator : undefined),", 'gpc: false,', 'the campaign-link grant can write consent for a browser sending Global Privacy Control'],
-    // the review of 2026-09-30, second round
-    ['components/CookieConsentBanner.tsx', 'search: pageArrival()?.search ?? window.location.search,', 'search: window.location.search,', 'the campaign-link grant is judged on the current address, not the one the page arrived on'],
+    ['lib/identity/consent.ts', 'void args.search', 'void 0', 'arrivalConsent reads the arrival query to auto-grant marketing from an ad click'],
+    ['public/rr-doc-tracker.js', 'var consentAtArrival = function () {\n      return consentNow()\n    }', 'var consentAtArrival = function () {\n      return \'all\'\n    }', 'the client-document tracker auto-grants marketing from a campaign link'],
     ['components/PersonIdentityBridge.tsx', 'const sessionId = await postedSession(IDENTIFY_WAIT_MS)', 'const sessionId = readRrSessionId()', "the identity bridge identifies the session in storage before the click, not the one the tracker's first post landed in"],
     ['components/VisitTracker.tsx', "if (typeof payload.sessionId === 'string') notePostedSession(payload.sessionId)", 'void 0', 'VisitTracker no longer says which session its posts landed in (the identity bridge waits for it)'],
     ['lib/visitor-backfill.ts', 'const NOT_AUTOMATION_FILTER = IDENTIFIABLE_SESSION_FILTER', "const NOT_AUTOMATION_FILTER = 'is_automated.eq.false'", 'the back-stitch filter is written out by hand again, free to drift from the rule the identify paths read'],

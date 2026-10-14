@@ -17,6 +17,7 @@ import {
   competitionEmptySourceLine,
   competitorCutLine,
   nearestOpening,
+  storedCompetitionSentenceToday,
   withoutMapPointer,
   type BandRivalsInput,
 } from '@/lib/cma/band-rivals'
@@ -24,6 +25,7 @@ import {
   marketAreaPriceBand,
   noOtherPeerSentence,
   noPeerInAreaSentence,
+  storedPeerSentenceToday,
   unsoldAreaTotalSentence,
 } from '@/lib/cma/market-status'
 import { formatClientMlsField } from '@/lib/cma/client-facing'
@@ -32,7 +34,7 @@ import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { normalizeAgentSlug } from '@/lib/agent-attribution'
 import { BRAND } from '@/lib/brand/contact'
 import { TESTIMONIALS } from '@/lib/testimonials'
-import { UNADDRESSED_DOC_LINKS, cleanText, countWord, dateLong, dottedPhone, escapeHtml, int, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
+import { UNADDRESSED_DOC_LINKS, cleanText, countWord, dateLong, dottedPhone, escapeHtml, int, monthYear, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import {
   chapter2bSourceLine,
@@ -77,11 +79,19 @@ import {
   mapPage,
   pricingPage,
   salesThatSetItPage,
+  salesThatSetItPhrase,
   whatItsWorthSearchStory,
   worthRangeRounded,
   type PricingPageInput,
 } from '@/lib/cma/render-pricing-page'
-import { activeRivalsFor, competitionSetWithoutSubject, unsoldPeersFor } from '@/lib/cma/matrix-sets'
+import { lotDifferenceSentence } from '@/lib/cma/lot-disclosure'
+import {
+  activeRivalsFor,
+  competitionDrawArea,
+  competitionSetWithoutSubject,
+  letterIsFrozen,
+  unsoldPeersFor,
+} from '@/lib/cma/matrix-sets'
 import { letterProductMatch, productClass } from '@/lib/cma/market-area'
 import { realSubdivisionName } from '@/lib/pricing/classes'
 import { namedSalesPlace, salesAreaIsBounded } from '@/lib/pricing/comp-area'
@@ -95,7 +105,8 @@ import {
 } from '@/lib/cma/matrix-entry'
 import { renderMatrixHtml, subjectListingFailed, subjectPrintableAsk } from '@/lib/cma/comp-matrix'
 import { compAreaSentence } from '@/lib/cma/matrix-sets'
-import { setAsideCompIndexes, setAsideSalePredicate } from '@/lib/cma/set-aside'
+import { readSetAsideSales, setAsideCompIndexes, setAsideSalePredicate } from '@/lib/cma/set-aside'
+import { excludedSaleReason } from '@/lib/cma/excluded-sale-note'
 import { statusPriceBoardHtml, statusPriceSummaries, splitActivePending } from '@/lib/cma/status-price-summary'
 import type { LikeHomeCredit } from '@/lib/cma/like-home-credits'
 import { sellerCostLines } from '@/lib/pricing/seller-net'
@@ -104,8 +115,9 @@ import { heldForMatt, heldUnderBand } from '@/lib/cma/cover-value'
 import { expectedSaleNear, netAtExpectedSale, netCreditsSentence, type NetTwoColumns } from '@/lib/cma/expected-sale'
 import { SALES_METHOD_LABEL, adjustedForPhrase, salesMethodSentences } from '@/lib/cma/sales-method-note'
 import { adjustmentNouns, adjustmentsApplied, joinAnd } from '@/lib/cma/adjustments-applied'
-import { salesSetOnlyTheRange } from '@/lib/cma/sales-role'
-import { CLOSED_SET_RANGE_LABEL } from '@/lib/cma/comp-pin-map'
+import { salesRole, salesSetOnlyTheRange, setWhat } from '@/lib/cma/sales-role'
+import { plainTextOf, sayOnceAfter } from '@/lib/cma/say-once'
+import { CLOSED_SET_RANGE_LABEL, CLOSED_SET_VALUE_LABEL } from '@/lib/cma/comp-pin-map'
 import type { CmaBroker, CmaClient, CmaSellerNetLine } from '@/lib/cma/types'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { CmaExtras } from '@/lib/cma/extras'
@@ -118,6 +130,7 @@ import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { askStepped, resolveAskPosition } from '@/lib/cma/ask-position'
+import { subjectFirstAsk } from '@/lib/cma/last-stretch'
 import { competitionBandBasisSentence } from '@/lib/cma/competition-band-basis'
 import { subjectOnMarket } from '@/lib/cma/subject-on-market'
 import {
@@ -213,6 +226,13 @@ export type OpinionPageArgs = {
   documentStatus?: string | null
   /** Credits homes like this one actually gave. Drafts only. */
   likeHomeCredits?: Pick<LikeHomeCredit, 'sentence' | 'source'> | null
+  /**
+   * Sales rule 20 refused, with the sentence the walk recorded (SKILL §0.3
+   * rule 29). The street list prints that sentence beside a sale that is not
+   * in the price set. Absent on letters built before the field landed; the
+   * note then asks the same price-set decision.
+   */
+  excludedSaleNotes?: import('@/lib/pricing/price-set').NotSettingSale[] | null
 }
 
 
@@ -286,7 +306,9 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
       unsoldPeersFor({
         subject: a.subject,
         peers: a.expiredPeers?.peers ?? a.extras?.marketArea?.expiredPeers,
-        area: a.compArea,
+        area: competitionDrawArea(a.compArea, a.expiredPeers),
+        buildArea: a.expiredPeers?.area ?? null,
+        frozen: letterIsFrozen(a.documentStatus),
       }),
       a.docLinks ?? null,
       a.subject.city,
@@ -296,7 +318,8 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
       activeRivalsFor(
         a.bandRivals?.rivals ?? a.extras?.band?.rivals,
         a.subject,
-        a.compArea ?? a.bandRivals?.area,
+        competitionDrawArea(a.compArea ?? a.bandRivals?.area, a.bandRivals),
+        { buildArea: a.bandRivals?.area ?? null, frozen: letterIsFrozen(a.documentStatus) },
       ),
       a.docLinks ?? null,
       a.subject.city,
@@ -325,9 +348,17 @@ export function mapArgs(a: OpinionPageArgs) {
     mapOverlay: a.mapOverlay,
     areaSentence: compAreaSentence(a),
     // "These set the price" is not true of sales under a cover they did not
-    // set (lib/cma/sales-role.ts; reader review, 20676 Wild Rose, 2026-10-08).
-    closedLabel: salesSetOnlyTheRange(a.pricing, gridSales(a).comps) ? CLOSED_SET_RANGE_LABEL : null,
+    // set (lib/cma/sales-role.ts; reader review, 20676 Wild Rose, 2026-10-08),
+    // nor of a home on the market, whose cover is a value (3062 NW Kelly
+    // Hill, 2026-10-09).
+    closedLabel: closedLegendLabel(a),
   }
+}
+
+/** The map legend's closed-sales line, by what the sales set on this letter. */
+function closedLegendLabel(a: OpinionPageArgs): string | null {
+  const role = salesRole(a.pricing, gridSales(a).comps, { onMarket: subjectOnMarket(a) })
+  return role === 'range' ? CLOSED_SET_RANGE_LABEL : role === 'value' ? CLOSED_SET_VALUE_LABEL : null
 }
 
 /**
@@ -379,10 +410,12 @@ export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
     finalCycle: a.expiredAudit?.finalCycle ?? null,
     askExposure: a.expiredAudit?.askExposure ?? null,
     asOfIso: a.generatedAtIso,
+    onMarket: subjectOnMarket(a),
     rivals: activeRivalsFor(
       a.bandRivals?.rivals ?? a.extras?.band?.rivals,
       a.subject,
-      a.bandRivals?.area ?? a.compArea,
+      competitionDrawArea(a.compArea ?? a.bandRivals?.area, a.bandRivals),
+      { buildArea: a.bandRivals?.area ?? null, frozen: letterIsFrozen(a.documentStatus) },
     ).map((r) => ({
       address: r.address,
       yearBuilt: r.yearBuilt ?? null,
@@ -622,9 +655,15 @@ export function sellerNetColumns(a: OpinionPageArgs): NetTwoColumns | null {
   return netAtExpectedSale({ pricing: grid.pricing, comps: grid.comps, sheet: base })
 }
 
-/** The chapter title. A list-only sheet is a net at list; two columns are not. */
+/**
+ * The chapter title. A list-only sheet is a net at list; two columns are not.
+ * On a letter held for Matt the one column is "At the price on the cover"
+ * (netListHeader), and the title over it said "Net at list" (reader review
+ * 2026-10-08): the title names the same price its column does.
+ */
 export function sellerNetHeading(a: OpinionPageArgs): string {
-  return sellerNetColumns(a) ? 'Net from the sale' : 'Net at list'
+  if (sellerNetColumns(a)) return 'Net from the sale'
+  return heldForMatt(a.pricing) ? `Net at ${COVER_PRICE_PHRASE}` : 'Net at list'
 }
 
 /** The eyebrow over the immersive twin. Never "What you keep" on a partial net. */
@@ -790,6 +829,11 @@ export function failedAskBacktestHtml(a: OpinionPageArgs, doc: 'letter' | 'immer
     city: a.subject.city,
     latitude: a.subject.latitude,
     longitude: a.subject.longitude,
+    // Its own listing's days, so the count can say when the home is in it.
+    status: a.subject.standardStatus,
+    listDate: a.subject.lastListDate,
+    onMarketDate: a.subject.stretch?.from ?? a.subject.firstOnMarketAt ?? null,
+    offMarketDate: a.expiredAudit?.finalCycle?.offMarketDate ?? null,
   })
 }
 
@@ -880,6 +924,8 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
     // above the range before it came inside (reader review 2026-10-08). With
     // no exposure on the row the split is unknown and no claim is made.
     segments: askExposureFor(a)?.segments ?? [],
+    // Every price the line draws, so a gap measured on the last ask says so.
+    asks: timeline.steps.map((s) => s.ask),
   })
   return `<div class="szn timeline-wide">${wide}</div>
   ${phone ? `<div class="szn timeline-phone">${phone}</div>` : ''}
@@ -890,11 +936,11 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
 /**
  * The market during the listing, under the ask line.
  *
- * The picture is two slopes in one comparison — the sale price, then the
- * price per square foot — because those are two units. The dates and the
- * median size are said once. The sentence states both moves, and the size
- * when that is what makes them disagree. The parent-place story, when the
- * row has one, is the block under this chart.
+ * The picture is two slopes in one comparison, because sale price and price
+ * per square foot are two units. The dates and the median size are said once.
+ * When the two windows are not one size of home, the per-foot slope leads and
+ * the sale-price slope says "different sizes" (listingMarketSentence). The
+ * parent-place story, when the row has one, is the block under this chart.
  */
 function listingMarketHtml(move: ListingMarketMove | null | undefined): string {
   if (!move) return ''
@@ -972,11 +1018,28 @@ export function askExposureFor(a: OpinionPageArgs): AskExposure | null {
  * title says where it stands and nothing more (class D).
  */
 export function whatHappenedHeading(a: OpinionPageArgs): string {
+  const line = whatHappenedAskLine(a)
+  // A listing that came back is told on its last stretch, and the letter says
+  // so (Matt 2026-10-08, "Last stretch, labeled").
+  const cycle = a.expiredAudit?.finalCycle ?? null
+  if (!cycle?.restarted || readSubjectStatus(a)?.isActiveWithOtherBrokerage) return line
+  const from = cycle.listDate ? dateLong(cycle.listDate, { month: 'short', day: 'numeric', year: undefined }) : null
+  return from && from !== '—' ? `${line} Counted from ${from}, when your home last came on the market.` : line
+}
+
+function whatHappenedAskLine(a: OpinionPageArgs): string {
   const status = readSubjectStatus(a)
   const exposure = askExposureFor(a)
+  // The first ask of the home's last stretch on the market, never an ask from
+  // before it (Matt 2026-10-08): 20676 Wild Rose printed "You first asked
+  // $625,000", its Coming Soon price, when it was Active only at $599,900.
   const position = resolveAskPosition({
     lastListPrice: a.subject.lastListPrice,
-    originalListPrice: a.subject.originalListPrice,
+    originalListPrice: subjectFirstAsk({
+      subject: a.subject,
+      exposure,
+      finalCycle: a.expiredAudit?.finalCycle ?? null,
+    }),
     exposure,
   })
   if (status?.isActiveWithOtherBrokerage) {
@@ -1200,7 +1263,7 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
     const ownFailed = subjectListingFailed(a.subject) && Boolean(sets.subject.outcome)
     // A stored "so none are on this map" points at a map this page does not
     // have (2382 Jackson); the counts and places stay as stored.
-    const storedSentence = unsoldCountSentence(a) ?? withoutMapPointer(a.expiredPeers?.sentence?.trim() ?? '')
+    const storedSentence = unsoldCountSentence(a, ownFailed) ?? withoutMapPointer(a.expiredPeers?.sentence?.trim() ?? '')
     const storedCount = a.expiredPeers ? (a.expiredPeers.count ?? a.expiredPeers.peers?.length ?? 0) : 0
     const said = !a.expiredPeers
       ? ''
@@ -1237,7 +1300,9 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
         // passed the sales rules. It prints only when the table is the set it
         // counted (rule 17): an old row whose stored sentence counted peers
         // outside the sales area prints the count it shows instead.
-        const story = a.expiredPeers?.sentence?.trim() ?? ''
+        // A stored short count names the whole search area today
+        // (storedPeerSentenceToday; 915 Saginaw, reader review 2026-10-09).
+        const story = a.expiredPeers ? storedPeerSentenceToday(a.expiredPeers.sentence?.trim() ?? '', a.expiredPeers) : ''
         if (story && sets.unsold.length === (a.expiredPeers?.count ?? 0)) return `<p>${esc(story)}</p>`
         const n = sets.unsold.length
         const line = `${countWord(n)} ${n === 1 ? 'listing' : 'listings'} came off without selling.`
@@ -1269,20 +1334,44 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
  * off near this price with no count. Null when the row's stored
  * sentence is not that count.
  */
-function unsoldCountSentence(a: OpinionPageArgs): string | null {
+function unsoldCountSentence(a: OpinionPageArgs, ownFailed = false): string | null {
   const peers = a.expiredPeers
   if (!peers) return null
   const count = peers.count ?? peers.peers?.length ?? 0
   const total = peers.areaTotal ?? 0
   if (count !== 0 || !(total > 0)) return null
   // Only the stored count of unlike homes is rewritten; any other stored
-  // zero sentence prints as it was written.
-  if (!/None were close to this home/.test(peers.sentence ?? '')) return null
+  // zero sentence prints as it was written. The old sentence named four
+  // reasons ("close to this home in bedrooms, bathrooms, size or age") that
+  // were not all true of the homes it counted (3062 NW Kelly Hill, reader
+  // review 2026-10-08), so it is rewritten with the homes' own reasons when
+  // the row carries them, and with no reason it cannot back when it does not.
+  if (!/close to this home in bedrooms, bathrooms, size or age/.test(peers.sentence ?? '')) return null
   const area = (peers.area ?? null) as import('@/lib/pricing/comp-area').CompArea | null
   const center = Number(a.bandRivals?.bandBasis?.center)
   const band = peers.priceBand ?? (center > 0 ? marketAreaPriceBand(center) : null)
   if (!area) return null
-  return unsoldAreaTotalSentence({ area, areaTotal: total, windowMonths: peers.windowMonths, priceBand: band })
+  return unsoldAreaTotalSentence({
+    area,
+    areaTotal: total,
+    windowMonths: peers.windowMonths,
+    priceBand: band,
+    unlike: peers.unlike ?? null,
+    other: ownFailed,
+  })
+}
+
+/**
+ * The homes the did-not-sell chapter counts as came off in the area and not
+ * like this one, when that count is the chapter's sentence: no peer drawn,
+ * the stored peer count zero, and an area total above zero.
+ */
+function unlikeUnsoldCount(a: OpinionPageArgs, shown: number): number {
+  const peers = a.expiredPeers
+  if (!peers || shown > 0) return 0
+  const count = peers.count ?? peers.peers?.length ?? 0
+  const total = peers.areaTotal ?? 0
+  return count === 0 && total > 0 ? total : 0
 }
 
 /**
@@ -1308,6 +1397,7 @@ export function didNotSellHeadingFor(a: OpinionPageArgs): string {
   return didNotSellHeading({
     shown: sets.unsold.length,
     ownFailed: subjectListingFailed(a.subject) && Boolean(sets.subject.outcome),
+    unlikeCount: unlikeUnsoldCount(a, sets.unsold.length),
   })
 }
 
@@ -1440,30 +1530,49 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
   // quotable pair in the document (tasteReview round three, §3). The adjusted
   // pair is the one the chapter of the answer states, rounded the same way, so
   // a reader meets both halves of "homes like yours" in one line.
-  const worth = worthRangeRounded(a.pricing, a.comps)
   // THE ADJUSTMENTS THE LETTER WAS PRICED ON, NAMED OFF THE SALES (reader
   // review, 2382 Jackson, 2026-10-07): a pocket letter with no size line
   // printed "before adjusting for date and size".
+  // The adjusted dollar span is the price chapter's sentence. Restating it
+  // here is the repeated sentence (reader review, 915 Saginaw, 2026-10-08).
   const adjustedFor = adjustedForPhrase(kept)
-  const supported = adjustedFor ? '; adjusted, they support' : '; they support'
-  const adjusted =
-    worth.low > 0 && worth.high > 0
-      ? worth.low === worth.high
-        ? `${supported} ${usd(worth.low)}`
-        : `${supported} ${usd(worth.low)} to ${usd(worth.high)}`
-      : ''
   // On a letter held for Matt the cover number is under his review, not yet
   // the owner's price (reader review 2026-10-08).
-  const whose = heldForMatt(a.pricing) ? COVER_PRICE_PHRASE : 'your price'
-  // On a cover the weights did not make (a rule 26 hold, or a cover held to
-  // the sale on the subject's street) the sales set the range, not the cover
-  // (lib/cma/sales-role.ts; reader review, 20676 Wild Rose, 2026-10-08).
-  const which = salesSetOnlyTheRange(a.pricing, a.comps) ? 'that set the range' : `behind ${whose}`
+  // A home on the market gets an opinion of value, never "your price" (rule 27).
+  const whose = subjectOnMarket(a) ? 'this value' : heldForMatt(a.pricing) ? COVER_PRICE_PHRASE : 'your price'
+  // On a cover the weights did not make (a rule 26 hold, a cover held to the
+  // sale on the subject's street, or a held cover the failed-ask ceiling set)
+  // the sales set the range, not the cover (lib/cma/sales-role.ts; reader
+  // reviews, 20676 Wild Rose and 62475 Woodsman, 2026-10-08). Read off the
+  // grid the letter prints, as every other page asks it.
+  const which = salesSetOnlyTheRange(a.pricing, gridSales(a).comps) ? 'that set the range' : `behind ${whose}`
   return `<p class="chart-read">${esc(
     `The ${countWord(keptSaleCount(a.pricing, a.comps))} sales ${which} sold for ${usd(
       Math.min(...closes),
-    )} to ${usd(Math.max(...closes))}${adjustedFor ? ` before adjusting for ${adjustedFor}` : ''}${adjusted}.`,
+    )} to ${usd(Math.max(...closes))}${adjustedFor ? ` before adjusting for ${adjustedFor}` : ''}.`,
   )}</p>`
+}
+
+/**
+ * "17 sales closed in Pheasant Hill between 2017 and 2026." The count is of
+ * closed sales (`computeSubdivisionFacts` counts sale rows), and one home can
+ * sell twice inside the window, so the sentence never says "17 homes have
+ * sold" (1648 Pheasant, reader review 2026-10-08).
+ */
+export function subdivisionSalesCountSentence(totalSales: number, name: string, span: string): string {
+  const n = Math.round(totalSales)
+  return `${int(n)} ${n === 1 ? 'sale' : 'sales'} closed in ${name}${span}.`
+}
+
+/**
+ * "Mar 2022": the month a street sale closed. Read off the calendar day, so a
+ * close stored as UTC midnight on the 1st never prints the month before.
+ */
+export function streetSaleMonth(closeDate: string | null | undefined): string {
+  const day = (closeDate ?? '').trim().slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return ''
+  const said = monthYear(day)
+  return /\d{4}$/.test(said) ? said : ''
 }
 
 /**
@@ -1481,6 +1590,13 @@ function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): stri
   const recent = [...(a.subdivisionStory?.notableSales ?? [])]
     .filter((n) => n.address.trim())
     .slice(0, 4)
+  // The price chapter's setters. A history sale that is one of them gets no
+  // extra line. A sale printed here that did not set the price says so once,
+  // beside the chip, in the words the engine recorded (rule 29).
+  const weighed = gridSales(a)
+  const asideIndexes = setAsideCompIndexes(weighed.pricing, weighed.comps)
+  const setters = weighed.comps.filter((_, i) => !asideIndexes.has(i))
+  const setAside = readSetAsideSales(weighed.pricing)
   const links = recent
     .map((n) => {
       // THE SALE'S OWN LISTING PAGE. `trackedDocLink('listing', …)` falls back
@@ -1502,10 +1618,22 @@ function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): stri
       )
       // 21px tall inline links were the last sub-44px targets on the phone
       // (tasteReview round two, item 3). The address and its price travel as
-      // ONE tappable chip, which is also how they read.
-      return `<a class="street-sale" href="${esc(href)}" data-rr-track="cma-street-sale">${esc(
+      // ONE tappable chip, which is also how they read. The chip carries the
+      // month it closed: 2745 Aldrich's "2757 Aldrich $550,000" was a March
+      // 2022 sale printed beside current numbers (reader review 2026-10-08).
+      const when = streetSaleMonth(n.closeDate)
+      const chip = `<a class="street-sale" href="${esc(href)}" data-rr-track="cma-street-sale">${esc(
         n.address,
-      )} <span class="n">${usd(n.closePrice)}</span></a>`
+      )} <span class="n">${usd(n.closePrice)}</span>${when ? ` <span class="d">${esc(when)}</span>` : ''}</a>`
+      const why = excludedSaleReason({
+        sale: n,
+        subject: a.subject,
+        setters,
+        setAside,
+        notes: a.excludedSaleNotes,
+      })
+      if (!why) return chip
+      return `<span class="street-sale-wrap">${chip}<span class="street-sale-why">${esc(why)}</span></span>`
     })
     .join('')
   const sub = (text: string) =>
@@ -1519,7 +1647,7 @@ function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): stri
       ? ` between ${Math.min(...years)} and ${Math.max(...years)}`
       : ''
   return `${sub(name)}
-  <p>${int(f.totalSales)} homes have sold in ${esc(name)}${esc(span)}.${
+  <p>${esc(subdivisionSalesCountSentence(f.totalSales, name, span))}${
     links ? ` The most recent ${recent.length === 1 ? 'one' : countWord(recent.length)}:` : ''
   }</p>
   ${links ? `<p class="street-sales">${links}</p>` : ''}
@@ -1606,7 +1734,7 @@ export function adjustedForClause(comps: readonly CmaAdjustedComp[]): string {
 export function salesMethodHtml(a: OpinionPageArgs): string {
   if (!a.pricing || !a.subject) return ''
   const grid = gridSales(a)
-  const { tail } = whatItsWorthSearchStory({
+  const { heading, tail } = whatItsWorthSearchStory({
     subdivision: a.subject.subdivision,
     comps: grid.comps,
     tiersUsed: a.tiersUsed,
@@ -1618,6 +1746,7 @@ export function salesMethodHtml(a: OpinionPageArgs): string {
     comps: grid.comps,
     pricing: grid.pricing,
     searchTail: tail,
+    searchHead: heading,
     onMarket: subjectOnMarket(a),
   })
   if (sentences.length === 0) return ''
@@ -1642,20 +1771,47 @@ function basisSaleCounts(a: OpinionPageArgs): { kept: number; aside: number } {
 function basisSalesClause(a: OpinionPageArgs): string {
   const { kept, aside } = basisSaleCounts(a)
   const sales = `${countWord(kept)} closed comparable ${kept === 1 ? 'sale' : 'sales'}`
-  // On a cover the sales did not set (lib/cma/sales-role.ts) they set the range.
-  const set = salesSetOnlyTheRange(a.pricing, gridSales(a).comps) ? 'set the range' : 'set the price'
+  // On a cover the sales did not set (lib/cma/sales-role.ts) they set the
+  // range; on a home on the market, the value.
+  const set = setWhat(salesRole(a.pricing, gridSales(a).comps, { onMarket: subjectOnMarket(a) }))
   return aside > 0
     ? `The value range rests on the ${sales} that ${set}, from the Oregon Data Share MLS`
     : `The value range rests on ${sales} from the Oregon Data Share MLS`
 }
 
+/**
+ * The grid the set-aside sales sit in is the one the condition paragraph just
+ * named by its chapter's words (gridPhrase), so this says "the same grid"
+ * rather than a chapter name the letter does not print ("the price chapter",
+ * reader review 2026-10-08).
+ */
 function basisSetAsideSentence(a: OpinionPageArgs): string {
   const { aside } = basisSaleCounts(a)
   if (aside <= 0) return ''
   const word = countWord(aside)
   return ` ${word.charAt(0).toUpperCase()}${word.slice(1)} more ${
-    aside === 1 ? 'is' : 'are'
-  } shown in the price chapter and set aside.`
+    aside === 1 ? 'sale is' : 'sales are'
+  } shown in the same grid and set aside.`
+}
+
+/**
+ * "The grid of the sales that set the range": the closed-sales grid, named by
+ * its chapter's own heading (salesThatSetItPhrase), whichever of the three
+ * headings this letter prints.
+ */
+function gridPhrase(a: OpinionPageArgs): string {
+  const grid = gridSales(a)
+  return `The grid of ${salesThatSetItPhrase(grid.pricing, grid.comps, { onMarket: subjectOnMarket(a) })}`
+}
+
+/**
+ * Rule 20's lot disclosure (lib/cma/lot-disclosure.ts), beside the condition
+ * one: what the grid does not adjust for, said the same way. Empty when no
+ * printed sale's lot differs from the home's.
+ */
+function lotDisclosureHtml(a: OpinionPageArgs): string {
+  const sentence = lotDifferenceSentence(a.subject, gridSales(a).comps)
+  return sentence ? `<p><strong>Lot size was not adjusted for.</strong> ${esc(sentence)}</p>` : ''
 }
 
 /**
@@ -1671,7 +1827,34 @@ function purposeClause(a: OpinionPageArgs): string {
     : `to assist the owner of ${home} in evaluating a potential listing price`
 }
 
-export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
+/**
+ * The use-of-property page prints zoning, buildability, rental, and covenant
+ * statements with a verification date beside them (`verified YYYY-MM-DD` on
+ * the zone line and in the sources line). A market-stat "verified" line is
+ * not that chapter. 1648 Pheasant, 3177 Coho, and 2382 Jackson stored the
+ * development read and still had no such page (reader review 2026-10-09).
+ */
+export function landUseStatementsRendered(html: string | null | undefined): boolean {
+  if (!html) return false
+  if (!html.includes('What this property can do')) return false
+  return /verified \d{4}-\d{2}-\d{2}/.test(html)
+}
+
+const LAND_USE_LIMITS_PARAGRAPH =
+  '<p><strong>Land use, rental, and code statements.</strong> Zoning, buildability, rental, and covenant statements in this report are preliminary reads of published code and recorded documents as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions, and they should be confirmed with the city or county planning office before anyone relies on them.</p>'
+
+/** The Basis sentence that points at those dates. Empty unless they are rendered. */
+export function landUseLimitsHtml(besideHtml: string | null | undefined): string {
+  return landUseStatementsRendered(besideHtml) ? LAND_USE_LIMITS_PARAGRAPH : ''
+}
+
+/**
+ * Basis and limits. `landUsePageHtml` is the use-of-property chapter when this
+ * document renders it. The seller letter and the immersive walk
+ * OPINION_CHAPTER_ORDER, which does not include that chapter, so both callers
+ * omit it. Stored `development` is not a substitute for the page.
+ */
+export function cmaDisclosureProseHtml(a: OpinionPageArgs, landUsePageHtml?: string | null): string {
   const b = a.broker
   const name = b?.displayName ?? 'the preparing broker'
   // Named only where it was actually read. A recorded lot or an assessor
@@ -1686,9 +1869,10 @@ export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
   )}. Every figure in it was pulled that day and reads the market as it stood then.</p>
   <p><strong>What was looked at.</strong> This opinion reads the Oregon Data Share MLS record for your home and for every sale, listing and failed listing named in it: the recorded facts, the price history and the listing photographs${record}. Nobody walked through the inside of your home, or the inside of any home it is measured against. Facts you told us, where they are used, are labeled as yours and should be confirmed independently.</p>
   ${salesMethodHtml(a)}
-  <p><strong>Condition was not adjusted for.</strong> The grid in the price chapter moves each sale ${esc(
+  <p><strong>Condition was not adjusted for.</strong> ${esc(gridPhrase(a))} moves each sale ${esc(
     adjustmentsMadeClause(a.comps),
   )}. It moves none of them for condition, because the MLS record carries no condition rating. Where a sale was in better or worse shape than your home, that difference sits inside its sale price and is not broken out.</p>
+  ${lotDisclosureHtml(a)}
   <p><strong>Basis for the value.</strong> ${esc(basisSalesClause(a))}, ${esc(
     adjustedForClause(a.comps),
   )}, and on verified market statistics for ${esc(a.market?.geoLabel ?? a.subject.city)}.${esc(
@@ -1703,20 +1887,35 @@ export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
       ? ` View: ${esc(formatClientMlsField(a.subject.viewDescription)!)}.`
       : ''
   }</p>
-  ${a.development ? '<p><strong>Land use, rental, and code statements.</strong> Zoning, buildability, rental, and covenant statements in this report are preliminary reads of published code and recorded documents as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions, and they should be confirmed with the city or county planning office before anyone relies on them.</p>' : ''}
+  ${landUseLimitsHtml(landUsePageHtml)}
   <p><strong>Licensee interest.</strong> Neither ${esc(name)} nor Ryan Realty holds any existing or contemplated interest in this property. Any such interest, should one arise, will be disclosed in writing.</p>
   <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>
   </div>`
+}
+
+/**
+ * The closing chapter's eyebrow and contents entry. "Your next step" asks the
+ * owner to act, and a home on the market with another brokerage gets an
+ * opinion of value, never a pitch (SKILL.md §0.3 rule 27). 3062 NW Kelly Hill
+ * printed "Your next step" over "See homes for sale near you" (reader review
+ * 2026-10-08). The same decision the closing's heading and buttons read.
+ */
+export const NEXT_STEP_EYEBROW = 'Your next step'
+export const NEUTRAL_CLOSE_EYEBROW = 'About this report'
+
+export function nextStepEyebrow(a: OpinionPageArgs): string {
+  return closingIsNonSoliciting(a) ? NEUTRAL_CLOSE_EYEBROW : NEXT_STEP_EYEBROW
 }
 
 /** What we would like them to do next. We, never I (VOICE.md). */
 export function nextStepPage(a: OpinionPageArgs): CmaPageDef | null {
   const br = a.broker
   if (!br) return null
+  const eyebrow = nextStepEyebrow(a)
   return {
     closing: true,
-    meta: `${esc(a.subject.streetAddress)} · Your next step`,
-    toc: 'Your next step',
+    meta: `${esc(a.subject.streetAddress)} · ${esc(eyebrow)}`,
+    toc: eyebrow,
     body: `
   <h2 class="section">${esc(nextStepHeading(a))}</h2>
   ${nextStepActionsHtml(a)}
@@ -2112,16 +2311,26 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
         (drawnActive >= COMPETITION_SHOWN_CAP &&
           b.activeCount > drawnActive &&
           stored.startsWith(`${nearestOpening(drawnActive)} `))
-  const useStored = stored.length > 0 && sameRows && forSaleAgrees
-  const sentence = useStored
-    ? withoutMapPointer(stored)
-    : competitionSentence({
-        lo: b.lo,
-        hi: b.hi,
-        activeCount: drawnActive,
-        pendingCount: drawnPending,
-        shown,
-      })
+  // A signed letter keeps the sentence it was built with when the rows drawn
+  // are the rows it stored. The area total can sit above the capped table
+  // ("13 homes... The nearest four") without the render restating it as the
+  // drawn count alone (1195 Remarkable, delivered, Matt 2026-10-09).
+  const useStored = stored.length > 0 && sameRows && (forSaleAgrees || letterIsFrozen(a.documentStatus))
+  // Said once per letter (lib/cma/say-once.ts): the room line and the short
+  // count line the did-not-sell chapter, a page earlier, already printed are
+  // not printed again word for word (915 Saginaw, reader review 2026-10-09).
+  const sentence = sayOnceAfter(
+    useStored
+      ? storedCompetitionSentenceToday(stored)
+      : competitionSentence({
+          lo: b.lo,
+          hi: b.hi,
+          activeCount: drawnActive,
+          pendingCount: drawnPending,
+          shown,
+        }),
+    plainTextOf(didNotSellBodyMatrixHtml(a)),
+  )
   // The trace names what the sentence counted. A stored sentence keeps its
   // stored trace. The counts drawn instead are the homes inside the sales
   // area, so the trace names that area, never the wider ring an old row read.
@@ -2245,14 +2454,38 @@ export function competitionEdge(input: {
   return { sentence, largest, lowestPpsf, subjectPpsf, competitorPpsf }
 }
 
+/**
+ * The competition chapter's heading for this row: the on-market heading names
+ * the homes the chapter draws, for sale, under contract, or both
+ * (`competitionHeading`).
+ */
+export function competitionHeadingFor(a: OpinionPageArgs): string {
+  const { active, pending } = splitActivePending(matrixEntriesFor(a).active)
+  return competitionHeading(a.pricing.recommended, {
+    onMarket: subjectOnMarket(a),
+    active: active.length,
+    pending: pending.length,
+  })
+}
+
+/**
+ * The competition chapter's running name. A home on the market gets an
+ * opinion of value, not a price (rule 27), so its chapter is the homes near
+ * this value, as its heading already says (3062 NW Kelly Hill, reader review
+ * 2026-10-09).
+ */
+export function competitionChapterName(a: OpinionPageArgs): string {
+  return subjectOnMarket(a) ? 'Near this value' : 'At this price'
+}
+
 export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {
   const body = competitionBodyMatrixHtml(a)
   if (!body.trim()) return null
   return {
-    meta: `${esc(a.subject.streetAddress)} · At this price`,
-    toc: competitionHeading(a.pricing.recommended, { onMarket: subjectOnMarket(a) }),
+    meta: `${esc(a.subject.streetAddress)} · ${esc(competitionChapterName(a))}`,
+    toc: competitionHeadingFor(a),
     body: `
-  <h2 class="section">${esc(competitionHeading(a.pricing.recommended, { onMarket: subjectOnMarket(a) }))}</h2>
+  <h2 class="section">${esc(competitionHeadingFor(a))}</h2>
   ${body}`,
   }
 }
@@ -2266,7 +2499,10 @@ export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
     hi: b.hi,
     activeCount: b.activeCount,
     pendingCount: b.pendingCount,
-    rivals: activeRivalsFor(b.rivals, a.subject, a.compArea ?? a.bandRivals?.area),
+    rivals: activeRivalsFor(b.rivals, a.subject, competitionDrawArea(a.compArea ?? a.bandRivals?.area, a.bandRivals), {
+      buildArea: a.bandRivals?.area ?? null,
+      frozen: letterIsFrozen(a.documentStatus),
+    }),
     docLinks: a.docLinks ?? null,
     recommendedList: a.pricing.recommended,
     asOfIso: a.generatedAtIso,

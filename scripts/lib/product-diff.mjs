@@ -48,6 +48,11 @@ const ZERO_SHA = /^0+$/
 export function isVercelSkippable(file) {
   if (SKIP_EXACT.has(file)) return true
   if (SKIP_PREFIXES.some((p) => file.startsWith(p))) return true
+  // Unit tests and the repo-root test/ harness do not change the Next build.
+  // Prefix only: app/api/push/test and app/api/google-business-profile/test are
+  // live routes, so a path segment named "test" must still build.
+  if (file.startsWith('test/')) return true
+  if (file.endsWith('.test.ts') || file.endsWith('.test.tsx')) return true
   // Pure markdown / cursor rules at repo root or nested (not under app/).
   if (!file.startsWith('app/') && SKIP_SUFFIXES.some((s) => file.endsWith(s))) return true
   return false
@@ -76,7 +81,13 @@ export function isUsableSha(sha) {
 }
 
 /**
- * @param {{ prev?: string, head?: string }} [opts]
+ * The files `head` changed. With a usable `prev`, the range prev...head; without
+ * one, the commit itself, a merge commit against its FIRST parent (what it brought
+ * into the branch). Plain `git diff-tree -r` prints nothing for a merge, so a
+ * merged PR read as an empty diff: vercel-ignore-build skipped the production
+ * build and deploy:verify gave the deploy only the 45-second SKIP window.
+ *
+ * @param {{ prev?: string, head?: string, cwd?: string }} [opts]
  * @returns {string[] | null}  null = git failed / unknown (caller should build/release)
  */
 export function listChangedFiles(opts = {}) {
@@ -85,10 +96,11 @@ export function listChangedFiles(opts = {}) {
   try {
     const cmd = isUsableSha(prev)
       ? `git diff --name-only ${prev}...${head}`
-      : `git diff-tree --no-commit-id --name-only -r ${head}`
+      : `git diff-tree --no-commit-id --name-only -r --diff-merges=first-parent ${head}`
     const out = execSync(cmd, {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      ...(opts.cwd ? { cwd: opts.cwd } : {}),
     })
     return out.split('\n').map((s) => s.trim()).filter(Boolean)
   } catch {

@@ -59,6 +59,7 @@
 #market .v3-instrument__eyebrow { order: 1; }
 #market .v3-instrument__headline { order: 2; }
 #market .v3-instrument__note { order: 3; }
+#market .v3-instrument__lede { order: 3; }
 #market .v3-instrument__stage { order: 4; }
 #market .v3-instrument__action { order: 5; }
 #market.v3-instrument > .v3-instrument__chart { order: 6; }

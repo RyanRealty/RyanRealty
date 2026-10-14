@@ -60,8 +60,8 @@ const REQUIRED = [
         // both July and September (GSC API) while /?utm_source=gbp ranked p3.
         // Matt 2026-10-04: after the brand, the terms GSC shows / for (bend
         // realtor, real estate agents bend oregon), then "Homes for Sale".
-        re: /title:\s*\{\s*absolute:\s*['"]Ryan Realty \| Bend Oregon Real Estate & Homes for Sale['"]/,
-        msg: 'metadata title must be "Ryan Realty | Bend Oregon Real Estate & Homes for Sale" (brand first per gsc-trend-11 2026-09-23; market terms per Matt 2026-10-04; absolute, so the layout suffix does not double the brand)',
+        re: /title:\s*\{\s*absolute:\s*['"]Ryan Realty \| Bend, Oregon Real Estate Brokerage['"]/,
+        msg: 'metadata title must be "Ryan Realty | Bend, Oregon Real Estate Brokerage" (brand first per gsc-trend-11 2026-09-23; one-business title 2026-10-13; absolute, so the layout suffix does not double the brand)',
       },
     ],
   },
@@ -132,7 +132,7 @@ const REQUIRED = [
         re: /titleBottom\s*=\s*["']Housing Market["']|headline\s*=\s*\{?\s*(?:v3Text\(\s*)?[`'"]Central Oregon housing market\b/,
         msg: 'market hub H1 must carry the head term: KB titleBottom="Housing Market", or a v3 headline literal opening "Central Oregon housing market"',
       },
-      { re: /title:\s*['"]Central Oregon Housing Market['"]/i, msg: 'market hub title must be "Central Oregon Housing Market"' },
+      { re: /title:\s*['"]Central Oregon Housing Market & Prices by City['"]/i, msg: 'market hub title must be "Central Oregon Housing Market & Prices by City" (Matt 2026-10-08)' },
     ],
   },
   {

@@ -53,11 +53,15 @@ import {
 } from '@/lib/cma/versions'
 import { buildCma } from '@/lib/cma/build'
 import { prepareCmaSendPreview, sendCmaToLead } from '@/lib/cma/send'
+import { companyOwnerSendHold, isCompanyOwnerHoldError } from '@/lib/prospecting/company-owner'
 import { ensureNativeLead, enrichNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { searchPeopleByName } from '@/lib/data/crm/searchPeople'
 import { attachCmaToPerson } from '@/lib/data/cma/crm'
 import { isSuppressed, isSuppressedByPhone, isSuppressedByEmail } from '@/lib/crm/suppressions'
-import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
+import { isIndustryContact } from '@/lib/crm/industry-contact'
+import { readPersonAudienceFields } from '@/lib/data/crm/getPeopleAudienceFields'
+import { smsWindowCloseAtFor } from '@/lib/crm/recipient-timezones'
+import { quietHoursRefusal } from '@/lib/comms/guards'
 import { renderCrmMerge, findUnresolvedMergeTokens, type MergePersonLike } from '@/lib/crm/merge'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import {
@@ -68,6 +72,7 @@ import {
 } from '@/lib/crm/first-touch-copy'
 import { sendSmsViaMessagingService, toE164 } from '@/lib/crm/twilio'
 import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
+import { buildTrackedUrl, CMA_DOC_PARAM, prospectCampaign } from '@/lib/analytics/utm'
 
 const SITE_URL = siteOrigin()
 
@@ -122,6 +127,15 @@ async function composeProspectFirstTouch(args: {
  * flips it immediately. `kinds` defaults to both because approve resolves by slug
  * and doesn't carry the prospect kind.
  */
+/** The refusal a broker sees in quiet hours, naming the live pause time. */
+/**
+ * Why an intro to `to` must wait right now, or null: Pacific first, then the
+ * number's own zone (Matt 2026-10-04, "Both zones"). An intro has no override.
+ */
+function quietHoursHold(to: string): string | null {
+  return quietHoursRefusal(to, new Date(), { canOverride: false })
+}
+
 function revalidateProspectCaches(kinds: ProspectKind[] = ['expired', 'fsbo']): void {
   for (const k of kinds) {
     revalidateTag(`prospecting:list:${k}`, 'max')
@@ -143,6 +157,8 @@ export async function sendProspectingIntro(
 
     const prospect = await getProspect(kind, id)
     if (!prospect) return { ok: false, error: 'Prospect not found.', code: 'not-found' }
+    const companyHold = companyOwnerSendHold(prospect.enrichmentNotes)
+    if (companyHold) return { ok: false, error: companyHold, code: 'company-owned' }
 
     // 3. Built-doc: a document must exist AND be client-ready (the public /cma
     // route 404s drafts, so the texted link must be finalized/delivered). The
@@ -219,9 +235,11 @@ export async function sendProspectingIntro(
     const to = toE164(prospect.contactPhone)
     if (!to) return { ok: false, error: 'No valid phone on file for this owner.', code: 'no-phone' }
 
-    // 8. Quiet hours (8am–8pm Pacific — Oregon's window, see lib/crm/quiet-hours).
-    if (inSmsQuietHours()) {
-      return { ok: false, error: 'Quiet hours (before 8am / after 8pm Pacific). Try again inside the window.', code: 'quiet-hours' }
+    // 8. Quiet hours (8am to the 7:55pm pause, Oregon's window, see
+    // lib/crm/quiet-hours), in Pacific and the owner number's own zone.
+    const quietAtStart = quietHoursHold(to)
+    if (quietAtStart) {
+      return { ok: false, error: quietAtStart, code: 'quiet-hours' }
     }
 
     // 9. Ensure a native CRM lead + LIVE suppression re-check (a newly created
@@ -243,6 +261,10 @@ export async function sendProspectingIntro(
     if (sup.suppressed) {
       return { ok: false, error: `Suppressed for SMS: ${sup.reasons.join(', ') || 'opt-out on file'}.`, code: 'suppressed' }
     }
+    const industrySms = await readPersonAudienceFields(lead.personId)
+    if (industrySms.error || (industrySms.fields && isIndustryContact(industrySms.fields))) {
+      return { ok: false, error: 'Industry contact — excluded from marketing outreach.', code: 'industry-contact' }
+    }
     // F6: value-keyed SMS suppression (an opt-out attached to the number, not a
     // person, e.g. a manual/imported STOP before any person row existed).
     // isSuppressed(personId) only reads person-keyed rows + tags. Fail-closed.
@@ -262,7 +284,12 @@ export async function sendProspectingIntro(
     const sb = createServiceClient()
     // Identity is stamped by the one decoration helper below (signed token, P7);
     // the doc URL itself carries only the campaign.
-    const docUrlForPerson = `${docUrl}?utm_source=crm&utm_medium=sms&utm_campaign=${kind}`
+    const docUrlForPerson = buildTrackedUrl(docUrl, {
+      source: 'crm',
+      medium: 'sms',
+      campaign: prospectCampaign(kind),
+      extraParams: { [CMA_DOC_PARAM]: clientReady.slug },
+    })
     let merged: string
     if (args.bodyOverride && args.bodyOverride.trim()) {
       // Broker-edited body (already shown to them in the preview). Still gated by
@@ -350,14 +377,17 @@ export async function sendProspectingIntro(
     // 12.6 Quiet hours again at the POST: step 8 ran before the lead upsert,
     // compose, short-link and claim, so a 7:59pm pass could text after 8pm.
     // Nothing has gone out yet, so release the claim.
-    if (inSmsQuietHours()) {
+    const quietAtPost = quietHoursHold(to)
+    if (quietAtPost) {
       await releaseProspectSend(kind, id)
-      return { ok: false, error: 'Quiet hours (before 8am / after 8pm Pacific). Try again inside the window.', code: 'quiet-hours' }
+      return { ok: false, error: quietAtPost, code: 'quiet-hours' }
     }
 
     // 13. Send via the A2P messaging service. A failure HERE is before any text
     // left the building, so it is safe to release the claim and let a retry go.
-    const sent = await sendSmsViaMessagingService({ to, body })
+    // Twilio drops the text if it is still queued at 8pm in Pacific or the
+    // number's zone, whichever comes first.
+    const sent = await sendSmsViaMessagingService({ to, body, validUntil: smsWindowCloseAtFor(to) })
     if (!sent.ok) {
       await releaseProspectSend(kind, id)
       console.error('[sendProspectingIntro] Twilio send failed, claim released:', sent.error)
@@ -474,6 +504,8 @@ export async function sendProspectingEmailIntro(
 
     const prospect = await getProspect(kind, id)
     if (!prospect) return { ok: false, error: 'Prospect not found.', code: 'not-found' }
+    const companyHold = companyOwnerSendHold(prospect.enrichmentNotes)
+    if (companyHold) return { ok: false, error: companyHold, code: 'company-owned' }
 
     // 3. Built-doc: client-ready only — the emailed link/PDF must never be a
     // draft (same chain as the SMS steps, including the cma_id-first slug
@@ -567,6 +599,10 @@ export async function sendProspectingEmailIntro(
     if (emailSup.suppressed) {
       return { ok: false, error: `Address suppressed for email: ${emailSup.reasons.join(', ') || 'opt-out on file'}.`, code: 'suppressed' }
     }
+    const industryEmail = await readPersonAudienceFields(lead.personId)
+    if (industryEmail.error || (industryEmail.fields && isIndustryContact(industryEmail.fields))) {
+      return { ok: false, error: 'Industry contact — excluded from marketing outreach.', code: 'industry-contact' }
+    }
 
     // 11. Broker overrides gate: fail-closed on any unresolved %token% (mirrors
     // SMS step 11's refusal). The rail's own default compose carries no tokens.
@@ -658,6 +694,10 @@ export async function sendProspectingEmailIntro(
       { callerHoldsProspectClaim: true },
     )
     if (!sent.ok) {
+      if (isCompanyOwnerHoldError(sent.error)) {
+        await releaseProspectEmailSend(kind, id)
+        return { ok: false, error: sent.error, code: 'company-owned' }
+      }
       if (isUnconfirmedGmailSendError(sent.error)) {
         console.error('[sendProspectingEmailIntro] Gmail did not confirm the send; claim kept for stuck-send recovery:', {
           kind,

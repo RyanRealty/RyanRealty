@@ -30,8 +30,8 @@ export function ListingSimilarStrip({
         </Link>
       </header>
       <div className="v3-lrow-list">
-        {rows.map((row, i) => (
-          <V3ListingRow key={row.listingKey} listing={row} priority={i < 2} />
+        {rows.map((row) => (
+          <V3ListingRow key={row.listingKey} listing={row} />
         ))}
       </div>
     </section>

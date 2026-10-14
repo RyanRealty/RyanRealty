@@ -2,8 +2,8 @@
  * Working surface around the locked capture forms.
  *
  * V3Sheet cannot take a ReactNode slot (its children are prose, its field is
- * one control). SellValueForm and ValuationForm are the capture contracts, so
- * they stay. On /sell the wrapper is a cream slab on the Stage photograph.
+ * one control). SellValueForm is the capture contract, so it stays. On /sell
+ * the wrapper is a cream slab on the Stage photograph.
  * On the homepage it still opens the Sheet token scope as the sell band.
  * Payload, field names, and Places autocomplete are unchanged.
  *

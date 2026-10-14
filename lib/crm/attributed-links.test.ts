@@ -22,8 +22,9 @@ describe('attributeOutbound', () => {
     const tok = decodeURIComponent(out.match(/\/api\/track\/e\/click\?t=([^"]+)/)![1])
     const payload = JSON.parse(Buffer.from(tok.split('.')[0], 'base64url').toString()) as { u: string }
     const u = new URL(payload.u)
-    expect(u.searchParams.get('utm_source')).toBe('crm')
+    expect(u.searchParams.get('utm_source')).toBe('newsletter')
     expect(u.searchParams.get('utm_medium')).toBe('email')
+    expect(u.searchParams.get('utm_campaign')).toBe('newsletter')
     expect(u.searchParams.get('utm_content')).toBe('agent-matt-ryan')
     expect(u.searchParams.get('agent')).toBe('matt-ryan')
   })
@@ -72,9 +73,14 @@ describe('attributeOutbound', () => {
     const out = attributeOutbound(html, OPTS)
     const tok = decodeURIComponent(out.match(/\/api\/track\/e\/click\?t=([^"]+)/)![1])
     const payload = JSON.parse(Buffer.from(tok.split('.')[0], 'base64url').toString())
-    expect(payload.u).toBe(
-      `https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report&agent=matt-ryan&_pid=${TOKEN}&utm_content=agent-matt-ryan#market-report`,
-    )
+    const dest = new URL(payload.u)
+    expect(dest.searchParams.get('utm_source')).toBe('crm')
+    expect(dest.searchParams.get('utm_medium')).toBe('email')
+    expect(dest.searchParams.get('utm_campaign')).toMatch(/^market-report-\d{4}-(0[1-9]|1[0-2])$/)
+    expect(dest.searchParams.get('agent')).toBe('matt-ryan')
+    expect(dest.searchParams.get('_pid')).toBe(TOKEN)
+    expect(dest.searchParams.get('utm_content')).toBe('agent-matt-ryan')
+    expect(dest.hash).toBe('#market-report')
   })
 
   it('is idempotent — running twice does not double-encode or break the link', () => {
@@ -167,7 +173,7 @@ describe('attributeUrl', () => {
       'matt-ryan',
     )
     const u = new URL(out)
-    expect(u.searchParams.get('utm_source')).toBe('ryan-realty')
+    expect(u.searchParams.get('utm_source')).toBe('crm')
     expect(u.searchParams.get('utm_medium')).toBe('email')
     expect(u.searchParams.get('utm_campaign')).toBe('listing-alerts')
     expect(u.searchParams.get('utm_content')).toBe('agent-matt-ryan')

@@ -140,7 +140,10 @@ describe('the listings ladder anchors 3062 NW Kelly Hill on Westside Meadows', (
   it('reads the subdivision family over the full year and names it', async () => {
     reads({ narrow: true })
     const sel = await selectComps(subject())
-    expect(sel.diagnostics.price_anchor).toEqual({ ppsf: 383, n: 7, level: 'family', where: 'in Westside Meadows' })
+    // Westside Meadows sits with Westside Meadows II inside Summit West, so it
+    // is the home's own subdivision (Matt 2026-10-08, "Yes, everywhere") and
+    // the seven sales answer at the plat level, named by the family.
+    expect(sel.diagnostics.price_anchor).toEqual({ ppsf: 383, n: 7, level: 'plat', where: 'in Westside Meadows' })
     expect(
       sel.trace.some((t) =>
         t.startsWith(

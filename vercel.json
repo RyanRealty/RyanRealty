@@ -115,6 +115,10 @@
       "schedule": "47 22 * * *"
     },
     {
+      "path": "/api/cron/ga4-internal-traffic-qa",
+      "schedule": "40 12 * * *"
+    },
+    {
       "path": "/api/cron/gbp-health-check",
       "schedule": "0 9 * * *"
     },

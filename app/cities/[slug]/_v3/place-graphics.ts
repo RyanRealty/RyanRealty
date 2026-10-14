@@ -72,7 +72,7 @@ export function cityVerdictCaption(input: {
 }): string | null {
   if (input.mos == null || !Number.isFinite(input.mos) || input.mos <= 0) return null
   if (!input.verdict || input.verdict.kind === 'unknown') return null
-  return `${formatMonthsOfSupply(input.mos)} months of homes on the market. A ${input.verdict.label}.`
+  return `${formatMonthsOfSupply(input.mos)} months of homes on the market.`
 }
 
 export function withoutMosTile(figures: readonly V3InstrumentFigure[]): V3InstrumentFigure[] {

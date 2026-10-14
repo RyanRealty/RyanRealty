@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * reachability: entry-point vendored catalog source (Matt 2026-09-10), wrapped by a v3 primitive when a section needs it.
+ */
+
 import { animate, useInView, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { EASE_OUT } from "@/lib/ease";

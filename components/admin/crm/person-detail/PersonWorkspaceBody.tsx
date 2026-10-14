@@ -35,6 +35,7 @@ import { addCrmCollaboratorAction, removeCrmCollaboratorAction } from '@/app/act
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import { getLeadSmsRecipients } from '@/lib/data/crm/getLeadSmsRecipients'
+import { inSmsQuietHoursFor, recipientTimeZones } from '@/lib/crm/recipient-timezones'
 import { getGroupReplyParticipants } from '@/lib/data/crm/getGroupReplyParticipants'
 import { TemplatePickerNav } from '@/components/admin/crm/TemplatePickerNav'
 import { getContactConversation } from '@/lib/data/crm/getContactConversation'
@@ -232,6 +233,7 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
     phone: string
     relation: string
     defaultOn?: boolean
+    timeZones?: string[]
   }> = relRecipients.map((r) => ({ ...r, defaultOn: false }))
   for (const g of groupParticipants) {
     const pid = g.personId ?? 0
@@ -251,6 +253,9 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
       defaultOn: true,
     })
   }
+  // Each number's area-code zones, so the composer's quiet-hours flag covers
+  // everyone on the text (Matt 2026-10-04, "Both zones").
+  for (const r of smsRecipients) r.timeZones = recipientTimeZones(r.phone)
 
   const _pid = person.id
   async function addCollaboratorForm(formData: FormData): Promise<void> {
@@ -310,6 +315,8 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
         hideMergeFields
         hideQuietHours
         hideAttachments
+        quietHours={inSmsQuietHoursFor(primaryPhone)}
+        primaryTimeZones={recipientTimeZones(primaryPhone)}
       />
     ) : (
       <p className="px-1 py-2 text-center text-[13px]" style={{ color: 'var(--a-text-2)' }}>
@@ -519,6 +526,8 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
                     primaryPersonId={person.id}
                     personId={person.id}
                     customFields={composerCustomFields}
+                    quietHours={inSmsQuietHoursFor(primaryPhone)}
+                    primaryTimeZones={recipientTimeZones(primaryPhone)}
                   />
                 </div>
               ) : (

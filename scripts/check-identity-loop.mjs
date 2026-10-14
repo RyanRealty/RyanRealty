@@ -46,8 +46,8 @@
  *      (public/rr-doc-tracker.js) stops for a visitor who declined and sends the
  *      arrival campaign; under Global Privacy Control both trackers write no
  *      identifier and send only the notice, and the track route records the
- *      suppression from what the browser already carries; the campaign-link grant is
- *      never written for GPC and goes through arrivalConsent; the search events and
+ *      suppression from what the browser already carries; an ad click is not
+ *      consent (`arrivalConsent` never writes a grant); the search events and
  *      trackUserEvent refuse a decline and GPC; the GA4 mirror does not assume gtag
  *      runs on a document; and the section tracker posts the shared first-party
  *      context (consent included), only for a visitor whose tier keeps a section id
@@ -231,8 +231,8 @@ export function missingWiring(read) {
     ['components/search/search-events.client.ts', /if \(currentConsentLevel\(\) === 'declined' \|\| gpcFromNavigator\(navigator\)\) return/, 'the search events record a visitor who declined or sends Global Privacy Control', CODE],
     ['app/actions/track-user-event.ts', /if \(!recordingAllowed\(\{ consentCookie: cookieStore\.get\(CONSENT_COOKIE\)\?\.value \?\? null, secGpc: hdrs\.get\('sec-gpc'\) \}\)\) return/, 'trackUserEvent records a visitor who declined or sends Global Privacy Control', CODE],
     ['public/rr-doc-tracker.js', /var automated = navigator\.webdriver === true \? '&webdriver=1' : ''/, 'the client-document tracker no longer tells the identify ping the browser is automated', CODE],
-    ['components/CookieConsentBanner.tsx', /const \{ grant \} = arrivalConsent\(\{[\s\S]{0,200}gpc: gpcFromNavigator\(typeof navigator !== 'undefined' \? navigator : undefined\),/, 'the campaign-link grant can write consent for a browser sending Global Privacy Control', CODE],
-    ['components/CookieConsentBanner.tsx', /search: pageArrival\(\)\?\.search \?\? window\.location\.search,/, 'the campaign-link grant is judged on the current address, not the one the page arrived on', CODE],
+    ['lib/identity/consent.ts', /void args\.search/, 'arrivalConsent reads the arrival query to auto-grant marketing from an ad click', CODE],
+    ['public/rr-doc-tracker.js', /var consentAtArrival = function \(\) \{\s*return consentNow\(\)\s*\}/, 'the client-document tracker auto-grants marketing from a campaign link', CODE],
     ['app/api/visitors/track/route.ts', /body\.pageCategory !== 'client-document'/, 'a consented reader of a client document can drop out of the GA4 mirror (the document runs no gtag)', CODE],
     ['components/site/v3/V3SectionTracker.client.tsx', /const ctx = firstPartyEventContext\(\)/, 'V3SectionTracker no longer posts the shared context (consent, session, campaign)', CODE],
     ['components/site/v3/V3SectionTracker.client.tsx', /if \(level !== 'all' && level !== 'analytics'\) return/, 'V3SectionTracker posts empty section and scroll rows for a visitor at the essential tier', CODE],

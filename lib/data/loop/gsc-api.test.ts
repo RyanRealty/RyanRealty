@@ -1,15 +1,88 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+/**
+ * createGscQuery's JWT and Search Analytics client must each carry a deadline:
+ * google-auth-library gives the token POST none of its own (the gap
+ * lib/gmail-draft.ts fixed first), and the query itself is called in a page
+ * loop (pullAllGscRows below, run from the 300 s api/cron/loop-weekly-measure)
+ * that needs a per-page bound, not one overall timer.
+ */
+const h = vi.hoisted(() => ({
+  jwtCtor: vi.fn(),
+  scCtor: vi.fn(),
+  query: vi.fn(),
+}))
+
+vi.mock('googleapis', () => ({
+  google: {
+    auth: {
+      JWT: class {
+        constructor(opts: unknown) {
+          h.jwtCtor(opts)
+        }
+      },
+    },
+    searchconsole: (opts: unknown) => {
+      h.scCtor(opts)
+      return { searchanalytics: { query: h.query } }
+    },
+  },
+}))
+
+import { GOOGLE_AUTH_TIMEOUT_MS } from '@/lib/google-deadline'
 import {
   addDays,
   chunkDateRange,
+  createGscQuery,
   daysBetweenInclusive,
   isIsoDate,
   pullAllGscRows,
   settledEndDate,
+  GSC_REQUEST_TIMEOUT_MS,
   type GscApiRow,
   type GscRequest,
 } from './gsc-api'
+
+describe('createGscQuery deadlines', () => {
+  beforeEach(() => {
+    vi.stubEnv('GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL', 'viewer@ryanrealty.iam.gserviceaccount.com')
+    vi.stubEnv('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY', 'test-key')
+    h.query.mockResolvedValue({ data: { rows: [] } })
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.clearAllMocks()
+  })
+
+  it('gives the service-account JWT a transporter timeout', async () => {
+    await createGscQuery()
+
+    expect(h.jwtCtor).toHaveBeenCalledWith(
+      expect.objectContaining({ transporterOptions: { timeout: GOOGLE_AUTH_TIMEOUT_MS } }),
+    )
+  })
+
+  it('gives the Search Analytics client a per-request timeout', async () => {
+    const query = await createGscQuery()
+    expect(h.scCtor).toHaveBeenCalledWith(expect.objectContaining({ timeout: GSC_REQUEST_TIMEOUT_MS }))
+
+    await query!({ startDate: '2026-09-01', endDate: '2026-09-01', dimensions: ['page'] })
+    expect(h.query).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns null (never builds a client) when the service account is not configured', async () => {
+    // Explicit empty stubs, not vi.unstubAllEnvs(): the ambient shell may carry
+    // real Google service-account creds (unlike Supabase/Twilio/Resend, they
+    // are not blanked by test/unit-no-live-services.ts), and this file's own
+    // googleapis mock means that would still hit no network, but the point of
+    // this case is the missing-config branch specifically.
+    vi.stubEnv('GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL', '')
+    vi.stubEnv('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY', '')
+    expect(await createGscQuery()).toBeNull()
+    expect(h.jwtCtor).not.toHaveBeenCalled()
+  })
+})
 
 function row(i: number): GscApiRow {
   return { keys: [`/p/${i}`], clicks: 0, impressions: 1, ctr: 0, position: 1 }

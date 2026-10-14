@@ -2,7 +2,7 @@
 /**
  * One-shot: fetch the primary photo URL from Spark v1 for three Ryan Realty
  * listings whose PhotoURL is null in the Supabase cache. Output hard-codeable
- * ADDRESS_OVERRIDES entries for app/lp/seller-home-value/data.ts.
+ * ADDRESS_OVERRIDES entries for the seller LP's address map (deleted, no consumer).
  */
 import { readFileSync } from 'node:fs'
 

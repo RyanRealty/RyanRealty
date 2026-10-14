@@ -55,31 +55,19 @@ export function formatMomPct(value: number | null | undefined, prevMonth: string
 }
 
 /** Months of supply + " months". One decimal, except within the narrow bands
- *  around the 4.0 / 6.0 verdict thresholds, where a second decimal is shown so
- *  the printed number can never appear to contradict the verdict pill (a true
- *  4.04 shows "4.04 months" next to "balanced market", not "4.0 months"). */
+ *  around the 4.0 / 6.0 classification thresholds, where a second decimal is
+ *  shown so a true 4.04 prints "4.04 months", not "4.0 months". */
 export function formatMonths(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return '—'
-  // INCLUSIVE band edges: a true 4.05 classifies balanced (4.05 > 4) but
-  // (4.05).toFixed(1) floating-point-rounds DOWN to "4.0" — printing
-  // "Balanced market · 4.0 months" is the exact verdict-vs-number
-  // contradiction §0 rule 5 bans. Bend hit this live on 2026-07-16.
+  // INCLUSIVE band edges: a true 4.05 sits above 4 but (4.05).toFixed(1)
+  // floating-point-rounds DOWN to "4.0". Bend hit this live on 2026-07-16.
   const nearThreshold = (value >= 3.95 && value <= 4.05) || (value >= 5.95 && value <= 6.05)
   return `${value.toFixed(nearThreshold ? 2 : 1)} months`
 }
 
-/** Plain-language verdict phrase (sentence case, no hype). */
-export function verdictLabel(verdict: MoSVerdict | null | undefined): string {
-  switch (verdict) {
-    case 'sellers':
-      return "Seller's market"
-    case 'balanced':
-      return 'Balanced market'
-    case 'buyers':
-      return "Buyer's market"
-    default:
-      return '—'
-  }
+/** Public copy prints months of supply, never a market-type label. */
+export function verdictLabel(_verdict: MoSVerdict | null | undefined): string {
+  return '—'
 }
 
 /**

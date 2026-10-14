@@ -2,8 +2,8 @@
  * The one way to link to the valuation spine from a content page.
  *
  * WHY THIS EXISTS: the valuation ask carries `?from=<originating path>`, which the
- * seller flow turns into CRM source attribution (app/lp/seller-home-value/actions.ts,
- * sourceUrl). The KB pages built that query string inline, one page at a time
+ * seller flow turns into CRM source attribution (app/lp/seller-home-value/actions.ts
+ * through lib/crm/lead-origin-path.ts, source_url; it was ignored until 2026-09-29). The KB pages built that query string inline, one page at a time
  * (components/site/kb/KbMarketHud.client.tsx). The first v3 migrations dropped it on
  * four routes at once, because an inline convention is invisible to whoever rewrites
  * the section. Attribution loss is silent: the lead still arrives, it just stops

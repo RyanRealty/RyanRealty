@@ -2,8 +2,9 @@
 /**
  * /admin/analytics/demographics — who is visiting, how old, where from.
  *
- * Pulls demographics from GA4 Data API (Google Signals must be enabled,
- * which it is per the 2026-05-21 admin config). Returns:
+ * Pulls demographics from GA4 Data API (Google Signals must be enabled).
+ * Signals is ON: it was turned off on 2026-10-08 and back on the same
+ * evening at Matt's call (GOOGLE_SIGNALS_ENABLED). Returns:
  *   - Age bracket distribution (overall + cross-tabs by page & source)
  *   - Gender split
  *   - Top cities (US-wide + Bend metro drill-down)
@@ -294,7 +295,8 @@ export default async function DemographicsPage({
       </Suspense>
 
       <Stamp>
-        GA4 Data API with Google Signals. Demographic coverage is typically 30 to 60 percent of total traffic. Range{' '}
+        GA4 Data API with Google Signals (on; briefly off on 2026-10-08, back on that evening, so that day may show
+        gaps). Demographic coverage is typically 30 to 60 percent of total traffic. Range{' '}
         {range.startDate} to {range.endDate}.
       </Stamp>
     </div>

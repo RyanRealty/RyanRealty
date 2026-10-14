@@ -182,7 +182,7 @@ const NEW_HOURS = {
   })),
 }
 
-const NEW_WEBSITE_URI = 'https://ryan-realty.com/?utm_source=gbp&utm_medium=organic&utm_campaign=profile'
+const NEW_WEBSITE_URI = 'https://ryan-realty.com/?utm_source=gbp&utm_medium=organic&utm_campaign=gbp-profile'
 
 const NEW_OPENING_DATE = { year: 2014, month: 10, day: 1 }
 

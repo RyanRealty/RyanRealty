@@ -653,12 +653,12 @@ export {
   getListingWaterSource,
 } from '@/lib/data/pricing/facts'
 export {
-  getCmaAdminRowBySlug, getCmaAdminReviewRowBySlug, getCmaProspectAsk, getCmaServeHead,
+  getCmaAdminRowBySlug, getCmaAdminReviewRowBySlug, getCmaProspectAsk, getCmaProspectEnrichmentNotes, getOutreachBuildProspect, getListingParcelNumber, getCmaServeHead,
   getCmaStoredHtmlBySlug, getCmaRenderSourceBySlug, getCmaHtmlBySlug,
   getCmaAccessIdentity, updateCmaRowFieldsBySlug, deleteCmaRowById, replaceCmaComps,
   snapshotCmaVersion, getCmaBuildSummaryBySlug,
 } from '@/lib/data/cma/documents'
-export type { CmaAdminRow, CmaCompInsert, CmaServeHead, CmaRenderSource, CmaVersionSnapshotResult } from '@/lib/data/cma/documents'
+export type { CmaAdminRow, CmaCompInsert, CmaServeHead, CmaRenderSource, CmaVersionSnapshotResult, OutreachBuildProspect } from '@/lib/data/cma/documents'
 export { listOpenCmaActions, listOpenCmaActionsForSlug, claimCmaAction, updateCmaActionRow, findOpenCmaActionBySlug, appendCmaActionNotify, getCmaActionPayload, mergeCmaActionContact } from '@/lib/data/cma/queue'
 // THE one CMA queue — every origin in a single list (Matt 2026-09-04).
 export { listCmaQueue, isSendableQueueState, CMA_QUEUE_READ_LIMIT } from '@/lib/data/cma/unified-queue'
@@ -890,9 +890,6 @@ export type { NewsletterBrokerBreakdownRow } from '@/lib/data/newsletter/queue'
 export { getBrokerNewsletterAnalytics, getBrokerWarmList } from '@/lib/data/newsletter/brokerAnalytics'
 export type { BrokerNewsletterAnalytics, BrokerWarmListRow } from '@/lib/data/newsletter/brokerAnalytics'
 
-// Anonymous partial-address capture — LP step-1 advance without cookie identity.
-export { saveAnonymousPartialAddress } from '@/lib/data/leads/saveAnonymousPartialAddress'
-export type { AnonymousPartialAddressInput } from '@/lib/data/leads/saveAnonymousPartialAddress'
 export { pauseSavedSearchByToken } from '@/lib/data/savedSearches'
 
 // Calculator defaults from app_config (mortgage rate, tax rate, insurance rate)

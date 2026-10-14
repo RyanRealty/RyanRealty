@@ -19,7 +19,7 @@
  *   market  → `reportsExploreYtdPath` (lib/slug.ts).
  *   search  → `homesForSalePath` / `publishRegionalSearchHref`.
  *
- * The five stamped params:
+ * The stamped params:
  *   agent=<brokerSlug>   routes the lead to the broker whose document this is
  *                        (AgentAttributionBridge writes the 90-day cookie).
  *   _pid=<signed token>  stitches the browser session to the contact: the
@@ -28,10 +28,14 @@
  *                        helper stamps on email and SMS links.
  *   utm_source=cma
  *   utm_medium=document
- *   utm_campaign=<cmaSlug>  which DOCUMENT the tap came out of. Without it a
- *                        visit to a comp is an anonymous listing view; with it
- *                        `getCmaOutcomes` can count the tap as a visit for that
- *                        CMA and show the broker which comps were opened.
+ *   utm_campaign=cma-letter  the stable program slug (never a street address).
+ *   rr_doc=<cmaSlug>     which DOCUMENT the tap came out of. First-party, not
+ *                        a UTM — GA4 must not see a per-property slug. Without
+ *                        it a visit to a comp is an anonymous listing view;
+ *                        with it `getCmaOutcomes` can count the tap as a visit
+ *                        for that CMA. Legacy links still carry
+ *                        `utm_campaign=<cmaSlug>`; `cmaCampaignFromUrl` reads
+ *                        `rr_doc` first, then that legacy form.
  *
  * NULL-SAFE BY CONSTRUCTION. Every kind has a working fallback and the function
  * returns a string, never null: a comp with no listing key gets a place-scoped
@@ -56,6 +60,7 @@ import {
   cmaNeighborhoodHref,
   cmaSubdivisionHref,
 } from '@/lib/cma/cma-place-links'
+import { buildTrackedUrl, CMA_DOC_PARAM, isCmaDocumentSlug } from '@/lib/analytics/utm'
 
 /**
  * The production origin, hard-coded on purpose. This URL is printed into a PDF
@@ -66,6 +71,8 @@ export const CMA_DOC_ORIGIN = 'https://ryan-realty.com'
 
 export const CMA_DOC_UTM_SOURCE = 'cma'
 export const CMA_DOC_UTM_MEDIUM = 'document'
+export const CMA_DOC_UTM_CAMPAIGN = 'cma-letter'
+export { CMA_DOC_PARAM }
 
 export type TrackedDocLinkKind = 'listing' | 'place' | 'market' | 'search' | 'book' | 'site'
 
@@ -74,7 +81,7 @@ export type TrackedDocLinkCtx = {
   brokerSlug?: string | null
   /** crm_people.id the signed ?_pid= token names — the recipient this copy was built for. */
   personId?: number | null
-  /** cmas.slug for ?utm_campaign= — WHICH document the tap came out of. */
+  /** cmas.slug for ?rr_doc= — WHICH document the tap came out of. */
   cmaSlug: string
 }
 
@@ -261,7 +268,7 @@ export function trackedDocLink(
   // `utm_source=crm&utm_medium=doc&utm_campaign=cma-letter`. Reduce whatever
   // comes back to its path and rebuild it on the production origin, then
   // OVERWRITE the utm params rather than appending: one link, one host, one
-  // campaign — and the campaign this document reads back is its own slug.
+  // program campaign. Document identity rides in rr_doc, not utm_campaign.
   const resolved = new URL(pathFor(kind, target), CMA_DOC_ORIGIN)
   const url = new URL(resolved.pathname + resolved.search + resolved.hash, CMA_DOC_ORIGIN)
 
@@ -275,33 +282,37 @@ export function trackedDocLink(
     url.searchParams.set(IDENTITY_LINK_PARAM, signPersonLinkToken(pid, 'document'))
   }
 
-  url.searchParams.set('utm_source', CMA_DOC_UTM_SOURCE)
-  url.searchParams.set('utm_medium', CMA_DOC_UTM_MEDIUM)
   const campaign = clean(ctx.cmaSlug)
-  if (campaign) url.searchParams.set('utm_campaign', campaign.toLowerCase())
-  else url.searchParams.delete('utm_campaign')
-
-  return url.toString()
+  const extraParams = campaign ? { [CMA_DOC_PARAM]: campaign.toLowerCase() } : undefined
+  if (!campaign) url.searchParams.delete(CMA_DOC_PARAM)
+  return buildTrackedUrl(url.toString(), {
+    source: CMA_DOC_UTM_SOURCE,
+    medium: CMA_DOC_UTM_MEDIUM,
+    campaign: campaign ? CMA_DOC_UTM_CAMPAIGN : undefined,
+    extraParams,
+  })
 }
 
 /**
  * The document slug out of an arrival URL — the read half of the stamp above.
  *
- * A CMA slug always starts `cma-` (lib/cma/address-slug.ts builds it), so the
- * prefix is what separates a document campaign from a newsletter or ad
- * campaign. Returns null for anything else, which is what keeps an unrelated
- * `utm_campaign` from being counted as a visit to somebody's report.
+ * Prefers `rr_doc` (the first-party param new links carry). Falls back to the
+ * legacy `utm_campaign=<cmaSlug>` form so a link already in someone's inbox
+ * still fires the broker "they opened your report" alert. The program slug
+ * `cma-letter` is not a document identity.
  */
 export function cmaCampaignFromUrl(pageUrl: string | null | undefined): string | null {
   const raw = typeof pageUrl === 'string' ? pageUrl.trim() : ''
   if (!raw) return null
-  let campaign: string | null = null
+  let params: URLSearchParams
   try {
-    campaign = new URL(raw, CMA_DOC_ORIGIN).searchParams.get('utm_campaign')
+    params = new URL(raw, CMA_DOC_ORIGIN).searchParams
   } catch {
     return null
   }
-  const slug = (campaign ?? '').trim().toLowerCase()
-  if (!slug.startsWith('cma-')) return null
-  return /^[a-z0-9-]{4,120}$/.test(slug) ? slug : null
+  const fromDoc = params.get(CMA_DOC_PARAM)
+  if (isCmaDocumentSlug(fromDoc)) return fromDoc!.trim().toLowerCase()
+  const fromCampaign = params.get('utm_campaign')
+  if (isCmaDocumentSlug(fromCampaign)) return fromCampaign!.trim().toLowerCase()
+  return null
 }

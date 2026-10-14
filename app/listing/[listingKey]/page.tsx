@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { MortgageCalculator } from '@/components/site/listing-detail/MortgageCalculator.lazy'
 import {
   getListingLookup,
   getListingPhotos,
@@ -33,6 +34,8 @@ import {
   publishListingStatusWord,
 } from '@/lib/listing/publish-listing-published-price'
 import { isPublicOffMarketStatus } from '@/lib/listing-status-public'
+import { listingIndexPolicy, listingOffMarketAnchor } from '@/lib/listing/listing-index-policy'
+import { listingCommunityDoor } from '@/lib/listing/listing-community-door'
 import { publishListingOffMarketFacts } from '@/lib/listing/publish-listing-offmarket'
 import { ListingOffMarketFacts } from '@/components/site/listing-detail/ListingOffMarketFacts'
 import { ListingOutOfAreaNotice } from '@/components/site/listing-detail/ListingOutOfAreaNotice'
@@ -65,14 +68,18 @@ import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-s
 import { formatDate as formatCalendarDate } from '@/lib/format/date'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
+import { ListingHubLinks } from '@/components/site/listing-detail/ListingHubLinks'
+import { listingHubLinks } from '@/lib/listing/listing-hub-links'
+import { ListingQuickFacts } from '@/components/site/listing-detail/ListingQuickFacts'
 import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
 import { DescriptionBlock } from '@/components/site/listing-detail/DescriptionBlock'
 import { GoverningDocumentsBlock } from '@/components/site/listing-detail/GoverningDocumentsBlock'
 import { getPlaceDocumentsForListing } from '@/lib/data/places/getPlaceDocumentsForListing'
-import { MortgageCalculator } from '@/components/site/listing-detail/MortgageCalculator'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { buildListingAtlas } from './_v3/listing-atlas'
 import { listingAtlasHeadline } from '@/lib/listing/listing-place-market'
+import { outerRings } from '@/lib/geo/project-svg'
+import { getSubdivisionRing } from '@/lib/data/geo/subdivision-ring'
 import { ListingAroundHere } from '@/components/site/listing-detail/ListingAroundHere'
 import { SchoolsBlock } from '@/components/site/listing-detail/SchoolsBlock'
 import { ListingAskInstrument } from '@/components/site/listing-detail/ListingAskInstrument'
@@ -83,6 +90,9 @@ import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-trut
 import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
 import { ListingSimilarStrip } from '@/components/site/listing-detail/ListingSimilarStrip'
 import {
+  listingHeroMapPins,
+  listingHeroSubdivisionRings,
+  listingSimilarActive,
   listingSimilarDedupe,
   listingSimilarInPlace,
   listingSimilarRail,
@@ -125,7 +135,15 @@ import {
   V3PlaceIndex,
   v3Text,
 } from '@/components/site/v3'
-import { basemapForRegions } from '@/lib/geo/basemap-source'
+import { basemapFrameForRegions } from '@/lib/geo/basemap-source'
+import { deferredAtlasProps } from '@/lib/atlas/atlas-deferred'
+import {
+  pickPriceCtaListing,
+  slimListingHistory,
+  slimListingMedia,
+  slimListingReviews,
+  slimPublicBroker,
+} from './_v3/listing-client-payload'
 
 void _PhotoGalleryLightboxImport
 void _ListingSaveButtonImport
@@ -134,6 +152,7 @@ void _TextMattCTAImport
 void _V3WorkWithUsImport
 void ListingVideoEmbed
 void V3ListingRow
+
 
 /**
  * One house. PAGE_INVENTORY listing (house URL), 13 rows, Zillow Showcase to beat.
@@ -226,44 +245,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // a self-canonical to whatever path was requested, so this is the single URL
   // every path for this listing points at.
   const canonicalPath = listingCanonicalHref(listing)
+  const { placeContext: metaPlace } = resolveListingPlaceAndMarket(listing)
+  const indexPolicy = listingIndexPolicy({
+    status: listing.status,
+    listingPath: canonicalPath,
+    communityHref: listingCommunityDoor(metaPlace.curatedCommunity)?.href ?? null,
+    cityHref: metaPlace.city?.href ?? null,
+    offMarketAt: listingOffMarketAnchor({
+      closeDate: listing.closeDate,
+      modifiedAt: listing.modifiedAt,
+    }),
+  })
 
-  // SITE-33 REVERTED (Matt 2026-10-05, "Undo it"). Out-of-area listings
-  // (Medford, Klamath Falls, Grants Pass, ...) are INDEXED again: the
-  // 2026-09-09 noindex cost about 36% of the Search Console impression drop
-  // since Sep 12 (~2,500 impressions and ~30 clicks a week). The honesty block
-  // stays on the page (outOfAreaListingPolicy in the page body); it no longer
-  // reaches the robots directive, and the sitemap ships the row again.
-  //
-  // SITE-32 (Matt ruled 2026-09-08). THE ABSENCE OF A STATUS BRANCH BELOW IS
-  // THE POLICY, not an oversight — read this before you add one.
-  //
-  // Off-market listing URLs — Closed, Expired, Canceled, Withdrawn, and Pending
-  // with them — stay INDEXED, index,follow, carrying SITE-21's honest state.
-  // Nothing here passes `noindex`: the only noindex on a listing URL is the
-  // refusal path one branch up, where getListingDetail returned null (IDX
-  // opt-out or Coming Soon). Neither status nor geography is an input, and
-  // neither may become one.
-  //
-  // Two contradictory written policies had stood for months — MASTER_SPEC §4.9
-  // said keep the URL indexed, docs/plans/data-architecture-plan.md Part J §1
-  // said noindex it and optionally 410 after 12 months — and neither was ever
-  // implemented. The losing text is deleted; §4.9 is the one statement.
-  // The measurement that settled it, GSC 2026-06-08..2026-09-05: off-market is
-  // 6,611 of 14,508 listing-detail URLs and 26,123 of 56,650 impressions (46%),
-  // earning ~324-577 clicks per 90 days at a CTR that straddles or beats
-  // Active. An address query has no Active substitute, so a noindex deletes
-  // those clicks rather than redistributing them. A Closed page showing
-  // ClosePrice is NOT a VOW-only sold surface under ODS A.4 for indexing (Matt,
-  // same ruling), so G54 is deliberately not extended here.
-  //
-  // These URLs are residual index, not submitted: getListingSitemapRows.ts
-  // ships Active/AUC only (every city, in-area or not), and that stays. Held by
-  // scripts/check-listing-offmarket-index.mjs (ci:listing-offmarket-index).
+  // Off-market pages older than 90 days are noindex, follow. Canonical is the
+  // community hub, else the city hub, else the listing. Recent Closed /
+  // Expired / Withdrawn and every on-market status stay index, follow on the
+  // listing URL. Geography is not an input for on-market homes (SITE-33
+  // reverted 2026-10-05). Held by listingIndexPolicy + ci:listing-offmarket-index.
   return pageMetadata({
     title,
     description: metaDescription,
-    path: canonicalPath,
+    path: indexPolicy.canonicalPath,
     ogImage: `/api/og?type=listing&id=${encodeURIComponent(listing.listingKey)}`,
+    noindex: indexPolicy.noindex,
   })
 }
 
@@ -325,8 +329,9 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   const offMarket = isPublicOffMarketStatus(listing.status)
 
   // SITE-33 — this home's market, for the honesty block only. Since Matt's
-  // 2026-10-05 revert it no longer touches robots or the sitemap: out-of-area
-  // homes are index, follow and in listings.xml. Null on every Central Oregon home, so
+  // 2026-10-05 revert it no longer touches robots or the sitemap for on-market
+  // homes: out-of-area Active/AUC/Pending stay index, follow and in listings.xml.
+  // Null on every Central Oregon home, so
   // a Bend page pays nothing: the geo read below only runs when the answer is
   // already "outside our market".
   const outOfArea = outOfAreaListingPolicy(listing.city)
@@ -441,7 +446,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           )
         : Promise.resolve([]),
       withTimeoutFallback(getListingDetailOpenHouses(listingKey), [], 3000, 'listing:open-houses'),
-      withTimeoutFallback(getReviews(50), null, 3000, 'listing:reviews'),
+      withTimeoutFallback(getReviews(8), null, 3000, 'listing:reviews'),
       withTimeoutFallback(getCalculatorDefaults(), null, 3000, 'listing:calcDefaults'),
       // SITE-06: how a price cut behaves in THIS listing's city, re-pulled per
       // city, pinned to a 12-month window. Null when nothing publishes honestly
@@ -517,11 +522,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
         ...p,
         url: listingRowPhotoSrc(p.url, LISTING_FIELD_LEAD_PHOTO_SIZE),
       }))
-  const listingWithPhotos = {
-    ...listing,
-    photos: flightPhotos,
-    photoUrl: flightPhotos[0]?.url ?? listing.photoUrl,
-  }
+  const listingWithPhotos = pickPriceCtaListing(listing)
 
   // SITE-21. relatedHomes.nearby is the only ACTIVE-only pool: fetchNearbyTiles
   // queries status 'active', while relatedHomes.similar hydrates the similar MV
@@ -536,34 +537,58 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     placeContext.neighborhood?.label,
     listing.subdivisionName,
   ].filter((n): n is string => !!n && n !== 'N/A')
-  const similarBase = offMarket
-    ? relatedHomes.nearby
-    : relatedHomes.nearby.length > 0
+  const similarBase = listingSimilarActive(
+    offMarket
       ? relatedHomes.nearby
-      : [...relatedHomes.similar, ...relatedHomes.primary]
+      : relatedHomes.nearby.length > 0
+        ? relatedHomes.nearby
+        : [...relatedHomes.similar, ...relatedHomes.primary],
+  )
   const similarInPlace = listingSimilarDedupe(listingSimilarInPlace(similarBase, placeNames))
-  const similarPool =
+  const similarPool = listingSimilarActive(
     offMarket && similarInPlace.length < OFF_MARKET_SIMILAR_MIN
       ? listingSimilarDedupe(similarBase)
-      : similarInPlace
+      : similarInPlace,
+  )
   const similarRows = listingSimilarRail(similarPool).map((row) =>
     row.photoUrl
       ? { ...row, photoUrl: listingRowPhotoSrc(row.photoUrl) }
       : row,
   )
   const inventoryDoor = listingInventoryDoor(placeContext)
-  const placeBoundary = await (async () => {
-    for (const attempt of listingBoundaryAttempts(listing, placeContext)) {
-      const geometry = await withTimeoutFallback(
-        getBoundaryGeoJSON(attempt),
+  const [placeBoundary, subdivisionBoundary] = await Promise.all([
+    (async () => {
+      for (const attempt of listingBoundaryAttempts(listing, placeContext)) {
+        const geometry = await withTimeoutFallback(
+          getBoundaryGeoJSON(attempt),
+          null,
+          1800,
+          `listing:boundary:${attempt.geoType}`,
+        )
+        if (geometry) return geometry
+      }
+      return null
+    })(),
+    (async () => {
+      if (listing.lat == null || listing.lng == null) return null
+      const ring = await withTimeoutFallback(
+        getSubdivisionRing(listing.lat, listing.lng),
         null,
         1800,
-        `listing:boundary:${attempt.geoType}`,
+        'listing:hero-plat',
       )
-      if (geometry) return geometry
-    }
-    return null
-  })()
+      const slug = ring?.homeSlug
+      if (!slug) return null
+      return withTimeoutFallback(
+        getBoundaryGeoJSON({ geoType: 'subdivision', geoSlug: slug }),
+        null,
+        1800,
+        'listing:hero-subdivision',
+      )
+    })(),
+  ])
+  const heroRings = listingHeroSubdivisionRings(outerRings(subdivisionBoundary))
+  const heroBoundary = heroRings.length > 0 ? subdivisionBoundary : null
   const listingAtlas = await buildListingAtlas({
     city: listing.city ?? '',
     citySlug: listing.citySlug ?? null,
@@ -595,6 +620,8 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     brokers[0] ??
     null
   const ctaBroker = listingAgent ?? matt
+  const slimBrokers = brokers.map(slimPublicBroker)
+  const slimCtaBroker = ctaBroker ? slimPublicBroker(ctaBroker) : null
 
   const brokerNameTokens = new Set<string>(['matt'])
   for (const b of brokers) {
@@ -603,14 +630,16 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
       if (t.length >= 4 && t !== 'ryan') brokerNameTokens.add(t)
     }
   }
-  const genericReviews = reviews
-    ? {
-        ...reviews,
-        reviews: reviews.reviews.filter(
-          (r) => ![...brokerNameTokens].some((tok) => new RegExp(`\\b${tok}\\b`).test(r.text.toLowerCase())),
-        ),
-      }
-    : reviews
+  const genericReviews = slimListingReviews(
+    reviews
+      ? {
+          ...reviews,
+          reviews: reviews.reviews.filter(
+            (r) => ![...brokerNameTokens].some((tok) => new RegExp(`\\b${tok}\\b`).test(r.text.toLowerCase())),
+          ),
+        }
+      : reviews,
+  )
 
   const street = listingMlsStreetLine(listing)
   const listingHref = listingCanonicalHref(listing)
@@ -621,6 +650,12 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     community: placeContext.curatedCommunity ?? aliasLadder.parent,
     subdivision: aliasLadder.plat ?? placeContext.subdivision,
     address: street || `Listing ${listingKey}`,
+  })
+  // Exact-match text doors to /homes-for-sale/{city} and the #513 community
+  // hub. Breadcrumb already climbs city → community (listingPlaceTrail).
+  const hubLinks = listingHubLinks({
+    city: listing.city && listing.citySlug ? { label: listing.city, slug: listing.citySlug } : null,
+    community: placeContext.curatedCommunity,
   })
 
   const contactKey =
@@ -706,13 +741,20 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
 
   const hero = (
     <ListingHero
-      photos={flightPhotos}
-      floorPlans={flightFloorPlans}
+      photos={slimListingMedia(flightPhotos)}
+      floorPlans={slimListingMedia(flightFloorPlans)}
       videos={videos}
       addressLine={street}
       cityLine={listing.city}
       lat={listing.lat}
       lng={listing.lng}
+      boundary={heroBoundary}
+      nearby={listingHeroMapPins(
+        relatedHomes.nearby,
+        listing.lat != null && listing.lng != null
+          ? { lat: listing.lat, lng: listing.lng, rings: heroRings }
+          : undefined,
+      )}
       openHouseLabel={
         openHouses[0]
           ? publishOpenHouseBadgeLabel(openHouses[0].event_date, openHouses[0].start_time)
@@ -722,17 +764,34 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     />
   )
 
-  const atlasBlock = listingAtlas ? (
+  const atlasProps = listingAtlas
+    ? deferredAtlasProps({
+        population: listingAtlas.atlas,
+        scope: {
+          cities: listingAtlas.cities,
+          boundaryRef: listingAtlas.boundaryRef,
+          boundary: listingAtlas.boundary,
+        },
+        regions: listingAtlas.regions,
+        types: listingAtlas.atlas.types,
+        fit: listingAtlas.dotsFrame ? 'dots' : 'regions',
+        basemapFrame: basemapFrameForRegions(listingAtlas.regions, {
+          dots: listingAtlas.atlas.dots,
+          fit: listingAtlas.dotsFrame ? 'dots' : 'regions',
+        }),
+      })
+    : null
+
+  const atlasBlock = listingAtlas && atlasProps ? (
     <V3Atlas
       id="location"
       headingLevel={2}
       headline={v3Text(listingAtlasHeadline(listingAtlas.frameName))}
-      dots={listingAtlas.atlas.dots}
-      regions={listingAtlas.regions}
-      basemap={basemapForRegions(listingAtlas.regions, {
-        dots: listingAtlas.atlas.dots,
-        fit: listingAtlas.dotsFrame ? 'dots' : 'regions',
-      })}
+      dots={atlasProps.dots}
+      dotsSrc={atlasProps.dotsSrc}
+      dotsSummary={atlasProps.dotsSummary}
+      regions={atlasProps.regions}
+      basemapSrc={atlasProps.basemapSrc}
       types={listingAtlas.atlas.types}
       events={listingAtlas.atlas.events}
       source={listingAtlas.atlas.source}
@@ -804,13 +863,14 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
       <PriceCtaStrip
         listing={listingWithPhotos}
         leaseRateOption={leaseRateOption}
-        history={history}
+        history={slimListingHistory(history)}
         onSave={saveListingFromStrip}
         initialSaved={initialSaved}
         signedIn={Boolean(session)}
         ratePct={calcDefaults?.mortgageRate ?? null}
         showEstPayment={false}
         showAlerts={false}
+        bookHref={`/book?agent=${encodeURIComponent(ctaBrokerSlug)}&listing=${encodeURIComponent(listing.listingKey)}`}
         similarHref={similarHref}
         alertsHref={alertsHref}
         dropMark={dropMark}
@@ -825,6 +885,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           it ends in that city's referral page. Null on every Central Oregon
           listing. */}
       {outOfAreaNotice ? <ListingOutOfAreaNotice notice={outOfAreaNotice} /> : null}
+      {hubLinks ? <ListingHubLinks links={hubLinks} /> : null}
       {/* SITE-21 — THE SOLD FACTS, first thing under the price. What happened
           to this house is the answer the reader came for, and it is the only
           claim about its price that is still true. */}
@@ -835,6 +896,27 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           browseLabel={similarLabel}
         />
       ) : null}
+      <ListingQuickFacts
+        street={street}
+        city={listing.city}
+        price={wholePropertyPrice}
+        beds={listing.beds}
+        baths={listing.baths}
+        sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
+        lotSizeAcres={listing.lotSizeAcres}
+        lotSizeSqft={listing.lotSizeSqft}
+        yearBuilt={listing.yearBuilt}
+        communityName={listing.communityName}
+        subdivisionName={listing.subdivisionName}
+        status={listing.status}
+        onMarketDate={listing.onMarketDate}
+        closeDate={listing.closeDate}
+        hoaMonthly={listing.hoaMonthly}
+        associationFee={listing.associationFee}
+        associationFeeFrequency={listing.associationFeeFrequency}
+        propertySubType={listing.propertySubType}
+        propertyType={listing.propertyType}
+      />
       {/* The homes a reader CAN buy get the prominence on a page about one
           they cannot: the rail moves from the bottom of the page to directly
           under the sold facts. MASTER_SPEC §4.9. */}
@@ -857,7 +939,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           showCoach={false}
         />
       ) : null}
-      <PropertySpecs listing={listingWithPhotos} />
+      <PropertySpecs listing={listing} />
       {/* The listing agent's own words, as written (CLAUDE.md §2; Matt
           2026-09-09: "mls descriptions must come back"). The 12-section rebuild
           dropped this import while getListingDetail kept reading public_remarks,
@@ -882,7 +964,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
       ) : null}
       {atlasBlock}
       <div id="schools">
-        <SchoolsBlock listing={listingWithPhotos} />
+        <SchoolsBlock listing={listing} />
       </div>
       <ListingAroundHere lat={listing.lat} lng={listing.lng} />
       {!offMarket && askClaim ? <ListingAskInstrument claim={askClaim} /> : null}
@@ -946,11 +1028,11 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           view={cutFacts && !isLease ? buildCloseView(cutFacts, closeSubject) : null}
         />
       ) : null}
-      {ctaBroker ? (
+      {slimCtaBroker ? (
         <div id="listed" className="listing-who listing-who--flow">
           <ListingBrokerCTA
-            defaultBroker={ctaBroker}
-            brokers={brokers}
+            defaultBroker={slimCtaBroker}
+            brokers={slimBrokers}
             listingKey={contactKey}
             reviews={genericReviews}
             lockToDefault={listingAgent != null}
@@ -967,10 +1049,10 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
 
   const floating = null
 
-  const sidebar = ctaBroker ? (
+  const sidebar = slimCtaBroker ? (
     <ListingBrokerCTA
-      defaultBroker={ctaBroker}
-      brokers={brokers}
+      defaultBroker={slimCtaBroker}
+      brokers={slimBrokers}
       listingKey={contactKey}
       reviews={genericReviews}
       lockToDefault={listingAgent != null}
@@ -984,7 +1066,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     wholePropertyPrice,
     trail: breadcrumbs,
     listing,
-    photoUrls: (lcpPriority ? galleryPhotos : flightPhotos).map((p) => p.url),
+    photoUrls: (lcpPriority ? galleryPhotos : flightPhotos).slice(0, 5).map((p) => p.url),
     agent: listingAgent
       ? { fullName: listingAgent.fullName, email: listingAgent.email, phoneDirect: listingAgent.phoneDirect }
       : null,

@@ -345,10 +345,11 @@ async function computeEngagementDetail(
   }
 
   // Site pages arrived at FROM the document (2026-09-07). Every link a CMA
-  // prints goes through `trackedDocLink`, which stamps `utm_campaign=<slug>`,
-  // and the visitor tracker stores the arrival URL query — so the campaign tag
-  // is what makes a tap on a comp a visit belonging to THAT document instead of
-  // an anonymous listing view.
+  // prints goes through `trackedDocLink`, which stamps `rr_doc=<slug>` (and,
+  // on links already sent, the legacy `utm_campaign=<slug>`). The visitor
+  // tracker stores the arrival URL query, so that identity is what makes a
+  // tap on a comp a visit belonging to THAT document instead of an anonymous
+  // listing view.
   //
   // No `page_category` filter here on purpose: these land on listing, place and
   // market pages, each with its own category. The ilike is a substring match,
@@ -368,7 +369,9 @@ async function computeEngagementDetail(
   >()
   for (let i = 0; i < slugs.length; i += 25) {
     const chunk = slugs.slice(i, i + 25)
-    const orExpr = chunk.map((s) => `page_url.ilike.%utm_campaign=${s}%`).join(',')
+    const orExpr = chunk
+      .flatMap((s) => [`page_url.ilike.%utm_campaign=${s}%`, `page_url.ilike.%rr_doc=${s}%`])
+      .join(',')
     const { data, error } = await sb
       .from('visitor_events')
       .select('page_url, event_at')

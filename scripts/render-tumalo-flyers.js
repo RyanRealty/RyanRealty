@@ -1064,7 +1064,7 @@ function F10_BuyerEducation(assets, photos) {
           <div class="fact-num">4.1</div>
           <div class="fact-unit">Months Supply</div>
           <div class="fact-rule"></div>
-          <div class="fact-desc">Central Oregon remains a seller's market. Inventory is tight and well-priced properties move fast.</div>
+          <div class="fact-desc">Central Oregon has 4.1 months of supply. Inventory is tight and well-priced properties move fast.</div>
         </div>
         <div class="fact-card">
           <div class="fact-num">2.28</div>

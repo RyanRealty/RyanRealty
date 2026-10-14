@@ -314,4 +314,31 @@ describe('sunday queue membership', () => {
     const weekday = await peekOldestQueuedFirstTouch({ kinds: ['expired'] })
     expect(weekday?.id).toBe('WEEKDAY')
   })
+
+  it('drops a company-owned Sunday row instead of stalling the queue', async () => {
+    h.tables.expired_listings = [
+      {
+        listing_key: 'PETROSA',
+        street_address: '3802 Petrosa',
+        city: 'Bend',
+        expired_at: '2026-09-01T00:00:00.000Z',
+        outreach_email_status: null,
+        outreach_email_queued_at: null,
+        outreach_email_sent_at: null,
+        outreach_email_message_id: null,
+        outreach_email_idempotency_key: null,
+      },
+    ]
+    const queued = await enqueueSundayFirstTouchEmail('expired', 'PETROSA')
+    expect(queued).toEqual({ ok: true, already: false })
+    sendProspectingEmailIntro.mockResolvedValue({
+      ok: false,
+      error: 'County owner is a company (PAHLISCH HOMES AT PETROSA LP). Cold outreach stays held.',
+      code: 'company-owned',
+    })
+    const out = await drainSundayFirstTouchQueue(SUN_800_PT)
+    expect(out).toEqual({ ok: true, action: 'skipped-all', skipped: 1 })
+    expect(h.tables.expired_listings[0]!.outreach_email_status).toBeNull()
+    expect(sendProspectingEmailIntro).toHaveBeenCalledTimes(1)
+  })
 })

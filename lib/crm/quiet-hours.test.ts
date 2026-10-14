@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { hourInTimeZone, inSmsQuietHours, nextSmsWindow } from './quiet-hours'
+import {
+  formatMinuteOfDay,
+  hourInTimeZone,
+  inSmsQuietHours,
+  nextSmsWindow,
+  QUIET_END_GUARD_MINUTES,
+  smsPauseStartLabel,
+  smsWindowCloseAt,
+} from './quiet-hours'
 
 // Quiet hours: no SMS before 8am or at/after 8PM in the recipient's local time
 // (default America/Los_Angeles). Federal TCPA/TSR would allow until 9pm; Oregon
@@ -19,10 +27,21 @@ describe('quiet-hours (America/Los_Angeles, PDT UTC-7)', () => {
     expect(inSmsQuietHours(new Date('2026-06-24T11:30:00Z'))).toBe(true) // 4:30am PDT
   })
 
-  it('allows the 8am to 8pm window', () => {
+  it('allows 8am up to the 7:55pm pause', () => {
     expect(inSmsQuietHours(new Date('2026-06-24T15:00:00Z'))).toBe(false) // 8am PDT
     expect(inSmsQuietHours(new Date('2026-06-24T19:00:00Z'))).toBe(false) // noon PDT
-    expect(inSmsQuietHours(new Date('2026-06-25T02:59:00Z'))).toBe(false) // 7:59pm PDT
+    expect(inSmsQuietHours(new Date('2026-06-25T02:54:59Z'))).toBe(false) // 7:54:59pm PDT
+  })
+
+  it('pauses five minutes before 8pm, so a text handed to Twilio lands inside the window', () => {
+    // A 7:59:59pm send passed every check and could still reach the phone
+    // after 8pm through Twilio's queue and the carrier (audit, 2026-09-24).
+    expect(QUIET_END_GUARD_MINUTES).toBe(5)
+    expect(inSmsQuietHours(new Date('2026-06-25T02:55:00Z'))).toBe(true) // 7:55pm PDT
+    expect(inSmsQuietHours(new Date('2026-06-25T02:59:59Z'))).toBe(true) // 7:59:59pm PDT
+    expect(inSmsQuietHours(new Date('2026-12-11T03:54:00Z'))).toBe(false) // 7:54pm PST
+    expect(inSmsQuietHours(new Date('2026-12-11T03:55:00Z'))).toBe(true) // 7:55pm PST
+    expect(smsPauseStartLabel()).toBe('7:55pm')
   })
 
   it('blocks at/after 8pm — the Oregon window, not the federal 9pm', () => {
@@ -88,5 +107,50 @@ describe('nextSmsWindow — the next morning, never the one after', () => {
         expect(inSmsQuietHours(next), now.toISOString()).toBe(false)
       }
     }
+  })
+})
+
+// smsWindowCloseAt: the 8:00pm instant every enforced send hands Twilio as its
+// ValidityPeriod bound, so a text still queued then is dropped, not delivered.
+describe('smsWindowCloseAt, the 8pm bound Twilio enforces', () => {
+  it('is 8:00:00pm local the same day, in summer and in winter', () => {
+    // 7:54:59.500pm PDT → 8:00pm PDT is 03:00Z the next UTC day
+    expect(smsWindowCloseAt(new Date('2026-06-25T02:54:59.500Z')).toISOString()).toBe('2026-06-25T03:00:00.000Z')
+    // 8:00am PDT → the same evening
+    expect(smsWindowCloseAt(new Date('2026-06-24T15:00:00Z')).toISOString()).toBe('2026-06-25T03:00:00.000Z')
+    // 12:30pm PST → 8:00pm PST is 04:00Z the next UTC day
+    expect(smsWindowCloseAt(new Date('2026-12-10T20:30:00Z')).toISOString()).toBe('2026-12-11T04:00:00.000Z')
+  })
+
+  it('holds on both DST changeover days (clocks change at 2am, before the window opens)', () => {
+    // 2026-03-08 spring forward: 9:00am PDT (16:00Z) → 8pm PDT (03:00Z)
+    expect(smsWindowCloseAt(new Date('2026-03-08T16:00:00Z')).toISOString()).toBe('2026-03-09T03:00:00.000Z')
+    // 2026-11-01 fall back: 9:00am PST (17:00Z) → 8pm PST (04:00Z)
+    expect(smsWindowCloseAt(new Date('2026-11-01T17:00:00Z')).toISOString()).toBe('2026-11-02T04:00:00.000Z')
+  })
+
+  it('leaves every open-window send at least the guard band before the close', () => {
+    for (let t = Date.parse('2026-06-24T08:00:00-07:00'); ; t += 60_000) {
+      const now = new Date(t)
+      if (inSmsQuietHours(now)) break
+      const left = smsWindowCloseAt(now).getTime() - now.getTime()
+      expect(left, now.toISOString()).toBeGreaterThanOrEqual(QUIET_END_GUARD_MINUTES * 60_000)
+      expect(left, now.toISOString()).toBeLessThanOrEqual(12 * 3_600_000)
+    }
+  })
+})
+
+describe('formatMinuteOfDay and hourInTimeZone share one clock', () => {
+  it('formats the window ends the way the copy prints them', () => {
+    expect(formatMinuteOfDay(8 * 60)).toBe('8:00am')
+    expect(formatMinuteOfDay(8 * 60, ' ')).toBe('8:00 am')
+    expect(formatMinuteOfDay(19 * 60 + 55, ' ')).toBe('7:55 pm')
+    expect(formatMinuteOfDay(0)).toBe('12:00am')
+    expect(formatMinuteOfDay(12 * 60)).toBe('12:00pm')
+  })
+
+  it('reads midnight as hour 0 and the last minute of the day as 23', () => {
+    expect(hourInTimeZone(new Date('2026-06-24T07:00:00Z'))).toBe(0) // midnight PDT
+    expect(hourInTimeZone(new Date('2026-06-24T06:59:59Z'))).toBe(23) // 11:59:59pm PDT
   })
 })

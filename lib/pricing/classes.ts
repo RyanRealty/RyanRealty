@@ -225,7 +225,7 @@ const SECOND_UNIT_RE =
 const SECOND_UNIT_CLAUSE_END = /[.!?;:\n\r]|--|\u2014/g
 const SECOND_UNIT_BEFORE_WINDOW = 60
 const SECOND_UNIT_HEDGE_BEFORE =
-  /\b(?:potential(?:ly)?|possib(?:le|ly|ility|ilities)|could|would|might|may|can\s+(?:be|add|build|accommodate|easily|also)|options?\s+(?:for|to|of)|optional|room\s+(?:for|to)|space\s+(?:for|to)|build|building\s+(?:an?|your|out)|add|adding|construct\w*|creat(?:e|ing)|convert\w*|future|plans?\s+(?:for|to)|planned|approved\s+plans?|permits?\s+(?:for|to)|zoned|zoning|allows?|eligib\w*|ready\s+(?:for|to)|dream\w*|eyeing|envision\w*|imagin\w*|consider\w*|explor\w*|bring\s+your|if\s+you|want(?:ed)?\s+to|(?:ideal|perfect|great|suited|suitable|use|used|serve|serves|function|works?)\s+(?:for|as)|think)\b/gi
+  /\b(?:potential(?:ly)?|possib(?:le|ly|ility|ilities)|could|would|might|may|can\s+(?:be|add|build|accommodate|easily|also)|options?\s+(?:for|to|of)|optional|room\s+(?:for|to)|space\s+(?:for|to)|build|building\s+(?:an?|your|out)|add|adding|construct(?!ion)\w*|creat(?:e|ing)|convert\w*|future|plans?\s+(?:for|to)|planned|approved\s+plans?|permits?\s+(?:for|to)|zoned|zoning|allows?|eligib\w*|ready\s+(?:for|to)|dream\w*|eyeing|envision\w*|imagin\w*|consider\w*|explor\w*|bring\s+your|if\s+you|want(?:ed)?\s+to|(?:ideal|perfect|great|suited|suitable|use|used|serve|serves|function|works?)\s+(?:for|as)|think)\b/gi
 /** A stated feature between the hedge and the unit word: the hedge is about something else. */
 const SECOND_UNIT_STATEMENT_BREAK =
   /\b(?:features?|featuring|includes?|including|has|have|having|offers?|offering|boasts?|plus|comes with|complete with|from)\b/i
@@ -502,6 +502,15 @@ export function productCompatible(a: ProductKey, b: ProductKey): boolean {
 export const TOWNHOUSE_FACTS_OR =
   'and(product_class.eq.attached,property_sub_type.ilike.%town%),product_class.eq.townhouse'
 
+/**
+ * Condo closes are stored as product_class attached, the same bucket as
+ * townhouses. Bend on 2026-10-09: 158 condo closes since 2024-10-09, every
+ * one attached, zero with product_class condo. An equality on condo returns
+ * an empty pool, which is how 2745 Ordway's own building never entered.
+ */
+export const CONDO_FACTS_OR =
+  'and(product_class.eq.attached,property_sub_type.ilike.%condo%),product_class.eq.condo'
+
 export type FactsProductClause = {
   eq?: ['product_class', string]
   or?: string
@@ -510,6 +519,7 @@ export type FactsProductClause = {
 export function factsProductClauses(productClass: string | null | undefined): FactsProductClause {
   if (!productClass || productClass === 'unknown' || productClass === 'multi-unit') return {}
   if (productClass === 'townhouse') return { or: TOWNHOUSE_FACTS_OR }
+  if (productClass === 'condo') return { or: CONDO_FACTS_OR }
   return { eq: ['product_class', productClass] }
 }
 

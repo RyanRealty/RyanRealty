@@ -298,6 +298,32 @@ async function postMessage(form: URLSearchParams): Promise<{ ok: true; sid: stri
  */
 const MAX_MMS_MEDIA = 10
 
+/** Twilio's accepted ValidityPeriod range; it recommends more than 5 s (Message resource docs). */
+const MIN_VALIDITY_S = 6
+const MAX_VALIDITY_S = 36_000
+
+/**
+ * ValidityPeriod, in seconds, for a text that must not reach a phone after
+ * `validUntil`: Twilio drops a message still in its queue when the period
+ * runs out. Null when too little time is left to send at all.
+ */
+export function validityPeriodSeconds(validUntil: Date, now: number = Date.now()): number | null {
+  const seconds = Math.floor((validUntil.getTime() - now) / 1000)
+  if (seconds < MIN_VALIDITY_S) return null
+  return Math.min(seconds, MAX_VALIDITY_S)
+}
+
+const SEND_WINDOW_CLOSED_ERROR = 'The send window closes before Twilio could deliver this text, so nothing was sent.'
+
+/** Set ValidityPeriod from `validUntil`; false when the window is already too close to send. */
+function applyValidUntil(form: URLSearchParams, validUntil?: Date): boolean {
+  if (!validUntil) return true
+  const seconds = validityPeriodSeconds(validUntil)
+  if (seconds == null) return false
+  form.set('ValidityPeriod', String(seconds))
+  return true
+}
+
 function appendMediaUrls(form: URLSearchParams, mediaUrls?: string[]): void {
   if (!mediaUrls || mediaUrls.length === 0) return
   mediaUrls.slice(0, MAX_MMS_MEDIA).forEach((url, i) => form.set(`MediaUrl${i}`, url))
@@ -312,7 +338,8 @@ function appendMediaUrls(form: URLSearchParams, mediaUrls?: string[]): void {
  * `queued` for a full hour before the carrier released it; through the service the
  * same send delivered in seconds from the same number). Falls back to a raw-From
  * send only when the messaging service isn't configured. Pass mediaUrls (public
- * HTTPS URLs) to send as MMS.
+ * HTTPS URLs) to send as MMS. Pass validUntil (smsWindowCloseAt() for a send
+ * under quiet hours) and Twilio drops the text if it is still queued then.
  */
 async function maybeInstrumentSmsBody(to: string, body: string): Promise<string> {
   if (!/https?:\/\//i.test(body)) return body
@@ -329,7 +356,7 @@ async function maybeInstrumentSmsBody(to: string, body: string): Promise<string>
   }
 }
 
-export async function sendSms(params: { from: string; to: string; body: string; mediaUrls?: string[] }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
+export async function sendSms(params: { from: string; to: string; body: string; mediaUrls?: string[]; validUntil?: Date }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
   const to = toE164(params.to)
   if (!to) return { ok: false, error: 'Invalid phone number' }
   const a2p = await getA2pCampaignStatus()
@@ -344,12 +371,13 @@ export async function sendSms(params: { from: string; to: string; body: string; 
       : { From: params.from, To: to, Body: body },
   )
   appendMediaUrls(form, params.mediaUrls)
+  if (!applyValidUntil(form, params.validUntil)) return { ok: false, error: SEND_WINDOW_CLOSED_ERROR }
   const r = await postMessage(form)
   return r.ok ? r : { ok: false, error: r.error }
 }
 
-/** Preferred outbound path — uses the A2P-registered messaging service. Pass mediaUrls (public HTTPS URLs) to send as MMS. */
-export async function sendSmsViaMessagingService(params: { to: string; body: string; mediaUrls?: string[] }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
+/** Preferred outbound path — uses the A2P-registered messaging service. Pass mediaUrls (public HTTPS URLs) to send as MMS, validUntil to bound Twilio's queue (see sendSms). */
+export async function sendSmsViaMessagingService(params: { to: string; body: string; mediaUrls?: string[]; validUntil?: Date }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
   const ms = process.env.TWILIO_MESSAGING_SERVICE_SID?.trim()
   if (!ms) return { ok: false, error: 'TWILIO_MESSAGING_SERVICE_SID not configured' }
   const to = toE164(params.to)
@@ -361,6 +389,7 @@ export async function sendSmsViaMessagingService(params: { to: string; body: str
   const body = await maybeInstrumentSmsBody(to, params.body)
   const form = new URLSearchParams({ MessagingServiceSid: ms, To: to, Body: body })
   appendMediaUrls(form, params.mediaUrls)
+  if (!applyValidUntil(form, params.validUntil)) return { ok: false, error: SEND_WINDOW_CLOSED_ERROR }
   const r = await postMessage(form)
   return r.ok ? r : { ok: false, error: r.error }
 }
@@ -467,6 +496,43 @@ export async function getRecipientOptOut(recipient: string, sender: string): Pro
   return optOutStateFromInbound(
     (data.messages ?? []).filter((m) => m.date_created).map((m) => ({ body: m.body, dateCreated: m.date_created as string })),
   )
+}
+
+/**
+ * Every message on the account in the trailing window, as Twilio recorded it:
+ * the inbound texts we should have handled and the delivery status of every
+ * outbound (including the forwards to broker cells). null = Twilio not
+ * configured or the read failed.
+ */
+export async function getRecentTwilioMessages(
+  sinceHours: number,
+  now: Date = new Date(),
+): Promise<Array<{ sid: string; direction: string; from: string; to: string; status: string; dateCreated: string }> | null> {
+  const c = creds()
+  if (!c) return null
+  const headers = { Authorization: authHeader(c) }
+  const since = new Date(now.getTime() - sinceHours * 3600 * 1000)
+  const day = since.toISOString().slice(0, 10)
+  try {
+    const out: Array<{ sid: string; direction: string; from: string; to: string; status: string; dateCreated: string }> = []
+    let next: string | null = `${API}/Accounts/${c.sid}/Messages.json?${new URLSearchParams({ 'DateSent>=': day, PageSize: '1000' })}`
+    for (let page = 0; next && page < 5; page++) {
+      const res = await resilientFetch(next, { headers, cache: 'no-store' })
+      if (!res.ok) return null
+      const data = (await res.json()) as {
+        messages?: Array<{ sid: string; direction: string; from: string; to: string; status: string; date_created: string }>
+        next_page_uri?: string | null
+      }
+      for (const m of data.messages ?? []) {
+        if (new Date(m.date_created).getTime() < since.getTime()) continue
+        out.push({ sid: m.sid, direction: m.direction, from: m.from, to: m.to, status: m.status, dateCreated: m.date_created })
+      }
+      next = data.next_page_uri ? `https://api.twilio.com${data.next_page_uri}` : null
+    }
+    return out
+  } catch {
+    return null
+  }
 }
 
 /**

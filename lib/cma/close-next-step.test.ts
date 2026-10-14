@@ -220,7 +220,8 @@ describe('the close has one next step', () => {
     expected.searchParams.set('agent', 'matt')
     const href = /href="([^"]+)" data-rr-track="cma-book"/.exec(nextStepButtonsHtml(a))?.[1]
     expect(href?.replace(/&amp;/g, '&')).toBe(expected.toString())
-    expect(href).toContain('utm_campaign=cma-2566-keats')
+    expect(href).toContain('utm_campaign=cma-letter')
+    expect(href).toContain('rr_doc=cma-2566-keats')
     expect(href).toContain('/book?')
   })
 

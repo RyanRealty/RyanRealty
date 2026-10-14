@@ -9,10 +9,14 @@ import { PRIMARY_CITIES } from '@/lib/cities'
 import { GOLF_COURSES } from '@/data/golf/courses'
 import aiQueryMap from '@/lib/seo/ai-query-map.json' assert { type: 'json' }
 import { CORE_MARKET_PATHS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
+import { BLOG_HOUSING_MARKET_GUIDE_REDIRECTS } from '@/lib/routing/blog-market-guide-redirects'
 import { cityTypeLlmsLines, dedupeLlmsLines, marketCityLlmsLines, zipLlmsLines, LLMS_SUBDIVISIONS_PATH } from '@/lib/site/llms-geo'
 import { BRAND, CONTACT } from '@/lib/brand/contact'
+import { BUYER_ANSWER_DEFS } from '@/lib/buyer-answers'
 
 const SITE_URL = siteOrigin()
+
+const GUIDE_HOP = new Map(BLOG_HOUSING_MARKET_GUIDE_REDIRECTS.map((r) => [r.source, r.destination]))
 
 export const revalidate = 3600
 
@@ -78,7 +82,9 @@ export async function GET() {
     `- Open houses: ${SITE_URL}/open-houses`,
     `- New construction in Bend: ${SITE_URL}/new-construction`,
     `- Price Drop Radar (Central Oregon): ${SITE_URL}/price-drops`,
+    `- Buyers have leverage in Bend (live MLS numbers): ${SITE_URL}/buy/leverage`,
     `- Bend price drops: ${SITE_URL}/price-drops/bend`,
+    `- Listing alerts: ${SITE_URL}/buy/alerts`,
     `- Redmond price drops: ${SITE_URL}/price-drops/redmond`,
     `- Sisters price drops: ${SITE_URL}/price-drops/sisters`,
     ...pillars('listings'),
@@ -104,6 +110,10 @@ export async function GET() {
       (c) => `- ${c.label} (${c.city}): ${SITE_URL}/communities/${publicCommunitySlug(c)}`,
     ),
   ])
+  const buyerAnswerLines = lines([
+    ...pillars('buyer-answers'),
+    ...BUYER_ANSWER_DEFS.map((def) => `- ${def.query}: ${SITE_URL}${def.path}`),
+  ])
   const neighborhoodLines = lines(
     neighborhoods
       .map((n) => {
@@ -117,7 +127,12 @@ export async function GET() {
   const guideLines = lines([
     `- All guides: ${SITE_URL}/blog`,
     ...pillars('guides'),
-    ...guides.map((g) => `- ${g.title}: ${SITE_URL}/blog/${g.slug}`),
+    // A retired /blog/<town>-housing-market-guide 404s; list the live page
+    // it 301s to (the same table next.config.ts redirects with).
+    ...guides.map((g) => {
+      const path = `/blog/${g.slug}`
+      return `- ${g.title}: ${SITE_URL}${GUIDE_HOP.get(path) ?? path}`
+    }),
   ])
   // "All posts" shares /blog with "All guides" above, so the dedupe drops it.
   const blogLines = lines([
@@ -126,6 +141,7 @@ export async function GET() {
   ])
   const toolLines = lines([
     `- Mortgage calculator: ${SITE_URL}/tools/mortgage-calculator`,
+    `- Seller net sheet (what a Bend seller nets, with a worked example at the median): ${SITE_URL}/tools/seller-net-sheet`,
     `- Rental property calculator: ${SITE_URL}/tools/rental-property-calculator`,
     `- Home appreciation tool: ${SITE_URL}/tools/appreciation`,
     ...pillars('tools'),
@@ -181,6 +197,9 @@ One page per property type in each city: the ones for sale now, live from the re
 ## Cities${cityLines}
 
 ## Communities${communityLines}
+
+## Buyer answers
+Long-tail buyer questions answered with live Oregon Data Share MLS figures, a table, listings, and FAQPage schema.${buyerAnswerLines}
 
 ## Neighborhoods${neighborhoodLines}
 

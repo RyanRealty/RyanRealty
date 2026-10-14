@@ -1,5 +1,6 @@
 import type { BlogPostSeed } from '../seed-blog-posts'
 import { buyerClosingCostsSeed } from '../../lib/blog/buyer-closing-costs'
+import { costToSellSeed } from '../../lib/blog/cost-to-sell'
 
 /**
  * Buyer + seller AEO guide pack, 2026-09-07. Fifteen guides from the keyword brief (docs/plans/PUBLIC_PRODUCT/AEO_GUIDES_2026-09.md). Six of these slugs replaced older seed entries in the sibling files, so each slug lives in exactly one seed file. Every number in these bodies traces to the source named in that doc; dated figures carry their as-of date in the text.
@@ -14,8 +15,8 @@ export const posts: BlogPostSeed[] = [
     author_broker_id: "2fda6811-2edf-49e3-b3ca-33e1052f82e6",
     published_at: '2026-09-07T16:00:00Z',
     status: 'published',
-    seo_title: "Cost of Living in Bend, Oregon (2026): Housing, Taxes",
-    seo_description: "What it costs to live in Bend: live housing numbers, Oregon income and property tax rules, insurance, utilities, and how to build a budget before you tour.",
+    seo_title: "Is Bend, Oregon Expensive? Cost of Living 2026",
+    seo_description: "Housing is the cost that decides whether Bend works. Live home prices, Oregon's no-sales-tax and 4.75%-9.9% income tax trade, utilities, and a budget.",
     excerpt: "Housing is the cost that decides whether Bend works. A plain look at the housing numbers, the Oregon tax trade, insurance, utilities, and how to build a Bend budget before you tour.",
     content: `
 <p>Most cost-of-living pages are a pile of numbers nobody checked. This one is built the other way. Every figure below names its source and the date we pulled it, September 7, 2026, and the housing figures link to the live market pages that update from MLS data every day. Where a number moves weekly, we say so.</p>
@@ -224,61 +225,8 @@ export const posts: BlogPostSeed[] = [
 <p><a href="/sell">Value my home</a> starts with your address and ends with a written valuation, the comps, and a net sheet. No listing agreement is required to get the number.</p>
 `,
   },
-  {
-    title: "What It Costs to Sell a House in Bend (and Oregon)",
-    slug: "cost-to-sell-house-bend-oregon",
-    category: "Selling Guides",
-    tags: ["cost to sell","seller closing costs","commission","bend","oregon"],
-    hero_image_url: "/images/blog/cost-to-sell-house-bend-oregon.jpg",
-    author_broker_id: "2fda6811-2edf-49e3-b3ca-33e1052f82e6",
-    published_at: '2026-09-07T16:00:00Z',
-    status: 'published',
-    seo_title: "Cost to Sell a House in Bend, Oregon: Fees, Title, Closing",
-    seo_description: "Every line a Bend seller pays: listing fee, buyer-agent compensation under the 2024 rules, title and escrow, recording, prorations, HOA fees. No transfer tax.",
-    excerpt: "The listing fee, buyer-agent compensation under the current rules, title and escrow, recording, prorations, and what is included. Oregon has no transfer tax, and we show the net before you accept.",
-    content: `
-<p>Sellers compare cost before they compare marketing, and they should. The costs of selling a home in Bend fall into a few buckets, most of them are knowable before you list, and one of them is negotiable in a way it was not a few years ago. Here is each line and who pays it.</p>
-
-<h2>The big buckets</h2>
-<ul>
-<li>The listing fee you agree to with your broker.</li>
-<li>Buyer-agent compensation, if you agree to offer it.</li>
-<li>Title insurance, escrow, and recording.</li>
-<li>Prorated property taxes, your loan payoff, and any HOA transfer fees.</li>
-<li>Prep and repairs, plus anything you agree to credit the buyer after inspection.</li>
-</ul>
-
-<h2>Listing fee versus buyer-agent compensation</h2>
-<p>These used to be one number. They are two now. Our listing fee is 3% of the sale price with no add-on fees, and it covers the MLS listing, professional photography, a 3D tour, the marketing plan, every showing, and transaction management through close. Buyer-agent compensation is separate. Under the rules that took effect in August 2024, offers of compensation to the buyer's agent no longer appear in the MLS, and buyers sign a written agreement with their own agent that states what that agent will be paid. Whether you offer to cover some or all of that is a term of each offer, and you decide it offer by offer. We walk you through the trade before the first one arrives. Commission is negotiable and every listing agreement is its own conversation.</p>
-
-<h2>Title, escrow, and recording</h2>
-<p>Oregon has no state real estate transfer tax outside of Washington County, so in Deschutes County that line is zero. Title insurance premiums in Oregon are filed with the state, so the owner's policy is a published figure for the sale price, and in Central Oregon practice the seller customarily pays for it. The escrow fee is customarily split between buyer and seller. The county charges a recording fee for the deed. Your escrow officer quotes each of these from a published schedule before you sign, and they show up as line items on your settlement statement.</p>
-
-<h2>Prorations, payoffs, and the HOA</h2>
-<p>Property taxes are prorated to the closing day on Oregon's July-through-June tax year, so you pay your share of the current year. Your mortgage is paid off from the proceeds, along with a small fee to record the release. If the home is in a homeowners association, the association's own fee schedule sets what it charges for the transfer and the document package, and some Bend communities charge a percentage of the sale price. Our <a href="/blog/hoa-guide-central-oregon">HOA guide</a> covers what to ask for.</p>
-
-<h2>Prep, marketing, and what is included</h2>
-<p>Photography, the 3D tour, the marketing, and the showings are inside the 3% fee. What is not inside it is the work on the house: repairs, cleaning, staging, and anything you decide to fix before listing. We give you a list with what each item is likely to cost and whether it changes the price, and you decide. Our <a href="/blog/preparing-home-for-sale-checklist">pre-listing checklist</a> separates the fixes that matter from the ones that only change the photos.</p>
-
-<h2>What the settlement statement looks like</h2>
-<p>Before you accept an offer, we send a seller net sheet: the offered price, the listing fee, any buyer-agent compensation you agreed to, title and escrow, prorations, your payoff, and any credit to the buyer, with the net at the bottom. That is the number to plan around. When the final settlement statement arrives from escrow, it should match the net sheet within the prorations, and we go through it with you line by line.</p>
-
-<h2>Questions</h2>
-<h3>How much does it cost to sell a house in Bend?</h3>
-<p>The listing fee, any buyer-agent compensation you agree to offer, title and escrow, the county recording fee, prorated property taxes, your loan payoff, and any HOA transfer fees, plus whatever you spend preparing the home. We itemize all of it on a seller net sheet before you accept an offer.</p>
-<h3>What does Ryan Realty's 3% listing plan include?</h3>
-<p>The listing fee is 3% of the sale price with no add-on fees. It covers the MLS listing, professional photography, a 3D tour, the marketing plan, every showing, weekly written reports, remote-owner care, and transaction management through close.</p>
-<h3>Who pays the buyer's agent now?</h3>
-<p>The buyer agrees to a fee with their own agent in a written agreement before touring. Whether the seller covers some or all of it is negotiated in each offer. Since August 2024 that offer no longer appears in the MLS, so it is a term of the contract, decided offer by offer.</p>
-<h3>Does Oregon charge a real estate transfer tax?</h3>
-<p>No. Oregon has no state transfer tax, and Deschutes County has none. Washington County, near Portland, is the one county in Oregon that charges one.</p>
-<h3>What other seller costs show up at closing?</h3>
-<p>The owner's title insurance policy, the seller's share of the escrow fee, the recording fee for the release of your mortgage, prorated property taxes through closing day, your loan payoff, HOA transfer fees if the home is in an association, and any credit to the buyer you agreed to in the contract.</p>
-
-<h2>Next step</h2>
-<p><a href="/sell">Value my home</a> starts with your address. The written valuation is free and comes with a net sheet at the recommended price.</p>
-`,
-  },
+  // Body, figures, and FAQ live in lib/blog/cost-to-sell.ts (AIV #1 worked example, 2026-10-08).
+  costToSellSeed(),
   {
     title: "First-Time Home Buyer Guide for Bend and Central Oregon",
     slug: "first-time-home-buyer-guide-central-oregon",
@@ -504,8 +452,8 @@ export const posts: BlogPostSeed[] = [
     author_broker_id: "2fda6811-2edf-49e3-b3ca-33e1052f82e6",
     published_at: '2026-09-07T16:00:00Z',
     status: 'published',
-    seo_title: "Property Taxes in Bend and Deschutes County (2026)",
-    seo_description: "How Oregon property tax works in Deschutes County: assessed vs market value under Measure 50, the DIAL lookup, the November 15 calendar, and relief programs.",
+    seo_title: "Bend Property Taxes: Deschutes Rate, Due Dates",
+    seo_description: "Deschutes County averages $16.80 per $1,000 of assessed value, about 0.7% of market value. 2026 bills are due Nov. 16; pay in full for a 3% discount.",
     excerpt: "Oregon taxes assessed value, not what you paid. How Measure 50 works, how to look up any account, when the bill is due, how it is prorated at closing, and the 2026 relief programs.",
     content: `
 <p>Oregon does something most states do not. It taxes a number that is usually well below what your home is worth. The gap between assessed value and market value explains why two identical houses on the same street can carry very different tax bills, and it is the first thing a Bend buyer or seller should understand. Every rule below is from the Oregon Department of Revenue or Deschutes County.</p>

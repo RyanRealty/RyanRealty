@@ -499,10 +499,10 @@
         "replaceWith": "shadcn-dialog"
       },
       {
-        "section": "PriceCtaStrip + mobile contact bar at 375",
+        "section": "PriceCtaStrip at 375",
         "severity": "defect",
-        "finding": "The H1 wraps so Place sits alone, and the listed-by line is clipped under the sticky Tour/Call/Text bar.",
-        "primitive": "components/site/listing-detail/ListingMobileContactBar.client.tsx",
+        "finding": "The H1 wraps so Place sits alone.",
+        "primitive": "components/site/listing-detail/PriceCtaStrip.tsx",
         "replaceWith": null
       }
     ],

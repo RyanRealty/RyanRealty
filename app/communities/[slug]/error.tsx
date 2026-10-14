@@ -2,9 +2,15 @@
 
 import Link from 'next/link'
 import { useEffect } from 'react'
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button'
 import { H1 } from '@/components/site/primitives'
 
+/**
+ * HTTP 500 for a /communities/<slug> render that threw (listings or the
+ * community read did not answer). Next keeps the last good ISR copy for
+ * later requests. This document is not the community page: it is noindex
+ * so a crawler that hits a cold miss does not index "did not load".
+ */
 export default function CommunityError({
   error,
   reset,
@@ -18,22 +24,16 @@ export default function CommunityError({
 
   return (
     <main className="min-h-screen bg-background flex items-center justify-center px-4">
+      <meta name="robots" content="noindex, nofollow" />
       <div className="max-w-md text-center">
-        <H1 className="text-2xl text-primary">This community didn’t load</H1>
+        <H1 className="text-2xl text-primary">This community did not load</H1>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
-          <Button
-            type="button"
-            onClick={reset}
-            className="rounded-lg bg-accent px-6 py-3 font-semibold text-primary hover:bg-accent/90"
-          >
+          <Button type="button" onClick={reset} variant="default">
             Try again
           </Button>
-          <Link
-            href="/communities"
-            className="rounded-lg border border-border bg-card px-6 py-3 font-semibold text-primary hover:bg-muted"
-          >
-            View all communities
-          </Link>
+          <Button asChild variant="outline">
+            <Link href="/communities">View all communities</Link>
+          </Button>
         </div>
       </div>
     </main>

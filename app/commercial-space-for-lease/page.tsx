@@ -29,13 +29,16 @@
  * an Offer: the ItemList names the rent in words and carries no price.
  *
  * EMPTY. The tile read is resilient-cached and can answer [] on a failed read,
- * so an empty pull opts out of ISR (noStore) and the page says what it knows:
- * nothing listed on this refresh, never "there is no commercial space".
+ * so an empty pull shortens this render's ISR lifetime instead of standing as
+ * the copy for the full window (refuseDegradedIsr, not noStore() — inside a
+ * runtime ISR render Next 16 answers noStore() with a 500, see
+ * lib/site/degraded-isr.ts), and the page says what it knows: nothing listed
+ * on this refresh, never "there is no commercial space".
  */
 import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
-import { unstable_noStore as noStore } from 'next/cache'
 import { getCommercialLeaseListings } from '@/lib/data'
+import { refuseDegradedIsr } from '@/lib/site/degraded-isr'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingsBrowsePath } from '@/lib/slug'
 import { buildJsonLd, type SchemaInput } from '@/lib/site/json-ld'
@@ -112,7 +115,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function CommercialSpaceForLeasePage() {
   const { tiles, rateOptions, leaseTerms, leadPhotos } = await getCommercialLeaseListings()
   const groups = leaseCityGroups(tiles, rateOptions, leaseTerms, leadPhotos)
-  if (groups.length === 0) noStore()
+  if (groups.length === 0) await refuseDegradedIsr('commercial-space-for-lease', ['getCommercialLeaseListings'])
 
   const siteUrl = siteOrigin()
   const itemList = leaseItemList(groups, siteUrl)

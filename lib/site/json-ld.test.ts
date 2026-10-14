@@ -45,6 +45,43 @@ describe('buildJsonLd', () => {
       expect(node.numberOfBathroomsTotal).toBe(3)
     })
 
+    it('nests a Residence about node that matches Quick facts, with Offer beside it', () => {
+      const node = buildJsonLd({
+        ...base,
+        beds: 3,
+        baths: 2,
+        livingAreaSqft: 1500,
+        yearBuilt: 2000,
+        availability: 'Active',
+        residenceType: 'SingleFamilyResidence',
+        additionalProperty: [
+          { name: 'Community', value: 'Tetherow' },
+          { name: 'Status', value: 'Active' },
+          { name: 'HOA', value: '$171 per month' },
+        ],
+      })
+      expect(node['@type']).toBe('RealEstateListing')
+      const about = rec(node.about)
+      expect(about).toMatchObject({
+        '@type': 'SingleFamilyResidence',
+        numberOfBedrooms: 3,
+        numberOfBathroomsTotal: 2,
+        yearBuilt: 2000,
+      })
+      expect(rec(node.offers)).toMatchObject({ '@type': 'Offer', price: 750000, priceCurrency: 'USD' })
+      const props = node.additionalProperty as Array<Record<string, unknown>>
+      expect(props).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ '@type': 'PropertyValue', name: 'Community', value: 'Tetherow' }),
+          expect.objectContaining({ name: 'HOA', value: '$171 per month' }),
+        ]),
+      )
+    })
+
+    it('omits Residence about when the listing is not a dwelling', () => {
+      expect(buildJsonLd(base).about).toBeUndefined()
+    })
+
     it('Active -> InStock offer at the list price', () => {
       const offer = rec(buildJsonLd({ ...base, availability: 'Active' }).offers)
       expect(offer).toMatchObject({
@@ -189,6 +226,44 @@ describe('buildJsonLd', () => {
     expect(rec(r.provider)?.['@id']).toMatch(/#organization$/)
     expect(rec(r.areaServed)).toMatchObject({ '@type': 'Place', name: 'Bend, Oregon' })
     expect(String(r.url)).toMatch(/\/sell\/valuation$/)
+  })
+
+  // A merge on 2026-09-22 (cbb5a14fe) dropped this wiring and these two cases;
+  // the verified map in place-entity-same-as.ts sat unused until 2026-09-25.
+  it('place City on /cities/bend carries Wikipedia + Wikidata sameAs and a #place @id', () => {
+    const r = buildJsonLd({
+      type: 'place',
+      placeType: 'City',
+      name: 'Bend',
+      url: '/cities/bend',
+    })
+    expect(r['@type']).toBe('City')
+    expect(String(r['@id'])).toMatch(/\/cities\/bend#place$/)
+    expect(r['@id']).toBe(`${r.url}#place`)
+    const sameAs = r.sameAs as string[]
+    expect(sameAs).toContain('https://en.wikipedia.org/wiki/Bend,_Oregon')
+    expect(sameAs).toContain('https://www.wikidata.org/wiki/Q671288')
+  })
+
+  it('place community on /communities/tetherow cites the official origin', () => {
+    const r = buildJsonLd({
+      type: 'place',
+      name: 'Tetherow',
+      url: '/communities/tetherow',
+    })
+    expect(r.sameAs).toEqual(['https://tetherow.com'])
+  })
+
+  it('place with no verified entity carries no sameAs, and a passed one merges without duplicates', () => {
+    const plain = buildJsonLd({ type: 'place', name: 'Deschutes River Woods', url: '/subdivisions/deschutes-river-woods' })
+    expect(plain.sameAs).toBeUndefined()
+    const merged = buildJsonLd({
+      type: 'place',
+      name: 'Tetherow',
+      url: '/communities/tetherow',
+      sameAs: ['https://tetherow.com/', 'https://example.org/tetherow'],
+    })
+    expect(merged.sameAs).toEqual(['https://tetherow.com', 'https://example.org/tetherow'])
   })
 })
 

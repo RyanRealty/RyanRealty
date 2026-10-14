@@ -29,14 +29,14 @@ import {
   type ConditionOp,
   type Step,
 } from '@/lib/crm/sequence-step-schema'
-import { QUIET_END_HOUR, QUIET_START_HOUR } from '@/lib/crm/quiet-hours'
+import { formatMinuteOfDay, QUIET_START_HOUR, SMS_PAUSE_START_MINUTE } from '@/lib/crm/quiet-hours'
 import { CHANNEL_CARD_LABELS } from './editor-shared'
 import type { PanelOptions } from './StepConfigPanel'
 import { EngineTruthRadios, TagMultiselect } from './step-config-bits'
 
-/** 8 → "8:00 am", 20 → "8:00 pm". The text window copy reads the rule's own hours so it cannot drift. */
-function clockHour(hour: number): string {
-  return `${hour % 12 || 12}:00 ${hour < 12 ? 'am' : 'pm'}`
+/** 480 → "8:00 am", 1195 → "7:55 pm". The text window copy reads the rule's own minutes so it cannot drift. */
+function clockTime(minuteOfDay: number): string {
+  return formatMinuteOfDay(minuteOfDay, ' ')
 }
 
 const CONDITION_FIELD_LABELS: Record<ConditionField, string> = {
@@ -255,8 +255,9 @@ export function StepChannelBody({
             </>
           ) : (
             <p className="rounded-lg p-2.5 text-xs" style={{ border: '1px solid var(--a-border)', background: 'var(--a-inset)', color: 'var(--a-text-2)' }}>
-              Texts send from the assigned broker&apos;s number, only between {clockHour(QUIET_START_HOUR)} and{' '}
-              {clockHour(QUIET_END_HOUR)} PT, and skip opted-out contacts.
+              Texts send from the assigned broker&apos;s number, only between {clockTime(QUIET_START_HOUR * 60)} and{' '}
+              {clockTime(SMS_PAUSE_START_MINUTE)} PT so each lands before Oregon&apos;s 8pm cutoff, within the same hours on
+              the lead&apos;s own clock (their area code&apos;s time zone), and skip opted-out contacts.
             </p>
           )}
           {waitField}

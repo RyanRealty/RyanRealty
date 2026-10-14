@@ -13,9 +13,19 @@
  */
 
 import { google } from 'googleapis'
+import { withAuthDeadline } from '@/lib/google-deadline'
 
 const READ_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly'
 const WRITE_SCOPE = 'https://www.googleapis.com/auth/calendar'
+
+/**
+ * Per-request deadline for Calendar API calls. The booking page reads with no
+ * maxDuration of its own, and api/cron/tc-deal-calendar (maxDuration 60) writes
+ * several events per live deal, so one stalled call must not eat the run. The
+ * upsert fails open, and a timed-out insert is found by its vaultKey on the next
+ * sync rather than duplicated.
+ */
+export const CALENDAR_REQUEST_TIMEOUT_MS = 8_000
 
 export type GcalEvent = {
   id: string
@@ -31,12 +41,9 @@ function getServiceAccountAuth(impersonateEmail: string, write = false) {
   const key = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n')
   if (!email || !key) throw new Error('Google service account credentials not configured')
 
-  return new google.auth.JWT({
-    email,
-    key,
-    scopes: [write ? WRITE_SCOPE : READ_SCOPE],
-    subject: impersonateEmail,
-  })
+  return new google.auth.JWT(
+    withAuthDeadline({ email, key, scopes: [write ? WRITE_SCOPE : READ_SCOPE], subject: impersonateEmail }),
+  )
 }
 
 export async function getGcalEvents(
@@ -47,7 +54,7 @@ export async function getGcalEvents(
 
   try {
     const auth = getServiceAccountAuth(brokerEmail)
-    const calendar = google.calendar({ version: 'v3', auth })
+    const calendar = google.calendar({ version: 'v3', auth, timeout: CALENDAR_REQUEST_TIMEOUT_MS })
 
     const timeMin = new Date().toISOString()
     const timeMax = new Date(Date.now() + daysAhead * 86_400_000).toISOString()
@@ -113,7 +120,7 @@ export async function getGcalBusyIntervals(
   }
 
   const auth = getServiceAccountAuth(brokerEmail)
-  const calendar = google.calendar({ version: 'v3', auth })
+  const calendar = google.calendar({ version: 'v3', auth, timeout: CALENDAR_REQUEST_TIMEOUT_MS })
 
   // No try/catch: a throw here is the point. bookingAvailability turns it into
   // a closed calendar rather than an open one.
@@ -175,7 +182,7 @@ export async function upsertAllDayGcalEvent(input: {
   }
   try {
     const auth = getServiceAccountAuth(input.brokerEmail, true)
-    const calendar = google.calendar({ version: 'v3', auth })
+    const calendar = google.calendar({ version: 'v3', auth, timeout: CALENDAR_REQUEST_TIMEOUT_MS })
     if (input.existingEventId) {
       const patched = await calendar.events.patch({
         calendarId: 'primary',

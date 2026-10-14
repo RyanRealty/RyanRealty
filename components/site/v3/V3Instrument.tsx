@@ -272,6 +272,13 @@ export type V3InstrumentProps = {
    * their own label.
    */
   note?: V3Text
+  /**
+   * The short answer, set directly under the headline and before the drawing,
+   * as plain server-rendered text (SEO & AEO Desk brief 2026-10-08: the first
+   * sentence after the H1 is the quotable answer). A caller passes finished
+   * markup (V3TakeawaysLead); the instrument only places it.
+   */
+  lede?: ReactNode
   /** The next step this answer earns, if it earns one. */
   action?: V3InstrumentAction
   /**
@@ -346,6 +353,7 @@ export function V3Instrument({
   asOf,
   eyebrow,
   note,
+  lede,
   action,
   chart,
   chartSecondary,
@@ -467,6 +475,8 @@ export function V3Instrument({
       </V3Heading>
 
       {note ? <p className="v3-instrument__note">{note}</p> : null}
+
+      {lede ? <div className="v3-instrument__lede">{lede}</div> : null}
 
       {/* THE LEAD. Drawn first on screen and read after the verdict: in the
           document it sits where chartFirst puts a chart, after the heading

@@ -16,6 +16,7 @@ import 'server-only'
  * both are Matt's calls, one switch each on the broker's page.
  */
 import { google } from 'googleapis'
+import { withAuthDeadline } from '@/lib/google-deadline'
 import { revalidateTag } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
@@ -42,7 +43,7 @@ export async function listWorkspaceUsers(): Promise<{ users: WorkspaceUser[]; co
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL?.trim()
   const key = (process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY ?? '').replace(/\\n/g, '\n').replace(/^"|"$/g, '')
   if (!clientEmail || !key) return { users: [], complete: false, error: 'Google service account not configured' }
-  const auth = new google.auth.JWT({ email: clientEmail, key, scopes: [DIRECTORY_SCOPE], subject: directorySubject() })
+  const auth = new google.auth.JWT(withAuthDeadline({ email: clientEmail, key, scopes: [DIRECTORY_SCOPE], subject: directorySubject() }))
   const admin = google.admin({ version: 'directory_v1', auth, timeout: 30_000 })
   const users: WorkspaceUser[] = []
   let pageToken: string | undefined

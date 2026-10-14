@@ -30,6 +30,30 @@ describe('getPlaceLinks community browse door (SITE-183 / SITE-182)', () => {
     expect(getPlaceLinks({ type: 'community', slug: 'pronghorn' }).placeUrl).toBe('/communities/juniper-preserve')
   })
 
+  it('links a community market report only when that report publishes', () => {
+    expect(getPlaceLinks({ type: 'community', slug: 'black-butte-ranch' }).marketUrl).toBe(
+      '/housing-market/sisters/black-butte-ranch',
+    )
+    expect(getPlaceLinks({ type: 'community', slug: 'eagle-crest' }).marketUrl).toBe(
+      '/housing-market/redmond/eagle-crest',
+    )
+    expect(getPlaceLinks({ type: 'community', slug: 'tetherow' }).marketUrl).toBe('/housing-market/bend')
+    expect(getPlaceLinks({ type: 'community', slug: 'crooked-river-ranch' }).marketUrl).toBe(
+      '/housing-market/terrebonne',
+    )
+    expect(getPlaceLinks({ type: 'neighborhood', slug: 'awbrey-butte', citySlug: 'bend' }).marketUrl).toBe(
+      '/housing-market/bend',
+    )
+    // Resorts whose report publishes keep the two-segment report (production 2026-10-08).
+    expect(getPlaceLinks({ type: 'community', slug: 'broken-top' }).marketUrl).toBe('/housing-market/bend/broken-top')
+    expect(getPlaceLinks({ type: 'community', slug: 'northwest-crossing' }).marketUrl).toBe(
+      '/housing-market/bend/northwest-crossing',
+    )
+    expect(getPlaceLinks({ type: 'community', slug: 'sunriver' }).marketUrl).toBe('/housing-market/sunriver')
+    // A resort with no published report links the city report.
+    expect(getPlaceLinks({ type: 'community', slug: 'vandevert-ranch' }).marketUrl).toBe('/housing-market/bend')
+  })
+
   it('keeps the area-filtered path for a compound slug outside the registry', () => {
     const links = getPlaceLinks({ type: 'community', slug: 'bend-some-plat', citySlug: 'bend' })
     expect(links.browseUrl).toBe('/homes-for-sale/bend/bend-some-plat')

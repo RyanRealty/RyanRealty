@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { stripClickDestination, stripIdentityParams, visitorEventMetadata, withoutIdentityOnOwnSite } from './strip-identity'
+import { stripClickDestination, stripGa4UrlParams, stripIdentityParams, visitorEventMetadata, withoutIdentityOnOwnSite } from './strip-identity'
+import { CMA_DOC_PARAM } from '@/lib/analytics/utm'
 import { trackedDocLink } from '@/lib/cma/doc-links'
 import { cmaCampaignFromUrl } from '@/lib/cma/doc-links'
 
@@ -80,7 +81,24 @@ describe('stripIdentityParams', () => {
     )
     const stored = stripIdentityParams(link)!
     expect(stored).not.toContain('_pid')
+    expect(stored).toContain(`${CMA_DOC_PARAM}=cma-1975-harriman`)
     expect(cmaCampaignFromUrl(stored)).toBe('cma-1975-harriman')
+  })
+
+  it('strips rr_doc from a URL forwarded to GA4 and keeps it on the stored first-party URL', () => {
+    const link =
+      'https://ryan-realty.com/homes-for-sale/bend?utm_source=cma&utm_medium=document&utm_campaign=cma-letter&rr_doc=cma-1975-harriman&_pid=tok'
+    const stored = stripIdentityParams(link)!
+    expect(stored).toContain('rr_doc=cma-1975-harriman')
+    expect(stored).not.toContain('_pid')
+    const ga4 = stripGa4UrlParams(link)!
+    expect(ga4).not.toContain('rr_doc=')
+    expect(ga4).not.toContain('_pid')
+    expect(ga4).toContain('utm_campaign=cma-letter')
+    expect(cmaCampaignFromUrl(stored)).toBe('cma-1975-harriman')
+    expect(cmaCampaignFromUrl('https://ryan-realty.com/x?utm_campaign=cma-1975-harriman')).toBe(
+      'cma-1975-harriman',
+    )
   })
 })
 

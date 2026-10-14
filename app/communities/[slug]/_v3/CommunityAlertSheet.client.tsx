@@ -48,7 +48,7 @@ import {
 } from '@/components/site/v3/V3AlertsStrip.client'
 
 void communityCatalogReady
-import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
+import { submitSearchAlertSignup } from '@/lib/analytics/submit-alert-signup'
 import { readRrSessionId } from '@/lib/tracking'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'

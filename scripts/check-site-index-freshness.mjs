@@ -11,10 +11,12 @@
  *      `revalidate` (CACHE_WINDOWS.*, not false/Infinity), and the page carries a
  *      bounded ISR `revalidate`. An unbounded cache = stale forever.
  *   2. EMPTY IS NEVER PINNED. The payload exposes a `generatedAt` sentinel that is
- *      null on the empty/failed fallback, and the page calls noStore() when
- *      generatedAt === null — so a transient derivation failure can't be baked
- *      into the ISR HTML for the TTL window (the "ISR caches empty fallback"
- *      class). makeResilientCached itself THROWS on a DB error (only a genuine
+ *      null on the empty/failed fallback, and the page awaits refuseDegradedIsr()
+ *      when generatedAt === null — so an empty derivation stands as the ISR copy
+ *      for DEGRADED_ISR_REVALIDATE_S, not the TTL window (the "ISR caches empty
+ *      fallback" class). It required noStore() until 2026-09-25; inside a runtime
+ *      ISR render Next 16 answers noStore() with a 500 (lib/site/degraded-isr.ts),
+ *      so the page may not call it at all. makeResilientCached itself THROWS on a DB error (only a genuine
  *      empty returns the fallback), so a blip doesn't strand the page.
  *
  * Static text checks — no DB, no network — safe for the secret-less ci:gates
@@ -135,25 +137,30 @@ if (page) {
   if (!/export const revalidate\s*=\s*([1-9]\d*)/.test(page)) {
     problems.push(`${PAGE}: needs a bounded \`export const revalidate = <positive int>\` — an unbounded/absent ISR window serves the derived index stale forever.`)
   }
-  // noStore() must be invoked DIRECTLY in the generatedAt===null branch — the
-  // tight adjacent pattern `…generatedAt === null ) [{] noStore()`. No slack
-  // window (which let a real generatedAt-null block call something unrelated
-  // while an unconnected noStore() sat nearby and still passed).
-  const guards = /generatedAt\s*===\s*null\s*\)\s*\{?\s*noStore\s*\(\s*\)/.test(page)
+  // refuseDegradedIsr() must be awaited DIRECTLY in the generatedAt===null
+  // branch — the tight adjacent pattern `…generatedAt === null ) [{] await
+  // refuseDegradedIsr(`. No slack window (which let a real generatedAt-null
+  // block call something unrelated while an unconnected call sat nearby).
+  const guards = /generatedAt\s*===\s*null\s*\)\s*\{?\s*await\s+refuseDegradedIsr\s*\(/.test(page)
   if (!guards) {
-    problems.push(`${PAGE}: must call noStore() DIRECTLY in the \`if (data.generatedAt === null)\` branch so a transient-empty derivation is not baked into the ISR page for the TTL window (ISR-caches-empty-fallback class).`)
+    problems.push(`${PAGE}: must await refuseDegradedIsr(...) DIRECTLY in the \`if (data.generatedAt === null)\` branch so an empty derivation stands as the ISR copy for DEGRADED_ISR_REVALIDATE_S, not the TTL window (ISR-caches-empty-fallback class).`)
   }
-  // The guard only works if `noStore` is the REAL next/cache export.
-  if (!/import\s*\{[^}]*\bnoStore\b[^}]*\}\s*from\s*['"]next\/cache['"]/.test(rawPage)) {
-    problems.push(`${PAGE}: must import noStore (unstable_noStore) from 'next/cache' — the guard is a no-op without the real binding.`)
+  // The guard only works if `refuseDegradedIsr` is the REAL mechanism export.
+  if (!/import\s*\{[^}]*\brefuseDegradedIsr\b[^}]*\}\s*from\s*['"]@\/lib\/site\/degraded-isr['"]/.test(rawPage)) {
+    problems.push(`${PAGE}: must import refuseDegradedIsr from '@/lib/site/degraded-isr' — the guard is a no-op without the real binding.`)
+  }
+  // noStore() in a runtime ISR render is an HTTP 500 in Next 16, not an opt-out.
+  if (/\bunstable_noStore\b|\bnoStore\s*\(/.test(page)) {
+    problems.push(`${PAGE}: calls unstable_noStore(); inside a runtime ISR render Next 16 throws DYNAMIC_SERVER_USAGE (E550) and answers HTTP 500. Use refuseDegradedIsr.`)
   }
   if (!/getSiteIndexLinks\(\)/.test(page)) {
     problems.push(`${PAGE}: must render from getSiteIndexLinks() (the auto-derived link layer), not a hand-curated snapshot.`)
   }
-  // Both load-bearing page imports must not be locally shadowed: `noStore` (a
-  // no-op shadow defeats the empty-guard) and `getSiteIndexLinks` (a module-scope
-  // memo wrapper would cache the result past the TTL — unbounded-refresh drift).
-  forbidLocalShadow(page, PAGE, ['noStore', 'getSiteIndexLinks'])
+  // Both load-bearing page imports must not be locally shadowed:
+  // `refuseDegradedIsr` (a no-op shadow defeats the empty-guard) and
+  // `getSiteIndexLinks` (a module-scope memo wrapper would cache the result past
+  // the TTL — unbounded-refresh drift).
+  forbidLocalShadow(page, PAGE, ['refuseDegradedIsr', 'getSiteIndexLinks'])
 }
 
 if (dal) {
@@ -207,5 +214,5 @@ if (problems.length) {
   for (const p of problems) console.error(`  ✗ ${p}`)
   process.exit(1)
 }
-console.log('✓ /site-index refresh is bounded and its empty derivation is never pinned (TTL + noStore-on-empty enforced).')
+console.log('✓ /site-index refresh is bounded and its empty derivation is never pinned (TTL + refuseDegradedIsr-on-empty enforced).')
 process.exit(0)

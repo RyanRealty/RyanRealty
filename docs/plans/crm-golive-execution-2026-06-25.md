@@ -42,7 +42,7 @@ exporting ONLY async functions. Confirmed: all four action files export async-on
 - [in progress] **Phase 1 — Green build.** Verify the staged fix compiles (`npm run build`), sweep for
   any OTHER build-breakers repo-wide, fix until exit 0.
 - [ ] **Phase 2 — Deploy.** Commit ONLY the build-fix files (leave unrelated WIP: tc migrations,
-  scripts/crm-a2p-resubmit.mjs, etc.), push to `main`, watch Vercel to READY, confirm prod serves current code.
+  scripts/crm-a2p-resubmit.mjs, etc.), push the branch, open a PR to `main`; Matt merges. After he merges, watch Vercel to READY, confirm prod serves current code.
 - [ ] **Phase 3 — End-to-end walkthrough + harden.** Against the fresh deploy, walk every surface
   (contacts list/bulk/saved views, settings/*, record card, inbox, tasks, reports/emails), verify renders
   + key flows, fix what breaks. Throwaway test contact for any send; NO real sends to live contacts.
@@ -52,7 +52,7 @@ exporting ONLY async functions. Confirmed: all four action files export async-on
 
 - A real `next build` must pass before any commit (the gap that caused this whole situation).
 - Suppression chokepoint on every send path stays intact; sends only ever to a throwaway test contact.
-- Commit verified increments only; push to `main`; confirm each deploy reaches READY.
+- Commit verified increments only; push the branch and open a PR to `main`; Matt merges. Confirm each deploy reaches READY.
 
 ## Event log
 

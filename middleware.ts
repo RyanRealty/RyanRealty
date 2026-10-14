@@ -5,7 +5,7 @@ import { resolveBendNewConstructionSearchTwinHop } from '@/lib/routing/bend-new-
 import { shouldRefuseDevRoute, DEV_NOT_FOUND_HTML } from '@/lib/routing/dev-only'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
 import { isPresetSlug } from '@/lib/search-presets'
-import { blogPostSlugFromPath, isInvalidBlogIndexPath } from '@/lib/blog/index-path-guard'
+import { blogPostSlugFromPath } from '@/lib/blog/index-path-guard'
 import { lookupPublishedBlogSlugEdge } from '@/lib/data/blog/publishedBlogSlugsEdge'
 import { allowedCommunityUrlSlugs } from '@/lib/communities/community-public-pair'
 import { FIRST_EDITION_LABEL, isInvalidEditionPath } from '@/lib/market-report/edition-path-guard'
@@ -15,6 +15,10 @@ import {
   LEGACY_NEXT_IMAGE_PATH,
   resolveLegacyNextImage,
 } from '@/lib/routing/legacy-next-image'
+import { GONE_BODY, GONE_CACHE_SECONDS, isGonePath } from '@/lib/routing/gone-prefixes'
+import { resolveBlogIndexRedirect } from '@/lib/routing/blog-index-redirect'
+import { isUnknownBuyPublicPath } from '@/lib/routing/buy-public-slugs'
+import { resolveCityNeighborhoodPath, resolveHousingMarketPath } from '@/lib/routing/geo-path-guard'
 import { isRouterFlightRequest, listingIdFromRequestPath, resolveListingCanonicalHop } from '@/lib/routing/listing-canonical-hop'
 import {
   isListingLookupUnavailable,
@@ -22,6 +26,10 @@ import {
   readListingForRequest,
 } from '@/lib/routing/listing-unavailable'
 import { getListingCanonicalPathFieldsEdge } from '@/lib/data/listings/getListingCanonicalPathFieldsEdge'
+import {
+  CONSENT_REGION_COOKIE,
+  consentRegionCookieValue,
+} from '@/lib/analytics/consent-regions'
 
 /**
  * Next.js Edge Middleware.
@@ -197,17 +205,18 @@ const BLOCKED_COUNTRIES = parseBlockedCountries()
 // Pages cited in compliance filings (A2P 10DLC campaign message_flow, carrier
 // CTA verification) must be loadable by reviewer tooling, which often presents
 // an HTTP-library User-Agent. Twilio error 30909 hit us twice (2026-06-11)
-// because the bad-ua screen 403'd these exact URLs. Keep this list in sync
-// with CTA_URLS in scripts/crm-a2p-resubmit.mjs.
+// because the bad-ua screen 403'd these exact URLs. Every path in CTA_URLS in
+// scripts/crm-a2p-resubmit.mjs, plus the privacy and terms pages the message
+// flow links (scripts/__tests__/middleware-compliance-paths.test.mjs holds the
+// two together; the /lp pages this used to list 308 to these since 2026-09-06).
 const COMPLIANCE_VERIFICATION_PATHS = new Set([
   '/privacy',
   '/terms',
   '/contact',
+  '/sell',
   '/sell/valuation',
-  '/lp/seller-home-value',
-  '/lp/sell-your-home',
-  '/lp/buyer-listing-alerts',
-  '/lp/expired-listing',
+  '/sell/expired-listings',
+  '/homes-for-sale',
 ])
 
 /**
@@ -217,7 +226,9 @@ const COMPLIANCE_VERIFICATION_PATHS = new Set([
 function screenBotRequest(request: NextRequest, pathname: string): string | null {
   if (process.env.BOT_SCREEN_DISABLED === '1') return null
   if (pathname.startsWith('/api/')) return null
-  if (COMPLIANCE_VERIFICATION_PATHS.has(pathname.replace(/\/$/, '') || '/')) return null
+  // The filed URL exactly, with no query: a reviewer loads the page once, while
+  // a scraper paging /homes-for-sale?page=N stays screened.
+  if (!request.nextUrl.search && COMPLIANCE_VERIFICATION_PATHS.has(pathname.replace(/\/$/, '') || '/')) return null
 
   const ua = request.headers.get('user-agent') ?? ''
 
@@ -382,6 +393,13 @@ const REPORT_NOT_FOUND_HTML =
   `<p style="opacity:.8;line-height:1.6;margin:0 0 1.5rem">There is no monthly market report at this address. The archive has every edition since ${FIRST_EDITION_LABEL}.</p>` +
   '<a href="/housing-market/reports/monthly" style="color:#faf8f4;text-decoration:underline">Every monthly report</a></div></body></html>'
 
+const BUY_NOT_FOUND_HTML =
+  '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Page not found · Ryan Realty</title></head>' +
+  '<body style="font-family:Geist,system-ui,sans-serif;background:#102742;color:#faf8f4;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center">' +
+  '<div style="max-width:32rem;padding:2rem"><h1 style="font-size:2rem;margin:0 0 .75rem">Page not found</h1>' +
+  '<p style="opacity:.8;line-height:1.6;margin:0 0 1.5rem">There is no buyer page at this address. Search every active listing instead.</p>' +
+  '<a href="/homes-for-sale" style="color:#faf8f4;text-decoration:underline">Homes for sale</a></div></body></html>'
+
 const GEO_NOT_FOUND_HTML =
   '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Page not found · Ryan Realty</title></head>' +
   '<body style="font-family:Geist,system-ui,sans-serif;background:#102742;color:#faf8f4;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center">' +
@@ -482,6 +500,34 @@ function attachVidCookie(response: NextResponse, request: NextRequest, host: str
   return response
 }
 
+/**
+ * One-bit region class for the Meta Pixel and the client tracking tier.
+ * Google Consent Mode region defaults do not need this (Google resolves geo
+ * itself). Missing/unknown country is restricted (`1`). Not identifying.
+ * Set on HTML page responses so the first inline script can read it; skipped
+ * on /api/* . Matcher already covers HTML page requests.
+ */
+function attachConsentRegionCookie(response: NextResponse, request: NextRequest, host: string): NextResponse {
+  if (request.nextUrl.pathname.startsWith('/api/')) return response
+  const country = request.headers.get('x-vercel-ip-country') ?? request.headers.get('cf-ipcountry')
+  const value = consentRegionCookieValue(country)
+  if (request.cookies.get(CONSENT_REGION_COOKIE)?.value === value) return response
+  const isProd = host.endsWith('ryan-realty.com')
+  response.cookies.set(CONSENT_REGION_COOKIE, value, {
+    maxAge: 24 * 60 * 60,
+    path: '/',
+    sameSite: 'lax',
+    httpOnly: false,
+    secure: isProd,
+    ...(isProd ? { domain: 'ryan-realty.com' } : {}),
+  })
+  return response
+}
+
+function attachTrackingCookies(response: NextResponse, request: NextRequest, host: string): NextResponse {
+  return attachConsentRegionCookie(attachVidCookie(attachFbcCookie(response, request, host), request, host), request, host)
+}
+
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const url = request.nextUrl
   const pathname = url.pathname
@@ -507,6 +553,19 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         'cache-control': cacheControl,
         'x-robots-tag': 'noindex',
         'x-legacy-image': decision.reason,
+      },
+    })
+  }
+
+  // Retired AgentFire search prefixes: bot traffic, 410 Gone. Same tiny-body
+  // 410 as /_next/image so nothing renders and crawlers stop asking.
+  if (isGonePath(pathname)) {
+    return new NextResponse(GONE_BODY, {
+      status: 410,
+      headers: {
+        'content-type': 'text/plain; charset=utf-8',
+        'cache-control': `public, max-age=${GONE_CACHE_SECONDS}`,
+        'x-robots-tag': 'noindex',
       },
     })
   }
@@ -589,17 +648,18 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     })
   }
 
-  // ─── (0b2) Invalid blog index path → REAL 404 (SITE-29) ─────────────────
-  // /blog/category/<c> and /blog/page/<n> are on-demand ISR with an empty
-  // generateStaticParams, the same soft-404 class as (0c): an unknown
-  // category or a malformed page number would render a hollow 200 under
-  // app/loading.tsx. The edge knows the category list and the page shape
-  // (lib/blog/index-path-guard); a page past the last stays the route's own.
-  if (!pathname.startsWith('/api/') && isInvalidBlogIndexPath(pathname)) {
-    return new NextResponse(BLOG_NOT_FOUND_HTML, {
-      status: 404,
-      headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
-    })
+  // ─── (0b2) Retired blog index paths → 301 /blog ────────────────────────
+  // /blog/2017/*, /blog/category, /blog/page, /blog/category/*/page (no
+  // number), and unknown categories were hollow 404s. Send them to the live
+  // index. Valid /blog/category/<name> and /blog/page/<n>=2+ still render.
+  if (!pathname.startsWith('/api/')) {
+    const blogIndexDest = resolveBlogIndexRedirect(pathname)
+    if (blogIndexDest) {
+      const redirectUrl = url.clone()
+      redirectUrl.pathname = blogIndexDest
+      redirectUrl.search = ''
+      return NextResponse.redirect(redirectUrl, 301)
+    }
   }
 
   // ─── (0b2b) Unknown or draft blog post → REAL 404 (soft-404 2026-10-05) ──
@@ -625,6 +685,22 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         },
       })
     }
+  }
+
+  // ─── (0b2c) Unknown /buy/<slug> → REAL 404 (buyer-pivot 2026-10-13) ──
+  // /buy/[intent] notFound() runs under app/buy/loading.tsx and used to flush
+  // a 200 "Page Not Found" + noindex (measured /buy/leverage, /buy/first-time).
+  // Known slugs stay in lib/routing/buy-public-slugs.ts. Bare /buy is not in
+  // that list so next.config can 301 it to /homes-for-sale.
+  if (!pathname.startsWith('/api/') && isUnknownBuyPublicPath(pathname)) {
+    return new NextResponse(BUY_NOT_FOUND_HTML, {
+      status: 404,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+        'x-robots-tag': 'noindex',
+      },
+    })
   }
 
   // ─── (0b3) Invalid monthly report edition → REAL 404 (SEO-9) ────────────
@@ -662,6 +738,39 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       redirectUrl.pathname = geoCityDest
       redirectUrl.search = ''
       return NextResponse.redirect(redirectUrl, 308)
+    }
+  }
+
+  // ─── (0d2) /housing-market/<slug> and /cities/<city>/<hood> ────────────
+  // Same soft-404 class as /cities and /communities: notFound() under
+  // app/loading.tsx is HTTP 200. Validate at the edge against static sets.
+  // Out-of-market towns 308 to /oregon/<town>; unknown plats and hoods 404.
+  if (!pathname.startsWith('/api/')) {
+    const marketGeo = resolveHousingMarketPath(pathname)
+    if (marketGeo?.kind === 'not-found') {
+      return new NextResponse(GEO_NOT_FOUND_HTML, {
+        status: 404,
+        headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
+      })
+    }
+    if (marketGeo?.kind === 'redirect') {
+      const redirectUrl = url.clone()
+      redirectUrl.pathname = marketGeo.destination
+      redirectUrl.search = ''
+      return NextResponse.redirect(redirectUrl, marketGeo.status)
+    }
+    const hoodGeo = resolveCityNeighborhoodPath(pathname)
+    if (hoodGeo?.kind === 'not-found') {
+      return new NextResponse(GEO_NOT_FOUND_HTML, {
+        status: 404,
+        headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
+      })
+    }
+    if (hoodGeo?.kind === 'redirect') {
+      const redirectUrl = url.clone()
+      redirectUrl.pathname = hoodGeo.destination
+      redirectUrl.search = ''
+      return NextResponse.redirect(redirectUrl, hoodGeo.status)
     }
   }
 
@@ -734,7 +843,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // INBOUND headers, so without this a client-sent x-search would pass
     // through to any future consumer on this branch (review hygiene).
     requestHeaders.set('x-search', request.nextUrl.search ?? '')
-    return attachVidCookie(attachFbcCookie(NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } }), request, host), request, host)
+    return attachTrackingCookies(NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } }), request, host)
   }
 
   // ─── (2) Rate limiting for /api/* ──────────────────────────────────────
@@ -774,7 +883,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   // ─── (3) Default: forward x-pathname so server components can branch ───
-  return attachVidCookie(attachFbcCookie(buildNextResponse(pathname, request), request, host), request, host)
+  return attachTrackingCookies(buildNextResponse(pathname, request), request, host)
 }
 
 // Run on everything that isn't a Next.js internal or static asset.

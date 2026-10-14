@@ -6,7 +6,8 @@
  *     (ONE authoritative read; TAG_CHANNEL maps compliance:hard-stop → all
  *     channels, so the same fail-closed read yields both stages — partitioned
  *     here so a hard-stop reports as its own stage, checked first)
- *   - quiet hours (SMS): lib/crm/quiet-hours inSmsQuietHours
+ *   - quiet hours (SMS): Pacific and the recipient number's own zone
+ *     (lib/crm/recipient-timezones smsQuietZoneFor, Matt 2026-10-04)
  *
  * Returns null when every guard passes. A non-null failure means the send
  * must NOT proceed — callers return it verbatim. Order is load-bearing: a
@@ -16,20 +17,64 @@
 
 import 'server-only'
 import { isSuppressed, type SendChannel } from '@/lib/crm/suppressions'
-import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
+import { DEFAULT_SMS_TIMEZONE, smsPauseStartLabel } from '@/lib/crm/quiet-hours'
+import { smsQuietZoneFor } from '@/lib/crm/recipient-timezones'
+import { formatZonedClock } from '@/lib/format/date'
 import { recordSendBlockEvent } from '@/lib/data/crm/recordSendBlockEvent'
 import type { GovernedFailure } from './types'
 
-/** The quiet-hours refusal shown to brokers (kept byte-identical to the composer's). */
-export const QUIET_HOURS_ERROR =
-  'Quiet hours: texts pause 8pm to 8am Pacific (Oregon, ORS 646.563). Call instead, or check "send anyway" to override.'
+/**
+ * The quiet-hours refusal shown to brokers (kept byte-identical to the
+ * composer's). The pause time comes from the rule, so the copy moves with it.
+ * It suggests no phone call: ORS 646.563 holds sales calls to the same 8am to
+ * 8pm window.
+ */
+export const QUIET_HOURS_ERROR = `Quiet hours: texts pause ${smsPauseStartLabel()} to 8am Pacific, ahead of Oregon's 8pm cutoff (ORS 646.563). Check "send anyway" to override.`
+
+/** The Pacific refusal where nobody can override (an automated or intro send). */
+const QUIET_HOURS_NO_OVERRIDE = `Quiet hours: texts pause ${smsPauseStartLabel()} to 8am Pacific, ahead of Oregon's 8pm cutoff (ORS 646.563). Try again after 8am.`
+
+/**
+ * The refusal for a text held by the recipient's own zone (Pacific is open,
+ * their area code is not). Names their clock so the broker sees why.
+ */
+function recipientQuietHoursError(timeZone: string, date: Date, canOverride = true): string {
+  const next = canOverride ? 'Check "send anyway" to override.' : 'Try again once it is 8am there.'
+  return `Quiet hours for this number: it is ${formatZonedClock(date, timeZone)} in its area code. Texts pause ${smsPauseStartLabel()} to 8am there as well as in Pacific. ${next}`
+}
+
+/**
+ * Why a text to `phone` may not send at `date`, or null when it may: the one
+ * place the quiet-hours copy is built. Pacific quiet hours keep
+ * QUIET_HOURS_ERROR word for word; a hold by the number's own zone names that
+ * zone's clock. No phone: Pacific alone. `canOverride: false` is for a send
+ * with no "send anyway" (an intro, a template test): the copy says when to try
+ * again instead.
+ */
+export function quietHoursRefusal(
+  phone?: string | null,
+  date: Date = new Date(),
+  opts?: { canOverride?: boolean },
+): string | null {
+  const zone = smsQuietZoneFor(phone, date)
+  if (zone === null) return null
+  const canOverride = opts?.canOverride ?? true
+  if (zone === DEFAULT_SMS_TIMEZONE) return canOverride ? QUIET_HOURS_ERROR : QUIET_HOURS_NO_OVERRIDE
+  return recipientQuietHoursError(zone, date, canOverride)
+}
 
 const HARD_STOP_REASON = 'tag:compliance:hard-stop'
 
 export async function checkSendGuards(
   personId: number,
   channel: SendChannel,
-  opts?: { overrideQuietHours?: boolean; source?: string; skipSuppression?: boolean },
+  opts?: {
+    overrideQuietHours?: boolean
+    source?: string
+    skipSuppression?: boolean
+    /** The number the text goes to. Its area-code zone holds the send too. */
+    recipientPhone?: string | null
+  },
 ): Promise<GovernedFailure | null> {
   // 1 + 2. Hard-stop tags, then channel suppression. One isSuppressed call is
   // the authoritative source for both (fail-closed on any read error).
@@ -54,9 +99,11 @@ export async function checkSendGuards(
     }
   }
 
-  // 3. Quiet hours — SMS only. A6: only a manual, human-typed 1:1 reply passes
-  // overrideQuietHours; automated/system callers never set it.
-  if (channel === 'sms' && !opts?.overrideQuietHours && inSmsQuietHours()) {
+  // 3. Quiet hours — SMS only, in Pacific and the recipient's own zone. A6:
+  // only a manual, human-typed send passes overrideQuietHours; automated and
+  // system callers never set it.
+  const quiet = channel === 'sms' && !opts?.overrideQuietHours ? quietHoursRefusal(opts?.recipientPhone) : null
+  if (quiet) {
     void recordSendBlockEvent({
       personId,
       channel,
@@ -64,7 +111,7 @@ export async function checkSendGuards(
       reasons: ['quiet-hours'],
       source: opts?.source,
     })
-    return { ok: false, error: QUIET_HOURS_ERROR, stage: 'quiet-hours' }
+    return { ok: false, error: quiet, stage: 'quiet-hours' }
   }
 
   return null

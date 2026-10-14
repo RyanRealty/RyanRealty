@@ -132,9 +132,13 @@ describe('3062 NW Kelly Hill: the anchor is Westside Meadows, not Summit West', 
   it('reads the subdivision family and keeps every Westside Meadows sale inside the line', () => {
     const pool = [...westsideMeadows(), ...summitWest()]
     const anchor = resolvePriceAnchor(kellyHill(), pool)
-    // Own plat: two sales, under five. The family (Westside Meadows II plus
-    // Westside Meadows) holds seven: median $383 (326, 336, 345, 383, 383, 402, 457).
-    expect(anchor).toMatchObject({ source: 'family', n: 7, where: 'Westside Meadows' })
+    // The home's own subdivision (Matt 2026-10-08, "Yes, everywhere"):
+    // Westside Meadows II and Westside Meadows, a plat of its family inside
+    // its own Summit West polygon, hold seven: median $383 (326, 336, 345,
+    // 383, 383, 402, 457). Before the ruling the plat level held only the two
+    // Westside Meadows II sales and the same seven answered one level later as
+    // the family. The level is named by the family, the place it read.
+    expect(anchor).toMatchObject({ source: 'plat', n: 7, where: 'Westside Meadows' })
     expect(Math.round(anchor!.ppsf)).toBe(383)
     const line = priceTierLine(anchor!.ppsf)!
     expect(line).toEqual({ anchor: 383, floor: 306, ceiling: 460 })
@@ -168,7 +172,7 @@ describe('3062 NW Kelly Hill: the anchor is Westside Meadows, not Summit West', 
 
   it('the walk seats Westside Meadows sales the old line skipped, and says where the anchor came from', () => {
     const out = walkPricingLadder(kellyHill(), [...westsideMeadows(), ...summitWest()], { asOf, anchorWindowMonths: 24 })
-    expect(out.priceAnchor?.source).toBe('family')
+    expect(out.priceAnchor?.source).toBe('plat')
     const seated = out.comps.map((c) => c.listingKey)
     // Five price-setting sales from the home's own subdivision: the two in its
     // own plat and the touching Westside Meadows sales inside the line.

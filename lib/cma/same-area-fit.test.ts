@@ -85,40 +85,46 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
     })
   })
 
-  it('applies rule 4: one room apart only on the own ground, kept and disclosed; two apart refused', () => {
+  it('applies rule 4: up to two rooms apart stays and is disclosed; three apart on one count is refused', () => {
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, baths: 3 })).toEqual({
       ok: true,
       ownPlat: true,
       roomDifference: ['baths'],
     })
-    // No own ground without coordinates: not the plat, not the street.
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, baths: 3, subdivision: 'Madison Park' })).toEqual({
-      ok: false,
-      reason: 'rooms',
+      ok: true,
+      ownPlat: false,
+      roomDifference: ['baths'],
     })
-    // One apart on both counts is two rooms.
-    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, beds: 2, baths: 3 })).toEqual({ ok: false, reason: 'rooms' })
-    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, beds: 5 })).toEqual({ ok: false, reason: 'rooms' })
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, beds: 2, baths: 3 })).toEqual({
+      ok: true,
+      ownPlat: true,
+      roomDifference: ['beds', 'baths'],
+    })
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, beds: 5 })).toEqual({
+      ok: true,
+      ownPlat: true,
+      roomDifference: ['beds'],
+    })
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, beds: 6 })).toEqual({ ok: false, reason: 'rooms', rooms: ['beds'] })
   })
 
   it('holds the plat-wide living-area band, and lets an unknown size through', () => {
     // 2,100 against 1,458 is 44 percent.
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: 2100 })).toEqual({ ok: false, reason: 'size' })
-    // 1,960 is 34.4 percent, inside the band.
-    // 25% is the band for every home in the letter (Matt 2026-10-08): 1,960 sqft
-    // is 34% over the 1,458 sqft subject and is no longer like yours; 1,800 (23%) is.
-    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: 1960 })).toEqual({ ok: false, reason: 'size' })
+    // 1,960 is 34.4 percent of 1,458, inside the picker's 35%. 1,969 is just past
+    // (1,458 × 1.35 = 1,968.3). 1,800 (23%) stays inside.
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: 1960 }).ok).toBe(true)
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: 1969 })).toEqual({ ok: false, reason: 'size' })
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: 1800 }).ok).toBe(true)
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, sqft: null }).ok).toBe(true)
   })
 
-  it('holds the year band off the own plat, and never on it', () => {
-    // 1988 against 2018 is 30 years, past the 25 the next-row rungs admit.
-    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, subdivision: 'Madison Park', yearBuilt: 1988 })).toEqual({
-      ok: false,
-      reason: 'age',
-    })
-    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, yearBuilt: 1988 }).ok).toBe(true)
+  it('does not remove a home for year built, on or off the own plat (Matt 2026-10-10)', () => {
+    // 1988 against 2018 is 30 years. Year ranks. It does not refuse the home.
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, subdivision: 'Madison Park', yearBuilt: 1988 }).ok).toBe(true)
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, yearBuilt: 1920 }).ok).toBe(true)
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, subdivision: 'Madison Park', yearBuilt: 2024 }).ok).toBe(true)
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, subdivision: 'Madison Park', yearBuilt: null }).ok).toBe(true)
   })
 
@@ -168,7 +174,7 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
     })
   })
 
-  it("holds the distance rungs' year band inside a radius area", () => {
+  it('keeps a home inside a radius area whatever its year', () => {
     const circle: CompArea = {
       kind: 'radius',
       names: [],
@@ -179,7 +185,7 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
     }
     const inside = { ...ALDRICH, subdivision: null, latitude: 44.0554, longitude: -121.3153 }
     expect(sameAreaFit(circle, COHO, { ...inside, yearBuilt: 1990 }).ok).toBe(true)
-    expect(sameAreaFit(circle, COHO, { ...inside, yearBuilt: 1985 })).toEqual({ ok: false, reason: 'age' })
+    expect(sameAreaFit(circle, COHO, { ...inside, yearBuilt: 1985 }).ok).toBe(true)
   })
 
   it('skips the area test when there is no area', () => {
@@ -190,7 +196,7 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
     expect(SAME_AREA_AGE_YEARS).toBe(25)
     expect(SAME_AREA_RADIUS_AGE_YEARS).toBe(30)
     expect(SAME_AREA_SQFT_BAND).toBe(PRICE_SET_SQFT_BAND)
-    expect(SAME_AREA_SQFT_BAND).toBe(0.25)
+    expect(SAME_AREA_SQFT_BAND).toBe(0.35)
     expect(sameAreaAgeYears(AREA)).toBe(25)
     expect(sameAreaAgeYears(OLD_BEND)).toBeNull()
     expect(sameAreaAgeYears({ ...OLD_BEND, kind: 'community' })).toBeNull()
@@ -244,7 +250,7 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
       publicRemarks:
         'The property includes a 1924-built, 3-beds, 1-bath home with 1,056 sq ft that can be lived in as-is, renovated, or incorporated into a larger vision for the site. The generous lot may offer possibilities for a lot split, duplex, multi-unit development,\r\nADU, or new custom home, subject to City approval.\r\nStreet and alley frontage add flexibility for access, parking and site design.',
     }
-    // Own plat, 1,056 sqft is 20.5% over 876 (inside 25%), one bathroom
+    // Own plat, 1,056 sqft is 20.5% over 876 (inside 35%), one bathroom
     // apart on own ground: kept and disclosed, no year test on the own plat.
     expect(sameAreaFit(area, subject, neighbor)).toEqual({ ok: true, ownPlat: true, roomDifference: ['baths'] })
     // A home that does state a duplex or an ADU is still refused.
@@ -270,5 +276,123 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
       '2820 Aldrich is one bedroom different from yours. 3163 Delmas is one bathroom different from yours. No dollar value is applied to the room.',
     )
     expect(two).not.toMatch(/[—–]/)
+  })
+})
+
+describe('sameAreaFit reads the polygon the area read placed the home in (reader review 2026-10-08)', () => {
+  // cma-915-saginaw: 915 Saginaw, its stored area, and the two homes under
+  // contract the letter said did not exist. Facts from listings, 2026-10-08.
+  const SAGINAW: SameAreaSubject = {
+    streetAddress: '915 Saginaw',
+    city: 'Bend',
+    subdivision: 'Park Place',
+    subdivisionSlug: 'park-place',
+    latitude: 44.06569,
+    longitude: -121.32545,
+    beds: 4,
+    baths: 3,
+    bathsFull: 2,
+    bathsHalf: 1,
+    sqft: 2085,
+    yearBuilt: 1992,
+    propertySubType: 'Single Family Residence',
+    marketArea: 'bend-river-west',
+  }
+  const SAGINAW_AREA: CompArea = {
+    kind: 'subdivisions',
+    names: ['Park Place', 'Miller Heights', 'Kenwood', 'West Hills', 'Bend View'],
+    radiusMiles: null,
+    centre: { lat: 44.06569, lng: -121.32545 },
+    source: 'test',
+    sentence: 'test',
+    platSlugs: ['park-place', 'miller-heights-phase-ii', 'kenwood', 'west-hills-fifth-addition', 'bend-view-addition'],
+    namesWithoutPlat: [],
+    street: null,
+  }
+
+  it('733 Saginaw (Kenwood First Addition, Pending $995,000) fits: one bedroom apart on own ground, 2,118 sqft', () => {
+    const fit = sameAreaFit(SAGINAW_AREA, SAGINAW, {
+      address: '733 Saginaw',
+      city: 'Bend',
+      subdivision: 'Kenwood',
+      subdivisionSlug: 'kenwood-first-addition',
+      latitude: 44.065697,
+      longitude: -121.322645,
+      beds: 3,
+      baths: 2,
+      bathsFull: 2,
+      bathsHalf: 0,
+      sqft: 2118,
+      yearBuilt: 1979,
+      propertySubType: 'Single Family Residence',
+    })
+    expect(fit).toEqual({ ok: true, ownPlat: false, roomDifference: ['beds'] })
+  })
+
+  it('1340 Trenton (West Hills, Pending $989,900) fits: one bedroom apart in the same neighborhood, 1,600 sqft', () => {
+    const fit = sameAreaFit(SAGINAW_AREA, SAGINAW, {
+      address: '1340 Trenton',
+      city: 'Bend',
+      subdivision: 'West Hills',
+      subdivisionSlug: 'west-hills',
+      latitude: 44.06695,
+      longitude: -121.331249,
+      beds: 3,
+      baths: 2,
+      bathsFull: 2,
+      bathsHalf: 0,
+      sqft: 1600,
+      yearBuilt: 1970,
+      propertySubType: 'Single Family Residence',
+    })
+    expect(fit.ok).toBe(true)
+  })
+
+  it("1425 Fresno is inside 1355 Jacksonville's area by its polygon, and 1,121 sqft fits inside 35% of 876", () => {
+    const JACKSONVILLE: SameAreaSubject = {
+      streetAddress: '1355 Jacksonville',
+      city: 'Bend',
+      subdivision: 'Northwest Townsite',
+      subdivisionSlug: 'northwest-townsite-second-addition',
+      latitude: 44.058868,
+      longitude: -121.331289,
+      beds: 3,
+      baths: 2,
+      sqft: 876,
+      yearBuilt: 1919,
+      propertySubType: 'Single Family Residence',
+    }
+    const area: CompArea = {
+      kind: 'subdivisions',
+      names: ['Northwest Townsite', 'Grandview'],
+      radiusMiles: null,
+      centre: { lat: 44.058868, lng: -121.331289 },
+      source: 'test',
+      sentence: 'test',
+      platSlugs: ['northwest-townsite-second-addition'],
+      namesWithoutPlat: ['Grandview'],
+      street: null,
+    }
+    const fresno: SameAreaCandidate = {
+      address: '1425 Fresno',
+      city: 'Bend',
+      subdivision: 'Northwest Townsite Co 2nd Addt',
+      subdivisionSlug: 'northwest-townsite-second-addition',
+      latitude: 44.055588,
+      longitude: -121.332439,
+      beds: 3,
+      baths: 2,
+      sqft: 1121,
+      yearBuilt: 1924,
+      propertySubType: 'Single Family Residence',
+    }
+    // By name alone ("Co 2nd Addt" is not an area name) it was outside.
+    expect(sameAreaFit(area, JACKSONVILLE, { ...fresno, subdivisionSlug: undefined })).toEqual({ ok: false, reason: 'area' })
+    // By its polygon it is inside. 1,121 is 28% over 876, inside the one 35% cutoff.
+    expect(sameAreaFit(area, JACKSONVILLE, fresno)).toEqual({ ok: true, ownPlat: true, roomDifference: [] })
+    // 876 × 1.35 = 1,182.6, so 1,183 is past the cutoff and still refused for size.
+    expect(sameAreaFit(area, JACKSONVILLE, { ...fresno, sqft: 1183 })).toEqual({ ok: false, reason: 'size' })
+    // The same home at the subject's size would be like it, and own plat.
+    expect(sameAreaFit(area, JACKSONVILLE, { ...fresno, sqft: 900 })).toEqual({ ok: true, ownPlat: true, roomDifference: [] })
   })
 })

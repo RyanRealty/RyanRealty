@@ -145,9 +145,20 @@
 
 .v3-ask__consent {
   display: flex;
-  align-items: flex-start;
-  gap: var(--v3-space-xs);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--v3-space-sm);
   margin-top: var(--v3-space-md);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+.v3-ask__notice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-sm);
+  margin-top: var(--v3-space-sm);
   font-size: var(--v3-size-body-sm);
   line-height: var(--v3-leading-body);
   color: var(--v3-ink-muted);
@@ -177,7 +188,9 @@
 /* The consent line keeps its legal sentence and links; it wears the form's
    ink, size, and a control-sized box, not the admin register's. */
 .v3-ask__consent,
-.v3-ask__consent * {
+.v3-ask__consent *,
+.v3-ask__notice,
+.v3-ask__notice * {
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-body-sm);
   line-height: var(--v3-leading-body);
@@ -185,7 +198,10 @@
 
 .v3-ask__consent button[role='checkbox'],
 .v3-ask__consent input[type='checkbox'],
-.v3-ask__consent [data-slot='checkbox'] {
+.v3-ask__consent [data-slot='checkbox'],
+.v3-ask__notice button[role='checkbox'],
+.v3-ask__notice input[type='checkbox'],
+.v3-ask__notice [data-slot='checkbox'] {
   box-sizing: border-box;
   flex: none;
   width: var(--v3-tap);
@@ -202,7 +218,9 @@
 /* shadcn `after:-inset-x-3 after:-inset-y-2` on size-4 measured 42×34.
    Insets would ignore width; pin a tap-sized pad on the control. */
 .v3-ask__consent button[role='checkbox']::after,
-.v3-ask__consent [data-slot='checkbox']::after {
+.v3-ask__consent [data-slot='checkbox']::after,
+.v3-ask__notice button[role='checkbox']::after,
+.v3-ask__notice [data-slot='checkbox']::after {
   content: '';
   position: absolute;
   inset: auto;
@@ -216,14 +234,16 @@
   pointer-events: auto;
 }
 
-.v3-ask__consent button[role='checkbox'][data-state='checked'] {
+.v3-ask__consent button[role='checkbox'][data-state='checked'],
+.v3-ask__notice button[role='checkbox'][data-state='checked'] {
   background: var(--v3-navy);
   border-color: var(--v3-navy);
   color: var(--v3-cream);
 }
 
 @layer base {
-  .v3-ask__consent a {
+  .v3-ask__consent a,
+  .v3-ask__notice a {
     color: var(--v3-ink);
     text-decoration: underline;
     text-underline-offset: var(--v3-underline-offset);

@@ -26,6 +26,7 @@ import 'server-only'
 import { attributeSiteLinks } from '@/lib/crm/merge'
 import { replaceOwnSiteLinks } from '@/lib/analytics/own-site-links'
 import { appendQueryParam, hasQueryParam } from '@/lib/analytics/visit-broker'
+import { buildTrackedUrl } from '@/lib/analytics/utm'
 import { isPrivateLink } from '@/lib/analytics/private-paths'
 import { signPersonLinkToken, type LinkChannel } from '@/lib/identity/link-token'
 
@@ -36,6 +37,8 @@ export type DecorateOutboundOptions = {
   personId: number | null | undefined
   /** Which sender this is. */
   channel: LinkChannel
+  /** Preview / self-test send: campaign becomes `test-<campaign>`. */
+  test?: boolean
   // There is deliberately no legacy vendor-CRM id option: `_fuid` is retired
   // (2026-09-23) because an unsigned id identifies nobody, so it is never stamped.
 }
@@ -54,7 +57,7 @@ function validId(n: unknown): n is number {
  */
 const MEDIUM_BY_CHANNEL: Partial<Record<LinkChannel, string>> = {
   sms: 'sms',
-  personal: 'personal-link',
+  personal: 'social',
 }
 
 function withMediumIfMissing(url: string, medium: string): string {
@@ -98,9 +101,12 @@ export function decorateOutboundText(text: string, opts: DecorateOutboundOptions
   const cleaned = replaceOwnSiteLinks(text, (u) => {
     if (isPrivateLink(u)) return u // a signing link is sent exactly as minted (private-paths.ts)
     const stripped = stripUnsignedIdentity(u)
+    if (opts.channel === 'newsletter' && !hasQueryParam(stripped, 'utm_source')) {
+      return buildTrackedUrl(stripped, { source: 'newsletter', medium: 'email', campaign: 'newsletter', test: opts.test })
+    }
     return medium ? withMediumIfMissing(stripped, medium) : stripped
   })
-  return attributeSiteLinks(cleaned, opts.brokerSlug ?? null, null, token)
+  return attributeSiteLinks(cleaned, opts.brokerSlug ?? null, null, token, opts.test)
 }
 
 /** Single-URL form (SMS short-link targets, a CMA link in a template). */

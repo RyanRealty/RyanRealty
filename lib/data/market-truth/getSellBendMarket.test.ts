@@ -20,7 +20,7 @@ const BEND_MT: SellBendMarket = {
   monthsOfSupply: 4.45402298850575,
   mosLabel: '4.5',
   verdictKind: 'balanced',
-  verdictLabel: 'balanced market',
+  verdictLabel: '4.5 months of supply',
   medianListPrice: 915000,
   computedAt: '2026-08-23T00:00:00.000Z',
   completeThrough: '2026-08-22',
@@ -86,7 +86,7 @@ describe('getSellBendMarket', () => {
     const hit = overlayDetachedMarket(pulse, BEND_MT)
     expect(hit.activeCount).toBe(775)
     expect(hit.monthsOfSupply).toBe(4.45402298850575)
-    expect(hit.marketHealthLabel).toBe('balanced market')
+    expect(hit.marketHealthLabel).toBe('4.5 months of supply')
     expect(hit.medianListPrice).toBe(915000)
     expect(hit.medianDaysToPending).toBe(15)
     expect(hit.newThisWeek).toBe(12)
@@ -156,12 +156,16 @@ describe('getSellBendMarket', () => {
     expect(page).toMatch(/getCityDetachedInventory/)
   })
 
-  it('/sell prints no market figures and the JSON feed reads Market Truth detached', () => {
+  it('/sell reads Market Truth for the AEO answer and the JSON feed stays detached', () => {
     // Matt 2026-09-28: the market sections left /sell for one link to the
-    // full market report, so the page reads no market table at all.
+    // full report. The 2026-10-08 AEO brief put two live sentences back
+    // under the hero (getSellBendMarket + getPublicDetachedPace). Pulse
+    // and the Instrument stay off the page.
     const page = readFileSync(resolve('app/sell/page.tsx'), 'utf8')
     const feed = readFileSync(resolve('lib/data/market/getMarketPulseJsonFeed.ts'), 'utf8')
-    expect(page).not.toMatch(/getSellBendMarket|getMarketPulse/)
+    expect(page).toMatch(/getSellBendMarket/)
+    expect(page).not.toMatch(/getMarketPulse/)
+    expect(page).not.toMatch(/V3Instrument/)
     const finalAsk = readFileSync(resolve('app/sell/_v3/SellFinalAsk.tsx'), 'utf8')
     expect(finalAsk).toContain('/housing-market/bend')
     expect(feed).toMatch(/getDetachedOverlays/)
@@ -207,8 +211,8 @@ describe('getSellBendMarket', () => {
   it('RECON Bend detached 4.454 months is 4.5 display and a balanced verdict', () => {
     const mos = 4.45402298850575
     expect(formatMonthsOfSupply(mos)).toBe('4.5')
-    expect(marketVerdict(mos)).toEqual({ kind: 'balanced', label: 'balanced market' })
-    expect(marketVerdict(3.54)).toEqual({ kind: 'sellers', label: "seller's market" })
+    expect(marketVerdict(mos)).toEqual({ kind: 'balanced', label: '4.5 months of supply' })
+    expect(marketVerdict(3.54)).toEqual({ kind: 'sellers', label: '3.5 months of supply' })
   })
 })
 

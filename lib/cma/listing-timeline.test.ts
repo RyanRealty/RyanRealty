@@ -196,8 +196,22 @@ describe('listingTimelineReading', () => {
     caption: 'c',
   }
 
-  it('measures the final ask against the top of the range', () => {
+  it('measures the final ask against the top of the range, and calls it the last ask', () => {
+    // $475,000 came before the $460,000 it measures, so the sentence says it
+    // is the last ask (reader review 2026-10-08, 2382 Jackson and 2745 Aldrich).
     expect(listingTimelineReading({ timeline: base, city: 'Redmond', marketMedianDom: 21 })).toBe(
+      'Your last ask was 15.6 percent above the top of the range the sales support. Your home sat 187 days. The median home in Redmond has an accepted offer in 21 days.',
+    )
+  })
+
+  it('keeps "You were asking" when the listing had one price', () => {
+    expect(
+      listingTimelineReading({
+        timeline: { ...base, steps: [{ date: '2026-02-26', ask: 460000 }] },
+        city: 'Redmond',
+        marketMedianDom: 21,
+      }),
+    ).toBe(
       'You were asking 15.6 percent above the top of the range the sales support. Your home sat 187 days. The median home in Redmond has an accepted offer in 21 days.',
     )
   })
@@ -235,7 +249,9 @@ describe('listingTimelineReading', () => {
       city: 'Redmond',
       marketMedianDom: null,
     })
-    expect(reading).toBe('You were asking inside the range the sales support. Your home sat 187 days and did not sell.')
+    expect(reading).toBe(
+      'You were asking inside the range the sales support. One of the sales that set this price is above that ask. Your home sat 187 days and did not sell.',
+    )
   })
 
   it('splits the days at the asks the line draws when only the last cut came inside the range', () => {
@@ -256,6 +272,7 @@ describe('listingTimelineReading', () => {
     expect(reading).toBe(
       'For 77 of your 187 days you were asking above the range the sales support, at $475,000. ' +
         'You asked $390,000, inside the range, for the last 110 days, and your home did not sell. ' +
+        'One of the sales that set this price is above that ask. ' +
         'Half of the homes that sold in Redmond had an offer inside 21 days. ' +
         'At a price inside the range, 110 days without a sale points at something other than the number. We would walk it with you before saying more.',
     )

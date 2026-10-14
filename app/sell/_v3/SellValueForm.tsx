@@ -79,6 +79,8 @@ import {
   type SellerLPTimeline,
 } from '@/app/lp/seller-home-value/actions'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
+import { FormAdConsentNotice, FormAdCookieBox, useFormConsentRestricted } from '@/components/site/FormAdConsent'
+import { writeFormAdConsent } from '@/lib/identity/form-ad-consent'
 import { CONTACT } from '@/lib/brand/contact'
 import { publishSellValuationConfirm } from '@/lib/sell/publish-sell-valuation'
 import { SellAddressField } from './SellAddressField'
@@ -318,6 +320,9 @@ export function SellValueForm({
   const [phone, setPhone] = useState('')
   const [timeline, setTimeline] = useState<SellerLPTimeline | ''>('')
   const [smsConsent, setSmsConsent] = useState(false)
+  const [adCookies, setAdCookies] = useState(false)
+  const [adMatch, setAdMatch] = useState(false)
+  const restricted = useFormConsentRestricted()
   const [addressError, setAddressError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -407,8 +412,13 @@ export function SellValueForm({
     const askSource: AskSource | null = readAskSource()
     const entry = readSellEntry() // event-handler body, hydration-safe
     startTransition(async () => {
+      // Memo 5.4: the grant is the banner's Accept all, and only when the
+      // box is checked at the send. Continue does not write it, so going
+      // back and clearing the box leaves no cookie.
+      writeFormAdConsent(adCookies) // hydration-safe: submit handler, not render
       const result = await submitSellerLPForm({
         smsConsent,
+        ...(restricted && adMatch ? { adMatchConsent: true } : {}),
         address: address.trim(),
         name: name.trim(),
         email: email.trim(),
@@ -431,8 +441,6 @@ export function SellValueForm({
             'Lead',
             {
               content_name: 'seller_lp_home_value',
-              value: 500,
-              currency: 'USD',
             },
             { eventID: result.eventId },
           )
@@ -597,6 +605,7 @@ export function SellValueForm({
         />
       </div>
 
+      <FormAdCookieBox className="mt-4" checked={adCookies} onCheckedChange={setAdCookies} />
       <SmsConsentDisclosure className="mt-4" checked={smsConsent} onCheckedChange={setSmsConsent} />
 
       <Button type="submit" disabled={pending} className="mt-6 min-h-11 w-full text-base">
@@ -607,6 +616,12 @@ export function SellValueForm({
           {error}
         </p>
       ) : null}
+      <FormAdConsentNotice
+        className="mt-3"
+        restricted={restricted}
+        adMatchChecked={adMatch}
+        onAdMatchCheckedChange={setAdMatch}
+      />
       <Button
         type="button"
         variant="link"

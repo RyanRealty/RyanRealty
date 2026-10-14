@@ -17,6 +17,7 @@
  * it.
  */
 
+import { letterPlaceName, nameFromPlatSlug } from '@/lib/cma/letter-place-name'
 import { countWord } from '@/lib/pricing/estimate'
 import { streetKey } from '@/lib/pricing/price-anchor'
 import { parseTierMonths, parseTierRadiusMiles } from '@/lib/pricing/search-story'
@@ -36,6 +37,18 @@ export type CompSearchKeptComp = {
   selectionTier?: string | null
   /** Street address, when the row has one. Used to name an outside sale. */
   address?: string | null
+  /**
+   * The selector's own-plat stamp (CmaComp.ownPlat): the sale sits in the
+   * subject's own recorded plat, whatever MLS spelling its row carries.
+   * Absent on rows stored before 2026-10-08.
+   */
+  ownPlat?: boolean | null
+  /**
+   * Recorded plat slug. A bare MLS code (CLAB) prints as the words of this
+   * slug (tara-view-estates → Tara View Estates). A real MLS name is not
+   * replaced by the slug.
+   */
+  subdivisionSlug?: string | null
 }
 
 export type CompSearchRung = {
@@ -189,17 +202,23 @@ export function buildCompSearch(input: {
     kept: keptByTier.get(r.tier) ?? 0,
   }))
 
+  // A sale on the subject's own ground is inside the subdivision whatever MLS
+  // spelling its row carries (reader review 2026-10-08, 1355 Jacksonville:
+  // 1367 Milwaukee is "Northwest Townsite Co 2nd Addt" on the MLS and sits in
+  // the subject's own recorded plat). The selector's own-plat stamp says so;
+  // the typed name is the fallback.
+  const onOwnGround = (c: CompSearchKeptComp): boolean =>
+    subdivision != null && (usableSubdivision(c.subdivision) === subdivision || c.ownPlat === true)
+
   const keptBySubdivision: Record<string, number> = {}
   for (const c of input.keptComps) {
-    const name = usableSubdivision(c.subdivision)
+    const name = onOwnGround(c) ? subdivision : usableSubdivision(c.subdivision)
     if (!name) continue
     keptBySubdivision[name] = (keptBySubdivision[name] ?? 0) + 1
   }
 
   const total = input.keptComps.length
-  const inside = subdivision
-    ? input.keptComps.filter((c) => usableSubdivision(c.subdivision) === subdivision)
-    : []
+  const inside = input.keptComps.filter(onOwnGround)
   const inSubdivision = inside.length
 
   // The sales OUTSIDE the subdivision. Name those sales. A rung that
@@ -207,9 +226,7 @@ export function buildCompSearch(input: {
   // came from. own-street-24mo did that on 3722 Petrosa and the sentence
   // called 62899 Daniel, in Mirada, "your own street."
   const subjectStreetKey = streetKey(input.subjectStreet)
-  const outside = input.keptComps.filter(
-    (c) => !subdivision || usableSubdivision(c.subdivision) !== subdivision,
-  )
+  const outside = input.keptComps.filter((c) => !onOwnGround(c))
   const onSubjectStreet = (c: CompSearchKeptComp): boolean => {
     const saleStreet = streetKey(c.address)
     return subjectStreetKey != null && saleStreet != null && saleStreet === subjectStreetKey
@@ -218,12 +235,26 @@ export function buildCompSearch(input: {
     describeOutsideSales(outside, onSubjectStreet) ??
     rungPhraseForUnnamed(outside, rungs, onSubjectStreet)
 
+  // WHAT THE OWN-GROUND RUNGS ACTUALLY COVERED (reader review 2026-10-08).
+  // The sentence may only say what the subdivision rungs searched: whether
+  // they ran, over how many months, and how many sales they found. Zero
+  // sales is "No home sold in X", never "matched your home".
+  const ownRungs = ran.filter((r) => r.tier.startsWith('subdivision-'))
+  const ownSearch: OwnGroundSearch | null =
+    ownRungs.length > 0
+      ? {
+          months: Math.max(0, ...ownRungs.map((r) => (r.monthsBack > 0 ? r.monthsBack : (parseTierMonths(r.tier) ?? 0)))),
+          found: ownRungs.reduce((sum, r) => sum + Math.max(0, r.compsAdded), 0),
+        }
+      : null
+
   const sentence = writeSentence({
     subdivision,
     total,
     inSubdivision,
     outside: described,
     brokerOnly: ran.every((r) => r.tier === BROKER_TIER),
+    ownSearch,
   })
 
   return {
@@ -294,7 +325,10 @@ function describeOutsideSales(
       const address = clean(c.address)
       return { text: address ? `${address} on your street` : 'a sale on your street', namesSale: true }
     }
-    const place = usableSubdivision(c.subdivision)
+    const mls = usableSubdivision(c.subdivision)
+    // A bare MLS code prints as the recorded plat. A real name stays.
+    const named = mls ? letterPlaceName(mls, nameFromPlatSlug(c.subdivisionSlug)) : ''
+    const place = named || null
     const address = clean(c.address)
     if (address && place) return { text: `${address} in ${place}`, namesSale: true }
     if (address) return { text: address, namesSale: true }
@@ -309,12 +343,57 @@ function describeOutsideSales(
   return { text: joinPhrases([...new Set(named.map((p) => p.text))]), namesSale: false }
 }
 
+/** What the subject's own-subdivision rungs searched: the widest window, and how many sales they found. */
+type OwnGroundSearch = { months: number; found: number }
+
+/** "in the last 24 months", or nothing when no window is known. */
+function lastMonths(months: number): string {
+  if (!(months > 0)) return ''
+  return months === 1 ? ' in the last month' : ` in the last ${months} months`
+}
+
+/**
+ * The sentence when no printed sale is inside the subdivision. It says only
+ * what the own-subdivision rungs covered: that they searched the subdivision,
+ * the window they searched, and whether they found a sale at all.
+ *   - They did not run: nothing is claimed about the subdivision.
+ *   - They ran and found none: "No home sold in X in the last N months",
+ *     with the window they actually read. "Matched your home" claimed a
+ *     size fit the search never made (reader review, 915 Saginaw, 2026-10-08).
+ *   - They found sales and none is printed: those sales exist, so "no home
+ *     sold" would be false. The sentence says they were found and are not
+ *     among the sales the letter uses.
+ */
+function absentSentence(args: {
+  subdivision: string
+  n: string
+  outside: OutsidePhrase | null
+  ownSearch: OwnGroundSearch | null
+}): string {
+  const { subdivision, n, outside, ownSearch } = args
+  const outsideText = outside?.text ?? ''
+  if (!ownSearch) {
+    return outsideText ? `The ${n} sales come from ${outsideText}.` : `The ${n} sales are the closest recent sales to your home.`
+  }
+  const window = lastMonths(ownSearch.months)
+  if (ownSearch.found > 0) {
+    const found = `The search found ${countWord(ownSearch.found)} ${ownSearch.found === 1 ? 'sale' : 'sales'} inside ${subdivision}${window}, and ${
+      ownSearch.found === 1 ? 'it is not' : 'none of them is'
+    } among the sales this letter uses.`
+    return outsideText ? `${found} The ${n} sales come from ${outsideText}.` : found
+  }
+  return outsideText
+    ? `No home sold in ${subdivision}${window}, so the search opened to ${outsideText}.`
+    : `No home sold in ${subdivision}${window}.`
+}
+
 function writeSentence(args: {
   subdivision: string | null
   total: number
   inSubdivision: number
   outside: OutsidePhrase | null
   brokerOnly: boolean
+  ownSearch?: OwnGroundSearch | null
 }): string {
   const { subdivision, total, inSubdivision, outside, brokerOnly } = args
   const n = countWord(total)
@@ -335,9 +414,7 @@ function writeSentence(args: {
       : `The ${n} sales are the closest recent sales to your home.`
   }
   if (inSubdivision === 0) {
-    return outsideLabels
-      ? `No recent sale inside ${subdivision} matched your home, so the search opened to ${outsideLabels}.`
-      : `No recent sale inside ${subdivision} matched your home.`
+    return absentSentence({ subdivision, n, outside, ownSearch: args.ownSearch ?? null })
   }
   if (inSubdivision >= total) {
     return total === 1

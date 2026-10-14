@@ -41,6 +41,8 @@ import {
   selectPricingFactsPool,
   selectSeniorCommunityListingKeys,
   selectListingBathSplits,
+  selectListingUnitNumbers,
+  selectListingViews,
   RECENT_CLOSE_CATCH_UP_DAYS,
   type PricingFactsCatchUp,
 } from '@/lib/data/pricing/facts'
@@ -79,6 +81,7 @@ export function cmaSubjectToPricing(
   return {
     listingKey: subject.listingKey,
     streetAddress: subject.streetAddress,
+    unitNumber: subject.unitNumber ?? null,
     city: subject.city,
     citySlug: citySlug(subject.city),
     subdivision: subject.subdivision,
@@ -105,6 +108,7 @@ export function cmaSubjectToPricing(
     propertySubType: subject.propertySubType,
     zoning: extras.zoning ?? zoningFromSubject ?? null,
     publicRemarks: subject.publicRemarks,
+    viewDescription: subject.viewDescription,
     seniorCommunityYn: subject.seniorCommunityYn ?? null,
     irrigationClass: extras.irrigationClass ?? null,
   }
@@ -163,8 +167,8 @@ export async function selectPricingComps(
     },
     asOfYear,
   )
-  // Ordinary: 24 months, the longest ordinary rung, and no further. Custom/new
-  // stays at 30 so those 24-month rungs still have a pool. Do not shrink the 30.
+  // The load reaches the 36-month recovery rungs. The price anchor still
+  // reads the ordinary 24-month window, or 30 for custom and new.
   const closeAfterIso = factsPoolCloseAfter(asOf, customOrNew)
   const sqft = pricingSubject.sqft
   // THE POOL IS NEVER OLDER THAN THE CHARTS (2026-10-07, 3037 Purcell). The
@@ -246,9 +250,11 @@ export async function selectPricingComps(
   // evidence either way.
   // The MLS full / half bath split, also only on listings: the room rule
   // compares full baths, and facts `baths` counts a powder room whole.
-  const [seniorKeys, bathSplits] = await Promise.all([
+  const [seniorKeys, bathSplits, unitNumbers, listingViews] = await Promise.all([
     selectSeniorCommunityListingKeys([...byKey.keys()]),
     selectListingBathSplits([...byKey.keys()]),
+    selectListingUnitNumbers([...byKey.keys()]),
+    selectListingViews([...byKey.keys()]),
   ])
   const sales = [...byKey.values()].map((s) => ({
     ...s,
@@ -256,6 +262,8 @@ export async function selectPricingComps(
     seniorCommunityYn: seniorKeys.has(s.listingKey) ? true : null,
     bathsFull: bathSplits.get(s.listingKey)?.full ?? null,
     bathsHalf: bathSplits.get(s.listingKey)?.half ?? null,
+    unitNumber: unitNumbers.get(s.listingKey) ?? null,
+    viewDescription: listingViews.get(s.listingKey) ?? null,
   }))
   // Touching plats, closest first. When this home has a neighborhood, a plat
   // with inNeighborhood false stays out. Null means no polygon was tested and
@@ -537,6 +545,7 @@ export function matchToCompSelection(
         price_tier: match.priceTierSkipped ?? 0,
       },
       not_price_setting: match.rungs.reduce((n, r) => n + (r.notSetting ?? 0), 0),
+      not_setting_sales: match.notSettingSales ?? [],
       outliers_excluded: 0,
       final_count: match.comps.length,
       final_tier_counts: Object.fromEntries(

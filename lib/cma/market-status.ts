@@ -5,14 +5,34 @@
  */
 
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
-import { compAreaContains, compAreaIn, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
+import { compAreaContains, compAreaIn, type CompArea } from '@/lib/pricing/comp-area'
 import { countWord } from '@/lib/pricing/estimate'
-import { keepSameProductType, letterProductMatch } from '@/lib/cma/market-area'
+import { rankBestPool } from '@/lib/pricing/best-pool'
+import { distanceMiles, keepSameProductType, letterProductMatch } from '@/lib/cma/market-area'
+import {
+  POOL_CAP,
+  POOL_EXPIRED_MONTHS,
+  bathCountGap,
+  poolExpiredSentence,
+  poolPlace,
+  wholeCountGap,
+  type PoolMeta,
+} from '@/lib/cma/pool-area'
 import { realSubdivision } from '@/lib/cma/comp-tiers'
 import { roomNotedSentence, sameAreaFit, sameAreaSubject, type SameAreaCandidate } from '@/lib/cma/same-area-fit'
+import { describeUnlikeHome, unlikeAsksPhrase, unlikeReasonSentence, type CmaUnlikeHome } from '@/lib/cma/unlike-reason'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
 import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
-import { cameOffStatus, lastActiveRun, pacificDay, sameStatus, type ActiveRun } from '@/lib/cma/listing-status'
+import {
+  cameOffStatus,
+  lastActiveRunTimed,
+  listingStretch,
+  pacificDay,
+  sameStatus,
+  type ActiveRun,
+  type ListingStretch,
+} from '@/lib/cma/listing-status'
+import { listingStretchRead } from '@/lib/cma/last-stretch'
 
 export type CmaStatusBucket = {
   key: 'selected' | 'active' | 'pending' | 'expired' | 'closed'
@@ -65,6 +85,13 @@ export type CmaExpiredPeer = {
   status: string
   /** Days on the market: the day it went Active to the day it left Active. */
   daysOnMarket: number | null
+  /**
+   * Its last stretch on the market (Matt 2026-10-08, "Last stretch, labeled"):
+   * the stretch `daysOnMarket` counts, the ask in effect when it began, and
+   * whether the home had been on the market before it. Print through
+   * last-stretch.ts listingStretchRead. Absent on rows built before.
+   */
+  stretch?: ListingStretch | null
   /** Cycle start — used to label or collapse multi-cycle peers. */
   onMarketDate: string | null
   /**
@@ -97,9 +124,16 @@ export type CmaExpiredPeer = {
   propertySubType: string | null
   /** MLS subdivision, so a plat boundary can be re-tested at render. */
   subdivision?: string | null
+  /**
+   * The recorded plat polygon the area read put the home in (null when tested
+   * and none holds it), so the render re-tests the polygon, not the MLS
+   * spelling (rule 24; reader review 2026-10-08). Absent on rows stored
+   * before then, which keep the name test.
+   */
+  platSlug?: string | null
   latitude: number | null
   longitude: number | null
-  /** Rule 4: one room apart on the subject's own ground, kept and disclosed, zero dollars. */
+  /** Rule 4: up to two whole rooms off stays and weighs less. Three or more on one count is refused. No dollar value. */
   roomDifference?: Array<'beds' | 'baths'> | null
 }
 
@@ -234,6 +268,9 @@ export type ExpiredPeerSubject = Pick<
   propertySubType?: string | null
   /** The rest of what the sales rules read (lib/cma/same-area-fit.ts). Absent on older callers. */
   baths?: number | null
+  /** Full baths, when the row carries the split. The gap uses these before the totals. */
+  bathsFull?: number | null
+  bathsHalf?: number | null
   yearBuilt?: number | null
   subdivision?: string | null
   subdivisionSlug?: string | null
@@ -436,6 +473,8 @@ function rowToCandidate(row: CmaMarketAreaRow): SameAreaCandidate {
     address: peerAddress(row) || null,
     city: row.City ?? null,
     subdivision: row.SubdivisionName ?? null,
+    // The polygon the area read placed it in, when it read one.
+    subdivisionSlug: row.plat_slug,
     latitude: row.Latitude ?? null,
     longitude: row.Longitude ?? null,
     beds: countOrNull(row.BedroomsTotal),
@@ -446,6 +485,23 @@ function rowToCandidate(row: CmaMarketAreaRow): SameAreaCandidate {
     yearBuilt: row.year_built ?? null,
     propertySubType: row.property_sub_type ?? null,
     publicRemarks: row.public_remarks ?? null,
+  }
+}
+
+function peerToCandidate(peer: CmaExpiredPeer): SameAreaCandidate {
+  return {
+    address: peer.address,
+    subdivision: peer.subdivision ?? null,
+    subdivisionSlug: peer.platSlug,
+    latitude: peer.latitude,
+    longitude: peer.longitude,
+    beds: peer.beds,
+    baths: peer.baths,
+    bathsFull: peer.bathsFull ?? null,
+    bathsHalf: peer.bathsHalf ?? null,
+    sqft: peer.sqft,
+    yearBuilt: peer.yearBuilt,
+    propertySubType: peer.propertySubType,
   }
 }
 
@@ -460,12 +516,34 @@ function peerDist2(row: CmaMarketAreaRow, lat: number, lng: number): number {
  * The last stretch an unsold listing was on the market, from its status log
  * when the read attached one, else its own on-market and off-market days.
  */
-function peerRun(row: CmaMarketAreaRow): ActiveRun | null {
-  return lastActiveRun({
+function peerRun(row: CmaMarketAreaRow): (ActiveRun & { fromAt: string | null }) | null {
+  return lastActiveRunTimed({
     changes: row.statusChanges ?? [],
     onMarketDate: row.OnMarketDate ?? row.ListDate,
     offMarketDate: row.off_market_date ?? row.status_change_timestamp ?? row.CloseDate,
     status: row.StandardStatus,
+  })
+}
+
+/**
+ * The stretch a came-off home's days count (Matt 2026-10-08): the ask in
+ * effect when it began, off the ask history the area read attached, and
+ * whether it had been on the market before.
+ */
+function peerStretch(
+  row: CmaMarketAreaRow,
+  run: (ActiveRun & { fromAt: string | null }) | null,
+  originalListPrice: number | null,
+  listPrice: number,
+): ListingStretch | null {
+  return listingStretch({
+    startAt: run?.fromAt ?? row.OnMarketDate ?? row.ListDate ?? null,
+    changes: row.statusChanges ?? [],
+    firstOnMarketAt: row.original_on_market_timestamp ?? null,
+    listedAt: row.OnMarketDate ?? row.ListDate ?? null,
+    askChanges: row.askChanges ?? [],
+    openingAsk: originalListPrice,
+    currentAsk: listPrice,
   })
 }
 
@@ -492,8 +570,32 @@ function onMarketSortKey(iso: string | null | undefined): number {
 }
 
 /**
+ * A later listing key of the same house is a relist even when that key's own
+ * clock starts the day it went Active. 3446 Jackwood's May listing
+ * (20260519200451052267000000) opened on its own on-market day, so that key
+ * alone is not a restart; the January listing under another key is. A missing
+ * earlier day, or the same listing key twice, is not an earlier stretch.
+ * The kept row's first ask and days stay the last stretch's.
+ */
+function markEarlierListing(primary: CmaExpiredPeer, earlier: readonly CmaExpiredPeer[]): CmaExpiredPeer {
+  const primaryDay = pacificDay(primary.onMarketDate)
+  if (!primaryDay) return primary
+  const cameBack = earlier.some((peer) => {
+    if (peer.listingKey === primary.listingKey) return false
+    const day = pacificDay(peer.onMarketDate)
+    return day != null && day < primaryDay
+  })
+  if (!cameBack) return primary
+  if (primary.stretch) return { ...primary, stretch: { ...primary.stretch, restarted: true } }
+  const opening = primary.originalListPrice
+  const firstAsk = opening != null && Number.isFinite(opening) && opening > 0 ? Math.round(opening) : null
+  return { ...primary, stretch: { from: primaryDay, firstAsk, restarted: true } }
+}
+
+/**
  * Same street twice (two failed list cycles) → one peer column.
  * Primary facts from the newest cycle; Listing history carries every cycle.
+ * An earlier cycle under a different listing key labels the kept row as a relist.
  */
 export function collapseExpiredPeerCycles(peers: readonly CmaExpiredPeer[]): CmaExpiredPeer[] {
   const byAddr = new Map<string, CmaExpiredPeer[]>()
@@ -512,7 +614,7 @@ export function collapseExpiredPeerCycles(peers: readonly CmaExpiredPeer[]): Cma
     const sorted = [...group].sort(
       (a, b) => onMarketSortKey(b.onMarketDate) - onMarketSortKey(a.onMarketDate),
     )
-    const primary = sorted[0]!
+    const primary = markEarlierListing(sorted[0]!, sorted.slice(1))
     const histories = sorted
       .map((p) => p.listingHistoryLine?.trim())
       .filter((line): line is string => Boolean(line))
@@ -568,7 +670,14 @@ export function pickExpiredPeers(
       const status = row.StandardStatus
       const leftAs = run?.source === 'status-history' ? run.leftAs : null
       const cameOffAs = leftAs && !sameStatus(leftAs, status) ? leftAs : null
-      const statusDay = pacificDay(row.status_change_timestamp ?? row.off_market_date ?? null)
+      // The date beside the status of record. When that status is the one it
+      // left Active for, the MLS off-market date wins over the activity log
+      // (1355 Jacksonville: WithdrawDate Sep 28, log Sep 29). A later status
+      // (withdrawn, then expired) keeps the log's status-of-record day.
+      const mlsOff = pacificDay(row.off_market_date)
+      const logStatusDay = pacificDay(row.status_change_timestamp ?? null)
+      const statusDay = cameOffAs ? (logStatusDay ?? mlsOff) : (mlsOff ?? logStatusDay)
+      const stretch = peerStretch(row, run, originalListPrice, listPrice)
       const peer: CmaExpiredPeer = {
         listingKey: key,
         address,
@@ -576,6 +685,7 @@ export function pickExpiredPeers(
         originalListPrice,
         status,
         daysOnMarket,
+        ...(stretch ? { stretch } : {}),
         onMarketDate,
         ...(run?.to ? { offMarketDate: run.to } : {}),
         ...(cameOffAs ? { cameOffAs } : {}),
@@ -583,7 +693,8 @@ export function pickExpiredPeers(
         photoUrl: row.PhotoURL ?? null,
         listingHistoryLine: buildListingHistoryLine({
           listPrice,
-          originalListPrice,
+          // The first ask of the stretch the days count (Matt 2026-10-08).
+          originalListPrice: stretch ? stretch.firstAsk : originalListPrice,
           status: cameOffStatus(status, cameOffAs),
           onMarketDate,
           daysOnMarket,
@@ -597,6 +708,8 @@ export function pickExpiredPeers(
         lotAcres: row.lot_size_acres ?? null,
         propertySubType: row.property_sub_type ?? null,
         subdivision: row.SubdivisionName ?? null,
+        // Always stored, null when the read found none (Matt 2026-10-09).
+        platSlug: row.plat_slug ?? null,
         latitude: row.Latitude ?? null,
         longitude: row.Longitude ?? null,
       }
@@ -860,6 +973,18 @@ export type CmaExpiredPeerSet = {
    * built before 2026-10-08.
    */
   priceBand?: { lo: number; hi: number } | null
+  /**
+   * The homes `areaTotal` counts that are not peers, one per address: each
+   * one's last ask and the refusal the fit returned (lib/cma/unlike-reason.ts),
+   * so the sentence says the reason that is true of them. Absent on rows built
+   * before 2026-10-08.
+   */
+  unlike?: CmaUnlikeHome[]
+  /**
+   * Drawn on the pool plats, not on the plats the sold comps happened to sit in.
+   * The render keeps these rows when this is set.
+   */
+  poolGeography?: boolean
 }
 
 function usd(n: number): string {
@@ -892,7 +1017,8 @@ export function whyItSat(
   if (peer.daysOnMarket != null && peer.daysOnMarket > 0) {
     bits.push(`${peer.daysOnMarket} ${peer.daysOnMarket === 1 ? 'day' : 'days'} on the market`)
   }
-  const open = peer.originalListPrice
+  // The opening ask of the stretch the days count (Matt 2026-10-08).
+  const open = listingStretchRead(peer).firstAsk
   if (open != null && Number.isFinite(open) && open > 0 && peer.listPrice > 0) {
     if (open > peer.listPrice) bits.push(`came down ${usd(open - peer.listPrice)} from ${usd(open)}`)
     else if (open === peer.listPrice) bits.push(`never came down from ${usd(open)}`)
@@ -1004,8 +1130,16 @@ export function buildExpiredPeerSet(input: {
    * now, did not come off unsold (laterOutcomeCycle). Omitted drops nothing.
    */
   laterCycles?: readonly HouseCycleRecord[]
-  /** The list-price window `rows` were read inside (getCmaAreaUnsoldCycles priceLo..priceHi). */
+  /**
+   * Ignored for membership. Price does not decide which home came off.
+   * Kept so older callers still type-check.
+   */
   priceBand?: { lo: number; hi: number } | null
+  /**
+   * The plat pool this set was drawn on. Place is own, adjacent, or the next
+   * row. Absent callers still use the 36-month rank, and the sentence names `area`.
+   */
+  pool?: PoolMeta | null
 }): CmaExpiredPeerSet {
   const asOf = input.asOf ?? new Date()
   // One house key for every "same street" test here: "3062 NW Kelly Hill" on a
@@ -1037,92 +1171,150 @@ export function buildExpiredPeerSet(input: {
       return address.length === 0 || !liveNorms.has(address)
     })
 
-  const maxW =
-    input.maxWindowMonths != null && Number.isFinite(input.maxWindowMonths) && input.maxWindowMonths > 0
-      ? Math.max(3, Math.round(input.maxWindowMonths))
-      : null
-  const filtered = [...EXPIRED_PEER_WINDOWS].filter((w) => (maxW == null ? true : w <= maxW))
-  const windows = filtered.length > 0 ? filtered : [maxW ?? 12]
-  let windowMonths = windows[windows.length - 1]!
-  let peers: CmaExpiredPeer[] = []
-  let areaTotal = 0
-  let found = 0
-  let likeYours = false
-  const tried: number[] = []
-  // A row outside the sales area is not in the area, whatever read returned
-  // it (Matt 2026-10-07, rule 24): the same exact test the fit applies, so
-  // `areaTotal` only counts homes the fit compared, and "none were close"
-  // is never said of a home that was never inside.
+  // One window: 36 months. Price is not a wall. The rank keeps five.
+  // maxWindowMonths and priceBand stay on the input for older callers and do not decide membership.
+  void input.maxWindowMonths
+  void input.priceBand
+  const windowMonths = POOL_EXPIRED_MONTHS
+  const inWindow = dated.filter((x) => x.months <= windowMonths).map((x) => x.row)
   const inArea = (r: CmaMarketAreaRow) =>
     compAreaContains(input.area, {
       latitude: r.Latitude ?? null,
       longitude: r.Longitude ?? null,
       subdivision: r.SubdivisionName ?? null,
       city: r.City ?? null,
-      // A plat held to the subject's street holds only that street.
+      platSlug: r.plat_slug,
       address: r.StreetName?.trim() ? `${(r.StreetNumber ?? '').trim()} ${r.StreetName.trim()}`.trim() : null,
     })
-  for (const w of windows) {
-    tried.push(w)
-    const inWindow = dated.filter((x) => x.months <= w).map((x) => x.row)
-    peers = pickExpiredPeers(inWindow, input.subject, input.area)
-    // How many homes came off in the area at all, one per address, subject
-    // excluded. The narrowed set is what the document prints; this is what the
-    // sentence would otherwise silently claim to be counting.
-    // What the sentence counts is the set the table shows. `found` is that
-    // set: homes that fit this one. Unlike homes stay in areaTotal only.
-    const key = (r: CmaMarketAreaRow) =>
-      normalizePeerAddress(peerAddress(r)) || String(r.ListingKey ?? '')
-    const eligible = inWindow.filter(
-      (r) =>
-        inArea(r) &&
-        !isSubjectExpiredRow(r, input.subject) &&
-        peerAddress(r).length > 0 &&
-        Number(r.ListPrice) > 0,
-    )
-    areaTotal = new Set(eligible.map(key).filter((k) => k.length > 0)).size
-    // Pins are only homes that fit. Unlike homes stay in areaTotal. They do
-    // not fill the three-home quota, so this window keeps opening.
-    likeYours = peers.length > 0
-    found = peers.length
-    windowMonths = w
-    if (peers.length >= EXPIRED_PEER_MIN) break
-  }
+  const key = (r: CmaMarketAreaRow) => normalizePeerAddress(peerAddress(r)) || String(r.ListingKey ?? '')
+  const eligible = inWindow.filter(
+    (r) =>
+      inArea(r) &&
+      !isSubjectExpiredRow(r, input.subject) &&
+      peerAddress(r).length > 0 &&
+      Number(r.ListPrice) > 0,
+  )
+  const areaTotal = new Set(eligible.map(key).filter((k) => k.length > 0)).size
+  const fitting = pickExpiredPeers(inWindow, input.subject, input.area)
+  const unlike = unlikeUnsoldHomes({
+    eligible,
+    months: new Map(dated.map((x) => [x.row, x.months])),
+    peers: fitting,
+    subject: input.subject,
+    area: input.area,
+    key,
+  })
 
-  const withWhy = peers.map((p) => ({ ...p, whyItSat: whyItSat(p, input.keptCompMedianPpsf) }))
+  const pool = input.pool ?? null
+  const lower = (names: readonly string[]) =>
+    new Set(names.map((name) => name.trim().toLowerCase()).filter(Boolean))
+  const ownSlugs = new Set(pool?.ownSlugs ?? [])
+  const ownNames = lower(pool ? [pool.ownLabel] : [])
+  const adjacentSlugs = new Set(pool?.adjacentSlugs ?? [])
+  const adjacentNames = lower(pool?.adjacentLabels ?? [])
+  const nextSlugs = new Set(pool?.openedNext ? pool.nextSlugs : [])
+  const nextNames = lower(pool?.openedNext ? pool.nextLabels : [])
+  const subjectPoint = { lat: input.subject.latitude ?? null, lng: input.subject.longitude ?? null }
+  const ranked = rankBestPool(
+    fitting.map((peer) => {
+      const fit = sameAreaFit(input.area, input.subject, peerToCandidate(peer))
+      const ownPlat = fit.ok && fit.ownPlat
+      return {
+        id: peer.listingKey,
+        place: pool
+          ? poolPlace({
+              ownPlat,
+              slug: peer.platSlug,
+              name: peer.subdivision,
+              ownSlugs,
+              ownNames,
+              adjacentSlugs,
+              adjacentNames,
+              nextSlugs,
+              nextNames,
+              openedNext: pool.openedNext,
+            })
+          : ownPlat
+            ? 'own'
+            : 'adjacent',
+        sqft: peer.sqft,
+        bedsOff: wholeCountGap(input.subject.beds, peer.beds),
+        bathsOff: bathCountGap(input.subject, peer),
+        yearBuilt: peer.yearBuilt,
+        when: (peer.offMarketDate ?? peer.statusDate ?? '').slice(0, 10) || null,
+        miles: distanceMiles(subjectPoint, { lat: peer.latitude, lng: peer.longitude }),
+        peer,
+      }
+    }),
+    { sqft: input.subject.sqft ?? null, yearBuilt: input.subject.yearBuilt ?? null },
+    'expired',
+    POOL_CAP,
+  )
+  const withWhy = ranked.map((item) => ({ ...item.peer, whyItSat: whyItSat(item.peer, input.keptCompMedianPpsf) }))
   const count = withWhy.length
-  const shortfall = count < EXPIRED_PEER_MIN
-  const widenedTo = !shortfall && windowMonths > windows[0]! ? windowMonths : null
-  // A peer kept one room apart on the subject's own ground is named with the
-  // room, and the sentence says no dollar value is applied (rule 4).
-  const noted = roomNotedSentence(withWhy)
+  const heldBack = Math.max(0, fitting.length - count)
+  const noted = roomNotedSentence(withWhy, input.subject)
   const roomNote = noted ? ` ${noted}` : ''
 
   return {
     area: input.area,
     windowMonths,
-    windowsTried: tried,
-    widenedTo,
+    windowsTried: [windowMonths],
+    widenedTo: null,
     count,
     areaTotal,
-    found,
-    likeYours,
-    shortfall,
+    found: count,
+    likeYours: count > 0,
+    shortfall: false,
     sentence:
-      peerSetSentence({
-        area: sentenceArea(input.area, withWhy),
-        searchArea: input.area,
+      poolExpiredSentence({
+        ownLabel: pool?.ownLabel ?? null,
+        openedNext: pool?.openedNext === true,
+        area: input.area,
         count,
-        areaTotal,
-        windowMonths,
-        shortfall,
-        likeYours,
         subjectCameOff: input.subjectCameOff === true,
-        priceBand: input.priceBand ?? null,
+        heldBack,
       }) + roomNote,
     peers: withWhy,
-    ...(input.priceBand ? { priceBand: { lo: input.priceBand.lo, hi: input.priceBand.hi } } : {}),
+    unlike,
+    poolGeography: true,
   }
+}
+/**
+ * One entry per counted address that is not a peer: its most recent cycle in
+ * the window, that cycle's last ask, and why the fit refused it. The same
+ * product test `pickExpiredPeers` applies first, then `sameAreaFit`, so the
+ * reason is the one that actually kept it out.
+ */
+function unlikeUnsoldHomes(input: {
+  eligible: readonly CmaMarketAreaRow[]
+  months: ReadonlyMap<CmaMarketAreaRow, number>
+  peers: readonly CmaExpiredPeer[]
+  subject: ExpiredPeerSubject
+  area: CompArea
+  key: (r: CmaMarketAreaRow) => string
+}): CmaUnlikeHome[] {
+  const peerKeys = new Set(input.peers.map((p) => normalizePeerAddress(p.address)).filter((k) => k.length > 0))
+  const latest = new Map<string, CmaMarketAreaRow>()
+  for (const row of input.eligible) {
+    const k = input.key(row)
+    if (!k || peerKeys.has(k)) continue
+    const held = latest.get(k)
+    const m = input.months.get(row) ?? Number.POSITIVE_INFINITY
+    if (!held || m < (input.months.get(held) ?? Number.POSITIVE_INFINITY)) latest.set(k, row)
+  }
+  const out: CmaUnlikeHome[] = []
+  for (const row of latest.values()) {
+    const ask = Number(row.ListPrice)
+    const lastAsk = Number.isFinite(ask) && ask > 0 ? ask : null
+    if (!letterProductMatch(input.subject.propertySubType ?? null, row.property_sub_type ?? null)) {
+      out.push({ lastAsk, reason: 'product' })
+      continue
+    }
+    const home = describeUnlikeHome(input.area, input.subject, rowToCandidate(row), lastAsk)
+    if (home) out.push(home)
+  }
+  return out.sort((a, b) => (a.lastAsk ?? 0) - (b.lastAsk ?? 0))
 }
 
 /**
@@ -1136,23 +1328,44 @@ export function buildExpiredPeerSet(input: {
  * around); four more homes in Jacksonville's area came off unsold outside it,
  * so "Two homes in ... came off the market" was false as written. With no
  * window on the row there is no count it can truthfully say, so it says that
- * homes came off near this price and none were close, without a number.
+ * homes came off near this price, without a number.
+ *
+ * THE WINDOW IS SAID AS THE SEARCH, THE PRICES ARE THE HOMES' OWN, AND THE
+ * REASON IS THE TRUE ONE (reader review, 3062 NW Kelly Hill, 2026-10-08).
+ * "Two homes in Westside Meadows and Skyline West listed between $405,000 and
+ * $1,362,000 came off ... None were close to this home in bedrooms,
+ * bathrooms, size or age" read the search window as the homes' prices (they
+ * asked $895,000 and $999,000) and named four reasons when the fit refused
+ * both for size alone; both were 3 bed 2 bath like the subject. Now:
+ * "We searched listings in Westside Meadows and Skyline West between $405,000
+ * and $1,362,000. Two homes came off the market without selling in the last
+ * 18 months, last listed at $895,000 and $999,000. Both are more than 25
+ * percent larger than this home, so they are not compared here." A row stored
+ * before the homes were described keeps the count and the window and says
+ * only that they are not enough like this home (`unlikeReasonSentence`).
+ * `other` says "other" when the seller's own listing is the one above it.
  */
 export function unsoldAreaTotalSentence(input: {
   area: CompArea
   areaTotal: number
   windowMonths: number
   priceBand: { lo: number; hi: number } | null
+  unlike?: readonly CmaUnlikeHome[] | null
+  other?: boolean
 }): string {
   const where = compAreaIn(input.area)
   const w = monthsWord(input.windowMonths)
+  const total = input.areaTotal
+  const described = input.unlike && input.unlike.length === total ? input.unlike : null
+  const other = input.other ? 'other ' : ''
   if (!input.priceBand) {
-    return `Homes ${where} came off the market without selling in the last ${w} months. None of those near this price were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.`
+    return `${input.other ? 'Other homes' : 'Homes'} ${where} came off the market without selling in the last ${w} months. None of those near this price is enough like this home to compare here.`
   }
-  const cameOff = input.areaTotal
-  const came = cameOff === 1 ? 'One home' : `${countWord(cameOff, true)} homes`
-  const listed = `listed between ${usd(input.priceBand.lo)} and ${usd(input.priceBand.hi)}`
-  return `${came} ${where} ${listed} came off the market without selling in the last ${w} months. None were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.`
+  const searched = `We searched listings ${where} between ${usd(input.priceBand.lo)} and ${usd(input.priceBand.hi)}.`
+  const came = `${countWord(total, true)} ${other}${total === 1 ? 'home' : 'homes'}`
+  const asks = described ? unlikeAsksPhrase(described) : ''
+  const cameOff = `${came} came off the market without selling in the last ${w} months${asks ? `, last listed ${asks}` : ''}.`
+  return `${searched} ${cameOff} ${unlikeReasonSentence(described, total)}`
 }
 
 function peerSetSentence(input: {
@@ -1167,6 +1380,8 @@ function peerSetSentence(input: {
   likeYours: boolean
   subjectCameOff?: boolean
   priceBand?: { lo: number; hi: number } | null
+  /** The counted homes that are not peers, each with its last ask and the reason it is not one. */
+  unlike?: readonly CmaUnlikeHome[] | null
 }): string {
   const where = compAreaIn(input.area)
   const whereOr = compAreaIn(input.area, { negative: true })
@@ -1188,6 +1403,8 @@ function peerSetSentence(input: {
         areaTotal: cameOff,
         windowMonths: input.windowMonths,
         priceBand: input.priceBand ?? null,
+        unlike: input.unlike ?? null,
+        other: input.subjectCameOff === true,
       })
     }
     // The subject is the home that came off, so the sentence says no OTHER
@@ -1206,9 +1423,72 @@ function peerSetSentence(input: {
   // Fewer than three even at the widest window. Say the number, say the
   // window, and say plainly that nothing was brought in from outside the
   // WHOLE search area, so the sentence never implies only one plat was read.
-  const outside =
-    input.searchArea.kind === 'radius' ? 'further out' : `outside ${compAreaPhrase(input.searchArea)}`
-  return `Only ${homes} ${where} came off the market without selling in the last ${w} months, and nothing from ${outside} was added to make up the number.`
+  return shortfallPeerSentence({
+    searchArea: input.searchArea,
+    count: n,
+    likeYours: input.likeYours,
+    windowMonths: input.windowMonths,
+  })
+}
+
+/**
+ * "Only one home like yours in Park Place, Miller Heights, Kenwood, West Hills
+ * and Bend View came off the market without selling in the last six months,
+ * and nothing from further out was added to make up the number."
+ *
+ * THE COUNT NAMES THE GROUND IT SEARCHED (reader review 2026-10-09, 915
+ * Saginaw). "Only one home like yours in Kenwood came off the market" named
+ * the plat the one home sits in, and read as if only Kenwood was searched
+ * when all five subdivisions were; the area then followed in a clause of its
+ * own ("nothing from outside Park Place, ..."). "Only one" is a claim about
+ * the whole search, so the search area is where it is said, once, and what
+ * was not added is everything further out.
+ */
+export function shortfallPeerSentence(input: {
+  searchArea: CompArea
+  count: number
+  likeYours: boolean
+  windowMonths: number
+}): string {
+  const n = input.count
+  const homes = `${countWord(n)} ${n === 1 ? 'home' : 'homes'}${input.likeYours ? ' like yours' : ''}`
+  return `Only ${homes} ${compAreaIn(input.searchArea)} came off the market without selling in the last ${monthsWord(
+    input.windowMonths,
+  )} months, and nothing from further out was added to make up the number.`
+}
+
+/** The shortfall count as rows built before 2026-10-09 stored it. */
+const STORED_SHORTFALL =
+  /^Only \S+ homes?(?: like yours)? .+? came off the market without selling in the last \S+ months, and nothing from .+? was added to make up the number\./
+
+/**
+ * A stored peer-set sentence in today's words: its shortfall count names the
+ * whole search area (`shortfallPeerSentence`), read off the fields stored
+ * beside it. Delivered letters re-render from stored render_args, so the
+ * render asks this. Anything else prints as stored.
+ */
+export function storedPeerSentenceToday(
+  sentence: string,
+  peers: {
+    area?: CompArea | null
+    count?: number | null
+    likeYours?: boolean | null
+    windowMonths?: number | null
+    shortfall?: boolean | null
+  },
+): string {
+  const n = peers.count ?? 0
+  if (!peers.area || !peers.shortfall || !(n > 0) || !(Number(peers.windowMonths) > 0)) return sentence
+  if (!STORED_SHORTFALL.test(sentence)) return sentence
+  return sentence.replace(
+    STORED_SHORTFALL,
+    shortfallPeerSentence({
+      searchArea: peers.area,
+      count: n,
+      likeYours: peers.likeYours === true,
+      windowMonths: Number(peers.windowMonths),
+    }),
+  )
 }
 
 /**

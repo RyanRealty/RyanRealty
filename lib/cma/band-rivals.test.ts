@@ -133,8 +133,16 @@ describe('pickBandRivals', () => {
     expect(pickBandRivals([rival({ address: '  ' })])).toEqual([])
   })
 
-  it("keeps a home one bedroom off only on the subject's own ground, and drops one two bedrooms off (rule 4, Matt 2026-10-07)", () => {
+  it('keeps a home two bedrooms off wherever the search reached, and drops one three bedrooms off (rule 4, Matt 2026-10-09)', () => {
     const rivals = (duffyPlat: string) => [
+      rival({
+        listingKey: 'THREE',
+        address: '6 Craftsman',
+        beds: 6,
+        sqft: 3600,
+        latitude: 44.27005,
+        longitude: -121.17,
+      }),
       rival({
         listingKey: 'TWO',
         address: '5 Craftsman',
@@ -162,13 +170,18 @@ describe('pickBandRivals', () => {
       }),
     ]
     const subject = { latitude: 44.27, longitude: -121.17, beds: 3, sqft: 3600, subdivision: 'Diamond Bar Ranch' }
-    expect(pickBandRivals(rivals('Diamond Bar Ranch'), subject).map((r) => r.address)).toEqual(['4 Duffy', '3 Fairway'])
-    expect(pickBandRivals(rivals('Other Plat'), subject).map((r) => r.address)).toEqual(['3 Fairway'])
+    for (const plat of ['Diamond Bar Ranch', 'Other Plat']) {
+      const picked = pickBandRivals(rivals(plat), subject).map((r) => r.address)
+      expect(picked).toContain('5 Craftsman')
+      expect(picked).toContain('4 Duffy')
+      expect(picked).toContain('3 Fairway')
+      expect(picked).not.toContain('6 Craftsman')
+    }
   })
 
   it('never falls back to unlike homes (Matt 2026-10-07)', () => {
     const picked = pickBandRivals(
-      [rival({ listingKey: 'FIVE', address: '5 Craftsman', beds: 5, latitude: 44.2701, longitude: -121.17 })],
+      [rival({ listingKey: 'SIX', address: '6 Craftsman', beds: 6, latitude: 44.2701, longitude: -121.17 })],
       { latitude: 44.27, longitude: -121.17, beds: 3, sqft: 1280 },
     )
     expect(picked).toEqual([])
@@ -414,7 +427,7 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
     // "The nearest N" counts the homes drawn for sale: two, not the three
     // cards with the one under contract (rule 17).
     expect(set.sentence).toBe(
-      'The nearest two like yours are for sale in Old Bend between $350,000 and $428,000. 14 are under contract.',
+      'The nearest two like yours are for sale in Old Bend between $350,000 and $428,000. 14 other homes like yours are under contract.',
     )
     expect(set.sentence).not.toContain('27 homes')
     expect(set.rivals.map((r) => r.address)).toEqual(['10 Aspen', '20 Birch', '30 Cedar'])
@@ -494,7 +507,7 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
     expect(set.rivals).toEqual([])
     expect(set.sentence).toBe(
       // countWord spells one through nine; past that the letter prints digits.
-      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. 12 other homes are listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so they are not compared here.',
+      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. 12 other homes are listed there in that range. None is enough like this home to compare here.',
     )
     expect(set.sentence).not.toMatch(/[—–]/)
     expect(set.unlikeCount).toBe(12)
@@ -542,7 +555,7 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
       ],
     })
     expect(set.sentence).toBe(
-      '2 homes like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 1 is under contract.',
+      '2 homes like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 1 other home like yours is under contract.',
     )
     expect(set.sentence).not.toMatch(/[—–]/)
   })
@@ -558,9 +571,9 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
       rivals: [],
     })
     expect(one.sentence).toBe(
-      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. One other home is listed there in that range, but it is not close to this home in bedrooms, bathrooms, size or age, so it is not compared here.',
+      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. One other home is listed there in that range. It is not enough like this home to compare here.',
     )
-    expect(one.sentence).not.toContain('none is close')
+    expect(one.sentence).not.toContain('None is')
     expect(one.sentence).not.toMatch(/[—–]/)
     const two = buildBandRivalSet({
       area: ROOSTER,
@@ -572,7 +585,7 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
       rivals: [],
     })
     expect(two.sentence).toBe(
-      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. Two other homes are listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so they are not compared here.',
+      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. Two other homes are listed there in that range. Neither is enough like this home to compare here.',
     )
   })
 
@@ -639,10 +652,9 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
       'No home like yours in Old Bend is for sale between $360,000 and $440,000, but one is under contract.',
     )
 
-    // The same 1925 home in a recorded-plat area is past the 25-year band
-    // there, and the assembly never counts it: the area sets the band.
+    // Year built does not remove the same 1925 home on a recorded plat (Matt 2026-10-10).
     const plat: CompArea = { ...ROOSTER, names: ['Old Bend Plat'], kind: 'subdivision' }
-    expect(sameAreaFit(plat, subject, { ...old, subdivision: 'Old Bend Plat' }).ok).toBe(false)
+    expect(sameAreaFit(plat, subject, { ...old, subdivision: 'Old Bend Plat' }).ok).toBe(true)
   })
 
   it('says "the nearest eight" over eight drawn for sale when the area holds more, whatever is under contract (rule 17)', () => {
@@ -673,7 +685,7 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
     expect(set.rivals.filter((r) => r.status === 'Active')).toHaveLength(8)
     expect(set.rivals.filter((r) => r.status === 'Pending')).toHaveLength(2)
     expect(set.sentence).toBe(
-      'The nearest eight like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 2 are under contract.',
+      'The nearest eight like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 2 other homes like yours are under contract.',
     )
     expect(set.sentence).not.toContain('nearest ten')
   })

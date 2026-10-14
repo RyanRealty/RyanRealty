@@ -342,7 +342,7 @@ export async function getCrmPersonFull(id: number): Promise<CrmPersonFull> {
     sb.from('crm_contact_points').select('id,kind,value,label,is_primary,status').eq('person_id', id).order('is_primary', { ascending: false }),
     sb.from('crm_timeline').select('id,ts,kind,title,body,source,broker,payload,starred', { count: 'exact' }).eq('person_id', id).order('ts', { ascending: false }).limit(100),
     sb.from('crm_tasks').select('id,name,type,due_at,completed_at,assigned_broker,fub_legacy_id').eq('person_id', id).order('completed_at', { ascending: true, nullsFirst: true }).order('due_at', { ascending: true }).limit(50),
-    sb.from('crm_suppressions').select('id,channel,reason,source').eq('person_id', id),
+    sb.from('crm_suppressions').select('id,channel,reason,source').eq('person_id', id).is('cleared_at', null),
     sb.from('crm_sequence_enrollments').select('id,status,step_index,crm_sequences(name)').eq('person_id', id),
     fubId ? sb.from('fub_person_geo').select('*').eq('fub_person_id', fubId).maybeSingle() : Promise.resolve({ data: null }),
     fubId ? sb.from('cma_deliveries').select('*').eq('fub_person_id', fubId).order('created_at', { ascending: false }).limit(5) : Promise.resolve({ data: [] }),
@@ -659,13 +659,15 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     .split(',').map((s) => s.trim()).filter(Boolean)
   const explicitGroupThread = String(formData.get('groupThread') ?? '') === '1'
 
-  // TCPA quiet hours: one time-based check for the whole send (it also covers
-  // the carrier-group path below, which cannot ride the per-person chokepoint).
-  // Block 8pm–8am Pacific unless the broker explicitly overrides (a deliberate
-  // manual reply — the ONE exception §A6 allows). The governed layer re-checks
-  // per recipient with the same helper + the same canonical message.
+  // Quiet hours: one Pacific check for the whole send, before anything is
+  // read. Block from the 7:55pm pause to 8am Pacific unless the broker
+  // explicitly overrides (a deliberate manual send, the ONE exception §A6
+  // allows). Each number's own zone is checked where the number is known: the
+  // governed 1:1 and group layers, and the raw-number loop below (Matt
+  // 2026-10-04, "Both zones").
   const { inSmsQuietHours } = await import('@/lib/crm/quiet-hours')
-  const { QUIET_HOURS_ERROR } = await import('@/lib/comms/guards')
+  const { smsWindowCloseAtFor } = await import('@/lib/crm/recipient-timezones')
+  const { QUIET_HOURS_ERROR, quietHoursRefusal } = await import('@/lib/comms/guards')
   const override = String(formData.get('overrideQuietHours') ?? '') === '1'
   if (inSmsQuietHours() && !override) {
     return { ok: false, error: QUIET_HOURS_ERROR }
@@ -682,6 +684,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const { GROUP_THREAD_FAILED } = await import('@/lib/crm/compose-group')
 
   let sentCount = 0
+  let failedCount = 0
   let lastError: string | null = null
   let fallbackNotice: string | undefined
 
@@ -730,7 +733,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     // Every recipient (including extras) must be in the broker's scope.
     if (rid !== personId) {
       const s = await requirePersonInScope(rid, access.access)
-      if (!s.ok) { lastError = 'A recipient is outside your scope'; continue }
+      if (!s.ok) { lastError = 'A recipient is outside your scope'; failedCount++; continue }
     }
     const sent = await sendGovernedSms({
       personId: rid,
@@ -740,7 +743,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
       overrideQuietHours: override,
       skipSuppression: true,
     })
-    if (!sent.ok) { lastError = sent.error; continue }
+    if (!sent.ok) { lastError = sent.error; failedCount++; continue }
     sentCount++
   }
 
@@ -750,14 +753,17 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     const rawSlug = access.access.brokerSlug ?? 'matt'
     const rawFrom = await brokerTwilioNumber(rawSlug)
     for (const e164 of rawPhones) {
-      // Quiet hours again at the POST: the one check at the top ran before the
-      // group attempt and every 1:1 send, and these numbers have no guard of their own.
-      if (inSmsQuietHours() && !override) { lastError = QUIET_HOURS_ERROR; continue }
+      // Quiet hours again at the POST, in Pacific and this number's own zone:
+      // the check at the top ran before the group attempt and every 1:1 send,
+      // and these numbers have no guard of their own.
+      const quiet = override ? null : quietHoursRefusal(e164)
+      if (quiet) { lastError = quiet; failedCount++; continue }
+      const validUntil = override ? undefined : smsWindowCloseAtFor(e164)
       const sent = rawFrom
-        ? await sendSms({ from: rawFrom, to: e164, body, mediaUrls })
-        : await sendSmsViaMessagingService({ to: e164, body, mediaUrls })
+        ? await sendSms({ from: rawFrom, to: e164, body, mediaUrls, validUntil })
+        : await sendSmsViaMessagingService({ to: e164, body, mediaUrls, validUntil })
       if (sent.ok) sentCount++
-      else lastError = sent.error
+      else { lastError = sent.error; failedCount++ }
     }
   }
 
@@ -773,7 +779,12 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     return { ok: false, error: lastError ?? 'No recipient could be texted' }
   }
   recipientIds.forEach((rid) => revalidateCrm(rid))
-  return fallbackNotice ? { ok: true, notice: fallbackNotice } : { ok: true }
+  // Some went and some did not (a recipient's own zone is in quiet hours, no
+  // phone, out of scope): say so, or the broker reads "sent" for everyone.
+  const partialNotice =
+    failedCount > 0 && lastError ? `Sent to ${sentCount} of ${sentCount + failedCount}. Not sent: ${lastError}` : undefined
+  const notice = [fallbackNotice, partialNotice].filter(Boolean).join(' ')
+  return notice ? { ok: true, notice } : { ok: true }
   }
 
   // An EMPTY composer key still gets a ledger entry — deriveFallbackSendKey says why.

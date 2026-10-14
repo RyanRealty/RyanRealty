@@ -213,14 +213,6 @@ checks.push({
     /formatPublishedAsk\(t\.listPrice\)/.test(nbh),
 })
 
-const cityField = src('app/cities/[slug]/_v3/city-field-items.ts')
-checks.push({
-  label: 'city field rows publish formatPublishedAsk',
-  ok:
-    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(cityField) &&
-    /formatPublishedAsk\(tile\.listPrice\)/.test(cityField),
-})
-
 const communityField = src('app/communities/[slug]/_v3/community-opening.ts')
 checks.push({
   label: 'community field rows publish formatPublishedAsk',
@@ -229,13 +221,11 @@ checks.push({
     /formatPublishedAsk\(tile\.listPrice\)/.test(communityField),
 })
 
-const platField = src('app/subdivisions/[slug]/_v3/subdivision-rows.ts')
-checks.push({
-  label: 'plat field rows publish formatPublishedAsk',
-  ok:
-    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(platField) &&
-    /formatPublishedAsk\(tile\.listPrice\)/.test(platField),
-})
+// _v3/subdivision-rows.ts (the plat field rows builder asserted above) was
+// retired 2026-08-29 (b4ca74d82, "Split plus plat inventory face") when the
+// plat opening moved to PlaceSplitView; app/subdivisions/[slug]/page.tsx does
+// not call formatPublishedAsk directly either, so this rule has no live arm
+// to assert on the plat page today.
 
 // KbFeatured left with the KB register (2026-08-27). The featured rail is now
 // the homepage Field, whose rows are built by app/_v3/home-field-items.ts --

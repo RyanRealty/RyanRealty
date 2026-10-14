@@ -152,6 +152,10 @@
   font-feature-settings: 'tnum' 1;
   letter-spacing: var(--v3-track-display);
   line-height: 1;
+  /* A figure never breaks or shrinks: with a long value beside it, "26" and
+     "3%" were wrapping one glyph per line (2026-10-08). The words wrap instead. */
+  flex: none;
+  white-space: nowrap;
 }
 
 .v3-facts__strip {

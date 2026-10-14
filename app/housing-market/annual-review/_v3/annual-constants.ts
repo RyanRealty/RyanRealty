@@ -36,19 +36,16 @@ export const REGION_LABEL = 'Central Oregon'
  * It resolves VALUATION_FORM from lib/site-nav, appends `from`, and keeps the
  * anchor last, which hand-built strings got wrong.
  *
- * WRITTEN_VALUATION_HREF is the written-CMA surface, and it is NOT built by that
- * helper, for a reason that was measured rather than assumed. The helper's base
- * is `/sell#get-value`, and the action behind that form never reads `from`:
- * app/lp/seller-home-value/actions.ts stores `sanitizePagePath(pagePath)` and
- * app/sell/page.tsx hardcodes `pagePath="/sell"`. Routing this door through the
- * helper would therefore move it to a surface that records '/sell' as the origin
- * of every lead it produces, which is the 2026-07-15 conversion-audit failure the
- * parameter exists to prevent. The written-valuation action DOES read it:
- * app/home-valuation/actions.ts takes the lead's stored source_url off the
- * referer's `from` and, when absent, falls back to the referer's own path, which
- * at submit time is /sell/valuation itself. Encoded because the value lands in a
- * query string, and CANONICAL_PATH is the string KbSell's `usePathname()`
- * produced here, so no stored source_url changes.
+ * WRITTEN_VALUATION_HREF is the written-CMA surface, /sell/valuation, so it is
+ * built on valuationPath() rather than that helper, whose base is the spine form
+ * `/sell#get-value`. Both doors post through submitSellerLPForm, which takes the
+ * lead's stored source_url off the referer's `from` (lib/crm/lead-origin-path.ts)
+ * and, when it is absent, falls back to the form's own page. Until 2026-09-29 that
+ * action ignored `from`, so both doors recorded /sell or /sell/valuation as the
+ * origin of every lead they produced, the 2026-07-15 conversion-audit failure the
+ * parameter exists to prevent. Encoded because the value lands in a query string,
+ * and CANONICAL_PATH is the string KbSell's `usePathname()` produced here, so
+ * stored source_url values stay comparable.
  */
 export const SELL_SPINE_HREF = valuationHref(CANONICAL_PATH)
 export const WRITTEN_VALUATION_HREF = `${valuationPath()}?from=${encodeURIComponent(CANONICAL_PATH)}`

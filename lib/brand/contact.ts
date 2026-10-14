@@ -26,13 +26,20 @@ export const BRAND = {
   legalName: 'Ryan Realty LLC',
   domain: 'ryan-realty.com',
   url: 'https://ryan-realty.com',
-  /** The day the Bend office opened. Not the company's founding: see llcSince. */
-  founded: '2023-06-21',
-  /** Ryan Realty LLC itself dates from 2014; the Bend office opened June 2023 (Matt 2026-09-07).
-   *  The company was founded in 2014, and that is the JSON-LD foundingDate (Matt 2026-09-24). */
+  /** The day the Bend office opened: OREA principal-broker affiliation date = Bend office.
+   *  NOT the company's founding (renamed from `founded` 2026-10-08 so no one ships it as
+   *  one). The founding year is llcSince. */
+  bendOfficeOpened: '2023-06-21',
+  /** Founded 2014: Matt 2026-09-07, 2026-09-24, restated 2026-10-08 ("2014 everywhere").
+   *  This is the JSON-LD foundingDate on every page. Public prose says "founded in 2014"
+   *  and "opened the Bend office in June 2023". */
   llcSince: '2014',
   /** Prose form for body copy ("opened in June 2023"). */
   foundedLabel: 'June 2023',
+  /** Oregon Real Estate Agency license for Ryan Realty LLC. The Agency's License Lookup lists
+   *  its type as "Registered Business Name" (ACTIVE, exp. 06/30/2027, read 2026-10-08), so
+   *  copy and schema call it that, never a "firm license". */
+  firmLicense: '201253677',
   /** NAP. The live Organization JSON-LD carries locality + region only (no
    *  street); keep both region forms — 'OR' for schema, 'Oregon' for prose. */
   address: {
@@ -102,11 +109,20 @@ export const BRAND = {
    *           private forward target (AEO-7): a profile edit for Matt, not code.
    * Realtor.com is NOT here: no profile URL for the brokerage or a broker
    * could be found (search index has none, public.brokers.realtor_id is null,
-   * realtor.com answers bots with 429). Add it when Matt supplies the URL.
+   * realtor.com answers bots with 429 / geo-blocks this environment). Add it
+   * when a live person or office URL is confirmed.
+   * Homes.com is NOT here: no profile URL is in the repo, and live fetches
+   * from this environment are Access Denied. Add it when a live URL is confirmed.
+   * experience  Matt's Experience.com page (verified 2026-10-08 and again
+   *             2026-10-13): "Matthew Ryan, Principal Broker, Ryan Realty LLC",
+   *             license 201206613, links ryan-realty.com. There is no separate
+   *             brokerage Experience.com page; this is the same pattern as
+   *             Zillow (Matt's agent profile under the brokerage screen name).
    */
   directoryProfiles: {
     zillow: 'https://www.zillow.com/profile/Ryan%20Realty%20Bend',
     yelp: 'https://www.yelp.com/biz/ryan-realty-bend',
+    experience: 'https://www.experience.com/reviews/matthew-15390858',
   },
 } as const
 
@@ -135,7 +151,58 @@ export const ENTITY_SAME_AS: string[] = [...SOCIAL_PROFILES, ...Object.values(BR
  * zillow_id / realtor_id / yelp_id / social_* are null for both, 2026-09-23).
  */
 export const BROKER_SAME_AS: Readonly<Record<string, readonly string[]>> = {
-  'matthew-ryan': [BRAND.directoryProfiles.zillow, 'https://www.linkedin.com/in/mattmryan'],
+  'matthew-ryan': [
+    BRAND.directoryProfiles.zillow,
+    'https://www.linkedin.com/in/mattmryan',
+    /** Verified 2026-10-08 (curl, Chrome UA, 200) and 2026-10-13: "Matthew Ryan,
+     *  Principal Broker, Ryan Realty LLC", license 201206613, links ryan-realty.com. */
+    BRAND.directoryProfiles.experience,
+    /** Brokerage channel and Instagram: the handles Matt uses in public.brokers
+     *  social_* and the only YouTube / Instagram URLs in the repo. Realtor.com
+     *  and Homes.com are omitted until a live person-profile URL is confirmed. */
+    BRAND.social.youtube,
+    BRAND.social.instagram,
+  ],
+}
+
+/**
+ * Per-broker schema.org extras for the person node (founder/employee in the site-wide
+ * Organization and the broker's own /team/<slug> page), keyed by public.brokers slug.
+ * alternateName closes the name gap engines see between our pages and the regulator:
+ *   matthew-ryan      OREA and the Zillow profile say "Matthew Ryan"; the site says "Matt Ryan".
+ *   rebecca-peterson  OREA says "Peterson, Rebecca Ryser"; the site prints "Rebecca Peterson".
+ * knowsAbout / areaServed mirror Matt's published bio on /team/matthew-ryan.
+ */
+export const BROKER_ENTITY_EXTRAS: Readonly<
+  Record<
+    string,
+    {
+      alternateName?: string
+      knowsAbout?: readonly string[]
+      /** City = incorporated; Place = unincorporated (Sunriver, Terrebonne). */
+      areaServed?: ReadonlyArray<{ type: 'City' | 'Place'; name: string }>
+    }
+  >
+> = {
+  'matthew-ryan': {
+    alternateName: 'Matthew Ryan',
+    knowsAbout: [
+      'Selling homes in Central Oregon',
+      'Relocation to Central Oregon',
+      'Second homes in Sunriver and Vandevert Ranch',
+      'First-time home buyers',
+      'Investment property',
+    ],
+    areaServed: [
+      { type: 'City', name: 'Bend, OR' },
+      { type: 'City', name: 'Redmond, OR' },
+      { type: 'City', name: 'Sisters, OR' },
+      { type: 'Place', name: 'Sunriver, OR' },
+      { type: 'City', name: 'La Pine, OR' },
+      { type: 'Place', name: 'Terrebonne, OR' },
+    ],
+  },
+  'rebecca-peterson': { alternateName: 'Rebecca Peterson' },
 }
 
 export const CONTACT = {

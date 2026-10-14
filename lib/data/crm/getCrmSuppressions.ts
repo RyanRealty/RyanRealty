@@ -1,6 +1,7 @@
 import 'server-only'
 import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { createServiceClient } from '@/lib/supabase/service'
+import { whereActiveSuppression } from '@/lib/crm/suppression-lifecycle'
 
 /**
  * getCrmSuppressions — the paged read side of the compliance suppression list
@@ -192,9 +193,11 @@ async function read(params: GetCrmSuppressionsParams): Promise<CrmSuppressionsRe
     personIdFilter = Array.from(new Set([...ptIds, ...nameIds]))
   }
 
-  let query = sb
-    .from('crm_suppressions')
-    .select('id,person_id,channel,value,reason,source,created_at', { count: 'exact' })
+  let query = whereActiveSuppression(
+    sb
+      .from('crm_suppressions')
+      .select('id,person_id,channel,value,reason,source,created_at', { count: 'exact' }),
+  )
 
   if (params.channel) query = query.eq('channel', params.channel)
 

@@ -35,6 +35,13 @@ export type CreateCmaRequestInput = {
   leadEmail: string | null
   leadName?: string | null
   leadPhone?: string | null
+  /** Skip-trace phones, line type included. The build gate reads these. An untyped number is not a cell. */
+  ownerPhones?: Array<{
+    number?: string | null
+    value?: string | null
+    type?: string | null
+    dnc?: boolean | null
+  }> | null
   leadTimeline?: string | null
   leadClassification?: string | null
   fubPersonId?: number | null
@@ -375,6 +382,7 @@ export async function createCmaRequest(
           client_name: leadName,
           client_email: leadEmail,
           client_phone: input.leadPhone?.trim() || null,
+          ...(input.ownerPhones?.length ? { owner_phones: input.ownerPhones } : {}),
           broker_email: broker.email,
           broker_slug: broker.slug,
           client_notes: clientNotesFull,

@@ -33,14 +33,17 @@ import {
   type CompArea,
 } from '@/lib/pricing/comp-area'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
+import { getPlatGroundBounds } from '@/lib/data/cma/platGroundBounds'
 import { assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
+import type { LatLngBounds } from '@/lib/cma/market-area'
+import { parentOf, platGround } from '@/lib/pricing/plat-ground'
 import {
   dropRelistedUnsoldCycles,
   RELIST_OUTCOME_STATUSES,
   type HouseCycleRecord,
 } from '@/lib/cma/market-status'
-import { getListingStatusChanges } from '@/lib/data/cma/localOutcomeReads'
-import type { ListingStatusChange } from '@/lib/cma/listing-status'
+import { getListingAskChanges, getListingStatusChanges } from '@/lib/data/cma/localOutcomeReads'
+import type { AskChange, ListingStatusChange } from '@/lib/cma/listing-status'
 
 /** The three MLS statuses that mean "came off without selling". */
 export const UNSOLD_STATUSES = ['Expired', 'Withdrawn', 'Canceled'] as const
@@ -49,7 +52,7 @@ export const UNSOLD_STATUSES = ['Expired', 'Withdrawn', 'Canceled'] as const
 export const UNSOLD_MAX_MONTHS = 24
 
 const COLS =
-  'ListingKey, StreetNumber, StreetName, City, PhotoURL, OriginalListPrice, Latitude, Longitude, StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, baths_full, baths_half, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, off_market_date, SubdivisionName, property_sub_type, year_built, lot_size_acres, public_remarks, parcel_number'
+  'ListingKey, StreetNumber, StreetName, City, PhotoURL, OriginalListPrice, Latitude, Longitude, StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, original_on_market_timestamp, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, baths_full, baths_half, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, off_market_date, SubdivisionName, property_sub_type, year_built, lot_size_acres, public_remarks, parcel_number'
 
 /** What the relist test reads of every other record of the same houses. */
 const LATER_COLS =
@@ -137,17 +140,22 @@ function monthsAgoIso(months: number, asOf: Date): string {
 /**
  * Empty area scope, in words, for the citation. Written from the SAME area
  * object the query was built from, so the trace cannot describe a different
- * geography than the one that was read.
+ * geography than the one that was read. `outline` is the box around the
+ * area's recorded plats when the read also took the rows inside it.
  */
-export function areaFilterTrace(area: CompArea): string {
+export function areaFilterTrace(area: CompArea, outline?: LatLngBounds | null): string {
   switch (area.kind) {
     case 'subdivision':
     case 'subdivisions':
       return `SubdivisionName IN (${area.names.map((n) => `'${n}'`).join(', ')})${
+        outline
+          ? `, or inside the box around those recorded plats and their subdivision family (lat ${outline.latMin.toFixed(4)}..${outline.latMax.toFixed(4)}, lng ${outline.lngMin.toFixed(4)}..${outline.lngMax.toFixed(4)}) whatever the MLS spelling`
+          : ''
+      }${
         areaReadsPlats(area)
           ? `, then the recorded plat polygon per row (${[...(area.platSlugs ?? [])].join(', ')}${
               area.street ? `; ${area.street.platSlugs.join(', ') || area.street.names.join(', ')} on ${area.street.key} only` : ''
-            }), the MLS name only where no polygon holds the row`
+            }; a phase, an alias-map sibling, or a plat of the same subdivision family inside the subject's neighborhood counts), the MLS name only where no polygon holds the row`
           : ''
       }`
     case 'neighborhood':
@@ -171,6 +179,40 @@ export function areaFilterTrace(area: CompArea): string {
 export function areaReadsPlats(area: CompArea): boolean {
   if (area.kind !== 'subdivision' && area.kind !== 'subdivisions') return false
   return (area.platSlugs?.length ?? 0) > 0 || (area.street?.platSlugs.length ?? 0) > 0
+}
+
+/**
+ * THE BOX AROUND A PLAT AREA'S RECORDED PLATS (reader review 2026-10-08).
+ * The name prefilter (SubdivisionName IN area.names) dropped every row of an
+ * area plat filed under another MLS spelling before its polygon was ever
+ * tested: 1425 Fresno ("Northwest Townsite Co 2nd Addt") never reached the
+ * 1355 Jacksonville came-off read, and 733 Saginaw (MLS "Kenwood", recorded
+ * Kenwood First Addition) never reached 915 Saginaw's competition read. The
+ * reads take the rows inside this box as well; the polygon test decides.
+ * Null when the area reads no plats or no outline could be drawn.
+ */
+export async function areaPlatOutline(area: CompArea, city: string): Promise<LatLngBounds | null> {
+  if (!areaReadsPlats(area)) return null
+  const ground = platGround({
+    platSlugs: [...(area.platSlugs ?? []), ...(area.street?.platSlugs ?? [])],
+    parent: area.centre ? parentOf(area.centre.lat, area.centre.lng) : null,
+  })
+  return getPlatGroundBounds(ground, { city }).catch(() => null)
+}
+
+/** Two reads of one table, each listing once (the first read's row wins). */
+export function mergeRowsByKey<T extends { ListingKey?: string | null }>(first: readonly T[], second: readonly T[]): T[] {
+  const seen = new Set<string>()
+  const out: T[] = []
+  for (const r of [...first, ...second]) {
+    const key = String(r.ListingKey ?? '').trim()
+    if (key) {
+      if (seen.has(key)) continue
+      seen.add(key)
+    }
+    out.push(r)
+  }
+  return out
 }
 
 /**
@@ -306,7 +348,10 @@ export async function getCmaAreaUnsoldCycles(input: {
   if (!sb) return empty
 
   const bounds = compAreaBounds(area)
-  const build = (): ListingQuery => {
+  // A plat area also reads the rows inside the box around its recorded plats,
+  // whatever their MLS spelling (areaPlatOutline). The polygon test decides.
+  const outline = await areaPlatOutline(area, input.city)
+  const build = (box: LatLngBounds | null = null): ListingQuery => {
     let q = sb
       .from('listings')
       .select(COLS)
@@ -317,17 +362,18 @@ export async function getCmaAreaUnsoldCycles(input: {
       .lte('ListPrice', input.priceHi) as unknown as ListingQuery
     if (subType) q = q.eq('property_sub_type', subType)
     if (area.kind === 'subdivision' || area.kind === 'subdivisions') {
-      q = q.in('SubdivisionName', area.names)
+      if (!box) q = q.in('SubdivisionName', area.names)
       if (input.city.trim()) q = q.eq('City', input.city.trim())
     } else if (area.kind === 'city') {
       q = q.eq('City', area.names[0] ?? input.city.trim())
     }
-    if (bounds) {
+    const geo = box ?? bounds
+    if (geo) {
       q = q
-        .gte('Latitude', bounds.latMin)
-        .lte('Latitude', bounds.latMax)
-        .gte('Longitude', bounds.lngMin)
-        .lte('Longitude', bounds.lngMax)
+        .gte('Latitude', geo.latMin)
+        .lte('Latitude', geo.latMax)
+        .gte('Longitude', geo.lngMin)
+        .lte('Longitude', geo.lngMax)
     }
     return q
   }
@@ -338,17 +384,23 @@ export async function getCmaAreaUnsoldCycles(input: {
     `status_change_timestamp >= ${sinceIso}`,
     `ListPrice ${input.priceLo}..${input.priceHi}`,
     subType ? `property_sub_type='${subType}'` : 'any residential sub type',
-    areaFilterTrace(area),
+    areaFilterTrace(area, outline),
   ].join(' AND ')
 
   try {
-    const { rows, truncated } = await pageQuery(build)
+    const [named, boxed] = await Promise.all([
+      pageQuery(() => build()),
+      outline ? pageQuery(() => build(outline)) : Promise.resolve({ rows: [] as CmaMarketAreaRow[], truncated: false }),
+    ])
+    const rows = mergeRowsByKey(named.rows, boxed.rows)
+    const truncated = named.truncated || boxed.truncated
     // The exact shape, after the box. A plat area tests each row's recorded
     // polygon (the SQL name match is only the prefilter), and a plat held to
     // the subject's street tests the street. ONE definition of membership
-    // for every read this document makes.
+    // for every read this document makes. The polygon each row sits in rides
+    // on the row (plat_slug), so the came-off fit tests the same polygon.
     const plats = await rowPlatSlugs(area, rows)
-    const inside = rows.filter((r, i) =>
+    const inside = rows.flatMap((r, i) =>
       compAreaContains(area, {
         latitude: r.Latitude ?? null,
         longitude: r.Longitude ?? null,
@@ -356,7 +408,9 @@ export async function getCmaAreaUnsoldCycles(input: {
         city: r.City ?? null,
         platSlug: plats[i],
         address: rowStreetAddress(r),
-      }),
+      })
+        ? [plats[i] === undefined ? r : { ...r, plat_slug: plats[i] }]
+        : [],
     )
     // WHEN EACH ONE LEFT THE MARKET (reader review 2026-10-08). 3204 Spring
     // Creek was withdrawn Jan 20 and its listing expired Jul 31; its row's
@@ -364,15 +418,28 @@ export async function getCmaAreaUnsoldCycles(input: {
     // 288 days" when it was on the market 96. The status log for the homes
     // inside the area says when each left Active. Additive: an unread log
     // leaves each row on its own dates.
-    const statusChanges = await getListingStatusChanges(
-      inside.map((r) => String(r.ListingKey ?? '').trim()).filter(Boolean),
-    ).catch((err) => {
-      console.error('[getCmaAreaUnsoldCycles] status changes', err instanceof Error ? err.message : String(err))
-      return new Map<string, ListingStatusChange[]>()
-    })
+    const insideKeys = inside.map((r) => String(r.ListingKey ?? '').trim()).filter(Boolean)
+    // And the asks each one's last stretch began at (Matt 2026-10-08, "Last
+    // stretch, labeled"). Additive like the status log.
+    const [statusChanges, askChanges] = await Promise.all([
+      getListingStatusChanges(insideKeys).catch((err) => {
+        console.error('[getCmaAreaUnsoldCycles] status changes', err instanceof Error ? err.message : String(err))
+        return new Map<string, ListingStatusChange[]>()
+      }),
+      getListingAskChanges(insideKeys).catch((err) => {
+        console.error('[getCmaAreaUnsoldCycles] ask changes', err instanceof Error ? err.message : String(err))
+        return new Map<string, AskChange[]>()
+      }),
+    ])
     const withChanges = inside.map((r) => {
-      const changes = statusChanges.get(String(r.ListingKey ?? '').trim())
-      return changes && changes.length > 0 ? { ...r, statusChanges: changes } : r
+      const key = String(r.ListingKey ?? '').trim()
+      const changes = statusChanges.get(key)
+      const asks = askChanges.get(key)
+      return {
+        ...r,
+        ...(changes && changes.length > 0 ? { statusChanges: changes } : {}),
+        ...(asks && asks.length > 0 ? { askChanges: asks } : {}),
+      }
     })
     // A cancel and relist is a re-entry, not a failure: 2639 Harvey and 1382
     // Drost each came off and then sold within weeks (cma-1648-pheasant).

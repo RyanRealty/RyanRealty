@@ -169,7 +169,6 @@ describe('getPublicPlaceSegments', () => {
     })).toEqual([
       '$326,000',
       '12.8 months',
-      "buyer's market",
       '5 under contract now',
       '32 sold in the last 12 months',
       '41 days to an offer, last 12 months',
@@ -198,7 +197,7 @@ describe('getPublicPlaceSegments', () => {
       medianList: 326000,
       monthsOfSupply: 0.0,
       verdict: 'buyer',
-    })).toEqual(['$326,000', "buyer's market"])
+    })).toEqual(['$326,000'])
     const items = publicSegmentItems(
       [
         {
@@ -359,7 +358,6 @@ describe('getPublicPlaceSegments', () => {
 describe('public place pages', () => {
   it('city and housing-market city pages read getPublicPlaceSegments', () => {
     const city = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
-    const strip = readFileSync(resolve('app/cities/[slug]/PublicProductTypes.tsx'), 'utf8')
     const market = readFileSync(resolve('app/housing-market/[...slug]/page.tsx'), 'utf8')
     const figures = readFileSync(
       resolve('app/housing-market/[...slug]/_v3/geo-figures.ts'),
@@ -369,8 +367,6 @@ describe('public place pages', () => {
     expect(city).toMatch(/getPublicPlaceSegments/)
     // v3 city page (2026-08-26): the enumeration is the shared barrel section.
     expect(city).toMatch(/PlaceTypeSlider/)
-    expect(strip).toMatch(/publicSegmentBrowseHref/)
-    expect(strip).toMatch(/publicSegmentDisplayBits/)
     expect(market).toMatch(/getPublicPlaceSegments/)
     expect(figures).toMatch(/buildPublicSegmentFigures/)
     expect(figures).toMatch(/publicSegmentBrowseHref/)
@@ -427,6 +423,5 @@ describe('public place pages', () => {
     // v3 neighborhood page (2026-08-26): the enumeration is the barrel section.
     expect(neighborhood).toMatch(/PlaceTypeSlider/)
     expect(city).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
-    expect(strip).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
   })
 })

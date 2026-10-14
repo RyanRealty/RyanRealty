@@ -232,9 +232,7 @@ describe('approveCmaAction review acknowledgement', () => {
 })
 
 describe('approveCmaAction refuses every hold the queue refuses (review, 2026-10-07)', () => {
-  // An expired row the build never measured (hold_measured false, no hold_kind)
-  // with the last ask inside the stored band: the report-page Approve button
-  // finalized it, because only a stored hold_kind was refused here.
+  // An expired row the build never measured (hold_measured false, no hold_kind).
   function unmeasuredExpiredRow(over: Record<string, unknown> = {}) {
     return {
       id: 'row-1',
@@ -251,14 +249,18 @@ describe('approveCmaAction refuses every hold the queue refuses (review, 2026-10
     }
   }
 
-  it('refuses an unmeasured expired row whose ask sits inside the stored band, even acknowledged', async () => {
+  it('does not hold an unmeasured expired row when the recommendation is under the ask and within 15%', async () => {
+    // $905,000 vs $925,000: 925_000 * 0.85 = 786_250, so the price is exempt.
+    // The ask sits inside the stored band, and the build never measured it.
     getCmaAdminReviewRowBySlug.mockResolvedValue(unmeasuredExpiredRow())
     getCmaProspectAsk.mockResolvedValue(925_000)
     const res = await approveCmaAction('cma-test', { acknowledgeReview: true })
-    expect(res.error).toContain('The last ask of $925,000 sits inside the sales range of $893,000 to $951,000')
-    expect(res.needsReviewAck).toBeUndefined()
+    expect(res).toEqual({ error: null })
     expect(getCmaProspectAsk).toHaveBeenCalledWith('row-1')
-    expect(updateCmaRowFieldsBySlug).not.toHaveBeenCalled()
+    expect(updateCmaRowFieldsBySlug).toHaveBeenCalledWith('cma-test', {
+      status: 'finalized',
+      finalized_at: NOW,
+    })
   })
 
   it('refuses a rule 3 gap: a recommendation above the last ask', async () => {

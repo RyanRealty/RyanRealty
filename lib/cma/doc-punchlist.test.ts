@@ -795,7 +795,7 @@ describe('F7 / tasteReview 2 — this market is sentences and two bars, not a KP
     // A monthly average over the window months of supply divides by.
     expect(block).toMatch(/Over the last six months, an average of 13 sold each month/)
     expect(block).toMatch(/3\.2 months to sell what is listed/)
-    expect(block).toMatch(/seller(&#39;|')s market territory/)
+    expect(block).not.toMatch(/seller(&#39;|')s market|buyer(&#39;|')s market|balanced market/)
   })
 
   it('names what each number actually is, in words', () => {
@@ -1159,7 +1159,7 @@ describe('tasteReview 1 — nothing in the document argues with itself', () => {
     // tasteReview round three, §3: the raw top of that sentence IS the ask
     // chapter 1 says failed, so the adjusted pair rides in the same breath.
     expect(html).toMatch(
-      /sales behind your price sold for \$[\d,]+ to \$[\d,]+ before adjusting for date and size; adjusted, they support \$[\d,]+ to \$[\d,]+\./,
+      /sales behind your price sold for \$[\d,]+ to \$[\d,]+ before adjusting for date and size\./,
     )
     expect(html).not.toContain('is every Redmond home, all sizes')
     expect(html).not.toContain('532,311')
@@ -1358,7 +1358,7 @@ describe('tasteReview 3 — the phone document, and the close', () => {
     expect(first).toContain('Your home · 2465 7th')
     // The subject's outcome line, which is where the ask that failed lives in
     // Delta 3's shared column set.
-    expect(first).toMatch(/Came off after \d+ days|Listed \$460,000/)
+    expect(first).toMatch(/came off after \d+ days|listed \$460,000/)
   })
 
   it('kills every how-the-price-moved spark in the letter', () => {
@@ -1600,7 +1600,7 @@ describe('chapter 1 — the story the numbers carry', () => {
   it('reconciles chapter 5 raw closes to the adjusted pair in one breath', () => {
     const html = letter(withRange(420000, 445000))
     expect(html).toMatch(
-      /sold for \$410,000 to \$460,000 before adjusting for date and size; adjusted, they support \$372,324 to \$398,788\./,
+      /sold for \$410,000 to \$460,000 before adjusting for date and size\./,
     )
   })
 })

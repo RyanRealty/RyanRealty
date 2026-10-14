@@ -1,20 +1,21 @@
 /**
  * ONE VOICE ON A HELD LETTER (reader review 2026-10-08).
  *
- * A letter the build holds for Matt (rule 22 'ask-in-band', rule 26
- * 'ask-below-band') labels its cover number "The price Matt is reviewing".
- * Independent readers of the rebuilt held drafts 62475 Woodsman and 2382
- * Jackson then found the rest of the letter calling that number settled:
- * "We'd list at the price on the cover and expect it to sell near
- * $1,535,000", "This range is 10% either side of the list price we
- * recommend.", "The list price we recommend was set after that", "The sales
- * that set this price", a net column headed "At the list price" that never
- * said which price, and "Across 2,016 square feet, that is $310 per square
- * foot." with nothing for "that" to point at.
+ * Ask-below-band always holds. A stored ask-in-band kind holds only when the
+ * recommendation is missing, equal to the ask, over it, or more than 15%
+ * under it. Those letters label the cover "The price Matt is reviewing" and
+ * print none of the settled phrases. A recommendation already under the ask
+ * and within 15% (exactly 15% counts) is the sendable letter, "Our
+ * Recommended List Price for your home", even when the row still carries
+ * kind ask-in-band. 2564 Purcell at $402,000 against a $429,000 ask is that
+ * case. 2382 Jackson's held drafts had called a held number settled: "We'd
+ * list", "the list price we recommend", "The sales that set this price", a
+ * net column headed "At the list price", and a per-foot line with nothing
+ * for "that" to point at.
  *
  * These render a whole letter (and its immersive twin) from a committed
  * letter shape with a hold written onto its pricing, and read the visible
- * text, so a settled phrase added anywhere in any renderer fails here.
+ * text.
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -68,10 +69,13 @@ function failedAskClamp(before: number, after: number) {
   }
 }
 
-function held(kind: 'ask-in-band' | 'ask-below-band'): RenderCmaArgs {
+/** $360,000 is more than 15% under the $429,000 ask (85% is $364,650). */
+const DEEP_UNDER_ASK = 360_000
+
+function held(kind: 'ask-in-band' | 'ask-below-band', recommended?: number): RenderCmaArgs {
   const a = shape()
   const p = a.pricing as CmaPricing
-  const rec = kind === 'ask-below-band' ? 380_000 : p.recommended
+  const rec = recommended ?? (kind === 'ask-below-band' ? 380_000 : p.recommended)
   a.pricing = {
     ...p,
     recommended: rec,
@@ -129,40 +133,94 @@ function settledPhrases(text: string): string[] {
 }
 
 describe('a held letter reads the cover number as the price under review, everywhere', () => {
-  for (const kind of ['ask-in-band', 'ask-below-band'] as const) {
-    it(`${kind}: the letter prints none of the settled phrases`, () => {
-      const text = visible(renderCmaHtml(held(kind)).html)
-      expect(text).toContain(HELD_PRICE_HEADLINE)
-      expect(settledPhrases(text)).toEqual([])
-    })
-
-    it(`${kind}: the immersive twin prints none of them either`, () => {
-      const text = visible(renderImmersiveCmaHtml(held(kind) as RenderCmaArgs & { broker: CmaBroker }, 'https://ryan-realty.com'))
-      expect(text).toContain(HELD_PRICE_HEADLINE)
-      expect(settledPhrases(text)).toEqual([])
-    })
-  }
-
-  it('ask-in-band: the sales are behind the number, and no list instruction prints', () => {
-    const text = visible(renderCmaHtml(held('ask-in-band')).html)
-    expect(text).toContain('The sales behind this price.')
-    expect(text).toMatch(/closed sales below are behind this number/)
+  it('ask-below-band: the letter prints none of the settled phrases', () => {
+    const text = visible(renderCmaHtml(held('ask-below-band')).html)
+    expect(text).toContain(HELD_PRICE_HEADLINE)
+    expect(settledPhrases(text)).toEqual([])
     expect(text).not.toContain('List in that range.')
   })
 
-  it('ask-in-band: the lead is the two facts, and nothing says why the ask failed', () => {
+  it('ask-below-band: the immersive twin prints none of them either', () => {
+    const text = visible(renderImmersiveCmaHtml(held('ask-below-band') as RenderCmaArgs & { broker: CmaBroker }, 'https://ryan-realty.com'))
+    expect(text).toContain(HELD_PRICE_HEADLINE)
+    expect(settledPhrases(text)).toEqual([])
+    expect(text).not.toContain('List in that range.')
+  })
+
+  it('ask-in-band more than 15% under stays a held letter', () => {
+    const text = visible(renderCmaHtml(held('ask-in-band', DEEP_UNDER_ASK)).html)
+    expect(text).toContain(HELD_PRICE_HEADLINE)
+    expect(text).not.toContain('Our Recommended List Price for your home')
+    expect(settledPhrases(text)).toEqual([])
+    expect(text).not.toContain('List in that range.')
+  })
+
+  it('ask-in-band more than 15% under: the immersive twin stays held', () => {
+    const text = visible(renderImmersiveCmaHtml(held('ask-in-band', DEEP_UNDER_ASK) as RenderCmaArgs & { broker: CmaBroker }, 'https://ryan-realty.com'))
+    expect(text).toContain(HELD_PRICE_HEADLINE)
+    expect(text).not.toContain('Our Recommended List Price for your home')
+    expect(settledPhrases(text)).toEqual([])
+  })
+
+  it('ask-in-band within 15% (2564 Purcell): the recommendation voice, not the held label', () => {
     const text = visible(renderCmaHtml(held('ask-in-band')).html)
-    // The fixture's last ask sits above its printed band, so "inside that range" is not said.
-    expect(text).toMatch(/The five sales that set the price support \$[\d,]+ to \$[\d,]+\. The last ask of \$429,000 /)
+    expect(text).toContain('Our Recommended List Price for your home')
+    expect(text).not.toContain(HELD_PRICE_HEADLINE)
+    expect(text).toContain('The sales that set this price.')
+    expect(text).toMatch(/closed sales below set this number/)
+    expect(text).not.toContain('The sales that set the range.')
+  })
+
+  it('ask-in-band within 15%: the immersive twin uses the recommendation voice', () => {
+    const text = visible(renderImmersiveCmaHtml(held('ask-in-band') as RenderCmaArgs & { broker: CmaBroker }, 'https://ryan-realty.com'))
+    expect(text).toContain('Our Recommended List Price for your home')
+    expect(text).not.toContain(HELD_PRICE_HEADLINE)
+  })
+
+  it('ask-in-band within 15%, no clamp: the sales set this price, and the letter says where to list', () => {
+    const a = held('ask-in-band')
+    a.pricing = { ...(a.pricing as CmaPricing), clamp: null } as CmaPricing
+    const text = visible(renderCmaHtml(a).html)
+    expect(text).toContain('Our Recommended List Price for your home')
+    expect(text).not.toContain(HELD_PRICE_HEADLINE)
+    expect(text).toContain('The sales that set this price.')
+    expect(text).not.toContain('The sales behind this price.')
+    expect(text).toMatch(/closed sales below set this number/)
+    expect(text).toContain(
+      "The five sales, after seller concessions and adjusted to today's market, run from $388,760 to $415,000. List in that range.",
+    )
+    expect(text).not.toMatch(/already failed to sell/)
+  })
+
+  it('ask-in-band within 15% with the failed-ask ceiling: the sales set this price, and the clamp says why the cover sits under the ask', () => {
+    // $402,000 is under the $429,000 ask and within 15%, so the stored
+    // ask-in-band kind is not a held letter. The clamp sentence prints, and
+    // the sales set the price. The last ask sits above the printed band, so
+    // the letter does not say it was inside that range.
+    const text = visible(renderCmaHtml(held('ask-in-band')).html)
+    const lead =
+      "The five sales, after seller concessions and adjusted to today's market, run from $388,760 to $415,000. List in that range. Because $429,000 already failed to sell, we recommend the price on the cover, which stays under that ask."
+    expect(text).toContain(lead)
+    expect(lead).not.toMatch(/[—–]/)
+    expect(lead).not.toMatch(/\bthe \d+ of the \d+\b/i)
+    expect(text).toContain('The sales that set this price.')
+    expect(text).toContain('Weight in this price')
+    expect(text).not.toContain('Weight among these sales')
+    expect(text).not.toContain('The sales that set the range.')
+    expect(text).not.toContain('It does not set the price on the cover.')
+    expect(text).toMatch(/closed sales below set this number/)
+    expect(text).not.toContain('support a value of')
     expect(text).not.toContain('The last ask of $429,000 sat 79 days inside that range')
-    expect(text).not.toMatch(/\bcapped\b|too high|already failed to sell|clamp/i)
-    expect(text).not.toMatch(/expect it to sell near/)
+    expect(text).not.toContain('One of the sales that set this price is above that ask.')
+    expect(text).not.toMatch(/\bcapped\b|too high/i)
   })
 
   it('ask-below-band (915 Saginaw shape): the rule 26 lead names the sales that set the range, not the price', () => {
     const text = visible(renderCmaHtml(held('ask-below-band')).html)
-    expect(text).toMatch(/The five sales that set the range support \$[\d,]+ to \$[\d,]+\. Buyers passed at the last ask of \$429,000\. The listing /)
+    expect(text).toContain(HELD_PRICE_HEADLINE)
+    expect(text).toMatch(/The five sales that set the range support \$[\d,]+ to \$[\d,]+\. Your home did not sell at its last ask of \$429,000\. The listing /)
     expect(text).not.toMatch(/\bcapped\b|too high|already failed to sell/i)
+    expect(text).not.toContain('List in that range.')
   })
 })
 
@@ -226,10 +284,24 @@ describe('heldInBandLead: rule 22 states the two facts rule 26 states', () => {
     )
   })
 
-  it('whatItsWorthLead prints it, and no expected-sale or list sentence, on a rule 22 letter', () => {
+  it('whatItsWorthLead uses the recommendation voice when the price is within 15%', () => {
+    // $624,000 is under $639,000 and within 15%, so a stored ask-in-band kind
+    // is not a held letter. No grid is passed, so the lead is the stored band
+    // rounded once, then the list instruction. It does not invent days.
     const lead = whatItsWorthLead(subject, pricing, undefined, null, finalCycle, exposure(639_000, 79))
+    expect(lead).toBe('The sales support $599,000 to $649,000. List in that range.')
+    expect(lead).not.toMatch(/[—–]/)
+    expect(lead).not.toMatch(/\bthe \d+ of the \d+\b/i)
+    expect(lead).not.toMatch(/\d+ days/)
+    expect(lead).not.toContain('sat 79 days inside that range')
+  })
+
+  it('whatItsWorthLead stays the held lead, with no list instruction, when the price is more than 15% under', () => {
+    const deep = { ...pricing, recommended: 500_000, conservative: 500_000 } as CmaPricing
+    const lead = whatItsWorthLead(subject, deep, undefined, null, finalCycle, exposure(639_000, 79))
     expect(lead).toContain('The last ask of $639,000 sat 79 days inside that range and did not sell.')
     expect(lead).not.toMatch(/We'd list|List in that range|expect it to sell/)
+    expect(lead).not.toContain('Our Recommended List Price')
   })
 })
 
@@ -262,15 +334,22 @@ describe('every letter, held or not', () => {
   })
 
   it('the net column head names its price in words, never the cover dollars', () => {
-    // The cover owns the recommended dollars (Matt lock 2026-09-12). An
-    // unheld letter's head reads "At the list price"; a held letter's reads
-    // "At the price on the cover", so it is never read as the last ask.
+    // The cover owns the recommended dollars (Matt lock 2026-09-12). A
+    // sendable letter's head reads "At the list price". A held letter's
+    // reads "At the price on the cover", so it is never read as the last ask.
+    // Ask-in-band within 15% is sendable. Ask-below-band, and ask-in-band
+    // more than 15% under, stay held.
     const plain = visible(renderCmaHtml(shape()).html)
     expect(plain).toContain('At the list price')
-    const heldText = visible(renderCmaHtml(held('ask-in-band')).html)
-    expect(heldText).toContain('At the price on the cover')
-    expect(heldText).not.toContain('At the list price')
-    for (const a of [shape(), held('ask-in-band')]) {
+    const inBand = visible(renderCmaHtml(held('ask-in-band')).html)
+    expect(inBand).toContain('At the list price')
+    expect(inBand).not.toContain('At the price on the cover')
+    for (const a of [held('ask-below-band'), held('ask-in-band', DEEP_UNDER_ASK)]) {
+      const heldText = visible(renderCmaHtml(a).html)
+      expect(heldText).toContain('At the price on the cover')
+      expect(heldText).not.toContain('At the list price')
+    }
+    for (const a of [shape(), held('ask-in-band'), held('ask-below-band'), held('ask-in-band', DEEP_UNDER_ASK)]) {
       const text = visible(renderCmaHtml(a).html)
       expect(text).not.toContain(`At $${(a.pricing as CmaPricing).recommended.toLocaleString('en-US')}`)
       expect(text).not.toContain('of the list price, if you offer it')

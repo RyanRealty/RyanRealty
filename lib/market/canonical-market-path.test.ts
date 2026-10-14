@@ -27,5 +27,7 @@ describe('one market URL per place', () => {
     expect(communityMarketPath('tetherow')).toBe('/communities/tetherow')
     expect(communityMarketPath('tetherow', { followLegacy: false })).toBe('/housing-market/bend/tetherow')
     expect(communityMarketPath('stevens-ranch')).toBeNull()
+    expect(communityMarketPath('crooked-river-ranch')).toBe('/communities/crooked-river-ranch')
+    expect(cityMarketPath('tumalo')).toBe('/cities/tumalo')
   })
 })

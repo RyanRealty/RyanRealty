@@ -24,7 +24,7 @@ import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
-import { placeHomesForSaleHeading } from '@/lib/place/place-homes-heading'
+import { communityHomesForSaleHeading } from './community-fold-answer'
 import { measuredPlaceHoaInput } from './place-hoa-measured'
 
 function imaginePlaceStill(...urls: Array<string | null | undefined>): string | null {
@@ -55,8 +55,7 @@ export function stagePoster(
 }
 
 /**
- * The page's H1. It names the PLACE — the same shape every other place grain
- * uses ("Bend homes for sale", "River West homes for sale").
+ * The page's H1. Title-case "{Community} Homes for Sale" (Matt 2026-10-13).
  *
  * It used to pick a "belonging fact" instead, so /communities/caldera-springs
  * headlined "Master HOA is $4,380 a year." and Tetherow "Membership is
@@ -65,7 +64,7 @@ export function stagePoster(
  * the name of a premier community. (Matt 2026-08-27.)
  */
 export function belongingHeadline(name: string, _content: ResortCommunityContent | null): string {
-  return placeHomesForSaleHeading(name)
+  return communityHomesForSaleHeading(name)
 }
 
 export function belongingFigures(

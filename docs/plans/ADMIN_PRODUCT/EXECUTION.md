@@ -181,7 +181,7 @@ go
   ├─ SERIAL 0: E-CHROME     layout PublicNav → V3Chrome (the 399 unlock)
   │                         + css-layers on V3Chrome/V3Footer
   │                         + chart atom in the barrel (D9) if a series ships next
-  ├─ then fan-out (parallel build, serial land):
+  ├─ then fan-out (parallel build, serial PRs to `main`; Matt merges):
   │     public families     (disjoint app/ globs)
   │     broker A3 → A4+A1   (admin / CRM — disjoint from public)
   │     voice.md rewrite    (one file; first public-copy slice)

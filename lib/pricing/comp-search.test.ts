@@ -110,9 +110,104 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
       keptComps: other(5),
     })
     expect(s!.keptBySubdivision['Diamond Bar Ranch']).toBeUndefined()
-    expect(s!.sentence).toMatch(/No recent sale inside Diamond Bar Ranch/)
-    expect(s!.sentence).toContain('Redmond Heights')
+    // The window the subdivision rungs actually read, not "recent" (reader
+    // review 2026-10-08: the sentence claims only what the search covered).
+    expect(s!.sentence).toBe(
+      'No home sold in Diamond Bar Ranch in the last 6 months, so the search opened to Redmond Heights.',
+    )
+    expect(s!.sentence).not.toContain('matched your home')
     expect(s!.sentence).not.toContain('your own street')
+  })
+
+  it('makes no claim about the subdivision when its rungs never ran', () => {
+    const s = buildCompSearch({
+      subdivision: 'Diamond Bar Ranch',
+      ladder: [rung({ tier: 'nearby-1mi-6mo', monthsBack: 6, compsAdded: 5 })],
+      keptComps: other(5),
+    })
+    expect(s!.sentence).toBe('The five sales come from Redmond Heights.')
+    expect(s!.sentence).not.toMatch(/No sale inside|matched your home/)
+  })
+
+  it('never says no sale matched when the subdivision rungs found sales the letter does not use', () => {
+    const s = buildCompSearch({
+      subdivision: 'Diamond Bar Ranch',
+      ladder: [
+        rung({ tier: 'subdivision-3mo', compsAdded: 0 }),
+        rung({ tier: 'subdivision-24mo', monthsBack: 24, compsAdded: 2 }),
+        rung({ tier: 'nearby-1mi-6mo', monthsBack: 6, compsAdded: 5 }),
+      ],
+      keptComps: other(5),
+    })
+    expect(s!.sentence).toBe(
+      'The search found two sales inside Diamond Bar Ranch in the last 24 months, and none of them is among the sales this letter uses. The five sales come from Redmond Heights.',
+    )
+    expect(s!.sentence).not.toMatch(/No sale inside/)
+  })
+
+  it('counts a sale on the subject\'s own plat under another MLS spelling as inside (1355 Jacksonville, reader review 2026-10-08)', () => {
+    // 1367 Milwaukee is "Northwest Townsite Co 2nd Addt" on the MLS and sits in
+    // the subject's own recorded plat, Northwest Townsite Second Addition: the
+    // selector stamped it own plat.
+    const s = buildCompSearch({
+      subdivision: 'Northwest Townsite',
+      subjectStreet: '1355 Jacksonville',
+      ladder: [
+        rung({ tier: 'subdivision-24mo', monthsBack: 24, compsAdded: 1 }),
+        rung({ tier: 'adjacent-subdivision-24mo', monthsBack: 24, compsAdded: 4 }),
+      ],
+      keptComps: [
+        { subdivision: 'Northwest Townsite Co 2nd Addt', selectionTier: 'subdivision-24mo', address: '1367 Milwaukee', ownPlat: true },
+        { subdivision: 'Grandview', selectionTier: 'adjacent-subdivision-24mo', address: '1345 Milwaukee' },
+        { subdivision: 'Highland', selectionTier: 'adjacent-subdivision-24mo', address: '1340 Cumberland' },
+        { subdivision: 'Bonne Home', selectionTier: 'adjacent-subdivision-24mo', address: '1613 Ithaca' },
+        { subdivision: 'Bonne Home', selectionTier: 'adjacent-subdivision-24mo', address: '1685 Fresno' },
+      ],
+    })
+    expect(s!.keptBySubdivision['Northwest Townsite']).toBe(1)
+    expect(s!.keptBySubdivision['Northwest Townsite Co 2nd Addt']).toBeUndefined()
+    expect(s!.sentence).toBe(
+      'One of the five sales is in Northwest Townsite. Four more were added: 1345 Milwaukee in Grandview, 1340 Cumberland in Highland, 1613 Ithaca in Bonne Home and 1685 Fresno in Bonne Home.',
+    )
+    expect(s!.sentence).not.toMatch(/No sale inside|No recent sale|matched your home/)
+  })
+
+  it('names a bare MLS code as the recorded plat and does not rename a real subdivision (20676 Wild Rose)', () => {
+    const s = buildCompSearch({
+      subdivision: 'Larkspur',
+      ladder: [
+        rung({ tier: 'subdivision-24mo', monthsBack: 24, compsAdded: 0 }),
+        rung({ tier: 'adjacent-subdivision-24mo', monthsBack: 24, compsAdded: 2 }),
+      ],
+      keptComps: [
+        {
+          subdivision: 'CLAB',
+          subdivisionSlug: 'tara-view-estates',
+          selectionTier: 'adjacent-subdivision-24mo',
+          address: '61197 Cottonwood',
+        },
+        {
+          subdivision: 'Foxborough',
+          subdivisionSlug: 'foxborough-phase-3',
+          selectionTier: 'adjacent-subdivision-24mo',
+          address: '20606 Songbird',
+        },
+      ],
+    })
+    expect(s!.sentence).toBe(
+      'No home sold in Larkspur in the last 24 months, so the search opened to 61197 Cottonwood in Tara View Estates and 20606 Songbird in Foxborough.',
+    )
+    expect(s!.sentence).not.toContain('CLAB')
+    expect(s!.sentence).not.toContain('Foxborough Phase 3')
+  })
+
+  it('a differently spelled sale the selector did not stamp own plat stays outside', () => {
+    const s = buildCompSearch({
+      subdivision: 'Northwest Townsite',
+      ladder: [rung({ tier: 'adjacent-subdivision-24mo', monthsBack: 24, compsAdded: 1 })],
+      keptComps: [{ subdivision: 'Northwest Townsite Co 2nd Addt', selectionTier: 'adjacent-subdivision-24mo', address: '9 Elm' }],
+    })
+    expect(s!.keptBySubdivision['Northwest Townsite Co 2nd Addt']).toBe(1)
   })
 
   it('says so plainly when every sale is in the subdivision', () => {

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { ListingTile } from '@/lib/data/types/listing'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import {
+  listingHeroMapPins,
+  listingHeroSubdivisionRings,
+  listingSimilarActive,
   listingSimilarDedupe,
   listingSimilarInPlace,
   listingSimilarRail,
@@ -59,6 +64,56 @@ describe('listingTileToRow', () => {
     expect(row.cityLine).toBe('Bend · Stonegate')
     expect(row.propertySubType).toBe('Single Family Residence')
     expect(row.href).toMatch(/220221963/)
+    expect(row.href.startsWith('/')).toBe(true)
+  })
+})
+
+describe('listingHeroMapPins', () => {
+  it('keeps active homes that have coordinates', () => {
+    const pins = listingHeroMapPins([
+      tile({ listingKey: 'a', lat: 44.07, lng: -121.31 }),
+      tile({ listingKey: 'closed', status: 'Closed', lat: 44.08, lng: -121.32 }),
+      tile({ listingKey: 'nolat', lat: null, lng: -121.3 }),
+      tile({ listingKey: 'dup', lat: 44.07, lng: -121.31 }),
+    ])
+    expect(pins).toEqual([{ lat: 44.07, lng: -121.31 }])
+  })
+
+  it('drops a home in another town and keeps one in the subdivision', () => {
+    const square: ReadonlyArray<readonly [number, number]> = [
+      [-121.32, 44.06],
+      [-121.30, 44.06],
+      [-121.30, 44.08],
+      [-121.32, 44.08],
+      [-121.32, 44.06],
+    ]
+    const pins = listingHeroMapPins(
+      [
+        tile({ listingKey: 'in', lat: 44.07, lng: -121.31 }),
+        tile({ listingKey: 'out', lat: 43.68, lng: -121.5 }),
+      ],
+      { lat: 44.07, lng: -121.31, rings: [square] },
+    )
+    expect(pins).toEqual([{ lat: 44.07, lng: -121.31 }])
+  })
+
+  it('refuses a polygon the size of the region', () => {
+    const region: ReadonlyArray<readonly [number, number]> = [
+      [-121.7, 43.7],
+      [-121.1, 43.7],
+      [-121.1, 44.4],
+      [-121.7, 44.4],
+      [-121.7, 43.7],
+    ]
+    expect(listingHeroSubdivisionRings([region])).toEqual([])
+    const pins = listingHeroMapPins(
+      [
+        tile({ listingKey: 'near', lat: 44.071, lng: -121.311 }),
+        tile({ listingKey: 'lapine', lat: 43.68, lng: -121.5 }),
+      ],
+      { lat: 44.07, lng: -121.31, rings: [region] },
+    )
+    expect(pins).toEqual([{ lat: 44.071, lng: -121.311 }])
   })
 })
 
@@ -91,5 +146,31 @@ describe('listingSimilarDedupe', () => {
       tile({ listingKey: '2', listNumber: '2', listPrice: 439_500 }),
     ])
     expect(kept).toHaveLength(1)
+  })
+})
+
+describe('listingSimilarActive', () => {
+  it('keeps Active and Active Under Contract, drops Closed', () => {
+    const kept = listingSimilarActive([
+      tile({ listingKey: 'a', status: 'Active' }),
+      tile({ listingKey: 'b', status: 'Active Under Contract' }),
+      tile({ listingKey: 'c', status: 'Closed' }),
+      tile({ listingKey: 'd', status: 'Expired' }),
+    ])
+    expect(kept.map((t) => t.listingKey)).toEqual(['a', 'b'])
+  })
+})
+
+describe('ListingSimilarStrip', () => {
+  const src = readFileSync(resolve('components/site/listing-detail/ListingSimilarStrip.tsx'), 'utf8')
+  const row = readFileSync(resolve('components/site/v3/V3ListingRow.tsx'), 'utf8')
+
+  it('is a server strip with crawlable rows, no LCP priority on below-fold thumbs', () => {
+    expect(src).not.toMatch(/'use client'/)
+    expect(src).toContain('<V3ListingRow')
+    expect(src).not.toMatch(/priority=\{/)
+    expect(row).toContain('listingPhotoAlt')
+    expect(row).toMatch(/loading=\{priority \? 'eager' : 'lazy'\}/)
+    expect(row).toContain('<Link href={listing.href}')
   })
 })

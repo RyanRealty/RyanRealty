@@ -37,7 +37,7 @@ export const maxDuration = 30
 // "Organic Search" channel grouping won't auto-pick this up; see
 // docs/UTM_TRACKING_CONVENTION.md §2 for the channel-grouping override.
 const DESIRED_URL =
-  'https://ryan-realty.com/?utm_source=gbp&utm_medium=organic&utm_campaign=profile'
+  'https://ryan-realty.com/?utm_source=gbp&utm_medium=organic&utm_campaign=gbp-profile'
 
 function unauthorized(reason: string) {
   return NextResponse.json({ ok: false, error: reason }, { status: 401 })

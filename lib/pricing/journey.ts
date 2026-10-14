@@ -3,6 +3,7 @@
  * in SQL; this copy is the testable contract and the in-memory fallback.
  * reachability: entry-point testable contract for sale_pricing_price_steps SQL
  */
+import { pacificDay } from '@/lib/cma/listing-status'
 
 export type HistoryEvent = {
   eventDate: string
@@ -63,6 +64,8 @@ export function buildSaleJourney(opts: {
   closePrice: number
   onMarketDate: string | null
   pendingTimestamp: string | null
+  /** When set, a 0-day offer whose on-market day is after this close is omitted. */
+  closeDate?: string | null
 }): SaleJourney {
   const seen = new Set<string>()
   const events = [...opts.events]
@@ -117,7 +120,25 @@ export function buildSaleJourney(opts: {
     firstDropDay: drops[0]?.dayFromList ?? null,
     dropCount: drops.length,
     pendingDate,
-    daysToOffer: dayDiff(opts.onMarketDate, pendingDate ?? ''),
+    daysToOffer: offerDays(opts.onMarketDate, pendingDate, opts.closeDate),
     steps,
   }
+}
+
+/**
+ * Days from on-market to the pending day. A 0 whose on-market Pacific day is
+ * after the close is not a same-day offer (1654 Meadow). Omit `closeDate` and
+ * the count is unchanged, including a real 0.
+ */
+function offerDays(
+  onMarketDate: string | null,
+  pendingDate: string | null,
+  closeDate?: string | null,
+): number | null {
+  const days = dayDiff(onMarketDate, pendingDate ?? '')
+  if (days !== 0 || !closeDate) return days
+  const from = pacificDay(onMarketDate)
+  const close = pacificDay(closeDate)
+  if (from && close && from > close) return null
+  return days
 }

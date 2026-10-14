@@ -17,6 +17,7 @@ const live = {
   dock: readFileSync(join(REPO, 'components/site/v3/V3PhoneDock.client.tsx'), 'utf8'),
   stickyCss: readFileSync(join(REPO, 'components/site/v3/V3StickyAsk.css'), 'utf8'),
   listingPage: readFileSync(join(REPO, 'app/listing/[listingKey]/page.tsx'), 'utf8'),
+  helper: readFileSync(join(REPO, 'lib/site/floater-broker.ts'), 'utf8'),
   gazeTest: readFileSync(join(REPO, 'components/site/v3/V3DogFloater.gaze.test.tsx'), 'utf8'),
 }
 
@@ -130,9 +131,9 @@ describe('ci:dog-floater lock', () => {
     expect(closeP.join('\n')).toMatch(/Close/)
   })
 
-  it('refuses object-fit:cover, a bottom cookie rest, and a continuous loop', () => {
+  it('refuses a stretched photo, a bottom cookie rest, and a continuous loop', () => {
     const css = live.css
-      .replace('object-fit: contain', 'object-fit: cover')
+      .replace('object-fit: cover', 'object-fit: fill')
       .replace('top: 50%;', 'bottom: calc(var(--v3-space-md) + env(safe-area-inset-bottom, 0px));')
       .replace(
         'animation: v3-dog-notice 1.35s ease-in-out 1;',
@@ -142,7 +143,30 @@ describe('ci:dog-floater lock', () => {
       root: REPO,
       files: { ...live, css },
     })
-    expect(p.join('\n')).toMatch(/object-fit:cover|contain|mid-end|cookie|infinite|continuous|bottom/i)
+    expect(p.join('\n')).toMatch(/object-fit:fill|stretch|cover|mid-end|cookie|infinite|continuous|bottom/i)
+  })
+
+  it('paints the attributed broker headshot and defaults to Matt', () => {
+    expect(live.helper).toMatch(/DEFAULT_FLOATER_BROKER[^=]*=\s*['"]matt['"]/)
+    expect(live.helper).toContain('/images/brokers/ryan-matt.png')
+    expect(live.helper).toContain('/images/brokers/peterson-rebecca.png')
+    expect(live.helper).toContain('/images/brokers/stevenson-paul.png')
+    expect(live.floater).toContain("from '@/lib/site/floater-broker'")
+    expect(live.floater).not.toContain('/brand/jax-head-navy.png')
+    const dog = live.floater
+      .replace("from '@/lib/site/floater-broker'", '')
+      .replaceAll('floaterBrokerHeadshot', '')
+      .replace('DEFAULT_FLOATER_BROKER', '')
+    const p = dogFloaterProblems({
+      root: REPO,
+      files: {
+        ...live,
+        floater: `${dog}
+                <img src="/brand/jax-head-cream.png" />
+                <img src="/brand/jax-head-navy.png" />`,
+      },
+    })
+    expect(p.join('\n')).toMatch(/broker headshot|floater-broker|DEFAULT_FLOATER_BROKER/)
   })
 
   it('keeps jax-head silhouettes inset so the circle cannot crop the muzzle', async () => {

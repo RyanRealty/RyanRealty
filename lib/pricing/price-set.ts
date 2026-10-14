@@ -6,10 +6,10 @@
  * (lib/cma/community-location.ts), not the MLS subdivision string and not a
  * remark. A sale from another community never sets the price, however short
  * the set is (Matt 2026-10-07). Neither does a clearly different size (more
- * than PRICE_SET_SQFT_BAND, 25%, larger or smaller, wherever the search found
- * it: Matt 2026-10-08) or a clearly different product (a cottage versus
- * acreage). A different plat that is not the subject's community is that
- * different community, not a neighbor that still prices the home.
+ * than PRICE_SET_SQFT_BAND, the picker's one cutoff, 35%) or a clearly
+ * different product (a cottage versus acreage). A different plat that is not
+ * the subject's community is that different community, not a neighbor that
+ * still prices the home.
  *
  * Both walks (lib/pricing/match.ts, lib/cma/comps.ts) apply this test at
  * admission: a sale that fails it is not admitted, does not count toward the
@@ -25,7 +25,7 @@
  */
 import { communityForAddress } from '@/lib/cma/community-location'
 import { lotCompatible, normSubdivision } from '@/lib/pricing/classes'
-import { PLAT_SQFT_BAND, PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { PLAT_WIDE_SQFT_BAND, PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 
 export type PriceSetSale = {
   ownPlat?: boolean | null
@@ -42,25 +42,23 @@ export type PriceSetSale = {
 }
 
 /**
- * THE ONE SIZE LIMIT FOR ANY SALE THAT SETS THE PRICE (Matt 2026-10-08, "25%
- * everywhere"): a sale more than 25% larger or smaller than the subject never
- * sets the price, wherever the search found it. 2382 Jackson (2,016 sqft) was
- * priced with 2225 Indigo (2 bed, 1,393 sqft, 30.9% smaller), admitted on a
- * wider rung at full weight because this test read the 35% search band; under
- * the ruling it never sets the price.
+ * THE ONE SIZE LIMIT (Matt 2026-10-09: the picker and the review look at the
+ * same cutoff). The search keeps a sale out to about 35% living area
+ * (PLAT_WIDE_SQFT_BAND, and the listings ladder's LOCATION_SQFT_BAND). That
+ * is the only size cutoff. A sale the wide rung admitted is not refused here
+ * for a tighter gap. 2339 Labiche held four sales until 2735 Crossing
+ * (1,282 sq ft against 1,001, 28% larger) was thrown out by a 25% door the
+ * search had already passed. 2225 Indigo (1,393 sq ft against 2,016, 30.9%
+ * smaller) is inside the same line and sets the price.
  *
- * The same number as the plat rungs' band (PLAT_SQFT_BAND), defined once. The
- * wider rungs (PLAT_WIDE_SQFT_BAND, the touching-plat, next-row and community
- * rungs, the listings ladder's LOCATION_SQFT_BAND) still SEARCH past it; a
- * sale they read between 25% and their band passes the rung's walls and is
- * refused here at the door, counted as not setting, never weighed.
+ * A sale more than 35% off never sets the price. Exactly 35% still does.
+ * Unknown size is not "clearly different".
  */
-export const PRICE_SET_SQFT_BAND = PLAT_SQFT_BAND
+export const PRICE_SET_SQFT_BAND = PLAT_WIDE_SQFT_BAND
 
 /**
  * Living area more than PRICE_SET_SQFT_BAND off the subject's, measured on the
- * subject. Exactly 25% still sets the price; 25.1% does not. Unknown size is
- * not "clearly different".
+ * subject. Exactly 35% still sets the price; just past it does not.
  */
 export function clearlyDifferentSize(
   subjectSqft: number | null | undefined,
@@ -93,16 +91,104 @@ function communityOf(input: {
   })
 }
 
+export type PriceSetRefusalCode = 'size' | 'product' | 'community'
+
 /**
- * True when this sale may move the recommended price.
- * Remarks are not an input.
+ * The sentence the letter prints beside a sale that does not set the price.
+ * The renderer prints `reason` and does not recompute it (SKILL §0.3 rule 29).
  */
-export function saleSetsThePrice(input: PriceSetSale): boolean {
-  if (clearlyDifferentSize(input.subjectSqft, input.saleSqft)) return false
-  if (clearlyDifferentProduct(input.subjectLotAcres, input.saleLotAcres)) return false
+export type PriceSetRefusal = {
+  code: PriceSetRefusalCode
+  reason: string
+}
+
+/** A sale rule 20 refused, named, so a later page can print the recorded reason. */
+export type NotSettingSale = {
+  listingKey: string
+  listNumber: string | null
+  address: string
+  code: PriceSetRefusalCode
+  reason: string
+}
+
+/**
+ * A printed sale the price-set decision would still allow, that this letter
+ * neither seated nor set aside. The letter says this once beside it.
+ */
+export const UNSEATED_PRINT_REASON = 'not one of the sales that set this price'
+
+export function notSettingSaleFrom(
+  sale: { listingKey: string; listNumber?: string | null; address: string },
+  refusal: PriceSetRefusal,
+): NotSettingSale {
+  return {
+    listingKey: sale.listingKey,
+    listNumber: sale.listNumber ?? null,
+    address: sale.address,
+    code: refusal.code,
+    reason: refusal.reason,
+  }
+}
+
+/**
+ * Whole percent, except just past the cutoff, where a rounded whole percent
+ * would say the sale is inside the band.
+ */
+function percentOffLabel(subjectSqft: number, saleSqft: number): string {
+  const line = Math.round(PRICE_SET_SQFT_BAND * 100)
+  const hundred = (Math.abs(saleSqft - subjectSqft) / subjectSqft) * 100
+  const whole = Math.round(hundred)
+  if (whole > line) return String(whole)
+  const tenths = Math.ceil(hundred * 10 - 1e-9) / 10
+  const text = tenths.toFixed(1)
+  return text.endsWith('.0') ? text.slice(0, -2) : text
+}
+
+function sqftLabel(n: number): string {
+  return Math.round(n).toLocaleString('en-US')
+}
+
+/** "1,634 sq ft, 36% larger than this home; sales more than 35% larger or smaller do not set the price" */
+export function sizeRefusalReason(subjectSqft: number, saleSqft: number): string {
+  const direction = saleSqft > subjectSqft ? 'larger' : 'smaller'
+  const line = Math.round(PRICE_SET_SQFT_BAND * 100)
+  return `${sqftLabel(saleSqft)} sq ft, ${percentOffLabel(subjectSqft, saleSqft)}% ${direction} than this home; sales more than ${line}% larger or smaller do not set the price`
+}
+
+function acreText(n: number): string {
+  const rounded = Math.round(n * 100) / 100
+  const body = Number.isInteger(rounded) ? String(rounded) : String(rounded)
+  return `${body} ${rounded === 1 ? 'acre' : 'acres'}`
+}
+
+export function productRefusalReason(subjectLotAcres: number, saleLotAcres: number): string {
+  return `${acreText(saleLotAcres)} against this home's ${acreText(subjectLotAcres)}; a cottage and an acreage property do not set each other's price`
+}
+
+export function communityRefusalReason(): string {
+  return 'a different community than this home; a sale in another community does not set the price'
+}
+
+/**
+ * Why this sale does not move the recommended price, or null when it may.
+ * The same branches as the admission test, in the same order. Remarks are
+ * not an input. The letter prints `reason` and does not recompute the gap.
+ */
+export function priceSetRefusal(input: PriceSetSale): PriceSetRefusal | null {
+  const subjectSqft = Number(input.subjectSqft)
+  const saleSqft = Number(input.saleSqft)
+  if (clearlyDifferentSize(input.subjectSqft, input.saleSqft)) {
+    return { code: 'size', reason: sizeRefusalReason(subjectSqft, saleSqft) }
+  }
+  if (clearlyDifferentProduct(input.subjectLotAcres, input.saleLotAcres)) {
+    return {
+      code: 'product',
+      reason: productRefusalReason(Number(input.subjectLotAcres), Number(input.saleLotAcres)),
+    }
+  }
 
   // The selector's own-plat decision (the recorded polygon first) wins.
-  if (input.ownPlat === true) return true
+  if (input.ownPlat === true) return null
 
   const subjectCommunity = communityOf({
     community: input.subjectCommunity,
@@ -130,14 +216,24 @@ export function saleSetsThePrice(input: PriceSetSale): boolean {
   // wall added to this function goes above it, never below.
   const subjectName = normSubdivision(input.subjectSubdivision)
   const saleName = normSubdivision(input.saleSubdivision)
-  if (subjectName != null && subjectName === saleName && communityAgrees) return true
+  if (subjectName != null && subjectName === saleName && communityAgrees) return null
 
   // One side is in a community the other is not, or they are different
   // communities. A short set does not change this: the sale never sets the
   // price, the walk goes past it, and under five setters the build is a comp
   // shortage. Size and product were refused above.
-  if ((subjectKnown || saleKnown) && !communityAgrees) return false
-  return true
+  if ((subjectKnown || saleKnown) && !communityAgrees) {
+    return { code: 'community', reason: communityRefusalReason() }
+  }
+  return null
+}
+
+/**
+ * True when this sale may move the recommended price.
+ * Remarks are not an input. One decision with priceSetRefusal.
+ */
+export function saleSetsThePrice(input: PriceSetSale): boolean {
+  return priceSetRefusal(input) == null
 }
 
 /**

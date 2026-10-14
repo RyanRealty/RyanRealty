@@ -30,7 +30,7 @@ const VIEWPORTS = {
 }
 
 async function dismissOverlays(page) {
-  for (const label of ['Maybe later', 'Essential only', 'Decline', 'Reject all', 'Accept All', 'Accept all', 'Got it', 'Close']) {
+  for (const label of ['Maybe later', 'Essential only', 'Decline', 'Reject all', 'Got it', 'Close']) {
     try {
       const btn = page.getByRole('button', { name: label }).first()
       if (await btn.isVisible({ timeout: 200 })) await btn.click({ timeout: 500 })

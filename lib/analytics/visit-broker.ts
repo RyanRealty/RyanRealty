@@ -6,12 +6,13 @@
  * `generate_lead` (`fireLeadGenerated`). This module is the single resolver
  * for those same GA Admin custom-definition names on page_view / listing_view.
  *
- * UTM convention (docs/UTM_TRACKING_CONVENTION.md + live CRM senders):
+ * UTM convention (lib/analytics/utm.ts):
  *   - Channel defaults when missing: utm_source=crm, utm_medium=email
- *     (same pair as market-report / prospecting CRM links — do not invent
- *     a second source/medium vocabulary).
- *   - Broker identity: utm_content=agent-<slug> when content is free;
- *     otherwise utm_term=agent-<slug>. Never overwrite existing utm_*.
+ *   - Broker identity: utm_content=agent-<slug> when content is free.
+ *     utm_term is paid-keyword only (never an agent tag).
+ *   - Existing channel UTMs are rebuilt through buildTrackedUrl so there is
+ *     exactly one set, remapped onto the closed vocab (email-click → crm,
+ *     doc → document, per-property campaign → cma-letter + rr_doc).
  */
 import {
   AGENT_ATTRIB_COOKIE,
@@ -19,6 +20,12 @@ import {
   parseAgentAttributionCookie,
   type BrokerSlug,
 } from '@/lib/agent-attribution'
+import {
+  buildTrackedUrl,
+  CMA_DOC_PARAM,
+  isCmaDocumentSlug,
+  readExistingUtms,
+} from '@/lib/analytics/utm'
 
 /** Live CRM senders already use this pair (market-report, prospecting SMS). */
 export const CRM_OUTBOUND_UTM_SOURCE = 'crm'
@@ -153,29 +160,36 @@ export function appendQueryParam(url: string, name: string, value: string): stri
 }
 
 /**
- * Stamp CRM channel + broker UTMs onto a destination URL without wiping
- * existing utm_*. Used by attributeSiteLinks so every ryan-realty.com click
- * from a CRM send is a campaign session, not Direct.
+ * Stamp CRM channel + broker UTMs onto a destination URL. Rebuilds through
+ * buildTrackedUrl so there is exactly one UTM set on the vocab. A link that
+ * already carries source/medium/campaign keeps them (after alias remap).
  */
-export function stampCrmOutboundUtms(url: string, brokerSlug: string | null | undefined): string {
-  let out = url
-  if (!hasQueryParam(out, 'utm_source')) {
-    out = appendQueryParam(out, 'utm_source', CRM_OUTBOUND_UTM_SOURCE)
+export function stampCrmOutboundUtms(
+  url: string,
+  brokerSlug: string | null | undefined,
+  opts?: { test?: boolean },
+): string {
+  const existing = readExistingUtms(url)
+  const source = existing.source || CRM_OUTBOUND_UTM_SOURCE
+  const medium = existing.medium || CRM_OUTBOUND_UTM_MEDIUM
+  const extraParams: Record<string, string> = {}
+  const doc = existing.extraDoc?.trim().toLowerCase()
+  if (doc) extraParams[CMA_DOC_PARAM] = doc
+  else if (existing.campaign && isCmaDocumentSlug(existing.campaign)) {
+    extraParams[CMA_DOC_PARAM] = existing.campaign.trim().toLowerCase()
   }
-  if (!hasQueryParam(out, 'utm_medium')) {
-    out = appendQueryParam(out, 'utm_medium', CRM_OUTBOUND_UTM_MEDIUM)
-  }
+  let content = existing.content
   const slug = (brokerSlug ?? '').trim()
-  if (!slug) return out
-  const tag = agentUtmTag(slug)
-  const existingContent = queryParamValue(out, 'utm_content')
-  if (!existingContent) {
-    return appendQueryParam(out, 'utm_content', tag)
-  }
-  // Content already is a broker tag — a second pass must not also fill term.
-  if (existingContent.toLowerCase().startsWith(AGENT_UTM_PREFIX)) return out
-  if (!hasQueryParam(out, 'utm_term')) {
-    return appendQueryParam(out, 'utm_term', tag)
-  }
-  return out
+  if (slug && !content) content = agentUtmTag(slug)
+  let term = existing.term
+  if (term && term.toLowerCase().startsWith(AGENT_UTM_PREFIX)) term = undefined
+  return buildTrackedUrl(url, {
+    source,
+    medium,
+    campaign: existing.campaign || undefined,
+    content: content || undefined,
+    term: term || undefined,
+    test: opts?.test,
+    extraParams: Object.keys(extraParams).length ? extraParams : undefined,
+  })
 }

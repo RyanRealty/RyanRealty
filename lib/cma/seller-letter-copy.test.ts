@@ -149,7 +149,7 @@ describe('the generators write plain English', () => {
       domDays: null,
       printableAsk: 650_000,
     })
-    expect(row.outcome).toMatch(/Came off/)
+    expect(row.outcome).toMatch(/^came off/)
     expect(row.mlsStatus).toBe('Expired')
     expect(row.statusDate).toBeNull()
     const peer = {
@@ -233,7 +233,12 @@ describe('the generators write plain English', () => {
   })
 
   it('explains a bedroom difference instead of a zero', () => {
-    expect(roomAdjustmentWords(['beds'])).toBe('One bedroom off yours. No dollar adjustment.')
+    expect(roomAdjustmentWords(['beds'])).toBe(
+      'One bedroom off yours. It counts for less. No dollar adjustment.',
+    )
     expect(roomAdjustmentWords(['beds'])).not.toContain('$0')
+    expect(roomAdjustmentWords(['beds', 'baths'], { beds: 2, baths: 2 })).toBe(
+      'Two bedrooms and two bathrooms off yours. It counts for less. No dollar adjustment.',
+    )
   })
 })

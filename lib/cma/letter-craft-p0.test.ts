@@ -406,7 +406,7 @@ describe('letter craft Matt ADD 2026-09-12', () => {
       // These closes report none, so the net equals the sold price.
       // 500000/1580 on the five closed sales = $316 a foot.
       expect(doc).toMatch(
-        /<tbody data-status="closed">[\s\S]*?<th scope="row">Median<\/th><td class="n">\$510,000<\/td><td class="n">\$500,000<\/td><td class="n">\$0<\/td><td class="n">\$316<\/td>/,
+        /<tbody data-status="closed">[\s\S]*?<th scope="row">Median in each column<\/th><td class="n">\$510,000<\/td><td class="n">\$500,000<\/td><td class="n">none<\/td><td class="n">\$316<\/td>/,
       )
       // Active 520000/1600 = 325; expired 540000/1500 = 360.
       expect(doc).toMatch(/<tbody data-status="active">[\s\S]*?<td class="n">\$325<\/td>/)

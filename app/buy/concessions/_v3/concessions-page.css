@@ -1,0 +1,5 @@
+.concessions-fair {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: 0 var(--v3-space-md) var(--v3-space-xl);
+}

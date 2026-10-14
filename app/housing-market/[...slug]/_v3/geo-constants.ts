@@ -25,7 +25,6 @@ export const CORE_CITY_SLUGS = [
   'sisters',
   'sunriver',
   'la-pine',
-  'tumalo',
   'prineville',
   'terrebonne',
 ] as const
@@ -41,6 +40,35 @@ export const CORE_CITY_SLUGS = [
 export const CORE_COMMUNITY_MARKET_PATHS: Readonly<Record<string, string>> = {
   'black-butte-ranch': '/housing-market/sisters/black-butte-ranch',
   'eagle-crest': '/housing-market/redmond/eagle-crest',
+}
+
+/**
+ * Resort communities (RESORT_SLUG_TO_CITY, the only two-segment slugs the
+ * market page resolves at neighborhood grain) whose community report does
+ * NOT publish: leftover HUD and leftover monthly are both empty, so the page
+ * takes notFound(), which app/loading.tsx serves as a 200. Verified on
+ * production 2026-10-08 (each served the "Page not found" shell). Links use
+ * the city report instead, and the edge 308s the URL to /communities/<slug>.
+ * Remove a slug here when its report starts publishing.
+ */
+export const UNPUBLISHED_RESORT_MARKET_SLUGS: ReadonlySet<string> = new Set([
+  'vandevert-ranch',
+  'mt-bachelor-village',
+  'rivers-edge',
+  'mountain-high',
+  'crooked-river-ranch',
+])
+
+/**
+ * True when /housing-market/<city>/<slug> can publish. A non-resort slug
+ * resolves at subdivision grain, where leftoverGeo is null and the report
+ * never publishes (lib/market/geo-market-publishes). A resort publishes
+ * unless it is in UNPUBLISHED_RESORT_MARKET_SLUGS. Pure, no DB.
+ */
+export function communityMarketPublishes(slug: string | null | undefined): boolean {
+  const s = (slug ?? '').trim().toLowerCase()
+  if (!s || !RESORT_SLUG_TO_CITY[s]) return false
+  return !UNPUBLISHED_RESORT_MARKET_SLUGS.has(s)
 }
 
 /**

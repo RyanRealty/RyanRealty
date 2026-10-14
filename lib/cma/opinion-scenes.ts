@@ -3,8 +3,6 @@
  * stay in immersive.ts. Same order as the print pages.
  */
 
-import { competitionHeading } from '@/lib/cma/band-rivals'
-import { subjectOnMarket } from '@/lib/cma/subject-on-market'
 import {
   MAP_HEADING,
   mapBodyHtml,
@@ -24,6 +22,9 @@ import {
   salesThatSetItArgs,
 
   nextStepButtonsHtml,
+  nextStepEyebrow,
+  competitionChapterName,
+  competitionHeadingFor,
   nextStepHeading,
   nextStepNoteHtml,
   thisMarketBodyHtml,
@@ -120,6 +121,7 @@ function salesThatSetItScene(a: OpinionSceneArgs): string {
     comps: args.comps,
     pricing: args.pricing,
     docLinks: args.docLinks ?? null,
+    onMarket: args.onMarket,
   })
   const heading = /<h2 class="section[^"]*">[\s\S]*?<\/h2>/.exec(page.body)?.[0] ?? ''
   const rest = heading ? page.body.replace(heading, '') : page.body
@@ -138,8 +140,8 @@ function competitionScene(a: OpinionSceneArgs): string {
   return `
   <section class="sc sc-cream pack" id="competition">
     <div class="in wide">
-      <div class="kick r">At this price</div>
-      <h2 class="h r">${esc(competitionHeading(a.pricing.recommended, { onMarket: subjectOnMarket(a) }))}</h2>
+      <div class="kick r">${esc(competitionChapterName(a))}</div>
+      <h2 class="h r">${esc(competitionHeadingFor(a))}</h2>
       <div class="r">${body}</div>
     </div>
   </section>`
@@ -273,7 +275,7 @@ function nextScene(a: OpinionSceneArgs): string {
   <section class="sc sc-navy pack" id="next-step">
     <div class="in next-in">
       <div class="next-b">
-        <div class="kick r">Your next step</div>
+        <div class="kick r">${esc(nextStepEyebrow(a))}</div>
         <h2 class="h r">${esc(nextStepHeading(a))}</h2>
         ${actions ? `<div class="cta next-cta r">${actions}</div>` : ''}
         <div class="r">${nextStepNoteHtml(a)}</div>

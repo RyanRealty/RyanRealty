@@ -2,7 +2,7 @@
 
 **Started:** 2026-08-12 (Grok, planning only — no product code this session)
 **Status:** v0.14 plan. D1–D11 locked. Public OS folded in. One board: `EXECUTION.md`.
-**Go** = autonomous envelope to completion (max parallel, serial land). Hard stops: send, post, OAuth, license, taste, money. Not Closings cutover.
+**Go** = autonomous envelope to completion (max parallel, serial PRs to `main`; Matt merges). Hard stops: send, post, OAuth, license, taste, money. Not Closings cutover.
 **Home:** `docs/plans/ADMIN_PRODUCT/` (G44 covered by the ADMIN_PRODUCT package row)
 **Jobs vs mechanics:** IA destinations and KEEP jobs still name the work. How we
 currently do them is not sacred. See §Implementation amnesia.
@@ -921,7 +921,7 @@ Prompts are cinematography (lens, move, light), not adjectives. Negative: no tex
   (locks, recipe, gate contracts). Do not start a third public rebuild.
   `experience-rollout` is superseded. `run public product` orients from the board.
 - Public CTA/copy/migrations and admin queue/packets/TC are one plan, disjoint
-  **file leases**, serial land on `main`.
+  **file leases**, serial PRs to `main`; Matt merges.
 - Path:line or it is not a finding. The **right loop** wins vs stale docs *and*
   vs current code. Code is evidence of what we tried, not a freeze.
 - Law is data (`TC_OREGON_COMPLIANCE.md`).

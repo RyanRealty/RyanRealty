@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sha256 } from '@noble/hashes/sha256'
 import { bytesToHex } from '@noble/hashes/utils'
 import { sendServerEvent, type MetaCapiUserData } from '@/lib/meta-capi'
+import { CONSENT_COOKIE, marketingSharingAllowed } from '@/lib/identity/consent'
 import { shouldExcludeFromSharing } from '@/lib/crm/gpc'
 import { getPersonIdsByEmail } from '@/lib/data/crm/getPersonIdsByEmail'
 import { getPersonSuppressions } from '@/lib/data/crm/getPersonSuppressions'
@@ -80,6 +81,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'eventName required' }, { status: 400, headers: cors })
     }
 
+    const consentCookie =
+      req.cookies.get(CONSENT_COOKIE)?.value ??
+      (typeof (body as { consentCookie?: unknown }).consentCookie === 'string'
+        ? (body as { consentCookie: string }).consentCookie
+        : null)
+    const secGpc =
+      req.headers.get('sec-gpc') ??
+      (typeof (body as { secGpc?: unknown }).secGpc === 'string' ? (body as { secGpc: string }).secGpc : null)
+    if (!marketingSharingAllowed({ consentCookie, secGpc })) {
+      return NextResponse.json(
+        { ok: true, skipped: 'no-marketing-consent', eventId: eventId ?? null },
+        { status: 200, headers: cors },
+      )
+    }
+
     // Hash PII with SHA-256
     const hashPII = (value: string | undefined): string | undefined => {
       if (!value?.trim()) return undefined
@@ -120,21 +136,10 @@ export async function POST(req: NextRequest) {
     const userAgent = bodyClientUserAgent?.trim() || req.headers.get('user-agent') || undefined
     if (userAgent) userData.client_user_agent = userAgent
 
-    // Limited Data Use (CCPA/CPRA): honor the visitor's marketing-consent cookie
-    // (same-origin client calls carry it); server-to-server callers pass `ldu` in
-    // the body. When marketing consent is not granted, send the conversion in LDU
-    // mode — consistent with the always-on pixel (components/MetaPixel.tsx).
-    let ldu = false
-    const consentCookie = cookies.find((c) => c.name === 'ryan_realty_cookie_consent')
-    if (consentCookie) {
-      try {
-        ldu = !JSON.parse(decodeURIComponent(consentCookie.value)).marketing
-      } catch {
-        ldu = consentCookie.value !== 'all'
-      }
-    } else if (typeof bodyLdu === 'boolean') {
-      ldu = bodyLdu
-    }
+    // Limited Data Use (CCPA/CPRA): this path only runs after marketingSharingAllowed.
+    // A known CRM suppression can still force LDU on. Server-to-server callers may
+    // pass `ldu` in the body.
+    let ldu = typeof bodyLdu === 'boolean' ? bodyLdu : false
 
     // Opt-out -> force Limited Data Use (Phase 8.1). When the subject is a known
     // CRM person who carries ANY suppression (a GPC opt-out, a hard-stop, an

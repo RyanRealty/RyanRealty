@@ -1267,8 +1267,8 @@
     {
      "section": "listing-ask",
      "severity": "taste",
-     "finding": "Desktop fold has no Tour / Call / Text control — only a Talk to a broker card. Mobile shows three separate leftover buttons (filled TOUR, outline CALL, outline TEXT), not one grouped control and not an action-swap.",
-     "primitive": "components/site/listing-detail/ListingMobileContactBar.client.tsx",
+     "finding": "Desktop fold has no Tour / Call / Text control — only a Talk to a broker card.",
+     "primitive": "components/site/listing-detail/ListingBrokerCTA.client.tsx",
      "replaceWith": "shadcn-button-group"
     },
     {

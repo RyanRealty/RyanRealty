@@ -35,3 +35,17 @@
   line-height: var(--v3-leading-note);
   color: var(--v3-ink-muted);
 }
+
+/* `color` on a bare `a` lives in @layer base so Tailwind's utilities layer
+   keeps winning (ci:css-layers). */
+@layer base {
+  .v3-takeaways__source a {
+    color: inherit;
+    text-decoration: underline;
+  }
+}
+
+/* Under an H1 (V3Instrument lede): the headline already holds the space. */
+.v3-takeaways--lede .v3-takeaways__source {
+  margin-top: var(--v3-space-md);
+}

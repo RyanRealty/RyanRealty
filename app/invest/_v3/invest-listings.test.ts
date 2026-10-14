@@ -102,7 +102,10 @@ describe('invest catalog import (Tip Ready route scan)', () => {
     const page = readFileSync(new URL('../page.tsx', import.meta.url), 'utf8')
     const css = readFileSync(new URL('./invest-table.css', import.meta.url), 'utf8')
     expect(src).toMatch(/from '@\/components\/ui\/table'/)
-    expect(page).toMatch(/from '@\/components\/ui\/table'/)
+    // The route scan reads page.tsx and _v3/, so the import lives where the
+    // table renders; the public page itself reaches shadcn only through it
+    // (ci:shadcn-burndown, 2026-09-29).
+    expect(page).not.toMatch(/from '@\/components\/ui\//)
     expect(src).not.toMatch(/<TableHead>Type<\/TableHead>/)
     expect(src).toMatch(/invest-tables__home/)
     expect(src).toMatch(/row\.photoSrc/)

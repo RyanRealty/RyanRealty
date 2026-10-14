@@ -209,10 +209,9 @@ describe('assembleOpinionPages format', () => {
     expect(
       chapterIsLeadOnly('<h2 class="section is-answer">X.</h2><p class="worth-lead">One.</p><p class="worth-lead-note">Two.</p>'),
     ).toBe(false)
-    // No map, nothing to fold.
-    expect(mapSharesPricePage({ ...args(), mapDataUri: null })).toBe(
-      Boolean(mapSubsectionHtml(mapArgs({ ...args(), mapDataUri: null }))),
-    )
+    // No tile: nothing to fold, and no caption about a map that is not there (rule 31).
+    expect(mapSubsectionHtml(mapArgs({ ...args(), mapDataUri: null }))).toBe('')
+    expect(mapSharesPricePage({ ...args(), mapDataUri: null })).toBe(false)
   })
 
   it('runs the number, the map, then the three matrices in Delta 3 order', () => {
@@ -522,12 +521,26 @@ describe('chapter one reads the ask that ran the clock', () => {
     expect(whatHappenedHeading(a)).toBe('You asked $500,000 for 152 days, then $460,000 for 35.')
   })
 
-  it('names the original list when the exposure starts at a later ask', () => {
+  it('names the first ask of the last stretch, never an MLS original list from before it (Matt 2026-10-08)', () => {
+    // The exposure is the listing's last stretch on the market. An original
+    // list the MLS carries from before it (an earlier stretch, or a Coming
+    // Soon price changed before it went Active) is a different clock.
     const a = withAudit({ findings: FINDINGS, askExposure: EXPOSURE, finalCycle: { days: 187 } })
     a.subject = { ...a.subject, originalListPrice: 1_025_000 }
     const heading = whatHappenedHeading(a)
-    expect(heading).toContain('$1,025,000')
-    expect(heading).toContain('You asked $500,000 for 152 days, then $460,000 for 35.')
+    expect(heading).not.toContain('$1,025,000')
+    expect(heading).toBe('You asked $500,000 for 152 days, then $460,000 for 35.')
+  })
+
+  it('says when the last stretch is not the listing\'s first', () => {
+    const a = withAudit({
+      findings: FINDINGS,
+      askExposure: EXPOSURE,
+      finalCycle: { days: 187, listDate: '2025-08-01', restarted: true },
+    })
+    expect(whatHappenedHeading(a)).toBe(
+      'You asked $500,000 for 152 days, then $460,000 for 35. Counted from Aug 1, when your home last came on the market.',
+    )
   })
 
   it('measures the gap off the last ask, not the original list', () => {
@@ -732,14 +745,65 @@ describe('the map and the pages around it (reader review 2026-10-08)', () => {
       .map((p) => p.body)
       .join('')
     expect(all).toContain('These 2 sales are shown above and did not set the number.')
-    const map = mapSubsectionHtml(mapArgs(a))
+    // A missing tile prints nothing. The set-aside glyph is on the tile's pins.
+    expect(mapSubsectionHtml(mapArgs(a))).toBe('')
+    expect(mapSubsectionHtml(mapArgs(a))).not.toContain('Every pin above')
+    const sales = fiveSales()
+    const map = mapSubsectionHtml(
+      mapArgs({
+        ...a,
+        mapDataUri: 'data:image/png;base64,TILE',
+        mapOverlay: {
+          view: { centerLat: 44.272, centerLng: -121.17, zoom: 15, width: 640, height: 480 },
+          pins: [
+            { key: null, family: 'subject', lat: 44.27, lng: -121.17 },
+            ...sales.map((c, i) => ({
+              key: String(i + 1),
+              family: 'closed' as const,
+              lat: c.latitude as number,
+              lng: c.longitude as number,
+            })),
+          ],
+          boundaryShown: false,
+          parentShown: false,
+          radiusShown: false,
+          streetPlaceShown: null,
+        },
+      }),
+    )
+    expect(map).toContain('<img class="pin-map"')
     expect(map).toContain('Closed sales: these set the price')
     expect(map).toContain('Closed sales shown but set aside')
-    expect((map.match(/class="pin-sale is-closed is-aside"/g) ?? []).length).toBe(2)
+    expect((map.match(/class="pin-hit is-closed is-aside"/g) ?? []).length).toBe(2)
   })
 
   it('keeps one closed legend line when nothing is set aside', () => {
-    const map = mapSubsectionHtml(mapArgs({ ...args(), comps: fiveSales(), mapDataUri: null }))
+    const sales = fiveSales()
+    const bare = mapSubsectionHtml(mapArgs({ ...args(), comps: sales, mapDataUri: null }))
+    expect(bare).toBe('')
+    const map = mapSubsectionHtml(
+      mapArgs({
+        ...args(),
+        comps: sales,
+        mapDataUri: 'data:image/png;base64,TILE',
+        mapOverlay: {
+          view: { centerLat: 44.272, centerLng: -121.17, zoom: 15, width: 640, height: 480 },
+          pins: [
+            { key: null, family: 'subject', lat: 44.27, lng: -121.17 },
+            ...sales.map((c, i) => ({
+              key: String(i + 1),
+              family: 'closed' as const,
+              lat: c.latitude as number,
+              lng: c.longitude as number,
+            })),
+          ],
+          boundaryShown: false,
+          parentShown: false,
+          radiusShown: false,
+          streetPlaceShown: null,
+        },
+      }),
+    )
     expect(map).toContain('Closed sales: these set the price')
     expect(map).not.toContain('set aside')
   })
@@ -811,9 +875,13 @@ describe('the map and the pages around it (reader review 2026-10-08)', () => {
       expect(p.body).not.toContain('this map')
       expect(p.body).not.toContain('pin-map')
     }
-    expect(unsold.toc).toBe('No other listing like yours near you came off unsold.')
-    expect(unsold.body).toContain('so they are not compared here.')
-    expect(compete.body).toContain('so it is not compared here.')
+    // Two homes came off and neither is like this one, so the heading says
+    // that, not that none came off (1355 Jacksonville, reader review 2026-10-08).
+    expect(unsold.toc).toBe('The other listings near you that did not sell are not like yours.')
+    // The stored rows carry no reason per home, so neither page names one.
+    expect(unsold.body).toContain('is enough like this home to compare here.')
+    expect(compete.body).toContain('It is not enough like this home to compare here.')
+    for (const p of [unsold, compete]) expect(p.body).not.toContain('bedrooms, bathrooms, size or age')
     // No table, so the trace prints as the count's source, not a caption.
     expect(compete.body).toContain(
       '<p class="small">Source: homes for sale and under contract in Diamond Bar Ranch between $386,000 and $472,000, from the Oregon Data Share MLS as of Sep 5, 2026.</p>',

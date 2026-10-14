@@ -26,7 +26,13 @@
  * held any sale, and the search died at four. The levels, narrowest first,
  * each taken only when it holds ANCHOR_MIN_N sales:
  *
- *   1. plat          the recorded plat the home sits in (boundaries polygon);
+ *   1. plat          the home's own subdivision by the one ground decision
+ *                    (lib/pricing/plat-ground.ts, Matt 2026-10-08 "Yes,
+ *                    everywhere"): the recorded plat it sits in, a phase of
+ *                    it, an alias sibling, or a recorded addition or phase of
+ *                    its family inside its own neighborhood or community
+ *                    polygon, named by the family when it reached past the
+ *                    plat itself;
  *   2. family        that plat's subdivision family: its phases, numbered
  *                    plats and additions (sameSubdivisionFamily below), in
  *                    the same city: Westside Meadows and Westside Meadows II;
@@ -67,6 +73,7 @@ import {
   platMemberDisplayName,
 } from '@/lib/market/plat-family'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
+import { ownPlatGround, platReach } from '@/lib/pricing/plat-ground'
 import { displaySubdivision } from '@/lib/slug'
 import type { PricingSale, PricingSubject } from '@/lib/pricing/match'
 
@@ -224,8 +231,18 @@ export function sameSubdivisionFamily(a: string | null | undefined, b: string | 
  */
 export type AnchorSample = {
   ppsf: number | null
-  /** In the subject's own recorded plat. */
+  /**
+   * In the subject's own subdivision by the one ground decision
+   * (lib/pricing/plat-ground.ts): its recorded plat, a phase, an alias
+   * sibling, or a family plat inside its neighborhood or community polygon.
+   */
   inPlat: boolean
+  /**
+   * In the plat level through a phase, an alias sibling or a family plat, not
+   * the recorded plat itself. The level is then named by the family, so the
+   * place the median was read over is the place it names.
+   */
+  inPlatBeyondOwn?: boolean
   /** In the subject's subdivision family (the plat itself included). */
   inFamily: boolean
   /** Carries the subject's own MLS SubdivisionName, in the subject's city. */
@@ -295,13 +312,40 @@ export function anchorSampler(subject: AnchorSubjectPlace): (sale: AnchorSalePla
   const city = knownCity(subject.citySlug)
   const inFamily = subdivisionFamilyOf(subject.platSlug)
   const plat = (subject.platSlug ?? '').trim() || null
+  // THE PLAT LEVEL IS THE SUBJECT'S OWN SUBDIVISION (Matt 2026-10-08, "Yes,
+  // everywhere"): the recorded plat, a phase of it, an alias sibling, or a
+  // recorded addition or phase of its family inside the subject's own
+  // neighborhood or community polygon, by the one ground decision the walks
+  // seat own-plat sales on (lib/pricing/plat-ground.ts). Polygon only: a sale
+  // no plat holds is not at this level. The family level below still reads
+  // the whole family in the city.
+  const ground = plat
+    ? ownPlatGround({
+        subdivisionSlug: plat,
+        subdivisionNorm: subject.subdivisionNorm,
+        city,
+        latitude: subject.latitude,
+        longitude: subject.longitude,
+        marketArea: subject.marketArea,
+      })
+    : null
   return (sale) => {
     const sameCity = Boolean(city && knownCity(sale.citySlug) === city)
     const salePlat = (sale.platSlug ?? '').trim() || null
-    const inPlat = Boolean(plat && salePlat && salePlat === plat)
+    const inPlat = Boolean(
+      ground &&
+        salePlat &&
+        platReach(ground, salePlat, {
+          latitude: sale.latitude,
+          longitude: sale.longitude,
+          ...(sale.marketArea?.trim() ? { marketArea: sale.marketArea } : {}),
+          city: knownCity(sale.citySlug),
+        }) != null,
+    )
     return {
       ppsf: sale.ppsf,
       inPlat,
+      ...(inPlat && salePlat !== plat ? { inPlatBeyondOwn: true } : {}),
       inFamily: inPlat || (sameCity && inFamily(salePlat)),
       sameSubdivisionName: Boolean(subject.subdivisionNorm && sameCity && sale.subdivisionNorm === subject.subdivisionNorm),
       inCommunity: Boolean(subject.communitySlug && sale.communitySlug === subject.communitySlug),
@@ -344,8 +388,13 @@ export function anchorFromSamples(
       .filter(pick)
       .map((s) => s.ppsf)
       .filter(usablePpsf)
+  // The plat level reads the subject's own subdivision; when that reached a
+  // phase, an alias sibling or a family plat, it is named by the family.
+  const platWhere = samples.some((s) => s.inPlat && s.inPlatBeyondOwn === true && usablePpsf(s.ppsf))
+    ? (names.family ?? names.plat ?? null)
+    : (names.plat ?? null)
   const levels: Array<{ source: PriceAnchorSource; where: string | null; rates: () => number[]; radiusMiles?: number }> = [
-    { source: 'plat', where: names.plat ?? null, rates: () => rates((s) => s.inPlat) },
+    { source: 'plat', where: platWhere, rates: () => rates((s) => s.inPlat) },
     { source: 'family', where: names.family ?? null, rates: () => rates((s) => s.inPlat || s.inFamily) },
     { source: 'subdivision', where: names.subdivision ?? null, rates: () => rates((s) => s.sameSubdivisionName) },
     { source: 'community', where: names.community ?? null, rates: () => rates((s) => s.inCommunity) },
@@ -551,8 +600,12 @@ export function streetKey(address: string | null | undefined): string | null {
  * THE OTHER EXEMPTION: THE SUBJECT'S OWN PLAT (Matt 2026-09-10, "two
  * exemptions and only two"). A sale inside it IS the subject's price tier. An
  * adjacent plat is a different plat and is graded like anything else.
- * Phases of one ordinary subdivision are that plat (Matt 2026-10-06). An
- * addition inside a community, and a phase of a registry community, are not.
+ * Phases of one ordinary subdivision are that plat (Matt 2026-10-06). Since
+ * 2026-10-08 ("Yes, everywhere") a recorded addition or phase of the
+ * subject's subdivision family that sits in the subject's own neighborhood or
+ * community polygon is its own subdivision too; that decision is onOwnPlat in
+ * lib/pricing/plat-ground.ts, and samePlat below is only its plat-and-phase
+ * part.
  *
  * Keys, not names: `subdivisionSlug` is the RECORDED plat polygon both homes
  * were resolved against, and `subdivisionNorm` the MLS SubdivisionName
@@ -582,8 +635,12 @@ export type PlatKeys = {
  * slugs for the adjacent-plat rung.
  *
  * Moved here from lib/pricing/match.ts on 2026-09-30 so both exemptions live in
- * one file: the ladder's same-subdivision rung and the comparability judge's
- * own-plat restoration (lib/cma/judge.ts) read the same definition.
+ * one file. Since Matt's 2026-10-08 ruling ("Yes, everywhere") this pairwise
+ * test is no longer the own-plat decision: a recorded addition or phase of the
+ * subject's subdivision inside its neighborhood is its own subdivision too,
+ * and every rule asks onOwnPlat in lib/pricing/plat-ground.ts, which reads
+ * this test's keys as its 'plat' relation (held equal pairwise by
+ * lib/pricing/plat-ground.test.ts).
  */
 export function samePlat(subject: PlatKeys, sale: PlatKeys): boolean {
   if (subject.subdivisionSlug && sale.subdivisionSlug) {

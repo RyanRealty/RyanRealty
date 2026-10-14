@@ -25,7 +25,12 @@ function positive(n: number | null | undefined): number | null {
 
 export function resolveAskPosition(input: {
   lastListPrice?: number | null
-  /** MLS OriginalListPrice. It is the first ask even when the exposure starts later. */
+  /**
+   * The first ask of the listing's last stretch on the market (Matt
+   * 2026-10-08, lib/cma/last-stretch.ts subjectFirstAsk): the price in effect
+   * when that stretch began, never an ask from an earlier stretch or a Coming
+   * Soon price changed before it went Active.
+   */
   originalListPrice?: number | null
   exposure?: AskExposureLike | null
 }): AskPosition {

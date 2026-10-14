@@ -5,6 +5,7 @@ import { sendEvent, type LeadEventPerson } from '@/lib/crm/send-event'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { cookies } from 'next/headers'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
+import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated, fireNonLeadEvent } from '@/lib/lead-tracking'
 
@@ -18,10 +19,11 @@ async function fireCapiLead(args: {
   lastName?: string | null
   eventSourceUrl: string
   contentName: string
-  value: number
 }): Promise<string | null> {
   const eventId = generateEventId()
   try {
+    const sharing = await visitorCapiConsent()
+    if (!sharing.allowed) return eventId
     await fetch(`${SITE_URL}/api/meta-capi`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -33,10 +35,10 @@ async function fireCapiLead(args: {
         lastName: args.lastName ?? undefined,
         eventId,
         eventSourceUrl: args.eventSourceUrl,
+        consentCookie: sharing.consentCookie,
+        secGpc: sharing.secGpc,
         customData: {
           content_name: args.contentName,
-          value: args.value,
-          currency: 'USD',
         },
       }),
     })
@@ -121,18 +123,12 @@ export async function submitPageCTA(input: {
       message: input.context ?? 'page-cta',
     })
 
-    const value =
-      input.leadType === 'seller' ? 500 :
-      input.leadType === 'buyer' ? 300 :
-      input.leadType === 'newsletter' ? 50 :
-      150
     await fireCapiLead({
       eventName: 'Lead',
       email,
       phone,
       eventSourceUrl: `${SITE_URL}/`,
       contentName: `page_cta_${input.leadType ?? 'general'}${input.area ? `_${input.area}` : ''}`,
-      value,
     })
 
     // Canonical tagging + ledger row against the native person id sendEvent
@@ -253,7 +249,6 @@ export async function submitRentalLead(input: {
       eventName: 'Lead', email, phone, firstName, lastName,
       eventSourceUrl: pageUrl,
       contentName: 'rental_calculator_lead',
-      value: 300,
     })
 
     // Canonical tags MUST be awaited on serverless (the lambda freezes on return).
@@ -377,13 +372,10 @@ export async function submitTetherowLead(input: {
       message,
     })
 
-    // Luxury Tetherow paid leads are high-value.
-    const value = isSeller ? 1000 : 600
     await fireCapiLead({
       eventName: 'Lead', email, phone, firstName, lastName,
       eventSourceUrl: pageUrl,
       contentName: `tetherow_${input.intent}`,
-      value,
     })
 
     // Canonical tags (correct audience trigger) + preserved resort context.

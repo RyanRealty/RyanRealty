@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * G4 lock: account / LP / guest saved-search enrollment writes listing_alerts
+ * G4 lock: account / guest / broker saved-search enrollment writes listing_alerts
  * with the native crm_people.id. Sends never read legacy saved_searches.
  *
  *   node scripts/check-listing-alert-enroll.mjs
@@ -56,11 +56,9 @@ checks.push({
   ok: /stampListingAlertsCrmPerson\(email, crmPersonId\)/.test(account),
 })
 
-const lp = src('app/lp/buyer-listing-alerts/actions.ts')
-checks.push({
-  label: 'buyer LP passes crmPersonId (native id) into upsertListingAlert',
-  ok: /crmPersonId: nativeCrmPersonId\(eventResult\.ok \? eventResult\.personId : null\)/.test(lp),
-})
+// The buyer LP's check (/lp/buyer-listing-alerts) retired with its action on
+// 2026-10-04: no form had called it since the page became a redirect. The
+// live alert writers are the guest, account and broker paths pinned here.
 
 // The newsletter.ts admin bulk-assign duplicate was deleted 2026-09-01 as a
 // zero-caller export; the LIVE bulk path is the assign-saved-search handler

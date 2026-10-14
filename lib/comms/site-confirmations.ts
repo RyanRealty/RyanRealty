@@ -15,8 +15,8 @@
  * is honest and "within five minutes" would be a promise nobody wrote down. No
  * figures live here at all: the place-page confirmation carries the verdict and
  * the comp count because that page computed them (lib/cma/request-emails.ts);
- * the contact form, the alert captures and the expired LP compute nothing, so
- * they claim nothing (§0).
+ * the contact form and the alert captures compute nothing, so they claim
+ * nothing (§0).
  *
  * Transport copied from sendPlaceValueConfirmation: the Gmail rail, the assigned
  * broker's own mailbox with their signature appended, an idempotency key per
@@ -176,12 +176,17 @@ export async function sendAlertConfirmation(params: {
     // that begins const home, and the contract test anchors its
     // promises-no-feed slice on that exact line.
     const watched = what || 'that home'
+    const areaWatch = !params.listingUrl
     const bodyText = [
       greet(params.firstName),
       '',
-      `We are watching the price on ${watched}.`,
+      areaWatch
+        ? `We are watching the price on homes in ${watched}.`
+        : `We are watching the price on ${watched}.`,
       '',
-      'If the seller changes it, you get one email about that change. Nothing else, and you can stop it from any of them.',
+      areaWatch
+        ? 'If a seller changes the asking price, you get one email about that change. Nothing else, and you can stop it from any of them.'
+        : 'If the seller changes it, you get one email about that change. Nothing else, and you can stop it from any of them.',
       params.listingUrl ? `\nThe home: ${params.listingUrl}` : null,
       '',
       `${signer.firstName} can tell you what comparable homes actually closed at, and whether this one is priced to sit. Pick a time whenever you want one: ${signer.bookHref}`,
@@ -310,46 +315,6 @@ export async function sendPaymentEstimate(params: {
     source: 'listing-payment',
     broker: signer.crmSlug,
     subject: `Your payment estimate for ${params.address}`,
-    bodyText,
-  })
-}
-
-/**
- * /lp/expired-listing.
- *
- * Deliberately thin: no verdict, no figure, no report. The CMA the submit queues
- * still carries notifyLead:false ("the owner never asked us for a report",
- * app/lp/expired-listing/actions.ts), and this acknowledges the submit itself so
- * an owner is not left wondering whether the form worked.
- */
-export async function sendExpiredAcknowledgment(params: {
-  personId: number | null
-  leadEmail: string
-  firstName?: string | null
-  address?: string | null
-}): Promise<SiteConfirmationResult> {
-  if (params.personId == null) return { ok: false, via: 'skipped', error: 'no crm person for the lead' }
-  const signer = await resolveSigner(params.personId)
-  const address = params.address?.trim()
-
-  const bodyText = [
-    greet(params.firstName),
-    '',
-    `We got your request${address ? ` about ${address}` : ''}.`,
-    '',
-    `${signer.firstName} gets it right away and will reach out personally to talk through what happened and what we would do differently.`,
-    '',
-    `If you would rather pick the time yourself, here is the calendar: ${signer.bookHref}`,
-  ].join('\n')
-
-  return send({
-    personId: params.personId,
-    to: params.leadEmail,
-    purpose: 'expired:acknowledgment',
-    idempotencyKey: `expired-ack:${params.personId}:${(address ?? 'no-address').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60)}`,
-    source: 'expired-lp',
-    broker: signer.crmSlug,
-    subject: address ? `We got your note about ${address}` : 'We got your note',
     bodyText,
   })
 }

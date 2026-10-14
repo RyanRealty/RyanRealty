@@ -501,7 +501,7 @@ async function renderZipPage({ params }: { params: Promise<Params> }) {
 
   const verdictSentence =
     verdict && mosText != null
-      ? `ZIP ${zip} is a ${verdict.label.toLowerCase()} at ${mosText} months of supply.`
+      ? `ZIP ${zip} has ${mosText} months of supply.`
       : activeCount != null && activeCount > 0
         ? `${activeCount.toLocaleString('en-US')} active ${listingNoun} ${activeCount === 1 ? 'listing' : 'listings'} in ${zip}.`
         : null
@@ -517,7 +517,7 @@ async function renderZipPage({ params }: { params: Promise<Params> }) {
   // homes-for-sale form. Family consistency is gated: ci:market-question.
   const marketHeadline =
     verdict && mosText != null
-      ? `Is ZIP ${zip} a buyer's or seller's market?`
+      ? `How many months of supply does ZIP ${zip} have?`
       : placeHomesForSaleHeading(zip)
 
   // ── THE FIELD ────────────────────────────────────────────────────────────

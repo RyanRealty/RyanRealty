@@ -145,6 +145,8 @@ export function useEngagementTracking(
           trackEvent('section_view' as Parameters<typeof trackEvent>[0], {
             section_id: sectionId,
             page_type: resolvedPageType,
+            // Same surface this hook stamps on its first-party scroll_depth.
+            surface: 'experience',
             position,
           })
         }

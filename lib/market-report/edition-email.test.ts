@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { checkCitations, extractInternalLinks } from '@/lib/newsletter/pre-send-gates'
 import { buildEditionEmail } from './edition-email'
+import { marketReportCampaign } from '@/lib/analytics/utm'
 import type { EditionPayload, Fig, Kpis, MarketSection } from './types'
 
 /**
@@ -110,7 +111,8 @@ describe('buildEditionEmail', () => {
     expect(body).toContain('291 homes sold, 38 fewer than August 2025')
     expect(body).toContain('38 days median time to go under contract')
     // 4.02 prints 4.1: the site-wide rule never lets the digits cross a verdict line.
-    expect(body).toContain('4.1 months of supply, a balanced market')
+    expect(body).toContain('4.1 months of supply')
+    expect(body).not.toMatch(/seller's market|buyer's market|balanced market/i)
     expect(body).toContain('1,261 homes for sale at the end of August, against 1,882 sales over the past six months.')
     expect(body).toContain('Single-family homes on less than an acre')
   })
@@ -150,12 +152,14 @@ describe('buildEditionEmail', () => {
   })
 
   it('links the edition page, its PDF and the archive on our domain', () => {
+    const campaign = marketReportCampaign('2026-08')
+    const q = `utm_source=newsletter&utm_medium=email&utm_campaign=${campaign}`
     expect(extractInternalLinks(email.bodyHtml)).toEqual([
-      'https://ryan-realty.com/housing-market/reports/monthly/2026-08',
-      'https://ryan-realty.com/housing-market/reports/monthly/2026-08/pdf',
-      'https://ryan-realty.com/housing-market/reports/monthly',
+      `https://ryan-realty.com/housing-market/reports/monthly/2026-08?${q}`,
+      `https://ryan-realty.com/housing-market/reports/monthly/2026-08/pdf?${q}`,
+      `https://ryan-realty.com/housing-market/reports/monthly?${q}`,
     ])
-    expect(email.bodyText).toContain('Download the PDF: https://ryan-realty.com/housing-market/reports/monthly/2026-08/pdf')
+    expect(email.bodyText).toContain('Download the PDF: https://ryan-realty.com/housing-market/reports/monthly/2026-08/pdf\n')
     expect(email.bodyText).toContain('Every monthly report since January 2006')
   })
 
@@ -185,7 +189,7 @@ describe('buildEditionEmail', () => {
 
   it('writes a preheader that matches the body figures', () => {
     expect(email.previewText).toBe(
-      'The median single-family home on less than an acre in Central Oregon sold for $640,000 in August. 4.1 months of supply: a balanced market.',
+      'The median single-family home on less than an acre in Central Oregon sold for $640,000 in August. 4.1 months of supply.',
     )
   })
 

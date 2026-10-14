@@ -8,13 +8,15 @@ This is the Admin-side click trail for everything the codebase wires automatical
 
 ### 2026-08-10 — volume repair (server MP)
 
-First-party `visitor_*` is the product scoreboard. Client gtag undercounts hard under Consent Mode denied-by-default + ad blockers (~30 sessions/week vs thousands of FP sessions/day).
+First-party `visitor_*` is the product scoreboard. Through 2026-10-08 client gtag undercounted hard under Consent Mode denied-by-default + ad blockers (~30 sessions/week vs thousands of FP sessions/day). Region defaults (analytics granted outside EEA/UK/CH) shipped 2026-10-08; see `docs/GTM_CONSENT_REGION_DEFAULTS.md` and `docs/TRACKING_POLICY.md`.
 
 **Shipped:** `POST /api/visitors/track` mirrors `page_view` / `listing_view` to GA4 via Measurement Protocol when the browser does not already have a live `_ga` cookie (or consent is essential-only). Requires `GA4_API_SECRET` (present in Vercel production). See `docs/plans/seo-voice/MEASUREMENT_DUAL_SOURCE.md`.
 
 **Still UI-only (API cannot set):** Reporting identity → **Blended**. Admin → Property settings → Data display → Reporting identity.
 
 ---
+
+> **Google Signals is ON.** It was turned off through the GA4 Admin API on 2026-10-08 and turned back on the same evening (7:01 PM PT) at Matt's call; Analytics confirmed `GOOGLE_SIGNALS_ENABLED` on property 527333348. Demographics and cross-device reports may show a gap for that day.
 
 ## Status as of 2026-08-10 (re-verified live via Admin API)
 
@@ -70,7 +72,7 @@ Total time to read this doc end-to-end: 10 minutes. Total time to actually do th
 
 ---
 
-## Part 2 — Google Signals (unlocks Demographics + Interests + cross-device)
+## Part 2: Google Signals (unlocks Demographics + Interests + cross-device)
 
 **Why this matters:** Signals is the GA4 feature that turns anonymous visits into rich demographic and interest data — `age 25–34`, `Real Estate Enthusiasts`, `Bend Oregon area`, etc. It's also what enables Google's conversion modeling (filling in conversions for visitors who declined cookies).
 

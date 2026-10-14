@@ -15,6 +15,7 @@ import {
   yoyCanCarryHeadline,
   HEADLINE_MIN_SOLD_COUNT,
 } from './market-report-email'
+import { marketReportCampaign } from '@/lib/analytics/utm'
 import type {
   MarketReportAreaBlock,
   MarketTrendSummary,
@@ -129,9 +130,9 @@ describe('formatMonths', () => {
 
 describe('verdictLabel', () => {
   it('maps each verdict to a sentence-case phrase', () => {
-    expect(verdictLabel('sellers')).toBe("Seller's market")
-    expect(verdictLabel('balanced')).toBe('Balanced market')
-    expect(verdictLabel('buyers')).toBe("Buyer's market")
+    expect(verdictLabel('sellers')).toBe('—')
+    expect(verdictLabel('balanced')).toBe('—')
+    expect(verdictLabel('buyers')).toBe('—')
     expect(verdictLabel(null)).toBe('—')
   })
 })
@@ -187,7 +188,7 @@ describe('buildHeadline', () => {
   })
   it('falls back to the verdict when no YoY exists', () => {
     const h = buildHeadline([block({ yoyPct: null })])
-    expect(h).toBe("Bend is a seller's market with 3.5 months of supply")
+    expect(h).toBe('Bend has 3.5 months of supply')
   })
   it('falls back to the median when neither exists', () => {
     const h = buildHeadline([
@@ -254,7 +255,7 @@ describe('headline sample floor (§0 judgment, not §0 citation)', () => {
     const h = buildHeadline([thinArea()])
     expect(h).not.toContain('17.1%')
     expect(h).not.toContain('from a year ago')
-    expect(h).toBe("Old Bend is a buyer's market with 7.2 months of supply")
+    expect(h).toBe('Old Bend has 7.2 months of supply')
   })
 
   it('a thin-sample area cannot take the headline from a well-sampled one', () => {
@@ -271,7 +272,7 @@ describe('headline sample floor (§0 judgment, not §0 citation)', () => {
     const solo = buildSubject([thinArea()])
     expect(solo).not.toContain('17.1%')
     expect(solo).not.toContain('from a year ago')
-    expect(solo).toBe("Old Bend is a buyer's market with 7.2 months of supply")
+    expect(solo).toBe('Old Bend has 7.2 months of supply')
     // And with no verdict either, it degrades to the plain area framing.
     expect(buildSubject([thinArea({ marketVerdict: null, monthsOfSupply: null, medianPrice: null })])).toBe(
       'Old Bend market update',
@@ -341,13 +342,13 @@ describe('reportCtaUrl (conversion-audit #2/#8 — seller-framed destination + U
   it('sends a city area to /housing-market/<city>, not the buyer storefront', () => {
     const url = reportCtaUrl({ slug: 'bend', geoType: 'city', href: '/cities/bend' })
     expect(url).toBe(
-      'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report',
+      `https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=${marketReportCampaign()}#market-report`,
     )
   })
   it('sends a neighborhood/community area to its geo page AT the market section', () => {
     const url = reportCtaUrl({ slug: 'tetherow', geoType: 'neighborhood', href: '/communities/tetherow' })
     expect(url).toBe(
-      'https://ryan-realty.com/communities/tetherow?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report',
+      `https://ryan-realty.com/communities/tetherow?utm_source=crm&utm_medium=email&utm_campaign=${marketReportCampaign()}#market-report`,
     )
   })
 })
@@ -366,15 +367,13 @@ describe('renderMarketReportEmail', () => {
     expect(out.html).toContain('Hi Jordan,')
     expect(out.html).toContain('$721,000')
     expect(out.html).toContain('25 days')
-    expect(out.html).toContain("Seller's market")
+    expect(out.html).not.toMatch(/Seller's market|Buyer's market|Balanced market/)
     expect(out.html).toContain('3.5 months of supply')
     expect(out.html).toContain('↓ 1.2% YoY')
     // The CTA lands on the seller-framed report page, never the buyer
     // storefront at /cities/bend (conversion-audit 2026-07-15 #2), and
     // carries GA4 UTMs (#8) plus the market-section anchor.
-    expect(out.html).toContain(
-      'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report',
-    )
+    expect(out.html).toContain(reportCtaUrl(block()))
     expect(out.html).not.toContain('https://ryan-realty.com/cities/bend')
     expect(out.html).toContain(UNSUB)
     // The one branded frame (lib/email/shell.ts): masthead + navy + 640px sheet.
@@ -452,7 +451,7 @@ describe('renderMarketReportEmail', () => {
     expect(out.html).toContain('Bend')
     expect(out.html).toContain('Tetherow')
     expect(out.html).toContain('$1,700,000')
-    expect(out.html).toContain("Buyer's market")
+    expect(out.html).not.toMatch(/Seller's market|Buyer's market|Balanced market/)
     expect(out.html).toContain('MARKET REPORT · CENTRAL OREGON')
   })
 

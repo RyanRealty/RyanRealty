@@ -37,15 +37,20 @@ import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing
 import {
   cameOffStatus,
   cameOffThenSentence,
-  lastActiveRun,
+  askInEffectAt,
+  lastActiveRunTimed,
+  mlsEventMillis,
+  stretchRestarted,
   mergeStatusChanges,
   pacificDay,
   pacificDaysBetween,
   sameStatus,
+  type AskChange,
   type ListingStatusChange,
 } from '@/lib/cma/listing-status'
 import type { ListingTimelineInput, ListingTimelineStep } from '@/lib/cma/market-charts'
 import { askStoryReading } from '@/lib/cma/ask-story'
+import { cycleOpeningAsk } from '@/lib/cma/last-stretch'
 import { askStepIsOwnEra } from '@/lib/cma/price-path'
 import { reanchorSellerNet } from '@/lib/pricing/seller-net'
 import { priceUnderFailedAsk, type FailedAskPullFacts } from '@/lib/pricing/failed-ask-under'
@@ -288,6 +293,13 @@ export interface ExpiredFinalCycle {
   statusDate?: string | null
   /** List date to off-market date — `finalCycleDaysOnMarket`, one definition. */
   days: number | null
+  /**
+   * True when this stretch is not the listing's first: it was withdrawn,
+   * expired, canceled or out of contract and came back (Matt 2026-10-08). The
+   * letter says the days and the first ask run from when it last came on the
+   * market. Absent on rows built before.
+   */
+  restarted?: boolean
   /** §0 trace: where each field came from. */
   source: { table: string; filter: string; fetchedAt: string; query: string }
 }
@@ -313,21 +325,37 @@ export function cycleOnTheMarket(
   changes: readonly ListingStatusChange[] | null | undefined,
 ): BpoListingCycle {
   const log = mergeStatusChanges(changes ?? [])
-  const run = lastActiveRun({
+  const run = lastActiveRunTimed({
     changes: log,
     onMarketDate: cycle.listDate,
     offMarketDate: cycle.offMarketDate,
     status: cycle.status,
   })
-  if (!run || run.source !== 'status-history' || !run.from) return cycle
+  // ONE CLOCK, THE LAST STRETCH (Matt 2026-10-08): the moment it began, so
+  // the first ask is the ask in effect then, and whether it is the listing's
+  // first stretch, so the letter can say when it is not.
+  const stretchOf = (from: string | null, at: string | null) => ({
+    listedAt: at ?? cycle.listDate,
+    restarted: stretchRestarted({
+      from: from ?? cycle.listDate,
+      changes: log,
+      firstOnMarketAt: cycle.firstOnMarketAt ?? null,
+      listedAt: cycle.listDate,
+    }),
+  })
+  if (!run || run.source !== 'status-history' || !run.from) {
+    return { ...cycle, ...stretchOf(null, cycle.listDate) }
+  }
+  const stretch = stretchOf(run.from, run.fromAt)
   const tookRecord = [...log].reverse().find((c) => sameStatus(c.to, cycle.status))
   const recordDay = pacificDay(tookRecord?.at ?? null) ?? pacificDay(cycle.offMarketDate)
-  if (!run.to) return { ...cycle, listDate: run.from }
+  if (!run.to) return { ...cycle, ...stretch, listDate: run.from }
   // Only a status that differs from the record's is worth carrying: the same
   // status is already the word every surface prints.
   const leftActiveAs = run.leftAs && !sameStatus(run.leftAs, cycle.status) ? run.leftAs : null
   return {
     ...cycle,
+    ...stretch,
     listDate: run.from,
     offMarketDate: run.to,
     leftActiveAs,
@@ -346,6 +374,70 @@ function dayString(value: string | null | undefined): string | null {
   return pacificDay(value ?? null)
 }
 
+/** A recorded ask change as the price-event read carries it. */
+type CyclePriceEvent = { date?: string; ask: number; at?: string | null; previousAsk?: number | null }
+
+/**
+ * The ask in effect the moment the failed listing's last stretch on the market
+ * began, and whether a recorded change or a restart placed it (`placed`).
+ *
+ * Placed: the last recorded ask change at or before that moment, else the ask
+ * the first later change moved off of, else the opening ask, and on a stretch
+ * that came back with no change on record only when the ask never moved
+ * (`askInEffectAt`). Not placed: the MLS OriginalListPrice, which is the
+ * listing's opening ask, Coming Soon included. Null when the record cannot
+ * say; never the final ask.
+ */
+function stretchOpeningAsk(
+  cycle: BpoListingCycle,
+  priceEvents: ReadonlyArray<CyclePriceEvent> | null | undefined,
+): { ask: number | null; placed: boolean } {
+  const startAt = cycle.listedAt ?? cycle.listDate ?? null
+  const timed: AskChange[] = (priceEvents ?? []).flatMap((e) => {
+    const to = positiveAsk(e.ask)
+    return e.at && to != null ? [{ at: e.at, from: positiveAsk(e.previousAsk), to }] : []
+  })
+  if (Number.isFinite(mlsEventMillis(startAt)) && (timed.length > 0 || cycle.restarted === true)) {
+    return {
+      ask: askInEffectAt(timed, startAt, {
+        openingAsk: cycle.originalListPrice,
+        currentAsk: cycle.finalListPrice,
+        restarted: cycle.restarted === true,
+      }),
+      placed: true,
+    }
+  }
+  return { ask: positiveAsk(cycle.originalListPrice), placed: false }
+}
+
+/**
+ * THE PRICE READS THE LETTER'S CLOCK (Matt 2026-10-08, "Yes, after this
+ * landing"). Rule 16's failed-ask pull asks whether the subject's ask was cut,
+ * and from what. That is measured on its last stretch on the market, from the
+ * ask in effect when it went Active: the same first ask the letter prints
+ * (rule 28). 20676 Wild Rose's MLS OriginalListPrice is $625,000, a Coming
+ * Soon price changed to $599,900 fourteen seconds before it went Active; on
+ * its last stretch it asked $599,900 the whole time and was never cut, so the
+ * pull reads it as a known ask that did not come down.
+ *
+ * `cycle` is the failed cycle after `cycleOnTheMarket` (its last Active
+ * stretch), and `priceEvents` the dated ask changes the build reads for it. A
+ * stretch whose first ask the record cannot say has no original ask to judge
+ * a cut by (null, rule 16's smaller extra), never an earlier stretch's ask
+ * and never the final ask. With no cycle the MLS OriginalListPrice stands, as
+ * every build read it before. Read for a stale cycle too: the story is
+ * suppressed past FAILED_ASK_RECENCY_MONTHS, the pull is not.
+ */
+export function failedAskCutOriginal(args: {
+  cycle: BpoListingCycle | null | undefined
+  priceEvents?: ReadonlyArray<CyclePriceEvent> | null
+  /** OriginalListPrice off the failed listing's MLS row, for a subject with no cycle. */
+  mlsOriginalListPrice?: number | null
+}): number | null {
+  if (!args.cycle) return positiveAsk(args.mlsOriginalListPrice)
+  return stretchOpeningAsk(args.cycle, args.priceEvents).ask
+}
+
 /**
  * Build the timeline from the final cycle plus whatever dated price events the
  * record holds. Pure — the caller does the reading (lib/pricing/local-outcomes
@@ -358,7 +450,8 @@ function dayString(value: string | null | undefined): string | null {
  */
 export function buildFinalCycle(args: {
   cycle: BpoListingCycle | null | undefined
-  priceEvents?: ReadonlyArray<{ date: string; ask: number }>
+  /** `at` is the change's timestamp and `previousAsk` the ask before it, when the read carries them. */
+  priceEvents?: ReadonlyArray<{ date: string; ask: number; at?: string | null; previousAsk?: number | null }>
   listingKey?: string | null
   fetchedAt?: string
 }): ExpiredFinalCycle | null {
@@ -366,7 +459,20 @@ export function buildFinalCycle(args: {
   if (!cycle) return null
   const listDate = dayString(cycle.listDate)
   const offMarketDate = dayString(cycle.offMarketDate)
-  const initialAsk = positiveAsk(cycle.originalListPrice) ?? positiveAsk(cycle.finalListPrice)
+  // THE FIRST ASK IS THE ASK IN EFFECT WHEN THE LAST STRETCH BEGAN (Matt
+  // 2026-10-08). 20676 Wild Rose was Coming Soon at $625,000, changed to
+  // $599,900 at 04:05:49 UTC and went Active 14 seconds later; the letter said
+  // "You first asked $625,000" and "Asked $625K on Sep 2". OriginalListPrice
+  // is the opening ask of the listing, Coming Soon included, so it stands only
+  // when no recorded change places the ask at that moment.
+  const startAt = cycle.listedAt ?? cycle.listDate ?? null
+  const startMs = mlsEventMillis(startAt)
+  // A stretch that came back with no recorded change to place its ask has no
+  // known opening ask unless the ask never moved: never the earlier stretch's.
+  // Unplaced, a row with no OriginalListPrice draws its final ask flat; the
+  // failed-ask pull does not take that as an original (failedAskCutOriginal).
+  const opening = stretchOpeningAsk(cycle, args.priceEvents)
+  const initialAsk = opening.placed ? opening.ask : (opening.ask ?? positiveAsk(cycle.finalListPrice))
   const finalAsk = positiveAsk(cycle.finalListPrice)
   const days = finalCycleDaysOnMarket(cycle)
 
@@ -378,6 +484,9 @@ export function buildFinalCycle(args: {
     if (!date || ask == null) continue
     if (listDate && date < listDate) continue
     if (offMarketDate && date > offMarketDate) continue
+    // A change at or before the moment the stretch began is already its
+    // opening ask, not a step the market saw.
+    if (e.at && Number.isFinite(startMs) && mlsEventMillis(e.at) <= startMs) continue
     // The opening ask is the line's start, not a step in it.
     if (initialAsk != null && ask === initialAsk && dated.length === 0) continue
     const k = `${date}|${ask}`
@@ -407,6 +516,7 @@ export function buildFinalCycle(args: {
     ...(leftActiveAs ? { leftActiveAs } : {}),
     ...(statusDate ? { statusDate } : {}),
     days,
+    ...(cycle.restarted ? { restarted: true } : {}),
     source: {
       table: 'listings + price_history + listing_history + status_history',
       filter:
@@ -414,7 +524,8 @@ export function buildFinalCycle(args: {
         `listDate and offMarketDate are the Pacific days the last Active stretch began and ended, from the MLS ` +
         `status log (listing_history 'MlsStatus: A → B' and status_history), else listings."ListDate" (falling back ` +
         `to "OnMarketDate") and listings.off_market_date (falling back to status_change_timestamp); ` +
-        `initialAsk from "OriginalListPrice", finalAsk from "ListPrice", ` +
+        `initialAsk is the ask in effect when the last Active stretch began (the last recorded ask change at or before that ` +
+        `moment), else "OriginalListPrice"; finalAsk from "ListPrice", ` +
         `days = list date to off-market date in whole calendar days. ` +
         (cutsDated
           ? `${dated.length} dated ask change(s) inside the cycle window from price_history.new_price and the ` +
@@ -611,8 +722,19 @@ export function buildAskExposure(args: {
   const final = segments[segments.length - 1]!
 
   // Second person: this is the reader's own listing (VOICE.md, Matt 2026-09-10).
-  const sentence =
-    segments.length === 1
+  // A listing that came back is told on its last stretch, and says so (Matt
+  // 2026-10-08, "Last stretch, labeled").
+  const sentence = cycle.restarted
+    ? segments.length === 1
+      ? `You asked ${usd(dominant.ask)} for all ${total.toLocaleString('en-US')} days since your home last came on the market.`
+      : `You asked ${usd(dominant.ask)} for ${dominant.days.toLocaleString(
+          'en-US',
+        )} of the ${total.toLocaleString('en-US')} days since your home last came on the market, ${pct1(
+          dominant.sharePct,
+        )} percent of that time. You came off at ${usd(final.ask)}, which you held for ${final.days.toLocaleString(
+          'en-US',
+        )}.`
+    : segments.length === 1
       ? `You asked ${usd(dominant.ask)} for all ${total.toLocaleString('en-US')} days you were on the market.`
       : `You asked ${usd(dominant.ask)} for ${dominant.days.toLocaleString(
           'en-US',
@@ -751,19 +873,26 @@ export function buildFailureFindings(args: {
   // MATERIAL path (3%+ or multiple cuts); a modest single trim gets a neutral
   // meaning, and the static-price observation only matters when the ask sat
   // above the supported range (fairness finding 2026-07-14).
-  if (cycle && cycle.originalListPrice && cycle.finalListPrice && cycle.originalListPrice > cycle.finalListPrice) {
-    const cut = cycle.originalListPrice - cycle.finalListPrice
-    const cutPct = (cut / cycle.originalListPrice) * 100
-    const cuts = cycle.priceCutCount ?? 0
+  // Measured from the first ask of the last stretch on the market (Matt
+  // 2026-10-08), the stretch the days above count: 20676 Wild Rose's
+  // $625,000 was a Coming Soon price it never went Active at. The MLS cut
+  // count covers the whole listing, so it is said only when the stretch
+  // opened at the listing's own original ask.
+  const stretchAsk = subject.stretch ? subject.stretch.firstAsk : (cycle?.originalListPrice ?? null)
+  const sinceBack = subject.stretch?.restarted ? ' since your home last came on the market' : ''
+  if (cycle && stretchAsk && cycle.finalListPrice && stretchAsk > cycle.finalListPrice) {
+    const cut = stretchAsk - cycle.finalListPrice
+    const cutPct = (cut / stretchAsk) * 100
+    const cuts = stretchAsk === cycle.originalListPrice ? (cycle.priceCutCount ?? 0) : 0
     findings.push({
       lens: 'price-cuts',
-      fact: `The asking price moved from ${usd(cycle.originalListPrice)} to ${usd(cycle.finalListPrice)}, a ${usd(cut)} reduction (${cutPct.toFixed(1)}%)${cuts > 0 ? ` over ${cuts} cut${cuts === 1 ? '' : 's'}` : ''}.`,
+      fact: `The asking price moved from ${usd(stretchAsk)} to ${usd(cycle.finalListPrice)}${sinceBack}, a ${usd(cut)} reduction (${cutPct.toFixed(1)}%)${cuts > 0 ? ` over ${cuts} cut${cuts === 1 ? '' : 's'}` : ''}.`,
       meaning: '',
     })
-  } else if (cycle && cycle.originalListPrice && cycle.originalListPrice === cycle.finalListPrice && askAboveRange) {
+  } else if (cycle && stretchAsk && stretchAsk === cycle.finalListPrice && askAboveRange) {
     findings.push({
       lens: 'price-cuts',
-      fact: `The asking price never moved from ${usd(cycle.originalListPrice)} across the full listing period.`,
+      fact: `The asking price never moved from ${usd(stretchAsk)} across the ${sinceBack ? `listing period${sinceBack}` : 'full listing period'}.`,
       meaning: '',
     })
   }
@@ -1039,6 +1168,113 @@ function failedAskP75(ask: number): number {
   return Math.round((FAILED_ASK_BACKTEST.closeP75Ratio * ask) / 1000) * 1000
 }
 
+/** "How closely it matches your home": the letter's one phrase for the weights. */
+const WEIGHTED_CLAUSE = 'once each is weighted by how closely it matches your home'
+
+/**
+ * Every first sentence the clamp sentence has been written with, so a
+ * renderer can take the stored one off and say what the printed grid
+ * supports instead (`splitFailedAskClampHead`).
+ */
+const FAILED_ASK_CLAMP_HEAD =
+  /^The sales support (?:a value of \$[\d,]+\.|a value near \$[\d,]+ once each is weighted by how closely it matches your home\.|the price on the cover once each is weighted by how closely it matches your home\.)\s*/
+
+/**
+ * NAME THE WEIGHTED FIGURE (Matt 2026-10-08). The clamp sentence's first
+ * sentence says what the sales support, and that is what their weights blend
+ * to: `reconciliation.weightedPrice`, to the thousand, the same rounding the
+ * letter prints as "near $X" (`expectedSaleNear`). 615 Reed Market said "The
+ * sales support a value of $533,000" (the list tier before the ceiling, with
+ * the list steps on it) while its weights blend to $510,945: a figure no
+ * weight on the page produces. When the weighted figure is the cover's own
+ * thousand the sentence names the cover, never its dollars twice. A row with
+ * no weighted price keeps the figure the evidence step recorded.
+ */
+export function failedAskClampHead(args: {
+  /** The list tier before the ceiling (`clamp.before`). Named only when no weighted price exists. */
+  supported: number
+  /** `reconciliation.weightedPrice`, whole dollars, or null when the row has none. */
+  weighted?: number | null
+  /** The list the letter prints. */
+  rec: number
+}): string {
+  const weighted = args.weighted
+  if (weighted == null || !Number.isFinite(weighted) || !(weighted > 0)) {
+    return `The sales support a value of ${clampUsd(args.supported)}.`
+  }
+  const near = Math.round(weighted / 1000) * 1000
+  if (sameMark(near, args.rec)) return `The sales support the price on the cover ${WEIGHTED_CLAUSE}.`
+  return `The sales support a value near ${clampUsd(near)} ${WEIGHTED_CLAUSE}.`
+}
+
+/**
+ * The stored clamp sentence split into its first sentence (what the sales
+ * support) and the rest (the ask, and why the cover sits where it does).
+ * Null when the sentence does not open with a head this module writes.
+ */
+export function splitFailedAskClampHead(sentence: string): { head: string; tail: string } | null {
+  const m = FAILED_ASK_CLAMP_HEAD.exec(sentence)
+  if (!m) return null
+  const tail = sentence.slice(m[0].length).trim()
+  return tail ? { head: m[0].trim(), tail } : null
+}
+
+/** `pricing.reconciliation.weightedPrice` when the row carries one. */
+function weightedPriceOf(pricing: { reconciliation?: { weightedPrice?: number | null } | null }): number | null {
+  const w = pricing.reconciliation?.weightedPrice
+  return typeof w === 'number' && Number.isFinite(w) && w > 0 ? w : null
+}
+
+/**
+ * Rule 16 (Matt 2026-10-08, delegated). The under-the-ask test reads the
+ * weighted price of the sales that set the price. When that price is already
+ * under the last ask, the failed-ask pull does not run. The recommendation is
+ * that price to the nearest thousand, the same figure the clamp line calls
+ * "near $X". A list tier above it is not used.
+ *
+ * 3037 Purcell blends to $561,188 under a $565,000 ask. The list tier was
+ * $576,000, and the pull printed $555,000. The cover is $561,000.
+ * 62475 Woodsman blends to $1,577,841 under a $1,600,000 ask. The list tier
+ * was $1,620,000, and the pull printed $1,576,000. The cover is $1,578,000.
+ *
+ * A nearest thousand that lands on or over the ask is not under the ask, so
+ * the pull still runs. A weighted price at or above the ask is unchanged
+ * here. A recommendation already under the weighted thousand is not raised:
+ * the street anchor sits between the two calls to this function, and this
+ * step does not put that price back up.
+ *
+ * Returns true when this branch owns the price and the pull must not run.
+ */
+function leaveWeightedPriceUnderAsk(
+  pricing: {
+    conservative: number
+    recommended: number
+    highEnd: number
+    valueLow?: number
+    valueHigh?: number
+    rangeRule?: { saleLow?: number; evidenceLow?: number } | null
+    reconciliation?: { weightedPrice?: number | null } | null
+  },
+  ask: number,
+): boolean {
+  const weighted = weightedPriceOf(pricing)
+  if (weighted == null || !(weighted < ask)) return false
+  const near = Math.round(weighted / 1000) * 1000
+  if (!(near > 0) || !(near < ask)) return false
+  if (pricing.recommended > near) pricing.recommended = near
+  // The list-from-close floor sits above this price (Purcell: $572,000 over
+  // the $561,188 blend). The high-DOM actives pull stops on the conservative
+  // tier, so that floor is not used. It falls to the closed-sale low when
+  // that low is at or under the recommendation.
+  if (pricing.conservative > pricing.recommended) {
+    const saleLow = closedSaleLow(pricing)
+    pricing.conservative =
+      saleLow != null && saleLow > 0 && saleLow <= pricing.recommended ? saleLow : pricing.recommended
+  }
+  if (pricing.highEnd > pricing.recommended && pricing.highEnd >= ask) pricing.highEnd = pricing.recommended
+  return true
+}
+
 /**
  * The sentence the document prints where the clamp binds.
  *
@@ -1056,8 +1292,10 @@ export function failedAskClampProse(args: {
   rec: number
   /** True when the ceiling was the recent-failure percentile, not the ask itself. */
   percentile: boolean
+  /** What the weights blend to (`reconciliation.weightedPrice`); the head names it when given. */
+  weighted?: number | null
 }): string {
-  const head = `The sales support a value of ${clampUsd(args.supported)}.`
+  const head = failedAskClampHead({ supported: args.supported, weighted: args.weighted, rec: args.rec })
   const because = `Because ${clampUsd(args.ask)} already failed to sell`
   const pairs = FAILED_ASK_BACKTEST.pairs.toLocaleString('en-US')
   const p75 = failedAskP75(args.ask)
@@ -1076,6 +1314,7 @@ function clampSentence(args: {
   ask: number
   printed: number
   phrase: string | null
+  weighted: number | null
 }): string {
   const percentile = args.phrase != null && /75th percentile/.test(args.phrase)
   return failedAskClampProse({
@@ -1084,6 +1323,7 @@ function clampSentence(args: {
     ceiling: args.printed,
     rec: args.printed,
     percentile,
+    weighted: args.weighted,
   })
 }
 
@@ -1118,6 +1358,8 @@ export function applyFailedAskCap(
     priceOverride?: number | null
     failedAskBelowRange?: boolean
     rangeRule?: { saleLow?: number; evidenceLow?: number } | null
+    /** What the printed weights blend to; the clamp sentence names it. */
+    reconciliation?: { weightedPrice?: number | null } | null
   },
   args: {
     lastFailedListPrice: number | null
@@ -1162,17 +1404,31 @@ export function applyFailedAskCap(
     pricing.failedAskBelowRange = true
     const note = failedAskBelowRangeNote(ask)
     if (!pricing.notes.includes(note)) pricing.notes.push(note)
-    const evidenceRec = priorBefore.get('recommended') ?? pricing.recommended
-    // Already under the ask: leave the comps. Do not pin the list up to a
-    // sale that sits on or above the ask that failed, and do not cut again.
-    if (evidenceRec < ask) {
-      reanchorSellerNet(pricing)
-      return { applied: false, cappedTo: null, uncappedRecommended: null, belowRange: true }
-    }
   }
   // A broker override with a note may sit below the sales. Do not lift or cut it.
   if (band && salesLow != null && pricing.recommended < salesLow && hasStoredBelowRangeReason(pricing)) {
     return none
+  }
+
+  // The weighted price of the sales that set the price is already under the
+  // ask. Leave it. Do not test the list tier, and do not pull again.
+  if (leaveWeightedPriceUnderAsk(pricing, ask)) {
+    reanchorSellerNet(pricing)
+    return {
+      applied: false,
+      cappedTo: null,
+      uncappedRecommended: null,
+      belowRange: pricing.failedAskBelowRange === true,
+    }
+  }
+  if (askBand && ask < askBand.low) {
+    const evidenceRec = priorBefore.get('recommended') ?? pricing.recommended
+    // No weighted price under the ask. The list tier is already under that
+    // ask: leave it. Do not pin the list up onto a sale, and do not cut again.
+    if (evidenceRec < ask) {
+      reanchorSellerNet(pricing)
+      return { applied: false, cappedTo: null, uncappedRecommended: null, belowRange: true }
+    }
   }
 
   let recent = false
@@ -1199,8 +1455,9 @@ export function applyFailedAskCap(
     askInsideBand && !hasStoredBelowRangeReason(pricing)
       ? Math.max(ceilings.highEnd.value, recCeil)
       : ceilings.highEnd.value
-  // Comps under the failed ask stay. Comps at or above it come under the ask
-  // by the small step in priceUnderFailedAsk. A percentile ceiling must not
+  // The list tier, used when no weighted price is under the ask. A list tier
+  // under the ask stays. A list tier at or above it comes under the ask by
+  // the small step in priceUnderFailedAsk. A percentile ceiling must not
   // take a second cut off a price that is already under, and it must not
   // leave the recommendation sitting on the ask.
   const evidenceRec = priorBefore.get('recommended') ?? pricing.recommended
@@ -1309,6 +1566,7 @@ export function applyFailedAskCap(
           ask,
           printed: pricing.recommended,
           phrase: ceilings[headline.tier].phrase,
+          weighted: weightedPriceOf(pricing),
         }),
       }
     : null
@@ -1346,7 +1604,11 @@ export function applyFailedAskCap(
  * the letter does not print two recommend prices.
  */
 export function rewriteFailedAskClampAfterRec<
-  T extends { recommended: number; clamp?: CmaPricingClamp | null },
+  T extends {
+    recommended: number
+    clamp?: CmaPricingClamp | null
+    reconciliation?: { weightedPrice?: number | null } | null
+  },
 >(pricing: T): T {
   const clamp = pricing.clamp
   if (!clamp || clamp.kind !== 'failed-ask') return pricing
@@ -1363,6 +1625,7 @@ export function rewriteFailedAskClampAfterRec<
           ceiling: clamp.after,
           rec,
           percentile,
+          weighted: weightedPriceOf(pricing),
         })
       : clamp.sentence
   const after = clamp.appliedTo === 'recommended' ? rec : clamp.after
@@ -1412,10 +1675,17 @@ export function resolveListingTimeline(input: {
 
   const steps: ListingTimelineStep[] = []
   if (cycle) {
-    if (cycle.initialAsk != null && cycle.initialAsk > 0) {
-      steps.push({ date: listDate, ask: cycle.initialAsk })
+    // The opening ask as the market saw it: an ask changed on the day the
+    // stretch began replaces the one before it, which never ran a day (Matt
+    // 2026-10-08; 20676 Wild Rose drew "Asked $625K on Sep 2", its Coming
+    // Soon price). The ask exposure reads the cycle the same way.
+    const opening = cycleOpeningAsk(cycle)
+    if (opening != null && opening > 0) {
+      steps.push({ date: listDate, ask: opening })
     }
+    const startDay = pacificDay(listDate)
     for (const cut of cycle.cuts ?? []) {
+      if (cycle.cutsDated !== false && startDay && pacificDay(cut.date) === startDay) continue
       if (cut.ask > 0 && cut.date) steps.push({ date: cut.date, ask: cut.ask })
     }
   }
@@ -1508,6 +1778,7 @@ export function listingTimelineReading(input: {
     status: t.status,
     cameOff: t.cameOff ?? null,
     segments: timelineSegments(t),
+    asks: t.steps.map((s) => s.ask),
   })
 }
 

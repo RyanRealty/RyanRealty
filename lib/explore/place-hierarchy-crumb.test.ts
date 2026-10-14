@@ -13,7 +13,6 @@ const neighborhood = readFileSync(
   'utf8',
 )
 const subdivision = readFileSync(resolve('app/subdivisions/[slug]/page.tsx'), 'utf8')
-const stage = readFileSync(resolve('app/communities/[slug]/_v3/CommunityStage.tsx'), 'utf8')
 const crumb = readFileSync(resolve('components/site/v3/V3Breadcrumb.tsx'), 'utf8')
 
 describe('SITE-128 hierarchy — community ≠ neighborhood', () => {
@@ -63,7 +62,8 @@ describe('Matt LOCK — sitewide crumb is one component', () => {
       expect(page).toMatch(/overlay=\{Boolean\(stagePosterSrc\)\}/)
       expect(page).toMatch(/tone=\{stagePosterSrc \? 'on-media' : 'surface'\}/)
     }
-    expect(stage).toMatch(/overlay=\{Boolean\(props\.posterSrc\)\}/)
+    // CommunityStage.tsx, which carried its own overlay copy, was deleted with
+    // the community first screen it served (15c9be385; ci:reachable-exports).
   })
 
   it('V3Breadcrumb is the only crumb primitive — collapse + overlay live there', () => {

@@ -11,15 +11,15 @@
  *     the subject or the comp. A number that matches neither is a contradiction.
  *  2. A size floor (a cutoff that is not the subject's living area) is supported
  *     only when the comp is on the failing side of that cutoff AND the living
- *     area gap is past SIZE_FLOOR_GAP (25%, the one price-setting band, rule
- *     20). A smaller gap is the invented 1600 sqft floor: the sale is a bit
+ *     area gap is past SIZE_FLOOR_GAP (the picker's one cutoff, 35%). A
+ *     smaller gap is the invented 1600 sqft floor: the sale is a bit
  *     smaller, not a different size class.
  *  3. A direct size comparison that names the real sqft, with no floor, needs
- *     the same gap as a floor: past SIZE_FLOOR_GAP (25%, the picker's
- *     living-area band). A tighter cut dropped sales the picker kept. There is
- *     one size cutoff, and it is the picker's: a sale at exactly 25% sets the
- *     price (lib/pricing/price-set.ts clearlyDifferentSize), so the review
- *     may not drop it either.
+ *     the same gap as a floor: past SIZE_FLOOR_GAP. A tighter cut dropped
+ *     sales the picker kept. There is one size cutoff, and it is the
+ *     picker's: a sale at exactly 35% sets the price
+ *     (lib/pricing/price-set.ts clearlyDifferentSize), so the review may not
+ *     drop it either.
  *  4. A $/sqft floor, ceiling, or band is supported only when the comp's actual
  *     $/sqft is outside it. "Below $419" when the sale is at $430 is ignored.
  *  5. ONE 20% LINE (Matt 2026-10-08, lib/pricing/price-tier.ts). When the
@@ -35,7 +35,8 @@
  *     (20%) of the median $/sqft of the other candidates.
  *  6. Lot (Matt 2026-10-08, "review uses search's rule"). Under one acre on
  *     both sides, a lot difference is disclosed (the Lot size row beside every
- *     sale in the comp matrix) and is never grounds to drop a sale: the comp
+ *     sale in the comp matrix, and the sentence Basis and limits states,
+ *     lib/cma/lot-disclosure.ts) and is never grounds to drop a sale: the comp
  *     search only separates lots at one acre (lotCompatible in
  *     lib/pricing/classes.ts). The exclusion is overridden and the sale kept at
  *     half weight with the difference stated. At one acre and above on either
@@ -55,16 +56,16 @@
  *  9. Location: a place word in the reason (fairway, golf, resort, highway)
  *     must be in the comp remarks or view and not in the subject's.
  * 10. Condition: a condition word in the reason must appear in the comp remarks.
- * 11. Beds or baths: the one-room rule (lib/pricing/room-counts.ts, skill 0.1)
+ * 11. Beds or baths: the room rule (lib/pricing/room-counts.ts, skill 0.1)
  *     is the only room wall. Cited counts must match the fields. An exclusion
- *     for a gap that rule allows (same whole count, or one apart on own ground)
- *     is ignored. An exclusion for a gap that rule refuses (one apart off
- *     ground, or two or more anywhere) stays.
+ *     for a gap that rule allows (up to two whole bedrooms off, up to two
+ *     whole bathrooms off, or both) is ignored. An exclusion for three or
+ *     more whole rooms apart on one count stays.
  * 12. Basis `other` with no checkable claim is kept. An exclusion we cannot
  *     disprove is not thrown out. An exclusion we can disprove is.
  *
  * Legitimate exclusions stay: a real duplex in the remarks, a living area gap
- * past 25%, a $/sqft outside the 20% line, a doubled lot at an acre or more, a room gap
+ * past 35%, a $/sqft outside the 20% line, a doubled lot at an acre or more, a room gap
  * the one-room rule refuses, a fairway the remarks actually name. Year built
  * does not drop a sale the picker kept.
  */
@@ -84,9 +85,9 @@ import { carriedRoomDecision } from '@/lib/pricing/room-ground'
 import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
 
 /**
- * The one size cutoff, the picker's (Matt 2026-10-08, "25% everywhere"): the
- * same band rule 20 refuses a sale on. A gap PAST it supports an exclusion; a
- * gap on it does not, because that sale set the price.
+ * The one size cutoff, the picker's 35% (Matt 2026-10-09): the same band
+ * rule 20 refuses a sale on. A gap PAST it supports an exclusion; a gap on
+ * it does not, because that sale set the price.
  */
 export const SIZE_FLOOR_GAP = PRICE_SET_SQFT_BAND
 /**
@@ -104,6 +105,18 @@ export const LOT_ACRES = 0.15
  * is disclosed, never a reason to drop a sale.
  */
 export const LOT_WALL_ACRES = 1
+
+/**
+ * Two lots that actually differ: one at least LOT_RATIO times the other, or
+ * LOT_ACRES apart. At an acre and above it is half of a supported lot cut
+ * (lotSupported). Under an acre on both sides it is the difference rule 20
+ * has the letter state instead of dropping the sale (lib/cma/lot-disclosure.ts).
+ */
+export function lotsDiffer(a: number, b: number): boolean {
+  if (!(a > 0) || !(b > 0) || !Number.isFinite(a) || !Number.isFinite(b)) return false
+  const ratio = Math.max(a, b) / Math.min(a, b)
+  return ratio >= LOT_RATIO || Math.abs(a - b) >= LOT_ACRES
+}
 
 export const UNGROUNDED_KEEP_REASON =
   'Kept at half weight. The exclusion cited a threshold or fact these fields do not support.'
@@ -350,9 +363,7 @@ function lotSupported(reason: string, subject: CmaSubject, comp: CmaComp): boole
   // Under an acre on both sides the search does not separate lots, so the
   // review may not either (Matt 2026-10-08).
   if (bothUnderAnAcre(subject, comp)) return false
-  const ratio = Math.max(subject.lotAcres, comp.lotAcres) / Math.min(subject.lotAcres, comp.lotAcres)
-  const abs = Math.abs(subject.lotAcres - comp.lotAcres)
-  if (ratio < LOT_RATIO && abs < LOT_ACRES) return false
+  if (!lotsDiffer(subject.lotAcres, comp.lotAcres)) return false
   const cited = nums(/(\d+(?:\.\d+)?)\s*(?:acres?|ac)\b/gi, reason)
   if (cited.length === 0) return true
   return cited.every(
@@ -429,13 +440,17 @@ function roomsSupported(reason: string, subject: CmaSubject, comp: CmaComp): boo
   return bedOk || bathOk || isRoomishReason(reason)
 }
 
-function keepForAllowedRoomGap(verdict: CompVerdict, notes: Array<'beds' | 'baths'>): GroundResult {
+function keepForAllowedRoomGap(
+  verdict: CompVerdict,
+  notes: Array<'beds' | 'baths'>,
+  gap?: { beds: number; baths: number } | null,
+): GroundResult {
   return {
     verdict: {
       listingKey: verdict.listingKey,
       tier: 'strong',
       reason:
-        roomDifferenceSentence(notes) ??
+        roomDifferenceSentence(notes, gap) ??
         'Room counts follow the one-room rule. This sale stays.',
     },
     grounded: false,
@@ -514,7 +529,7 @@ export function groundVerdict(
 
   const rooms = carriedRoomDecision(subject, comp)
   if (rooms.ok && isRoomishReason(reason) && (basis == null || basis === 'other')) {
-    return keepForAllowedRoomGap(verdict, rooms.notes)
+    return keepForAllowedRoomGap(verdict, rooms.notes, rooms.gap)
   }
 
   const priceRead = readPriceClaims(reason)

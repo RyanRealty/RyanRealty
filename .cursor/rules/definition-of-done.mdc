@@ -8,7 +8,7 @@ alwaysApply: true
 ## A task is done when:
 1. `npm run build` passes
 2. The page renders **real data** (not placeholders, not zeros, not empty sections)
-3. **Ship and parity:** `main` pushed, Vercel production **READY**, hosted Supabase migrations applied when the change needs them (see `.cursor/rules/deploy-verify-before-done.mdc` and `.cursor/rules/production-parity.mdc`)
+3. **Ship and parity:** PR opened to `main` and Matt merged it, Vercel production **READY**, hosted Supabase migrations applied when the change needs them (see `.cursor/rules/deploy-verify-before-done.mdc` and `.cursor/rules/production-parity.mdc`)
 4. You have a **screenshot** proving it renders correctly (Playwright: `npx playwright screenshot --browser chromium "http://localhost:PORT/page" /path/to/screenshot.png --viewport-size 1400,900`)
 5. For UI changes: mobile screenshot too (390x844)
 6. No console errors in the browser

@@ -33,7 +33,9 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
+  V3TakeawaysLead,
 } from '@/components/site/v3'
+import { publishBendSearchAnswer } from '@/lib/search/bend-search-answer'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
 import SearchPageJsonLd from '../SearchPageJsonLd'
 import { splitLeadImageUrl } from '@/lib/search/split-lead-image'
@@ -43,6 +45,9 @@ import { type ResolvedSearchSlug } from '../resolve-slug'
 import { type SearchParams } from '../page-filters'
 import { SearchSeoTail } from './SeoTail'
 import { type CitySplitDepth } from './city-split-depth'
+import { SPLIT_CARD_PAGE } from '@/lib/search/search-opening'
+import { slimViewportListings } from '@/lib/search/slim-viewport-listing'
+import { compactAtlasGeometry } from '@/lib/atlas/compact-geometry'
 
 /**
  * How long the plain city page may wait for its below-map depth AFTER the
@@ -323,9 +328,27 @@ export async function renderMapSplitView(props: {
   // publishes no ItemList (unknown is not a list of ten homes, §0).
   const citySeo = props.citySeo ?? null
   const cityDepth = citySeo
-    ? await withTimeout(citySeo.cityDepth, null, SPLIT_CITY_DEPTH_GRACE_MS)
+    ? await withTimeout(
+        citySeo.cityDepth,
+        null,
+        citySeo.relatedCitySlug === 'bend' ? 8000 : SPLIT_CITY_DEPTH_GRACE_MS,
+      )
     : null
-  const jsonLdListings = viewportDegraded ? [] : viewport.listings
+  // Intro counts come from leftoverHudKpis via cityFaqInput
+  // (search-city-sfr-publish). Omit when leftover cannot make two sentences.
+  const bendAnswer =
+    citySeo?.relatedCitySlug === 'bend'
+      ? publishBendSearchAnswer({
+          faq: cityDepth?.market.cityFaqInput,
+          pace: cityDepth?.market.publicPace,
+        })
+      : null
+  const jsonLdListings = viewportDegraded ? [] : viewport.listings.slice(0, 20)
+  const seedListings = slimViewportListings(viewport.listings.slice(0, SPLIT_CARD_PAGE))
+  const slimBoundary =
+    mapBoundaryGeojson && typeof mapBoundaryGeojson === 'object' && 'type' in mapBoundaryGeojson
+      ? compactAtlasGeometry(mapBoundaryGeojson as GeoJSON.Geometry, 1e-4)
+      : mapBoundaryGeojson
 
   // Registry URL params ride along so pan/zoom refetches keep advanced filters.
   const registryParamsFromUrl: Record<string, string> = {}
@@ -420,6 +443,13 @@ export async function renderMapSplitView(props: {
         <h1 className="truncate px-4 pt-2 font-display text-sm font-medium leading-5 text-foreground sm:px-6">
           {headline}
         </h1>
+        {bendAnswer ? (
+          <V3TakeawaysLead
+            items={bendAnswer.items}
+            source={bendAnswer.source}
+            className="px-4 pb-2 sm:px-6"
+          />
+        ) : null}
         <SearchFilters initialFilters={filters} signedIn={!!session?.user} hideViewToggle />
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
@@ -437,7 +467,7 @@ export async function renderMapSplitView(props: {
         </Suspense>
         </div>
         <MapSearchView
-          initialListings={viewport.listings}
+          initialListings={seedListings}
           initialTotalCount={viewport.totalCount}
           initialCapped={viewport.capped}
           initialCountIsExact={viewport.countIsExact}
@@ -446,12 +476,13 @@ export async function renderMapSplitView(props: {
           savedListingKeys={savedKeys}
           likedListingKeys={likedKeys}
           placeQuery={placeQuery}
-          boundaryGeojson={mapBoundaryGeojson ?? undefined}
+          boundaryGeojson={slimBoundary ?? undefined}
           initialPolygon={initialPolygon}
           initialShapes={initialShapes}
           nowMs={Date.now()}
           initialDegraded={viewportDegraded}
           openHouseLabels={openHouseLabels}
+          seedRowCap={SPLIT_CARD_PAGE}
         />
       </div>
     </UrlSearchParamsProvider>

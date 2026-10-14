@@ -62,3 +62,25 @@ export function latestSaleMedian(
   const value = byKey.get(latestKey)!
   return { value, monthLabel: labelOf(latestKey), monthKey: latestKey }
 }
+
+/**
+ * The same calendar month one year before `monthKey`, from the same series,
+ * so a "down 1.0% from $766,750 in September 2025" clause compares a month to
+ * itself and reads off the chart's own values. Null when that month has no
+ * positive median; the caller drops the clause (§0).
+ */
+export function sameMonthYearBefore(
+  months: readonly MonthlySalePoint[],
+  monthKey: string,
+): { value: number; monthLabel: string; monthKey: string } | null {
+  const m = /^(\d{4})-(\d{2})$/.exec(monthKey)
+  if (!m) return null
+  const priorKey = `${Number(m[1]) - 1}-${m[2]}`
+  for (const row of months) {
+    if (monthKeyOf(row.periodStart) !== priorKey) continue
+    const v = row.medianSalePrice
+    if (v == null || !Number.isFinite(v) || v <= 0) return null
+    return { value: v, monthLabel: labelOf(priorKey), monthKey: priorKey }
+  }
+  return null
+}

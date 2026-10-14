@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   calendarDaysBetween,
+  closedSaleDaysToOffer,
   closedSaleDomTotal,
   daysOnMarketFrom,
   daysOnMarketLabel,
@@ -63,6 +64,39 @@ describe('listingHistoryLine', () => {
     expect(line?.toLowerCase()).not.toContain('overprice')
   })
 
+  it('1654 Meadow: omits a 0-day claim when the on-market day is after the close', () => {
+    const line = listingHistoryLine({
+      listPrice: 544000,
+      originalListPrice: 544000,
+      closePrice: 544000,
+      status: 'Closed',
+      onMarketDate: '2025-06-06',
+      closeDate: '2025-05-30',
+      daysOnMarket: 0,
+    })
+    expect(line).toBe('Listed Jun 6, 2025, sold May 30, 2025 at $544,000')
+    expect(line).not.toMatch(/\b0 days\b/)
+    expect(
+      listingHistoryLine({
+        listPrice: 544000,
+        originalListPrice: 544000,
+        closePrice: 544000,
+        status: 'Closed',
+        onMarketDate: '2025-05-30',
+        closeDate: '2025-05-30',
+        daysOnMarket: 0,
+      }),
+    ).toContain('0 days on market')
+    expect(
+      listingHistoryLine({
+        listPrice: 400000,
+        status: 'Active',
+        onMarketDate: '2026-10-08',
+        daysOnMarket: 0,
+      }),
+    ).toContain('0 days on market')
+  })
+
   it('shows expired peers came off without saying overpriced', () => {
     const line = listingHistoryLine({
       listPrice: 519000,
@@ -115,6 +149,39 @@ describe('closedSaleDomTotal', () => {
         closeDate: '2026-07-02',
       }),
     ).toBe(167)
+  })
+
+  it('1654 Meadow: a zero MLS count after the close is not a run; a positive count stays', () => {
+    expect(
+      closedSaleDomTotal({
+        daysOnMarket: 0,
+        onMarketDate: '2025-06-06',
+        closeDate: '2025-05-30',
+      }),
+    ).toBeNull()
+    expect(
+      closedSaleDomTotal({
+        daysOnMarket: 12,
+        onMarketDate: '2025-06-06',
+        closeDate: '2025-05-30',
+      }),
+    ).toBe(12)
+    expect(
+      closedSaleDaysToOffer({
+        daysToOffer: 0,
+        measuredFrom: '2025-06-06',
+        closeDate: '2025-05-30',
+        domTotal: 0,
+      }),
+    ).toBeNull()
+    expect(
+      closedSaleDaysToOffer({
+        daysToOffer: 0,
+        measuredFrom: '2025-05-30',
+        closeDate: '2025-05-30',
+        domTotal: 0,
+      }),
+    ).toBe(0)
   })
 
   it('mild Forest Edge: calendar when MLS is a few days short', () => {

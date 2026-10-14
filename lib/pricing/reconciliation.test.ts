@@ -198,7 +198,10 @@ describe('reconcileAdjustedSales', () => {
       subjectSqft: 1_700,
       asOf: '2026-10-05',
     })
-    expect(dated.sentence).toContain('sold 3 months ago')
+    // July 28 to October 5 is 2 months and 7 days: whole months, by the day,
+    // never the calendar count of 3 (reader review 2026-10-08, 3062 NW Kelly Hill).
+    expect(dated.sentence).toContain('sold 2 months ago')
+    expect(dated.sentence).not.toContain('sold 3 months ago')
     expect(dated.sentence).not.toContain('sold this month')
 
     const sameMonth = reconcileAdjustedSales({
@@ -268,21 +271,22 @@ describe('set aside means set aside (tasteReview round three, §2 item 1)', () =
     sale({ listingKey: 'G', adjustedPrice: 469_558, weight: 0.8 }),
   ]
 
-  it('partitions the single highest and single lowest out at five or more sales', async () => {
+  it('keeps every seated sale, including the high and the low', async () => {
     const { partitionByRangeRule } = await import('./estimate')
     const part = partitionByRangeRule(seven)
-    expect(part.rule).toBe('trimmed-one-each-end')
-    expect(part.setAside.map((s) => s.listingKey).sort()).toEqual(['E', 'HIGH'])
-    expect(part.kept).toHaveLength(5)
-    expect(part.kept.map((s) => s.listingKey)).not.toContain('E')
+    expect(part.rule).toBe('min-max')
+    expect(part.setAside).toEqual([])
+    expect(part.kept).toHaveLength(7)
+    expect(part.kept.map((s) => s.listingKey)).toContain('HIGH')
+    expect(part.kept.map((s) => s.listingKey)).toContain('E')
   })
 
-  it('sets two aside at five sales, and draws no rule at four (the band is always trimmed, Matt 2026-10-07)', async () => {
+  it('uses all five, and draws no rule at four', async () => {
     const { partitionByRangeRule } = await import('./estimate')
     const part = partitionByRangeRule(seven.slice(0, 5))
-    expect(part.rule).toBe('trimmed-one-each-end')
-    expect(part.setAside.map((s) => s.listingKey).sort()).toEqual(['E', 'HIGH'])
-    expect(part.kept).toHaveLength(3)
+    expect(part.rule).toBe('min-max')
+    expect(part.setAside).toEqual([])
+    expect(part.kept).toHaveLength(5)
     const four = partitionByRangeRule(seven.slice(0, 4))
     expect(four.rule).toBeNull()
     expect(four.setAside).toEqual([])
@@ -292,16 +296,16 @@ describe('set aside means set aside (tasteReview round three, §2 item 1)', () =
   it('keeps the order it was given, so the grid and the weights line up', async () => {
     const { partitionByRangeRule } = await import('./estimate')
     const part = partitionByRangeRule(seven)
-    expect(part.kept.map((s) => s.listingKey)).toEqual(['LOW', 'C', 'D', 'F', 'G'])
+    expect(part.kept.map((s) => s.listingKey)).toEqual(['LOW', 'HIGH', 'C', 'D', 'E', 'F', 'G'])
   })
 
-  it('a sale that was set aside carries no weight in the reconciliation', async () => {
+  it('the high and the low carry their weight in the reconciliation', async () => {
     const { partitionByRangeRule } = await import('./estimate')
     const part = partitionByRangeRule(seven)
     const out = reconcileAdjustedSales({ sales: part.kept, subjectSqft: 1_668 })
-    expect(out.weights).toHaveLength(5)
-    expect(out.weights.map((w) => w.listingKey)).not.toContain('HIGH')
-    expect(out.weights.map((w) => w.listingKey)).not.toContain('E')
+    expect(out.weights).toHaveLength(7)
+    expect(out.weights.map((w) => w.listingKey)).toContain('HIGH')
+    expect(out.weights.map((w) => w.listingKey)).toContain('E')
     expect(out.weights.reduce((s, w) => s + w.weight, 0)).toBeCloseTo(100, 1)
   })
 
@@ -309,7 +313,7 @@ describe('set aside means set aside (tasteReview round three, §2 item 1)', () =
     const { partitionByRangeRule } = await import('./estimate')
     const part = partitionByRangeRule(seven)
     const out = reconcileAdjustedSales({ sales: part.kept, subjectSqft: 1_668 })
-    expect(out.sentence).toContain('the five sales behind this price')
+    expect(out.sentence).toContain('the seven sales behind this price')
     expect(out.sentence!.toLowerCase()).not.toContain(' set ')
   })
 
@@ -395,7 +399,8 @@ describe('location first when the step is why a sale leads (rule 15, reader revi
       asOf: '2026-10-07',
     })
     expect(out.mostWeighted).toBe('A')
-    expect(out.sentence).toMatch(/^2254 Indigo carries the most weight of the three sales behind this price, at [\d.]+ percent: it is in your subdivision, it is 75 square feet larger than yours, it sold 9 months ago, and /)
+    // January 15 to October 7 is 8 whole months and 22 days.
+    expect(out.sentence).toMatch(/^2254 Indigo carries the most weight of the three sales behind this price, at [\d.]+ percent: it is in your subdivision, it is 75 square feet larger than yours, it sold 8 months ago, and /)
     expect(readsLikeSellerProse(out.sentence ?? '')).toBe(true)
   })
 

@@ -17,15 +17,6 @@
 
 import type { Metadata } from 'next'
 import InsightCards from '@/components/motion/insight-cards'
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildJsonLd } from '@/lib/site/json-ld'
 import { formatDate, formatDateTime } from '@/lib/format/date'
@@ -54,16 +45,15 @@ import { InvestInsight } from './_v3/InvestInsight.client'
 import { InvestTables } from './_v3/InvestTables.client'
 import { loadInvestBoard } from './_v3/load-invest-board'
 
-/** Tip Ready route scan: page.tsx must import the catalog specifiers (comment ≠ import). */
+/**
+ * Tip Ready route scan: the route's page/_v3 files must import the catalog
+ * specifiers (comment ≠ import). The shadcn table is imported where it renders,
+ * _v3/InvestTables.client.tsx, which the scan reads, so the page keeps no direct
+ * @/components/ui import (ci:shadcn-burndown: a public page reaches shadcn
+ * through a v3 component).
+ */
 export const INVEST_CATALOG_INSTALL = {
   InsightCards,
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
 } as const
 
 export const revalidate = 3600

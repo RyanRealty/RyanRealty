@@ -37,6 +37,28 @@ describe('placeEntitySameAs', () => {
   })
 })
 
+describe('one entity, one page', () => {
+  it('never gives a Wikipedia or Wikidata entity to two paths', () => {
+    const owner = new Map<string, string>()
+    for (const row of PLACE_ENTITY_SAME_AS) {
+      for (const href of row.sameAs) {
+        if (!/wikipedia\.org|wikidata\.org/.test(href)) continue
+        expect(owner.get(href), `${href} on ${row.path} and ${owner.get(href)}`).toBeUndefined()
+        owner.set(href, row.path)
+      }
+    }
+  })
+
+  it('Sunriver: the community page (the town\'s one page) carries the town entity and names no resort business', () => {
+    const sameAs = placeEntitySameAs('/communities/sunriver')
+    expect(sameAs).toContain('https://www.wikidata.org/wiki/Q3459533')
+    expect(sameAs).toContain('https://www.sunriverowners.org')
+    expect(sameAs).not.toContain('https://www.wikidata.org/wiki/Q7641161')
+    expect(sameAs).not.toContain('https://en.wikipedia.org/wiki/Sunriver_Resort')
+    expect(placeEntitySameAs('/cities/sunriver')).toEqual([])
+  })
+})
+
 describe('canonicalPlacePath', () => {
   it('strips origin and trailing slash', () => {
     expect(canonicalPlacePath('https://ryan-realty.com/cities/Bend/')).toBe('/cities/bend')

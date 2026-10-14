@@ -6,9 +6,9 @@
  *
  * 1. DOWN ONLY IF LOCAL FELL (Matt 2026-10-08). Before any sale is adjusted,
  *    the letter's local read is measured: the same listing-window read the
- *    local page prints ("While your home was listed, the median sale in
- *    Shevlin West for a home about this size ... The price per square foot
- *    held flat, $581 then $572"), over the same closes and the same sales
+ *    local page prints ("While your home was listed, the price per square foot
+ *    in Shevlin West for a home about this size held flat, $581 then $572"),
+ *    over the same closes and the same sales
  *    area. Its per-foot verdict gates the pocket's date move: only "fell"
  *    lets a sale move down with the city index. The build hands this one
  *    move to the local page, so the two pages print one read.
@@ -114,10 +114,14 @@ export function finishExclusivePocketPricing(
   p.notes.unshift(
     exclusivePocketSetNote(subject.city, coolingApplied, moves, args.pocketLocal, (p.timeAdjustment?.n ?? 0) > 0),
   )
+  // The subject's own subdivision: the picker's own-plat stamp (the one ground
+  // decision, lib/pricing/plat-ground.ts, which counts a recorded addition or
+  // phase inside the subject's neighborhood and any MLS spelling of its plat,
+  // Matt 2026-10-08 "Yes, everywhere"), or the subject's own MLS name.
   const sameSub = (subject.subdivision ?? '').trim().toLowerCase()
-  const sameSubRows = sameSub
-    ? adj.filter((c) => (c.subdivision ?? '').trim().toLowerCase() === sameSub)
-    : []
+  const sameSubRows = adj.filter(
+    (c) => c.ownPlat === true || (sameSub !== '' && (c.subdivision ?? '').trim().toLowerCase() === sameSub),
+  )
   const weightTotal = sameSubRows.reduce((sum, c) => sum + (c.weight > 0 ? c.weight : 0), 0)
   const topWeight = sameSubRows.reduce((best, c) => (c.weight > best ? c.weight : best), 0)
   const meaningfulAdjusted = sameSubRows

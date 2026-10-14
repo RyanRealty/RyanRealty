@@ -18,7 +18,7 @@ const story: PlacePricingStory = {
   heldAskMedianDays: 12,
   cutPriceCount: 14,
   cutPriceMedianDays: 28,
-  sourceNote: 'Old Farm single-family homes listed 2025-10-01 through 2026-09-30, 48 homes, Oregon Data Share MLS.',
+  sourceNote: 'Old Farm single-family homes on the market 2025-10-01 through 2026-09-30, 48 homes, Oregon Data Share MLS.',
 }
 
 function page(over: Partial<OpinionPageArgs> = {}): OpinionPageArgs {
@@ -39,7 +39,11 @@ describe('placePricingStoryHtml', () => {
     // With no home to place, the line names the place for what it is and says
     // nothing about where the home sits.
     expect(html).toContain('Here&#39;s what happened in the Old Farm neighborhood over the last 12 months.')
-    expect(html).toContain('48 homes were listed. 11 of them came off the market without selling.')
+    // The words say what the count holds (reader review 2026-10-09, 1355
+    // Jacksonville); this was "48 homes were listed." over the same count.
+    expect(html).toContain(
+      '48 homes were listed, sold or taken off the market. 11 of them came off the market without selling.',
+    )
     expect(html).toContain('9 dropped the price. The typical cut was 3.5% of the first ask.')
     expect(html).toContain('6 gave the buyer a concession at closing. The typical concession was 2% of the list price.')
     expect(html).toContain(
@@ -47,6 +51,17 @@ describe('placePricingStoryHtml', () => {
     )
     expect(html).toContain('A home that starts high and then cuts sits longer.')
     expect(html).toContain(story.sourceNote)
+    const stored = placePricingStoryHtml(
+      {
+        ...story,
+        sourceNote: 'River West single-family homes listed October 8, 2025 through October 8, 2026, 139 homes.',
+      },
+      'letter',
+    )
+    expect(stored).toContain(
+      'River West single-family homes listed, sold or taken off the market between October 8, 2025 and October 8, 2026: 139 homes, each address counted once.',
+    )
+    expect(stored).not.toContain('listed October 8, 2025 through')
     expect(html).toContain('keep-note')
     expect(html).toContain('class="small"')
     expect(html).not.toContain('3,394')
@@ -60,7 +75,7 @@ describe('placePricingStoryHtml', () => {
   it('prints the same sentences on the immersive document', () => {
     const html = placePricingStoryHtml(story, 'immersive')
     expect(html).toContain('Old Farm')
-    expect(html).toContain('48 homes were listed')
+    expect(html).toContain('48 homes were listed, sold or taken off the market')
     expect(html).not.toContain('3,394')
     expect(html).not.toContain('94.2')
   })
@@ -84,7 +99,7 @@ describe('placePricingStoryHtml', () => {
       },
       'letter',
     )
-    expect(quiet).toContain('48 homes were listed')
+    expect(quiet).toContain('48 homes were listed, sold or taken off the market')
     expect(quiet).not.toContain('dropped the price')
     expect(quiet).not.toContain('concession')
     expect(quiet).not.toContain('had an offer')
@@ -123,7 +138,7 @@ describe('failedAskBacktestHtml', () => {
   it('prints the place story and not the regional tiles', () => {
     const html = failedAskBacktestHtml(page({ placePricing: story }), 'letter')
     expect(html).toContain('Old Farm')
-    expect(html).toContain('48 homes were listed')
+    expect(html).toContain('48 homes were listed, sold or taken off the market')
     expect(html).not.toContain('3,394')
     expect(html).not.toContain('94.2')
     expect(html).not.toContain('12.3')

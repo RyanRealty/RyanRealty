@@ -1,5 +1,6 @@
 import 'server-only'
 import { getAlertManageUrl } from '@/lib/alerts/manage-url'
+import { buildTrackedUrl } from '@/lib/analytics/utm'
 
 /**
  * Alert send machinery — the per-alert fan-out half of the typed-event
@@ -112,12 +113,7 @@ function buildListingUrl(row: {
  * double-encode. Unsubscribe links never pass through this.
  */
 function withUtm(url: string): string {
-  const params = new URLSearchParams({
-    utm_source: 'ryan-realty',
-    utm_medium: 'email',
-    utm_campaign: 'listing-alerts',
-  })
-  return `${url}${url.includes('?') ? '&' : '?'}${params.toString()}`
+  return buildTrackedUrl(url, { source: 'crm', medium: 'email', campaign: 'listing-alerts' })
 }
 
 /** Map a search-cache listing row to the email builder's card shape. */

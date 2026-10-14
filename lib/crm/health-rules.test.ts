@@ -21,6 +21,7 @@ function healthy(): HealthSignals {
     geoSmartLists: [],
     mvLagDays: 0,
     mvRefreshAgeHours: 0.2,
+    unforwardedTexts: [],
   }
 }
 
@@ -198,6 +199,7 @@ describe('evaluateHealthRules', () => {
         mvRefreshAgeHours: 0.2,
         twilioReachable: false,
         geoSmartLists: [],
+        unforwardedTexts: [],
       })
       expect(new Set(result.alarms.map((a) => a.key))).toEqual(
         new Set([
@@ -218,6 +220,7 @@ describe('evaluateHealthRules', () => {
         geoSmartLists: [{ id: 9, name: 'Bad list', exactCount: 0, signalCount: 100 }],
         mvLagDays: 8,
         mvRefreshAgeHours: 8 * 24,
+        unforwardedTexts: [],
       })
       for (const a of alarms) {
         expect(a.key.length).toBeGreaterThan(0)
@@ -238,6 +241,7 @@ describe('rule 8: listing_tile_mv staleness', () => {
     geoSmartLists: [],
     mvLagDays: 0,
     mvRefreshAgeHours: 0.2,
+    unforwardedTexts: [],
   })
   it('stays quiet on the Friday-to-Monday CloseDate gap while the refresh stamp is fresh', () => {
     // 2026-08-17 18:11Z: first Monday close on listings, tile still Friday,

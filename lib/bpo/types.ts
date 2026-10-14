@@ -43,6 +43,19 @@ export interface BpoListingCycle {
   leftActiveAs?: string | null
   /** The Pacific day `status` took effect, when that is after the day it left Active. */
   statusDate?: string | null
+  /**
+   * The first day the listing was ever on the market (original_on_market_timestamp:
+   * Active, never Coming Soon). Earlier than `listDate` when it came back.
+   */
+  firstOnMarketAt?: string | null
+  /**
+   * Set by cycleOnTheMarket: the exact moment the last stretch on the market
+   * began (the status change's timestamp, else the row's list timestamp). The
+   * first ask printed is the ask in effect at that moment (Matt 2026-10-08).
+   */
+  listedAt?: string | null
+  /** Set by cycleOnTheMarket: true when that stretch is not the listing's first. */
+  restarted?: boolean
 }
 
 export interface BpoHistorySignal {

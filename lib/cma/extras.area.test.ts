@@ -23,6 +23,10 @@ vi.mock('@/lib/data/cma/marketAreaReads', () => ({
   getCmaMarketAreaRows: (...args: unknown[]) => (getCmaMarketAreaRows as AnyFn)(...args),
 }))
 
+// No outline around the area's plats: the box prefilter is not what this file
+// tests, and unmocked it would reach for the live database.
+vi.mock('@/lib/data/cma/platGroundBounds', () => ({ getPlatGroundBounds: async () => null }))
+
 import { buildCmaExtras } from '@/lib/cma/extras'
 
 function subject(over: Partial<CmaSubject> = {}): CmaSubject {
@@ -141,7 +145,8 @@ describe('buildCmaExtras — CompArea-scoped band', () => {
     expect(extras.band).not.toBeNull()
     expect(extras.band!.activeCount).toBe(12)
     expect(extras.band!.source).toContain('CompArea')
-    expect(extras.band!.source).toContain('the 12 active listings in the band that passed the sales rules (sameAreaFit) inside the sales area')
+    expect(extras.band!.source).toContain('The price was not a filter. The plats were.')
+    expect(extras.band!.source).toContain('The 12 active listings that passed the hard walls on these plats (sameAreaFit)')
     expect(extras.band!.source).not.toContain('all 12 active listings in the band')
     expect(extras.band!.source).not.toMatch(/city-wide|City='Sisters'/)
   })

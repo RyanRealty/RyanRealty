@@ -6,25 +6,31 @@
  * in the reports from a real referral. Analytics that includes the people
  * building the site is not analytics.
  *
- * Matched against the page_location we are about to report, not the process env,
- * because a local run against production credentials is exactly the case that
- * leaked. `NEXT_PUBLIC_SITE_URL` is deliberately not consulted — a dev machine
- * often has the production value set.
+ * Allowlist, not denylist: any host that is not ryan-realty.com (or a subdomain)
+ * is non-production. That covers localhost, 127.0.0.1 with any port, 0.0.0.0,
+ * [::1], LAN IPs (192.168.x, 10.x), *.vercel.app previews, and a lookalike
+ * host. Matched against the page_location we are about to report AND, on the
+ * track route, the request Host header — a client that spoofs pageUrl as
+ * production while posting to a local `next start` still drops.
+ *
+ * `NEXT_PUBLIC_SITE_URL` is deliberately not consulted — a dev machine often
+ * has the production value set.
  */
-// URL.hostname keeps the brackets on an IPv6 literal: http://[::1]:3000 reads "[::1]".
-const NON_PRODUCTION_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0', '::1', '[::1]'])
+import { isProductionHost } from './ga-suppression'
 
 export function isNonProductionPageLocation(pageLocation: unknown): boolean {
   if (typeof pageLocation !== 'string' || !pageLocation) return false
   let host: string
   try {
-    host = new URL(pageLocation).hostname.toLowerCase()
+    host = new URL(pageLocation).hostname
   } catch {
     return false
   }
-  if (NON_PRODUCTION_HOSTS.has(host)) return true
-  // Vercel preview + branch deploys, and any *.local / *.test dev domain.
-  if (host.endsWith('.local') || host.endsWith('.test') || host.endsWith('.localhost')) return true
-  if (host.endsWith('.vercel.app')) return true
-  return false
+  return !isProductionHost(host)
+}
+
+/** True when the incoming request Host is not ryan-realty.com (port stripped). */
+export function isNonProductionRequestHost(hostHeader: string | null | undefined): boolean {
+  if (typeof hostHeader !== 'string' || !hostHeader.trim()) return false
+  return !isProductionHost(hostHeader)
 }

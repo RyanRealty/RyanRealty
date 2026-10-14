@@ -129,6 +129,7 @@ describe('design directive contracts', () => {
     const main = src.slice(src.indexOf('const main = ('), src.indexOf('const floating ='))
     const order = [
       '<PriceCtaStrip',
+      '<ListingQuickFacts',
       '<PropertySpecs',
       '<MortgageCalculator',
       '{atlasBlock}',
@@ -868,9 +869,6 @@ describe('place-family indexes', () => {
     expect(plat).not.toMatch(/export const dynamic = 'force-dynamic'/)
     const code = plat.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n')
     expect(code).not.toMatch(/\bsearchParams\b|cookies\(\)|headers\(\)/)
-    const split = readSrc('components/search/PlaceSplitView.tsx')
-    const splitCode = split.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n')
-    expect(splitCode).not.toMatch(/getSession|getPersonIdFromCookie|cookies\(\)|\bsearchParams\b/)
   })
 })
 

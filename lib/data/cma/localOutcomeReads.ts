@@ -48,9 +48,12 @@ import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 import { listStartDatesFromHistory } from '@/lib/cma/listing-history-line'
 import {
+  mergeAskChanges,
   mergeStatusChanges,
   pacificDay,
+  parseListPriceChange as parseListPriceChangeLine,
   parseMlsStatusChange,
+  type AskChange,
   type ListingStatusChange,
 } from '@/lib/cma/listing-status'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
@@ -99,6 +102,14 @@ export type CmaCityFailedOutcomeRow = {
 export type CmaListingPriceEvent = {
   /** YYYY-MM-DD. */
   date: string
+  /**
+   * The change's timestamp: the MLS change log's when it recorded the change,
+   * else the delta sync's. The first ask of a stretch is the ask in effect the
+   * moment it went Active (Matt 2026-10-08), and 20676 Wild Rose's cut came 14
+   * seconds before it did, so the day alone cannot place it. Absent on events
+   * cached before it was read.
+   */
+  at?: string
   /** The ask AFTER the change. */
   ask: number
   /** The ask before it, when the record carries one. */
@@ -273,33 +284,46 @@ async function fetchCmaListingPriceEvents(listingKey: string): Promise<CmaListin
     if (!date || ask == null) continue
     const previousAsk = positive(row.old_price)
     if (previousAsk != null && previousAsk === ask) continue
-    events.push({ date, ask, previousAsk, source: 'price_history' })
+    const at = typeof row.changed_at === 'string' ? row.changed_at : undefined
+    events.push({ date, ...(at ? { at } : {}), ask, previousAsk, source: 'price_history' })
   }
+  const logged: CmaListingPriceEvent[] = []
   for (const row of (historyRes.data ?? []) as Array<Record<string, unknown>>) {
     const date = dayOf(row.event_date)
     if (!date) continue
     const change = parseListPriceChange(row.description as string | null)
     if (!change || change.to == null) continue
-    events.push({ date, ask: change.to, previousAsk: change.from, source: 'listing_history' })
+    const at = typeof row.event_date === 'string' ? row.event_date : undefined
+    logged.push({ date, ...(at ? { at } : {}), ask: change.to, previousAsk: change.from, source: 'listing_history' })
   }
 
   // One step per (day, ask). price_history is inserted first, so its entry
-  // wins the de-dupe and keeps its explicit previous ask.
-  const seen = new Set<string>()
-  return events
-    .filter((e) => {
-      const k = `${e.date}|${e.ask}`
-      if (seen.has(k)) return false
-      seen.add(k)
-      return true
-    })
-    .sort((a, b) => a.date.localeCompare(b.date))
+  // wins the de-dupe and keeps its explicit previous ask; the MLS change log's
+  // timestamp replaces the sync's, which is minutes late (20676 Wild Rose: the
+  // cut is 04:05:49 in the MLS log, 14 seconds before it went Active, and
+  // 04:18:13 in price_history, after it).
+  const byKey = new Map<string, CmaListingPriceEvent>()
+  const out: CmaListingPriceEvent[] = []
+  for (const e of [...events, ...logged]) {
+    const k = `${e.date}|${e.ask}`
+    const seen = byKey.get(k)
+    if (seen) {
+      if (e.source === 'listing_history' && e.at) seen.at = e.at
+      if (seen.previousAsk == null && e.previousAsk != null) seen.previousAsk = e.previousAsk
+      continue
+    }
+    const copy = { ...e }
+    byKey.set(k, copy)
+    out.push(copy)
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date) || (a.at ?? '').localeCompare(b.at ?? ''))
 }
 
 export const getCmaListingPriceEvents = makeResilientCached(
   fetchCmaListingPriceEvents,
   // v2: event days are Pacific calendar days (were UTC).
-  ['cma-listing-price-events-v2'],
+  // v3: each event carries its timestamp (`at`), the MLS log's when it has one.
+  ['cma-listing-price-events-v3'],
   { revalidate: CACHE_WINDOWS.marketStats, tags: [cacheTag.listings] },
   [] as CmaListingPriceEvent[],
 )
@@ -375,6 +399,111 @@ async function fetchStatusChanges(
 }
 
 /**
+ * The ask changes for a set of keys, both writers merged, keyed by listing,
+ * oldest first: the MLS change log's 'ListPrice: A → B' lines (filtered to
+ * those lines, so remark edits cannot push a cut past the page cap) and the
+ * delta sync's price_history. Callers hand in keys already through
+ * resolveCanonicalListingKey.
+ */
+async function fetchAskChanges(
+  sb: StatusChangeClient,
+  keys: readonly string[],
+): Promise<Map<string, AskChange[]>> {
+  const out = new Map<string, AskChange[]>()
+  if (keys.length === 0) return out
+  const [loggedPage, syncedPage] = await Promise.all([
+    fetchPagedRows<Record<string, unknown>>(
+      (from, to) =>
+        sb
+          .from('listing_history')
+          .select('listing_key, event_date, description')
+          // @canonical-key: the callers resolve every key first.
+          .in('listing_key', keys as string[])
+          .like('description', 'ListPrice:%')
+          .order('event_date', { ascending: true })
+          .order('listing_key', { ascending: true })
+          .range(from, to),
+      5000,
+    ),
+    fetchPagedRows<Record<string, unknown>>(
+      (from, to) =>
+        sb
+          .from('price_history')
+          .select('listing_key, old_price, new_price, changed_at')
+          // @canonical-key: the callers resolve every key first.
+          .in('listing_key', keys as string[])
+          .order('changed_at', { ascending: true })
+          .order('listing_key', { ascending: true })
+          .range(from, to),
+      5000,
+    ),
+  ])
+  if (loggedPage.error) throw new Error(`getListingAskChanges(listing_history): ${loggedPage.error.message}`)
+  if (syncedPage.error) throw new Error(`getListingAskChanges(price_history): ${syncedPage.error.message}`)
+  const logged = new Map<string, AskChange[]>()
+  const synced = new Map<string, AskChange[]>()
+  for (const row of loggedPage.rows) {
+    const key = typeof row.listing_key === 'string' ? row.listing_key : null
+    const at = typeof row.event_date === 'string' ? row.event_date : null
+    const change = parseListPriceChangeLine(typeof row.description === 'string' ? row.description : null)
+    if (!key || !at || !change) continue
+    const list = logged.get(key) ?? []
+    list.push({ at, from: change.from, to: change.to })
+    logged.set(key, list)
+  }
+  for (const row of syncedPage.rows) {
+    const key = typeof row.listing_key === 'string' ? row.listing_key : null
+    const at = typeof row.changed_at === 'string' ? row.changed_at : null
+    const to = positive(row.new_price)
+    if (!key || !at || to == null) continue
+    const from = positive(row.old_price)
+    if (from != null && from === to) continue
+    const list = synced.get(key) ?? []
+    list.push({ at, from, to })
+    synced.set(key, list)
+  }
+  for (const key of keys) {
+    const merged = mergeAskChanges(logged.get(key) ?? [], synced.get(key) ?? [])
+    if (merged.length > 0) out.set(key, merged)
+  }
+  return out
+}
+
+/**
+ * Every recorded ask change on these listings, oldest first, keyed by the
+ * ListingKey the caller passed. A key with no recorded change is absent.
+ *
+ * THROWS on a database error: the caller decides what an unread history
+ * means. The build treats it as additive and keeps the asks on the row.
+ */
+export async function getListingAskChanges(
+  listingKeys: readonly string[],
+): Promise<Map<string, AskChange[]>> {
+  const raw = Array.from(new Set(listingKeys.map((k) => k.trim()).filter(Boolean)))
+  if (raw.length === 0) return new Map()
+  const sb = client()
+  if (!sb) return new Map()
+  let keys: string[]
+  const resolvedFrom = new Map<string, string>()
+  try {
+    const resolved = await Promise.all(raw.map((k) => resolveCanonicalListingKey(k)))
+    keys = []
+    raw.forEach((k, i) => {
+      const key = (resolved[i] ?? '').trim() || k
+      resolvedFrom.set(key, k)
+      if (!keys.includes(key)) keys.push(key)
+    })
+  } catch (err) {
+    console.error('[getListingAskChanges] resolveCanonicalListingKey', err)
+    keys = raw
+  }
+  const byKey = await fetchAskChanges(sb, keys)
+  const out = new Map<string, AskChange[]>()
+  for (const [key, changes] of byKey) out.set(resolvedFrom.get(key) ?? key, changes)
+  return out
+}
+
+/**
  * Every MLS status change recorded against these listings, oldest first, keyed
  * by ListingKey. A key with no recorded change is absent from the map.
  *
@@ -427,6 +556,11 @@ export type ClosedCompListStartRow = {
   daysToPending: number | null
   /** CumulativeDaysOnMarket, else DaysOnMarket, as the row carries it. */
   mlsDaysOnMarket: number | null
+  /** Every recorded ask change on the listing, oldest first, with its timestamp. */
+  askChanges: AskChange[]
+  /** MLS OriginalListPrice and ListPrice, for the ask in effect when the last stretch began. */
+  originalListPrice: number | null
+  listPrice: number | null
 }
 
 /**
@@ -461,11 +595,11 @@ export async function getClosedCompListStarts(
   // History/price batches can exceed PostgREST's 1,000-row response cap across
   // a closed-comp set — page with a stable order (G48). Cap stays 2,000 so a
   // huge set still finishes; earliest list dates live near the front of the order.
-  const [listingRes, historyPage, pricePage, statusChanges] = await Promise.all([
+  const [listingRes, historyPage, pricePage, statusChanges, askChanges] = await Promise.all([
     sb
       .from('listings')
       .select(
-        'ListingKey, OnMarketDate, ListDate, original_entry_timestamp, original_on_market_timestamp, pending_timestamp, days_to_pending, DaysOnMarket, CumulativeDaysOnMarket',
+        'ListingKey, OnMarketDate, ListDate, original_entry_timestamp, original_on_market_timestamp, pending_timestamp, days_to_pending, DaysOnMarket, CumulativeDaysOnMarket, OriginalListPrice, ListPrice',
       )
       .in('ListingKey', keys),
     fetchPagedRows<Record<string, unknown>>(
@@ -496,6 +630,12 @@ export async function getClosedCompListStarts(
       console.error('[getClosedCompListStarts] status changes', err instanceof Error ? err.message : String(err))
       return new Map<string, ListingStatusChange[]>()
     }),
+    // The asks the last stretch opened at (Matt 2026-10-08). Additive: an
+    // unread history leaves the first ask unknown on a sale that came back.
+    fetchAskChanges(sb, keys).catch((err) => {
+      console.error('[getClosedCompListStarts] ask changes', err instanceof Error ? err.message : String(err))
+      return new Map<string, AskChange[]>()
+    }),
   ])
   if (listingRes.error) {
     console.error('[getClosedCompListStarts] listings', listingRes.error.message)
@@ -520,6 +660,9 @@ export async function getClosedCompListStarts(
     pendingTimestamp: null,
     daysToPending: null,
     mlsDaysOnMarket: null,
+    askChanges: askChanges.get(key) ?? [],
+    originalListPrice: null,
+    listPrice: null,
   })
   for (const key of keys) out.set(key, blank(key))
 
@@ -540,6 +683,8 @@ export async function getClosedCompListStarts(
     cur.pendingTimestamp = typeof row.pending_timestamp === 'string' ? row.pending_timestamp : null
     cur.daysToPending = num(row.days_to_pending)
     cur.mlsDaysOnMarket = num(row.CumulativeDaysOnMarket) ?? num(row.DaysOnMarket)
+    cur.originalListPrice = positive(row.OriginalListPrice)
+    cur.listPrice = positive(row.ListPrice)
     out.set(key, cur)
   }
 

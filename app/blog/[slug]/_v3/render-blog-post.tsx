@@ -28,14 +28,17 @@ import Image from 'next/image'
 import { getRelatedBlogPosts, getDetachedMarket, type BlogPostFull } from '@/lib/data'
 import { getBlogRelatedHomes } from '@/lib/data/blog/getBlogRelatedHomes'
 import { matchGeoLinksForPost } from '@/lib/blog-geo-links'
+import { matchHubForPost } from '@/lib/blog/match-hub-for-post'
 import {
   matchBuyablePlaceForPost,
   publishBlogContextualCta,
   publishBlogRelatedHomes,
 } from '@/lib/blog/publish-blog-related-homes'
 import { publishBlogReportPeriod } from '@/lib/blog/publish-blog-report-period'
+import { ensureChatgptLandingBody } from '@/lib/blog/chatgpt-landing-answers'
 import { blogRelatedHomeRows } from './blog-related-homes'
 import { buildBlogArticleView } from './article-view'
+import { extractAnswerFirst } from './answer-first'
 import { BlogArticleRail } from './BlogArticleRail.client'
 import './blog-article.css'
 import {
@@ -102,6 +105,7 @@ export async function renderBlogPost(
 ): Promise<ReactElement> {
   const relatedPosts = await getRelatedBlogPosts(post.slug, post.category, 3)
   const buyablePlace = matchBuyablePlaceForPost(post)
+  const hub = matchHubForPost(post)
   const relatedHomeTiles = buyablePlace ? await getBlogRelatedHomes(buyablePlace, 8) : []
   const publishedHomes = publishBlogRelatedHomes({
     place: buyablePlace,
@@ -116,7 +120,10 @@ export async function renderBlogPost(
   const contextualCta = publishBlogContextualCta(buyablePlace)
   const pageUrl = `${siteUrl}/blog/${encodeURIComponent(post.slug)}`
   const readMinutes = estimateReadTime(post.content)
-  const rawBody = post.content?.trim() || post.excerpt?.trim() || ''
+  const rawBody = ensureChatgptLandingBody(
+    post.slug,
+    post.content?.trim() || post.excerpt?.trim() || '',
+  )
   const period = publishBlogReportPeriod({
     title: post.title,
     html: rawBody,
@@ -132,6 +139,7 @@ export async function renderBlogPost(
       ? `${siteUrl}/api/og?type=blog&id=${encodeURIComponent(post.slug)}`
       : undefined,
     author_name: post.author_name,
+    author_slug: post.author_slug,
   })
   // AEO: the Questions section of a guide is also its FAQPage schema. Same
   // markup, one source, so the schema cannot drift from the visible answers.
@@ -175,11 +183,14 @@ export async function renderBlogPost(
       )
     : rawBody
   const articleBody = rewriteBlogMosVerdicts(currentMosBody)
+  // A guide that opens with an answer block gets it under the dek, above the
+  // rail: on a phone the rail renders before the prose (./answer-first.ts).
+  const answerFirst = extractAnswerFirst(articleBody)
   // The reading apparatus, derived from the body and from nothing else: the
   // figures the writer already sourced in a sentence, the questions the post
   // answers, the Questions block as disclosures, every citation wearing its
   // host. ./_v3/article-view.ts states what it refuses to infer.
-  const view = buildBlogArticleView(articleBody)
+  const view = buildBlogArticleView(answerFirst.body)
   const title = period.displayTitle.trim()
   if (!title) notFound()
   const category = post.category?.trim()
@@ -207,6 +218,7 @@ export async function renderBlogPost(
     post.author_name?.trim() ? post.author_name.trim() : 'Ryan Realty',
     publishedLabel ?? 'Date not recorded',
     ...(updatedLabel ? [updatedLabel] : []),
+    ...(answerFirst.figuresAsOf ? [`Figures as of ${formatDate(answerFirst.figuresAsOf)}`] : []),
     `${readMinutes} min read`,
   ].join(' · ')
 
@@ -246,10 +258,13 @@ export async function renderBlogPost(
   })
 
   const geoItems: V3QuietItem[] = matchGeoLinksForPost(post).map((geo) => ({
-    label: `${geo.label}, ${geo.city}`,
+    label: geo.anchor,
     href: geo.href,
   }))
-  const exploreHrefs = new Set<string>([contextualCta.href])
+  const exploreHrefs = new Set<string>([
+    contextualCta.href,
+    ...(hub ? [hub.href] : []),
+  ])
 
   const tagBody = post.tags && post.tags.length > 0 ? post.tags.filter((t) => t.trim()).join(' · ') : null
 
@@ -331,6 +346,19 @@ export async function renderBlogPost(
             {post.excerpt?.trim() ? <p className="v3-blog-dek">{post.excerpt.trim()}</p> : null}
             {period.periodNote ? <p className="v3-blog-dek">{period.periodNote}</p> : null}
 
+            {answerFirst.answerHtml ? (
+              <div
+                className="v3-blog-answer"
+                dangerouslySetInnerHTML={{ __html: answerFirst.answerHtml }}
+              />
+            ) : null}
+
+            {hub ? (
+              <p className="v3-blog-hub">
+                Browse <Link href={hub.href}>{hub.anchor}</Link>.
+              </p>
+            ) : null}
+
             {view.html ? (
               <div className="v3-blog-layout">
                 <BlogArticleRail figures={view.figures} sections={view.sections} title={title} />
@@ -399,6 +427,7 @@ export async function renderBlogPost(
           eyebrow="More resources"
           heading="Next steps"
           items={[
+            ...(hub ? [{ label: hub.anchor, href: hub.href }] : []),
             { label: contextualCta.label, href: contextualCta.href },
             ...geoItems.filter((item) => !('href' in item) || !exploreHrefs.has(item.href)),
             ...(tagBody ? [{ kind: 'prose' as const, term: 'Tags', body: tagBody }] : []),

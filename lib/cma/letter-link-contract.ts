@@ -3,7 +3,8 @@
  * carries the signed person token when the row has a contact or lead id.
  */
 
-import { CMA_DOC_ORIGIN, CMA_DOC_UTM_MEDIUM, CMA_DOC_UTM_SOURCE } from '@/lib/cma/doc-links'
+import { CMA_DOC_ORIGIN, CMA_DOC_PARAM, CMA_DOC_UTM_CAMPAIGN, CMA_DOC_UTM_MEDIUM, CMA_DOC_UTM_SOURCE } from '@/lib/cma/doc-links'
+import { isCmaDocumentSlug } from '@/lib/analytics/utm'
 import { IDENTITY_LINK_PARAM } from '@/lib/identity/link-token'
 
 const SITE_HOST = 'ryan-realty.com'
@@ -81,8 +82,13 @@ export function inspectLetterSiteLinks(html: string): SiteLinkStamp[] {
         const u = new URL(href, CMA_DOC_ORIGIN)
         const source = (u.searchParams.get('utm_source') ?? '').toLowerCase()
         const medium = (u.searchParams.get('utm_medium') ?? '').toLowerCase()
+        const campaign = (u.searchParams.get('utm_campaign') ?? '').toLowerCase()
+        const hasDoc = Boolean(u.searchParams.get(CMA_DOC_PARAM)?.trim()) || isCmaDocumentSlug(campaign)
         const hasUtm =
-          source === CMA_DOC_UTM_SOURCE && medium === CMA_DOC_UTM_MEDIUM && Boolean(u.searchParams.get('utm_campaign'))
+          source === CMA_DOC_UTM_SOURCE &&
+          medium === CMA_DOC_UTM_MEDIUM &&
+          (campaign === CMA_DOC_UTM_CAMPAIGN || isCmaDocumentSlug(campaign)) &&
+          hasDoc
         const pid = u.searchParams.get(IDENTITY_LINK_PARAM)
         return { href, hasUtm, hasPid: Boolean(pid && pid.trim()) }
       } catch {
@@ -117,7 +123,7 @@ export function letterLinkTrackingCheck(
   const missingPid = needPid ? links.filter((l) => !l.hasPid) : []
   const pass = missingUtm.length === 0 && missingPid.length === 0
   const bits: string[] = []
-  if (missingUtm.length) bits.push(`${missingUtm.length} site link(s) missing utm_source=cma, utm_medium=document, and utm_campaign`)
+  if (missingUtm.length) bits.push(`${missingUtm.length} site link(s) missing utm_source=cma, utm_medium=document, utm_campaign=cma-letter, and rr_doc`)
   if (missingPid.length) bits.push(`${missingPid.length} site link(s) missing _pid though the row has a contact or lead`)
   return {
     id: 'letter-links-tracked',

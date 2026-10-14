@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { BRAND, CONTACT } from '@/lib/brand/contact'
+import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
 import { buildJsonLd } from '@/lib/site/json-ld'
 import { V3Answers, V3Entries, V3Facts } from '@/components/site/v3'
 import { LISTING_TERMS } from '@/app/sell/_v3/sell-constants'
@@ -45,6 +45,24 @@ const RECORD = {
     { day: '2026-09-18', what: '3 Third St, Sisters', value: '$600,000' },
   ],
 }
+// The firm's all-area record (2026-10-08): one more closing than the rail,
+// outside Central Oregon, so the headline (4) and the rail (3) differ.
+const FIRM = {
+  count: 4,
+  firstClose: '2015-04-30',
+  lastClose: '2026-09-18',
+  centralOregon: 3,
+  brokers: [
+    { slug: 'founder', name: 'Founder Person', count: 3, recent: 1 },
+    { slug: 'second', name: 'Second Person', count: 1, recent: 0 },
+  ],
+  recent: { count: 1, cutoff: '2025-10-08', cities: [{ name: 'Sisters', n: 1 }] },
+  cities: [{ name: 'Bend', n: 1 }, { name: 'Redmond', n: 1 }, { name: 'Sisters', n: 1 }],
+  outside: 1,
+  types: [{ name: 'house', n: 4 }],
+  lowest: null,
+  highest: null,
+}
 const REVIEWS = { average: 5, count: 25 }
 const HOURS = aboutHoursSentence(
   [{ days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], start_time: '09:00', end_time: '17:00' }],
@@ -58,10 +76,10 @@ function sentences(text: string): number {
 
 function allCopy(): string {
   const faq = aboutFaqItems(PEOPLE, { hours: HOURS })
-  const facts = aboutKeyFacts({ founder: PEOPLE[0]!, people: PEOPLE, services: SERVICES, hours: HOURS, record: RECORD, reviews: REVIEWS })
+  const facts = aboutKeyFacts({ founder: PEOPLE[0]!, people: PEOPLE, services: SERVICES, hours: HOURS, record: RECORD, firm: FIRM, reviews: REVIEWS })
   return [
     ...SERVICES.flatMap((s) => [s.title, String(s.body), s.door?.label ?? '']),
-    ...aboutDifferentiators({ reviews: REVIEWS, record: RECORD, valuationHref: '/v' }).flatMap((c) => [c.title, String(c.body), c.figure?.label ?? '']),
+    ...aboutDifferentiators({ reviews: REVIEWS, record: RECORD, firm: FIRM, valuationHref: '/v' }).flatMap((c) => [c.title, String(c.body), c.figure?.label ?? '']),
     ...ABOUT_CLIENTS.map((c) => c.label),
     ABOUT_PROMISE_LINE,
     ...ABOUT_HOW_STEPS.flatMap((s) => [s.title, String(s.body)]),
@@ -90,16 +108,19 @@ describe('about playbook: live facts', () => {
   it('counts the team from the roster and names no one when it did not load', () => {
     expect(aboutTeamBody(PEOPLE)).toMatch(/^Ryan Realty has three licensed brokers, and all three live and work in Central Oregon\./)
     expect(aboutTeamBody([])).toBeNull()
-    expect(aboutOriginBody()).toContain(`${BRAND.legalName} in ${BRAND.llcSince}`)
+    // 2026-10-08: 2014 belongs to the brand, not the LLC filing (the brief's
+    // section 2a), so the origin says "started Ryan Realty in 2014".
+    expect(aboutOriginBody()).toContain(`started ${BRAND.name} in ${BRAND.llcSince}`)
+    expect(aboutOriginBody()).not.toContain(BRAND.legalName)
     expect(aboutOriginBody()).toContain(BRAND.foundedLabel)
     expect(aboutOriginBody()).not.toMatch(/boutique|authentic|exceptional/)
   })
 
   it('drops a differentiator whose live figure did not load', () => {
-    const full = aboutDifferentiators({ reviews: REVIEWS, record: RECORD, valuationHref: '/v' })
+    const full = aboutDifferentiators({ reviews: REVIEWS, record: RECORD, firm: FIRM, valuationHref: '/v' })
     expect(full).toHaveLength(5)
     expect(full[0]?.figure).toEqual({ value: '5.0', label: 'Google rating, 25 reviews' })
-    expect(full.find((c) => c.id === 'different-closings')?.figure).toEqual({ value: '3', label: 'Closings since 2015' })
+    expect(full.find((c) => c.id === 'different-closings')?.figure).toEqual({ value: '4', label: 'Closings since 2015' })
     const bare = aboutDifferentiators({ reviews: null, record: null, valuationHref: '/v' })
     expect(bare.map((c) => c.id)).toEqual(['different-listing', 'different-valuation', 'different-broker'])
   })
@@ -107,10 +128,15 @@ describe('about playbook: live facts', () => {
 
 describe('about playbook: the closings and the brokers', () => {
   it('shows the closings as a count, with no drawn record of them (Matt 2026-09-24)', () => {
-    const claim = aboutDifferentiators({ reviews: REVIEWS, record: RECORD, valuationHref: '/v' }).find(
+    const claim = aboutDifferentiators({ reviews: REVIEWS, record: RECORD, firm: FIRM, valuationHref: '/v' }).find(
       (c) => c.id === 'different-closings',
     )
-    expect(claim?.figure).toEqual({ value: '3', label: 'Closings since 2015' })
+    // One closings number (2026-10-08): the figure is the all-area count; the
+    // rail's count is named only as the Central Oregon homes listed above.
+    expect(claim?.figure).toEqual({ value: '4', label: 'Closings since 2015' })
+    expect(claim?.body).toBe(
+      'Every closing is a recorded MLS sale. The 3 in Central Oregon are listed above with the address, the price it closed at, and the date, and each one links to the home.',
+    )
     expect(claim).not.toHaveProperty('strip')
   })
 
@@ -122,23 +148,24 @@ describe('about playbook: the closings and the brokers', () => {
 })
 
 describe('about playbook: key facts', () => {
-  const facts = aboutKeyFacts({ founder: PEOPLE[0]!, people: PEOPLE, services: SERVICES, hours: HOURS, record: RECORD, reviews: REVIEWS })
+  const facts = aboutKeyFacts({ founder: PEOPLE[0]!, people: PEOPLE, services: SERVICES, hours: HOURS, record: RECORD, firm: FIRM, reviews: REVIEWS })
   const byTerm = new Map(facts.map((f) => [f.term, f]))
 
   it('carries every row the playbook asks for, and none of the three Matt cut', () => {
     for (const term of [
       'Company name', 'Type', 'Founded', 'Founder', 'Headquarters', 'Website', 'Core offering', 'Pricing',
-      'Services', 'Communication', 'Service area', 'Brokerage license', 'Clients served', 'Reviews', 'Social',
+      'Services', 'Communication', 'Service area', 'Brokerage license', 'Recorded closings', 'Reviews', 'Social',
     ]) {
       expect(byTerm.has(term), term).toBe(true)
     }
-    for (const cut of ['Notable clients', 'Competitors', 'Contract terms']) expect(byTerm.has(cut)).toBe(false)
+    for (const cut of ['Notable clients', 'Competitors', 'Contract terms', 'Clients served']) expect(byTerm.has(cut)).toBe(false)
   })
 
   it('reads its values from the brand module, the fee constant, and the live record', () => {
     expect(byTerm.get('Company name')?.value).toBe(BRAND.name)
     expect(byTerm.get('Founded')?.figure).toBe(BRAND.llcSince)
-    expect(byTerm.get('Founded')?.value).toBe(`as ${BRAND.legalName}`)
+    expect(byTerm.get('Founded')?.value).toBe(`by ${BROKERS.matt.nameShort}`)
+    expect(byTerm.get('Founded')?.detail).toBe(`Bend office opened ${BRAND.foundedLabel}`)
     expect(byTerm.get('Headquarters')?.value).toContain(BRAND.address.street)
     expect(byTerm.get('Website')?.links?.[0]?.href).toBe(BRAND.url)
     expect(byTerm.get('Pricing')?.figure).toBe('3%')
@@ -146,9 +173,11 @@ describe('about playbook: key facts', () => {
     expect(byTerm.get('Communication')?.value).toContain(CONTACT.phoneDirect)
     expect(byTerm.get('Communication')?.value).toContain('same business day')
     expect(byTerm.get('Brokerage license')?.value).toContain(FIRM_LICENSE.replace(/^OREA\s+/, ''))
-    expect(byTerm.get('Clients served')?.figure).toBe('3')
-    expect(byTerm.get('Clients served')?.value).toBe('recorded closings in Central Oregon')
-    expect(byTerm.get('Clients served')?.detail).toBe('MLS record, Apr 2015 to Sep 2026')
+    expect(byTerm.get('Brokerage license')?.value).toContain('registered business name')
+    expect(byTerm.get('Brokerage license')?.value).not.toMatch(/firm license/i)
+    expect(byTerm.get('Recorded closings')?.figure).toBe('4')
+    expect(byTerm.get('Recorded closings')?.value).toBe('recorded MLS closings by Ryan Realty brokers')
+    expect(byTerm.get('Recorded closings')?.detail).toBe('Apr 2015 to Sep 2026, 3 in Central Oregon')
     expect(byTerm.get('Reviews')?.figure).toBe('5.0')
     expect(byTerm.get('Reviews')?.value).toBe('average from 25 Google reviews')
     expect(byTerm.get('Services')?.value).toBe(SERVICES.map((s) => s.title).join('; '))
@@ -156,9 +185,9 @@ describe('about playbook: key facts', () => {
   })
 
   it('leaves a live row out rather than printing a guess', () => {
-    const lean = aboutKeyFacts({ founder: null, people: [], services: SERVICES, hours: null, record: null, reviews: null })
+    const lean = aboutKeyFacts({ founder: null, people: [], services: SERVICES, hours: null, record: null, firm: null, reviews: null })
     const terms = lean.map((f) => f.term)
-    for (const live of ['Founder', 'Brokers', 'Office hours', 'Clients served', 'Reviews']) expect(terms).not.toContain(live)
+    for (const live of ['Founder', 'Brokers', 'Office hours', 'Recorded closings', 'Reviews']) expect(terms).not.toContain(live)
   })
 
   it('services render as H3 rows with a numbered index of hash links', () => {
@@ -174,10 +203,10 @@ describe('about playbook: key facts', () => {
     const html = renderToStaticMarkup(createElement(V3Facts, { id: 'key-facts', heading: 'Key facts about Ryan Realty', facts }))
     expect(html.match(/<dl\b/g)).toHaveLength(1)
     expect(html.match(/<dt\b/g)).toHaveLength(facts.length)
-    expect(html).toContain('<dt class="v3-facts__term">Clients served</dt>')
+    expect(html).toContain('<dt class="v3-facts__term">Recorded closings</dt>')
     // The figure and its words read as one phrase in the served text.
     const plain = html.replace(/<[^>]+>/g, '')
-    expect(plain).toContain('3 recorded closings in Central Oregon')
+    expect(plain).toContain('4 recorded MLS closings by Ryan Realty brokers')
     expect(plain).toContain('5.0 average from 25 Google reviews')
     expect(plain).toContain('3% of the sale price as the listing fee')
   })
@@ -203,11 +232,22 @@ describe('about playbook: FAQ', () => {
 
   it('answers each question in two or three sentences', () => {
     expect(faq.length).toBeGreaterThanOrEqual(8)
+    // The licensing answer is the SEO & AEO Desk brief's exact copy of
+    // 2026-10-08 (a "Yes." and three facts), so it may run to four.
+    const briefCopy = new Set(['Is Ryan Realty licensed, and how can I check?'])
     for (const { question, answer } of faq) {
       const n = sentences(answer)
       expect(n, question).toBeGreaterThanOrEqual(2)
-      expect(n, question).toBeLessThanOrEqual(3)
+      expect(n, question).toBeLessThanOrEqual(briefCopy.has(question) ? 4 : 3)
     }
+  })
+
+  it('says registered business name, never firm license, and adds no licensed-since year', () => {
+    const licensed = faq.find((q) => q.question === 'Is Ryan Realty licensed, and how can I check?')
+    expect(licensed?.answer).toContain('as a registered business name')
+    expect(licensed?.answer).toContain('October 8, 2026')
+    expect(faq.map((q) => q.answer).join(' ')).not.toMatch(/firm license|licensed since/i)
+    expect(faq.some((q) => q.question === 'Is Ryan Realty licensed in Oregon?')).toBe(false)
   })
 
   it('states the fee from the one spelling and the office hours from the live rows', () => {
@@ -236,7 +276,10 @@ describe('about playbook: FAQ', () => {
 
   it('the page feeds the visible questions and FAQPage from one array', () => {
     const page = readFileSync('app/about/page.tsx', 'utf8')
-    expect(page).toContain('const faqItems = aboutFaqItems(proof.faces, { hours: hoursLine })')
+    // 2026-10-08: the kept questions (roster + hours live) join the record
+    // questions in one array, and that one array feeds both sinks.
+    expect(page).toContain('const keptFaq = aboutFaqItems(proof.faces, { hours: hoursLine })')
+    expect(page).toContain('const faqItems = aboutFaqWithRecord(keptFaq, live)')
     expect(page).toContain("type: 'faqPage',\n      items: faqItems,")
     expect(page).toContain('questions={faqAnswers}')
     expect(page).toContain('questionHeadings')

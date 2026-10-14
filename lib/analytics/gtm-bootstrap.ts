@@ -1,5 +1,6 @@
 import { PRIVATE_PATH_JS } from './private-paths'
 import { GA_SUPPRESS_JS } from './ga-suppression'
+import { consentModeDefaultJs } from './consent-defaults'
 
 /**
  * The inline Google Tag Manager bootstrap, as one string.
@@ -23,7 +24,7 @@ export function gtmBootstrapScript(pageType: string, gtmId: string): string {
   const safePageType = pageType.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
   return `window.dataLayer=window.dataLayer||[];
 function gtag(){dataLayer.push(arguments);}
-gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});
+${consentModeDefaultJs()}
 window.dataLayer.push({page_type:'${safePageType}'});
 (function(){try{var a=new URLSearchParams(location.search||'').get('agent');if(!a){var m=document.cookie.match(/(?:^|; )rr_agent_attribution=([^;]*)/);if(m){try{var j=JSON.parse(decodeURIComponent(m[1]));a=j&&j.slug}catch(e){a=decodeURIComponent(m[1])}}}if(!a)return;a=String(a).trim().toLowerCase();var map={matt:'matt','matt-ryan':'matt',rebecca:'rebecca','rebecca-peterson':'rebecca',paul:'paul','paul-stevenson':'paul'};var s=map[a];if(!s)return;gtag('set','user_properties',{assigned_broker:s});window.dataLayer.push({broker_slug:s,assigned_broker:s})}catch(e){}})();
 if(!${PRIVATE_PATH_JS}&&!${GA_SUPPRESS_JS})(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':

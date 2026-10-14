@@ -1,11 +1,21 @@
 /**
  * @vitest-environment jsdom
  *
- * Client gtag page_view must carry assigned_broker (USER) + broker_slug (EVENT)
- * when ?agent= is known — the same custom-definition names as generate_lead.
+ * Client trackPageView stamps assigned_broker (USER, via gtag set) and
+ * broker_slug (EVENT, on the dataLayer page_view push) when ?agent= is known.
+ * Same custom-definition names as generate_lead. It never calls
+ * gtag('event','page_view') -- GTM's Google tag owns that event, and a second
+ * gtag copy would double-count.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { applyVisitBrokerToGtag, trackPageView } from './tracking'
+
+function dataLayerPageView(): Record<string, unknown> | undefined {
+  return (window.dataLayer ?? []).find((row): row is Record<string, unknown> => {
+    if (!row || typeof row !== 'object') return false
+    return (row as Record<string, unknown>).event === 'page_view'
+  })
+}
 
 describe('trackPageView visit broker props', () => {
   const gtag = vi.fn()
@@ -29,28 +39,24 @@ describe('trackPageView visit broker props', () => {
     trackPageView('listing_search', { page_path: '/homes-for-sale' })
 
     expect(gtag).toHaveBeenCalledWith('set', 'user_properties', { assigned_broker: 'rebecca' })
-    expect(gtag).toHaveBeenCalledWith(
-      'event',
-      'page_view',
+    expect(gtag.mock.calls.some((c) => c[0] === 'event' && c[1] === 'page_view')).toBe(false)
+    expect(dataLayerPageView()).toEqual(
       expect.objectContaining({
+        event: 'page_view',
         page_type: 'listing_search',
         broker_slug: 'rebecca',
       }),
     )
-    const pushed = window.dataLayer ?? []
-    expect(pushed.some((row) => {
-      if (!row || typeof row !== 'object') return false
-      const rec = row as Record<string, unknown>
-      return rec.event === 'page_view' && rec.broker_slug === 'rebecca'
-    })).toBe(true)
   })
 
   it('omits broker props when no agent is known', () => {
     window.history.replaceState({}, '', '/homes-for-sale')
     trackPageView('listing_search')
     expect(gtag).not.toHaveBeenCalledWith('set', 'user_properties', expect.anything())
-    const eventCall = gtag.mock.calls.find((c) => c[0] === 'event' && c[1] === 'page_view')
-    expect(eventCall?.[2]).not.toHaveProperty('broker_slug')
+    expect(gtag.mock.calls.some((c) => c[0] === 'event' && c[1] === 'page_view')).toBe(false)
+    const pushed = dataLayerPageView()
+    expect(pushed).toEqual(expect.objectContaining({ event: 'page_view', page_type: 'listing_search' }))
+    expect(pushed).not.toHaveProperty('broker_slug')
   })
 
   it('applyVisitBrokerToGtag reads the attribution cookie after the URL param is gone', () => {

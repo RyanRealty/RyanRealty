@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-reachable-exports.mjs — G55: every components/lib module must be reachable.
+ * check-reachable-exports.mjs — G55: every components/lib/app-helper module must be reachable.
  *
  * The 2026-07-21 audit found finished components shipped dark — imported by
  * nothing (SmartSearch, HeroSearchOverlay, SearchSplitView). A module no file
@@ -8,26 +8,53 @@
  * "fixed" by agents who assume it renders somewhere. This gate makes the
  * orphaned-component class impossible to grow.
  *
+ * The 2026-09-25 widening: the original rule exempted EVERY file under app/**
+ * on the theory that app/ only holds framework-invoked routes. False — app/
+ * also holds plain helper modules co-located with the route that uses them
+ * (app/cities/[slug]/city-schemas.ts, never imported once the page moved to
+ * ./_v3/city-metadata) and they went dark unseen, because the blanket
+ * `file.startsWith('app/')` exemption made them invisible to this gate by
+ * construction. Only Next.js App Router's own special filenames are
+ * framework-invoked by path rather than by import; everything else under
+ * app/** is an ordinary module and must be reachable like components/lib.
+ *
  * How it works: builds an import graph over app/**, components/**, lib/**
  * (.ts/.tsx; skips .test./.spec./.d.ts, node_modules, .next, .claude), plus
  * root-level entry files (middleware.ts, instrumentation.ts, *.config.ts)
  * as extra importers. Specifiers resolve by relative path and the "@/" alias
- * (tsconfig: "@/*" -> "./*"). Every file under components/** or lib/** with
- * zero importers is an orphan.
+ * (tsconfig: "@/*" -> "./*"). Every file under app/**, components/**, or
+ * lib/** with zero importers is an orphan — EXCEPT the entry-point
+ * exemptions below.
  *
  * Entry-point exemptions (never counted as orphans):
- *   - app/** files (framework-invoked routes — not candidates to begin with)
- *   - middleware.ts, anything matching "instrumentation", *.config.*
+ *   - Next.js App Router special files under app/**: a file whose basename
+ *     (extension stripped) is exactly one of page, layout, template,
+ *     loading, error, global-error, not-found, forbidden, unauthorized,
+ *     route, default, opengraph-image, twitter-image, icon, apple-icon,
+ *     sitemap, robots, manifest — with a .ts/.tsx/.js/.jsx extension. These
+ *     are the ONLY filenames Next.js itself invokes by path/convention
+ *     instead of by import. A non-special file under app/** (a component, a
+ *     helper, a data module, a client island) is an ordinary candidate.
+ *   - middleware.ts, anything matching "instrumentation", *.config.* — none
+ *     of these live under app/** in this repo (middleware.ts and
+ *     instrumentation.ts sit at the repo root); the checks stay
+ *     basename-based so they would still catch one under app/** too.
  *   - scripts/**, supabase/**
  *   - files whose FIRST 10 lines carry the marker "reachability: entry-point"
- *     (escape hatch — put the reason on the same line)
+ *     (escape hatch — put the reason on the same line). Use this for a
+ *     source file that ships only by being read as a path string by outside
+ *     tooling, e.g. a Serwist swSrc compiled by a manual webpack build
+ *     rather than imported by any other module.
  *
  * Ratchet semantics (same as check-cron-registered.mjs): the baseline file
  * lists the pre-gate orphan backlog, which may ONLY SHRINK. A NEW orphan
  * fails the build; cleared entries are reported so the baseline can shrink.
  *
  * CLI: default pass/fail · --report (human, exit 0) · --write-baseline ·
- *      --self-test (inject a synthetic orphan, assert the ratchet flags it)
+ *      --self-test (inject a synthetic orphan under components/ AND one
+ *      under app/, assert the ratchet flags both as NEW; also proves a
+ *      synthetic app/**\/page.tsx is exempted rather than treated as a
+ *      candidate orphan)
  */
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
 import { join, dirname, resolve, relative, extname } from 'node:path'
@@ -41,7 +68,7 @@ const ROOT = process.cwd()
 // in CLAUDE.md. A gate that tells you to delete load-bearing code is worse than
 // no gate, because someone eventually obeys it.
 const SCAN_DIRS = ['app', 'components', 'lib', 'scripts']
-const CANDIDATE_DIRS = ['components', 'lib']
+const CANDIDATE_DIRS = ['app', 'components', 'lib']
 const BASELINE = 'scripts/reachable-exports-baseline.json'
 const MARKER = 'reachability: entry-point'
 const SKIP_DIRS = new Set(['node_modules', '.next', '.claude'])
@@ -152,12 +179,54 @@ for (const file of importerFiles) {
 }
 
 // ---- orphan determination -------------------------------------------------
-function isExempt(file) {
+// The only filenames Next.js App Router invokes by path/convention instead of
+// by import. Keep this list in sync with Next's file-convention docs — it is
+// deliberately an allowlist of EXACT basenames, not a prefix or a guess, so a
+// plain helper module that merely lives under app/** is never accidentally
+// swept in with the framework's own entry points.
+const APP_ROUTER_SPECIAL_BASENAMES = new Set([
+  'page',
+  'layout',
+  'template',
+  'loading',
+  'error',
+  'global-error',
+  'not-found',
+  'forbidden',
+  'unauthorized',
+  'route',
+  'default',
+  'opengraph-image',
+  'twitter-image',
+  'icon',
+  'apple-icon',
+  'sitemap',
+  'robots',
+  'manifest',
+])
+
+/** True for app/**\/<special-name>.(ts|tsx|js|jsx) — a framework entry file, never a candidate orphan. */
+function isAppRouterSpecialFile(file) {
+  if (!file.startsWith('app/')) return false
   const basename = file.slice(file.lastIndexOf('/') + 1)
-  if (file.startsWith('app/') || file.startsWith('scripts/') || file.startsWith('supabase/')) return true
+  const m = basename.match(/^(.+)\.(tsx|ts|jsx|js)$/)
+  if (!m) return false
+  return APP_ROUTER_SPECIAL_BASENAMES.has(m[1])
+}
+
+/** Exemptions decidable from the path alone — no disk read, so the self-test can call this on synthetic paths. */
+function isExemptByPath(file) {
+  const basename = file.slice(file.lastIndexOf('/') + 1)
+  if (file.startsWith('scripts/') || file.startsWith('supabase/')) return true
+  if (isAppRouterSpecialFile(file)) return true
   if (basename === 'middleware.ts') return true
   if (basename.includes('instrumentation')) return true
   if (/\.config\.[^/]+$/.test(basename)) return true
+  return false
+}
+
+function isExempt(file) {
+  if (isExemptByPath(file)) return true
   const head = readFileSync(join(ROOT, file), 'utf8').split('\n', 10).join('\n')
   return head.includes(MARKER)
 }
@@ -172,8 +241,8 @@ if (writeBaseline) {
       {
         generatedAt: new Date().toISOString(),
         reason:
-          'Pre-gate backlog of components/** and lib/** modules that no file imports. ' +
-          'This list may only shrink: wire the module into a surface, mark it ' +
+          'Pre-gate backlog of components/**, lib/**, and app/** non-route modules that no ' +
+          'file imports. This list may only shrink: wire the module into a surface, mark it ' +
           '"reachability: entry-point <reason>" in its first 10 lines, or delete it. ' +
           'New orphans fail the build.',
         count: violators.length,
@@ -200,21 +269,37 @@ const baseSet = new Set(baseline.names ?? [])
 if (selfTest) {
   // Prove the detection path end-to-end without touching the tree:
   // (1) the graph actually resolved edges through both specifier forms,
-  // (2) a synthetic orphan record injected past the graph is flagged as NEW.
+  // (2) a synthetic orphan record injected past the graph is flagged as NEW,
+  // (3) the same holds for a synthetic orphan under app/** (the 2026-09-25
+  //     widening's whole point — a non-special app/ helper is a real candidate),
+  // (4) a synthetic app/**/page.tsx is exempted rather than swept in with it,
+  //     proving the App Router allowlist doesn't just exempt everything again.
   const fake = 'components/__self-test-synthetic-orphan__.tsx'
-  const injected = [...violators, fake]
+  const fakeAppOrphan = 'app/__self-test-synthetic-orphan__.ts'
+  const fakeAppPage = 'app/__self-test-synthetic__/page.tsx'
+  const injected = [...violators, fake, fakeAppOrphan]
   const flagged = injected.filter((v) => !baseSet.has(v))
   const failures = []
   if (aliasEdges === 0) failures.push('no @/ alias edges resolved — alias resolution broken')
   if (relativeEdges === 0) failures.push('no relative edges resolved — relative resolution broken')
-  if (!flagged.includes(fake)) failures.push('synthetic orphan not flagged as NEW violator — ratchet broken')
+  if (!flagged.includes(fake)) failures.push('synthetic components/ orphan not flagged as NEW violator — ratchet broken')
+  if (!flagged.includes(fakeAppOrphan)) {
+    failures.push('synthetic app/ orphan not flagged as NEW violator — app/** widening broken')
+  }
+  if (isExemptByPath(fakeAppOrphan)) {
+    failures.push(`${fakeAppOrphan} wrongly exempted — a non-special app/ basename must be a candidate, not entry-point`)
+  }
+  if (!isExemptByPath(fakeAppPage)) {
+    failures.push(`${fakeAppPage} wrongly treated as a candidate orphan — the App Router page.tsx exemption is broken`)
+  }
   if (failures.length > 0) {
     console.error(`reachable-exports self-test FAILED:\n  - ${failures.join('\n  - ')}`)
     process.exit(1)
   }
   console.log(
     `reachable-exports self-test passed — ${aliasEdges} alias edges, ${relativeEdges} relative edges, ` +
-      `synthetic orphan ${fake} correctly flagged as NEW violator`
+      `synthetic orphans ${fake} and ${fakeAppOrphan} correctly flagged as NEW violators, ` +
+      `synthetic ${fakeAppPage} correctly exempted as an App Router entry file`
   )
   process.exit(0)
 }
@@ -233,8 +318,8 @@ if (newViolators.length > 0) {
   console.error(
     `reachable-exports gate FAILED — ${newViolators.length} NEW orphan module(s) nothing imports:\n` +
       newViolators.map((v) => `  ${v}`).join('\n') +
-      '\nEvery components/** and lib/** module must be imported by some file. Wire it into a surface,\n' +
-      `mark it "${MARKER} <reason>" in its first 10 lines, or delete it.`
+      '\nEvery components/**, lib/**, and app/** non-route module must be imported by some file.\n' +
+      `Wire it into a surface, mark it "${MARKER} <reason>" in its first 10 lines, or delete it.`
   )
   process.exit(1)
 }
@@ -246,6 +331,6 @@ if (cleared.length > 0) {
   )
 }
 console.log(
-  `reachable-exports gate passed — ${candidates.length} components/lib modules: ` +
+  `reachable-exports gate passed — ${candidates.length} app/components/lib modules: ` +
     `${candidates.length - violators.length} reachable, ${violators.length} in backlog (ratchet: shrink-only).`
 )

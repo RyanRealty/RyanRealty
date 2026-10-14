@@ -684,8 +684,8 @@ export { markStripDrawable } from './V3MarkStrip'
 export type { V3MarkStripProps, V3MarkStripMark } from './V3MarkStrip'
 export { V3Facts } from './V3Facts'
 // Takeaways: the short answer after a place page's opening (AEO, Matt 2026-10-04).
-export { V3Takeaways } from './V3Takeaways'
-export type { V3TakeawaysProps } from './V3Takeaways'
+export { V3Takeaways, V3TakeawaysLead } from './V3Takeaways'
+export type { V3TakeawaysProps, V3TakeawaysLeadProps } from './V3Takeaways'
 export type { V3FactsProps, V3Fact, V3FactLink, V3FactStrip } from './V3Facts'
 
 /* -------------------------------------------------------------------------- */

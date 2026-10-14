@@ -8,7 +8,7 @@ import { requirePersonInScope } from '@/app/actions/crm'
 import { addUnknownCallerPersonAction } from '@/app/actions/crm-inbox'
 import { searchPeopleForMergeAction, linkUnknownCallerToPersonAction } from '@/app/actions/crm-person-gaps'
 import { isUnknownCaller } from '@/lib/crm/display-name'
-import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
+import { inSmsQuietHoursFor, recipientTimeZones } from '@/lib/crm/recipient-timezones'
 import { smsDisplayBody } from '@/lib/crm/sms-display-body'
 import { Button, ThreadBubble, ThreadScrollEnd } from '@/components/admin/v2'
 import { oldestFirst } from '@/lib/crm/thread-chronology'
@@ -63,7 +63,8 @@ export async function MessagesThread({
     getConversationTriageState(personId),
     canAssign ? getCrmBrokers() : Promise.resolve([]),
   ])
-  const quiet = inSmsQuietHours()
+  // Pacific and the contact's own zone (Matt 2026-10-04, "Both zones").
+  const quiet = inSmsQuietHoursFor(card?.phone)
 
   // DAL is newest-first (LIMIT window); bubbles need oldest → newest.
   const chronological = oldestFirst(thread)
@@ -173,6 +174,7 @@ export async function MessagesThread({
                       name: card.name ?? 'Unknown contact',
                       phone: card.phone,
                       email: card.email,
+                      timeZones: recipientTimeZones(card.phone),
                     },
                   ]
                 : []

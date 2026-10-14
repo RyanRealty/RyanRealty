@@ -68,10 +68,12 @@ import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { getReviews, type Review } from '@/lib/data/reviews/getReviews'
 import { getBrokerageTrackRecord } from '@/lib/data/track-record'
 import { getMetrics, type MetricResult } from '@/lib/data/market-truth/getMetric'
+import { formatCalendarDay, formatDate } from '@/lib/format/date'
 import {
   computeProofOutcomes,
   PROOF_WINDOW_MONTHS,
   type ProofClosingInput,
+  PROOF_QUIET_LINE,
   type ProofOutcomes,
 } from '@/lib/data/proof/outcomes'
 
@@ -95,6 +97,15 @@ export type ProofTrace = {
    */
   scope: 'always' | 'outcomes'
   figure: string
+  /**
+   * The entry as a visitor reads it: the figure, where it comes from in plain
+   * English, its window, and the as-of date in PT. This is the ONLY field the
+   * public disclosure prints (`traceText` in V3ProofBlock.view.ts). The fields
+   * below stay on the object for tests, reviewers and /dev/site-11-proof, and
+   * never reach a public page: table names, SQL filters, function names, row
+   * counts and raw ISO stamps are internal (sell brief 2026-10-08, L1 to L3b).
+   */
+  plain: string
   source: string
   table: string
   filter: string
@@ -168,7 +179,13 @@ const EMPTY_OUTCOMES: ProofOutcomes = {
   medianDaysToContract: null,
   cities: [],
   publishable: false,
-  quietReason: 'Too few recent closings here to chart.',
+  quietReason: PROOF_QUIET_LINE,
+}
+
+/** "Bend", "Bend and Redmond", "Bend, Redmond and Sisters". */
+function cityList(cities: readonly string[]): string {
+  if (cities.length <= 1) return cities[0] ?? ''
+  return `${cities.slice(0, -1).join(', ')} and ${cities[cities.length - 1]}`
 }
 
 function isoDay(d: Date): string {
@@ -218,6 +235,9 @@ async function fetchProofBlock(input: {
   const fetchedAt = now.toISOString()
   const window = proofWindow(now)
   const windowLabel = `CloseDate ${window.start}..${window.end} (${PROOF_WINDOW_MONTHS} months)`
+  // The public wording of the same window and stamp, in PT.
+  const asOf = formatDate(now)
+  const windowPlain = `in the last ${PROOF_WINDOW_MONTHS} months (${formatCalendarDay(window.start)} to ${formatCalendarDay(window.end)})`
 
   const sb = createServiceClient()
 
@@ -324,6 +344,7 @@ async function fetchProofBlock(input: {
     trace.push({
       scope: 'always',
       figure: `${proofReviews.averageRating.toFixed(1)} average from ${proofReviews.count} Google reviews`,
+      plain: `${proofReviews.averageRating.toFixed(1)} average from ${proofReviews.count} Google review${proofReviews.count === 1 ? '' : 's'}: every review on our Google Business Profile, read live on ${asOf}.`,
       source: 'Google Business Profile, ingested live',
       table: 'public.reviews',
       filter: "source = 'google' AND is_hidden = false",
@@ -338,6 +359,7 @@ async function fetchProofBlock(input: {
     trace.push({
       scope: 'always',
       figure: `${record.homesSold} homes closed, listed by Ryan Realty`,
+      plain: `${record.homesSold} home${record.homesSold === 1 ? '' : 's'} closed, listed by Ryan Realty: every Ryan Realty listing that has closed in the Central Oregon MLS (Oregon Data Share). Homes where we represented the buyer aren't counted.`,
       source: 'Central Oregon MLS via Supabase listings',
       table: 'public.listings',
       filter:
@@ -355,6 +377,7 @@ async function fetchProofBlock(input: {
   trace.push({
     scope: 'always',
     figure: `${outcomes.closings} Ryan Realty closings in the window`,
+    plain: `${outcomes.closings} Ryan Realty listing${outcomes.closings === 1 ? '' : 's'} closed${outcomes.cities.length ? ` in ${cityList(outcomes.cities)}` : ''} ${windowPlain}, Central Oregon MLS.`,
     source: 'Central Oregon MLS via Supabase listings',
     table: 'public.listings',
     filter: `"ListOfficeName" ILIKE '%ryan realty%' AND "StandardStatus" = 'Closed' (list side); cities ${outcomes.cities.join(', ') || 'none'}`,
@@ -367,6 +390,7 @@ async function fetchProofBlock(input: {
   trace.push({
     scope: 'outcomes',
     figure: `sale-to-original-list on ${outcomes.saleToOriginalN} of them, days-to-contract on ${outcomes.daysToContractN} (${outcomes.daysExcludedN} dropped by the market definition)`,
+    plain: `Sale price as a share of the first asking price on ${outcomes.saleToOriginalN} of them, and days from listing to an accepted offer on ${outcomes.daysToContractN}${outcomes.daysExcludedN > 0 ? ` (${outcomes.daysExcludedN} entered into the MLS after the contract was signed, so left out)` : ''}, Central Oregon MLS.`,
     source: 'Central Oregon MLS via Supabase listings, computed with the Market Truth fact definitions',
     table: 'public.listings',
     filter: `"ListOfficeName" ILIKE '%ryan realty%' AND "StandardStatus" = 'Closed' (list side); cities ${outcomes.cities.join(', ') || 'none'}`,
@@ -381,6 +405,7 @@ async function fetchProofBlock(input: {
     trace.push({
       scope: 'outcomes',
       figure: `${context.label} detached median days to contract ${Math.round(context.medianDaysToContract)}`,
+      plain: `${context.label} median days from listing to an accepted offer, ${Math.round(context.medianDaysToContract)}, across detached single-family homes over the same ${PROOF_WINDOW_MONTHS} months, Central Oregon MLS.`,
       source: `Market Truth cell, definition ${context.definitionId ?? '?'}`,
       table: 'public.market_metric',
       filter: `stat_id = 'median_days_to_contract' AND geo_type = '${context.geoType}' AND geo_slug = '${context.geoSlug}' AND segment = 'detached'`,
@@ -395,6 +420,7 @@ async function fetchProofBlock(input: {
     trace.push({
       scope: 'outcomes',
       figure: `${context.label} detached median sale to original list ${(context.medianSaleToOriginal * 100).toFixed(1)}%`,
+      plain: `${context.label} median sale price as a share of the first asking price, ${(context.medianSaleToOriginal * 100).toFixed(1)}%, across detached single-family homes over the same ${PROOF_WINDOW_MONTHS} months, Central Oregon MLS.`,
       source: `Market Truth cell, definition ${context.definitionId ?? '?'}`,
       table: 'public.market_metric',
       filter: `stat_id = 'median_sale_to_original_list' AND geo_type = '${context.geoType}' AND geo_slug = '${context.geoSlug}' AND segment = 'detached'`,

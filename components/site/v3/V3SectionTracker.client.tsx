@@ -8,6 +8,9 @@ import { currentConsentLevel, firstPartyEventContext } from '@/components/VisitT
 
 export type V3SectionTrackerProps = Record<string, never>
 
+/** GA4 `surface` on this tracker's section_view: the public page-section observer. */
+export const SECTION_SURFACE = 'page_section'
+
 /**
  * V3 section + scroll tracking. An island, not a seventh pattern: chrome
  * surrounds a page, this records it. Observes every `.v3 section[id]` and
@@ -82,7 +85,10 @@ export function V3SectionTracker(_props?: V3SectionTrackerProps) {
           const id = (e.target as HTMLElement).id
           if (e.isIntersecting && e.intersectionRatio >= 0.55 && !seen.has(id)) {
             seen.add(id)
-            trackEvent('section_view', { section: id, page_type: pageType })
+            // surface names the emitter, as every other surface-tagged event
+            // does. section_view sent none before 2026-10-09, so GA4's surface
+            // column was empty on every one (verify report, 2026-10-09).
+            trackEvent('section_view', { section: id, page_type: pageType, surface: SECTION_SURFACE })
             // The track route reads `metadata`; a top-level `section` field is ignored.
             internalTrack('section_view', { metadata: { section: id } })
           }

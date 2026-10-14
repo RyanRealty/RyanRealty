@@ -1,6 +1,16 @@
 # GTM & GA4 — setup and dataLayer event reference
 
+> **Browser events reach GA4 only through GTM's GA4 Event tag (2026-10-08).** The page never calls `gtag('event')`
+> for GA4. The tag, its trigger and parameters: [`docs/GTM_GA4_BROWSER_EVENTS.md`](GTM_GA4_BROWSER_EVENTS.md).
+> Where this older page says the app sends events with gtag, that stopped on 2026-08-18 (1224b1f).
+
 This file absorbed `GTM_GA4_SETUP.md` and `GTM_TRIGGERS.md` (2026-04-24 governance merge).
+
+> **Consent Mode v2 region defaults (2026-10-08).** The page sets them before `gtm.js`
+> (`lib/analytics/consent-defaults.ts`). Analytics granted outside EEA/UK/CH; denied in
+> those regions until accept; ad_* denied everywhere; GPC and a stored decline deny
+> analytics. GTM click-path and Tag Assistant checks:
+> [`docs/GTM_CONSENT_REGION_DEFAULTS.md`](GTM_CONSENT_REGION_DEFAULTS.md).
 
 ---
 

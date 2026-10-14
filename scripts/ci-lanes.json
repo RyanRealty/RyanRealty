@@ -1,6 +1,10 @@
 {
   "version": 1,
   "always": [
+    "ci:studio-rules",
+    "ci:private-remarks",
+    "ci:deals-copy",
+    "ci:imagine-no-paid-api",
     "ci:broker-own-book",
     "ci:commit-compiles",
     "ci:count-degraded-read",
@@ -17,6 +21,7 @@
     "ci:close-date-window",
     "ci:dal-internal-discipline",
     "ci:db-timeout-guard",
+    "ci:google-deadline",
     "ci:deliverable-send-chokepoint",
     "ci:email-link-tracking",
     "ci:email-send-gated",
@@ -24,6 +29,7 @@
     "ci:pdf-trace-guard",
     "ci:entity-scope",
     "ci:gates-wired",
+    "ci:ship-path",
     "ci:governed-send",
     "ci:hidden-exclusion-surfaces",
     "ci:hooks-installed",
@@ -125,6 +131,7 @@
     "ci:handoff-current",
     "ci:process-canon",
     "ci:claude-canon",
+    "ci:core-rules-prefix",
     "ci:loop-skills-canon"
   ],
   "path": {
@@ -690,6 +697,7 @@
       "scripts/ci-lanes.json",
       "scripts/check-tests-wired.mjs",
       "scripts/check-gates-wired.mjs",
+      ".claude/skills/ryan-studio/tools/tests/**",
       ".husky/**",
       ".github/workflows/**"
     ],
@@ -1250,6 +1258,15 @@
       "app/robots.ts",
       "app/llms.txt/**",
       "app/sitemap.ts"
+    ],
+    "ci:sitemap-url-health": [
+      "app/communities/**",
+      "app/robots.ts",
+      "lib/site/listings-unavailable.ts",
+      "scripts/lib/sitemap-url-health.mjs",
+      "scripts/check-sitemap-url-health.mjs",
+      "scripts/check-vercel-deploy.mjs",
+      "scripts/lib/live-seo-audit.mjs"
     ],
     "ci:skyslope-mirror": [
       "lib/tc/**",

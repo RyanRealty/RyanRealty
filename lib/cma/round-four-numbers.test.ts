@@ -34,7 +34,6 @@ import {
 import { compSearchSentence, keptInSubdivision } from '@/lib/cma/render-comp-search'
 import { listCeiling, readCompSearch, readRangeRuleKept } from '@/lib/cma/render-contract'
 import { renderCompMatrixHtml, subjectPrintableAsk } from '@/lib/cma/comp-matrix'
-import { worthStripSvg, WORTH_STRIP_WIDE } from '@/lib/cma/worth-strip'
 import { renderInventoryBoardHtml } from '@/lib/cma/market-area-chapters'
 import { cityMedianReconciliationHtml, salesMethodHtml, sellerNetPage, nextStepPage } from '@/lib/cma/opinion-pages'
 import type { OpinionPageArgs } from '@/lib/cma/opinion-pages'
@@ -245,6 +244,21 @@ describe('E1 — the search sentence never claims a shortage the printed sales r
     )
   })
 
+  it('rewrites a stored zero-sale sentence that said the search matched the home (915 Saginaw)', () => {
+    const args = {
+      compSearch: {
+        subdivision: 'Park Place',
+        rungs: [],
+        keptBySubdivision: {},
+        sentence:
+          'No sale inside Park Place in the last 24 months matched your home, so the search opened to 628 Portland in Kenwood.',
+      },
+    }
+    expect(compSearchSentence({ subdivision: 'Park Place', args, comps: [] })).toBe(
+      'No home sold in Park Place in the last 24 months, so the search opened to 628 Portland in Kenwood.',
+    )
+  })
+
   it('refuses even a STORED sentence that claims a shortage the grid refutes', () => {
     const args = {
       compSearch: {
@@ -397,75 +411,18 @@ describe('E3 — the strip caption, the chapter lead, the range cause and the se
     expect(html).not.toContain('The six closed sales below set this number')
   })
 
-  it('the market chapter counts the kept sales and prints their adjusted spread, never a set-aside end', () => {
+  it('the market chapter counts the kept sales and prints their raw closes, never a set-aside end', () => {
     const html = cityMedianReconciliationHtml(opinionArgs())
     expect(html).toContain('The four sales behind your price')
     expect(html).toContain('sold for $368,000 to $477,000')
-    // $370,000 to $479,000 is the kept four's adjusted spread; $296,000 and
-    // $512,000 are the two sales the document set aside.
-    expect(html).toContain('$370,000 to $479,000')
+    // The adjusted span ($370,000 to $479,000) is the price chapter's sentence.
+    // Restating it here repeated the range (reader review, 915 Saginaw, 2026-10-08).
+    // $296,000 and $512,000 are the two sales the document set aside.
+    expect(html).not.toContain('$370,000 to $479,000')
+    expect(html).not.toContain('adjusted, they support')
     expect(html).not.toContain('$296,000')
     expect(html).not.toContain('$512,000')
     expect(html).not.toContain('The six sales behind your price')
-  })
-})
-
-// ── E4. The axis end wins ───────────────────────────────────────────────────
-
-describe('E4 — a set-aside sale is never an axis label', () => {
-  const sales = SIX_COMPS.map((c, i) => ({
-    n: i + 1,
-    address: c.address,
-    adjustedPrice: c.adjustedPrice,
-    setAside: i === 0 || i === 5,
-  }))
-
-  it('labels the axis with valueLow and valueHigh, not the outermost dots', () => {
-    const svg = worthStripSvg(
-      { sales, rangeLow: 370_000, rangeHigh: 479_000, recommended: 461_000, lastAsk: null, keptCount: 4 },
-      WORTH_STRIP_WIDE,
-    )
-    expect(svg).toContain('$370K')
-    expect(svg).toContain('$479K')
-    // The two set-aside sales are $296K and $512K. Neither labels an end.
-    expect(svg).not.toContain('$296K')
-    expect(svg).not.toContain('$512K')
-  })
-
-  it('drops the "set aside" label when the sale sits exactly on an axis end', () => {
-    // 19968 AS IT SHIPS. The set-aside sale is $479,614 and the stated worth
-    // top is $479,000 — never equal, three tenths of a pixel apart, which is
-    // why the rule is "does the word land on the axis label", not "are the
-    // two prices the same". The $431,000 one is set aside too and sits well
-    // inside the axis, so the pair separates that rule from "no set-aside
-    // sale is ever labelled".
-    const onEnd = sales.map((s, i) => ({
-      ...s,
-      adjustedPrice: i === 4 ? 479_614 : s.adjustedPrice,
-      setAside: i === 3 || i === 4,
-    }))
-    const svg = worthStripSvg(
-      { sales: onEnd, rangeLow: 370_000, rangeHigh: 479_000, recommended: 461_000, lastAsk: null, keptCount: 4 },
-      WORTH_STRIP_WIDE,
-    )
-    // Both are drawn hollow — that is what says "not one of the sales the
-    // range is the spread of".
-    expect((svg.match(/class="ws-aside"/g) ?? []).length).toBe(2)
-    // But only ONE "set aside" word: the one that is not on an axis end.
-    expect((svg.match(/>set aside</g) ?? []).length).toBe(1)
-    // The axis end still carries the chapter's own number.
-    expect(svg).toContain('$479K')
-  })
-
-  it('states one scale, and the document n, in the caption', () => {
-    const svg = worthStripSvg(
-      { sales, rangeLow: 370_000, rangeHigh: 479_000, recommended: 461_000, lastAsk: null, keptCount: 4 },
-      WORTH_STRIP_WIDE,
-    )
-    expect(svg).toContain('One scale: sale price today. 4 sales.')
-    expect(svg).toContain('The shading is what your home is worth')
-    // The list line is a labelled mark on that same scale.
-    expect(svg).toContain('list $461K')
   })
 })
 
@@ -590,7 +547,7 @@ describe('E6 — the subject column never prints a stale cycle as "listed"', () 
     expect(html).toContain('1,440 sqft')
     expect(html).toContain('2004')
     // The phone card says what is true of a home nobody is selling.
-    expect(html).toContain('Not on the market')
+    expect(html).toContain('not on the market')
   })
 
   it('still prints a current ask', () => {

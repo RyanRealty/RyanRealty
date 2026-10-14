@@ -20,7 +20,10 @@
  *     lib/ that never navigate (no `.goto(`): they print HTML strings to PDF.
  *  2. Automation never grants analytics consent: no file outside the site's own
  *     consent code (app/, components/, lib/, public/) writes the consent cookie
- *     with analytics granted, or clicks the banner's "Accept all".
+ *     with analytics granted, or clicks the banner's "Accept all". A dismiss
+ *     loop that includes "Accept all" among the labels it clicks counts.
+ *     The shared helper plants rr_automation=1, rr_internal=1, and a declined
+ *     consent cookie before the first page load.
  *  3. The Playwright config plants the marker (automationStorageState).
  *  4. The browser loaders honor the decision: the GTM bootstrap gates gtm.js on
  *     GA_SUPPRESS_JS, GoogleAnalytics.tsx gates gtag.js on it, GTMHead re-applies
@@ -123,6 +126,7 @@ const CONSENT_GRANT = [
   /(?:analytics['"]?\s*:\s*true|%22analytics%22%3Atrue)[\s\S]{0,300}?ryan_realty_cookie_consent/,
 ]
 const ACCEPT_ALL_CLICK = /(?:getByRole\([^)]*name:\s*\/?['"]?Accept all|text=Accept all|['"]Accept all['"][\s\S]{0,80}?\.click\(|hasText:\s*['"]Accept all)/i
+const ACCEPT_ALL_DISMISS_LOOP = /for\s*\(\s*const\s+\w+\s+of\s*\[[^\]]{0,500}Accept all[^\]]{0,500}\]/i
 
 /** Site code that legitimately reads or writes the consent answer a visitor gave. */
 function isSiteConsentCode(rel) {
@@ -153,7 +157,7 @@ export function findViolations(files) {
       if (CONSENT_GRANT.some((re) => re.test(code))) {
         violations.push(`${rel}: grants analytics consent in automation. Answer the banner with a decline ({ analytics: false, marketing: false }) to hide it.`)
       }
-      if (ACCEPT_ALL_CLICK.test(code)) {
+      if (ACCEPT_ALL_CLICK.test(code) || (ACCEPT_ALL_DISMISS_LOOP.test(code) && /\.click\(/.test(code))) {
         violations.push(`${rel}: clicks the cookie banner's "Accept all" in automation. Decline it instead.`)
       }
     }
@@ -174,7 +178,11 @@ export const WIRING = [
   ['components/GoogleAnalytics.tsx', /if \(!\$\{GA_SUPPRESS_JS\}\) \{[\s\S]*?googletagmanager\.com\/gtag\/js/, 'GoogleAnalytics.tsx requests gtag.js without the suppression decision'],
   ['app/api/visitors/track/route.ts', /const gaSuppression = decideGaSuppressionForPage\(/, 'the GA4 mirror no longer reads the shared suppression decision'],
   ['app/api/visitors/track/route.ts', /mirrorGa4 &&\s*!gaSuppression\.suppress &&/, 'the GA4 mirror condition no longer honors the suppression decision'],
-  ['app/api/visitors/track/route.ts', /if \(isNonProductionPageLocation\(pageUrl\)\) \{\s*return NextResponse\.json\(/, 'the track route writes first-party visits from non-production hosts again'],
+  [
+    'app/api/visitors/track/route.ts',
+    /if \(isNonProductionPageLocation\(pageUrl\) \|\| isNonProductionRequestHost\(requestHost\)\) \{\s*return NextResponse\.json\(/,
+    'the track route writes first-party visits from non-production hosts again',
+  ],
   ['app/api/visitors/track/route.ts', /marker: hasAutomationMarker\(/, 'the track route no longer flags our automation marker'],
   ['app/api/visitors/track/route.ts', /hasInternalUserCookie\(cookieHeader\)/, 'the track route no longer flags a signed-in broker browser'],
   ['app/auth/callback/route.ts', /await markInternalIfAdmin\(res, data\.user\.email, request\)/, 'the admin sign-in callback no longer sets the internal-user cookie'],
@@ -184,6 +192,9 @@ export const WIRING = [
   ['app/admin/login/_components/AdminLoginForm.tsx', /await markInternalBrowser\(\)/, 'One Tap admin sign-in no longer sets the internal-user cookie'],
   ['playwright.config.ts', /storageState: MARKED/, 'Playwright runs no longer carry the automation marker'],
   ['scripts/take-route-shots.mjs', /from '\.\/lib\/marked-playwright\.mjs'/, 'the capture tool launches without the automation marker'],
+  ['scripts/lib/automation-marker.mjs', /INTERNAL_USER_COOKIE/, 'the automation helper no longer plants rr_internal=1'],
+  ['scripts/lib/automation-marker.mjs', /analytics:\s*false,\s*marketing:\s*false/, 'the automation helper no longer stores a declined consent answer'],
+  ['scripts/lib/marked-playwright.mjs', /addInitScript\(\{ content: plantFlagsScript\(\) \}\)/, 'the Playwright wrapper no longer plants markers before page scripts run'],
 ]
 
 /** Files under app/ and components/ allowed to request a Google tag script. */
@@ -214,6 +225,11 @@ function main() {
   const mjsName = mjsSrc.match(/export const AUTOMATION_MARKER_COOKIE = '([^']+)'/)?.[1]
   if (!tsName || tsName !== mjsName) {
     violations.push(`the automation marker cookie differs between lib/analytics/ga-suppression.ts (${tsName}) and scripts/lib/automation-marker.mjs (${mjsName})`)
+  }
+  const tsInternal = tsSrc.match(/export const INTERNAL_USER_COOKIE = '([^']+)'/)?.[1]
+  const mjsInternal = mjsSrc.match(/export const INTERNAL_USER_COOKIE = '([^']+)'/)?.[1]
+  if (!tsInternal || tsInternal !== mjsInternal) {
+    violations.push(`the internal-user cookie differs between lib/analytics/ga-suppression.ts (${tsInternal}) and scripts/lib/automation-marker.mjs (${mjsInternal})`)
   }
 
   if (violations.length) {

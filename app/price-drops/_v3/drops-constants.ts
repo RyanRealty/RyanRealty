@@ -32,6 +32,22 @@ export const DROPS_ALERT_FILTERS: Readonly<Record<string, string>> = {
 }
 
 /**
+ * The page asks for every qualifying cut. The DAL still has a list cap (500)
+ * so a bad week cannot render thousands of cards into the HTML.
+ */
+export const PRICE_DROPS_LIST_LIMIT = 500
+
+/** listing_alerts.events for a price-cut signup: only price_change fires. */
+export const PRICE_DROP_ALERT_EVENTS: Readonly<Record<string, boolean>> = {
+  new: false,
+  price_change: true,
+  status_change: false,
+  back_on_market: false,
+  sold: false,
+  open_house: false,
+}
+
+/**
  * The window's answer when the price-cut read did not answer (§0: unknown is
  * not zero). The empty-window copy says no home cut its price; this says the
  * page could not look, so a failed read never passes for a quiet week.

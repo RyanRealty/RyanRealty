@@ -478,8 +478,8 @@ export function resolveUrl(baseUrl, routeKey, readParity) {
  * the capture: ~128 GA4 sessions in four weeks and 1,232 unflagged first-party
  * sessions were this tool (Matt 2026-10-05, GA cleanup). Any stored answer
  * hides the banner, and a decline records nothing. The browser itself carries
- * the `rr_automation=1` marker (scripts/lib/marked-playwright.mjs), so the site
- * loads no Google tag for it either way. `ci:analytics-suppression` holds both.
+ * `rr_automation=1` and `rr_internal=1` (scripts/lib/marked-playwright.mjs), so
+ * the site loads no Google tag for it either way. `ci:analytics-suppression` holds both.
  */
 const SUPPRESS_OVERLAYS = () => {
   try {
@@ -511,7 +511,7 @@ async function dismissOverlays(page) {
   // bottom-left corner, so it lands in the corner of every record taken against
   // `next dev` — which is every record these lanes take. It is not the page.
   await page.evaluate(() => document.querySelectorAll('nextjs-portal').forEach((n) => n.remove())).catch(() => {})
-  for (const name of ['Maybe later', 'Accept All', 'Accept all', 'Essential only', 'Got it']) {
+  for (const name of ['Maybe later', 'Essential only', 'Got it']) {
     try {
       const btn = page.getByRole('button', { name }).first()
       if (await btn.isVisible({ timeout: 250 })) await btn.click({ timeout: 600 })

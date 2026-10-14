@@ -1,4 +1,5 @@
 /**
+ * reachability: entry-point fleet-lock registry held by its contract test — HOLD until Matt clears the Flex A/B call (see below).
  * Matt 2026-09-17: Prove CMA locks on Canter first (near Flex / live bar),
  * then apply ALL locks to every CMA via these shared engine paths.
  * Tip Ready: node scripts/lib/taste-receipt.mjs --ship lib/cma/canter-then-fleet-locks.parity.json

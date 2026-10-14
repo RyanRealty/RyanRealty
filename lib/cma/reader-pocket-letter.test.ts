@@ -97,9 +97,16 @@ describe('2382 Jackson: the raw-range sentence names the adjustments it was pric
     expect(adjustedForPhrase(kept)).toBe('date and seller concessions')
     const html = cityMedianReconciliationHtml({ pricing, comps, subject } as unknown as OpinionPageArgs)
     expect(html).toContain(
-      'The three sales behind your price sold for $545,000 to $690,000 before adjusting for date and seller concessions; adjusted, they support',
+      'The three sales behind your price sold for $545,000 to $690,000 before adjusting for date and seller concessions.',
     )
     expect(html).not.toContain('date and size')
+  })
+
+  it('says "behind this value" on a home that is on the market (rule 27)', () => {
+    const onMarket = { ...subject, standardStatus: 'Active' }
+    const html = cityMedianReconciliationHtml({ pricing, comps, subject: onMarket } as unknown as OpinionPageArgs)
+    expect(html).toContain('The three sales behind this value sold for')
+    expect(html).not.toContain('your price')
   })
 
   it('names size where a size line moved a sale, and nothing where no line moved', () => {

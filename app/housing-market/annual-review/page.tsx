@@ -94,9 +94,10 @@
  *     states the measured reason it does not use that builder's base. The Menu+
  *     overlay's bare valuation link belongs to the layout's chrome, so the
  *     measurement that matters here is the one inside <main>. A bare door does
- *     not merely lose attribution: app/home-valuation/actions.ts falls back to
- *     the referer's own path, so the valuation page records itself as the origin
- *     of every seller lead this page produces (the 2026-07-15 conversion audit).
+ *     not merely lose attribution: submitSellerLPForm (lib/crm/lead-origin-path.ts)
+ *     falls back to the form's own page, so /sell or /sell/valuation records itself
+ *     as the origin of every seller lead this page produces (the 2026-07-15
+ *     conversion audit).
  *     KbSell set `from` to its mounted pathname, and both constants reproduce it.
  *  6. ONE NUMBER PER FACT, ON THE PAGE AND IN THE PAYLOAD. Each figure published
  *     twice, on screen and in the Dataset markup, is rounded ONCE upstream of
@@ -627,8 +628,8 @@ export default async function AnnualReviewPage() {
               verdict.kind === 'unknown'
                 ? 'The year in Central Oregon housing'
                 : mosText
-                  ? `A ${verdict.label} at ${mosText} months of supply`
-                  : `A ${verdict.label}`,
+                  ? `${mosText} months of supply`
+                  : 'The year in Central Oregon housing',
             )}
             figures={[firstRegionFigure, ...restRegionFigures]}
             /* SITE-101: one claim (verdict + MOS). MOS is V3MosBars drawing

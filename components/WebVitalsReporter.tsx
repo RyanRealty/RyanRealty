@@ -3,6 +3,7 @@
 import { useReportWebVitals } from 'next/web-vitals'
 import { scrubPrivateUrls } from '@/lib/analytics/private-paths'
 import { isNonPagePath } from '@/lib/analytics/web-vitals-sample'
+import { pushDataLayerEvent } from '@/lib/analytics/ga4-browser-events'
 
 /**
  * Real-user Core Web Vitals reporter.
@@ -10,7 +11,7 @@ import { isNonPagePath } from '@/lib/analytics/web-vitals-sample'
  * Next's useReportWebVitals fires once per metric (LCP, INP, CLS, FCP, TTFB) as
  * the browser measures it. We send each sample two places:
  *   1. /api/web-vitals -> public.web_vitals (powers the scoreboard's field p75)
- *   2. GA4 as an event (so Google's own reports carry real CWV too)
+ *   2. GA4 as an event via GTM (so Google's own reports carry real CWV too)
  *
  * Telemetry is best-effort and must never affect the page — every send is
  * wrapped in try/catch and uses sendBeacon (survives page unload).
@@ -52,15 +53,15 @@ export function WebVitalsReporter() {
       // ignore
     }
 
-    // 2. GA4 (real-user CWV in Google's reports).
+    // 2. GA4 (real-user CWV in Google's reports), through GTM's GA4 Event tag
+    //    (lib/analytics/ga4-browser-events.ts). A bare gtag('event') has reached
+    //    nothing since 1224b1f made GTM's Google tag the only GA4 config.
     try {
-      const w = window as unknown as { gtag?: (...args: unknown[]) => void }
-      w.gtag?.('event', metric.name, {
+      pushDataLayerEvent(metric.name, {
         // GA4 event values are integers; CLS is unitless so scale x1000.
         value: Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
         metric_id: metric.id,
         metric_rating: metric.rating,
-        non_interaction: true,
       })
     } catch {
       // ignore

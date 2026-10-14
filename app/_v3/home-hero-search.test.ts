@@ -23,9 +23,9 @@ describe('homepage hero search uses the public search stack', () => {
     expect(PAGE).not.toMatch(/headline=\{v3Text\('Ryan Realty, Bend'\)\}/)
     // gsc-trend-11 (2026-09-23): the brand leads the title.
     // Brand first, then the terms GSC shows / for (Matt 2026-10-04).
-    expect(PAGE).toMatch(/title:\s*\{\s*absolute:\s*'Ryan Realty \| Bend Oregon Real Estate & Homes for Sale'\s*\}/)
-    expect(PAGE).toMatch(/openGraph: \{[\s\S]*?title: 'Ryan Realty \| Bend Oregon Real Estate & Homes for Sale'/)
-    expect(PAGE).toMatch(/twitter: \{[\s\S]*?title: 'Ryan Realty \| Bend Oregon Real Estate & Homes for Sale'/)
+    expect(PAGE).toMatch(/title:\s*\{\s*absolute:\s*'Ryan Realty \| Bend, Oregon Real Estate Brokerage'\s*\}/)
+    expect(PAGE).toMatch(/openGraph: \{[\s\S]*?title: 'Ryan Realty \| Bend, Oregon Real Estate Brokerage'/)
+    expect(PAGE).toMatch(/twitter: \{[\s\S]*?title: 'Ryan Realty \| Bend, Oregon Real Estate Brokerage'/)
     expect(PAGE).toMatch(/<HomeHeroSearch[^>]*valuationHref=/)
   })
 
@@ -435,8 +435,9 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PLACES).not.toMatch(/markSrc/)
     expect(PLACES).not.toMatch(/home-browse-places__mark/)
     expect(PAGE).not.toMatch(/markSrc/)
-    expect(PAGE).toContain('attachListingCardExtras')
-    expect(PAGE).toContain('enrichHomeRailRows')
+    expect(PAGE).toContain('HOME_RAIL_POOL')
+    expect(PAGE).not.toContain('attachListingCardExtras')
+    expect(PAGE).not.toContain('enrichHomeRailRows')
     expect(RAIL_CLIENT).not.toContain('ListingTourOverlay')
     expect(RAIL_CLIENT).toContain('tourUrl={card.tourUrl}')
     expect(RAIL_CLIENT).toContain('SPLIT_CARD_MEDIA_SIZES_RAIL')

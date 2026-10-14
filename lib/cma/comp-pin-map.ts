@@ -25,8 +25,10 @@
  * price changed, and the outcome line. The legend names the three families in
  * the words the three matrices use.
  *
- * The SVG fallback below is what a document with no map key gets: the same
- * pins, the same attributes, on a cream field with no basemap under them.
+ * The SVG below is the drawing unit's own fallback when a caller has
+ * coordinates and no tile. The letter does not print it. mapBodyHtml omits
+ * the map, the legend, and the "Every pin above" sentence when there is no
+ * tile image (rule 31, 2745 Aldrich, 2026-10-09).
  */
 
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
@@ -69,6 +71,13 @@ export type CmaPinFact = {
   priceChanges: number | null
   /** False when the record says only THAT the price moved, not how often. */
   priceChangesExact?: boolean
+  /**
+   * The price changes are counted over the home's last stretch on the market,
+   * which is not its listing's first: "no price change" holds only since it
+   * came back (reader review 2026-10-09, 61197 Cottonwood went from $849,900
+   * to $774,900 before it came back at $774,900).
+   */
+  sinceCameBack?: boolean
   latitude?: number | null
   longitude?: number | null
   /** Matrix 3's split: an active pin's row is in the Active or the Pending table. */
@@ -199,7 +208,9 @@ export function pinRevealLine(fact: CmaPinFact): string {
   if (fact.priceChanges != null && fact.priceChanges >= 0) {
     bits.push(
       fact.priceChanges === 0
-        ? 'no price change'
+        ? fact.sinceCameBack
+          ? `no price change since it last came on the market`
+          : 'no price change'
         : fact.priceChangesExact
           ? `${int(fact.priceChanges)} price change${fact.priceChanges === 1 ? '' : 's'}`
           : 'came down at least once',
@@ -210,11 +221,36 @@ export function pinRevealLine(fact: CmaPinFact): string {
 
 /** Said on a set-aside sale's pin, on tap and to a screen reader. */
 export const SET_ASIDE_PIN_NOTE = 'Set aside: did not set the price'
+/**
+ * The same note on a letter whose sales set only the range
+ * (lib/cma/sales-role.ts). 20676 Wild Rose's legend said "Closed sales: these
+ * set the range" while its set-aside pins said "did not set the price"
+ * (reader review 2026-10-08).
+ */
+export const SET_ASIDE_PIN_NOTE_RANGE = 'Set aside: did not set the range'
+/** The same note on a home on the market, whose sales set an opinion of value (rule 27). */
+export const SET_ASIDE_PIN_NOTE_VALUE = 'Set aside: did not set the value'
+
+/**
+ * The set-aside pin's note, by the decision the legend's closed line was
+ * drawn from: when the legend says the closed sales set the range, so does
+ * every set-aside pin.
+ */
+export function setAsidePinNote(closedLabel?: string | null): string {
+  if (closedLabel === CLOSED_SET_RANGE_LABEL) return SET_ASIDE_PIN_NOTE_RANGE
+  if (closedLabel === CLOSED_SET_VALUE_LABEL) return SET_ASIDE_PIN_NOTE_VALUE
+  return SET_ASIDE_PIN_NOTE
+}
 
 /** The whole pin, in words, for a screen reader and for the button's label. */
-export function pinReading(fact: CmaPinFact): string {
+export function pinReading(fact: CmaPinFact, opts?: { closedLabel?: string | null }): string {
   const line = pinRevealLine(fact)
-  return [`${fact.key}. ${fact.address}`, fact.outcome, line, fact.setAside ? SET_ASIDE_PIN_NOTE : '']
+  return [
+    `${fact.key}. ${fact.address}`,
+    fact.outcome,
+    line,
+    fact.setAside ? setAsidePinNote(opts?.closedLabel) : '',
+  ]
     .filter(Boolean)
     .join('. ')
 }
@@ -299,12 +335,12 @@ const WIDE_LAYOUT = { width: 1000, separation: 34 }
 const PHONE_LAYOUT = { width: 339, separation: 29 }
 
 /** The reveal card's markup. Address, outcome, days and price changes. */
-function revealHtml(fact: CmaPinFact): string {
+function revealHtml(fact: CmaPinFact, closedLabel?: string | null): string {
   const line = pinRevealLine(fact)
   return `<span class="pn-a">${esc(fact.address)}</span>${
     fact.outcome ? `<span class="pn-o">${esc(fact.outcome)}</span>` : ''
   }${line ? `<span class="pn-d">${esc(line)}</span>` : ''}${
-    fact.setAside ? `<span class="pn-d">${esc(SET_ASIDE_PIN_NOTE)}</span>` : ''
+    fact.setAside ? `<span class="pn-d">${esc(setAsidePinNote(closedLabel))}</span>` : ''
   }`
 }
 
@@ -395,6 +431,11 @@ export type CompPinMapInput = {
 
 /** The legend line for closed sales on a letter whose cover the sales did not set. */
 export const CLOSED_SET_RANGE_LABEL = 'Closed sales: these set the range'
+/**
+ * The legend line on a home on the market (rule 27), whose cover is an opinion
+ * of value (reader review 2026-10-09, 3062 NW Kelly Hill).
+ */
+export const CLOSED_SET_VALUE_LABEL = 'Closed sales: these set the value'
 
 /**
  * The map, and the pins it actually drew.
@@ -465,8 +506,8 @@ export function compPinMap(input: CompPinMapInput): CompPinMapDrawing {
           glyph: pin.key!,
           family: pin.family,
           extraClass: pin.family === 'closed' && fact.setAside ? 'is-aside' : undefined,
-          label: pinReading(fact),
-          reveal: revealHtml(fact),
+          label: pinReading(fact, { closedLabel: input.closedLabel }),
+          reveal: revealHtml(fact, input.closedLabel),
           xPct: at.xPct,
           yPct: at.yPct,
           phone,
@@ -539,7 +580,7 @@ export function compPinMap(input: CompPinMapInput): CompPinMapDrawing {
           }/>`
       return `<g class="pin-sale ${pinClass(fact)}" data-pin="${esc(fact.key)}" data-comp="${esc(
         fact.key,
-      )}" tabindex="0" role="button" aria-label="${esc(pinReading(fact))}">
+      )}" tabindex="0" role="button" aria-label="${esc(pinReading(fact, { closedLabel: input.closedLabel }))}">
         <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="24" fill="transparent"/>
         ${body}
         <text x="${p.x.toFixed(1)}" y="${(p.y + 4).toFixed(1)}" text-anchor="middle" fill="${

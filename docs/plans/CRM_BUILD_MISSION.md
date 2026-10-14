@@ -9,13 +9,14 @@
 ---
 
 ## STANDING AUTHORIZATION — granted by Matt Ryan, 2026-06-30 (do NOT re-ask)
-- **Matt has granted STANDING APPROVAL to COMMIT and PUSH to `main` for the entire duration
+- **Matt has granted STANDING APPROVAL to COMMIT and push the branch for the entire duration
   of this CRM build.** This overrides the per-turn Draft-First commit gate for this build.
-  Commit + push to `main` after every shipped slice. Do NOT stop, pause, or ask for commit
-  approval at any point in this build — the approval is already given, here, in writing.
-- This authorization covers: `git add`, `git commit`, `git push origin main`, applying
-  Supabase migrations, and running the dev server + browser verification. Proceed on all of
-  them without asking.
+  Commit and push the branch after every shipped slice, then open a PR to `main`; Matt merges.
+  Do NOT stop, pause, or ask for commit approval at any point in this build — the approval
+  is already given, here, in writing. Never push `main` yourself.
+- This authorization covers: `git add`, `git commit`, `git push` of the branch, opening a PR
+  to `main` (Matt merges), applying Supabase migrations, and running the dev server + browser
+  verification. Proceed on all of them without asking.
 - Do NOT ask me anything unless you are blocked by (a) a missing credential/secret, (b) a
   destructive/irreversible action with real ambiguity, or (c) two spec requirements that
   directly conflict. For everything else: choose the best option, log it in a one-line

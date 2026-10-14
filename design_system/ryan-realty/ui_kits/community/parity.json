@@ -52,8 +52,23 @@
       "blocking": true
     },
     {
+      "name": "CommunityFoldAnswer",
+      "section": "#answer, the 2-3 sentence leftover answer under the H1 (2026-10-13): live active count, median list, 12-month median sale, median days to contract, cited Oregon Data Share MLS as of the leftover date. Missing or non-positive figures drop their clause. Never a $0.",
+      "blocking": true
+    },
+    {
+      "name": "CommunityHomesGrid",
+      "section": "#homes, the server-rendered active listing grid. Same for-sale tiles as the map dials. A crawler and a no-JS reader see every card.",
+      "blocking": true
+    },
+    {
       "name": "PlaceSubdivisionHomes",
-      "section": "#homes, the listing dials (Matt 2026-09-24: every place page shows listings the same way; /subdivisions/northwest-crossing and /subdivisions/broken-top 301 here, which is where Matt still saw the carousel). Every publicly active home in the current map selection, one V3ListingDial per buyer group: one home large with its lead photograph and the card copy, the rest of the group as thumbnails on a vertical rail to its left (a strip under the card on a phone), an \"03 / 12\" readout heading the rail. The type links over it (community-field-types) land on each dial's #homes-<group> id. Commercial leases are the last dial, never in a for-sale dial or its count. Every listing stays an <a href> in the served HTML.",
+      "section": "#homes-dial, the listing dials under the map (Matt 2026-09-24: every place page shows listings the same way; /subdivisions/northwest-crossing and /subdivisions/broken-top 301 here, which is where Matt still saw the carousel). Every publicly active home in the current map selection, one V3ListingDial per buyer group: one home large with its lead photograph and the card copy, the rest of the group as thumbnails on a vertical rail to its left (a strip under the card on a phone), an \"03 / 12\" readout heading the rail. The type links over it (community-field-types) land on each dial's #homes-dial-<group> id. Commercial leases are the last dial, never in a for-sale dial or its count. Every listing stays an <a href> in the served HTML. The crawlable for-sale grid is CommunityHomesGrid #homes.",
+      "blocking": true
+    },
+    {
+      "name": "CommunityBroker",
+      "section": "#broker, Your local broker, after the FAQ. Door to /team/matthew-ryan. No invented numbers.",
       "blocking": true
     },
     {
@@ -244,12 +259,15 @@
     "MetadataBlock",
     "PlaceAreaHero (photograph owns the fold)",
     "V3Breadcrumb",
-    "V3Heading (H1 `{Community} homes for sale`)",
+    "V3Heading (H1 `{Community} Homes for Sale`)",
+    "CommunityFoldAnswer #answer (live leftover count, median list, 12-month median sale, days to contract)",
+    "CommunityHomesGrid #homes (server-rendered for-sale grid)",
+    "V3Ledger #sold (recently sold, 6 months)",
     "CommunityInsight #place-insight (the paged supply figure: the community's own months of supply, or the withheld count and the parent city named as the city; then the community's monthly closes)",
     "CommunityAlertsStrip #alerts (the 30-day new-listing count and the email ask, beside the figure in the first screen, 2026-10-01)",
     "PlaceSubdivisionRail #child-places -- subdivisions beside the one map. Name and property-type line. No sales bars.",
     "PlaceSubdivisionAtlas #atlas -- the one map. Selecting a subdivision zooms to it. No second map and no reach list.",
-    "PlaceSubdivisionHomes #homes, listing dials -- one V3ListingDial per buyer group of every publicly active home in the place, or in the selected subdivision; commercial leases last.",
+    "PlaceSubdivisionHomes #homes-dial, listing dials -- one V3ListingDial per buyer group of every publicly active home in the place, or in the selected subdivision; commercial leases last.",
     "CommunityPlaceValue (address in, verdict and pace out, then the email that delivers the written valuation)",
     "V3Amenities #amenities -- each authored place and what it is. No share bar.",
     "V3Instrument #market (this community's typical-price slope; never Bend's median) or V3Quiet (too few / stated absence)",
@@ -259,6 +277,7 @@
     "V3Ledger #open-houses",
     "V3Ledger #activity",
     "V3Answers #faq",
+    "CommunityBroker #broker",
     "V3Footer"
   ],
   "superseded": [],

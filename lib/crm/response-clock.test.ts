@@ -101,7 +101,6 @@ describe('SITE_SUBMIT_SOURCES — pinned against the action files', () => {
   it.each([
     ['app/contact/actions.ts', "source: 'contact-form'"],
     ['app/actions/search-alert-capture.ts', "source: 'idx-registration'"],
-    ['app/lp/expired-listing/actions.ts', "source: 'expired-lp'"],
     ['app/communities/[slug]/_v3/place-value-actions.ts', "source: 'place-page'"],
     ['app/actions/book-appointment.ts', 'website-booking'],
   ])('%s still writes %s', (file, literal) => {
@@ -116,7 +115,16 @@ describe('SITE_SUBMIT_SOURCES — pinned against the action files', () => {
   })
 
   it('the buyer LP still writes source:buyer-lp', () => {
-    expect(read('app/lp/buyer-listing-alerts/actions.ts')).toContain('buyer-lp')
+    // /buy/[intent] since /lp/buyer-listing-alerts became a redirect; its action
+    // was deleted 2026-10-04.
+    expect(read('app/actions/lead-landing.ts')).toContain("'buyer-lp'")
+  })
+
+  it('keeps expired-lp for the leads already recorded under it', () => {
+    // No action writes it since the /lp/expired-listing form and action were
+    // deleted (2026-10-04); people created by it still carry it, and the clock
+    // still counts their submit as one.
+    expect(SITE_SUBMIT_SOURCES).toContain('expired-lp')
   })
 
   it('does NOT include the bare site domain (a website sign-in asked us for nothing)', () => {

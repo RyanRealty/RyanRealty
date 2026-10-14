@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 import { findViolations } from '../check-analytics-suppression.mjs'
+import { markerCookies, plantFlagsScript, AUTOMATION_MARKER_COOKIE, INTERNAL_USER_COOKIE, CONSENT_COOKIE } from '../lib/automation-marker.mjs'
 
 const one = (rel, src) => findViolations([{ rel, src }])
 
@@ -38,7 +39,26 @@ describe('ci:analytics-suppression (Matt 2026-10-05, GA cleanup)', () => {
     expect(one('e2e/a.spec.ts', "await page.getByRole('button', { name: 'Accept all' }).click()")).toHaveLength(1)
     const decline = grant.replace('analytics: true, marketing: true', 'analytics: false, marketing: false')
     expect(one('scripts/take-route-shots.mjs', decline)).toEqual([])
+    expect(
+      one(
+        'scripts/probe-x.mjs',
+        "for (const label of ['Not now', 'Essential only', 'Accept all']) {\n  await btn.click()\n}",
+      ),
+    ).toHaveLength(1)
     // The site's own banner writes the visitor's real answer.
     expect(one('components/CookieConsentBanner.tsx', grant)).toEqual([])
+  })
+
+  it('plants rr_automation, rr_internal, and a declined consent cookie', () => {
+    const names = new Set(markerCookies().map((c) => c.name))
+    expect(names.has(AUTOMATION_MARKER_COOKIE)).toBe(true)
+    expect(names.has(INTERNAL_USER_COOKIE)).toBe(true)
+    expect(names.has(CONSENT_COOKIE)).toBe(true)
+    expect(markerCookies().some((c) => c.name === CONSENT_COOKIE && c.value.includes('false'))).toBe(true)
+    const planted = plantFlagsScript()
+    expect(planted).toContain('rr_automation=1')
+    expect(planted).toContain('rr_internal=1')
+    expect(planted).toContain('analytics')
+    expect(planted).not.toMatch(/analytics":true/)
   })
 })

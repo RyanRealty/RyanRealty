@@ -69,7 +69,24 @@ export function publishListingDropMark(
     const key = normalizeEvent(row.event)
     if (key !== 'pricechange' && key !== 'pricedrop') continue
     const change = row.price_change
-    if (change == null || !Number.isFinite(change) || change >= 0) continue
+    if (change == null || !Number.isFinite(change)) continue
+    // A RISE NEWER THAN THE CUT ENDS THE SEARCH (2026-09-11).
+    //
+    // This loop used to `continue` past an increase and keep hunting for an
+    // older decrease, so a cut stayed on the page after the seller put the
+    // price back up. /homes-for-sale/bend/21357-kilimanjaro-220222798 asked
+    // $614,995 while this mark printed a struck-through $609,995 labelled
+    // "Cut $1,000" beside it — a LOWER number presented as the old price, so
+    // the page read as a discount on a home whose price had just gone UP
+    // $6,000 (history: -$1K Aug 19, +$6K Sep 2). Publishing a rise as a cut is
+    // a §0 failure and a misrepresentation on a licensed broker's listing.
+    //
+    // Newest-first, the first price ACTION decides: a rise means there is no
+    // cut to publish today, so stop rather than reach past it. `=== 0` is not
+    // an action and is skipped; a null/NaN change cannot be classified either
+    // way and is skipped rather than treated as a rise.
+    if (change > 0) return null
+    if (change === 0) continue
     const to = positive(row.price)
     if (to == null) return null
     const from = to + Math.round(Math.abs(change))

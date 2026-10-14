@@ -327,7 +327,12 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
     expect(html).toContain('The sales that set this price')
     expect(html).toContain('The listings near you that did not sell.')
     expect(html).toContain('id="competition"')
-    expect(html).toContain('days on market')
+    // Rule 31 (2745 Aldrich): this call passes no tile, so the pin-reveal
+    // line ("97 days on market") is not printed. That line belonged to the
+    // map. The matrix still names the count, and the page does not talk
+    // about pins that are not there.
+    expect(html).toContain('Days on market')
+    expect(html).not.toContain('Every pin above')
     expect(html.toLowerCase()).not.toContain('overprice')
   })
 })

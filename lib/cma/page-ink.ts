@@ -1,5 +1,6 @@
 /**
  * Sheet-ink checks the page-safety contract does not cover.
+ * reachability: entry-point test-support: lib/cma/page-safety.int.test.ts and letter-pagination.int.test.ts run these on rendered letters
  *
  * A section banner and its heading must not be the last ink on a sheet.
  * The body they introduce starts on the next sheet, which is how the

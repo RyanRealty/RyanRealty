@@ -304,11 +304,11 @@ A user-visible task is not done without a screenshot proving real data renders, 
 `PROSE ⚠ NEEDS GATE` · *Merged from: .cursor/rules/definition-of-done.mdc, memory feedback_verify_before_moving_on + feedback_verify_entire_surface*
 
 ### 4.6 Deploy verification is mandatory
-`npm run deploy:verify` runs immediately after every push to `main`, polling Vercel for the pushed SHA and exiting non-zero on error. "Pushed = done" is banned. Confirm `origin/main` SHA moved and Vercel built.
+`npm run deploy:verify` runs immediately after Matt merges a PR to `main`, polling Vercel for the SHA and exiting non-zero on error. "Pushed = done" is banned. Confirm `origin/main` SHA moved and Vercel built.
 `GATE: deploy:verify` (script confirmed: `scripts/check-vercel-deploy.mjs`) · *Merged from: .cursor/rules/deploy-verify-before-done.mdc, memory feedback_verify_push_landed*
 
 ### 4.7 Git workflow
-Single checkout, `main` only. No `git worktree`, no feature branches, no PRs unless explicitly asked. Before work: `git pull --rebase origin main`. After an **approved** commit: push to `origin` immediately — no locally-parked commits. Migrations apply to hosted Supabase in the same delivery as the code depending on them. Stale `.git/index.lock` files get cleared silently, never reported as a blocker. Push via `npm run push` so gates + build stamp the pre-push marker before the SSH connection opens.
+Branch from current `origin/main`. Push the branch immediately — no locally-parked commits. Open a PR to `main`; Matt merges. Never push, fast-forward, or merge `main` yourself. No rebase, force-push, or reset. Migrations apply to hosted Supabase in the same delivery as the code depending on them. Stale `.git/index.lock` files get cleared silently, never reported as a blocker. Push the branch via `npm run push` so gates + build stamp the pre-push marker before the SSH connection opens.
 `GATE: pre-push hook (rr-gates-marker)` · *Merged from: CLAUDE.md, AGENTS.md, memory feedback_direct_to_main + feedback_always_push + reference_prepush_marker_npm_run_push*
 
 ### 4.8 UI is built from the design system, never hand-rolled

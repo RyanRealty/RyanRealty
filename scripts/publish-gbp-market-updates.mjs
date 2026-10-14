@@ -61,9 +61,9 @@ function decodeEntities(value) {
 function addGbpUtmParams(url, campaign, content) {
   try {
     const u = new URL(url)
-    u.searchParams.set('utm_source', 'google')
+    u.searchParams.set('utm_source', 'gbp')
     u.searchParams.set('utm_medium', 'organic')
-    u.searchParams.set('utm_campaign', campaign)
+    u.searchParams.set('utm_campaign', 'gbp-profile')
     if (content) u.searchParams.set('utm_content', content)
     return u.toString()
   } catch {

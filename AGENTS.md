@@ -1,3 +1,44 @@
+# CORE RULES (read first; these override everything below and any handoff or plan doc)
+
+These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait, or to `git push` `main`, is stale.
+
+**Main.** Work isn't done until merged and live in production (Matt 2026-10-13). Agents merge their own PRs once checks pass; never ask. `npm run ship`: gates, push, merge, confirm the Vercel production deploy. Never `git push` `main`. Unfinished work is `npm run push` only.
+
+**Git safety.** No rebase. No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away.
+
+**Do not send.** Emails, texts, CMAs, and social posts stay drafts until Matt asks to send that specific item. A rebuild does not send, enqueue, or approve.
+
+**Names.** Never put buyer or seller names in public copy (site, email, social, letters).
+
+**Invent nothing.** Never invent numbers, names, prices, stats, or people. If it is not in the source you just read, it does not ship.
+
+**Prod DB.** Production Supabase is read-only unless Matt says otherwise in this session. Raw SQL is `-- audit:` row reads only.
+
+**Secrets.** Never print API keys, tokens, passwords, or `.env` values. Never put them in commits, logs, or chat.
+
+**Integrations.** Before saying a service is not connected, search this repo for the existing client, env var, and key. The wiring is usually already here.
+
+**Cursor out.** When Cursor is out (usage, credit, spend, 402, or a 20-minute stall), switch to Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve`. Never use `XAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` to get past a limit.
+
+**Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
+
+**Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. Ad copy, VO, captions: [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). video_gate is backup.
+
+---
+
+## Ad copy, voiceover and captions
+
+All ad work (copy, captions, voice, video, avatar) follows this same process on every tool (Grok, Claude, or another). Never a generic fallback. Written voice stays [`marketing_brain_skills/brand-voice/VOICE.md`](marketing_brain_skills/brand-voice/VOICE.md). Engine markup, script template, and caption timing: [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md).
+
+1. Same process on every tool. Never drop to a generic script because the tool changed.
+2. Warm and conversational, like a friendly person on a phone call: short sentences, one idea each, light filler, natural pauses. Never scripted, robotic, broadcast, or market-report, and never complicated.
+3. The voiceover is a female voice.
+4. TikTok-style burned-in captions, 1-4 words per card, timed from the final rendered audio's timestamps. Never estimated.
+5. Write the VO in the confirmed engine's official markup. ElevenLabs v3/v4: ellipses, line breaks, and audio tags; no `<break>`. ElevenLabs v2: `<break time>`; no audio tags. Grok TTS: inline `[pause]` / `[breath]`; no SSML. Money is spoken words on every engine.
+6. Facts and numbers stay exactly as in the approved brief. Say "buyers have leverage," never "buyer's market." No em dashes, no client names or addresses, no "top team." Financing ads carry "Not lending advice. Talk to your lender." Nothing publishes without Matt.
+
+---
+
 # Agent Protocol — Ryan Realty
 
 This document tells AI coding agents (Cursor, Copilot, Windsurf, etc.) how to autonomously pick up, execute, validate, and complete development tasks on this project.
@@ -20,7 +61,7 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 1. One CMA path. Price on current main only. No second ladder. No 80% send floor. Do not merge PR 408 or any 80% floor. PR 401 stays. Do not revert 770a4fd1.
 2. Recommended price is the house from comps only. ADU, second lot, and rental income are letter notes, not dollars, until Matt says otherwise.
 3. Hold for Matt if the rec is more than 15% under last ask, or any amount over it. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold.
-4. One room rule: same whole bed or bath count anywhere. One whole room apart only on the subject's own plat, mapped neighborhood, or own street, kept and disclosed, zero dollars. Two or more apart refused everywhere. The picker and the review call the same decision. The review must not exclude a sale the picker kept for a room gap this rule allows.
+4. One room rule (Matt 2026-10-09): same whole bed or bath count anywhere. Up to two whole bedrooms off, up to two whole bathrooms off, or both, stays wherever the search already reached, kept and disclosed. It weighs less: one bedroom off is 0.85 of the room step, two bedrooms off is 0.70, one bathroom off is 0.90, two bathrooms off is 0.75, and the two counts multiply. Location still outranks rooms (same subdivision 3, adjacent 2, neighborhood 1). No dollar value is applied to the room. Three or more whole rooms apart on one count is refused everywhere. The picker and the review call the same decision. The review must not exclude a sale the picker kept for a room gap this rule allows.
 5. Pocket rungs are skipped when the plat and the street already have five sales before the first quarter-mile pocket rung. A cheap different-plat pocket sale drops when no own-plat sale remains in the set that is actually priced. Do not check only the pre-review set.
 6. Do not build or send a CMA if the home is listed again. Live status first. Active, pending, or otherwise on the market means skip.
 7. A rebuild does not send, enqueue, or approve.
@@ -30,9 +71,10 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 11. Approved CMAs send only in the weekday 9:03 AM PT window.
 12. Never use buyer or seller names in social, email, or public copy.
 13. No em dashes in public site copy.
-14. All code work is pushed to GitHub as a branch right away. Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset.
+14. A finished change is `npm run ship` (Matt 2026-10-09). Unfinished work is pushed as a branch right away. Never `git push` `main`. No rebase, force-push, or reset.
 15. Recommended price is the weighted price of the sales the picker kept. A closer match weighs more. A looser match stays. Location order, heaviest first, is the long-standing search order: same subdivision (weight 3), adjacent subdivisions (weight 2), the neighborhood or community (weight 1). Size and bedrooms come after that and cannot reorder it. A same-subdivision sale outweighs a similar-size neighborhood sale. An adjacent-subdivision sale sits between those two. One size cutoff, the picker's, about 35% living area. The review does not drop a picker-kept sale for a tighter size gap or a 15-year vintage wall. When the first location search is short of 3 comps, widen the closed-sale age and date range. Do not return a short set. The pull walks same subdivision, then adjacent subdivisions, then the neighborhood community, and widens the closed-sale age and date inside each before the next. After that community, distance rings start at 0.25 miles and step up by 0.25 miles. Do not open with a 1-mile ring. Do not fall back to same-zip while a closer place still has sales.
-16. An expired, canceled, or withdrawn home that did not sell was overpriced. The recommended price must come out under the last ask. A number that matches the ask, or sits over it, is wrong. The comps still set the price. Location weights stay same subdivision 3, adjacent 2, neighborhood 1, and size and bedrooms cannot reorder that. If the weighted comp price is already under the last ask, leave it. Do not add a second discount. If it is at the last ask or above it, pull it under. With no days on market and no original ask, the pull is $1,000, not a percent. When days on market or an original ask is already on the subject, start at 1% under and deepen with days on market toward 120 days. No price cut, when the original ask is known and did not come down, adds up to 2% more, so 3% at 120 days. A known price cut, or no original ask to judge a cut by, adds at most 0.5% more, so 1.5% at 120 days. The pull floors to the thousand and stays inside 3%. This is only for a home that failed to sell. Do not apply it to a normal comp sale. The hold is separate and unchanged: a rec more than 15% under last ask, or any amount over last ask, is a hold. Exactly 15% under is not a hold. Recommended price is still the house from comps only. ADU, second lot, and rental stay notes, not dollars.
+**One rule set (Matt 2026-10-08).** There is no second review. The picker rules are the process. "One rule set. The picker's size cutoff, sales kept out to about a 35% living-area gap, is the only size cutoff. Nothing re-judges a sale the picker kept. If the first search returns fewer than 3 comps that pass, widen the closed-sale age and date range and search again. Do not return a short set with no recovery, and do not run a token-burning review that uses different cuts."
+16. An expired, canceled, or withdrawn home that did not sell was overpriced. The recommended price must come out under the last ask. A number that matches the ask, or sits over it, is wrong. The comps still set the price. Location weights stay same subdivision 3, adjacent 2, neighborhood 1, and size and bedrooms cannot reorder that. If the weighted comp price is already under the last ask, leave it. Do not add a second discount. If it is at the last ask or above it, pull it under. With no days on market and no original ask, the pull is $1,000, not a percent. When days on market or an original ask is already on the subject, start at 1% under and deepen with days on market toward 120 days. No price cut, when the original ask is known and did not come down, adds up to 2% more, so 3% at 120 days. A known price cut, or no original ask to judge a cut by, adds at most 0.5% more, so 1.5% at 120 days. The pull floors to the thousand and stays inside 3%. This is only for a home that failed to sell. Do not apply it to a normal comp sale. The hold is separate and unchanged: a rec more than 15% under last ask, or any amount over last ask, is a hold. Exactly 15% under is not a hold. Recommended price is still the house from comps only. ADU, second lot, and rental stay notes, not dollars. The under-the-ask test reads the weighted price of the sales that set the price (reconciliation.weightedPrice), not the list tier above it (Matt 2026-10-08, delegated): 3037 Purcell's sales blend to $561,188, already under the $565,000 ask, so the cover is $561,000 before the actives pull and the $576,000 list tier is not used; 62475 Woodsman's sales blend to $1,577,841, already under the $1,600,000 ask, so the cover is $1,578,000 before the actives pull and the $1,620,000 list tier is not used. When that weighted price is at or above the last ask, this pull is unchanged. The high-DOM sitting-actives pull still applies after. Held by lib/cma/failed-ask-weighted.test.ts.
 17. A seller CMA letter must not print internal search labels (including own-street-24mo and any similar slug), unfinished sentences, "the N of the M", review tokens such as pass, a list date labeled as the off-market date, or a recommendation the letter says the comps do not support. Each count says what it counts. The new-home sentence matches the table beside it. A local price per square foot that held flat and a large date cut do not both ship. A negligible-weight sale stays in the table when the price counted it, and the letter says the weight is under one percent so it barely moves the price. It is not described as the sale that set the number. A zero room adjustment is explained in plain language or omitted. No buyer or seller names. The generator refuses these shapes in lib/cma/seller-letter-copy.ts. Do not put them back. Each home on the screen cards shows one listing photo when the MLS has one. Do not strip those photos. Each sold comp field prints once on those cards. A card must not paint another card's weight column, and the room-adjustment sentence is not clipped.
 18. Sold information on a CMA includes seller concessions (or seller-paid closing costs) when the MLS already stored an amount. Comparison matrices factor that amount into the sale they adjust. A sale price that ignores a recorded concession is wrong. When the sale reported none, print none or zero; do not hide the line. Do not invent a concession amount. Adjusted matrix figures, the prices that set the recommendation, and any sold summary must use the same concession-adjusted sale.
 19. A resale built within 5 years of the as-of date still prices with brand-new homes that have never been owned. That window is the custom/new year band already in the pricer, as-of minus year built at most 5, not a new cutoff. The 0-2 year mark still means the house itself is a new build and still wins over a false new-construction flag. The 15-year band is still one construction generation among custom and new homes. A 2021 resale as of 2026 is inside the window, so those brand-new sales stay in the price set. That is why the new homes are the higher price. After 5 years, a resale with the new-construction flag false, and without custom-quality remarks or a new-construction subtype, is not priced as the same product as never-owned new construction. When the subject is a resale inside the window and the sales that set the price include never-owned new homes, the seller letter says, in plain sentences, that this home is basically a new home, but it is competing with brand-new homes that have had no previous owner, at that same price point, so it will likely sell for less. Do not invent a dollar discount. The recommended price stays the weighted sales. The letter and the matrix name the same homes.
@@ -41,11 +83,26 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 22. Community membership is the location of the address, for every community. It is not the MLS SubdivisionName and not a one-community exception. A sale belongs to the subject's community when its latitude and longitude sit inside that community boundary, or inside a plat that sits in that community, even when the MLS subdivision name is a different plat. A sale does not belong because the remarks mention the community. The search order is own subdivision, then adjacent subdivisions, then the neighborhood community, then distance. A point inside a recorded plat is a member of that community even when the MLS subdivision name differs. A remarks mention of the community or the golf course is not membership. Distance rings start at 0.25 miles and step up by 0.25 miles. Do not open with a 1-mile ring. Do not replace that order with a radius search.
 23. A recommended price under every sale that set it, or above every one of them, is not a price. The set is wrong, or the result is a hold. Do not print a number outside that set. A sale does not set the price when it is a different community than the subject, or a clearly different size or product: a house much larger or much smaller than the one living-area cutoff, a cottage versus acreage, or a different plat that is not the subject's community. A different MLS name inside the subject's community still sets the price. Community membership stays the location of the address. The search order is unchanged.
 24. Expired and FSBO intake (Matt 2026-10-05). A CMA is built when we hold a sendable owner email, or a cell number we can text. Before `createCmaRequest` and before the CRM person is created, in this order: live status, then compliance, then email, then a cell. Live status skips Active, Pending, Coming Soon, and Closed after the expiry, matched on the same address or the same parcel or taxlot. Compliance skips a litigator and a deceased owner. The litigator tag is applied only when the skip-trace says the person is a litigator. TCPA-only and a DNC phone block calls and texts. They do not block email and they do not set `compliance:hard-stop`. A sendable, non-suppressed email still builds the CMA and the send stays email. With no sendable email, a non-DNC cell whose line type is mobile, wireless, or cell builds the CMA and the send is SMS. A landline, a VOIP number, or a phone with no line type does not. An untyped listing-page phone is not a cell. A suppressed email is not used. A clean cell still builds, and that send is SMS. Nothing texts the owner from intake. The existing prospect SMS intro sends after the letter is approved. Do not put this gate in `sendCmaToLead` or `createCmaRequest`. Those also serve inbound seller and lead-form CMAs. The source of truth is `expired_listings.compliance_hard_stop` and `compliance_flags`, and the same columns on `fsbo_listings`. Every expired and FSBO send path reads them. A litigator or deceased owner sets the column so the send stays blocked. See `.cursor/rules/expired-fsbo-intake.mdc`.
+25. **UTM convention (Analytics fix 8, 2026-10-08).** Every outbound ryan-realty.com link is built with `buildTrackedUrl` in `lib/analytics/utm.ts`. One UTM set per URL (existing `utm_*` are replaced, never appended). No street addresses, person names, or per-property slugs in any `utm_*` value. Test/preview sends use `test: true` so `utm_campaign=test-<campaign>`. CMA document identity rides in first-party `rr_doc=<cmas.slug>`, not in `utm_campaign`. Details: `.cursor/rules/utm-convention.mdc`. Buyer paid/organic table: `docs/analytics/buyer-utm-spec.md`.
+
+| Param | Allowed values |
+|---|---|
+| utm_source | `crm`, `cma`, `gbp`, `facebook`, `instagram`, `x`, `youtube`, `tiktok`, `google`, `newsletter`, `zillow`, `realtor`, `referral-<domain>` |
+| utm_medium | `email`, `sms`, `organic`, `social`, `paid_social`, `cpc`, `document`, `referral`, `qr` |
+| utm_campaign | stable program slug: `cma-letter`, `expired-outreach`, `fsbo-outreach`, `market-report-YYYY-MM`, `open-house-weekly`, `listing-launch`, plus `listing-alerts`, `gbp-profile`, `newsletter`, `social-post`, `crm-outbound`, `buyer-leverage`, `buyer-price-drops`, `buyer-what-it-buys`, `buyer-relocate`, `buyer-first-home`, `buyer-deal-report`, and `buyer-<angle>` |
+| utm_content | variant: `v2`, `cta-top`, `listing-<listing_key>`, `agent-<slug>` (never an address) |
+| utm_term | paid keyword only (medium `cpc` or `paid_social`) |
+26. **Grok fallback when Cursor is out (Matt 2026-10-08).** Bots never stop because Cursor is out. When a Cursor cloud agent or CLI hits a usage, credit, spend or on-demand limit (or a 402), or stalls for 20 minutes, switch at once to the Grok CLI on Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve -p ...`, run in a fresh worktree branched from origin/main (skill: grok-fallback-when-cursor-is-out; helper: `/home/box/agent-data/tools/grok-code-pr.sh`). Never use XAI_API_KEY, ANTHROPIC_API_KEY or OPENAI_API_KEY to get past a limit. Every other rule still holds: land per rule 14, DB read-only unless Matt says otherwise, no secrets printed, no sends. Tell Matt you switched, with the exact Cursor error, and the PR link. If Grok's login is also out, stop and ask Matt to re-login. Don't wait silently.
+29. A sale the letter prints outside the price chapter says why it does not set the price (Matt 2026-10-08, delegated; 2745 Aldrich). Any closed sale printed outside the price chapter (the plat or neighborhood history list, a map, a caption) that is not one of the sales that set the price says so once, beside it, in the words the engine recorded. The one size cutoff is the picker's, 35% living area (Matt 2026-10-09: the picker and the review use that same line). A sale inside it sets the price, including 2764 Spring Water at 1,574 sq ft against 2745 Aldrich's 1,201 (31% larger) and 2735 Crossing at 1,282 sq ft against 2339 Labiche's 1,001 (28% larger). A sale past 35% does not set the price, and the letter says so beside it in the words the engine recorded: the living area, the percent, then "sales more than 35% larger or smaller do not set the price." The renderer prints that recorded sentence and does not recompute the gap, the community, or the product. The walk records the sale and the reason when rule 20 refuses it (notSettingSales on the facts walk, not_setting_sales on the selection). A printed sale the walk did not record is asked of the same price-set decision, or of the set-aside record when that is why it carries no weight, and that sentence is what prints. A sale that sets the price gets no such line. PRICE_SET_SQFT_BAND is that one cutoff. It is not a second, tighter cut. Map pins that already carry a set-aside sentence are not labeled a second time. Held by lib/pricing/price-set.test.ts, lib/pricing/match.test.ts, and lib/cma/excluded-sale-note.test.ts.
+30. A size mix is not a market move (2026-10-09, 2902 Pinnacle). The block that reads a home about this size states the market in the unit that holds size still, price per square foot, the same per-foot word the date gate already reads (Matt 2026-10-08, down only if local fell). When the two windows' median living areas differ by 5 percent or more (LISTING_MARKET_SIZE_MIX in lib/cma/listing-window-market.ts, the line already used to say the homes changed size), the letter does not call the median sale price a rise, a fall, or flat. It leads with the per-foot move, names the size change once, and prints the two median sale prices as what those homes sold for. The sale-price slope says "different sizes" and is not inked as a decline. A half of one sale stays "one sale, not a trend" and is not this rule. The date gate reads the per-foot word, never the dollar median, so a mix-shifted dollar fall does not move a sale down and the price does not change. 2902 Pinnacle: Mountain View, 13 sales at 1,727 sq ft then 9 at 1,518 sq ft (12 percent smaller), median sale $585,000 then $550,000, while the rate went from $335 to $357 a square foot. Held by lib/cma/listing-window-market.test.ts. Lookpass `--check` fails a price-led mix shift through listingMarketPriceLedMixShift.
+31. The live letter draws the one comps map (2026-10-09, 2745 Aldrich). render_args omits the tile, so every view rebuilds it. That rebuild is not an optional 4-second read. The map has its own budget, long enough for a cold boundary read and the static tile, and it starts with the other serve reads. A finished tile is cached by the document slug plus a hash of the map inputs (the coordinates, the product, and the homes the map pins), through the unstable_cache door. A stored row gets that map with no database write. The plat polygons are read together. When the tile cannot be drawn, the page prints no map caption, no pin legend, and no sentence that says every pin above. A cream scatter with no tile is not that map. The matrices do not claim a map that is not there. Held by lib/cma/serve-map.test.ts, lib/cma/map-tile-cache.test.ts, lib/cma/map-tile-parallel.test.ts, and the lookpass --check map image assertion in lib/cma/lookpass-chapters.ts.
+32. A stored competition or unsold row with no subdivision and no plat prints when the build drew that set on the area the letter is filtering, and a delivered or finalized letter prints the competition and unsold rows it was signed with (Matt 2026-10-09, 2902 Pinnacle and 1195 Remarkable). The render dropped every blank place and then rewrote the sentence to "0 homes" and "No other listing like yours" over five stored rivals and three unsold homes in those same plats. A blank place is the build's own area decision when the filter area is that drawn area. Otherwise the row is tested on its coordinates when the area kind can test them, and a blank with neither is still outside (2566 Keats). A delivered or finalized letter does not re-test those rows and does not restate the counts (serve-document.ts D27). A draft still drops a named subdivision outside the sales plats (rule 24, 3177 Coho). The count sentence matches the rows drawn. A new build stores subdivision, platSlug, and coordinates on every rival and unsold peer. Held by lib/cma/render-area-filter.test.ts and scripts/cma-render-audit.ts.
+33. Basis and limits names a chapter only when that chapter is on the page (reader review 2026-10-09, 1648 Pheasant, 3177 Coho, and 2382 Jackson; SKILL.md §0.3 rule 33). The sentence that zoning, buildability, rental, and covenant statements are preliminary reads of published code and recorded documents as of the verification dates shown beside them prints only when those statements and a verification date are rendered in the same document. Stored development or rental data is not that chapter. The seller letter and the immersive walk OPINION_CHAPTER_ORDER, which does not include the use-of-property page, so the sentence stays off those documents. The rest of the disclosure stays. Held by lib/cma/expected-sale.test.ts and lib/cma/render-sections.test.ts.
 
 
 `docs/EXECUTION_PLAN.md` and `docs/SITE_SPEC.md` are 2026-05-22 fossils (SITE_SPEC still describes an AgentFire WordPress cutover that already shipped). Do not execute them.
 
-**Done = the served ship class is locally accepted, then one `npm run push` + `deploy:verify` when the app changed.**
+**Done = the served ship class is locally accepted, then one `npm run ship`. That includes `deploy:verify` when the app changed.**
 
 **Fresh environment** (no `node_modules`, no git hooks): run `bash scripts/cloud-setup.sh` first. It installs the dependencies, the git hooks and the brand fonts. Claude Code cloud sessions get the same from `.claude/hooks/session-start.sh`.
 
@@ -67,15 +124,15 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 
 ### Start of every session (any tool)
 
-1. `git fetch origin` and branch from current `origin/main`. Do not rebase, force-push, or reset. All code work is pushed to GitHub as a branch right away (locked process rule 14).
+1. `git fetch origin` and branch from current `origin/main`. Do not rebase, force-push, or reset. A finished unit is `npm run ship`. Unfinished work is `npm run push` right away (rule 14).
 2. If you are picking up mid-thread from the other surface, read the newest `~/.claude/plans/HANDOFF-*.md` when one exists (narrative); otherwise **`git log origin/main -5`** is enough.
 3. What you can reach (Supabase, the Google service account, Gmail, Vercel, GitHub, the rest) is in [`docs/ACCESS_INVENTORY.md`](docs/ACCESS_INVENTORY.md). Never ask Matt what access you have (Matt 2026-10-07). A provider refusal is a scope or grant to name precisely, not a question.
 4. **The public origin is https://ryan-realty.com. Never use `ryanrealty.vercel.app` for anything outward** (a link, email, SMS, canonical, OG or sitemap URL, PDF, redirect, lead source, or a URL a script prints or posts; Matt 2026-10-07). `siteOrigin()` / `siteUrl()` / `siteHost()` in [`lib/site-origin.ts`](lib/site-origin.ts) (plain-node scripts: `scripts/lib/site-origin.mjs`) is the only way to build an outward URL; never read `NEXT_PUBLIC_SITE_URL` directly (production still holds the alias). Held by `ci:site-origin` (G81).
 
 ### Ship discipline (non-negotiable)
 
-1. **Production truth is `origin/main`.** All code work is pushed to GitHub as a branch right away. Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset. Unfinished work still gets a line in `docs/plans/CROSS_AGENT_HANDOFF.md`. Network failure is the only excuse for the branch not being on origin yet. Say that explicitly.
-2. **Production follows Git.** Pushing `main` triggers Vercel production when the diff affects the Next app; “shipped” means remote `main` is updated and, when app code changed, the production deploy is **READY** (see `.cursor/rules/deploy-verify-before-done.mdc`). Docs/skills/changelog-only pushes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
+1. **Production truth is `origin/main`.** A finished change is `npm run ship` (Matt 2026-10-09). Never `git push` `main`. No rebase, force-push, or reset. Unfinished work still gets a line in `docs/plans/CROSS_AGENT_HANDOFF.md`. Network failure is the only excuse for the branch not being on origin yet. Say that explicitly.
+2. **Production follows Git.** A merge onto `main` triggers Vercel production when the diff affects the Next app; “shipped” means `origin/main` moved and, when app code changed, the production deploy is **READY** (see `.cursor/rules/deploy-verify-before-done.mdc`). Docs/skills/changelog-only changes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
 3. **No hanging migrations.** New files under `supabase/migrations/` are not real until they run on **hosted** Supabase. Apply them in the **same delivery effort** as the code that needs them — never “commit now, migrate later” (`.cursor/rules/supabase-migrations-auto.mdc`, `.cursor/rules/production-parity.mdc`).
 4. **Branch, then push.** Day-to-day edits go on a branch from current `origin/main` and that branch is pushed to GitHub right away. Use linked worktrees for parallel agents, not as a silent parking lot. See **Worktrees** below.
 
@@ -83,13 +140,13 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 
 July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change *when* and *what* you push:
 
-1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit on the branch**, `NODE_OPTIONS=--max-old-space-size=8192 npm run push` (pushes that branch, not `main`), then `npm run deploy:verify` when the user-facing app changed and `main` has the fast-forward.
+1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit on the branch**, then `NODE_OPTIONS=--max-old-space-size=8192 npm run ship`. That command runs `deploy:verify` when the app changed.
 2. **Docs / skills / rules / plans / handoffs only** → **batch into one commit**, then push once. Local `npm run push` already skips `next build` for non-buildable diffs; Vercel skips the remote build via `ignoreCommand`. Do not drip many docs commits that each burn local `ci:gates`.
 3. **Do not push mid-thought.** Commit locally while iterating if you need a restore point; push when the unit of work is coherent.
 4. **Ship class (fleet / loop):** same-category bot findings share one isolated verify + one production deploy. `loop-brief` prints the class. Do not run `npm run push` after each finding.
 5. **R-221 — do not poll GitHub Actions.** One `ci:gates` per ship. After a green local stamp + push, stop. Do not `gh run view` in a loop. Do not rematch `origin/main` unless GitHub says CONFLICTING. Live-DB int tests are nightly (`test:int`), not a reason to sit idle.
 6. **Release / changelog:** GitHub Releases carry the notes. Do not recreate a `chore: update changelog` commit on `main` — that path burned hundreds of full production builds.
-7. **Worktree branches:** push them to GitHub right away. Do not keep the only copy local. Do not merge them to `main` yourself. Land main with a fast-forward when the work is ready. Any machine may do it.
+7. **Worktree branches:** a finished unit is `npm run ship` from that checkout. Unfinished work is `npm run push` plus a handoff line. Do not keep the only copy local.
 
 ### Worktrees (allowed — design against stranded work)
 
@@ -101,7 +158,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 
 1. Branch name: `wt/<topic>-YYYYMMDD` (or harness names like `claude/…`). Push the branch before stop, or write the handoff.
 2. Path: sibling dir such as `../RyanRealty-wt-<topic>` — not nested inside the primary tree.
-3. Session end: push the branch to origin with `npm run push`. Do not merge, rebase, force-push, or reset onto `main`. If work is unfinished, also write branch + absolute path + next step into `docs/plans/CROSS_AGENT_HANDOFF.md` Current block on that branch.
+3. Session end: unfinished work is `npm run push` plus a handoff line (branch, absolute path, next step) in `docs/plans/CROSS_AGENT_HANDOFF.md`. A finished unit is `npm run ship`. No rebase, force-push, or reset.
 4. Cleanup when merged: delete branch, `git worktree remove <path>`, `git worktree prune`. Run `node scripts/worktree-hygiene.mjs` at session start/end.
 5. Never leave the only copy of valued commits in an unpushed worktree with no handoff line.
 
@@ -121,7 +178,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 
 ### Cross-agent handoff (mandatory when work spans tools)
 
-1. **Push the branch to origin first** (nothing handoff-worthy should be unpushed). Do not merge it to `main`.
+1. **Unfinished work pushes the branch and stops.** A finished unit is `npm run ship` and does not stop at a handoff.
 2. Open **`docs/plans/CROSS_AGENT_HANDOFF.md`** and replace the **Current** block (exactly one; never stack a second, `ci:handoff-current` fails it; carry any still-open Matt directive forward): surface, time, commit SHA, what finished, what is next, blockers, which **`SKILL.md` files you actually read**.
 3. Optionally also write narrative under **`~/.claude/plans/HANDOFF-*.md`** for Claude Desktop-only context (paths on disk, local-only experiments)—still assume the other agent only **pulls git** and reads **`CROSS_AGENT_HANDOFF.md`**.
 
@@ -136,7 +193,7 @@ If a workspace **skill** might apply—even slightly—**read its `SKILL.md` fir
 - **Any public site work (any tool):** the backlog is the site queue in `loop_work_nodes` (domain `public-ux`, version_gap `SITE-*`). Follow **`docs/RUN_LOOP.md`**: it holds the claim path, the accept test, the land path and the stop rule for every tool, and nothing here restates them. Lane mechanics: `.claude/skills/site-queue/SKILL.md` (Cursor and Grok: `.cursor/skills/site-queue/SKILL.md`). Site commits carry a `Node: <id>` trailer (G72, commit-msg hook). Do not write a new site audit; append findings to a node.
 - **This repo:** `.cursor/skills/**/SKILL.md` (e.g. Oregon OREF, OREA PB, SkySlope, professional Word, etc.)
 - **Cursor-bundled / plugin skills:** paths under `~/.cursor/plugins/.../skills/**/SKILL.md` when the task matches their description (Next.js, Vercel, Supabase, TDD, debugging, etc.)
-- **Video:** no producer `SKILL.md` remains. Rules live in `CLAUDE.md` §4. Caption modules only: `video_production_skills/captions/canonical/`.
+- **Video:** no producer `SKILL.md` remains. Rules live in `CLAUDE.md` §4. Ad copy, voiceover and captions: this file's section of that name and [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). Caption modules only: `video_production_skills/captions/canonical/`.
 - **Publishing trigger:** if Matt says "go ahead and publish it" after approving content, load `automation_skills/automation/publish/SKILL.md` (and know the live path is `/api/cron/publisher-sweep` → `/api/social/publish`)
 - **Cowork-only skills** (e.g. mounted **docx** under `mnt/.claude/skills/`): see section **E** in the global registry; copy into `~/.claude/skills/` if you need the same skill in Claude Code CLI.
 - **Marketing, advertising, paid social, Meta or Facebook or Instagram ads, lead generation, seller acquisition, CPL or CAPI, weekly optimization packets, `agent_insights` marketing rows:** Read **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** first (canonical end-to-end system map). For **how each path creates a lead** (webhooks, forms, dedup, sinks), read **`docs/MARKETING_LEAD_FLOW.md`**. Then **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`** for launch checklist and budgets. For the recurring optimization routine load **`.cursor/skills/facebook-seller-growth/SKILL.md`** (and append learnings to **`docs/marketing/facebook-seller-growth-LEARNINGS.md`**). Cursor surfaces **`.cursor/rules/marketing-advertising-workflow.mdc`** when the task matches these topics.
@@ -227,6 +284,8 @@ Required details:
 | CRM | In-house (`public.crm_people`). |
 | Data Feed | Spark/MLS API |
 
+**GA4 / automation browsers.** Any script that opens our site (ryan-realty.com, localhost, 127.0.0.1, `*.vercel.app`) in a browser sets `rr_automation=1` and `rr_internal=1` before the first page load and never grants analytics consent; use `scripts/lib/marked-playwright.mjs`.
+
 ### Running Locally
 
 ```bash
@@ -276,12 +335,36 @@ All rules in `.cursor/rules/` are mandatory. Key rules:
 | `sliders-no-scrollbars.mdc` | Arrow navigation, no visible scrollbars on carousels |
 | `master-plan-protocol.mdc` | File ownership matrix enforcement |
 
+### Firm facts (one number per fact, Matt 2026-10-08)
+
+- **Founded 2014, everywhere.** JSON-LD `foundingDate` is `BRAND.llcSince` ("2014"). Prose says
+  "Matt Ryan founded Ryan Realty in 2014" (Matt confirmed the wording 2026-10-08; never tie 2014
+  to the LLC filing) and "opened the Bend office in June 2023". June 2023
+  (`BRAND.bendOfficeOpened`, the OREA affiliation date) is the Bend office, never the founding.
+- **Firm closings: one headline count.** Every closed MLS sale where a Ryan Realty broker was the
+  listing or buyer's broker, once per ListingKey, any area (`app/team/_v3/firm-record.ts`). A
+  977-zip subset is printed only as "N in Central Oregon". Never sum per-broker counts; never
+  label closings as "clients served".
+- **License 201253677 is a "registered business name" license** (OREA License Lookup), not a
+  "firm license" (`BRAND.firmLicense`). No new "licensed since" year or year count: the issue
+  date is not on the lookup.
+- **Hand-counted facts carry their count date** (review themes, neighborhood names): print the
+  date they were counted, and re-count when the underlying total moves.
+- **Counts bind live.** Never hard-code a closings or review count in copy; read it from the
+  record on render, and re-check it against live data on the day a change ships.
+- **Public copy never says who Ryan Realty is not a fit for** (Matt 2026-10-08: "we're the right
+  fit for every single person"). Say who we help; no "not the right fit" lists or fit/no-fit framing.
+
 ### Design System (Zero Exceptions)
 
 - **Components**: Only use shadcn/ui from `@/components/ui/`. See `CLAUDE.md` for the full mapping.
 - **Colors**: Only semantic tokens (`bg-primary`, `text-foreground`, `border-border`). No hex, no `bg-white`, no `bg-gray-*`.
 - **Utilities**: Use `cn()` from `@/lib/utils` for conditional classes.
 - **Fonts**: Geist Sans (`font-sans`) and Geist Mono (`font-mono`) only.
+
+### Browser analytics events (locked, Matt 2026-10-08)
+
+- Browser events reach GA4 only through GTM's GA4 Event tag: push them with `trackEvent()` / `pushDataLayerEvent()` (`lib/analytics/ga4-browser-events.ts`), never `gtag('event', …)` for GA4, and add a new event name to `GA4_BROWSER_EVENTS` plus the GTM steps in `docs/GTM_GA4_BROWSER_EVENTS.md` (Matt publishes GTM). Held by `lib/analytics/ga4-browser-events.test.ts`.
 
 ### Server Actions
 
@@ -391,27 +474,27 @@ If UI or routes changed, the matching `ci:*` members are already in `ci:gates`. 
 ## How to Complete
 
 ```bash
-NODE_OPTIONS=--max-old-space-size=8192 npm run push   # the branch, not main
+NODE_OPTIONS=--max-old-space-size=8192 npm run ship
 ```
 
-`orchestrate.ts complete` is retired. The work graph updates from loop/sentinel, not from that CLI.
+`npm run push` saves an unfinished branch. It does not reach production. `orchestrate.ts complete` is retired. The work graph updates from loop/sentinel, not from that CLI.
 
-## CRITICAL: Push the branch, then fast-forward `main` when the work is ready.
+## CRITICAL: A finished unit is `npm run ship`. Never `git push` `main`.
 
-**Production deploys from `main` only. Land `main` with a fast-forward when the work is ready. Any machine may do it.** Routine work: commit on a branch from current `origin/main` and `npm run push` that branch. Do not merge, rebase, force-push, or reset. Do not leave the only copy of valued work unpushed. Unfinished work gets a line in `CROSS_AGENT_HANDOFF.md`.
+**Production deploys from `main`. A finished change is `npm run ship` (Matt 2026-10-09): local gates, push the branch, merge the pull request, then `deploy:verify` when the app changed.** Never `git push` `main`. No rebase, force-push, or reset. Do not leave the only copy of valued work unpushed. Unfinished work is `npm run push` plus a line in `CROSS_AGENT_HANDOFF.md`. One `ci:gates` per ship; do not poll GitHub Actions.
 
 ```bash
-# DEFAULT: push the branch, not main
-NODE_OPTIONS=--max-old-space-size=8192 npm run push
+# DEFAULT: finished work
+NODE_OPTIONS=--max-old-space-size=8192 npm run ship
 
-# WORKTREE: branch from current origin/main, push the branch, do not merge it
+# WORKTREE: branch from current origin/main, then the same command from that checkout
 git fetch origin
 git worktree add -b wt/crm-mobile-20260726 ../RyanRealty-wt-crm-mobile origin/main
 # …work in the other checkout…
-# npm run push of that branch. Do not merge it to main.
+# npm run ship from that checkout when the unit is finished
 
 # WRONG
-# merge, rebase, force-push, or reset onto main yourself
+# git push main, rebase, force-push, or reset
 # leave the only copy of the work unpushed, with no handoff
 ```
 

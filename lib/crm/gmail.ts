@@ -24,7 +24,7 @@ import { classifyInboundReply } from '@/lib/crm/reply-intent'
 import { prospectOutreachContext } from '@/lib/crm/prospect-context'
 import { buildEmailIntentNote, emailIntentDedupeKey } from '@/lib/crm/email-intent-note'
 import { INDEX_METADATA_HEADERS } from '@/lib/tc/gmail-message'
-import { GMAIL_AUTH_TIMEOUT_MS } from '@/lib/gmail-draft'
+import { withAuthDeadline } from '@/lib/google-deadline'
 import { isUnsentDraft, withoutDrafts } from '@/lib/crm/gmail-drafts'
 import { gmailTimelineKind, sentByUs } from '@/lib/crm/gmail-timeline-kind'
 
@@ -52,17 +52,10 @@ function getKey(): { clientEmail: string; privateKey: string } | null {
 export function getGmailFor(subject: string, scopes: string[]): gmail_v1.Gmail | null {
   const key = getKey()
   if (!key) return null
-  const jwt = new google.auth.JWT({
-    email: key.clientEmail,
-    key: key.privateKey,
-    scopes,
-    subject,
-    // The token exchange runs inside the first Gmail call, before that call's
-    // timeout starts, and google-auth-library gives it none of its own: a
-    // stalled token endpoint would hang the call for good. Only the token
-    // request picks up this default; every Gmail call sets its own timeout below.
-    transporterOptions: { timeout: GMAIL_AUTH_TIMEOUT_MS },
-  })
+  // The token exchange runs inside the first Gmail call, before that call's
+  // timeout starts; withAuthDeadline gives it its own. Every Gmail call sets its
+  // own timeout below.
+  const jwt = new google.auth.JWT(withAuthDeadline({ email: key.clientEmail, key: key.privateKey, scopes, subject }))
   // Every Gmail call gets a deadline and a retry. Without one, a single stalled
   // request (seen 2026-09-23: a DNS failure mid-walk) hung the mail backfill
   // for good; in a cron it would burn the whole run.

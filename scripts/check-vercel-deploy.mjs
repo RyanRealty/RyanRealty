@@ -34,7 +34,6 @@ import { readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
 import { execSync } from 'child_process'
 import { homedir } from 'os'
-import { classifyDiff, isVercelSkippable, listChangedFiles } from './lib/product-diff.mjs'
 // The live probe speaks the shared CI user agent: the middleware bot screen
 // 403s an unknown UA, and ci:probe-ua fails any raw-HTTP probe without it.
 import { CI_PROBE_USER_AGENT } from './lib/ci-probe-ua.mjs'
@@ -42,10 +41,15 @@ import { CI_PROBE_USER_AGENT } from './lib/ci-probe-ua.mjs'
 import { fetchWithTransportRetry } from './lib/transport-retry.mjs'
 import { formatSitemapSmoke, probeSitemapClasses } from './lib/sitemap-smoke.mjs'
 import { LIVE_SEO_UA, runLiveSeoAudit } from './lib/live-seo-audit.mjs'
+import {
+  DEFAULT_DEPLOY_SITEMAP_URL_HEALTH_MAX,
+  runSitemapUrlHealth,
+} from './lib/sitemap-url-health.mjs'
 import { checkInlineScripts, formatInlineScriptReport } from './lib/inline-script-health.mjs'
 import {
   DEFAULT_TIMEOUT_MS,
   DEFAULT_SKIP_WAIT_MS,
+  classifyTip,
   isSkippableTip,
   findSupersedingDeploy,
 } from './lib/deploy-verify-policy.mjs'
@@ -355,8 +359,8 @@ async function main() {
     out('no API token found; using Vercel CLI, then GitHub Vercel status, for deploy checks')
   }
 
-  const tipFiles = listChangedFiles()
-  const tipClass = classifyDiff(tipFiles, { skippable: isVercelSkippable })
+  // The commit being verified, never the checkout's HEAD (classifyTip).
+  const tipClass = classifyTip(sha)
   const skippableTip = isSkippableTip(tipClass.status)
   // let, not const (2026-09-08): the short SKIP window exists to stop a docs-only
   // tip from waiting 15 minutes for a deploy Vercel will never make. Once a
@@ -364,9 +368,7 @@ async function main() {
   // deploy exists and is building, so the full budget applies. Leaving it const
   // made every site round time out at 45s on a BUILDING deploy and exit 2, which
   // is indistinguishable from a real production ERROR: the net that catches a
-  // broken generate was being read as noise. A merge commit makes it worse,
-  // because `git diff-tree -r` prints zero files for a merge, so the tip
-  // classifies as skippable even when the merged range rebuilds the site.
+  // broken generate was being read as noise.
   let waitMs = skippableTip ? SKIP_WAIT_MS : TIMEOUT_MS
   if (skippableTip) {
     out(
@@ -527,6 +529,30 @@ async function main() {
             process.exit(1)
           }
           out('live seo: ✓ baseline holds')
+        }
+
+        // ── every sitemap URL (200, self canonical, not noindex) ──────────
+        // The sample above is the rich baseline. This walk is the inventory:
+        // every loc Google is given must stay a real indexable page on
+        // https://ryan-realty.com. SITEMAP_URL_HEALTH_SKIP=1 is the escape.
+        if (process.env.SITEMAP_URL_HEALTH_SKIP === '1') {
+          out('sitemap url health: SKIPPED (SITEMAP_URL_HEALTH_SKIP=1)')
+        } else {
+          const maxUrls = process.env.SITEMAP_URL_HEALTH_MAX
+            ? Number(process.env.SITEMAP_URL_HEALTH_MAX)
+            : DEFAULT_DEPLOY_SITEMAP_URL_HEALTH_MAX
+          const health = await runSitemapUrlHealth('https://ryan-realty.com', {
+            ua: LIVE_SEO_UA,
+            maxUrls,
+            concurrency: Number(process.env.SITEMAP_URL_HEALTH_CONCURRENCY ?? 8),
+          })
+          for (const line of health.lines) out(`sitemap url health: ${line}`)
+          if (health.fails.length > 0) {
+            err(`✗ SITEMAP URL HEALTH FAILED (${health.fails.length} of ${health.checked}):`)
+            for (const f of health.fails) err(`  - ${f}`)
+            process.exit(1)
+          }
+          out(`sitemap url health: ✓ ${health.checked} URLs are 200, self-canonical, indexable`)
         }
 
         const regressed = usingCliFallback

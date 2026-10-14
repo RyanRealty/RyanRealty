@@ -71,6 +71,8 @@ export type V3AskProps = {
   fields: readonly V3AskField[]
   /** Rendered between the fields and the button: a consent line, a note. */
   consent?: ReactNode
+  /** Rendered under the submit button. Notice, not a second submit. */
+  notice?: ReactNode
   submitLabel: string
   onSubmit: (answers: Readonly<Record<string, string>>) => Promise<V3AskResult>
   className?: string
@@ -97,6 +99,7 @@ export function V3Ask({
   lede,
   fields,
   consent,
+  notice,
   submitLabel,
   onSubmit,
   className,
@@ -214,6 +217,7 @@ export function V3Ask({
               </p>
             ) : null}
           </div>
+          {notice ? notice : null}
         </form>
       ) : null}
     </section>

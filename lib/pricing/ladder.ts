@@ -11,8 +11,8 @@
  *      Never rural vs urban. Age, stories, beds, baths, GLA filter first.
  *
  * Hard exclusions run on EVERY rung. Beds and baths use the one-room rule
- * (`lib/pricing/room-counts.ts`): same whole count travels anywhere, one
- * room apart only on own ground, two or more refused everywhere. Soft
+ * (`lib/pricing/room-counts.ts`): one room apart stays and weighs less, two
+ * or more apart is refused everywhere. Soft
  * filters (age/story) start tight and loosen as the ladder widens. A
  * half-bath still matches the same whole count (1 and 1.5 both floor to 1).
  */
@@ -73,6 +73,13 @@ export type PricingTier = {
    * outright while the bounded ladder is still reaching the minimum.
    */
   whenStarved?: boolean
+  /**
+   * Same places, older closes. Runs only while the set is still under five.
+   * A set that already holds five never sees these, so a letter that already
+   * prices does not pick up a 30-month sale. Not a wider ring and not a
+   * boundary exit.
+   */
+  dateRecovery?: boolean
 }
 
 /**
@@ -261,6 +268,46 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     bedSlop: 1,
     bathSlop: 1,
   })
+  const OLDER_DISCLOSURE =
+    'The newer window in these same places held fewer than five sales, so the search kept the same street, the same plat, the plats next to it, and this home\'s community, and took sales that closed between 24 and 36 months ago. An older sale carries a larger market adjustment and less weight.'
+  const olderSamePlaces = (months: number): PricingTier[] => [
+    {
+      ...street(months),
+      name: `older-street-${months}mo`,
+      dateRecovery: true,
+      disclosure: OLDER_DISCLOSURE,
+    },
+    {
+      ...sub(months),
+      name: `older-subdivision-${months}mo`,
+      dateRecovery: true,
+      disclosure: OLDER_DISCLOSURE,
+    },
+    {
+      ...sub(months, PLAT_WIDE_SQFT_BAND, '-wide'),
+      name: `older-subdivision-${months}mo-wide`,
+      dateRecovery: true,
+      disclosure: OLDER_DISCLOSURE,
+    },
+    {
+      ...adjacent(months, 'utilities'),
+      name: `older-adjacent-${months}mo`,
+      dateRecovery: true,
+      disclosure: OLDER_DISCLOSURE,
+    },
+    {
+      ...closer(months, 'utilities'),
+      name: `older-closer-${months}mo`,
+      dateRecovery: true,
+      disclosure: OLDER_DISCLOSURE,
+    },
+    {
+      ...community(months, 'utilities'),
+      name: `older-community-${months}mo`,
+      dateRecovery: true,
+      disclosure: OLDER_DISCLOSURE,
+    },
+  ]
   const likeCommunity = (months: number): PricingTier => ({
     name: `like-community-${months}mo`,
     monthsBack: months,
@@ -279,11 +326,22 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       'This home sits in a golf or resort community, and that community did not have enough of its own sales even across two years. The sales below come from comparable golf and resort communities in Central Oregon rather than from ordinary neighborhoods nearby, because that is the market a buyer of this home shops against.',
   })
   // Integer quarters so 0.25 + 0.25 does not drift. Through 2 miles.
+  // These steps run only when the plat rows are still short of five (the walk
+  // skips them once that plat, the plats that touch it, and the plats that
+  // touch those already hold five). They use the one size cutoff, 35% to look
+  // and 35% to set the price. Inside a mile they used to demand 15% size, the
+  // same number of stories, and 15 years, so a closer sale lost its seat to a
+  // farther sale the wider ring would take (20289 Schaeffer, Matt 2026-10-09).
+  // Age and stories follow the utilities rung: 25 years, stories not required.
   const distanceRings: PricingTier[] = []
   for (let quarter = 1; quarter <= 8; quarter++) {
     const miles = quarter / 4
-    const apples: AppleStrictness = miles <= 1 ? 'strict' : 'utilities'
-    for (const months of [3, 6, 9] as const) distanceRings.push(near(miles, months, apples))
+    for (const months of [3, 6, 9] as const) {
+      distanceRings.push({
+        ...near(miles, months, 'utilities'),
+        sqftBand: PLAT_WIDE_SQFT_BAND,
+      })
+    }
   }
   const tiers: PricingTier[] = [
     // YOUR OWN STREET, FIRST, WHATEVER THE MLS CALLS THE TRACT (Matt
@@ -327,6 +385,15 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     closer(12, 'utilities'),
     closer(18, 'utilities'),
     closer(24, 'utilities'),
+    // SAME PLACES, OLDER CLOSES (Matt 2026-10-09). The rows above stop at 24
+    // months. A plat whose matching sales closed just past that, and nowhere
+    // newer, came back with an empty set (Cascade Courtyard, Staats). These
+    // rungs reopen the subject's own street, its own plat, the plats that
+    // touch it, the next row, and its community out to 36 months, and only
+    // while the set is still under five. They do not open a wider ring. A
+    // set that already holds five skips them.
+    ...olderSamePlaces(30),
+    ...olderSamePlaces(36),
     // No recorded plat (and rural acreage with no plat): the distance ladder.
     // A recorded subdivision opens these only when its plat rows above hold
     // fewer than the minimum; the parent wall still holds on every one.
@@ -499,12 +566,12 @@ export const PRICING_MIN_COMPS = 5
  */
 export const PRICING_WALK_CAP = 7
 /**
- * The floor is the trim threshold: every priced set sets its highest and
- * lowest aside (Matt 2026-10-07, the band is always the trimmed range). A
- * future floor change moves the trim with it on purpose.
+ * The floor is where the range rule starts. At five or more, every seated
+ * sale sets the price and the band is their full adjusted spread (Matt
+ * 2026-10-09). Under five the build already failed, and the rule stays off.
  */
 export const RANGE_TRIM_MIN_N = PRICING_MIN_COMPS
-/** Never peel the range below three kept sales. A five-sale set keeps three. */
+/** Kept so older rows and tests can name the retired three-sale peel. */
 export const RANGE_MIN_KEPT = 3
 /**
  * The search may cross the subject's neighborhood/community boundary only
@@ -612,21 +679,23 @@ function monthsBefore(asOf: string | undefined, closeDate: string | null | undef
  */
 export const LOCAL_POOL_RADIUS_MILES = 3
 /**
- * How far back the facts pool is loaded, in calendar months. Ordinary rungs
- * stop at 24, so the pool stops there too: an 18-month floor never loaded a
- * sale one day older than that, and a 24-month rung could not see it. Custom
- * and new rungs also stop at 24, but the pool stays at 30 so a sale the
- * 24-month rung should see is not lost to the calendar-month versus 30.44-day
- * mismatch. Do not shrink the custom window. Do not pull ordinary sales past 24.
+ * How far back the facts pool is loaded, in calendar months. The rungs that
+ * always run stop at 24 (30 for custom and new, so a 24-month rung is not
+ * lost to the calendar-month versus 30.44-day mismatch). Do not shrink the
+ * custom window. The load goes out to DATE_RECOVERY_MONTHS so a short set
+ * can see a same-plat sale past 24 months. The price anchor stays on the
+ * ordinary or custom window (walkPricingLadder), so a letter that already
+ * has five sales does not move because an older close entered the pool.
  */
 export const ORDINARY_FACTS_POOL_MONTHS = 24
 export const CUSTOM_FACTS_POOL_MONTHS = 30
+/** Same places, reopened only while a set is still under five. */
+export const DATE_RECOVERY_MONTHS = 36
 
 export function factsPoolCloseAfter(asOf: string, customOrNew: boolean): string {
+  const rungMonths = customOrNew ? CUSTOM_FACTS_POOL_MONTHS : ORDINARY_FACTS_POOL_MONTHS
   const closeAfter = new Date(asOf.slice(0, 10))
-  closeAfter.setMonth(
-    closeAfter.getMonth() - (customOrNew ? CUSTOM_FACTS_POOL_MONTHS : ORDINARY_FACTS_POOL_MONTHS),
-  )
+  closeAfter.setMonth(closeAfter.getMonth() - Math.max(rungMonths, DATE_RECOVERY_MONTHS))
   return closeAfter.toISOString().slice(0, 10)
 }
 /**
@@ -636,8 +705,11 @@ export function factsPoolCloseAfter(asOf: string, customOrNew: boolean): string 
  */
 export const WIDENED_SQFT_BAND = 0.25
 
-/** Own street, own plat, or the 0.25 mi street-cluster pocket. */
-export function isPocketExclusiveTier(tier: Pick<PricingTier, 'sameSubdivision' | 'sameStreetOnly' | 'samePocket'>): boolean {
+/** Own street, own plat, or the 0.25 mi street-cluster pocket. A date-recovery rung is the same place but it does not keep walking once five sales are seated. */
+export function isPocketExclusiveTier(
+  tier: Pick<PricingTier, 'sameSubdivision' | 'sameStreetOnly' | 'samePocket' | 'dateRecovery'>,
+): boolean {
+  if (tier.dateRecovery) return false
   return Boolean(tier.sameSubdivision || tier.sameStreetOnly || tier.samePocket)
 }
 
@@ -646,7 +718,7 @@ export function isPocketExclusiveTier(tier: Pick<PricingTier, 'sameSubdivision' 
  * Not the exclusive pocket, not adjacent plats, not designated communities.
  */
 export function isGeographyWidenTier(tier: PricingTier): boolean {
-  if (tier.whenStarved || tier.ruralOnly) return false
+  if (tier.dateRecovery || tier.whenStarved || tier.ruralOnly) return false
   if (isPocketExclusiveTier(tier)) return false
   if (tier.sameCommunity || tier.likeCommunity || tier.adjacentSubdivision || tier.closerSubdivision) return false
   return true
@@ -720,11 +792,10 @@ export function pocketStopsLaterRungs(args: {
  * the plat this band is the ONLY dimensional test: beds, baths, vintage and
  * story count are all disclosed rather than refused (lib/pricing/match.ts).
  *
- * PLAT_WIDE_SQFT_BAND is a SEARCH band only (Matt 2026-10-08, "25%
- * everywhere"). A sale a wide rung reads past 25% passes the rung's walls and
- * is refused at the door by rule 20 (PRICE_SET_SQFT_BAND in
- * lib/pricing/price-set.ts, equal to PLAT_SQFT_BAND): it never sets the
- * price and never counts toward the five.
+ * PLAT_WIDE_SQFT_BAND is the one size cutoff (Matt 2026-10-09). The wide
+ * rungs search it, and PRICE_SET_SQFT_BAND in lib/pricing/price-set.ts is
+ * the same number. A sale the wide rung admits is not refused for a tighter
+ * living-area gap. A sale more than 35% off never sets the price.
  */
 export const PLAT_SQFT_BAND = 0.25
 export const PLAT_WIDE_SQFT_BAND = 0.35

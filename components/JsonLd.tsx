@@ -16,7 +16,7 @@ import { siteOrigin } from '@/lib/site-origin'
 import type { Broker } from '@/lib/data/types/broker'
 import { teamPath } from '@/lib/slug'
 import { BRAND, CONTACT, ENTITY_SAME_AS } from '@/lib/brand/contact'
-import { brokerPersonId, brokerSameAs } from '@/lib/site/broker-entity'
+import { brokerAlternateName, brokerPersonId, brokerSameAs } from '@/lib/site/broker-entity'
 
 /** "541.213.6706" -> "+1-541-213-6706" (schema.org E.164-ish telephone). */
 function toTel(dotted: string | null | undefined): string | undefined {
@@ -44,6 +44,9 @@ function brokerAgent(b: Broker, baseUrl: string): Record<string, unknown> {
     // AEO-6: the same id /team/[slug] gives its page node (brokerPersonId).
     '@id': brokerPersonId(baseUrl, b.slug),
     name: b.fullName,
+    // 2026-10-08: the other spelling engines see (OREA "Matthew Ryan"; the
+    // site prints "Rebecca Peterson" for "Rebecca Ryser Peterson").
+    alternateName: brokerAlternateName(b.slug),
     jobTitle: b.title,
     url,
     image: b.headshotPng ? `${baseUrl}${b.headshotPng}` : undefined,
@@ -75,8 +78,22 @@ export default async function JsonLd() {
     url: baseUrl,
     telephone: CONTACT.phoneDirectTel,
     email: CONTACT.email.primary,
-    // Ryan Realty LLC, 2014 (Matt 2026-09-24); June 2023 is the Bend office.
+    // Founded 2014 (Matt 2026-09-24, restated 2026-10-08: "2014 everywhere");
+    // June 2023 is the Bend office (BRAND.bendOfficeOpened), never this field.
     foundingDate: BRAND.llcSince,
+    // OREA License Lookup (2026-10-08): 201253677 is license type "Registered
+    // Business Name", ACTIVE. Stated as the Agency states it.
+    identifier: {
+      '@type': 'PropertyValue',
+      propertyID: 'Oregon Real Estate Agency license (Registered Business Name)',
+      value: BRAND.firmLicense,
+    },
+    hasCredential: {
+      '@type': 'EducationalOccupationalCredential',
+      credentialCategory: 'Oregon Real Estate Agency registered business name license',
+      identifier: BRAND.firmLicense,
+      recognizedBy: { '@type': 'GovernmentOrganization', name: 'Oregon Real Estate Agency', url: 'https://www.oregon.gov/rea' },
+    },
     areaServed: {
       '@type': 'GeoCircle',
       geoMidpoint: { '@type': 'GeoCoordinates', latitude: 44.0582, longitude: -121.3153 },

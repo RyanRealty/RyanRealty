@@ -1,11 +1,11 @@
 /**
  * WHAT PRICES THE HOUSE AFTER THE COMPARABILITY REVIEW.
  *
- * When the judge ran and the broker did not curate the set, the priced set is
- * the product-matched comps the judge KEPT, strong and weak. A comp it
- * excluded is never priced. Fewer than the pricing minimum is a comp shortage,
- * and the build fails with the existing shortage message rather than printing
- * a number off sales the review threw out.
+ * The picker already seated these sales. The review reads that same set. It
+ * does not remove a sale the picker kept, and it does not price a shorter
+ * keep (Matt 2026-10-09). Product walls below are the picker's own rules
+ * (subtype, multi-unit, ADU, age-restricted, resale against new construction).
+ * Fewer than the pricing minimum after those walls is a comp shortage.
  *
  * THE FALCON RE-ADMISSION IS RETIRED (2026-09-30). On Falcon 15991 the judge
  * kept 3 of 8 closed sales because it had cut near-acre peers in the subject's
@@ -151,42 +151,16 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
   }
   const pool = args.selected.filter((c) => !hard(c))
   const droppedProduct = args.selected.length - pool.length
+  const shortage = pool.length < args.minComps
   const judged = args.verdicts.length > 0
-  if (!judged) {
-    // No review to hold to: the product-matched pool prices, and the contract's
-    // llm-judgment-ran check forces broker review.
-    const shortage = pool.length < args.minComps
-    return {
-      comps: pool,
-      shortage,
-      droppedProduct,
-      trace:
-        droppedProduct > 0
-          ? `Excluded ${droppedProduct} different-product sale(s) before pricing. ${pool.length} product-matched sale(s) remain.`
-          : `Priced on the ${pool.length} product-matched sale(s).`,
-    }
-  }
-  const poolKeys = new Set(pool.map((c) => c.listingKey))
-  const kept = args.vetted.filter((c) => poolKeys.has(c.listingKey))
-  // Review exclusions among the product-matched sales, so a structure-type
-  // exclusion is counted once, as a different product.
-  const excluded = args.verdicts.filter((v) => v.tier === 'exclude' && poolKeys.has(v.listingKey)).length
-  if (kept.length < args.minComps) {
-    return {
-      comps: kept,
-      shortage: true,
-      droppedProduct,
-      trace: `Comparability judgment kept ${kept.length} product-matched sale(s), under the ${args.minComps}-sale minimum. The excluded sales are not priced.`,
-    }
-  }
-  const dropped = [
-    excluded > 0 ? `${excluded} excluded by the comparability review` : null,
-    droppedProduct > 0 ? `${droppedProduct} different-product sale(s)` : null,
-  ].filter(Boolean)
+  const base =
+    droppedProduct > 0
+      ? `Excluded ${droppedProduct} different-product sale(s) before pricing. ${pool.length} product-matched sale(s) remain.`
+      : `Priced on the ${pool.length} product-matched sale(s) the picker kept.`
   return {
-    comps: kept,
-    shortage: false,
+    comps: pool,
+    shortage,
     droppedProduct,
-    trace: `Priced on the ${kept.length} sale(s) the comparability review kept${dropped.length ? `. Not priced: ${dropped.join(', ')}` : ''}.`,
+    trace: judged ? `${base} The review reads the same sales and does not remove one the picker kept.` : base,
   }
 }

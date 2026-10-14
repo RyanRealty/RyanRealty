@@ -64,8 +64,8 @@ function liveBlock(over: Partial<ProofBlock> = {}): ProofBlock {
       computedAt: '2026-09-08T00:21:24.953Z',
     },
     trace: [
-      { scope: 'always', figure: '5.0 average from 25 Google reviews', source: 'GBP', table: 'public.reviews', filter: "source='google'", window: 'all', rows: 25, fetchedAt: '2026-09-08T03:45:07.237Z', query: 'getReviews()' },
-      { scope: 'outcomes', figure: 'Bend detached median days to contract 29', source: 'Market Truth cell', table: 'public.market_metric', filter: "stat_id = 'median_days_to_contract'", window: '12 months', rows: 1994, fetchedAt: '2026-09-08T03:45:07.237Z', query: 'getMetrics()' },
+      { scope: 'always', figure: '5.0 average from 25 Google reviews', plain: '5.0 average from 25 Google reviews: every review on our Google Business Profile, read live on Sep 7, 2026.', source: 'GBP', table: 'public.reviews', filter: "source='google'", window: 'all', rows: 25, fetchedAt: '2026-09-08T03:45:07.237Z', query: 'getReviews()' },
+      { scope: 'outcomes', figure: 'Bend detached median days to contract 29', plain: 'Bend median days from listing to an accepted offer, 29, across detached single-family homes over the same 12 months, Central Oregon MLS.', source: 'Market Truth cell', table: 'public.market_metric', filter: "stat_id = 'median_days_to_contract'", window: '12 months', rows: 1994, fetchedAt: '2026-09-08T03:45:07.237Z', query: 'getMetrics()' },
     ],
     ...over,
   }
@@ -201,9 +201,13 @@ describe('proofBlockView', () => {
     expect(view.reviews?.quotes).toHaveLength(2)
     // Quotes are never trimmed.
     expect(view.reviews?.quotes[0]?.text).toContain('more difficult than I had anticipated')
-    expect(view.trace).toContain('public.reviews')
+    expect(view.trace).toContain('every review on our Google Business Profile')
     // The strips are drawn here, so their sourcing belongs in the disclosure.
-    expect(view.trace).toContain('median days to contract 29')
+    expect(view.trace).toContain('median days from listing to an accepted offer, 29')
+    // Only the plain sentences print: no table, filter, query or raw stamp.
+    expect(view.trace).not.toContain('public.reviews')
+    expect(view.trace).not.toContain('getReviews')
+    expect(view.trace).not.toContain('2026-09-08T')
   })
 
   // Matt 2026-09-08, decisions.md: with the two outcome strips held, the
@@ -214,8 +218,8 @@ describe('proofBlockView', () => {
   it('drops the outcome sourcing from the disclosure when the strips are held', () => {
     const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
     expect(view.strips).toHaveLength(0)
-    expect(view.trace).toContain('public.reviews')
-    expect(view.trace).not.toContain('median days to contract')
+    expect(view.trace).toContain('every review on our Google Business Profile')
+    expect(view.trace).not.toContain('median days from listing')
     expect(view.trace).not.toContain('market_metric')
     expect(view.trace).not.toContain('sale_to_orig_list')
   })
@@ -230,12 +234,13 @@ describe('proofBlockView', () => {
           rows: thin.outcomes.rows.slice(0, 3),
           closings: 3,
           publishable: false,
-          quietReason: 'Too few recent closings here to chart.',
+          quietReason: 'We show every closing as a list rather than a chart.',
         },
       },
       attribution: ATTRIBUTION,
+      showOutcomes: true,
     })!
-    expect(view.quiet).toBe('Too few recent closings here to chart.')
+    expect(view.quiet).toBe('We show every closing as a list rather than a chart.')
     expect(view.marks).toHaveLength(0)
     expect(view.strips).toHaveLength(0)
     // The record and the reviews survive: only the drawing withheld.

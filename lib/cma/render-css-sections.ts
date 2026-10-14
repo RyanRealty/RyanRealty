@@ -292,7 +292,7 @@ export function cmaSectionStyles(): string {
     overflow: clip;
     box-sizing: border-box;
   }
-  .comp-stack-addr { font-weight: 600; margin: 0 0 6px; color: var(--navy); font-size: 14px; line-height: 1.25; }
+  .comp-stack-addr { font-weight: 600; margin: 0 0 6px; color: var(--navy); font-size: 14px; line-height: 1.25; overflow-wrap: normal; word-break: normal; }
   .comp-stack-sold { font-size: 12px; margin: 0 0 8px; font-variant-numeric: tabular-nums; }
   .comp-stack-nums { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0 0 6px; font-variant-numeric: tabular-nums; }
   .comp-stack-n { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -303,7 +303,7 @@ export function cmaSectionStyles(): string {
   @media print {
     .comp-stack { display: none !important; }
     /* 4pt inside the content box. A right-aligned room sentence
-       ("One bedroom off yours. No dollar adjustment.") was landing 0.04in
+       ("One bedroom off yours. It counts for less. No dollar adjustment.") was landing 0.04in
        past the right margin on a full-width last column. The sentence stays
        whole. The table moves in. */
     .comp-matrix-wrap { display: block !important; overflow-x: visible; max-width: calc(100% - 4pt); }
@@ -438,7 +438,7 @@ export function cmaSectionStyles(): string {
   /* Each unsold peer's dollars-a-foot story, keyed to its pin. */
   .peer-stories { list-style: none; margin: 8px 0 0; padding: 0; }
   .peer-stories li { display: flex; align-items: baseline; gap: 6px; margin: 0 0 5px; font-size: 10.5px; line-height: 1.45; }
-  .peer-stories .ps-a { font-weight: 600; white-space: nowrap; }
+  .peer-stories .ps-a { font-weight: 600; white-space: normal; }
   .peer-stories .ps-r { min-width: 0; }
   /* Chapter 3's lead line, under the number that is the chapter title. */
   .worth-lead { font-size: 13.5px; line-height: 1.5; margin: 0 0 12px; }
@@ -603,8 +603,11 @@ export function cmaSectionStyles(): string {
   /* The price-path primitive (blueprint, Delta 1). Two layouts of one line,
      exactly one visible, same mechanism as every other chart here. */
   .street-sales { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+  .street-sale-wrap { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; max-width: 36em; }
+  .street-sale-why { color: var(--muted); font-size: 11px; line-height: 1.35; max-width: 36em; }
   a.street-sale { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--navy-line); border-radius: 8px; color: inherit; text-decoration: none; font-size: 11px; }
   a.street-sale .n { font-variant-numeric: tabular-nums; font-weight: 600; }
+  a.street-sale .d { color: var(--muted); font-variant-numeric: tabular-nums; }
   @media screen and (max-width: 700px) {
     a.street-sale { min-height: 44px; padding: 10px 12px; font-size: 14px; }
   }
@@ -637,7 +640,7 @@ export function cmaSectionStyles(): string {
   .dns-card.is-yours { border-top-width: 2px; }
   .dns-photo { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
   .dns-photo.is-empty { background: rgba(16, 39, 66, 0.06); }
-  .dns-addr { display: block; font-size: 13px; font-weight: 600; color: var(--navy); }
+  .dns-addr { display: block; font-size: 13px; font-weight: 600; color: var(--navy); overflow-wrap: normal; word-break: normal; }
   .dns-ask { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
   .dns-facts { font-size: 11px; color: var(--muted); margin-top: 2px; }
   .dns-read { font-size: 12px; line-height: 1.5; margin: 4px 0 0; }
@@ -660,12 +663,20 @@ export function cmaSectionStyles(): string {
   table.comp-matrix .matrix-thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; margin: 0 0 6px; }
   table.comp-matrix .matrix-thumb.is-empty { background: rgba(16, 39, 66, 0.06); }
   table.comp-matrix .matrix-addr { display: block; }
-  .addr-row { display: flex; align-items: center; justify-content: flex-end; flex-wrap: nowrap; gap: 4px; }
+  .addr-row { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 4px; }
   .addr-row .pin-badge { margin-right: 0; }
   .addr-row .matrix-addr { min-width: 0; overflow-wrap: break-word; text-align: right; }
+  /* A column head breaks an address only between words (reader review
+     2026-10-09, 20676 Wild Rose: "20582 GOLDENRO/D" and "61197 COTTONWO/OD"
+     at 900 to 1440px). The address is as narrow as its longest word; when
+     that word does not fit beside the pin, the address takes the line under
+     the pin and the whole column. A word wider than the whole column still
+     breaks (break-word, above) rather than run past the margin on paper. */
+  table.comp-matrix thead .addr-row { flex-wrap: wrap; row-gap: 2px; }
+  table.comp-matrix thead .addr-row .matrix-addr { flex: 1 1 auto; width: min-content; }
   .addr-row.is-card { justify-content: flex-start; gap: 5px; margin: 0 0 6px; }
   .addr-row.is-card .pin-badge { margin-right: 0; }
-  .addr-row.is-card .comp-stack-addr { margin: 0; flex: 1 1 auto; min-width: 0; }
+  .addr-row.is-card .comp-stack-addr { margin: 0; flex: 1 1 auto; min-width: min-content; overflow-wrap: normal; word-break: normal; }
   /* The map's pin, at reading size: the number is the key to the pin, not a
      rank. print-color-adjust is exact on * in the sheet, so it prints filled. */
   .pin-badge.is-active, .pin-badge.is-unsold {
@@ -683,7 +694,9 @@ export function cmaSectionStyles(): string {
   /* The adjustment grid repeats the columns and drops the photographs. */
   table.comp-matrix.is-adjustments thead th.v { padding-top: 2px; }
   .subhead.adjustments-h { margin-top: 12px; }
-  .pin-badge { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: var(--navy); color: var(--cream); font-size: 9px; font-weight: 700; line-height: 1; margin-right: 5px; flex: 0 0 auto; vertical-align: middle; }
+  /* Width follows the key. A fixed 15px circle centered "xxxvi" and the longer
+     unsold keys, and the left half painted into the page margin. */
+  .pin-badge { display: inline-flex; align-items: center; justify-content: center; width: auto; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; background: var(--navy); color: var(--cream); font-size: 9px; font-weight: 700; line-height: 1; margin-right: 5px; flex: 0 0 auto; vertical-align: middle; }
   table.comp-matrix th, table.comp-matrix td {
     padding: 5px 6px;
     /* Values sit under their own column head. Only the thead rule carried

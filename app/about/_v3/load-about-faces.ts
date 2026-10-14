@@ -5,6 +5,7 @@
  * tiles, unique ListingKey. Unknown is not zero. No invented rows.
  */
 
+import { cache } from 'react'
 import {
   getBrokerBySlug,
   getBrokerageListingTiles,
@@ -23,6 +24,7 @@ import {
   uniqueListingTiles,
   type FirmClosingRecord,
 } from '@/app/team/[slug]/_v3/sale-rows'
+import { firmAllAreaRecord, type FirmAllAreaRecord } from '@/app/team/_v3/firm-record'
 import { aboutFaceFromBroker, type AboutFace } from './about-faces'
 import type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
 import type { V3LedgerFigureRow } from '@/components/site/v3'
@@ -41,6 +43,12 @@ export type AboutProof = {
    * fewer, never a different set.
    */
   record: FirmClosingRecord
+  /**
+   * The firm's headline record (2026-10-08): every broker's own closed sales,
+   * once per ListingKey, ANY area. The rail above stays Central Oregon, so
+   * `record.count` is only ever printed as "in Central Oregon".
+   */
+  firm: FirmAllAreaRecord
 }
 
 async function activeCitiesFor(
@@ -64,7 +72,13 @@ async function activeCitiesFor(
   return tiles.map((t) => ({ city: t.city ?? null }))
 }
 
-export async function loadAboutProof(): Promise<AboutProof> {
+/**
+ * One read per request: generateMetadata (the meta description binds the
+ * closings count) and the page share it through React cache.
+ */
+export const loadAboutProof = cache(loadAboutProofUncached)
+
+async function loadAboutProofUncached(): Promise<AboutProof> {
   const brokers = await getBrokers()
   const ordered = [...brokers].sort(
     (a, b) => (TEAM_RANK[a.slug.split('-')[0] ?? ''] ?? 9) - (TEAM_RANK[b.slug.split('-')[0] ?? ''] ?? 9),
@@ -82,6 +96,7 @@ export async function loadAboutProof(): Promise<AboutProof> {
         const actives = closed.length > 0 ? [] : await activeCitiesFor(row, broker.email)
         return {
           slug: broker.slug,
+          name: aboutFaceFromBroker(broker)?.name ?? broker.fullName,
           record: brokerRosterRecord({ name: broker.fullName, sales, actives }),
           sales,
         }
@@ -108,6 +123,7 @@ export async function loadAboutProof(): Promise<AboutProof> {
     faces,
     closings: publishFirmClosingRows(saleTiles, FIRM_CLOSING_LIMIT),
     record: firmClosingRecord(saleTiles),
+    firm: firmAllAreaRecord(records.map((r) => ({ slug: r.slug, name: r.name, sales: r.sales }))),
   }
 }
 

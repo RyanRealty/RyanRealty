@@ -128,3 +128,19 @@ export function toIsoTimestamp(value: string | number | Date | null | undefined)
   const t = value instanceof Date ? value : new Date(value)
   return Number.isNaN(t.getTime()) ? null : t.toISOString()
 }
+
+/**
+ * "9:43pm EDT": the clock at an instant in an IANA zone, with the zone's short
+ * name. For copy that names someone else's local time, such as the SMS
+ * quiet-hours refusal for a number in another zone (lib/comms/guards.ts).
+ */
+export function formatZonedClock(d: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+    timeZone,
+  }).formatToParts(d)
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? ''
+  return `${get('hour')}:${get('minute')}${get('dayPeriod').toLowerCase()} ${get('timeZoneName')}`.trim()
+}

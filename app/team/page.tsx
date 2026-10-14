@@ -55,6 +55,8 @@ import { AboutFaces } from '@/app/about/_v3/AboutFaces'
 import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
 import { buildBrokerRecord } from '@/app/team/[slug]/_v3/broker-record'
 import { publishFirmClosingRows, uniqueListingTiles } from '@/app/team/[slug]/_v3/sale-rows'
+import { firmAllAreaRecord } from '@/app/team/_v3/firm-record'
+import { aboutClosingSpan } from '@/app/about/_v3/about-playbook'
 import { TeamClosings } from './_v3/TeamClosings'
 import { TeamTrio } from './_v3/TeamTrio'
 import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
@@ -140,17 +142,21 @@ export default async function TeamPage() {
      in the claim; the trace below says so. */
   const dotByKey = new Map<string, AtlasDot>()
   let closedWithCoords = 0
-  let closedTotal = 0
   let newestClose: string | null = null
   for (const r of records) {
     const built = buildBrokerRecord(r.sales)
-    closedTotal += built.closings.length
     closedWithCoords += built.dots.length
     for (const dot of built.dots) if (!dotByKey.has(dot.k)) dotByKey.set(dot.k, dot)
     const newest = built.closings[0]?.CloseDate ?? null
     if (newest && (!newestClose || newest > newestClose)) newestClose = newest
   }
   const dots = [...dotByKey.values()]
+  // The firm's one headline count (2026-10-08): every broker's closings,
+  // counted once per sale (unique ListingKey), the same record /about prints.
+  // Summing each broker's count would count a shared sale twice.
+  const firm = firmAllAreaRecord(records.map((r) => ({ slug: r.slug, name: r.slug, sales: r.sales })))
+  const closedTotal = firm.count
+  const firmSpan = aboutClosingSpan({ count: firm.count, firstClose: firm.firstClose, lastClose: firm.lastClose })
   const present = new Set(dots.map((d) => d.t))
   const atlasTypes: AtlasType[] = [
     ...ATLAS_TYPES.filter((t) => present.has(t.key)),
@@ -159,7 +165,7 @@ export default async function TeamPage() {
       .map((k) => ({ key: k, label: k === 'other' ? 'Other' : `${k[0]!.toUpperCase()}${k.slice(1)}` })),
   ]
   const atlasSource = v3Text(
-    `Closed MLS sales through Oregon Data Share. Every closing recorded for a Ryan Realty broker as listing agent or buyer agent: ${closedTotal} closings on record, ${dots.length} of them carrying a coordinate on the feed and drawn here. A closing the feed gives no latitude and longitude for is not a mark and is not counted in this map. Prices are the recorded sold price.`,
+    `Closed MLS sales through Oregon Data Share. Every closing recorded for a Ryan Realty broker as listing agent or buyer agent, counted once per sale: ${closedTotal} closings on record${firmSpan ? ` from ${firmSpan}` : ''}, ${firm.centralOregon} of them in Central Oregon. ${dots.length} carry a coordinate on the feed and are drawn here. A closing the feed gives no latitude and longitude for is not a mark and is not counted in this map. Prices are the recorded sold price.`,
   )
   const atlasStamp = newestClose ? v3Text(formatDate(newestClose.slice(0, 10))) : undefined
   const closingRows = publishFirmClosingRows(

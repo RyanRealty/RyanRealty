@@ -34,7 +34,10 @@
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data/cma/builderReads'
 import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from '@/lib/data/geo/subdivision-ring'
 import { getPlatFamilyFootprint } from '@/lib/data/subdivisions/getPlatFamilyFootprint'
+import { getPlatGroundBounds } from '@/lib/data/cma/platGroundBounds'
+import { ownGroundSeatRank, platGround, platGroundReach, platGroundTrace } from '@/lib/pricing/plat-ground'
 import { keepTightestByClosePrice, PRICING_MIN_COMPS, PRICING_TARGET_COMPS, PRICING_WALK_CAP } from '@/lib/pricing/ladder'
+import { addressIsThisHome } from '@/lib/pricing/same-address'
 import type { CompRefillBench } from '@/lib/cma/review-refill'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
@@ -93,7 +96,6 @@ import {
   ANCHOR_RADIUS_MILES,
   ANCHOR_RURAL_RADII_MILES,
   isOwnPlatRung,
-  samePlat,
   sameStreetPeer,
   streetKey,
   type AnchorSample,
@@ -108,7 +110,7 @@ import { isClusterPocket, LOCAL_POOL_RADIUS_MILES, pocketStopsLaterRungs } from 
 import { locationMatchFromFacts } from '@/lib/pricing/closed-comp-weight'
 import { subjectHasRecordedSubdivision } from '@/lib/pricing/match'
 import { printedBaths } from '@/lib/pricing/bath-count'
-import { saleSetsThePrice } from '@/lib/pricing/price-set'
+import { notSettingSaleFrom, priceSetRefusal, type NotSettingSale } from '@/lib/pricing/price-set'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -133,8 +135,9 @@ export { realSubdivision }
  * for want of comparable sales. On 2026-10-07 he reversed that: a three-sale
  * letter printed a raw min-to-max band and one stray sale put the failed ask
  * inside it, which contradicts the letter. The floor is five price-setting
- * sales, the band is always the trimmed range, and a sale that does not set
- * the price (lib/pricing/price-set.ts) never counts toward the five.
+ * sales. A sale that does not set the price (lib/pricing/price-set.ts) never
+ * counts toward the five. On 2026-10-09 the band became the full spread of
+ * the sales that cleared that floor. The high and the low stay in the price.
  */
 export const MIN_COMPS = PRICING_MIN_COMPS
 /**
@@ -156,6 +159,21 @@ export const TARGET_COMPS = PRICING_TARGET_COMPS
  * (only what's needed, Matt 2026-10-07). An earlier place keeps its seats.
  */
 export const MAX_COMPS = PRICING_WALK_CAP
+
+/** Two reads of the listings table, each listing once (the first read's row wins). */
+function mergeListingRows(first: readonly CmaListingRow[], second: readonly CmaListingRow[]): CmaListingRow[] {
+  const seen = new Set<string>()
+  const out: CmaListingRow[] = []
+  for (const r of [...first, ...second]) {
+    const key = typeof r['ListingKey'] === 'string' ? (r['ListingKey'] as string).trim() : ''
+    if (key) {
+      if (seen.has(key)) continue
+      seen.add(key)
+    }
+    out.push(r)
+  }
+  return out
+}
 
 function num(v: unknown): number | null {
   if (v == null) return null
@@ -399,15 +417,21 @@ function emptyDiagnostics(
  * 926 and 925 sqft five months apart), counting once in the median and again
  * at the end of the printed range.
  *
- * The key is address + city + CLOSE PRICE, deliberately not address alone.
- * Two condos in one building often carry no unit number in the MLS, and
- * collapsing them would silently throw away a real comp; two different homes
- * closing at the exact same price at the same street address is not a thing.
- * Square footage is out of the key because the duplicate above disagreed with
- * itself by one foot.
+ * The key is address + unit + city + CLOSE PRICE, deliberately not address alone.
+ * A blank unit stays on address and price, so a building whose MLS rows have
+ * no unit number is not collapsed into one sale. Two units that both carry a
+ * unit number are two sales even when they close at the same dollar (1940
+ * Monterey Pines units 2 and 12, both $520,000). Square footage stays out of
+ * the key because the Ordway duplicate disagreed with itself by one foot.
  */
-function saleKey(comp: { address: string; city?: string | null; closePrice: number }): string {
-  return `${comp.address.trim().toLowerCase()}|${(comp.city ?? '').trim().toLowerCase()}|${Math.round(comp.closePrice)}`
+function saleKey(comp: {
+  address: string
+  city?: string | null
+  closePrice: number
+  unitNumber?: string | null
+}): string {
+  const unit = (comp.unitNumber ?? '').trim().toLowerCase()
+  return `${comp.address.trim().toLowerCase()}|${unit}|${(comp.city ?? '').trim().toLowerCase()}|${Math.round(comp.closePrice)}`
 }
 
 export async function selectComps(
@@ -446,6 +470,7 @@ export async function selectComps(
   const tiersUsed: string[] = []
   const ladder: CompTierTrace[] = []
   const excludedTotals = emptyExclusions()
+  const notSettingSales: NotSettingSale[] = []
   const byKey = new Map<string, CmaComp>()
   /** Sales already held, so one closed sale cannot enter a comp set twice. */
   const bySale = new Set<string>()
@@ -623,6 +648,42 @@ export async function selectComps(
     pocketSubdivisionNorms: pocketNeighborNorms,
   })
   const tiers = compTierLadder(subdivisionIlike)
+
+  // THE SUBJECT'S OWN GROUND (reader review 2026-10-08, lib/pricing/plat-ground.ts):
+  // the recorded plat the home sits in, its phases and alias-map siblings
+  // (any MLS spelling), the plats of its subdivision family inside its own
+  // neighborhood polygon, and the MLS name the rungs search for a row no
+  // polygon holds. A home in no recorded plat keeps the name alone.
+  const ownGround = platGround({
+    platSlugs: ring?.homeSlug ? [ring.homeSlug] : [],
+    names: [subdivisionIlike],
+    city: subject.city,
+    parent: subjectArea,
+  })
+  let ownGroundBox: LatLngBounds | null | undefined
+  const readOwnGroundBox = async (): Promise<LatLngBounds | null> => {
+    if (ownGroundBox === undefined) ownGroundBox = await getPlatGroundBounds(ownGround, { city: subject.city })
+    return ownGroundBox
+  }
+  /** Each row's recorded plat, read once per walk (null: tested, no polygon holds it). */
+  const platByKey = new Map<string, string | null>()
+  const platsOfRows = async (rows: readonly CmaListingRow[]): Promise<Array<string | null>> => {
+    const pending = rows.filter((r) => {
+      const key = str(r['ListingKey'])
+      return key == null || !platByKey.has(key)
+    })
+    if (pending.length > 0) {
+      const found = await assignSubdivisionSlugs(pending.map((r) => ({ lat: num(r['Latitude']), lng: num(r['Longitude']) })))
+      pending.forEach((r, i) => {
+        const key = str(r['ListingKey'])
+        if (key) platByKey.set(key, found[i] ?? null)
+      })
+    }
+    return rows.map((r) => {
+      const key = str(r['ListingKey'])
+      return key ? (platByKey.get(key) ?? null) : null
+    })
+  }
 
   // How many sales the widening rung crossed the resort-membership rule for.
   // Counted so the disclosure can name it rather than imply it.
@@ -937,7 +998,13 @@ export async function selectComps(
     const sqftMax = Math.round(sqft * (1 + tier.sqftBand))
     const closeDateGte = isoMonthsAgo(tier.monthsBack)
     const geography = [
-      tier.subdivisionIlike ? `SubdivisionName ILIKE '${tier.subdivisionIlike}'` : null,
+      tier.subdivisionIlike
+        ? `SubdivisionName ILIKE '${tier.subdivisionIlike}'${
+            isOwnPlatRung(tier.name) && ownGround.platSlugs.length > 0
+              ? ` or inside its recorded plat and that plat's subdivision family under any MLS spelling`
+              : ''
+          }`
+        : null,
       tier.ignoreCity ? 'any mailing city' : `City ILIKE '${subject.city}'`,
       tier.sameArea ? `market area = ${subjectAreaName}` : null,
       tier.maxMiles != null ? `within ${tier.maxMiles} miles of the subject` : null,
@@ -981,7 +1048,7 @@ export async function selectComps(
         : tier.adjacentSubdivisions
           ? await readTouchingBounds()
           : null
-    const rows = await selectCmaCompsPool({
+    const rungRead = {
       cityIlike: tier.ignoreCity ? null : subject.city,
       subdivisionIlike: tier.subdivisionIlike ?? null,
       postalCode: null,
@@ -994,8 +1061,40 @@ export async function selectComps(
       limit: tierBounds ? 500 : 100,
       propertySubType: sqlSubType,
       propertyType: segment,
-    })
-    rung.rows_returned = rows.length
+    }
+    const namedRows = await selectCmaCompsPool(rungRead)
+    // THE OWN-PLAT RUNG READS THE SUBJECT'S GROUND, NOT ONE MLS SPELLING
+    // (reader review 2026-10-08, 1355 Jacksonville). It also reads the rows
+    // inside the box around the subject's recorded plat and its family, and
+    // the one ground decision (platGroundReach, lib/pricing/plat-ground.ts)
+    // keeps the rows the polygon puts on the ground, whatever the MLS calls
+    // them. A row the name read returned from another subdivision's polygon
+    // is not the subject's plat, as on the facts walk, which asks the same
+    // decision (onOwnPlat, Matt 2026-10-08 "Yes, everywhere").
+    let rows = namedRows
+    if (isOwnPlatRung(tier.name) && ownGround.platSlugs.length > 0) {
+      const box = await readOwnGroundBox()
+      const boxedRows = box
+        ? await selectCmaCompsPool({ ...rungRead, subdivisionIlike: null, bounds: box, limit: 500 })
+        : []
+      const named = new Set(namedRows.map((r) => str(r['ListingKey'])).filter((k): k is string => k != null))
+      const merged = mergeListingRows(namedRows, boxedRows)
+      const plats = await platsOfRows(merged)
+      rows = merged.filter((r, i) => {
+        const onGround =
+          platGroundReach(ownGround, {
+            platSlug: plats[i],
+            subdivision: str(r['SubdivisionName']),
+            latitude: num(r['Latitude']),
+            longitude: num(r['Longitude']),
+          }) != null
+        if (!onGround && named.has(str(r['ListingKey']) ?? '')) {
+          rung.excluded.not_own_plat = (rung.excluded.not_own_plat ?? 0) + 1
+        }
+        return onGround
+      })
+    }
+    rung.rows_returned = rows.length + (rung.excluded.not_own_plat ?? 0)
     if (isOwnPlatRung(tier.name) && rows.length > 0) {
       for (const r of rows) {
         const key = str(r['ListingKey'])
@@ -1022,9 +1121,7 @@ export async function selectComps(
         )
       : null
     // The adjacent rung needs each row's plat; one batched point lookup.
-    const rowPlats = tier.adjacentSubdivisions
-      ? await assignSubdivisionSlugs(rows.map((r) => ({ lat: num(r['Latitude']), lng: num(r['Longitude']) })))
-      : null
+    const rowPlats = tier.adjacentSubdivisions ? await platsOfRows(rows) : null
     const pendingLocate: { key: string; lat: number; lng: number }[] = []
     for (const row of rows) {
       const key = str(row['ListingKey'])
@@ -1079,16 +1176,17 @@ export async function selectComps(
       // ATTACHED subject are ambiguous and admit (the subject's true self is
       // already caught by ListingKey above), while on a detached subject the
       // bare address match stays self, which is what it always meant there.
-      if (subject.streetAddress && comp.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
-        const su = (subject.unitNumber ?? '').trim().toLowerCase()
-        const cu = (comp.unitNumber ?? '').trim().toLowerCase()
-        const attached = !keepSameProductType('Single Family Residence', subject.propertySubType)
-        const unitsDiffer = su !== cu
-        const bothAbsentOnAttached = !su && !cu && attached
-        if (!unitsDiffer && !bothAbsentOnAttached) {
-          rung.excluded.self++
-          continue
-        }
+      if (
+        addressIsThisHome({
+          subjectAddress: subject.streetAddress,
+          saleAddress: comp.address,
+          subjectUnit: subject.unitNumber,
+          saleUnit: comp.unitNumber,
+          sharedBuilding: !keepSameProductType('Single Family Residence', subject.propertySubType),
+        })
+      ) {
+        rung.excluded.self++
+        continue
       }
       if (byKey.has(comp.listingKey)) {
         rung.excluded.duplicate++
@@ -1164,15 +1262,19 @@ export async function selectComps(
       // from being graded on price. The facts ladder already drew the line
       // here (`tier.sameSubdivision` in lib/pricing/match.ts).
       const tightRung = isOwnPlatRung(tier.name)
-      // THE SUBJECT'S OWN PLAT on this ladder: the plat rung itself, or the same
-      // MLS subdivision name the rung searched (samePlat's fallback key; this
-      // ladder resolves no recorded-plat slug per row).
+      // THE SUBJECT'S OWN PLAT on this ladder: the plat rung itself, or the one
+      // ground decision (lib/pricing/plat-ground.ts) on the row: its recorded
+      // polygon when a rung read it, else the MLS name the rung searched.
       const inOwnPlat =
         tightRung ||
-        samePlat(
-          { subdivisionNorm: normSubdivision(subdivisionIlike) },
-          { subdivisionNorm: normSubdivision(comp.subdivision) },
-        )
+        platGroundReach(ownGround, {
+          platSlug: platByKey.get(comp.listingKey),
+          subdivision: comp.subdivision,
+          latitude: comp.latitude,
+          longitude: comp.longitude,
+          // Off the mesh a family plat counts only in the subject's town, as on the facts walk.
+          city: comp.city ?? null,
+        }) != null
       const ownStreetPeer = sameStreetPeer(
         { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft ?? 0 },
         { address: comp.address, city: comp.city, sqft: comp.sqft },
@@ -1402,26 +1504,36 @@ export async function selectComps(
       // FACTS_STANDALONE_MIN) reads searchCommunitySlug with the member-plat
       // map. Missing data fails open on both: saleSetsThePrice treats an
       // unknown community on both sides as a match.
-      if (
-        !saleSetsThePrice({
-          ownPlat: comp.ownPlat,
-          subjectSubdivision: subject.subdivision,
-          saleSubdivision: comp.subdivision,
-          subjectCommunity,
-          saleCommunity: compCommunity,
-          subjectCommunityLocated: subject.communityLocated === true || subjectCommunity != null,
-          saleCommunityLocated: comp.communityLocated === true || compCommunity != null,
-          subjectSqft: subject.sqft,
-          saleSqft: comp.sqft,
-          subjectLotAcres: subject.lotAcres,
-          saleLotAcres: comp.lotAcres,
-        })
-      ) {
+      const priceInput = {
+        ownPlat: comp.ownPlat,
+        subjectSubdivision: subject.subdivision,
+        saleSubdivision: comp.subdivision,
+        subjectCommunity,
+        saleCommunity: compCommunity,
+        subjectCommunityLocated: subject.communityLocated === true || subjectCommunity != null,
+        saleCommunityLocated: comp.communityLocated === true || compCommunity != null,
+        subjectSqft: subject.sqft,
+        saleSqft: comp.sqft,
+        subjectLotAcres: subject.lotAcres,
+        saleLotAcres: comp.lotAcres,
+      }
+      const refusal = priceSetRefusal(priceInput)
+      if (refusal) {
+        notSettingSales.push(
+          notSettingSaleFrom(
+            { listingKey: comp.listingKey, listNumber: comp.mlsNumber, address: comp.address },
+            refusal,
+          ),
+        )
         rung.excluded.not_price_setting++
         bySale.add(saleKey(comp))
         continue
       }
       comp.setsPrice = true
+      // The recorded plat a rung placed it in, so the area the letter draws
+      // from these sales tests the polygon (lib/pricing/comp-area.ts).
+      const recordedPlat = platByKey.get(comp.listingKey)
+      if (recordedPlat && !comp.subdivisionSlug) comp.subdivisionSlug = recordedPlat
 
       byKey.set(comp.listingKey, comp)
       bySale.add(saleKey(comp))
@@ -1432,7 +1544,7 @@ export async function selectComps(
     addExclusions(excludedTotals, rung.excluded)
     ladder.push(rung)
     trace.push(
-      `Tier ${tier.name}: listings WHERE StandardStatus ILIKE '%Closed%' AND PropertyType='${segment}'${subTypeSql} AND ClosePrice>0 AND CloseDate>='${closeDateGte}'${tier.ignoreCity ? '' : ` AND City ILIKE '${subject.city}'`}${tier.subdivisionIlike ? ` AND SubdivisionName ILIKE '${tier.subdivisionIlike}'` : ''}${land ? '' : ` AND TotalLivingAreaSqFt BETWEEN ${sqftMin} AND ${sqftMax}`}${lotMin != null ? ` AND lot_size_acres BETWEEN ${lotMin} AND ${landLotMax}` : landLotMax != null ? ` AND lot_size_acres <= ${landLotMax}` : ''}` +
+      `Tier ${tier.name}: listings WHERE StandardStatus ILIKE '%Closed%' AND PropertyType='${segment}'${subTypeSql} AND ClosePrice>0 AND CloseDate>='${closeDateGte}'${tier.ignoreCity ? '' : ` AND City ILIKE '${subject.city}'`}${tier.subdivisionIlike ? ` AND (SubdivisionName ILIKE '${tier.subdivisionIlike}'${isOwnPlatRung(tier.name) && ownGround.platSlugs.length > 0 ? ` OR inside the box around the subject's plat), each row kept by ${platGroundTrace(ownGround)}` : ')'}` : ''}${land ? '' : ` AND TotalLivingAreaSqFt BETWEEN ${sqftMin} AND ${sqftMax}`}${lotMin != null ? ` AND lot_size_acres BETWEEN ${lotMin} AND ${landLotMax}` : landLotMax != null ? ` AND lot_size_acres <= ${landLotMax}` : ''}` +
         `${tier.sameArea ? ` AND market area = ${subjectAreaName}` : ''}${tier.maxMiles != null ? ` AND distance <= ${tier.maxMiles} miles` : ''}. Returned ${rows.length} rows, ${added} new comps.`,
     )
     if (added > 0) tiersUsed.push(tier.name)
@@ -1464,7 +1576,7 @@ export async function selectComps(
   }
   if (x.bath_count > 0) {
     trace.push(
-      `Excluded ${x.bath_count} sale(s) on room count. A sale one bedroom or bathroom away from your home is used only inside your home's own plat, neighborhood or street, and is marked where it is; two or more rooms away is not used anywhere.`,
+      `Excluded ${x.bath_count} sale(s) on room count. A sale up to two bedrooms or two bathrooms off your home is used and weighs less. Three or more rooms off on one count is not used.`,
     )
   }
   if (x.lot_character > 0) {
@@ -1479,6 +1591,11 @@ export async function selectComps(
   if ((x.not_touching_plat ?? 0) > 0) {
     trace.push(
       `The touching-plat step read ${x.not_touching_plat} sale(s) in plats that do not touch this home's plat and did not use them there.`,
+    )
+  }
+  if ((x.not_own_plat ?? 0) > 0) {
+    trace.push(
+      `The own-subdivision step read ${x.not_own_plat} sale(s) under this home's MLS subdivision name whose recorded plat is another subdivision's, and did not use them there.`,
     )
   }
   if ((x.not_in_pocket ?? 0) > 0) {
@@ -1568,8 +1685,10 @@ export async function selectComps(
   // (lib/pricing/match.ts capPricingSet). Every sale admitted before the rung
   // that reached five keeps its seat: together they held fewer than five.
   // Seats six and seven come only from own ground. When own ground reached
-  // five, it fills up to seven, newest closes first, nearest on a tie, then
-  // the close nearest the set's middle price. When a rung that widens the
+  // five, it fills up to seven, own-street and exact-plat sales first, then
+  // the rest of the own subdivision, then the pocket (Matt 2026-10-08), each
+  // newest closes first, nearest on a tie, then the close nearest the set's
+  // middle price. When a rung that widens the
   // area reached five, that rung adds only the shortfall to five, its
   // tightest prices first (a rung that dumped a high outlier does not get to
   // set the range), and the set is five.
@@ -1586,7 +1705,22 @@ export async function selectComps(
       const half = Math.floor(prices.length / 2)
       const middle = prices.length === 0 ? 0 : prices.length % 2 === 1 ? prices[half]! : (prices[half - 1]! + prices[half]!) / 2
       const milesOf = (c: CmaComp) => distanceMiles(subjectPoint, { lat: c.latitude, lng: c.longitude }) ?? Number.POSITIVE_INFINITY
+      // OWN STREET AND EXACT PLAT FIRST (Matt 2026-10-08): the subject's
+      // own-street and exact-plat sales seat before the rest of its own
+      // subdivision (alias siblings, family plats in its neighborhood), then
+      // the pocket, newest first within each, by the same rank the facts
+      // ladder seats on (ownGroundSeatRank, lib/pricing/plat-ground.ts). A
+      // street-cluster subject's exclusive pocket is one place and is not ranked.
+      const seatSubject = {
+        streetAddress: subject.streetAddress,
+        city: subject.city,
+        subdivisionSlug: ring?.homeSlug ?? null,
+        subdivision: subdivisionIlike,
+      }
+      const rankOf = (c: CmaComp): number => (clusterPocket ? 0 : ownGroundSeatRank(seatSubject, c))
       open.sort((a, b) => {
+        const order = rankOf(a) - rankOf(b)
+        if (order !== 0) return order
         const date = b.closeDate.slice(0, 10).localeCompare(a.closeDate.slice(0, 10))
         if (date !== 0) return date
         const miles = milesOf(a) - milesOf(b)
@@ -1644,7 +1778,7 @@ export async function selectComps(
   }
   const roomNotedCount = comps.filter((c) => (c.roomDifference ?? []).length > 0).length
   if (roomNotedCount > 0) {
-    const d = `${roomNotedCount} sale(s) are one bedroom or bathroom different from your home. They are used because they sit on your home's own ground — its plat, its neighborhood or its street — and each is marked on the report. No dollar value is applied to the room: paired sales in this market do not support one.`
+    const d = `${roomNotedCount} sale(s) are off by one or two bedrooms or bathrooms. Each one still counts, and it counts for less than a sale with the same rooms. No dollar value is applied to the room: paired sales in this market do not support one.`
     trace.push(d)
     disclosures.push(d)
   }
@@ -1709,6 +1843,7 @@ export async function selectComps(
     candidates: candidateCount,
     excluded_totals: excludedTotals,
     not_price_setting: excludedTotals.not_price_setting,
+    not_setting_sales: notSettingSales,
     outliers_excluded: excludedOutliers.length,
     final_count: comps.length,
     final_tier_counts: countByTier(comps),
@@ -1764,7 +1899,7 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
     const rooms = roomCountsDecision(subject, { ...comp, selectionTier: 'broker-selected' })
     if (!rooms.ok) {
       refused.push(
-        `${comp.address} is ${comp.beds ?? '?'} bed / ${printedBaths(comp) ?? '?'} bath against your home's ${subject.beds ?? '?'} / ${printedBaths(subject) ?? '?'}, two or more rooms apart`,
+        `${comp.address} is ${comp.beds ?? '?'} bed / ${printedBaths(comp) ?? '?'} bath against your home's ${subject.beds ?? '?'} / ${printedBaths(subject) ?? '?'}, three or more rooms apart`,
       )
       continue
     }
@@ -1851,6 +1986,7 @@ const REFUSAL_CUT_LABELS: Partial<Record<keyof CompExclusionCounts, string>> = {
   adu_sale: 'carrying an ADU or other second living unit your home does not have',
   not_touching_plat: 'sitting in a subdivision that does not touch yours',
   not_in_pocket: 'sitting off the streets and subdivisions right around your home',
+  not_own_plat: "sitting in another subdivision's recorded plat under your subdivision's name",
 }
 
 /**

@@ -1,4 +1,5 @@
 import 'server-only'
+import { primaryPhoneValue } from '@/lib/crm/primary-phone'
 import { createServiceClient } from '@/lib/supabase/service'
 
 /** The person fields the SMS composer + click-to-call need (merge + routing). */
@@ -36,9 +37,7 @@ export async function getSendTarget(personId: number): Promise<SendTarget | null
     .maybeSingle()
   if (!person) return null
 
-  let phone =
-    (person.phones as Array<{ value?: string; isPrimary?: number | boolean }> | null)
-      ?.sort((a, b) => Number(!!b.isPrimary) - Number(!!a.isPrimary))[0]?.value ?? ''
+  let phone = primaryPhoneValue(person.phones) ?? ''
   if (!phone) {
     const { data: pt } = await sb
       .from('crm_contact_points')

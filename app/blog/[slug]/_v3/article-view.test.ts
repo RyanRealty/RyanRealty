@@ -36,6 +36,15 @@ describe('buildBlogArticleView', () => {
     expect(view.sections[0].id).toBe('what-does-a-home-cost-right-now')
   })
 
+  it('keeps a heading\'s own id so a renamed section holds its old anchor', () => {
+    const renamed = buildBlogArticleView(
+      '<h2 id="sroa-fees-and-costs">Sunriver HOA fees (SROA) in 2026</h2><p>The fee is $172.94 a month.</p>',
+    )
+    expect(renamed.sections[0].id).toBe('sroa-fees-and-costs')
+    expect(renamed.html).toContain('id="sroa-fees-and-costs"')
+    expect(renamed.html).not.toContain('id="sunriver-hoa-fees-sroa-in-2026"')
+  })
+
   it('keeps the lede that sits before the first heading', () => {
     expect(view.html).toContain('The lede paragraph')
   })
@@ -138,5 +147,35 @@ describe('slugifyHeading', () => {
     expect(slugifyHeading("What's for sale in Awbrey Glen right now?")).toBe(
       'what-s-for-sale-in-awbrey-glen-right-now',
     )
+  })
+})
+
+// SEO & AEO Desk brief 2026-10-08 §6: the Bend monthly reports' rail showed
+// "4 months" (the threshold) under "If you are buying" while the sentence said
+// 3.5 (September) and 3.9 (August). Paragraphs verbatim from the live reports.
+describe('months-of-supply chip reads the figure, never the threshold', () => {
+  const report = (mos: string) => `
+<h2>If you are buying</h2>
+<p>Months of supply sits at ${mos}, which is a seller's market by the standard measure: 4 months or less favors sellers, above 4 and under 6 is balanced, 6 or more favors buyers.</p>
+`
+  it('September reads 3.5 months', () => {
+    const chips = buildBlogArticleView(report('3.5')).figures.map((f) => f.value)
+    expect(chips).toEqual(['3.5 months'])
+  })
+  it('August reads 3.9 months', () => {
+    const chips = buildBlogArticleView(report('3.9')).figures.map((f) => f.value)
+    expect(chips).toEqual(['3.9 months'])
+  })
+  it('a threshold alone never becomes a chip', () => {
+    const chips = buildBlogArticleView(
+      `<h2>What the measure means</h2><p>By the standard measure, 4 months or less favors sellers and 6 months or more favors buyers.</p>`,
+    ).figures.map((f) => f.value)
+    expect(chips).toEqual([])
+  })
+  it('a stated duration still reads', () => {
+    const chips = buildBlogArticleView(
+      `<h2>How fast?</h2><p>Bend homes went under contract in a median 31 days this quarter.</p>`,
+    ).figures.map((f) => f.value)
+    expect(chips).toEqual(['31 days'])
   })
 })
