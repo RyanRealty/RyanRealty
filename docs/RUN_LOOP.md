@@ -54,6 +54,8 @@ items in the JSON's order (`siteServeTier` in the same file is the one serve ord
 whose route family another owner holds. A `GSC gap` node (a lost query, a split landing, or a
 money page class that lost rank, seeded by the Monday measurer `/api/cron/loop-weekly-measure`
 or the boot brief) is served with round three, behind only a fleet p0/major and Matt's ADD/CHANGE.
+A defect you found (deploy:verify, a gate, a log) has a work node: check it before you fix, claim it, and if another owner holds it, leave it.
+deploy:verify files one `DEPLOY-*` node per failure and the brief lists them: `npx tsx --conditions=react-server scripts/deploy-defects.ts --claim DEPLOY-<id> --owner <same>`.
 
 ## 4. The accept test for a public page node
 
@@ -88,8 +90,7 @@ mechanics (worktrees, cloud sandboxes, the judge chain): the skill.
 
 1. Commit on the branch. A site commit carries `Node: <id>` (G72).
 2. Finished work is `npm run ship`: local gates, push this branch, open the pull
-   request if it is missing, and merge it. Unfinished work is `npm run push`
-   plus one handoff line.
+   request if it is missing, and merge it. Unfinished work is `npm run push` plus one handoff line.
 3. When the diff changes the app, that command runs `deploy:verify` until READY.
    A docs-only diff skips the Vercel build.
 

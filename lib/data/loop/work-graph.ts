@@ -99,6 +99,29 @@ export async function listWorkNodes(input?: {
   return (data ?? []).map(mapRow)
 }
 
+/**
+ * Every node whose version_gap starts with `prefix`, in any state. Unlike
+ * listWorkNodes, a read error comes back as `error` instead of an empty list: a
+ * caller that decides "nothing is filed yet" from an empty list (deploy:verify's
+ * defect filer, deploy-defects.ts) has to tell "none" from "could not read".
+ */
+export async function readWorkNodesByGap(
+  prefix: string,
+): Promise<{ data: WorkNode[] | null; error: string | null }> {
+  try {
+    const sb = createServiceClient()
+    const { data, error } = await sb
+      .from('loop_work_nodes')
+      .select(COLS)
+      .like('version_gap', `${prefix}%`)
+      .order('created_at', { ascending: true })
+    if (error) return { data: null, error: error.message }
+    return { data: (data ?? []).map(mapRow), error: null }
+  } catch (err) {
+    return { data: null, error: err instanceof Error ? err.message : 'read failed' }
+  }
+}
+
 /** in_progress nodes untouched past the stale window — stranded work for the packet. */
 export async function listStaleInProgressNodes(now: Date = new Date()): Promise<WorkNode[]> {
   const open = await listWorkNodes({ states: ['in_progress'] })

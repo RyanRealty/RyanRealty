@@ -226,6 +226,37 @@ describe('runSitemapUrlHealth (mocked fetch)', () => {
   })
 })
 
+describe('runSitemapUrlHealth: what a pass covered (deploy-defect filer)', () => {
+  const urls = [`${O}/a`, `${O}/b`, `${O}/c`, `${O}/d`]
+  const healthy = (u) => `<html><head><link rel="canonical" href="${u}"/><meta name="robots" content="index, follow"/></head><body></body></html>`
+  const fetchImpl = async (url) => {
+    const text = (() => {
+      if (url === `${O}/robots.txt`) return `User-Agent: *\nAllow: /\nAllow: /api/og\nDisallow: /admin/\n`
+      if (url === `${O}/sitemap.xml`) return `<sitemapindex><sitemap><loc>${O}/sitemaps/geo.xml</loc></sitemap></sitemapindex>`
+      if (url === `${O}/sitemaps/geo.xml`) return `<urlset>${urls.map((u) => `<url><loc>${u}</loc></url>`).join('')}</urlset>`
+      return urls.includes(url) ? healthy(url) : ''
+    })()
+    return { status: text ? 200 : 404, headers: new Headers(), text: async () => text }
+  }
+
+  it('returns the pathnames it fetched and every pathname the sitemaps list', async () => {
+    const r = await runSitemapUrlHealth(O, { ua: 'test', fetchImpl, retryDelayMs: 0 })
+    expect(r.fails).toEqual([])
+    expect(r.listedPaths).toEqual(['/a', '/b', '/c', '/d'])
+    expect(r.checkedPaths).toEqual(['/a', '/b', '/c', '/d'])
+  })
+
+  it('walks the priorityUrls an open deploy-found node names even under the cap', async () => {
+    const capped = await runSitemapUrlHealth(O, { ua: 'test', fetchImpl, retryDelayMs: 0, maxUrls: 2 })
+    expect(capped.checkedPaths).toEqual(['/a', '/c'])
+    const r = await runSitemapUrlHealth(O, { ua: 'test', fetchImpl, retryDelayMs: 0, maxUrls: 2, priorityUrls: [`${O}/d`, `${O}/not-in-the-sitemap`] })
+    expect(r.checked).toBe(2)
+    expect(r.checkedPaths).toContain('/d')
+    expect(r.checkedPaths).not.toContain('/not-in-the-sitemap')
+    expect(r.listedPaths).toHaveLength(4)
+  })
+})
+
 describe('takeSitemapTargets', () => {
   it('walks every loc when the cap is unset', () => {
     expect(takeSitemapTargets([['a', 'b'], ['c']], Infinity)).toEqual(['a', 'b', 'c'])
