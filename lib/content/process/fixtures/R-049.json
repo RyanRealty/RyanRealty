@@ -1,0 +1,12 @@
+{
+  "rule": "R-049",
+  "step": "brief",
+  "what": "an unnamed engine",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.voiceover.engine",
+      "set": "sapi"
+    }
+  ]
+}

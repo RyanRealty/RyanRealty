@@ -1,0 +1,12 @@
+{
+  "rule": "R-034",
+  "step": "brief",
+  "what": "buyer's market on the call to action",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "cta.text",
+      "set": "Is this a buyer's market? Send this to whoever you're house hunting with."
+    }
+  ]
+}

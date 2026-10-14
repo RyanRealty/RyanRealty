@@ -15,7 +15,8 @@
  * The camera zooms in log space (a constant feel of speed at every scale) and
  * strokes are drawn non-scaling, so a hairline stays a hairline at 40x.
  */
-import { cubicBezier, progress } from './ease'
+import { cameraFromView, cameraMove, cameraView } from './camera'
+import { progress } from './ease'
 
 /** [lng, lat] rings, as GeoJSON stores them. */
 export type LngLatRing = Array<[number, number]>
@@ -29,6 +30,8 @@ export type MotionOutline = {
 
 /** The map viewport at 1080 x 1920: under the heading, clear of the figure card at 1150. */
 export const MAP_BOX = { left: 90, top: 460, width: 900, height: 650 }
+/** The viewport a map Camera is a transform for: the box's own size, its centre the camera's centre. */
+const MAP_VIEWPORT = { width: MAP_BOX.width, height: MAP_BOX.height }
 
 /** Air around the place when the camera has arrived, as a share of the box. */
 const SUBJECT_PAD = 0.12
@@ -36,9 +39,6 @@ const SUBJECT_PAD = 0.12
 const CONTEXT_PAD = 0.04
 /** Simplification tolerance at the final scale, in screen pixels. */
 const TOLERANCE_PX = 0.35
-
-/** The camera curve: cubic-bezier(.65,0,.35,1). */
-const CAMERA_EASE = [0.65, 0, 0.35, 1] as const
 
 export type Camera = { s: number; tx: number; ty: number }
 
@@ -221,34 +221,25 @@ export function mapGeometry(outline: MotionOutline): MapGeometry | null {
 }
 
 /**
- * The camera at film time t over a move [start, start + seconds]. Scale moves
- * in log space about the zoom's fixed point, so the place grows toward the
- * middle in one smooth move instead of swinging out and back.
+ * The camera at film time t over a move [start, start + seconds], on the brand
+ * camera curve (.65,0,.35,1). The move is camera.ts's one world camera: scale
+ * moves in log space about the zoom's fixed point (the one world point that
+ * sits at the same screen position under both cameras), so the place grows
+ * toward the middle in one smooth move instead of swinging out and back. Before
+ * the move the camera is the geometry's open camera and after it the arrive
+ * camera, exactly; in between the numbers are the map's own: scale to 5
+ * places, translate to 2.
  */
 export function cameraAt(geometry: MapGeometry, t: number, start: number, seconds: number): Camera {
-  const [x1, y1, x2, y2] = CAMERA_EASE
-  const p = cubicBezier(x1, y1, x2, y2, progress(t, start, seconds))
   const { open, arrive } = geometry
-  if (p <= 0) return open
-  if (p >= 1) return arrive
-  if (arrive.s === open.s) {
-    return {
-      s: open.s,
-      tx: Math.round((open.tx + (arrive.tx - open.tx) * p) * 100) / 100,
-      ty: Math.round((open.ty + (arrive.ty - open.ty) * p) * 100) / 100,
-    }
-  }
-  const s = Math.exp(Math.log(open.s) + (Math.log(arrive.s) - Math.log(open.s)) * p)
-  // The one world point that sits at the same place on screen under both
-  // cameras. Holding it still while the scale moves is a zoom toward it,
-  // which is what a camera move into a place looks like.
-  const fx = (open.tx - arrive.tx) / (arrive.s - open.s)
-  const fy = (open.ty - arrive.ty) / (arrive.s - open.s)
-  const sx = fx * open.s + open.tx
-  const sy = fy * open.s + open.ty
+  const x = progress(t, start, seconds)
+  if (x <= 0) return open
+  if (x >= 1) return arrive
+  const pose = cameraMove(cameraFromView(open, MAP_VIEWPORT), cameraFromView(arrive, MAP_VIEWPORT), t, start, seconds, 'move')
+  const view = cameraView(pose, MAP_VIEWPORT)
   return {
-    s: Math.round(s * 1e5) / 1e5,
-    tx: Math.round((sx - fx * s) * 100) / 100,
-    ty: Math.round((sy - fy * s) * 100) / 100,
+    s: Math.round(view.s * 1e5) / 1e5,
+    tx: Math.round(view.tx * 100) / 100,
+    ty: Math.round(view.ty * 100) / 100,
   }
 }

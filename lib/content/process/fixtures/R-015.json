@@ -1,0 +1,17 @@
+{
+  "rule": "R-015",
+  "step": "brief",
+  "what": "a 35 s film with no reason",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "length_s",
+      "set": 35
+    },
+    {
+      "in": "timeline",
+      "path": "duration_s",
+      "set": 35
+    }
+  ]
+}

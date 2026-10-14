@@ -3,7 +3,7 @@
 Nothing is delivered to Matt unless this exits 0. No warnings, no overrides.
 
 Usage: python3 tools/video_render_gate.py <video.mp4> [--type buyer_ad] [--silent]
-                 [--vo-start S --vo-end S] [--json]
+                 [--max-s S] [--vo-start S --vo-end S] [--json]
 On PASS writes <video>.gate.json {pass, sha256}; on FAIL deletes any old stamp.
 Delivery (tools/deliver_video.sh) refuses any file whose sha256 has no passing stamp.
 Exit 0 = PASS, 1 = FAIL (reasons printed), 2 = usage / tooling error (also blocks delivery).
@@ -20,7 +20,13 @@ Checks (all hard-fail):
                  absolute difference > 0.20 (0..1 scale) OR SSIM < 0.35. Calibrated so a solid
                  off-white card vs a dark photo (diff ~0.5+) fails, while a blurred/darkened
                  version of the opening photo behind the end card passes.
- 3 LENGTH        15.0 <= duration <= 30.0 s.
+ 3 LENGTH        min_s <= duration <= max_s for --type, read from video_types.json (defaults
+                 merged with the type; 15 to 30 s for most types). Matt 2026-10-14: each
+                 video type keeps its own length window. --max-s S replaces the ceiling with the
+                 longest run the BRIEF is allowed (video_gate.mjs's Length block): the type's
+                 hard_max_s when the brief has a non-empty length_reason, 'inf' when it carries a
+                 matt_overrides entry for 'length', else the type's max_s (the default). The
+                 window it judged against is recorded in the stamp (info.length_window_s).
  4 HOOK          OCR finds >= 2 words of on-screen text in a frame at or before 2.0 s.
  5 CAPTIONS      Voiced render: OCR text in >= 70% of frames sampled every 0.5 s across the VO
                  span (default 0.5 s .. duration-4 s, or --vo-start/--vo-end). buyer_ad with no
@@ -31,7 +37,7 @@ Checks (all hard-fail):
                  ($ + digits, e.g. $612,000 / $1.2M / $612K) AND 'closed' or 'sold'. Consecutive
                  hits form a segment; any segment lasting <= 3.0 s (+0.5 s sampling slack) fails.
 """
-import argparse, json, re, subprocess, sys, tempfile, os, unicodedata
+import argparse, json, math, re, subprocess, sys, tempfile, os, unicodedata
 import cv2, numpy as np
 
 LOOP_MAX_DIFF = 0.20
@@ -116,12 +122,26 @@ def endcard_ocr(img):
 
 def norm_phone(s): return re.sub(r"[^0-9]", "", s)
 
-def run(path, vtype, silent, vo_start, vo_end):
+def length_window(vtype, max_s=None):
+    """(min_s, max_s) for a video type: video_types.json defaults merged with the type.
+    max_s, when given, is the longest run the brief allows (see check 3) and replaces the type's own ceiling."""
+    cfg = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "video_types.json")))
+    if vtype not in cfg["types"]: raise ValueError(f"unknown video type {vtype!r}; use one of {', '.join(cfg['types'])}")
+    t = {**cfg["defaults"], **cfg["types"][vtype]}
+    lo, hi = float(t["min_s"]), float(t["max_s"])
+    if max_s is not None:
+        if math.isnan(max_s) or max_s < lo: raise ValueError(f"--max-s {max_s:g} is under the {vtype} minimum of {lo:g} s")
+        hi = float(max_s)
+    return lo, hi
+
+def run(path, vtype, silent, vo_start, vo_end, max_s=None):
     fails = []; info = {}
     dur, has_audio = probe(path); info["duration_s"] = round(dur, 2); info["audio"] = has_audio
     v = Video(path)
-    # 3 length
-    if not (15.0 <= dur <= 30.0): fails.append(f"LENGTH: runs {dur:.2f}s; must be 15-30 s.")
+    # 3 length: the type's own window, from the file video_gate.mjs and video:check read
+    lo, hi = length_window(vtype, max_s)
+    info["length_window_s"] = [lo, hi if math.isfinite(hi) else None]  # None: no ceiling (a Matt length override)
+    if not (lo <= dur <= hi): fails.append(f"LENGTH: runs {dur:.2f}s; {vtype} must be {lo:g}-{hi:g} s.")
     # OCR every 0.5 s across the whole video
     samples = {}
     t = 0.0
@@ -198,9 +218,10 @@ def run(path, vtype, silent, vo_start, vo_end):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("video"); ap.add_argument("--type", default="buyer_ad"); ap.add_argument("--silent", action="store_true")
+    ap.add_argument("--max-s", type=float, help="longest run the brief allows; default: the type's max_s")
     ap.add_argument("--vo-start", type=float); ap.add_argument("--vo-end", type=float); ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
-    try: fails, info = run(a.video, a.type, a.silent, a.vo_start, a.vo_end)
+    try: fails, info = run(a.video, a.type, a.silent, a.vo_start, a.vo_end, a.max_s)
     except Exception as e:
         print(f"RENDER GATE ERROR (blocks delivery): {e}"); sys.exit(2)
     if a.json: print(json.dumps({"fails": fails, "info": info}, indent=1))

@@ -1,0 +1,16 @@
+{
+  "rule": "R-090",
+  "step": "board",
+  "what": "a drawn box past x 960",
+  "setup": {
+    "layout": [
+      {
+        "box": {
+          "index": 0,
+          "x": 500,
+          "w": 600
+        }
+      }
+    ]
+  }
+}

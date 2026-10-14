@@ -1,0 +1,8 @@
+{
+  "rule": "R-119",
+  "step": "master",
+  "what": "a missing golden still",
+  "setup": {
+    "golden": false
+  }
+}

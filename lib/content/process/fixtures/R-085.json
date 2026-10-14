@@ -1,0 +1,12 @@
+{
+  "rule": "R-085",
+  "step": "board",
+  "what": "question_secret_hook with no question card",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "techniques.8",
+      "set": "question_secret_hook"
+    }
+  ]
+}

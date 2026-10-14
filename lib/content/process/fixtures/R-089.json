@@ -1,0 +1,12 @@
+{
+  "rule": "R-089",
+  "step": "board",
+  "what": "the payoff line never drawn",
+  "setup": {
+    "layout": [
+      {
+        "dropCue": "plan-map"
+      }
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "rule": "R-128",
+  "step": "master",
+  "what": "a frame that cannot be read",
+  "setup": {
+    "measure": {
+      "failFrame": true
+    }
+  }
+}

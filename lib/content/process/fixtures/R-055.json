@@ -1,0 +1,12 @@
+{
+  "rule": "R-055",
+  "step": "brief",
+  "what": "three real numbers",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.real_numbers_count",
+      "set": 3
+    }
+  ]
+}

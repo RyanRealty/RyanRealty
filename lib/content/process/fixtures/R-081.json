@@ -1,0 +1,14 @@
+{
+  "rule": "R-081",
+  "step": "stills",
+  "what": "a cut at 2.0 s inside the first beat's clip",
+  "setup": {
+    "clips": {
+      "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/videos/curated/a9bddb1c-ac97-46b9-a426-7a899c5cb5b4.mp4": {
+        "cuts": [
+          2
+        ]
+      }
+    }
+  }
+}

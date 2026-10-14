@@ -1,0 +1,8 @@
+{
+  "rule": "R-136",
+  "step": "approve",
+  "what": "step approve asked for directly",
+  "setup": {
+    "single": true
+  }
+}

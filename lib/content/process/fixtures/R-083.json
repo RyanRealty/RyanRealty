@@ -1,0 +1,12 @@
+{
+  "rule": "R-083",
+  "step": "board",
+  "what": "a gap before the second beat",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.1.start",
+      "set": 3.4
+    }
+  ]
+}

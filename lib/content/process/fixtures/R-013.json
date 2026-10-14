@@ -1,0 +1,26 @@
+{
+  "rule": "R-013",
+  "step": "brief",
+  "what": "a 12 s buyer ad",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "length_s",
+      "set": 12
+    },
+    {
+      "in": "timeline",
+      "path": "duration_s",
+      "set": 12
+    },
+    {
+      "in": "brief",
+      "path": "matt_overrides",
+      "set": [
+        {
+          "rule": "length"
+        }
+      ]
+    }
+  ]
+}

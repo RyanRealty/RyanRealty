@@ -45,6 +45,23 @@ export function evaluateLength(duration: number, rules: { min_s: number; max_s: 
   return problems
 }
 
+/**
+ * The longest run the brief is allowed, exactly as video_gate.mjs's Length block
+ * lets it through: the type's max_s; its hard_max_s when the brief gives a non-empty
+ * length_reason; no ceiling (Infinity) when the brief carries a matt_overrides entry
+ * for 'length'. The render gate (video_render_gate.py --max-s) judges the file
+ * against this, so a film the brief gate passes is not failed after render.
+ */
+export function allowedLengthCeiling(
+  rules: { max_s: number; hard_max_s: number },
+  brief: { length_reason?: unknown; matt_overrides?: unknown } | null | undefined,
+): number {
+  const overrides = Array.isArray(brief?.matt_overrides) ? (brief.matt_overrides as unknown[]) : []
+  if (overrides.some((o) => typeof o === 'object' && o !== null && (o as { rule?: unknown }).rule === 'length')) return Infinity
+  const reason = typeof brief?.length_reason === 'string' ? brief.length_reason.trim() : ''
+  return reason === '' ? rules.max_s : rules.hard_max_s
+}
+
 // ---------------------------------------------------------------------------
 // Check 4: hook
 

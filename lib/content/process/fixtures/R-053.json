@@ -1,0 +1,12 @@
+{
+  "rule": "R-053",
+  "step": "brief",
+  "what": "a hook_by_s of 3",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.hook_by_s",
+      "set": 3
+    }
+  ]
+}

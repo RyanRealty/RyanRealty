@@ -934,9 +934,18 @@ export function pickerContractProblems(d, { root = process.cwd() } = {}) {
   return p
 }
 
+/**
+ * The vitest arguments for a picker contract's test files. A run names its project:
+ * a bare `vitest run <file>` can pull in the `int` project, which writes to production
+ * (ci:int-test-residue R6).
+ */
+export function pickerContractVitestArgs(files) {
+  return ['vitest', 'run', '--project', 'unit', '--project', 'gates', '--reporter=dot', ...files]
+}
+
 export function runPickerContractTests(d, { root = process.cwd() } = {}) {
   const files = Array.isArray(d.testFiles) ? d.testFiles : []
-  const r = spawnSync('npx', ['vitest', 'run', '--reporter=dot', ...files], {
+  const r = spawnSync('npx', pickerContractVitestArgs(files), {
     cwd: root,
     encoding: 'utf8',
     env: process.env,

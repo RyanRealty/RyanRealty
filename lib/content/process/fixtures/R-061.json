@@ -1,0 +1,12 @@
+{
+  "rule": "R-061",
+  "step": "brief",
+  "what": "a made-up technique",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "techniques.8",
+      "set": "made_up"
+    }
+  ]
+}

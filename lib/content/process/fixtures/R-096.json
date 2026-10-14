@@ -1,0 +1,12 @@
+{
+  "rule": "R-096",
+  "step": "master",
+  "what": "a 1000 pixel wide file",
+  "setup": {
+    "measure": {
+      "probe": {
+        "width": 1000
+      }
+    }
+  }
+}

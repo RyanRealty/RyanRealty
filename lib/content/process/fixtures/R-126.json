@@ -1,0 +1,19 @@
+{
+  "rule": "R-126",
+  "step": "master",
+  "what": "a $999 in two samples running",
+  "setup": {
+    "pixels": {
+      "samples": [
+        {
+          "t": 5,
+          "text": "$999"
+        },
+        {
+          "t": 5.5,
+          "text": "$999"
+        }
+      ]
+    }
+  }
+}
