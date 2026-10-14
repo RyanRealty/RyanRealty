@@ -57,8 +57,12 @@ export function siteBaseUrl(): string {
 // warmer. See lib/sitemap-universe-memo.ts and its tests for the invariant.
 const UNIVERSE_TTL_MS = 600_000
 
+// listings: false (2026-10-14). The universe only feeds core, geo, matrix and
+// content, and every listing URL classifies as 'listings', which is served
+// below without the universe. The listing leg was read and discarded on every
+// build, and as the slowest leg it held each post-deploy build open longest.
 const buildUniverseOnce = createUniverseMemo<MetadataRoute.Sitemap>(
-  () => buildAllUrls(siteBaseUrl(), new Date()),
+  () => buildAllUrls(siteBaseUrl(), new Date(), { listings: false }),
   UNIVERSE_TTL_MS,
 )
 

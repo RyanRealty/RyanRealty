@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# After a pull or merge, other worktrees may now be eligible (their PR landed).
+# Never fail the git operation. Agents also call `npm run wt:cleanup` themselves.
+sh scripts/cleanup-merged-worktrees.sh --hook || true

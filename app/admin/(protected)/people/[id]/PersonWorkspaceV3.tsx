@@ -21,6 +21,7 @@ import type { PersonDealLink } from '@/lib/data/tc/deal-people'
 import type { PersonAddress } from '@/lib/crm/person-address'
 import { FieldEditors } from './FieldEditors'
 import { HomesSection } from './HomesSection'
+import { CountyRecordsSection } from './CountyRecordsSection'
 import { PersonAddressEditor } from './PersonAddressEditor'
 import { PersonDeals } from './PersonDeals'
 import { PersonNotesAdd } from './PersonNotesAdd'
@@ -203,6 +204,12 @@ export function PersonWorkspaceV3(props: {
                 : `No visits identified to this contact in the last ${props.siteActivity.windowDays} days.`}
             </p>
             <PersonalLinkCopy href={personalLink} />
+          </SidebarSec>
+
+          <SidebarSec title="County records" meta="Deschutes, Crook">
+            <Suspense fallback={<p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>Reading county records…</p>}>
+              <CountyRecordsSection personId={props.personId} hideHeading />
+            </Suspense>
           </SidebarSec>
 
           <SidebarSec

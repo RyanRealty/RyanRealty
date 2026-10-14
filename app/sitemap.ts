@@ -88,6 +88,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return buildAllUrls(baseUrl, now)
 }
 
+export type BuildAllUrlsOptions = {
+  /**
+   * Include the listing-detail URLs (getListingSitemapRows). Default true, so
+   * the monolith fallback above still lists every public URL.
+   *
+   * The per-class children pass false (lib/sitemap-class-rows.ts). Every
+   * listing URL classifies as 'listings', and getClassRows('listings') reads
+   * getListingSitemapRows itself and returns before it builds this universe,
+   * so in core, geo, matrix and content the listing leg was read and thrown
+   * away. It was also the slowest leg (13-28s in production on 2026-10-14),
+   * and four of those class builds start together after every deploy.
+   */
+  listings?: boolean
+}
+
 /**
  * Build the complete list of sitemap URLs. Called once per chunk request.
  * In production with caching (revalidate: 3600), this is efficient enough.
@@ -97,7 +112,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
  * so GSC reports indexed counts per class. The monolith at /sitemap.xml
  * stays authoritative and unchanged.
  */
-export async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.Sitemap> {
+export async function buildAllUrls(
+  baseUrl: string,
+  now: Date,
+  opts: BuildAllUrlsOptions = {},
+): Promise<MetadataRoute.Sitemap> {
   // Sanctioned 2-segment /cities/{a}/{b} paths (from the neighborhoods table);
   // filterRogueCityUrls drops any 2-seg /cities URL not in this set before serve.
   const allowedNeighborhoodPaths = new Set<string>()
@@ -372,7 +391,12 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
         ),
         [] as Array<{ slug: string; updated_at?: string }>,
       ),
-      'listing-rows': leg('listing-rows', getListingSitemapRows(now), []),
+      // Skipped for the class universe (BuildAllUrlsOptions.listings): no
+      // leg, no read, no line in the leg-timing log.
+      'listing-rows':
+        opts.listings === false
+          ? Promise.resolve([] as Awaited<ReturnType<typeof getListingSitemapRows>>)
+          : leg('listing-rows', getListingSitemapRows(now), []),
       'blog-posts': leg(
         'blog-posts',
         fetchAllRows<{ slug: string; published_at?: string | null }>(

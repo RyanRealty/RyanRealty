@@ -9,6 +9,6 @@ Read **`AGENTS.md` CORE RULES** first. That file is the only process-rule source
 
 PRs only, auto-merge, stale-PR land, Done (merged + production READY + live URL), payload caps, no sleep waits, DB writes, and new process rules: **[AGENTS.md](../../AGENTS.md)**.
 
-Worktrees and anti-strand detail: **AGENTS.md → Worktrees**.
+Worktrees and anti-strand detail: **AGENTS.md → Worktrees**. After your PR merges or closes, remove your own worktree or clone (`npm run wt:cleanup`). Never remove a checkout with uncommitted changes, unpushed commits, stashes, or one another session is using. Rule: `.cursor/rules/cleanup-merged-worktrees.mdc`.
 
 Commit message format (not process): `.cursor/rules/git-commit.mdc`.

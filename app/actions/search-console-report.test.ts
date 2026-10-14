@@ -31,7 +31,7 @@ vi.mock('googleapis', () => ({
 }))
 
 import { GOOGLE_AUTH_TIMEOUT_MS } from '@/lib/google-deadline'
-import { getSearchConsoleSummary } from './search-console-report'
+import { getSearchConsoleReportedThrough, getSearchConsoleSummary } from './search-console-report'
 
 beforeEach(() => {
   vi.stubEnv('GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL', 'viewer@ryanrealty.iam.gserviceaccount.com')
@@ -67,5 +67,56 @@ describe('getSearchConsoleSummary deadlines', () => {
     await getSearchConsoleSummary('2026-08-01', '2026-08-28')
 
     expect(h.query).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('final data only', () => {
+  it('every summary query asks for final data, the same state the reported-through probe reads', async () => {
+    await getSearchConsoleSummary('2026-10-11', '2026-10-11')
+
+    for (const [req] of h.query.mock.calls) {
+      expect(req.requestBody.dataState).toBe('final')
+    }
+  })
+})
+
+describe('getSearchConsoleReportedThrough', () => {
+  it('returns the latest final date Google reports, from one date-grouped query', async () => {
+    h.query.mockResolvedValueOnce({
+      data: {
+        rows: [
+          { keys: ['2026-10-10'], impressions: 855 },
+          { keys: ['2026-10-11'], impressions: 823 },
+        ],
+      },
+    })
+
+    const res = await getSearchConsoleReportedThrough()
+
+    expect(res).toMatchObject({ ok: true, reportedThrough: '2026-10-11' })
+    expect(h.query).toHaveBeenCalledTimes(1)
+    const [req] = h.query.mock.calls[0]
+    expect(req.requestBody).toMatchObject({ dimensions: ['date'], dataState: 'final' })
+  })
+
+  it('is null, not a date, when Google returns no rows', async () => {
+    h.query.mockResolvedValueOnce({ data: {} })
+
+    const res = await getSearchConsoleReportedThrough()
+
+    expect(res).toMatchObject({ ok: true, reportedThrough: null })
+  })
+
+  it('fails closed on an API error so the cron stores nothing', async () => {
+    h.query.mockRejectedValueOnce(new Error('quota'))
+
+    expect(await getSearchConsoleReportedThrough()).toEqual({ ok: false, error: 'quota' })
+  })
+
+  it('reports SEARCH_CONSOLE_NOT_CONFIGURED without credentials', async () => {
+    vi.stubEnv('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY', '')
+
+    expect(await getSearchConsoleReportedThrough()).toEqual({ ok: false, error: 'SEARCH_CONSOLE_NOT_CONFIGURED' })
+    expect(h.query).not.toHaveBeenCalled()
   })
 })

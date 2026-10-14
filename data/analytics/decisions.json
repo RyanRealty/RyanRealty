@@ -147,6 +147,12 @@
       "decided": "Matt 2026-10-14",
       "why": "For a known CRM contact, county ownership records may be matched to show whether they own a home and which one, on the CRM profile only. Never for anonymous visitors, never on a public page, email or export.",
       "manual": "CRM person profile > County records"
+    },
+    {
+      "id": "known-contact-audiences",
+      "decided": "Matt 2026-10-14",
+      "why": "Audiences for recognized CRM contacts test GA4's Signed in with user ID = yes (the site sets user_id to the hashed CRM id). Never test a custom dimension for 'any value' (.+, not empty): GA4's literal '(not set)' matches it, so the audience holds everyone. The retired vendor CRM's fub_person_id field is archived; GA4 names no vendor CRM.",
+      "code": "scripts/ga4-admin.mjs"
     }
   ]
 }
