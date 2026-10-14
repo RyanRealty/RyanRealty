@@ -144,13 +144,39 @@ describe('PageViewTracker visitor intent', () => {
     expect(last).toEqual({ page_type: 'listing', visitor_intent: 'buyer', primary_market: 'bend' })
   })
 
-  it('without analytics consent records nothing, pushes no intent key and forgets the stored memory', async () => {
+  it('without analytics consent records nothing, clears both keys in GTM and forgets the stored memory', async () => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ intent: 'seller' }))
     state.analytics = false
     await renderAt('/sell')
-    expect(rows()).toContainEqual({ page_type: 'sell' })
-    expect(rows().some((r) => 'visitor_intent' in r || 'primary_market' in r)).toBe(false)
+    const context = rows().find((r) => r.page_type === 'sell')!
+    // An undefined value replaces the key in GTM's data model, so no stale user property is sent.
+    expect(Object.keys(context).sort()).toEqual(['page_type', 'primary_market', 'visitor_intent'])
+    expect(context.visitor_intent).toBeUndefined()
+    expect(context.primary_market).toBeUndefined()
     expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull()
+  })
+
+  it('turning analytics off in the banner forgets the memory and clears the keys at once', async () => {
+    await renderAt('/sell')
+    expect(window.localStorage.getItem(STORAGE_KEY)).not.toBeNull()
+    state.analytics = false
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('cookie-consent', { detail: 'essential' }))
+    })
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull()
+    const last = rows()[rows().length - 1]
+    expect(Object.keys(last).sort()).toEqual(['primary_market', 'visitor_intent'])
+    expect(last.visitor_intent).toBeUndefined()
+  })
+
+  it('a consent change that keeps analytics on changes nothing', async () => {
+    await renderAt('/sell')
+    const before = rows().length
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('cookie-consent', { detail: 'all' }))
+    })
+    expect(rows()).toHaveLength(before)
+    expect(window.localStorage.getItem(STORAGE_KEY)).not.toBeNull()
   })
 
   it('never records a private path', async () => {

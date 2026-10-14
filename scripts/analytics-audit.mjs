@@ -270,7 +270,10 @@ if (!container) {
     gtm.userProperties = {}
     for (const tagName of ['GA4 - page_view', 'GA4 - dataLayer events']) {
       const t = (live.tag || []).find((x) => x.type === 'gaawe' && x.name === tagName)
-      if (!t) continue
+      if (!t) {
+        finding('FAIL', 'gtm', `Live container has no GA4 Event tag "${tagName}": its hits carry no content_group and no visitor_intent / primary_market user properties.`)
+        continue
+      }
       const ups = listRows(t, 'userProperties', 'name', 'value')
       const params = listRows(t, 'eventSettingsTable', 'parameter', 'parameterValue')
       gtm.userProperties[tagName] = Object.keys(ups)

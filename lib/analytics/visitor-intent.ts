@@ -193,7 +193,6 @@ const CITY_SEGMENT_ROUTES: Readonly<Record<string, number>> = {
   cities: 1, // /cities/<city>[/<neighborhood>|/buying|/cost|...]
   'open-houses': 1, // /open-houses/<city>
   'price-drops': 1, // /price-drops/<city>
-  'motivated-sellers': 1, // /motivated-sellers/<city>
   'housing-market': 1, // /housing-market/<city>[/...] (the market report pages)
 }
 
@@ -201,13 +200,14 @@ const CITY_SEGMENT_ROUTES: Readonly<Record<string, number>> = {
  * The market a page is about, as a lowercase slug, or null.
  *
  *   /homes-for-sale/<city>/...  /cities/<city>/...  /open-houses/<city>
- *   /price-drops/<city>  /motivated-sellers/<city>  /housing-market/<city>/...  -> the city
+ *   /price-drops/<city>  /housing-market/<city>/...                             -> the city
  *   /communities/<slug>/...                                                     -> the community slug
  *
  * Everything else is null: /subdivisions/<slug> (a plat is finer than a market
  * and its slug carries no city), /listing/<key> (no place in the path),
  * /oregon/<city> (outside the service area), /central-oregon/* (trails, golf,
- * events: not a market), /zip, /areas and every non-place page.
+ * events: not a market), /zip, /areas and every non-place page. /motivated-sellers
+ * is a 301 to /price-drops (next.config.ts), so it never renders here.
  */
 export function marketSlugFromPath(pathname: string | null | undefined): string | null {
   if (!pathname) return null
@@ -257,10 +257,14 @@ function addMarketView(memory: VisitorIntentMemory, slug: string): void {
   }
   const keys = Object.keys(memory.markets)
   if (keys.length >= MARKET_KEY_CAP) {
-    // Drop the least-viewed market (first one on a tie), never the primary.
+    // Drop the least-viewed market (first one on a tie), never the primary and
+    // never the market added last: at the cap a new market starts at 1, so
+    // without that a visitor moving between two new areas would evict each in
+    // turn and neither could ever build a count.
+    const newest = keys[keys.length - 1]
     let drop: string | null = null
     for (const k of keys) {
-      if (k === memory.primaryMarket) continue
+      if (k === memory.primaryMarket || k === newest) continue
       if (drop === null || memory.markets[k] < memory.markets[drop]) drop = k
     }
     if (drop !== null) delete memory.markets[drop]
@@ -387,6 +391,16 @@ export function recordPageVisit(pathname: string, opts: RecordOptions): VisitorI
 export function recordIntentEvent(eventName: string, opts: RecordOptions): VisitorIntentUpdate {
   if (!isVisitorIntentEvent(eventName)) return NOT_RECORDED
   return update(opts, (memory, now) => applyIntentEvent(memory, eventName, now))
+}
+
+/**
+ * Pushed when analytics consent is off: an `undefined` value REPLACES a key in
+ * GTM's data model, so neither GA4 tag keeps sending the user properties this
+ * page pushed before the visitor turned analytics off.
+ */
+export const VISITOR_INTENT_CLEAR_FIELDS: Readonly<Record<'visitor_intent' | 'primary_market', undefined>> = {
+  visitor_intent: undefined,
+  primary_market: undefined,
 }
 
 /** The flat dataLayer keys for a context, null fields left out (an undefined or null key would wipe GTM's stored value). */

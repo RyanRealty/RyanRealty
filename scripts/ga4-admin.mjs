@@ -303,10 +303,15 @@ const AUDIENCES = [
 
 /**
  * Fields a buyer or seller audience may never filter on (fair housing: an
- * audience that can target housing ads is built from behavior only). Matched
- * against every fieldName in a 'visitor-intent' group payload.
+ * audience that can target housing ads is built from behavior only). Demographics
+ * (age, gender, interests, language) and every place field, GA4's geography
+ * dimensions and this site's own place parameters and user property
+ * (primary_market, city, city_slug, community_slug, place), with or without a
+ * customUser: / customEvent: prefix. Matched against every fieldName in a
+ * 'visitor-intent' group payload; the builder throws on a match.
  */
-const FAIR_HOUSING_BANNED_FIELDS = /^(userAgeBracket|userGender|brandingInterest|city|cityId|region|country|countryId|continent|subContinent|metro|postalCode|zip|language|languageCode|firstUserSource|firstUserMedium|deviceCategory|customUser:(age|gender|zip|postal_code|city|region))$/i
+const FAIR_HOUSING_BANNED_FIELDS =
+  /^(?:customUser:|customEvent:)?(userAgeBracket|userGender|age|gender|brandingInterest|interests?|language|languageCode|city|cityId|city_slug|community_slug|place|place_slug|primary_market|region|country|countryId|continent|continentId|subContinent|subContinentCode|metro|postalCode|postal_code|zip)$/i
 
 /**
  * Audiences whose filters were rebuilt. GA4 keeps an audience's filters

@@ -108,7 +108,6 @@ describe('marketSlugFromPath', () => {
     ['/cities/bend/old-bend/living', 'bend'],
     ['/open-houses/sunriver', 'sunriver'],
     ['/price-drops/prineville', 'prineville'],
-    ['/motivated-sellers/madras', 'madras'],
     ['/housing-market/bend', 'bend'],
     ['/communities/tetherow', 'tetherow'],
     ['/communities/bend-northwest-crossing/hoa', 'bend-northwest-crossing'],
@@ -136,6 +135,7 @@ describe('marketSlugFromPath', () => {
     '/sell',
     '/buy/alerts',
     '/blog/bend-market',
+    '/motivated-sellers/madras',
   ])('%s -> null', (path) => {
     expect(marketSlugFromPath(path)).toBeNull()
   })
@@ -167,6 +167,16 @@ describe('primaryMarket', () => {
     expect(m.primaryMarket).toBe('redmond')
     m = applyPageVisit(m, '/cities/bend', NOW)
     expect(m.primaryMarket).toBe('redmond')
+  })
+
+  it('at the cap, two new markets visited in turn do not evict each other', () => {
+    const full: Record<string, number> = {}
+    for (let i = 0; i < MARKET_KEY_CAP; i++) full[`old-${i}`] = 5
+    let m = mem({ markets: full, primaryMarket: 'old-0' })
+    for (const p of ['/cities/bend', '/cities/redmond', '/cities/bend', '/cities/redmond', '/cities/bend']) m = applyPageVisit(m, p, NOW)
+    expect(m.markets.bend).toBe(3)
+    expect(m.markets.redmond).toBe(2)
+    expect(Object.keys(m.markets)).toHaveLength(MARKET_KEY_CAP)
   })
 
   it(`counts at most ${MARKET_KEY_CAP} markets and never drops the primary`, () => {

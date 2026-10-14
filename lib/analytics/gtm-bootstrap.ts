@@ -22,11 +22,12 @@ const GA4_PAGE_LOCATION_JS = `(function(){var h=location.href;try{var u=new URL(
  * only carry what the browser stored on an earlier page; PageViewTracker records
  * this page on hydration and pushes the updated values for every later hit.
  * Read only when analytics consent holds, the same test as hasAnalyticsConsent:
- * GPC off, and a stored banner answer with analytics on, or no answer outside a
- * restricted region (`rr_cr=0`). Values are re-checked against the label list and
+ * GPC off, and a stored banner answer with analytics on, or no answer (no cookie,
+ * or an empty one, as parseConsentCookie reads it) outside a restricted region
+ * (`rr_cr=0`). Values are re-checked against the label list and
  * the slug shape. Any failure (blocked storage, bad JSON) yields `{}`.
  */
-const VISITOR_INTENT_JS = `(function(){try{if(navigator.globalPrivacyControl===true)return{};var k=document.cookie||'',c=k.match(/(?:^|;\\s*)${CONSENT_COOKIE}=([^;]*)/);if(c){var a;try{var p=JSON.parse(decodeURIComponent(c[1]));a=!!(p&&p.analytics)}catch(e){a=c[1]==='all'}if(!a)return{}}else if(!/(?:^|;\\s*)${CONSENT_REGION_COOKIE}=${CONSENT_REGION_UNRESTRICTED_VALUE}(?:;|$)/.test(k))return{};var m=JSON.parse(window.localStorage.getItem('${VISITOR_INTENT_STORAGE_KEY}')||'null'),o={};if(m&&typeof m.intent==='string'&&/^(${VISITOR_INTENTS.join('|')})$/.test(m.intent))o.visitor_intent=m.intent;if(m&&typeof m.primaryMarket==='string'&&/^[a-z0-9-]{1,${MARKET_SLUG_MAX}}$/.test(m.primaryMarket))o.primary_market=m.primaryMarket;return o}catch(e){return{}}})()`
+const VISITOR_INTENT_JS = `(function(){try{if(navigator.globalPrivacyControl===true)return{};var k=document.cookie||'',c=k.match(/(?:^|;\\s*)${CONSENT_COOKIE}=([^;]*)/),r=c?c[1].trim():'';if(r){var a;try{var p=JSON.parse(decodeURIComponent(r));a=!!(p&&p.analytics)}catch(e){a=r==='all'}if(!a)return{}}else if(!/(?:^|;\\s*)${CONSENT_REGION_COOKIE}=${CONSENT_REGION_UNRESTRICTED_VALUE}(?:;|$)/.test(k))return{};var m=JSON.parse(window.localStorage.getItem('${VISITOR_INTENT_STORAGE_KEY}')||'null'),o={};if(m&&typeof m.intent==='string'&&/^(${VISITOR_INTENTS.join('|')})$/.test(m.intent))o.visitor_intent=m.intent;if(m&&typeof m.primaryMarket==='string'&&/^[a-z0-9-]{1,${MARKET_SLUG_MAX}}$/.test(m.primaryMarket))o.primary_market=m.primaryMarket;return o}catch(e){return{}}})()`
 
 /**
  * The inline Google Tag Manager bootstrap, as one string.

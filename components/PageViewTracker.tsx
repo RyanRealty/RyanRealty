@@ -5,7 +5,12 @@ import { usePathname } from 'next/navigation'
 import { hasAnalyticsConsent, hasMarketingConsent } from './CookieConsentBanner'
 import { applyVisitBrokerToGtag, trackPageView } from '@/lib/tracking'
 import { pageTypeFromPath } from '@/lib/analytics/page-type'
-import { clearVisitorIntent, recordPageVisit, visitorIntentDataLayerFields } from '@/lib/analytics/visitor-intent'
+import {
+  VISITOR_INTENT_CLEAR_FIELDS,
+  clearVisitorIntent,
+  recordPageVisit,
+  visitorIntentDataLayerFields,
+} from '@/lib/analytics/visitor-intent'
 import { isPrivatePath } from '@/lib/analytics/private-paths'
 import { stripGa4UrlParams } from '@/app/api/visitors/track/strip-identity'
 
@@ -34,7 +39,9 @@ import { stripGa4UrlParams } from '@/app/api/visitors/track/strip-identity'
  * GTM's Data Layer Variables hold them when "GA4 - page_view" fires and send
  * them as the user properties visitor_intent / primary_market (GTM version 10).
  * That memory is storage, so it is written only with analytics consent
- * (hasAnalyticsConsent) and forgotten without it.
+ * (hasAnalyticsConsent) and forgotten without it: the stored key is removed and
+ * both dataLayer keys are set to undefined, so GTM stops sending the values this
+ * page pushed earlier. The same happens the moment the banner turns analytics off.
  */
 export default function PageViewTracker() {
   const pathname = usePathname()
@@ -67,6 +74,23 @@ export default function PageViewTracker() {
     }
   }
 
+  // Analytics turned off in the banner mid-page: forget now, not at the next navigation.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onConsent = () => {
+      try {
+        if (hasAnalyticsConsent()) return
+        clearVisitorIntent()
+        window.dataLayer = window.dataLayer || []
+        window.dataLayer.push({ ...VISITOR_INTENT_CLEAR_FIELDS })
+      } catch {
+        /* tracking never breaks a page */
+      }
+    }
+    window.addEventListener('cookie-consent', onConsent)
+    return () => window.removeEventListener('cookie-consent', onConsent)
+  }, [])
+
   useEffect(() => {
     if (privatePage) {
       // Remember it, so coming back to the page before it counts as a new view.
@@ -98,14 +122,15 @@ export default function PageViewTracker() {
 /**
  * Record this page in the visitor-intent memory and return the flat keys to push
  * with the page context. Without analytics consent nothing is recorded, the
- * stored memory is forgotten, and no key is pushed. Never throws: tracking must
- * not break a page.
+ * stored memory is forgotten, and both keys go out as undefined (clearing any
+ * value GTM holds from earlier on this page). Never throws: tracking must not
+ * break a page.
  */
-function visitorIntentForPage(pathname: string | null): ReturnType<typeof visitorIntentDataLayerFields> {
+function visitorIntentForPage(pathname: string | null): Partial<Record<'visitor_intent' | 'primary_market', string | undefined>> {
   try {
     if (!hasAnalyticsConsent()) {
       clearVisitorIntent()
-      return {}
+      return { ...VISITOR_INTENT_CLEAR_FIELDS }
     }
     return visitorIntentDataLayerFields(recordPageVisit(pathname || '/', { consent: true }))
   } catch {

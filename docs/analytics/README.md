@@ -179,9 +179,9 @@ import { pushDataLayerEvent } from '@/lib/analytics/ga4-browser-events'
 
 A page or event flag never expires; only the listing-view count has a window. `save_listing` and `tour_requested` are in the rule but no browser code sends them yet (2026-10-14), so today a buyer comes from listing views, buyer pages, `schedule_tour_click` and `ask_question_click`.
 
-**Market** (`marketSlugFromPath`): the service-area city in `/homes-for-sale/<city>/…` (listing detail pages included), `/cities/<city>/…`, `/open-houses/<city>`, `/price-drops/<city>`, `/motivated-sellers/<city>` and `/housing-market/<city>/…`, only when it is in `CENTRAL_OREGON_CITY_SLUGS`; the slug in `/communities/<slug>/…`. Everything else, `/subdivisions/<slug>` included (a plat slug carries no city), counts no market. `primary_market` is the most-viewed market; a tie keeps the one reported before.
+**Market** (`marketSlugFromPath`): the service-area city in `/homes-for-sale/<city>/…` (listing detail pages included), `/cities/<city>/…`, `/open-houses/<city>`, `/price-drops/<city>` and `/housing-market/<city>/…`, only when it is in `CENTRAL_OREGON_CITY_SLUGS`; the slug in `/communities/<slug>/…`. Everything else, `/subdivisions/<slug>` included (a plat slug carries no city), counts no market. `primary_market` is the most-viewed market; a tie keeps the one reported before.
 
-**Storage:** localStorage `rr_visitor_intent_v1`: listing-view timestamps (30 days, at most 50), the four flags as timestamps, view counts per market (at most 30), and the last label and market. No identifier. Written only when `hasAnalyticsConsent()` is true; without it nothing is recorded and `PageViewTracker` removes the key. Every read and write is wrapped, so blocked storage only forgets. Listed on `/cookies`.
+**Storage:** localStorage `rr_visitor_intent_v1`: listing-view timestamps (30 days, at most 50), the four flags as timestamps, view counts per market (at most 30), and the last label and market. No identifier. Written only when `hasAnalyticsConsent()` is true; without it nothing is recorded, `PageViewTracker` removes the key and pushes both dataLayer keys as `undefined` (so GTM stops sending values pushed earlier on the page), and it does the same the moment the banner turns analytics off. Every read and write is wrapped, so blocked storage only forgets. Listed on `/cookies`.
 
 **Where it shows:**
 
@@ -190,7 +190,7 @@ A page or event flag never expires; only the listing-view count has a window. `s
 - `trackEvent` (`lib/tracking.ts`) records a buyer or seller event and, when the label changes, pushes the new `visitor_intent` just before that event, so the event's own hit carries it.
 - GA4: user properties `visitor_intent` / `primary_market` on every hit (GTM version 10), user-scoped custom dimensions from `scripts/ga4-admin-setup.mjs`, and the audiences below.
 
-**Audiences** (`scripts/ga4-admin.mjs`, group `visitor-intent`). Behavior only, for fair housing: no age, gender, interest, ZIP, city or other geography condition, because these audiences can feed housing ads. The payload builder throws if one of them names such a field (`FAIR_HOUSING_BANNED_FIELDS`). All 30-day membership.
+**Audiences** (`scripts/ga4-admin.mjs`, group `visitor-intent`). Behavior only, for fair housing: no age, gender, interest, ZIP, city or other geography condition, because these audiences can feed housing ads. The payload builder throws if one of them names such a field (`FAIR_HOUSING_BANNED_FIELDS`), `primary_market` and the site's own place parameters included. All 30-day membership.
 
 | Audience | Condition |
 |---|---|

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { gtmBootstrapScript } from './gtm-bootstrap'
 import { RESTRICTED_CONSENT_REGIONS } from './consent-regions'
 import { consentModeDefaultJs } from './consent-defaults'
+import { consentRegionRestrictedFromCookieHeader } from './consent-regions'
+import { CONSENT_COOKIE, parseConsentCookie } from '@/lib/identity/consent'
 
 const VISITOR_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
@@ -314,6 +316,11 @@ describe('first-paint page_view carries the stored visitor intent', () => {
     expect(firstPageView({ cookie: `a=b; ${ACCEPT}; rr_cr=1`, stored: STORED })).toMatchObject({ visitor_intent: 'seller' })
   })
 
+  it('an empty consent cookie is no answer (parseConsentCookie), so the region decides', () => {
+    expect(firstPageView({ cookie: 'ryan_realty_cookie_consent=; rr_cr=0', stored: STORED })).toMatchObject({ visitor_intent: 'seller' })
+    expect(firstPageView({ cookie: 'ryan_realty_cookie_consent=; rr_cr=1', stored: STORED })).not.toHaveProperty('visitor_intent')
+  })
+
   it('reads nothing without analytics consent: GPC, a stored decline, or no answer in a restricted region', () => {
     for (const opts of [
       { cookie: `rr_cr=0`, stored: STORED, gpc: true },
@@ -326,6 +333,22 @@ describe('first-paint page_view carries the stored visitor intent', () => {
       expect(view).not.toHaveProperty('visitor_intent')
       expect(view).not.toHaveProperty('primary_market')
     }
+  })
+
+  it('decides consent exactly as hasAnalyticsConsent does (GPC, stored answer, else the region cookie)', () => {
+    const answers = ['', `${CONSENT_COOKIE}=`, ACCEPT, DECLINE, `${CONSENT_COOKIE}=all`, `${CONSENT_COOKIE}=garbage`]
+    const regions = ['', 'rr_cr=0', 'rr_cr=1']
+    for (const answer of answers)
+      for (const region of regions)
+        for (const gpc of [false, true]) {
+          const cookie = [answer, region].filter(Boolean).join('; ')
+          // hasAnalyticsConsent (components/CookieConsentBanner.tsx), from the same parts it is built from.
+          const raw = cookie.split('; ').find((row) => row.startsWith(`${CONSENT_COOKIE}=`))?.split('=')[1]
+          const stored = parseConsentCookie(raw)
+          const expected = !gpc && (stored !== null ? stored.analytics : !consentRegionRestrictedFromCookieHeader(cookie))
+          const view = firstPageView({ cookie, stored: STORED, gpc })
+          expect(view?.visitor_intent === 'seller', `${cookie || '(no cookie)'} gpc=${gpc}`).toBe(expected)
+        }
   })
 
   it('sends the plain page_view when storage is empty, blocked or holds garbage', () => {
