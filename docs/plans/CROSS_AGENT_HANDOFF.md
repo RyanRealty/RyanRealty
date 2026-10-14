@@ -1,8 +1,18 @@
-# Current — 2026-10-14 (Cursor, revert #469 hold-for-matt)
+# Current — 2026-10-14 (Cursor, agent rules: PR merge + DB writes)
+
+Surface: Cursor cloud. Branch `cursor/agent-rules-main-db-136e` from origin/main `12878ac14` (merged, not rebased: #568, #562, #547, #471, #556, #557, #506, #558). Matt approved merging #544 once checks pass. Known main flakes allowed: `/sell` content-floor, `/communities/tetherow` page-payload, Lighthouse JSON. Other agents closed #544 three times as superseded by #562; Matt still wants this PR merged. Nothing sent. Nobody pushes main. No rebuild.
+
+**What this branch does.** Agent instruction files match Matt 2026-10-13: PRs only, never `git push` `main`; merge your own PR once CI checks pass, then verify the production deploy. Bots may write to Ryan Realty Supabase when a task Matt asked for needs it. #562 on main is the process-rule source (`AGENTS.md`). This PR keeps that plus the Current block. Merge with a normal merge commit, not squash.
+
+**Still open.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+
+## Earlier — 2026-10-14 (Cursor, revert #469 hold-for-matt)
 
 Surface: Cursor cloud. Branch `cursor/revert-pr-469-6f1e` from origin/main `ef24a6b5f`. Reverts #469. Nobody pushes main. Nothing sent.
 
-**What this branch does.** #469 was labeled `hold-for-matt` and titled do-not-merge-without-Matt. A session token ran `gh pr merge --auto --squash` while Allow auto-merge is off, which immediately squash-merged a MERGEABLE PR (`ef24a6b5f`). This revert restores main. #544 closed as superseded by #562 (`1810a65f3`). #567 still open: wait for required checks before squash.
+**What this branch does.** #469 was labeled `hold-for-matt` and titled do-not-merge-without-Matt. A session token ran `gh pr merge --auto --squash` while Allow auto-merge is off, which immediately squash-merged a MERGEABLE PR (`ef24a6b5f`). This revert restores main. #567 still open: wait for required checks before squash.
 
 **Admin 403.** GitHub App token (`ghs_`, account `cursor`) still 403s Administration: PATCH `allow_auto_merge` / `delete_branch_on_merge`, POST ruleset, PUT/GET branch protection, `workflow_dispatch` Stale PRs. GET rulesets returns `[]`. Did not push an empty commit to main.
 
