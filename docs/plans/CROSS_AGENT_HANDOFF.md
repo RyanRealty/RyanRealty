@@ -1,36 +1,30 @@
-# Current — 2026-10-14 (Cursor, listings-failure no-cache, merging #511)
+# Current — 2026-10-14 (Cursor, homes-for-sale-by-area internal links)
 
-Surface: Cursor cloud. Branch `cursor/listings-failure-no-cache-fd1f` rebased onto origin/main `5293aa46c` (includes #539 main CI reds, #538 geo-guard, #528 buyer-answer pages, #533, #512, #532, #521). Matt approved merge of PR #511. Do not `git push` main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/homes-for-sale-by-area-f550` merged onto origin/main `ab4342b1d` (#511 listings-failure no-cache, #539 inherited CI reds, #536 /buy slug allowlist, #538 city living/cost geo-guard, plus #528/#533/#512/#521/#513). PR #525. Do not `git push` main. Nothing sent. Prod DB read-only.
 
-**What this branch does.** Community and resort pages throw `ListingsUnavailableError` after one retry when the listings or community read does not answer, so Next keeps the last good ISR copy. A cold miss is HTTP 500 + noindex. `CommunityDegraded` is deleted. #521's fold stays. Type links keep #539 `#homes-dial-<group>`. `ci:sitemap-url-health` walks sitemap locs for 200 / self-canonical on `https://ryan-realty.com` / not noindex.
+**What this branch does.** Sitewide footer column "Homes for sale by area" with exact-match anchors to `/homes-for-sale/{bend,redmond,sisters,sunriver,la-pine}` plus the top eight community hubs. Listing pages keep the place trail and add city + community text doors via `listingCommunityDoor` (PR #513). Off-market index policy stays #533 (90-day stale noindex). Blog posts that name a place get a contextual hub link. `/homes-for-sale/bend` server-renders live inventory takeaways after the H1. Visitor copy never says leftover HUD.
 
-**Not this change.** Do not send. Do not apply hosted SQL.
+**Next.** Watch CI on PR #525, squash-merge, verify production.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES.
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `.cursor/rules/git-commit.mdc`, `docs/plans/PUBLIC_PRODUCT/PAGE_OUTLINE.md`.
+
+## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
+
+Surface: Cursor cloud. Landed on main via #511 at `ab4342b1d`. Community and resort pages throw `ListingsUnavailableError` after one retry when the listings or community read does not answer, so Next keeps the last good ISR copy. A cold miss is HTTP 500 + noindex. `CommunityDegraded` is deleted.
 
 ## Earlier — 2026-10-14 (Cursor, make main CI green)
 
-Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` merged origin/main `29fd04d93`. Landed on main via #539. Nothing sent. Nobody pushes main.
-
-**What that commit did.** `ci:studio-rules` names both studio node tests. `/sell` Stage uses the repo `SELL_POSTER` (4200×3150) so content-floor stays 3780. After #521, type links jump to `#homes-dial-<group>`. After #528, `serve.ts` re-exports `V3Footer`. After #498, `/buy/concessions` takes the 30-yr rate from `getLiveMortgageRate` / `getCalculatorDefaults` and points are `dollars / loan * 100` so `ci:stat-source` stays one engine.
-
-Skills read: `.cursor/rules/git-commit.mdc`, `scripts/check-stat-source.mjs`, `scripts/check-tests-wired.mjs`, `scripts/check-date-format.mjs`.
+Surface: Cursor cloud. Landed on main via #539 at `5293aa46c`. `serve.ts` re-exports `V3Footer` so buyer-answer child routes pass `ci:default-chrome-footer`. Nothing sent. Nobody pushes main.
 
 ## Earlier — 2026-10-14 (Cursor, city buyer-answer geo-guard)
 
-Surface: Cursor cloud. Landed on main via #538. `resolveCityNeighborhoodPath` reserved `living`, `cost`, `vs`, `types` so city buyer-answer children are not 404ed as unknown neighborhoods.
+Surface: Cursor cloud. Landed on main via #538 at `e534ef5a4`. Nobody pushes main. Nothing sent.
+
+**What landed.** `resolveCityNeighborhoodPath` treated `/cities/<city>/living` and `/cost` as unknown neighborhoods and hard-404ed them at the edge. Reserved child segments (`living`, `cost`, `vs`, `types`) now pass through to the App Router. Out-of-market towns still 308 to `/oregon/<town>`. Unknown hoods still 404.
 
 ## Earlier — 2026-10-13 (Cursor, buyer answer pages)
 
-Surface: Cursor cloud. Branch `cursor/buyer-answer-pages-cde8`. Landed on main via #528. 36 long-tail buyer-answer pages. Nobody pushes main. Nothing sent.
-
-**What that commit did.** Child routes under community and city hubs (`/living`, `/cost`, `/hoa`, `/short-term-rentals`, `/vs/[other]`) plus extras on existing price-band, acreage, and new-construction search routes. Each child page opens with a 40-60 word live MLS answer cited as Oregon Data Share MLS, a figures table, listing dial, FAQ + FAQPage, hub and `/buy/*` links, and a `/team/matthew-ryan` byline. HOA only where master assessments are sourced (Tetherow, Sunriver, Caldera Springs). STR only Tetherow and Juniper Preserve. Sitemap and llms.txt list them. Registry: `lib/buyer-answers`.
-
-**Not this change.** Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send until Matt asks. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase. Do not run the CRM backfill.
-
-**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool` in the primary checkout. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
-
-Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md`, `lib/buyer-answers/*`.
+Surface: Cursor cloud. Landed on main via #528 at `65f98dd2a`. Child routes under community and city hubs plus extras on search routes. Live MLS answers cited as Oregon Data Share MLS.
 
 ## Earlier — 2026-10-13 (Cursor, sitemap + listing index hygiene)
 
