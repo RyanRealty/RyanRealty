@@ -79,7 +79,7 @@
 6. **Verdict words must agree with the numbers.** No "buyers have leverage" beside 3.5 months of supply.
 7. **New database tables: yes.** Job claims and limits, approvals, signatures, rule-change approvals and the approved-video list. New tables only; nothing existing changes.
 8. **Posting keys:** production must hold every one so the doors can post, checked by `lib/social/token-heartbeat.ts`. No rotation now, so copies on bot machines remain a known gap.
-9. **LinkedIn and Threads are removed as posting platforms.** Their profile links stay on the footer and About page.
+9. **Content-queue drafts that pass `ci:content-queue` are publishable** (Matt 2026-10-14 11:59 PT). There is no `approved: true` door. LinkedIn is on for Matt's profile and the company page via `content-queue/` (`w_organization_social` on the company page). Threads stays off the old `/api/social/publish` door. Profile links stay on the footer and About page.
 
 **Contradictions settled by the newest rule:**
 - The paid xAI API is out (RULEBOOK, 2026-09-24).

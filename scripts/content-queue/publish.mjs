@@ -8,9 +8,11 @@
  *   node scripts/content-queue/publish.mjs --self-test           # build requests for fixtures and assert shape (CI)
  *   CONTENT_QUEUE_LIVE=true node scripts/content-queue/publish.mjs --live
  *
- * A live post needs ALL of: --live, CONTENT_QUEUE_LIVE=true, `approved: true` in the
- * draft's frontmatter (set only on Matt's say-so), a green gate, and the platform's
- * credentials. Anything missing => the item is reported and skipped, never posted.
+ * A live post needs ALL of: --live, CONTENT_QUEUE_LIVE=true, a green gate, and the
+ * platform's credentials. A draft that passes the gate is publishable (Matt
+ * 2026-10-14 11:59 PT: no approved: true door). Anything missing => the item is
+ * reported and skipped, never posted. The unique publish log
+ * (content_queue_published) makes a duplicate post impossible.
  *
  * X Articles have no public create API. x-article drafts are written to a
  * ready-to-paste file (<slug>/x-article.paste.md artifact) for Matt to paste in X.
@@ -19,6 +21,18 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkDraft, listDrafts, readSource, parseFrontmatter, platformKey } from './lib.mjs'
+import {
+  claimSlot,
+  deletePublished,
+  insertPublished,
+  loadPublishedKeys,
+  markPublished,
+  ptDate as publishedPtDate,
+  releaseSlot,
+  scheduledPtDate,
+  selectDue,
+  slotKey,
+} from './published-log.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const argv = process.argv.slice(2)
@@ -28,7 +42,7 @@ const opt = (n) => argv.find((a) => a.startsWith(`--${n}=`))?.split('=')[1]
 export const LINKEDIN_VERSION = '202509'
 export const GBP_BASE = 'https://mybusiness.googleapis.com/v4'
 
-const ptDate = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(d)
+const ptDate = publishedPtDate
 
 /** Build the exact HTTP request each platform's API expects. Token is a placeholder in dry run. */
 export function buildRequest(platform, body, data, env, token = '<redacted>') {
@@ -82,14 +96,88 @@ export function validateRequest(platform, r) {
   return errs
 }
 
+async function persistToken(table, env, body) {
+  const url = env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/+$/, '')
+  const key = env.SUPABASE_SERVICE_ROLE_KEY
+  await fetch(`${url}/rest/v1/${table}?id=eq.default`, {
+    method: 'PATCH',
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify(body),
+  })
+}
+
+async function refreshGbp(env, refreshToken) {
+  const clientId = env.GOOGLE_BUSINESS_PROFILE_CLIENT_ID || env.GOOGLE_OAUTH_CLIENT_ID
+  const clientSecret = env.GOOGLE_BUSINESS_PROFILE_CLIENT_SECRET || env.GOOGLE_OAUTH_CLIENT_SECRET
+  if (!clientId || !clientSecret || !refreshToken) return { error: 'GBP refresh prerequisites missing' }
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken, grant_type: 'refresh_token' }),
+  })
+  if (!res.ok) return { error: `GBP refresh HTTP ${res.status}` }
+  const json = await res.json()
+  if (!json.access_token) return { error: 'GBP refresh returned no access_token' }
+  await persistToken('google_business_profile_auth', env, {
+    access_token: json.access_token,
+    refresh_token: json.refresh_token || refreshToken,
+    expires_at: new Date(Date.now() + (json.expires_in || 3600) * 1000).toISOString(),
+    updated_at: new Date().toISOString(),
+  })
+  return { token: json.access_token }
+}
+
+async function refreshX(env, refreshToken) {
+  const id = env.X_CLIENT_ID, secret = env.X_CLIENT_SECRET
+  if (!id || !secret || !refreshToken) return { error: 'X refresh prerequisites missing' }
+  const res = await fetch('https://api.x.com/2/oauth2/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${Buffer.from(`${id}:${secret}`).toString('base64')}`,
+    },
+    body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refreshToken }),
+  })
+  if (!res.ok) return { error: `X refresh HTTP ${res.status}` }
+  const json = await res.json()
+  if (!json.access_token) return { error: 'X refresh returned no access_token' }
+  await persistToken('x_auth', env, {
+    access_token: json.access_token,
+    refresh_token: json.refresh_token || refreshToken,
+    expires_at: new Date(Date.now() + (json.expires_in || 7200) * 1000).toISOString(),
+    updated_at: new Date().toISOString(),
+  })
+  return { token: json.access_token }
+}
+
 async function supabaseToken(table, env) {
   const url = env.NEXT_PUBLIC_SUPABASE_URL, key = env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return { error: 'NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set' }
-  const res = await fetch(`${url}/rest/v1/${table}?id=eq.default&select=access_token,expires_at`, { headers: { apikey: key, Authorization: `Bearer ${key}` } })
+  const res = await fetch(`${url}/rest/v1/${table}?id=eq.default&select=access_token,refresh_token,expires_at`, { headers: { apikey: key, Authorization: `Bearer ${key}` } })
   const [row] = res.ok ? await res.json() : []
   if (!row?.access_token) return { error: `no token row in ${table}` }
-  if (row.expires_at && Date.parse(row.expires_at) < Date.now() + 60_000) return { error: `${table} token expired at ${row.expires_at}; the app's token-heartbeat cron refreshes GBP and X hourly` }
-  return { token: row.access_token }
+  if (!row.expires_at || Date.parse(row.expires_at) >= Date.now() + 60_000) return { token: row.access_token }
+  if (table === 'google_business_profile_auth') return refreshGbp(env, row.refresh_token)
+  if (table === 'x_auth') return refreshX(env, row.refresh_token)
+  return { error: `${table} token expired at ${row.expires_at}; reconnect that platform` }
+}
+
+export function publicUrl(platform, responseText) {
+  const key = platformKey(platform)
+  if (key === 'x-post') {
+    try {
+      const id = JSON.parse(responseText)?.data?.id
+      if (id) return `https://x.com/i/web/status/${id}`
+    } catch { /* keep going */ }
+  }
+  if (key === 'gbp') {
+    try {
+      const j = JSON.parse(responseText)
+      if (j.searchUrl) return j.searchUrl
+      if (j.name) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(j.name)}`
+    } catch { /* keep going */ }
+  }
+  return null
 }
 
 const TOKEN_TABLE = { gbp: 'google_business_profile_auth', 'linkedin-personal': 'linkedin_auth', 'linkedin-company': 'linkedin_auth', 'x-post': 'x_auth' }
@@ -123,9 +211,20 @@ async function main() {
   }
 
   const today = opt('date') || ptDate(new Date())
-  const drafts = listDrafts(join(ROOT, 'content-queue'))
-  const due = drafts.filter((d) => flag('all') || ptDate(new Date(parseFrontmatter(readFileSync(d.file, 'utf8')).data?.scheduled_at || 0)) === today)
-  console.log(`${live ? 'LIVE' : 'DRY RUN'}: ${due.length} item(s) due ${flag('all') ? '(all)' : today}`)
+  const catchUp = live && !opt('date') && !flag('all')
+  const drafts = listDrafts(join(ROOT, 'content-queue')).map((d) => {
+    const scheduledAt = parseFrontmatter(readFileSync(d.file, 'utf8')).data?.scheduled_at
+    return { ...d, item: d.slug, channel: d.platform, scheduledAt }
+  })
+  const logUrl = env.NEXT_PUBLIC_SUPABASE_URL
+  const logKey = env.SUPABASE_SERVICE_ROLE_KEY
+  const loaded = await loadPublishedKeys({ url: logUrl, key: logKey })
+  if (loaded.error) console.log(`publish log: ${loaded.error}`)
+  const published = loaded.keys
+  const due = flag('all')
+    ? drafts
+    : selectDue(drafts, { today, catchUp, published })
+  console.log(`${live ? 'LIVE' : 'DRY RUN'}: ${due.length} item(s) due ${flag('all') ? '(all)' : catchUp ? `catch-up through ${today}` : today}`)
   const report = []
   let failures = 0
   for (const d of due) {
@@ -133,6 +232,8 @@ async function main() {
     const { data, body } = parseFrontmatter(text)
     const gate = checkDraft({ text, platform: d.platform, slug: d.slug, sourceText: readSource(join(ROOT, 'content-queue'), d.slug) || '' })
     const key = platformKey(d.platform)
+    const date = scheduledPtDate(data.scheduled_at)
+    const slot = date ? slotKey({ item: d.slug, channel: d.platform, date }) : null
     const entry = { item: `${d.slug}/${d.platform}`, scheduled_at: data.scheduled_at, approved: data.approved === true }
     if (gate.length) { entry.status = 'blocked: gate'; entry.errors = gate; failures++; report.push(entry); continue }
     const request = buildRequest(d.platform, body, data, env)
@@ -145,16 +246,39 @@ async function main() {
       entry.status = `paste file written (X has no Articles API): ${paste}`
       report.push(entry); continue
     }
-    if (!live) { entry.status = entry.approved ? 'dry run: would post' : 'dry run: not approved, would skip'; report.push(entry); continue }
-    if (!entry.approved) { entry.status = 'skipped: not approved'; report.push(entry); continue }
+    if (!live) { entry.status = 'dry run: would post'; report.push(entry); continue }
+    if (!slot) { entry.status = 'skipped: no scheduled date'; failures++; report.push(entry); continue }
+    if (!claimSlot(published, slot).ok) { entry.status = 'skipped: already published'; report.push(entry); continue }
+    const claimed = await insertPublished({ url: logUrl, key: logKey, row: { item: d.slug, channel: d.platform, date, status: 'claimed' } })
+    if (!claimed.ok) {
+      entry.status = `skipped: ${claimed.reason}`
+      if (claimed.reason !== 'already published') failures++
+      report.push(entry); continue
+    }
     const missing = REQUIRED_ENV[key].filter((n) => !env[n])
     const tok = await supabaseToken(TOKEN_TABLE[key], env)
-    if (missing.length || tok.error) { entry.status = 'skipped: missing credentials'; entry.errors = [...missing.map((m) => `env ${m} not set`), tok.error].filter(Boolean); failures++; report.push(entry); continue }
+    if (missing.length || tok.error) {
+      await deletePublished({ url: logUrl, key: logKey, row: { item: d.slug, channel: d.platform, date } })
+      releaseSlot(published, slot)
+      entry.status = 'skipped: missing credentials'
+      entry.errors = [...missing.map((m) => `env ${m} not set`), tok.error].filter(Boolean)
+      failures++; report.push(entry); continue
+    }
     const real = buildRequest(d.platform, body, data, env, tok.token)
     const res = await fetch(real.url, { method: real.method, headers: real.headers, body: JSON.stringify(real.body) })
-    entry.status = res.ok ? 'posted' : `post failed ${res.status}`
-    entry.response = res.ok ? (res.headers.get('x-restli-id') || (await res.text()).slice(0, 300)) : (await res.text()).slice(0, 300)
-    if (!res.ok) failures++
+    const responseText = await res.text()
+    if (!res.ok) {
+      await deletePublished({ url: logUrl, key: logKey, row: { item: d.slug, channel: d.platform, date } })
+      releaseSlot(published, slot)
+      entry.status = `post failed ${res.status}`
+      entry.response = responseText.slice(0, 300)
+      failures++; report.push(entry); continue
+    }
+    const url = publicUrl(d.platform, responseText)
+    await markPublished({ url: logUrl, key: logKey, row: { item: d.slug, channel: d.platform, date, remoteId: url || responseText.slice(0, 200) } })
+    entry.status = 'posted'
+    entry.public_url = url
+    entry.response = res.headers.get('x-restli-id') || responseText.slice(0, 300)
     report.push(entry)
   }
   writeFileSync(join(outDir, 'report.json'), JSON.stringify(report, null, 2))
