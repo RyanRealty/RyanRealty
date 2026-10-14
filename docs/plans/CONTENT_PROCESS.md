@@ -75,7 +75,7 @@
 2. **Matt sees every video's board for now.**
 3. **The old video path is frozen.**
 4. **Rule loosening waits for Matt's click.** Tightening flows, with a daily digest.
-5. **No ads render until the library is built** and Matt has approved the techniques they use.
+5. **No ads render until the library is built** and Matt has approved the techniques they use. **Narrowed the same day:** the buyer ad's techniques are built first (the full-screen $10,000, the map lighting up area cells, motion blur, the number landing on the beat). Matt approves each from a short showcase reel, then sees the buyer ad's board. The rest of the library keeps building alongside.
 6. **Verdict words must agree with the numbers.** No "buyers have leverage" beside 3.5 months of supply.
 7. **New database tables: yes.** Job claims and limits, approvals, signatures, rule-change approvals and the approved-video list. New tables only; nothing existing changes.
 8. **Posting keys:** production must hold every one so the doors can post, checked by `lib/social/token-heartbeat.ts`. No rotation now, so copies on bot machines remain a known gap.
@@ -95,5 +95,5 @@
 2. **Process core:** the steps, the stamps, the rules file, the job limits and the printed rules.
 3. **The server certifier, the two doors and the token move.**
 4. **The judge:** rubric, anchors, calibration.
-5. **The technique library**, built in parallel, then Matt's approval reel.
+5. **The buyer ad's techniques first** (Matt 2026-10-14), each with a showcase reel for Matt's approval; then the rest of the technique library, built in parallel.
 6. **The buyer ad** (`docs/plans/BUYER_AD.md`): its board first.
