@@ -15,6 +15,7 @@ import { readFileSync } from 'node:fs'
 const GUARDED = [
   'app/api/admin/gbp/set-website-utm/route.ts',
   'app/api/admin/expired-listing-lookup/route.ts',
+  'app/api/admin/email/one-off/route.ts',
 ]
 const fails = []
 

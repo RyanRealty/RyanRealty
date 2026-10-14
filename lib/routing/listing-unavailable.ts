@@ -70,10 +70,11 @@ export function isListingLookupUnavailable(lookup: EdgeCanonicalLookup): boolean
 
 const LISTING_UNAVAILABLE_HTML =
   '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
-  `<meta http-equiv="refresh" content="${LISTING_RETRY_AFTER_SECONDS}"><title>This home is taking a moment to load · Ryan Realty</title></head>` +
+  '<title>This home is taking a moment to load · Ryan Realty</title></head>' +
   '<body style="font-family:Geist,system-ui,sans-serif;background:#102742;color:#faf8f4;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center">' +
   '<div style="max-width:32rem;padding:2rem"><h1 style="font-size:2rem;margin:0 0 .75rem">This home is taking a moment to load</h1>' +
   '<p style="opacity:.8;line-height:1.6;margin:0 0 1.5rem">Our listing data is slow to answer right now. Refresh in a minute and the home will be here.</p>' +
+  '<p style="margin:0 0 1.5rem"><a href="" style="color:#faf8f4;text-decoration:underline">Refresh this page</a></p>' +
   '<a href="/homes-for-sale" style="color:#faf8f4;text-decoration:underline">Browse homes for sale</a></div></body></html>'
 
 /** HTTP 503 + Retry-After + no-store, for a listing path whose lookup the database did not answer. */
