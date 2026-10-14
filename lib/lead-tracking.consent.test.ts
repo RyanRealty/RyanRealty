@@ -145,3 +145,29 @@ describe('server events join the visitor GA4 session (2026-10-14)', () => {
     expect(h.fireGa4Event).not.toHaveBeenCalled()
   })
 })
+
+describe('generate_lead carries the contact\'s hashed GA4 user id at the analytics tier only', () => {
+  const uid = async () => (await import('@/lib/analytics/ga4-user-id')).ga4UserIdForPerson(64115)
+
+  it('no banner answer in the US is the analytics tier: the user id the browser tag uses', async () => {
+    h.headers['x-vercel-ip-country'] = 'US'
+    await fireLeadGenerated({ ...LEAD, crm_person_id: 64115 } as never)
+    expect(h.fireGa4Event.mock.calls[0][0].userId).toBe(await uid())
+  })
+
+  it('a restricted region with no answer, or no country header, is essential: no user id', async () => {
+    h.headers['x-vercel-ip-country'] = 'FR'
+    await fireLeadGenerated({ ...LEAD, crm_person_id: 64115 } as never)
+    delete h.headers['x-vercel-ip-country']
+    await fireLeadGenerated({ ...LEAD, crm_person_id: 64115 } as never)
+    expect(h.fireGa4Event).toHaveBeenCalledTimes(2)
+    expect(h.fireGa4Event.mock.calls[0][0].userId).toBeUndefined()
+    expect(h.fireGa4Event.mock.calls[1][0].userId).toBeUndefined()
+  })
+
+  it('a lead with no contact carries none', async () => {
+    h.headers['x-vercel-ip-country'] = 'US'
+    await fireLeadGenerated(LEAD as never)
+    expect(h.fireGa4Event.mock.calls[0][0].userId).toBeUndefined()
+  })
+})

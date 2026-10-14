@@ -38,6 +38,13 @@ export interface Ga4MpFireParams {
   eventName: string
   /** Stable per-user identifier. Reuse the client_id from the `_ga` cookie when present. */
   clientId?: string
+  /**
+   * GA4 user_id of a known CRM contact: ONLY `ga4UserIdForPerson()` from
+   * lib/analytics/ga4-user-id.ts (a hash, never a name, email or phone), and only
+   * at the analytics tier (`ga4UserIdAllowedAt`). Sent as the request's top-level
+   * `user_id`, so GA4 counts the event under the same user the browser tag does.
+   */
+  userId?: string | null
   /** User-properties scoped values (assigned_broker, lead_status). Stable, low-cardinality. */
   userProperties?: Record<string, string | number>
   /** Event-scoped params (lp_variant, lp_source, lp_campaign, broker_slug, ...). */
@@ -186,8 +193,10 @@ export async function fireGa4Event(params: Ga4MpFireParams): Promise<Ga4MpFireRe
       name: e.name.trim().slice(0, 40),
       params: { ...sanitizeParams(e.params || {}), ...sessionCarry },
     }))
+  const userId = typeof params.userId === 'string' ? params.userId.trim().slice(0, 256) : ''
   const payload: Record<string, unknown> = {
     client_id: clientId,
+    ...(userId ? { user_id: userId } : {}),
     events: [
       ...preceding,
       {

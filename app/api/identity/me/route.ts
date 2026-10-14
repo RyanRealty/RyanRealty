@@ -37,6 +37,7 @@ import { cookies } from 'next/headers'
 import { createHash } from 'node:crypto'
 import { getSession } from '@/app/actions/auth'
 import { PERSON_COOKIE, readPersonCookie } from '@/lib/identity/person-cookie'
+import { ga4UserIdForEmail, ga4UserIdForPerson } from '@/lib/analytics/ga4-user-id'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -59,11 +60,13 @@ export async function GET(): Promise<NextResponse> {
   // GA4 user_id: prefer the cookie-stamped person (works for unauthenticated
   // visitors who clicked an email-click link; survives sign-out). Fall back
   // to a hashed email when we only have a signed-in session.
+  // The same string the server sends on Measurement Protocol events for this
+  // person (lib/analytics/ga4-user-id.ts), so GA4 counts one user, not two.
   let hashedUserId: string | null = null
   if (personIdValid) {
-    hashedUserId = `crm-${sha256(String(personId))}`
+    hashedUserId = ga4UserIdForPerson(personId)
   } else if (email) {
-    hashedUserId = `em-${sha256(email)}`
+    hashedUserId = ga4UserIdForEmail(email)
   }
 
   // Meta Pixel advanced matching takes a sha256 of the normalized email.

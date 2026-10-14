@@ -237,6 +237,20 @@ A provider webhook has no browser behind it. It passes `serverToServer: true` an
 
 A new server event must go through `ga4ServerContext()`. Never call `fireGa4Event` with only a `client_id`.
 
+### Known contacts carry a user_id (2026-10-14)
+
+A known CRM contact is one GA4 user, in the browser and on the server (decision `crm-contacts-tagged-in-ga4`). The user_id is `ga4UserIdForPerson()` in `lib/analytics/ga4-user-id.ts`: `crm-<sha256 of crm_people.id>`, never a name, email or phone. It goes only on hits from a visitor at the analytics tier or above (`ga4UserIdAllowedAt`); an essential-tier visit reaches GA4 under an anonymous client id and nothing else (`docs/TRACKING_POLICY.md` tier table).
+
+| Path | How the user_id gets there |
+|---|---|
+| Browser (GTM) | `components/AnalyticsIdentityBridge.tsx` reads `/api/identity/me` and calls `gtag('set', { user_id })`. The GTM Google tag applies that command to every later hit; no tag field maps it. GA4 read 2026-10-14 showed it on `session_start`, `user_engagement` and `scroll`, which only the browser tag sends. The first-paint `page_view` goes before the bridge runs, so it never has one. |
+| Page-view mirror | `app/api/visitors/track/route.ts` sends it on a mirrored hit from a session that belongs to a contact, at the analytics tier. The mirror runs after the identify step, so the report view that identifies a recipient carries it. A client document (`/cma`, `/bpo`) runs no Google tag, so this is the only way a recipient reading a report is counted as known. |
+| `generate_lead`, `person_identified`, `valuation_requested` | `ga4ServerUserId(ctx, personId)` in `lib/analytics/ga4-server-context.ts`, from the visitor's tier (`trackingLevel`: the stored banner answer, else the region default from `x-vercel-ip-country`; no country header fails closed). |
+
+`npm run analytics:audit` prints the known-contact user count and the events that carried a user_id, and warns when no `session_start` or `user_engagement` carried one.
+
+What GA4 cannot count, by design: a contact whose visits were all at the essential tier (before 2026-10-08 that was every US visitor who never answered the banner), and a form submitter's hits for the rest of the submitting session (a typed email never mints the signed `rr_pid` cookie the bridge reads; the next session is born identified and tagged, and `generate_lead` carries the user_id).
+
 ### `generate_lead` (server-only)
 
 One event per real submission. **Only** `fireLeadGenerated` in `lib/lead-tracking.ts` may send it. Never from the browser, never `fireGa4Event('generate_lead')` directly, never `trackEvent('generate_lead')`. Held by `lib/analytics/lead-event.test.ts`.
@@ -391,7 +405,7 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | File | Role |
 |---|---|
 | `lib/ga4-measurement-protocol.ts` | The one Measurement Protocol client (`fireGa4Event`) and the cookie parsers (`_ga`, `_ga_<stream>`) |
-| `lib/analytics/ga4-server-context.ts` | The request context every in-request server sender reads |
+| `lib/analytics/ga4-server-context.ts` | The request context every in-request server sender reads, and `ga4ServerUserId` |
 | `lib/lead-tracking.ts` | `generate_lead` (`fireLeadGenerated`) and the non-lead form events |
 | `app/actions/identity-bridge.ts` | `person_identified` on an email-click identify |
 | `lib/cma-request.ts` | `valuation_requested` for seller LP, FSBO LP and place-page submissions |
@@ -457,6 +471,7 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | `lib/analytics/own-site-links.ts` | Finds ryan-realty.com links in a message so each can be decorated (tracked) |
 | `lib/analytics/web-vitals-sample.ts` | Validates one real-user Web Vitals sample before `public.web_vitals` stores it |
 | `lib/analytics/visitor-intent.ts` | Visitor intent (buyer / seller / both / browsing) and primary market, from the shared page categories; the `rr_visitor_intent_v1` memory behind the GA4 user properties |
+| `lib/analytics/ga4-user-id.ts` | The one GA4 user_id of a known contact (hashed CRM id), and the tier rule for sending it |
 
 ---
 

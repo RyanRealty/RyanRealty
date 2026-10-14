@@ -11,6 +11,8 @@
 import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeVisitorDb } from '@/test/fake-visitor-db'
+import { signPersonLinkToken } from '@/lib/identity/link-token'
+import { ga4UserIdForPerson } from '@/lib/analytics/ga4-user-id'
 
 const store = createFakeVisitorDb()
 const ga4 = vi.hoisted(() => ({ fire: vi.fn(async () => undefined) }))
@@ -112,5 +114,47 @@ describe('every other page keeps the double-count guard', () => {
   it('an essential-tier visitor on a site page is mirrored (client gtag is consent-denied)', async () => {
     await track(pageView({ pageUrl: 'https://ryan-realty.com/homes-for-sale/bend', pageCategory: 'search', consent: 'essential' }), { _ga: GA_COOKIE })
     expect(ga4.fire).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('a known contact\'s mirrored hit carries the hashed user id the browser tag uses (analytics tier only)', () => {
+  const PERSON = 64115
+  const VID = '9a1b2c3d-4e5f-4a6b-8c7d-0e1f2a3b4c5d'
+  const UID = ga4UserIdForPerson(PERSON)
+
+  it.each(['all', 'analytics'])('the report view that identifies a %s-tier recipient carries it (identify runs before the mirror)', async (consent) => {
+    const token = signPersonLinkToken(PERSON, 'document')
+    await track(pageView({ pageUrl: `${DOC}&_pid=${token}`, pageCategory: 'client-document', consent }), { rr_vid: VID })
+    expect(store.session(SESSION)).toMatchObject({ crm_person_id: PERSON })
+    expect(ga4.fire).toHaveBeenCalledTimes(1)
+    expect(ga4.fire).toHaveBeenCalledWith(expect.objectContaining({ eventName: 'page_view', userId: UID }))
+    // never the raw id, never the token
+    expect(JSON.stringify(ga4.fire.mock.calls)).not.toContain(token)
+  })
+
+  it('a returning browser (identity map) reading at the analytics tier carries it', async () => {
+    store.db.visitor_identity_map.push({ rr_vid: VID, crm_person_id: PERSON })
+    await track(pageView({ pageUrl: DOC, pageCategory: 'client-document', consent: 'all' }), { rr_vid: VID })
+    expect(ga4.fire).toHaveBeenCalledWith(expect.objectContaining({ userId: UID }))
+  })
+
+  it('an essential-tier recipient is mirrored under the anonymous client id only', async () => {
+    const token = signPersonLinkToken(PERSON, 'document')
+    await track(pageView({ pageUrl: `${DOC}&_pid=${token}`, pageCategory: 'client-document', consent: 'essential' }), { rr_vid: VID })
+    expect(store.session(SESSION)).toMatchObject({ crm_person_id: PERSON })
+    expect(ga4.fire).toHaveBeenCalledTimes(1)
+    expect(ga4.fire).toHaveBeenCalledWith(expect.objectContaining({ userId: null }))
+  })
+
+  it('a known contact on an essential-tier site page is mirrored with no user id', async () => {
+    store.db.visitor_identity_map.push({ rr_vid: VID, crm_person_id: PERSON })
+    await track(pageView({ pageUrl: 'https://ryan-realty.com/homes-for-sale/bend', pageCategory: 'search', consent: 'essential' }), { rr_vid: VID })
+    expect(store.session(SESSION)).toMatchObject({ crm_person_id: PERSON })
+    expect(ga4.fire).toHaveBeenCalledWith(expect.objectContaining({ userId: null }))
+  })
+
+  it('an anonymous reader carries none', async () => {
+    await track(pageView({ pageUrl: DOC, pageCategory: 'client-document', consent: 'all' }))
+    expect(ga4.fire).toHaveBeenCalledWith(expect.objectContaining({ userId: null }))
   })
 })

@@ -125,6 +125,22 @@ describe('fireGa4Event — per-visit session + campaign_details (TRACK-1, P7)', 
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  it('sends a known contact\'s user_id at the top level, and none when there is none', async () => {
+    vi.stubEnv('GA4_MEASUREMENT_ID', 'G-TEST')
+    vi.stubEnv('GA4_API_SECRET', 'secret')
+    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const uid = `crm-${'a'.repeat(64)}`
+    await fireGa4Event({ eventName: 'generate_lead', clientId: '1.2', userId: uid, eventParams: { page_location: 'https://ryan-realty.com/' } })
+    await fireGa4Event({ eventName: 'page_view', clientId: '1.2', userId: null, eventParams: { page_location: 'https://ryan-realty.com/' } })
+    await fireGa4Event({ eventName: 'page_view', clientId: '1.2', userId: '  ', eventParams: { page_location: 'https://ryan-realty.com/' } })
+    const bodies = fetchMock.mock.calls.map((c) => JSON.parse(String((c as unknown as [string, RequestInit])[1].body)))
+    expect(bodies[0].user_id).toBe(uid)
+    expect(bodies[0].events[0].params).not.toHaveProperty('user_id')
+    expect(bodies[1]).not.toHaveProperty('user_id')
+    expect(bodies[2]).not.toHaveProperty('user_id')
+  })
+
   it('sends only the event itself when nothing precedes it', async () => {
     vi.stubEnv('GA4_MEASUREMENT_ID', 'G-TEST')
     vi.stubEnv('GA4_API_SECRET', 'secret')

@@ -519,11 +519,12 @@ export async function createCmaRequest(
     if (requestSource === 'seller-lp' || requestSource === 'fsbo-lp' || requestSource === 'place-page') {
       // Read the request before anything is detached from it. Fails closed:
       // a request that cannot be read sends nothing.
-      const { ga4ServerSend, ga4ServerEventParams } = await import('@/lib/analytics/ga4-server-context')
+      const { ga4ServerSend, ga4ServerEventParams, ga4ServerUserId } = await import('@/lib/analytics/ga4-server-context')
       const ga4 = await ga4ServerSend()
       if (ga4) void fireGa4Event({
         eventName: 'valuation_requested',
         clientId: ga4.clientId,
+        userId: ga4ServerUserId(ga4.ctx, linkedPersonId),
         eventParams: ga4ServerEventParams(ga4.ctx, {
           cma_slug: slug,
           lp_variant: requestSource === 'fsbo-lp' ? 'fsbo' : requestSource === 'place-page' ? 'place-page' : 'seller-home-value',

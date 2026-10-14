@@ -15,7 +15,7 @@
 
 import { cookies, headers } from 'next/headers'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
-import { ga4ServerEventParams, ga4ServerSend } from '@/lib/analytics/ga4-server-context'
+import { ga4ServerEventParams, ga4ServerSend, ga4ServerUserId } from '@/lib/analytics/ga4-server-context'
 import {
   backfillSessionToFub,
   isAutomatedSession,
@@ -167,6 +167,7 @@ async function bridgeIdentifiedPerson(
     void fireGa4Event({
       eventName: 'person_identified',
       clientId: ga4.clientId,
+      userId: ga4ServerUserId(ga4.ctx, id),
       eventParams: ga4ServerEventParams(ga4.ctx, {
         person_id: id,
         identify_source: 'email-click',

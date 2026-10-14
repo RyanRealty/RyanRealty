@@ -5,7 +5,8 @@ vi.mock('next/headers', () => ({
   headers: () => Promise.resolve({ get: () => null }),
 }))
 
-import { ga4ContextFromRequest, ga4ServerEventParams, ga4ServerSendAllowed } from './ga4-server-context'
+import { ga4ContextFromRequest, ga4ServerEventParams, ga4ServerSendAllowed, ga4ServerUserId } from './ga4-server-context'
+import { ga4UserIdForPerson } from './ga4-user-id'
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
 const jar = (c: Record<string, string>) => ({ get: (n: string) => (n in c ? { value: c[n] } : undefined) })
@@ -44,6 +45,48 @@ describe('ga4ContextFromRequest', () => {
     expect(ga4ServerSendAllowed(webhook, { serverToServer: true })).toBe(true)
     expect(ga4ServerSendAllowed(ctx({ referer: '', cookieHeader: 'rr_internal=1' }), { serverToServer: true })).toBe(false)
     expect(ga4ServerSendAllowed(ctx({ referer: '', secGpc: '1' }), { serverToServer: true })).toBe(false)
+  })
+})
+
+describe('ga4ServerUserId: a known contact\'s server events carry the browser\'s user id, at the analytics tier only', () => {
+  const PERSON = 64115
+  const withConsent = (consent: string | null, over: Partial<Parameters<typeof ga4ContextFromRequest>[0]> = {}) =>
+    ctx({
+      cookieStore: jar({ _ga: 'GA1.1.111.222', ...(consent === null ? {} : { ryan_realty_cookie_consent: consent }) }),
+      ...over,
+    })
+
+  it('no banner answer in an unrestricted country is the analytics tier: the hashed id', () => {
+    const c = withConsent(null, { country: 'US' })
+    expect(c.trackingLevel).toBe('analytics')
+    expect(ga4ServerUserId(c, PERSON)).toBe(ga4UserIdForPerson(PERSON))
+  })
+
+  it('an explicit analytics accept is the hashed id wherever the visitor is', () => {
+    const accept = encodeURIComponent(JSON.stringify({ analytics: true, marketing: false }))
+    expect(ga4ServerUserId(withConsent(accept, { country: 'DE' }), PERSON)).toBe(ga4UserIdForPerson(PERSON))
+  })
+
+  it.each([
+    ['no answer in a restricted region', null, 'DE'],
+    ['no answer and no country header (fails closed)', null, null],
+    ['a marketing-only answer', encodeURIComponent(JSON.stringify({ analytics: false, marketing: true })), 'US'],
+  ])('%s is the essential tier: no user id', (_label, consent, country) => {
+    const c = withConsent(consent, { country })
+    expect(c.trackingLevel).toBe('essential')
+    expect(ga4ServerUserId(c, PERSON)).toBeUndefined()
+  })
+
+  it('GPC or a decline is no user id (and no event at all)', () => {
+    expect(ga4ServerUserId(withConsent(null, { country: 'US', secGpc: '1' }), PERSON)).toBeUndefined()
+    const decline = encodeURIComponent(JSON.stringify({ analytics: false, marketing: false }))
+    expect(withConsent(decline, { country: 'US' }).trackingLevel).toBe('declined')
+    expect(ga4ServerUserId(withConsent(decline, { country: 'US' }), PERSON)).toBeUndefined()
+  })
+
+  it('no person, or no visitor context (a provider webhook), is no user id', () => {
+    expect(ga4ServerUserId(withConsent(null, { country: 'US' }), null)).toBeUndefined()
+    expect(ga4ServerUserId(null, PERSON)).toBeUndefined()
   })
 })
 

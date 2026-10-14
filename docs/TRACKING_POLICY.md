@@ -491,7 +491,11 @@ build when any part of it is broken.**
 Matching happens on the server against `crm_people`; no URL carries an email. What the
 browser gets back is hashes only (`/api/identity/me`): a GA4 `user_id` that is a SHA-256
 of the person id (or of a signed-in visitor's email), and a SHA-256 of a signed-in
-visitor's email for Meta Pixel advanced matching.
+visitor's email for Meta Pixel advanced matching. The server sends the same `user_id`
+(`lib/analytics/ga4-user-id.ts`) on the page-view mirror, `generate_lead`,
+`person_identified` and `valuation_requested` for a known contact, at the analytics tier
+only: an essential-tier visit reaches GA4 under an anonymous client id and nothing else
+(`docs/analytics/README.md` "Known contacts carry a user_id").
 
 **Measured, the 30 days to 2026-09-23** (supabase-js reads, fetched 2026-09-23T02:49Z,
 window `first_seen_at >= 2026-08-24T02:49Z` on `visitor_sessions`, `ts >=

@@ -71,6 +71,7 @@ import {
   classifyAutomation,
 } from '@/lib/analytics/automation'
 import { campaignDetailsParams, ga4SessionParams, parseVisit } from '@/lib/analytics/ga4-visit'
+import { ga4UserIdForPerson } from '@/lib/analytics/ga4-user-id'
 import {
   decideGaSuppressionForPage,
   hasAutomationMarker,
@@ -651,6 +652,52 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, eventDropped: true }, { headers: corsHeaders(origin) })
   }
 
+  // 3. Fetch the updated session for the response payload. Snippet uses this
+  //    to decide whether to keep showing the sign-in modal, open a soft wall,
+  //    or skip both.
+  const { data: sessRow, error: readSessErr } = await supabase
+    .from('visitor_sessions')
+    .select('engagement_score, intent_tags, fub_person_id, crm_person_id, first_seen_at, identified_at')
+    .eq('session_id', sessionId)
+    .maybeSingle()
+
+  if (readSessErr) {
+    console.warn('[visitors/track] session read failed:', readSessErr.message)
+  }
+
+  const session = sessRow ?? null
+
+  // ─── Identify the visit (P7) ─────────────────────────────────────────────
+  // The signed token on the link just clicked, else the signed rr_pid cookie
+  // from an earlier identification on this browser. Identifies the session AND
+  // back-stitches every anonymous session on the same rr_vid, and maps the
+  // rr_vid so the next visit, and this person's other devices once they click
+  // from them, are born identified.
+  const cookiePersonId = signedPersonIdFromCookie(request.cookies.get(PERSON_COOKIE)?.value)
+  const decision: ArrivalDecision = planArrivalIdentity({
+    token,
+    tokenPersonExists,
+    session: session ? { crmPersonId: typeof session.crm_person_id === 'number' ? session.crm_person_id : null } : null,
+    cookiePersonId,
+    automated: automation.automated,
+  })
+  if (session && decision.kind === 'identify') {
+    const res = await identifySessionAndBrowser(supabase, {
+      sessionId,
+      rrVid,
+      personId: decision.personId,
+      via: decision.via,
+    })
+    if (res.sessionStamped) {
+      identifiedNow = true
+      session.crm_person_id = decision.personId
+      session.fub_person_id = decision.personId
+      session.identified_at = session.identified_at ?? new Date().toISOString()
+    }
+    if (res.sessionStamped && cookiePersonId !== decision.personId) setPersonCookieFor = decision.personId
+  }
+  if (setPersonCookieFor && setPersonCookieFor === cookiePersonId) setPersonCookieFor = null
+
   // ─── GA4 Measurement Protocol page_view mirror (2026-08-10) ─────────────
   // Mirror view events when the browser is not counting them.
   //
@@ -668,6 +715,16 @@ export async function POST(request: NextRequest) {
   // (intent_declared, welcome_back, email_opt, sms_opt) are unchanged.
   // A decline never reaches here. Never blocks the visitor response.
   // No-op without GA4_API_SECRET.
+  //
+  // KNOWN CONTACTS (2026-10-14, data/analytics/decisions.json
+  // "crm-contacts-tagged-in-ga4"): a mirrored hit from a session that belongs to
+  // a CRM contact carries the same hashed user_id the browser tag gets from
+  // /api/identity/me, at the analytics tier only (an essential-tier visit reaches
+  // GA4 under an anonymous client id and nothing else). The mirror runs AFTER the
+  // identify step above so the view that identifies the visit (a tracked link to
+  // a CMA, which runs no Google tag) carries it: GA4 read 2026-10-14 showed 12
+  // users with a user id against 113 contacts on the site in 30 days, and 13 of
+  // the missing ones had read only their report at the analytics tier.
   const mirrorGa4 =
     eventType === 'page_view' ||
     eventType === 'listing_view' ||
@@ -738,9 +795,12 @@ export async function POST(request: NextRequest) {
         // draw sessions and attribute them.
         const visit = parseVisit(body.visit)
         const campaignDetails = visit?.start ? campaignDetailsParams(campaign ?? body.campaign) : null
+        const knownPersonId =
+          !minimalOnly && session && typeof session.crm_person_id === 'number' ? session.crm_person_id : null
         void fireGa4Event({
           eventName: isView ? 'page_view' : eventType,
           clientId: fromCookie || clientIdFromSessionId(sessionId),
+          userId: ga4UserIdForPerson(knownPersonId),
           precedingEvents: campaignDetails ? [{ name: 'campaign_details', params: campaignDetails }] : undefined,
           userProperties: {
             ...(intent ? { intent } : {}),
@@ -769,52 +829,6 @@ export async function POST(request: NextRequest) {
       )
     }
   }
-
-  // 3. Fetch the updated session for the response payload. Snippet uses this
-  //    to decide whether to keep showing the sign-in modal, open a soft wall,
-  //    or skip both.
-  const { data: sessRow, error: readSessErr } = await supabase
-    .from('visitor_sessions')
-    .select('engagement_score, intent_tags, fub_person_id, crm_person_id, first_seen_at, identified_at')
-    .eq('session_id', sessionId)
-    .maybeSingle()
-
-  if (readSessErr) {
-    console.warn('[visitors/track] session read failed:', readSessErr.message)
-  }
-
-  const session = sessRow ?? null
-
-  // ─── Identify the visit (P7) ─────────────────────────────────────────────
-  // The signed token on the link just clicked, else the signed rr_pid cookie
-  // from an earlier identification on this browser. Identifies the session AND
-  // back-stitches every anonymous session on the same rr_vid, and maps the
-  // rr_vid so the next visit, and this person's other devices once they click
-  // from them, are born identified.
-  const cookiePersonId = signedPersonIdFromCookie(request.cookies.get(PERSON_COOKIE)?.value)
-  const decision: ArrivalDecision = planArrivalIdentity({
-    token,
-    tokenPersonExists,
-    session: session ? { crmPersonId: typeof session.crm_person_id === 'number' ? session.crm_person_id : null } : null,
-    cookiePersonId,
-    automated: automation.automated,
-  })
-  if (session && decision.kind === 'identify') {
-    const res = await identifySessionAndBrowser(supabase, {
-      sessionId,
-      rrVid,
-      personId: decision.personId,
-      via: decision.via,
-    })
-    if (res.sessionStamped) {
-      identifiedNow = true
-      session.crm_person_id = decision.personId
-      session.fub_person_id = decision.personId
-      session.identified_at = session.identified_at ?? new Date().toISOString()
-    }
-    if (res.sessionStamped && cookiePersonId !== decision.personId) setPersonCookieFor = decision.personId
-  }
-  if (setPersonCookieFor && setPersonCookieFor === cookiePersonId) setPersonCookieFor = null
 
   // ─── Looking-at wake (D3) ────────────────────────────────────────────────
   // Identified person (crm_people.id) + a specific home. GPC already dropped
