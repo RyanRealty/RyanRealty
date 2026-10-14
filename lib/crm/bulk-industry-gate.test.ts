@@ -74,12 +74,29 @@ describe('1:1 composer stays open for industry contacts', () => {
     expect(emailSlice).not.toContain('isIndustryContact')
   })
 
-  it('sendCrmSmsAction skips suppression so a 1:1 text always works', () => {
+  it('sendCrmSmsAction may skip a soft consent row on 1:1 compose', () => {
     const text = src('../../app/actions/crm.ts')
     const smsFn = text.indexOf('export async function sendCrmSmsAction')
     const nextExport = text.indexOf('\nexport async function', smsFn + 1)
     const smsSlice = text.slice(smsFn, nextExport === -1 ? undefined : nextExport)
     expect(smsSlice).toContain('skipSuppression: true')
     expect(smsSlice).not.toContain('isIndustryContact')
+  })
+})
+
+describe('skipSuppression cannot ride a bulk, drip, or marketing path', () => {
+  it('sequence, drip, and cohort senders never set the skip flag', () => {
+    const sequence = src('../../app/api/cron/crm-sequence-engine/route.ts')
+    const drip = src('../data/prospecting/drip-drain.ts')
+    const cohort = src('./bulk-handlers/email-cohort.ts')
+    expect(sequence).not.toContain('skipSuppression')
+    expect(drip).not.toContain('skipSuppression')
+    expect(cohort).not.toContain('skipSuppression')
+  })
+
+  it('quiet-hours rechecks do not skip all suppressions', () => {
+    const sms = src('../comms/sendGovernedSms.ts')
+    expect(sms).toContain('quietHoursOnly: true')
+    expect(sms).not.toMatch(/skipSuppression:\s*true/)
   })
 })

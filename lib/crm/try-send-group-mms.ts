@@ -48,7 +48,7 @@ export async function trySendGroupMms(opts: {
   access: GroupSmsAccess
   explicitGroupThread: boolean
   overrideQuietHours?: boolean
-  /** Broker compose: skip consent/STOP suppressions (bulk-only). */
+  /** Broker compose: skip a soft consent row. Opt-outs still hold. */
   skipSuppression?: boolean
   requirePersonInScope: (
     personId: number,
@@ -86,8 +86,9 @@ export async function trySendGroupMms(opts: {
     }
     const target = await getSendTarget(rid)
     if (!target?.phone) continue
-    // Consent / STOP / opt-in: bulk-only. Manual compose does not drop members
-    // for crm_suppressions (skipSuppression). Phone presence is enough here.
+    // Missing-consent is bulk-only. Manual compose does not drop members for
+    // that row (skipSuppression). STOP / bounce / complaint still hold in
+    // checkSendGuards. Phone presence is enough here.
     members.push({ rid, phone: target.phone })
   }
   for (const e164 of opts.rawPhones) members.push({ rid: null, phone: e164 })
