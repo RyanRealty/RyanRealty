@@ -1,54 +1,33 @@
 ---
-description: Required reading before any video production work. One factory, lib/studio: Grok footage plus the motion stage for type.
+description: Required reading before any video work. One factory (lib/studio), the spine every video shares, and the measured check before Matt sees anything.
 alwaysApply: true
 ---
 
-# Video Production — REQUIRED reading
+# Video: one factory, one check (Matt 2026-10-13)
 
-**Before writing any video code, any video synth or render: read CLAUDE.md §4 and `docs/GROK_CRAFT_CANON.md`.** Remotion is deleted. The one video factory is `lib/studio`: Grok makes the footage, and `lib/studio/motion` composites type, cards and verified figures over it (Matt 2026-10-07). This is non-negotiable.
+Every video, from any bot (Cursor, Claude, Grok, Imagine) and on any machine, renders through this repo's `lib/studio` code. Imagine makes footage clips only, never a finished cut. Remotion is deleted, and the old box pipeline (`/workspace/motion-clips` HTML + `render.mjs`) is retired.
 
-## Where the rules live
+## The path
 
-- **CLAUDE.md → "Video Build Hard Rules"** — the source of truth, always present in this repo: format/length, hook, beats, safe zones, VO, brand, render hygiene, the quality gate.
-- The deeper video skill library (`video_production_skills/VIDEO_PRODUCTION_SKILL.md`, `VIRAL_GUARDRAILS.md`, the format sub-skills) lives on the local render worker / Cowork mount, NOT this deployed repo — load it there for a novel format or edge case. The summary below is the repo-local floor; CLAUDE.md governs.
+1. Read `.claude/skills/ryan-studio/SKILL.md` (the mandatory rules, the type cards, the brief schema, the technique menu) and `references/RULEBOOK.md` (Matt's locked rules, which win).
+2. Write `brief.json` and `timeline.json`; `node .claude/skills/ryan-studio/tools/video_gate.mjs brief.json timeline.json` checks the paperwork.
+3. `npm run studio:render -- brief.json timeline.json` renders the film and its manifest.
+4. `npm run video:check -- final.mp4` measures the finished file. A separate reviewer signs off, then `npm run video:check -- final.mp4 --final` must pass. Only that goes to Matt. Matt posts himself.
 
-## The non-negotiables (summary — full detail in the skill file)
+Contract and every measured check: `docs/plans/STUDIO_ONE_FACTORY.md`. Craft: `.claude/skills/motion-design/SKILL.md`. Ad copy, voiceover markup and captions: `docs/ai-voiceover-scripts.md`.
 
-- **Length:** 30-45s target, never over 60s.
-- **Hook:** motion engaged by frame 12 (0.4s), address text by 1s, VO content by 2s. No logo, no title card on black.
-- **Cuts:** 2-3s standard, 4s max. 12+ photo beats in a 45s video.
-- **Re-hooks at 25% and 50%, reveal in final 15%.**
-- **Text safe zone:** 900×1400 inside 1080×1920. Body 48 px+, headline 64-80 px.
-- **End card, final 2.5s (Matt 2026-10-07, supersedes the old no-brand-in-frame rule):** navy-on-cream card with the wordmark and `ryan-realty.com`; on our own listings it is the listing agent's card with their headshot. Another office's listing gets no brand card. No logo or brand anywhere else in the frame, and never at the open.
-- **Listing photos are panned at their true shape, never generated or reshaped** (Matt 2026-10-07; `lib/video/pan.ts`). A photo is scaled uniformly and a window moves across it. Never stretch or squeeze a photo to fit the frame.
-- **Three movement types per video minimum.**
-- **Banned words:** stunning, nestled, boasts, gorgeous, breathtaking, must-see, "welcome to your dream home." No em-dashes, no semicolons. (Plain hyphens are allowed where standard English requires them — single-family, 30-year fixed — per CLAUDE.md brand voice; the old "no hyphens in prose" rule was wrong.)
-- **All numbers carry units.** "$3,025,000" not "3,025,000."
-- **i2v is allowed** when the source is a real still and the motion passes the rejecter (no melt, no invented architecture). Do not invent rooms or the view from an address.
+## The spine (the same in every video, measured)
 
-## The render hygiene rules
+- Hook in the first 1 to 2 s, readable with the sound off.
+- 15 to 30 s (a longer cut needs a written reason in the brief).
+- Every beat holds at least 2.5 s; nothing on screen freezes.
+- A warm female voiceover with TikTok-style captions timed from the final audio.
+- One or two real numbers, each sourced (CLAUDE.md §0).
+- Loops back into frame 0.
+- Ends on the locked end card: logo, then Quality / Local / Service, then "Call now" 541.703.3095. A topic call to action gets its own card before it.
+- Navy #102742 and cream #faf8f4; Amboqia for display words, Geist for numbers and captions; the logo only on the end card.
+- Listing photos are moved at their true shape, never stretched, squeezed or regenerated.
 
-- One factory: `lib/studio`. Type and figures go through `lib/studio/motion` (deterministic HTML frames, Chromium, ffmpeg), never a second pipeline and never baked into a generated frame.
-- 1080×1920 portrait, 30 fps minimum.
-- After render: `ffmpeg blackdetect d=0.03:pix_th=0.05` returns ZERO black sequences.
-- Compress to under 100 MB with `-crf 24 -preset medium -movflags +faststart` before delivery.
+## The creative layer (different every time)
 
-## The quality gate
-
-Before pushing or emailing, every item in `VIRAL_VIDEO_CONSTRAINTS.md` post-render checklist must be green. Self-enforce — don't wait for Matt to find an obvious bug.
-
-## Common failures + fixes
-
-The skill file has a full troubleshooting section. The greatest hits:
-
-- **Black bars at transitions** → parent div transparent + crossfadeOut 0 + Sequence overlap (`PhotoBeat.tsx`).
-- **Audio mismatch** → `previous_text` chained synth (`scripts/synth_vo_*.py`).
-- **Deschutes pronunciation** → IPA `<phoneme>` tag on `eleven_v3` model.
-- **Missing assets at render time** → run `build_v5_library.py` + verify symlinks BEFORE render, not after.
-- **Generic feel** → re-read Section 2 (Creative direction) before scaffolding BEATS array.
-
-## Schoolhouse v5 lesson log
-
-The v1 → v5.9 sequence is the case study. Each major rule in the skill file is anchored to a specific round where the failure shipped. Reading the change log of `feat(listing-video-v5):` commits is the fastest way to internalize WHY each rule exists.
-
-Most important inflection: **v5.7 (133s cinematic short film) → v5.8 (45s viral cut)**. A brokerage-credibility cinematic piece and a viral Reel are different products with different rules. Don't conflate them.
+Pick ready techniques from `.claude/skills/ryan-studio/techniques/registry.json`: at least one hook, one scene and one type technique. A planned technique is not built yet. A film whose hook device and scene set repeat any of the last five films fails the check.

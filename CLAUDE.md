@@ -32,7 +32,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Keep moving.** Unfinished work: push the branch, write your note in `docs/plans/handoffs/`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
 
-**Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. Ad copy, VO, captions: [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). video_gate is backup.
+**Video.** One factory (Matt 2026-10-13): any bot, any machine renders via `npm run studio:render`; Imagine makes footage only. Nothing reaches Matt until `npm run video:check -- <mp4> --final` passes. Rules: `.claude/skills/ryan-studio/SKILL.md`.
 
 ---
 
@@ -550,7 +550,7 @@ else fires on trigger match.
 
 | Trigger | Load this |
 |---|---|
-| Any video build | **§4** and the `motion-design` skill. Remotion is gone. |
+| Any video build | §4, `ryan-studio`, `motion-design`. |
 | SEO blog post | [`social_media_skills/blog-post/SKILL.md`](social_media_skills/blog-post/SKILL.md). Publishing path is Supabase `blog_posts` rendered by the live Next site. |
 | Paid Meta pipeline, marketing automation, weekly optimization crons, seller funnel | [`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`](docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md) first, then [`docs/MARKETING_LEAD_FLOW.md`](docs/MARKETING_LEAD_FLOW.md), `.cursor/skills/facebook-seller-growth/SKILL.md` |
 | Facebook lead-gen ad | the two docs above for live wiring, then `social_media_skills/facebook-lead-gen-ad/SKILL.md` |
