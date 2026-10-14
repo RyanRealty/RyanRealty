@@ -1,0 +1,13 @@
+{
+  "rule": "R-115",
+  "step": "master",
+  "what": "a Call now held 1.35 s",
+  "setup": {
+    "manifest": [
+      {
+        "path": "endcard.call",
+        "set": 13.9
+      }
+    ]
+  }
+}

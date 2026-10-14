@@ -1,0 +1,10 @@
+{
+  "rule": "R-125",
+  "step": "master",
+  "what": "a box that reads back as something else",
+  "setup": {
+    "pixels": {
+      "readWrong": true
+    }
+  }
+}

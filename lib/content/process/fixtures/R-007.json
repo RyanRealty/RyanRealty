@@ -1,0 +1,12 @@
+{
+  "rule": "R-007",
+  "step": "brief",
+  "what": "a beat with a made-up role",
+  "edits": [
+    {
+      "in": "timeline",
+      "path": "beats.1.role",
+      "set": "montage"
+    }
+  ]
+}

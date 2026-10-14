@@ -1,0 +1,12 @@
+{
+  "rule": "R-032",
+  "step": "brief",
+  "what": "an em dash in the caption",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "caption",
+      "set": "Bend has 3.5 months of homes for sale — sellers still have the edge."
+    }
+  ]
+}

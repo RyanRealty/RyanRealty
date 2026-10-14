@@ -1,0 +1,17 @@
+{
+  "rule": "R-028",
+  "step": "brief",
+  "what": "a news_civic brief with no sources",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "video_type",
+      "set": "news_civic"
+    },
+    {
+      "in": "brief",
+      "path": "sources",
+      "set": []
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "rule": "R-002",
+  "step": "brief",
+  "what": "a brief with no caption",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "caption",
+      "delete": true
+    }
+  ]
+}

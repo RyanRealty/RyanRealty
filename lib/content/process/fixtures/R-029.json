@@ -1,0 +1,12 @@
+{
+  "rule": "R-029",
+  "step": "brief",
+  "what": "a buyer ad with no special_ad_category",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "special_ad_category",
+      "delete": true
+    }
+  ]
+}

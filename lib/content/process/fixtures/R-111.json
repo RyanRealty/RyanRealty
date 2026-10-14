@@ -1,0 +1,13 @@
+{
+  "rule": "R-111",
+  "step": "master",
+  "what": "a manifest with no captions",
+  "setup": {
+    "manifest": [
+      {
+        "path": "captions",
+        "set": []
+      }
+    ]
+  }
+}

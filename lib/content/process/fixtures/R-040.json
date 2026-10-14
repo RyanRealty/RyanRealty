@@ -1,0 +1,12 @@
+{
+  "rule": "R-040",
+  "step": "brief",
+  "what": "young professionals in the caption",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "caption",
+      "set": "Perfect for young professionals, 3.5 months of homes for sale."
+    }
+  ]
+}

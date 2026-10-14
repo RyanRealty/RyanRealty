@@ -1,0 +1,13 @@
+{
+  "rule": "R-112",
+  "step": "master",
+  "what": "a manifest with no end card",
+  "setup": {
+    "manifest": [
+      {
+        "path": "endcard",
+        "set": null
+      }
+    ]
+  }
+}

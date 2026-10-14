@@ -1,0 +1,13 @@
+{
+  "rule": "R-114",
+  "step": "master",
+  "what": "words that take 1.24 s",
+  "setup": {
+    "manifest": [
+      {
+        "path": "endcard.service",
+        "set": 13.44
+      }
+    ]
+  }
+}

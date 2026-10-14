@@ -160,18 +160,30 @@ export function assertNotPublic(path: string, roots: readonly string[] = checkou
   }
 }
 
-async function defaultDownload(url: string, dest: string): Promise<void> {
+export async function defaultDownload(url: string, dest: string): Promise<void> {
   const res = await fetch(url, { signal: AbortSignal.timeout(180_000) })
   if (!res.ok) throw new RenderError(`footage download failed: HTTP ${res.status} for ${url}`)
   writeFileSync(dest, Buffer.from(await res.arrayBuffer()))
 }
 
-function footageSources(timeline: Timeline): TimelineFootage[] {
+export function footageSources(timeline: Timeline): TimelineFootage[] {
   return [...timeline.beats.flatMap((b) => (b.footage ? [b.footage] : [])), ...(timeline.cta?.footage ? [timeline.cta.footage] : [])]
 }
 
+/**
+ * Where a footage source lives on disk: a URL's cached copy (named from the URL, so the same
+ * URL is the same file on every film), or the local path resolved from the timeline's folder.
+ */
+export function footageFilePath(src: string, opts: { baseDir: string; cacheDir: string }): string {
+  if (/^https:\/\//i.test(src)) {
+    const ext = extname(new URL(src).pathname) || '.mp4'
+    return join(opts.cacheDir, 'footage', `${createHash('sha256').update(src).digest('hex').slice(0, 24)}${ext}`)
+  }
+  return isAbsolute(src) ? src : resolve(opts.baseDir, src)
+}
+
 /** Every clip on disk and measured. URLs download once into the cache; local paths must exist. */
-async function resolveFootage(
+export async function resolveFootage(
   timeline: Timeline,
   opts: { baseDir: string; cacheDir: string },
   measure: Measure,
@@ -181,20 +193,14 @@ async function resolveFootage(
   const out: Record<string, ResolvedFootage> = {}
   for (const f of footageSources(timeline)) {
     if (out[f.src]) continue
-    let path: string
+    const path = footageFilePath(f.src, opts)
     if (/^https:\/\//i.test(f.src)) {
-      const dir = join(opts.cacheDir, 'footage')
-      mkdirSync(dir, { recursive: true })
-      const ext = extname(new URL(f.src).pathname) || '.mp4'
-      path = join(dir, `${createHash('sha256').update(f.src).digest('hex').slice(0, 24)}${ext}`)
+      mkdirSync(join(opts.cacheDir, 'footage'), { recursive: true })
       if (!existsSync(path)) {
         log(`footage: downloading ${f.src}`)
         await download(f.src, path)
       }
-    } else {
-      path = isAbsolute(f.src) ? f.src : resolve(opts.baseDir, f.src)
-      if (!existsSync(path)) throw new RenderError(`footage ${f.src} does not exist (looked at ${path})`)
-    }
+    } else if (!existsSync(path)) throw new RenderError(`footage ${f.src} does not exist (looked at ${path})`)
     const probe = await measure.probe(path)
     out[f.src] = { path, width: probe.width, height: probe.height, duration: probe.videoDuration }
   }
@@ -227,7 +233,7 @@ export function proveTechniques(
 }
 
 /** The outlines the timeline's scenes draw, read from the boundaries table by the injected resolver. */
-async function resolveOutlines(
+export async function resolveOutlines(
   brief: StudioBrief,
   timeline: Timeline,
   resolve: RenderDeps['resolveOutline'],

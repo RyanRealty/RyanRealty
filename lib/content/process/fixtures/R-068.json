@@ -1,0 +1,12 @@
+{
+  "rule": "R-068",
+  "step": "brief",
+  "what": "a brief titled Test film",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "title",
+      "set": "Test film"
+    }
+  ]
+}

@@ -1,0 +1,477 @@
+{
+  "version": 1,
+  "_doc": "The last value Matt approved for every number a rule holds, and every rule ID ever issued. A looser number needs `Approved-by: matt` and `Rule-loosened: R-xxx` in the commit message (scripts/check-rule-loosening.mjs). IDs are never removed. Re-record with: node scripts/check-content-rules.mjs --write-baseline",
+  "ids": [
+    "R-001",
+    "R-002",
+    "R-003",
+    "R-004",
+    "R-005",
+    "R-006",
+    "R-007",
+    "R-008",
+    "R-009",
+    "R-010",
+    "R-011",
+    "R-012",
+    "R-013",
+    "R-014",
+    "R-015",
+    "R-016",
+    "R-017",
+    "R-018",
+    "R-019",
+    "R-020",
+    "R-021",
+    "R-022",
+    "R-023",
+    "R-024",
+    "R-025",
+    "R-026",
+    "R-027",
+    "R-028",
+    "R-029",
+    "R-030",
+    "R-031",
+    "R-032",
+    "R-033",
+    "R-034",
+    "R-035",
+    "R-036",
+    "R-037",
+    "R-038",
+    "R-039",
+    "R-040",
+    "R-041",
+    "R-042",
+    "R-043",
+    "R-044",
+    "R-045",
+    "R-046",
+    "R-047",
+    "R-048",
+    "R-049",
+    "R-050",
+    "R-051",
+    "R-052",
+    "R-053",
+    "R-054",
+    "R-055",
+    "R-056",
+    "R-057",
+    "R-058",
+    "R-059",
+    "R-060",
+    "R-061",
+    "R-062",
+    "R-063",
+    "R-064",
+    "R-065",
+    "R-066",
+    "R-067",
+    "R-068",
+    "R-069",
+    "R-070",
+    "R-071",
+    "R-072",
+    "R-073",
+    "R-074",
+    "R-075",
+    "R-076",
+    "R-077",
+    "R-078",
+    "R-079",
+    "R-080",
+    "R-081",
+    "R-082",
+    "R-083",
+    "R-084",
+    "R-085",
+    "R-086",
+    "R-087",
+    "R-088",
+    "R-089",
+    "R-090",
+    "R-091",
+    "R-092",
+    "R-093",
+    "R-094",
+    "R-095",
+    "R-096",
+    "R-097",
+    "R-098",
+    "R-099",
+    "R-100",
+    "R-101",
+    "R-102",
+    "R-103",
+    "R-104",
+    "R-105",
+    "R-106",
+    "R-107",
+    "R-108",
+    "R-109",
+    "R-110",
+    "R-111",
+    "R-112",
+    "R-113",
+    "R-114",
+    "R-115",
+    "R-116",
+    "R-117",
+    "R-118",
+    "R-119",
+    "R-120",
+    "R-121",
+    "R-122",
+    "R-123",
+    "R-124",
+    "R-125",
+    "R-126",
+    "R-127",
+    "R-128",
+    "R-129",
+    "R-130",
+    "R-131",
+    "R-132",
+    "R-133",
+    "R-134",
+    "R-135",
+    "R-136",
+    "R-137",
+    "R-138",
+    "R-139",
+    "R-140",
+    "R-141",
+    "R-142",
+    "R-143",
+    "R-144",
+    "R-145",
+    "R-146",
+    "R-147",
+    "R-148",
+    "R-149",
+    "R-150",
+    "R-151",
+    "R-152",
+    "R-153",
+    "R-154",
+    "R-155",
+    "R-156",
+    "R-157",
+    "R-158",
+    "R-159",
+    "R-160",
+    "R-161",
+    "R-162",
+    "R-163",
+    "R-164",
+    "R-165",
+    "R-166",
+    "R-167",
+    "R-168",
+    "R-169",
+    "R-170",
+    "R-171",
+    "R-172",
+    "R-173",
+    "R-174",
+    "R-175",
+    "R-176",
+    "R-177",
+    "R-178",
+    "R-179",
+    "R-180",
+    "R-181",
+    "R-182",
+    "R-183",
+    "R-184",
+    "R-185"
+  ],
+  "thresholds": {
+    "R-004": {
+      "source": "video_types",
+      "path": "defaults.hook_max_s",
+      "tighterIs": "lower",
+      "value": 2,
+      "perType": {
+        "buyer_ad": 1.5
+      }
+    },
+    "R-013": {
+      "source": "video_types",
+      "path": "defaults.min_s",
+      "tighterIs": "higher",
+      "value": 15,
+      "perType": {
+        "closing": 15,
+        "brand_film": 15,
+        "story_teaser": 7
+      }
+    },
+    "R-014": {
+      "source": "video_types",
+      "path": "defaults.hard_max_s",
+      "tighterIs": "lower",
+      "value": 40,
+      "perType": {
+        "market_update": 40,
+        "brand_film": 90,
+        "story_teaser": 15
+      }
+    },
+    "R-015": {
+      "source": "video_types",
+      "path": "defaults.max_s",
+      "tighterIs": "lower",
+      "value": 30,
+      "perType": {
+        "brand_film": 90,
+        "story_teaser": 15
+      }
+    },
+    "R-017": {
+      "source": "video_types",
+      "path": "defaults.min_hold_s",
+      "tighterIs": "higher",
+      "value": 2.5
+    },
+    "R-018": {
+      "source": "qa",
+      "path": "safeArea.maxX",
+      "tighterIs": "lower",
+      "value": 960
+    },
+    "R-018#2": {
+      "source": "qa",
+      "path": "safeArea.maxY",
+      "tighterIs": "lower",
+      "value": 1640
+    },
+    "R-019": {
+      "source": "video_types",
+      "path": "defaults.max_hero_numbers",
+      "tighterIs": "lower",
+      "value": 2,
+      "perType": {
+        "story_teaser": 1
+      }
+    },
+    "R-022": {
+      "source": "video_types",
+      "path": "defaults.requires_real_footage",
+      "tighterIs": "higher",
+      "value": true
+    },
+    "R-028": {
+      "source": "video_types",
+      "path": "types.news_civic.requires_sources",
+      "tighterIs": "higher",
+      "value": true
+    },
+    "R-030": {
+      "source": "video_types",
+      "path": "types.buyer_ad.requires_persona",
+      "tighterIs": "higher",
+      "value": true
+    },
+    "R-034": {
+      "source": "qa",
+      "path": "extra_banned_phrases",
+      "tighterIs": "higher",
+      "value": [
+        "top team",
+        "buyer's market"
+      ]
+    },
+    "R-035": {
+      "source": "video_types",
+      "path": "banned_phrases",
+      "tighterIs": "higher",
+      "value": [
+        "nestled",
+        "hidden gem",
+        "vibrant",
+        "thriving",
+        "bustling",
+        "whether you're",
+        "look no further",
+        "dream home",
+        "unlock",
+        "elevate",
+        "discover",
+        "explore",
+        "journey",
+        "more than just",
+        "in today's market",
+        "game-changer",
+        "game changer",
+        "perfect blend",
+        "hottest market ever",
+        "top team"
+      ]
+    },
+    "R-040": {
+      "source": "video_types",
+      "path": "fair_housing_flags",
+      "tighterIs": "higher",
+      "value": [
+        "families",
+        "family-friendly",
+        "singles",
+        "young professionals",
+        "retirees",
+        "empty nesters",
+        "christian",
+        "church",
+        "exclusive",
+        "safe neighborhood",
+        "walking distance to church"
+      ]
+    },
+    "R-071": {
+      "source": "video_types",
+      "path": "defaults.requires_voiceover",
+      "tighterIs": "higher",
+      "value": true
+    },
+    "R-081": {
+      "source": "qa",
+      "path": "sceneCutScore",
+      "tighterIs": "lower",
+      "value": 0.35
+    },
+    "R-087": {
+      "source": "video_types",
+      "path": "defaults.requires_loop",
+      "tighterIs": "higher",
+      "value": true
+    },
+    "R-090": {
+      "source": "qa",
+      "path": "safeArea.maxX",
+      "tighterIs": "lower",
+      "value": 960
+    },
+    "R-090#2": {
+      "source": "qa",
+      "path": "safeArea.maxY",
+      "tighterIs": "lower",
+      "value": 1640
+    },
+    "R-099": {
+      "source": "qa",
+      "path": "durationToleranceSeconds",
+      "tighterIs": "lower",
+      "value": 0.05
+    },
+    "R-100": {
+      "source": "qa",
+      "path": "freezeSeconds",
+      "tighterIs": "lower",
+      "value": 1.2
+    },
+    "R-102": {
+      "source": "qa",
+      "path": "blankFrameLumaVarianceMin",
+      "tighterIs": "higher",
+      "value": 4
+    },
+    "R-104": {
+      "source": "qa",
+      "path": "audio.lufsMin",
+      "tighterIs": "higher",
+      "value": -15
+    },
+    "R-104#2": {
+      "source": "qa",
+      "path": "audio.lufsMax",
+      "tighterIs": "lower",
+      "value": -13
+    },
+    "R-105": {
+      "source": "qa",
+      "path": "audio.truePeakMaxDb",
+      "tighterIs": "lower",
+      "value": -1
+    },
+    "R-107": {
+      "source": "qa",
+      "path": "caption.maxWords",
+      "tighterIs": "lower",
+      "value": 4
+    },
+    "R-108": {
+      "source": "qa",
+      "path": "caption.minSeconds",
+      "tighterIs": "higher",
+      "value": 0.4
+    },
+    "R-109": {
+      "source": "qa",
+      "path": "caption.syncSeconds",
+      "tighterIs": "lower",
+      "value": 0.08
+    },
+    "R-112": {
+      "source": "video_types",
+      "path": "defaults.requires_end_card",
+      "tighterIs": "higher",
+      "value": true
+    },
+    "R-114": {
+      "source": "qa",
+      "path": "endcard.wordPopBudgetSeconds",
+      "tighterIs": "lower",
+      "value": 1.2
+    },
+    "R-115": {
+      "source": "qa",
+      "path": "endcard.callHoldMinSeconds",
+      "tighterIs": "higher",
+      "value": 1.5
+    },
+    "R-116": {
+      "source": "qa",
+      "path": "endcard.outToleranceSeconds",
+      "tighterIs": "lower",
+      "value": 0.1
+    },
+    "R-118": {
+      "source": "qa",
+      "path": "endcard.ssimMin",
+      "tighterIs": "higher",
+      "value": 0.92
+    },
+    "R-121": {
+      "source": "qa",
+      "path": "loopSsimMin",
+      "tighterIs": "higher",
+      "value": 0.85
+    },
+    "R-129": {
+      "source": "qa",
+      "path": "caps.boards",
+      "tighterIs": "lower",
+      "value": 3
+    },
+    "R-130": {
+      "source": "qa",
+      "path": "caps.animatics",
+      "tighterIs": "lower",
+      "value": 2
+    },
+    "R-131": {
+      "source": "qa",
+      "path": "caps.masters",
+      "tighterIs": "lower",
+      "value": 2
+    },
+    "R-132": {
+      "source": "qa",
+      "path": "caps.minutes",
+      "tighterIs": "lower",
+      "value": 90
+    }
+  }
+}
