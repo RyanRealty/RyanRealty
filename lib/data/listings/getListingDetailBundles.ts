@@ -6,6 +6,7 @@
  * boundary; app/actions/listing-detail.ts delegates.
  */
 
+import { cleanListingMediaUrl } from '@/lib/listing/listing-media-url'
 import { supabaseAnon } from '@/lib/data/client'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { toIsoDate, to24hTime } from '@/lib/data/open-houses/getUpcomingOpenHouses'
@@ -295,7 +296,11 @@ export async function getListingDetailVideos(listingKey: string): Promise<Listin
     .select('id, video_url, sort_order')
     .eq('listing_key', canonicalKey)
     .order('sort_order', { ascending: true })
-  return (data ?? []) as ListingDetailVideoRow[]
+  // Rows written before 2026-10-14 may hold a mail-scanner rewrite.
+  return ((data ?? []) as ListingDetailVideoRow[]).flatMap((row) => {
+    const videoUrl = cleanListingMediaUrl(row.video_url)
+    return videoUrl ? [{ ...row, video_url: videoUrl }] : []
+  })
 }
 
 // upsertListingEmbedding (semantic-search refresh) was deleted 2026-07-22:

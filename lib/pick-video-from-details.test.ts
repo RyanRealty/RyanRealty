@@ -55,3 +55,28 @@ describe('pickFirstVideoFromDetails', () => {
     )
   })
 })
+
+describe('pickFirstVideoFromDetails — mail-scanner rewrites (2026-10-14)', () => {
+  const wrapped =
+    'https://nam12.safelinks.protection.outlook.com/?url=https%3A%2F%2Fvimeo.com%2F123456789&data=05%7C02%7Cbroker%40example.com%7Cx&sdata=y&reserved=0'
+
+  it('unwraps a SafeLinks Videos.Uri', () => {
+    expect(pickFirstVideoFromDetails({ Videos: [{ Uri: wrapped }] })).toEqual({
+      url: 'https://vimeo.com/123456789',
+      source: 'listing_video',
+    })
+  })
+
+  it('unwraps a SafeLinks VirtualTourURLUnbranded and a stored virtual_tour_url', () => {
+    expect(pickFirstVideoFromDetails({ VirtualTourURLUnbranded: wrapped })?.url).toBe('https://vimeo.com/123456789')
+    expect(pickFirstVideoFromListingRow({ virtual_tour_url: wrapped })?.url).toBe('https://vimeo.com/123456789')
+  })
+
+  it('skips an unreadable wrapper and takes the next candidate', () => {
+    expect(
+      pickFirstVideoFromDetails({
+        Videos: [{ Uri: 'https://protect-us.mimecast.com/s/AbCdEf' }, { Uri: 'https://youtu.be/dQw4w9WgXcQ' }],
+      }),
+    ).toEqual({ url: 'https://youtu.be/dQw4w9WgXcQ', source: 'listing_video' })
+  })
+})

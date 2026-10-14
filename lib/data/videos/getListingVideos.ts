@@ -364,7 +364,11 @@ export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
     // v15 bump 2026-09-25 — Vimeo srcs keep the unlisted-video privacy hash
     // (vimeo.com/<id>/<hash> or ?h=). v14 entries hold hashless player srcs,
     // which Vimeo answers with "this video does not exist".
-    ['listing-videos-v15', listingKey],
+    // v16 bump 2026-10-14 — every URL passes cleanListingMediaUrl in
+    // normalizeEmbed: a SafeLinks-wrapped link (whose data param named another
+    // brokerage's agent by email) is unwrapped, an unreadable wrapper dropped.
+    // v15 entries hold the wrapped strings.
+    ['listing-videos-v16', listingKey],
     {
       revalidate: CACHE_WINDOWS.videos,
       tags: [cacheTag.listing(listingKey), cacheTag.videos],

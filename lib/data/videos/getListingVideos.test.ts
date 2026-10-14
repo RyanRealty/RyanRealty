@@ -89,3 +89,37 @@ describe('normalizeEmbed — showcase-video eligibility', () => {
     expect(normalizeEmbed('not-a-url')).toBeNull()
   })
 })
+
+/**
+ * PRIVACY (2026-10-14): MLS video links rewritten by the broker's mail scanner.
+ * The SafeLinks `data` param names the recipient (another brokerage's agent).
+ * The address below is a fake.
+ */
+describe('normalizeEmbed — mail-scanner rewrites never reach the page', () => {
+  const safelinks = (target: string) =>
+    'https://nam12.safelinks.protection.outlook.com/?url=' +
+    encodeURIComponent(target) +
+    '&data=05%7C02%7Cbroker%40example.com%7Cabc%7C0%7C0%7C638612345678901234%7CUnknown&sdata=xYz%3D&reserved=0'
+
+  it('a SafeLinks-wrapped Momenzo link becomes the bare Momenzo watch link', () => {
+    const momenzo = 'https://app.momenzo.com/share/v/8f2c41d0-9b7e-4c3a-a1f5-2d6e7b9c0e11'
+    const r = normalizeEmbed(safelinks(momenzo))
+    expect(r).toEqual({ url: momenzo, embedType: 'link' })
+    expect(JSON.stringify(r)).not.toMatch(/safelinks|broker|%40|@|sdata|reserved/)
+  })
+
+  it('a SafeLinks-wrapped YouTube link now embeds as YouTube', () => {
+    const r = normalizeEmbed(safelinks('https://www.youtube.com/watch?v=dQw4w9WgXcQ'))
+    expect(r?.embedType).toBe('iframe')
+    expect(r?.url).toMatch(/^https:\/\/www\.youtube\.com\/embed\/dQw4w9WgXcQ/)
+  })
+
+  it('a Mimecast rewrite, which cannot be read without its server, is dropped', () => {
+    expect(normalizeEmbed('https://protect-us.mimecast.com/s/AbCdEfGh?domain=vimeo.com')).toBeNull()
+  })
+
+  it('a tour URL carrying an address in a query param loses that param', () => {
+    const r = normalizeEmbed('https://my.matterport.com/show/?m=AbC123xyz&ref=broker%40example.com')
+    expect(r?.url).toBe('https://my.matterport.com/show/?m=AbC123xyz')
+  })
+})

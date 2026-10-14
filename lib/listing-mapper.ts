@@ -34,6 +34,7 @@ export {
 // ---------------------------------------------------------------------------
 
 import { toNum, toInt, toTimestamp, toDate, toBool, toText } from '@/lib/listing-scalars'
+import { cleanListingMediaUrl } from '@/lib/listing/listing-media-url'
 import { clampListingNumericBounds } from '@/lib/listing-numeric-bounds'
 import { computeTier1 } from '@/lib/listing-tier1'
 
@@ -335,7 +336,9 @@ export function sparkToListingRow(
   const hoaMonthly = normalizeHoaMonthly(assocFee, assocFreq)
   const photosCount = toInt(pick(fields, 'PhotosCount', 'PhotosTotal'))
   const publicRemarks = toText(fields.PublicRemarks)
-  const virtualTourUrl = toText(pick(fields, 'VirtualTourURLUnbranded', 'VirtualTourURLBranded'))
+  // Stored cleaned (2026-10-14): a SafeLinks / Proofpoint rewrite of the
+  // broker's link is unwrapped, and no stored tour URL carries an address.
+  const virtualTourUrl = cleanListingMediaUrl(toText(pick(fields, 'VirtualTourURLUnbranded', 'VirtualTourURLBranded')))
 
   // --- Compute Tier 1 ---
   const tier1 = computeTier1({

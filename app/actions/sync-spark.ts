@@ -1,5 +1,6 @@
 'use server'
 
+import { cleanListingMediaUrl } from '@/lib/listing/listing-media-url'
 import { createServiceClient } from '@/lib/supabase/service'
 import { isTerminalStatus } from '@/lib/sync/terminalStatus'
 import {
@@ -70,7 +71,9 @@ async function syncListingVideosForRows(
       .map((item, index) => {
         const record = item as { Uri?: string; uri?: string; URL?: string; Url?: string; Order?: number } | null
         if (!record) return null
-        const videoUrl = (record.Uri ?? record.uri ?? record.URL ?? record.Url ?? '').trim()
+        // Stored cleaned (2026-10-14): a SafeLinks / Proofpoint rewrite of the
+        // broker's link is unwrapped, and no stored URL carries an address.
+        const videoUrl = cleanListingMediaUrl(record.Uri ?? record.uri ?? record.URL ?? record.Url ?? '')
         if (!videoUrl || !isLikelyVideoUrl(videoUrl)) return null
         return {
           listing_key: listingKey,

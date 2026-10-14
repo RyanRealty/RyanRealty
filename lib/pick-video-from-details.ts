@@ -2,7 +2,13 @@
  * Extract a playable tour or video URL from Spark/RESO `details` JSONB (or raw Spark row).
  * Keep in sync with sync pipeline and `fetchListingsWithVideos` (served via
  * `getListingsWithVideosCached` / `getSubdivisionVideoTours`).
+ *
+ * Every URL handed out is cleanListingMediaUrl's (2026-10-14): a mail-scanner
+ * rewrite (SafeLinks and the rest) is unwrapped, and an entry with no safe form
+ * is skipped so the next candidate gets its turn.
  */
+import { cleanListingMediaUrl } from '@/lib/listing/listing-media-url'
+
 export type VideoTourSource = 'virtual_tour' | 'listing_video'
 
 function parseDetailsObject(details: unknown): Record<string, unknown> | null {
@@ -34,10 +40,13 @@ function firstVideoFromArray(
   for (const video of videos) {
     if (!video || typeof video !== 'object') continue
     const v = video as Record<string, unknown>
-    const uri = String(v.Uri ?? v.uri ?? v.URL ?? v.url ?? v.Url ?? '').trim()
+    const uri = cleanListingMediaUrl(String(v.Uri ?? v.uri ?? v.URL ?? v.url ?? v.Url ?? ''))
     if (uri) return { url: uri, source }
     const objectHtml = String(v.ObjectHtml ?? v.objectHtml ?? v.object_html ?? '').trim()
-    if (objectHtml.length > 20) return { url: objectHtml, source }
+    if (objectHtml.length > 20) {
+      const cleaned = cleanListingMediaUrl(objectHtml)
+      if (cleaned) return { url: cleaned, source }
+    }
   }
   return null
 }
@@ -54,13 +63,15 @@ export function pickFirstVideoFromDetails(details: unknown): { url: string; sour
     firstVideoFromArray(d.VirtualTours, 'virtual_tour') ?? firstVideoFromArray(d.virtualTours, 'virtual_tour')
   if (fromTours) return fromTours
 
-  const fallbackTour = String(
-    d.VirtualTourURLUnbranded ??
-      d.virtualTourURLUnbranded ??
-      d.VirtualTourURL ??
-      d.virtualTourURL ??
-      ''
-  ).trim()
+  const fallbackTour = cleanListingMediaUrl(
+    String(
+      d.VirtualTourURLUnbranded ??
+        d.virtualTourURLUnbranded ??
+        d.VirtualTourURL ??
+        d.virtualTourURL ??
+        ''
+    )
+  )
   if (fallbackTour) return { url: fallbackTour, source: 'virtual_tour' }
 
   return null
@@ -72,9 +83,9 @@ export function pickFirstVideoFromListingRow(row: Record<string, unknown>): { ur
   if (fromDetails) return fromDetails
   const fromRaw = pickFirstVideoFromDetails(row.raw_data)
   if (fromRaw) return fromRaw
-  const vt = String(
-    row.virtual_tour_url ?? row.VirtualTourURL ?? row.VirtualTourURLUnbranded ?? ''
-  ).trim()
+  const vt = cleanListingMediaUrl(
+    String(row.virtual_tour_url ?? row.VirtualTourURL ?? row.VirtualTourURLUnbranded ?? '')
+  )
   if (vt) return { url: vt, source: 'virtual_tour' }
   return null
 }
