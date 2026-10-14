@@ -32,6 +32,7 @@
     "ci:email-link-tracking",
     "ci:email-send-gated",
     "ci:broker-reply-sender",
+    "ci:from-domain",
     "ci:pdf-trace-guard",
     "ci:entity-scope",
     "ci:gates-wired",

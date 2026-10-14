@@ -6,7 +6,7 @@ import 'server-only'
 
 import { sendGovernedEmail } from '@/lib/comms/sendGovernedEmail'
 import { findExistingOneOffSend } from '@/lib/data/email/one-off-send-state'
-import { brokerSendIdentity } from '@/lib/email/broker-identity'
+import { brokerSendIdentity, SEND_DOMAIN } from '@/lib/email/broker-identity'
 import { missingLocalImageSrcs, normalizeOneOffUtms } from '@/lib/email/one-off-html'
 
 export type SendOneOffEmailInput = {
@@ -29,16 +29,20 @@ export function oneOffEmailKey(sendKey: string, personId: number): string {
   return `gov:${sendKey}:${personId}`
 }
 
+function extractAddress(from: string): string {
+  const angled = from.match(/<([^>]+)>/)
+  return (angled?.[1] ?? from).trim().toLowerCase()
+}
+
 function displayFrom(from: string | undefined, broker: string): string {
   const identity = brokerSendIdentity(broker)
   const explicit = from?.trim()
   if (!explicit) return identity.from
-  // Resend is verified on mail.ryan-realty.com. A Workspace mailbox
-  // (matt@ryan-realty.com) is Reply-To, not From.
-  if (/@ryan-realty\.com$/i.test(explicit.replace(/.*<|>/g, '')) && !/@mail\.ryan-realty\.com$/i.test(explicit)) {
-    return identity.from
-  }
-  if (explicit.includes('<')) return explicit
+  const address = extractAddress(explicit)
+  // Root domain is the verified From. Keep a named identity already on
+  // SEND_DOMAIN; rewrite leftover mail. subdomain and bare addresses onto
+  // the central identity (display name + Reply-To stay with the broker).
+  if (address.endsWith(`@${SEND_DOMAIN}`) && explicit.includes('<')) return explicit
   return identity.from
 }
 
