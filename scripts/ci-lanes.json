@@ -19,6 +19,7 @@
     "ci:crm-secrets",
     "ci:crm-sms-safety",
     "ci:inbound-message-enrich",
+    "ci:inbound-consent-clear",
     "ci:person-identity-edit",
     "ci:csp",
     "ci:dal-boundary",

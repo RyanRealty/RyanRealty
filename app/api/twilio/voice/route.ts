@@ -35,6 +35,7 @@ import { isWithinOfficeHours } from '@/lib/crm/office-hours'
 import { lookupCaller } from '@/lib/crm/lookup'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
+import { applyInboundConsentClear } from '@/lib/data/crm/applyInboundConsentClear'
 
 /** Reject TwiML — a blocked/spam caller is hung up on, never ringing a broker. */
 function rejectResponse(): NextResponse {
@@ -141,6 +142,16 @@ export async function POST(request: Request) {
             detail: `Calling now from ${from}`,
           }),
         })
+      }
+      try {
+        await applyInboundConsentClear({
+          personId: match.personId,
+          event: 'call',
+          eventId: params.CallSid ?? null,
+          broker: forwardingBroker,
+        })
+      } catch (e) {
+        console.warn('[twilio/voice] inbound consent clear failed', e)
       }
     } catch (e) {
       console.error('[twilio/voice] timeline/alert write failed (continuing):', e)
