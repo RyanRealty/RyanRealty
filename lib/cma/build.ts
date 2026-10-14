@@ -23,7 +23,7 @@ import {
 } from '@/lib/data'
 import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
 import { applySubjectFactOverrides, resolveCmaSubject } from '@/lib/cma/subject'
-import { multiUnitSubjectRefusal } from '@/lib/cma/subject-units'
+import { multiUnitSubjectRefusal, pricingMarketFor } from '@/lib/cma/subject-units'
 import { applyReconciledRoomCounts, reconcileSubjectRoomCounts } from '@/lib/cma/subject-room-conflict'
 import { pickCoverPhoto } from '@/lib/cma/cover-photo'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
@@ -317,12 +317,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       },
       input.subjectFacts,
     )
-    // A duplex or other multi-unit home is refused before a single comp is
-    // read (Matt 2026-10-14, 429 Irving: a duplex by its own listing history,
-    // priced on five single-family sales). Rule 23 prices like from like, and
-    // the pool holds no multi-unit sales, so the queue files it for Matt. The
-    // resolver decides (every pricing build reads the same field); the
-    // overrides above never change a unit count.
+    // A multi-unit home the ladder cannot price is refused before a single
+    // comp is read (Matt 2026-10-14, 429 Irving: a duplex by its own listing
+    // history, priced on five single-family sales). A two- to four-unit home
+    // now prices on the multi-unit ladder (the resolver stamped its profile,
+    // lib/cma/subject-units.ts); a larger building is income property and the
+    // queue files it for Matt. The resolver decides (every pricing build
+    // reads the same field); the overrides above never change a unit count.
     const unitRefusal = resolved.refusal ?? multiUnitSubjectRefusal(subject)
     if (unitRefusal) {
       await recordBuildFailure(slug, unitRefusal, { stage: 'subject', docType, trace: [resolved.trace] })
@@ -453,6 +454,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             // The re-entry after a review drop (CmaBuildInput.aduFallback).
             aduPass: input.aduFallback ? 'ordinary' : 'first',
             aduSalesHeld: input.aduFallback?.heldAfterReview,
+            // The multi-unit ladder's re-entry (CmaBuildInput.unitsFallback).
+            unitsPass: input.unitsFallback ? 'class' : 'first',
+            unitSalesHeld: input.unitsFallback?.heldAfterReview,
           }),
       marketPromise,
     ])
@@ -668,6 +672,15 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           )
           return buildCma({ ...input, aduFallback: { heldAfterReview: gated.comps.length } })
         }
+        // A MULTI-UNIT HOME FALLS BACK AFTER THE REVIEW TOO (Matt 2026-10-14,
+        // lib/pricing/multi-unit-preference.ts): a same-unit-count set that
+        // lost a sale in the review re-enters once on the whole 2-4 unit class.
+        if (!input.unitsFallback && selection.diagnostics.multi_unit?.outcome === 'same-units') {
+          console.log(
+            `[cma/build] ${slug}: the same-unit-count set held ${gated.comps.length} of ${MIN_COMPS} after the review; rebuilding on every 2-4 unit sale`,
+          )
+          return buildCma({ ...input, unitsFallback: { heldAfterReview: gated.comps.length } })
+        }
         const err =
           gated.droppedProduct > 0
             ? `Not enough sales of the same product type to price this home. ${gated.comps.length} of ${selection.comps.length} candidates matched, and this home needs ${MIN_COMPS}.`
@@ -732,7 +745,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // Bend documents walked the monthly index, and nothing in any of the three
     // said they were measured differently. The index is a fact about the CITY,
     // not about which ladder found the sales.
-    const marketIndex = await getPricingMarketIndex(citySlug(subject.city))
+    // A 2-4 UNIT HOME IS NOT MOVED BY THE SINGLE-FAMILY INDEX (review
+    // 2026-10-14). pricing_market_index and the market context's year-over-year
+    // figure are single-family series; a duplex sale is taken at its closed
+    // price and the time-adjustment record says why.
+    const marketIndex = subject.multiUnit ? [] : await getPricingMarketIndex(citySlug(subject.city))
     const asOf = new Date().toISOString().slice(0, 10)
     // The SELECTOR's classification, computed once with the same asOf year
     // lib/pricing/match.ts uses. Everything downstream that has to grade a comp
@@ -875,7 +892,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
                 pocketLocal,
               }).adjusted,
             )
-          : adjustComps(subject, set, market)
+          : adjustComps(subject, set, pricingMarketFor(subject, market))
       ).map((c) => {
         const factor = reviewWeightFactor(tierByKey.get(c.listingKey))
         return factor < 1 ? { ...c, weight: +(c.weight * factor).toFixed(4) } : c
@@ -883,14 +900,18 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       const p = priceCmaSet({
         subject,
         adjusted: adj,
-        market,
+        market: pricingMarketFor(subject, market),
         input,
         site,
         selection,
         marketIndex,
         asOf,
         indexUnavailableReason:
-          marketIndex.length > 0 ? null : `no monthly index rows for ${citySlug(subject.city) || 'this city'}`,
+          marketIndex.length > 0
+            ? null
+            : subject.multiUnit
+              ? 'the city index and the year-over-year figure measure single-family homes, so a 2-4 unit home\'s sales are not moved for their date'
+              : `no monthly index rows for ${citySlug(subject.city) || 'this city'}`,
         computePricing,
         // A failed-ask pull under every sale that set the price is held for
         // Matt after the pin (applyAskBelowBandHold), not failed here.

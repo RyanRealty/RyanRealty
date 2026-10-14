@@ -21,7 +21,7 @@ import { statusIsOnMarket } from '@/lib/cma/subject-on-market'
 import { STREET_DIRECTIONALS as DIRECTIONALS, STREET_SUFFIXES } from '@/lib/cma/street-words'
 
 import { assessorTrace, propertySubTypeFromStatClass, resolveAssessorFacts, type AssessorFacts } from '@/lib/cma/assessor'
-import { multiUnitSubjectRefusal, subjectUnitFacts, subjectUnitsTrace } from '@/lib/cma/subject-units'
+import { applyMultiUnitSubject, multiUnitSubjectRefusal, multiUnitSubjectTrace, subjectUnitFacts, subjectUnitsTrace } from '@/lib/cma/subject-units'
 
 export interface ParsedAddress {
   streetNumber: string
@@ -440,8 +440,12 @@ export async function resolveCmaSubject(opts: {
       }
       // Every row at the address is read for units before the pool is dropped
       // (Matt 2026-10-14, 429 Irving: the duplex record was the one not chosen).
+      // The trace reads the record as listed; the profile then retypes the
+      // subject for the multi-unit ladder (applyMultiUnitSubject).
       subject.units = subjectUnitFacts(best, pool)
-      const unitsLine = subjectUnitsTrace(subject.units, subject)
+      const unitsLine = [subjectUnitsTrace(subject.units, subject), multiUnitSubjectTrace(applyMultiUnitSubject(subject))]
+        .filter(Boolean)
+        .join(' ')
       return {
         subject,
         trace: `${subjectTrace(`Entered by MLS ${opts.mlsNumber.trim()}.`, best, pool.length)}${unitsLine ? ` ${unitsLine}` : ''}`,
@@ -493,8 +497,12 @@ export async function resolveCmaSubject(opts: {
       )
       // Every row at the address is read for units before the pool is dropped
       // (Matt 2026-10-14, 429 Irving: the duplex record was the one not chosen).
+      // The trace reads the record as listed; the profile then retypes the
+      // subject for the multi-unit ladder (applyMultiUnitSubject).
       subject.units = subjectUnitFacts(best, rows)
-      const unitsLine = subjectUnitsTrace(subject.units, subject)
+      const unitsLine = [subjectUnitsTrace(subject.units, subject), multiUnitSubjectTrace(applyMultiUnitSubject(subject))]
+        .filter(Boolean)
+        .join(' ')
       if (unitsLine) trace += ` ${unitsLine}`
       const refusal = multiUnitSubjectRefusal(subject)
       // An MLS row with no living area cannot form a price-per-sqft comp set,

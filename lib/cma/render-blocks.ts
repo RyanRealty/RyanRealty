@@ -479,6 +479,8 @@ export function propertyDescription(subject: {
   sqft: number | null
   lotAcres: number | null
   yearBuilt: number | null
+  /** A 2-4 unit home's area basis (CmaSubject.multiUnit), printed beside the figure. */
+  multiUnit?: { sqftBasis?: string | null } | null
 }): string {
   // The MLS's own reading: 2 full baths and a powder room prints 2.5, not the
   // 3 BathroomsTotal records (lib/pricing/bath-count.ts).
@@ -494,7 +496,9 @@ export function propertyDescription(subject: {
     // "1 bathrooms" shipped on the disclosure page of a real document.
     subject.beds != null ? `${int(subject.beds)} bedroom${subject.beds === 1 ? '' : 's'}` : null,
     baths != null ? `${dec(baths, baths % 1 !== 0 ? 1 : 0)} bathroom${baths === 1 ? '' : 's'}` : null,
-    subject.sqft != null ? `${int(subject.sqft)} sqft` : null,
+    // A 2-4 unit home priced on an area no single record states says where
+    // it came from (lib/cma/subject-units.ts, §0).
+    subject.sqft != null ? `${int(subject.sqft)} sqft${subject.multiUnit?.sqftBasis ? ` (${subject.multiUnit.sqftBasis})` : ''}` : null,
     subject.lotAcres != null ? `${dec(subject.lotAcres, 2)} acres` : null,
     subject.yearBuilt != null ? `built ${subject.yearBuilt}` : null,
   ].filter(Boolean)

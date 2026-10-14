@@ -4,6 +4,8 @@
  */
 
 import { aduFirst, aduPreferenceTrace, isAduSale, reviewFallbackPreference, subjectHasAdu } from '@/lib/pricing/adu-preference'
+import { multiUnitTrace, reviewFallbackMultiUnit, unitsFirst } from '@/lib/pricing/multi-unit-preference'
+import { isMultiUnitSubType, unitsFromSubType } from '@/lib/cma/market-area'
 import { isRuralAcreage } from '@/lib/cma/comp-tiers'
 import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
 import type { CmaSubject } from '@/lib/cma/types'
@@ -670,8 +672,23 @@ export async function selectCompsPreferringFacts(
     /** See selectPricingComps: the build's re-entry on the ordinary pass after a review drop. */
     aduPass?: 'first' | 'ordinary'
     aduSalesHeld?: number
+    /**
+     * The multi-unit ladder's passes (lib/pricing/multi-unit-preference.ts):
+     * 'first' runs the same-unit-count pass and falls back to the whole 2-4
+     * unit class under five; 'class' is the build's re-entry after a review
+     * drop on a same-count set, and `unitSalesHeld` is what that set still held.
+     */
+    unitsPass?: 'first' | 'class'
+    unitSalesHeld?: number
   } = {},
 ): Promise<CompSelection> {
+  // A MULTI-UNIT HOME PRICES ON THE MULTI-UNIT LADDER (Matt 2026-10-14). The
+  // facts pool holds PropertyType A closes only, so a duplex never enters it;
+  // the listings ladder reads segment C for it (lib/cma/comps.ts) and is the
+  // one search it has, custom/new or not.
+  if (isMultiUnitSubType(subject.propertySubType)) {
+    return withOwnGroundSold(await selectMultiUnitComps(subject, opts), subject, opts.asOf)
+  }
   // Classify BEFORE any ladder. Custom/new must never load listings SQL tiers
   // (subdivision / competing-area / citywide) — live Rim View after #187 still
   // showed those when the refuse lived only after selectPricingComps returned.
@@ -709,6 +726,42 @@ export async function selectCompsPreferringFacts(
     listings.result.trace.unshift(aduPreferenceTrace(listingsPreference, null))
   }
   return withOwnGroundSold(withFactsPath(listings.result, match), subject, opts.asOf)
+}
+
+/**
+ * THE MULTI-UNIT LADDER (Matt 2026-10-14, lib/pricing/multi-unit-preference.ts).
+ * Two passes of the listings ladder over PropertyType C closes: sales with the
+ * subject's own unit count first (a duplex from duplexes); five or more
+ * price-setting ones are the set; fewer hand the home to every two- to
+ * four-unit sale, and the letter says so. A build re-entered on the class
+ * pass after a review drop stamps the review fallback instead. The outcome
+ * rides the diagnostics as `multi_unit` to the letter (assembleCompetition).
+ */
+export async function selectMultiUnitComps(
+  subject: CmaSubject,
+  opts: {
+    subjectIrrigation?: IrrigationClass | null
+    subjectZoning?: string | null
+    asOf?: string
+    unitsPass?: 'first' | 'class'
+    unitSalesHeld?: number
+  } = {},
+): Promise<CompSelection> {
+  const { selectComps } = await import('@/lib/cma/comps')
+  const units = subject.multiUnit?.units ?? unitsFromSubType(subject.propertySubType)
+  const run = (sameUnitsOnly: boolean) =>
+    selectComps(subject, { subjectIrrigation: opts.subjectIrrigation, subjectZoning: opts.subjectZoning, asOf: opts.asOf, sameUnitsOnly })
+  if (opts.unitsPass === 'class') {
+    const result = await run(false)
+    const preference = reviewFallbackMultiUnit({ propertySubType: subject.propertySubType, units, heldAfterReview: opts.unitSalesHeld ?? 0 })
+    result.diagnostics.multi_unit = preference
+    result.trace.unshift(multiUnitTrace(preference))
+    return result
+  }
+  const { result, preference } = await unitsFirst({ propertySubType: subject.propertySubType, units, run })
+  result.diagnostics.multi_unit = preference
+  result.trace.unshift(multiUnitTrace(preference))
+  return result
 }
 
 /**

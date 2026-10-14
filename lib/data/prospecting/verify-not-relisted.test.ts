@@ -140,6 +140,29 @@ describe('verifyNotRelisted — sold after expire', () => {
     expect(out.relisted).toBe(false)
   })
 
+  it('blocks an Active relist stamped at the same second as expire (same-sync)', async () => {
+    parcelRow = { parcel_number: null }
+    streetRows = [
+      {
+        StreetNumber: '123',
+        StreetName: 'SMITH',
+        City: 'Bend',
+        StandardStatus: 'Active',
+        CloseDate: null,
+        status_change_timestamp: EXPIRE,
+        parcel_number: null,
+      },
+    ]
+    const out = await verifyNotRelisted('expired', {
+      street_address: '123 Smith St',
+      city: 'Bend',
+      expiryComparator: EXPIRE,
+      listing_key: 'EXPIRED-KEY',
+    })
+    expect(out.verifyFailed).toBe(false)
+    expect(out.relisted).toBe(true)
+  })
+
   it('still blocks an Active relist after expire (existing behavior)', async () => {
     parcelRow = { parcel_number: null }
     streetRows = [

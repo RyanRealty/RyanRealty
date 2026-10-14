@@ -228,8 +228,9 @@ export function cmaQueueWhy(r: {
   if (r.state === 'failed') {
     const err = (r.buildError ?? '').toLowerCase()
     if (err.includes('judge_unstable') || err.includes('did not agree')) return 'judge-unstable'
-    // A duplex or other multi-unit subject (lib/cma/subject-units.ts, Matt
-    // 2026-10-14) is refused before comps and filed as its own reason.
+    // A multi-unit subject the ladder cannot price, a building of more than
+    // four units (lib/cma/subject-units.ts, Matt 2026-10-14), is refused
+    // before comps and filed as its own reason.
     if (err.startsWith('multi-unit home:')) return 'multi-unit'
     if (err.includes('no closed sale')) return 'no-sales'
     if (err.includes('outside the sales')) return 'price-outside'

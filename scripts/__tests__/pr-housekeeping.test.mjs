@@ -17,6 +17,7 @@ import {
   shouldApplyTitleHold,
   shouldQueueAutoMerge,
   shouldRemoveHoldLabel,
+  shouldStampApprovedLabel,
   staleDecision,
   titleLooksLikeHold,
 } from '../lib/pr-housekeeping.mjs'
@@ -87,6 +88,14 @@ describe('shouldApplyTitleHold and shouldRemoveHoldLabel', () => {
     )
     expect(shouldRemoveHoldLabel({ labels: [HOLD_LABEL] })).toBe(false)
     expect(shouldRemoveHoldLabel({ labels: [APPROVED_LABEL] })).toBe(false)
+  })
+
+  it('stamps approved-by-matt when the list approved the PR', () => {
+    expect(shouldStampApprovedLabel({ number: 590, approvedNumbers: [590] })).toBe(true)
+    expect(
+      shouldStampApprovedLabel({ labels: [APPROVED_LABEL], number: 590, approvedNumbers: [590] }),
+    ).toBe(false)
+    expect(shouldStampApprovedLabel({ labels: [HOLD_LABEL], number: 590 })).toBe(false)
   })
 })
 

@@ -6,6 +6,7 @@
  */
 
 import 'server-only'
+import { MULTI_UNIT_COMP_SUB_TYPES } from '@/lib/cma/market-area'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   compAreaBounds,
@@ -100,21 +101,25 @@ export async function getCmaBandInventory(
   lo: number,
   hi: number,
   subjectSubType?: string | null,
+  /** MLS segment: A (the default) or C for a 2-4 unit home (lib/cma/market-area.ts compPoolPropertyType). */
+  propertyType?: string | null,
 ): Promise<CmaBandInventory | null> {
   const sb = client()
   if (!sb) return null
   const subType = subjectSubType?.trim() || null
+  const segment = propertyType?.trim() || 'A'
 
   const scoped = (status: 'Active' | 'Pending', head: boolean) => {
     let q = sb
       .from('listings')
       .select(head ? 'ListingKey' : BAND_SELECT, { count: 'exact', head })
       .eq('City', city)
-      .eq('PropertyType', 'A')
+      .eq('PropertyType', segment)
       .eq('StandardStatus', status)
       .gte('ListPrice', lo)
       .lte('ListPrice', hi)
     if (subType) q = q.eq('property_sub_type', subType)
+    else if (segment === 'C') q = q.in('property_sub_type', [...MULTI_UNIT_COMP_SUB_TYPES])
     return q
   }
 
@@ -222,11 +227,14 @@ export async function getCmaAreaBandInventory(input: {
   lo: number
   hi: number
   propertySubType?: string | null
+  /** MLS segment: A (the default) or C for a 2-4 unit home (lib/cma/market-area.ts compPoolPropertyType). */
+  propertyType?: string | null
 }): Promise<CmaAreaBandInventory | null> {
   const sb = client()
   if (!sb) return null
   const area = input.area
   const subType = input.propertySubType?.trim() || null
+  const segment = input.propertyType?.trim() || 'A'
   const bounds = compAreaBounds(area)
   // A plat area also reads the rows inside the box around its recorded plats,
   // whatever their MLS spelling (areaPlatOutline, reader review 2026-10-08:
@@ -237,11 +245,12 @@ export async function getCmaAreaBandInventory(input: {
     let q = sb
       .from('listings')
       .select(AREA_SELECT)
-      .eq('PropertyType', 'A')
+      .eq('PropertyType', segment)
       .eq('StandardStatus', status)
       .gte('ListPrice', input.lo)
       .lte('ListPrice', input.hi)
     if (subType) q = q.eq('property_sub_type', subType)
+    else if (segment === 'C') q = q.in('property_sub_type', [...MULTI_UNIT_COMP_SUB_TYPES])
     if (area.kind === 'subdivision' || area.kind === 'subdivisions') {
       if (!box) q = q.in('SubdivisionName', area.names)
       if (input.city.trim()) q = q.eq('City', input.city.trim())
@@ -303,10 +312,10 @@ export async function getCmaAreaBandInventory(input: {
   }
 
   const filter = [
-    `PropertyType='A'`,
+    `PropertyType='${segment}'`,
     `StandardStatus IN (Active, Pending)`,
     `ListPrice ${input.lo}..${input.hi}`,
-    subType ? `property_sub_type='${subType}'` : 'any residential sub type',
+    subType ? `property_sub_type='${subType}'` : segment === 'C' ? `property_sub_type IN (${MULTI_UNIT_COMP_SUB_TYPES.join(', ')})` : 'any residential sub type',
     areaFilterTrace(area, outline),
   ].join(' AND ')
 

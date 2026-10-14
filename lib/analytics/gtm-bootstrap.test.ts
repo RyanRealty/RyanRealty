@@ -208,3 +208,56 @@ describe('gtmBootstrapScript', () => {
     expect(loadsGtm({ pathname: '/', hostname: 'ryan-realty.com', cookie: 'rr_internal=1; rr_vid=x' })).toBe(false)
   })
 })
+
+/**
+ * GTM version 9 (2026-10-14): the bootstrap pushes the first-paint page_view
+ * itself, right after gtm.js, and GTM's "GA4 - page_view" tag is its only
+ * sender (the Google tag has send_page_view false). page_location carries no
+ * contact id: the Google tag used to send a tracked email link's `_pid`.
+ */
+describe('first-paint page_view', () => {
+  function run(href: string, opts: { cookie?: string } = {}): unknown[] {
+    const u = new URL(href)
+    const script = gtmBootstrapScript('listing', 'GTM-TEST123')
+    const fakeScript = { parentNode: { insertBefore: () => {} } }
+    const document = { cookie: opts.cookie ?? '', getElementsByTagName: () => [fakeScript], createElement: () => ({}), head: { appendChild: () => {} } }
+    const window: { dataLayer?: unknown[] } = { dataLayer: [] }
+    new Function('window', 'document', 'location', 'navigator', 'dataLayer', script)(
+      window,
+      document,
+      { href, search: u.search, pathname: u.pathname, hostname: u.hostname },
+      { userAgent: VISITOR_UA, webdriver: false },
+      window.dataLayer,
+    )
+    return window.dataLayer ?? []
+  }
+  const eventName = (row: unknown) => (row && typeof row === 'object' ? (row as { event?: unknown }).event : undefined)
+
+  it('pushes one page_view right after gtm.js, with page_type and page_location', () => {
+    const rows = run('https://ryan-realty.com/homes-for-sale/bend/x-220216404')
+    const events = rows.map(eventName).filter(Boolean)
+    expect(events).toEqual(['gtm.js', 'page_view'])
+    expect(rows[rows.length - 1]).toEqual({
+      event: 'page_view',
+      page_type: 'listing',
+      page_location: 'https://ryan-realty.com/homes-for-sale/bend/x-220216404',
+    })
+  })
+
+  it('strips _pid, _fuid and rr_doc from page_location and keeps the campaign', () => {
+    const rows = run('https://ryan-realty.com/sell?agent=matt&_pid=13490&_fuid=22288&rr_doc=cma-x&utm_source=email')
+    const view = rows.find((r) => eventName(r) === 'page_view') as { page_location: string }
+    expect(view.page_location).toBe('https://ryan-realty.com/sell?agent=matt&utm_source=email')
+  })
+
+  it('leaves an address with nothing to strip byte for byte', () => {
+    const href = 'https://ryan-realty.com/search?q=NW%20Crossing&beds=3'
+    const view = run(href).find((r) => eventName(r) === 'page_view') as { page_location: string }
+    expect(view.page_location).toBe(href)
+  })
+
+  it('pushes no page_view when the page is suppressed (a signed-in broker browser)', () => {
+    const rows = run('https://ryan-realty.com/cities/bend', { cookie: 'rr_internal=1' })
+    expect(rows.map(eventName).filter(Boolean)).toEqual([])
+  })
+})

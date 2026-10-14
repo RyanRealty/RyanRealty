@@ -41,7 +41,7 @@
  * dispersion guard and the contract's review flag as the backstop.
  */
 import { aduSaleRefused, dropsResaleVersusNewBuild, multiUnitFromRemarks } from '@/lib/pricing/classes'
-import { productTypeCompatible } from '@/lib/cma/market-area'
+import { isMultiUnitSubType, productTypeCompatible } from '@/lib/cma/market-area'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 
 const PRODUCT_REASON =
@@ -114,10 +114,15 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
     subdivision: args.subject.subdivision,
     seniorCommunityYn: args.subject.seniorCommunityYn,
   }
+  // On a multi-unit subject the product is the typed 2-4 unit class, which
+  // productTypeCompatible below holds; the remarks reader is not a wall
+  // there (a duplex that says "duplex" and one that only lists its units are
+  // one product). Everywhere else rule 23 reads the remarks on both sides.
+  const subjectMultiUnit = isMultiUnitSubType(args.subject.propertySubType)
   const hard = (comp: T): boolean => {
     // Rule 23: the remarks are read for a multi-unit on both sides. Null
     // remarks on a comp fail open (false on both sides is a match).
-    if (multiUnitFromRemarks(comp.publicRemarks) !== multiUnitFromRemarks(args.subject.publicRemarks)) return true
+    if (!subjectMultiUnit && multiUnitFromRemarks(comp.publicRemarks) !== multiUnitFromRemarks(args.subject.publicRemarks)) return true
     // The ADU wall: a sale whose remarks state an ADU never prices a subject
     // whose remarks state none. A subject with an ADU keeps both kinds.
     if (aduSaleRefused(args.subject.publicRemarks, comp.publicRemarks, args.subject.units?.aduYn)) return true

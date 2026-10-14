@@ -5,6 +5,9 @@ import {
   GA4_BROWSER_EVENTS,
   GA4_BROWSER_EVENTS_NOT_SENT,
   GA4_EVENT_PARAMS,
+  GA4_PAGE_VIEW_PARAMS,
+  GA4_PAGE_VIEW_TAG_NAME,
+  GA4_PAGE_VIEW_TRIGGER_NAME,
   GA4_PARAMS_KEY,
   ga4BrowserEventTriggerRegex,
   ga4ListingKey,
@@ -140,6 +143,13 @@ describe('GTM steps stay in step with the code', () => {
     for (const p of GA4_EVENT_PARAMS) expect(doc).toContain(`| \`${p.name}\` | \`DLV - ga4 ${p.name}\` | \`${p.from}\` |`)
     expect(doc).toContain(`${GA4_EVENT_PARAMS.length} Data Layer Variables`)
     expect(doc).toContain(`(${GA4_EVENT_PARAMS.length} rows.`)
+  })
+
+  it('the doc carries the page_view tag and every one of its parameter rows', () => {
+    expect(doc).toContain(`\`${GA4_PAGE_VIEW_TAG_NAME}\``)
+    expect(doc).toContain(`\`${GA4_PAGE_VIEW_TRIGGER_NAME}\``)
+    for (const p of GA4_PAGE_VIEW_PARAMS) expect(doc).toContain(`| \`${p.name}\` | \`DLV - ga4 ${p.name}\` | \`${p.from}\``)
+    expect(doc).toContain('`send_page_view` = `false`')
   })
 
   it('the committed GTM import file is the generated one (npx tsx scripts/build-gtm-ga4-import.ts)', () => {

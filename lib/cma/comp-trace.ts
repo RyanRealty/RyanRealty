@@ -30,6 +30,7 @@
  */
 
 import type { AduPreference } from '@/lib/pricing/adu-preference'
+import type { MultiUnitPreference } from '@/lib/pricing/multi-unit-preference'
 import type { NotSettingSale } from '@/lib/pricing/price-set'
 
 /** Every reason a candidate row can be dropped, counted per tier and in total. */
@@ -247,6 +248,14 @@ export interface CompSelectionDiagnostics {
    * on rows stored before it landed.
    */
   adu_preference?: AduPreference
+  /**
+   * A MULTI-UNIT HOME PRICES FROM SALES OF THE SAME KIND (Matt 2026-10-14):
+   * the pass that ran (same unit count first, then every two- to four-unit
+   * sale), how many same-count sales set the price, and the sentence the
+   * letter prints (lib/pricing/multi-unit-preference.ts). Absent on every
+   * other home and on rows stored before it landed.
+   */
+  multi_unit?: MultiUnitPreference
   /**
    * How many homes sold on the subject's own ground (its plat, phases and
    * family, or its MLS name off any polygon) over the widest own-subdivision

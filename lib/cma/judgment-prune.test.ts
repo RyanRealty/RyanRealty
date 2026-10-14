@@ -534,3 +534,63 @@ describe('reviewWeightFactor', () => {
     expect(reviewWeightFactor(null)).toBe(1)
   })
 })
+
+describe('a multi-unit subject keeps its 2-4 unit sales (Matt 2026-10-14, the multi-unit ladder)', () => {
+  const DUPLEX_SUBJECT = {
+    propertySubType: 'Duplex',
+    yearBuilt: 2003,
+    newConstructionYn: false,
+    // The current record's remarks name an ADU, not a duplex.
+    publicRemarks: 'Prime midtown location. A 1,629 sq ft main home and a 520 sq ft ADU.',
+    subdivision: null,
+    units: { aduYn: true },
+  }
+  const duplex = (listingKey: string, extra: Record<string, unknown> = {}) => ({
+    listingKey,
+    yearBuilt: 2004,
+    propertySubType: 'Duplex',
+    publicRemarks: 'Detached duplex, two units each with its own entrance.',
+    subdivision: null,
+    ownPlat: null as boolean | null,
+    ...extra,
+  })
+
+  it('the remarks reader is not a wall on a duplex subject: duplex sales that say "duplex" price it', () => {
+    const selected = ['a', 'b', 'c', 'd', 'e'].map((k) => duplex(k))
+    const gated = pricingCompsAfterJudgment({
+      selected,
+      vetted: selected,
+      verdicts: selected.map((c) => kept(c.listingKey)),
+      subject: DUPLEX_SUBJECT,
+      minComps: MIN_COMPS,
+    })
+    expect(gated.shortage).toBe(false)
+    expect(gated.droppedProduct).toBe(0)
+    expect(gated.comps.map((c) => c.listingKey)).toEqual(['a', 'b', 'c', 'd', 'e'])
+  })
+
+  it('a house sale is still another product to a duplex subject', () => {
+    const selected = [...['a', 'b', 'c', 'd'].map((k) => duplex(k)), sfr('house')]
+    const gated = pricingCompsAfterJudgment({
+      selected,
+      vetted: selected,
+      verdicts: selected.map((c) => kept(c.listingKey)),
+      subject: DUPLEX_SUBJECT,
+      minComps: MIN_COMPS,
+    })
+    expect(gated.droppedProduct).toBe(1)
+    expect(gated.comps.map((c) => c.listingKey)).not.toContain('house')
+  })
+
+  it('a duplex that sold as Single Family Residence still never prices a house (rule 23, unchanged)', () => {
+    const selected = [...['a', 'b', 'c', 'd'].map((k) => sfr(k)), sfr('hidden-duplex', { publicRemarks: 'This beautifully updated duplex features two units.' })]
+    const gated = pricingCompsAfterJudgment({
+      selected,
+      vetted: selected,
+      verdicts: selected.map((c) => kept(c.listingKey)),
+      subject: SFR_SUBJECT,
+      minComps: MIN_COMPS,
+    })
+    expect(gated.comps.map((c) => c.listingKey)).not.toContain('hidden-duplex')
+  })
+})

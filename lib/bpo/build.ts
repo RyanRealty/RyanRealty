@@ -119,7 +119,9 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       return { ok: false, error: resolved.trace, slug }
     }
     // A multi-unit home is never priced from single-family sales (rule 23,
-    // Matt 2026-10-14); the CMA build refuses on the same field.
+    // Matt 2026-10-14): two to four units price on the multi-unit ladder
+    // (the resolver stamped the profile), a larger building is refused here
+    // on the same field the CMA build reads.
     if (resolved.refusal) {
       await recordFailure(slug, resolved.refusal)
       return { ok: false, error: resolved.refusal, slug }
@@ -127,7 +129,10 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     const subject = resolved.subject
 
     // 2. Comps + market context in parallel (shared CMA engine).
-    const { selection, market, site, marketIndex } = await loadBpoEngineInputs(subject, { aduFallback: input.aduFallback ?? null })
+    const { selection, market, site, marketIndex } = await loadBpoEngineInputs(subject, {
+      aduFallback: input.aduFallback ?? null,
+      unitsFallback: input.unitsFallback ?? null,
+    })
     void selectComps
     if (selection.comps.length < MIN_COMPS) {
       // The CMA build's sentence: it leads with the path that held the most
@@ -179,6 +184,14 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
             `[bpo/build] ${slug}: the ADU-first set held ${gated.comps.length} of ${MIN_COMPS} after the review; rebuilding on the ordinary set`,
           )
           return buildBpo({ ...input, aduFallback: { heldAfterReview: gated.comps.length } })
+        }
+        // A same-unit-count set that lost a sale in the review re-enters once
+        // on the whole 2-4 unit class (Matt 2026-10-14; see the CMA build).
+        if (!input.unitsFallback && selection.diagnostics.multi_unit?.outcome === 'same-units') {
+          console.log(
+            `[bpo/build] ${slug}: the same-unit-count set held ${gated.comps.length} of ${MIN_COMPS} after the review; rebuilding on every 2-4 unit sale`,
+          )
+          return buildBpo({ ...input, unitsFallback: { heldAfterReview: gated.comps.length } })
         }
         const err =
           gated.droppedProduct > 0

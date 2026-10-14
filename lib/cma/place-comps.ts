@@ -74,8 +74,9 @@ export async function countCompsForAddress(input: {
     city: input.city,
     postalCode: input.postalCode ?? null,
   })
-  // A multi-unit home has no count on the single-family ladder (rule 23); a
-  // broker matches it by hand, which is what the not-found copy already says.
+  // A 2-4 unit home counts on the multi-unit ladder (rule 23, Matt 2026-10-14).
+  // A building the ladder cannot price is refused, and a broker matches it by
+  // hand, which is what the not-found copy already says.
   if (!resolved.subject || resolved.refusal) {
     return {
       subjectFound: false,

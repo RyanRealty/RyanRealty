@@ -130,9 +130,10 @@ export function classifyProduct(subType: string | null | undefined): ProductKey 
   const s = subType.toLowerCase()
   // Duplex, Triplex, Quadruplex and Multi Family are their own product (rule
   // 23, Matt 2026-10-14). sale_pricing_facts admits PropertyType A closes
-  // only, so no facts row carries this class: it names a SUBJECT the build
-  // refuses (lib/cma/subject-units.ts) and the remarks reader's verdict on a
-  // sale, never a pool filter.
+  // only, so no facts row carries this class: a subject of this class prices
+  // on the listings ladder over PropertyType C closes instead
+  // (lib/pricing/select.ts selectMultiUnitComps), and here the class is the
+  // remarks reader's verdict on a sale, never a facts pool filter.
   if (/duplex|tri-?plex|four-?plex|quad-?plex|quadruplex|multi[- ]?family|multi[- ]?unit|residential income/.test(s)) {
     return 'multi-unit'
   }

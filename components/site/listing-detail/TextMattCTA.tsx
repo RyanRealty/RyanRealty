@@ -8,6 +8,7 @@ import {
 import { ActionSwapText } from '@/components/motion/action-swap'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
+import { TrackedAnchor } from '@/components/analytics/TrackedAnchor.client'
 import { valuationHref } from '@/lib/site/valuation-href'
 import type { Broker } from '@/lib/data/types/broker'
 import type { ReviewsSummary } from '@/lib/data/reviews/getReviews'
@@ -158,9 +159,17 @@ export function TextMattCTA({
           className="w-full gap-0 pt-1"
         >
           <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
-            <a href={tourHref}>
+            <TrackedAnchor
+              href={tourHref}
+              event={primaryCta ? 'click_cta' : offMarket ? 'ask_question_click' : 'schedule_tour_click'}
+              eventParams={{
+                listing_key: listingKey,
+                surface: 'listing_broker_card',
+                ...(primaryCta ? { cta: primaryCta.label } : {}),
+              }}
+            >
               <ActionSwapText value="tour">{tourLabel}</ActionSwapText>
-            </a>
+            </TrackedAnchor>
           </Button>
           {offMarket ? (
             <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>

@@ -55,18 +55,25 @@ Env vars (names only): `NEXT_PUBLIC_GA4_MEASUREMENT_ID`, `NEXT_PUBLIC_GTM_CONTAI
 
 ## GTM container
 
-**Live version 7** — name `GA4 browser events via dataLayer (2026-10-13)`. Inventory: **2 tags, 4 triggers, 30 variables**.
+**Version 8** (2026-10-14, `Audit cleanup: Google tag on Initialization`): the Google tag moved to **Initialization - All Pages**; unused trigger `CE generate_lead` and duplicate variable `DLV page_type` deleted. **Version 9** (2026-10-14) makes the dataLayer the one `page_view` sender (below). `npm run analytics:audit` prints the live version.
 
-What that version holds:
+What the container holds:
 
-- The **base Google tag** for `G-ST40W4WM6T` (All Pages). This is the only `page_view` sender. **It is not in the repo import file.** <!-- pragma: allowlist secret -->
+- The **base Google tag** for `G-ST40W4WM6T` (Initialization - All Pages), configuration parameter `send_page_view` = `false`. **It is not in the repo import file.** <!-- pragma: allowlist secret -->
 - Tag **`GA4 - dataLayer events`** — GA4 Event tag, Event Name `{{Event}}`, parameters from `ga4_params.*` plus flat `page_type` / `broker_slug`. Trigger: **`CE - GA4 browser events`** (regex on the allowlist below).
+- Tag **`GA4 - page_view`** — GA4 Event tag, Event Name `page_view`, parameters `page_type`, `broker_slug`, `page_location`, `page_referrer` (flat keys, `GA4_PAGE_VIEW_PARAMS`). Trigger: **`CE page_view`** (event equals `page_view`).
+
+### page_view: one sender
+
+The page pushes `page_view` to the dataLayer and `GA4 - page_view` sends it: the inline GTM bootstrap once on first paint (right after `gtm.js`, so a visitor who leaves before hydration still counts), then `components/PageViewTracker.tsx` once per **pathname** change. A query-only change is not a page view: the search map rewrites `?bbox=` on every pan and zoom, the gallery writes `?photo=N`, the identity bridges strip params. Enhanced measurement's history page views counted all of those (2026-10-14 audit: one map zoom sent a second `page_view`) and carried no `page_type`.
+
+It depends on two settings outside the code, both set 2026-10-14: the Google tag's `send_page_view` = `false`, and GA4 enhanced measurement **Page changes based on browser history events** off. Turning either back on doubles or drops page views; `npm run analytics:audit` fails on any mix but one sender. `page_location` is identity-stripped (`_pid`, `_fuid`, `rr_doc`, the same `GA4_STRIP_PARAMS` as the server mirror): the Google tag used to send a tracked email link's contact id to Google on first paint, before `PersonIdentityBridge` cleaned the address bar.
 
 ### Import rule (do not skip)
 
 GTM imports **MUST use Merge** (Admin → Import Container → **Merge** → Rename conflicting tags, triggers, and variables). **Never Overwrite.**
 
-`docs/gtm/ga4-browser-events.import.json` is a **partial** container: 1 tag (`GA4 - dataLayer events`), 1 trigger (`CE - GA4 browser events`), 29 Data Layer Variables (`DLV - ga4 …`). It **intentionally omits the base Google tag**. Overwrite deletes that Google tag and every other live tag/trigger/variable that is not in the file.
+`docs/gtm/ga4-browser-events.import.json` is a **partial** container: 2 tags (`GA4 - dataLayer events`, `GA4 - page_view`), 2 triggers (`CE - GA4 browser events`, `CE page_view`), 32 Data Layer Variables (`DLV - ga4 …`). It **intentionally omits the base Google tag**. Overwrite deletes that Google tag and every other live tag/trigger/variable that is not in the file.
 
 Publish belongs to Matt. After a bad import, restore via **Versions → Set as latest** (prior published versions stay restorable).
 
@@ -132,13 +139,14 @@ import { pushDataLayerEvent } from '@/lib/analytics/ga4-browser-events'
 | `lp_content` | `ga4_params.lp_content` | |
 | `metric_id` | `ga4_params.metric_id` | Web vitals |
 | `metric_rating` | `ga4_params.metric_rating` | Web vitals |
+| `seconds` | `ga4_params.seconds` | `dwell` threshold reached (listing pages 30/60/120/300, `/subdivisions` 15/45/120) |
 
 ### Deliberately not sent by the GTM tag
 
 | Name | Why |
 |---|---|
 | `generate_lead` | Server only (Measurement Protocol). A browser copy would double-count. |
-| `page_view` | The Google tag owns it. A second one doubles page views. |
+| `page_view` | Its own tag, `GA4 - page_view` (above). Never on the shared trigger. |
 | `valuation_requested` | Server (`lib/cma-request.ts`) for the same submissions. |
 | `form_start` | Enhanced measurement already sends it. |
 

@@ -396,3 +396,46 @@ describe('sameAreaFit reads the polygon the area read placed the home in (reader
     expect(sameAreaFit(area, JACKSONVILLE, { ...fresno, sqft: 900 })).toEqual({ ok: true, ownPlat: true, roomDifference: [] })
   })
 })
+
+describe('a 2-4 unit subject\'s tables hold typed 2-4 unit rows only (Matt 2026-10-14, the multi-unit ladder)', () => {
+  const IRVING: SameAreaSubject = {
+    ...COHO,
+    streetAddress: '429 Irving',
+    subdivision: 'Center Addition',
+    sqft: 2149,
+    beds: 3,
+    baths: 4,
+    yearBuilt: 2003,
+    propertySubType: 'Duplex',
+    publicRemarks: 'Prime midtown location. A 1,629 sq ft main home and a 520 sq ft ADU.',
+  }
+  const duplex: SameAreaCandidate = {
+    ...ALDRICH,
+    address: '468 Olney',
+    subdivision: 'Center Addition',
+    sqft: 2100,
+    beds: 3,
+    baths: 4,
+    yearBuilt: 2001,
+    propertySubType: 'Duplex',
+    publicRemarks: 'Detached duplex, two units each with its own entrance.',
+  }
+
+  it('a duplex whose remarks say "duplex" fits a duplex subject whose remarks name an ADU', () => {
+    expect(sameAreaFit(null, IRVING, duplex).ok).toBe(true)
+  })
+
+  it('a triplex is the same 2-4 unit product', () => {
+    expect(sameAreaFit(null, IRVING, { ...duplex, propertySubType: 'Triplex' }).ok).toBe(true)
+  })
+
+  it('a blank sub type (a house on a city read) and a Multi Family row with no count fail closed', () => {
+    expect(sameAreaFit(null, IRVING, { ...duplex, propertySubType: null })).toEqual({ ok: false, reason: 'product' })
+    expect(sameAreaFit(null, IRVING, { ...duplex, propertySubType: 'Multi Family' })).toEqual({ ok: false, reason: 'product' })
+    expect(sameAreaFit(null, IRVING, { ...duplex, propertySubType: 'Single Family Residence' })).toEqual({ ok: false, reason: 'product' })
+  })
+
+  it('a house subject is unchanged: a duplex by its remarks is another product', () => {
+    expect(sameAreaFit(null, COHO, { ...ALDRICH, publicRemarks: 'This updated duplex has two units.' })).toEqual({ ok: false, reason: 'product' })
+  })
+})

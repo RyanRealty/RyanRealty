@@ -326,6 +326,8 @@ export type CompSearch = {
   ruralSentence?: string | null
   /** An ADU home: which sales set its price, one sentence (Matt 2026-10-14). */
   aduSentence?: string | null
+  /** A multi-unit home: which sales set its price, one sentence (Matt 2026-10-14). */
+  multiUnitSentence?: string | null
   /**
    * Homes that sold on the subject's own ground, any size, when the own
    * rungs found none. Null when that was not read. A count above zero means
@@ -377,6 +379,7 @@ export function readCompSearch(args: unknown): CompSearch | null {
     sentence: str(cs.sentence),
     ruralSentence: str(cs.ruralSentence),
     aduSentence: str(cs.aduSentence),
+    multiUnitSentence: str(cs.multiUnitSentence),
     ownGroundSold: sold != null && sold >= 0 ? sold : null,
   }
 }

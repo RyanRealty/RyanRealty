@@ -34,6 +34,7 @@ import {
   shouldApplyTitleHold,
   shouldQueueAutoMerge,
   shouldRemoveHoldLabel,
+  shouldStampApprovedLabel,
 } from './lib/pr-housekeeping.mjs'
 
 function gh(args) {
@@ -101,14 +102,20 @@ function applyTitleHolds(approvedNumbers) {
   if (!listed.ok) fail(listed.stderr || 'gh pr list failed')
   const prs = JSON.parse(listed.stdout || '[]')
   for (const pr of prs) {
-    if (
-      !shouldApplyTitleHold({
-        title: pr.title,
-        labels: pr.labels,
-        number: pr.number,
-        approvedNumbers,
-      })
-    ) {
+    const decision = {
+      title: pr.title,
+      labels: pr.labels,
+      number: pr.number,
+      approvedNumbers,
+    }
+    if (shouldStampApprovedLabel(decision)) {
+      const stamped = gh(['pr', 'edit', String(pr.number), '--add-label', APPROVED_LABEL])
+      if (stamped.ok) {
+        console.log(`#${pr.number} labeled ${APPROVED_LABEL} from ${APPROVED_PRS_PATH}`)
+        decision.labels = [...(pr.labels || []), { name: APPROVED_LABEL }]
+      }
+    }
+    if (!shouldApplyTitleHold(decision)) {
       continue
     }
     const add = gh(['pr', 'edit', String(pr.number), '--add-label', HOLD_LABEL])
@@ -143,6 +150,17 @@ function handlePr(number, approvedNumbers) {
     title: pr.title,
     number: pr.number,
     approvedNumbers,
+  }
+  if (shouldStampApprovedLabel(decision)) {
+    const stamped = gh(['pr', 'edit', String(number), '--add-label', APPROVED_LABEL])
+    if (stamped.ok) {
+      console.log(`#${number} labeled ${APPROVED_LABEL} from ${APPROVED_PRS_PATH}`)
+      decision.labels = [...(pr.labels || []), { name: APPROVED_LABEL }]
+    } else {
+      console.error(
+        `#${number} could not add ${APPROVED_LABEL}: ${stamped.stderr || stamped.stdout}`.trim(),
+      )
+    }
   }
   if (shouldRemoveHoldLabel(decision)) {
     const removed = gh(['pr', 'edit', String(number), '--remove-label', HOLD_LABEL])

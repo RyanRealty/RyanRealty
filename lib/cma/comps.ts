@@ -67,6 +67,9 @@ import {
   proximityLabel,
   resolveMarketArea,
   compPoolPropertySubType,
+  compPoolPropertyType,
+  isMultiUnitSubType,
+  unitsFromSubType,
 } from '@/lib/cma/market-area'
 import {
   addExclusions,
@@ -274,6 +277,7 @@ function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | nu
     sqft,
     lotAcres,
     propertySubType: str(row['property_sub_type']),
+    unitsTotal: num(row['units_total']),
     yearBuilt: saneYearBuilt(num(row['year_built'])),
     newConstructionYn: (() => {
       const fromCol = mlsTriBool(row['new_construction_yn'])
@@ -425,6 +429,20 @@ function emptyDiagnostics(
  * Monterey Pines units 2 and 12, both $520,000). Square footage stays out of
  * the key because the Ordway duplicate disagreed with itself by one foot.
  */
+/** A 2-4 unit sale's unit count: the sub type's word first, then MLS NumberOfUnitsTotal. */
+export function saleUnitCount(comp: Pick<CmaComp, 'propertySubType' | 'unitsTotal'>): number | null {
+  const fromSub = unitsFromSubType(comp.propertySubType)
+  if (fromSub != null) return fromSub
+  const n = comp.unitsTotal
+  return n != null && Number.isFinite(n) && n > 0 ? Math.round(n) : null
+}
+
+/** The class pass admits a sale that states two to four units. Unknown fails closed. */
+export function multiUnitSaleAdmitted(comp: Pick<CmaComp, 'propertySubType' | 'unitsTotal'>): boolean {
+  const n = saleUnitCount(comp)
+  return n != null && n >= 2 && n <= 4
+}
+
 function saleKey(comp: {
   address: string
   city?: string | null
@@ -454,6 +472,14 @@ export async function selectComps(
      * runs this pass and falls back to the whole ladder under five.
      */
     aduSalesOnly?: boolean
+    /**
+     * THE SAME-UNIT-COUNT PASS (Matt 2026-10-14, lib/pricing/multi-unit-preference.ts):
+     * a duplex is priced from duplex sales first, so on this pass a 2-4 unit
+     * sale with another unit count, or none on record, is skipped before any
+     * wall counts it. selectCompsPreferringFacts runs this pass and falls back
+     * to the whole 2-4 unit class under five. Read on a multi-unit subject only.
+     */
+    sameUnitsOnly?: boolean
   } = {},
 ): Promise<CompSelection> {
   const asOf = (opts.asOf ?? new Date().toISOString()).slice(0, 10)
@@ -495,8 +521,13 @@ export async function selectComps(
   // same 1-acre line the exclusion uses.
   const landLotMax = land === 'lots' && lotMax == null ? ACREAGE_THRESHOLD_ACRES : lotMax
   // Land is MLS segment 'D' (REGISTRY §1). Pulling it against 'A' returns zero
-  // rows and reads as "no comparable sales" rather than as a wrong query.
-  const segment = land ? 'D' : 'A'
+  // rows and reads as "no comparable sales" rather than as a wrong query. A
+  // 2-4 unit home is segment 'C', Residential Income (Matt 2026-10-14, the
+  // multi-unit ladder): a duplex is priced from closed duplexes, which the MLS
+  // files there, never from the single-family rows of 'A'.
+  const multiUnitSubject = !land && isMultiUnitSubType(subject.propertySubType)
+  const subjectUnits = multiUnitSubject ? (subject.multiUnit?.units ?? unitsFromSubType(subject.propertySubType)) : null
+  const segment = land ? 'D' : compPoolPropertyType(subject.propertySubType)
 
   // Null when the MLS holds a placeholder rather than a real subdivision.
   // Filled from a plat or nearest mapped neighbor before the mile rings.
@@ -567,13 +598,18 @@ export async function selectComps(
     touchingBounds = outline ?? marketAreaBounds(subjectArea)
     return touchingBounds
   }
-  const customOrNew = isCustomOrNewSubject({
-    yearBuilt: subject.yearBuilt,
-    newConstructionYn: subject.newConstructionYn,
-    remarks: subject.publicRemarks,
-    propertySubType: subject.propertySubType,
-    standardStatus: subject.standardStatus,
-  })
+  // A multi-unit home has no facts pool to stay on (sale_pricing_facts holds
+  // PropertyType A closes only), so the custom/new refusal below cannot apply
+  // to it: this ladder is the one search it has, whatever its year.
+  const customOrNew =
+    !multiUnitSubject &&
+    isCustomOrNewSubject({
+      yearBuilt: subject.yearBuilt,
+      newConstructionYn: subject.newConstructionYn,
+      remarks: subject.publicRemarks,
+      propertySubType: subject.propertySubType,
+      standardStatus: subject.standardStatus,
+    })
 
   // Defense in depth: custom/new NEVER walks listings SQL tiers. Production
   // must stay on sale_pricing_facts via selectCompsPreferringFacts. Walking
@@ -655,7 +691,7 @@ export async function selectComps(
     inferredPocket: { source: pocketSource, neighborNorms: pocketNeighborNorms },
     pocketSubdivisionNorms: pocketNeighborNorms,
   })
-  const tiers = compTierLadder(subdivisionIlike)
+  const tiers = compTierLadder(subdivisionIlike, { multiUnit: multiUnitSubject })
 
   // THE SUBJECT'S OWN GROUND (reader review 2026-10-08, lib/pricing/plat-ground.ts):
   // the recorded plat the home sits in, its phases and alias-map siblings
@@ -719,6 +755,8 @@ export async function selectComps(
    * still exempt (31 Benaiah), and so is the subject's own plat rung.
    */
   let priceLine: PriceTierLine | null = null
+  // Said once when a 2-4 unit home's walk leaves its neighborhood (below).
+  let multiUnitOpenedRings = false
   // Sales set aside for sitting across a river from an unmapped subject.
   let crossedFeature = 0
   // The community whose boundary contains the address. The MLS name is only
@@ -841,6 +879,9 @@ export async function selectComps(
       for (const row of rows) {
         const comp = rowToComp(row, 'price-anchor', false)
         if (!comp || gradedKeys.has(comp.listingKey)) continue
+        // A 2-4 unit home's line is read over 2-4 unit sales: an apartment
+        // building filed as Multi Family on segment C never grades it.
+        if (multiUnitSubject && !multiUnitSaleAdmitted(comp)) continue
         const rate = unitRate(comp, false)
         if (!(rate > 0)) continue
         gradedKeys.add(comp.listingKey)
@@ -995,6 +1036,7 @@ export async function selectComps(
         : tier.sameArea && !subjectArea
           ? 'the subject sits outside every mapped neighborhood polygon'
           : (subjectArea || subjectCommunity) &&
+            !multiUnitSubject &&
             (isListingsGeographyWidenTier(tier) || tier.likeCommunity || tier.whenStarved)
           ? 'this home sits inside a neighborhood or community, so the search stays in the subdivisions there and does not open a distance ring'
         : tier.adjacentSubdivisions && adjacentSlugs.size === 0
@@ -1033,6 +1075,14 @@ export async function selectComps(
       comps_added: 0,
       running_total: byKey.size,
       excluded: emptyExclusions(),
+    }
+    // THE MULTI-UNIT WALK OPENS THE RINGS (Matt 2026-10-14): said once, on
+    // the first ring rung a 2-4 unit home inside a neighborhood reaches short.
+    if (!skip && multiUnitSubject && (subjectArea || subjectCommunity) && isListingsGeographyWidenTier(tier) && byKey.size < MIN_COMPS && !multiUnitOpenedRings) {
+      multiUnitOpenedRings = true
+      trace.push(
+        `Multi-unit home: the plats, the neighborhood and the community held ${byKey.size} price-setting two- to four-unit sale(s), under the ${MIN_COMPS} this letter needs, so the search opened the distance rings a house inside a neighborhood would not (the 2-4 unit pool is a tenth the size; Matt 2026-10-14). Every ring is named in the letter.`,
+      )
     }
     if (skip) {
       ladder.push(rung)
@@ -1155,6 +1205,11 @@ export async function selectComps(
       // exactly as the facts walk skips it, so no total describes a sale the
       // pass never admitted.
       if (opts.aduSalesOnly && !isAduSale(comp)) continue
+      // THE SAME-UNIT-COUNT PASS (Matt 2026-10-14, lib/pricing/multi-unit-preference.ts):
+      // a duplex prices from duplex sales first. A 2-4 unit sale with another
+      // count, or none on record, is skipped before any wall counts it, the
+      // same way the ADU-only pass skips a plain sale.
+      if (multiUnitSubject && opts.sameUnitsOnly && saleUnitCount(comp) !== subjectUnits) continue
       if (communityByKey.has(comp.listingKey)) {
         comp.communityLocated = true
         comp.communitySlug = communityByKey.get(comp.listingKey) ?? null
@@ -1196,7 +1251,9 @@ export async function selectComps(
           saleAddress: comp.address,
           subjectUnit: subject.unitNumber,
           saleUnit: comp.unitNumber,
-          sharedBuilding: !keepSameProductType('Single Family Residence', subject.propertySubType),
+          // A 2-4 unit building sells as one listing at one address, so its
+          // own earlier sale is self there, as on a house.
+          sharedBuilding: !multiUnitSubject && !keepSameProductType('Single Family Residence', subject.propertySubType),
         })
       ) {
         rung.excluded.self++
@@ -1380,10 +1437,18 @@ export async function selectComps(
       // multi-unit entered as Single Family Residence never prices a detached
       // home, and the test is symmetric. Null remarks fail open here; an
       // unknown sub type still fails closed above.
+      // On a multi-unit subject the product is the typed 2-4 unit class
+      // (segment C), so the remarks reader is not a wall there: a duplex
+      // whose remarks say "duplex" and one that only lists its units are the
+      // same product. A 2-4 unit sale still has to state a count of two to
+      // four, on the sub type or NumberOfUnitsTotal; an apartment building
+      // filed as Multi Family with no count fails closed like any unknown.
       if (
         !productTypeCompatible(subject.propertySubType, comp.propertySubType) ||
         !keepSameProductType(subject.propertySubType, comp.propertySubType) ||
-        multiUnitFromRemarks(comp.publicRemarks) !== multiUnitFromRemarks(subject.publicRemarks)
+        (multiUnitSubject
+          ? !multiUnitSaleAdmitted(comp)
+          : multiUnitFromRemarks(comp.publicRemarks) !== multiUnitFromRemarks(subject.publicRemarks))
       ) {
         rung.excluded.product_type++
         continue
@@ -1895,13 +1960,16 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
   // ListingKey" — the same bucket as a key that does not exist. Each refusal
   // now carries its own reason to the trace.
   const refused: string[] = []
+  const multiUnitSubject = isMultiUnitSubType(subject.propertySubType)
   for (const row of rows) {
     const comp = rowToComp(row, 'broker-selected')
     if (!comp) continue
     if (subject.listingKey && comp.listingKey === subject.listingKey) continue
     if (
       !productTypeCompatible(subject.propertySubType, comp.propertySubType) ||
-      !keepSameProductType(subject.propertySubType, comp.propertySubType)
+      !keepSameProductType(subject.propertySubType, comp.propertySubType) ||
+      // A 2-4 unit home's set holds 2-4 unit sales that state their count.
+      (multiUnitSubject && !multiUnitSaleAdmitted(comp))
     ) {
       refused.push(`${comp.address} is ${comp.propertySubType ?? 'an unknown type'}, a different product`)
       continue
@@ -1928,7 +1996,7 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
   const comps = Array.from(byKey.values()).sort((a, b) => b.closeDate.localeCompare(a.closeDate))
   const found = new Set(comps.map((c) => c.listingKey))
   const missing = requested.filter((k) => !found.has(k))
-  const note = `Broker-selected comp set: ${comps.length} of ${requested.length} requested ListingKey(s) resolved as valid closed SFR${
+  const note = `Broker-selected comp set: ${comps.length} of ${requested.length} requested ListingKey(s) resolved as valid closed sales of the subject's product${
     missing.length ? ` (unresolved: ${missing.join(', ')})` : ''
   }.${refused.length ? ` Refused: ${refused.join('; ')}.` : ''}`
   const diagnostics: CompSelectionDiagnostics = {

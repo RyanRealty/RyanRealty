@@ -235,10 +235,11 @@ describe('CMA market readers', () => {
     const comps = readFileSync(resolve('lib/cma/comps.ts'), 'utf8')
     const pool = readFileSync(resolve('lib/data/cma/builderReads.ts'), 'utf8')
     // 'A' is now the DEFAULT rather than a literal, so a land subject can pull
-    // segment 'D' (REGISTRY §1) instead of silently matching nothing. Every
-    // improved caller omits the field and still gets 'A'.
+    // segment 'D' (REGISTRY §1) instead of silently matching nothing, and a
+    // 2-4 unit home pulls 'C' (compPoolPropertyType, Matt 2026-10-14). Every
+    // improved house caller omits the field and still gets 'A'.
     expect(pool).toMatch(/\.eq\('PropertyType', opts\.propertyType\?\.trim\(\) \|\| 'A'\)/)
-    expect(comps).toMatch(/const segment = land \? 'D' : 'A'/)
+    expect(comps).toMatch(/const segment = land \? 'D' : compPoolPropertyType\(subject\.propertySubType\)/)
     expect(comps).toMatch(/keepSameProductType/)
     expect(comps).toMatch(/selectCmaCompsPool/)
   })

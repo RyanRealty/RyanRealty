@@ -225,5 +225,7 @@ export function compSearchSentence(input: Parameters<typeof baseCompSearchSenten
   const rural = cleanText(stored?.ruralSentence ?? null)
   // An ADU home says which sales set its price (Matt 2026-10-14, lib/pricing/adu-preference.ts).
   const adu = cleanText(stored?.aduSentence ?? null)
-  return [base, rural, adu].filter((s): s is string => Boolean(s)).join(' ')
+  // A multi-unit home says the same (Matt 2026-10-14, lib/pricing/multi-unit-preference.ts).
+  const multiUnit = cleanText(stored?.multiUnitSentence ?? null)
+  return [base, rural, adu, multiUnit].filter((s): s is string => Boolean(s)).join(' ')
 }

@@ -65,6 +65,7 @@ import { cleanText, countWord, int, usd } from '@/lib/cma/render-blocks'
 import { sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
 import { FLAT_LOCAL_DATE_SENTENCE } from '@/lib/cma/flat-date-story'
 import { letterPlaceName, nameFromPlatSlug } from '@/lib/cma/letter-place-name'
+import { productNounPlural } from '@/lib/cma/market-area'
 import { realSubdivisionName } from '@/lib/pricing/classes'
 import { formatCalendarDay } from '@/lib/format/date'
 import { isPocketTimeBasis } from '@/lib/pricing/exclusive-pocket-date-adj'
@@ -420,7 +421,7 @@ function ownListingClause(own: NonNullable<LocalGate['ownListing']>): string {
 
 /** "homes like yours in Shevlin West": the homes the local page measured. */
 function localHomes(g: LocalGate, subject: Partial<Pick<CmaSubject, 'subdivision'>>): string {
-  const noun = g.productNoun === 'townhouse' ? 'townhouses' : g.productNoun === 'condo' ? 'condos' : 'homes'
+  const noun = productNounPlural(g.productNoun)
   const place = g.place ?? realSubdivisionName(cleanText(subject.subdivision ?? null))
   const like = g.sized ? `${noun} like yours` : noun
   return place ? `${like} in ${place}` : `${like} nearby`

@@ -25,6 +25,7 @@
  */
 
 import 'server-only'
+import { MULTI_UNIT_COMP_SUB_TYPES } from '@/lib/cma/market-area'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   compAreaBounds,
@@ -318,6 +319,8 @@ export async function getCmaAreaUnsoldCycles(input: {
   /** The subject's city — the bound on a subdivision-scoped read, since names repeat between towns. */
   city: string
   propertySubType: string | null
+  /** MLS segment: A (the default) or C for a 2-4 unit home (lib/cma/market-area.ts compPoolPropertyType). */
+  propertyType?: string | null
   priceLo: number
   priceHi: number
   months?: number
@@ -328,6 +331,7 @@ export async function getCmaAreaUnsoldCycles(input: {
   const sinceIso = monthsAgoIso(months, asOf)
   const area = input.area
   const subType = input.propertySubType?.trim() || null
+  const segment = input.propertyType?.trim() || 'A'
   const empty: CmaAreaUnsoldRead = {
     rows: [],
     laterCycles: [],
@@ -355,12 +359,13 @@ export async function getCmaAreaUnsoldCycles(input: {
     let q = sb
       .from('listings')
       .select(COLS)
-      .eq('PropertyType', 'A')
+      .eq('PropertyType', segment)
       .in('StandardStatus', UNSOLD_STATUSES as unknown as string[])
       .gte('status_change_timestamp', sinceIso)
       .gte('ListPrice', input.priceLo)
       .lte('ListPrice', input.priceHi) as unknown as ListingQuery
     if (subType) q = q.eq('property_sub_type', subType)
+    else if (segment === 'C') q = q.in('property_sub_type', [...MULTI_UNIT_COMP_SUB_TYPES])
     if (area.kind === 'subdivision' || area.kind === 'subdivisions') {
       if (!box) q = q.in('SubdivisionName', area.names)
       if (input.city.trim()) q = q.eq('City', input.city.trim())
@@ -379,11 +384,11 @@ export async function getCmaAreaUnsoldCycles(input: {
   }
 
   const filter = [
-    `PropertyType='A'`,
+    `PropertyType='${segment}'`,
     `StandardStatus IN (${UNSOLD_STATUSES.join(', ')})`,
     `status_change_timestamp >= ${sinceIso}`,
     `ListPrice ${input.priceLo}..${input.priceHi}`,
-    subType ? `property_sub_type='${subType}'` : 'any residential sub type',
+    subType ? `property_sub_type='${subType}'` : segment === 'C' ? `property_sub_type IN (${MULTI_UNIT_COMP_SUB_TYPES.join(', ')})` : 'any residential sub type',
     areaFilterTrace(area, outline),
   ].join(' AND ')
 
