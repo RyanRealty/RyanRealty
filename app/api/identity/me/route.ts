@@ -62,12 +62,8 @@ export async function GET(): Promise<NextResponse> {
   // to a hashed email when we only have a signed-in session.
   // The same string the server sends on Measurement Protocol events for this
   // person (lib/analytics/ga4-user-id.ts), so GA4 counts one user, not two.
-  let hashedUserId: string | null = null
-  if (personIdValid) {
-    hashedUserId = ga4UserIdForPerson(personId)
-  } else if (email) {
-    hashedUserId = ga4UserIdForEmail(email)
-  }
+  // The bridge applies it only at the analytics tier, as the server does.
+  const hashedUserId = ga4UserIdForPerson(personId) ?? (email ? ga4UserIdForEmail(email) : null)
 
   // Meta Pixel advanced matching takes a sha256 of the normalized email.
   const hashedEmail = email ? sha256(email) : null

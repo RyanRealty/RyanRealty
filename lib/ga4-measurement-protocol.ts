@@ -29,6 +29,8 @@
  */
 import { randomUUID } from 'node:crypto'
 import { isNonProductionPageLocation } from '@/lib/analytics/non-production-host'
+import { ga4UserIdFor } from '@/lib/analytics/ga4-user-id'
+import type { TrackingConsentLevel } from '@/lib/identity/consent'
 
 const GA4_ENDPOINT = 'https://www.google-analytics.com/mp/collect'
 const GA4_DEBUG_ENDPOINT = 'https://www.google-analytics.com/debug/mp/collect'
@@ -39,12 +41,13 @@ export interface Ga4MpFireParams {
   /** Stable per-user identifier. Reuse the client_id from the `_ga` cookie when present. */
   clientId?: string
   /**
-   * GA4 user_id of a known CRM contact: ONLY `ga4UserIdForPerson()` from
-   * lib/analytics/ga4-user-id.ts (a hash, never a name, email or phone), and only
-   * at the analytics tier (`ga4UserIdAllowedAt`). Sent as the request's top-level
-   * `user_id`, so GA4 counts the event under the same user the browser tag does.
+   * The known CRM contact this event belongs to, and the visitor's consent tier.
+   * fireGa4Event derives the GA4 user_id itself (lib/analytics/ga4-user-id.ts:
+   * the hashed CRM id the browser tag uses, only at the analytics tier or above)
+   * and sends it as the request's top-level `user_id`. Callers never build a
+   * user_id string, so none can send a raw id or an email by mistake.
    */
-  userId?: string | null
+  knownContact?: { personId: number | null | undefined; trackingLevel: TrackingConsentLevel | null | undefined } | null
   /** User-properties scoped values (assigned_broker, lead_status). Stable, low-cardinality. */
   userProperties?: Record<string, string | number>
   /** Event-scoped params (lp_variant, lp_source, lp_campaign, broker_slug, ...). */
@@ -193,7 +196,7 @@ export async function fireGa4Event(params: Ga4MpFireParams): Promise<Ga4MpFireRe
       name: e.name.trim().slice(0, 40),
       params: { ...sanitizeParams(e.params || {}), ...sessionCarry },
     }))
-  const userId = typeof params.userId === 'string' ? params.userId.trim().slice(0, 256) : ''
+  const userId = params.knownContact ? ga4UserIdFor(params.knownContact.personId, params.knownContact.trackingLevel) : null
   const payload: Record<string, unknown> = {
     client_id: clientId,
     ...(userId ? { user_id: userId } : {}),

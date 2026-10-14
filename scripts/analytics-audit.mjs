@@ -181,7 +181,8 @@ if (Array.isArray(health.leadEventsByHost)) {
 if (Array.isArray(health.userIdByEvent)) {
   const browserUid = health.userIdByEvent.filter((r) => r[0] === 'session_start' || r[0] === 'user_engagement').reduce((a, r) => a + r[1], 0)
   health.userIdOnBrowserEvents = browserUid
-  if (!browserUid) finding('WARN', 'ga4', `No session_start or user_engagement event carried a user_id in ${DAYS} days: known CRM contacts are not tagged by the browser (components/AnalyticsIdentityBridge.tsx, /api/identity/me).`)
+  // A week is enough: the site sees known contacts every week (113 in the 30 days to 2026-10-14).
+  if (!browserUid && DAYS >= 7) finding('WARN', 'ga4', `No session_start or user_engagement event carried a user_id in ${DAYS} days: known CRM contacts are not tagged by the browser (components/AnalyticsIdentityBridge.tsx, /api/identity/me).`)
 }
 if (Array.isArray(cfg.keyEvents) && Array.isArray(events)) {
   const dead = cfg.keyEvents.filter((k) => !evCount[k] && k !== 'purchase')
@@ -404,7 +405,7 @@ if (JSON_OUT) {
   line(`  channels ${JSON.stringify(health.channels)}`)
   line(`  hostnames ${JSON.stringify(health.hostnames)}`)
   line(`  generate_lead by hostname ${JSON.stringify(health.leadEventsByHost)}`)
-  line(`  known contacts (users with a user_id) ${JSON.stringify(health.knownContactUsers)} · events with a user_id ${JSON.stringify(health.userIdByEvent)}`)
+  line(`  known contacts (active users with a user_id) ${JSON.stringify(health.knownContactUsers)} · events with a user_id [event, events, total users] ${JSON.stringify(health.userIdByEvent)}`)
   line(`  top events ${JSON.stringify(Object.entries(evCount).sort((a, b) => b[1] - a[1]).slice(0, 25))}`)
   line()
   line('Search Console')

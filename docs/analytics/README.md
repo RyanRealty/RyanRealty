@@ -239,17 +239,19 @@ A new server event must go through `ga4ServerContext()`. Never call `fireGa4Even
 
 ### Known contacts carry a user_id (2026-10-14)
 
-A known CRM contact is one GA4 user, in the browser and on the server (decision `crm-contacts-tagged-in-ga4`). The user_id is `ga4UserIdForPerson()` in `lib/analytics/ga4-user-id.ts`: `crm-<sha256 of crm_people.id>`, never a name, email or phone. It goes only on hits from a visitor at the analytics tier or above (`ga4UserIdAllowedAt`); an essential-tier visit reaches GA4 under an anonymous client id and nothing else (`docs/TRACKING_POLICY.md` tier table).
+A known CRM contact is one GA4 user, in the browser and on the server (decision `crm-contacts-tagged-in-ga4`). The user_id is `ga4UserIdForPerson()` in `lib/analytics/ga4-user-id.ts`: `crm-<sha256 of crm_people.id>`, never a name, email or phone. It goes only on hits from a visitor at the analytics tier or above (`ga4UserIdAllowedAt`); an essential-tier visit reaches GA4 under an anonymous client id and nothing else (`docs/TRACKING_POLICY.md` tier table). Server callers never build the string: they pass `knownContact: { personId, trackingLevel }` and `fireGa4Event` derives it (`ga4UserIdFor`), so no caller can send a raw id or an email as the user_id.
 
 | Path | How the user_id gets there |
 |---|---|
-| Browser (GTM) | `components/AnalyticsIdentityBridge.tsx` reads `/api/identity/me` and calls `gtag('set', { user_id })`. The GTM Google tag applies that command to every later hit; no tag field maps it. GA4 read 2026-10-14 showed it on `session_start`, `user_engagement` and `scroll`, which only the browser tag sends. The first-paint `page_view` goes before the bridge runs, so it never has one. |
-| Page-view mirror | `app/api/visitors/track/route.ts` sends it on a mirrored hit from a session that belongs to a contact, at the analytics tier. The mirror runs after the identify step, so the report view that identifies a recipient carries it. A client document (`/cma`, `/bpo`) runs no Google tag, so this is the only way a recipient reading a report is counted as known. |
-| `generate_lead`, `person_identified`, `valuation_requested` | `ga4ServerUserId(ctx, personId)` in `lib/analytics/ga4-server-context.ts`, from the visitor's tier (`trackingLevel`: the stored banner answer, else the region default from `x-vercel-ip-country`; no country header fails closed). |
+| Browser (GTM) | `components/AnalyticsIdentityBridge.tsx` reads `/api/identity/me` and, when `hasAnalyticsConsent()` holds, calls `gtag('set', { user_id })`; a banner answer given mid-page sets or clears it. The GTM Google tag applies that command to every later hit; no tag field maps it. GA4 read 2026-10-14 showed it on `session_start`, `user_engagement` and `scroll`, which only the browser tag sends. The first-paint `page_view` goes before the bridge runs, so it never has one. |
+| Page-view mirror | `app/api/visitors/track/route.ts` passes the session's contact and tier as `knownContact` on a mirrored hit; the hit goes out through `after()` so it is not lost when the response returns. The mirror runs after the identify step, so the report view that identifies a recipient carries it. A client document (`/cma`, `/bpo`) runs no Google tag, so this is the only way a recipient reading a report is counted as known. |
+| `generate_lead`, `person_identified`, `valuation_requested` | `knownContact: ga4KnownContact(ctx, personId)` (`lib/analytics/ga4-server-context.ts`), with the visitor's tier (`trackingLevel`: the stored banner answer, else the region default from `x-vercel-ip-country`, else the `rr_cr` cookie; unknown fails closed to essential). |
 
 `npm run analytics:audit` prints the known-contact user count and the events that carried a user_id, and warns when no `session_start` or `user_engagement` carried one.
 
-What GA4 cannot count, by design: a contact whose visits were all at the essential tier (before 2026-10-08 that was every US visitor who never answered the banner), and a form submitter's hits for the rest of the submitting session (a typed email never mints the signed `rr_pid` cookie the bridge reads; the next session is born identified and tagged, and `generate_lead` carries the user_id).
+The user_id is pseudonymous, not secret: CRM ids are small integers, so the hash maps back to the id, and `generate_lead` also sends `crm_person_id` as a parameter.
+
+What GA4 cannot count, by design: a contact whose visits were all at the essential tier (before 2026-10-08 that was every US visitor who never answered the banner). And for a form submitter, the browser tag's hits for the rest of the submitting session: a typed email never mints the signed `rr_pid` cookie the bridge reads. `generate_lead` carries the user_id, any mirrored hit later in that session does too (the submit stamps the session), and the next session is born identified and tagged.
 
 ### `generate_lead` (server-only)
 
@@ -405,7 +407,7 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | File | Role |
 |---|---|
 | `lib/ga4-measurement-protocol.ts` | The one Measurement Protocol client (`fireGa4Event`) and the cookie parsers (`_ga`, `_ga_<stream>`) |
-| `lib/analytics/ga4-server-context.ts` | The request context every in-request server sender reads, and `ga4ServerUserId` |
+| `lib/analytics/ga4-server-context.ts` | The request context every in-request server sender reads, and `ga4KnownContact` |
 | `lib/lead-tracking.ts` | `generate_lead` (`fireLeadGenerated`) and the non-lead form events |
 | `app/actions/identity-bridge.ts` | `person_identified` on an email-click identify |
 | `lib/cma-request.ts` | `valuation_requested` for seller LP, FSBO LP and place-page submissions |

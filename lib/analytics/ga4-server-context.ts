@@ -7,9 +7,9 @@ import {
   trackingLevelFromConsent,
   type TrackingConsentLevel,
 } from '@/lib/identity/consent'
-import { ga4UserIdAllowedAt, ga4UserIdForPerson } from './ga4-user-id'
 import { stripGa4UrlParams } from '@/app/api/visitors/track/strip-identity'
 import { decideGaSuppression, hasInternalUserCookie, type GaSuppression } from './ga-suppression'
+import { consentRegionRestrictedFromCookieHeader } from './consent-regions'
 
 /**
  * What a server-side GA4 event (Measurement Protocol) needs from the visitor's
@@ -36,9 +36,10 @@ export type Ga4ServerContext = {
   analyticsAllowed: boolean
   /**
    * The visitor's tier (docs/TRACKING_POLICY.md tier table): the stored banner
-   * answer, or with no answer the region default from the request's country
-   * (unknown country fails closed to essential). 'declined' under GPC or a decline.
-   * Decides whether a server event may carry a user_id (ga4ServerUserId).
+   * answer, or with no answer the region default from the request's country,
+   * else the rr_cr region cookie (unknown fails closed to essential). 'declined'
+   * under GPC or a decline. Decides whether a server event carries a user_id
+   * (ga4KnownContact).
    */
   trackingLevel: TrackingConsentLevel
   suppression: GaSuppression
@@ -60,8 +61,15 @@ export function ga4ContextFromRequest(args: {
   const { cookieStore, cookieHeader, referer, userAgent, secGpc } = args
   const consentCookie = cookieStore.get(CONSENT_COOKIE)?.value
   const analyticsAllowed = recordingAllowed({ consentCookie, secGpc })
+  // No country header: the rr_cr region cookie middleware set from it (only an
+  // explicit `0` is unrestricted), else fail closed to essential.
   const trackingLevel: TrackingConsentLevel = analyticsAllowed
-    ? trackingLevelFromConsent(parseConsentCookie(consentCookie), { country: args.country ?? null })
+    ? trackingLevelFromConsent(
+        parseConsentCookie(consentCookie),
+        args.country
+          ? { country: args.country }
+          : { restrictedRegion: consentRegionRestrictedFromCookieHeader(cookieHeader) },
+      )
     : 'declined'
   let page: URL | null = null
   try {
@@ -105,7 +113,8 @@ export async function ga4ServerContext(): Promise<Ga4ServerContext> {
     userAgent: headersList.get('user-agent'),
     secGpc: headersList.get('sec-gpc'),
     host: headersList.get('x-forwarded-host') ?? headersList.get('host'),
-    country: headersList.get('x-vercel-ip-country') ?? headersList.get('cf-ipcountry'),
+    // The track route's consent gate reads the same headers in the same order.
+    country: headersList.get('x-vercel-ip-country') || headersList.get('cf-ipcountry'),
   })
 }
 
@@ -124,14 +133,16 @@ export function ga4ServerSendAllowed(ctx: Ga4ServerContext, opts: { serverToServ
 }
 
 /**
- * The GA4 user_id a server event for this known contact carries, or undefined:
- * the same hashed CRM id the browser tag gets (lib/analytics/ga4-user-id.ts),
- * only at the analytics tier or above. No context (a provider webhook) is no
- * visitor consent to read, so no user id.
+ * The `knownContact` a server event for this contact passes to fireGa4Event,
+ * which sends the hashed CRM id as user_id at the analytics tier or above
+ * (lib/analytics/ga4-user-id.ts). No context (a provider webhook) is no visitor
+ * consent to read, so null: no user id.
  */
-export function ga4ServerUserId(ctx: Ga4ServerContext | null, personId: number | null | undefined): string | undefined {
-  if (!ctx || !ga4UserIdAllowedAt(ctx.trackingLevel)) return undefined
-  return ga4UserIdForPerson(personId) ?? undefined
+export function ga4KnownContact(
+  ctx: Ga4ServerContext | null,
+  personId: number | null | undefined,
+): { personId: number | null | undefined; trackingLevel: TrackingConsentLevel } | null {
+  return ctx ? { personId, trackingLevel: ctx.trackingLevel } : null
 }
 
 /** The session + page params that tie a server event to the browser's GA4 session. */

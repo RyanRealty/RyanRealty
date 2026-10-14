@@ -125,20 +125,23 @@ describe('fireGa4Event — per-visit session + campaign_details (TRACK-1, P7)', 
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('sends a known contact\'s user_id at the top level, and none when there is none', async () => {
+  it('derives a known contact\'s user_id itself and sends it at the top level, at the analytics tier only', async () => {
     vi.stubEnv('GA4_MEASUREMENT_ID', 'G-TEST')
     vi.stubEnv('GA4_API_SECRET', 'secret')
     const fetchMock = vi.fn(async () => new Response(null, { status: 204 }))
     vi.stubGlobal('fetch', fetchMock)
-    const uid = `crm-${'a'.repeat(64)}`
-    await fireGa4Event({ eventName: 'generate_lead', clientId: '1.2', userId: uid, eventParams: { page_location: 'https://ryan-realty.com/' } })
-    await fireGa4Event({ eventName: 'page_view', clientId: '1.2', userId: null, eventParams: { page_location: 'https://ryan-realty.com/' } })
-    await fireGa4Event({ eventName: 'page_view', clientId: '1.2', userId: '  ', eventParams: { page_location: 'https://ryan-realty.com/' } })
+    const { ga4UserIdForPerson } = await import('./analytics/ga4-user-id')
+    const page = { page_location: 'https://ryan-realty.com/' }
+    await fireGa4Event({ eventName: 'generate_lead', clientId: '1.2', knownContact: { personId: 64115, trackingLevel: 'analytics' }, eventParams: page })
+    await fireGa4Event({ eventName: 'page_view', clientId: '1.2', knownContact: { personId: 64115, trackingLevel: 'all' }, eventParams: page })
+    await fireGa4Event({ eventName: 'page_view', clientId: '1.2', knownContact: { personId: 64115, trackingLevel: 'essential' }, eventParams: page })
+    await fireGa4Event({ eventName: 'page_view', clientId: '1.2', knownContact: { personId: null, trackingLevel: 'all' }, eventParams: page })
+    await fireGa4Event({ eventName: 'page_view', clientId: '1.2', knownContact: null, eventParams: page })
     const bodies = fetchMock.mock.calls.map((c) => JSON.parse(String((c as unknown as [string, RequestInit])[1].body)))
-    expect(bodies[0].user_id).toBe(uid)
-    expect(bodies[0].events[0].params).not.toHaveProperty('user_id')
-    expect(bodies[1]).not.toHaveProperty('user_id')
-    expect(bodies[2]).not.toHaveProperty('user_id')
+    expect(bodies[0].user_id).toBe(ga4UserIdForPerson(64115))
+    expect(bodies[1].user_id).toBe(ga4UserIdForPerson(64115))
+    expect(JSON.stringify(bodies[0])).not.toContain('64115')
+    for (const b of bodies.slice(2)) expect(b).not.toHaveProperty('user_id')
   })
 
   it('sends only the event itself when nothing precedes it', async () => {

@@ -33,7 +33,7 @@
  *   - IP rate limiting at the Vercel edge stops obvious abuse.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { isGpcOptOut } from '@/lib/crm/gpc'
@@ -71,7 +71,6 @@ import {
   classifyAutomation,
 } from '@/lib/analytics/automation'
 import { campaignDetailsParams, ga4SessionParams, parseVisit } from '@/lib/analytics/ga4-visit'
-import { ga4UserIdForPerson } from '@/lib/analytics/ga4-user-id'
 import {
   decideGaSuppressionForPage,
   hasAutomationMarker,
@@ -227,6 +226,21 @@ type TrackBody = {
    * the GA4 mirror's per-visit session_id (TRACK-1).
    */
   visit?: { id?: number; number?: number; start?: boolean }
+}
+
+/**
+ * Send the GA4 mirror hit once the response is on its way, without losing it.
+ * The mirror runs last in this handler, so a bare `void` promise could be
+ * frozen with the function before the request to Google leaves; `after()` keeps
+ * the function alive until it settles. Outside a request scope (unit tests)
+ * `after` throws, and the task simply runs now.
+ */
+function mirrorAfterResponse(task: () => Promise<unknown>): void {
+  try {
+    after(task)
+  } catch {
+    void task()
+  }
 }
 
 function getSupabase() {
@@ -590,6 +604,9 @@ export async function POST(request: NextRequest) {
   // The signed rr_pid cookie is (re)issued whenever this request identifies a
   // browser, so /api/identity/me and the landing-page forms know them too.
   let setPersonCookieFor: number | null = null
+  // True once the carryover below clears a provisional automation flag: the
+  // mirror then sends this known contact's first view like any other.
+  let provisionalCleared = false
   if (sessionWrite.inserted && rrVid && !token && !automation.automated) {
     const known = await readIdentityMapForVid(supabase, rrVid)
     if (known?.personId) {
@@ -606,6 +623,7 @@ export async function POST(request: NextRequest) {
       // A browser already mapped to a contact is a person, whatever it landed on.
       if (res.sessionStamped && arrivalShape.automated) {
         await clearProvisionalAutomation(supabase, sessionId, PROVISIONAL_AUTOMATION_REASONS)
+        provisionalCleared = true
       }
     } else if (known?.email) {
       await stampSessionEmailOnly(supabase, sessionId, known.email)
@@ -750,7 +768,7 @@ export async function POST(request: NextRequest) {
     mirrorGa4 &&
     !gaSuppression.suppress &&
     !automation.automated &&
-    !(sessionWrite.inserted && arrivalShape.automated)
+    !(sessionWrite.inserted && arrivalShape.automated && !provisionalCleared)
   ) {
     try {
       const { fireGa4Event, clientIdFromGaCookie, clientIdFromSessionId } = await import(
@@ -795,12 +813,12 @@ export async function POST(request: NextRequest) {
         // draw sessions and attribute them.
         const visit = parseVisit(body.visit)
         const campaignDetails = visit?.start ? campaignDetailsParams(campaign ?? body.campaign) : null
-        const knownPersonId =
-          !minimalOnly && session && typeof session.crm_person_id === 'number' ? session.crm_person_id : null
-        void fireGa4Event({
+        const knownPersonId = session && typeof session.crm_person_id === 'number' ? session.crm_person_id : null
+        mirrorAfterResponse(() => fireGa4Event({
           eventName: isView ? 'page_view' : eventType,
           clientId: fromCookie || clientIdFromSessionId(sessionId),
-          userId: ga4UserIdForPerson(knownPersonId),
+          // fireGa4Event sends the hashed id at the analytics tier only.
+          knownContact: { personId: knownPersonId, trackingLevel: consent },
           precedingEvents: campaignDetails ? [{ name: 'campaign_details', params: campaignDetails }] : undefined,
           userProperties: {
             ...(intent ? { intent } : {}),
@@ -820,7 +838,7 @@ export async function POST(request: NextRequest) {
             thing,
             ...(broker?.eventParams ?? {}),
           },
-        })
+        }))
       }
     } catch (err) {
       console.warn(

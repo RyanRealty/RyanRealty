@@ -9,7 +9,9 @@
  * as two users.
  *
  * A SHA-256 of the crm_people.id, never a name, email or phone (Google forbids
- * personal information in GA4). Only for a visitor at the analytics tier or
+ * personal information in GA4). Pseudonymous, not secret: CRM ids are small
+ * integers, so the hash maps back to the id, and generate_lead already sends
+ * `crm_person_id` as a parameter. Only for a visitor at the analytics tier or
  * above (docs/TRACKING_POLICY.md tier table): an essential-tier visit reaches
  * GA4 under an anonymous client id and nothing else, so it never carries one.
  */
@@ -35,4 +37,15 @@ export function ga4UserIdForEmail(normalizedEmail: string): string {
 /** May a GA4 hit for this visit carry a user_id? Only at the analytics tier or above. */
 export function ga4UserIdAllowedAt(level: TrackingConsentLevel | null | undefined): boolean {
   return level === 'analytics' || level === 'all'
+}
+
+/**
+ * The user_id a server hit for this contact carries at this tier, or null. The
+ * one decision fireGa4Event (lib/ga4-measurement-protocol.ts) applies.
+ */
+export function ga4UserIdFor(
+  personId: number | null | undefined,
+  level: TrackingConsentLevel | null | undefined,
+): string | null {
+  return ga4UserIdAllowedAt(level) ? ga4UserIdForPerson(personId) : null
 }
