@@ -73,6 +73,14 @@ export function SellHowWeSell() {
           {LISTING_TERMS.fee} {LISTING_TERMS.buyerAgent}.
         </p>
       </details>
+      {/* Quiet, below the plan, so it never competes with the one main button
+          (Matt 2026-10-08). The net sheet ships in its own PR (#436); link the
+          page itself, never the bare /tools index. */}
+      <p className="sell-how__net">
+        <a href="/tools/seller-net-sheet" data-sell-cta="how-net-sheet">
+          Estimate your net
+        </a>
+      </p>
     </section>
   )
 }

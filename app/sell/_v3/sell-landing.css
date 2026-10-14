@@ -328,6 +328,27 @@ html[data-sell-entry='cma'] .v3.v3-stage.sell-landing-hero .sell-hero-sub--cma {
   padding-block-end: var(--v3-space-md);
   font-size: var(--v3-size-body-sm);
 }
+.sell-how__net {
+  margin: var(--v3-space-sm) 0 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}
+.sell-how__net a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  color: var(--v3-ink-muted);
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+.sell-how__net a:hover {
+  color: var(--v3-ink);
+}
+.sell-how__net a:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
 
 /* ---------- recent closings ---------- */
 .sell-closings__list {
