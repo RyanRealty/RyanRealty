@@ -1,5 +1,10 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { gate } from '../../../.claude/skills/ryan-studio/tools/video_gate.mjs'
+import { REPO_ROOT } from './thresholds'
 import {
+  allowedLengthCeiling,
   captionProblems,
   computeShots,
   evaluateCaptions,
@@ -617,5 +622,59 @@ describe('evaluateReview', () => {
 
   it('compares the hash case insensitively', () => {
     expect(evaluateReview({ ...ok, sha256: sha.toUpperCase() }, sha, 'claude', true)).toEqual([])
+  })
+})
+
+describe('allowedLengthCeiling (what the render gate is held to)', () => {
+  const rules = { max_s: 30, hard_max_s: 40 }
+  it('is the type\'s max_s with no reason, a blank reason or no brief', () => {
+    expect(allowedLengthCeiling(rules, {})).toBe(30)
+    expect(allowedLengthCeiling(rules, { length_reason: '' })).toBe(30)
+    expect(allowedLengthCeiling(rules, { length_reason: '   ' })).toBe(30)
+    expect(allowedLengthCeiling(rules, null)).toBe(30)
+    expect(allowedLengthCeiling(rules, undefined)).toBe(30)
+    expect(allowedLengthCeiling(rules, { length_reason: 42 })).toBe(30)
+  })
+  it('is the type\'s hard_max_s with a non-empty length_reason', () => {
+    expect(allowedLengthCeiling(rules, { length_reason: 'two-part market story' })).toBe(40)
+  })
+  it('has no ceiling when the brief carries a Matt override for length, with or without a reason', () => {
+    const o = [{ rule: 'length', said: 'run it long', date: '2026-10-14' }]
+    expect(allowedLengthCeiling(rules, { matt_overrides: o })).toBe(Infinity)
+    expect(allowedLengthCeiling(rules, { matt_overrides: o, length_reason: 'x' })).toBe(Infinity)
+  })
+  it('ignores an override for another rule and a malformed list', () => {
+    expect(allowedLengthCeiling(rules, { matt_overrides: [{ rule: 'hero_numbers' }] })).toBe(30)
+    expect(allowedLengthCeiling(rules, { matt_overrides: [null, 'length', 7] })).toBe(30)
+    expect(allowedLengthCeiling(rules, { matt_overrides: 'length' })).toBe(30)
+    expect(allowedLengthCeiling(rules, { matt_overrides: [{ rule: 'hero_numbers' }], length_reason: 'x' })).toBe(40)
+  })
+
+  // The two must never drift: a film the brief gate (video_gate.mjs, Length block) lets through
+  // has to be one the render gate is allowed to see, and one it refuses has to stay refused.
+  it('allows exactly the lengths video_gate.mjs lets the brief through', () => {
+    const fixtures = join(REPO_ROOT, '.claude', 'skills', 'ryan-studio', 'tools', 'tests', 'fixtures')
+    const cfg = JSON.parse(readFileSync(join(REPO_ROOT, '.claude', 'skills', 'ryan-studio', 'tools', 'video_types.json'), 'utf8'))
+    const registry = JSON.parse(readFileSync(join(REPO_ROOT, '.claude', 'skills', 'ryan-studio', 'techniques', 'registry.json'), 'utf8')).techniques
+    const type = { ...cfg.defaults, ...cfg.types.market_update }
+    expect(type.max_s).toBeLessThan(type.hard_max_s)
+    const lengthFails = (brief: Record<string, unknown>, d: number) => {
+      const b = { ...JSON.parse(readFileSync(join(fixtures, 'pass.brief.json'), 'utf8')), ...brief, length_s: d }
+      const t = { ...JSON.parse(readFileSync(join(fixtures, 'pass.timeline.json'), 'utf8')), duration_s: d }
+      return (gate(b, t, cfg, registry, {}).fails as string[]).filter((f) => /^Runs /.test(f))
+    }
+    const briefs: Array<[string, Record<string, unknown>]> = [
+      ['no reason', {}],
+      ['a reason', { length_reason: 'two-part market story' }],
+      ['an override', { matt_overrides: [{ rule: 'length', said: 'run it long', date: '2026-10-14' }] }],
+      ['a reason and an override', { length_reason: 'x', matt_overrides: [{ rule: 'length', said: 'ok', date: '2026-10-14' }] }],
+      ['an override for another rule', { matt_overrides: [{ rule: 'hero_numbers', said: 'ok', date: '2026-10-14' }] }],
+    ]
+    for (const [name, brief] of briefs) {
+      const ceiling = allowedLengthCeiling(type, brief)
+      for (const d of [type.min_s, type.max_s - 0.5, type.max_s, type.max_s + 0.5, type.hard_max_s - 0.5, type.hard_max_s, type.hard_max_s + 0.5, type.hard_max_s + 20]) {
+        expect({ brief: name, d, allowed: d <= ceiling }).toEqual({ brief: name, d, allowed: lengthFails(brief, d).length === 0 })
+      }
+    }
   })
 })

@@ -90,6 +90,18 @@ test('spec rules: each mandatory rule blocks', () => {
   ];
   for (const [mut, re] of cases) { const b = pb(); mut(b); assert.match(fails(b), re); }
 });
+test('spec rules: the length range is the video type\'s own window, never a fixed 15 to 30 s (Matt 2026-10-14)', () => {
+  const b = pb();
+  assert.doesNotMatch(fails(b), /length_s_range/);
+  b.spec_rules.length_s_range = [7, 15];
+  assert.match(fails(b), new RegExp(`length_s_range must be \\[15,30\\], the ${b.video_type} window`));
+  const teaser = pb();
+  teaser.video_type = 'story_teaser';
+  teaser.spec_rules.length_s_range = [7, 15];
+  assert.doesNotMatch(fails(teaser), /length_s_range/);
+  teaser.spec_rules.length_s_range = [15, 30];
+  assert.match(fails(teaser), /length_s_range must be \[7,15\], the story_teaser window/);
+});
 test('registry: every technique has a recipe file', () => {
   const reg = JSON.parse(readFileSync(join(here, '..', '..', 'techniques', 'registry.json'), 'utf8')).techniques;
   for (const [n, v] of Object.entries(reg)) assert.ok(readFileSync(join(here, '..', '..', 'techniques', v.file), 'utf8').includes('## Recipe'), n);
@@ -116,4 +128,21 @@ test('spoken voice: the gate blocks a brief with a prose VO, and with no VO', ()
   assert.match(fails(b), /Spoken voice/);
   const c = pb(); delete c.spec_rules.voiceover.script;
   assert.match(fails(c), /script is required/);
+});
+test('the brief schema holds length_s_range as the type\'s own window, not a pinned [15,30] (Matt 2026-10-14)', () => {
+  const schema = JSON.parse(readFileSync(join(here, '..', '..', 'templates', 'brief.schema.json'), 'utf8'));
+  const prop = schema.properties.spec_rules.properties.length_s_range;
+  assert.equal('const' in prop, false, 'a const pins one window for every type');
+  assert.equal(prop.type, 'array');
+  assert.equal(prop.minItems, 2); assert.equal(prop.maxItems, 2);
+  assert.equal(prop.items.type, 'number');
+  assert.match(prop.description, /video_types\.json/);
+  // Every type's window, as the gate demands it, is a pair this schema accepts, and the briefs the gate passes agree.
+  for (const [name, type] of Object.entries(cfg.types)) {
+    const win = [type.min_s ?? cfg.defaults.min_s, type.max_s ?? cfg.defaults.max_s];
+    assert.equal(win.length, prop.minItems, name);
+    assert.ok(win.every((n) => typeof n === 'number' && n > (prop.items.exclusiveMinimum ?? -Infinity)), `${name} window ${win}`);
+    const b = pb(); b.video_type = name; b.spec_rules.length_s_range = win;
+    assert.doesNotMatch(fails(b), /length_s_range/, name);
+  }
 });

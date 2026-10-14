@@ -1,0 +1,17 @@
+{
+  "rule": "R-074",
+  "step": "brief",
+  "what": "\"most buyers\"",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "spec_rules.voiceover.script",
+      "set": "[warm] So... most buyers in Bend go in with a plan. [long pause] Send this to whoever you're house hunting with."
+    },
+    {
+      "in": "timeline",
+      "path": "voice.script",
+      "set": "[warm] So... most buyers in Bend go in with a plan. [long pause] Send this to whoever you're house hunting with."
+    }
+  ]
+}

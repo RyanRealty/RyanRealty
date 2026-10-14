@@ -1,0 +1,31 @@
+{
+  "rule": "R-031",
+  "step": "brief",
+  "what": "a 3 s closing",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "video_type",
+      "set": "closing"
+    },
+    {
+      "in": "brief",
+      "path": "length_s",
+      "set": 3
+    },
+    {
+      "in": "timeline",
+      "path": "duration_s",
+      "set": 3
+    },
+    {
+      "in": "brief",
+      "path": "matt_overrides",
+      "set": [
+        {
+          "rule": "length"
+        }
+      ]
+    }
+  ]
+}

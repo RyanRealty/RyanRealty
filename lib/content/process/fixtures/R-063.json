@@ -1,0 +1,13 @@
+{
+  "rule": "R-063",
+  "step": "brief",
+  "what": "an approved row naming the wrong approver",
+  "setup": {
+    "registry": [
+      {
+        "path": "techniques.outline_draw_zoom.approved_by",
+        "set": "matt"
+      }
+    ]
+  }
+}

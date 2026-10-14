@@ -1,0 +1,12 @@
+{
+  "rule": "R-059",
+  "step": "brief",
+  "what": "an empty feel",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "creative.feel",
+      "set": " "
+    }
+  ]
+}

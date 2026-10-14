@@ -19,7 +19,7 @@ vi.mock('./pixels', async (importOriginal) => ({
 }))
 import { checkVideo, type CheckDeps, type CheckReport } from './check'
 import type { Interval, Loudness, Measure, ProbeResult } from './measure'
-import type { GateRun, PixelProbe } from './pixels'
+import type { GateOptions, GateRun, PixelProbe } from './pixels'
 import { VIDEO_TYPES_PATH, loadVideoTypes, typeRulesFor } from './thresholds'
 
 const SHA = 'c'.repeat(64)
@@ -83,6 +83,8 @@ function fakeMeasure(f: Fake, frameCalls: number[] = []): Measure {
 interface FakePixels {
   missing: string | null
   gate: GateRun | Error
+  /** Every option set check 17 handed the render gate. */
+  gateCalls?: GateOptions[]
   /** Override what a box reads; default: the manifest text drawn in that box at that time. */
   read?: (t: number, text: string | undefined) => string
 }
@@ -93,7 +95,8 @@ const defaultPixels = (): FakePixels => ({ missing: null, gate: { fails: [], inf
 function fakePixels(manifest: Json, p: FakePixels, calls: string[] = []): PixelProbe {
   return {
     async missingTooling() { return p.missing },
-    async gate() {
+    async gate(_mp4, opts) {
+      p.gateCalls?.push(opts)
       if (p.gate instanceof Error) throw p.gate
       return p.gate
     },
@@ -985,6 +988,28 @@ describe('17 Pixels', () => {
     const r = await run({ pixels: (p) => { p.missing = 'tesseract is not installed: install the OCR tooling' } })
     expect(get(r.report, 17).pass).toBe(false)
     expect(get(r.report, 17).detail).toContain('cannot be measured, so it fails: tesseract is not installed')
+  })
+
+  describe('hands the render gate the longest run the brief allows (--max-s)', () => {
+    // listing is 15 to 30 s with no longer hard maximum; give it 40 so a length_reason has room to matter.
+    const longer = typesWith('listing', { hard_max_s: 40 })
+    const ceilingOf = async (brief: Setup['brief']) => {
+      const calls: GateOptions[] = []
+      const r = await run({ types: longer, brief, pixels: (p) => { p.gateCalls = calls } })
+      expect(get(r.report, 17).pass).toBe(true)
+      expect(calls).toHaveLength(1)
+      return calls[0].maxS
+    }
+    it('is the type\'s max_s when the brief gives no length_reason', async () => {
+      expect(await ceilingOf(null)).toBe(30)
+      expect(await ceilingOf((b) => { b.length_reason = '  ' })).toBe(30)
+    })
+    it('is the type\'s hard_max_s with a length_reason, as video_gate.mjs lets the brief through', async () => {
+      expect(await ceilingOf((b) => { b.length_reason = 'two-part market story' })).toBe(40)
+    })
+    it('is no ceiling with a Matt override for length', async () => {
+      expect(await ceilingOf((b) => { b.matt_overrides = [{ rule: 'length', said: 'run it long', date: '2026-10-14' }] })).toBe(Infinity)
+    })
   })
 
   it('fails when the gate cannot run', async () => {

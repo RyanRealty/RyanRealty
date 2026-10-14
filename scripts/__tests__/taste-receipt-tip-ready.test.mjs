@@ -10,10 +10,21 @@ const SHIP = join(REPO, 'scripts/lib/taste-receipt.mjs')
 import {
   hasOpenStateEvidence,
   openStateEvidenceProblems,
+  pickerContractVitestArgs,
   siteQueueDoneEvidenceProblems,
   tasteDoneProblems,
 } from '../lib/taste-receipt.mjs'
 import { catalogInstallProblems, tipReadyCatalogInstallProblems } from '../lib/catalog-install.mjs'
+import { bareVitestRuns } from '../lib/vitest-projects.mjs'
+
+describe('picker contract test run', () => {
+  it('names its vitest project, so it can never pull in the production-writing int project', () => {
+    const args = pickerContractVitestArgs(['components/x/a.test.ts', 'components/x/b.test.ts'])
+    expect(args.slice(0, 6)).toEqual(['vitest', 'run', '--project', 'unit', '--project', 'gates'])
+    expect(args.slice(-2)).toEqual(['components/x/a.test.ts', 'components/x/b.test.ts'])
+    expect(bareVitestRuns(`npx ${args.join(' ')}`)).toEqual([])
+  })
+})
 
 const ABOUT_BRIEF = {
   id: 'about-researchy-1-8',

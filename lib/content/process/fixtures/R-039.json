@@ -1,0 +1,12 @@
+{
+  "rule": "R-039",
+  "step": "brief",
+  "what": "a first-name pair that just closed",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "caption",
+      "set": "Sarah and Tom just closed, 3.5 months of homes for sale."
+    }
+  ]
+}

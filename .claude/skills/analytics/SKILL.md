@@ -9,6 +9,8 @@ Matt, 2026-10-14: every SEO, analytics or tracking task is looked at and done pr
 
 ## 1. Read the one source of truth
 
+SEO changes (titles, URLs, redirects, canonicals, robots, schema) start at [`docs/SEO.md`](../../../docs/SEO.md) and Matt's pinned calls in [`data/seo/decisions.json`](../../../data/seo/decisions.json). Measurement starts here:
+
 [`docs/analytics/README.md`](../../../docs/analytics/README.md). It wins over every older analytics doc, skill, handoff and the claude.ai shared "Ryan Realty analytics guide". It holds:
 
 - the IDs

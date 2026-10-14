@@ -17,6 +17,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'
 import { DOMAIN_REQUIRED_READS, type CompanyImprovementDomain } from '../lib/data/loop/domains'
+import { formatDeployDefectBrief, isDeployFoundGap } from '../lib/data/loop/deploy-defects'
 import { runFleetIntake } from '../lib/data/loop/fleet-intake-core'
 import { collectCompanyScoreboardSignals } from '../lib/data/loop/signals'
 import { formatCrawlProbeLine } from '../lib/data/crawl-probe/rows'
@@ -265,6 +266,27 @@ async function main() {
   push(`fetched: ${signals.fetchedAt}`)
   push(`version: ${manifestStatus()}`)
   push(`demand:  ${requirementsSummary()}`)
+  push('')
+  // Deploy-found defects (Matt 2026-10-14): deploy:verify files one claimable node per
+  // failure (lib/data/loop/deploy-defects.ts). Printed first so a session sees what is
+  // already taken BEFORE it starts a fix: on 2026-10-14 two sessions built the same one.
+  for (const line of formatDeployDefectBrief(
+    nodes
+      .filter((n) => isDeployFoundGap(n.version_gap))
+      .map((n) => ({
+        id: n.id,
+        versionGap: n.version_gap,
+        title: n.title,
+        objective: n.objective,
+        state: n.state,
+        ownerSession: n.owner_session,
+        blockedReason: n.blocked_reason,
+        updatedAt: n.updated_at,
+      })),
+    now,
+  )) {
+    push(line)
+  }
   push('')
   push('--- HANDOFF (standing holds + newest notes) ---')
   push(handoffCurrent())

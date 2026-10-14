@@ -161,8 +161,9 @@ export function gate(brief, timeline, cfg, registry, opts = {}) {
   else {
     const EC = ['logo', 'Quality / Local / Service', 'Call now 541.703.3095'];
     if (!(typeof sr.hook_by_s === 'number' && sr.hook_by_s <= 2)) fail('spec_rules.hook_by_s must be 2s or less.');
-    if (JSON.stringify(sr.length_s_range) !== '[15,30]') fail('spec_rules.length_s_range must be [15,30].');
-    if (typeof brief.length_s === 'number' && (brief.length_s < 15 || brief.length_s > 30) && !overrides.has('length')) fail(`Length ${brief.length_s}s is outside 15 to 30s.`);
+    // Each video type keeps its own length window (Matt 2026-10-14); the Length block above holds the film to it.
+    const win = [t.min_s, t.max_s];
+    if (JSON.stringify(sr.length_s_range) !== JSON.stringify(win)) fail(`spec_rules.length_s_range must be [${win.join(',')}], the ${brief.video_type} window.`);
     for (const k of ['real_footage', 'sound_off_readable', 'loopable', 'no_top_team_wording', 'no_price_closed_flash', 'same_process_any_tool']) if (sr[k] !== true) fail(`spec_rules.${k} must be true.`);
     if (!(sr.real_numbers_count >= 1 && sr.real_numbers_count <= 2)) fail('spec_rules.real_numbers_count must be 1 or 2.');
     if (sr.captions?.style !== 'tiktok_burned_in' || sr.captions?.synced_to_vo !== true) fail('Captions must be TikTok-style burned in and synced to the voiceover.');

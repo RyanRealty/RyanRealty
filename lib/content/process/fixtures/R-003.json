@@ -1,0 +1,12 @@
+{
+  "rule": "R-003",
+  "step": "brief",
+  "what": "an unknown video type",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "video_type",
+      "set": "made_up"
+    }
+  ]
+}

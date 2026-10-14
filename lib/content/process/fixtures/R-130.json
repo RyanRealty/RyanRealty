@@ -1,0 +1,15 @@
+{
+  "rule": "R-130",
+  "step": "animatic",
+  "what": "a third animatic",
+  "setup": {
+    "attempts": [
+      {
+        "step": "animatic"
+      },
+      {
+        "step": "animatic"
+      }
+    ]
+  }
+}

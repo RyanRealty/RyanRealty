@@ -12,3 +12,6 @@ node scripts/check-seo-decisions.mjs "$1"
 # Technique approval: a commit that adds or changes an approved row in the studio
 # technique registry needs `Approved-by: matt` and the technique's name. No override.
 node scripts/check-technique-approval.mjs "$1"
+# Rule loosening: a commit that makes a content rule's number looser (lib/content/process/rules.baseline.json)
+# needs `Approved-by: matt` and a `Rule-loosened: R-xxx` line per rule; removing a rule ID is never allowed. No override.
+node scripts/check-rule-loosening.mjs "$1"

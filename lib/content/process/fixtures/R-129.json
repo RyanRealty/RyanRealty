@@ -1,0 +1,18 @@
+{
+  "rule": "R-129",
+  "step": "board",
+  "what": "a fourth board",
+  "setup": {
+    "attempts": [
+      {
+        "step": "board"
+      },
+      {
+        "step": "board"
+      },
+      {
+        "step": "board"
+      }
+    ]
+  }
+}

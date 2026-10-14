@@ -1,0 +1,13 @@
+{
+  "rule": "R-110",
+  "step": "master",
+  "what": "the last caption removed",
+  "setup": {
+    "manifest": [
+      {
+        "path": "captions.9",
+        "delete": true
+      }
+    ]
+  }
+}

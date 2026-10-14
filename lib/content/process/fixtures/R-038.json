@@ -1,0 +1,12 @@
+{
+  "rule": "R-038",
+  "step": "brief",
+  "what": "a street address in the caption",
+  "edits": [
+    {
+      "in": "brief",
+      "path": "caption",
+      "set": "See 123 Main Street, 3.5 months of homes for sale."
+    }
+  ]
+}

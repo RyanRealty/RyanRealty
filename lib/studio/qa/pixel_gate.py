@@ -2,7 +2,7 @@
 """video:check check 17 ("Pixels"): run the ryan-studio render gate on the MP4
 and also hand back the OCR text of every frame it sampled.
 
-Usage: python3 pixel_gate.py <gate.py> <video.mp4> [--type T] [--silent] [--vo-start S --vo-end S]
+Usage: python3 pixel_gate.py <gate.py> <video.mp4> [--type T] [--silent] [--max-s S] [--vo-start S --vo-end S]
 Prints one JSON object: {"fails": [...], "info": {...}, "samples": [{"t": s, "text": "..."}]}
 or {"error": "...", "missing": "opencv" | "tesseract" | null} with exit code 2.
 
@@ -27,7 +27,7 @@ def main():
         return 2
     gate_path, video = args[0], args[1]
     rest = args[2:]
-    vtype, silent, vo_start, vo_end = "buyer_ad", False, None, None
+    vtype, silent, vo_start, vo_end, max_s = "buyer_ad", False, None, None, None
     i = 0
     while i < len(rest):
         a = rest[i]
@@ -35,6 +35,8 @@ def main():
             vtype = rest[i + 1]; i += 2
         elif a == "--silent":
             silent = True; i += 1
+        elif a == "--max-s":
+            max_s = float(rest[i + 1]); i += 2
         elif a == "--vo-start":
             vo_start = float(rest[i + 1]); i += 2
         elif a == "--vo-end":
@@ -72,7 +74,7 @@ def main():
 
     gate.ocr = ocr
     gate.endcard_ocr = endcard_ocr
-    fails, info = gate.run(video, vtype, silent, vo_start, vo_end)
+    fails, info = gate.run(video, vtype, silent, vo_start, vo_end, max_s)
     # The sampling loop's own times (video_render_gate.run: every 0.5 s while t < duration - 0.01).
     dur, _ = gate.probe(video)
     times = []

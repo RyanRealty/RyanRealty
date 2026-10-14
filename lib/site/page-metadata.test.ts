@@ -182,4 +182,15 @@ describe('pageMetadata', () => {
     const meta = pageMetadata({ title: 'Bend', description: 'Bend homes.', path: '/cities/bend' })
     expect(meta.robots).toEqual({ index: true, follow: true })
   })
+
+  it('keeps the document title budgeted and puts a longer share title on og/twitter', () => {
+    const meta = pageMetadata({
+      title: '61637 SE Evie Drive, Bend, OR 97702',
+      ogTitle: '61637 SE Evie Drive, Bend, OR 97702 · $634,900 · 4 bed, 3 bath',
+      description: 'A Bend listing.',
+      path: '/homes-for-sale/bend/acapella/61637-evie-220227635',
+    })
+    expect(meta.title).toBe('61637 SE Evie Drive, Bend, OR 97702')
+    expect(meta.openGraph?.title).toBe('61637 SE Evie Drive, Bend, OR 97702 · $634,900 · 4 bed, 3 bath')
+  })
 })

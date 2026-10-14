@@ -1,0 +1,10 @@
+{
+  "rule": "R-079",
+  "step": "voice",
+  "what": "a voice that runs 1.6 times as long",
+  "setup": {
+    "voice": {
+      "stretch": 1.6
+    }
+  }
+}

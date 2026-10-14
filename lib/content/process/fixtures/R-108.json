@@ -1,0 +1,13 @@
+{
+  "rule": "R-108",
+  "step": "master",
+  "what": "a caption up for 0.15 s",
+  "setup": {
+    "manifest": [
+      {
+        "path": "captions.3.end",
+        "set": 3.4
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "rule": "R-104",
+  "step": "master",
+  "what": "a film at -20 LUFS",
+  "setup": {
+    "measure": {
+      "loudness": {
+        "integratedLufs": -20,
+        "truePeakDb": -3
+      }
+    }
+  }
+}
