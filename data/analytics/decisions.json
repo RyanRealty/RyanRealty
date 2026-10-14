@@ -129,6 +129,12 @@
       "decided": "Matt 2026-10-14",
       "why": "One plain-English admin dashboard (leads from the CRM, sources, what visitors look at, buyer vs seller intent, markets, Google search) replaces the scattered report pages, and the same view exists inside GA4 as a custom report collection.",
       "manual": "/admin/analytics and GA4 Reports > Library"
+    },
+    {
+      "id": "clarity-session-recordings",
+      "decided": "Matt 2026-10-14",
+      "why": "Microsoft Clarity session recordings and heatmaps, to see where visitors click, scroll, get stuck or leave. Loads only under the GA4 consent rule (hasAnalyticsConsent: GPC off, a restricted region needs an explicit yes) and the GA4 suppression rule (never /admin or the CRM, never a broker's browser or automation), never on a private-path page, /account or /dashboard, or an address carrying a person token. A withdrawal sends consentv2 denied and stops it without a reload. It is told only page_type, visitor_intent, primary_market and, for a known contact, the hashed id GA4 gets as user_id; never a name, email or phone. Public lead forms carry data-clarity-mask. Off until Matt sends the project id (CLARITY_PROJECT_ID in lib/analytics/clarity.ts). Linking Clarity to GA4 is an OAuth grant in Clarity's settings and needs Matt's yes.",
+      "code": "lib/analytics/clarity.test.ts"
     }
   ]
 }
