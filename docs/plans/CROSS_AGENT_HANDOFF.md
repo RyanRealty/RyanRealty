@@ -1,17 +1,25 @@
-# Current — 2026-10-14 (Cursor, three send-gate draft PRs)
+# Current — 2026-10-14 (Cursor, landing three send-gate PRs)
 
-Surface: Cursor cloud. Three open draft PRs off origin/main `fe948f648`. Do not merge. Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. Matt approved merge once checks pass. Landing in order: #546, #547, #550. Normal merge, no force-push. Nobody pushes main. Nothing sent.
 
-**This pass.** Send-gate bugs, each its own PR:
+**This pass.**
 - #546 `cursor/intake-mobile-sms-gate-3e28` — mobile-only intake skipped SMS suppression
 - #547 `cursor/skip-suppression-opt-out-3e28` — skipSuppression bypassed STOP/opt-outs
-- #548 `cursor/same-sync-relist-race-3e28` — same-sync Active relist missed by `>` compare
+- #550 `cursor/same-sync-relist-race-3e28` — same-sync Active relist missed by `>` compare
 
-`EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true. CMA and email wording unchanged.
+`EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true. CMA and email wording unchanged. Known main flakes that may fail: `/sell` content-floor, `/communities/tetherow` page-payload, Lighthouse JSON.
 
-**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the SMS suppression branch / fix/cma-phase-match / PR 488 or 489. Hold #452 and #471 as before.
+**Held.** #452 stays open: the body requires a rule-25 fleet score before merge (stretch clocks). #471 stays open: merge conflicts with later main and would drop `loadCmaMapTile` / `CMA_MAP_MS`; lint-and-build is already red. The unique `idx_listings_parcel_number` migration is not on main.
+
+**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`.
 
 Skills read: `.cursor/rules/git-commit.mdc`.
+
+## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
+
+Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489), which includes #485 (`fe948f648`) and #488 (`2167f8f71`). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
+
+**What landed.** #485 refuses an expired/FSBO CMA build when the home is on the market or has no sendable email. #488 ranks closer lots and matching views ahead of a mismatched sale. #489 seats a same-generation half-mile sale ahead of a stale neighbor.
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 
