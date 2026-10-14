@@ -1,31 +1,32 @@
-import { ImageResponse } from 'next/og'
-import { createClient } from '@supabase/supabase-js'
+import { getBlogPostForOgBySlug, getBrokerForOgBySlug } from '@/lib/data/brokers/getBrokers'
+import { getHeroPhotosByListingKeys } from '@/lib/data/listings/getListingDetailBundles'
 import { getListingTiles } from '@/lib/data/listings/getListingTiles'
-import { publishMoneyText, publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
+import { renderShareCard } from '@/lib/og/share-card'
+import { resolvePlaceOgPhoto } from '@/lib/og/resolve-photo'
+import { shortOgTitle } from '@/lib/og/share-image-url'
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-function getSupabase() {
-  if (!url?.trim() || !anonKey?.trim()) return null
-  return createClient(url, anonKey)
-}
-
-// Node: importing getListingTiles through the DAL barrel pulled node:crypto
-// (ingest-licensed-blank / signing) into Edge and Vercel rejected middleware.
 export const runtime = 'nodejs'
+export const revalidate = 86400
+
+function listingCardTitle(tile: {
+  streetNumber?: string | null
+  streetName?: string | null
+  streetSuffix?: string | null
+  city?: string | null
+}): string {
+  const street = [tile.streetNumber, tile.streetName, tile.streetSuffix].filter(Boolean).join(' ')
+  return shortOgTitle(street || tile.city || 'Home for sale')
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const type = searchParams.get('type') ?? 'default'
-  const id = searchParams.get('id') ?? searchParams.get('slug') ?? ''
+  const id = (searchParams.get('id') ?? searchParams.get('slug') ?? '').trim()
+  const slug = (searchParams.get('slug') ?? id).trim()
+  const titleParam = searchParams.get('title') ?? ''
 
   if (type === 'listing' && id) {
-    const supabase = getSupabase()
-    if (supabase) {
-      // DAL: read tile via listingKeys filter (returns one row with full
-      // address + photo URL inlined). Replaces the prior 3-query chain
-      // (listings + properties + listing_photos) with a single MV lookup.
+    try {
       const tiles = await getListingTiles({
         listingKeys: [id],
         status: 'all',
@@ -33,200 +34,66 @@ export async function GET(request: Request) {
       })
       const tile = tiles[0]
       if (tile) {
-        const address = [tile.streetNumber, tile.streetName, tile.streetSuffix].filter(Boolean).join(' ')
         let photoUrl: string | undefined = tile.photoUrl ?? undefined
         if (!photoUrl) {
-          void supabase
-          const { getHeroPhotosByListingKeys } = await import('@/lib/data')
           const heroMap = await getHeroPhotosByListingKeys([tile.listingKey])
           photoUrl = heroMap.get(tile.listingKey)
         }
-        // The share card carries no sub-type badge, so it prints the price of
-        // the WHOLE property or no price at all. MLS 220190868 is a $1
-        // fractional interest at Eagle Crest: the card published a "$1" pill
-        // over "3 bed · 2 bath · 1,405 sq ft". MLS 220222478 is a quarter share
-        // of an 866 sq ft cabin at Lake Creek Lodge: the card published a
-        // "$159,900" pill over "3 bed · 2 bath · 866 sq ft".
-        const price =
-          publishMoneyText(
-            publishWholePropertyAmount({
-              price: tile.listPrice,
-              propertyType: tile.propertyType,
-              propertySubType: tile.propertySubType,
-              subdivisionName: tile.subdivisionName,
-              city: tile.city,
-              listNumber: tile.listNumber,
-            }),
-            'exact',
-          ) ?? ''
-        const stats = [tile.beds, tile.baths, tile.sqft].filter(Boolean)
-        const statsStr = stats.length ? `${tile.beds ?? '—'} bed · ${tile.baths ?? '—'} bath${tile.sqft ? ` · ${tile.sqft.toLocaleString()} sq ft` : ''}` : ''
-        return new ImageResponse(
-          (
-            <div
-              style={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'flex-end',
-                background: photoUrl ? `url(${photoUrl})` : '#102742',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }}
-            >
-              <div
-                style={{
-                  background: 'linear-gradient(transparent 0%, rgba(0,0,0,0.85) 100%)',
-                  padding: 48,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 12,
-                }}
-              >
-                {price && (
-                  <span style={{ backgroundColor: '#d4a853', color: '#102742', padding: '12px 24px', borderRadius: 8, fontSize: 36, fontWeight: 700 }}>
-                    {price}
-                  </span>
-                )}
-                <span style={{ color: 'white', fontSize: 28 }}>{address || 'Property'}</span>
-                {statsStr && <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 20 }}>{statsStr}</span>}
-                <span style={{ position: 'absolute', bottom: 24, right: 24, color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>Ryan Realty</span>
-              </div>
-            </div>
-          ),
-          { width: 1200, height: 630 }
-        )
+        return renderShareCard({
+          title: listingCardTitle(tile),
+          photoSrc: photoUrl,
+        })
       }
+    } catch (err) {
+      console.error('[og:listing]', err)
     }
   }
 
   if (type === 'community') {
-    // Fix 7: accept ?name=...&city=... directly (no DB lookup needed) so every
-    // community gets a branded OG card even without a curated static image.
-    // The page's generateMetadata passes these params when no static image exists.
-    const nameParam = searchParams.get('name') ?? ''
-    const cityParam = searchParams.get('city') ?? ''
-    if (nameParam) {
-      const cityLine = cityParam ? `${cityParam}, OR` : 'Central Oregon, OR'
-      return new ImageResponse(
-        (
-          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: '#102742', padding: 48 }}>
-            <span style={{ color: '#faf8f4', fontSize: 56, fontWeight: 700, textAlign: 'center', lineHeight: 1.1 }}>{nameParam}</span>
-            <span style={{ color: '#faf8f4', fontSize: 22, marginTop: 16, opacity: 0.75 }}>{cityLine}</span>
-            <span style={{ color: '#faf8f4', fontSize: 22, marginTop: 8, opacity: 0.55 }}>Homes for Sale &middot; Ryan Realty</span>
-          </div>
-        ),
-        { width: 1200, height: 630 }
-      )
-    }
-    // Legacy: lookup by slug via DB
-    if (id) {
-      const supabase = getSupabase()
-      if (supabase) {
-        void supabase
-        const { getCommunityNameBySlugIlike } = await import('@/lib/data')
-        const c = await getCommunityNameBySlugIlike(id)
-        if (c?.name) {
-          return new ImageResponse(
-            (
-              <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: '#102742', padding: 48 }}>
-                <span style={{ color: '#faf8f4', fontSize: 56, fontWeight: 700, textAlign: 'center' }}>{c.name}</span>
-                <span style={{ color: '#faf8f4', fontSize: 24, marginTop: 16, opacity: 0.65 }}>Homes for Sale &middot; Ryan Realty</span>
-              </div>
-            ),
-            { width: 1200, height: 630 }
-          )
-        }
-      }
-    }
+    const name = searchParams.get('name') ?? titleParam
+    return renderShareCard({
+      title: name || slug,
+      photoSrc: resolvePlaceOgPhoto('community', slug),
+    })
+  }
+
+  if (type === 'city') {
+    return renderShareCard({
+      title: titleParam || slug,
+      photoSrc: resolvePlaceOgPhoto('city', slug),
+    })
   }
 
   if (type === 'blog' && id) {
-    const supabase = getSupabase()
-    if (supabase) {
-      void supabase
-      const { getBlogPostForOgBySlug } = await import('@/lib/data')
-      const p = await getBlogPostForOgBySlug(id)
-      if (p?.title) {
-        // P0-4: heroes are local public/ paths now — satori needs an absolute URL.
-        const heroUrl = p.hero_image_url?.startsWith('/')
-          ? new URL(p.hero_image_url, request.url).toString()
-          : p.hero_image_url
-        return new ImageResponse(
-          (
-            <div
-              style={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'flex-end',
-                background: heroUrl ? `url(${heroUrl})` : '#102742',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }}
-            >
-              <div
-                style={{
-                  background: heroUrl
-                    ? 'linear-gradient(transparent 0%, rgba(0,0,0,0.85) 100%)'
-                    : 'transparent',
-                  padding: heroUrl ? 48 : 64,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: heroUrl ? 'flex-end' : 'center',
-                  gap: 12,
-                  flexGrow: heroUrl ? 0 : 1,
-                }}
-              >
-                {p.category && (
-                  <span style={{ color: '#d4a853', fontSize: 18, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>
-                    {p.category}
-                  </span>
-                )}
-                <span style={{ color: 'white', fontSize: 44, fontWeight: 700, lineHeight: 1.2 }}>{p.title}</span>
-                <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, marginTop: 8 }}>Ryan Realty | Central Oregon Real Estate</span>
-              </div>
-            </div>
-          ),
-          { width: 1200, height: 630 }
-        )
+    try {
+      const post = await getBlogPostForOgBySlug(id)
+      if (post?.title) {
+        return renderShareCard({
+          title: post.title,
+          photoSrc: post.hero_image_url,
+        })
       }
+    } catch (err) {
+      console.error('[og:blog]', err)
     }
   }
 
   if (type === 'broker' && id) {
-    const supabase = getSupabase()
-    if (supabase) {
-      void supabase
-      const { getBrokerForOgBySlug } = await import('@/lib/data')
-      const b = await getBrokerForOgBySlug(id)
-      if (b?.display_name) {
-        return new ImageResponse(
-          (
-            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0eeec', padding: 48 }}>
-              {b.photo_url && (
-                <img src={b.photo_url} alt={b.display_name || 'Agent photo'} width={160} height={160} style={{ borderRadius: '50%', objectFit: 'cover', marginBottom: 24 }} />
-              )}
-              <span style={{ color: '#102742', fontSize: 42, fontWeight: 700 }}>{b.display_name}</span>
-              {b.title && <span style={{ color: '#6b7280', fontSize: 22, marginTop: 8 }}>{b.title}</span>}
-              <span style={{ position: 'absolute', bottom: 24, right: 24, color: '#9ca3af', fontSize: 16 }}>Ryan Realty</span>
-            </div>
-          ),
-          { width: 1200, height: 630 }
-        )
+    try {
+      const broker = await getBrokerForOgBySlug(id)
+      if (broker?.display_name) {
+        return renderShareCard({
+          title: broker.display_name,
+          photoSrc: broker.photo_url,
+        })
       }
+    } catch (err) {
+      console.error('[og:broker]', err)
     }
   }
 
-  return new ImageResponse(
-    (
-      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: '#102742', padding: 48 }}>
-        <span style={{ color: 'white', fontSize: 52, fontWeight: 700, textAlign: 'center' }}>Ryan Realty</span>
-        <span style={{ color: '#d4a853', fontSize: 28, marginTop: 20 }}>Central Oregon Real Estate</span>
-      </div>
-    ),
-    { width: 1200, height: 630 }
-  )
+  return renderShareCard({
+    title: titleParam || 'Bend · Central Oregon',
+    photoSrc: null,
+  })
 }

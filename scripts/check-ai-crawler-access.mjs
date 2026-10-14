@@ -54,7 +54,20 @@ const REQUIRED_BOTS = [
 
 // Accept (SITE-174): these UAs from a blocked country must not be geo-403'd.
 // Middleware allows GOOD_BOT_RE first; without a match they fall through to CN/HK/RU/SG.
-const GEO_BYPASS_UAS = ['Perplexity-User', 'YouBot', 'meta-externalagent', 'Amazonbot']
+const GEO_BYPASS_UAS = [
+  'Perplexity-User',
+  'YouBot',
+  'meta-externalagent',
+  'Amazonbot',
+  // Link-preview fetchers. A geo 403 here is a navy-less iMessage / Slack card.
+  'facebookexternalhit',
+  'Twitterbot',
+  'Slackbot',
+  'Applebot',
+  'WhatsApp',
+  'LinkedInBot',
+  'Discordbot',
+]
 
 /**
  * Pull a top-level `const <name> = /regex/flags` out of a TS source file using
