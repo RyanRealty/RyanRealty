@@ -46,16 +46,8 @@ export type CommunitySoldRow = {
 }
 
 export function communitySoldWindowStart(asOf: Date): string {
-  // date-format-ok: Pacific day parts for the 6-month sold window, not a displayed date
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Los_Angeles',
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-  }).formatToParts(asOf)
-  const year = Number(parts.find((p) => p.type === 'year')?.value)
-  const month = Number(parts.find((p) => p.type === 'month')?.value)
-  const day = Number(parts.find((p) => p.type === 'day')?.value)
+  const today = zonedDateKey(asOf)
+  const [year, month, day] = today.split('-').map(Number)
   const shifted = new Date(Date.UTC(year, month - 1 - COMMUNITY_SOLD_WINDOW_MONTHS, day, 12, 0, 0))
   return zonedDateKey(shifted)
 }

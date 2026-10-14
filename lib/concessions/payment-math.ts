@@ -53,13 +53,14 @@ export type CompareResult = {
   withinCap: boolean
 }
 
-/** Documented 7.40% scenario used by payment_math.py when live PMMS is missing. */
-export const FALLBACK_PMMS = {
-  ratePct: 7.4,
-  weekStart: '2026-10-08',
-  sourceName: 'Freddie Mac PMMS 30-yr',
-  sourceUrl: 'https://www.freddiemac.com/pmms',
-} as const
+/**
+ * One discount point is one percent of the loan. Dollars divided by that
+ * amount is the point count the spec feeds into rateAfterBuydown.
+ */
+export function dollarsToPoints(dollars: number, loan: number): number {
+  if (!(loan > 0)) return 0
+  return (dollars / loan) * 100
+}
 
 export const DEFAULT_COMPARE: Omit<CompareInput, 'ratePct'> = {
   price: 695_850,
@@ -113,7 +114,7 @@ export function comparePriceCutVsConcession(input: CompareInput): CompareResult 
   const cutLoan = Math.max(0, price - dollars) * (1 - downFraction)
   const cutPi = monthlyPI(cutLoan, input.ratePct, termMonths)
 
-  const points = loan > 0 ? dollars / (loan * 0.01) : 0
+  const points = dollarsToPoints(dollars, loan)
   const concessionRate = rateAfterBuydown(input.ratePct, points, input.pointsPer025)
   const concessionPi = monthlyPI(loan, concessionRate, termMonths)
 
