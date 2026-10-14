@@ -75,6 +75,11 @@ export type CompSearch = {
   sentence: string
   /** On acreage: the splits that set sales aside, as one sentence (lib/pricing/rural.ts). */
   ruralSentence?: string | null
+  /**
+   * Homes that sold on the subject's own ground over the own rungs' window,
+   * any size. Null when that was not read.
+   */
+  ownGroundSold?: number | null
 }
 
 const BROKER_TIER = 'broker-selected'
@@ -182,6 +187,14 @@ export function buildCompSearch(input: {
   keptComps: readonly CompSearchKeptComp[]
   /** On acreage: the subject's zone and the split counts, for the reader's sentence. */
   rural?: { subjectZone: string | null | undefined; counts: Partial<RuralSplitCounts> | null | undefined } | null
+  /**
+   * Homes that sold on the subject's own ground over the own rungs' widest
+   * window, any size (CompSelectionDiagnostics.own_ground_sold, read only when
+   * those rungs found nothing). Zero lets the sentence say no home sold there;
+   * more than zero, that none matched. Null or absent: not read, and the
+   * sentence claims neither.
+   */
+  ownGroundSold?: number | null
 }): CompSearch | null {
   const subdivision = usableSubdivision(input.subdivision)
   const ran = input.ladder.filter((r) => r.ran && clean(r.tier))
@@ -236,15 +249,18 @@ export function buildCompSearch(input: {
     rungPhraseForUnnamed(outside, rungs, onSubjectStreet)
 
   // WHAT THE OWN-GROUND RUNGS ACTUALLY COVERED (reader review 2026-10-08).
-  // The sentence may only say what the subdivision rungs searched: whether
-  // they ran, over how many months, and how many sales they found. Zero
-  // sales is "No home sold in X", never "matched your home".
+  // "No recent sale inside X matched your home" is a claim about a search;
+  // it may only say what the subdivision rungs searched: whether they ran,
+  // over how many months, and how many sales they found. A real zero on the
+  // own-ground read (any size) is "No home sold"; homes that sold and none
+  // matched is "matched"; unread is neither (reader review 2026-10-09, 915 Saginaw).
   const ownRungs = ran.filter((r) => r.tier.startsWith('subdivision-'))
   const ownSearch: OwnGroundSearch | null =
     ownRungs.length > 0
       ? {
           months: Math.max(0, ...ownRungs.map((r) => (r.monthsBack > 0 ? r.monthsBack : (parseTierMonths(r.tier) ?? 0)))),
           found: ownRungs.reduce((sum, r) => sum + Math.max(0, r.compsAdded), 0),
+          sold: input.ownGroundSold != null && input.ownGroundSold >= 0 ? input.ownGroundSold : null,
         }
       : null
 
@@ -263,6 +279,7 @@ export function buildCompSearch(input: {
     keptBySubdivision,
     sentence,
     ruralSentence: input.rural ? ruralSplitsSentence(input.rural) : null,
+    ownGroundSold: ownSearch?.sold ?? null,
   }
 }
 
@@ -343,8 +360,12 @@ function describeOutsideSales(
   return { text: joinPhrases([...new Set(named.map((p) => p.text))]), namesSale: false }
 }
 
-/** What the subject's own-subdivision rungs searched: the widest window, and how many sales they found. */
-type OwnGroundSearch = { months: number; found: number }
+/**
+ * What the subject's own-subdivision rungs searched: the widest window, how
+ * many sales they found, and, when they found none, how many homes sold
+ * there at all over that window, any size (null when that was not read).
+ */
+type OwnGroundSearch = { months: number; found: number; sold?: number | null }
 
 /** "in the last 24 months", or nothing when no window is known. */
 function lastMonths(months: number): string {
@@ -357,11 +378,17 @@ function lastMonths(months: number): string {
  * what the own-subdivision rungs covered: that they searched the subdivision,
  * the window they searched, and whether they found a sale at all.
  *   - They did not run: nothing is claimed about the subdivision.
- *   - They ran and found none: "No home sold in X in the last N months",
- *     with the window they actually read. "Matched your home" claimed a
- *     size fit the search never made (reader review, 915 Saginaw, 2026-10-08).
- *   - They found sales and none is printed: those sales exist, so "no home
- *     sold" would be false. The sentence says they were found and are not
+ *   - They ran and found none, and no home of any size sold there in that
+ *     window: "No home sold in X in the last N months" (reader review
+ *     2026-10-09, 915 Saginaw: "No sale inside Park Place ... matched your
+ *     home" read as sales turned down, and there were none).
+ *   - They ran and found none, and homes did sell there: those sales were
+ *     turned down, so "No sale inside X in the last N months matched your
+ *     home".
+ *   - They ran and found none, and nobody read whether anything sold: the
+ *     sentence says only that the search found none to use.
+ *   - They found sales and none is printed: those sales exist, so "no sale
+ *     matched" would be false. The sentence says they were found and are not
  *     among the sales the letter uses.
  */
 function absentSentence(args: {
@@ -382,9 +409,19 @@ function absentSentence(args: {
     } among the sales this letter uses.`
     return outsideText ? `${found} The ${n} sales come from ${outsideText}.` : found
   }
+  if (ownSearch.sold === 0) {
+    return outsideText
+      ? `No home sold in ${subdivision}${window}, so the search opened to ${outsideText}.`
+      : `No home sold in ${subdivision}${window}.`
+  }
+  if (ownSearch.sold != null && ownSearch.sold > 0) {
+    return outsideText
+      ? `No sale inside ${subdivision}${window} matched your home, so the search opened to ${outsideText}.`
+      : `No sale inside ${subdivision}${window} matched your home.`
+  }
   return outsideText
-    ? `No home sold in ${subdivision}${window}, so the search opened to ${outsideText}.`
-    : `No home sold in ${subdivision}${window}.`
+    ? `The search found no sale inside ${subdivision}${window} to use, so it opened to ${outsideText}.`
+    : `The search found no sale inside ${subdivision}${window} to use.`
 }
 
 function writeSentence(args: {
