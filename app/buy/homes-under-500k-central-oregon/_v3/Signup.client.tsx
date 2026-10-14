@@ -116,7 +116,7 @@ export function Under500kSignup() {
         <label htmlFor="under500-company">{TRAP.label}</label>
         <input
           id="under500-company"
-          name={TRAP.name}
+          name="company"
           type="text"
           tabIndex={-1}
           autoComplete="off"

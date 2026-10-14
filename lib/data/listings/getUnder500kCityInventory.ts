@@ -24,6 +24,8 @@ import {
   type Under500kTownCounts,
 } from '@/lib/data/listings/under-500k-classify'
 
+export type { Under500kTownCounts } from '@/lib/data/listings/under-500k-classify'
+
 const PAGE_SIZE = 1000
 const MAX_ROWS = 8000
 
