@@ -63,6 +63,27 @@ function pathOf(url: string): string | null {
  *      cities (30 duplicates live on 2026-09-22); first occurrence wins.
  * Dropping, never throwing: a defect degrades to an omitted URL, not a 500.
  */
+/**
+ * Drop each /open-houses/<city> page that renders noindex because its week is
+ * empty (SITE-27): deploy:verify found /open-houses/brothers and
+ * /open-houses/black-butte-ranch submitted with noindex on 2026-10-14.
+ * `withEvents` holds the city slugs that have an open house in the page's
+ * window, or is null when that read failed. Then nothing is dropped, because
+ * an unknown calendar is not an empty one.
+ */
+export function dropEmptyOpenHouseCities<T extends { url: string }>(
+  entries: T[],
+  withEvents: ReadonlySet<string> | null,
+): T[] {
+  if (!withEvents) return entries
+  return entries.filter((entry) => {
+    const city = /^\/open-houses\/([^/]+)$/.exec(pathOf(entry.url) ?? '')?.[1]
+    if (!city || withEvents.has(city)) return true
+    console.error(`[sitemap] dropped an open-house city page with no open house this week (it renders noindex): ${entry.url}`)
+    return false
+  })
+}
+
 export function finalizeSitemapEntries<T extends { url: string }>(
   entries: T[],
   allowedNeighborhoodPaths: Set<string>,
