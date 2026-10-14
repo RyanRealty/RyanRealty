@@ -39,6 +39,9 @@ import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { buildAllUrls } from '@/app/sitemap'
 import { classifySitemapUrl, type SitemapClass } from '@/lib/data/sitemap/classify'
 import { getListingSitemapRows } from '@/lib/data/sitemap/getListingSitemapRows'
+import type { ListingSitemapRow } from '@/lib/data/sitemap/listing-sitemap-path'
+import { getListingSitemapPhotos } from '@/lib/data/sitemap/getListingSitemapPhotos'
+import { listingPhotoSitemapPart } from '@/lib/data/sitemap/listing-photo-sitemap'
 import { getIndexablePresetSlugs } from '@/lib/search-presets'
 import { createUniverseMemo } from '@/lib/sitemap-universe-memo'
 
@@ -90,3 +93,32 @@ export const getClassRows = unstable_cache(
   ['sitemap-class-urls-v5'],
   { revalidate: 3600 },
 )
+
+/**
+ * The listings.xml listing set (Active, Active Under Contract, Pending, from
+ * listing_tile_mv) with its ListingKeys, memoized per instance so the photo
+ * parts and the video sitemap requested together share one read. A failed
+ * read is never memoized.
+ */
+export const getListingSitemapRowsOnce = createUniverseMemo<ListingSitemapRow[]>(
+  () => getListingSitemapRows(),
+  UNIVERSE_TTL_MS,
+)
+
+export type ListingPhotoSitemapEntry = { path: string; lastModified: string; images: string[] }
+
+/**
+ * One /sitemaps/listing-photos/{part}.xml: the listings.xml listings whose
+ * ListingKey hashes to `part`, each with every photo (capped), in listing_key
+ * order. A listing with no publishable photo is left out of the file.
+ */
+export async function getListingPhotoSitemapEntries(part: number): Promise<ListingPhotoSitemapEntry[]> {
+  const rows = (await getListingSitemapRowsOnce()).filter((r) => listingPhotoSitemapPart(r.listingKey) === part)
+  const photos = await getListingSitemapPhotos(rows.map((r) => r.listingKey))
+  const out: ListingPhotoSitemapEntry[] = []
+  for (const row of rows) {
+    const images = photos.get(row.listingKey)
+    if (images && images.length > 0) out.push({ path: row.path, lastModified: row.lastModified, images })
+  }
+  return out
+}

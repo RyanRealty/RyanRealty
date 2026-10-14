@@ -120,7 +120,7 @@ import { V3WorkWithUs as _V3WorkWithUsImport } from '@/components/site/v3/V3Phon
 import ListingTracker from '@/components/listing/ListingTracker'
 import { ListingAttribution } from '@/components/listing/ListingAttribution'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { buildListingJsonLd } from './listing-json-ld'
+import { buildListingJsonLd, LISTING_JSONLD_IMAGE_CAP } from './listing-json-ld'
 import {
   V3_ROOT_CLASS,
   V3_LISTING_CLASS,
@@ -1069,7 +1069,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     wholePropertyPrice,
     trail: breadcrumbs,
     listing,
-    photoUrls: (lcpPriority ? galleryPhotos : flightPhotos).slice(0, 5).map((p) => p.url),
+    photoUrls: (lcpPriority ? galleryPhotos : flightPhotos).slice(0, LISTING_JSONLD_IMAGE_CAP).map((p) => p.url),
     agent: listingAgent
       ? { fullName: listingAgent.fullName, email: listingAgent.email, phoneDirect: listingAgent.phoneDirect }
       : null,

@@ -493,7 +493,8 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
         dateModified: input.dateModified,
         additionalProperty: listingAdditionalProperty(input.additionalProperty),
         about: listingResidenceAbout(input),
-        image: input.photos && input.photos.length > 0 ? input.photos.slice(0, 5).map(absoluteUrl) : undefined,
+        // Ten photos (2026-10-14, was 5): listing pages pass LISTING_JSONLD_IMAGE_CAP.
+        image: input.photos && input.photos.length > 0 ? input.photos.slice(0, 10).map(absoluteUrl) : undefined,
         listingAgent: input.listingAgent ? prune({
           '@type': 'RealEstateAgent',
           name: input.listingAgent.name,

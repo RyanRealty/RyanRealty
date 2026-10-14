@@ -20,8 +20,10 @@
  * 220157653 at 250, 220218225 at 500). When the whole-property price is
  * withheld the offer and the priced description are withheld with it.
  *
- * Photos are already gated by media_suppressed inside getListingPhotos(); the
- * cap at 5 matches the builder's own slice.
+ * Photos are already gated by media_suppressed inside getListingPhotos(). The
+ * image list is capped at LISTING_JSONLD_IMAGE_CAP (10 since 2026-10-14, was
+ * 5); the image sitemap carries the rest of the gallery, so this node stays
+ * small in a page that serializes it twice (HTML + RSC flight).
  */
 
 import { toIsoTimestamp } from '@/lib/format/date'
@@ -31,6 +33,9 @@ import { publishListingQuickFacts } from '@/lib/listing/publish-listing-quick-fa
 import { listingCanonicalHref } from '@/lib/slug'
 import type { PlaceCrumb } from '@/lib/site/place-trail'
 import type { SchemaInput } from '@/lib/site/json-ld'
+
+/** Photos in the RealEstateListing `image` list (lib/site/json-ld.ts caps at the same). */
+export const LISTING_JSONLD_IMAGE_CAP = 10
 
 export type ListingJsonLdInput = {
   listingKey: string
@@ -176,7 +181,7 @@ export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
       lotSizeSqft: listing.lotSizeSqft ?? undefined,
       yearBuilt: listing.yearBuilt ?? undefined,
       listPrice: wholePropertyPrice ?? undefined,
-      photos: photoUrls.length > 0 ? photoUrls.slice(0, 5) : undefined,
+      photos: photoUrls.length > 0 ? photoUrls.slice(0, LISTING_JSONLD_IMAGE_CAP) : undefined,
       listingAgent: agent
         ? {
             name: agent.fullName,

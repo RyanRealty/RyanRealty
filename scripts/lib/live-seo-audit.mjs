@@ -11,7 +11,12 @@
  *
  * Fails (exit 1 from the caller) on:
  *   robots   a named crawler group without the private-page disallows; no Sitemap line
- *   sitemap  a child that is not 200; listings.xml with image:loc on < 90% of entries
+ *   sitemap  a child that is not 200; listings.xml with image:loc on < 90% of entries;
+ *            a /sitemaps/listing-photos/{n}.xml part with no <image:loc> (2026-10-14).
+ *            Photo parts and video.xml re-list listings.xml URLs, so their pages
+ *            are not sampled a second time; an empty video.xml is a warning
+ *            (it lists only listings whose MLS video is a YouTube or Vimeo
+ *            player with a dated record).
  *   page     (sampled from every child sitemap, fetched as a real visit with
  *            Accept: text/html)
  *            - not a 200, or a sitemap URL that redirects
@@ -345,9 +350,30 @@ export async function runLiveSeoAudit(base, { ua, perSitemap = 8, concurrency = 
   if (index.status !== 200 || children.length === 0) fails.push(`/sitemap.xml returned ${index.status} with ${children.length} children`)
 
   const targets = [{ url: `${origin}/`, isHome: true, isListing: false }]
+  let photoParts = 0
+  let photoImages = 0
   for (const child of children) {
     const res = await fetchText(child, ua, { accept: 'application/xml', timeoutMs: 300_000 })
     const locs = [...res.text.matchAll(/<url>\s*<loc>([^<]+)<\/loc>/g)].map((m) => decode(m[1]))
+    const childPath = new URL(child).pathname
+    if (/^\/sitemaps\/video\.xml$/.test(childPath)) {
+      if (res.status !== 200) fails.push(`${childPath} returned ${res.status}`)
+      else {
+        const videos = (res.text.match(/<video:video>/g) ?? []).length
+        lines.push(`video sitemap: ${videos} videos on ${locs.length} listing URLs`)
+        if (videos === 0) warns.push('video.xml lists no videos')
+      }
+      continue
+    }
+    if (/^\/sitemaps\/listing-photos\/\d+\.xml$/.test(childPath)) {
+      const images = (res.text.match(/<image:loc>/g) ?? []).length
+      if (res.status !== 200 || locs.length === 0 || images === 0) {
+        fails.push(`${childPath} returned ${res.status} with ${locs.length} URLs and ${images} photos`)
+      }
+      photoParts++
+      photoImages += images
+      continue
+    }
     if (res.status !== 200 || locs.length === 0) {
       fails.push(`${new URL(child).pathname} returned ${res.status} with ${locs.length} URLs`)
       continue
@@ -401,6 +427,7 @@ export async function runLiveSeoAudit(base, { ua, perSitemap = 8, concurrency = 
       else descSeen.set(page.description, where)
     }
   })
+  if (photoParts > 0) lines.push(`listing photo sitemaps: ${photoImages} photos across ${photoParts} parts`)
   lines.push(`pages: ${targets.length} sampled (${perSitemap} per sitemap + home)`)
 
   const decisions = JSON.parse(readFileSync(new URL('../../data/seo/decisions.json', import.meta.url), 'utf8')).decisions
