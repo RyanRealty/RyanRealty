@@ -29,6 +29,7 @@ import {
   captionPresenceProblem,
   computeShots,
   endcardStartFromPixels,
+  allowedLengthCeiling,
   evaluateLength,
   missingVoiceProblem,
   requiredPartProblem,
@@ -634,6 +635,8 @@ async function pixels(c: Ctx, probe: PixelProbe): Promise<Body> {
     silent,
     voStart: words.length ? words[0].start : null,
     voEnd: words.length ? words[words.length - 1].end : null,
+    // The brief's allowed ceiling, as video_gate.mjs's Length block allows it: a film it passed is not failed by the gate.
+    maxS: allowedLengthCeiling(c.rules, c.brief),
   })
   const { kept, dropped } = gateFindings(gate.fails, m, c.rules)
   const problems = kept.map((f) => `render gate: ${f}`)
