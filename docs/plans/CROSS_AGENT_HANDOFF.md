@@ -1,4 +1,16 @@
-# Current — 2026-10-13 (Cursor, rebase #512 onto main)
+# Current — 2026-10-13 (Cursor, #512 landed on production)
+
+Surface: Cursor cloud. PR #512 merged to `origin/main` as `09d783c99` at 2026-10-13T23:31:09Z. Production Vercel `dpl_G21oncZ62GVDnzxeux1mHvGMdEmN` READY for that SHA and aliased to ryan-realty.com. Nothing sent. Production DB stayed read-only.
+
+**What landed.** `/price-drops` counts only honest currently-active asking-price cuts. Cuts over 40% and ~10x decimal-shift typos are withheld (Hunnell 90%). #510's >50% typo guard, MLS-number dedupe, and `ci:private-remarks` / `ci:deals-copy` / `ci:imagine-no-paid-api` stay. Signup is a price-drop alert on the #502 listing-alert path (events + ads consent + landingSearch), through #505's `submit-alert-signup` wrapper.
+
+**Verified live.** GET https://ryan-realty.com/price-drops → 200, deploy id `dpl_G21oncZ62GVDnzxeux1mHvGMdEmN`. 174 cuts this week, 0.2%–37.5%, no Hunnell, no `was $…` cut over 50%. Eight sampled listing pages (including 4705 Wittmer at −37.5%) are Active / `index, follow` with asks that match the catalog.
+
+**Not this change.** Do not send alerts. Do not apply SQL. Do not rebuild letters. Do not resend the 2026-10-11 letters.
+
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES.
+
+## Earlier — 2026-10-13 (Cursor, rebase #512 onto main)
 
 Surface: Cursor cloud. Branch `cursor/price-drops-accuracy-61bb` rebased onto origin/main `f1058b79d` (after #502, #516/#518, #499, #515, #519, #526, #513, #520, #521, #498, #531, #532, #505). Nothing sent. Production DB stayed read-only.
 
