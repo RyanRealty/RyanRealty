@@ -260,6 +260,71 @@
       },
       "decided": "Matt 2026-10-05",
       "why": "Undo SITE-33's out-of-area noindex: Search Console showed it cost ~36% of the impression drop since Sep 12 (~2,500 impressions, ~30 clicks a week). Out-of-area listings are index, follow with a self canonical, in /sitemaps/listings.xml, and keep the honesty block. Sample: an Active Medford listing on the feed since 2020."
+    },
+    {
+      "id": "sitemap-index-lists-listing-media",
+      "path": "/sitemap.xml",
+      "expect": {
+        "status": 200,
+        "html": [
+          "/sitemaps/listings\\.xml",
+          "/sitemaps/listing-photos/1\\.xml",
+          "/sitemaps/listing-photos/24\\.xml",
+          "/sitemaps/video\\.xml"
+        ]
+      },
+      "decided": "Matt 2026-10-14",
+      "why": "Listing photos in the image sitemap and listing video tours in a video sitemap, both reached from the one sitemap index Google is given."
+    },
+    {
+      "id": "listing-photos-in-image-sitemap",
+      "path": "/sitemaps/listing-photos/1.xml",
+      "expect": {
+        "status": 200,
+        "html": [
+          "<image:loc>https://cdn\\.resize\\.sparkplatform\\.com/"
+        ]
+      },
+      "decided": "Matt 2026-10-14",
+      "why": "Every listing photo (up to 30 per listing, the 1600x1200 render the page loads) ships in /sitemaps/listing-photos/{1..24}.xml so Google Images ties each MLS photograph to its listing page. listings.xml keeps the lead photo."
+    },
+    {
+      "id": "no-rehost-mls-media",
+      "path": "/sitemaps/listings.xml",
+      "expect": {
+        "status": 200,
+        "html": [
+          "<image:loc>https://cdn\\.resize\\.sparkplatform\\.com/"
+        ]
+      },
+      "decided": "Matt 2026-10-14",
+      "why": "ODS: listing photos and videos are the listing broker's; we hotlink the MLS CDN (Spark) and embed videos from their host, never a re-hosted copy, until a license says otherwise."
+    },
+    {
+      "id": "listing-video-sitemap",
+      "path": "/sitemaps/video.xml",
+      "expect": {
+        "status": 200,
+        "html": [
+          "<video:player_loc>https://(www\\.youtube\\.com/embed/|player\\.vimeo\\.com/video/)",
+          "<video:publication_date>20"
+        ]
+      },
+      "decided": "Matt 2026-10-14",
+      "why": "Listing video tours for Google video search: only YouTube or Vimeo players with a real MLS date, never a date invented and never a file of ours. 418 listings on 2026-10-14."
+    },
+    {
+      "id": "community-area-guide-videoobject",
+      "path": "/communities/juniper-preserve",
+      "expect": {
+        "status": 200,
+        "html": [
+          "\"@type\":\"VideoObject\"",
+          "\"uploadDate\":\"20"
+        ]
+      },
+      "decided": "Matt 2026-10-14",
+      "why": "A community with an area guide carries the same complete VideoObject as /cities/bend. Juniper Preserve's guide is tagged with its durable key 'pronghorn' and was missed until 2026-10-14."
     }
   ]
 }
