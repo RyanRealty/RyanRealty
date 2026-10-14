@@ -93,5 +93,32 @@ export function buildFaqs(input: {
     )
   }
 
+  if (def.kind === 'from-out-of-state') {
+    items.push(
+      faq(
+        `Can I buy a house in ${place.name} from out of state?`,
+        `Yes. The live list is the same list we use in town. ${cite}. Ryan Realty has been doing this work since Matt Ryan founded the firm in 2014.`,
+      ),
+    )
+  }
+
+  if (def.kind === 'second-home') {
+    items.push(
+      faq(
+        `Does this page say I can rent a ${place.name} home short-term?`,
+        `No. It states live single-family inventory only. Short-term rental rules are not a single sourced figure on this page. Confirm use with the association before you buy.`,
+      ),
+    )
+  }
+
+  if (def.kind === 'buying') {
+    items.push(
+      faq(
+        `What does buying a home in ${place.name} start with?`,
+        `The live MLS list. ${cite}. This page does not rank neighborhoods or name a best first house.`,
+      ),
+    )
+  }
+
   return items.slice(0, 5)
 }

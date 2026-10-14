@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buyingAnswer,
   costAnswer,
+  fromOutOfStateAnswer,
   hoaAnswer,
   livingAnswer,
   presetAnswer,
+  secondHomeAnswer,
   strAnswer,
   vsAnswer,
 } from './copy'
@@ -61,6 +64,9 @@ describe('buyer-answer copy', () => {
         medianDaysToPending: 28,
         asOf,
       }),
+      fromOutOfStateAnswer(place({ name: 'Bend', placeKind: 'city', publicSlug: 'bend', hubHref: '/cities/bend', hoaAnnual: null, hoaKind: null, activeCount: 412, medianListPrice: 749_000, medianDaysToPending: 28 }), asOf),
+      secondHomeAnswer(place({ name: 'Sunriver', publicSlug: 'sunriver', durableSlug: 'sunriver', hubHref: '/communities/sunriver', hoaAnnual: null, hoaKind: null, activeCount: 40, medianListPrice: 895_000 }), asOf),
+      buyingAnswer(place({ name: 'Redmond', placeKind: 'city', publicSlug: 'redmond', hubHref: '/cities/redmond', hoaAnnual: null, hoaKind: null, activeCount: 210, medianListPrice: 575_000 }), asOf),
     ]
     for (const answer of answers) {
       const n = wordCount(answer)
@@ -105,5 +111,36 @@ describe('buyer-answer copy', () => {
     const answer = livingAnswer(place({ name: 'Tetherow', activeCount: 0, medianListPrice: null }), asOf)
     expect(answer).toContain('no single-family homes for sale')
     expect(answer).not.toContain('median list price')
+  })
+
+  it('names 2014 on the out-of-state answer and does not invent STR for a second home', () => {
+    const remote = fromOutOfStateAnswer(
+      place({
+        name: 'Bend',
+        placeKind: 'city',
+        publicSlug: 'bend',
+        hubHref: '/cities/bend',
+        hoaAnnual: null,
+        hoaKind: null,
+        activeCount: 412,
+        medianListPrice: 749_000,
+      }),
+      asOf,
+    )
+    expect(remote).toContain('2014')
+    expect(remote.toLowerCase()).not.toMatch(/top team/)
+    const second = secondHomeAnswer(
+      place({
+        name: 'Sunriver',
+        publicSlug: 'sunriver',
+        durableSlug: 'sunriver',
+        hubHref: '/communities/sunriver',
+        hoaAnnual: null,
+        hoaKind: null,
+      }),
+      asOf,
+    )
+    expect(second).toContain('not a single sourced figure')
+    expect(second).not.toMatch(/Airbnb|VRBO|allowed|banned/)
   })
 })

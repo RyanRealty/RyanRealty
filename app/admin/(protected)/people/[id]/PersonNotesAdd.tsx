@@ -22,19 +22,23 @@ function tsLabel(iso: string): string {
 export function PersonNotesAdd({
   personId,
   notes,
+  hideHeading = false,
+  latestOnly = false,
 }: {
   personId: number
   notes: PersonNoteView[]
+  hideHeading?: boolean
+  latestOnly?: boolean
 }) {
   const [rows, setRows] = useState(notes)
   const [body, setBody] = useState('')
   const [saving, startSave] = useTransition()
 
   return (
-    <section aria-label="Notes" style={{ margin: '0 0 20px' }}>
-      <SectionHead>Notes</SectionHead>
+    <section aria-label="Notes" style={{ margin: hideHeading ? 0 : '0 0 20px' }}>
+      {hideHeading ? null : <SectionHead>Notes</SectionHead>}
       <ul className="av2-quietlist">
-        {rows.map((n) => (
+        {(latestOnly ? rows.slice(0, 1) : rows).map((n) => (
           <li key={n.id} className="av2-quiet" style={{ display: 'block' }}>
             <div style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
               {tsLabel(n.ts)}

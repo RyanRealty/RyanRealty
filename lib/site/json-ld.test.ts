@@ -206,6 +206,21 @@ describe('buildJsonLd', () => {
     expect(rec(r.mainEntity)?.['@id']).toMatch(/#organization$/)
   })
 
+  it('webPage can name the visible author', () => {
+    const r = buildJsonLd({
+      type: 'webPage',
+      name: 'Buying a house in Bend from out of state',
+      url: '/cities/bend/from-out-of-state',
+      authorName: 'Matt Ryan, Principal Broker',
+      authorUrl: '/team/matthew-ryan',
+    })
+    expect(rec(r.author)).toMatchObject({
+      '@type': 'Person',
+      name: 'Matt Ryan, Principal Broker',
+    })
+    expect(String(rec(r.author)?.url)).toMatch(/\/team\/matthew-ryan$/)
+  })
+
   it('already-absolute URLs pass through unchanged', () => {
     const r = buildJsonLd({ type: 'article', headline: 'H', url: 'https://example.com/x' })
     expect(r.url).toBe('https://example.com/x')

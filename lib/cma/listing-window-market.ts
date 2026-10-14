@@ -68,6 +68,12 @@ export type ListingMarketMove = {
    * house. Absent keeps the single-family wording the older letters use.
    */
   productNoun?: string | null
+  /**
+   * True when the window runs to the letter date because the home is still on
+   * the market (Matt 2026-10-09). The sentence then says "Since your home came
+   * on the market", never "While your home was listed".
+   */
+  ongoing?: boolean
 }
 
 export type ListingMarketClose = {
@@ -297,6 +303,10 @@ export function chooseListingMarket(input: {
   return attempt(false)
 }
 
+function listedLead(move: Pick<ListingMarketMove, 'ongoing'>): string {
+  return move.ongoing ? 'Since your home came on the market' : 'While your home was listed'
+}
+
 function moveClause(word: ListingMarketMoveWord, from: number, to: number): string {
   if (word === 'held flat') return `held flat, ${usd(from)} then ${usd(to)}`
   if (word === 'rose') return `rose from ${usd(from)} to ${usd(to)}`
@@ -336,10 +346,10 @@ function sizeMixSentence(move: ListingMarketMove, size: string): string {
   const sizeLine = `The later homes were ${late > early ? 'larger' : 'smaller'}. The median one was ${fmt(late)} square feet, and the earlier median was ${fmt(early)}.`
   const dollars = `The median sale was ${usd(move.early.median)}, then ${usd(move.late.median)}.`
   const hasFoot = move.ppsfMove != null && move.early.ppsf != null && move.late.ppsf != null
-  if (!hasFoot) return `While your home was listed, ${sizeLine} ${dollars}`
+  if (!hasFoot) return `${listedLead(move)}, ${sizeLine} ${dollars}`
   const where = move.productNoun ? `for a ${move.productNoun} in ${move.place}` : `in ${move.place}`
   const foot = `the price per square foot ${where}${size} ${moveClause(move.ppsfMove!, move.early.ppsf!, move.late.ppsf!)}`
-  return `While your home was listed, ${foot}. ${sizeLine} ${dollars}`
+  return `${listedLead(move)}, ${foot}. ${sizeLine} ${dollars}`
 }
 
 /**
@@ -363,7 +373,7 @@ function singleSaleSentence(move: ListingMarketMove, product: string, size: stri
     move.early.ppsf != null && move.late.ppsf != null
       ? ` Per square foot, that is ${usd(move.early.ppsf)}, then ${usd(move.late.ppsf)}.`
       : ''
-  return `While your home was listed, ${first}, and ${second}.${foot} One sale is one home's price, not a trend.`
+  return `${listedLead(move)}, ${first}, and ${second}.${foot} One sale is one home's price, not a trend.`
 }
 
 /** A stored move, or null when the value is not one the local page could print. */
@@ -429,7 +439,7 @@ export function listingMarketSentence(move: ListingMarketMove): string {
   // word the date gate reads, and do not call the dollar median a rise or a fall.
   if (listingMarketSizeMix(move)) return sizeMixSentence(move, size)
   const price = moveClause(move.priceMove, move.early.median, move.late.median)
-  const head = `While your home was listed, the median ${product}sale in ${move.place}${size} ${price}.`
+  const head = `${listedLead(move)}, the median ${product}sale in ${move.place}${size} ${price}.`
   if (move.ppsfMove == null || move.early.ppsf == null || move.late.ppsf == null) return head
   const foot = `The price per square foot ${moveClause(move.ppsfMove, move.early.ppsf, move.late.ppsf)}.`
   return `${head} ${foot}`
