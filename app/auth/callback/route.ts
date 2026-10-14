@@ -7,7 +7,15 @@ import { claimGuestSavedSearches } from '@/lib/data/savedSearches'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
 // The rr_pid value is a SIGNED token since 2026-09-23 (P7 identity loop): a
 // bare id in a cookie let anyone claim any contact's identity.
-import { PERSON_COOKIE, personCookieOptions, personCookieValue } from '@/lib/identity/person-cookie'
+import {
+  PERSON_COOKIE,
+  personCookieOptions,
+  personCookieValue,
+  personCookieWrite,
+  readPersonCookie,
+  signInProvenance,
+  type IdentityProvenance,
+} from '@/lib/identity/person-cookie'
 import type { User } from '@supabase/supabase-js'
 import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
@@ -60,6 +68,10 @@ async function stampPersonIdFromEmail(
   rrVid: string | undefined,
   userId: string | undefined,
   source: string,
+  // The sign-in's provenance (signInProvenance): verified once the provider
+  // confirmed the email, which is what lets the CMA consent bar trust it.
+  provenance: IdentityProvenance,
+  currentPersonCookie: string | undefined,
 ): Promise<void> {
   const normalized = email.trim().toLowerCase()
   if (!normalized) return
@@ -68,7 +80,8 @@ async function stampPersonIdFromEmail(
     const matchIds = await personIdsByEmailCi(sb, normalized).catch(() => [] as number[])
     const personId = matchIds[0] ?? null
     if (personId) {
-      res.cookies.set(PERSON_COOKIE, personCookieValue(personId), personCookieOptions())
+      const write = personCookieWrite(readPersonCookie(currentPersonCookie), personId, provenance)
+      if (write) res.cookies.set(PERSON_COOKIE, personCookieValue(personId, write), personCookieOptions())
     }
     // Guest listing-save absorb: if this browser's identity-map row still holds
     // a minutes-old guest capture under a different email, fold it into the
@@ -281,7 +294,15 @@ export async function GET(request: Request) {
       const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
-      await stampPersonIdFromEmail(res, data.user.email ?? '', rrVid, data.user.id, 'auth_oauth')
+      await stampPersonIdFromEmail(
+        res,
+        data.user.email ?? '',
+        rrVid,
+        data.user.id,
+        'auth_oauth',
+        signInProvenance(data.user),
+        cookieStore.get(PERSON_COOKIE)?.value,
+      )
       // Phase 7.3: pull this signer's guest email-keyed saved searches into the
       // account (verified-email gated, idempotent, never blocks sign-in).
       await claimGuestSearchesForUser(data.user)
@@ -316,7 +337,15 @@ export async function GET(request: Request) {
       const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
-      await stampPersonIdFromEmail(res, data.user.email ?? '', rrVid, data.user.id, type === 'recovery' ? 'auth_recovery' : 'auth_email')
+      await stampPersonIdFromEmail(
+        res,
+        data.user.email ?? '',
+        rrVid,
+        data.user.id,
+        type === 'recovery' ? 'auth_recovery' : 'auth_email',
+        signInProvenance(data.user),
+        cookieStore.get(PERSON_COOKIE)?.value,
+      )
       // Phase 7.3: pull this signer's guest email-keyed saved searches into the
       // account (verified-email gated, idempotent, never blocks sign-in).
       await claimGuestSearchesForUser(data.user)

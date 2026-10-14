@@ -29,14 +29,16 @@ import type { CmaRenderSource } from '@/lib/data/cma/documents'
 import { adminReviewBannerHtml, injectAdminReviewBanner } from '@/lib/cma/review-banner'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { IDENTITY_LINK_PARAM, verifyPersonLinkToken } from '@/lib/identity/link-token'
-import { PERSON_COOKIE, signedPersonIdFromCookie } from '@/lib/identity/person-cookie'
+import { PERSON_COOKIE, verifiedPersonIdFromCookie } from '@/lib/identity/person-cookie'
 
 /**
  * The recipient a request PROVES it is: the signed `?_pid=` token on the link we
- * sent, or the signed rr_pid cookie that link set (P7 identity loop,
- * 2026-09-23). A bare id identifies nobody: CMA slugs are street addresses and
- * person ids are sequential, so an unsigned id let anyone open a client's
- * private valuation.
+ * sent, or the VERIFIED rr_pid cookie that link set (P7 identity loop,
+ * 2026-09-23; provenance 2026-10-14). A bare id identifies nobody: CMA slugs are
+ * street addresses and person ids are sequential, so an unsigned id let anyone
+ * open a client's private valuation. A claimed cookie (a browser known only from
+ * an email someone typed into a form) proves nothing either: anyone can type
+ * anyone's email, and the bar this decides records SMS and email consent.
  */
 function recipientFromParam(v: string | null | undefined): number | null {
   return verifyPersonLinkToken(v)?.personId ?? null
@@ -302,8 +304,10 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<ServeCmaInner
   // NO SIGN-IN TO VIEW (Matt 2026-10-07): a client-ready report opens for
   // anyone with the link. The only thing identity still decides is the
   // consent bar: the recipient who came in on the tracked link (`?_pid=`
-  // token, or the signed rr_pid cookie it set) and has not answered the ask
-  // gets an optional bar inside the report. Everyone else gets no bar.
+  // token, or the verified rr_pid cookie it set) and has not answered the ask
+  // gets an optional bar inside the report. Everyone else gets no bar,
+  // including a browser whose cookie is only claimed (consent integrity,
+  // 2026-10-14): /api/cma/register would refuse its answer anyway.
   let consentBar = ''
   if (publicReady && !opts.isAdmin && !opts.skipRegisterGate) {
     const identity = await getCmaAccessIdentity(safeSlug)
@@ -311,7 +315,7 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<ServeCmaInner
     const commsCookie = jar.get(GOOGLE_COMMS_COOKIE)?.value
     const recipientPersonId =
       recipientFromParam(new URL(opts.requestUrl).searchParams.get(IDENTITY_LINK_PARAM)) ??
-      signedPersonIdFromCookie(jar.get(PERSON_COOKIE)?.value)
+      verifiedPersonIdFromCookie(jar.get(PERSON_COOKIE)?.value)
     if (
       identity?.personId &&
       recipientPersonId === identity.personId &&

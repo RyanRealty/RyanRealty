@@ -18,7 +18,7 @@ import { getCmaAccessIdentity } from '@/lib/data'
 import { decideCmaAccess } from '@/lib/cma/register-gate'
 import { SMS_CONSENT_TEXT } from '@/lib/crm/sms-consent-text'
 import { createServiceClient } from '@/lib/supabase/service'
-import { PERSON_COOKIE, signedPersonIdFromCookie } from '@/lib/identity/person-cookie'
+import { PERSON_COOKIE, verifiedPersonIdFromCookie } from '@/lib/identity/person-cookie'
 
 export const revalidate = 0
 
@@ -50,9 +50,13 @@ export async function POST(request: Request) {
   let barPersonId: number | null = null
   if (!viewerEmail) {
     const pid = Number.parseInt(String(form.get('pid') ?? ''), 10)
-    // Only a SIGNED rr_pid counts (P7, 2026-09-23): a bare id in a cookie is
-    // something any visitor can type into their own browser.
-    const cookiePid = signedPersonIdFromCookie((await cookies()).get(PERSON_COOKIE)?.value)
+    // Only a VERIFIED rr_pid counts. A bare id is something any visitor can type
+    // into their own browser (P7, 2026-09-23). A claimed one names whoever's
+    // email was typed into a form on this browser, and anyone can type anyone's
+    // email, so it is no proof that the person consenting is this contact
+    // (consent integrity, 2026-10-14). The tracked link in the email we sent
+    // them mints a verified cookie when they arrive.
+    const cookiePid = verifiedPersonIdFromCookie((await cookies()).get(PERSON_COOKIE)?.value)
     if (Number.isFinite(pid) && pid > 0 && identity.personId === pid && cookiePid === pid) {
       barPersonId = pid
     } else {
