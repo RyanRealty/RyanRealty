@@ -29,7 +29,9 @@ restates them.
   CLAUDE.md §8 applies (clear a stale git lock yourself). In a Cursor cloud sandbox, the
   skill's "If you are a cloud session" section applies instead.
 - **Worktrees:** per AGENTS.md ("Claude Code ↔ Cursor"). Never leave the only copy of work
-  on a branch: land it per RUN_LOOP.md §5 or name it in the handoff's one Current block.
+  on a branch: land it per RUN_LOOP.md §5 or name it in the handoff. After the PR merges
+  or closes, remove your own worktree (`npm run wt:cleanup`). Never remove a dirty,
+  unpushed, stashed, or in-use checkout.
 
 ## Kickoff — paste this as the first message
 
