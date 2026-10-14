@@ -108,10 +108,12 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
         rung({ tier: 'nearby-1mi-6mo', monthsBack: 6, compsAdded: 5 }),
       ],
       keptComps: other(5),
+      ownGroundSold: 0,
     })
     expect(s!.keptBySubdivision['Diamond Bar Ranch']).toBeUndefined()
     // The window the subdivision rungs actually read, not "recent" (reader
     // review 2026-10-08: the sentence claims only what the search covered).
+    // ownGroundSold 0 is the real-zero read (reader review 2026-10-09).
     expect(s!.sentence).toBe(
       'No home sold in Diamond Bar Ranch in the last 6 months, so the search opened to Redmond Heights.',
     )
@@ -193,6 +195,7 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
           address: '20606 Songbird',
         },
       ],
+      ownGroundSold: 0,
     })
     expect(s!.sentence).toBe(
       'No home sold in Larkspur in the last 24 months, so the search opened to 61197 Cottonwood in Tara View Estates and 20606 Songbird in Foxborough.',
