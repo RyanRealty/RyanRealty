@@ -1472,6 +1472,15 @@ function pricingLocationGroup(tier: string | null | undefined): number {
 /** Same era, then a generation apart, then a different era. Unknown sits in the middle. */
 const PLAT_ERA_TIGHT_YEARS = 7
 const PLAT_ERA_LOOSE_YEARS = 15
+/**
+ * Same generation against this home's own-plat median year: within 10.
+ * Stale: more than 15 years off. A gap of 11 to 15, and a plat with no year,
+ * are neither. Those neighbors keep the order they already had.
+ */
+const SAME_GENERATION_YEARS = 10
+const STALE_GENERATION_YEARS = 15
+/** The 0.25 and 0.5 mile rings. A same-generation sale does not open 0.75 or farther. */
+const SAME_VINTAGE_MAX_MILES = 0.5
 /** A plat whose homes are within about 10% of this living area is the same size. */
 const PLAT_SIZE_CLOSE = 0.1
 /** Float noise under a hundredth of a mile does not beat a closer feature match. */
@@ -1483,6 +1492,154 @@ function platKey(sale: PricingSale): string {
   const name = sale.subdivisionNorm?.trim().toLowerCase()
   if (name) return name
   return sale.listingKey
+}
+
+function builtYear(year: number | null | undefined): number | null {
+  return year != null && year >= 1850 ? year : null
+}
+
+/** Median year built of one plat's sales in the pool. No year means the plat is unknown. */
+function platYearMedians(pool: readonly PricingSale[]): Map<string, number> {
+  const years = new Map<string, number[]>()
+  for (const sale of pool) {
+    const year = builtYear(sale.yearBuilt)
+    if (year == null) continue
+    const key = platKey(sale)
+    const rows = years.get(key)
+    if (rows) rows.push(year)
+    else years.set(key, [year])
+  }
+  const medians = new Map<string, number>()
+  for (const [key, rows] of years) {
+    const mid = medianClose(rows)
+    if (mid != null) medians.set(key, mid)
+  }
+  return medians
+}
+
+/**
+ * The year a neighbor plat is compared to. The own plat's median year when
+ * that plat has one. The subject's year when the own plat has no year.
+ */
+function ownPlatYearBaseline(subject: PricingSubject, pool: readonly PricingSale[]): number | null {
+  const years: number[] = []
+  for (const sale of pool) {
+    if (!inSubjectPlat(subject, sale)) continue
+    const year = builtYear(sale.yearBuilt)
+    if (year != null) years.push(year)
+  }
+  return medianClose(years) ?? builtYear(subject.yearBuilt)
+}
+
+function generationGap(baseline: number | null, median: number | null | undefined): number | null {
+  if (baseline == null || median == null) return null
+  return Math.abs(baseline - median)
+}
+
+function isSameGeneration(baseline: number | null, median: number | null | undefined): boolean {
+  const gap = generationGap(baseline, median)
+  return gap != null && gap <= SAME_GENERATION_YEARS
+}
+
+function isStaleGeneration(baseline: number | null, median: number | null | undefined): boolean {
+  const gap = generationGap(baseline, median)
+  return gap != null && gap > STALE_GENERATION_YEARS
+}
+
+function withinHalfMile(subject: PricingSubject, sale: PricingSale): boolean {
+  const miles = distanceMiles(
+    { lat: subject.latitude, lng: subject.longitude },
+    { lat: sale.latitude, lng: sale.longitude },
+  )
+  return miles != null && miles <= SAME_VINTAGE_MAX_MILES
+}
+
+function isHalfMileNearbyTier(tier: PricingTier): boolean {
+  return tier.name.startsWith('nearby-') && tier.maxMiles != null && tier.maxMiles <= SAME_VINTAGE_MAX_MILES
+}
+
+/**
+ * Plat rows already hold five, a touching plat or the next row is a stale
+ * generation, and a same-generation sale within half a mile is still outside
+ * the set. That sale is not on this home's own plat. Unknown years do not
+ * open the rings.
+ */
+function staleNeighborNeedsHalfMile(
+  subject: PricingSubject,
+  pool: readonly PricingSale[],
+  admitted: Iterable<SelectedPricingComp>,
+  baseline: number | null,
+  platYears: ReadonlyMap<string, number>,
+): boolean {
+  if (baseline == null) return false
+  const admittedKeys = new Set<string>()
+  let staleNeighbor = false
+  for (const sale of admitted) {
+    admittedKeys.add(sale.listingKey)
+    const place = poolPlaceFromTier(sale.selectionTier)
+    if (place !== 'adjacent' && place !== 'next') continue
+    if (isStaleGeneration(baseline, platYears.get(platKey(sale)))) staleNeighbor = true
+  }
+  if (!staleNeighbor) return false
+  for (const sale of pool) {
+    if (admittedKeys.has(sale.listingKey)) continue
+    if (inSubjectPlat(subject, sale)) continue
+    if (!withinHalfMile(subject, sale)) continue
+    if (isSameGeneration(baseline, platYears.get(platKey(sale)))) return true
+  }
+  return false
+}
+
+/**
+ * A same-generation sale within half a mile takes a seat a stale neighbor
+ * would have filled. Own ground and neighbors that are not stale stay in
+ * their current order. Fewer same-generation sales than stale seats leaves
+ * the remaining stale neighbors seated. The count does not fall.
+ */
+function preferSameGenerationHalfMile(
+  subject: PricingSubject,
+  seated: readonly SelectedPricingComp[],
+  candidates: readonly SelectedPricingComp[],
+  baseline: number | null,
+  platYears: ReadonlyMap<string, number>,
+): { seated: SelectedPricingComp[]; displaced: SelectedPricingComp[] } {
+  if (baseline == null || seated.length === 0) return { seated: [...seated], displaced: [] }
+  const sameGen = candidates.filter((sale) => {
+    if (seated.some((kept) => kept.listingKey === sale.listingKey || isSameProperty(sale, kept))) return false
+    if (inSubjectPlat(subject, sale)) return false
+    if (!withinHalfMile(subject, sale)) return false
+    return isSameGeneration(baseline, platYears.get(platKey(sale)))
+  })
+  if (sameGen.length === 0) return { seated: [...seated], displaced: [] }
+  sameGen.sort((a, b) => {
+    const miles = saleMiles(subject, a) - saleMiles(subject, b)
+    if (Math.abs(miles) > MILES_TIE) return miles
+    return a.listingKey.localeCompare(b.listingKey)
+  })
+  const staleAt: number[] = []
+  seated.forEach((sale, index) => {
+    const place = poolPlaceFromTier(sale.selectionTier)
+    if (place !== 'adjacent' && place !== 'next') return
+    if (isStaleGeneration(baseline, platYears.get(platKey(sale)))) staleAt.push(index)
+  })
+  const swaps = Math.min(sameGen.length, staleAt.length)
+  if (swaps === 0) return { seated: [...seated], displaced: [] }
+  const dropAt = new Set(staleAt.slice(-swaps))
+  const displaced: SelectedPricingComp[] = []
+  const next: SelectedPricingComp[] = []
+  let incoming = 0
+  seated.forEach((sale, index) => {
+    if (!dropAt.has(index)) {
+      next.push(sale)
+      return
+    }
+    displaced.push(sale)
+    const replacement = sameGen[incoming]
+    incoming += 1
+    if (replacement) next.push(replacement)
+  })
+  if (next.length < seated.length) return { seated: [...seated], displaced: [] }
+  return { seated: next, displaced }
 }
 
 /**
@@ -1799,6 +1956,14 @@ function tierOutsideRecordedPlatRows(tier: PricingTier): boolean {
  * rungs keep the stop at five. The priced sales are the best five of that
  * pool. A short pool keeps every one of those sales and fills from the later
  * rungs, up to five. Location weight stays on the rung that admitted the sale.
+ *
+ * SAME GENERATION WITHIN HALF A MILE. When an admitted touching plat or next
+ * row is more than 15 years off this home's own-plat median year, and a
+ * same-generation sale (within 10 years of that median) sits within half a
+ * mile on another plat, the 0.25 and 0.5 mile rings still run. That sale
+ * takes a seat a stale neighbor would have filled. Own-plat sales stay.
+ * Unknown years do not promote and are not stale. The 0.75 mile ring and
+ * anything farther stay shut.
  */
 export function walkPricingLadder(
   rawSubject: PricingSubject,
@@ -2022,6 +2187,23 @@ export function walkPricingLadder(
   // Decided once, before any next-row rung runs, so a later next-row month
   // still enters when the row was opened under five.
   let nextRowClosed: boolean | null = null
+  // Own-plat median year, or the subject's year when that plat has none.
+  // Neighbor plats are stale or same-generation against this one number.
+  const baselineYear = ownPlatYearBaseline(subject, pool)
+  const platYears = platYearMedians(pool)
+  let sameVintageOpen: boolean | null = null
+  const opensForSameVintage = (tier: PricingTier): boolean => {
+    if (!isHalfMileNearbyTier(tier)) return false
+    if (sameVintageOpen == null) {
+      sameVintageOpen = staleNeighborNeedsHalfMile(subject, pool, byKey.values(), baselineYear, platYears)
+      if (sameVintageOpen) {
+        trace.push(
+          'A neighbor plat is a different generation, and a same-generation sale sits within half a mile, so the quarter-mile and half-mile rings still run. A wider ring stays shut.',
+        )
+      }
+    }
+    return sameVintageOpen
+  }
 
   for (const { tier, pass } of planned) {
     if (tier.samePocket && countBeforePocket == null) countBeforePocket = homesInSet()
@@ -2055,7 +2237,9 @@ export function walkPricingLadder(
     // (Matt 2026-10-10). The next row is one decision: opened only while
     // the plat and the plats that touch it hold fewer than five, then every
     // next-row rung runs. Distance, community, and the other rungs still
-    // stop once five are seated. A pocket rung is the same exception it was.
+    // stop once five are seated, except the 0.25 and 0.5 mile rings when a
+    // stale neighbor is in and a same-generation sale within half a mile is
+    // not. A pocket rung is the same exception it was. Wider rings are not.
     if (pass === 'next') {
       if (nextRowClosed == null) nextRowClosed = homesInSet() >= PRICING_TARGET_COMPS
       if (nextRowClosed) {
@@ -2071,7 +2255,12 @@ export function walkPricingLadder(
         })
         continue
       }
-    } else if (pass === 'rest' && homesInSet() >= PRICING_TARGET_COMPS && !isPocketExclusiveTier(tier)) {
+    } else if (
+      pass === 'rest' &&
+      homesInSet() >= PRICING_TARGET_COMPS &&
+      !isPocketExclusiveTier(tier) &&
+      !opensForSameVintage(tier)
+    ) {
       rungs.push({
         tier: tier.name,
         ran: false,
@@ -2135,7 +2324,10 @@ export function walkPricingLadder(
         // first and inside the parent wall, before the build fails (rules 15
         // and 19: "Do not return a short set"). 915 Saginaw and 1648 Pheasant
         // failed on 2026-10-07 holding one sale each with the neighborhood unread.
-        : recordedPlat && tierOutsideRecordedPlatRows(tier) && (platRowCount ?? 0) >= PRICING_MIN_COMPS
+        : recordedPlat &&
+            tierOutsideRecordedPlatRows(tier) &&
+            (platRowCount ?? 0) >= PRICING_MIN_COMPS &&
+            !opensForSameVintage(tier)
           ? `this home sits in a recorded subdivision, and that plat, the plats that touch it, and the plats that touch those already hold ${platRowCount} price-setting sales, so the search stays there. It does not open a quarter-mile pocket, a distance ring, or the rest of the neighborhood`
         : parentConfines(subject) && (tier.likeCommunity || tier.crossBoundary || tier.whenStarved)
           ? 'this home sits inside a neighborhood or community, so the search does not leave it for another community or a distance past that boundary'
@@ -2373,11 +2565,21 @@ export function walkPricingLadder(
   let sliced: SelectedPricingComp[]
   let seatBench: SelectedPricingComp[]
   let widening: boolean
+  let vintageDisplaced = 0
   if (poolFull) {
-    sliced = seatedPool
-    seatBench = poolBench
+    const preferred = preferSameGenerationHalfMile(subject, seatedPool, restComps, baselineYear, platYears)
+    sliced = preferred.seated
+    seatBench = [...preferred.displaced, ...poolBench]
+    vintageDisplaced = preferred.displaced.length
     const reachedPlace = poolPlaceFromTier(reachedOnTier)
     widening = reachedPlace != null && reachedPlace !== 'own'
+    if (preferred.displaced.length > 0) {
+      trace.push(
+        preferred.displaced.length === 1
+          ? 'A same-generation sale within half a mile took a seat ahead of a neighbor plat from a different generation.'
+          : `${preferred.displaced.length} same-generation sales within half a mile took seats ahead of neighbor plats from a different generation.`,
+      )
+    }
   } else {
     const slots = PRICING_TARGET_COMPS - seatedPool.length
     const restReach = poolPlaceFromTier(reachedOnTier) == null ? reachedOnTier : null
@@ -2486,7 +2688,9 @@ export function walkPricingLadder(
     const heldBack = bench.filter((comp) => poolPlaceFromTier(comp.selectionTier) != null).length
     if (heldBack > 0) {
       trace.push(
-        `The plat pool held ${poolComps.length} qualifying sales. The best ${seatedPool.length} set the price, and ${heldBack} more from that pool do not.`,
+        vintageDisplaced > 0
+          ? `The plat pool held ${poolComps.length} qualifying sales. ${vintageDisplaced} from a different generation gave up a seat to a same-generation sale within half a mile, and ${heldBack} more from that pool do not set the price.`
+          : `The plat pool held ${poolComps.length} qualifying sales. The best ${seatedPool.length} set the price, and ${heldBack} more from that pool do not.`,
       )
     }
   }
