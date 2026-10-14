@@ -75,8 +75,15 @@ const OUT_FIELDS: Record<CountyKey, string> = {
   ].join(','),
 }
 
-/** Most rows one read returns. A where clause that hits more says so (`truncated`). */
-export const COUNTY_RESULT_CAP = 250
+/**
+ * Most rows one read returns; a where clause that hits more says so
+ * (`truncated`). A read by site address or account is a handful of parcels.
+ * A read by name can be hundreds for a short, common name ("LEE" and "AL"
+ * matched 425 Deschutes owners on 2026-10-14), so it gets the layers' own
+ * page size: Deschutes serves 1,000 a read, Crook 2,000.
+ */
+export const PARCEL_READ_CAP = 250
+export const NAME_READ_CAP = 1000
 
 export type CountyOwnerRecord = {
   county: CountyKey
@@ -224,13 +231,13 @@ export function parseOwnerResponse(
 export async function fetchOwnerRecordsByWhere(
   county: CountyKey,
   where: string,
-  opts: { timeoutMs?: number } = {},
+  opts: { timeoutMs?: number; cap?: number } = {},
 ): Promise<{ records: CountyOwnerRecord[]; truncated: boolean }> {
   const params = new URLSearchParams({
     where,
     outFields: OUT_FIELDS[county],
     returnGeometry: 'false',
-    resultRecordCount: String(COUNTY_RESULT_CAP),
+    resultRecordCount: String(opts.cap ?? PARCEL_READ_CAP),
     f: 'json',
   })
   const res = await fetch(`${QUERY_URL[county]}?${params.toString()}`, {

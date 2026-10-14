@@ -120,12 +120,21 @@ export function ownerKindOf(raw: string): OwnerKind {
   return 'person'
 }
 
-function cleanOwnerText(raw: string): string {
-  return foldText(raw)
+// Tenancy markers that are never a name, stripped from every owner string.
+const TENANCY_RE = /\b(?:ET\s+UX|ET\s+VIR|ET\s*AL|ETAL|JTWROS)\b/g
+
+/**
+ * Trust and estate title words come off only when the owner is a trust: on a
+ * person, LIV, FAM and TR can be a given name or initials ("NILSEN, LIV").
+ */
+function cleanOwnerText(raw: string, kind: OwnerKind): string {
+  let t = foldText(raw)
     .replace(/\([^)]*\)/g, ' ')
     .replace(/\bC\/O\b.*$/g, ' ')
     .replace(/%.*$/g, ' ')
-    .replace(TITLE_WORD_RE, ' ')
+    .replace(TENANCY_RE, ' ')
+  if (kind === 'trust') t = t.replace(TITLE_WORD_RE, ' ')
+  return t
     .replace(/\b\d[\d/-]*\b/g, ' ')
     .replace(/\s*,\s*/g, ', ')
     .replace(/\s+/g, ' ')
@@ -172,9 +181,126 @@ function leadingSurname(tokens: string[]): { surname: string; rest: string[] } {
   return { surname: tokens[0] ?? '', rest: tokens.slice(1) }
 }
 
+/** The family name at the end of a first-name-order token list, particles kept together (VAN DOREN). */
+function trailingSurname(tokens: string[]): { surname: string; given: string[] } {
+  const n = tokens.length
+  if (n >= 3 && SURNAME_PARTICLES.has(tokens[n - 2]!)) {
+    return { surname: tokens[n - 2]! + tokens[n - 1]!, given: tokens.slice(0, -2) }
+  }
+  return { surname: tokens[n - 1] ?? '', given: tokens.slice(0, -1) }
+}
+
+/** The parties and family names one reading of an owner string yields. */
+class Reading {
+  parties: OwnerParty[] = []
+  familyNames: string[] = []
+  push(p: OwnerParty | null): void {
+    if (p) this.parties.push(p)
+  }
+  family(s: string): void {
+    const k = nameKey(s)
+    if (k.length >= 2 && !this.familyNames.includes(k)) this.familyNames.push(k)
+  }
+}
+
+/** "LAST, FIRST M & FIRST M" / "LAST, FIRST & LAST, FIRST" / "LAST, FIRST & FIRST LAST". */
+function readCommaOrder(segments: string[]): Reading {
+  const r = new Reading()
+  let lastSeen: string | null = null
+  for (const seg of segments) {
+    if (seg.includes(',')) {
+      const [l, rest] = seg.split(',', 2)
+      const sur = stripAffixes(words(l ?? ''))
+      const given = stripAffixes(words(rest ?? ''))
+      const surname = sur.tokens.join('')
+      if (nameKey(surname).length >= 2) {
+        lastSeen = surname
+        r.family(surname)
+      }
+      if (lastSeen) r.push(partyFrom(given.tokens, [lastSeen], given.suffix ?? sur.suffix))
+      continue
+    }
+    const { tokens, suffix } = stripAffixes(words(seg))
+    if (tokens.length === 0) continue
+    if (lastSeen) r.push(partyFrom(tokens, [lastSeen], suffix))
+    // "& KATHLEEN BERNARD" can also be a second family name; allow that reading too.
+    if (tokens.length >= 2 && isNameWord(tokens[tokens.length - 1])) {
+      const { surname, given } = trailingSurname(tokens)
+      r.push(partyFrom(given, [surname], suffix))
+      r.family(surname)
+    }
+  }
+  return r
+}
+
+/** Crook: "LAST FIRST M & FIRST M" or "LAST FIRST & LAST FIRST". */
+function readSurnameFirst(segments: string[]): Reading {
+  const r = new Reading()
+  let lead: string | null = null
+  segments.forEach((seg, i) => {
+    const { tokens, suffix } = stripAffixes(words(seg))
+    if (tokens.length === 0) return
+    if (i === 0 || !lead) {
+      const { surname, rest } = leadingSurname(tokens)
+      if (nameKey(surname).length < 2) return
+      lead = surname
+      r.family(surname)
+      r.push(partyFrom(rest, [surname], suffix))
+      return
+    }
+    // Reading A: shares the lead family name ("& JANE B").
+    r.push(partyFrom(tokens, [lead], suffix))
+    // Reading B: carries its own family name first ("& YOUNG ROBERT").
+    if (tokens.length >= 2) {
+      const { surname, rest } = leadingSurname(tokens)
+      if (nameKey(surname).length >= 2) {
+        r.family(surname)
+        r.push(partyFrom(rest, [surname], suffix))
+      }
+    }
+  })
+  return r
+}
+
+/** First-name order without a comma: "FIRST M & FIRST M LAST" (a trust title) or "LAST" alone. */
+function readFirstNameOrder(segments: string[]): Reading {
+  const r = new Reading()
+  const tokenSets = segments.map((s) => stripAffixes(words(s)))
+  const multi = tokenSets.filter((t) => t.tokens.length >= 2)
+  const lastMulti = multi[multi.length - 1]?.tokens
+  const shared =
+    lastMulti && isNameWord(lastMulti[lastMulti.length - 1]) ? trailingSurname(lastMulti).surname : null
+  if (shared) r.family(shared)
+  for (const { tokens, suffix } of tokenSets) {
+    if (tokens.length === 0) continue
+    if (tokens.length === 1) {
+      if (shared && nameKey(tokens[0]) !== nameKey(shared)) r.push(partyFrom(tokens, [shared], suffix))
+      else r.family(tokens[0]!)
+      continue
+    }
+    const tail = tokens[tokens.length - 1]!
+    if (isInitial(tail) || !isNameWord(tail)) {
+      if (shared) r.push(partyFrom(tokens, [shared], suffix))
+      continue
+    }
+    // A full last word is that person's own family name ("JOHN SMITH & JANE DOE"):
+    // never also the shared one, so John Doe is not read into it.
+    const { surname, given } = trailingSurname(tokens)
+    r.family(surname)
+    r.push(partyFrom(given, [surname], suffix))
+  }
+  return r
+}
+
 /**
  * Parse a county owner-of-record string into the people it names.
  * Empty input, or an entity, names nobody.
+ *
+ * Why not lib/crm/household-names.ts parseOwnerHousehold: that parser picks
+ * one reading of a Deschutes string to choose a letter greeting. Ownership
+ * needs every reading a county's order allows (Crook writes family name first,
+ * and a Crook trust title can be in first-name order), and Jr/Sr kept, so a
+ * name is never read into a party the record does not allow.
  */
 export function parseOwnerOfRecord(raw: string | null | undefined, order: OwnerNameOrder): ParsedOwner {
   const text = foldText(raw)
@@ -182,95 +308,18 @@ export function parseOwnerOfRecord(raw: string | null | undefined, order: OwnerN
   const empty: ParsedOwner = { raw: text, kind, parties: [], familyNames: [] }
   if (!text || kind === 'entity') return empty
 
-  const segments = splitSegments(cleanOwnerText(text))
-  const parties: OwnerParty[] = []
+  const segments = splitSegments(cleanOwnerText(text, kind))
+  const readings: Reading[] = []
+  if (segments.some((s) => s.includes(','))) readings.push(readCommaOrder(segments))
+  else if (order === 'surname-first') {
+    readings.push(readSurnameFirst(segments))
+    // A Crook trust can be titled in first-name order ("CHAD M PENHOLLOW REVOCABLE LIVING TRUST").
+    if (kind === 'trust') readings.push(readFirstNameOrder(segments))
+  } else readings.push(readFirstNameOrder(segments))
+
   const familyNames: string[] = []
-  const push = (p: OwnerParty | null) => {
-    if (p) parties.push(p)
-  }
-  const family = (s: string) => {
-    const k = nameKey(s)
-    if (k.length >= 2 && !familyNames.includes(k)) familyNames.push(k)
-  }
-
-  if (segments.some((s) => s.includes(','))) {
-    // "LAST, FIRST M & FIRST M" / "LAST, FIRST & LAST, FIRST" / "LAST, FIRST & FIRST LAST"
-    let lastSeen: string | null = null
-    for (const seg of segments) {
-      if (seg.includes(',')) {
-        const [l, r] = seg.split(',', 2)
-        const sur = stripAffixes(words(l ?? ''))
-        const given = stripAffixes(words(r ?? ''))
-        const surname = sur.tokens.join('')
-        if (nameKey(surname).length >= 2) {
-          lastSeen = surname
-          family(surname)
-        }
-        if (lastSeen) push(partyFrom(given.tokens, [lastSeen], given.suffix ?? sur.suffix))
-        continue
-      }
-      const { tokens, suffix } = stripAffixes(words(seg))
-      if (tokens.length === 0) continue
-      if (lastSeen) push(partyFrom(tokens, [lastSeen], suffix))
-      // "& KATHLEEN BERNARD" can also be a second family name; allow that reading too.
-      const tail = tokens[tokens.length - 1]
-      if (tokens.length >= 2 && isNameWord(tail)) {
-        push(partyFrom(tokens.slice(0, -1), [tail], suffix))
-        family(tail)
-      }
-    }
-  } else if (order === 'surname-first') {
-    // Crook: "LAST FIRST M & FIRST M" or "LAST FIRST & LAST FIRST".
-    let lead: string | null = null
-    segments.forEach((seg, i) => {
-      const { tokens, suffix } = stripAffixes(words(seg))
-      if (tokens.length === 0) return
-      if (i === 0 || !lead) {
-        const { surname, rest } = leadingSurname(tokens)
-        if (nameKey(surname).length < 2) return
-        lead = surname
-        family(surname)
-        push(partyFrom(rest, [surname], suffix))
-        return
-      }
-      // Reading A: shares the lead family name ("& JANE B").
-      push(partyFrom(tokens, [lead], suffix))
-      // Reading B: carries its own family name first ("& YOUNG ROBERT").
-      if (tokens.length >= 2) {
-        const { surname, rest } = leadingSurname(tokens)
-        if (nameKey(surname).length >= 2) {
-          family(surname)
-          push(partyFrom(rest, [surname], suffix))
-        }
-      }
-    })
-  } else {
-    // Deschutes without a comma: "FIRST M & FIRST M LAST" (a trust title) or "LAST" alone.
-    const tokenSets = segments.map((s) => stripAffixes(words(s)))
-    const multi = tokenSets.filter((t) => t.tokens.length >= 2)
-    const lastMulti = multi[multi.length - 1]?.tokens
-    const shared = lastMulti && isNameWord(lastMulti[lastMulti.length - 1]) ? lastMulti[lastMulti.length - 1]! : null
-    if (shared) family(shared)
-    for (const { tokens, suffix } of tokenSets) {
-      if (tokens.length === 0) continue
-      if (tokens.length === 1) {
-        if (shared && tokens[0] !== shared) push(partyFrom(tokens, [shared], suffix))
-        else family(tokens[0]!)
-        continue
-      }
-      const tail = tokens[tokens.length - 1]!
-      if (isInitial(tail) || !isNameWord(tail)) {
-        if (shared) push(partyFrom(tokens, [shared], suffix))
-        continue
-      }
-      // A full last word is that person's own family name ("JOHN SMITH & JANE DOE"):
-      // never also the shared one, so John Doe is not read into it.
-      family(tail)
-      push(partyFrom(tokens.slice(0, -1), [tail], suffix))
-    }
-  }
-
-  return { raw: text, kind, parties, familyNames }
+  for (const r of readings) for (const f of r.familyNames) if (!familyNames.includes(f)) familyNames.push(f)
+  return { raw: text, kind, parties: readings.flatMap((r) => r.parties), familyNames }
 }
 
 /** The westside_parcels assessor export carries owners as structured fields. */
@@ -346,7 +395,7 @@ function displayCase(s: string): string {
 }
 
 /** The record's own spelling of a name key: a word, two adjacent words, or the whole field. */
-function rawSpelling(key: string, input: { first_name?: string | null; last_name?: string | null; name?: string | null }): string {
+export function recordSpelling(key: string, input: { first_name?: string | null; last_name?: string | null; name?: string | null }): string {
   const fields = [input.last_name, input.first_name, input.name].map((f) => String(f ?? '').trim()).filter(Boolean)
   const pool: string[] = [...fields]
   for (const f of fields) {
@@ -408,6 +457,14 @@ export function parseContactName(input: {
   }
 
   if (!full) return { people, entityKey: null, reversed: [] }
+  // Name only, written "Smith, John" (a trailing ", Jr." is not that comma).
+  const commaForm = full.replace(/,\s*(JR|SR|II|III|IV)\.?\s*$/, ' $1')
+  if (commaForm.includes(',')) {
+    for (const p of parseOwnerOfRecord(commaForm, 'comma').parties) {
+      add({ first: p.first, middles: p.middles, last: p.surnames[0]!, suffix: p.suffix, display: '' })
+    }
+    return { people: withDisplay(people, input), entityKey: null, reversed: [] }
+  }
   // Name only: "John A Smith", "John & Jane Smith", "John Smith & Jane Doe".
   const segs = splitSegments(full).map((s) => stripAffixes(words(s)))
   const multi = segs.filter((s) => s.tokens.length >= 2)
@@ -434,7 +491,7 @@ function withDisplay(
   people: ContactPerson[],
   input: { first_name?: string | null; last_name?: string | null; name?: string | null },
 ): ContactPerson[] {
-  return people.map((p) => ({ ...p, display: `${rawSpelling(p.first, input)} ${rawSpelling(p.last, input)}` }))
+  return people.map((p) => ({ ...p, display: `${recordSpelling(p.first, input)} ${recordSpelling(p.last, input)}` }))
 }
 
 /** True when this owner-record party is this contact person. */

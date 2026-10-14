@@ -39,30 +39,35 @@ export function searchedLine(r: CountyOwnershipResult): string[] {
   if (r.searchedNames.length === 0 && r.searchedAddresses.length === 0) {
     return ['Nothing to search: this contact has no first and last name and no street address.']
   }
+  if (r.counties.length > 0 && r.counties.every((c) => c.status === 'not-searched')) {
+    return ['Nothing on this contact could go into a county search: the name and addresses are not in a form the county records use.']
+  }
   const what: string[] = []
   if (r.searchedNames.length > 0) what.push(joinWords(r.searchedNames))
   if (r.searchedAddresses.length > 0) {
     what.push(r.searchedAddresses.length === 1 ? '1 address' : `${r.searchedAddresses.length} addresses`)
   }
-  const ok = r.counties.filter((c) => c.status === 'ok').map((c) => c.label.replace(/ County$/, ''))
+  const answered = r.counties.filter((c) => c.status === 'ok' || c.status === 'partial').map((c) => c.label.replace(/ County$/, ''))
   const down = r.counties.filter((c) => c.status === 'unavailable').map((c) => c.label)
+  const partial = r.counties.filter((c) => c.status === 'partial').map((c) => c.label)
   const lines: string[] = []
   lines.push(
-    ok.length > 0
-      ? `Searched ${joinWords(ok)} County owner records for ${what.join(' and ')}. Jefferson County publishes no owner records, so a home there will not show.`
+    answered.length > 0
+      ? `Searched ${joinWords(answered)} County owner records for ${what.join(' and ')}. Jefferson County publishes no owner records, so a home there will not show.`
       : `No county answered the search for ${what.join(' and ')}.`,
   )
-  if (down.length > 0) {
-    const westside = down.includes('Deschutes County') && r.snapshotLoadedAt
-    lines.push(
-      `${joinWords(down)} did not answer just now.${
-        westside ? ` West Bend rows below come from the assessor export loaded ${formatDate(r.snapshotLoadedAt)}.` : ''
-      }`,
-    )
+  if (down.length > 0 || partial.length > 0) {
+    const westside = (down.includes('Deschutes County') || partial.includes('Deschutes County')) && r.snapshotLoadedAt
+    const parts = [
+      down.length > 0 ? `${joinWords(down)} did not answer just now.` : '',
+      partial.length > 0 ? `${joinWords(partial)} answered only part of the search just now.` : '',
+      westside ? `West Bend rows marked as the assessor export come from the export loaded ${formatDate(r.snapshotLoadedAt)}.` : '',
+    ]
+    lines.push(parts.filter(Boolean).join(' '))
   }
   const truncated = r.counties.filter((c) => c.truncated).map((c) => c.label)
   if (truncated.length > 0) {
-    lines.push(`${joinWords(truncated)} matched more records than one read returns, so a parcel under a common name may be missing.`)
+    lines.push(`${joinWords(truncated)} matched more owners by name than one read returns, so a parcel under a common name may be missing.`)
   }
   return lines
 }
@@ -149,7 +154,7 @@ export async function CountyRecordsSection({ personId, hideHeading = false }: { 
                 <ParcelRow key={row.key} row={row} />
               ))}
             </ul>
-          ) : result.counties.some((c) => c.status === 'ok') ? (
+          ) : result.counties.some((c) => c.status === 'ok' || c.status === 'partial') ? (
             <p style={{ ...muted, marginBottom: 16 }}>
               No owner record names them, and no address we hold for them is a parcel in these counties.
             </p>

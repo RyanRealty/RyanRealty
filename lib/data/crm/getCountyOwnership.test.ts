@@ -86,17 +86,19 @@ const deschutesFeature = (account: string, owner: string, address: string, mail 
 
 let deschutesBody: unknown
 let deschutesOk = true
-const fetchMock = vi.fn(async (url: string) => {
+const defaultFetch = async (url: string) => {
   if (url.includes('deschutes')) {
     if (!deschutesOk) return new Response('down', { status: 503 })
     return new Response(JSON.stringify(deschutesBody), { status: 200 })
   }
   return new Response(JSON.stringify({ features: [] }), { status: 200 })
-})
+}
+const fetchMock = vi.fn(defaultFetch)
 
 beforeEach(() => {
   orFilters.length = 0
   fetchMock.mockClear()
+  fetchMock.mockImplementation(defaultFetch)
   deschutesOk = true
   tables.crm_people = { data: person, error: null }
   tables.crm_deals = { data: [{ property_address: '61000 Brookswood Blvd, Bend, OR 97702' }], error: null }
@@ -128,8 +130,15 @@ describe('buildContactQuery + westsideOrFilter', () => {
     const q = buildContactQuery(person, identity, addresses, ['101105'])
     expect(q).toEqual({ names: [{ first: 'JANE', last: 'PELLWORTH' }], addresses: [{ number: '2347', streetWord: 'LARKSPUR' }], accounts: ['101105'] })
     expect(westsideOrFilter(42, q)).toBe(
-      'person_id.eq.42,and(owner1_last.ilike."*PELLWORTH*",owner1_first.ilike."JANE*"),and(owner2_last.ilike."*PELLWORTH*",owner2_first.ilike."JANE*"),and(owner1_first.ilike."*JANE*",owner1_first.ilike."*PELLWORTH*"),site_street.ilike."2347 *"',
+      'person_id.eq.42,and(owner1_last.ilike."*PELLWORTH*",owner1_first.ilike."JANE*"),and(owner2_last.ilike."*PELLWORTH*",owner2_first.ilike."JANE*"),and(owner1_first.ilike."*JANE*",owner1_first.ilike."*PELLWORTH*"),and(site_street.ilike."2347 *",site_street.ilike."*LARKSPUR*")',
     )
+  })
+
+  it('searches the name as the record spells it: hyphens and particles', () => {
+    const maryJo = { ...person, first_name: 'Mary-Jo', last_name: 'Pellworth', name: 'Mary-Jo Pellworth', addresses: [] }
+    expect(buildContactQuery(maryJo, parseContactName(maryJo), [], []).names).toEqual([{ first: 'MARY', last: 'PELLWORTH' }])
+    const vanDoren = { ...person, first_name: null, last_name: null, name: 'John A Van Doren', addresses: [] }
+    expect(buildContactQuery(vanDoren, parseContactName(vanDoren), [], []).names).toEqual([{ first: 'JOHN', last: 'DOREN' }])
   })
 })
 
@@ -166,10 +175,19 @@ describe('getCountyOwnershipForPerson', () => {
       ownerChangedSince: false,
     })
     // The export row on another street never reached the county query.
-    const deschutesUrl = String(fetchMock.mock.calls.find((c) => String(c[0]).includes('deschutes'))![0])
-    const where = new URL(deschutesUrl).searchParams.get('where') ?? ''
-    expect(where).toContain("dbo_GIS_MAILING.ACCOUNT_ID IN ('101105')")
-    expect(where).not.toContain('999999')
+    // Two Deschutes reads: site addresses + accounts, and names on their own.
+    const wheres = fetchMock.mock.calls
+      .filter((c) => String(c[0]).includes('deschutes'))
+      .map((c) => new URL(String(c[0])).searchParams)
+    expect(wheres).toHaveLength(2)
+    const parcelRead = wheres.find((w) => (w.get('where') ?? '').includes('ACCOUNT_ID'))!
+    expect(parcelRead.get('where')).toContain("dbo_GIS_MAILING.ACCOUNT_ID IN ('101105')")
+    expect(parcelRead.get('where')).not.toContain('999999')
+    expect(parcelRead.get('where')).not.toContain('OWNER')
+    expect(parcelRead.get('resultRecordCount')).toBe('250')
+    const nameRead = wheres.find((w) => (w.get('where') ?? '').includes('OWNER'))!
+    expect(nameRead.get('where')).not.toContain('House_Number')
+    expect(nameRead.get('resultRecordCount')).toBe('1000')
   })
 
   it('a parcel sold since the export keeps assessed values but drops the old sale', async () => {
@@ -193,6 +211,35 @@ describe('getCountyOwnershipForPerson', () => {
     expect(out.counties[0]).toMatchObject({ county: 'deschutes', status: 'unavailable' })
     expect(out.rows.map((r) => [r.account, r.strength, r.sourceIsLive])).toEqual([['101105', 'high', false]])
     expect(out.rows[0]!.source).toBe('Assessor export for west Bend (westside_parcels)')
+  })
+
+  it('name read down, account read up: partial, and the export does not stand in', async () => {
+    deschutesBody = { features: [deschutesFeature('101105', "O'PELLWORTH, JANE B & JOHN A", '2347 NW LARKSPUR PL')] }
+    fetchMock.mockImplementation(async (url: string) => {
+      const where = new URL(url).searchParams.get('where') ?? ''
+      if (url.includes('deschutes') && where.includes('OWNER')) return new Response('down', { status: 503 })
+      if (url.includes('deschutes')) return new Response(JSON.stringify(deschutesBody), { status: 200 })
+      return new Response(JSON.stringify({ features: [] }), { status: 200 })
+    })
+    const out = await getCountyOwnershipForPerson(42, { cache: false })
+    expect(out.counties[0]).toMatchObject({ county: 'deschutes', status: 'partial' })
+    expect(out.rows.map((r) => [r.account, r.strength, r.sourceIsLive])).toEqual([['101105', 'high', true]])
+  })
+
+  it('account read down: the export stands in for the accounts no read returned', async () => {
+    deschutesBody = { features: [deschutesFeature('777777', "O'PELLWORTH, JANE", '19000 RIVER WOODS DR')] }
+    fetchMock.mockImplementation(async (url: string) => {
+      const where = new URL(url).searchParams.get('where') ?? ''
+      if (url.includes('deschutes') && where.includes('ACCOUNT_ID')) return new Response('down', { status: 503 })
+      if (url.includes('deschutes')) return new Response(JSON.stringify(deschutesBody), { status: 200 })
+      return new Response(JSON.stringify({ features: [] }), { status: 200 })
+    })
+    const out = await getCountyOwnershipForPerson(42, { cache: false })
+    expect(out.counties[0]).toMatchObject({ status: 'partial' })
+    expect(out.rows.map((r) => [r.account, r.strength, r.sourceIsLive])).toEqual([
+      ['101105', 'high', false],
+      ['777777', 'medium', true],
+    ])
   })
 
   it('a deleted or missing contact searches nothing', async () => {

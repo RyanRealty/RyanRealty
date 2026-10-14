@@ -102,6 +102,12 @@ describe('parseOwnerOfRecord, Crook order (family name first, no comma)', () => 
   it('keeps a particle with the family name', () => {
     expect(named('VAN DOREN MARTA L', 'surname-first', { first_name: 'Marta', last_name: 'Van Doren' })).toBe(true)
   })
+
+  it('also reads a Crook trust titled in first-name order', () => {
+    const owner = 'DANE M QUORVIK REVOCABLE LIVING TRUST'
+    expect(named(owner, 'surname-first', { first_name: 'Dane', last_name: 'Quorvik' })).toBe(true)
+    expect(named(owner, 'surname-first', { first_name: 'Quorvik', last_name: 'Dane' })).toBe(false)
+  })
 })
 
 describe('name rules', () => {
@@ -120,6 +126,16 @@ describe('name rules', () => {
     expect(named('PELLWORTH, JOHN JR', 'comma', { name: 'John Pellworth Jr.' })).toBe(true)
     expect(named('PELLWORTH, JOHN JR', 'comma', { first_name: 'John', last_name: 'Pellworth' })).toBe(true)
     expect(named('PELLWORTH JR, JOHN', 'comma', { name: 'John Pellworth III' })).toBe(false)
+  })
+
+  it('a particle family name in a first-name-order trust title', () => {
+    expect(named('MARTA VAN DOREN TRUST', 'comma', { name: 'Marta Van Doren' })).toBe(true)
+    expect(named('MARTA VAN DOREN TRUST', 'comma', { name: 'Marta Doren' })).toBe(false)
+  })
+
+  it('trust title words come off trusts only, so a person named Liv keeps her name', () => {
+    expect(named('VARNSTAD, LIV', 'comma', { first_name: 'Liv', last_name: 'Varnstad' })).toBe(true)
+    expect(named('VARNSTAD, LIV ET AL', 'comma', { first_name: 'Liv', last_name: 'Varnstad' })).toBe(true)
   })
 
   it('a lone initial is not a first name, and nicknames are not equal', () => {
@@ -141,6 +157,11 @@ describe('parseContactName', () => {
   it('reads a name-only contact with a title and a suffix', () => {
     const c = parseContactName({ name: 'Dr. John A. Pellworth Jr.' })
     expect(c.people).toEqual([{ first: 'JOHN', middles: ['A'], last: 'PELLWORTH', suffix: 'JR', display: 'John Pellworth' }])
+  })
+
+  it('reads "Last, First" in the name field, and a comma before a suffix is not that', () => {
+    expect(parseContactName({ name: 'Pellworth, John A' }).people.map((p) => [p.first, p.middles[0], p.last])).toEqual([['JOHN', 'A', 'PELLWORTH']])
+    expect(parseContactName({ name: 'John Pellworth, Jr.' }).people.map((p) => [p.first, p.last, p.suffix])).toEqual([['JOHN', 'PELLWORTH', 'JR']])
   })
 
   it('reads a couple in the name field', () => {

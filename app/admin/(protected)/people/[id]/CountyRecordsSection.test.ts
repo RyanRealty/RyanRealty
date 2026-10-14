@@ -25,13 +25,25 @@ describe('searchedLine', () => {
     const r = { ...base, counties: [{ ...base.counties[0]!, status: 'unavailable' as const }, base.counties[1]!] }
     expect(searchedLine(r)).toEqual([
       'Searched Crook County owner records for Jane Pellworth and 2 addresses. Jefferson County publishes no owner records, so a home there will not show.',
-      'Deschutes County did not answer just now. West Bend rows below come from the assessor export loaded Jul 4, 2026.',
+      'Deschutes County did not answer just now. West Bend rows marked as the assessor export come from the export loaded Jul 4, 2026.',
     ])
   })
 
   it('warns when a common name filled a read', () => {
     const r = { ...base, counties: [{ ...base.counties[0]!, truncated: true }, base.counties[1]!] }
-    expect(searchedLine(r)[1]).toBe('Deschutes County matched more records than one read returns, so a parcel under a common name may be missing.')
+    expect(searchedLine(r)[1]).toBe('Deschutes County matched more owners by name than one read returns, so a parcel under a common name may be missing.')
+  })
+
+  it('a county that answered part of the search says so', () => {
+    const r = { ...base, counties: [base.counties[0]!, { ...base.counties[1]!, status: 'partial' as const }] }
+    expect(searchedLine(r)[1]).toBe('Crook County answered only part of the search just now.')
+  })
+
+  it('nothing searchable is not a county outage', () => {
+    const r = { ...base, counties: base.counties.map((c) => ({ ...c, status: 'not-searched' as const })) }
+    expect(searchedLine(r)).toEqual([
+      'Nothing on this contact could go into a county search: the name and addresses are not in a form the county records use.',
+    ])
   })
 
   it('says there is nothing to search', () => {

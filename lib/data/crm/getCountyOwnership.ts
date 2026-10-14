@@ -39,11 +39,11 @@ import {
   contactPersonLabel,
   describeMatch,
   longestLetterRun,
-  nameKey,
   parseContactName,
   parseOwnerOfRecord,
   parseStreetLine,
   parseStructuredOwner,
+  recordSpelling,
   sameOwnerOfRecord,
   type ContactAddress,
   type ContactIdentity,
@@ -57,6 +57,8 @@ import {
   COUNTY_LABEL,
   COUNTY_SOURCE,
   CROOK_SITUS_PLACES,
+  NAME_READ_CAP,
+  PARCEL_READ_CAP,
   buildOwnerWhere,
   fetchOwnerRecordsByWhere,
   type CountyKey,
@@ -105,9 +107,15 @@ export type CountyOwnershipRow = {
 export type CountySearchStatus = {
   county: CountyKey
   label: string
-  status: 'ok' | 'unavailable' | 'not-searched'
+  /**
+   * ok: every read answered. partial: the site-address/account read or the
+   * name read failed, not both. unavailable: nothing answered. not-searched:
+   * nothing on the contact could go into a county search.
+   */
+  status: 'ok' | 'partial' | 'unavailable' | 'not-searched'
+  /** The older of the reads' times (each read is cached for a day). */
   readAt: string | null
-  /** More records matched the search words than one read returns. */
+  /** The name read matched more owners than one read returns. */
   truncated: boolean
 }
 
@@ -216,21 +224,6 @@ function streetWord(a: StreetAddress): string | null {
   return pool.reduce((best, t) => (t.length > best.length ? t : best), '')
 }
 
-/** Raw last-name strings a contact carries, for picking each person's search word. */
-function rawLastNames(p: PersonRow): string[] {
-  const out: string[] = []
-  if (p.last_name?.trim()) out.push(p.last_name)
-  const name = String(p.name ?? '')
-  for (const seg of name.split(/\s*(?:&|\/|;|\band\b)\s*/i)) {
-    const words = seg.trim().split(/\s+/).filter((w) => !/^(jr|sr|ii|iii|iv)\.?$/i.test(w))
-    if (words.length >= 2) {
-      out.push(words[words.length - 1]!)
-      out.push(words.slice(1).join(' '))
-    }
-  }
-  return out
-}
-
 /** The county search for this contact: names, addresses, and accounts already in hand. */
 export function buildContactQuery(
   person: PersonRow,
@@ -238,11 +231,13 @@ export function buildContactQuery(
   addresses: ContactAddress[],
   accounts: string[],
 ): CountyOwnerQuery {
-  const raws = rawLastNames(person)
-  const names = identity.people.map((p) => {
-    const raw = raws.find((r) => nameKey(r) === p.last)
-    return { first: p.first, last: raw ? longestLetterRun(raw) : p.last }
-  })
+  // Search the longest letter run of the name as the record spells it ("O'Pellworth" ->
+  // PELLWORTH, "Mary-Jo" -> MARY): the county may keep the apostrophe, hyphen or space
+  // the record dropped, and the matcher, not the search, decides.
+  const names = identity.people.map((p) => ({
+    first: longestLetterRun(recordSpelling(p.first, person)) || p.first,
+    last: longestLetterRun(recordSpelling(p.last, person)) || p.last,
+  }))
   const addrs = addresses
     .map((a) => ({ number: a.address.number, streetWord: streetWord(a.address) ?? '' }))
     .filter((a) => a.streetWord)
@@ -264,7 +259,8 @@ export function westsideOrFilter(personId: number, q: CountyOwnerQuery): string 
   }
   for (const a of q.addresses) {
     const num = clean(a.number)
-    if (num) parts.push(`site_street.ilike."${num} *"`)
+    const word = clean(a.streetWord)
+    if (num && word.length >= 2) parts.push(`and(site_street.ilike."${num} *",site_street.ilike."*${word}*")`)
   }
   return parts.join(',')
 }
@@ -409,31 +405,59 @@ export function buildOwnershipRows(
 
 type CountyRead = { records: CountyOwnerRecord[]; truncated: boolean; readAt: string }
 
-async function readCountyDirect(county: CountyKey, where: string): Promise<CountyRead> {
-  const out = await fetchOwnerRecordsByWhere(county, where)
+async function readCountyDirect(county: CountyKey, where: string, cap: number): Promise<CountyRead> {
+  const out = await fetchOwnerRecordsByWhere(county, where, { cap })
   return { ...out, readAt: new Date().toISOString() }
 }
 
 // A failed read throws, and a thrown read is never cached: the next view retries.
-const readCountyCached = unstable_cache(readCountyDirect, ['crm-county-owner-records-v1'], {
+const readCountyCached = unstable_cache(readCountyDirect, ['crm-county-owner-records-v2'], {
   revalidate: 60 * 60 * 24,
   tags: ['crm-county-owner-records'],
 })
 
-async function readCounty(
-  county: CountyKey,
-  q: CountyOwnerQuery,
-  cache: boolean,
-): Promise<{ status: CountySearchStatus; records: CountyOwnerRecord[] }> {
-  const where = buildOwnerWhere(county, q)
+type CountyResult = {
+  status: CountySearchStatus
+  records: CountyOwnerRecord[]
+  /** The site-address/account read answered, so an account it did not return is gone. */
+  parcelReadOk: boolean
+}
+
+/**
+ * Two reads per county, so a common name can never crowd out the parcels that
+ * matter most: one by the contact's own site addresses and known accounts
+ * (a handful of rows), one by name (up to the layer's page size).
+ */
+async function readCounty(county: CountyKey, q: CountyOwnerQuery, cache: boolean): Promise<CountyResult> {
+  const parcelWhere = buildOwnerWhere(county, { names: [], addresses: q.addresses, accounts: q.accounts })
+  const nameWhere = buildOwnerWhere(county, { names: q.names, addresses: [], accounts: [] })
   const base = { county, label: COUNTY_LABEL[county], readAt: null, truncated: false }
-  if (!where) return { status: { ...base, status: 'not-searched' }, records: [] }
-  try {
-    const out = cache ? await readCountyCached(county, where) : await readCountyDirect(county, where)
-    return { status: { ...base, status: 'ok', readAt: out.readAt, truncated: out.truncated }, records: out.records }
-  } catch (err) {
-    console.warn(`[getCountyOwnership] ${county} read failed:`, err instanceof Error ? err.message : err)
-    return { status: { ...base, status: 'unavailable' }, records: [] }
+  if (!parcelWhere && !nameWhere) return { status: { ...base, status: 'not-searched' }, records: [], parcelReadOk: false }
+
+  const attempt = async (where: string | null, cap: number): Promise<CountyRead | 'failed' | null> => {
+    if (!where) return null
+    try {
+      return cache ? await readCountyCached(county, where, cap) : await readCountyDirect(county, where, cap)
+    } catch (err) {
+      console.warn(`[getCountyOwnership] ${county} read failed:`, err instanceof Error ? err.message : err)
+      return 'failed'
+    }
+  }
+  const [parcel, byName] = await Promise.all([attempt(parcelWhere, PARCEL_READ_CAP), attempt(nameWhere, NAME_READ_CAP)])
+  const reads = [parcel, byName].filter((r): r is CountyRead => r !== null && r !== 'failed')
+  const failed = [parcel, byName].filter((r) => r === 'failed').length
+  const records = new Map<string, CountyOwnerRecord>()
+  for (const r of reads) for (const rec of r.records) if (!records.has(rec.account)) records.set(rec.account, rec)
+  const times = reads.map((r) => r.readAt).sort()
+  return {
+    status: {
+      ...base,
+      status: reads.length === 0 ? 'unavailable' : failed > 0 ? 'partial' : 'ok',
+      readAt: times[0] ?? null,
+      truncated: reads.some((r) => r.truncated),
+    },
+    records: [...records.values()],
+    parcelReadOk: parcel !== null && parcel !== 'failed',
   }
 }
 
@@ -490,6 +514,9 @@ export async function getCountyOwnershipForPerson(
     .order('apn')
     .limit(WESTSIDE_LIMIT)
   if (westRes.error) console.warn('[getCountyOwnership] westside_parcels read failed:', westRes.error.message)
+  if ((westRes.data?.length ?? 0) >= WESTSIDE_LIMIT) {
+    console.warn(`[getCountyOwnership] westside_parcels read for person ${personId} hit ${WESTSIDE_LIMIT} rows; later rows were not read`)
+  }
   // Keep only export rows that relate to the contact before asking the county about them.
   const westRows = ((westRes.data ?? []) as unknown as WestsideOwnerRow[]).filter((w) => {
     const c = westsideCandidate(w)
@@ -507,9 +534,13 @@ export async function getCountyOwnershipForPerson(
     ...deschutes.records.map((r) => liveCandidate(r, deschutes.status.readAt, westByApn.get(r.account) ?? null)),
     ...crook.records.map((r) => liveCandidate(r, crook.status.readAt, null)),
   ]
-  // The export stands in for the owner of record only when Deschutes did not answer.
-  // When it did, an export account it no longer returns is a retired account.
-  if (deschutes.status.status !== 'ok') candidates.push(...westRows.map(westsideCandidate))
+  // The export stands in for the owner of record only where Deschutes did not
+  // answer for that account. When the account read did answer, an export
+  // account it did not return no longer exists at the county.
+  if (!deschutes.parcelReadOk) {
+    const live = new Set(deschutes.records.map((r) => r.account))
+    candidates.push(...westRows.filter((w) => !live.has(w.apn)).map(westsideCandidate))
+  }
 
   result.rows = buildOwnershipRows(identity, addresses, related, candidates)
   return result
