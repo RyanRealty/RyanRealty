@@ -3,8 +3,10 @@
 // stage, tags, related people, and notes. Messages and tools stream after.
 import Link from 'next/link'
 import { Suspense } from 'react'
+import { cookies } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
+import { isLeadPageV3Enabled, LEAD_PAGE_V3_COOKIE } from '@/lib/admin/lead-page-v3'
 import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 import { getInboxContactCard } from '@/lib/data/crm/getInboxThread'
 import { getPersonIdByLegacyId } from '@/lib/data/crm/getPersonIdByLegacyId'
@@ -29,6 +31,8 @@ import { PersonRelationships } from './PersonRelationships'
 import { PersonNotesAdd } from './PersonNotesAdd'
 import { PersonWorkspace } from './PersonWorkspace'
 import { CmaKickoffSheet } from '@/components/admin/crm/CmaKickoffSheet'
+import { LeadHeader } from '@/components/admin/crm/lead-page-v3/LeadHeader'
+import { PersistLeadPageV3 } from '@/components/admin/crm/lead-page-v3/PersistLeadPageV3'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,6 +61,9 @@ export default async function PersonPage({
     error?: string
     replyChannel?: string
     composeCma?: string
+    v?: string
+    'lead-page-v3'?: string
+    edit?: string
   }>
 }) {
   const ctx = await requireAdminPage('people.view')
@@ -84,6 +91,85 @@ export default async function PersonPage({
   }
 
   const addressLine = card.address ? formatPersonAddress(card.address) : null
+  const cookieStore = await cookies()
+  const v3 = isLeadPageV3Enabled({
+    searchParams: { v: sp.v, 'lead-page-v3': sp['lead-page-v3'] },
+    cookie: cookieStore.get(LEAD_PAGE_V3_COOKIE)?.value ?? null,
+  })
+  const workspace = (
+    <PersonWorkspace
+      idNum={idNum}
+      card={card}
+      layout={v3 ? 'v3' : 'v2'}
+      notes={notes}
+      nowLine={glance.nowLine}
+      details={
+        v3
+          ? {
+              canReassign: ctx.role === 'superuser',
+              assignedBrokerName: card.assignedBroker ? brokerDisplayName(card.assignedBroker) : null,
+              brokerOptions: activeBrokerSlugs().map((slug) => ({ slug, name: brokerDisplayName(slug) })),
+              sources: [...LEAD_SOURCE_OPTIONS],
+              address: card.address,
+              autoEditAddress: sp.edit === 'address',
+              updateStage: updateStageFromPerson.bind(null, card.personId),
+              assignBroker: assignBrokerFromPerson.bind(null, card.personId),
+              updateSource: updateSourceFromPerson.bind(null, card.personId),
+              addTag: addTagFromPerson.bind(null, card.personId),
+              removeTag: removeTagFromPerson.bind(null, card.personId),
+            }
+          : undefined
+      }
+      sp={{
+        intent: sp.intent,
+        kicked: sp.kicked,
+        err: sp.err,
+        tpl: sp.tpl,
+        smsTpl: sp.smsTpl,
+        replyChannel: sp.replyChannel,
+        composeCma: sp.composeCma,
+      }}
+    />
+  )
+
+  if (v3) {
+    return (
+      <div className="av2-scope" style={{ maxWidth: 1280, margin: '0 auto', padding: 16 }}>
+        <Suspense fallback={null}>
+          <PersistLeadPageV3 />
+        </Suspense>
+        <LeadHeader
+          personId={card.personId}
+          name={card.name}
+          stage={card.stage}
+          assignedBroker={card.assignedBroker}
+          source={card.source}
+          phone={card.phone}
+          email={card.email}
+          tags={card.tags}
+        />
+        <CmaKickoffSheet
+          personId={card.personId}
+          personName={card.name}
+          personPhone={card.phone}
+          personEmail={card.email}
+          suggestedAddress={addressLine}
+          autoOpen={sp.intent === 'cma'}
+        />
+        {sp.flash ? (
+          <div style={{ marginBottom: 12, fontSize: 'var(--a-text-sm)', color: 'var(--a-ok)', fontWeight: 500 }}>
+            {sp.flash}
+          </div>
+        ) : null}
+        {sp.error ? (
+          <div style={{ marginBottom: 12, fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)', fontWeight: 500 }}>
+            {sp.error}
+          </div>
+        ) : null}
+        <Suspense fallback={<PersonWorkspaceFallback />}>{workspace}</Suspense>
+      </div>
+    )
+  }
 
   return (
     <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
@@ -177,21 +263,7 @@ export default async function PersonPage({
       <PersonRelationships personId={card.personId} relationships={relationships} />
       <PersonNotesAdd personId={card.personId} notes={notes} />
 
-      <Suspense fallback={<PersonWorkspaceFallback />}>
-        <PersonWorkspace
-          idNum={idNum}
-          card={card}
-          sp={{
-            intent: sp.intent,
-            kicked: sp.kicked,
-            err: sp.err,
-            tpl: sp.tpl,
-            smsTpl: sp.smsTpl,
-            replyChannel: sp.replyChannel,
-            composeCma: sp.composeCma,
-          }}
-        />
-      </Suspense>
+      <Suspense fallback={<PersonWorkspaceFallback />}>{workspace}</Suspense>
     </div>
   )
 }

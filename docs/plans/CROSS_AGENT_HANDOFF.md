@@ -1,4 +1,16 @@
-# Current — 2026-10-14 (Cursor, analytics SoT)
+# Current — 2026-10-14 (Cursor, merge main into lead-page-v3)
+
+Surface: Cursor cloud. Branch `cursor/lead-page-v3-d7f6`, PR #506 vs main. Merged origin/main `ee189e044` (#558 analytics SoT). Matt approved a normal merge of #506 once CI is green apart from reds already on main. Nobody pushes main. Nothing sent.
+
+**What this branch does.** The admin person page has a v3 layout behind `lead-page-v3` (default off). Turn on with `?v=3` or `?lead-page-v3=1` (cookie `rr_lead_page_v3=1` keeps it). Flag-off is the current page: Text, Message, Call, Email, Build a CMA, All tools. Email Send is disabled when subject or body is empty, including with the flag off.
+
+**Not this change.** Do not send texts or emails while reviewing. Do not rebuild CMA letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch `fix/cma-phase-match`.
+
+**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool`. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered. Do not resend the 2026-10-11 letters. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Hold #471.
+
+Skills read: `.cursor/skills/crm-up-to-snuff/SKILL.md`, `.cursor/rules/git-commit.mdc`.
+
+## Earlier — 2026-10-14 (Cursor, analytics SoT)
 
 Surface: Cursor cloud. Branch `cursor/analytics-sot-readme-5e14`. `docs/analytics/README.md` is the analytics source of truth. Nobody pushes main. Nothing sent.
 
