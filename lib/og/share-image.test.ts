@@ -128,6 +128,20 @@ describe('share-card metadata', () => {
 })
 
 describe('/api/og share cards', () => {
+  it('place and default cards never pass a chip or title into the renderer', async () => {
+    const { readFileSync } = await import('node:fs')
+    const route = readFileSync('app/api/og/route.tsx', 'utf8')
+    const housing = readFileSync('app/housing-market/og/[...slug]/route.tsx', 'utf8')
+    const search = readFileSync('app/search/og/[...slug]/route.tsx', 'utf8')
+    expect(route).toMatch(/type === 'community'/)
+    expect(route).not.toMatch(/type === 'community'[\s\S]*chip:/)
+    expect(housing).toContain('renderShareCard')
+    expect(housing).not.toMatch(/chip:/)
+    expect(search).not.toMatch(/chip:/)
+    expect(housing).not.toMatch(/title:/)
+    expect(search).not.toMatch(/title:/)
+  })
+
   it('returns 200 image/png for default, community, and blog fallback cards', async () => {
     const cases = [
       'http://localhost/api/og?type=default',
