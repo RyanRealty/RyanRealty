@@ -1,12 +1,12 @@
-# Current — 2026-10-14 (Cursor, GA4 offline conversions)
+# Current — 2026-10-14 (Cursor, analytics SoT)
 
-Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-3b48` (#543), merged origin/main `7e23fdb97` (#551 handoff, #489 same-vintage, #542 Meta Lead no dollars). Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. Branch `cursor/analytics-sot-readme-5e14`. `docs/analytics/README.md` is the analytics source of truth. Nobody pushes main. Nothing sent.
 
-**This pass.** Daily `/api/cron/offline-conversions` now also sends GA4 MP `qualify_lead` (Buyer Contract, Pending) and `close_convert_lead` (Closed) through `fireGa4Event`. `lead_type` only, no dollar amount. Stored `_ga` client_id on `crm_people.custom.gaClientId` (first-touch from `fireLeadGenerated`). Skip + log when missing. Idempotent `ga4_offline_conversion` / `person:<id>:<stageKey>`. Live audit 2026-10-14: **0 of 23,909** contacts have a usable client_id. Land #543, then `gh pr checks --watch` and `gh pr merge --squash`.
+**This pass.** `docs/analytics/README.md` is the analytics SoT (GA4 property, measurement ID, GTM container live version 7 — Merge never Overwrite, browser dataLayer events, server `generate_lead`, buyer form_ids, consent, daily 8 AM PT offline cron including #543 `qualify_lead` / `close_convert_lead`). Pointers in CLAUDE.md (shrink-only) and AGENTS.md.
 
 **Still open.** Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`). Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. The unique `idx_listings_parcel_number` migration is not on main.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+Skills read: `.cursor/rules/git-commit.mdc`.
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 
