@@ -2,8 +2,10 @@
  * Writes docs/gtm/ga4-browser-events.import.json: a GTM container import
  * (Admin > Import Container > Merge) holding the GA4 Event tag, its Custom Event
  * trigger, the "GA4 - page_view" tag with its trigger, and one Data Layer
- * Variable per parameter, all built from
+ * Variable per dataLayer key, all built from
  * lib/analytics/ga4-browser-events.ts so the import cannot drift from the code.
+ * Both tags carry the content_group row (= page_type) and the user properties
+ * visitor_intent / primary_market, as GTM version 10 (2026-10-14) does live.
  *
  * Usage: npx tsx scripts/build-gtm-ga4-import.ts
  * ga4-browser-events.test.ts fails when the committed file is out of date.
@@ -16,6 +18,7 @@ import {
   GA4_PAGE_VIEW_PARAMS,
   GA4_PAGE_VIEW_TAG_NAME,
   GA4_PAGE_VIEW_TRIGGER_NAME,
+  GA4_USER_PROPERTIES,
   ga4BrowserEventTriggerRegex,
 } from '../lib/analytics/ga4-browser-events'
 
@@ -25,21 +28,59 @@ export const gtmVariableName = (param: string) => `DLV - ga4 ${param}`
 
 const tpl = (key: string, value: string) => ({ type: 'TEMPLATE', key, value })
 
+type Mapping = { readonly name: string; readonly from: string }
+
+/**
+ * One Data Layer Variable per distinct dataLayer key, named after the first
+ * mapping that reads it: the event tag's table, then the page_view tag's, then
+ * the user properties. A second name for the same key (content_group reads
+ * page_type) reuses that variable instead of adding a twin.
+ */
+function variableByKey(): Map<string, string> {
+  const out = new Map<string, string>()
+  for (const p of [...GA4_EVENT_PARAMS, ...GA4_PAGE_VIEW_PARAMS, ...GA4_USER_PROPERTIES] as Mapping[]) {
+    if (!out.has(p.from)) out.set(p.from, gtmVariableName(p.name))
+  }
+  return out
+}
+
+/** The GTM variable a parameter or user property reads (`DLV - ga4 page_type` for content_group). */
+export function gtmVariableFor(p: Mapping): string {
+  const name = variableByKey().get(p.from)
+  if (!name) throw new Error(`no Data Layer Variable reads ${p.from}`)
+  return name
+}
+
+const eventSettingsTable = (params: readonly Mapping[]) => ({
+  type: 'LIST',
+  key: 'eventSettingsTable',
+  list: params.map((p) => ({
+    type: 'MAP',
+    map: [tpl('parameter', p.name), tpl('parameterValue', `{{${gtmVariableFor(p)}}}`)],
+  })),
+})
+
+/** The GA4 Event tag's "User Properties" table (GTM version 10, on both tags). */
+const userPropertiesTable = () => ({
+  type: 'LIST',
+  key: 'userProperties',
+  list: GA4_USER_PROPERTIES.map((p) => ({
+    type: 'MAP',
+    map: [tpl('name', p.name), tpl('value', `{{${gtmVariableFor(p)}}}`)],
+  })),
+})
+
 export function buildGtmImport() {
-  // One Data Layer Variable per distinct dataLayer key: the event tag's table,
-  // then the page_view tag's keys it does not already read.
-  const eventKeys = new Set<string>(GA4_EVENT_PARAMS.map((p) => p.name))
-  const variableParams = [...GA4_EVENT_PARAMS, ...GA4_PAGE_VIEW_PARAMS.filter((p) => !eventKeys.has(p.name))]
-  const variables = variableParams.map((p, i) => ({
+  const variables = [...variableByKey()].map(([key, name], i) => ({
     accountId: '0',
     containerId: '0',
     variableId: String(100 + i),
-    name: gtmVariableName(p.name),
+    name,
     type: 'v',
     parameter: [
       { type: 'INTEGER', key: 'dataLayerVersion', value: '2' },
       { type: 'BOOLEAN', key: 'setDefaultValue', value: 'false' },
-      tpl('name', p.from),
+      tpl('name', key),
     ],
     formatValue: {},
   }))
@@ -64,14 +105,8 @@ export function buildGtmImport() {
       { type: 'BOOLEAN', key: 'enhancedUserId', value: 'false' },
       tpl('eventName', '{{Event}}'),
       tpl('measurementIdOverride', GA4_MEASUREMENT_ID),
-      {
-        type: 'LIST',
-        key: 'eventSettingsTable',
-        list: GA4_EVENT_PARAMS.map((p) => ({
-          type: 'MAP',
-          map: [tpl('parameter', p.name), tpl('parameterValue', `{{${gtmVariableName(p.name)}}}`)],
-        })),
-      },
+      eventSettingsTable(GA4_EVENT_PARAMS),
+      userPropertiesTable(),
     ],
     firingTriggerId: [trigger.triggerId],
     tagFiringOption: 'ONCE_PER_EVENT',
@@ -100,14 +135,8 @@ export function buildGtmImport() {
       { type: 'BOOLEAN', key: 'enhancedUserId', value: 'false' },
       tpl('eventName', 'page_view'),
       tpl('measurementIdOverride', GA4_MEASUREMENT_ID),
-      {
-        type: 'LIST',
-        key: 'eventSettingsTable',
-        list: GA4_PAGE_VIEW_PARAMS.map((p) => ({
-          type: 'MAP',
-          map: [tpl('parameter', p.name), tpl('parameterValue', `{{${gtmVariableName(p.name)}}}`)],
-        })),
-      },
+      eventSettingsTable(GA4_PAGE_VIEW_PARAMS),
+      userPropertiesTable(),
     ],
     firingTriggerId: [pageViewTrigger.triggerId],
     tagFiringOption: 'ONCE_PER_EVENT',

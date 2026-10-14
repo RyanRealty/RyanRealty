@@ -26,7 +26,8 @@
  * which is cleared (`{ ga4_params: null }`, Google's ecommerce-reset pattern)
  * before every push. The tag reads `ga4_params.<name>` only. page_type and
  * broker_slug are page context on purpose and stay flat keys: the GTM
- * bootstrap and PageViewTracker stamp them on every navigation.
+ * bootstrap and PageViewTracker stamp them on every navigation. So are the
+ * user properties visitor_intent and primary_market (GA4_USER_PROPERTIES).
  *
  * PRIVACY. Only the parameters in GA4_EVENT_PARAMS go into ga4_params, so a
  * call that also carries phone_number, email_to, href or a page path for the
@@ -158,8 +159,27 @@ export const GA4_PAGE_VIEW_TRIGGER_NAME = 'CE page_view'
 export const GA4_PAGE_VIEW_PARAMS = [
   { name: 'page_type', from: 'page_type' },
   { name: 'broker_slug', from: 'broker_slug' },
+  // GA4's built-in Content group dimension, the same value as page_type (GTM version 10).
+  { name: 'content_group', from: 'page_type' },
   { name: 'page_location', from: 'page_location' },
   { name: 'page_referrer', from: 'page_referrer' },
+] as const
+
+/**
+ * GA4 user properties both GA4 Event tags set ("GA4 - page_view" and
+ * "GA4 - dataLayer events", GTM version 10, 2026-10-14). `from` is the flat
+ * dataLayer key. They come from lib/analytics/visitor-intent.ts, the one
+ * buyer / seller / both / browsing definition the CRM's page categories use:
+ * PageViewTracker pushes both with the page context before every page_view, the
+ * inline bootstrap adds the stored values to the first-paint page_view, and
+ * trackEvent pushes a new visitor_intent before the buyer or seller event that
+ * changed it. Registered in GA4 as user-scoped custom dimensions
+ * (scripts/ga4-admin-setup.mjs) and used by the "Visitor intent: …" audiences
+ * (scripts/ga4-admin.mjs).
+ */
+export const GA4_USER_PROPERTIES = [
+  { name: 'visitor_intent', from: 'visitor_intent' },
+  { name: 'primary_market', from: 'primary_market' },
 ] as const
 
 /**
@@ -170,6 +190,8 @@ export const GA4_EVENT_PARAMS = [
   // Page context: flat keys on purpose (stamped on every navigation).
   { name: 'page_type', from: 'page_type' },
   { name: 'broker_slug', from: 'broker_slug' },
+  // GA4's built-in Content group dimension mirrors page_type (GTM version 10).
+  { name: 'content_group', from: 'page_type' },
   // Per-event parameters: cleared before every push.
   { name: 'source', from: 'ga4_params.source' },
   { name: 'context', from: 'ga4_params.context' },

@@ -29,7 +29,9 @@ dataLayer.push({ event: 'section_view', section: 'proof', page_type: 'sell',   /
 - Aliases are folded to one name per fact: `section_id` → `section`, `percent` → `depth`, `depth_percent` → `depth`, `listing_id` → `listing_key`, `place_slug` → `place`, `cta_label` → `cta`, `cta_context` → `cta_location`.
 - `listing_key` reaches GA4 as `lk_<key>` when the key is all digits (it always is for MLS keys). GA4 stored a bare 26-digit key as a double and dropped digits (2026-10-08, e.g. `2.0251020154621696e+25`). Only `ga4_params.listing_key` carries the prefix; the flat dataLayer key, the first-party store and Meta `content_ids` keep the bare key. No GTM change: the same Data Layer Variable and tag pass it through. Strip `lk_` to join GA4 data back to listings. Rows before 2026-10-09 stay floats and cannot be recovered.
 - `page_type` and `broker_slug` are page context, read as flat keys (the GTM bootstrap and PageViewTracker stamp
-  them on every navigation).
+  them on every navigation). Both tags also send `content_group` from the same `page_type` key (GTM version 10).
+- `visitor_intent` and `primary_market` are flat keys too, read as GA4 **user properties** by both tags (GTM
+  version 10, below).
 - Alert enroll pushes `sign_up` (already on this trigger) with `method`,
   `form_id`, and `lead_type`.
 - Not sent by this tag, on purpose: `generate_lead` (server only, Measurement
@@ -53,6 +55,7 @@ not a new page.
 |---|---|---|
 | `page_type` | `DLV - ga4 page_type` | `page_type` |
 | `broker_slug` | `DLV - ga4 broker_slug` | `broker_slug` |
+| `content_group` | `DLV - ga4 page_type` | `page_type` (GA4's built-in Content group, the same value) |
 | `page_location` | `DLV - ga4 page_location` | `page_location` (identity params `_pid`, `_fuid`, `rr_doc` stripped) |
 | `page_referrer` | `DLV - ga4 page_referrer` | `page_referrer` (the previous page on a client-side navigation; absent on first paint) |
 
@@ -64,6 +67,27 @@ It only works with both of these, or page views double:
 
 `npm run analytics:audit` fails on any other mix (two senders, or none).
 
+## Content group and visitor intent (GTM version 10, live since 2026-10-14)
+
+Version 10, `Content group + visitor intent/market user properties (2026-10-14)`, is published. Both GA4 Event tags
+(`GA4 - page_view` and `GA4 - dataLayer events`) now carry:
+
+- Event parameter `content_group` = `{{DLV - ga4 page_type}}`. GA4's Content group dimension is the same value as
+  `page_type`; no new variable.
+- **User Properties** (the tag's "User Properties" section), each from a flat dataLayer key:
+
+| GA4 user property | GTM variable | dataLayer key |
+|---|---|---|
+| `visitor_intent` | `DLV - ga4 visitor_intent` | `visitor_intent` |
+| `primary_market` | `DLV - ga4 primary_market` | `primary_market` |
+
+The values come from `lib/analytics/visitor-intent.ts` (buyer / seller / both / browsing, and the most-viewed
+Central Oregon city or community slug). `PageViewTracker` pushes both in the page-context push before every
+`page_view`; the inline bootstrap adds the stored values to the first-paint `page_view`; `trackEvent` pushes a new
+`visitor_intent` just before the buyer or seller event that changed it. Nothing is stored or pushed without
+analytics consent. GTM's data model keeps the last value, so every later event on the page carries it too.
+`npm run analytics:audit` fails if either tag stops mapping them.
+
 ## Option A: import (about 3 minutes)
 
 1. tagmanager.google.com → container **GTM-WV6R4NZ5** → **Admin** → **Import Container**.
@@ -71,8 +95,9 @@ It only works with both of these, or page views double:
 3. Workspace: **Existing** → Default Workspace. Import option: **Merge** → **Rename conflicting tags, triggers, and
    variables**. Confirm.
 4. It adds 2 tags (`GA4 - dataLayer events`, `GA4 - page_view`), 2 triggers (`CE - GA4 browser events`,
-   `CE page_view`) and 32 variables: the event tag's 30 Data Layer Variables plus `page_location` and
-   `page_referrer` (`DLV - ga4 …`). On the live container, which already has them, Merge renames the duplicates;
+   `CE page_view`) and 34 variables: the event tag's 30 Data Layer Variables, `page_location` and
+   `page_referrer`, and the two user-property variables `visitor_intent` and `primary_market` (`DLV - ga4 …`;
+   `content_group` reuses `DLV - ga4 page_type`). On the live container, which already has them, Merge renames the duplicates;
    edit by hand there instead. It changes nothing that exists. **Matt must import and publish**
    so `lead_type` on `sign_up` reaches GA4. `sign_up` was already on the trigger regex.
    Do not add `generate_lead` to that regex.
@@ -117,6 +142,8 @@ value. Name the variable as in the "GTM variable" column.
 | 28 | `metric_rating` | `DLV - ga4 metric_rating` | `ga4_params.metric_rating` |
 | 29 | `lead_type` | `DLV - ga4 lead_type` | `ga4_params.lead_type` |
 | 30 | `seconds` | `DLV - ga4 seconds` | `ga4_params.seconds` |
+| 31 | `visitor_intent` (user property) | `DLV - ga4 visitor_intent` | `visitor_intent` |
+| 32 | `primary_market` (user property) | `DLV - ga4 primary_market` | `primary_market` |
 
 Also confirm the built-in variable **Event** is enabled (Variables → Configure → Event). It is on by default.
 
@@ -136,8 +163,15 @@ Also confirm the built-in variable **Event** is enabled (Variables → Configure
 - Name: `GA4 - dataLayer events`
 - Measurement ID: `G-ST40W4WM6T`
 - Event Name: `{{Event}}`
-- Event Parameters: one row per line of the table above: Parameter Name = "GA4 parameter", Value = the
-  `{{DLV - ga4 …}}` variable. (30 rows. Empty values are not sent.)
+- Event Parameters: one row per line 1 to 30 of the table above: Parameter Name = "GA4 parameter", Value = the
+  `{{DLV - ga4 …}}` variable, plus this row (31 rows. Empty values are not sent.):
+
+| GA4 parameter | GTM variable | dataLayer key |
+|---|---|---|
+| `content_group` | `DLV - ga4 page_type` | `page_type` |
+
+- User Properties: `visitor_intent` = `{{DLV - ga4 visitor_intent}}`, `primary_market` = `{{DLV - ga4 primary_market}}`
+  (rows 31 and 32). `GA4 - page_view` carries the same `content_group` row and the same two user properties.
 - Leave "Send Ecommerce data" off. Consent: leave the built-in consent checks as they are (do not add any).
 - Triggering: `CE - GA4 browser events`.
 
@@ -158,7 +192,8 @@ Also confirm the built-in variable **Event** is enabled (Variables → Configure
 
 - Next day: GA4 Data API `section_view` > 0, `call_initiated` > 0 on a day with a tel: click.
 - Register event-scoped custom dimensions for `section`, `depth`, `surface`, `cta`, `form_id` if they should show in
-  reports (Admin → Data display → Custom definitions). `page_type`, `cta_location`, `source`, `city_slug`,
+  reports (Admin → Data display → Custom definitions). The user-scoped `visitor_intent` and `primary_market` are
+  registered by `scripts/ga4-admin-setup.mjs` (run `--dry-run` first). `page_type`, `cta_location`, `source`, `city_slug`,
   `listing_key`, `lp_*`, `broker_slug`, `method`, `lead_type` and `context` are already registered.
 
 ## Changing the list later

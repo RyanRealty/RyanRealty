@@ -13,3 +13,4 @@ When migrations in `supabase/migrations/` must be applied to the hosted project 
 2. Prefer **Supabase MCP** (`list_projects` → `apply_migration` with full SQL from the file, in filename order) when the CLI is not linked (`supabase link`).
 3. If CLI is linked locally, `npm run db:push` or `npm run db:push:all` is acceptable.
 4. After schema changes that add `has_virtual_tour` or similar flags, run a **backfill** `execute_sql` when the pipeline does not populate them yet (see data architecture plan / `pick-video-from-details` usage).
+5. After merge, do not leave apply as a hand `npm run db:push`. `.github/workflows/supabase-migrations.yml` dry-runs then applies this-push files on `main`. MCP apply during delivery is still fine: the Action then no-ops or tolerates already-applied SQL.
