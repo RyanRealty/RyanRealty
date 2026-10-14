@@ -66,6 +66,12 @@ export type ProspectIntakeInput = {
   dncPhone: boolean
   email: string | null | undefined
   emailSuppressed: boolean
+  /**
+   * Live SMS suppression on the cell we would text (STOP, bounce, complaint,
+   * unsubscribe, GPC, or a person-keyed opt-out on that number). Email already
+   * has emailSuppressed. A mobile-only owner must get the same gate.
+   */
+  smsSuppressed?: boolean
   /** Skip-trace phones, with line type. An untyped number is not a cell. */
   phones?: readonly IntakePhone[] | null
 }
@@ -139,9 +145,10 @@ export function decideProspectIntake(input: ProspectIntakeInput): ProspectIntake
     }
   }
   // A clean cell is enough. Person-level DNC on some other number must not
-  // tag this cell do-not-text. TCPA still blocks the text.
+  // tag this cell do-not-text. TCPA still blocks the text. A STOP or other
+  // SMS suppression on this cell is the same gate email already ran.
   const cell = pickSendableCell(input.phones)
-  if (cell && !input.dncTcpa) {
+  if (cell && !input.dncTcpa && !input.smsSuppressed) {
     return {
       action: 'proceed',
       channel: 'sms',
@@ -155,6 +162,8 @@ export function decideProspectIntake(input: ProspectIntakeInput): ProspectIntake
   if (input.emailSuppressed && hasSendableEmail(email)) {
     return { action: 'skip', reason: 'email-suppressed', ...carry }
   }
-  if (cell && input.dncTcpa) return { action: 'skip', reason: 'sms-blocked', ...carry }
+  if (cell && (input.dncTcpa || input.smsSuppressed)) {
+    return { action: 'skip', reason: 'sms-blocked', ...carry }
+  }
   return { action: 'skip', reason: 'no-sendable-email', ...carry }
 }
