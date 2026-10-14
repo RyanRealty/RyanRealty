@@ -465,6 +465,30 @@ build when any part of it is broken.**
    browser stitched to them, plus **Copy personal link**: a `personal`-channel tracked
    link for a Facebook or Instagram DM, a Gmail reply, or a text from a broker's own
    phone. Data: `lib/data/crm/getSiteActivity.ts`; shaping: `lib/crm/site-activity.ts`.
+7. **Recognized is not proven** (consent integrity, 2026-10-14). The signed `rr_pid`
+   cookie carries how the browser came to be known, under the signature, set by the code
+   that mints it (`lib/identity/person-cookie.ts`):
+   - `verified`: a channel the person controls proved it. A signed link we sent to their
+     own email or phone (the track route, the identify action), or a sign-in whose email
+     the provider confirmed (`signInProvenance`).
+   - `claimed`: a session born identified from the `rr_vid` identity map
+     (`rr_vid_carryover`). The map may hold nothing stronger than an email someone typed
+     into a form, and anyone can type anyone's email.
+   - `legacy`: minted before 2026-10-14. Provenance unknown, so unverified.
+
+   The identity loop reads every signed cookie the same way (analytics, the CRM timeline,
+   Known people, a GPC opt-out). **Consent capture reads only `verified`**
+   (`verifiedPersonIdFromCookie`): the CMA report's consent bar and its POST
+   (`/api/cma/register`), a phone-only lead's bind-on-first-register, the sign-in
+   callback's CMA consent marker, and a seller-form submit that carried no email
+   (`submittedConsentCounts`). A claimed or legacy cookie gets no consent ask; the person
+   verifies by the normal path, the tracked link in the email we sent them. A form submit
+   that carries the person's own email records its consent box for the person that email
+   names (first-party consent with the form's own disclosure). A tracked link upgrades a
+   claimed cookie for the same person; a claim never downgrades a verified cookie. Cookie
+   values are not link tokens: `?_pid=` refuses them, so a visitor cannot paste their own
+   claimed cookie into a URL and come back verified. `ci:identity-loop` rule 12 pins each
+   guard.
 
 ### Channel map
 
@@ -482,10 +506,10 @@ build when any part of it is broken.**
 | Prospecting SMS | signed `_pid` (`prospecting`) | `app/actions/prospecting.ts` → helper → `/r/<code>` | same race | yes |
 | Facebook / Instagram DM, Gmail typed by hand, text from a broker's phone | signed `_pid` (`personal`) | broker pastes the person page's personal link | no (no link existed) | yes |
 | Email already in an inbox (pre-2026-09-23) | signed click token | `/api/track/e/click` re-signs the destination | raw id, same race | yes |
-| Returning device | `rr_vid` cookie, signed `rr_pid` cookie | identity map carryover at session birth; cookie fallback | yes (`rr_vid_carryover`) | yes |
+| Returning device | `rr_vid` cookie, signed `rr_pid` cookie | identity map carryover at session birth (cookie `claimed`); cookie fallback (keeps its provenance) | yes (`rr_vid_carryover`) | yes |
 | Sign-in (Google OAuth, email link, password) | the verified session email, matched server-side | `app/auth/callback` + `identifyAuthenticatedSession` → `personIdsByEmailCi` → stitch | yes | yes |
 | Google One Tap | not on the public site (only `/admin/login` takes a Google ID token, for brokers) | none | n/a | n/a |
-| Form fill | the submitted email | `stitchFormSubmitIdentity` | yes | yes |
+| Form fill | the submitted email | `stitchFormSubmitIdentity` (maps the `rr_vid`; the next session's cookie is `claimed`, never consent-grade) | yes | yes |
 | Google Business Profile, organic search, paid ads (`fbclid`/`gclid`), AI assistants | nothing that names a person | anonymous until one of the rows above happens, then back-stitched by `rr_vid` | back-stitch existed | yes |
 
 Matching happens on the server against `crm_people`; no URL carries an email. What the
