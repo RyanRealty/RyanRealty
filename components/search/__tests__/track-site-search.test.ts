@@ -23,7 +23,7 @@ describe('trackSiteSearch', () => {
   it('sends one GA4 search and one first-party search row', () => {
     trackSiteSearch({ surface: 'search_page', source: 'typeahead', query: 'Bend', term: 'be', city: 'Bend' })
     expect(calls.ga4).toEqual([
-      ['search', { surface: 'search_page', search_term: 'be', city: 'Bend', subdivision: undefined, postalCode: undefined }],
+      ['search', { surface: 'search_page', search_term: 'Bend', city: 'Bend', subdivision: undefined, postalCode: undefined }],
     ])
     expect(calls.firstParty).toEqual([
       [
@@ -51,13 +51,10 @@ describe('trackSiteSearch', () => {
     expect(calls.ga4[0][1]).toMatchObject({ surface: 'home_hero', search_term: '3 bed in Redmond' })
   })
 
-  it('still records a blank submit, with no query', () => {
-    trackSiteSearch({ surface: 'home_hero', source: 'submit', query: '' })
-    expect(calls.ga4).toHaveLength(1)
-    expect(calls.ga4[0][1]).toMatchObject({ surface: 'home_hero', search_term: undefined })
-    expect(calls.firstParty).toHaveLength(1)
-    const [, opts] = calls.firstParty[0] as [string, { metadata: Record<string, unknown> }]
-    expect(opts.metadata.query).toBeUndefined()
+  it('records nothing for a blank submit, so every counted search has words', () => {
+    trackSiteSearch({ surface: 'home_hero', source: 'submit', query: '   ' })
+    expect(calls.ga4).toEqual([])
+    expect(calls.firstParty).toEqual([])
   })
 
   it('a GA4 failure does not stop the first-party row', () => {

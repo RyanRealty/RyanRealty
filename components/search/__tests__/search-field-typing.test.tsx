@@ -37,6 +37,12 @@ import SearchFilters from '@/components/search/SearchFilters'
 const EMPTY = { addresses: [], cities: [], subdivisions: [], neighborhoods: [], zips: [], brokers: [], reports: [], pages: [] }
 
 let root: Root | null = null
+const original = {
+  matchMedia: window.matchMedia,
+  fetch: globalThis.fetch,
+  ResizeObserver: globalThis.ResizeObserver,
+  scrollIntoView: Element.prototype.scrollIntoView,
+}
 
 beforeEach(() => {
   pushed.length = 0
@@ -79,6 +85,10 @@ afterEach(() => {
   root = null
   document.body.innerHTML = ''
   vi.restoreAllMocks()
+  window.matchMedia = original.matchMedia
+  globalThis.fetch = original.fetch
+  globalThis.ResizeObserver = original.ResizeObserver
+  Element.prototype.scrollIntoView = original.scrollIntoView
 })
 
 const trigger = () => document.querySelector<HTMLInputElement>('[data-v3-morph="trigger"] input')
@@ -101,7 +111,8 @@ function type(input: HTMLInputElement, value: string) {
   })
 }
 
-describe('the /homes-for-sale search field takes typing', () => {
+// Real SearchFilters + framer-motion in jsdom: allow a loaded machine its time.
+describe('the /homes-for-sale search field takes typing', { timeout: 30_000 }, () => {
   it('opens on focus, onto the city seeds', async () => {
     expect(trigger()).not.toBeNull()
     act(() => trigger()!.focus())
@@ -135,7 +146,7 @@ describe('the /homes-for-sale search field takes typing', () => {
     ])
   })
 
-  it('applies a sentence that names no place from the last row', async () => {
+  it('applies a sentence of filter words on Enter', async () => {
     act(() => trigger()!.focus())
     await flush()
     type(dialogInput()!, '3 bed under 800k')

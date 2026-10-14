@@ -135,7 +135,7 @@ export function HomeHeroSearch({
 
   const onBuySubmit = useCallback(() => {
     const text = query.trim()
-    // An empty submit opens the regional list and still counts as a search.
+    // A blank submit opens the regional list; trackSiteSearch records only words.
     trackSiteSearch({ surface: 'home_hero', source: 'submit', query: text })
     if (!text) {
       go(publishRegionalSearchHref())

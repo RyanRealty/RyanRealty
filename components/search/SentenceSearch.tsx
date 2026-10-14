@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -51,10 +51,14 @@ export type SentenceSearchProps = {
 export function SentenceSearch({ className, transcript }: SentenceSearchProps) {
   const apply = useApplySentenceSearch()
   const [value, setValue] = useState('')
+  // `apply` changes with every URL change, its own replace included. One
+  // transcript applies (and records a search) once, not once per URL change.
+  const appliedTranscript = useRef<string | null>(null)
 
   useEffect(() => {
     const text = transcript?.trim()
-    if (!text) return
+    if (!text || appliedTranscript.current === text) return
+    appliedTranscript.current = text
     setValue(text)
     apply(text)
   }, [apply, transcript])

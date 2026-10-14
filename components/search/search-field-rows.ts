@@ -42,39 +42,40 @@ export function searchFieldRows(
  *
  * - No row carries its own onSelect. MorphingSearch calls a row's onSelect AND
  *   its onSelect prop, so a row handler recorded every pick twice.
- * - Server rows carry the typed words as a keyword, so MorphingSearch's own
- *   substring filter cannot drop a match the server made on a field the row does
- *   not print (V3ChromeSearch does the same). Seed rows do not: the typed words
- *   narrow them ("Re" leaves Redmond).
- * - A last row applies the typed words as a sentence (lib/parse-search-query.ts)
- *   when they read as filters ("3 bed under 800k") or when no row would show,
- *   and no row already names them. Enter takes the first row, so without it
- *   Enter on words that match no place did nothing; the field before the morph
- *   applied them as a keyword search, and this keeps that.
+ * - Server rows that answer exactly these typed words carry them as a keyword,
+ *   so MorphingSearch's own substring filter cannot drop a match the server made
+ *   on a field the row does not print (V3ChromeSearch does the same). Seeds, and
+ *   suggestions still left from earlier words, do not: the typed words narrow
+ *   them ("Re" leaves Redmond, and a stale "Bend" row leaves once "Bend 3 bed"
+ *   is typed), so Enter cannot pick a row the words have moved past.
+ * - A row applies the typed words as a sentence (lib/parse-search-query.ts) when
+ *   no row already names them, and they read as filters ("3 bed in Tetherow")
+ *   or no other row would show. Filter words put it FIRST, so Enter applies
+ *   every filter rather than only the place a row matched; plain words put it
+ *   last. Enter takes the first row, so without it Enter on words that match no
+ *   place did nothing; the field before the morph applied them on Enter.
  */
 export function searchFieldItems(
   rows: readonly SuggestItem[],
   query: string,
-  opts: { fromServer: boolean },
+  opts: { answersQuery: boolean },
 ): MorphingSearchItem[] {
   const text = query.trim()
   const items: MorphingSearchItem[] = rows.map((row) => ({
     id: row.href,
     title: row.label,
     description: row.sublabel,
-    ...(opts.fromServer && text ? { keywords: [text] } : {}),
+    ...(opts.answersQuery && text ? { keywords: [text] } : {}),
   }))
   if (text.length < 2) return items
   const needle = text.toLowerCase()
   if (rows.some((row) => row.label.trim().toLowerCase() === needle)) return items
-  // Seed rows are narrowed by MorphingSearch's own filter (title + description);
-  // server rows are not (their keyword is the typed words).
-  const shown = opts.fromServer
+  const shown = opts.answersQuery
     ? rows.length
     : rows.filter((row) => `${row.label} ${row.sublabel ?? ''}`.toLowerCase().includes(needle)).length
   const filters = Object.keys(parseSearchQuery(text)).some((key) => key !== 'keywords')
-  if (filters || shown === 0) {
-    items.push({ id: `${TYPED_SEARCH_ROW_PREFIX}${text}`, title: text, description: 'Search homes' })
-  }
+  const typed: MorphingSearchItem = { id: `${TYPED_SEARCH_ROW_PREFIX}${text}`, title: text, description: 'Search homes' }
+  if (filters) return [typed, ...items]
+  if (shown === 0) return [...items, typed]
   return items
 }

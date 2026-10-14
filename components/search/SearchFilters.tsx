@@ -347,14 +347,18 @@ export default function SearchFilters({
   const [locationOpen, setLocationOpen] = useState(false)
   const [highlight, setHighlight] = useState(-1)
   const locationInputRef = useRef<HTMLInputElement>(null)
-  const { suggestions, loading: suggestLoading } = useSearchSuggest(locationQuery)
-  const suggestItems = flattenSuggestions(suggestions)
+  const { suggestions, loading: suggestLoading, answeredQuery } = useSearchSuggest(locationQuery)
+  const suggestItems = useMemo(() => flattenSuggestions(suggestions), [suggestions])
   // The no-JS fallback's results panel opens only with something to show. The
   // live morph field opens on focus instead (search-field-rows.ts says why).
   const morphOpen = locationOpen && (suggestItems.length > 0 || suggestLoading)
   const citySeeds = useMemo(() => citySeedRows(REPORT_CITY_LABELS), [])
-  const fieldRows = searchFieldRows(suggestItems, citySeeds)
-  const fieldItems = searchFieldItems(fieldRows, locationQuery, { fromServer: suggestItems.length > 0 })
+  const fieldRows = useMemo(() => searchFieldRows(suggestItems, citySeeds), [suggestItems, citySeeds])
+  const answersQuery = suggestItems.length > 0 && answeredQuery === locationQuery.trim()
+  const fieldItems = useMemo(
+    () => searchFieldItems(fieldRows, locationQuery, { answersQuery }),
+    [fieldRows, locationQuery, answersQuery],
+  )
 
   const urlPrice = useMemo(
     () => urlToRange(initialFilters.minPrice, initialFilters.maxPrice, V3_PRICE_STOPS),

@@ -14,6 +14,11 @@
  * per pick. search-tracking-contract.test.ts fails on any direct
  * trackEvent('search') or fireFirstPartyEvent('search') outside this file.
  *
+ * A search is words: a blank submit (the homepage hero's empty Search opens the
+ * whole list) records nothing, so the card's count is searches that had a term.
+ * GA4 `search_term` is what was searched (the place picked, the sentence
+ * applied), never the half-typed letters; those ride first-party metadata.term.
+ *
  * Fire-and-forget: a tracking failure never breaks a search, and one sender
  * failing never stops the other. Consent is each sender's own gate.
  */
@@ -37,7 +42,7 @@ export type SiteSearchSource =
 export type SiteSearch = {
   surface: SiteSearchSurface
   source: SiteSearchSource
-  /** What the search resolved to: the place picked, or the sentence applied. Empty for a blank submit. */
+  /** What the search resolved to: the place picked, or the sentence applied. Blank records nothing. */
   query: string
   /** What the visitor had typed, when it differs from `query`. */
   term?: string
@@ -53,6 +58,7 @@ function clean(value: string | undefined): string | undefined {
 
 export function trackSiteSearch(search: SiteSearch): void {
   const query = clean(search.query)
+  if (!query) return
   const term = clean(search.term)
   const city = clean(search.city)
   const subdivision = clean(search.subdivision)
@@ -60,7 +66,7 @@ export function trackSiteSearch(search: SiteSearch): void {
   try {
     trackEvent('search', {
       surface: search.surface,
-      search_term: term ?? query,
+      search_term: query,
       city,
       subdivision,
       postalCode,

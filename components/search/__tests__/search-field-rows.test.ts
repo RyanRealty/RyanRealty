@@ -25,37 +25,46 @@ describe('searchFieldRows', () => {
 
 describe('searchFieldItems', () => {
   it('never gives a row its own onSelect, so a pick is handled once', () => {
-    const items = searchFieldItems([bend, address], 'be', { fromServer: true })
+    const items = searchFieldItems([bend, address], 'be', { answersQuery: true })
     for (const item of items) expect(item).not.toHaveProperty('onSelect')
   })
 
   it('lets server rows survive the morph filter through the typed words; seeds stay filterable', () => {
-    expect(searchFieldItems([address], '2666 26th', { fromServer: true })[0].keywords).toEqual(['2666 26th'])
-    const seeded = searchFieldItems(citySeedRows(['Bend']), 'Re', { fromServer: false })
+    expect(searchFieldItems([address], '2666 26th', { answersQuery: true })[0].keywords).toEqual(['2666 26th'])
+    const seeded = searchFieldItems(citySeedRows(['Bend']), 'Re', { answersQuery: false })
     expect(seeded[0]).not.toHaveProperty('keywords')
   })
 
-  it('adds a last row that applies typed filter words as a sentence', () => {
-    const items = searchFieldItems([], '3 bed under 800k', { fromServer: false })
-    expect(items.at(-1)).toEqual({
-      id: `${TYPED_SEARCH_ROW_PREFIX}3 bed under 800k`,
-      title: '3 bed under 800k',
+  it('puts a sentence of filter words first, so Enter applies every filter, not just the place', () => {
+    const tetherow: SuggestItem = { kind: 'subdivision', label: 'Tetherow', sublabel: 'Bend', href: '/communities/tetherow', city: 'Bend', subdivisionName: 'Tetherow' }
+    const items = searchFieldItems([tetherow], '3 bed in Tetherow', { answersQuery: true })
+    expect(items[0]).toEqual({
+      id: `${TYPED_SEARCH_ROW_PREFIX}3 bed in Tetherow`,
+      title: '3 bed in Tetherow',
       description: 'Search homes',
     })
+    expect(items.map((i) => i.id)).toContain('/communities/tetherow')
+  })
+
+  it('suggestions left from earlier words carry no keyword, so the new words filter them out', () => {
+    // The Bend row answered "Bend"; "Bend 3 bed" is typed before the new answer lands.
+    const items = searchFieldItems([bend], 'Bend 3 bed', { answersQuery: false })
+    expect(items.find((i) => i.id === bend.href)).not.toHaveProperty('keywords')
+    expect(items[0].id).toBe(`${TYPED_SEARCH_ROW_PREFIX}Bend 3 bed`)
   })
 
   it('adds a keyword row when nothing else would show, as the field before the morph did on Enter', () => {
-    const items = searchFieldItems(citySeedRows(['Bend', 'Redmond']), 'zz', { fromServer: false })
+    const items = searchFieldItems(citySeedRows(['Bend', 'Redmond']), 'zz', { answersQuery: false })
     expect(items.at(-1)?.id).toBe(`${TYPED_SEARCH_ROW_PREFIX}zz`)
   })
 
   it('adds no row when a place already answers the words, or a row names them', () => {
     // "Be" leaves the Bend seed showing.
-    expect(searchFieldItems(citySeedRows(['Bend', 'Redmond']), 'Be', { fromServer: false }).map((i) => i.id)).toEqual([
+    expect(searchFieldItems(citySeedRows(['Bend', 'Redmond']), 'Be', { answersQuery: false }).map((i) => i.id)).toEqual([
       '/homes-for-sale?city=Bend',
       '/homes-for-sale?city=Redmond',
     ])
-    expect(searchFieldItems([bend], 'bend', { fromServer: true }).map((i) => i.id)).toEqual(['/homes-for-sale/bend'])
-    expect(searchFieldItems([address], '2666 26th', { fromServer: true }).map((i) => i.id)).toEqual([address.href])
+    expect(searchFieldItems([bend], 'bend', { answersQuery: true }).map((i) => i.id)).toEqual(['/homes-for-sale/bend'])
+    expect(searchFieldItems([address], '2666 26th', { answersQuery: true }).map((i) => i.id)).toEqual([address.href])
   })
 })

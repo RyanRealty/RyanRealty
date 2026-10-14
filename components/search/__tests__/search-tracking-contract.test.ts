@@ -13,15 +13,15 @@ const HELPER = 'components/search/track-site-search.ts'
 
 describe('site search tracking has one sender', () => {
   it('no file but the helper sends a search event directly', () => {
-    // git grep over tracked and untracked sources: a walk of app/components/lib
-    // takes seconds, this takes milliseconds. Exit 1 is "no match".
+    // git grep narrows to files that call either sender (milliseconds, where a
+    // walk of app/components/lib takes seconds); the JS regex then reads each
+    // whole file, so a call wrapped across lines is still caught. Exit 1 is "no match".
     let out = ''
     try {
       out = execFileSync(
         'git',
         [
-          'grep', '-l', '--untracked', '-E',
-          `(trackEvent|fireFirstPartyEvent)\\(\\s*['"]search['"]`,
+          'grep', '-l', '--untracked', '-E', '(trackEvent|fireFirstPartyEvent)\\(',
           '--', 'app', 'components', 'lib', ':(exclude)*.test.ts', ':(exclude)*.test.tsx',
         ],
         { encoding: 'utf8' },
@@ -29,7 +29,11 @@ describe('site search tracking has one sender', () => {
     } catch (e) {
       if ((e as { status?: number }).status !== 1) throw e
     }
-    const offenders = out.split('\n').filter((f) => f && f !== HELPER)
+    const direct = /(trackEvent|fireFirstPartyEvent)\(\s*['"`]search['"`]/
+    const offenders = out
+      .split('\n')
+      .filter((f) => f && f !== HELPER)
+      .filter((f) => direct.test(readFileSync(resolve(f), 'utf8')))
     expect(offenders).toEqual([])
   })
 
