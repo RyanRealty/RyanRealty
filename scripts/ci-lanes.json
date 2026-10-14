@@ -140,7 +140,8 @@
     "ci:process-canon",
     "ci:claude-canon",
     "ci:core-rules-prefix",
-    "ci:loop-skills-canon"
+    "ci:loop-skills-canon",
+    "ci:worktree-cleanup"
   ],
   "path": {
     "ci:plat-families": [
