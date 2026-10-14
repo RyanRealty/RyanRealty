@@ -1,31 +1,26 @@
-# Current — 2026-10-14 (Claude, analytics one source of truth + lead session fix)
+# Current — 2026-10-14 (Cursor, buyer-answers batch 2)
 
-Surface: Claude Code cloud. Branch `claude/blissful-franklin-tshl2h`, PR #563. It carries #558 (Cursor's analytics README) merged in. Nobody pushes main. Nothing sent. No GA4, GTM or Search Console setting changed (read-only audit).
+Surface: Cursor cloud. Branch `cursor/buyer-answers-batch-2-41c4` from origin/main `a00d7c3ca` (merged #506, no rebase). Land path is `gh pr checks --watch` then `gh pr merge --squash`. Nobody pushes main. Nothing sent.
 
-**This pass.**
-- Server GA4 events (`generate_lead`, the non-lead form events, `person_identified`, `valuation_requested`) now carry the browser's `session_id`, `session_number` and `page_location` through `lib/analytics/ga4-server-context.ts`. Before this, all 117 `generate_lead` events from 2026-09-15 to 10-13 sat in Unassigned sessions with hostname (not set) (GA4 Data API, read 2026-10-14).
-- Server events now obey the browser suppression rule: broker browser, automation, `/admin`, non-production host.
-- `person_identified` now honors GPC and a decline.
-- The Meta Lead webhook passes `serverToServer`.
-- `npm run analytics:audit` (`scripts/analytics-audit.mjs`) is THE read-only live audit of GA4, Search Console and GTM, through the service account.
-- `ci:analytics-registry` fails any file that sends to GA4 or calls the GA4, Search Console or GTM APIs and is not in the README Registry.
-- New skill `.claude/skills/analytics/`. `.cursor/rules/analytics-tracking.mdc` points at the README.
-- `npm run push` now publishes a branch that has no upstream (`-u`).
+**What this branch does.** Extends the buyer-answer system (#528) with batch 2: living+cost for Broken Top, Brasada Ranch, Three Rivers; cost for Juniper Preserve, Eagle Crest, Black Butte Ranch; living+cost for six Bend NA districts with enough inventory (Old Bend, Southeast Bend, Century West, Southwest Bend, Summit West, Old Farm District); buyer-question pages for Bend from out of state, Sunriver second home, and buying in Redmond; luxury Bend preset (`/homes-for-sale/bend/over-1-5m`) plus region presets `/homes-for-sale/acreage` and `/homes-for-sale/under-500k`. Same templates, live MLS, FAQPage, author `/team/matthew-ryan`, sitemap + llms.txt. Edge guard reserves `from-out-of-state` and `buying`. Skipped thin places: Crosswater, Vandevert Ranch, Shevlin Commons, Discovery West.
 
-**Matt's calls, not done.**
-- Key events that never fire: `schedule_showing`, `listing_showing_click`, `listing_inquiry`, `home_valuation_cta_click`.
-- A Search Console Domain property, which needs a DNS TXT record.
-- The `ga4-admin.mjs` and `ga4-admin-setup.mjs` configs disagree with the live property. Do not run either one's apply mode.
+**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`).
 
-**Still open.** Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`). Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. The unique `idx_listings_parcel_number` migration is not on main.
+**Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool`. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
 
-Skills read: `docs/analytics/README.md`, `docs/TRACKING_POLICY.md`, `docs/RUN_LOOP.md` (loop brief).
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `docs/DATABASE_FOR_AI_AGENTS.md` (cache + neighborhood inventory SoR).
+
+## Earlier — 2026-10-14 (Cursor, lead page v3)
+
+Surface: Cursor cloud. Branch `cursor/lead-page-v3-d7f6` landed on main via #506 at `a00d7c3ca`. Admin person page v3 behind `lead-page-v3`. Nobody pushes main. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, analytics SoT)
 
-Surface: Cursor cloud. Branch `cursor/analytics-sot-readme-5e14`. `docs/analytics/README.md` is the analytics source of truth. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/analytics-sot-readme-5e14` landed on main via #558 at `ee189e044`. `docs/analytics/README.md` is the analytics source of truth. Nobody pushes main. Nothing sent.
 
-**This pass.** `docs/analytics/README.md` is the analytics SoT (GA4 property, measurement ID, GTM container live version 7 — Merge never Overwrite, browser dataLayer events, server `generate_lead`, buyer form_ids, consent, daily 8 AM PT offline cron including #543 `qualify_lead` / `close_convert_lead`). Pointers in CLAUDE.md (shrink-only) and AGENTS.md.
+## Earlier — 2026-10-14 (Cursor, STOP cell intake)
+
+Surface: Cursor cloud. PR #546 landed. Skip a STOP'd cell on the mobile-only intake path. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, reader-5 leftover reads)
 
@@ -33,7 +28,19 @@ Surface: Cursor cloud. PR #559 landed. Thin-window own-listing-unsold and own-gr
 
 ## Earlier — 2026-10-14 (Claude, buyer landing pages)
 
-Surface: Claude Code cloud. PR #548 (`claude/festive-ramanujan-xfbo6b`). `/buy/concessions` and `/buy/alerts` open like `/sell`: `V3Stage`, sourced figures, ask in the first viewport. Same lead and tracking tokens. Nothing sent.
+Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b` landed on main via #548 at `befee8c88`. `/buy/concessions` and `/buy/alerts` now open with a `V3Stage` photograph. Nothing sent. Nobody pushes main.
+
+## Earlier — 2026-10-14 (Cursor, relist blip)
+
+Surface: Cursor cloud. Branch `fix/relist-blip` landed on main via #452 at `608fd879b`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, offline GA4 conversions live)
+
+Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-41c4` landed on main via #543. Offline conversions cron reads `ga_client_id` and posts GA4 Measurement Protocol hits. Production SHA `e532597d8`. Nobody pushes main. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
+
+Surface: Cursor cloud. #485, #488, and #489 are on `origin/main`. Production deploy `dpl_8QTmbLCSV97LyQqquUnZVqniqCNp` is READY for `7ebb9a12b` (#489). Closed #524 because `/buy/alerts` is live via #536. Nobody pushes main. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 

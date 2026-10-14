@@ -37,12 +37,13 @@ export function TasksSection(props: {
   }>
   completeTask: (taskId: number, formData: FormData) => Promise<void>
   addTask: (formData: FormData) => Promise<void>
+  hideHeading?: boolean
 }) {
   const open = props.tasks.filter((t) => !t.completed_at)
   const now = Date.now()
   return (
     <section aria-label="Tasks and appointments">
-      <SectionHead>Tasks &amp; appointments</SectionHead>
+      {props.hideHeading ? null : <SectionHead>Tasks &amp; appointments</SectionHead>}
       <ul className="av2-quietlist">
         {open.map((t) => {
           const overdue = t.due_at ? new Date(t.due_at).getTime() < now : false

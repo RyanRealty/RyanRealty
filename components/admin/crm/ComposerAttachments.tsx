@@ -223,6 +223,9 @@ export function AttachmentControl(props: {
   ariaLabel?: string
   className?: string
   iconClassName?: string
+  /** Hide the paperclip; keep the file input so a host Attach menu can click it. */
+  hideTrigger?: boolean
+  inputId?: string
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { attachments } = props
@@ -235,6 +238,7 @@ export function AttachmentControl(props: {
       <div className="hidden">
         <TextField
           ref={fileInputRef}
+          id={props.inputId}
           label="Attachment files"
           type="file"
           multiple
@@ -253,6 +257,7 @@ export function AttachmentControl(props: {
         value={attachments.ready.length ? JSON.stringify(attachments.ready) : ''}
         readOnly
       />
+      {props.hideTrigger ? null : (
       <IconButton
         label={props.ariaLabel ?? 'Attach files'}
         aria-pressed={lit}
@@ -265,6 +270,7 @@ export function AttachmentControl(props: {
       >
         <Paperclip className={props.iconClassName ?? 'h-4 w-4'} aria-hidden />
       </IconButton>
+      )}
     </>
   )
 }

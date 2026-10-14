@@ -76,6 +76,8 @@ export function EmailBodyEditor(props: {
   renderPreviewBody?: (body: string) => string
   /** Extra toolbar control (EmailComposer injects its attachment button). */
   toolbarExtra?: React.ReactNode
+  /** Person-page v3: Text/HTML sits behind More. Preview stays a toggle. */
+  hideFormatToggle?: boolean
   subjectPlaceholder?: string
   bodyPlaceholder?: string
 }) {
@@ -148,7 +150,7 @@ export function EmailBodyEditor(props: {
           {tab === 'edit' && !props.hideMergeFields ? (
             <MergeFieldInserter channel="email" customFields={props.customFields} onInsert={handleInsertToken} />
           ) : null}
-          {/* Text | HTML body-mode toggle. */}
+          {props.hideFormatToggle ? null : (
           <div className="flex items-center gap-1">
             <FilterChip
               pressed={format === 'text'}
@@ -165,6 +167,7 @@ export function EmailBodyEditor(props: {
               HTML
             </FilterChip>
           </div>
+          )}
           {props.toolbarExtra}
         </div>
       </div>
