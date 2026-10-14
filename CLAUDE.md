@@ -32,7 +32,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Keep moving.** Unfinished work: push the branch, write your note in `docs/plans/handoffs/`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
 
-**Video.** One factory (Matt 2026-10-13): every video, any bot or machine, renders via `npm run studio:render`; Imagine makes footage only. Nothing reaches Matt until `npm run video:check -- <mp4> --final` passes. Rules: `.claude/skills/ryan-studio/SKILL.md`.
+**Video.** One factory (Matt 2026-10-13): any bot, any machine renders via `npm run studio:render`; Imagine makes footage only. Nothing reaches Matt until `npm run video:check -- <mp4> --final` passes. Rules: `.claude/skills/ryan-studio/SKILL.md`.
 
 ---
 
