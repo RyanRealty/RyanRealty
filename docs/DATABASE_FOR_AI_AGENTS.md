@@ -323,6 +323,7 @@ Pricing matcher (`lib/pricing/match.ts`) on top of facts. Refuse a comps-implied
 | `public.pinterest_auth` | 0 | Pinterest Business tokens. |
 | `public.threads_auth` | 0 | Threads OAuth. |
 | `public.nextdoor_auth` | 0 | Nextdoor Business Share API tokens (single row at `id='default'`). |
+| `public.content_queue_published` | 0 | Unique `(content_item, channel, published_date)` log so a content-queue draft cannot post twice. Daily catch-up reads absence of a row. Service-role only. |
 
 ### 2k. Config + misc
 

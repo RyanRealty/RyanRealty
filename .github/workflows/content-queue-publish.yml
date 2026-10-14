@@ -1,8 +1,11 @@
 name: content-queue-publish
-# Publishes approved social drafts from content-queue/ on their scheduled_at date (PT).
-# DRY RUN unless the repo variable CONTENT_QUEUE_LIVE is "true". Even live, a draft posts
-# only with `approved: true` (Matt's say-so), a green gate, and the platform's credentials.
+# Publishes social drafts from content-queue/ on their scheduled_at date (PT).
+# DRY RUN unless the repo variable CONTENT_QUEUE_LIVE is "true". A gate-passing
+# draft is publishable (Matt 2026-10-14: no approved: true door). Live still
+# needs CONTENT_QUEUE_LIVE=true, a green gate, and the platform's credentials.
 # Runs on merge to main (dry-run report of what is queued) and daily at 9:00 AM PT.
+# workflow_dispatch also honors CONTENT_QUEUE_LIVE so a first live post can be
+# proven without waiting for the cron. Push to main stays dry-run.
 on:
   push:
     branches: [main]
@@ -32,11 +35,17 @@ jobs:
         run: node scripts/content-queue/check.mjs
       - name: Publish (dry run unless CONTENT_QUEUE_LIVE=true)
         env:
-          CONTENT_QUEUE_LIVE: ${{ github.event_name == 'schedule' && vars.CONTENT_QUEUE_LIVE || 'false' }}
+          CONTENT_QUEUE_LIVE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && vars.CONTENT_QUEUE_LIVE || 'false' }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GOOGLE_BUSINESS_PROFILE_ACCOUNT_ID: ${{ secrets.GOOGLE_BUSINESS_PROFILE_ACCOUNT_ID }}
           GOOGLE_BUSINESS_PROFILE_LOCATION_ID: ${{ secrets.GOOGLE_BUSINESS_PROFILE_LOCATION_ID }}
+          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          GOOGLE_BUSINESS_PROFILE_CLIENT_ID: ${{ secrets.GOOGLE_BUSINESS_PROFILE_CLIENT_ID }}
+          GOOGLE_BUSINESS_PROFILE_CLIENT_SECRET: ${{ secrets.GOOGLE_BUSINESS_PROFILE_CLIENT_SECRET }}
+          X_CLIENT_ID: ${{ secrets.X_CLIENT_ID }}
+          X_CLIENT_SECRET: ${{ secrets.X_CLIENT_SECRET }}
           LINKEDIN_PERSON_ID: ${{ secrets.LINKEDIN_PERSON_ID }}
           LINKEDIN_ORGANIZATION_ID: ${{ secrets.LINKEDIN_ORGANIZATION_ID }}
         run: |
