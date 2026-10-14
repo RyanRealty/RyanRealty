@@ -8,6 +8,10 @@ Surface: Cursor cloud. Branch `cursor/persist-ga-client-id-3b48` / PR #560. Noth
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
+## Earlier — 2026-10-14 (Cursor, G46 commit-compiles process tree)
+
+Surface: Cursor cloud. Branch `cursor/commit-compiles-heavy-timeout-84fb` landed on main via #541 at `63f24f16a`. G46 tsc spawn is process-tree killed. Nobody pushes main. Nothing sent.
+
 ## Earlier — 2026-10-14 (Cursor, buyer-answers batch 2)
 
 Surface: Cursor cloud. Branch `cursor/buyer-answers-batch-2-41c4` landed on main via #557 at `63d924ee5`. Living+cost buyer-answer pages, luxury/acreage/under-500k presets. Nobody pushes main. Nothing sent.
