@@ -156,11 +156,18 @@ describe('getSellBendMarket', () => {
     expect(page).toMatch(/getCityDetachedInventory/)
   })
 
-  it('/sell and the JSON feed both read Market Truth detached', () => {
+  it('/sell reads Market Truth for the AEO answer and the JSON feed stays detached', () => {
+    // Matt 2026-09-28: the market sections left /sell for one link to the
+    // full report. The 2026-10-08 AEO brief put two live sentences back
+    // under the hero (getSellBendMarket + getPublicDetachedPace). Pulse
+    // and the Instrument stay off the page.
     const page = readFileSync(resolve('app/sell/page.tsx'), 'utf8')
     const feed = readFileSync(resolve('lib/data/market/getMarketPulseJsonFeed.ts'), 'utf8')
     expect(page).toMatch(/getSellBendMarket/)
     expect(page).not.toMatch(/getMarketPulse/)
+    expect(page).not.toMatch(/V3Instrument/)
+    const finalAsk = readFileSync(resolve('app/sell/_v3/SellFinalAsk.tsx'), 'utf8')
+    expect(finalAsk).toContain('/housing-market/bend')
     expect(feed).toMatch(/getDetachedOverlays/)
   })
 

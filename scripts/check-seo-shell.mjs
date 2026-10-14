@@ -148,8 +148,10 @@ const REQUIRED = [
     // docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.2.
     checks: [
       {
-        re: /titleTop\s*=\s*["']Sell your home in["']|headline\s*=\s*\{?\s*(?:v3Text\(\s*)?[`'"]Sell your home in Central Oregon\b/,
-        msg: 'sell H1 must carry the head term: KB titleTop="Sell your home in", or a v3 headline literal opening "Sell your home in Central Oregon"',
+        // Matt 2026-10-08: H1 is "Sell your Central Oregon home with a local
+        // broker who prices it right". The pin moved with it.
+        re: /titleTop\s*=\s*["']Sell your home in["']|headline\s*=\s*\{?\s*(?:v3Text\(\s*)?[`'"]Sell your Central Oregon home\b/,
+        msg: 'sell H1 must carry the head term: KB titleTop="Sell your home in", or a v3 headline literal opening "Sell your Central Oregon home"',
       },
       { re: /title:\s*['"]Sell Your Home/i, msg: 'sell metadata title must lead with "Sell Your Home"' },
     ],

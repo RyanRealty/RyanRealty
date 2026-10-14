@@ -214,31 +214,48 @@ export const VALUATION_FAQ_ITEMS = [
   },
 ] as const
 
-export const SELL_REVIEW_AUTHORS = [
-  'Audra Hedberg',
-  'Douglas Grant',
-  'Charise Millard',
-  'C Jenkins',
-  'Helen Luna Fess',
-  'SwankHQ',
-] as const
-
-export const BEND_MARKET_TRACE_SCOPE =
-  'live MLS through Oregon Data Share, detached single-family homes whose MLS City is Bend, not the city-limits polygon.'
+export const TRACK_RECORD_TRACE =
+  // The WINDOW is stated (2026-08-27 audit: a count with no window leaves the
+  // reader to guess). Matt 2026-10-08: the company dates from 2014 (Ryan
+  // Realty LLC); what opened in June 2023 is the Bend office, so say that.
+  // Plain words only (AEO brief L6): no MLS field names.
+  'Central Oregon MLS, every home listed by Ryan Realty and closed since the Bend office opened June 2023. Homes where we represented the buyer are not counted.'
 
 /**
- * The section-0 trace for the two figures the first viewport prints beside the
- * ask (closed count, median sale). SITE-111: those figures used to carry no
- * source line until the Instrument three sections down, so the fold published
- * numbers a reader could not check without scrolling. A figure and its trace
- * belong in the same viewport.
+ * /sell's own four questions (Matt's brief, 2026-09-28: "FAQ of about 4"). The
+ * FAQPage JSON-LD on /sell is built from this same array, so the visible
+ * answers and the structured data cannot drift. FAQ_ITEMS stays for the
+ * expired-listing and for-sale-by-owner pages that still carry it.
  */
-export const SELL_FOLD_TRACE =
-  'Regional MLS through Oregon Data Share, read through the Market Truth metric layer: detached single-family homes whose MLS City is Bend, trailing 12 months of closed sales.'
+export const SELL_FAQ_ITEMS = [
+  {
+    question: 'Is there a contract to talk with you?',
+    answer:
+      'No. The conversation and the written valuation are free. There is no listing agreement to sign for either. If you decide to list with us later, that is a separate agreement we walk through together.',
+  },
+  FAQ_ITEMS[1],
+  FAQ_ITEMS[2],
+  {
+    question: 'My listing just ended with another brokerage. Can we talk?',
+    answer:
+      'Yes, once that listing agreement has ended. We look at the price, the photos and the showings, tell you plainly what we would change, and you decide. From a signed agreement to live on the MLS is typically 5 to 7 business days.',
+  },
+] as const
 
-export const TRACK_RECORD_TRACE =
-  // The WINDOW is stated (2026-08-27 audit: "16 homes sold" carried a filter
-  // trace and no window — career? YTD? — leaving the reader to guess). The
-  // read has no date filter: it is every closed Ryan Realty listing since the
-  // brokerage opened in June 2023.
-  'Central Oregon MLS, every home listed by Ryan Realty and closed since the brokerage opened in June 2023. StandardStatus Closed, ClosePrice.'
+/** The ONE primary action on /sell, on the hero submit and the final ask. */
+export const SELL_PRIMARY_LABEL = 'Talk to us about your home'
+
+/** /sell default hero sub: two short sentences (Matt 2026-10-08). The H1 must open "Sell your Central Oregon home" (ci:seo-shell). */
+export const SELL_HERO_SUB =
+  "We price your home from what nearby homes sold for, market it professionally, and update you every week. Start with your address; there's no contract to talk."
+
+/** Default H1. States what we do for the seller and why us, in one read. */
+export const SELL_HERO_HEADLINE =
+  'Sell your Central Oregon home with a local broker who prices it right'
+
+/** /sell?from=cma hero (Matt, 2026-09-28). ONLY the hero copy changes. */
+export const SELL_CMA_EYEBROW = 'For homeowners whose listing ended'
+export const SELL_CMA_HEADLINE = "Your listing ended. Let's talk about what's next."
+export const SELL_CMA_SUB =
+  "We'll look at the price, the photos and the showings, and tell you plainly what we'd change. No contract, no pressure."
+

@@ -58,18 +58,17 @@ describe('sell leaves sit on the /sell spine', () => {
     expect(valuation).toContain('height="compact"')
   })
 
-  it('/sell keeps one filled ask on the photograph and prints our listings', () => {
+  it('/sell keeps one filled ask on the photograph and shows closings, not active listings', () => {
+    // Matt 2026-09-28: "Our listings" showed active listings; the page now
+    // shows recent office CLOSINGS from MLS closed data instead.
     expect(sell).toContain('placement="stage"')
-    expect(sell).toContain('sellListingRows')
+    expect(sell).not.toContain('sellListingRows')
+    expect(sell).not.toContain('id="our-listings"')
+    expect(sell).toContain('<SellClosings')
   })
 
-  it('our-listings draws photographs at the photo scale; bend-also does not', () => {
+  it('the leaves keep their own-listings shop at the photo scale', () => {
     const shop = read('app/sell/_v3/SellShop.tsx')
-    const ourBlock = sell.slice(sell.indexOf('id="our-listings"'))
-    const alsoBlock = sell.slice(sell.indexOf('id="bend-also"'), sell.indexOf('id="listing-plan"'))
-    expect(ourBlock).toMatch(/id="our-listings"[\s\S]{0,400}?media="photo"/)
-    expect(alsoBlock).toContain('id="bend-also"')
-    expect(alsoBlock).not.toMatch(/media="photo"/)
     expect(shop).toMatch(/id="our-listings"[\s\S]{0,400}?media="photo"/)
   })
 })

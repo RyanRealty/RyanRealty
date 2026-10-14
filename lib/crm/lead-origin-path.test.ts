@@ -56,6 +56,8 @@ describe('submitSellerLPForm uses it for source_url only', () => {
   })
 
   it("keeps the broker's origin note on the page the form was on", () => {
-    expect(src).toMatch(/landingPage: leadPagePath,/)
+    // /sell ?from=cma appends that entry onto the same form path; every
+    // other submit still records the bare leadPagePath.
+    expect(src).toMatch(/landingPage: sellEntry \? `\$\{leadPagePath\}\?from=\$\{sellEntry\}` : leadPagePath/)
   })
 })

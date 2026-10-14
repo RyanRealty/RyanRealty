@@ -66,7 +66,11 @@ describe('public pace surfaces', () => {
     expect(market).toMatch(/getPublicDetachedPace/)
     expect(hub).toMatch(/getPublicDetachedPace/)
     expect(zip).toMatch(/getPublicDetachedPace/)
+    // /sell dropped its market sections (Matt 2026-09-28). The AEO direct
+    // answer under the hero (2026-10-08) reads pace for two live sentences;
+    // the Instrument / market-rows table stay off the page.
     expect(sell).toMatch(/getPublicDetachedPace/)
+    expect(sell).not.toMatch(/V3Instrument/)
     const annual = readFileSync(resolve('app/housing-market/annual-review/page.tsx'), 'utf8')
     const region = readFileSync(resolve('app/housing-market/central-oregon/page.tsx'), 'utf8')
     const reports = readFileSync(resolve('app/housing-market/reports/page.tsx'), 'utf8')

@@ -351,7 +351,7 @@ async function fetchProofBlock(input: {
       window: 'all reviews, no date filter',
       rows: proofReviews.count,
       fetchedAt,
-      query: 'getReviews() — lib/data/reviews/getReviews.ts',
+      query: 'getReviews() in lib/data/reviews/getReviews.ts',
     })
   }
 
@@ -367,7 +367,7 @@ async function fetchProofBlock(input: {
       window: 'every closing on record, no date filter',
       rows: record.homesSold,
       fetchedAt,
-      query: 'getBrokerageTrackRecord() — lib/data/track-record.ts',
+      query: 'getBrokerageTrackRecord() in lib/data/track-record.ts',
     })
   }
 
@@ -384,7 +384,7 @@ async function fetchProofBlock(input: {
     window: windowLabel,
     rows: outcomes.closings,
     fetchedAt,
-    query: 'getProofBlock() — lib/data/proof/getProofBlock.ts',
+    query: 'getProofBlock() in lib/data/proof/getProofBlock.ts',
   })
 
   trace.push({
@@ -412,7 +412,7 @@ async function fetchProofBlock(input: {
       window: `${PROOF_WINDOW_MONTHS} months, same window as the closings above`,
       rows: context.medianDaysToContractN,
       fetchedAt,
-      query: `getMetrics([{ stat: 'median_days_to_contract', ... }]) — computed ${context.computedAt ?? '?'}`,
+      query: `getMetrics([{ stat: 'median_days_to_contract', ... }]), computed ${context.computedAt ?? '?'}`,
     })
   }
 
@@ -427,7 +427,7 @@ async function fetchProofBlock(input: {
       window: `${PROOF_WINDOW_MONTHS} months, same window as the closings above`,
       rows: context.medianSaleToOriginalN,
       fetchedAt,
-      query: `getMetrics([{ stat: 'median_sale_to_original_list', ... }]) — computed ${context.computedAt ?? '?'}`,
+      query: `getMetrics([{ stat: 'median_sale_to_original_list', ... }]), computed ${context.computedAt ?? '?'}`,
     })
   }
 

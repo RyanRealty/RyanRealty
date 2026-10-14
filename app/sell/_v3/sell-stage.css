@@ -216,6 +216,19 @@
   color: var(--v3-ink);
 }
 
+/* The address field is the catalog pill (components/motion/input): the pill
+   owns the border and clips to its radius, so the blanket square border above
+   drew a navy box that the pill's rounded ends cut off at both edges (the
+   "clipped" left edge on the 1440 and 375 cards since Oct 5). The native input
+   inside it draws no border; the pill's idle edge takes the ink so the field
+   still reads at a glance. Focus, error and success stay the catalog's. */
+.v3.v3-stage .sell-stage-ask .sell-field input {
+  border: 0;
+}
+.v3.v3-stage .sell-stage-ask .sell-field [data-state='idle'] {
+  border-color: var(--v3-ink);
+}
+
 /* Address field layout only. Error / success / focus live on the catalog
    controls (beui-input shake + check, shadcn InputGroup rings). Do not
    restyle those states to a navy border bump. */
