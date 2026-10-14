@@ -8,7 +8,7 @@ import { buildCaptions } from '../voice/captions'
 import type { SpokenWord } from '../voice/types'
 import { REPO_ROOT } from '../qa/thresholds'
 import { endcardStartSeconds, planFilm, type FilmPlan } from './plan'
-import { assertNotPublic, boundNumbers, checkoutRoots, proveTechniques, realPathOf, textsFromProbes, visibleSpans } from './render'
+import { assertNotPublic, boundNumbers, checkoutRoots, proveTechniques, realPathOf, textsFromProbes, visibleSpans, builderOf } from './render'
 import { studioFfmpeg } from './ffmpeg'
 import { parseBrief, parseTimeline } from './validate'
 import { shiftWords } from './voice'
@@ -157,5 +157,15 @@ describe('studioFfmpeg', () => {
     expect(await studioFfmpeg(env({ FFMPEG_PATH: '/opt/ff/ffmpeg' }), (p) => p.startsWith('/opt/ff/') || p.startsWith('/usr/bin/'))).toBe('/opt/ff/ffmpeg')
     expect(await studioFfmpeg(env({}), (p) => p.startsWith('/usr/bin/'))).toBe('/usr/bin/ffmpeg')
     await expect(studioFfmpeg(env({ FFMPEG_PATH: '/gone/ffmpeg' }), (p) => p.startsWith('/usr/bin/'))).rejects.toThrow(/does not exist/)
+  })
+})
+
+describe('builderOf (F11)', () => {
+  it('takes the builder from STUDIO_BUILDER in the environment, else claude; there is no CLI flag', async () => {
+    expect(builderOf({ STUDIO_BUILDER: 'grok-desk' })).toBe('grok-desk')
+    expect(builderOf({ STUDIO_BUILDER: '  ' })).toBe('claude')
+    expect(builderOf({})).toBe('claude')
+    const { readFileSync } = await import('node:fs')
+    expect(readFileSync('scripts/studio-render.ts', 'utf8')).not.toContain('--built-by')
   })
 })

@@ -405,12 +405,15 @@ describe.skipIf(!hasMedia)('video:check against real files', () => {
         .then((r) => ({ code: 0, out: r.stdout }))
         .catch((e: { code?: number; stdout?: string }) => ({ code: e.code ?? 1, out: e.stdout ?? '' }))
 
-    it('runs every check on the real film, writes the report and the contact sheet, and fails only the pixels (no OCR here: it fails, never passes)', async () => {
+    it('runs every check on the real film, writes the report and the contact sheet, and fails only the pixels and the test approval (no OCR here: it fails, never passes)', async () => {
       const r = await cli(good)
       expect(r.code).toBe(1)
       expect(r.out).toContain('Provenance')
       const report = JSON.parse(readFileSync(join(dir, 'good.check.json'), 'utf8')) as CheckReport
-      expect(failing(report).map((x) => x.split(':')[0])).toEqual(['17 Pixels'])
+      // A registry passed on the command line approves only with "matt" (F1): its
+      // test-only approval does not hold there, so check 15 fails with the floor.
+      expect(failing(report).map((x) => x.split(':')[0])).toEqual(['15 Techniques ran', '17 Pixels'])
+      expect(report.checks.find((c) => c.id === 15)?.detail).toContain('at least one approved signature technique')
       expect(report.checks.find((c) => c.id === 17)?.detail).toContain('tesseract is not installed')
       expect(report.overrides).toEqual({ golden, ledgerPath: join(dir, 'cli-ledger.jsonl'), registryPath: registry })
       expect(r.out).toContain('overrides used (draft run only)')

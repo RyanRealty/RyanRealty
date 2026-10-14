@@ -1,5 +1,5 @@
 /**
- * npm run studio:render -- <brief.json> <timeline.json> [--slug s] [--out dir] [--built-by name] [--no-check]
+ * npm run studio:render -- <brief.json> <timeline.json> [--slug s] [--out dir] [--no-check]
  *
  * The one factory's renderer (docs/plans/STUDIO_ONE_FACTORY.md). Every Studio
  * video renders here, on Matt's Mac mini or in a cloud session, through the
@@ -34,9 +34,9 @@ const resolveFilename = (Module as unknown as { _resolveFilename: (r: string, ..
   return resolveFilename.call(this, req, ...args)
 }
 
-const USAGE = 'Usage: npm run studio:render -- <brief.json> <timeline.json> [--slug s] [--out dir] [--built-by name] [--no-check]'
+const USAGE = 'Usage: npm run studio:render -- <brief.json> <timeline.json> [--slug s] [--out dir] [--no-check] (the builder is STUDIO_BUILDER, default claude)'
 
-type Args = { brief: string; timeline: string; slug?: string; out?: string; builtBy?: string; check: boolean }
+type Args = { brief: string; timeline: string; slug?: string; out?: string; check: boolean }
 
 function parseArgs(argv: string[]): Args {
   const positional: string[] = []
@@ -44,12 +44,11 @@ function parseArgs(argv: string[]): Args {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--no-check') out.check = false
-    else if (a === '--slug' || a === '--out' || a === '--built-by') {
+    else if (a === '--slug' || a === '--out') {
       const v = argv[++i]
       if (!v || v.startsWith('--')) throw new Error(`${a} needs a value`)
       if (a === '--slug') out.slug = v
-      else if (a === '--out') out.out = v
-      else out.builtBy = v
+      else out.out = v
     } else if (a.startsWith('--')) throw new Error(`unknown option ${a}`)
     else positional.push(a)
   }
@@ -119,7 +118,6 @@ async function main(): Promise<number> {
         baseDir: path.dirname(path.resolve(args.timeline)),
         outDir,
         cacheDir,
-        builtBy: args.builtBy,
       },
       {
         ffmpeg,

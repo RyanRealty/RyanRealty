@@ -2,11 +2,13 @@
  * The rules refuse before render (Matt 2026-10-14: "I expect you to know the
  * rules before you build a video").
  *
- * 1. Every video:check check is classified preflight or file-only
- *    (lib/studio/qa/phases.ts), and the table matches the checks video:check runs.
+ * 1. The CHECK_PHASES table itself (every check preflight or file-only) is
+ *    lib/studio/qa/phases.test.ts.
  * 2. Every preflight check is reported by every preflight step its row names,
- *    on a film that breaks that rule (the CASES table below, one case per
- *    check and step; a check with no case fails the coverage test).
+ *    on a brief or timeline that breaks that rule (the CASES table below, one
+ *    case or more per check and step; a check with no case fails the coverage
+ *    test). Step c cases derive the planned manifest from the broken brief or
+ *    timeline exactly as renderTimelineFilm does (F9); none edits a manifest.
  * 3. renderTimelineFilm runs the steps in order and refuses before the paid
  *    voice (step b), before the layout probe and any frame (step c), and before
  *    the full render (step d).
@@ -24,19 +26,18 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { TEST_ONLY_APPROVAL } from '../qa/fixtures/test-approval'
 import { cueTexts, stillTimes } from '../motion/cues'
 import type { DrawnText } from '../motion/render'
-import { CHECK_IDS } from '../qa/check'
 import { CHECK_PHASES, PREFLIGHT_CHECK_IDS, type PreflightStep } from '../qa/phases'
 import type { LedgerEntry } from '../qa/ledger'
-import type { Manifest } from '../qa/manifest'
 import type { Measure } from '../qa/measure'
 import { loadTechniqueRegistry, type TechniqueRegistry } from '../qa/techniques'
 import { REPO_ROOT, loadVideoTypes, typeRulesFor } from '../qa/thresholds'
 import { buildCaptions } from '../voice/captions'
 import type { SpokenWord } from '../voice/types'
-import { endcardStartSeconds, planFilm, type FilmPlan } from './plan'
+import { PlanError, endcardStartSeconds, planFilm, type FilmPlan } from './plan'
 import {
   PreflightError,
   dryWords,
+  scriptWords,
   layoutPreflight,
   planPreflight,
   plannedManifest,
@@ -98,20 +99,37 @@ function parsed(mutate?: (b: Raw, t: Raw) => void): { brief: StudioBrief; timeli
 
 function ctxFor(brief: StudioBrief, ledger: LedgerEntry[] = []): PreflightContext {
   const types = loadVideoTypes()
-  return { types, rules: typeRulesFor(brief.video_type, types)!, registry, ledger, slug: 'bend-go-in-with-a-plan' }
+  return { types, rules: typeRulesFor(brief.video_type, types)!, registry, ledger, slug: 'bend-go-in-with-a-plan', oneSentence: brief.creative.one_sentence }
 }
 
 const fixtureWords: SpokenWord[] = read('lib/studio/timeline/fixtures/bend-mos.words.json').words
 
-function voiceOf(timeline: Timeline) {
-  const words = shiftWords(fixtureWords, timeline.voice?.start ?? 0.3)
-  return { words, captions: buildCaptions(words, { display: timeline.voice?.display, endLimitSeconds: endcardStartSeconds(timeline) }) }
+const FIXTURE_SCRIPT: string = read('lib/studio/timeline/fixtures/bend-mos.timeline.json').voice.script
+
+/**
+ * The voice the speak stub would hand back for this timeline, as render.ts gets
+ * it: none when the timeline has none; the recorded synthesis for the sample's
+ * own script; for a script a case changed word for word, the new words on the
+ * recorded timing; otherwise the script read with even timing (dryWords).
+ */
+function voiceOf(timeline: Timeline): { words: SpokenWord[]; captions: ReturnType<typeof buildCaptions> } | null {
+  if (!timeline.voice) return null
+  const scripted = scriptWords(timeline.voice.script)
+  const said =
+    timeline.voice.script === FIXTURE_SCRIPT
+      ? fixtureWords
+      : scripted.length === fixtureWords.length
+        ? fixtureWords.map((w, i) => ({ ...w, word: scripted[i] }))
+        : dryWords(timeline.voice.script)
+  const words = shiftWords(said, timeline.voice.start ?? 0.3)
+  return { words, captions: buildCaptions(words, { display: timeline.voice.display, endLimitSeconds: endcardStartSeconds(timeline) }) }
 }
 
+/** planFilm as renderTimelineFilm calls it (scored only when the timeline names a score). */
 function filmOf(brief: StudioBrief, timeline: Timeline): FilmPlan {
   const footage: Record<string, { path: string; width: number; height: number; duration: number }> = {}
   for (const f of [...timeline.beats.map((x) => x.footage), timeline.cta?.footage]) if (f) footage[f.src] = { path: '/c.mp4', width: 1080, height: 1920, duration: 24 }
-  return planFilm({ brief, timeline, voice: voiceOf(timeline), footage, scored: true, outlines: { bend: { subject: [SQUARE], context: [AROUND] } } })
+  return planFilm({ brief, timeline, voice: voiceOf(timeline), footage, scored: Boolean(timeline.score), outlines: { bend: { subject: [SQUARE], context: [AROUND] } } })
 }
 
 /** What a page that drew the plan would read back: every cue's texts (the meter's scale marks too), each in its own box. */
@@ -132,20 +150,6 @@ const checksIn = (problems: PreflightProblem[]) => [...new Set(problems.map((p) 
 // ---------------------------------------------------------------------------
 // 1. The table
 
-describe('CHECK_PHASES: every check is preflight or file-only', () => {
-  it('classifies exactly the checks video:check runs', () => {
-    expect(CHECK_PHASES.map((c) => c.id)).toEqual([...CHECK_IDS])
-    for (const c of CHECK_PHASES) {
-      expect(['preflight', 'file-only'], `check ${c.id}`).toContain(c.phase)
-      if (c.phase === 'preflight') expect(c.steps.length, `check ${c.id}`).toBeGreaterThan(0)
-    }
-  })
-
-  it('keeps the file-only checks to what only the MP4 can show', () => {
-    expect(CHECK_PHASES.filter((c) => c.phase === 'file-only').map((c) => c.id)).toEqual([1, 2, 6, 14, 17])
-  })
-})
-
 // ---------------------------------------------------------------------------
 // 2. Each preflight check, refused by each of its steps
 
@@ -161,16 +165,33 @@ const textCase = (check: number, what: string, mutate: (b: Raw, t: Raw) => void,
   },
 })
 
-const planCase = (check: number, what: string, edit: (m: Manifest) => void, ledger: LedgerEntry[] = []): Case => ({
+/**
+ * Step c, derived (F9, 2026-10-14): the case breaks the BRIEF or the TIMELINE,
+ * and the planned manifest is built from them exactly as renderTimelineFilm
+ * builds it (the voice, planFilm, plannedManifest, planPreflight); nothing edits
+ * the manifest afterwards. Some rules the planner itself holds (holds, the
+ * locked end card, a hook beat that opens on its figure, a technique no beat
+ * sets up, a voice the captions need): planFilm refuses those at step c with a
+ * PlanError, and the case names the rule it expects (`planner`). Any other
+ * planner refusal fails the case, so a case cannot pass on the wrong reason.
+ */
+const planCase = (check: number, what: string, mutate: (b: Raw, t: Raw) => void, opts: { ledger?: LedgerEntry[]; planner?: RegExp } = {}): Case => ({
   check,
   step: 'plan',
   what,
   run: () => {
-    const { brief, timeline } = parsed()
-    const film = filmOf(brief, timeline)
-    const m = plannedManifest(film, brief, voiceOf(timeline))
-    edit(m)
-    return planPreflight(m, brief, ctxFor(brief, ledger))
+    const { brief, timeline } = parsed(mutate)
+    let film: FilmPlan
+    try {
+      film = filmOf(brief, timeline)
+    } catch (e) {
+      if (!(e instanceof PlanError)) throw e
+      const named = opts.planner ? e.problems.filter((p) => opts.planner!.test(p)) : []
+      if (!named.length) throw new Error(`planFilm refused for another reason: ${e.problems.join('; ')}`)
+      return named.map((problem) => ({ check, problem: `planFilm: ${problem}` }))
+    }
+    if (opts.planner) throw new Error(`expected planFilm to refuse (${opts.planner}), but it planned the film`)
+    return planPreflight(plannedManifest(film, brief, voiceOf(timeline)), brief, ctxFor(brief, opts.ledger ?? []))
   },
 })
 
@@ -209,18 +230,27 @@ const CASES: Case[] = [
   textCase(10, 'a fair housing flag on a card', (_b, t) => { t.beats[0].cards[0].footer = 'Perfect for young professionals' }),
   textCase(15, 'a planned technique and no approved signature', (b) => { b.techniques = b.techniques.filter((x: string) => x !== 'outline_draw_zoom').concat('subframe_motion_blur') }),
   textCase(16, 'the same hook and scenes as a recent film', () => undefined, [repeatLine]),
-  // c: the planned manifest
-  planCase(3, 'a film over the hard maximum', (m) => { m.video.duration = 45 }),
-  planCase(4, 'hook text after the limit', (m) => { for (const t of m.texts) if (t.kind !== 'caption') t.start = Math.max(t.start, 5) }),
-  planCase(5, 'a beat under 2.5 s', (m) => { m.beats[1].end = 4.0; m.beats[2].start = 4.0 }),
-  planCase(7, 'the voice dropped', (m) => { m.voice = null; m.captions = [] }),
-  planCase(8, 'a caption that is not the words', (m) => { m.captions[0].text = 'WRONG WORDS HERE' }),
-  planCase(9, 'a figure with no row', (m) => { m.texts.push({ text: '12 days', start: 4, end: 6, box: { x: 0, y: 0, w: 0, h: 0 }, kind: 'card' }) }),
-  planCase(10, 'verdict words against 3.5 months', (m) => { m.texts.push({ text: 'Buyers have leverage', start: 4, end: 6, box: { x: 0, y: 0, w: 0, h: 0 }, kind: 'card' }) }),
-  planCase(12, 'an end card that is not its beat', (m) => { m.endcard!.start = 2 }),
-  planCase(13, 'no loop on a looping type', (m) => { m.loop = null }),
-  planCase(15, 'a brief technique the plan never set up', (m) => { m.techniques = m.techniques.filter((x) => x !== 'outline_draw_zoom') }),
-  planCase(16, 'a repeat of a recent film', () => undefined, [repeatLine]),
+  // c: the planned manifest, derived from a broken brief or timeline (F9)
+  planCase(3, 'a type whose hard maximum the film runs past (story_teaser, 15 s)', (b) => { b.video_type = 'story_teaser' }),
+  planCase(4, 'a hook beat that does not open on its hook figure', (_b, t) => { t.beats[0].cards.unshift({ kind: 'text', text: 'Bend, right now', tone: 'payoff' }) }, { planner: /hook beat/ }),
+  planCase(5, 'a meter beat held 0.7 s', (_b, t) => { t.beats[1].end = 4.0; t.beats[2].start = 4.0 }, { planner: /holds .*needs 2\.5s/ }),
+  planCase(7, 'no voice on a voiced type', (_b, t) => { delete t.voice }, { planner: /voice/ }),
+  planCase(8, 'a display rule that shows a word the voice does not say', (_b, t) => { t.voice.display['right now'] = 'today' }),
+  planCase(9, 'a display rule that shows the wrong figure', (_b, t) => { t.voice.display['three and a half'] = '3.6' }),
+  planCase(9, 'the same digits in another unit (F3)', (b, t) => {
+    t.voice.script = t.voice.script.replace('three and a half months of homes', 'three and a half days of homes')
+    b.spec_rules.voiceover.script = t.voice.script
+  }),
+  planCase(10, 'verdict words against 3.5 months on the payoff line', (_b, t) => { t.beats[2].scene.line = 'Buyers have leverage' }),
+  planCase(10, 'a fair housing flag on the payoff line', (_b, t) => { t.beats[2].scene.line = 'Perfect for young professionals' }),
+  planCase(12, 'an end card beat shorter than the locked card', (_b, t) => { t.beats[3].start = 13.2 }, { planner: /end card/ }),
+  planCase(13, 'no loop on a looping type', (b, t) => {
+    delete t.loop_seam
+    b.techniques = b.techniques.filter((x: string) => x !== 'loop_seam_edit')
+    b.spec_rules.loopable = false
+  }),
+  planCase(15, 'a brief technique no beat sets up', (b) => { b.techniques = [...b.techniques, 'question_secret_hook'] }, { planner: /no beat sets it up/ }),
+  planCase(16, 'the same hook and scenes as an earlier film', () => undefined, { ledger: [repeatLine] }),
   // d: the layout probe
   layoutCase(9, 'a meter scale mark the page never drew', (texts) => texts.filter((x) => x.text !== '4 mo')),
   layoutCase(11, 'a box past x 960', (texts) => texts.map((x, i) => (i === 0 ? { ...x, w: 900 } : x))),
@@ -252,6 +282,22 @@ describe('every preflight check is refused by every step its row names', () => {
   }
 })
 
+describe('the repeat rule at step b (F7)', () => {
+  it('refuses a generic slug before anything is paid for', () => {
+    const { brief, timeline } = parsed()
+    const sixteen = textPreflight(brief, timeline, { ...ctxFor(brief), slug: 'test-film' }).filter((p) => p.check === 16)
+    expect(sixteen.map((p) => p.problem).join('\n')).toContain('the slug "test-film" names no film')
+  })
+
+  it('exempts the previous version of this film, and only when the one sentence matches too', () => {
+    const { brief, timeline } = parsed()
+    const previous = { ...repeatLine, slug: 'bend-go-in-with-a-plan', oneSentence: brief.creative.one_sentence }
+    expect(textPreflight(brief, timeline, ctxFor(brief, [previous])).filter((p) => p.check === 16)).toEqual([])
+    const reused = { ...previous, oneSentence: 'Redmond is balanced, so take your time.' }
+    expect(textPreflight(brief, timeline, ctxFor(brief, [reused])).filter((p) => p.check === 16)).toHaveLength(1)
+  })
+})
+
 describe('quantity words refuse at step b (F4)', () => {
   it("names each figure in the review's sentence that no sourced caption shows", () => {
     const { brief, timeline } = parsed((b, t) => {
@@ -278,7 +324,7 @@ describe('the real sample, against the committed registry', () => {
     const t = parseTimeline(read('lib/studio/timeline/fixtures/bend-mos.timeline.json'))
     if (!b.ok || !t.ok) throw new Error('fixture invalid')
     const types = loadVideoTypes()
-    const problems = textPreflight(b.value, t.value, { types, rules: typeRulesFor('buyer_ad', types)!, registry: loadTechniqueRegistry(), ledger: [], slug: 'x' })
+    const problems = textPreflight(b.value, t.value, { types, rules: typeRulesFor('buyer_ad', types)!, registry: loadTechniqueRegistry(), ledger: [], slug: 'bend-go-in-with-a-plan', oneSentence: b.value.creative.one_sentence })
     expect(problems).toEqual([{ check: 15, problem: expect.stringContaining('at least one approved signature technique') }])
   })
 

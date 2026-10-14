@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Manifest } from './manifest'
-import { boxClaims, captionsWithoutBoxes, claimConfirmed, editDistance, figureShaped, gateFindings, listedFigures, unlistedFigures } from './pixels'
+import { PHONE_TOKENS, boxClaims, captionsWithoutBoxes, claimConfirmed, figureKey, figureShaped, gateFindings, listedFigures, unlistedFigures } from './pixels'
 
 const box = { x: 90, y: 400, w: 860, h: 220 }
 const texts: Manifest['texts'] = [
@@ -58,7 +58,7 @@ describe('unlistedFigures', () => {
     expect(unlistedFigures(samples, listed, null)).toEqual(['"$612K" at 4s and 4.5s'])
   })
 
-  it('does not flag a misread of a listed figure, noise read once, a short bare number, or the phone', () => {
+  it('does not flag noise read once, a short bare number, or the phone', () => {
     const samples = [
       { t: 0.5, text: '3.0 38, #4' }, { t: 1, text: '3.9 x' }, { t: 1.5, text: '3.0 12' }, { t: 2, text: '12 88%' },
       { t: 2.5, text: '541.703.309' }, { t: 3, text: '541.703.3' },
@@ -72,20 +72,40 @@ describe('unlistedFigures', () => {
     expect(unlistedFigures(samples, listed, null)).toHaveLength(1)
   })
 
+  it('treats only an exact figure as listed, never a near one (F8)', () => {
+    // review finding: with "4 mo" and "3.5" listed, "45%" and "$350K" read twice running were ignored
+    const short = listedFigures({ texts: [{ text: '4 mo', start: 0, end: 1, box: { x: 0, y: 0, w: 1, h: 1 }, kind: 'card' }, { text: '3.5', start: 0, end: 1, box: { x: 0, y: 0, w: 1, h: 1 }, kind: 'card' }], captions: [] })
+    const twice = (text: string) => [{ t: 4, text }, { t: 4.5, text }]
+    expect(unlistedFigures(twice('45%'), short, null)).toEqual(['"45%" at 4s and 4.5s'])
+    expect(unlistedFigures(twice('$350K'), short, null)).toEqual(['"$350K" at 4s and 4.5s'])
+    expect(unlistedFigures(twice('3.5 MONTHS'), short, null)).toEqual([])
+  })
+
+  it("skips only the phone's own tokens, not figures that share its digits (F8)", () => {
+    // review finding: "$417K", "$170K" and "$703K" were skipped as phone fragments
+    const twice = (text: string) => [{ t: 4, text }, { t: 4.5, text }]
+    for (const fig of ['$417K', '$170K', '$703K']) expect(unlistedFigures(twice(fig), listed, null), fig).toHaveLength(1)
+    for (const part of ['541-703', '703.3095', '(541)', '541 703 3095']) expect(unlistedFigures(twice(part), listed, null), part).toEqual([])
+    expect([...PHONE_TOKENS]).toContain('5417033095')
+  })
+
   it('needs consecutive samples, 0.5 s apart', () => {
     expect(unlistedFigures([{ t: 4, text: '$612K' }, { t: 5, text: '$612K' }], listed, null)).toEqual([])
   })
 })
 
-describe('figureShaped and editDistance', () => {
-  it('reads $, %, a decimal or three digits as a figure', () => {
-    expect(['$5', '7%', '3.5', '612'].map(figureShaped)).toEqual([true, true, true, true])
-    expect(['12', '4'].map(figureShaped)).toEqual([false, false])
+describe('figureShaped and figureKey', () => {
+  it('reads a figure as figure-shaped only with $, %, a decimal or three digits', () => {
+    expect(figureShaped('$4')).toBe(true)
+    expect(figureShaped('4%')).toBe(true)
+    expect(figureShaped('3.5')).toBe(true)
+    expect(figureShaped('612')).toBe(true)
+    expect(figureShaped('38')).toBe(false)
   })
 
-  it('counts edits', () => {
-    expect(editDistance('35', '30')).toBe(1)
-    expect(editDistance('612', '35')).toBe(3)
-    expect(editDistance('', 'ab')).toBe(2)
+  it('keys a figure by its prefix, digits, magnitude and percent, its unit word aside', () => {
+    expect(figureKey('3.5 mo')).toBe('3.5')
+    expect(figureKey('$475K')).toBe('$475k')
+    expect(figureKey('12%')).toBe('12%')
   })
 })

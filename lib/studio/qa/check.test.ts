@@ -6,8 +6,17 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TEST_ONLY_APPROVAL } from './fixtures/test-approval'
+
+// The unit project never runs the real OCR tooling (F10): every checkVideo call
+// here injects a fake PixelProbe, and one that forgets fails loudly.
+vi.mock('./pixels', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./pixels')>()),
+  createPixelProbe: () => {
+    throw new Error('check.test.ts: inject a fake pixel probe (deps.pixels); the unit project never runs the real OCR tooling')
+  },
+}))
 import { checkVideo, type CheckDeps, type CheckReport } from './check'
 import type { Interval, Loudness, Measure, ProbeResult } from './measure'
 import type { GateRun, PixelProbe } from './pixels'
@@ -140,14 +149,14 @@ function goodManifest(): Json {
     loop: { seconds: 0.3 },
     builtBy: 'claude',
     briefSha256: 'e'.repeat(64),
-    slug: 'test-film',
+    slug: 'bend-supply-check',
     creative: { feel: 'satisfying', constraint: 'one figure per beat', lineage: 'Swiss typographic posters', one_sentence: 'One number, read on a ruler.' },
   }
 }
 
 const goodBrief = (): Json => ({
   video_type: 'listing',
-  title: 'Test film',
+  title: 'Bend supply check',
   techniques: ['dollar_first_hook', 'subframe_motion_blur', 'eased_number_reveal'],
 })
 
@@ -315,7 +324,7 @@ describe('1 Provenance', () => {
 
   it('fails a slug that is not the brief\'s', async () => {
     const { report } = await run({ manifest: (m) => { m.slug = 'another-film' } })
-    expect(get(report, 1).detail).toContain('slug "another-film" is not the brief\'s ("test-film")')
+    expect(get(report, 1).detail).toContain('slug "another-film" is not the brief\'s ("bend-supply-check")')
   })
 
   it('makes every manifest-dependent check fail rather than pass when the manifest is missing', async () => {
@@ -768,11 +777,14 @@ describe('14 Review (final only)', () => {
     expect(get(report, 14).detail).toContain('different file')
   })
 
-  it('fails the same author as the build, or a reviewer id that starts with it', async () => {
+  it('fails the same author as the build, or a reviewer id that shares a word with it (F11)', async () => {
     const { report } = await run({ final: true, review: review({ reviewer: 'Claude' }) })
-    expect(get(report, 14).detail).toContain('is the builder')
+    expect(get(report, 14).detail).toContain('shares "claude" with the builder "claude"')
     const prefixed = await run({ final: true, review: review({ reviewer: 'claude-review' }) })
-    expect(get(prefixed.report, 14).detail).toContain('may not equal or start with')
+    expect(get(prefixed.report, 14).detail).toContain('may not share a word')
+    // review finding: "anthropic-claude" got past a prefix rule
+    const suffixed = await run({ final: true, review: review({ reviewer: 'anthropic-claude' }) })
+    expect(get(suffixed.report, 14).detail).toContain('shares "claude"')
   })
 
   it('fails when not watched, not listened, or the verdict is not ship', async () => {
@@ -876,15 +888,28 @@ describe('16 Not a repeat', () => {
     expect(get(report, 16).pass).toBe(true)
   })
 
-  it('skips a ledger line with this film\'s own sha256', async () => {
-    const { report } = await run({ ledger: line({ sha256: SHA }) })
+  it('skips a ledger line of this very file (its own sha256 and slug)', async () => {
+    const { report } = await run({ ledger: line({ sha256: SHA, slug: 'bend-supply-check' }) })
     expect(get(report, 16).pass).toBe(true)
   })
 
-  it('treats a revision of the same film (the same slug) as not a repeat', async () => {
-    const { report } = await run({ ledger: line({ slug: 'test-film' }) })
-    expect(get(report, 16).pass).toBe(true)
-    expect(get((await run({ ledger: line({ slug: 'other-film' }) })).report, 16).pass).toBe(false)
+  it('exempts only the previous version of the same film: same slug AND same one sentence (F7)', async () => {
+    const sentence = goodManifest().creative.one_sentence
+    const same = line({ slug: 'bend-supply-check', oneSentence: sentence })
+    expect(get((await run({ ledger: same })).report, 16).pass).toBe(true)
+    // review finding: reusing a slug made a new film a "revision"
+    const reused = line({ slug: 'bend-supply-check', oneSentence: 'Redmond is balanced, so take your time.' })
+    expect(get((await run({ ledger: reused })).report, 16).detail).toContain('same hook device "dollar_first_hook"')
+    expect(get((await run({ ledger: line({ slug: 'other-film', oneSentence: sentence }) })).report, 16).pass).toBe(false)
+    // Two earlier versions: only the latest is exempt, the older one is compared.
+    const older = line({ sha256: 'a'.repeat(64), slug: 'bend-supply-check', oneSentence: sentence })
+    const previous = line({ sha256: 'b'.repeat(64), slug: 'bend-supply-check', oneSentence: sentence })
+    expect(get((await run({ ledger: older + previous })).report, 16).pass).toBe(false)
+  })
+
+  it('refuses a generic slug (F7)', async () => {
+    const { report } = await run({ manifest: (m) => { m.slug = 'film' }, brief: (b) => { b.slug = 'film' } })
+    expect(get(report, 16).detail).toContain('the slug "film" names no film')
   })
 
   it('lists the ready hook and scene pairs the type has not used lately', async () => {
@@ -906,11 +931,11 @@ describe('16 Not a repeat', () => {
     expect(d).not.toContain('map_pins_pop')
   })
 
-  it('looks only at the last five films of the same type', async () => {
-    const filler = Array.from({ length: 5 }, (_, i) => line({ sha256: String(i).repeat(64), hookDevice: 'question_secret_hook' })).join('')
+  it('compares against every earlier film of the same type, not the last five (F7)', async () => {
+    const filler = Array.from({ length: 8 }, (_, i) => line({ sha256: String(i).repeat(64), hookDevice: 'question_secret_hook' })).join('')
     const old = line({ sha256: 'a'.repeat(64) })
-    expect(get((await run({ ledger: old + filler })).report, 16).pass).toBe(true)
-    expect(get((await run({ ledger: old + filler.split('\n').slice(0, 4).join('\n') + '\n' })).report, 16).pass).toBe(false)
+    expect(get((await run({ ledger: old + filler })).report, 16).pass).toBe(false)
+    expect(get((await run({ ledger: filler })).report, 16).measured).toMatchObject({ compared: 8 })
   })
 
   it('fails a damaged ledger instead of ignoring the bad line', async () => {
@@ -1023,7 +1048,8 @@ describe('the report', () => {
     writeFileSync(mp4, 'x')
     writeFileSync(join(dir, 'final.manifest.json'), JSON.stringify(goodManifest()))
     const broken: Measure = { ...fakeMeasure(defaultFake()), async probe() { throw new Error('ffprobe exited 1: Invalid data') }, async sha256() { throw new Error('ENOENT') } }
-    const report = await checkVideo({ mp4Path: mp4, registryPath: join(dir, 'missing.json'), ledgerPath: join(dir, 'l.jsonl') }, { measure: broken })
+    // A fake pixel probe: the unit project never reaches for the real OCR tooling (F10).
+    const report = await checkVideo({ mp4Path: mp4, registryPath: join(dir, 'missing.json'), ledgerPath: join(dir, 'l.jsonl') }, { measure: broken, pixels: fakePixels(goodManifest(), defaultPixels()) })
     expect(report.pass).toBe(false)
     expect(report.sha256).toBeNull()
     for (const id of [1, 2, 3, 4, 5, 7, 12, 13]) expect(get(report, id).pass, `check ${id}`).toBe(false)

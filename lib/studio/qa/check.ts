@@ -49,7 +49,7 @@ import {
   voiceoverRequired,
   type ReviewFile,
 } from './evaluate'
-import { appendLedgerEntry, buildLedgerEntry, comparedCount, findRepeat, readLedger, repeatProblem, unusedCombinations, type LedgerEntry } from './ledger'
+import { appendLedgerEntry, buildLedgerEntry, comparedCount, findRepeat, genericSlugProblem, readLedger, repeatProblems, unusedCombinations, type LedgerEntry } from './ledger'
 import {
   MANIFEST_FACTORY,
   formatManifestIssues,
@@ -72,7 +72,6 @@ import {
 import { evaluateTechniques, loadCheckedTechniqueRegistry, techniqueProblems, type TechniqueRegistry } from './techniques'
 import {
   FILM_LEDGER_PATH,
-  LEDGER_WINDOW,
   QA_THRESHOLDS,
   REPO_ROOT,
   REQUIRED_TECHNIQUE_CATEGORIES,
@@ -598,12 +597,17 @@ async function techniquesRan(c: Ctx): Promise<Body> {
 
 async function notARepeat(c: Ctx): Promise<Body> {
   const m = c.manifest
-  const expected = { notSameHookAndSceneSetAsLast: LEDGER_WINDOW, sameVideoType: true, revisionsOfTheSameSlug: 'not a repeat' }
+  const expected = {
+    notSameHookAndSceneSetAs: 'any earlier film of the same type',
+    exempt: 'only the previous version of the same film (same slug and same creative one_sentence)',
+    slug: 'names the film (not generic)',
+  }
   if (!m) return c.noManifest(expected)
+  const generic = genericSlugProblem(m.slug)
   const registry = await loadRegistry(c)
   const sha = await c.sha()
-  const built = buildLedgerEntry({ sha256: sha, slug: m.slug, videoType: m.videoType, techniques: m.techniques, checkedAt: c.now().toISOString() }, registry)
-  if (!built.ok) return bad({ hookDevice: null, sceneSet: [] }, expected, `cannot be compared: ${built.reason}`)
+  const built = buildLedgerEntry({ sha256: sha, slug: m.slug, oneSentence: m.creative.one_sentence, videoType: m.videoType, techniques: m.techniques, checkedAt: c.now().toISOString() }, registry)
+  if (!built.ok) return bad({ hookDevice: null, sceneSet: [], slug: m.slug }, expected, [generic, `cannot be compared: ${built.reason}`].filter(Boolean).join('; '))
   const ledgerPath = c.opts.ledgerPath ?? FILM_LEDGER_PATH
   const ledger = readLedger(ledgerPath)
   if (ledger.errors.length) return bad({ ledger: ledgerPath }, expected, `the ledger is damaged: ${ledger.errors.slice(0, 3).join('; ')}`)
@@ -611,9 +615,9 @@ async function notARepeat(c: Ctx): Promise<Body> {
   const repeat = findRepeat(built.entry, ledger.entries)
   const compared = comparedCount(built.entry, ledger.entries)
   const measured = { hookDevice: built.entry.hookDevice, sceneSet: built.entry.sceneSet, slug: m.slug, compared, repeatOf: repeat ? repeat.sha256.slice(0, 12) : null }
-  const problem = repeatProblem(built.entry, ledger.entries, registry)
-  if (problem) return bad({ ...measured, unusedReadyCombinations: unusedCombinations(built.entry, ledger.entries, registry) }, expected, problem)
-  return done(measured, expected, `hook "${built.entry.hookDevice}" with scenes [${built.entry.sceneSet.join(', ')}] differs from the last ${compared} other ${m.videoType} film(s)`)
+  const problems = repeatProblems(built.entry, ledger.entries, registry)
+  if (problems.length) return bad({ ...measured, unusedReadyCombinations: unusedCombinations(built.entry, ledger.entries, registry) }, expected, problems.join('; '))
+  return done(measured, expected, `hook "${built.entry.hookDevice}" with scenes [${built.entry.sceneSet.join(', ')}] differs from all ${compared} earlier ${m.videoType} film(s) it is compared against`)
 }
 
 async function pixels(c: Ctx, probe: PixelProbe): Promise<Body> {

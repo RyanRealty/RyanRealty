@@ -42,7 +42,7 @@ import {
   requiredPartProblem,
   voiceoverRequired,
 } from '../qa/evaluate'
-import { buildLedgerEntry, repeatProblem, type LedgerEntry } from '../qa/ledger'
+import { buildLedgerEntry, genericSlugProblem, repeatProblems, type LedgerEntry } from '../qa/ledger'
 import { PREFLIGHT_STEPS, checkName, type PreflightStep } from '../qa/phases'
 import { notReadyTechniques, techniqueProblems, unusableReason, type TechniqueRegistry } from '../qa/techniques'
 import { bannedPhrases, type TypeRules, type VideoTypesFile } from '../qa/thresholds'
@@ -79,6 +79,8 @@ export type PreflightContext = {
   registry: TechniqueRegistry
   ledger: readonly LedgerEntry[]
   slug: string
+  /** The brief's creative.one_sentence: with the slug, it says which ledger line is this film's previous version. */
+  oneSentence: string
 }
 
 const tag = (check: number, problems: ReadonlyArray<string | null | undefined>): PreflightProblem[] =>
@@ -124,9 +126,9 @@ function copyProblems(m: Manifest, ctx: PreflightContext): PreflightProblem[] {
 /** Checks 15 and 16 on the techniques the film runs (the brief's at step b, the plan's at step c). */
 function techniqueAndRepeatProblems(briefTechniques: readonly string[], ran: readonly string[], videoType: string, ctx: PreflightContext): PreflightProblem[] {
   const out = tag(15, techniqueProblems(briefTechniques, ran, ctx.registry))
-  const entry = buildLedgerEntry({ sha256: 'planned', slug: ctx.slug, videoType, techniques: ran, checkedAt: 'planned' }, ctx.registry)
-  if (!entry.ok) out.push({ check: 16, problem: `cannot be compared: ${entry.reason}` })
-  else out.push(...tag(16, [repeatProblem(entry.entry, ctx.ledger, ctx.registry)]))
+  const entry = buildLedgerEntry({ sha256: 'planned', slug: ctx.slug, oneSentence: ctx.oneSentence, videoType, techniques: ran, checkedAt: 'planned' }, ctx.registry)
+  if (!entry.ok) out.push(...tag(16, [genericSlugProblem(ctx.slug), `cannot be compared: ${entry.reason}`]))
+  else out.push(...tag(16, repeatProblems(entry.entry, ctx.ledger, ctx.registry)))
   return out
 }
 

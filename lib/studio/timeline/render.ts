@@ -95,8 +95,6 @@ export type RenderOptions = {
   outDir: string
   /** Footage downloads and voice syntheses are cached here across films. */
   cacheDir: string
-  /** Who built the film (check 14 refuses a review by the same author, or one whose id starts with it). Default "claude". */
-  builtBy?: string
   /** Override the voice id (tests); otherwise the named voice's environment variable. */
   voiceId?: string
   /** The film ledger the repeat rule reads (default data/studio/film-ledger.jsonl). */
@@ -250,6 +248,17 @@ async function resolveOutlines(
   return out
 }
 
+/**
+ * Who built the film, from the environment the factory runs in (F11,
+ * 2026-10-14): STUDIO_BUILDER, else "claude". Not a CLI flag, so a render cannot
+ * name its builder to suit the review it wants. Check 14 refuses a reviewer id
+ * that shares a word with it. This is still self-reported: the real reviewer
+ * identity comes from the server certifier later, not from these files.
+ */
+export function builderOf(env: Record<string, string | undefined>): string {
+  return env.STUDIO_BUILDER?.trim() || 'claude'
+}
+
 export async function renderTimelineFilm(opts: RenderOptions, deps: RenderDeps): Promise<RenderResult> {
   const started = Date.now()
   const log = deps.log ?? (() => undefined)
@@ -279,7 +288,7 @@ export async function renderTimelineFilm(opts: RenderOptions, deps: RenderDeps):
   if (ledger.errors.length) throw new RenderError(`the film ledger is damaged: ${ledger.errors.slice(0, 3).join('; ')}`)
   // A registry handed in through deps.registryPath is a test's: it approves only with TEST_APPROVER.
   const registry = await loadCheckedTechniqueRegistry(deps.registryPath, { testOnly: Boolean(deps.registryPath) })
-  const ctx: PreflightContext = { types, rules, registry, ledger: ledger.entries, slug }
+  const ctx: PreflightContext = { types, rules, registry, ledger: ledger.entries, slug, oneSentence: brief.creative.one_sentence }
   // b: the script and every authored string, before any download or the paid voice.
   refuse('text', textPreflight(brief, timeline, ctx))
   log('preflight b (script and authored strings): clear')
@@ -451,7 +460,7 @@ export async function renderTimelineFilm(opts: RenderOptions, deps: RenderDeps):
       ? { start: film.endcard.start, quality: film.endcard.quality, local: film.endcard.local, service: film.endcard.service, call: film.endcard.call, out: film.endcard.out }
       : null,
     loop: film.loop,
-    builtBy: opts.builtBy?.trim() || 'claude',
+    builtBy: builderOf(env),
     briefSha256,
     slug,
     creative: { ...brief.creative },

@@ -34,7 +34,7 @@ const hasMedia = spawnSync(ffmpeg, ['-version']).status === 0 && spawnSync(resol
 const hasChrome = existsSync(motionChromePath())
 if (!hasMedia || !hasChrome) console.warn('[timeline render.int] ffmpeg, ffprobe or Chromium not found: skipping.')
 
-const SCRIPT = '[warm] Buying in Bend this fall? Here is what most buyers miss.'
+const SCRIPT = '[warm] Buying in Bend this fall? Here is what new buyers miss.'
 
 /** Word times on the voice's own clock: the question by 1.3 s, the turn after it. */
 const WORDS: Array<[string, number, number]> = [
@@ -46,7 +46,7 @@ const WORDS: Array<[string, number, number]> = [
   ['Here', 1.62, 1.8],
   ['is', 1.84, 1.92],
   ['what', 1.96, 2.14],
-  ['most', 2.18, 2.42],
+  ['new', 2.18, 2.42],
   ['buyers', 2.46, 2.8],
   ['miss.', 2.84, 3.2],
 ]
@@ -185,7 +185,7 @@ describe.skipIf(!hasMedia || !hasChrome)('studio:render, a 10.5 s film with no n
           footage: { src: 'clip.mp4', in: 0.5 },
           cards: [
             { kind: 'question', text: 'Buying in Bend this fall?' },
-            { kind: 'turn', text: 'Here is what most buyers miss.' },
+            { kind: 'turn', text: 'Here is what new buyers miss.' },
           ],
         },
         { id: 'supply', role: 'payoff', start: 4.4, end: 7.4, footage: { src: 'clip.mp4', in: 2.8 }, scene: { kind: 'meter_fill_verdict', number: 'mos' } },
@@ -194,8 +194,8 @@ describe.skipIf(!hasMedia || !hasChrome)('studio:render, a 10.5 s film with no n
     }
     const outDir = join(dir, 'film')
     const result = await renderTimelineFilm(
-      { brief, timeline, baseDir: dir, outDir, cacheDir: join(dir, 'cache'), builtBy: 'int-test', voiceId: 'stub-voice', ledgerPath: ledger },
-      { ffmpeg, voiceProvider: stubVoice, launchBrowser: launchMotionChrome, registryPath: registry },
+      { brief, timeline, baseDir: dir, outDir, cacheDir: join(dir, 'cache'), voiceId: 'stub-voice', ledgerPath: ledger },
+      { ffmpeg, voiceProvider: stubVoice, launchBrowser: launchMotionChrome, registryPath: registry, env: { ...process.env, STUDIO_BUILDER: 'int-test' } },
     )
 
     // The plate covered and cropped the 16:9 clip at one scale, and said so.

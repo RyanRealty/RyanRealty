@@ -89,9 +89,6 @@ export type TechniqueCategory = (typeof TECHNIQUE_CATEGORIES)[number]
 /** A film must have run at least one technique of each of these (check 15). */
 export const REQUIRED_TECHNIQUE_CATEGORIES: readonly TechniqueCategory[] = Object.freeze(['hook', 'scene', 'type'])
 
-/** The repeat check (16) compares against this many earlier films of the same type. */
-export const LEDGER_WINDOW = 5
-
 /** Phrases the contract bans on top of video_types.json banned_phrases (check 10). */
 export const EXTRA_BANNED_PHRASES: readonly string[] = Object.freeze(['top team', "buyer's market"])
 

@@ -20,6 +20,8 @@ renderer cannot be skipped; a check that measures the file cannot be talked past
 
 This supersedes RULEBOOK conflict C10 (the box HTML + `render.mjs` pipeline as "the real
 pipeline"). CLAUDE.md §4 already said one factory; this makes it the only path.
+The admin Studio path (`/admin/studio`, `lib/studio/produce.ts` composeMotion, the
+studio-slate cron) stays frozen until it routes through `studio:render`.
 
 ## Two layers (Matt 2026-10-13)
 
@@ -40,7 +42,7 @@ don't want every video to look the same, but it has to have the same underlying 
   feeling (creative-brain pipeline), and at least one hook device, one scene device and
   one type treatment. The renderer records the techniques it actually ran in the
   manifest (`techniques`), and the check fails a brief technique that never ran (check
-  15) and a film whose hook device and scene set repeat any of the last five films
+  15) and a film whose hook device and scene set repeat any earlier film of its type
   (check 16, the repeat check). The reviewer (check 14) judges taste on top.
 
 ## Rules refuse before render (Matt 2026-10-14)
@@ -51,8 +53,11 @@ words and the planned layout can decide is decided before a frame is rendered, a
 the paid voice where the script alone decides it. `lib/studio/timeline/preflight.ts` builds
 a planned manifest and runs the SAME evaluators video:check runs (`lib/studio/qa/evaluate.ts`,
 `techniques.ts`, `ledger.ts`); no rule has a second copy. The phase of every check is
-`CHECK_PHASES` in `lib/studio/qa/phases.ts`, held by `lib/studio/timeline/preflight.test.ts`
-(an unclassified check, or a preflight check a broken film does not trip, fails the test).
+`CHECK_PHASES` in `lib/studio/qa/phases.ts`. `lib/studio/qa/phases.test.ts` fails an
+unclassified check; `lib/studio/timeline/preflight.test.ts` fails a preflight check that a
+broken brief or timeline does not trip at each step its row names (the step c cases build
+the planned manifest from the broken brief or timeline exactly as the renderer does, and
+name the planner refusal when planFilm itself holds the rule).
 
 `studio:render` runs, in order, and each step lists every problem at once:
 
@@ -80,7 +85,17 @@ milestone_timeline, outline_draw_zoom, line_draw_riding_dot) or `base` (spine an
 Status rungs: `planned` (an idea with a home) -> `ready` (code and test, built) ->
 `approved` (Matt saw its showcase reel and said yes; the entry carries `approved_by: "matt"`,
 `approved_on` and `reel`). A base technique runs when ready or approved; a signature
-technique only when approved. Every film runs at least one approved signature technique:
+technique only when approved.
+
+Interim, until Matt's /admin approvals live in the database, an approval holds only when
+`approved_by` is `"matt"`, `approved_on` is an ISO date and `reel` exists: a file in the
+checkout, or an https URL that answers a HEAD request within the timeout. One rule,
+`.claude/skills/ryan-studio/tools/technique-approval.mjs`, read by video_gate,
+`ci:studio-techniques`, the render preflight and check 15. A commit that adds or changes
+an approved row needs an `Approved-by: matt` line naming the technique
+(`scripts/check-technique-approval.mjs`, commit-msg; no override). The committed registry
+has zero approved rows today, and a test holds that. A test's registry approves only with
+the test approver (`"test-only stub"`, never `"matt"`), and only through a code seam. Every film runs at least one approved signature technique:
 that is a floor, not a target. video_gate, the render preflight (step b) and check 15
 refuse a film below it. Nothing is approved by an agent; until Matt approves a signature
 technique, no film starts (the sample `bend-mos` fixture is refused there on purpose).
@@ -132,9 +147,9 @@ manifest carries it for the reviewer.
   "audio": { "lufs": -14.0, "truePeakDb": -1.7, "silent": false },
   "endcard": { "start": 24.45, "quality": 24.45, "local": 24.85, "service": 25.25, "call": 25.7, "out": 27.5 },
   "loop": { "seconds": 0.3 },                     // the last 0.3 s carries the cut back into frame 0
-  "builtBy": "claude",                            // always written; check 14 refuses a reviewer id equal to or starting with it
+  "builtBy": "claude",                            // STUDIO_BUILDER in the factory's environment, else "claude"; check 14 refuses a reviewer id sharing a word with it
   "briefSha256": "<hex>",                         // the brief file it was rendered from (check 1)
-  "slug": "bend-go-in-with-a-plan",               // [a-z0-9-], from the brief; a later render with the same slug is a revision
+  "slug": "bend-go-in-with-a-plan",               // [a-z0-9-], from the brief; never generic ("film", "test-2"); with creative.one_sentence it names the film
   "creative": { "feel": "<one emotion>", "constraint": "<one formal constraint>", "lineage": "<artistic lineage>", "one_sentence": "<the idea>" }
 }
 ```
@@ -151,15 +166,15 @@ manifest carries it for the reviewer.
 | 6 | Motion | ffmpeg `freezedetect` | any frozen stretch of 1.2 s or more ("everything animated", RULEBOOK §2) |
 | 7 | Sound | ffmpeg `ebur128` on the file | integrated outside -15..-13 LUFS, true peak above -1.0 dBTP; no voice or no audio stream when the type (`requires_voiceover`, default true) or the brief (`spec_rules.voiceover`) asks for a voiceover. "Declared silent" passes only for a type and brief that ask for none |
 | 8 | Captions | `voice.words` vs `captions` | a caption over 4 words or under 0.4 s, a caption starting more than 0.08 s off its first word, a spoken word no caption shows, caption text that is not the spoken words; no voice words or no captions when a voiceover is required |
-| 9 | Numbers | every figure token (with its unit or prefix: $, #, %, K, M, mo) in `texts`, `captions` and the voice; every number said or written in words | a figure no row IS (whole token: "4" is not "4 mo", "$475" is not "$475K"); an authored row covering anything but its own boxes; a spoken figure its caption does not show as a brief row's figure; a figure written in words on screen; a row missing source, window, geography or definition |
-| 10 | Copy | `texts`, `captions`, voice words | em or en dash, `banned_phrases` from video_types.json, "top team", "buyer's market"; video_gate's fair housing flags, addresses and names; verdict words that disagree with a months-of-supply reading's band (lib/market/classify.ts) |
+| 9 | Numbers | every figure token in `texts`, `captions` and the voice, with its prefix, magnitude and unit word in one form ($, #, %, K, M; mo, days, homes, sales, listings and the rest; fullwidth digits read as digits); every number, ratio, fraction or dozen said or written in words | a figure no row IS in the same unit ("4" is not "4 mo", "$475" is not "$475K", "3.5 days" is not 3.5 months of supply); an authored row, or a brief row whose window is "none" (a threshold), covering anything but its own bound boxes (never a caption or the voice); a spoken figure ("doubled", "a quarter", "a dozen" too) its caption does not show as a measured brief row's figure; a quantity with no single figure said ("most", "dozens", "hundreds of"); a figure written in words on screen; a row missing source, window, geography or definition |
+| 10 | Copy | `texts`, `captions`, voice words | em or en dash, `banned_phrases` from video_types.json, "top team", "buyer's market"; video_gate's fair housing flags, addresses and names in any case ("SOLD AT 123 MAIN ST", "Sarah and Tom just closed"); a verdict that disagrees with a months-of-supply reading's band (lib/market/classify.ts): a side word (buyers, sellers) within four words of an edge word (leverage, edge, upper hand, in charge, in control, favor, advantage, power), or "buyer's/seller's market"; the supply row is found by its stat id or by a definition of active listings over monthly or six-month sales |
 | 11 | Safe area | every non-endcard `texts` box | box beyond x 960 or y 1640 |
 | 12 | End card | manifest times vs END_CARD_SPEC; the frame at `endcard.call + 0.5 s` vs the locked golden still (SSIM); the cream field's first frame in the pixels | missing, out of order, `endcard.start` not the end card beat's start, a start earlier than the pixels show the card, words over ~1.2 s, call hold under 1.5 s, SSIM below 0.92 |
 | 13 | Loop | SSIM of the last frame vs frame 0 | below 0.85 |
-| 14 | Review (`--final` only) | `<name>.review.json`: `sha256`, `reviewer`, `watched`, `listened`, `verdict` | missing, wrong hash, same author as the build, verdict not `ship` |
-| 15 | Techniques ran | brief `techniques` vs manifest `techniques` (what the renderer executed) | a brief technique the renderer never ran; fewer than one hook device, one scene device and one type treatment; no approved signature technique ran |
-| 16 | Not a repeat | this manifest vs the last five manifests in the film ledger | same hook device and the same scene set as any of the last five other films (a revision with the same slug is not a repeat); the failure lists the ready hook + scene pairs not used lately |
-| 17 | Pixels | the ryan-studio render gate (`video_render_gate.py`, OCR via tesseract + opencv) on the MP4; every claimed text read back off its own box at its own time; the gate's OCR samples scanned for figures | a render gate finding (its 15 to 30 s LENGTH is left to check 3); a claimed caption, card or figure the pixels do not show; a figure-shaped token the pixels show twice running that the manifest does not list; OCR tooling missing (fails with the install line) |
+| 14 | Review (`--final` only) | `<name>.review.json`: `sha256`, `reviewer`, `watched`, `listened`, `verdict` | missing, wrong hash, a reviewer id sharing a word with `builtBy` (STUDIO_BUILDER), verdict not `ship`. Both ids are self-reported until the server certifier names the reviewer |
+| 15 | Techniques ran | brief `techniques` vs manifest `techniques` (what the renderer executed) | a brief technique the renderer never ran; fewer than one hook device, one scene device and one type treatment; no approved signature technique ran (an approval holds only with Matt, an ISO date and a reel that exists) |
+| 16 | Not a repeat | this manifest vs every earlier film of the same type in the film ledger | a generic slug ("film", "video", "ad", "test", "draft", "untitled", with or without numbers); the same hook device and the same scene set as any earlier film of the type, except the immediately previous version of the same film (the same slug AND the same `creative.one_sentence`); the failure lists the ready hook + scene pairs not used. The ledger append skips a line whose slug and sha256 are already there |
+| 17 | Pixels | the ryan-studio render gate (`video_render_gate.py`, OCR via tesseract + opencv) on the MP4; every claimed text read back off its own box at its own time; the gate's OCR samples scanned for figures | a render gate finding (its 15 to 30 s LENGTH is left to check 3); a claimed caption, card or figure the pixels do not show; a figure-shaped token the pixels show in two samples running that is not exactly a figure the manifest lists (no near matches; only the phone's own tokens are skipped); OCR tooling missing (fails with the install line) |
 
 Thresholds live in one place (`lib/studio/qa/thresholds.ts`) so a change is one line and a
 test. A check that cannot be measured fails, never passes by default. `--golden`, `--ledger`

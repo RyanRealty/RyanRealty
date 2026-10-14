@@ -16,10 +16,10 @@
  *     every figure in it, and at least half of its longer words.
  *  3. The gate's full-frame OCR samples are scanned for figure-shaped tokens
  *     ($, %, a decimal, or three or more digits) that persist across two
- *     samples and are not within one digit of any figure the manifest lists.
- *     Full-frame OCR over footage is noisy (it reads 3.5 as 3.0 or 3.9), so this
- *     scan is deliberately conservative; it catches a figure the manifest left
- *     out, not a misread.
+ *     consecutive samples and are not exactly a figure the manifest lists
+ *     (F8, 2026-10-14: no near matches; only the phone's own tokens are
+ *     skipped). Noise rarely repeats in two samples running, so the two-sample
+ *     rule, not a fuzzy match, is what keeps a misread from failing the film.
  *
  * OCR tooling missing (tesseract, python3 with opencv) is a FAIL with the
  * install line, never a pass.
@@ -31,7 +31,7 @@ import { dirname, join } from 'node:path'
 import type { Manifest, ManifestText } from './manifest'
 import { readBox, readingShowsCaption, type OcrBox, type OcrMode } from './ocr'
 import { resolvePython, resolveTesseract, runBinary, studioBinaries } from './measure'
-import { extractNumberTokens } from './spoken'
+import { extractNumberTokens, splitFigure, squash } from './spoken'
 import { REPO_ROOT } from './thresholds'
 
 export const RENDER_GATE_PATH = join(REPO_ROOT, '.claude', 'skills', 'ryan-studio', 'tools', 'video_render_gate.py')
@@ -117,46 +117,50 @@ export function captionsWithoutBoxes(m: Pick<Manifest, 'texts' | 'captions'>): s
 
 const digitsOf = (s: string) => s.replace(/[^0-9]/g, '')
 
-/** Levenshtein distance, for "is this a misread of a listed figure". */
-export function editDistance(a: string, b: string): number {
-  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)] as number[])
-  for (let j = 1; j <= b.length; j++) d[0][j] = j
-  for (let i = 1; i <= a.length; i++) {
-    for (let j = 1; j <= b.length; j++) {
-      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
-    }
-  }
-  return d[a.length][b.length]
-}
-
 /** A token that reads as a figure, not as OCR noise: $, %, a decimal point, or three or more digits. */
 export function figureShaped(token: string): boolean {
   return /[$%]/.test(token) || /\d\.\d/.test(token) || digitsOf(token).length >= 3
 }
 
 /**
- * Figures the pixels show that the manifest does not list. A token counts only
- * when it is figure-shaped, is not a piece of the locked phone, is not within
- * one digit of a listed figure, and is read in two consecutive samples (a
- * figure on screen holds 2.5 s, five samples; noise rarely repeats). Samples
- * from the end card on are skipped (the gate checks the locked card).
+ * The figure itself, for an exact comparison: prefix, digits, magnitude and
+ * percent ("$475K", "3.5", "12%"), its unit word aside, because OCR runs a card's
+ * figure and its unit line together ("3.5 MONTHS" over a card that lists "3.5").
+ */
+export function figureKey(token: string): string {
+  const { num, unit } = splitFigure(token)
+  return squash(unit === '%' ? `${num}%` : num)
+}
+
+/**
+ * The locked end card phone's own tokens, in the spellings it is drawn or read
+ * in (541.703.3095, 541-703-3095, (541) 703-3095): only these are skipped as
+ * the phone. Any other figure that happens to share its digits is a figure.
+ */
+export const PHONE_TOKENS: ReadonlySet<string> = new Set(['541', '703', '3095', '541.703', '703.3095', '5417033095'])
+
+/**
+ * Figures the pixels show that the manifest does not list (F8, 2026-10-14:
+ * exact matches only). A token counts when it is figure-shaped, is not one of
+ * the phone's own tokens, is not exactly a listed figure (figureKey), and is
+ * read in two consecutive samples (a figure on screen holds 2.5 s, five
+ * samples; noise rarely repeats). Samples from the end card on are skipped
+ * (the gate checks the locked card).
  */
 export function unlistedFigures(
   samples: ReadonlyArray<{ t: number; text: string }>,
   listed: readonly string[],
   endcardStart: number | null,
 ): string[] {
-  const listedDigits = [...new Set(listed.map(digitsOf).filter(Boolean))]
-  const near = (d: string) => listedDigits.some((l) => editDistance(d, l) <= 1)
+  const listedKeys = new Set(listed.map(figureKey))
   const until = endcardStart === null ? Infinity : endcardStart - 0.25
   const used = samples.filter((s) => s.t < until).sort((a, b) => a.t - b.t)
   const perSample = used.map((s) => {
     const found = new Map<string, string>()
     for (const tok of extractNumberTokens(s.text)) {
-      const d = digitsOf(tok)
-      if (!d || !figureShaped(tok) || near(d)) continue
-      if (d.length >= 3 && '5417033095'.includes(d)) continue
-      found.set(d, tok)
+      const key = figureKey(tok)
+      if (!figureShaped(tok) || listedKeys.has(key) || PHONE_TOKENS.has(key)) continue
+      found.set(key, tok)
     }
     return { t: s.t, found }
   })
@@ -165,8 +169,8 @@ export function unlistedFigures(
     const a = perSample[i - 1]
     const b = perSample[i]
     if (Math.abs(b.t - a.t - 0.5) > 0.01) continue
-    for (const [d, tok] of b.found) {
-      if (a.found.has(d) && !out.has(d)) out.set(d, `"${tok}" at ${a.t}s and ${b.t}s`)
+    for (const [key, tok] of b.found) {
+      if (a.found.has(key) && !out.has(key)) out.set(key, `"${tok}" at ${a.t}s and ${b.t}s`)
     }
   }
   return [...out.values()]

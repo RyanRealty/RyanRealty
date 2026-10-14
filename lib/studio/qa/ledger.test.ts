@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from 'no
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appendLedgerEntry, buildLedgerEntry, comparedCount, findRepeat, parseLedger, readLedger, unusedCombinations, type LedgerEntry } from './ledger'
+import { appendLedgerEntry, buildLedgerEntry, comparedCount, findRepeat, genericSlugProblem, parseLedger, readLedger, repeatProblems, unusedCombinations, type LedgerEntry } from './ledger'
 import type { TechniqueRegistry } from './techniques'
 
 const registry: TechniqueRegistry = {
@@ -76,51 +76,64 @@ describe('findRepeat', () => {
     expect(findRepeat(entry(), [entry({ sceneSet: ['loop_seam_edit', 'subframe_motion_blur', 'map_zoom'] })])).toBeNull()
   })
 
-  it('skips a line with the same sha256: it is the same film', () => {
-    const me = entry()
-    expect(findRepeat(me, [{ ...entry(), sha256: me.sha256 }])).toBeNull()
+  it('skips the line of this very file (the same sha256 and slug)', () => {
+    const me = entry({ slug: 'bend-plan' })
+    expect(findRepeat(me, [{ ...entry(), sha256: me.sha256, slug: 'bend-plan' }])).toBeNull()
   })
 
   it('compares only films of the same video type', () => {
     expect(findRepeat(entry(), [entry({ videoType: 'market_update' })])).toBeNull()
   })
 
-  it('works with a ledger shorter than five lines, and with none', () => {
+  it('works with an empty ledger', () => {
     expect(findRepeat(entry(), [])).toBeNull()
     const earlier = entry()
     expect(findRepeat(entry(), [entry({ hookDevice: 'dollar_first_hook' }), earlier])).toBe(earlier)
   })
 
-  it('looks only at the last five: a repeat of the sixth most recent film passes', () => {
+  it('compares against every earlier film of the type, not a recent window (F7)', () => {
     const old = entry()
-    const filler = Array.from({ length: 5 }, () => entry({ hookDevice: 'dollar_first_hook' }))
-    expect(findRepeat(entry(), [old, ...filler])).toBeNull()
-    expect(findRepeat(entry(), [old, ...filler.slice(0, 4)])).toBe(old)
+    const filler = Array.from({ length: 12 }, () => entry({ hookDevice: 'dollar_first_hook' }))
+    expect(findRepeat(entry(), [old, ...filler])).toBe(old)
+    expect(comparedCount(entry(), [old, ...filler, entry({ videoType: 'market_update' })])).toBe(13)
+  })
+})
+
+describe('the same film: the same slug AND the same one sentence (F7)', () => {
+  const one = 'Bend still favors sellers, so go in with a plan.'
+
+  it('exempts only the immediately previous version of the same film', () => {
+    const v1 = entry({ slug: 'bend-plan', oneSentence: one })
+    const v2 = entry({ slug: 'bend-plan', oneSentence: one })
+    // v2 is a revision of v1: v1 is its previous version, so no repeat.
+    expect(findRepeat(v2, [v1])).toBeNull()
+    expect(comparedCount(v2, [v1])).toBe(0)
+    // v3 skips only v2 (the previous version); v1 is compared and repeats.
+    const v3 = entry({ slug: 'bend-plan', oneSentence: one })
+    expect(findRepeat(v3, [v1, v2])).toBe(v1)
   })
 
-  it('does not let same-sha lines or other types use up the five slots', () => {
-    const me = entry()
-    const old = entry()
-    const noise = [
-      { ...entry(), sha256: me.sha256 },
-      entry({ videoType: 'market_update' }),
-      ...Array.from({ length: 4 }, () => entry({ hookDevice: 'dollar_first_hook' })),
-    ]
-    expect(findRepeat(me, [old, ...noise])).toBe(old)
-    expect(comparedCount(me, [old, ...noise])).toBe(5)
+  it("does not let a reused slug make a new film a revision (the review's bypass)", () => {
+    // review finding: a Redmond film with slug "bend-go-in-with-a-plan" passed as a revision of the Bend film
+    const bend = entry({ slug: 'bend-go-in-with-a-plan', oneSentence: one })
+    const redmond = entry({ slug: 'bend-go-in-with-a-plan', oneSentence: 'Redmond is balanced, so take your time.' })
+    expect(findRepeat(redmond, [bend])).toBe(bend)
+    // The same sentence under another slug is another film too.
+    expect(findRepeat(entry({ slug: 'redmond-plan', oneSentence: one }), [bend])).toBe(bend)
+    // Older lines with no sentence are never "the same film".
+    expect(findRepeat(entry({ slug: 'x-plan' }), [entry({ slug: 'x-plan' })])).not.toBeNull()
+  })
+
+  it('refuses a generic slug', () => {
+    for (const slug of ['film', 'video', 'ad', 'test', 'draft', 'untitled', 'test-2', 'Final-Video', 'v3', undefined, '']) {
+      expect(genericSlugProblem(slug), String(slug)).toContain('names no film')
+    }
+    for (const slug of ['bend-go-in-with-a-plan', 'redmond-2026-q3', 'tetherow-listing']) expect(genericSlugProblem(slug), slug).toBeNull()
+    expect(repeatProblems(entry({ slug: 'film', oneSentence: one }), [], registry)).toEqual([expect.stringContaining('the slug "film" names no film')])
   })
 })
 
 describe('revisions and what is left', () => {
-  it('treats a later render of the same slug as a revision, not a repeat', () => {
-    // review finding: two hook devices by one scene locked the type after two finals, revisions included
-    const first = entry({ slug: 'bend-plan' })
-    expect(findRepeat(entry({ slug: 'bend-plan' }), [first])).toBeNull()
-    expect(comparedCount(entry({ slug: 'bend-plan' }), [first])).toBe(0)
-    expect(findRepeat(entry({ slug: 'redmond-plan' }), [first])).toBe(first)
-    expect(findRepeat(entry(), [entry()])).not.toBeNull()
-  })
-
   it('builds the slug into the entry and reads it back', () => {
     const r = buildLedgerEntry({ sha256: 'f'.repeat(64), slug: 'bend-plan', videoType: 'listing', techniques: ['dollar_first_hook', 'map_zoom'], checkedAt: 'now' }, registry)
     expect(r.ok && r.entry.slug).toBe('bend-plan')
@@ -180,15 +193,16 @@ describe('readLedger and appendLedgerEntry', () => {
     expect(readFileSync(path, 'utf8')).toBe('')
   })
 
-  it('appends one line per film and never twice for the same sha256', () => {
+  it('appends one line per film and never twice for the same slug and sha256', () => {
     const path = join(tmp(), 'l.jsonl')
-    const a = entry()
+    const a = entry({ slug: 'bend-plan', oneSentence: 'One sentence.' })
     expect(appendLedgerEntry(a, path)).toBe(true)
     expect(appendLedgerEntry(a, path)).toBe(false)
     expect(appendLedgerEntry(entry(), path)).toBe(true)
     const lines = readFileSync(path, 'utf8').trim().split('\n')
     expect(lines).toHaveLength(2)
     expect(JSON.parse(lines[0])).toEqual(a)
+    expect(readLedger(path).entries[0].oneSentence).toBe('One sentence.')
   })
 
   it('starts a new line when the file lacks a trailing newline', () => {

@@ -599,15 +599,18 @@ describe('evaluateReview', () => {
   it('fails each way a review can be wrong', () => {
     expect(evaluateReview({ ...ok, sha256: 'b'.repeat(64) }, sha, 'claude', true)[0]).toContain('different file')
     expect(evaluateReview({ ...ok, reviewer: '  ' }, sha, 'claude', true)[0]).toContain('no reviewer')
-    expect(evaluateReview({ ...ok, reviewer: 'Claude ' }, sha, 'claude', true)[0]).toContain('is the builder')
+    expect(evaluateReview({ ...ok, reviewer: 'Claude ' }, sha, 'claude', true)[0]).toContain('shares "claude" with the builder')
     expect(evaluateReview({ ...ok, watched: false }, sha, 'claude', true)[0]).toContain('not watched')
     expect(evaluateReview({ ...ok, verdict: 'fix' }, sha, 'claude', true)[0]).toContain('"ship"')
     expect(evaluateReview({}, sha, 'claude', true).length).toBeGreaterThanOrEqual(4)
   })
 
-  it('refuses a reviewer id that starts with the builder\'s, and a manifest with no builder', () => {
-    expect(evaluateReview({ ...ok, reviewer: 'claude-reviewer' }, sha, 'claude', true)[0]).toContain('may not equal or start with')
+  it('refuses a reviewer id that shares any word with the builder\'s, and a manifest with no builder (F11)', () => {
+    expect(evaluateReview({ ...ok, reviewer: 'claude-reviewer' }, sha, 'claude', true)[0]).toContain('may not share a word')
+    expect(evaluateReview({ ...ok, reviewer: 'anthropic-claude' }, sha, 'claude', true)[0]).toContain('shares "claude"')
+    expect(evaluateReview({ ...ok, reviewer: 'Imagine Desk' }, sha, 'imagine-desk', true)[0]).toContain('shares "imagine", "desk"')
     expect(evaluateReview({ ...ok, reviewer: 'grok' }, sha, 'claude-2', true)).toEqual([])
+    expect(evaluateReview({ ...ok, reviewer: 'claudette' }, sha, 'claude', true)).toEqual([])
     expect(evaluateReview(ok, sha, undefined, true)[0]).toContain('names no builder')
     expect(evaluateReview(ok, sha, '  ', true)[0]).toContain('names no builder')
   })

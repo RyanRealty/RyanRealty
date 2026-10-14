@@ -632,17 +632,23 @@ export interface ReviewFile {
   verdict?: unknown
 }
 
+/** The words of an id, lowercase: "Anthropic-Claude_2" is anthropic, claude, 2. */
+const idWords = (id: string): string[] => id.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
+
 export function evaluateReview(review: ReviewFile, fileSha256: string, builtBy: string | undefined, hasAudio: boolean): string[] {
   const problems: string[] = []
   if (typeof review.sha256 !== 'string' || review.sha256.toLowerCase() !== fileSha256.toLowerCase()) {
     problems.push('the review is for a different file (sha256 does not match)')
   }
   const reviewer = typeof review.reviewer === 'string' ? review.reviewer.trim() : ''
-  const builder = (builtBy ?? '').trim().toLowerCase()
+  const builder = (builtBy ?? '').trim()
   if (builder === '') problems.push('the manifest names no builder (builtBy), so the review cannot be told apart from it')
   if (reviewer === '') problems.push('the review names no reviewer')
-  else if (builder !== '' && reviewer.toLowerCase().startsWith(builder)) {
-    problems.push(`the reviewer "${reviewer}" is the builder "${builtBy}" (a reviewer id may not equal or start with the builder's)`)
+  else if (builder !== '') {
+    // F11: the reviewer id may not share a word with the builder's ("anthropic-claude" is "claude").
+    // Both are still self-reported; the real reviewer identity comes from the server certifier later.
+    const shared = idWords(reviewer).filter((w) => idWords(builder).includes(w))
+    if (shared.length) problems.push(`the reviewer "${reviewer}" shares "${shared.join('", "')}" with the builder "${builder}" (a reviewer id may not share a word with the builder's)`)
   }
   if (review.watched !== true) problems.push('the reviewer has not watched it (watched must be true)')
   if (hasAudio && review.listened !== true) problems.push('the reviewer has not listened to it (listened must be true)')

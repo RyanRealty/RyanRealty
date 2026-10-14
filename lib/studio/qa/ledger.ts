@@ -2,28 +2,51 @@
  * lib/studio/qa/ledger.ts - the film ledger behind check 16 ("Not a repeat").
  *
  * `data/studio/film-ledger.jsonl` is committed, so every machine compares a new
- * film against the same recent history. One JSON object per line:
- *   { sha256, videoType, hookDevice, sceneSet, techniques, checkedAt }
- * A film repeats when its hook device AND scene set both equal any of the last
- * five earlier films of the same type. A later render of the same film (the
- * same slug) is a revision, not a repeat. The comparison is a pure function
- * (findRepeat); only readLedger and appendLedgerEntry touch the disk.
+ * film against the same history. One JSON object per line:
+ *   { sha256, slug, oneSentence, videoType, hookDevice, sceneSet, techniques, checkedAt }
+ * A film repeats when its hook device AND scene set both equal any earlier film
+ * of the same type (F7, 2026-10-14: every line, not a recent window). The one
+ * line skipped is the immediately previous version of the SAME film: the same
+ * slug AND the same creative one_sentence (a slug alone is a free field, so it
+ * cannot make a new film a "revision"). A generic slug ("film", "test-2") is
+ * refused, so a brief cannot dodge the comparison by naming every film alike.
+ * The comparison is pure (findRepeat); only readLedger and appendLedgerEntry
+ * touch the disk, and the append skips a line whose slug and sha256 are there.
  */
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
-import { FILM_LEDGER_PATH, LEDGER_WINDOW } from './thresholds'
+import { FILM_LEDGER_PATH } from './thresholds'
 import { usableTechnique, type TechniqueRegistry } from './techniques'
 
 export interface LedgerEntry {
   sha256: string
   /** The film's slug (manifest.slug). Older lines have none. */
   slug?: string
+  /** The brief's creative.one_sentence (manifest.creative). Older lines have none. */
+  oneSentence?: string
   videoType: string
   hookDevice: string
   sceneSet: string[]
   techniques: string[]
   checkedAt: string
 }
+
+/** Slug words that name no film. A slug made only of these (and numbers) is refused. */
+export const GENERIC_SLUG_WORDS: readonly string[] = [
+  'film', 'films', 'video', 'videos', 'ad', 'ads', 'test', 'tests', 'testing', 'draft', 'drafts', 'untitled', 'new', 'final',
+  'copy', 'temp', 'tmp', 'clip', 'reel', 'sample', 'example', 'demo', 'v', 'version', 'rev', 'revision',
+]
+
+/** Check 16: a slug that names no film ("film", "test-2", "untitled") cannot tell films apart. Null when it can. */
+export function genericSlugProblem(slug: string | undefined): string | null {
+  const words = (slug ?? '').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
+  const generic = words.every((w) => GENERIC_SLUG_WORDS.includes(w) || /^v?\d+$/.test(w))
+  return generic
+    ? `the slug "${slug ?? ''}" names no film (${GENERIC_SLUG_WORDS.slice(0, 6).join(', ')} and numbers are generic); give the brief a slug or title that says what this film is`
+    : null
+}
+
+const sentenceForm = (s: string | undefined) => (s ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
 
 export type BuiltEntry = { ok: true; entry: LedgerEntry } | { ok: false; reason: string }
 
@@ -33,7 +56,7 @@ export type BuiltEntry = { ok: true; entry: LedgerEntry } | { ok: false; reason:
  * no scene technique cannot be compared, so it reports why instead.
  */
 export function buildLedgerEntry(
-  film: { sha256: string; slug?: string; videoType: string; techniques: readonly string[]; checkedAt: string },
+  film: { sha256: string; slug?: string; oneSentence?: string; videoType: string; techniques: readonly string[]; checkedAt: string },
   registry: TechniqueRegistry,
 ): BuiltEntry {
   if (!registry.hasCategories) return { ok: false, reason: 'registry has no categories' }
@@ -46,6 +69,7 @@ export function buildLedgerEntry(
     entry: {
       sha256: film.sha256,
       ...(film.slug ? { slug: film.slug } : {}),
+      ...(film.oneSentence ? { oneSentence: film.oneSentence } : {}),
       videoType: film.videoType,
       hookDevice: hook,
       sceneSet: [...new Set(scenes)].sort(),
@@ -61,38 +85,47 @@ function sameSet(a: readonly string[], b: readonly string[]): boolean {
   return x.length === y.length && x.every((v, i) => v === y[i])
 }
 
-/** The same film: the same file, or a revision of it (the same slug). */
-const sameFilm = (a: LedgerEntry, b: LedgerEntry) => a.sha256 === b.sha256 || (Boolean(a.slug) && a.slug === b.slug)
-
-/** The earlier films of this type findRepeat compares against: the last `window`, other films only. */
-function recentOthers(entry: LedgerEntry, ledger: readonly LedgerEntry[], window: number): LedgerEntry[] {
-  return ledger.filter((e) => e.videoType === entry.videoType && !sameFilm(e, entry)).slice(-window)
-}
+/** The same film: the same slug AND the same creative one_sentence. */
+export const sameFilm = (a: LedgerEntry, b: LedgerEntry): boolean =>
+  Boolean(a.slug) && a.slug === b.slug && sentenceForm(a.oneSentence) !== '' && sentenceForm(a.oneSentence) === sentenceForm(b.oneSentence)
 
 /**
- * The earlier film this one repeats, or null. Only films of the same type count;
- * a line with this film's own sha256, or its own slug (a revision), is the same
- * film and is skipped; the comparison covers the last `window` of what is left
- * (fewer if the ledger is short).
+ * The earlier films of this type findRepeat compares against: every line of the
+ * type, except the immediately previous version of the same film (the last line
+ * that is the same film) and this very file's own line (same sha256 and slug).
  */
-export function findRepeat(entry: LedgerEntry, ledger: readonly LedgerEntry[], window: number = LEDGER_WINDOW): LedgerEntry | null {
-  return recentOthers(entry, ledger, window).find((e) => e.hookDevice === entry.hookDevice && sameSet(e.sceneSet, entry.sceneSet)) ?? null
+export function comparedLines(entry: LedgerEntry, ledger: readonly LedgerEntry[]): LedgerEntry[] {
+  const ofType = ledger.filter((e) => e.videoType === entry.videoType)
+  let previous = -1
+  for (let i = ofType.length - 1; i >= 0; i--) {
+    if (sameFilm(ofType[i], entry)) {
+      previous = i
+      break
+    }
+  }
+  return ofType.filter((e, i) => i !== previous && !(e.sha256 === entry.sha256 && e.slug === entry.slug))
+}
+
+/** The earlier film this one repeats (the most recent such line), or null. */
+export function findRepeat(entry: LedgerEntry, ledger: readonly LedgerEntry[]): LedgerEntry | null {
+  const hits = comparedLines(entry, ledger).filter((e) => e.hookDevice === entry.hookDevice && sameSet(e.sceneSet, entry.sceneSet))
+  return hits.length ? hits[hits.length - 1] : null
 }
 
 /** How many ledger lines findRepeat compares against (for the check's report). */
-export function comparedCount(entry: LedgerEntry, ledger: readonly LedgerEntry[], window: number = LEDGER_WINDOW): number {
-  return recentOthers(entry, ledger, window).length
+export function comparedCount(entry: LedgerEntry, ledger: readonly LedgerEntry[]): number {
+  return comparedLines(entry, ledger).length
 }
 
 /**
- * The usable hook and scene pairs this type has not used in its last `window`
- * films (techniques.ts usableTechnique: base ready or approved, signature
- * approved; one scene each): what a repeat could switch to.
+ * The usable hook and scene pairs this type has not used in the films it is
+ * compared against (techniques.ts usableTechnique: base ready or approved,
+ * signature approved; one scene each): what a repeat could switch to.
  */
-export function unusedCombinations(entry: LedgerEntry, ledger: readonly LedgerEntry[], registry: TechniqueRegistry, window: number = LEDGER_WINDOW): string[] {
+export function unusedCombinations(entry: LedgerEntry, ledger: readonly LedgerEntry[], registry: TechniqueRegistry): string[] {
   const ready = (cat: string) =>
     [...registry.categories.entries()].filter(([name, c]) => c === cat && usableTechnique(name, registry)).map(([name]) => name).sort()
-  const recent = recentOthers(entry, ledger, window)
+  const recent = comparedLines(entry, ledger)
   const out: string[] = []
   for (const hook of ready('hook')) {
     for (const scene of ready('scene')) {
@@ -138,9 +171,14 @@ export function parseLedger(text: string): ParsedLedger {
       errors.push(`line ${i + 1} has a slug that is not a string`)
       return
     }
+    if (o.oneSentence !== undefined && typeof o.oneSentence !== 'string') {
+      errors.push(`line ${i + 1} has a oneSentence that is not a string`)
+      return
+    }
     entries.push({
       sha256: o.sha256,
       ...(o.slug ? { slug: o.slug } : {}),
+      ...(o.oneSentence ? { oneSentence: o.oneSentence } : {}),
       videoType: o.videoType,
       hookDevice: o.hookDevice,
       sceneSet: o.sceneSet,
@@ -160,22 +198,35 @@ export function readLedger(path: string = FILM_LEDGER_PATH): ParsedLedger {
   return parseLedger(readFileSync(path, 'utf8'))
 }
 
-/** Append one film. Returns false (and writes nothing) when its sha256 is already there. */
+/** Append one film. Returns false (and writes nothing) when a line with its slug and sha256 is already there. */
 export function appendLedgerEntry(entry: LedgerEntry, path: string = FILM_LEDGER_PATH): boolean {
   const current = readLedger(path)
-  if (current.entries.some((e) => e.sha256 === entry.sha256)) return false
+  if (current.entries.some((e) => e.sha256 === entry.sha256 && (e.slug ?? '') === (entry.slug ?? ''))) return false
   const text = readFileSync(path, 'utf8')
   const lead = text.length > 0 && !text.endsWith('\n') ? '\n' : ''
   appendFileSync(path, `${lead}${JSON.stringify(entry)}\n`)
   return true
 }
 
-/** Check 16 as a problem: the repeat and the ready pairs left, or null when the film is new. */
-export function repeatProblem(entry: LedgerEntry, ledger: readonly LedgerEntry[], registry: TechniqueRegistry, window: number = LEDGER_WINDOW): string | null {
-  const repeat = findRepeat(entry, ledger, window)
-  if (!repeat) return null
-  const unused = unusedCombinations(entry, ledger, registry, window)
-  return `same hook device "${repeat.hookDevice}" and scene set [${repeat.sceneSet.join(', ')}] as film ${repeat.sha256.slice(0, 12)}${repeat.slug ? ` (${repeat.slug})` : ''} (${repeat.checkedAt}), one of the last ${window} ${entry.videoType} films. ${
-    unused.length ? `Ready hook + scene pairs this type has not used lately: ${unused.join('; ')}` : 'Every ready hook + scene pair was used lately; a new scene technique is needed'
-  }`
+/** Check 16 as problems: a generic slug, or the repeat and the ready pairs left. Empty when the film is new. */
+export function repeatProblems(entry: LedgerEntry, ledger: readonly LedgerEntry[], registry: TechniqueRegistry): string[] {
+  const out: string[] = []
+  const generic = genericSlugProblem(entry.slug)
+  if (generic) out.push(generic)
+  const repeat = findRepeat(entry, ledger)
+  if (repeat) {
+    const unused = unusedCombinations(entry, ledger, registry)
+    out.push(
+      `same hook device "${repeat.hookDevice}" and scene set [${repeat.sceneSet.join(', ')}] as film ${repeat.sha256.slice(0, 12)}${repeat.slug ? ` (${repeat.slug})` : ''} (${repeat.checkedAt}), an earlier ${entry.videoType} film (only the previous version of the same film, the same slug and one sentence, is exempt). ${
+        unused.length ? `Ready hook + scene pairs this type has not used: ${unused.join('; ')}` : 'Every ready hook + scene pair is used; a new scene technique is needed'
+      }`,
+    )
+  }
+  return out
+}
+
+/** Check 16 as one problem line, or null when the film is new and its slug names it. */
+export function repeatProblem(entry: LedgerEntry, ledger: readonly LedgerEntry[], registry: TechniqueRegistry): string | null {
+  const problems = repeatProblems(entry, ledger, registry)
+  return problems.length ? problems.join('; ') : null
 }

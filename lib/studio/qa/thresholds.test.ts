@@ -5,7 +5,6 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   EXTRA_BANNED_PHRASES,
   FILM_LEDGER_PATH,
-  LEDGER_WINDOW,
   QA_THRESHOLDS,
   REPO_ROOT,
   TECHNIQUE_REGISTRY_PATH,
@@ -48,9 +47,8 @@ describe('QA_THRESHOLDS', () => {
     for (const k of ['min_hold_s', 'hook_max_s', 'hard_max_s', 'min_s', 'max_s']) expect(keys).not.toContain(k)
   })
 
-  it('requires a hook, a scene and a type technique, and compares five films', () => {
+  it('requires a hook, a scene and a type technique', () => {
     expect([...REQUIRED_TECHNIQUE_CATEGORIES]).toEqual(['hook', 'scene', 'type'])
-    expect(LEDGER_WINDOW).toBe(5)
   })
 })
 
