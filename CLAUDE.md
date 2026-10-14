@@ -4,7 +4,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **PRs only.** Never push or fast-forward to `main`. Branch, open a PR, merge. Unfinished work is `npm run push` only.
 
-**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except PRs labeled `hold-for-matt`. Workflows enqueue that.
+**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except `hold-for-matt` without `approved-by-matt`. Approval (label or `.github/approved-prs`) unholds and merges when `merge-gate` is green.
 
 **Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason. The stale job keeps the branch.
 
@@ -32,7 +32,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Keep moving.** Unfinished work: push the branch, write your note in `docs/plans/handoffs/`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
 
-**Video.** One factory (Matt 2026-10-13): any bot, any machine renders via `npm run studio:render`; Imagine makes footage only. Nothing reaches Matt until `npm run video:check -- <mp4> --final` passes. Rules: `.claude/skills/ryan-studio/SKILL.md`.
+**Video.** One factory (Matt 2026-10-13): every video, any bot or machine, renders via `npm run studio:render`; Imagine makes footage only. Nothing reaches Matt until `npm run video:check -- <mp4> --final` passes. Rules: `.claude/skills/ryan-studio/SKILL.md`.
 
 ---
 
@@ -53,7 +53,7 @@ The enterprise map (`docs/plans/ENTERPRISE_MAP/`) is the whole-system SoR for wh
 what is verified, and what is open. Subject work (admin, CRM, growth) still runs; it
 does not erase other planes from Sense.
 
-**Every development cycle routes through THE LOOP v1.6.0 — [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** Session boot: `npx tsx scripts/loop-brief.ts` (the durable work graph, not the chat, is the source of record for in-flight work). The brief serves a **ship class**: same-category fleet findings share one `npm run ship`. **"Run the loop" = [`docs/RUN_LOOP.md`](docs/RUN_LOOP.md)**, one page for all tools.
+**Every development cycle routes through THE LOOP v1.6.0 — [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** Session boot: `npx tsx scripts/loop-brief.ts`. The brief serves a **ship class**: same-category fleet findings share one `npm run ship`. **"Run the loop" = [`docs/RUN_LOOP.md`](docs/RUN_LOOP.md)**.
 Enforced by G44 (`ci:process-canon`).
 
 **A rule that lives only in chat history is lost next session.** When Matt issues a

@@ -49,13 +49,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/pr-auto-merge.mjs --ensure-labels --apply-title-holds
-      - name: Disable auto-merge when hold-for-matt is added
-        if: github.event.action == 'labeled' && github.event.label.name == 'hold-for-matt'
+      - name: Disable auto-merge when hold-for-matt is added without approval
+        if: >
+          github.event.action == 'labeled' &&
+          github.event.label.name == 'hold-for-matt' &&
+          !contains(join(github.event.pull_request.labels.*.name, ','), 'approved-by-matt')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh pr merge "${{ github.event.pull_request.number }}" --disable-auto || true
       - name: Queue auto-merge
-        if: steps.pr.outputs.number != '' && (github.event.action != 'labeled' || github.event.label.name != 'hold-for-matt')
+        if: steps.pr.outputs.number != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/pr-auto-merge.mjs --pr "${{ steps.pr.outputs.number }}"
