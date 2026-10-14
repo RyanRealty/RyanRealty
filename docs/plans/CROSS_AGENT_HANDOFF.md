@@ -1,4 +1,14 @@
-# Current — 2026-10-14 (Cursor, make main CI green)
+# Current — 2026-10-14 (Claude, the two buyer landing pages look like landing pages)
+
+Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b` from origin/main `5293aa46`. Draft PR, `npm run ship` once checks are green. Nothing sent. Nobody pushes main.
+
+**What this commit does.** `/buy/concessions` and `/buy/alerts` were a cream column of prose and a form (Matt 2026-10-14: "these are supposed to be landing pages, and they're kind of bums"). Both now open the way `/sell` does: a `V3Stage` photograph with the H1, the page's sourced figures on the navy band, and the ask in the first viewport. Concessions: the Bend Drake Park aerial, then the ad's "Same $10,000" as a live instrument on the new barrel primitive `V3Compare` (seller dollars scrubbed, two monthly savings rolling on `V3Number`, the margin drawn as two bars on one scale, the loan inputs folded under "Your numbers"), then the two-year share chart, caps, the ask, and the phone. The admin-register `components/ui` inputs left the route. Alerts: Smith Rock, the signup as a cream slab on the photograph (town chips, email, price and bedrooms folded), `V3Steps` for what lands in the inbox, a `V3ListingDial` of the newest single-family listings in Bend (`getCityListings`, listed-newest, SFR sub type), `V3Answers` for the FAQ with the page's doors, a `Quiet` of sources. Same action, same lead and tracking tokens, same approved H1, meta, FAQ and cadence sentences. Figures unchanged and still traced: the 90-day concession read in `lib/concessions/results.ts`, the live Freddie Mac rate, the Bend new-30-day count, the 7-day cut count and months of supply from the same helpers as before.
+
+**Not this change.** Do not send. Do not apply hosted SQL. Do not merge the phase-pool branch. Do not rebuild letters. The Google Drive "Same $10,000" ad file Matt linked was not reachable from this session (Drive returned not found), so no video was placed on the page; the page carries the ad's device as a live instrument instead.
+
+Skills read: `design_system/public/PUBLIC_UI.md`, `design_system/public/TASTE.md`, `.claude/skills/frontend-design/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `docs/CLOUD_ENVIRONMENT_SETUP.md`.
+
+## Earlier — 2026-10-14 (Cursor, make main CI green)
 
 Surface: Cursor cloud. Branch `cursor/fix-main-ci-db9c` merged origin/main `29fd04d93` (#536, #538). PR #532. Finish remaining red checks, then squash-merge. Nothing sent. Nobody pushes main.
 

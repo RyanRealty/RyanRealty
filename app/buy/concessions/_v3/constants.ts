@@ -7,17 +7,33 @@ export const TITLE = 'Seller concessions for Bend buyers'
 export const DESCRIPTION =
   'Compare a price cut to the same dollars as a seller concession that buys down the rate. At least 1 in 2 Bend sales in the last 90 days reported a seller concession.'
 
+/**
+ * The Stage still. A Bend aerial (Drake Park and the river), 3840x2160, the
+ * repo's own photograph. /sell opens on Tetherow and /buy on Sisters, so a
+ * buyer landing here from an ad sees Bend itself behind "Buyers have
+ * leverage in Bend."
+ */
+export const POSTER = '/images/homepage/bend-drake-park-aerial.jpg'
+
+/** Stage context line. One phrase, not a sentence. */
+export const STAGE_EYEBROW = 'Bend · last 90 days'
+
 // Draft copy from Writing Bot (Oct 13), pending Matt's OK.
 export const HERO_HEADLINE = 'Buyers have leverage in Bend.'
 
 export const HERO_LEDE =
   "So, here's the thing. At least 1 in 2 Bend sales in the last 90 days came with a seller concession. Put toward your rate, that money can lower your payment more than the same dollars off the price."
 
-// Static figures: checked against comparePriceCutVsConcession(DEFAULT_COMPARE, 7.40%):
-// price cut saves $55.39/mo, concession buydown saves $169.07/mo. Re-check if the
-// default scenario or the fallback PMMS rate changes.
-export const CALCULATOR_INTRO =
-  "Same $10,000, two ways. Off the price, it's about $55 a month. Toward your rate, it's about $169 a month (at 7.40%, Freddie Mac, Oct 8). Try your own numbers."
+/** The compare instrument's heading: the ad's own line. */
+export const COMPARE_HEADING = 'Same $10,000, two ways'
+
+export const COMPARE_EYEBROW = 'Payment'
+
+export const AMOUNT_LABEL = 'Seller dollars'
+
+export const AMOUNT_HINT = 'Starts at the median Bend credit, last 90 days. Drag it to your offer.'
+
+export const INPUTS_LABEL = 'Your numbers'
 
 export const CAPS_INTRO = 'Every loan has a cap on concessions. Your lender will know yours.'
 

@@ -5,12 +5,17 @@
  * submitSearchAlertSignup, honeypot company, guest-watch residual, alert_create.
  * Cadence and unsubscribe are visitor-visible sentences in this file so
  * ci:alert-capture-disclosure can read them after comments are stripped.
+ *
+ * 2026-10-14: the form is the cream slab on the Stage photograph, the way the
+ * address field is on /sell. Towns are chips, the email and the one filled
+ * ask follow, and price and bedrooms fold under one disclosure so the fold
+ * carries the ask and not a six-field form.
  */
 import Link from 'next/link'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { FormAdConsentNotice, FormAdCookieBox, useFormConsentRestricted } from '@/components/site/FormAdConsent'
-import { V3Button } from '@/components/site/v3/atoms'
+import { V3Button, V3Eyebrow, V3Heading } from '@/components/site/v3/atoms'
 import { V3Input } from '@/components/site/v3/V3Input'
 import { formatPriceStop, V3_PRICE_STOPS } from '@/components/site/v3/V3Range.logic'
 import { writeFormAdConsent } from '@/lib/identity/form-ad-consent'
@@ -31,7 +36,6 @@ import {
   BUY_ALERTS_TOWNS,
 } from './buy-alerts-constants'
 import { buildBuyAlertFilters, parseOptionalBound } from './buy-alerts-filters'
-import '@/components/site/v3/V3Ask.css'
 
 type Status = 'asking' | 'sending' | 'sent' | 'failed'
 
@@ -117,74 +121,86 @@ export function BuyAlertsSignup() {
     [adCookies],
   )
 
-  if (status === 'sent') {
-    return (
-      <div className="buy-alerts-status" role="status">
-        <p>
-          <strong>{BUY_ALERTS_COPY.formConfirmHeading}.</strong> {BUY_ALERTS_COPY.formConfirmBody}
-        </p>
-      </div>
-    )
-  }
-
   return (
-    <form className="v3-ask__form buy-alerts-form" onSubmit={onSubmit} noValidate={false}>
-      <div className="buy-alerts-trap" aria-hidden="true">
-        <label htmlFor="buy-alerts-company">Company</label>
-        <input
-          id="buy-alerts-company"
-          name="company"
-          type="text"
-          tabIndex={-1}
-          autoComplete="off"
-          defaultValue=""
-        />
-      </div>
+    <div className="buy-alerts-slab" id="signup" aria-labelledby="signup-heading">
+      <header className="buy-alerts-slab__head">
+        <V3Eyebrow>{BUY_ALERTS_COPY.signupEyebrow}</V3Eyebrow>
+        <V3Heading id="signup-heading" level={2} size="field">
+          {BUY_ALERTS_COPY.signupHeading}
+        </V3Heading>
+      </header>
 
-      <div className="v3-ask__fields">
-        <fieldset className="v3-ask__field v3-ask__field--full">
-          <legend className="v3-ask__label">{BUY_ALERTS_COPY.formTowns}</legend>
-          <p className="buy-alerts-hint">{BUY_ALERTS_COPY.formTownHint}</p>
-          <div className="buy-alerts-towns">
-            {BUY_ALERTS_TOWNS.map((town) => (
-              <label key={town.id} className="buy-alerts-town">
-                <input
-                  type="checkbox"
-                  name="town"
-                  value={town.id}
-                  defaultChecked={DEFAULT_TOWNS.has(town.id)}
-                />
-                {town.label}
-              </label>
-            ))}
+      {status === 'sent' ? (
+        <div className="buy-alerts-status buy-alerts-status--sent" role="status">
+          <p>
+            <strong>{BUY_ALERTS_COPY.formConfirmHeading}.</strong> {BUY_ALERTS_COPY.formConfirmBody}
+          </p>
+          <p>
+            <Link href={BUY_ALERTS_LINKS.bendHomes}>{BUY_ALERTS_COPY.linkBendHomes}</Link>
+          </p>
+        </div>
+      ) : (
+        <form className="buy-alerts-form" onSubmit={onSubmit} noValidate={false}>
+          <div className="buy-alerts-trap" aria-hidden="true">
+            <label htmlFor="buy-alerts-company">Company</label>
+            <input
+              id="buy-alerts-company"
+              name="company"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              defaultValue=""
+            />
           </div>
-        </fieldset>
 
-        <V3Input
-          id="buy-alerts-min"
-          name="minPrice"
-          label={BUY_ALERTS_COPY.formPriceFrom}
-          kind="select"
-          options={[{ value: '', label: 'Any' }, ...PRICE_OPTIONS]}
-          defaultValue=""
-        />
-        <V3Input
-          id="buy-alerts-max"
-          name="maxPrice"
-          label={BUY_ALERTS_COPY.formPriceTo}
-          kind="select"
-          options={[{ value: '', label: 'Any' }, ...PRICE_OPTIONS]}
-          defaultValue=""
-        />
-        <V3Input
-          id="buy-alerts-beds"
-          name="beds"
-          label={BUY_ALERTS_COPY.formBeds}
-          kind="select"
-          options={BUY_ALERTS_BED_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-          defaultValue=""
-        />
-        <div className="v3-ask__field--full">
+          <fieldset className="buy-alerts-towns-set">
+            <legend className="buy-alerts-label">{BUY_ALERTS_COPY.formTowns}</legend>
+            <div className="buy-alerts-towns">
+              {BUY_ALERTS_TOWNS.map((town) => (
+                <label key={town.id} className="buy-alerts-town">
+                  <input
+                    type="checkbox"
+                    name="town"
+                    value={town.id}
+                    defaultChecked={DEFAULT_TOWNS.has(town.id)}
+                  />
+                  <span>{town.label}</span>
+                </label>
+              ))}
+            </div>
+            <p className="buy-alerts-hint">{BUY_ALERTS_COPY.formTownHint}</p>
+          </fieldset>
+
+          <details className="buy-alerts-more">
+            <summary className="buy-alerts-more__summary">{BUY_ALERTS_COPY.formMoreFilters}</summary>
+            <div className="buy-alerts-more__fields">
+              <V3Input
+                id="buy-alerts-min"
+                name="minPrice"
+                label={BUY_ALERTS_COPY.formPriceFrom}
+                kind="select"
+                options={[{ value: '', label: 'Any' }, ...PRICE_OPTIONS]}
+                defaultValue=""
+              />
+              <V3Input
+                id="buy-alerts-max"
+                name="maxPrice"
+                label={BUY_ALERTS_COPY.formPriceTo}
+                kind="select"
+                options={[{ value: '', label: 'Any' }, ...PRICE_OPTIONS]}
+                defaultValue=""
+              />
+              <V3Input
+                id="buy-alerts-beds"
+                name="beds"
+                label={BUY_ALERTS_COPY.formBeds}
+                kind="select"
+                options={BUY_ALERTS_BED_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                defaultValue=""
+              />
+            </div>
+          </details>
+
           <V3Input
             id="buy-alerts-email"
             name="email"
@@ -195,37 +211,39 @@ export function BuyAlertsSignup() {
             placeholder={BUY_ALERTS_COPY.formEmailPlaceholder}
             maxLength={200}
           />
-        </div>
-      </div>
 
-      <div className="v3-ask__consent">
-        <FormAdCookieBox checked={adCookies} onCheckedChange={setAdCookies} />
-      </div>
+          {status === 'failed' && problem ? (
+            <p className="buy-alerts-status" role="alert">
+              {problem}
+            </p>
+          ) : null}
+          {status === 'sending' ? <p className="buy-alerts-status">{BUY_ALERTS_COPY.formSending}</p> : null}
 
-      {status === 'failed' && problem ? (
-        <p className="buy-alerts-status" role="alert">
-          {problem}
-        </p>
-      ) : null}
-      {status === 'sending' ? <p className="buy-alerts-status">{BUY_ALERTS_COPY.formSending}</p> : null}
+          <div className="buy-alerts-actions">
+            <V3Button type="submit" disabled={status === 'sending'}>
+              {BUY_ALERTS_COPY.formSubmit}
+            </V3Button>
+          </div>
 
-      <div className="v3-ask__actions">
-        <V3Button type="submit" disabled={status === 'sending'}>
-          {BUY_ALERTS_COPY.formSubmit}
-        </V3Button>
-      </div>
+          {/* The ask sits right under the field so it is in the first viewport
+              at 1440 and 375; the opt-in cookie box and the notices follow it. */}
+          <div className="buy-alerts-consent">
+            <FormAdCookieBox checked={adCookies} onCheckedChange={setAdCookies} />
+          </div>
 
-      <p className="buy-alerts-cadence">
-        {FORM_CADENCE}{' '}
-        <Link href={BUY_ALERTS_LINKS.privacy}>{BUY_ALERTS_COPY.linkPrivacy}</Link>
-      </p>
+          <p className="buy-alerts-cadence">
+            {FORM_CADENCE}{' '}
+            <Link href={BUY_ALERTS_LINKS.privacy}>{BUY_ALERTS_COPY.linkPrivacy}</Link>
+          </p>
 
-      <FormAdConsentNotice
-        surface="ask"
-        restricted={restricted}
-        adMatchChecked={adMatch}
-        onAdMatchCheckedChange={setAdMatch}
-      />
-    </form>
+          <FormAdConsentNotice
+            surface="ask"
+            restricted={restricted}
+            adMatchChecked={adMatch}
+            onAdMatchCheckedChange={setAdMatch}
+          />
+        </form>
+      )}
+    </div>
   )
 }

@@ -13,6 +13,14 @@ import type { LeadFormId, LeadType } from '@/lib/analytics/lead-event'
 
 export const ROUTE_PATH = '/buy/alerts'
 
+/**
+ * The Stage still: Smith Rock from Terrebonne, 4200x2800, the repo's own
+ * photograph. Alerts cover every town, so the opening is Central Oregon,
+ * not one city; /sell opens on Tetherow, /buy on Sisters, /buy/concessions
+ * on Bend.
+ */
+export const BUY_ALERTS_POSTER = '/images/homepage/smith-rock-terrebonne.jpg'
+
 /** Recurring email list. Flip this on /buy/leverage if that form becomes a consult. */
 export const BUY_ALERTS_LEAD_TYPE: LeadType = 'buyer_alerts'
 export const BUY_ALERTS_FORM_ID: LeadFormId = 'buyer_alerts_lp'
@@ -124,6 +132,38 @@ export const BUY_ALERTS_COPY = {
   breadcrumbHome: 'Home',
   breadcrumbHomes: 'Homes for sale',
   breadcrumbHere: 'Listing alerts',
+  howEyebrow: 'How it works',
+  howHeading: 'What lands in your inbox',
+  howPromise: 'One email per new listing. No agent calls unless you ask for one.',
+  howFactSource: 'Source',
+  howFactSourceValue: 'Oregon Data Share MLS',
+  howFactCadence: 'Cadence',
+  howFactCadenceValue: 'About once an hour',
+  howFactCost: 'Cost',
+  howFactCostValue: 'Free',
+  howFactStop: 'To stop',
+  howFactStopValue: 'One click, in every email',
+  stepTownsTitle: 'Pick your towns',
+  stepTownsBody:
+    'Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, or all of Central Oregon. Add a price range and bedrooms if you want them.',
+  stepWatchTitle: 'We watch the MLS',
+  stepWatchBody: 'Alerts go out as new listings come into the Oregon Data Share feed, about once an hour.',
+  stepEmailTitle: 'One email per home',
+  stepEmailBody: 'Each new listing in the towns you pick lands as its own email.',
+  stepDropsTitle: 'Price changes too',
+  stepDropsBody: "If a home you were sent cuts its price, you hear about that as well.",
+  stepStopTitle: 'Stop any time',
+  stepStopBody: 'One-click unsubscribe in every email.',
+  newestHeading: 'The newest homes listed in Bend',
+  newestCount: '{count} shown, newest first',
+  newestLabel: 'The newest single-family homes listed in Bend',
+  newestSeeAll: 'All Bend homes for sale',
+  figureNew: 'houses listed in Bend, 30 days',
+  figureDrops: 'Bend price cuts, 7 days',
+  figureMos: 'months of supply in Bend',
+  figureSource:
+    'Single-family homes, Oregon Data Share MLS. New listings and months of supply are Market Truth detached cells for the city of Bend{leftoverStamp}; price cuts are MLS price changes in the last 7 days{dropsStamp}.',
+  formMoreFilters: 'Price and bedrooms',
   faqSpeedQ: 'How fast do alerts arrive?',
   faqSpeedA: 'Alerts go out as new listings come into the MLS feed, about once an hour.',
   faqDropsQ: 'Do alerts include price drops?',
