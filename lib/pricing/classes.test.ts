@@ -635,3 +635,15 @@ describe('aduFromRemarks: the remarks state a second living unit on the lot (Mat
     expect(aduSaleRefused(plain, plain)).toBe(false)
   })
 })
+
+describe('classifyProduct reads multi-unit sub types as their own product (Matt 2026-10-14, 429 Irving)', () => {
+  it('Duplex, Triplex, Quadruplex and Multi Family are multi-unit, never unknown', () => {
+    expect(classifyProduct('Duplex')).toBe('multi-unit')
+    expect(classifyProduct('Triplex')).toBe('multi-unit')
+    expect(classifyProduct('Quadruplex')).toBe('multi-unit')
+    expect(classifyProduct('Multi Family')).toBe('multi-unit')
+    expect(classifyProduct('Residential Income')).toBe('multi-unit')
+    expect(productCompatible('multi-unit', 'detached')).toBe(false)
+    expect(productCompatible('multi-unit', 'multi-unit')).toBe(true)
+  })
+})

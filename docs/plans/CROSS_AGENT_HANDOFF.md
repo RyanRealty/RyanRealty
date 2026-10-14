@@ -1,14 +1,42 @@
-# Current — 2026-10-14 (Claude, buyer visit attribution + GA4 landing-page audiences)
+# Cross-agent handoff (frozen 2026-10-14)
 
-Surface: Claude Code cloud. Branch `claude/agent-navigation-efficiency-dp5zj5`, main merged in (not rebased). Draft PR to main; Matt merges. Nobody pushes main. Nothing sent.
+History only. New handoffs are one file per session in [`handoffs/`](handoffs/README.md). Do not add a Current block here.
 
-**This session (Matt's two answers of 2026-10-09).** (1) "Visit they signed up in": every buyer door (saved search, alert, save, price watch, /buy lead form, /buy/concessions) credits the live visit's landing link, else the page's own link with no live visit (`lib/crm/visit-attribution.ts`, `readLiveVisit` on `visitor_sessions.landing_page`). The tab-lifetime `rr_lp_context` is gone. (2) "Rebuild on /sell and /buy": `view_landing_page` fires from `components/tracking/LandingPageViewTracker.tsx` on live landing pages only; GA4 "High-intent sellers" rebuilt as `audiences/16124906126` (`scroll_depth`, `page_type` sell, `depth` > 74), the old one renamed "(retired 2026-10-14, never matched)". `scripts/ga4-admin.mjs apply-audiences` runs the audience step only.
+## Last shared block — 2026-10-14 (Cursor, Lighthouse artifact-poll retry)
 
-**Found, not changed.** GA4 key events `home_valuation_cta_click`, `listing_inquiry`, `listing_showing_click`, `schedule_showing` were unmarked on the property 2026-10-14 between 04:00 and 05:05 UTC by another session; the script no longer lists any event the property dropped. Doors still writing the site host as `crm_people.source` (FUNNEL-4 leftovers): `/buy` lead form, CMA download, listing payment email, CMA PDF route.
+Surface: Cursor cloud. Branch `cursor/lhci-artifact-poll-4396` from origin/main `83d4fdf40` (#529 just merged). Nobody pushes main. Nothing sent. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true. CMA and email wording unchanged.
 
-**Next.** After Matt merges: `npm run deploy:verify <merge sha>`; a few days later, read GA4 for `view_landing_page` on /sell and /buy and the two LP-visitor audiences filling.
+**Done this session.** #452 merged `608fd879b`, deploy READY. #471 merged `637dbefcf`, deploy READY. #529 merged `83d4fdf40`, deploy verify in flight.
 
-Skills read: `code-review` (built-in), `CLAUDE.md` §0 §1 §6 §7 §8.
+**This branch.** `use-build` retries `gh api .../artifacts` until the body is valid JSON (12 tries) so Lighthouse no longer dies on `unexpected end of JSON input`. Helper `scripts/lib/valid-json.mjs`. Merge when green.
+
+**Still open.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `new-branch-and-pr`, `make-pr-easy-to-review`.
+
+## Earlier — 2026-10-14 (Claude, CMA multi-unit guard + greeting names the person at the address)
+
+Surface: Claude Code cloud. Branch `claude/lucid-galileo-rcafq4` landed on main via #561 at `9f788f38` (squash by the auto-merge workflow). Nothing sent. No rebuild. Prod Supabase read-only this session.
+
+**What landed.** The 429 Irving letter priced a duplex on single-family sales and opened with the co-owner's first name instead of the recipient's. `lib/cma/subject-units.ts` reads every MLS row at the subject's address (PropertyType C, duplex and multi-family sub types, `NumberOfUnitsTotal` 2 to 4 on a house or income record, duplex remarks, an earlier record of the same structure) and `resolveCmaSubject` returns a refusal that stops the CMA build, the BPO build, the fleet dry run, the `/sell` answer and the place comps count; the queue files it as "Multi-unit home" (CMA SKILL rule 23 extended). `lib/crm/household-names.ts` parses the county owner string into its people and matches the email's local part: the lookup files the lead under the person the email belongs to and writes `Owner of record:` into the notes; compose time (`cmaFirstContactFactsForSend`, the Review preview, every send) runs the same rule against the address the send goes to; a multi-party record whose email names nobody greets "Hi there," (CMA SKILL rule 34). Carried in while driving the PR green: the #553 Tetherow page-payload baseline, and `scripts/check-route-smoke.mjs` gives a listing probe that answers 503 with `x-listing-lookup: unavailable` the one serial retry a timed-out page already gets.
+
+**Open for Matt.** Whether a house with an ADU and no multi-unit record prices only from ADU sales (today it stays a detached home, rule 23 as ruled 2026-10-08). The CRM person and the `cmas` row for 429 Irving still carry the co-owner's first name. The owner's reply left a phone number and is a warm lead; nothing drafted or sent.
+
+Skills read: `marketing_brain_skills/producers/cma/SKILL.md`, built-in `code-review`.
+
+## Earlier — 2026-10-14 (Cursor, revert #469 hold-for-matt)
+
+Surface: Cursor cloud. Branch `cursor/revert-pr-469-6f1e` from origin/main `ef24a6b5f`. Reverts #469. Nobody pushes main. Nothing sent.
+
+**What this branch does.** #469 was labeled `hold-for-matt` and titled do-not-merge-without-Matt. A session token ran `gh pr merge --auto --squash` while Allow auto-merge is off, which immediately squash-merged a MERGEABLE PR (`ef24a6b5f`). This revert restores main. #567 still open: wait for required checks before squash.
+
+**Admin 403.** GitHub App token (`ghs_`, account `cursor`) still 403s Administration: PATCH `allow_auto_merge` / `delete_branch_on_merge`, POST ruleset, PUT/GET branch protection, `workflow_dispatch` Stale PRs. GET rulesets returns `[]`. Did not push an empty commit to main.
+
+**Also held.** Do not merge #545, #473, or #479.
+
+**Held.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
 ## Earlier — 2026-10-14 (Cursor, PR hygiene + Zillow FSBO mapped parse)
 

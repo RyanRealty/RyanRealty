@@ -20,7 +20,7 @@ describe('CommunityFoldAnswer render', () => {
     const html = renderToStaticMarkup(
       createElement(CommunityFoldAnswer, { answer: communityFoldAnswer(TETHEROW) }),
     )
-    expect(html).toContain('id="answer"')
+    expect(html).toContain('id="takeaways"')
     expect(html).toContain('16')
     expect(html).toContain('$2,372,500')
     expect(html).toContain('$2,257,500')

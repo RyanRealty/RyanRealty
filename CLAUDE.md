@@ -1,30 +1,42 @@
 # CORE RULES (read first; these override everything below and any handoff or plan doc)
 
-These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait, or to `git push` `main`, is stale.
+These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait, or to `git push` `main`, is stale. Process rules live in `AGENTS.md` only. `CLAUDE.md` and `.cursor/rules` point here. New process rules land in `AGENTS.md` in the same PR.
 
-**Main.** Work isn't done until merged and live in production (Matt 2026-10-13). Agents merge their own PRs once checks pass; never ask. `npm run ship`: gates, push, merge, confirm the Vercel production deploy. Never `git push` `main`. Unfinished work is `npm run push` only.
+**PRs only.** Never push or fast-forward to `main`. Branch, open a PR, merge. Unfinished work is `npm run push` only.
 
-**Git safety.** No rebase. No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away.
+**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except PRs labeled `hold-for-matt`. Workflows enqueue that.
 
-**Do not send.** Emails, texts, CMAs, and social posts stay drafts until Matt asks to send that specific item. A rebuild does not send, enqueue, or approve.
+**Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason. The stale job keeps the branch.
+
+**Done.** Merged, Vercel production **READY**, and the live URL checked. `npm run ship` is the land path.
+
+**Git safety.** No force-push. No `git reset --hard`. No `--no-verify`. Push the branch to GitHub right away. Rebase only to land a PR.
+
+**Do not send.** Emails, texts, CMAs, and social posts stay drafts until Matt asks to send that specific item. A rebuild does not send, enqueue, or approve. Do not change approved CMA or email wording.
 
 **Names.** Never put buyer or seller names in public copy (site, email, social, letters).
 
 **Invent nothing.** Never invent numbers, names, prices, stats, or people. If it is not in the source you just read, it does not ship.
 
-**Prod DB.** Production Supabase is read-only unless Matt says otherwise in this session. Raw SQL is `-- audit:` row reads only.
+**DB.** Bots may write to the Ryan Realty Supabase DB when a task Matt asked for needs it. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` stays true.
 
 **Secrets.** Never print API keys, tokens, passwords, or `.env` values. Never put them in commits, logs, or chat.
 
-**Integrations.** Before saying a service is not connected, search this repo for the existing client, env var, and key. The wiring is usually already here.
+**Payload.** Cap grids and schema lists. Never send the same data twice.
+
+**Waits.** No sleep-based waits. Use `gh pr checks --watch` or CI waits.
+
+**Integrations.** Before saying a service is not connected, search this repo for the existing client, env var, and key.
 
 **Cursor out.** When Cursor is out (usage, credit, spend, 402, or a 20-minute stall), switch to Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve`. Never use `XAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` to get past a limit.
 
-**Keep moving.** Unfinished work: push the branch, add a line to the Current block in `docs/plans/CROSS_AGENT_HANDOFF.md`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
+**Keep moving.** Unfinished work: push the branch, write your note in `docs/plans/handoffs/`, and ask Matt short yes/no questions. Do not stop silently. Never ask Matt to run a command.
 
 **Video.** Build to the MANDATORY VIDEO RULES atop `.claude/skills/ryan-studio/SKILL.md`; the brief needs `spec_rules`. Ad copy, VO, captions: [`docs/ai-voiceover-scripts.md`](docs/ai-voiceover-scripts.md). video_gate is backup.
 
 ---
+
+Process: **[AGENTS.md](AGENTS.md)**. Domain canon stays here. Do not copy process rules back.
 
 # Ryan Realty — agent canon
 
@@ -36,7 +48,7 @@ your task touches.
 
 **Fleet start (mandatory before subject tunnels):** read
 [`docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md`](docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md)
-and the current block in [`docs/plans/CROSS_AGENT_HANDOFF.md`](docs/plans/CROSS_AGENT_HANDOFF.md).
+and the newest notes in [`docs/plans/handoffs/`](docs/plans/handoffs/README.md).
 The enterprise map (`docs/plans/ENTERPRISE_MAP/`) is the whole-system SoR for what exists,
 what is verified, and what is open. Subject work (admin, CRM, growth) still runs; it
 does not erase other planes from Sense.
@@ -44,9 +56,9 @@ does not erase other planes from Sense.
 **Every development cycle routes through THE LOOP v1.6.0 — [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** Session boot: `npx tsx scripts/loop-brief.ts` (the durable work graph, not the chat, is the source of record for in-flight work). The brief serves a **ship class**: same-category fleet findings share one `npm run ship`. **"Run the loop" = [`docs/RUN_LOOP.md`](docs/RUN_LOOP.md)**, one page for all tools.
 Enforced by G44 (`ci:process-canon`).
 
-**A rule that lives only in chat history is lost next session.** When Matt issues a directive
-that creates a permanent rule, do both: apply it to the immediate work, AND write it here (or
-into the producer SKILL.md that owns the surface). See §6 — if a rule keeps being violated, the
+**A rule that lives only in chat history is lost next session.** When Matt issues a
+process rule, write it in [`AGENTS.md`](AGENTS.md) in the same PR. Domain rules stay
+in the doc that owns the surface. See §6 — if a rule keeps being violated, the
 answer is a new mechanical gate, not more prose. No past rule is permanent (Matt 2026-09-23).
 **Identity loop** (a known contact is one person on every visit; `ci:identity-loop`):
 [TRACKING_POLICY](docs/TRACKING_POLICY.md) "The known-contact identity loop".
@@ -467,8 +479,8 @@ Served cache rows are stamped `methodology_version = 'v3-2026-05-07'`, not the n
   verified by reading the relevant code. Every fix must be tested before it's reported done.
 - **Truthful and accurate, always.** If you're not sure, say so. Never state something as fact
   unless you've confirmed it.
-- **A finished change is `npm run ship` (Matt 2026-10-09).**
-  See [`AGENTS.md`](AGENTS.md). **R-221:** do not poll GitHub Actions.
+- **Done is defined in [`AGENTS.md`](AGENTS.md) CORE RULES.** Merged, production
+  READY, live URL checked. **R-221:** do not poll GitHub Actions.
 - **Never ask Matt to run anything or what access you have; never queue found work for him
   (Matt 2026-09-25, 10-07).** Access: [`docs/ACCESS_INVENTORY.md`](docs/ACCESS_INVENTORY.md).
   Git, terminal, deploys are yours; a found defect ships this session.
@@ -504,9 +516,8 @@ Launch parallel subagents in one message when the work is independent.
 ## Persistent memory + handoff
 
 Durable cross-session notes live in **`.auto-memory/`**. **Hand off to Cursor / the other agent**
-by updating [`docs/plans/CROSS_AGENT_HANDOFF.md`](docs/plans/CROSS_AGENT_HANDOFF.md) (what
-shipped, what is next, commit SHA, skills you read) before Matt switches tools. The other side
-pulls `main` and reads that file first. See [`AGENTS.md`](AGENTS.md).
+with your own note in [`docs/plans/handoffs/`](docs/plans/handoffs/README.md) (what
+shipped, what is next, commit SHA, skills you read). The loop brief prints the newest. See [`AGENTS.md`](AGENTS.md).
 
 ---
 
@@ -556,23 +567,6 @@ else fires on trigger match.
 | Place page code | Sections: [`lib/site/`](lib/site/) `place-*.ts`, [`lib/place/`](lib/place/). Route-only: `app/<route>/[slug]/_v3/`. `page.tsx` is wiring: grep it. |
 | Listings, search box, map | Reads: [`lib/data/listings/`](lib/data/listings/). Map + price badges: [`components/SearchMapClustered.tsx`](components/SearchMapClustered.tsx). |
 
-**Locked CMA process rules. Do not loosen these.**
-
-1. One CMA path. Price on current main only. No second ladder. No 80% send floor. Do not merge PR 408 or any 80% floor. PR 401 stays. Do not revert 770a4fd1.
-2. Recommended price is the house from comps only. ADU, second lot, and rental income are letter notes, not dollars, until Matt says otherwise.
-3. Hold for Matt if the rec is more than 15% under last ask, or any amount over it. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold.
-4. Room rule (Matt 2026-10-09): up to two beds and two baths off stays and weighs less (one bed 0.85, two beds 0.70, one bath 0.90, two baths 0.75). No dollar on the room. Location still outranks it. Three or more apart on one count is refused. Picker and review agree.
-5. Pocket rungs are skipped when the plat and the street already have five sales before the first quarter-mile pocket rung. A cheap different-plat pocket sale drops when no own-plat sale remains in the set that is actually priced. Do not check only the pre-review set.
-6. Do not build or send a CMA if the home is listed again. Live status first. Active, pending, or otherwise on the market means skip.
-7. A rebuild does not send, enqueue, or approve.
-8. Minimum 5 price-setting sales (Matt 2026-10-07). Comp-shortage stays build-failed.
-9. Nothing enters the send queue without Matt's review.
-10. No owner email until a real owner-path send to matt@ryan-realty.com shows, on that contact, sent, delivered, opened, each link click, and the sell-page visit, with timestamps. Tests must use that production path, not a separate test sender. Every outbound email link is click-tracked. Links are short linked words, never raw tracking URLs. Approved CMA email wording does not change without Matt's sign-off.
-11. Approved CMAs send only in the weekday 9:03 AM PT window.
-12. Never use buyer or seller names in social, email, or public copy.
-13. No em dashes in public site copy.
-14. A finished change is `npm run ship` (Matt 2026-10-09). Never `git push` `main`. No rebase, force-push, or reset.
-15. A townhouse subject uses closed townhouse sales. sale_pricing_facts stores those closes as product_class attached, not townhouse, so the facts pool filters property_sub_type to townhouse and classes the row as townhouse. Do not pull condos, apartments, or other attached homes just because they share product_class attached. Do not change how single-family comps are chosen.
-16. **Grok fallback when Cursor is out (Matt 2026-10-08).** See [`AGENTS.md`](AGENTS.md) rule 26.
+**Locked CMA process rules.** The numbered list lives in [`AGENTS.md`](AGENTS.md). Do not loosen those rules. Do not copy them back into this file.
 
 **CRM is in-house** `public.crm_people` via `sendEvent()` in [`lib/crm/send-event.ts`](lib/crm/send-event.ts). Review at `/admin/crm`.

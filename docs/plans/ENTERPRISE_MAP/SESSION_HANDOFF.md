@@ -1,6 +1,6 @@
 # SESSION HANDOFF — Enterprise Map (photograph, not a second backlog)
 
-**Do not start a session by executing ALL-OPEN.** Next work is `npx tsx scripts/loop-brief.ts` plus `CROSS_AGENT_HANDOFF.md` Current.
+**Do not start a session by executing ALL-OPEN.** Next work is `npx tsx scripts/loop-brief.ts`, which prints the newest `docs/plans/handoffs/` notes.
 
 **Access:** never ask Matt what access you have (Matt 2026-10-07). Read [`docs/ACCESS_INVENTORY.md`](../../ACCESS_INVENTORY.md).
 

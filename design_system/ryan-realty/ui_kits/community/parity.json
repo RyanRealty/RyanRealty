@@ -53,7 +53,7 @@
     },
     {
       "name": "CommunityFoldAnswer",
-      "section": "#answer, the 2-3 sentence leftover answer under the H1 (2026-10-13): live active count, median list, 12-month median sale, median days to contract, cited Oregon Data Share MLS as of the leftover date. Missing or non-positive figures drop their clause. Never a $0.",
+      "section": "#takeaways, the 2-3 sentence leftover answer under the H1 (2026-10-13; anchor is takeaways per the pinned aeo-community-takeaways decision): live active count, median list, 12-month median sale, median days to contract, cited Oregon Data Share MLS as of the leftover date. Missing or non-positive figures drop their clause. Never a $0.",
       "blocking": true
     },
     {
@@ -260,7 +260,7 @@
     "PlaceAreaHero (photograph owns the fold)",
     "V3Breadcrumb",
     "V3Heading (H1 `{Community} Homes for Sale`)",
-    "CommunityFoldAnswer #answer (live leftover count, median list, 12-month median sale, days to contract)",
+    "CommunityFoldAnswer #takeaways (live leftover count, median list, 12-month median sale, days to contract)",
     "CommunityHomesGrid #homes (server-rendered for-sale grid)",
     "V3Ledger #sold (recently sold, 6 months)",
     "CommunityInsight #place-insight (the paged supply figure: the community's own months of supply, or the withheld count and the parent city named as the city; then the community's monthly closes)",
