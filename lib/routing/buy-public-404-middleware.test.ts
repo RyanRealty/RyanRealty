@@ -36,6 +36,8 @@ describe('middleware /buy/<slug> 404', () => {
     it(`live buyer pages pass through (${name})`, async () => {
       for (const path of [
         '/buy/leverage',
+        '/buy/alerts',
+        '/buy/concessions',
         '/buy/first-time-home-buyer',
         '/buy/relocation',
         '/buy/investment',

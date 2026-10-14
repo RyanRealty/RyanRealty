@@ -1344,7 +1344,7 @@ async function renderCommunityDetail({ params }: Props) {
               <ul>
                 {fieldTypeIndex.map((item) => (
                   <li key={item.key}>
-                    <a href={`#homes-${item.key}`}>
+                    <a href={`#homes-dial-${item.key}`}>
                       {item.heading}
                       <span> · {item.countLabel}</span>
                     </a>
