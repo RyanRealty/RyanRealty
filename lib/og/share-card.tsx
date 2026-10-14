@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ImageResponse } from 'next/og'
+import { siteOrigin } from '@/lib/site-origin'
 import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH, shortOgTitle } from './share-image-url'
 import { isLocalPublicPath, OG_FALLBACK_PHOTO, OG_LOGO_REL } from './resolve-photo'
 
@@ -11,7 +12,6 @@ const OG_CACHE =
   'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800'
 
 let logoDataUrl: string | null = null
-const photoDataUrls = new Map<string, string>()
 
 function fileToDataUrl(absPath: string, mime: string): string {
   const buf = readFileSync(absPath)
@@ -24,29 +24,29 @@ export function ogLogoDataUrl(): string {
   return logoDataUrl
 }
 
-export function localPhotoDataUrl(publicPath: string): string {
-  const hit = photoDataUrls.get(publicPath)
-  if (hit) return hit
-  const rel = publicPath.replace(/^\//, '')
-  const abs = join(process.cwd(), 'public', rel)
-  const mime = rel.endsWith('.png') ? 'image/png' : 'image/jpeg'
-  const url = fileToDataUrl(abs, mime)
-  photoDataUrls.set(publicPath, url)
-  return url
+function publicHttps(publicPath: string): string {
+  const path = publicPath.startsWith('/') ? publicPath : `/${publicPath}`
+  return `${siteOrigin()}${path}`
 }
 
+/**
+ * Place photos are static files on the CDN. Reading them with readFileSync
+ * 500s on Vercel (they are not in the serverless trace; a 1.6 MB JPEG data
+ * URL also blows the function). Listing heroes already arrive as https URLs.
+ */
 export function resolveCardPhotoSrc(photoSrc: string | null | undefined): string {
   const src = photoSrc?.trim()
-  if (!src) return localPhotoDataUrl(OG_FALLBACK_PHOTO)
-  if (isLocalPublicPath(src)) {
-    try {
-      return localPhotoDataUrl(src)
-    } catch {
-      return localPhotoDataUrl(OG_FALLBACK_PHOTO)
-    }
+  if (src && /^https:\/\//i.test(src)) return src
+  if (src && isLocalPublicPath(src)) return publicHttps(src)
+  return publicHttps(OG_FALLBACK_PHOTO)
+}
+
+export function ogLogoSrc(): string {
+  try {
+    return ogLogoDataUrl()
+  } catch {
+    return publicHttps('/brand/logo-horizontal-white.png')
   }
-  if (/^https:\/\//i.test(src)) return src
-  return localPhotoDataUrl(OG_FALLBACK_PHOTO)
 }
 
 export function withOgCache(image: ImageResponse): ImageResponse {
@@ -61,7 +61,7 @@ export function renderShareCard(input: {
 }): ImageResponse {
   const title = shortOgTitle(input.title ?? '')
   const photo = resolveCardPhotoSrc(input.photoSrc)
-  const logo = ogLogoDataUrl()
+  const logo = ogLogoSrc()
   const titleSize = title.length > 26 ? 44 : 56
 
   return withOgCache(
