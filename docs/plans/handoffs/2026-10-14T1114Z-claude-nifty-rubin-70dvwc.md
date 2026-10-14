@@ -6,11 +6,9 @@ Branch `claude/nifty-rubin-70dvwc`. Nobody pushes main. Nothing sent, posted or 
 - #573 (`f16f41b50`): the old /admin/studio video path is frozen at every door (`lib/content/video-freeze.ts`, `ci:video-freeze`). LinkedIn and Threads are removed as posting platforms; their profile links stay. `lib/social/token-heartbeat.ts` checks each posting key; no rotation (Matt).
 - #577 (`3b5913486`): the one video factory (`studio:render`, `video:check` with 17 checks, preflight before render), the technique registry with tiers and Matt-only approvals, `docs/plans/CONTENT_PROCESS.md`, the 366-technique research.
 
-**This PR (on top of those).**
-- `lib/content/process/`: one rules file (185 rules with IDs; each enforced one proven by a fixture that breaks it), step stamps, job caps, `npm run studio -- rules | run | status`, `ci:content-rules` (G84) and the rule-loosening commit check (loosening needs `Approved-by: matt`).
-- Motion foundations: `lib/studio/motion/spring.ts`, `camera.ts`.
-- Int tests run only by name (`npm run test:int` sets `RR_INT_RUN=1`); `npm test` names its projects. A helper's bare `vitest run` swept two zztest marker objects from production storage on 2026-10-14 (disclosed to Matt).
-- Each video type keeps its own length window in `video_gate.mjs` and the render gate (Matt 2026-10-14).
+- #584 (`0fb7e4094`): the content process core (185 rules with IDs, step stamps, job caps, `npm run studio`, `ci:content-rules` G84), the motion springs and camera, int tests only by name (`npm run test:int`), per-type length windows.
+
+**This PR.** A deploy-found defect is one claimable work node (Matt 2026-10-14): `deploy:verify` files `DEPLOY-<check>-<hash>` nodes through the work-graph DAL, prints who holds each, and closes a node when its check passes. Claim with `npx tsx --conditions=react-server scripts/deploy-defects.ts --claim <id> --owner <tool>-<model>-<date>`. Gate `ci:deploy-defect-filing` (G85).
 
 **Next.** Matt picked the buyer ad's techniques first: `figure_pullout_hook`, `map_area_cells` (aggregate cells only, ODS §5-4; `MIN_SALES_PER_CELL = 3` needs Matt's sign-off), `subframe_motion_blur`, `measured_drop_sync`. Builders run in worktrees `tech-hook`, `tech-cells`, `tech-blurbeat`. Then a showcase reel for Matt, then the buyer ad's board (`docs/plans/BUYER_AD.md`).
 
