@@ -327,7 +327,7 @@
           "words": 126
         },
         "recent-closings": {
-          "items": 5,
+          "items": 4,
           "words": 120
         },
         "selling-questions": {
@@ -336,6 +336,6 @@
         }
       }
     },
-    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason. 2026-09-28 reseed (tip/sell-landing-rebuild, measured on a local production build of that branch): words 823 -> 538 and heroImageNatural 3780 -> 1296 are lowered on purpose. Matt's cuts removed the market-rows table, the long plan list (now behind a toggle) and the Dataset schema; the hero is now a pre-sized 640-1920w webp srcset instead of the 4200px original, which is what cut page weight from ~15.6 MB to ~4.5 MB."
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason. 2026-09-28 reseed (tip/sell-landing-rebuild, measured on a local production build of that branch): words 823 -> 538 and heroImageNatural 3780 -> 1296 are lowered on purpose. Matt's cuts removed the market-rows table, the long plan list (now behind a toggle) and the Dataset schema; the hero is now a pre-sized 640-1920w webp srcset instead of the 4200px original, which is what cut page weight from ~15.6 MB to ~4.5 MB. 2026-10-14: recent-closings.items 5 -> 4. The strip still prints every qualifying Ryan Realty seller-side close in the last 12 months, up to 6. CI measured 4 cards on this rebuild (4 < floor 5, was 6 on 2026-09-28). Do not invent a fifth home. The layout is unchanged."
   }
 }
