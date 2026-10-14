@@ -170,7 +170,7 @@ export function V3Ask({
       {sent && sentResult?.ok && done ? <div className="v3-ask__done">{done}</div> : null}
 
       {!sent ? (
-        <form className="v3-ask__form" onSubmit={submit} aria-busy={status === 'sending'}>
+        <form data-clarity-mask="True" className="v3-ask__form" onSubmit={submit} aria-busy={status === 'sending'}>
           <div className="v3-ask__fields">
             {fields.map((f) => {
               const fid = f.id ?? `${uid}-${f.name}`

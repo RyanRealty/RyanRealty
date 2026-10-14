@@ -458,6 +458,7 @@ function WatchPanel({
 
   return (
     <form
+      data-clarity-mask="True"
       className="v3-close__form"
       onSubmit={(e) => {
         e.preventDefault()
@@ -611,6 +612,7 @@ function PaymentPanel({
 
   return (
     <form
+      data-clarity-mask="True"
       className="v3-close__form"
       onSubmit={(e) => {
         e.preventDefault()

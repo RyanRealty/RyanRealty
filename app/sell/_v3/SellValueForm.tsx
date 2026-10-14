@@ -516,7 +516,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
       </Button>
     </div>
   ) : step === 'qualify' ? (
-    <form className="sell-ask-sheet__body" onSubmit={handleQualifySubmit} noValidate>
+    <form data-clarity-mask="True" className="sell-ask-sheet__body" onSubmit={handleQualifySubmit} noValidate>
       <div className="sell-ask-sheet__fields">
         <MotionInput
           id="sell-value-name"
@@ -608,6 +608,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
   return (
     <>
       <form
+        data-clarity-mask="True"
         id={formId}
         onSubmit={advanceFromAddress}
         className="scroll-mt-4 sell-stage-field"
@@ -697,6 +698,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
         }}
       >
         <SheetContent
+          data-clarity-mask="True"
           side="right"
           className={cn(V3_ROOT_CLASS, 'sell-ask-sheet')}
           overlayClassName="sell-ask-sheet__scrim"
