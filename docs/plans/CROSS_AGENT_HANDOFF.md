@@ -1,14 +1,18 @@
 # Current — 2026-10-14 (Cursor, buyer-answers batch 2)
 
-Surface: Cursor cloud. Branch `cursor/buyer-answers-batch-2-41c4` from origin/main `7e23fdb97`. Land path is `gh pr checks --watch` then `gh pr merge --squash`. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/buyer-answers-batch-2-41c4` from origin/main `e532597d8` (merged #543, no rebase). Land path is `gh pr checks --watch` then `gh pr merge --squash`. Nobody pushes main. Nothing sent.
 
 **What this branch does.** Extends the buyer-answer system (#528) with batch 2: living+cost for Broken Top, Brasada Ranch, Three Rivers; cost for Juniper Preserve, Eagle Crest, Black Butte Ranch; living+cost for six Bend NA districts with enough inventory (Old Bend, Southeast Bend, Century West, Southwest Bend, Summit West, Old Farm District); buyer-question pages for Bend from out of state, Sunriver second home, and buying in Redmond; luxury Bend preset (`/homes-for-sale/bend/over-1-5m`) plus region presets `/homes-for-sale/acreage` and `/homes-for-sale/under-500k`. Same templates, live MLS, FAQPage, author `/team/matthew-ryan`, sitemap + llms.txt. Edge guard reserves `from-out-of-state` and `buying`. Skipped thin places: Crosswater, Vandevert Ranch, Shevlin Commons, Discovery West.
 
-**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+**Not this change.** Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. Hold #452 (body requires a rule-25 fleet score). Hold #471 (stale vs main; would drop `loadCmaMapTile` / `CMA_MAP_MS`).
 
 **Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool`. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`, `docs/DATABASE_FOR_AI_AGENTS.md` (cache + neighborhood inventory SoR).
+
+## Earlier — 2026-10-14 (Cursor, offline GA4 conversions live)
+
+Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-41c4` landed on main via #543. Offline conversions cron reads `ga_client_id` and posts GA4 Measurement Protocol hits. Production SHA `e532597d8`. Nobody pushes main. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, CMA intake + ranking PRs live)
 
