@@ -52,6 +52,7 @@ describe('community map', () => {
     expect(PAGE).toMatch(/<PlaceSubdivisionAtlas[\s\S]*?id="atlas"/)
     expect(PAGE).toMatch(/<PlaceSubdivisionRail[\s\S]*?id="child-places"/)
     expect(PAGE).toMatch(/<PlaceSubdivisionHomes[\s\S]*?id="homes-dial"/)
+    expect(PAGE).toMatch(/href=\{`#homes-dial-\$\{item\.key\}`\}/)
     expect(PAGE).toMatch(/nameOnly/)
     expect(PAGE).not.toMatch(/<V3PlaceLook/)
     expect(PAGE).toMatch(/<V3Amenities/)

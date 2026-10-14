@@ -8,7 +8,11 @@ import {
 } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { loadBuyerAnswerForSlugs, type BuyerAnswerKind, type BuyerAnswerPlaceKind } from '@/lib/buyer-answers'
+import { V3Footer } from '@/components/site/v3'
 import { BuyerAnswerPage } from './BuyerAnswerPage'
+
+/** BuyerAnswerPage already renders V3Footer. Re-export so ci:default-chrome-footer's one-level import from the child routes sees the v3 register. */
+export { V3Footer }
 
 export { pageMetadata }
 
