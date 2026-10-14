@@ -33,6 +33,11 @@
  *   R4  Any int test that writes at all imports test/int-scope. A brand-new
  *       file cannot hand-roll unmarked ids and slip past R1 by never spelling a
  *       marker.
+ *   R5  An int run is asked for by name (2026-10-14). setup() throws before
+ *       its first sweep unless RR_INT_RUN=1, teardown() does nothing without
+ *       it, and `npm run test:int` sets it. A plain `vitest run <folder>` from an
+ *       agent with production keys once pulled the int project in and swept the
+ *       marketing-deliverables bucket.
  *
  * AST throughout (repo convention: code-inspecting gates use the TypeScript
  * compiler, never regex over source) — a rename, a reformat, or a differently
@@ -141,6 +146,23 @@ if (setupSf) {
   if (!text.includes('sweepIntResidue')) {
     problems.push(`${SETUP_MODULE}: does not call sweepIntResidue — the hooks are wired to nothing.`)
   }
+  // R5: setup refuses before its first sweep; teardown stands down without the flag.
+  const setupBody = text.slice(text.search(/export async function setup\b/), text.search(/export async function teardown\b/))
+  const refuse = setupBody.indexOf('if (!intRunAllowed()) throw')
+  const firstSweep = setupBody.indexOf('sweepIntResidue')
+  if (refuse < 0 || (firstSweep >= 0 && refuse > firstSweep)) {
+    problems.push(`${SETUP_MODULE}: setup() must throw unless RR_INT_RUN=1 (\`if (!intRunAllowed()) throw\`) before it sweeps — a run nobody asked for must not write to production (R5).`)
+  }
+  if (!/export function intRunAllowed[\s\S]*?RR_INT_RUN === '1'/.test(text)) {
+    problems.push(`${SETUP_MODULE}: intRunAllowed() must answer true only for RR_INT_RUN === '1' (R5).`)
+  }
+  if (!/export async function teardown\b[\s\S]*?!intRunAllowed\(\)\) return/.test(text)) {
+    problems.push(`${SETUP_MODULE}: teardown() must return without sweeping unless RR_INT_RUN=1 (R5).`)
+  }
+}
+const pkgScripts = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8')).scripts ?? {}
+if (!/^RR_INT_RUN=1 vitest run --project int\b/.test(pkgScripts['test:int'] ?? '')) {
+  problems.push(`package.json: "test:int" must be \`RR_INT_RUN=1 vitest run --project int\` — it is the one door to an int run (R5).`)
 }
 
 // ── R1 / R2 / R4: every int test ─────────────────────────────────────────────
