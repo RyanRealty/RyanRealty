@@ -6,15 +6,18 @@ import {
   classifyToken,
   DISABLED_PLATFORMS,
   disabledReason,
+  isRemovedPlatform,
   missingEnv,
   PLATFORM_SPECS,
   redactSecrets,
+  REMOVED_PLATFORMS,
   responseStatusFor,
   specFor,
   toSyncLogRows,
+  type HeartbeatPlatform,
   type TokenObservation,
 } from './token-heartbeat'
-import { PUBLISH_DOOR_PLATFORMS } from './publish-door'
+import { isPublishDoorPlatform, PUBLISH_DOOR_PLATFORMS, REMOVED_PLATFORMS_MESSAGE } from './publish-door'
 
 const NOW = Date.parse('2026-10-14T12:00:00.000Z')
 const DAY = 24 * 60 * 60 * 1000
@@ -36,48 +39,50 @@ describe('token heartbeat state model', () => {
 
   it('ok: no refresh token but 14+ days left, and the message says when to reconnect', () => {
     const r = classifyToken(
-      specFor('linkedin'),
+      specFor('pinterest'),
       obs({ row: { expiresAt: new Date(NOW + 30 * DAY).toISOString(), hasRefreshToken: false } }),
       NOW,
     )
     expect(r).toMatchObject({ state: 'ok', severity: 'ok' })
-    expect(r.message).toContain('no refresh token: reconnect before then at /api/linkedin/authorize')
+    expect(r.message).toContain('no refresh token: reconnect before then at /api/pinterest/authorize')
   })
 
   it('expiring: under 14 days and no refresh path is a failure', () => {
     const r = classifyToken(
-      specFor('linkedin'),
+      specFor('pinterest'),
       obs({ row: { expiresAt: new Date(NOW + 6 * DAY + 3600_000).toISOString(), hasRefreshToken: false } }),
       NOW,
     )
     expect(r).toMatchObject({ state: 'expiring', severity: 'failure' })
     expect(r.message).toBe(
-      'LinkedIn token expires 2026-10-20 (6 days left) with no refresh token: reconnect at /api/linkedin/authorize',
+      'Pinterest token expires 2026-10-20 (6 days left) with no refresh token: reconnect at /api/pinterest/authorize',
     )
   })
 
-  it('expiring: a refresh path whose refresh failed while the token still has hours left', () => {
+  it('expiring: a refresh path whose refresh failed while the token still has minutes left', () => {
     const r = classifyToken(
-      specFor('threads'),
+      specFor('x'),
       obs({
-        row: { expiresAt: new Date(NOW + 10 * 3600_000).toISOString(), hasRefreshToken: false },
-        refreshError: 'Threads token refresh failed: 400 Bad Request',
+        row: { expiresAt: new Date(NOW + 20 * 60_000).toISOString(), hasRefreshToken: true },
+        refreshError: 'X token refresh failed: 400 Bad Request',
       }),
       NOW,
     )
     expect(r).toMatchObject({ state: 'expiring', severity: 'failure' })
-    expect(r.message).toContain('and the refresh failed (Threads token refresh failed: 400 Bad Request)')
+    expect(r.message).toBe(
+      'X token expires 2026-10-14 (under 1 day left) and the refresh failed (X token refresh failed: 400 Bad Request): reconnect at /api/x/authorize',
+    )
   })
 
-  it('expired: the LinkedIn case names the date and the fix exactly', () => {
+  it('expired: no refresh token names the date and the fix', () => {
     const r = classifyToken(
-      specFor('linkedin'),
+      specFor('pinterest'),
       obs({ row: { expiresAt: '2026-07-09T02:26:37.528Z', hasRefreshToken: false } }),
       NOW,
     )
     expect(r).toMatchObject({ state: 'expired', severity: 'failure', hasRefreshToken: false })
     expect(r.message).toBe(
-      'LinkedIn token expired 2026-07-09 with no refresh token: reconnect at /api/linkedin/authorize',
+      'Pinterest token expired 2026-07-09 with no refresh token: reconnect at /api/pinterest/authorize',
     )
   })
 
@@ -110,9 +115,9 @@ describe('token heartbeat state model', () => {
   })
 
   it('not_connected: client env present, no row, on a publish-door target is a failure', () => {
-    const r = classifyToken(specFor('threads'), obs(), NOW)
+    const r = classifyToken(specFor('pinterest'), obs(), NOW)
     expect(r).toMatchObject({ state: 'not_connected', severity: 'failure' })
-    expect(r.message).toBe('Threads is not connected (no threads_auth row): connect at /api/threads/authorize')
+    expect(r.message).toBe('Pinterest is not connected (no pinterest_auth row): connect at /api/pinterest/authorize')
   })
 
   it('not_configured: no client env is a warning, naming the missing env (names only)', () => {
@@ -167,11 +172,42 @@ describe('token heartbeat state model', () => {
   })
 })
 
+describe('removed platforms (Matt 2026-10-14)', () => {
+  it('LinkedIn and Threads are REMOVED_PLATFORMS, each with Matt\'s ruling as the reason', () => {
+    expect(REMOVED_PLATFORMS.map((r) => r.platform)).toEqual(['linkedin', 'threads'])
+    for (const r of REMOVED_PLATFORMS) expect(r.reason).toContain('Matt 2026-10-14')
+    expect(isRemovedPlatform('linkedin')).toBe(true)
+    expect(isRemovedPlatform('threads')).toBe(true)
+    expect(isRemovedPlatform('x')).toBe(false)
+    expect(REMOVED_PLATFORMS_MESSAGE).toBe('LinkedIn and Threads were removed as platforms (Matt 2026-10-14)')
+  })
+
+  it('the heartbeat holds no spec for a removed platform, so it can never check, refresh or alert one', () => {
+    const platforms = PLATFORM_SPECS.map((s) => s.platform as string)
+    expect(platforms).not.toContain('linkedin')
+    expect(platforms).not.toContain('threads')
+    expect(PLATFORM_SPECS.some((s) => s.table === 'linkedin_auth' || s.table === 'threads_auth')).toBe(false)
+    expect(() => specFor('linkedin' as HeartbeatPlatform)).toThrow()
+  })
+
+  it('the publish door no longer lists them', () => {
+    expect(PUBLISH_DOOR_PLATFORMS).not.toContain('linkedin' as never)
+    expect(PUBLISH_DOOR_PLATFORMS).not.toContain('threads' as never)
+    expect(isPublishDoorPlatform('linkedin')).toBe(false)
+    expect(isPublishDoorPlatform('threads')).toBe(false)
+  })
+
+  it('a removed platform is not also "disabled" (disabled platforms still alert on a dead token)', () => {
+    const disabled = DISABLED_PLATFORMS.map((d) => d.platform as string)
+    for (const r of REMOVED_PLATFORMS) expect(disabled).not.toContain(r.platform)
+  })
+})
+
 describe('config', () => {
   it('every disabled platform has a reason, and Nextdoor is listed', () => {
     expect(DISABLED_PLATFORMS.every((d) => d.reason.trim().length > 20)).toBe(true)
     expect(disabledReason('nextdoor')).toContain('partner-gated')
-    expect(disabledReason('linkedin')).toBeNull()
+    expect(disabledReason('pinterest')).toBeNull()
   })
 
   it('every publish-door target is powered by exactly one heartbeat platform', () => {
@@ -205,7 +241,7 @@ describe('redaction, alerts, sync_logs', () => {
   })
 
   it('dedupe key is platform + state + UTC date', () => {
-    expect(alertKey('linkedin', 'expired', '2026-10-14')).toBe('token-heartbeat:linkedin:expired:2026-10-14')
+    expect(alertKey('pinterest', 'expired', '2026-10-14')).toBe('token-heartbeat:pinterest:expired:2026-10-14')
   })
 
   it('failures write 500 rows and a 500 run row that names them; warnings and off stay 204', () => {
@@ -214,19 +250,19 @@ describe('redaction, alerts, sync_logs', () => {
     expect(responseStatusFor('warning')).toBe(204)
     expect(responseStatusFor('off')).toBe(204)
     const expired = classifyToken(
-      specFor('linkedin'),
+      specFor('pinterest'),
       obs({ row: { expiresAt: '2026-07-09T02:26:37.528Z', hasRefreshToken: false } }),
       NOW,
     )
     const rows = toSyncLogRows([{ ...expired, alertQueued: true }], 'cycle-1', 'test', 10)
     expect(rows).toHaveLength(2)
     expect(rows[0]).toMatchObject({
-      endpoint: 'token_heartbeat:linkedin',
+      endpoint: 'token_heartbeat:pinterest',
       response_status: 500,
       alert_sent: true,
       error_message: `[expired] ${expired.message}`,
     })
     expect(rows[1]).toMatchObject({ endpoint: 'token_heartbeat', response_status: 500, records_returned: 1 })
-    expect(rows[1].error_message).toContain('LinkedIn token expired 2026-07-09')
+    expect(rows[1].error_message).toContain('Pinterest token expired 2026-07-09')
   })
 })

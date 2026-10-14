@@ -1,7 +1,8 @@
 /**
  * /api/cron/token-heartbeat: every platform state, the per-day alert dedupe,
- * and "never logs a token". DB, env and platform libs are mocked; the alert
- * path is the REAL queueBrokerHealthAlert over an in-memory crm_broker_alerts.
+ * removed platforms (Matt 2026-10-14), and "never logs a token". DB, env and
+ * platform libs are mocked; the alert path is the REAL queueBrokerHealthAlert
+ * over an in-memory crm_broker_alerts.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
@@ -11,6 +12,8 @@ type Row = Record<string, unknown>
 const db = {
   tables: {} as Record<string, Row | null>,
   readErrors: new Set<string>(),
+  /** Every table the route selected from, in order. */
+  reads: [] as string[],
   syncLogs: [] as Row[][],
   syncLogError: null as string | null,
 }
@@ -30,6 +33,7 @@ function fakeClient() {
       }
       return {
         select(cols: string) {
+          db.reads.push(table)
           const names = cols.split(',').map((c) => c.trim())
           return {
             eq: () => ({
@@ -69,24 +73,25 @@ vi.mock('@/lib/data/crm/healthAlertQueue', () => ({
 
 const getters = {
   youtube: vi.fn(),
-  linkedin: vi.fn(),
   x: vi.fn(),
   gbp: vi.fn(),
-  threads: vi.fn(),
   pinterest: vi.fn(),
   nextdoor: vi.fn(),
   tiktokRefresh: vi.fn(),
+  // Removed platforms: wired so a call would be visible, and asserted never called.
+  linkedin: vi.fn(),
+  threads: vi.fn(),
 }
 vi.mock('@/lib/youtube', () => ({ getYouTubeAccessToken: (...a: unknown[]) => getters.youtube(...a) }))
-vi.mock('@/lib/linkedin', () => ({ getLinkedInAccessToken: (...a: unknown[]) => getters.linkedin(...a) }))
 vi.mock('@/lib/x', () => ({ getXAccessToken: (...a: unknown[]) => getters.x(...a) }))
 vi.mock('@/lib/google-business-profile', () => ({
   getOrRefreshGoogleBusinessProfileAccessToken: (...a: unknown[]) => getters.gbp(...a),
 }))
-vi.mock('@/lib/threads', () => ({ getThreadsAccessToken: (...a: unknown[]) => getters.threads(...a) }))
 vi.mock('@/lib/pinterest', () => ({ getPinterestAccessToken: (...a: unknown[]) => getters.pinterest(...a) }))
 vi.mock('@/lib/nextdoor', () => ({ getNextdoorAccessToken: (...a: unknown[]) => getters.nextdoor(...a) }))
 vi.mock('@/lib/tiktok', () => ({ refreshAccessToken: (...a: unknown[]) => getters.tiktokRefresh(...a) }))
+vi.mock('@/lib/linkedin', () => ({ getLinkedInAccessToken: (...a: unknown[]) => getters.linkedin(...a) }))
+vi.mock('@/lib/threads', () => ({ getThreadsAccessToken: (...a: unknown[]) => getters.threads(...a) }))
 
 const fetchMock = vi.fn()
 
@@ -124,7 +129,10 @@ function refreshes(table: string, ms: number, token: string) {
   }
 }
 
-/** Production as read 2026-10-14 (presence + expiry only; see the commit). */
+/**
+ * Production as read 2026-10-14 (presence + expiry only): LinkedIn's dead row
+ * and the Threads client env are still there, but both platforms are removed.
+ */
 function todaysData() {
   setEnv(['linkedin', 'youtube', 'x', 'gbp', 'tiktok', 'threads', 'meta'])
   db.tables = {
@@ -151,15 +159,11 @@ function todaysData() {
   fetchMock.mockImplementation(async () => new Response(JSON.stringify({ id: '1234567890' }), { status: 200 }))
 }
 
-/** Every platform connected and alive (Nextdoor stays off: partner-gated). */
+/** Every remaining platform connected and alive (Nextdoor stays off: partner-gated). */
 function healthyData() {
   todaysData()
   setEnv(['linkedin', 'youtube', 'x', 'gbp', 'tiktok', 'threads', 'pinterest', 'meta'])
-  db.tables.linkedin_auth = { refresh_token: 'li-SECRET-refresh', expires_at: at(50 * DAY) }
-  db.tables.threads_auth = { expires_at: at(40 * DAY), threads_user_id: 'u' }
   db.tables.pinterest_auth = { refresh_token: 'pin-SECRET-refresh', expires_at: at(20 * DAY) }
-  getters.linkedin.mockResolvedValue('li-SECRET-access')
-  getters.threads.mockResolvedValue({ accessToken: 'th-SECRET-access', userId: 'u' })
   getters.pinterest.mockResolvedValue('pin-SECRET-access')
 }
 
@@ -173,6 +177,7 @@ type Body = {
   anyFailed: boolean
   summary: { ok: number; failure: number; warning: number; off: number; failures: string[]; warnings: string[] }
   results: Array<{ platform: string; state: string; severity: string; message: string; alertQueued?: boolean }>
+  removed: Array<{ platform: string; reason: string }>
 }
 
 async function run(qs = ''): Promise<{ status: number; body: Body }> {
@@ -182,6 +187,7 @@ async function run(qs = ''): Promise<{ status: number; body: Body }> {
 }
 
 const byPlatform = (body: Body, p: string) => body.results.find((r) => r.platform === p)
+const markers = () => alerts.map((a) => a.body.split(' ')[0])
 
 describe('/api/cron/token-heartbeat', () => {
   beforeEach(() => {
@@ -191,6 +197,7 @@ describe('/api/cron/token-heartbeat', () => {
     vi.stubEnv('TWILIO_FORWARD_MATT', '+15415550100')
     vi.stubGlobal('fetch', fetchMock)
     db.readErrors = new Set()
+    db.reads = []
     db.syncLogs = []
     db.syncLogError = null
     alerts.length = 0
@@ -213,98 +220,112 @@ describe('/api/cron/token-heartbeat', () => {
     expect(db.syncLogs).toHaveLength(0)
   })
 
-  it("today's data: LinkedIn expired and Threads unconnected fail the run, loudly, with the fix", async () => {
+  it("today's data: no texts, Pinterest a warning only, Nextdoor off, everything else ok", async () => {
     todaysData()
     const { status, body } = await run()
 
-    expect(status).toBe(500)
-    expect(body.anyFailed).toBe(true)
-    expect(byPlatform(body, 'linkedin')).toMatchObject({
-      state: 'expired',
-      severity: 'failure',
-      message: 'LinkedIn token expired 2026-07-09 with no refresh token: reconnect at /api/linkedin/authorize',
-      alertQueued: true,
+    expect(status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(body.anyFailed).toBe(false)
+    expect(byPlatform(body, 'pinterest')).toMatchObject({
+      state: 'not_configured',
+      severity: 'warning',
+      message:
+        'Pinterest is not configured (PINTEREST_CLIENT_ID, PINTEREST_CLIENT_SECRET, PINTEREST_REDIRECT_URI unset): set the client env, then connect at /api/pinterest/authorize',
     })
-    expect(byPlatform(body, 'threads')).toMatchObject({
-      state: 'not_connected',
-      severity: 'failure',
-      message: 'Threads is not connected (no threads_auth row): connect at /api/threads/authorize',
-      alertQueued: true,
-    })
-    expect(byPlatform(body, 'pinterest')).toMatchObject({ state: 'not_configured', severity: 'warning' })
     expect(byPlatform(body, 'nextdoor')).toMatchObject({ state: 'not_configured', severity: 'off' })
     for (const p of ['meta', 'youtube', 'x', 'google_business_profile', 'tiktok']) {
       expect(byPlatform(body, p)).toMatchObject({ state: 'ok', severity: 'ok' })
     }
-    expect(body.summary).toMatchObject({ ok: 5, failure: 2, warning: 1, off: 1 })
+    expect(body.summary).toMatchObject({ ok: 5, failure: 0, warning: 1, off: 1 })
+    expect(alerts).toHaveLength(0)
 
-    // Refresh still happens for everything that has a refresh path; nothing is
-    // called for a token that cannot be renewed.
+    // Refresh still happens for everything that has a refresh path.
     expect(getters.x).toHaveBeenCalledTimes(1)
     expect(getters.youtube).toHaveBeenCalledTimes(1)
     expect(getters.gbp).toHaveBeenCalledTimes(1)
     expect(getters.tiktokRefresh).toHaveBeenCalledTimes(1)
-    expect(getters.linkedin).not.toHaveBeenCalled()
     expect(db.tables.tiktok_auth?.refresh_token).toBe('tt-SECRET-refresh-new')
 
-    // One alert per failing platform, through the ops health channel to Matt.
-    expect(alerts.map((a) => a.body.split(' ')[0]).sort()).toEqual([
-      '[crm-health:token-heartbeat:linkedin:expired:2026-10-14]',
-      '[crm-health:token-heartbeat:threads:not_connected:2026-10-14]',
-    ])
-    expect(alerts.find((a) => a.body.includes('linkedin'))?.body).toContain(
-      'Token heartbeat: LinkedIn token expired 2026-07-09 with no refresh token: reconnect at /api/linkedin/authorize',
-    )
-
-    // sync_logs: per-platform rows the scoreboard reads, plus a failing run row.
+    // sync_logs: one row per remaining platform plus a 200 run row.
     const rows = db.syncLogs[0]
-    expect(rows).toHaveLength(10)
+    expect(rows).toHaveLength(8)
     const row = (ep: string) => rows.find((r) => r.endpoint === ep)
-    expect(row('token_heartbeat')).toMatchObject({ response_status: 500, alert_sent: true, records_returned: 9 })
-    expect(String(row('token_heartbeat')?.error_message)).toContain('LinkedIn token expired 2026-07-09')
-    expect(row('token_heartbeat:linkedin')).toMatchObject({ response_status: 500, alert_sent: true })
-    expect(row('token_heartbeat:threads')).toMatchObject({ response_status: 500 })
+    expect(row('token_heartbeat')).toMatchObject({ response_status: 200, error_message: null, alert_sent: false, records_returned: 7 })
     expect(row('token_heartbeat:pinterest')).toMatchObject({ response_status: 204, alert_sent: false })
     expect(row('token_heartbeat:nextdoor')).toMatchObject({ response_status: 204 })
     expect(row('token_heartbeat:youtube')).toMatchObject({ response_status: 200, error_message: null })
   })
 
+  it('removed platforms (LinkedIn, Threads) are never read, refreshed, logged or alerted, even with a dead token row', async () => {
+    healthyData()
+    // A dead LinkedIn row with a refresh token, and a dead Threads row: both would fail if checked.
+    db.tables.linkedin_auth = { access_token: 'li-SECRET-access', refresh_token: 'li-SECRET-refresh', expires_at: '2026-07-09T02:26:37.528Z' }
+    db.tables.threads_auth = { access_token: 'th-SECRET-access', expires_at: '2026-08-01T00:00:00.000Z' }
+    const { status, body } = await run()
+
+    expect(status).toBe(200)
+    expect(alerts).toHaveLength(0)
+    expect(getters.linkedin).not.toHaveBeenCalled()
+    expect(getters.threads).not.toHaveBeenCalled()
+    expect(db.reads).not.toContain('linkedin_auth')
+    expect(db.reads).not.toContain('threads_auth')
+    expect(body.results.map((r) => r.platform)).not.toContain('linkedin')
+    expect(body.results.map((r) => r.platform)).not.toContain('threads')
+    const endpoints = db.syncLogs[0].map((r) => r.endpoint)
+    expect(endpoints).not.toContain('token_heartbeat:linkedin')
+    expect(endpoints).not.toContain('token_heartbeat:threads')
+    expect(JSON.stringify(db.syncLogs)).not.toMatch(/LinkedIn|Threads/)
+    // Listed in the response only so a reader knows they are gone on purpose.
+    expect(body.removed).toEqual([
+      { platform: 'linkedin', reason: 'Matt 2026-10-14: "Just remove LinkedIn and Threads."' },
+      { platform: 'threads', reason: 'Matt 2026-10-14: "Just remove LinkedIn and Threads."' },
+    ])
+  })
+
   it('dedupes alerts on platform + state + date: a re-run the same day is quiet, the next day pages again', async () => {
-    todaysData()
-    await run()
-    expect(alerts).toHaveLength(2)
+    healthyData()
+    db.tables.pinterest_auth = null // configured, never connected: a door target, so a failure
+    getters.x.mockRejectedValue(new Error('X token refresh failed: 400 Bad Request'))
+    const first = await run()
+    expect(first.status).toBe(500)
+    expect(markers().sort()).toEqual([
+      '[crm-health:token-heartbeat:pinterest:not_connected:2026-10-14]',
+      '[crm-health:token-heartbeat:x:expired:2026-10-14]',
+    ])
 
     vi.setSystemTime(new Date('2026-10-14T18:30:00.000Z'))
     const again = await run()
     expect(again.status).toBe(500) // still failing, still a red cron
     expect(alerts).toHaveLength(2) // but no second text
-    expect(byPlatform(again.body, 'linkedin')?.alertQueued).toBe(false)
+    expect(byPlatform(again.body, 'x')?.alertQueued).toBe(false)
 
     vi.setSystemTime(new Date('2026-10-15T12:00:05.000Z'))
     await run()
     expect(alerts).toHaveLength(4)
-    expect(alerts.slice(2).map((a) => a.body.split(' ')[0]).sort()).toEqual([
-      '[crm-health:token-heartbeat:linkedin:expired:2026-10-15]',
-      '[crm-health:token-heartbeat:threads:not_connected:2026-10-15]',
+    expect(markers().slice(2).sort()).toEqual([
+      '[crm-health:token-heartbeat:pinterest:not_connected:2026-10-15]',
+      '[crm-health:token-heartbeat:x:expired:2026-10-15]',
     ])
   })
 
   it('a new state for the same platform on the same day is its own alert', async () => {
     healthyData()
-    db.tables.linkedin_auth = { refresh_token: null, expires_at: at(2 * HOUR) }
+    db.tables.pinterest_auth = { refresh_token: null, expires_at: at(2 * HOUR) }
     const first = await run()
-    expect(byPlatform(first.body, 'linkedin')).toMatchObject({
+    expect(byPlatform(first.body, 'pinterest')).toMatchObject({
       state: 'expiring',
       alertQueued: true,
-      message: 'LinkedIn token expires 2026-10-14 (under 1 day left) with no refresh token: reconnect at /api/linkedin/authorize',
+      message:
+        'Pinterest token expires 2026-10-14 (under 1 day left) with no refresh token: reconnect at /api/pinterest/authorize',
     })
 
     vi.setSystemTime(new Date(Date.parse(NOW) + 3 * HOUR))
     const second = await run()
-    expect(byPlatform(second.body, 'linkedin')).toMatchObject({ state: 'expired', alertQueued: true })
-    expect(alerts.map((a) => a.body.split(' ')[0])).toEqual([
-      '[crm-health:token-heartbeat:linkedin:expiring:2026-10-14]',
-      '[crm-health:token-heartbeat:linkedin:expired:2026-10-14]',
+    expect(byPlatform(second.body, 'pinterest')).toMatchObject({ state: 'expired', alertQueued: true })
+    expect(markers()).toEqual([
+      '[crm-health:token-heartbeat:pinterest:expiring:2026-10-14]',
+      '[crm-health:token-heartbeat:pinterest:expired:2026-10-14]',
     ])
   })
 
@@ -313,7 +334,7 @@ describe('/api/cron/token-heartbeat', () => {
     const { status, body } = await run()
     expect(status).toBe(200)
     expect(body.ok).toBe(true)
-    expect(body.summary).toMatchObject({ ok: 8, failure: 0, warning: 0, off: 1 })
+    expect(body.summary).toMatchObject({ ok: 6, failure: 0, warning: 0, off: 1 })
     expect(alerts).toHaveLength(0)
     const runRow = db.syncLogs[0].find((r) => r.endpoint === 'token_heartbeat')
     expect(runRow).toMatchObject({ response_status: 200, error_message: null, alert_sent: false })
@@ -321,14 +342,28 @@ describe('/api/cron/token-heartbeat', () => {
 
   it('expiring: a no-refresh token under 14 days is a failure that names the date', async () => {
     healthyData()
-    db.tables.linkedin_auth = { refresh_token: null, expires_at: at(6 * DAY) }
+    db.tables.pinterest_auth = { refresh_token: null, expires_at: at(6 * DAY) }
     const { status, body } = await run()
     expect(status).toBe(500)
-    expect(byPlatform(body, 'linkedin')).toMatchObject({
+    expect(byPlatform(body, 'pinterest')).toMatchObject({
       state: 'expiring',
       severity: 'failure',
-      message: 'LinkedIn token expires 2026-10-20 (6 days left) with no refresh token: reconnect at /api/linkedin/authorize',
+      message: 'Pinterest token expires 2026-10-20 (6 days left) with no refresh token: reconnect at /api/pinterest/authorize',
     })
+  })
+
+  it('expired: a token past expiry with no refresh token names the date and the fix', async () => {
+    healthyData()
+    db.tables.pinterest_auth = { refresh_token: null, expires_at: '2026-07-09T02:26:37.528Z' }
+    const { status, body } = await run()
+    expect(status).toBe(500)
+    expect(byPlatform(body, 'pinterest')).toMatchObject({
+      state: 'expired',
+      severity: 'failure',
+      message: 'Pinterest token expired 2026-07-09 with no refresh token: reconnect at /api/pinterest/authorize',
+      alertQueued: true,
+    })
+    expect(getters.pinterest).not.toHaveBeenCalled() // nothing can renew it
   })
 
   it('expired: a refresh that fails on a dead token is a failure, not "auto-refresh"', async () => {
@@ -347,7 +382,8 @@ describe('/api/cron/token-heartbeat', () => {
   it('not_connected: a configured publish-door target with no token row fails', async () => {
     healthyData()
     db.tables.pinterest_auth = null
-    const { body } = await run()
+    const { status, body } = await run()
+    expect(status).toBe(500)
     expect(byPlatform(body, 'pinterest')).toMatchObject({
       state: 'not_connected',
       severity: 'failure',
@@ -357,7 +393,7 @@ describe('/api/cron/token-heartbeat', () => {
 
   it('not_configured: a missing client env is a warning, and does not fail the run on its own', async () => {
     healthyData()
-    setEnv(['linkedin', 'youtube', 'x', 'gbp', 'tiktok', 'threads', 'meta'])
+    setEnv(['youtube', 'x', 'gbp', 'tiktok', 'meta'])
     db.tables.pinterest_auth = null
     const { status, body } = await run()
     expect(status).toBe(200)
@@ -386,7 +422,8 @@ describe('/api/cron/token-heartbeat', () => {
   })
 
   it('notify=0 runs and reports the failure without texting', async () => {
-    todaysData()
+    healthyData()
+    db.tables.pinterest_auth = null
     const { status } = await run('?notify=0')
     expect(status).toBe(500)
     expect(alerts).toHaveLength(0)
@@ -402,12 +439,14 @@ describe('/api/cron/token-heartbeat', () => {
   })
 
   it('never logs, returns, stores or texts a token value', async () => {
-    todaysData()
+    healthyData()
     // Errors that echo secrets, the way a careless upstream message would.
     getters.x.mockRejectedValue(
       new Error('X token refresh failed for x-SECRET-refresh: 400 (Authorization: Bearer x-SECRET-access-old)'),
     )
     getters.youtube.mockRejectedValue(new Error('POST /token?refresh_token=yt-SECRET-refresh&client_secret=abc123456 400'))
+    getters.pinterest.mockRejectedValue(new Error('Pinterest refresh failed; stored pin-SECRET-refresh rejected'))
+    db.tables.pinterest_auth = { refresh_token: 'pin-SECRET-refresh', expires_at: at(-HOUR) }
     fetchMock.mockImplementation(
       async () =>
         new Response(
@@ -422,13 +461,9 @@ describe('/api/cron/token-heartbeat', () => {
     const { body } = await run()
 
     const printed = spies.flatMap((s) => s.mock.calls.map((c) => c.map((x) => String(x)).join(' ')))
-    const surfaces = [
-      JSON.stringify(body),
-      JSON.stringify(db.syncLogs),
-      JSON.stringify(alerts),
-      ...printed,
-    ].join('\n')
+    const surfaces = [JSON.stringify(body), JSON.stringify(db.syncLogs), JSON.stringify(alerts), ...printed].join('\n')
     expect(printed.length).toBeGreaterThan(0)
+    expect(alerts.length).toBeGreaterThan(0)
     // Every token value this test planted (env names like *_CLIENT_SECRET may appear; values never).
     const planted = [
       ...Object.values(db.tables).flatMap((row) =>
@@ -437,6 +472,7 @@ describe('/api/cron/token-heartbeat', () => {
       'x-SECRET-refresh',
       'x-SECRET-access-old',
       'yt-SECRET-refresh',
+      'pin-SECRET-refresh',
       'tt-SECRET-access-new',
       'tt-SECRET-refresh',
       'tt-SECRET-refresh-new',

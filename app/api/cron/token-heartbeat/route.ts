@@ -15,6 +15,7 @@ import {
   missingEnv,
   PLATFORM_SPECS,
   redactSecrets,
+  REMOVED_PLATFORMS,
   summarize,
   toSyncLogRows,
   type HeartbeatPlatform,
@@ -35,6 +36,10 @@ import {
  *
  * (state model, severities and DISABLED_PLATFORMS: lib/social/token-heartbeat.ts).
  *
+ * LinkedIn and Threads were removed as platforms (Matt 2026-10-14,
+ * REMOVED_PLATFORMS): the heartbeat never reads, refreshes or alerts on them,
+ * even though linkedin_auth still holds a dead token row.
+ *
  * WHY THIS IS LOUD (2026-10-14): a token that was dead with no refresh token, or
  * a platform never connected, used to report as "skipped" with HTTP 204. LinkedIn
  * expired 2026-07-09 with no refresh token and the cron stayed green for 97 days.
@@ -53,9 +58,8 @@ import {
  * Inactivity windows (how long a token can sit idle before it dies):
  *   Meta Page token: never expires; pinged for status.
  *   YouTube / GBP: 6 months of refresh-token inactivity (Google).
- *   LinkedIn / TikTok: 365 days (rolling refresh), when a refresh token exists.
+ *   TikTok: 365 days (rolling refresh).
  *   X: refresh token rotates on every use.
- *   Threads: 60-day long-lived token, extendable only while still valid.
  *   Pinterest: 30-60 days by tier. Nextdoor: partner-gated, off.
  *
  * Auth: Authorization: Bearer ${CRON_SECRET} (requireCronAuth).
@@ -137,14 +141,10 @@ async function exerciseGetter(
   switch (platform) {
     case 'youtube':
       return (await import('@/lib/youtube')).getYouTubeAccessToken()
-    case 'linkedin':
-      return (await import('@/lib/linkedin')).getLinkedInAccessToken()
     case 'x':
       return (await import('@/lib/x')).getXAccessToken()
     case 'google_business_profile':
       return (await import('@/lib/google-business-profile')).getOrRefreshGoogleBusinessProfileAccessToken()
-    case 'threads':
-      return (await (await import('@/lib/threads')).getThreadsAccessToken()).accessToken
     case 'pinterest':
       return (await import('@/lib/pinterest')).getPinterestAccessToken()
     case 'nextdoor':
@@ -172,13 +172,7 @@ async function observeOAuthPlatform(spec: PlatformSpec, secrets: Set<string>): P
   if (!before) return base
 
   const beforeMs = before.expiresAt ? Date.parse(before.expiresAt) : Number.NaN
-  const hasRefreshPath =
-    envMissing.length === 0 &&
-    (spec.refreshMode === 'refresh_token'
-      ? before.hasRefreshToken
-      : spec.refreshMode === 'self'
-        ? beforeMs > Date.now()
-        : false)
+  const hasRefreshPath = envMissing.length === 0 && spec.refreshMode === 'refresh_token' && before.hasRefreshToken
 
   // Nothing can renew a token with no refresh path, so its getter is not called
   // (it would only return the same token or throw "expired, no refresh token").
@@ -306,6 +300,8 @@ export async function GET(request: NextRequest) {
       summary,
       anyFailed,
       results,
+      // Not checked: removed by Matt, listed so a reader knows they are gone on purpose.
+      removed: REMOVED_PLATFORMS.map((r) => ({ platform: r.platform, reason: r.reason })),
       syncLogs: { written: syncLogError ? 0 : syncRows.length, error: syncLogError },
     },
     // A dead platform fails the cron. A heartbeat that cannot write its own

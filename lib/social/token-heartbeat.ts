@@ -15,6 +15,10 @@
  *   not_configured  no client env (and no token row)
  *   error           the heartbeat could not tell (row unreadable, check threw)
  *
+ * LinkedIn and Threads are REMOVED_PLATFORMS (Matt 2026-10-14): no spec here,
+ * so they are never checked, refreshed or alerted, even with a dead token row.
+ * That is unlike DISABLED_PLATFORMS, where a dead connected token still fails.
+ *
  * Severity decides how loud a state is:
  *   failure  expiring, expired, error, and not_connected on a publish-door target.
  *            Fails the cron's HTTP status and sync_logs, and alerts Matt.
@@ -25,16 +29,22 @@
  * only, and every message goes through redactSecrets before it is logged,
  * returned, written to sync_logs, or texted.
  */
-import { isPublishDoorPlatform, type PublishDoorPlatform } from '@/lib/social/publish-door'
+import {
+  isPublishDoorPlatform,
+  isRemovedPlatform,
+  REMOVED_PLATFORMS,
+  type PublishDoorPlatform,
+} from '@/lib/social/publish-door'
+
+/** Removed platforms (Matt 2026-10-14). The heartbeat holds no spec for them. */
+export { REMOVED_PLATFORMS, isRemovedPlatform }
 
 export type HeartbeatPlatform =
   | 'meta'
   | 'youtube'
-  | 'linkedin'
   | 'x'
   | 'google_business_profile'
   | 'tiktok'
-  | 'threads'
   | 'pinterest'
   | 'nextdoor'
 
@@ -48,17 +58,16 @@ const DAY_MS = 24 * 60 * 60 * 1000
 /**
  * How a platform's access token is kept alive.
  *   refresh_token  a stored refresh token buys a new access token
- *   self           the access token extends itself while still valid (Threads th_refresh_token)
  *   none           nothing renews it (Meta Page token from env)
  */
-export type RefreshMode = 'refresh_token' | 'self' | 'none'
+export type RefreshMode = 'refresh_token' | 'none'
 
 export type PlatformSpec = {
   platform: HeartbeatPlatform
   label: string
   /** Supabase table holding the OAuth row (id='default'); null for env-token platforms. */
   table: string | null
-  /** Whether `table` has a refresh_token column (threads_auth does not). */
+  /** Whether `table` has a refresh_token column. */
   hasRefreshColumn: boolean
   /** Client env the platform's lib requires; each inner list is any-of. Names only, never values. */
   env: string[][]
@@ -70,8 +79,8 @@ export type PlatformSpec = {
 }
 
 /**
- * Env names mirror each lib's own OAuth env reader: getLinkedInOAuthEnv,
- * getPinterestOAuthEnv, getThreadsOAuthEnv, getNextdoorOAuthEnv, getXOAuthEnv,
+ * Env names mirror each lib's own OAuth env reader: getPinterestOAuthEnv,
+ * getNextdoorOAuthEnv, getXOAuthEnv,
  * getYouTubeOAuthEnv (lib/<platform>.ts), getEnv in lib/tiktok.ts, and
  * getGoogleEnv in lib/google-business-profile.ts.
  */
@@ -95,16 +104,6 @@ export const PLATFORM_SPECS: readonly PlatformSpec[] = [
     refreshMode: 'refresh_token',
     fixPath: '/api/youtube/authorize',
     doorTargets: ['youtube'],
-  },
-  {
-    platform: 'linkedin',
-    label: 'LinkedIn',
-    table: 'linkedin_auth',
-    hasRefreshColumn: true,
-    env: [['LINKEDIN_CLIENT_ID'], ['LINKEDIN_CLIENT_SECRET'], ['LINKEDIN_REDIRECT_URI']],
-    refreshMode: 'refresh_token',
-    fixPath: '/api/linkedin/authorize',
-    doorTargets: ['linkedin'],
   },
   {
     platform: 'x',
@@ -139,16 +138,6 @@ export const PLATFORM_SPECS: readonly PlatformSpec[] = [
     refreshMode: 'refresh_token',
     fixPath: '/api/tiktok/authorize',
     doorTargets: ['tiktok'],
-  },
-  {
-    platform: 'threads',
-    label: 'Threads',
-    table: 'threads_auth',
-    hasRefreshColumn: false,
-    env: [['THREADS_CLIENT_ID'], ['THREADS_CLIENT_SECRET'], ['THREADS_REDIRECT_URI']],
-    refreshMode: 'self',
-    fixPath: '/api/threads/authorize',
-    doorTargets: ['threads'],
   },
   {
     platform: 'pinterest',
@@ -347,20 +336,13 @@ export function classifyToken(spec: PlatformSpec, obs: TokenObservation, nowMs: 
   }
 
   const envOk = obs.envMissing.length === 0
-  const refreshPath =
-    envOk &&
-    (spec.refreshMode === 'refresh_token'
-      ? hasRefreshToken
-      : spec.refreshMode === 'self'
-        ? expMs > nowMs
-        : false)
+  const refreshPath = envOk && spec.refreshMode === 'refresh_token' && hasRefreshToken
 
   // Why nothing renews it, in the words the summary uses.
   let why: string
   if (refreshPath && obs.refreshError) why = `and the refresh failed (${obs.refreshError})`
   else if (!envOk) why = `and cannot refresh (${obs.envMissing.join(', ')} unset)`
   else if (spec.refreshMode === 'refresh_token' && !hasRefreshToken) why = 'with no refresh token'
-  else if (spec.refreshMode === 'self') why = 'and can no longer be extended (Threads tokens extend only before they expire)'
   else why = 'and did not refresh'
 
   const msLeft = expMs - nowMs
