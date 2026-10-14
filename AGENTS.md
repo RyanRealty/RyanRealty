@@ -51,6 +51,7 @@ These outrank every later line in this file, every skill, and every handoff or p
 7. **New process rules.** A standing process rule Matt issues lands in this file in the same PR as the work it governs.
 8. **DB writes.** Bots may write to the Ryan Realty Supabase DB when a task Matt asked for needs it. Sends stay drafts. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` in `lib/data/prospecting/drip-schedule.ts` stays `true`. Approved CMA and email wording do not change without Matt's sign-off.
 9. **merge-gate.** CI job `merge-gate` is the required land-path rollup: lint, gates, unit, and on app PRs build / e2e / a11y. Do not require Lighthouse or content-floor. A ruleset or branch protection on `main` should require `merge-gate` + `security-scan`, block direct pushes and force-pushes, require a PR, and let repository admins bypass in an emergency. This session's GitHub App token 403s Administration (`Resource not accessible by integration`); do not push an empty commit to `main` until the API shows protection is active.
+10. **Post-merge steps are automated.** A merge to `main` must not leave `npm run db:push`, a hosted schema apply, or any other required production step as a hand command. `.github/workflows/supabase-migrations.yml` dry-runs then applies `supabase/migrations/**` on push to `main` (project `dwvlophlbvvygjfxcrhm`). Already-applied SQL is tolerated. A failed run opens or comments on a `migration-failed` issue. Never tell anyone to run `npm run db:push` after merge.
 
 ---
 
@@ -571,7 +572,9 @@ Put it on the work graph (`loop_work_nodes` / `/admin/loop`), not `orchestrate.t
 # Create a new migration
 npm run db:migration <name>
 
-# Push migrations to Supabase
+# Local / linked CLI only. After merge, do not run this by hand.
+# .github/workflows/supabase-migrations.yml dry-runs then applies
+# supabase/migrations/** on push to main.
 npm run db:push
 
 # Check for migration drift (pre-push hook)
@@ -580,6 +583,7 @@ npm run db:guard
 
 Naming: `YYYYMMDDHHMMSS_description_snake_case.sql`
 Always idempotent: use `IF NOT EXISTS`, `IF EXISTS`, `ON CONFLICT DO NOTHING`.
+Post-merge apply is automated (CORE RULES process land path item 10).
 
 ---
 
@@ -590,7 +594,7 @@ Always idempotent: use `IF NOT EXISTS`, `IF EXISTS`, `ON CONFLICT DO NOTHING`.
 | `npm run build` fails with type errors | Check for missing imports, incorrect types. Run `npx tsc --noEmit` for detailed errors. |
 | Design token lint fails | Replace hardcoded colors with semantic tokens. See `CLAUDE.md` for the mapping. |
 | Pre-push hook fails | Run `npm run quality:local:strict` to see what's failing. Fix or use `SKIP_LOCAL_GATES=1`. |
-| Supabase migration drift | Run `npm run db:push` to sync migrations, or `SKIP_DB_GUARD=1` to bypass check. |
+| Hosted migration failed | The apply-on-main Action failed; see the `migration-failed` issue and the workflow run. Do not leave `npm run db:push` as a hand step. |
 | Tests fail on CI but pass locally | Ensure env vars are set in GitHub Secrets. Check if test depends on Supabase connection. |
 
 ---
