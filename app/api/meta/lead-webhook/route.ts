@@ -688,6 +688,7 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
     lead_type:
       parsed.audience === 'buyer' ? 'buyer_question' : parsed.audience === 'seller' ? 'seller_listing' : 'contact_general',
     form_id: 'meta_lead_ad',
+    crm_person_id: personId,
     extra: {
       lp_source: 'facebook',
       lp_medium: 'paid_social',

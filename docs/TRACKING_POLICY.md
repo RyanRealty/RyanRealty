@@ -583,7 +583,9 @@ explicit approval before shipping (ops-explicit / Draft-First).
    `qualify_lead` (Buyer Contract, Pending) and `close_convert_lead` (Closed)
    through `fireGa4Event` — the same helper as server `generate_lead`. Params are
    `lead_type` only. The contact must already hold a stored `_ga` client_id
-   (`crm_people.custom.gaClientId`, first-touch from `fireLeadGenerated`); a
+   (`crm_people.custom.gaClientId`, first-touch from `fireLeadGenerated` and
+   each lead form action via `persistGaClientIdFromCookies`; client_id is the
+   last two numeric parts of the `_ga` cookie); a
    missing id is skipped and counted, never minted. Idempotent per contact+stage
    (`ga4_offline_conversion` / `person:<id>:<stageKey>`).
    **Google Enhanced Conversions is still NOT built** — Google Ads has never run

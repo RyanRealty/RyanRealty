@@ -9,7 +9,7 @@ import { sendContactNotification } from '@/lib/resend'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
-import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { fireLeadGenerated, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { TRAP } from './_v3/constants'
@@ -205,6 +205,7 @@ export async function submitConcessionsLead(formData: FormData): Promise<Concess
     })
   }
 
+  await persistGaClientIdFromCookies(capturedPersonId)
   await fireLeadGenerated({
     lp_variant: 'buy-concessions',
     lead_type: 'buyer_question',
