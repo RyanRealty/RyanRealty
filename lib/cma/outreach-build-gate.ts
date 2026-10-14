@@ -10,11 +10,12 @@ import { getCmaAdminReviewRowBySlug, getListingParcelNumber, getOutreachBuildPro
 import { getPersonForCmaKickoff } from '@/lib/data/crm/cmaKickoff'
 import { probeIntakeBackOnMarket } from '@/lib/data/prospecting/compliance'
 import { hasSendableEmail } from '@/lib/data/prospecting/types'
-import { isSuppressedByEmail } from '@/lib/crm/suppressions'
+import { isSuppressedByEmail, isSuppressedByPhone } from '@/lib/crm/suppressions'
 import { classifyCmaOrigin } from '@/lib/cma/origin'
 import {
   decideProspectIntake,
   emailBlockedByFlags,
+  pickSendableCell,
   type IntakePhone,
 } from '@/lib/prospecting/intake-gate'
 import type { CmaBuildInput } from '@/lib/cma/types'
@@ -35,6 +36,7 @@ const SMS_BLOCKED = 'The cell cannot be texted. The CMA was not built.'
 const NO_CHANNEL = 'There is no sendable owner email or cell. The CMA was not built.'
 const ROW_UNREAD = 'The CMA row could not be read. The CMA was not built.'
 const EMAIL_UNREAD = 'The email check could not be read. The CMA was not built.'
+const SMS_UNREAD = 'The SMS check could not be read. The CMA was not built.'
 
 export function outreachOrigin(
   requestSource: string | null | undefined,
@@ -76,6 +78,8 @@ export function decideOutreachBuild(input: {
   flags: readonly string[]
   email: string | null
   emailSuppressed: boolean
+  /** Live SMS suppression on the cell we would text. Same gate as emailSuppressed. */
+  smsSuppressed?: boolean
   phones: readonly IntakePhone[] | null
 }): OutreachBuildDecision {
   if (input.unreadable) return { ok: false, reason: UNREADABLE }
@@ -88,6 +92,7 @@ export function decideOutreachBuild(input: {
     dncPhone: flags.includes('dnc') || flags.includes('do-not-call') || flags.includes('do_not_call'),
     email: input.email,
     emailSuppressed: input.emailSuppressed,
+    smsSuppressed: input.smsSuppressed,
     phones: input.phones,
   })
   if (decision.action === 'skip' && decision.reason === 'back-on-market') {
@@ -212,6 +217,25 @@ export async function gateOutreachBuild(input: CmaBuildInput): Promise<OutreachB
     }
   }
 
+  const phones = phonesForBuild(input.ownerPhones, [
+    input.client.phone,
+    (row?.client_phone as string | null) ?? null,
+    prospect?.contactPhone,
+  ])
+  let smsSuppressed = false
+  const cell = pickSendableCell(phones)
+  if (!live.onMarket && !live.unreadable && cell && (!email || emailSuppressed)) {
+    try {
+      const sup = await isSuppressedByPhone(cell, 'sms')
+      if (sup.reasons.some((reason) => reason.startsWith('phone-suppression-check-failed'))) {
+        return { ok: false, reason: SMS_UNREAD }
+      }
+      smsSuppressed = sup.suppressed
+    } catch {
+      return { ok: false, reason: SMS_UNREAD }
+    }
+  }
+
   return decideOutreachBuild({
     unreadable: live.unreadable,
     onMarket: live.onMarket,
@@ -219,10 +243,7 @@ export async function gateOutreachBuild(input: CmaBuildInput): Promise<OutreachB
     flags: prospect?.flags ?? [],
     email,
     emailSuppressed,
-    phones: phonesForBuild(input.ownerPhones, [
-      input.client.phone,
-      (row?.client_phone as string | null) ?? null,
-      prospect?.contactPhone,
-    ]),
+    smsSuppressed,
+    phones,
   })
 }
