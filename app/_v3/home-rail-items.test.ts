@@ -80,7 +80,7 @@ describe('homeRailRows', () => {
 
   // 2026-09-08 evaluator: 3027 Polarstar Avenue led both the nearby rail and the
   // price-cuts rail, so the page opened with the same photograph twice. On a
-  // real pool (HOME_TILE_FETCH is 3,000) every house now leads exactly one shelf.
+  // real pool (HOME_RAIL_POOL newest tiles plus drop keys) every house now leads exactly one shelf.
   it('never shows one house on two shelves', () => {
     const tiles = Array.from({ length: 40 }, (_, i) =>
       tile({

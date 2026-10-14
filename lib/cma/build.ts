@@ -48,6 +48,7 @@ import { buildRejectedSales } from '@/lib/pricing/rejected'
 import { dropPriorSalesOfSameHome, seatDistinctHomes } from '@/lib/pricing/same-address'
 import { buildPricingReview, confidenceForVerdict } from '@/lib/pricing/review'
 import { applyAskBelowBandHold, applyAskInBandHold } from '@/lib/cma/gap-hold'
+import { gateOutreachBuild } from '@/lib/cma/outreach-build-gate'
 import { attachSellerNet, reanchorSellerNet } from '@/lib/pricing/seller-net'
 import { pricingFailureMessage } from '@/lib/pricing/price-set'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject } from '@/lib/pricing/classes'
@@ -266,6 +267,15 @@ async function persistJudgeCache(slug: string, record: JudgeDecisionRecord): Pro
 
 export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
   const slug = input.slug.trim().toLowerCase()
+  // Expired and FSBO only. Live status, then compliance, then a sendable
+  // email or a typed cell. This runs before the snapshot so a rebuild cannot
+  // price a home that is back on the market or has nobody to reach.
+  const docType: 'cma' | 'expired-audit' = input.docType === 'expired-audit' ? 'expired-audit' : 'cma'
+  const blocked = await gateOutreachBuild(input)
+  if (!blocked.ok) {
+    await recordBuildFailure(slug, blocked.reason, { stage: 'subject', docType })
+    return { ok: false, error: blocked.reason, slug }
+  }
   const generatedAtIso = new Date().toISOString()
   // The letter's calendar day in Pacific time, the day every printed date on
   // the document reads (formatDate). A UTC slice of an evening build is the
@@ -273,8 +283,6 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
   // 2026-10-08" and "listed ... through October 8, 2026" (reader review
   // 2026-10-08). The reads that print a day take this.
   const letterDay = zonedDateKey(generatedAtIso)
-  // Hoisted: every failure path stamps it on the row alongside the comp trace.
-  const docType: 'cma' | 'expired-audit' = input.docType === 'expired-audit' ? 'expired-audit' : 'cma'
   // Held outside the try so the catch-all below can still write the comp trace.
   // A throw anywhere downstream of selection (voice gate, render, persist) used
   // to wipe the answer to "why these comps" off the row entirely.

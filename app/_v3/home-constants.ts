@@ -19,10 +19,20 @@ export const HOME_FIELD_LIMIT = 12
 /** Legacy mixed-type Field pool size. Prefer homeRailRows on Home `/`. */
 export const HOME_FIELD_POOL = 24
 
-/** Tile fetch ceiling. The DAL's own note: 5000 covers the full active
- *  inventory (~2-3K rows); 3000 held on the KB page and holds here, so the
- *  curation's "two highest asks" claim is over the whole feed, not a sample. */
+/** Tile fetch ceiling for pages that still walk the full active feed (/buy).
+ *  The homepage no longer uses this: it reads HOME_RAIL_POOL newest tiles plus
+ *  the current price-drop keys, which is enough to fill three 12-card rails. */
 export const HOME_TILE_FETCH = 3000
+
+/**
+ * Newest active tiles the homepage reads. Three rails take 12 cards each;
+ * newest-first covers "new this week" and the Bend-area shelf. Price-cut
+ * homes that are not in this window are hydrated by HOME_RAIL_DROP_KEYS.
+ */
+export const HOME_RAIL_POOL = 80
+
+/** Current price-drop keys the homepage hydrates as tiles (one rail of 12, spare). */
+export const HOME_RAIL_DROP_KEYS = 36
 
 /**
  * The count line's source: the count is the leftover Market Truth region row

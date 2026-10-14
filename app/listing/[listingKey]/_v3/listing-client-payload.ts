@@ -6,6 +6,7 @@
 import type { ListingDetail, ListingPhoto } from '@/lib/data/types/listing'
 import type { Broker } from '@/lib/data/types/broker'
 import type { ReviewsSummary } from '@/lib/data/reviews/getReviews'
+import { SSR_GRID_PAGE } from '@/lib/site/ssr-grid-page'
 
 export type PriceCtaListing = Pick<
   ListingDetail,
@@ -91,8 +92,14 @@ export function pickPriceCtaListing(listing: ListingDetail): PriceCtaListing {
   }
 }
 
-export function slimListingMedia(photos: readonly ListingPhoto[]): ListingPhoto[] {
-  return photos.map((photo) => ({
+/** Photographs serialized into the listing-detail RSC flight. The rest stay on the photos API. */
+export const LISTING_SSR_PHOTO_CAP = SSR_GRID_PAGE
+
+export function slimListingMedia(
+  photos: readonly ListingPhoto[],
+  cap: number = LISTING_SSR_PHOTO_CAP,
+): ListingPhoto[] {
+  return photos.slice(0, Math.max(0, cap)).map((photo) => ({
     url: photo.url,
     caption: photo.caption ?? null,
     order: photo.order,
