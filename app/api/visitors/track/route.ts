@@ -33,7 +33,7 @@
  *   - IP rate limiting at the Vercel edge stops obvious abuse.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { isGpcOptOut } from '@/lib/crm/gpc'
@@ -226,6 +226,21 @@ type TrackBody = {
    * the GA4 mirror's per-visit session_id (TRACK-1).
    */
   visit?: { id?: number; number?: number; start?: boolean }
+}
+
+/**
+ * Send the GA4 mirror hit once the response is on its way, without losing it.
+ * The mirror runs last in this handler, so a bare `void` promise could be
+ * frozen with the function before the request to Google leaves; `after()` keeps
+ * the function alive until it settles. Outside a request scope (unit tests)
+ * `after` throws, and the task simply runs now.
+ */
+function mirrorAfterResponse(task: () => Promise<unknown>): void {
+  try {
+    after(task)
+  } catch {
+    void task()
+  }
 }
 
 function getSupabase() {
@@ -589,6 +604,9 @@ export async function POST(request: NextRequest) {
   // The signed rr_pid cookie is (re)issued whenever this request identifies a
   // browser, so /api/identity/me and the landing-page forms know them too.
   let setPersonCookieFor: number | null = null
+  // True once the carryover below clears a provisional automation flag: the
+  // mirror then sends this known contact's first view like any other.
+  let provisionalCleared = false
   if (sessionWrite.inserted && rrVid && !token && !automation.automated) {
     const known = await readIdentityMapForVid(supabase, rrVid)
     if (known?.personId) {
@@ -605,6 +623,7 @@ export async function POST(request: NextRequest) {
       // A browser already mapped to a contact is a person, whatever it landed on.
       if (res.sessionStamped && arrivalShape.automated) {
         await clearProvisionalAutomation(supabase, sessionId, PROVISIONAL_AUTOMATION_REASONS)
+        provisionalCleared = true
       }
     } else if (known?.email) {
       await stampSessionEmailOnly(supabase, sessionId, known.email)
@@ -649,125 +668,6 @@ export async function POST(request: NextRequest) {
     // unexpected reason. Log and return success — the page must not break.
     console.warn('[visitors/track] event insert failed:', insertEventErr.message)
     return NextResponse.json({ ok: true, eventDropped: true }, { headers: corsHeaders(origin) })
-  }
-
-  // ─── GA4 Measurement Protocol page_view mirror (2026-08-10) ─────────────
-  // Mirror view events when the browser is not counting them.
-  //
-  // At analytics/all on a site page, skip page_view/listing_view regardless of
-  // `_ga`. US visitors are analytics-granted by default, so the Google tag
-  // counts the first view; `_ga` is often not set yet when this POST lands, and
-  // gating on the cookie double-counted that first view (browser client_id plus
-  // an rr_session_id-derived client_id). Trade-off: an ad-blocked visitor at
-  // the analytics tier is no longer mirrored; first-party Supabase still has
-  // them.
-  //
-  // Essential-tier views are still mirrored (browser gtag is consent-denied).
-  // Client documents (`pageCategory: 'client-document'`) load no gtag, so they
-  // are always mirrored, whatever the tier. Non-view mirrored events
-  // (intent_declared, welcome_back, email_opt, sms_opt) are unchanged.
-  // A decline never reaches here. Never blocks the visitor response.
-  // No-op without GA4_API_SECRET.
-  const mirrorGa4 =
-    eventType === 'page_view' ||
-    eventType === 'listing_view' ||
-    eventType === 'intent_declared' ||
-    eventType === 'welcome_back' ||
-    eventType === 'email_opt' ||
-    eventType === 'sms_opt'
-  // Automation never reaches GA4: a crawler render mirrored as a page_view is
-  // exactly the inflation TRACK-1 measured, and GA4's known-bot filter does
-  // not see Measurement Protocol hits. A provisional contact-deep-link session
-  // loses only its first view; a later event proves a person and mirrors.
-  // ONE suppression decision with the browser's Google tag loader
-  // (lib/analytics/ga-suppression.ts, Matt 2026-10-05): never /admin, never a
-  // non-production host, never automation (user agent, navigator.webdriver, our
-  // marker), never a signed-in broker's browser.
-  const gaSuppression = decideGaSuppressionForPage({
-    pageUrl,
-    userAgent: request.headers.get('user-agent'),
-    webdriver: body.webdriver,
-    cookieHeader,
-  })
-  if (
-    mirrorGa4 &&
-    !gaSuppression.suppress &&
-    !automation.automated &&
-    !(sessionWrite.inserted && arrivalShape.automated)
-  ) {
-    try {
-      const { fireGa4Event, clientIdFromGaCookie, clientIdFromSessionId } = await import(
-        '@/lib/ga4-measurement-protocol'
-      )
-      const gaCookie = request.cookies.get('_ga')?.value
-      const fromCookie = clientIdFromGaCookie(gaCookie)
-      const isView = eventType === 'page_view' || eventType === 'listing_view'
-      // A raw-HTML client document (/cma, /bpo) loads no gtag at all, so the
-      // premise of this guard, "the browser's own gtag is counting this view", is
-      // false there. Before 2026-09-29 the document tracker always posted at
-      // 'essential' and every report open was mirrored; it now posts the visitor's
-      // real tier, and a consented reader with a _ga cookie would have dropped out
-      // of GA4 entirely (the most engaged recipients).
-      const clientHasGtag = isView && !minimalOnly && body.pageCategory !== 'client-document'
-      if (!clientHasGtag) {
-        const pagePath = (() => {
-          try {
-            return new URL(pageUrl).pathname
-          } catch {
-            return undefined
-          }
-        })()
-        const { pageTypeFromPath } = await import('@/lib/analytics/page-type')
-        const pageType = pagePath ? pageTypeFromPath(pagePath) : undefined
-        const meta = body.metadata && typeof body.metadata === 'object' ? body.metadata : {}
-        const intent = typeof meta.intent === 'string' ? meta.intent : undefined
-        const source = typeof meta.source === 'string' ? meta.source : undefined
-        const thing = typeof meta.thing === 'string' ? meta.thing : undefined
-        const broker = visitBrokerGa4Fields(
-          resolveVisitBrokerSlug({
-            agentParam: typeof body.agent === 'string' ? body.agent : null,
-            cookieValue: request.cookies.get(AGENT_ATTRIB_COOKIE)?.value,
-            pageUrl,
-            utmContent: campaign?.content,
-            utmTerm: campaign?.term,
-          }),
-        )
-        // TRACK-1: a per-visit numeric session id (not the browser-lifetime
-        // rr_session_id) and, on the first event of a visit, campaign_details
-        // with the source / medium / campaign the tracker captured, so GA4 can
-        // draw sessions and attribute them.
-        const visit = parseVisit(body.visit)
-        const campaignDetails = visit?.start ? campaignDetailsParams(campaign ?? body.campaign) : null
-        void fireGa4Event({
-          eventName: isView ? 'page_view' : eventType,
-          clientId: fromCookie || clientIdFromSessionId(sessionId),
-          precedingEvents: campaignDetails ? [{ name: 'campaign_details', params: campaignDetails }] : undefined,
-          userProperties: {
-            ...(intent ? { intent } : {}),
-            ...(broker?.userProperties ?? {}),
-          },
-          eventParams: {
-            // Identity-stripped: GA4 is a third party and a contact id must not
-            // leave the building inside a URL (same rule as the stored row).
-            page_location: stripGa4UrlParams(pageUrl) ?? storedPageUrl,
-            page_title: body.pageTitle ?? undefined,
-            page_referrer: stripGa4UrlParams(body.referrer),
-            page_path: pagePath,
-            page_type: pageType,
-            ...ga4SessionParams(visit, sessionId),
-            intent,
-            source,
-            thing,
-            ...(broker?.eventParams ?? {}),
-          },
-        })
-      }
-    } catch (err) {
-      console.warn(
-        '[visitors/track] ga4 page_view mirror failed:',
-        err instanceof Error ? err.message : String(err),
-      )
-    }
   }
 
   // 3. Fetch the updated session for the response payload. Snippet uses this
@@ -815,6 +715,138 @@ export async function POST(request: NextRequest) {
     if (res.sessionStamped && cookiePersonId !== decision.personId) setPersonCookieFor = decision.personId
   }
   if (setPersonCookieFor && setPersonCookieFor === cookiePersonId) setPersonCookieFor = null
+
+  // ─── GA4 Measurement Protocol page_view mirror (2026-08-10) ─────────────
+  // Mirror view events when the browser is not counting them.
+  //
+  // At analytics/all on a site page, skip page_view/listing_view regardless of
+  // `_ga`. US visitors are analytics-granted by default, so the Google tag
+  // counts the first view; `_ga` is often not set yet when this POST lands, and
+  // gating on the cookie double-counted that first view (browser client_id plus
+  // an rr_session_id-derived client_id). Trade-off: an ad-blocked visitor at
+  // the analytics tier is no longer mirrored; first-party Supabase still has
+  // them.
+  //
+  // Essential-tier views are still mirrored (browser gtag is consent-denied).
+  // Client documents (`pageCategory: 'client-document'`) load no gtag, so they
+  // are always mirrored, whatever the tier. Non-view mirrored events
+  // (intent_declared, welcome_back, email_opt, sms_opt) are unchanged.
+  // A decline never reaches here. Never blocks the visitor response.
+  // No-op without GA4_API_SECRET.
+  //
+  // KNOWN CONTACTS (2026-10-14, data/analytics/decisions.json
+  // "crm-contacts-tagged-in-ga4"): a mirrored hit from a session that belongs to
+  // a CRM contact carries the same hashed user_id the browser tag gets from
+  // /api/identity/me, at the analytics tier only (an essential-tier visit reaches
+  // GA4 under an anonymous client id and nothing else). The mirror runs AFTER the
+  // identify step above so the view that identifies the visit (a tracked link to
+  // a CMA, which runs no Google tag) carries it: GA4 read 2026-10-14 showed 12
+  // users with a user id against 113 contacts on the site in 30 days, and 13 of
+  // the missing ones had read only their report at the analytics tier.
+  const mirrorGa4 =
+    eventType === 'page_view' ||
+    eventType === 'listing_view' ||
+    eventType === 'intent_declared' ||
+    eventType === 'welcome_back' ||
+    eventType === 'email_opt' ||
+    eventType === 'sms_opt'
+  // Automation never reaches GA4: a crawler render mirrored as a page_view is
+  // exactly the inflation TRACK-1 measured, and GA4's known-bot filter does
+  // not see Measurement Protocol hits. A provisional contact-deep-link session
+  // loses only its first view; a later event proves a person and mirrors.
+  // ONE suppression decision with the browser's Google tag loader
+  // (lib/analytics/ga-suppression.ts, Matt 2026-10-05): never /admin, never a
+  // non-production host, never automation (user agent, navigator.webdriver, our
+  // marker), never a signed-in broker's browser.
+  const gaSuppression = decideGaSuppressionForPage({
+    pageUrl,
+    userAgent: request.headers.get('user-agent'),
+    webdriver: body.webdriver,
+    cookieHeader,
+  })
+  if (
+    mirrorGa4 &&
+    !gaSuppression.suppress &&
+    !automation.automated &&
+    !(sessionWrite.inserted && arrivalShape.automated && !provisionalCleared)
+  ) {
+    try {
+      const { fireGa4Event, clientIdFromGaCookie, clientIdFromSessionId } = await import(
+        '@/lib/ga4-measurement-protocol'
+      )
+      const gaCookie = request.cookies.get('_ga')?.value
+      const fromCookie = clientIdFromGaCookie(gaCookie)
+      const isView = eventType === 'page_view' || eventType === 'listing_view'
+      // A raw-HTML client document (/cma, /bpo) loads no gtag at all, so the
+      // premise of this guard, "the browser's own gtag is counting this view", is
+      // false there. Before 2026-09-29 the document tracker always posted at
+      // 'essential' and every report open was mirrored; it now posts the visitor's
+      // real tier, and a consented reader with a _ga cookie would have dropped out
+      // of GA4 entirely (the most engaged recipients).
+      const clientHasGtag = isView && !minimalOnly && body.pageCategory !== 'client-document'
+      if (!clientHasGtag) {
+        const pagePath = (() => {
+          try {
+            return new URL(pageUrl).pathname
+          } catch {
+            return undefined
+          }
+        })()
+        const { pageTypeFromPath } = await import('@/lib/analytics/page-type')
+        const pageType = pagePath ? pageTypeFromPath(pagePath) : undefined
+        const meta = body.metadata && typeof body.metadata === 'object' ? body.metadata : {}
+        const intent = typeof meta.intent === 'string' ? meta.intent : undefined
+        const source = typeof meta.source === 'string' ? meta.source : undefined
+        const thing = typeof meta.thing === 'string' ? meta.thing : undefined
+        const broker = visitBrokerGa4Fields(
+          resolveVisitBrokerSlug({
+            agentParam: typeof body.agent === 'string' ? body.agent : null,
+            cookieValue: request.cookies.get(AGENT_ATTRIB_COOKIE)?.value,
+            pageUrl,
+            utmContent: campaign?.content,
+            utmTerm: campaign?.term,
+          }),
+        )
+        // TRACK-1: a per-visit numeric session id (not the browser-lifetime
+        // rr_session_id) and, on the first event of a visit, campaign_details
+        // with the source / medium / campaign the tracker captured, so GA4 can
+        // draw sessions and attribute them.
+        const visit = parseVisit(body.visit)
+        const campaignDetails = visit?.start ? campaignDetailsParams(campaign ?? body.campaign) : null
+        const knownPersonId = session && typeof session.crm_person_id === 'number' ? session.crm_person_id : null
+        mirrorAfterResponse(() => fireGa4Event({
+          eventName: isView ? 'page_view' : eventType,
+          clientId: fromCookie || clientIdFromSessionId(sessionId),
+          // fireGa4Event sends the hashed id at the analytics tier only.
+          knownContact: { personId: knownPersonId, trackingLevel: consent },
+          precedingEvents: campaignDetails ? [{ name: 'campaign_details', params: campaignDetails }] : undefined,
+          userProperties: {
+            ...(intent ? { intent } : {}),
+            ...(broker?.userProperties ?? {}),
+          },
+          eventParams: {
+            // Identity-stripped: GA4 is a third party and a contact id must not
+            // leave the building inside a URL (same rule as the stored row).
+            page_location: stripGa4UrlParams(pageUrl) ?? storedPageUrl,
+            page_title: body.pageTitle ?? undefined,
+            page_referrer: stripGa4UrlParams(body.referrer),
+            page_path: pagePath,
+            page_type: pageType,
+            ...ga4SessionParams(visit, sessionId),
+            intent,
+            source,
+            thing,
+            ...(broker?.eventParams ?? {}),
+          },
+        }))
+      }
+    } catch (err) {
+      console.warn(
+        '[visitors/track] ga4 page_view mirror failed:',
+        err instanceof Error ? err.message : String(err),
+      )
+    }
+  }
 
   // ─── Looking-at wake (D3) ────────────────────────────────────────────────
   // Identified person (crm_people.id) + a specific home. GPC already dropped
