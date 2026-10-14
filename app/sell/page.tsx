@@ -47,7 +47,6 @@ import {
   getBrokers,
   getProofBlock,
   getSellBendMarket,
-  getSurfaceImage,
 } from '@/lib/data'
 import { applyDetachedOverlay } from '@/lib/data/market-truth/getSellBendMarket'
 import { stickyAskVerdict } from '@/lib/sticky-ask'
@@ -122,7 +121,6 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function SellPage() {
   const [
     bend,
-    heroSrc,
     trackRecord,
     publicPace,
     publicSegments,
@@ -132,11 +130,6 @@ export default async function SellPage() {
     attributed,
   ] = await Promise.all([
     getSellBendMarket(),
-    getSurfaceImage('hero', {
-      geoTags: ['central-oregon'],
-      seed: ROUTE_PATH,
-      fallback: SELL_POSTER,
-    }),
     getBrokerageTrackRecord(),
     getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
     getPublicPlaceSegments({ geoType: 'city', geoSlug: 'bend' }),
@@ -343,7 +336,7 @@ export default async function SellPage() {
     })
   }
 
-  const posterSrc = heroSrc ?? SELL_POSTER
+  const posterSrc = SELL_POSTER
 
   // SITE-85 · §0. Quiet hero figure from the pace read this page already makes.
   // Re-verified 2026-09-10 this session: market_metric city=bend

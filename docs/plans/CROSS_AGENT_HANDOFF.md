@@ -1,24 +1,26 @@
-# Current — 2026-10-13 (Cursor, one business + one author JSON-LD)
+# Current — 2026-10-13 (Cursor, buyer answer pages)
 
-Surface: Cursor cloud. Branch `cursor/one-author-entity-118d` merged onto origin/main `7a17527a1`. User asked squash-merge #519 after its own CI (main-also-fail does not count), then verify production. Do not `git push` main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/buyer-answer-pages-cde8` (PR #528) rebased onto origin/main `40ffcb2b9`. 36 long-tail buyer-answer pages. Nobody pushes main. Nothing sent.
 
-**What this branch does.** Every BlogPosting author is `{@id: https://ryan-realty.com/team/matthew-ryan#person}`. Person sameAs adds verified Zillow, LinkedIn, Experience.com, YouTube, Instagram. Organization sameAs adds Zillow, Yelp, Experience.com. `/team/matthew-ryan` renders a 400-600 word bio from repo facts (LLC 2014, Bend office June 2023). Homepage title is `Ryan Realty | Bend, Oregon Real Estate Brokerage`. Realtor.com and Homes.com stay off: no verified live person URL.
+**What this commit does.** Child routes under community and city hubs (`/living`, `/cost`, `/hoa`, `/short-term-rentals`, `/vs/[other]`) plus extras on existing price-band, acreage, and new-construction search routes. Each child page opens with a 40-60 word live MLS answer cited as Oregon Data Share MLS, a figures table, listing dial, FAQ + FAQPage, hub and `/buy/*` links, and a `/team/matthew-ryan` byline. HOA only where master assessments are sourced (Tetherow, Sunriver, Caldera Springs). STR only Tetherow and Juniper Preserve. Sitemap and llms.txt list them. Registry: `lib/buyer-answers`.
 
-**Still open.** Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill. Do not send. Lead-event parse error already landed on main via #516 / #518.
+**Next.** Wait for this PR's CI, squash-merge, verify production.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES, `CLAUDE.md` §0/§2/§7.
-
-## Earlier — 2026-10-13 (Cursor, ad copy / voiceover / caption process)
-
-Surface: Cursor cloud. Branch `cursor/ai-voiceover-scripts-8a9c`, merged latest origin/main. Docs only. Do not run `npm run ship`. Do not merge. Nobody pushes main. Nothing rebuilt, nothing sent, nothing approved.
-
-**What this commit does.** Matt's 2026-10-13 ad, voiceover, and caption process now lives in the agent instruction files. New [`docs/ai-voiceover-scripts.md`](../ai-voiceover-scripts.md). AGENTS.md has the section "Ad copy, voiceover and captions" with the six locks. CLAUDE.md keeps main's Video CORE RULES (mandatory rules + `spec_rules`; video_gate is backup) and adds the ad/VO pointer on that same line. VOICE.md adds a spoken-ad note so written site/email/CMA voice stays that file.
-
-**Not this change.** Do not merge this PR unless Matt asks. Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send until Matt asks. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase. Do not run the CRM backfill.
+**Not this change.** Do not merge the phase-pool branch `fix/cma-phase-match`. Do not merge PR 488 or 489. Do not rebuild letters to re-pick comps. Do not send until Matt asks. Do not resend the 2026-10-11 letters (the 13, Aldrich, Mahogany). Do not send Monterey Mews. Do not email designing4you@msn.com. Do not send company-owned cold outreach. Do not send homes more than 15% under, the six whose ask is under every sale, 23 Benaiah, 2545 Awbrey, or 466 Flagline. Do not rebuild McCann. Do not apply `20261013180000_crm_suppressions_cleared.sql` to hosted Supabase. Do not run the CRM backfill.
 
 **Still open.** Do not pop git stash `plat-walk wip 2026-10-09`. Do not restart the 144-home fleet. Whole-plat pool stays on `fix/cma-whole-pool` in the primary checkout. Do not rebuild `cma-120-sisemore` unless Matt asks. Schaeffer stays outside Boyd Acres. Do not add Parks At Broken Top as a Broken Top alias. Oakview stays a hold. Keats and Remarkable stay delivered.
 
-Skills read: `.cursor/rules/git-commit.mdc`, `scripts/check-claude-canon.mjs`.
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `docs/DATABASE_FOR_AI_AGENTS.md`, `lib/buyer-answers/*`.
+
+## Earlier — 2026-10-13 (Cursor, sitemap + listing index hygiene)
+
+Surface: Cursor cloud. Branch `cursor/sitemap-index-hygiene-f2b8` landed on main via #533. Do not `git push` main. Nothing sent.
+
+**What that commit did.** `listings.xml` submits Active, Active Under Contract, and Pending. Closed / Expired / Withdrawn / Canceled pages older than 90 days are `noindex, follow` with a community or city hub canonical. Thin geo and matrix URLs drop.
+
+## Earlier — 2026-10-13 (Cursor, price-drops accuracy)
+
+Surface: Cursor cloud. Branch `cursor/price-drops-accuracy-61bb` landed on main via #512. Nothing sent.
 
 ## Earlier — 2026-10-13 (Cursor, inbound SMS clear + industry exclusion, PR only)
 

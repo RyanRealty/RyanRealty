@@ -8,16 +8,18 @@ const h = vi.hoisted(() => ({
   sendEvent: vi.fn(),
   canonicallyTagLead: vi.fn(),
   createNativeTask: vi.fn(),
+  enrichNativeLead: vi.fn(),
   upsertListingAlert: vi.fn(),
   fireLeadGenerated: vi.fn(),
   stitchFormSubmitIdentity: vi.fn(),
   getCookie: vi.fn(),
   sendAlertConfirmation: vi.fn(),
+  headerGet: vi.fn((_name?: string) => null as string | null),
 }))
 
 vi.mock('next/headers', () => ({
   cookies: () => Promise.resolve({ get: h.getCookie }),
-  headers: () => Promise.resolve({ get: () => null }),
+  headers: () => Promise.resolve({ get: (name: string) => h.headerGet(name) }),
 }))
 
 vi.mock('@/lib/rate-limit', () => ({
@@ -34,6 +36,7 @@ vi.mock('@/lib/canonical-lead-tagger', () => ({
 
 vi.mock('@/lib/data/crm/ensureNativeLead', () => ({
   createNativeTask: (...args: unknown[]) => h.createNativeTask(...args),
+  enrichNativeLead: (...args: unknown[]) => h.enrichNativeLead(...args),
 }))
 
 vi.mock('@/lib/data/leads/listingAlerts', () => ({
@@ -79,12 +82,16 @@ beforeEach(() => {
   h.sendEvent.mockReset()
   h.canonicallyTagLead.mockReset()
   h.createNativeTask.mockReset()
+  h.enrichNativeLead.mockReset()
   h.upsertListingAlert.mockReset()
   h.fireLeadGenerated.mockReset()
   h.stitchFormSubmitIdentity.mockReset()
   h.getCookie.mockReset()
   h.sendAlertConfirmation.mockReset()
+  h.headerGet.mockReset()
+  h.headerGet.mockReturnValue(null)
   h.sendAlertConfirmation.mockResolvedValue({ ok: false, via: 'skipped', error: 'unit test' })
+  h.enrichNativeLead.mockResolvedValue(undefined)
 
   h.sendEvent.mockResolvedValue({ ok: true, status: 200, personId: PERSON_ID })
   h.canonicallyTagLead.mockResolvedValue(undefined)
@@ -101,7 +108,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
   it('calls stitchFormSubmitIdentity with rr_vid + person id when a person exists', async () => {
     const result = await signup()
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, counted: true })
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledTimes(1)
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledWith({
       personId: PERSON_ID,
@@ -124,7 +131,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
   it('passes a valid uuid v4 sessionId through to stitch', async () => {
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toMatchObject({ ok: true })
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledTimes(1)
     expect(h.stitchFormSubmitIdentity).toHaveBeenCalledWith({
       personId: PERSON_ID,
@@ -137,7 +144,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
   it('does not stitch when the honeypot is filled', async () => {
     const result = await signup({ company: 'Acme Bot Farm' })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, counted: false })
     expect(h.sendEvent).not.toHaveBeenCalled()
     expect(h.stitchFormSubmitIdentity).not.toHaveBeenCalled()
     expect(h.upsertListingAlert).not.toHaveBeenCalled()
@@ -148,7 +155,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
 
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toMatchObject({ ok: true })
     expect(h.upsertListingAlert).toHaveBeenCalled()
   })
 
@@ -164,7 +171,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
 
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, counted: false })
     expect(h.upsertListingAlert).toHaveBeenCalledWith(expect.objectContaining({ email: EMAIL, crmPersonId: PERSON_ID }))
     expect(h.canonicallyTagLead).not.toHaveBeenCalled()
     expect(h.createNativeTask).not.toHaveBeenCalled()
@@ -178,7 +185,7 @@ describe('submitSearchAlertSignup identity stitch', () => {
 
     const result = await signup({ sessionId: SESSION_ID })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toMatchObject({ ok: true })
     expect(h.stitchFormSubmitIdentity).not.toHaveBeenCalled()
     expect(h.upsertListingAlert).toHaveBeenCalled()
   })
@@ -246,5 +253,92 @@ describe('submitSearchAlertSignup identity stitch', () => {
         form_id: 'buyer_leverage_lp',
       }),
     )
+  })
+})
+
+describe('submitSearchAlertSignup price-drop watch', () => {
+  const PRICE_DROP_EVENTS = {
+    new: false,
+    price_change: true,
+    status_change: false,
+    back_on_market: false,
+    sold: false,
+    open_house: false,
+  }
+
+  it('writes the price-change events map and confirms as a price-drop watch', async () => {
+    const result = await signup({ events: PRICE_DROP_EVENTS })
+
+    expect(result).toMatchObject({ ok: true })
+    expect(h.upsertListingAlert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: EMAIL,
+        events: PRICE_DROP_EVENTS,
+      }),
+    )
+    expect(h.sendAlertConfirmation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'price-drop',
+      }),
+    )
+    expect(h.sendAlertConfirmation.mock.calls[0][0].listingUrl).toBeUndefined()
+    expect(h.sendEvent.mock.calls[0][0].message).toMatch(/Price-drop alert/)
+  })
+
+  it('carries gclid, fbclid and utm_* on CRM sourceUrl and campaign', async () => {
+    const result = await signup({
+      landingSearch: '?gclid=G1&fbclid=F1&utm_source=google&utm_medium=cpc&utm_campaign=price-drops&email=no@no.com',
+    })
+
+    expect(result).toMatchObject({ ok: true })
+    const sent = h.sendEvent.mock.calls[0][0]
+    expect(sent.sourceUrl).toMatch(/gclid=G1/)
+    expect(sent.sourceUrl).toMatch(/fbclid=F1/)
+    expect(sent.sourceUrl).toMatch(/utm_source=google/)
+    expect(sent.sourceUrl).not.toMatch(/email=/)
+    expect(sent.campaign).toEqual({
+      source: 'google',
+      medium: 'cpc',
+      campaign: 'price-drops',
+    })
+  })
+
+  it('falls back to the referer when landingSearch is empty', async () => {
+    h.headerGet.mockImplementation((name?: string) =>
+      name === 'referer'
+        ? 'https://ryan-realty.com/price-drops?gclid=FROMREF&utm_source=facebook'
+        : null,
+    )
+
+    await signup()
+
+    const sent = h.sendEvent.mock.calls[0][0]
+    expect(sent.sourceUrl).toMatch(/gclid=FROMREF/)
+    expect(sent.campaign).toEqual({ source: 'facebook' })
+  })
+
+  it('stores EU hashed-match consent on the person and never puts dollars on generate_lead', async () => {
+    const result = await signup({ adMatchConsent: true })
+
+    expect(result).toMatchObject({ ok: true })
+    expect(h.enrichNativeLead).toHaveBeenCalledWith(
+      expect.objectContaining({
+        personId: PERSON_ID,
+        custom: expect.objectContaining({ adMatchConsent: 'granted' }),
+      }),
+    )
+    const lead = h.fireLeadGenerated.mock.calls[0][0]
+    expect(lead).toMatchObject({
+      lead_type: 'buyer_alerts',
+      form_id: 'search_alert',
+    })
+    expect(lead).not.toHaveProperty('value')
+    expect(lead).not.toHaveProperty('currency')
+    expect(JSON.stringify(lead)).not.toMatch(/adMatch|consent/)
+  })
+
+  it('does not write ad-match consent when the box is unchecked', async () => {
+    await signup()
+    expect(h.enrichNativeLead).not.toHaveBeenCalled()
   })
 })

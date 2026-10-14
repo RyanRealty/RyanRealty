@@ -34,6 +34,9 @@ import {
   publishListingStatusWord,
 } from '@/lib/listing/publish-listing-published-price'
 import { isPublicOffMarketStatus } from '@/lib/listing-status-public'
+import { listingIndexPolicy, listingOffMarketAnchor } from '@/lib/listing/listing-index-policy'
+import { listingCommunityDoor } from '@/lib/listing/listing-community-door'
+import { ListingCommunityDoor } from '@/components/site/listing-detail/ListingCommunityDoor'
 import { publishListingOffMarketFacts } from '@/lib/listing/publish-listing-offmarket'
 import { ListingOffMarketFacts } from '@/components/site/listing-detail/ListingOffMarketFacts'
 import { ListingOutOfAreaNotice } from '@/components/site/listing-detail/ListingOutOfAreaNotice'
@@ -241,44 +244,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // a self-canonical to whatever path was requested, so this is the single URL
   // every path for this listing points at.
   const canonicalPath = listingCanonicalHref(listing)
+  const { placeContext: metaPlace } = resolveListingPlaceAndMarket(listing)
+  const indexPolicy = listingIndexPolicy({
+    status: listing.status,
+    listingPath: canonicalPath,
+    communityHref: listingCommunityDoor(metaPlace.curatedCommunity)?.href ?? null,
+    cityHref: metaPlace.city?.href ?? null,
+    offMarketAt: listingOffMarketAnchor({
+      closeDate: listing.closeDate,
+      modifiedAt: listing.modifiedAt,
+    }),
+  })
 
-  // SITE-33 REVERTED (Matt 2026-10-05, "Undo it"). Out-of-area listings
-  // (Medford, Klamath Falls, Grants Pass, ...) are INDEXED again: the
-  // 2026-09-09 noindex cost about 36% of the Search Console impression drop
-  // since Sep 12 (~2,500 impressions and ~30 clicks a week). The honesty block
-  // stays on the page (outOfAreaListingPolicy in the page body); it no longer
-  // reaches the robots directive, and the sitemap ships the row again.
-  //
-  // SITE-32 (Matt ruled 2026-09-08). THE ABSENCE OF A STATUS BRANCH BELOW IS
-  // THE POLICY, not an oversight — read this before you add one.
-  //
-  // Off-market listing URLs — Closed, Expired, Canceled, Withdrawn, and Pending
-  // with them — stay INDEXED, index,follow, carrying SITE-21's honest state.
-  // Nothing here passes `noindex`: the only noindex on a listing URL is the
-  // refusal path one branch up, where getListingDetail returned null (IDX
-  // opt-out or Coming Soon). Neither status nor geography is an input, and
-  // neither may become one.
-  //
-  // Two contradictory written policies had stood for months — MASTER_SPEC §4.9
-  // said keep the URL indexed, docs/plans/data-architecture-plan.md Part J §1
-  // said noindex it and optionally 410 after 12 months — and neither was ever
-  // implemented. The losing text is deleted; §4.9 is the one statement.
-  // The measurement that settled it, GSC 2026-06-08..2026-09-05: off-market is
-  // 6,611 of 14,508 listing-detail URLs and 26,123 of 56,650 impressions (46%),
-  // earning ~324-577 clicks per 90 days at a CTR that straddles or beats
-  // Active. An address query has no Active substitute, so a noindex deletes
-  // those clicks rather than redistributing them. A Closed page showing
-  // ClosePrice is NOT a VOW-only sold surface under ODS A.4 for indexing (Matt,
-  // same ruling), so G54 is deliberately not extended here.
-  //
-  // These URLs are residual index, not submitted: getListingSitemapRows.ts
-  // ships Active/AUC only (every city, in-area or not), and that stays. Held by
-  // scripts/check-listing-offmarket-index.mjs (ci:listing-offmarket-index).
+  // Off-market pages older than 90 days are noindex, follow. Canonical is the
+  // community hub, else the city hub, else the listing. Recent Closed /
+  // Expired / Withdrawn and every on-market status stay index, follow on the
+  // listing URL. Geography is not an input for on-market homes (SITE-33
+  // reverted 2026-10-05). Held by listingIndexPolicy + ci:listing-offmarket-index.
   return pageMetadata({
     title,
     description: metaDescription,
-    path: canonicalPath,
+    path: indexPolicy.canonicalPath,
     ogImage: `/api/og?type=listing&id=${encodeURIComponent(listing.listingKey)}`,
+    noindex: indexPolicy.noindex,
   })
 }
 
@@ -340,8 +328,9 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   const offMarket = isPublicOffMarketStatus(listing.status)
 
   // SITE-33 — this home's market, for the honesty block only. Since Matt's
-  // 2026-10-05 revert it no longer touches robots or the sitemap: out-of-area
-  // homes are index, follow and in listings.xml. Null on every Central Oregon home, so
+  // 2026-10-05 revert it no longer touches robots or the sitemap for on-market
+  // homes: out-of-area Active/AUC/Pending stay index, follow and in listings.xml.
+  // Null on every Central Oregon home, so
   // a Bend page pays nothing: the geo read below only runs when the answer is
   // already "outside our market".
   const outOfArea = outOfAreaListingPolicy(listing.city)
@@ -360,6 +349,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   const outOfAreaNotice = buildListingOutOfAreaNotice(outOfArea, outOfAreaCityRow !== null)
 
   const { placeContext, marketGeo } = resolveListingPlaceAndMarket(listing)
+  const communityDoor = listingCommunityDoor(placeContext.curatedCommunity)
   const aliasLadder = listingAliasPlatLadder({
     mlsSubdivisionName: listing.subdivisionName,
     boundarySubdivision: listing.boundarySubdivision,
@@ -881,6 +871,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
         read={pillRead}
         ours={listingAgent != null || /ryan realty/i.test(listing.listOfficeName ?? '')}
       />
+      {communityDoor ? <ListingCommunityDoor door={communityDoor} /> : null}
       {/* SITE-33 — THIS IS NOT OUR MARKET, said before the page says anything
           else about the home. A reader who scrolls past the price strip on a
           Medford house has already been told, by a "| Ryan Realty — Central
