@@ -17,6 +17,13 @@
 export const BRAND_EASE_OUT = [0.22, 0.61, 0.36, 1] as const
 
 /**
+ * The brand's draw and camera-move ease, cubic-bezier(0.65, 0, 0.35, 1): slow
+ * in, slow out, so a move starts and lands without a visible edge (motion-design
+ * contract 6; camera.ts and map.ts ride it).
+ */
+export const BRAND_EASE_MOVE = [0.65, 0, 0.35, 1] as const
+
+/**
  * Evaluate a CSS cubic-bezier at progress x in [0, 1]. Newton steps with a
  * bisection fallback, the same approach browsers take, so the curve here and
  * the one a CSS transition would draw agree to well under a pixel.

@@ -27,6 +27,7 @@
  *    size, and empty or dashed copy.
  */
 import { BRAND_EASE_OUT, cubicBezier, progress } from './ease'
+import { track } from './spring'
 
 /** Advance width and ink extent of one word, in em of its own face. */
 export type WordMetrics = { advance: number; inkLeft: number; inkRight: number }
@@ -356,13 +357,6 @@ function backOut(p: number, c1: number): number {
   const x = p - 1
   return 1 + (c1 + 1) * x * x * x + c1 * x * x
 }
-/** An underdamped spring's step response from -drop to 0 with zero start velocity. */
-function spring(tau: number, drop: number, omega: number, zeta: number): number {
-  if (tau <= 0) return -drop
-  const wd = omega * Math.sqrt(1 - zeta * zeta)
-  const decay = Math.exp(-zeta * omega * tau)
-  return -drop * decay * (Math.cos(wd * tau) + ((zeta * omega) / wd) * Math.sin(wd * tau))
-}
 
 // `+ 0` turns a rounded -0 into 0, so equal frames compare equal.
 const r2 = (n: number) => Math.round(n * 100) / 100 + 0
@@ -488,7 +482,7 @@ export function endcardState(t: number, opts: EndcardOptions = {}): EndcardState
 
   // The logo springs down into place, then bobs a little on each beat.
   const G = ENDCARD.logo
-  let logoY = spring(t - T.start, G.dropPx, G.omega, G.zeta)
+  let logoY = track(t, [[T.start, -G.dropPx], [T.start, 0]], { omega: G.omega, zeta: G.zeta })
   for (const beat of endcardBeats(T, opts)) {
     if (t >= beat && t < beat + G.bobSeconds) logoY += G.bobPx * Math.sin(Math.PI * progress(t, beat, G.bobSeconds))
   }
