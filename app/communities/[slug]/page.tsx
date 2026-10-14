@@ -60,7 +60,7 @@ import { getCommunitySeoAbout } from '@/lib/community-seo-content'
 import { GOLF_COURSES } from '@/data/golf/courses'
 import { communityOutlineRef } from '@/lib/communities/community-outline'
 import { communityRegistryContext } from '@/lib/communities/community-registry-context'
-import { emptyCommunityPopulation, getCommunityPopulation } from '@/lib/place/community-population'
+import { getCommunityPopulation } from '@/lib/place/community-population'
 import { getDistrictForCity } from '@/data/co-schools'
 import { communityNewestListingsHref, getPlaceLinks } from '@/lib/place-links'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
@@ -172,7 +172,10 @@ import {
 } from './_v3/community-stock-types'
 import { resolveCommunityDisplayName } from './_v3/community-display-name'
 import { CommunityUnavailable } from './_v3/CommunityUnavailable'
-import { CommunityDegraded } from './_v3/CommunityDegraded'
+import {
+  readOrRefuseListings,
+  refuseEmptyFailedListings,
+} from '@/lib/site/listings-unavailable'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
 import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
 import { getRecordedPlatLabel } from '@/lib/data/subdivisions/getRecordedPlatLabel'
@@ -245,6 +248,11 @@ function mosBarsProps(view: PlaceMosView): V3MosBarsProps {
 
 type Props = {
   params: Promise<{ slug: string }>
+}
+
+/** One population read. The page retries this; it is not a second source. */
+function readCommunityPopulation(slug: string) {
+  return withTimeoutFallbackResult(getCommunityPopulation(slug), null, 20000, 'comm:population')
 }
 
 /**
@@ -354,29 +362,17 @@ export default async function CommunityDetailPage(props: Props) {
 async function renderCommunityDetail({ params }: Props) {
   const { slug } = await params
 
-  // RACED like generateMetadata above (SITE-214). A read that threw or hung used
-  // to end in error.tsx, a hollow 200 titled "This community didn't load" that a
-  // crawler indexed as the page. Unknown renders a small honest body with no
-  // figures; only a read that ANSWERED with no community is a 404. The degrade
-  // is noted by withTimeoutFallbackResult, so this copy's ISR lifetime is the
-  // 60 s window (lib/site/degraded-isr.ts), and robots stay as the head set them.
-  const communityRead = await withTimeoutFallbackResult(
-    getCommunityBySlug(slug),
-    null,
-    PLACE_HEAD_READ_MS,
-    'comm:body-community',
+  // RACED like generateMetadata above (SITE-214). A read that did not answer
+  // used to render a soft listings-miss body as a cacheable 200 ("The live
+  // homes did not load"), which crawlers indexed as the page. Throw instead:
+  // Next keeps the last good ISR copy, and a cold miss is HTTP 500 (error.tsx,
+  // noindex), never a cached empty community. Only a read that ANSWERED
+  // with no community is a 404. Retry once before refusing.
+  const community = await readOrRefuseListings(
+    () =>
+      withTimeoutFallbackResult(getCommunityBySlug(slug), null, PLACE_HEAD_READ_MS, 'comm:body-community'),
+    `comm:body-community ${slug}`,
   )
-  if (!communityRead.ok) {
-    const entry = getResortCommunityBySlug(slug)
-    return (
-      <CommunityDegraded
-        name={entry?.label ?? placeNameFromSlug(slug)}
-        city={entry?.city ?? null}
-        citySlug={entry?.city_slug ?? null}
-      />
-    )
-  }
-  const community = communityRead.value
   if (!community) notFound()
 
   // SITE-28 — NAME FIRST, BEFORE ANY OTHER READ. If this URL has no real place
@@ -459,7 +455,8 @@ async function renderCommunityDetail({ params }: Props) {
     // THE FOR-SALE POPULATION: one set for the homes list, the map's for-sale
     // dots, the head's count and the Atlas dots route. Its switch (outline
     // only, or outline plus MLS names) is COMMUNITY_FOR_SALE_SCOPE there.
-    withTimeoutFallbackResult(getCommunityPopulation(slug), null, 20000, 'comm:population'),
+    // Retried + refused below: a timed-out population is not "0 for sale".
+    readCommunityPopulation(slug),
     trustedOutlineSlug
       ? withTimeoutFallback(
           getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: trustedOutlineSlug }),
@@ -579,9 +576,13 @@ async function renderCommunityDetail({ params }: Props) {
     subEstimates: registryEntry?.sub_neighborhoods?.map((s) => s.hoa_annual_estimate),
   })
 
-  // A population that did not read is unknown, not empty: nothing listed, and
-  // the Atlas says its read did not complete (§0).
-  const population = populationRead.value ?? emptyCommunityPopulation(slug)
+  // A population that did not read is unknown, not empty. Retry once, then
+  // throw so ISR keeps the last good homes list instead of caching "0 for sale".
+  const population = populationRead.ok
+    ? populationRead.value
+    : await readOrRefuseListings(() => readCommunityPopulation(slug), `comm:population ${slug}`)
+  if (!population) notFound()
+  refuseEmptyFailedListings(population, `comm:population ${slug}`)
   const aliasAwareCount = population.aliasAwareCount
 
   const activeCount: number | null = hud.active
