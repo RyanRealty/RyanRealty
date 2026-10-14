@@ -45,6 +45,14 @@ export const FAQ_ITEMS = [
 
 export const BUYER_GUIDE_ROWS: V3LedgerPlainRow[] = [
   {
+    href: '/buy/leverage',
+    what: v3Text('Buyer leverage'),
+    detail: v3Text(
+      'Live MLS numbers for Bend and Central Oregon: price cuts, first asks, and months of supply. The paid-ad destination for buyers who want room to negotiate.',
+    ),
+    id: 'leverage',
+  },
+  {
     href: '/buy/first-time-home-buyer',
     what: v3Text('First-time buyer plan'),
     detail: v3Text(

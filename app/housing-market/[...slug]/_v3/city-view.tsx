@@ -168,7 +168,7 @@ export function CityMarketView({
   const headline =
     verdict.kind === 'unknown'
       ? `${cityName} housing market`
-      : `${cityName} housing market: a ${verdict.label}`
+      : `${cityName} housing market: ${verdict.label}`
 
   // SITE-81: face is name + stamp; disclosure is one plain sentence. MOS math
   // lives on #market-mos's own source, not duplicated here.
@@ -183,6 +183,9 @@ export function CityMarketView({
     { label: 'How we get our numbers', href: '/how-we-get-our-numbers' },
     ...(answerReport ? [answerReport] : []),
   ]
+  // id="takeaways" rides the answer wherever it renders (V3TakeawaysLead
+  // carries it here; the fallback section below carries it when there is no
+  // instrument), never both at once (city-view-anchor.test.tsx).
   const lede =
     takeaways.length >= 2 ? (
       <V3TakeawaysLead items={takeaways} source={answerSource} links={answerLinks} />

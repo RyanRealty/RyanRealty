@@ -15,7 +15,7 @@
  * Pure: everything here is arithmetic over data the caller hands in.
  */
 import { decodeBasemapFeature, type Basemap } from '@/lib/geo/basemap'
-import { atlasLabelBox } from '@/lib/atlas/pack-labels'
+import { atlasLabelBox, wrapLabelLines } from '@/lib/atlas/pack-labels'
 import { latLngToWorld, worldToLatLng, type StaticMapView } from '@/lib/cma/static-map-projection'
 import type { MapLatLng } from '@/lib/cma/map-overlay'
 
@@ -94,6 +94,18 @@ function pathD(points: ReadonlyArray<{ x: number; y: number }>, close = false): 
 
 function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+/** One SVG text block. A name that fits stays one node; a long plat wraps. */
+function labelText(x: number, y: number, size: number, prominent: boolean, lines: string[]): string {
+  const open = `<text x="${fmt(x)}" y="${fmt(y)}" font-family="${FONT}" font-size="${size}" font-weight="${prominent ? 600 : 500}" fill="${NAVY}" fill-opacity="${prominent ? 0.85 : 0.7}" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="${CREAM}" stroke-width="3" stroke-linejoin="round">`
+  if (lines.length <= 1) return `${open}${esc(lines[0] ?? '')}</text>`
+  const lh = size * 1.15
+  const firstDy = -((lines.length - 1) * lh) / 2
+  const spans = lines
+    .map((line, i) => `<tspan x="${fmt(x)}" dy="${fmt(i === 0 ? firstDy : lh)}">${esc(line)}</tspan>`)
+    .join('')
+  return `${open}${spans}</text>`
 }
 
 /** Miles → a lat/lng ring around a centre, for the search radius. */
@@ -234,9 +246,13 @@ export function renderMapGroundSvg(input: MapGroundInput): MapGroundResult {
   for (const p of placed) {
     const prominent = p.kind === 'town' || p.kind === 'parent'
     const size = prominent ? 12 : 11
-    parts.push(
-      `<text x="${fmt(p.x)}" y="${fmt(p.y)}" font-family="${FONT}" font-size="${size}" font-weight="${prominent ? 600 : 500}" fill="${NAVY}" fill-opacity="${prominent ? 0.85 : 0.7}" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="${CREAM}" stroke-width="3" stroke-linejoin="round">${esc(p.text)}</text>`,
-    )
+    const boxKind = p.kind === 'parent' || p.kind === 'town' ? 'town' : 'place'
+    const box = atlasLabelBox(p.text, boxKind)
+    const reserved = Math.max(28, (box.hw - 4) * 2)
+    const room = 2 * Math.min(Math.max(0, p.x - 4), Math.max(0, W - 4 - p.x))
+    const maxW = Math.max(28, Math.min(reserved, room))
+    const lines = wrapLabelLines(p.text, maxW, size)
+    parts.push(labelText(p.x, p.y, size, prominent, lines.length > 0 ? lines : [p.text]))
   }
 
   // Provenance, quietly, where the tile's logo used to sit.

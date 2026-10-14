@@ -8,9 +8,9 @@ describe('restingCityDetail', () => {
         medianLine: 'Median list $425K',
         sentence: null,
         hasPhoto: false,
-        restingSupply: 'Balanced market · 5.2 months',
+        restingSupply: '5.2 months of supply',
       }),
-    ).toBe('Median list $425K · Balanced market · 5.2 months')
+    ).toBe('Median list $425K · 5.2 months of supply')
   })
 
   it('does not invent production language when there is no photo and no supply', () => {

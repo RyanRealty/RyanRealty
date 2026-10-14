@@ -28,12 +28,14 @@ import Image from 'next/image'
 import { getRelatedBlogPosts, getDetachedMarket, type BlogPostFull } from '@/lib/data'
 import { getBlogRelatedHomes } from '@/lib/data/blog/getBlogRelatedHomes'
 import { matchGeoLinksForPost } from '@/lib/blog-geo-links'
+import { matchHubForPost } from '@/lib/blog/match-hub-for-post'
 import {
   matchBuyablePlaceForPost,
   publishBlogContextualCta,
   publishBlogRelatedHomes,
 } from '@/lib/blog/publish-blog-related-homes'
 import { publishBlogReportPeriod } from '@/lib/blog/publish-blog-report-period'
+import { ensureChatgptLandingBody } from '@/lib/blog/chatgpt-landing-answers'
 import { blogRelatedHomeRows } from './blog-related-homes'
 import { buildBlogArticleView } from './article-view'
 import { extractAnswerFirst } from './answer-first'
@@ -103,6 +105,7 @@ export async function renderBlogPost(
 ): Promise<ReactElement> {
   const relatedPosts = await getRelatedBlogPosts(post.slug, post.category, 3)
   const buyablePlace = matchBuyablePlaceForPost(post)
+  const hub = matchHubForPost(post)
   const relatedHomeTiles = buyablePlace ? await getBlogRelatedHomes(buyablePlace, 8) : []
   const publishedHomes = publishBlogRelatedHomes({
     place: buyablePlace,
@@ -117,7 +120,10 @@ export async function renderBlogPost(
   const contextualCta = publishBlogContextualCta(buyablePlace)
   const pageUrl = `${siteUrl}/blog/${encodeURIComponent(post.slug)}`
   const readMinutes = estimateReadTime(post.content)
-  const rawBody = post.content?.trim() || post.excerpt?.trim() || ''
+  const rawBody = ensureChatgptLandingBody(
+    post.slug,
+    post.content?.trim() || post.excerpt?.trim() || '',
+  )
   const period = publishBlogReportPeriod({
     title: post.title,
     html: rawBody,
@@ -252,10 +258,13 @@ export async function renderBlogPost(
   })
 
   const geoItems: V3QuietItem[] = matchGeoLinksForPost(post).map((geo) => ({
-    label: `${geo.label}, ${geo.city}`,
+    label: geo.anchor,
     href: geo.href,
   }))
-  const exploreHrefs = new Set<string>([contextualCta.href])
+  const exploreHrefs = new Set<string>([
+    contextualCta.href,
+    ...(hub ? [hub.href] : []),
+  ])
 
   const tagBody = post.tags && post.tags.length > 0 ? post.tags.filter((t) => t.trim()).join(' · ') : null
 
@@ -344,6 +353,12 @@ export async function renderBlogPost(
               />
             ) : null}
 
+            {hub ? (
+              <p className="v3-blog-hub">
+                Browse <Link href={hub.href}>{hub.anchor}</Link>.
+              </p>
+            ) : null}
+
             {view.html ? (
               <div className="v3-blog-layout">
                 <BlogArticleRail figures={view.figures} sections={view.sections} title={title} />
@@ -412,6 +427,7 @@ export async function renderBlogPost(
           eyebrow="More resources"
           heading="Next steps"
           items={[
+            ...(hub ? [{ label: hub.anchor, href: hub.href }] : []),
             { label: contextualCta.label, href: contextualCta.href },
             ...geoItems.filter((item) => !('href' in item) || !exploreHrefs.has(item.href)),
             ...(tagBody ? [{ kind: 'prose' as const, term: 'Tags', body: tagBody }] : []),

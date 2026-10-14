@@ -120,7 +120,7 @@ function escapeRegExp(value: string): string {
 
 function renderCurrentList(published: PublishedBlogMos): string {
   const items = published.rows
-    .map((row) => `<li><strong>${row.label}: ${row.display} months</strong>, a ${row.verdict}</li>`)
+    .map((row) => `<li><strong>${row.label}: ${row.display} months</strong></li>`)
     .join('\n')
   return `<ul>\n${items}\n</ul>`
 }

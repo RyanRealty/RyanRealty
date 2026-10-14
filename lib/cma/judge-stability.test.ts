@@ -216,7 +216,7 @@ describe('exclusion grounding', () => {
     expect(result.rule).toBe('price-outlier')
   })
 
-  it('does not drop a sale inside the picker living-area band, and the band is 25% on the line (Matt 2026-10-08)', () => {
+  it('does not drop a sale inside the picker living-area band, and the band is 35% on the line (Matt 2026-10-09)', () => {
     const sizeExclusion = (sale: CmaComp) =>
       groundVerdict(
         sub,
@@ -229,16 +229,16 @@ describe('exclusion grounding', () => {
         }),
         [sale],
       )
-    // 20% living-area gap: inside the picker's 25% band, past the old 20% wall.
-    const inside = sizeExclusion(comp({ listingKey: 'band', sqft: Math.round(1840 * 1.2), closePrice: 500000 }))
+    // 30% (1,840 x 1.30 = 2,392) is inside the picker's 35%. The review may not drop it.
+    const inside = sizeExclusion(comp({ listingKey: 'band', sqft: Math.round(1840 * 1.3), closePrice: 500000 }))
     expect(inside.verdict.tier).not.toBe('exclude')
     expect(inside.grounded).toBe(false)
-    // Exactly 25% (1,840 x 1.25 = 2,300) set the price, so the review may not drop it.
-    const onLine = sizeExclusion(comp({ listingKey: 'line', sqft: 2300, closePrice: 500000 }))
+    // Exactly 35% (1,840 x 1.35 = 2,484) set the price, so the review may not drop it.
+    const onLine = sizeExclusion(comp({ listingKey: 'line', sqft: 2484, closePrice: 500000 }))
     expect(onLine.verdict.tier).not.toBe('exclude')
     expect(onLine.grounded).toBe(false)
-    // 30%: past the one size cutoff, the picker's, so a size exclusion is real.
-    const past = sizeExclusion(comp({ listingKey: 'past', sqft: Math.round(1840 * 1.3), closePrice: 500000 }))
+    // 2,486 is just past 35% of 1,840, so a size exclusion is real.
+    const past = sizeExclusion(comp({ listingKey: 'past', sqft: 2486, closePrice: 500000 }))
     expect(past.grounded).toBe(true)
     expect(past.rule).toBe('size-gap')
     expect(past.verdict.tier).toBe('exclude')
@@ -298,10 +298,12 @@ describe('exclusion grounding', () => {
     expect(result.verdict.tier).toBe('exclude')
   })
 
-  it('keeps a real lot gap at an acre and a room gap the one-room rule refuses', () => {
+  it('keeps a real lot gap at an acre and a room gap of three the room rule refuses', () => {
     // An acre or more on one side is the comp search's own lot wall, so the
     // old lot test still holds there (Matt 2026-10-08). Under an acre on both
     // sides it no longer does: see "lot size under an acre" below.
+    // A gap of two stays (Matt 2026-10-09). Three whole bedrooms apart is the
+    // refusal this exclusion is allowed to stand on.
     const lot = comp({ listingKey: 'lot', lotAcres: 1.2, publicRemarks: '4 car garage with RV space.' })
     const lotResult = groundVerdict(
       sub,
@@ -318,7 +320,7 @@ describe('exclusion grounding', () => {
 
     const beds = comp({
       listingKey: 'beds',
-      beds: 1,
+      beds: 6,
       subdivision: 'Other Park',
       ownPlat: false,
       address: '99 Other St',
@@ -330,7 +332,7 @@ describe('exclusion grounding', () => {
         listingKey: 'beds',
         tier: 'exclude',
         basis: 'other',
-        reason: '1 bed versus the subject 3 bed.',
+        reason: '6 bed versus the subject 3 bed.',
       }),
       [beds],
     )
@@ -339,21 +341,38 @@ describe('exclusion grounding', () => {
     expect(bedResult.verdict.tier).toBe('exclude')
   })
 
-  it('does not ground a one-bed own-plat gap the one-room rule allows', () => {
-    const beds = comp({ listingKey: 'beds', beds: 2, ownPlat: true })
-    const bedResult = groundVerdict(
+  it('does not ground a one-bed or two-bed gap the room rule allows', () => {
+    const one = comp({ listingKey: 'beds', beds: 2, ownPlat: true })
+    const oneResult = groundVerdict(
       sub,
-      beds,
+      one,
       verdict({
         listingKey: 'beds',
         tier: 'exclude',
         basis: 'other',
         reason: '2 bed versus the subject 3 bed.',
       }),
-      [beds],
+      [one],
     )
-    expect(bedResult.verdict.tier).not.toBe('exclude')
-    expect(bedResult.grounded).toBe(false)
+    expect(oneResult.verdict.tier).not.toBe('exclude')
+    expect(oneResult.grounded).toBe(false)
+    expect(oneResult.verdict.reason).toContain('One bedroom')
+
+    const two = comp({ listingKey: 'two', beds: 5, ownPlat: false, subdivision: 'Other Park', address: '99 Other St' })
+    const twoResult = groundVerdict(
+      sub,
+      two,
+      verdict({
+        listingKey: 'two',
+        tier: 'exclude',
+        basis: 'other',
+        reason: '5 bed versus the subject 3 bed.',
+      }),
+      [two],
+    )
+    expect(twoResult.verdict.tier).not.toBe('exclude')
+    expect(twoResult.grounded).toBe(false)
+    expect(twoResult.verdict.reason).toContain('Two bedrooms')
   })
 
   it('drops a structure-type claim the remarks do not support', () => {
@@ -830,9 +849,10 @@ describe('the comparability review at the production floor (five price-setting s
       subject: { propertySubType: sub.propertySubType, yearBuilt: sub.yearBuilt, publicRemarks: sub.publicRemarks },
       minComps: MIN_COMPS,
     })
-    expect(gated.shortage).toBe(true)
-    expect(gated.comps).toHaveLength(PRICING_MIN_COMPS - 1)
-    expect(gated.trace).toContain(`under the ${PRICING_MIN_COMPS}-sale minimum`)
+    // The vote still marks one sale out. The price uses the picker's set.
+    expect(gated.shortage).toBe(false)
+    expect(gated.comps).toHaveLength(PRICING_MIN_COMPS)
+    expect(gated.trace).toContain('does not remove one the picker kept')
   })
 
   it('a majority exclude that stays under five even if the split is kept is a comp shortage, not unstable', async () => {
@@ -878,7 +898,8 @@ describe('the comparability review at the production floor (five price-setting s
       subject: { propertySubType: sub.propertySubType, yearBuilt: sub.yearBuilt, publicRemarks: sub.publicRemarks },
       minComps: MIN_COMPS,
     })
-    expect(gated.shortage).toBe(true)
+    expect(gated.shortage).toBe(false)
+    expect(gated.comps).toHaveLength(PRICING_MIN_COMPS)
   })
 })
 
@@ -930,7 +951,7 @@ describe('the review on a walk-to-7 set (walk to 7, price on 5+, Matt 2026-10-07
     expect(PRICING_WALK_CAP - 2).toBe(MIN_COMPS)
   })
 
-  it('two unanimous exclusions out of seven price on the five the review kept', async () => {
+  it('two unanimous exclusions out of seven still price all seven the picker kept', async () => {
     const pool = [...seven.slice(0, 5), { ...seven[5]!, ...outlierLot }, { ...seven[6]!, ...outlierLot }]
     const result = await judgeComps(sub, pool, market, {
       callModel: passesOn(pool, (key) => key === 'W5' || key === 'W6'),
@@ -943,8 +964,8 @@ describe('the review on a walk-to-7 set (walk to 7, price on 5+, Matt 2026-10-07
     expect(result!.keptKeys.sort()).toEqual(['W0', 'W1', 'W2', 'W3', 'W4'])
     const gated = gate(pool, result!.keptKeys, result!.verdicts)
     expect(gated.shortage).toBe(false)
-    expect(gated.comps.map((c) => c.listingKey).sort()).toEqual(['W0', 'W1', 'W2', 'W3', 'W4'])
-    expect(gated.trace).toContain('Priced on the 5 sale(s) the comparability review kept')
+    expect(gated.comps.map((c) => c.listingKey).sort()).toEqual(['W0', 'W1', 'W2', 'W3', 'W4', 'W5', 'W6'])
+    expect(gated.trace).toContain('Priced on the 7 product-matched sale(s) the picker kept')
   })
 
   it('one split vote out of seven still prices, it is not JUDGE_UNSTABLE', async () => {
@@ -963,7 +984,8 @@ describe('the review on a walk-to-7 set (walk to 7, price on 5+, Matt 2026-10-07
     expect(result!.keptKeys).not.toContain('W6')
     const gated = gate(pool, result!.keptKeys, result!.verdicts)
     expect(gated.shortage).toBe(false)
-    expect(gated.comps).toHaveLength(6)
+    expect(gated.comps).toHaveLength(7)
+    expect(gated.comps.map((c) => c.listingKey)).toContain('W6')
   })
 
   it('two sure exclusions and one split out of seven is the five-sale failure again: JUDGE_UNSTABLE', async () => {

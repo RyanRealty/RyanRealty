@@ -17,7 +17,7 @@ import { getProspectEngagement, EMPTY_ENGAGEMENT, type ProspectEngagementKey } f
 import { isProspectDocClientReady } from './doc-ready'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { emailBlockedByFlags, phoneBlockedByFlags } from '@/lib/prospecting/intake-gate'
-import { blockAllChannels, hasSendableEmail, hasSendablePhone, isUndefinedColumnError, type ProspectComplianceState, type ProspectDetail, type ProspectDocState, type ProspectKind, type ProspectPriceCycle, type ProspectRow } from './types'
+import { blockAllChannels, fsboOffMarketReason, hasSendableEmail, hasSendablePhone, isUndefinedColumnError, type ProspectComplianceState, type ProspectDetail, type ProspectDocState, type ProspectKind, type ProspectPriceCycle, type ProspectRow } from './types'
 
 // Fail-closed default when the batch somehow omits a row (it never should — it
 // iterates every input — but the read must never send an unclassified row).
@@ -49,7 +49,7 @@ export const EXPIRED_SELECT =
 
 export const FSBO_SELECT =
   'fsbo_url, street_address, city, postal_code, full_address, owner_name, contact_phone, contact_email, ' +
-  'list_price, detected_at, status, latitude, longitude, photo_url, bedrooms, bathrooms, sqft, property_type, ' +
+  'list_price, detected_at, last_seen_at, status, latitude, longitude, photo_url, bedrooms, bathrooms, sqft, property_type, ' +
   'year_built, lot_size_sqft, days_listed, description, contact_source, owner_lookup_status, enrichment_notes, ' +
   'outreach_sms_sent_at, outreach_sms_sid, outreach_crm_person_id, fub_person_id, cma_id, ' +
   'compliance_hard_stop, compliance_flags'
@@ -229,6 +229,7 @@ export function mapExpiredSkeleton(
     longitude: listing?.longitude ?? null,
     contactPhone: (raw.contact_phone as string | null) ?? null,
     contactEmail: (raw.contact_email as string | null) ?? null,
+    enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
     doc,
     compliance,
   }
@@ -257,6 +258,7 @@ export function mapFsboSkeleton(
     longitude: numOrNull(raw.longitude),
     contactPhone: (raw.contact_phone as string | null) ?? null,
     contactEmail: (raw.contact_email as string | null) ?? null,
+    enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
     doc,
     compliance,
   }
@@ -617,7 +619,7 @@ export function complianceSnapshotFromRow(kind: ProspectKind, raw: RawRow): Pros
   if (phoneHard) reasons.push(phoneHard)
   if (noPhone) reasons.push('SMS: No phone on file')
   if (noEmail) reasons.push('EMAIL: No email on file')
-  if (offMarket) reasons.push('Off market')
+  if (offMarket) reasons.push(fsboOffMarketReason(raw.last_seen_at as string | null | undefined))
   const smsClosedByCompliance = emailHard != null || phoneHard != null
   return {
     hardStop: smsClosedByCompliance,
@@ -692,7 +694,6 @@ function propertyFromExpired(raw: RawRow, listing: ExpiredListingJoin | null): O
     cumulativeDaysOnMarket: numOrNull(raw.cumulative_days_on_market),
     contactSource: (raw.contact_source as string | null) ?? null,
     ownerLookupStatus: (raw.owner_lookup_status as string | null) ?? null,
-    enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
   }
 }
 
@@ -716,7 +717,6 @@ function propertyFromFsbo(raw: RawRow): Omit<ProspectDetail, keyof ProspectRow |
     cumulativeDaysOnMarket: null,
     contactSource: (raw.contact_source as string | null) ?? null,
     ownerLookupStatus: (raw.owner_lookup_status as string | null) ?? null,
-    enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
   }
 }
 

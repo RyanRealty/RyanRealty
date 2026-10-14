@@ -66,6 +66,18 @@ describe('differentUs97Bank', () => {
     expect(differentUs97Bank(SUBJECT, QUINCE)).toBe(false)
   })
 
+  it('keeps the next house on the same side of the parkway', () => {
+    // 20090 Mount Faith is inside the frontage band. 20052 Badger is the next
+    // house west, in the touching plat. The line between them does not cross
+    // US-97. A tenth of a mile of setback is not Hayden Ranch against Diamond Bar.
+    const mountFaith = { lat: 44.025993, lng: -121.319936 }
+    const badger = { lat: 44.024725, lng: -121.320972 }
+    expect(crossesUs97(mountFaith, badger)).toBe(false)
+    expect(differentUs97Bank(mountFaith, badger)).toBe(false)
+    expect(us97Bank(mountFaith)).toBe('on')
+    expect(us97Bank(badger)).toBe('west')
+  })
+
   it('fails open when a pin has no coordinates', () => {
     expect(differentUs97Bank(SUBJECT, null)).toBe(false)
     expect(differentUs97Bank(null, HAYDEN)).toBe(false)

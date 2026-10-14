@@ -21,7 +21,7 @@ export type PlaceMos = {
 const PLACE_AT_RE = /([A-Z][A-Za-z.]+(?:\s+[A-Z][A-Za-z.]+)*) at (\d+(?:\.\d+)?)/g
 
 const TERRITORY_RE =
-  /((?:[A-Z][A-Za-z.]+(?:\s+[A-Z][A-Za-z.]+)* at \d+(?:\.\d+)?(?:,(?: and)?| and)?\s*)+)are firmly in buyer's territory/gi
+  /((?:[A-Z][A-Za-z.]+(?:\s+[A-Z][A-Za-z.]+)* at \d+(?:\.\d+)?(?:,(?: and)?| and)?\s*)+)are firmly in buyer's territory\.?/gi
 
 const INLINE_VERDICT_RE =
   /(\d+(?:\.\d+)?)(\s*months(?: of supply)?)((?:<\/[^>]+>|,|\s)+a\s+)(buyer's market|seller's market|balanced market)/gi
@@ -61,23 +61,14 @@ function joinPlaceAt(items: PlaceMos[]): string {
 }
 
 function extraVerdictSentences(items: PlaceMos[]): string {
-  return items
-    .map((item) => {
-      const verdict = publishBlogMosKind(item.mos)
-      return `${item.place} at ${item.display} is a ${verdict.label}`
-    })
-    .join('. ')
+  return items.map((item) => `${item.place} at ${item.display} months of supply`).join('. ')
 }
 
 export function rewriteBlogMosTerritoryClaims(html: string): string {
   return html.replace(TERRITORY_RE, (full, list: string) => {
     const pairs = parsePlaceMosPairs(list)
     if (pairs.length === 0) return full
-    const buyers = pairs.filter((row) => publishBlogMosKind(row.mos).kind === 'buyers')
-    const others = pairs.filter((row) => publishBlogMosKind(row.mos).kind !== 'buyers')
-    if (others.length === 0) return full
-    if (buyers.length === 0) return extraVerdictSentences(others)
-    return `${joinPlaceAt(buyers)} are firmly in buyer's territory. ${extraVerdictSentences(others)}`
+    return `${joinPlaceAt(pairs)}.`
   })
 }
 
@@ -85,9 +76,8 @@ export function rewriteBlogMosInlineVerdicts(html: string): string {
   return html.replace(INLINE_VERDICT_RE, (full, num: string, months: string, mid: string) => {
     const mos = Number(num)
     if (!Number.isFinite(mos)) return full
-    const want = publishBlogMosKind(mos)
-    if (want.kind === 'unknown') return full
-    return `${num}${months}${mid}${want.label}`
+    const cleaned = mid.replace(/,?\s*a\s+$/i, '')
+    return `${num}${months}${cleaned}`
   })
 }
 

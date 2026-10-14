@@ -93,38 +93,98 @@ const MUTED = { color: 'var(--a-text-2)' }
 const CODE = { fontFamily: 'var(--a-font-mono)', overflowWrap: 'anywhere' as const }
 
 // ─── Lead-surface registry ────────────────────────────────────────────────
-// Every code path that captures a lead. Used for the wiring-health table.
+// Every live door that captures a lead. Used for the wiring-health table.
+// Re-pointed 2026-10-09: the /lp pages this listed have 308'd since 2026-09-06
+// (next.config.ts), so their rows read 0 sessions, variants nothing sends and
+// sources nothing writes, on the page spend is judged from.
 //
-// `lp_variant` is the value the server-side fireLeadGenerated call writes to
-// the GA4 event param of the same name. `assignment_source` is the value
-// written to crm_people.source by the canonical tagger or the inline ledger
-// insert. `path_prefix` is the URL we match in the visitor_events table to
-// count raw landings on this surface.
+// `lp_variants` are the values the door's server-side fireLeadGenerated writes
+// to the GA4 event param lp_variant (summed). `assignment_source` is the exact
+// crm_people.source the door writes on create, or null when that string cannot
+// be counted per door (the bare site host, shared by several doors, or one
+// string per Meta campaign). `path_prefixes` are the visitor_events paths that
+// count landings on the door's own pages (summed); empty for a door with no
+// page of its own, so it never reads Silent just because the site has traffic.
 
 type LeadSurface = {
-  /** Short human label for the row. */
+  /** Short human label for the row, also the row key. */
   label: string
-  /** GA4 lp_variant param value. Used to pivot the GA4 lpFunnels report. */
-  lp_variant: string
+  /** GA4 lp_variant values the door sends. Used to pivot the GA4 lpFunnels report. */
+  lp_variants: readonly string[]
   /** crm_people.source value written by the server action for this surface. */
   assignment_source: string | null
-  /** URL path used in visitor_events matching. */
-  path_prefix: string
+  /** URL paths used in visitor_events matching (a prefix without a trailing slash matches itself and its subpaths). */
+  path_prefixes: readonly string[]
   /** Notes column to surface caveats. */
   notes?: string
 }
 
 const LEAD_SURFACES: LeadSurface[] = [
-  { label: 'Seller LP (gold)', lp_variant: 'seller-home-value', assignment_source: 'seller-lp', path_prefix: '/lp/seller-home-value' },
-  { label: 'Buyer LP', lp_variant: 'buyer-listing-alerts', assignment_source: 'buyer-lp', path_prefix: '/lp/buyer-listing-alerts' },
-  { label: 'Expired LP', lp_variant: 'expired-listing', assignment_source: 'expired-lp', path_prefix: '/lp/expired-listing' },
-  { label: 'Heath CMA (Tetherow)', lp_variant: 'tetherow-heath-cma', assignment_source: 'cma-request', path_prefix: '/lp/tetherow/heath' },
-  { label: 'Home valuation form', lp_variant: 'home-valuation', assignment_source: 'cma-request', path_prefix: '/home-valuation' },
-  { label: 'Contact form', lp_variant: 'contact', assignment_source: 'contact-form', path_prefix: '/contact' },
-  { label: 'Listing inquiry (showing/ask)', lp_variant: 'listing-detail', assignment_source: 'showings-request', path_prefix: '/listing/', notes: 'Also writes source=idx-registration for Ask-a-question.' },
-  { label: 'Lead-landing (multi-LP)', lp_variant: 'lead-landing-seller', assignment_source: 'seller-lp', path_prefix: '/lp/', notes: 'Shared submit across all /lp/<area>/ pages.' },
-  { label: 'Exit-intent popup', lp_variant: 'exit-intent', assignment_source: 'unknown', path_prefix: '/', notes: 'No dedicated URL; fires from anywhere.' },
-  { label: 'Meta Lead Ads webhook', lp_variant: 'meta-leadgen-form', assignment_source: null, path_prefix: '/', notes: 'Server-to-server. No site session; uses fb_lead source naming.' },
+  {
+    label: 'Seller valuation (/sell)',
+    lp_variants: ['seller-home-value'],
+    assignment_source: 'seller-lp',
+    path_prefixes: ['/sell'],
+    notes: 'One form on /sell, /sell/valuation, /sell/expired-listings and /sell/for-sale-by-owner. A submit whose visit carried a utm_source records the platform (e.g. Facebook) as its source, so it is not in the CRM count.',
+  },
+  {
+    label: 'Buyer landing (/buy/<intent>)',
+    lp_variants: ['lead-landing-buyer'],
+    assignment_source: null,
+    path_prefixes: ['/buy/'],
+    notes: 'Source is the site host, shared by other doors, so no CRM count; the person carries source:buyer-lp.',
+  },
+  {
+    label: 'Contact form',
+    lp_variants: ['contact'],
+    assignment_source: 'contact-form',
+    path_prefixes: ['/contact'],
+    notes: 'Listing tour and question buttons open /contact.',
+  },
+  {
+    label: 'Listing alerts and saves',
+    lp_variants: ['search-alert', 'listing-save', 'listing-price-watch'],
+    assignment_source: 'idx-registration',
+    path_prefixes: [],
+    notes: 'Search alerts (place pages, search), save home and price-drop watch (listing pages). One CRM source, so one row; no single page.',
+  },
+  {
+    label: 'Listing page asks (payment, CMA, pricing)',
+    lp_variants: ['listing-payment-email', 'published-cma', 'listing-pricing-read'],
+    assignment_source: null,
+    path_prefixes: [],
+    notes: 'Source is the site host, so no CRM count.',
+  },
+  {
+    label: 'Community value ask',
+    lp_variants: ['place-page'],
+    assignment_source: 'place-page',
+    path_prefixes: ['/communities/'],
+  },
+  {
+    label: 'Market and FAQ inquiry',
+    lp_variants: ['page-cta-general'],
+    assignment_source: null,
+    path_prefixes: ['/housing-market', '/faq'],
+    notes: 'Source is the site host, so no CRM count.',
+  },
+  {
+    label: 'Rental calculator',
+    lp_variants: ['rental-calculator'],
+    assignment_source: null,
+    path_prefixes: ['/tools/rental-property-calculator'],
+    notes: 'Source is the site host, so no CRM count.',
+  },
+  { label: 'Out-of-area referral', lp_variants: ['out-of-area-city'], assignment_source: 'out-of-area-lp', path_prefixes: ['/oregon/'] },
+  { label: 'Agent referral', lp_variants: ['inbound-agent-referral'], assignment_source: 'agent-referral', path_prefixes: ['/refer-a-client'] },
+  { label: 'Book a time', lp_variants: [], assignment_source: 'Website booking', path_prefixes: ['/book'], notes: 'Sends no GA4 lead event.' },
+  {
+    label: 'Meta Lead Ads webhook',
+    lp_variants: ['meta-leadgen-form'],
+    assignment_source: null,
+    path_prefixes: [],
+    notes: 'Server-to-server, no site session. Its CRM source names the campaign, so no CRM count.',
+  },
 ]
 
 // ─── Data types ───────────────────────────────────────────────────────────
@@ -148,7 +208,7 @@ type DailySeries = { date: string; count: number }
 function classifyWiring(sessions: number, ga4Events: number, assignments: number, surface: LeadSurface): WiringStatus {
   // The Meta lead-ads webhook is server-to-server. No site sessions exist.
   // Classify it by GA4 events only (the webhook fires fireGa4Event directly).
-  if (surface.lp_variant === 'meta-leadgen-form') {
+  if (surface.lp_variants.includes('meta-leadgen-form')) {
     return ga4Events > 0 ? 'wired' : 'meta-only'
   }
 
@@ -316,18 +376,23 @@ async function LeadFlowContent({
     assignmentsBySource.set(s.source, s.count)
   }
 
-  // Sessions per surface = sum of visits whose path starts with the prefix.
-  function sessionsForPrefix(prefix: string): number {
+  // Sessions per surface = visits on any of its prefixes. A prefix ending in
+  // '/' matches what starts with it; any other matches itself and its subpaths,
+  // so '/sell' never counts a '/sellers-guide'.
+  function onPrefix(path: string, prefix: string): boolean {
+    return prefix.endsWith('/') ? path.startsWith(prefix) : path === prefix || path.startsWith(`${prefix}/`)
+  }
+  function sessionsForPrefixes(prefixes: readonly string[]): number {
     let total = 0
     for (const row of visitsByPath) {
-      if (row.path === prefix || row.path.startsWith(prefix)) total += row.visits
+      if (prefixes.some((prefix) => onPrefix(row.path, prefix))) total += row.visits
     }
     return total
   }
 
   const wiringRows: WiringRow[] = LEAD_SURFACES.map((surface) => {
-    const sessions = surface.lp_variant === 'meta-leadgen-form' ? 0 : sessionsForPrefix(surface.path_prefix)
-    const ga4_events = ga4EventsByLp.get(surface.lp_variant) ?? 0
+    const sessions = sessionsForPrefixes(surface.path_prefixes)
+    const ga4_events = surface.lp_variants.reduce((sum, v) => sum + (ga4EventsByLp.get(v) ?? 0), 0)
     const assignments_count = surface.assignment_source ? assignmentsBySource.get(surface.assignment_source) ?? 0 : 0
     const status = classifyWiring(sessions, ga4_events, assignments_count, surface)
     return { surface, sessions, ga4_events, assignments: assignments_count, status }
@@ -389,7 +454,7 @@ async function LeadFlowContent({
   }))
 
   const wiringGrid: ReportGridRow[] = wiringRows.slice(0, CAP_WIRING).map((row) => ({
-    key: row.surface.lp_variant,
+    key: row.surface.label,
     cells: [
       row.surface.label,
       formatInt(row.sessions),

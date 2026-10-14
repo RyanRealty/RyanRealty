@@ -334,9 +334,9 @@ describe('master-plan opening', () => {
     // uses. It must never be a belonging fact: this page headlined "Master HOA
     // is $4,380 a year." on Caldera Springs and "Membership is separate from
     // the home." on Tetherow and Black Butte Ranch, live (Matt 2026-08-27).
-    expect(belongingHeadline('Tetherow', content)).toBe('Tetherow homes for sale')
-    expect(belongingHeadline('Caldera Springs', content)).toBe('Caldera Springs homes for sale')
-    expect(belongingHeadline('Black Butte Ranch', null)).toBe('Black Butte Ranch homes for sale')
+    expect(belongingHeadline('Tetherow', content)).toBe('Tetherow Homes for Sale')
+    expect(belongingHeadline('Caldera Springs', content)).toBe('Caldera Springs Homes for Sale')
+    expect(belongingHeadline('Black Butte Ranch', null)).toBe('Black Butte Ranch Homes for Sale')
     // the belonging facts are still published — beside the heading, as figures
     expect(belongingFigures(content).map((figure) => figure.label)).toEqual([
       'master HOA a year',

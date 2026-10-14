@@ -17,6 +17,7 @@
  * it.
  */
 
+import { letterPlaceName, nameFromPlatSlug } from '@/lib/cma/letter-place-name'
 import { countWord } from '@/lib/pricing/estimate'
 import { streetKey } from '@/lib/pricing/price-anchor'
 import { parseTierMonths, parseTierRadiusMiles } from '@/lib/pricing/search-story'
@@ -42,6 +43,12 @@ export type CompSearchKeptComp = {
    * Absent on rows stored before 2026-10-08.
    */
   ownPlat?: boolean | null
+  /**
+   * Recorded plat slug. A bare MLS code (CLAB) prints as the words of this
+   * slug (tara-view-estates → Tara View Estates). A real MLS name is not
+   * replaced by the slug.
+   */
+  subdivisionSlug?: string | null
 }
 
 export type CompSearchRung = {
@@ -229,9 +236,9 @@ export function buildCompSearch(input: {
     rungPhraseForUnnamed(outside, rungs, onSubjectStreet)
 
   // WHAT THE OWN-GROUND RUNGS ACTUALLY COVERED (reader review 2026-10-08).
-  // "No recent sale inside X matched your home" is a claim about a search;
-  // it may only say what the subdivision rungs searched: whether they ran,
-  // over how many months, and how many sales they found.
+  // The sentence may only say what the subdivision rungs searched: whether
+  // they ran, over how many months, and how many sales they found. Zero
+  // sales is "No home sold in X", never "matched your home".
   const ownRungs = ran.filter((r) => r.tier.startsWith('subdivision-'))
   const ownSearch: OwnGroundSearch | null =
     ownRungs.length > 0
@@ -318,7 +325,10 @@ function describeOutsideSales(
       const address = clean(c.address)
       return { text: address ? `${address} on your street` : 'a sale on your street', namesSale: true }
     }
-    const place = usableSubdivision(c.subdivision)
+    const mls = usableSubdivision(c.subdivision)
+    // A bare MLS code prints as the recorded plat. A real name stays.
+    const named = mls ? letterPlaceName(mls, nameFromPlatSlug(c.subdivisionSlug)) : ''
+    const place = named || null
     const address = clean(c.address)
     if (address && place) return { text: `${address} in ${place}`, namesSale: true }
     if (address) return { text: address, namesSale: true }
@@ -347,10 +357,11 @@ function lastMonths(months: number): string {
  * what the own-subdivision rungs covered: that they searched the subdivision,
  * the window they searched, and whether they found a sale at all.
  *   - They did not run: nothing is claimed about the subdivision.
- *   - They ran and found none: "No sale inside X in the last N months matched
- *     your home", with the window they actually read.
- *   - They found sales and none is printed: those sales exist, so "no sale
- *     matched" would be false. The sentence says they were found and are not
+ *   - They ran and found none: "No home sold in X in the last N months",
+ *     with the window they actually read. "Matched your home" claimed a
+ *     size fit the search never made (reader review, 915 Saginaw, 2026-10-08).
+ *   - They found sales and none is printed: those sales exist, so "no home
+ *     sold" would be false. The sentence says they were found and are not
  *     among the sales the letter uses.
  */
 function absentSentence(args: {
@@ -372,8 +383,8 @@ function absentSentence(args: {
     return outsideText ? `${found} The ${n} sales come from ${outsideText}.` : found
   }
   return outsideText
-    ? `No sale inside ${subdivision}${window} matched your home, so the search opened to ${outsideText}.`
-    : `No sale inside ${subdivision}${window} matched your home.`
+    ? `No home sold in ${subdivision}${window}, so the search opened to ${outsideText}.`
+    : `No home sold in ${subdivision}${window}.`
 }
 
 function writeSentence(args: {

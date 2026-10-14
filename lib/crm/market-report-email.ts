@@ -219,9 +219,8 @@ export function buildHeadline(areas: MarketReportAreaBlock[]): string {
   // No area's price move is headline-grade. Fall through to the next priority
   // against the first subscribed area, exactly as this function already did
   // when no area carried a YoY at all.
-  if (lead.marketVerdict != null && lead.monthsOfSupply != null) {
-    const v = verdictLabel(lead.marketVerdict).toLowerCase()
-    return `${lead.areaLabel} is a ${v} with ${formatMonths(lead.monthsOfSupply)} of supply`
+  if (lead.monthsOfSupply != null) {
+    return `${lead.areaLabel} has ${formatMonths(lead.monthsOfSupply)} of supply`
   }
   if (lead.medianPrice != null) {
     return `The ${lead.areaLabel} median sale price now sits at ${formatCurrencyRounded(lead.medianPrice)}`
@@ -322,26 +321,21 @@ export function reportCtaUrl(
 function renderAreaBlock(area: MarketReportAreaBlock): AreaRender {
   const traces: EmailFigureTrace[] = []
   const textLines: string[] = []
-  const verdict = verdictLabel(area.marketVerdict)
-  const hasVerdict = area.marketVerdict != null
   const href = reportCtaUrl(area)
   const trend = area.trend ?? null
 
   // ── Kicker ────────────────────────────────────────────────────────────────
-  const kicker = hasVerdict
-    ? `<div style="font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:${MUTED};margin-bottom:8px;font-variant-numeric:tabular-nums;">${escapeHtml(verdict)} &middot; ${formatMonths(area.monthsOfSupply)} of supply</div>`
-    : ''
-  if (hasVerdict && area.monthsOfSupply != null) {
+  const kicker =
+    area.monthsOfSupply != null
+      ? `<div style="font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:${MUTED};margin-bottom:8px;font-variant-numeric:tabular-nums;">${escapeHtml(formatMonths(area.monthsOfSupply))} of supply</div>`
+      : ''
+  if (area.monthsOfSupply != null) {
     traces.push({
       figure: `${area.areaLabel} months of supply ${formatMonths(area.monthsOfSupply)}`,
       source:
         area.source === 'market_pulse_live'
           ? `${pulseOrCacheSource(area)} (months_of_supply)`
           : `computed active / (sold_12mo / 12) from ${cacheSource(area)}`,
-    })
-    traces.push({
-      figure: `${area.areaLabel} verdict ${verdict}`,
-      source: `derived from months of supply ${formatMonths(area.monthsOfSupply)} against the canonical thresholds (4 or less sellers, 4 to 6 balanced, 6 or more buyers)`,
     })
   }
 
@@ -475,7 +469,7 @@ function renderAreaBlock(area: MarketReportAreaBlock): AreaRender {
   rows.push({
     label: 'Months of supply',
     value: formatMonths(area.monthsOfSupply),
-    context: hasVerdict ? verdict : null,
+    context: null,
   })
 
   const rowHtml = (r: StatRow): string => {
@@ -516,8 +510,8 @@ function renderAreaBlock(area: MarketReportAreaBlock): AreaRender {
 
   // ── Plain-text mirror ─────────────────────────────────────────────────────
   textLines.push(area.areaLabel.toUpperCase())
-  if (hasVerdict) {
-    textLines.push(`${verdict} with ${formatMonths(area.monthsOfSupply)} of supply`)
+  if (area.monthsOfSupply != null) {
+    textLines.push(`${formatMonths(area.monthsOfSupply)} of supply`)
   }
   textLines.push(`Median sale price (trailing 12 months) ${priceLine} (${formatYoy(area.yoyPct)})`)
   if (momText) textLines.push(momText)

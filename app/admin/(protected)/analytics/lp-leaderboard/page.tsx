@@ -21,6 +21,7 @@ import { SectionHead, StateWord, VerdictLine } from '@/components/admin/v2'
 import { DataList, Figures, Loading, Trouble } from '../_components/v2/kit'
 import { RangeControl } from '../_components/v2/RangeControl'
 import { resolveDateRange } from '../_lib/queries'
+import { lpPathForVariant } from '@/lib/analytics/lp-variant'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -118,7 +119,7 @@ async function LpLeaderboard({ range }: { range: { startDate: string; endDate: s
               lead: true,
               cell: (r, i) => (
                 <>
-                  <Link href={`/lp/${r.variant}`} style={{ color: 'var(--a-accent)' }}>
+                  <Link href={lpPathForVariant(r.variant)} style={{ color: 'var(--a-accent)' }}>
                     {r.variant}
                   </Link>{' '}
                   <StateWord state={i === 0 ? 'ok' : i === rows.length - 1 && rows.length > 2 ? 'down' : 'waiting'}>

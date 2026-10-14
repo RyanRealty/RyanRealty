@@ -59,6 +59,7 @@ Last curated: 2026-04-21 (governance purge ch.3). Obsolete/snapshot docs moved t
 ### Media
 - `VIDEO_DATA_FLOW.md` — Spark → details.Videos → listing page pipeline
 - `VIDEO_TROUBLESHOOTING.md` — video debug guide
+- `ai-voiceover-scripts.md` — ad/VO/caption process and per-engine markup (Matt 2026-10-13)
 
 ### Deployment
 - `VERCEL_DEPLOY.md` — Vercel deploy steps + env checklist

@@ -32,6 +32,7 @@ import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
 import { assembleOpinionPages } from '@/lib/cma/opinion-pages'
+import { applyRecordedPlaceNames } from '@/lib/cma/letter-place-name'
 import { scrubSellerLetterHtml } from '@/lib/cma/seller-letter-copy'
 import { letterCoverPayoffHtml } from '@/lib/cma/cover-value'
 import { subjectOnMarket } from '@/lib/cma/subject-on-market'
@@ -321,10 +322,9 @@ function wrapPage(page: PageDef): string {
 /**
  * A subject photo older than this no longer shows today's house.
  *
- * 24 months is not arbitrary: it is the same recency window the accuracy
- * contract already enforces on comparable sales ("close date within 24
- * months"). A photo we would not accept as evidence of a comp's condition is
- * not evidence of the subject's either.
+ * 24 months is the photo rule for this house. A seated sale can be older
+ * than that when the short-set recovery rung kept it (out to 36 months).
+ * A photo we would not accept as evidence of today's house is not shown.
  */
 const STALE_SUBJECT_PHOTO_MONTHS = 24
 
@@ -503,11 +503,12 @@ ${body}
 </body>
 </html>`
   const rendered = expandNameMonthDatesInHtml(html, { clientName: a.client?.name ?? null })
+  const scrubbed = scrubSellerLetterHtml(rendered, {
+    recommended: a.pricing?.recommended ?? null,
+    failedAsk: a.subject?.lastListPrice ?? null,
+  })
   return {
-    html: scrubSellerLetterHtml(rendered, {
-      recommended: a.pricing?.recommended ?? null,
-      failedAsk: a.subject?.lastListPrice ?? null,
-    }),
+    html: applyRecordedPlaceNames(scrubbed, a.comps),
     pageCount: pages.length,
   }
 }

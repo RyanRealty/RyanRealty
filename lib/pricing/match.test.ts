@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { distanceMiles } from '@/lib/cma/market-area'
 import { productClassFromFactsRow, SUBDIVISION_TIER_RATIO } from '@/lib/pricing/classes'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
-import { CUSTOM_FACTS_POOL_MONTHS, factsPoolCloseAfter, ORDINARY_FACTS_POOL_MONTHS } from '@/lib/pricing/ladder'
+import { CUSTOM_FACTS_POOL_MONTHS, DATE_RECOVERY_MONTHS, factsPoolCloseAfter, ORDINARY_FACTS_POOL_MONTHS } from '@/lib/pricing/ladder'
 import { nextRowSubdivisionSlugs, touchingPlatsForSearch } from '@/lib/data/geo/subdivision-ring'
 import { walkPricingLadder, type PricingSale, type PricingSubject } from '@/lib/pricing/match'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -83,6 +83,36 @@ function sale(over: Partial<PricingSale> = {}): PricingSale {
 const asOf = '2026-08-01'
 
 describe('walkPricingLadder', () => {
+  it('keeps two units at one address that closed at the same price', () => {
+    const pool = [
+      sale({
+        listingKey: 'U2',
+        address: '1940 Monterey Pines',
+        unitNumber: 'UNIT 2',
+        closePrice: 520_000,
+        closeDate: '2026-06-01',
+      }),
+      sale({
+        listingKey: 'U12',
+        address: '1940 Monterey Pines',
+        unitNumber: 'UNIT 12',
+        closePrice: 520_000,
+        closeDate: '2026-05-15',
+      }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['U12', 'U2'])
+  })
+
+  it('still counts one house once when a second row has the same address and price and no unit', () => {
+    const pool = [
+      sale({ listingKey: 'A', address: '10 Same St', closePrice: 700_000, closeDate: '2026-06-01' }),
+      sale({ listingKey: 'B', address: '10 Same St', closePrice: 700_000, closeDate: '2026-05-01' }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['A'])
+  })
+
   it('takes same-subdivision 3-month sales before it reaches for distance', () => {
     const pool = [
       sale({ listingKey: 'RECENT', closeDate: '2026-06-15', address: '10 Kenwood' }),
@@ -133,12 +163,9 @@ describe('walkPricingLadder', () => {
   })
 
   /**
-   * THE ONE ROOM RULE (Matt 2026-09-10: adjust inside, wall outside). The old
-   * invariant here was "never prices a one-bath house from a two-bath sale"
-   * anywhere. That wall cut 438 nearby sales on 23 Benaiah and pushed the
-   * search into four other neighborhoods. What replaces it: one bath apart is
-   * used on the subject's OWN plat and recorded on the comp, and never from
-   * outside it.
+   * THE ONE ROOM RULE (Matt 2026-10-09). One bath apart stays wherever a rung
+   * already reaches, and it is recorded on the comp. Three or more apart is
+   * refused. A sale no rung reaches stays out for distance, not for the room.
    */
   it('uses a one-bath difference from inside the subject’s own plat, and records it', () => {
     const pool = [
@@ -151,7 +178,7 @@ describe('walkPricingLadder', () => {
     expect(out.comps.find((c) => c.listingKey === 'ONE')?.roomDifference).toBeNull()
   })
 
-  it('never takes that one-bath difference from outside the subject’s ground', () => {
+  it('a one-bath sale no rung reaches stays out', () => {
     const pool = [
       sale({
         listingKey: 'AWAY',
@@ -167,16 +194,21 @@ describe('walkPricingLadder', () => {
     expect(out.comps.map((c) => c.listingKey)).not.toContain('AWAY')
   })
 
-  it('refuses two whole baths apart even inside the subject’s own plat', () => {
-    const pool = [sale({ listingKey: 'FOUR', baths: 4, address: '16 Kenwood' })]
+  it('keeps two whole baths apart inside the subject’s own plat, and refuses three', () => {
+    const pool = [
+      sale({ listingKey: 'TWO', baths: 4, address: '16 Kenwood' }),
+      sale({ listingKey: 'THREE', baths: 5, address: '18 Kenwood' }),
+    ]
     const out = walkPricingLadder(subject({ baths: 2 }), pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey)).not.toContain('FOUR')
+    expect(out.comps.map((c) => c.listingKey)).toContain('TWO')
+    expect(out.comps.find((c) => c.listingKey === 'TWO')?.roomDifference).toEqual(['baths'])
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('THREE')
   })
 
-  it('still refuses two whole baths apart outside the plat', () => {
+  it('keeps two whole baths apart outside the plat when a rung reaches it, and refuses three', () => {
     const pool = [
       sale({
-        listingKey: 'FOUR_AWAY',
+        listingKey: 'TWO_AWAY',
         baths: 4,
         address: '16 Stone',
         subdivision: 'Stone Creek',
@@ -184,9 +216,20 @@ describe('walkPricingLadder', () => {
         latitude: 44.062,
         longitude: -121.302,
       }),
+      sale({
+        listingKey: 'THREE_AWAY',
+        baths: 5,
+        address: '18 Stone',
+        subdivision: 'Stone Creek',
+        subdivisionNorm: 'stone creek',
+        latitude: 44.0621,
+        longitude: -121.3021,
+      }),
     ]
     const out = walkPricingLadder(subject({ baths: 2, marketArea: null }), pool, { asOf })
-    expect(out.comps).toHaveLength(0)
+    expect(out.comps.map((c) => c.listingKey)).toContain('TWO_AWAY')
+    expect(out.comps.find((c) => c.listingKey === 'TWO_AWAY')?.roomDifference).toEqual(['baths'])
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('THREE_AWAY')
   })
 
   it('drops a much more expensive subdivision once the similar-sub rungs run', () => {
@@ -493,7 +536,7 @@ describe('walkPricingLadder', () => {
     expect(out.comps.map((c) => c.listingKey)).toEqual(['TOWN'])
   })
 
-  it('pulls in one smaller sale when every selected comp is larger', () => {
+  it('does not import an off-plat smaller sale once the own plat already holds five', () => {
     const larger = Array.from({ length: 8 }, (_, i) =>
       sale({
         listingKey: `BIG${i}`,
@@ -502,10 +545,6 @@ describe('walkPricingLadder', () => {
         sqft: 2200,
       }),
     )
-    // Outside the plat on purpose: the plat band and the bracket band are both
-    // 25% since 2026-09-10, so a same-plat sale the rung refuses is a sale the
-    // bracket refuses too. The nearby rungs sit at 15%, which is the gap the
-    // bracket exists to close.
     const smaller = sale({
       listingKey: 'SMALL',
       address: '40 Aubrey',
@@ -515,14 +554,14 @@ describe('walkPricingLadder', () => {
       sqft: 1600,
     })
     const out = walkPricingLadder(subject({ sqft: 2000 }), [...larger, smaller], { asOf })
-    expect(out.comps.map((c) => c.listingKey)).toContain('SMALL')
-    expect(out.comps.some((c) => c.sqft > 2000)).toBe(true)
-    // Walk to 7 (Matt 2026-10-07): seven seats, one of them swapped for the smaller sale.
-    expect(out.comps).toHaveLength(7)
-    expect(out.comps.filter((c) => c.listingKey.startsWith('BIG'))).toHaveLength(6)
+    // Same size on the plat, so the five newest set the price. The off-plat
+    // sale is not opened, and it is not swapped in.
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['BIG0', 'BIG1', 'BIG2', 'BIG3', 'BIG4'])
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('SMALL')
+    expect(out.tiersUsed).not.toContain('gla-bracket')
   })
 
-  it('never keeps more than seven priced sales (walk to 7, price on 5+, Matt 2026-10-07)', () => {
+  it('prices five sales from a full own plat, the five newest', () => {
     const pool = Array.from({ length: 12 }, (_, i) =>
       sale({
         listingKey: `N${i}`,
@@ -531,10 +570,10 @@ describe('walkPricingLadder', () => {
       }),
     )
     const out = walkPricingLadder(subject(), pool, { asOf })
-    expect(out.comps).toHaveLength(7)
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['N0', 'N1', 'N2', 'N3', 'N4'])
   })
 
-  it('drops a farther sale once seven nearer sales are in, and a same-distance price does not', () => {
+  it('prices the five newest same-size sales, so a farther older sale does not seat', () => {
     const near = [700_000, 705_000, 710_000, 715_000, 720_000, 735_000, 980_000]
     const pool = [
       ...near.map((closePrice, i) =>
@@ -557,9 +596,9 @@ describe('walkPricingLadder', () => {
       }),
     ]
     const out = walkPricingLadder(subject(), pool, { asOf })
-    expect(out.comps).toHaveLength(7)
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['N0', 'N1', 'N2', 'N3', 'N4'])
     expect(out.comps.map((c) => c.listingKey)).not.toContain('FAR')
-    expect(out.comps.map((c) => c.listingKey)).toContain('N6')
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('N6')
   })
 
   it('does not treat three wide-GLA same-subdivision sales as a quality stop', () => {
@@ -1631,13 +1670,15 @@ describe('one sale, one row', () => {
     expect(out.comps[0]!.listingKey).toBe('FIRST')
   })
 
-  it('keeps two real sales of the same house at different prices', () => {
+  it('admits two real sales of the same house at different prices, and the later close takes the seat', () => {
     const pool = [
       sale({ listingKey: 'A', address: '2745 Ordway', closePrice: 799_000, closeDate: '2026-06-22' }),
       sale({ listingKey: 'B', address: '2745 Ordway', closePrice: 640_000, closeDate: '2025-09-14' }),
     ]
     const out = walkPricingLadder(subject(), pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B'])
+    const admitted = out.rungs.filter((rung) => rung.ran).reduce((max, rung) => Math.max(max, rung.runningTotal), 0)
+    expect(admitted).toBeGreaterThanOrEqual(2)
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['A'])
   })
 })
 
@@ -1717,8 +1758,8 @@ describe('the GLA bracket obeys the 24-month wall', () => {
   it('will not swap in a sale the accuracy contract would hard-fail as stale', () => {
     // Every kept sale smaller than the subject, so the bracket wants a larger
     // one. The only larger sale on offer closed 27 months ago.
-    const smaller = Array.from({ length: 3 }, (_, i) =>
-      sale({ listingKey: `S${i}`, address: `${i} Kenwood`, sqft: 1800, closeDate: '2026-06-01' }),
+    const smaller = Array.from({ length: 5 }, (_, i) =>
+      sale({ listingKey: `S${i}`, address: `${i} Kenwood`, sqft: 1800, closeDate: '2026-06-01', closePrice: 700_000 + i }),
     )
     const staleBigger = sale({
       listingKey: 'STALE',
@@ -2558,18 +2599,21 @@ describe('a comp from the wrong house', () => {
 })
 
 describe('the facts pool reaches the rung that names it', () => {
-  it('loads a sale one day outside 18 months, and does not load one past 24', () => {
+  it('loads the 36-month recovery window, and keeps the anchor windows', () => {
     const asOf = '2026-10-01'
     const ordinary = factsPoolCloseAfter(asOf, false)
     const custom = factsPoolCloseAfter(asOf, true)
     expect(ORDINARY_FACTS_POOL_MONTHS).toBe(24)
     expect(CUSTOM_FACTS_POOL_MONTHS).toBe(30)
+    expect(DATE_RECOVERY_MONTHS).toBe(36)
     // 1367 Milwaukee closed 2025-03-31, one day before the old 18-month floor.
     expect(ordinary <= '2025-03-31').toBe(true)
-    // 1125 Columbia closed about 24.6 months out.
-    expect(ordinary > '2024-09-13').toBe(true)
-    // Custom/new still reaches past the ordinary floor. Do not shrink it.
-    expect(custom < ordinary).toBe(true)
+    // 1125 Columbia closed about 24.6 months out. The recovery load includes it.
+    // The price anchor still ignores it (ORDINARY_FACTS_POOL_MONTHS).
+    expect(ordinary <= '2024-09-13').toBe(true)
+    expect(ordinary > '2023-08-01').toBe(true)
+    // Custom/new is not shorter than the recovery window, and not shorter than 30.
+    expect(custom <= ordinary).toBe(true)
     expect(custom <= '2024-09-13').toBe(true)
   })
 
@@ -2607,7 +2651,7 @@ describe('the facts pool reaches the rung that names it', () => {
     expect(out.rungs.find((r) => r.tier === 'subdivision-12mo')?.added).toBe(0)
   })
 
-  it('does not keep a sale past 24 months', () => {
+  it('keeps a same-plat sale past 24 months on the recovery rung, not on the 24-month rung', () => {
     const asOf = '2026-10-01'
     const columbia = sale({
       listingKey: 'COLUMBIA',
@@ -2635,8 +2679,9 @@ describe('the facts pool reaches the rung that names it', () => {
       [columbia],
       { asOf },
     )
-    expect(factsPoolCloseAfter(asOf, false) > columbia.closeDate).toBe(true)
-    expect(out.comps.map((c) => c.listingKey)).not.toContain('COLUMBIA')
+    expect(factsPoolCloseAfter(asOf, false) <= columbia.closeDate).toBe(true)
+    expect(out.comps.map((c) => c.listingKey)).toContain('COLUMBIA')
+    expect(out.comps[0]?.selectionTier).toMatch(/^older-subdivision-/)
     expect(out.rungs.find((r) => r.tier === 'subdivision-24mo')?.added).toBe(0)
   })
 })
@@ -2921,7 +2966,7 @@ describe('overflow — closest homes, then the plat that resembles this one (Mat
     expect(keys.filter((key) => key.startsWith('NEW'))).toHaveLength(1)
   })
 
-  it('keeps the seven closest own-plat sales when a farther cluster sits on the middle price', () => {
+  it('keeps the five closest own-plat sales when a farther cluster sits on the middle price', () => {
     const subj = subject({
       ...here,
       subdivision: 'Old Ground',
@@ -2960,7 +3005,8 @@ describe('overflow — closest homes, then the plat that resembles this one (Mat
       row('F660', 0.3, 660_000),
     ]
     const out = walkPricingLadder(subj, pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['C1000', 'C400', 'C450', 'C500', 'C800', 'C900', 'C950'])
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['C1000', 'C400', 'C450', 'C500', 'C800'])
+    expect(out.comps.map((c) => c.listingKey).some((key) => key.startsWith('F'))).toBe(false)
   })
 
   it('does not give an own-plat seat to a closer adjacent sale', () => {
@@ -3264,11 +3310,10 @@ describe('five price-setting sales is the floor, and a sale that does not set th
     expect(widened?.added).toBe(0)
   })
 
-  it('a sale more than 25% smaller on a wider plat rung does not set the price and does not reach five (Matt 2026-10-08, 2382 Jackson against 2225 Indigo)', () => {
-    // 2382 Jackson is 2,016 sqft. 2225 Indigo, 2 bed, 1,393 sqft, is 30.9%
-    // smaller: the 25% plat rung refuses it at the wall, the 35% -wide rung
-    // reads it, and rule 20 refuses it at the door. It is never admitted, it
-    // never counts toward the five, and four own-plat setters are a shortage.
+  it('a sale inside 35% on a wider plat rung sets the price and reaches five (2225 Indigo, 30.9% smaller)', () => {
+    // 2382 Jackson is 2,016 sqft. 2225 Indigo, 1,393 sqft, is 30.9% smaller.
+    // The tight plat rung does not read it. The 35% rung does, and that is
+    // the same line the price uses, so Indigo is the fifth sale.
     const jackson = plain({ sqft: 2016 })
     const indigo = {
       ...own('INDIGO', 4),
@@ -3282,32 +3327,28 @@ describe('five price-setting sales is the floor, and a sale that does not set th
     }
     const pool = [own('A', 0), own('B', 1), own('C', 2), own('D', 3), indigo]
     const out = walkPricingLadder(jackson, pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D'])
-    expect(out.comps.map((c) => c.listingKey)).not.toContain('INDIGO')
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D', 'INDIGO'])
     expect(out.comps.every((c) => c.setsPrice === true)).toBe(true)
     const wide = out.rungs.find((r) => r.tier === 'subdivision-3mo-wide')
     expect(wide?.ran).toBe(true)
-    expect(wide?.notSetting).toBe(1)
-    expect(wide?.added).toBe(0)
-    const indigoNote = out.notSettingSales?.find((s) => s.listingKey === 'INDIGO')
-    expect(indigoNote?.address).toBe('2225 Indigo')
-    expect(indigoNote?.reason).toBe(
-      '1,393 sq ft, 31% smaller than this home; sales more than 25% larger or smaller do not set the price',
-    )
-    expect(out.comps.map((c) => c.listingKey)).not.toContain('INDIGO')
+    expect(wide?.notSetting).toBe(0)
+    expect(wide?.added).toBe(1)
+    expect(out.notSettingSales?.find((s) => s.listingKey === 'INDIGO')).toBeUndefined()
     expect(out.rungs.find((r) => r.tier === 'subdivision-3mo')?.notSetting ?? 0).toBe(0)
-    expect(out.starved).toBe(true)
-    expect(out.reachedTarget).toBe(false)
-    expect(out.trace.some((t) => t.includes('Comp shortage: only 4 price-setting sale(s)'))).toBe(true)
-    expect(out.trace.some((t) => t.includes('do not set the price'))).toBe(true)
+    expect(out.starved).toBe(false)
+    expect(out.reachedTarget).toBe(true)
 
-    // A fifth own-plat sale 17.9% smaller (1,655 sqft) still sets the price and reaches five.
-    const fifth = { ...own('FIFTH', 5), sqft: 1655, closePrice: 585_000, closePpsf: 585_000 / 1655 }
-    const reached = walkPricingLadder(jackson, [...pool, fifth], { asOf })
-    expect(reached.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D', 'FIFTH'])
-    expect(reached.comps.map((c) => c.listingKey)).not.toContain('INDIGO')
-    expect(reached.reachedTarget).toBe(true)
-    expect(reached.starved).toBe(false)
+    // A sale past 35% still does not set the price. 1,280 against 2,016 is 36.5%.
+    const past = {
+      ...own('PAST', 6),
+      address: '100 Past',
+      sqft: 1280,
+      closePrice: 400_000,
+      closePpsf: 400_000 / 1280,
+    }
+    const refused = walkPricingLadder(jackson, [past], { asOf })
+    expect(refused.comps.map((c) => c.listingKey)).not.toContain('PAST')
+    expect(refused.notSettingSales ?? []).toEqual([])
   })
 
   it('a duplex by its remarks never prices a single-family home (rule 23, 1531 10th against 915 Saginaw)', () => {
@@ -3370,10 +3411,15 @@ describe('five price-setting sales is the floor, and a sale that does not set th
       const subj = plain({ sqft: 1850, publicRemarks: PHEASANT })
       const out = walkPricingLadder(subj, [...larger, small], { asOf })
       expect(out.comps.map((c) => c.listingKey)).not.toContain('SMALL')
+      expect(out.bench?.map((c) => c.listingKey)).not.toContain('SMALL')
       expect(out.tiersUsed).not.toContain('gla-bracket')
-      // The control: a plain small sale is what the bracket swaps in.
+      expect(out.aduSkipped).toBe(1)
+      // The plain smaller sale is admitted. The five closer-size sales set
+      // the price, so it does not. It is not refused as an ADU.
       const control = walkPricingLadder(subj, [...larger, { ...small, publicRemarks: null }], { asOf })
-      expect(control.comps.map((c) => c.listingKey)).toContain('SMALL')
+      expect(control.comps.map((c) => c.listingKey)).not.toContain('SMALL')
+      expect(control.bench?.map((c) => c.listingKey)).toContain('SMALL')
+      expect(control.aduSkipped).toBe(0)
     })
   })
 })
@@ -3530,13 +3576,14 @@ describe('walk to 7, price on 5+ (Matt 2026-10-07)', () => {
     expect(out.comps).toHaveLength(5)
     expect(keysOf(out)).toEqual(['A1', 'A2', 'A3', 'O1', 'O2'])
     expect(rung(out, 'adjacent-sub-3mo')?.added).toBe(8)
-    expect(rung(out, 'adjacent-sub-6mo')?.ran).toBe(false)
-    // The five came from the touching plat, so the reason names that rung
-    // and does not claim own ground supplied them.
-    expect(rung(out, 'adjacent-sub-6mo')?.skippedReason).toBe(
-      'the search already has 10 price-setting sales (it reached 5 on adjacent-sub-3mo), so it does not widen the area',
-    )
-    expect(rung(out, 'adjacent-sub-6mo')?.skippedReason).not.toMatch(/own ground/)
+    // The whole adjacent row is read, including the older closer sale.
+    // Recency ranks the July sales ahead of it, so it does not set the price.
+    expect(rung(out, 'adjacent-sub-6mo')?.ran).toBe(true)
+    expect(rung(out, 'adjacent-sub-6mo')?.added).toBe(1)
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('A6MO')
+    expect(out.bench?.map((c) => c.listingKey)).toContain('A6MO')
+    expect(rung(out, 'closer-sub-3mo')?.ran).toBe(false)
+    expect(rung(out, 'closer-sub-3mo')?.skippedReason).toMatch(/next row was not opened/)
     expect(out.reachedTarget).toBe(true)
   })
 
@@ -3549,12 +3596,20 @@ describe('walk to 7, price on 5+ (Matt 2026-10-07)', () => {
       ring('RING', 0.1, '2026-07-25'),
     ]
     const out = walkPricingLadder(subj(), pool, { asOf })
-    expect(keysOf(out)).toEqual(['P1', 'P2', 'P3', 'P4', 'P5', 'P6'])
-    for (const tier of ['adjacent-sub-3mo', 'closer-sub-3mo', 'nearby-0.25mi-3mo', 'community-6mo', 'widened-disclosed-24mo']) {
+    // Own outranks the touching plat. The best five of the six own-plat
+    // sales set the price. The adjacent sale is gathered and does not seat.
+    expect(keysOf(out)).toEqual(['P1', 'P2', 'P3', 'P4', 'P5'])
+    expect(out.bench?.map((c) => c.listingKey)).toEqual(expect.arrayContaining(['P6', 'ADJ']))
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('ADJ')
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('RING')
+    expect(rung(out, 'adjacent-sub-3mo')?.ran).toBe(true)
+    expect(rung(out, 'adjacent-sub-3mo')?.added).toBe(1)
+    expect(rung(out, 'closer-sub-3mo')?.ran).toBe(false)
+    expect(rung(out, 'closer-sub-3mo')?.skippedReason).toMatch(/next row was not opened/)
+    for (const tier of ['nearby-0.25mi-3mo', 'community-6mo', 'widened-disclosed-24mo']) {
       expect(rung(out, tier)?.ran).toBe(false)
-      expect(rung(out, tier)?.skippedReason).toMatch(/already has 6 price-setting sales/)
+      expect(rung(out, tier)?.skippedReason).toMatch(/already has 7 price-setting sales/)
     }
-    // Own ground is the same area: its later windows still ran.
     expect(rung(out, 'subdivision-24mo-wide')?.ran).toBe(true)
   })
 
@@ -3571,12 +3626,13 @@ describe('walk to 7, price on 5+ (Matt 2026-10-07)', () => {
     expect(rung(out, 'subdivision-3mo')?.runningTotal).toBe(5)
     expect(rung(out, 'subdivision-18mo')?.added).toBe(2)
     expect(rung(out, 'subdivision-24mo')?.added).toBe(2)
-    // Nine own-plat sales, seven seats, newest first, then nearest (Matt
-    // 2026-10-07): the five three-month sales take seats though the four older
-    // ones sit nearer, and the two 18-month sales beat the 24-month ones.
-    expect(out.comps).toHaveLength(7)
-    expect(keysOf(out)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'L18A', 'L18B'])
-    expect(rung(out, 'adjacent-sub-3mo')?.ran).toBe(false)
+    // The older own-plat sales stay in the pool. Recency seats the five
+    // newest. The touching plat is gathered and does not take a seat from them.
+    expect(out.comps).toHaveLength(5)
+    expect(keysOf(out)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5'])
+    expect(out.bench?.map((c) => c.listingKey)).toEqual(expect.arrayContaining(['L18A', 'L18B', 'L24A', 'L24B']))
+    expect(rung(out, 'adjacent-sub-3mo')?.ran).toBe(true)
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('ADJ')
   })
 
   it('a wider rung that reaches five holding six gives five: it adds only what reaches five', () => {
@@ -3589,10 +3645,14 @@ describe('walk to 7, price on 5+ (Matt 2026-10-07)', () => {
     ]
     const out = walkPricingLadder(subj(), pool, { asOf })
     expect(rung(out, 'adjacent-sub-3mo')?.added).toBe(4)
-    // The four touching-plat sales tie on distance and features; the listing
-    // key settles which three seat.
+    // The later adjacent month is read. Those sales are closer, and older.
+    // Recency ranks the July sales ahead of them. The listing key settles
+    // which three of the four July sales seat.
+    expect(rung(out, 'adjacent-sub-6mo')?.ran).toBe(true)
+    expect(rung(out, 'adjacent-sub-6mo')?.added).toBe(3)
     expect(keysOf(out)).toEqual(['B1', 'B2', 'B3', 'O1', 'O2'])
-    expect(rung(out, 'adjacent-sub-6mo')?.ran).toBe(false)
+    expect(out.bench?.map((c) => c.listingKey)).toEqual(expect.arrayContaining(['C1', 'C2', 'C3']))
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('RING')
     expect(out.trace.some((t) => t.includes('Comp shortage'))).toBe(false)
   })
 
@@ -3639,8 +3699,181 @@ describe('walk to 7, price on 5+ (Matt 2026-10-07)', () => {
     expect(keysOf(out)).toEqual(['E1', 'E2', 'O1', 'O2', 'O3'])
     expect(out.reachedTarget).toBe(true)
     expect(rung(out, 'adjacent-sub-3mo')?.runningTotal).toBe(5)
-    const ran = out.rungs.filter((r) => r.ran).map((r) => r.tier)
-    expect(ran[ran.length - 1]).toBe('adjacent-sub-3mo')
-    expect(rung(out, 'adjacent-sub-6mo')?.skippedReason).toMatch(/already has 5 price-setting sales/)
+    // The later adjacent month and the 36-month recovery still run. The
+    // older closer sales do not outrank the newer ones. The next row and
+    // the distance ring stay closed.
+    expect(rung(out, 'adjacent-sub-6mo')?.ran).toBe(true)
+    expect(rung(out, 'adjacent-sub-6mo')?.added).toBe(3)
+    expect(out.comps.map((c) => c.listingKey).filter((key) => key.startsWith('W'))).toEqual([])
+    expect(out.bench?.map((c) => c.listingKey)).toEqual(expect.arrayContaining(['W1', 'W2', 'W3']))
+    expect(rung(out, 'older-adjacent-36mo')?.ran).toBe(true)
+    expect(rung(out, 'closer-sub-3mo')?.skippedReason).toMatch(/next row was not opened/)
+    expect(rung(out, 'nearby-0.25mi-3mo')?.ran).toBe(false)
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('RING')
+  })
+})
+
+describe('best five from the whole plat pool (Matt 2026-10-10)', () => {
+  const asOf = '2026-08-01'
+  const here = { latitude: 44.06, longitude: -121.3, communityLocated: true as const, communitySlug: null }
+  function atMiles(miles: number) {
+    return { latitude: here.latitude + miles / 69, longitude: here.longitude }
+  }
+  const subj = (over: Partial<PricingSubject> = {}) =>
+    subject({
+      ...here,
+      subdivision: 'Old Ground',
+      subdivisionNorm: 'old ground',
+      subdivisionSlug: 'old-ground',
+      adjacentSubdivisionSlugs: ['near-plat', 'far-plat'],
+      closerSubdivisionSlugs: ['next-plat'],
+      yearBuilt: 1990,
+      sqft: 2000,
+      beds: 3,
+      baths: 2,
+      ...over,
+    })
+  const row = (
+    listingKey: string,
+    slug: string,
+    name: string,
+    over: Partial<PricingSale> = {},
+  ) =>
+    sale({
+      ...here,
+      ...atMiles(0.2),
+      listingKey,
+      address: `${listingKey} Pool Ln`,
+      subdivision: name,
+      subdivisionNorm: name.toLowerCase(),
+      subdivisionSlug: slug,
+      yearBuilt: 1992,
+      sqft: 2000,
+      beds: 3,
+      baths: 2,
+      closeDate: '2026-06-01',
+      closePrice: 700_000,
+      ...over,
+    })
+
+  it('seats the next home when one of the five keys is an earlier sale of another', () => {
+    const homes = ['H1', 'H2', 'H3', 'H4'].map((key) => row(key, 'old-ground', 'Old Ground'))
+    const earlier = row('H2-EARLIER', 'old-ground', 'Old Ground', {
+      address: 'H2 Pool Ln',
+      sqft: 2000,
+      closeDate: '2025-03-01',
+      closePrice: 640_000,
+    })
+    const sixth = row('H6', 'old-ground', 'Old Ground', { sqft: 2300 })
+    const out = walkPricingLadder(subj(), [...homes, earlier, sixth], { asOf })
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toHaveLength(5)
+    expect(keys).toEqual(expect.arrayContaining(['H1', 'H2', 'H3', 'H4', 'H6']))
+    expect(keys).not.toContain('H2-EARLIER')
+    expect(out.trace.some((line) => line.includes('not counted twice'))).toBe(true)
+  })
+
+  it('keeps a much newer adjacent sale and ranks it behind a closer year', () => {
+    const closer = ['C1', 'C2', 'C3', 'C4', 'C5'].map((key) =>
+      row(key, 'near-plat', 'Near Plat', { yearBuilt: 1992, ...atMiles(0.25) }),
+    )
+    const newer = row('NEWER', 'near-plat', 'Near Plat', { yearBuilt: 2018, ...atMiles(0.08) })
+    const out = walkPricingLadder(subj(), [...closer, newer], { asOf })
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toHaveLength(5)
+    expect(keys).toEqual(expect.arrayContaining(['C1', 'C2', 'C3', 'C4', 'C5']))
+    expect(keys).not.toContain('NEWER')
+    expect(out.bench?.map((c) => c.listingKey)).toContain('NEWER')
+    expect(out.rungs.some((r) => r.tier.startsWith('adjacent-') && r.ran && r.added > 0)).toBe(true)
+  })
+
+  it('seats a better match on a farther adjacent plat ahead of a worse close on the first plat', () => {
+    const near = ['N1', 'N2', 'N3', 'N4'].map((key) =>
+      row(key, 'near-plat', 'Near Plat', { sqft: 2100, yearBuilt: 1998, ...atMiles(0.05) }),
+    )
+    const worse = row('WORSE', 'near-plat', 'Near Plat', { sqft: 2600, yearBuilt: 1970, ...atMiles(0.04) })
+    const better = row('BETTER', 'far-plat', 'Far Plat', { sqft: 2000, yearBuilt: 2000, ...atMiles(0.4) })
+    const out = walkPricingLadder(subj({ yearBuilt: 2000 }), [...near, worse, better], { asOf })
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toHaveLength(5)
+    expect(keys).toContain('BETTER')
+    expect(keys).toEqual(expect.arrayContaining(['N1', 'N2', 'N3', 'N4']))
+    expect(keys).not.toContain('WORSE')
+    expect(out.bench?.map((c) => c.listingKey)).toContain('WORSE')
+  })
+
+  it('does not seat a next-row sale when the plat and the plats that touch it already hold five', () => {
+    const own = ['O1', 'O2', 'O3'].map((key) => row(key, 'old-ground', 'Old Ground', { ...atMiles(0.1) }))
+    const adjacent = ['A1', 'A2'].map((key) => row(key, 'near-plat', 'Near Plat'))
+    const next = row('NEXT', 'next-plat', 'Next Plat', { sqft: 2000, yearBuilt: 1990, ...atMiles(0.05) })
+    const out = walkPricingLadder(subj(), [...own, ...adjacent, next], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('NEXT')
+    expect(out.comps).toHaveLength(5)
+    const closer = out.rungs.find((r) => r.tier === 'closer-sub-3mo')
+    expect(closer?.ran).toBe(false)
+    expect(closer?.skippedReason).toMatch(/next row was not opened/)
+    expect(out.rungs.find((r) => r.tier === 'nearby-0.25mi-3mo')?.ran).toBe(false)
+  })
+
+  it('lets the next row fill the fifth when the plat and the plats that touch it hold four', () => {
+    const own = ['O1', 'O2', 'O3'].map((key) => row(key, 'old-ground', 'Old Ground'))
+    const adjacent = [row('A1', 'near-plat', 'Near Plat')]
+    const good = row('NEXT-GOOD', 'next-plat', 'Next Plat', { sqft: 2000, yearBuilt: 1990, ...atMiles(0.3) })
+    const worse = row('NEXT-WORSE', 'next-plat', 'Next Plat', { sqft: 2500, yearBuilt: 1975, ...atMiles(0.05) })
+    const out = walkPricingLadder(subj(), [...own, ...adjacent, worse, good], { asOf })
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toHaveLength(5)
+    expect(keys).toEqual(expect.arrayContaining(['O1', 'O2', 'O3', 'A1', 'NEXT-GOOD']))
+    expect(keys).not.toContain('NEXT-WORSE')
+    expect(out.rungs.find((r) => r.tier === 'closer-sub-3mo')?.ran).toBe(true)
+  })
+
+  it('still refuses a sale more than 35% off in living area', () => {
+    const past = row('PAST', 'old-ground', 'Old Ground', { sqft: 2720 })
+    const out = walkPricingLadder(subj(), [past], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('PAST')
+  })
+
+  it('still refuses a sale three bedrooms off', () => {
+    const beds = row('BEDS', 'old-ground', 'Old Ground', { beds: 6 })
+    const out = walkPricingLadder(subj(), [beds], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('BEDS')
+  })
+
+  it('keeps an adjacent sale whose plat median sits outside the price cell', () => {
+    const cells = new Map([
+      ['bend:old ground', { medianPpsf: 400, n: 20 }],
+      ['bend:near plat', { medianPpsf: 900, n: 20 }],
+    ])
+    const rich = row('RICH', 'near-plat', 'Near Plat', {
+      closePpsf: 900,
+      closePrice: 1_800_000,
+      lastAsk: 1_800_000,
+      originalAsk: 1_850_000,
+    })
+    const out = walkPricingLadder(subj(), [rich], { asOf, cells })
+    expect(out.comps.map((c) => c.listingKey)).toContain('RICH')
+  })
+
+  it('still drops that price cell once the search leaves the plat rows', () => {
+    const cells = new Map([
+      ['bend:kenwood', { medianPpsf: 400, n: 20 }],
+      ['bend:tetherow', { medianPpsf: 900, n: 20 }],
+    ])
+    const rich = sale({
+      listingKey: 'TETH',
+      subdivision: 'Tetherow',
+      subdivisionNorm: 'tetherow',
+      closeDate: '2026-07-01',
+      closePpsf: 900,
+      closePrice: 1_800_000,
+      lastAsk: 1_800_000,
+      originalAsk: 1_850_000,
+      address: '1 Tetherow',
+      latitude: 44.05,
+      longitude: -121.36,
+    })
+    const out = walkPricingLadder(subject(), [rich], { asOf, cells })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('TETH')
   })
 })

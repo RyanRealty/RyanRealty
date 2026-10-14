@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  BROWSE_PAIR_MIN_ACTIVE,
   BROWSE_PAIR_MIN_LIFETIME_SALES,
   decideBrowsePair,
   isRefusedBrowsePair,
@@ -104,7 +105,8 @@ describe('decideBrowsePair — EXP-4 / SEO-6: one canonical per place', () => {
     )
     expect(d.kind).toBe('sold-history')
     expect(d.canonicalPath).toBe('/homes-for-sale/bend/north-rim')
-    expect(d.emit).toBe(true)
+    expect(d.emit).toBe(false)
+    expect(d.index).toBe(false)
   })
 
   it('twins across a word break to the plat slug the county recorded', () => {
@@ -178,36 +180,38 @@ describe('decideBrowsePair — EXP-4 / SEO-6: one canonical per place', () => {
       facts({ citySlug: 'culver', areaSlug: 'culver-heights', inventory: { mlsName: 'Culver Heights', closedLifetime: 40, activeNow: 0 } }),
     )
     expect(d.kind).toBe('sold-history')
-    expect(d.emit).toBe(true)
+    expect(d.emit).toBe(false)
   })
 })
 
 describe('decideBrowsePair — EXP-2: only real content is indexed, decided on lifetime depth', () => {
-  it(`emits and indexes a pair with >= ${BROWSE_PAIR_MIN_LIFETIME_SALES} closed sales even with nothing for sale`, () => {
+  it(`drops a sold-history pair with >= ${BROWSE_PAIR_MIN_LIFETIME_SALES} sales when fewer than ${BROWSE_PAIR_MIN_ACTIVE} homes are for sale`, () => {
     const d = decideBrowsePair(
       facts({ inventory: { mlsName: 'Cambria', closedLifetime: 22, activeNow: 0 } }),
     )
     expect(d.kind).toBe('sold-history')
-    expect(d.index).toBe(true)
-    expect(d.emit).toBe(true)
+    expect(d.index).toBe(false)
+    expect(d.emit).toBe(false)
     expect(d.canonicalPath).toBe('/homes-for-sale/bend/cambria')
     expect(d.publicName).toBe('Cambria')
   })
 
-  it('the emitted set does not move when the last listing sells (lifetime, not live)', () => {
+  it(`emits and indexes sold history only while ${BROWSE_PAIR_MIN_ACTIVE} or more homes are for sale`, () => {
     const live = decideBrowsePair(facts({ inventory: { mlsName: 'Cambria', closedLifetime: 22, activeNow: 3 } }))
     const sold = decideBrowsePair(facts({ inventory: { mlsName: 'Cambria', closedLifetime: 25, activeNow: 0 } }))
     expect(live.emit).toBe(true)
-    expect(sold.emit).toBe(true)
+    expect(live.index).toBe(true)
+    expect(sold.emit).toBe(false)
+    expect(sold.index).toBe(false)
   })
 
-  it('indexes a thin pair only while it has homes for sale, and never submits it', () => {
+  it(`indexes and submits a live-only pair at the ${BROWSE_PAIR_MIN_ACTIVE}-active floor`, () => {
     const withListings = decideBrowsePair(
       facts({ areaSlug: 'discovery-west-phase-8-9', inventory: { mlsName: 'Discovery West Phase 8 & 9', closedLifetime: 6, activeNow: 16 } }),
     )
     expect(withListings.kind).toBe('live-only')
     expect(withListings.index).toBe(true)
-    expect(withListings.emit).toBe(false)
+    expect(withListings.emit).toBe(true)
 
     const empty = decideBrowsePair(
       facts({ areaSlug: 'amundson', inventory: { mlsName: 'Amundson', closedLifetime: 7, activeNow: 0 } }),
@@ -218,12 +222,13 @@ describe('decideBrowsePair — EXP-2: only real content is indexed, decided on l
     expect(empty.canonicalPath).toBe('/homes-for-sale/bend/amundson')
   })
 
-  it('a failed plat-set read withdraws nothing (page and sitemap read the same set)', () => {
+  it('a failed plat-set read still agrees with the page: thin sold-history is not emitted', () => {
     const d = decideBrowsePair(
       facts({ inventory: { mlsName: 'Cambria', closedLifetime: 22, activeNow: 0 }, platIndexable: null }),
     )
     expect(d.kind).toBe('sold-history')
-    expect(d.emit).toBe(true)
+    expect(d.emit).toBe(false)
+    expect(d.index).toBe(false)
   })
 })
 
