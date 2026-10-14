@@ -1,12 +1,18 @@
-# Current — 2026-10-13 (Cursor, homes-for-sale-by-area internal links)
+# Current — 2026-10-14 (Cursor, homes-for-sale-by-area internal links)
 
-Surface: Cursor cloud. Branch `cursor/homes-for-sale-by-area-f550` rebased onto origin/main `65f98dd2a` (#528 buyer answers, #533 sitemap index, #512 price-drops, #521 community fold, #513 community door). PR #525. Do not `git push` main. Nothing sent. Prod DB read-only.
+Surface: Cursor cloud. Branch `cursor/homes-for-sale-by-area-f550` merged onto origin/main `e534ef5a4` (#538 city living/cost geo-guard, plus #528 buyer answers, #533 sitemap, #512 price-drops, #521 community fold, #513 community door). PR #525. Do not `git push` main. Nothing sent. Prod DB read-only.
 
 **What this branch does.** Sitewide footer column "Homes for sale by area" with exact-match anchors to `/homes-for-sale/{bend,redmond,sisters,sunriver,la-pine}` plus the top eight community hubs. Listing pages keep the place trail and add city + community text doors via `listingCommunityDoor` (PR #513). Off-market index policy stays #533 (90-day stale noindex). Blog posts that name a place get a contextual hub link. `/homes-for-sale/bend` server-renders live inventory takeaways after the H1. Visitor copy never says leftover HUD.
 
 **Next.** Watch CI on PR #525, squash-merge, verify production.
 
 Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `.cursor/rules/git-commit.mdc`, `docs/plans/PUBLIC_PRODUCT/PAGE_OUTLINE.md`.
+
+## Earlier — 2026-10-14 (Cursor, city buyer-answer geo-guard)
+
+Surface: Cursor cloud. Landed on main via #538 at `e534ef5a4`. Nobody pushes main. Nothing sent.
+
+**What landed.** `resolveCityNeighborhoodPath` treated `/cities/<city>/living` and `/cost` as unknown neighborhoods and hard-404ed them at the edge. Reserved child segments (`living`, `cost`, `vs`, `types`) now pass through to the App Router. Out-of-market towns still 308 to `/oregon/<town>`. Unknown hoods still 404.
 
 ## Earlier — 2026-10-13 (Cursor, buyer answer pages)
 
