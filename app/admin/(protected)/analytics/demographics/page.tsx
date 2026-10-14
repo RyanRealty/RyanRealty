@@ -20,12 +20,14 @@
  * when a group has too few users; a withheld section says so and never shows
  * as 0% or an error. Shares are of KNOWN brackets (GA4's `unknown` is left out
  * of the base, as the stamp has always said). A failed report shows its own
- * error and the rest of the page still renders.
+ * error and the rest of the page still renders. Bend metro users is its own
+ * exact GA4 count, no longer a sum of the top-25 city rows.
  */
 import { Suspense, type ReactNode } from 'react'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import { getGA4DemographicsCached as getGA4Demographics } from '@/lib/ga4-cache'
 import {
+  BEND_METRO_CITIES,
   isKnownBucket,
   knownShare,
   sectionRows,
@@ -79,11 +81,8 @@ function AgeLabel({ bracket }: { bracket: string }) {
   )
 }
 
-// Bend metro split: Bend + Redmond + Sisters + Sunriver + Tumalo + La Pine + Madras + Prineville
-const BEND_METRO = new Set(['Bend', 'Redmond', 'Sisters', 'Sunriver', 'Tumalo', 'La Pine', 'Madras', 'Prineville'])
-
 function CityName({ city }: { city: string }) {
-  const local = BEND_METRO.has(city)
+  const local = BEND_METRO_CITIES.has(city)
   return (
     <span style={{ fontWeight: local ? 700 : 500, color: local ? 'var(--a-accent)' : 'var(--a-text)' }}>
       {city}
@@ -116,8 +115,8 @@ function ReportSection<T>({
   if (section.state === 'withheld') {
     return (
       <StatePanel>
-        <b>Withheld by Google for privacy.</b> Google Analytics hides any age or gender group with too few visitors in
-        it, and in this range it hid every group. That is not zero visitors. A longer date range may clear the threshold.
+        <b>Withheld by Google for privacy.</b> Google Analytics hides any group with too few visitors in it, and in this
+        range it hid every group in this report. That is not zero visitors. A longer date range may clear the threshold.
       </StatePanel>
     )
   }
@@ -152,10 +151,7 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
   const lpAgeBase = knownShare(sectionRows(lpAgeSection), (r) => r.ageBracket, () => true).base
   const genderBase = knownShare(sectionRows(data.genders), (r) => r.gender, () => true).base
 
-  const bendMetroUsers =
-    data.topCities.state === 'ok'
-      ? data.topCities.rows.filter((c) => BEND_METRO.has(c.city)).reduce((acc, c) => acc + c.users, 0)
-      : null
+  const bendMetroUsers = data.bendMetroUsers
   const bendShare = bendMetroUsers !== null && data.totalUsers ? bendMetroUsers / data.totalUsers : null
 
   // No seller-page events is "not tracked in this range", not zero visitors:

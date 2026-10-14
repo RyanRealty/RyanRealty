@@ -6,18 +6,22 @@
  * and a summary query for that day comes back empty. The snapshot cron used to
  * read that empty answer as a zero day and store clicks, impressions, CTR and
  * position as 0 (2026-10-12, written 2026-10-14 12:20 UTC). A reader comparing
- * weeks then saw a fake drop (the admin page said clicks were down 24% when the
- * true figure was down 2%).
+ * weeks then saw a fake drop in clicks.
  *
  * The rule here: a day is stored only when it is on or before the latest date
- * Google reports final data for. That date comes from Google itself (one
- * `dimensions: ['date']` query at the same `dataState` the per-day queries
- * use), so no time-zone or lag guess is involved. Read live 2026-10-14: final
- * rows ran through 2026-10-11, and a `dataState: 'all'` query named
- * 2026-10-12 as `firstIncompleteDate`, the same boundary.
+ * with final rows. That date comes from Google itself (one `dimensions:
+ * ['date']` query at the same `dataState: 'final'` the per-day queries use),
+ * not from a time-zone or lag guess. Read live 2026-10-14: final rows ran
+ * through 2026-10-11, and a `dataState: 'all'` query named 2026-10-12 as
+ * `firstIncompleteDate`, the same boundary.
  *
- * A day on or before that date with no rows is a real zero day (Search Console
- * omits zero-impression days from a date query), so it is stored as zeros.
+ * Deliberately conservative. Search Console leaves zero-impression days out of
+ * a date query, so a finished zero day at the very edge waits until a later
+ * day reports; it is deferred, never stored as a false zero. (`firstIncompleteDate`
+ * would date that edge, but it describes `all` data, not the `final` data the
+ * cron stores; trusting it for a day the final query has not returned yet
+ * would recreate the false-zero bug.) A day before the edge with no rows is a
+ * real zero day and is stored as zeros.
  *
  * Pure, so the boundary is unit-tested without Google
  * (gsc-reported-days.test.ts).

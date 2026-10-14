@@ -28,9 +28,11 @@
 
 import { BetaAnalyticsDataClient } from '@google-analytics/data'
 import {
+  BEND_METRO_CITIES,
   ga4ErrorMessage,
   isKnownBucket,
   sectionFromSettled,
+  singleCount,
   type Ga4ReportLike,
   type Ga4Section,
 } from '@/lib/analytics/ga4-demographic-sections'
@@ -56,6 +58,8 @@ export type Ga4DemographicsResult =
       sellerLpTotals:  Ga4Section<SellerLPTotals>
       /** All users in the range; null when that report failed. */
       totalUsers:      number | null
+      /** Users in the Bend metro cities (BEND_METRO_CITIES, Oregon); null when that report failed. */
+      bendMetroUsers:  number | null
       /** False when any report failed; such a result is not cached. */
       complete:        boolean
     }
@@ -88,24 +92,26 @@ export async function getGA4Demographics(
     },
   }
 
-  const settled = (await Promise.allSettled([
-    // 1. Age bucket distribution (overall)
-    client.runReport({
+  // Named reports, settled together: each section reads its own report by
+  // name, so adding or removing one cannot shift another's response.
+  const reports = {
+    // Age bucket distribution (overall)
+    age: client.runReport({
       property,
       dateRanges: range,
       dimensions: [{ name: 'userAgeBracket' }],
       metrics:    [{ name: 'totalUsers' }, { name: 'sessions' }],
       orderBys:   [{ dimension: { dimensionName: 'userAgeBracket' } }],
     }),
-    // 2. Gender split
-    client.runReport({
+    // Gender split
+    gender: client.runReport({
       property,
       dateRanges: range,
       dimensions: [{ name: 'userGender' }],
       metrics:    [{ name: 'totalUsers' }, { name: 'sessions' }],
     }),
-    // 3. Top cities (where are visitors physically located)
-    client.runReport({
+    // Top cities (where are visitors physically located)
+    cities: client.runReport({
       property,
       dateRanges: range,
       dimensions: [{ name: 'city' }, { name: 'region' }, { name: 'country' }],
@@ -113,10 +119,25 @@ export async function getGA4Demographics(
       orderBys:   [{ metric: { metricName: 'totalUsers' }, desc: true }],
       limit: 25,
     }),
-    // 4. Age x channel — which channel drives each age? userAgeBracket is
-    //    incompatible with sessionSourceMedium; the default channel group is
-    //    the compatible session-scoped acquisition dimension.
-    client.runReport({
+    // Bend metro users, no dimensions: an exact count. Summing the top-25
+    // city rows missed any metro city ranked below 25th.
+    bendMetro: client.runReport({
+      property,
+      dateRanges: range,
+      metrics: [{ name: 'totalUsers' }],
+      dimensionFilter: {
+        andGroup: {
+          expressions: [
+            { filter: { fieldName: 'region', stringFilter: { value: 'Oregon' } } },
+            { filter: { fieldName: 'city', inListFilter: { values: [...BEND_METRO_CITIES] } } },
+          ],
+        },
+      },
+    }),
+    // Age x channel — which channel drives each age? userAgeBracket is
+    // incompatible with sessionSourceMedium; the default channel group is
+    // the compatible session-scoped acquisition dimension.
+    ageByChannel: client.runReport({
       property,
       dateRanges: range,
       dimensions: [{ name: 'userAgeBracket' }, { name: 'sessionDefaultChannelGroup' }],
@@ -124,8 +145,8 @@ export async function getGA4Demographics(
       orderBys:   [{ metric: { metricName: 'sessions' }, desc: true }],
       limit: 60,
     }),
-    // 5. Seller LP visitors by city — where are HNW seller prospects coming from?
-    client.runReport({
+    // Seller LP visitors by city — where are HNW seller prospects coming from?
+    sellerLpCities: client.runReport({
       property,
       dateRanges: range,
       dimensions: [{ name: 'city' }, { name: 'region' }],
@@ -134,8 +155,8 @@ export async function getGA4Demographics(
       orderBys: [{ metric: { metricName: 'totalUsers' }, desc: true }],
       limit: 20,
     }),
-    // 6. Seller LP visitors by age bracket — the killer report for HNW targeting
-    client.runReport({
+    // Seller LP visitors by age bracket — the killer report for HNW targeting
+    sellerLpAge: client.runReport({
       property,
       dateRanges: range,
       dimensions: [{ name: 'userAgeBracket' }],
@@ -143,60 +164,61 @@ export async function getGA4Demographics(
       dimensionFilter: sellerLp,
       orderBys: [{ dimension: { dimensionName: 'userAgeBracket' } }],
     }),
-    // 7. Total users (for percentage calcs)
-    client.runReport({
-      property,
-      dateRanges: range,
-      metrics: [{ name: 'totalUsers' }],
-    }),
-    // 8. Seller LP visitors, no dimensions: an exact count that does not
-    //    depend on the age report Google may withhold.
-    client.runReport({
+    // Seller LP visitors, no dimensions: an exact count that does not depend
+    // on the age report Google may withhold.
+    sellerLpTotals: client.runReport({
       property,
       dateRanges: range,
       metrics: [{ name: 'totalUsers' }, { name: 'eventCount' }],
       dimensionFilter: sellerLp,
     }),
-  ])) as Settled[]
+    // Total users (for percentage calcs)
+    totalUsers: client.runReport({
+      property,
+      dateRanges: range,
+      metrics: [{ name: 'totalUsers' }],
+    }),
+  }
+  type ReportName = keyof typeof reports
+  const names = Object.keys(reports) as ReportName[]
+  const outcomes = (await Promise.allSettled(names.map((n) => reports[n]))) as Settled[]
+  const settled = Object.fromEntries(names.map((n, i) => [n, outcomes[i]])) as Record<ReportName, Settled>
 
-  if (settled.every((s) => s.status === 'rejected')) {
-    return { ok: false, error: ga4ErrorMessage((settled[0] as PromiseRejectedResult).reason) }
+  if (outcomes.every((o) => o.status === 'rejected')) {
+    return { ok: false, error: ga4ErrorMessage((outcomes[0] as PromiseRejectedResult).reason) }
   }
 
-  const [ageRes, genderRes, geoRes, ageByChannelRes, sellerLpGeoRes, sellerLpAgeRes, totalUsersRes, sellerLpTotalsRes] = settled
-
   const ageBuckets = sectionFromSettled(
-    ageRes,
+    settled.age,
     ([ageBracket = 'unknown'], [users = 0, sessions = 0]) => ({ ageBracket, users, sessions }),
     (r) => isKnownBucket(r.ageBracket),
   )
   const genders = sectionFromSettled(
-    genderRes,
+    settled.gender,
     ([gender = 'unknown'], [users = 0, sessions = 0]) => ({ gender, users, sessions }),
     (r) => isKnownBucket(r.gender),
   )
   const topCities = sectionFromSettled(
-    geoRes,
+    settled.cities,
     ([city = '(unknown)', region = '', country = ''], [users = 0, sessions = 0]) => ({ city, region, country, users, sessions }),
   )
   const ageByChannel = sectionFromSettled(
-    ageByChannelRes,
+    settled.ageByChannel,
     ([ageBracket = 'unknown', channel = '(not set)'], [users = 0, sessions = 0]) => ({ ageBracket, channel, users, sessions }),
     (r) => isKnownBucket(r.ageBracket),
   )
   const sellerLpByCity = sectionFromSettled(
-    sellerLpGeoRes,
+    settled.sellerLpCities,
     ([city = '(unknown)', region = ''], [users = 0, eventCount = 0]) => ({ city, region, users, eventCount }),
   )
   const sellerLpByAge = sectionFromSettled(
-    sellerLpAgeRes,
+    settled.sellerLpAge,
     ([ageBracket = 'unknown'], [users = 0, eventCount = 0]) => ({ ageBracket, users, eventCount }),
     (r) => isKnownBucket(r.ageBracket),
   )
-  const sellerLpTotals = sectionFromSettled(sellerLpTotalsRes, (_d, [users = 0, eventCount = 0]) => ({ users, eventCount }))
-  const total = sectionFromSettled(totalUsersRes, (_d, [users = 0]) => users)
-  // No rows without thresholding means no users; withheld or failed means unknown.
-  const totalUsers = total.state === 'ok' ? (total.rows[0] ?? 0) : total.state === 'empty' ? 0 : null
+  const sellerLpTotals = sectionFromSettled(settled.sellerLpTotals, (_d, [users = 0, eventCount = 0]) => ({ users, eventCount }))
+  const totalUsers = singleCount(sectionFromSettled(settled.totalUsers, (_d, [users = 0]) => users))
+  const bendMetroUsers = singleCount(sectionFromSettled(settled.bendMetro, (_d, [users = 0]) => users))
 
   return {
     ok: true,
@@ -208,6 +230,7 @@ export async function getGA4Demographics(
     sellerLpByAge,
     sellerLpTotals,
     totalUsers,
-    complete: settled.every((s) => s.status === 'fulfilled'),
+    bendMetroUsers,
+    complete: outcomes.every((o) => o.status === 'fulfilled'),
   }
 }

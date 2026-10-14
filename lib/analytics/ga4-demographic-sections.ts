@@ -93,6 +93,28 @@ export function sectionFromSettled<T>(
   return toSection(rows, res.metadata?.subjectToThresholding, isUsable)
 }
 
+/**
+ * The one figure of an undimensioned count report. No rows without
+ * thresholding means none were counted (0); withheld or failed means unknown
+ * (null), never 0.
+ */
+export function singleCount(section: Ga4Section<number>): number | null {
+  if (section.state === 'ok') return section.rows[0] ?? 0
+  return section.state === 'empty' ? 0 : null
+}
+
+/** The Bend metro, as GA4 names the cities (region Oregon). */
+export const BEND_METRO_CITIES: ReadonlySet<string> = new Set([
+  'Bend',
+  'Redmond',
+  'Sisters',
+  'Sunriver',
+  'Tumalo',
+  'La Pine',
+  'Madras',
+  'Prineville',
+])
+
 /** Rows to render: the reported rows when ok, otherwise none. */
 export function sectionRows<T>(section: Ga4Section<T>): T[] {
   return section.state === 'ok' ? section.rows : []

@@ -5,6 +5,7 @@ import {
   knownShare,
   sectionFromSettled,
   sectionRows,
+  singleCount,
   sortAgeBuckets,
   sortAgeSection,
   toSection,
@@ -140,5 +141,14 @@ describe('ga4ErrorMessage', () => {
     expect(ga4ErrorMessage({ details: 'incompatible', message: '3 INVALID_ARGUMENT: incompatible' })).toBe('incompatible')
     expect(ga4ErrorMessage(new Error('quota'))).toBe('quota')
     expect(ga4ErrorMessage('boom')).toBe('boom')
+  })
+})
+
+describe('singleCount', () => {
+  it('reads the one figure, 0 when Google counted none, null when withheld or failed', () => {
+    expect(singleCount({ state: 'ok', rows: [640], partial: false })).toBe(640)
+    expect(singleCount({ state: 'empty' })).toBe(0)
+    expect(singleCount({ state: 'withheld' })).toBeNull()
+    expect(singleCount({ state: 'error', error: 'quota' })).toBeNull()
   })
 })

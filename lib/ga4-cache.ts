@@ -21,6 +21,7 @@ import { getGA4Summary } from '@/app/actions/ga4-report'
 import { getGA4Demographics } from '@/app/actions/ga4-demographics'
 
 const DEFAULT_TTL_SECONDS = 15 * 60 // 15 minutes
+const PARTIAL_TTL_SECONDS = 2 * 60 // a demographics result with a failed report
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -84,8 +85,9 @@ export const getGA4DemographicsCached = cache(async (startDate: string, endDate:
   const hit = await readCache<Awaited<ReturnType<typeof getGA4Demographics>>>(cacheKey)
   if (hit) return hit
   const fresh = await getGA4Demographics(startDate, endDate)
-  // A result with a failed report is shown but not cached, so one transient
-  // Google error does not stick for the TTL.
-  if (fresh.ok && fresh.complete) await writeCache(cacheKey, fresh, DEFAULT_TTL_SECONDS)
+  // A result with a failed report is cached briefly: long enough that a report
+  // failing on every load does not re-run all nine GA4 calls each time, short
+  // enough that a transient Google error clears quickly.
+  if (fresh.ok) await writeCache(cacheKey, fresh, fresh.complete ? DEFAULT_TTL_SECONDS : PARTIAL_TTL_SECONDS)
   return fresh
 })

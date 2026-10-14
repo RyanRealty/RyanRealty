@@ -43,6 +43,7 @@ function liveLike(req: Req) {
   if (d.includes('userAgeBracket') || d.includes('userGender')) return Promise.resolve([withheld])
   if (d === 'city,region,country') return Promise.resolve([ok([[['Bend', 'Oregon', 'United States'], ['120', '150']]])])
   if (d === 'city,region') return Promise.resolve([{ rows: [], metadata: {} }])
+  if (d === '' && JSON.stringify(req.dimensionFilter ?? null).includes('inListFilter')) return Promise.resolve([ok([[[], ['640']]])])
   if (d === '' && req.dimensionFilter) return Promise.resolve([{ rows: [], metadata: {} }])
   if (d === '') return Promise.resolve([ok([[[], ['1500']]])])
   return Promise.resolve([{ rows: [] }])
@@ -86,7 +87,21 @@ describe('getGA4Demographics', () => {
     expect(res.sellerLpByCity).toEqual({ state: 'empty' })
     expect(res.sellerLpTotals).toEqual({ state: 'empty' })
     expect(res.totalUsers).toBe(1500)
+    expect(res.bendMetroUsers).toBe(640)
     expect(res.complete).toBe(true)
+  })
+
+  it('counts Bend metro users exactly from Oregon metro cities, not from the top-25 city rows', async () => {
+    await getGA4Demographics('2026-09-14', '2026-10-13')
+
+    const bend = h.runReport.mock.calls
+      .map(([req]) => req as Req)
+      .find((req) => JSON.stringify(req.dimensionFilter ?? null).includes('inListFilter'))
+    expect(bend?.dimensions ?? []).toEqual([])
+    const filter = JSON.stringify(bend?.dimensionFilter)
+    expect(filter).toContain('"fieldName":"region"')
+    expect(filter).toContain('"value":"Oregon"')
+    for (const city of ['Bend', 'Redmond', 'Sisters', 'Sunriver', 'La Pine', 'Madras', 'Prineville']) expect(filter).toContain(`"${city}"`)
   })
 
   it('one rejected report is that section\'s error; the rest of the page survives and is not cached', async () => {
@@ -103,14 +118,17 @@ describe('getGA4Demographics', () => {
     expect(res.complete).toBe(false)
   })
 
-  it('a failed total is null, never 0', async () => {
+  it('a failed total or Bend metro count is null, never 0', async () => {
     h.runReport.mockImplementation((req: Req) =>
-      dims(req) === '' && !req.dimensionFilter ? Promise.reject(new Error('quota exceeded')) : liveLike(req),
+      dims(req) === '' && (!req.dimensionFilter || JSON.stringify(req.dimensionFilter).includes('inListFilter'))
+        ? Promise.reject(new Error('quota exceeded'))
+        : liveLike(req),
     )
 
     const res = await getGA4Demographics('2026-09-14', '2026-10-13')
 
     expect(res.ok && res.totalUsers).toBeNull()
+    expect(res.ok && res.bendMetroUsers).toBeNull()
   })
 
   it('every report failing is one page-level error', async () => {

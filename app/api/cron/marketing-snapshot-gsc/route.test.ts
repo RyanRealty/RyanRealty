@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 /**
  * The GSC snapshot must never store a day Google has not reported. On
  * 2026-10-14 the cron wrote 2026-10-12 as all zeros (Search Console's final
- * data ran through 10-11), and the admin page read it as a 24% click drop.
+ * data ran through 10-11), and the admin page read it as a click drop.
  */
 
 const getSearchConsoleSummary = vi.fn()
@@ -79,13 +79,19 @@ describe('/api/cron/marketing-snapshot-gsc', () => {
     expect(body.errors).toEqual(['reported-through probe: quota'])
   })
 
-  it('writes nothing when Google has reported no day at all', async () => {
-    getSearchConsoleReportedThrough.mockResolvedValue({ ok: true, reportedThrough: null })
+  it('writes nothing, and says why, when Google has reported no day at all', async () => {
+    getSearchConsoleReportedThrough.mockResolvedValue({
+      ok: true,
+      reportedThrough: null,
+      probedFrom: '2026-09-14',
+      probedTo: '2026-10-14',
+    })
     const { GET } = await import('./route')
 
-    await GET(req('?startDate=2026-10-05&endDate=2026-10-06') as never)
+    const body = await (await GET(req('?startDate=2026-10-05&endDate=2026-10-06') as never)).json()
 
     expect(upsertMetricRows).not.toHaveBeenCalled()
+    expect(body.errors).toEqual(['reported-through probe: Search Console returned no final day from 2026-09-14 to 2026-10-14'])
   })
 
   it('stores a reported day with no Search Console rows as a real zero day', async () => {

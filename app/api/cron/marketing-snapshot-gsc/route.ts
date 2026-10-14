@@ -188,6 +188,9 @@ export async function GET(request: NextRequest) {
   const probe = await getSearchConsoleReportedThrough(siteOverride)
   const reportedThrough = probe.ok ? probe.reportedThrough : null
   if (!probe.ok) errors.push(`reported-through probe: ${probe.error}`)
+  else if (reportedThrough === null) {
+    errors.push(`reported-through probe: Search Console returned no final day from ${probe.probedFrom} to ${probe.probedTo}`)
+  }
   const { reported, pending } = splitReportedDays([...dateIter(startDate, endDate)], reportedThrough)
 
   for (const day of reported) {
