@@ -1,4 +1,12 @@
-# Current — 2026-10-14 (Cursor, buyer-answers batch 2)
+# Current — 2026-10-14 (Cursor, G46 commit-compiles process tree)
+
+Surface: Cursor cloud. Branch `cursor/commit-compiles-heavy-timeout-84fb`. PR https://github.com/RyanRealty/RyanRealty/pull/541. Merged origin/main `63d924ee5` into the branch (handoff Current only). Matt approved merge once checks pass, treating Lighthouse JSON flake, `/communities/tetherow` page-payload, and `/sell` content-floor as already-red-on-main. Nobody pushes main. Nothing sent.
+
+**What this branch does.** `scripts/check-commit-compiles.mjs` (G46) spawns tsc detached. If `/home/box/agent-data/tools/heavy.sh` exists, tsc runs as `heavy.sh <tsc cmd...>`. The child pid is kept. On exit, SIGINT, SIGTERM, uncaughtException, and unhandledRejection the gate SIGTERMs the process group, SIGKILLs after ~5s, and `fs.rmSync`s the `/tmp/rr-commit-check-*` dir. Default timeout is 10 minutes (`COMMIT_COMPILES_TIMEOUT_MS`). Pass/fail banners are unchanged.
+
+Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`, `.claude/skills/tdd/SKILL.md`.
+
+## Earlier — 2026-10-14 (Cursor, buyer-answers batch 2)
 
 Surface: Cursor cloud. Branch `cursor/buyer-answers-batch-2-41c4` from origin/main `a00d7c3ca` (merged #506, no rebase). Land path is `gh pr checks --watch` then `gh pr merge --squash`. Nobody pushes main. Nothing sent.
 
