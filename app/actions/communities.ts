@@ -16,7 +16,13 @@ import { isResidentialInventoryType } from '@/lib/inventory-filters'
 import { getCanonicalCityForSubdivision, getResortCommunityBySlug } from '@/lib/data/communities/registry'
 import { resolveDurableCommunitySlug } from '@/lib/communities/community-public-pair'
 import { isCentralOregonCity } from '@/lib/central-oregon'
-import { getCommunityHeroUrlsBySlug, getGeoSnapshot, getCommunityListings as getCommunityListingsDAL } from '@/lib/data'
+import {
+  getAllSubdivisionFlags,
+  getCommunityHeroUrlsBySlug,
+  getGeoSnapshot,
+  getCommunityListings as getCommunityListingsDAL,
+} from '@/lib/data'
+import { RESORT_ENTITY_KEYS } from '@/lib/resort-communities'
 import type { ListingTile } from '@/lib/data'
 import { PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
 
@@ -182,7 +188,8 @@ export const getCommunitiesForIndex = cache(async (): Promise<CommunityForIndex[
 
 /** Get community by slug; returns null if not found. */
 async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetail | null> {
-  const citySlugs = await getCitySlugs()
+  // The city slugs and the flag rows depend on nothing below: one round trip.
+  const [citySlugs, flagRows] = await Promise.all([getCitySlugs(), getAllSubdivisionFlags()])
   // SITE-214: a slug the committed registry names (bare public slug such as
   // "tetherow" or "juniper-preserve", or its durable key) is a real community
   // whatever the database says. Every read below swallows a database failure to
@@ -234,11 +241,20 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
     neighborhood_id?: string | null
     neighborhoods?: { name: string; slug: string } | null
   } | null
-  const flags = await listSubdivisionsWithFlags()
-  const isResort =
-    flags.some((f) => f.entity_key === entityKey && f.is_resort) ||
-    comm?.is_resort === true ||
-    registered?.is_resort === true
+  // ONE FLAG ROW, NOT THE ADMIN LIST (2026-10-14). This used to call
+  // listSubdivisionsWithFlags(), the admin resort-communities list (every
+  // community snapshot in geo_snapshot_mv merged with the flags table and the
+  // registry), to learn whether THIS entity key is flagged. Timed cold from a
+  // cloud session over the 19 prerendered communities it was 2.4 to 5.2 s of a
+  // 4.0 to 7.6 s read. At build time every page starts cold and several render
+  // at once, so the 8 s head cap (PLACE_HEAD_READ_MS) was missed about six
+  // times per quiet build (comm:meta-community in the Vercel build log) and
+  // those heads shipped degraded. The rule is unchanged: a flags row for the
+  // key decides, else the registry set, as listSubdivisionsWithFlags()'s own
+  // isResort() reads it.
+  const flagRow = flagRows.find((f) => f.entity_key === entityKey)
+  const flaggedResort = flagRow ? flagRow.is_resort === true : RESORT_ENTITY_KEYS.has(entityKey)
+  const isResort = flaggedResort || comm?.is_resort === true || registered?.is_resort === true
 
   // Junk-slug guard: a REAL community has at least one signal — active listings,
   // a community DB row, a geo snapshot, or resort-registry membership. A bare

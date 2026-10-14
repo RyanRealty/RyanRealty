@@ -27,7 +27,11 @@ vi.mock('@/app/actions/market-stats', () => ({
     closedLast12Months: 0,
   }),
 }))
-vi.mock('@/app/actions/subdivision-flags', () => ({ listSubdivisionsWithFlags: async () => [] }))
+const flagState = vi.hoisted(() => ({
+  rows: [] as Array<{ entity_key: string; is_resort: boolean }>,
+  listSubdivisionsWithFlags: vi.fn(async () => []),
+}))
+vi.mock('@/app/actions/subdivision-flags', () => ({ listSubdivisionsWithFlags: flagState.listSubdivisionsWithFlags }))
 vi.mock('@/app/actions/listings', () => ({ getBrowseCities: async () => [] }))
 vi.mock('@/lib/kb/registry-resort-public-figures', () => ({
   getRegistryResortPublicFigures: async () => new Map(),
@@ -37,12 +41,15 @@ vi.mock('@/lib/data', () => ({
   getGeoSnapshot: async () => null,
   getCommunityListings: async () => [],
   getCommunityDetailByName: async () => null,
+  getAllSubdivisionFlags: async () => flagState.rows,
 }))
 
 import { getCommunityBySlug } from './communities'
 
 beforeEach(() => {
   vi.spyOn(console, 'warn').mockImplementation(() => {})
+  flagState.rows = []
+  flagState.listSubdivisionsWithFlags.mockClear()
 })
 
 describe('getCommunityBySlug with every database read empty', () => {
@@ -65,5 +72,29 @@ describe('getCommunityBySlug with every database read empty', () => {
   it('still returns null for a slug the registry does not name', async () => {
     expect(await getCommunityBySlug('bend-industrial')).toBeNull()
     expect(await getCommunityBySlug('not-a-place')).toBeNull()
+  })
+})
+
+// 2026-10-14: the resort decision reads the flag rows, never the admin
+// resort-communities list (every community snapshot merged with the flags),
+// which cost 2.4 to 5.2 s cold and pushed the community head past its 8 s
+// build cap. The rule is the list's own: a flags row for the key decides,
+// else the registry.
+describe('the resort decision reads one flag row, not the admin list', () => {
+  it('a detail read never calls listSubdivisionsWithFlags', async () => {
+    await getCommunityBySlug('tetherow')
+    expect(flagState.listSubdivisionsWithFlags).not.toHaveBeenCalled()
+  })
+
+  it('a flags row marks an unregistered community resort, which also clears the junk-slug guard', async () => {
+    flagState.rows = [{ entity_key: 'bend:industrial', is_resort: true }]
+    const c = await getCommunityBySlug('bend-industrial')
+    expect(c).not.toBeNull()
+    expect(c?.isResort).toBe(true)
+  })
+
+  it('a flags row set false leaves a registered community resort by the registry', async () => {
+    flagState.rows = [{ entity_key: 'bend:tetherow', is_resort: false }]
+    expect((await getCommunityBySlug('tetherow'))?.isResort).toBe(true)
   })
 })
