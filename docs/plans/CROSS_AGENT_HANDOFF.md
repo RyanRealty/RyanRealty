@@ -1,12 +1,20 @@
 # Current — 2026-10-14 (Cursor, merge main into sell-landing-rebuild-netsheet)
 
-Surface: Cursor cloud. Draft PR #545 on `tip/sell-landing-rebuild-netsheet`. Merged `origin/main` (`7e23fdb97`) with a merge commit. Do not merge the PR. Do not send. Nobody pushes main.
+Surface: Cursor cloud. Draft PR #545 on `tip/sell-landing-rebuild-netsheet`. Merged `origin/main` twice (`7e23fdb97`, then `befee8c88` after #548/#452/#543 landed). Do not merge the PR. Do not send. Nobody pushes main.
 
 **What this merge kept.** The /sell rebuild, the `/tools/seller-net-sheet` link, `sellEntry` on the value form, and the rebuilt page Promise.all / SellClosings / Drake Park srcset. Main's plain-English `traceText` + `PROOF_TRACE_BANNED`, ad-match consent, and the regenerated `scripts/site-primitive-wired-baseline.json` (12 unwired, including `V3StickyAsk`). Net-sheet link colors sit in `@layer base` so `ci:css-layers` stays green.
 
-**Held from the previous Current.** #452 stays open (rule-25 fleet score before merge). #471 stays open (would drop `loadCmaMapTile` / `CMA_MAP_MS`). Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. Do not rebuild letters.
+**Held from the previous Current.** #471 stays open (would drop `loadCmaMapTile` / `CMA_MAP_MS`). Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch. Do not rebuild letters. #452 landed on main in `befee8c88`.
 
 Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/rules/git-commit.mdc`.
+
+## Earlier — 2026-10-14 (Claude, the two buyer landing pages look like landing pages)
+
+Surface: Claude Code cloud. Branch `claude/festive-ramanujan-xfbo6b` landed on main via #548. `/buy/concessions` and `/buy/alerts` now open on a `V3Stage` photograph with the ask in the first viewport. Nothing sent.
+
+## Earlier — 2026-10-14 (Cursor, GA4 offline conversions)
+
+Surface: Cursor cloud. Branch `cursor/offline-ga4-conversions-3b48` landed on main via #543. Daily offline-conversions cron also sends GA4 `qualify_lead` and `close_convert_lead`. Nothing sent.
 
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 
