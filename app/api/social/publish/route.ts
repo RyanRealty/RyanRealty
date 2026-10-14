@@ -12,11 +12,6 @@ import { createClient } from '@supabase/supabase-js'
 import { refreshAccessToken } from '@/lib/tiktok'
 import { getYouTubeAccessToken, uploadYouTubeVideoFromUrl } from '@/lib/youtube'
 import {
-  getLinkedInAccessToken,
-  getLinkedInPersonId,
-  publishLinkedInVideoFromUrl,
-} from '@/lib/linkedin'
-import {
   getOrRefreshGoogleBusinessProfileAccessToken,
   publishGoogleBusinessLocalPost,
 } from '@/lib/google-business-profile'
@@ -26,26 +21,22 @@ import {
   getDefaultPinterestBoardId,
   createPinterestVideoPin,
 } from '@/lib/pinterest'
-import { getThreadsAccessToken, publishThreadsVideo } from '@/lib/threads'
 import { publishNextdoorPost } from '@/lib/nextdoor'
 import { assertNoDashes, DashViolationError } from '@/lib/punctuation-guard'
 import { buildTrackedUrl, isUtmCampaign, platformUtmMedium, platformUtmSource } from '@/lib/analytics/utm'
 import { videoFreezeRefusal } from '@/lib/content/video-freeze'
+import {
+  isPublishDoorPlatform,
+  isRemovedPlatform,
+  REMOVED_PLATFORMS_MESSAGE,
+  type PublishDoorPlatform,
+} from '@/lib/social/publish-door'
 
 /** Fan-out can exceed 60s when Meta poll finishes slowly or FB reel upload is large. */
 export const maxDuration = 300
 
-type Platform =
-  | 'instagram'
-  | 'facebook'
-  | 'tiktok'
-  | 'youtube'
-  | 'linkedin'
-  | 'google_business_profile'
-  | 'x'
-  | 'pinterest'
-  | 'threads'
-  | 'nextdoor'
+/** The door's targets live in lib/social/publish-door.ts so the token heartbeat reads the same list. */
+type Platform = PublishDoorPlatform
 type MediaType = 'image' | 'video' | 'reel'
 
 /**
@@ -102,9 +93,6 @@ interface PublishRequest {
       description?: string
       tags?: string[]
       privacyStatus?: 'public' | 'private' | 'unlisted'
-    }
-    linkedin?: {
-      visibility?: 'PUBLIC' | 'CONNECTIONS'
     }
     google_business_profile?: {
       summary?: string
@@ -470,46 +458,6 @@ async function publishToYouTube(
   }
 }
 
-async function publishToLinkedIn(
-  mediaType: MediaType,
-  mediaUrl: string,
-  caption: string,
-  visibility?: 'PUBLIC' | 'CONNECTIONS'
-): Promise<PlatformResult> {
-  if (mediaType === 'image') {
-    return {
-      success: false,
-      status: 'failed',
-      error: 'LinkedIn route currently supports video publish only',
-    }
-  }
-
-  try {
-    const accessToken = await getLinkedInAccessToken()
-    const personId = getLinkedInPersonId()
-    const postId = await publishLinkedInVideoFromUrl({
-      accessToken,
-      personId,
-      mediaUrl,
-      caption,
-      visibility,
-    })
-    return {
-      success: true,
-      status: 'published',
-      externalPostId: postId,
-      url: null,
-    }
-  } catch (error) {
-    console.error('LinkedIn publish error:', error)
-    return {
-      success: false,
-      status: 'failed',
-      error: error instanceof Error ? error.message : 'LinkedIn publish failed',
-    }
-  }
-}
-
 async function publishToX(
   mediaType: MediaType,
   mediaUrl: string,
@@ -568,29 +516,6 @@ async function publishToPinterest(
       success: false,
       status: 'failed',
       error: error instanceof Error ? error.message : 'Pinterest publish failed',
-    }
-  }
-}
-
-async function publishToThreads(
-  mediaType: MediaType,
-  mediaUrl: string,
-  caption: string
-): Promise<PlatformResult> {
-  if (mediaType === 'image') {
-    return { success: false, status: 'failed', error: 'Threads video post requires video media' }
-  }
-
-  try {
-    const { accessToken, userId } = await getThreadsAccessToken()
-    const postId = await publishThreadsVideo(accessToken, userId, mediaUrl, caption)
-    return { success: true, status: 'published', externalPostId: postId, url: null }
-  } catch (error) {
-    console.error('Threads publish error:', error)
-    return {
-      success: false,
-      status: 'failed',
-      error: error instanceof Error ? error.message : 'Threads publish failed',
     }
   }
 }
@@ -685,6 +610,17 @@ export async function POST(request: NextRequest) {
       coverUrl,
     } = body
 
+    // LinkedIn and Threads were removed as platforms (Matt 2026-10-14). Refuse
+    // them by name, before any approval lookup, so a stale draft or script
+    // that still names one gets a clear answer instead of "invalid platform".
+    const removed = (Array.isArray(platforms) ? (platforms as string[]) : []).filter(isRemovedPlatform)
+    if (removed.length > 0) {
+      return NextResponse.json(
+        { error: REMOVED_PLATFORMS_MESSAGE, removedPlatforms: removed },
+        { status: 400 }
+      )
+    }
+
     if (!approved) {
       return NextResponse.json(
         { error: 'Publish blocked: approved must be true' },
@@ -716,19 +652,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const validPlatforms: Platform[] = [
-      'instagram',
-      'facebook',
-      'tiktok',
-      'youtube',
-      'linkedin',
-      'google_business_profile',
-      'x',
-      'pinterest',
-      'threads',
-      'nextdoor',
-    ]
-    const invalidPlatforms = platforms.filter((p) => !validPlatforms.includes(p))
+    const invalidPlatforms = platforms.filter((p) => !isPublishDoorPlatform(p))
     if (invalidPlatforms.length > 0) {
       return NextResponse.json(
         { error: `Invalid platforms: ${invalidPlatforms.join(', ')}` },
@@ -776,14 +700,6 @@ export async function POST(request: NextRequest) {
               body.metadata?.youtube?.privacyStatus
             )
             break
-          case 'linkedin':
-            result = await publishToLinkedIn(
-              mediaType,
-              mediaUrl,
-              caption,
-              body.metadata?.linkedin?.visibility
-            )
-            break
           case 'google_business_profile':
             result = await publishToGoogleBusinessProfile(
               caption,
@@ -803,9 +719,6 @@ export async function POST(request: NextRequest) {
               body.metadata?.pinterest?.title,
               body.metadata?.pinterest?.boardId
             )
-            break
-          case 'threads':
-            result = await publishToThreads(mediaType, mediaUrl, caption)
             break
           case 'nextdoor':
             result = await publishToNextdoor(

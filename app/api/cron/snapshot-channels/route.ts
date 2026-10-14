@@ -37,9 +37,9 @@ const PLATFORMS = [
   'gbp',
   'youtube',
 ] as const
-// Parked / never-wrote children (deep-audit 2026-09-04): linkedin (no refresh
-// token), google-ads (no oauth table, 0 marketing_channel_daily rows). Keep
-// the child routes; do not fan out until Matt reconnects (§1).
+// Not fanned out: LinkedIn (removed as a platform, Matt 2026-10-14) and
+// google-ads (no oauth table, 0 marketing_channel_daily rows; parked until
+// Matt reconnects, §1).
 
 export async function GET(request: NextRequest) {
   const denied = requireCronAuth(request)
