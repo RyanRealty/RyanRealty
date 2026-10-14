@@ -4,6 +4,8 @@
  * PropertyType G (rent) is out of the sale board. No neighborhood MOS.
  */
 import { createServiceClient } from '@/lib/data/client'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
+import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { DEFINITION_ID } from '@/lib/data/market-truth/registry'
 import { staleReason } from '@/lib/data/market-truth/getMetric'
 import {
@@ -38,10 +40,7 @@ function emptyRow(segment: string): CitySegmentRow {
   }
 }
 
-export async function getCitySegmentBoard(citySlug: string): Promise<CitySegmentRow[]> {
-  const geoSlug = hyphenSlug(citySlug)
-  if (!geoSlug) return SALE_SEGMENTS.map(emptyRow)
-
+async function fetchCitySegmentBoard(geoSlug: string): Promise<CitySegmentRow[]> {
   const sb = createServiceClient()
   const { data, error } = await sb
     .from('market_metric')
@@ -67,4 +66,16 @@ export async function getCitySegmentBoard(citySlug: string): Promise<CitySegment
         }),
       ),
   })
+}
+
+const loadCitySegmentBoardCached = unstable_cache(
+  fetchCitySegmentBoard,
+  ['market-metric-city-board-v1'],
+  { revalidate: CACHE_WINDOWS.marketMetric, tags: [cacheTag.market] },
+)
+
+export async function getCitySegmentBoard(citySlug: string): Promise<CitySegmentRow[]> {
+  const geoSlug = hyphenSlug(citySlug)
+  if (!geoSlug) return SALE_SEGMENTS.map(emptyRow)
+  return loadCitySegmentBoardCached(geoSlug)
 }

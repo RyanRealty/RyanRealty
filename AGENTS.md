@@ -566,6 +566,7 @@ Put it on the work graph (`loop_work_nodes` / `/admin/loop`), not `orchestrate.t
 7. **Geographic hierarchy**: City > optional Neighborhood > Community. "Community" = MLS SubdivisionName. Neighborhoods are higher-level areas that may contain multiple communities. Not every city has defined neighborhoods. The system gracefully handles both cases.
 8. **geo_slug format**: Community-level cache keys use `citySlug:communitySlug` (colon-separated) via `subdivisionEntityKey()`. Never use hyphen-separated format for cache keys.
 9. **Data architecture rule**: See `.cursor/rules/data-architecture.mdc` for stats computation, JSONB strategy, query patterns, caching, performance non-negotiables, and scalability design.
+10. **`market_metric` is cached.** Public pages and routes never query `public.market_metric` live. Reads go through `lib/data/market-truth` (`getMetrics`, `getDetachedOverlays`, `resolveNeighborhoodMetricSlug`, and the admin boards), each wrapped in `unstable_cache` (≥1h, keyed by geo and segment) with in-flight dedupe. `community_subdivisions` is the same pattern, with RPC concurrency capped at 2. Held by `ci:market-metric-cached`.
 
 ---
 

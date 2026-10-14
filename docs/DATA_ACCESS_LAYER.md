@@ -43,6 +43,7 @@ video_tours_cache
 listing_history
 market_stats_cache
 market_pulse_live
+market_metric
 engagement_metrics
 properties
 neighborhoods
