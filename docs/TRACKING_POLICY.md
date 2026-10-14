@@ -579,6 +579,13 @@ explicit approval before shipping (ops-explicit / Draft-First).
    means do not send them. **Meta's /events rejects an event_time older than ~7 days,
    so there is no backfill**: measured 2026-08-26, all 18 milestone-eligible deals were
    39–417 days old and none could be uploaded. The loop starts at the next milestone.
+   **GA4 Measurement Protocol (2026-10-14).** The same cron also sends
+   `qualify_lead` (Buyer Contract, Pending) and `close_convert_lead` (Closed)
+   through `fireGa4Event` — the same helper as server `generate_lead`. Params are
+   `lead_type` only. The contact must already hold a stored `_ga` client_id
+   (`crm_people.custom.gaClientId`, first-touch from `fireLeadGenerated`); a
+   missing id is skipped and counted, never minted. Idempotent per contact+stage
+   (`ga4_offline_conversion` / `person:<id>:<stageKey>`).
    **Google Enhanced Conversions is still NOT built** — Google Ads has never run
    ($0 spend, ever). Windows when it does: **GCLID 90 days, hashed-PII 63 days.**
 3. **Versioned, timestamped consent record.** Store consent text version + scope +

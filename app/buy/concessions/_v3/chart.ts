@@ -1,6 +1,6 @@
 import { v3Text, type V3ChartPoint, type V3ChartProps } from '@/components/site/v3'
 import { formatUnit, MONTH_TICKS, percentTicks, spacedTicks } from '@/lib/charts/ticks'
-import { MONTHLY_SHARE, ON_SCREEN } from '@/lib/concessions/results'
+import { MONTHLY_SHARE } from '@/lib/concessions/results'
 
 function monthTick(year: number, month: number): string {
   const name = MONTH_TICKS[month - 1] ?? String(month)
@@ -20,12 +20,12 @@ export function buildConcessionShareChart(): V3ChartProps {
   })
   const series = [{ name: v3Text('Share with a seller concession'), points }]
   const yTicks = percentTicks(series)
-  const xTicks = spacedTicks(series, 4)
+  // Three ticks: four ran "Jun 2025" into "Jan 2026" at 375 (evaluator 2026-10-14).
+  const xTicks = spacedTicks(series, 3)
   return {
+    // The claim is the Instrument's headline; the chart carries only its caption
+    // so the sentence prints once (evaluator 2026-10-14: stated three times).
     caption: v3Text('Share of Bend sales with a seller concession, Oct 2024 to Sep 2026'),
-    claim: v3Text(
-      `The share of Bend sales with a seller concession rose from ${ON_SCREEN.sep2025ShareRounded}% in Sep 2025 to ${ON_SCREEN.sep2026ShareRounded}% in Sep 2026.`,
-    ),
     series,
     marks: true,
     hover: true,

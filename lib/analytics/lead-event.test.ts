@@ -251,6 +251,12 @@ describe('generate_lead is server-only and sent in one place', () => {
     expect(calls).toBeGreaterThan(15)
   })
 
+  it('persists the _ga client_id so offline qualify_lead / close_convert_lead can stitch', () => {
+    const src = readFileSync(join(ROOT, 'lib/lead-tracking.ts'), 'utf8')
+    expect(src).toContain('rememberGaClientId')
+    expect(src).toMatch(/rememberGaClientId\(params\.crm_person_id \?\? params\.fub_person_id, clientId\)/)
+  })
+
   it('puts no dollar value on generate_lead (Matt 2026-10-08)', () => {
     const bannedToken = ['LEAD', 'VALUE', 'USD'].join('_')
     for (const rel of ['lib/analytics/lead-event.ts', 'lib/lead-tracking.ts']) {
@@ -263,6 +269,23 @@ describe('generate_lead is server-only and sent in one place', () => {
         if (/\bvalue\s*:/.test(call) || /\bcurrency\s*:/.test(call)) {
           bad.push(`${f.rel}: value/currency in fireLeadGenerated`)
         }
+      }
+    }
+    expect(bad).toEqual([])
+  })
+})
+
+describe('Meta Lead events carry no dollar value (Matt 2026-10-14)', () => {
+  it('no CAPI Lead or fbq Lead payload sends value or currency', () => {
+    const skip = new Set(['lib/meta-offline-conversions.ts'])
+    const bad: string[] = []
+    for (const f of FILES) {
+      if (skip.has(f.rel)) continue
+      if (/fbq\([\s\S]{0,160}['"`]Lead['"`][\s\S]{0,400}?\b(?:value|currency)\s*:/.test(f.src)) {
+        bad.push(`${f.rel}: fbq Lead value/currency`)
+      }
+      if (/eventName:\s*['"`]Lead['"`][\s\S]{0,800}?\b(?:value|currency)\s*:/.test(f.src)) {
+        bad.push(`${f.rel}: CAPI Lead value/currency`)
       }
     }
     expect(bad).toEqual([])

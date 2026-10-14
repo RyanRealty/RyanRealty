@@ -54,6 +54,11 @@ describe('cmaSubjectToPricing', () => {
     expect(out.marketArea).toBeNull()
   })
 
+  it('copies the listing view onto the pricing subject', () => {
+    const out = cmaSubjectToPricing(subject({ viewDescription: 'Neighborhood' }))
+    expect(out.viewDescription).toBe('Neighborhood')
+  })
+
   it('carries remarks and an OWRD irrigation class onto the facts subject', () => {
     const out = cmaSubjectToPricing(subject({ publicRemarks: 'Irrigated hay ground.' }), {
       irrigationClass: 'irrigated',

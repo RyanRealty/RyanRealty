@@ -57,7 +57,6 @@ export async function submitLeverageLead(
     formId: LEVERAGE_FORM_ID,
     leadType: LEVERAGE_LEAD_TYPE,
     lpVariant: LEVERAGE_LP_VARIANT,
-    omitCapiValue: true,
     adMatchConsent: input.adMatchConsent,
   })
 }
