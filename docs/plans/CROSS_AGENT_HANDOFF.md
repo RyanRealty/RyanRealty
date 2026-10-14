@@ -8,6 +8,10 @@ Surface: Cursor cloud. Branch `cursor/analytics-sot-readme-5e14`. `docs/analytic
 
 Skills read: `.cursor/rules/git-commit.mdc`.
 
+## Earlier — 2026-10-14 (Claude, buyer landing pages)
+
+Surface: Claude Code cloud. PR #548 (`claude/festive-ramanujan-xfbo6b`). `/buy/concessions` and `/buy/alerts` open like `/sell`: `V3Stage`, sourced figures, ask in the first viewport. Same lead and tracking tokens. Nothing sent.
+
 ## Earlier — 2026-10-14 (Cursor, listings-failure no-cache)
 
 Surface: Cursor cloud. Branch `cursor/listings-failure-no-cache-fd1f` landed on main via #511. Community and resort pages throw `ListingsUnavailableError` after one retry. A cold miss is HTTP 500 + noindex. `CommunityDegraded` is deleted.

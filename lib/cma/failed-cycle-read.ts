@@ -28,13 +28,23 @@ export async function readFailedListingCycle(
   if (!key) return cycle
   // Additive: an unread log leaves the cycle on its own row's dates, which is
   // the count every letter printed before this read existed.
-  const changes = await getListingStatusChanges([key])
-    .then((byKey) => byKey.get(key) ?? [])
-    .catch((err) => {
-      console.error('[readFailedListingCycle] status changes', err instanceof Error ? err.message : String(err))
-      return []
-    })
-  return cycleOnTheMarket(cycle, changes)
+  // The ask log is what says a short pending reversal was the same ask. A
+  // missed read passes null, so the clock does not guess that it was.
+  const [changes, asks] = await Promise.all([
+    getListingStatusChanges([key])
+      .then((byKey) => byKey.get(key) ?? [])
+      .catch((err) => {
+        console.error('[readFailedListingCycle] status changes', err instanceof Error ? err.message : String(err))
+        return []
+      }),
+    getListingAskChanges([key])
+      .then((byKey) => byKey.get(key) ?? [])
+      .catch((err) => {
+        console.error('[readFailedListingCycle] ask changes', err instanceof Error ? err.message : String(err))
+        return null
+      }),
+  ])
+  return cycleOnTheMarket(cycle, changes, asks)
 }
 
 /** The history with its current cycle replaced by the one read above, so the review counts the same days. */
