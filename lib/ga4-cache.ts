@@ -79,10 +79,13 @@ export const getGA4SummaryCached = cache(async (startDate: string, endDate: stri
 })
 
 export const getGA4DemographicsCached = cache(async (startDate: string, endDate: string) => {
-  const cacheKey = `demographics:${startDate}:${endDate}`
+  // v2: per-report sections (2026-10-14). The old shape must never be served back.
+  const cacheKey = `demographics:v2:${startDate}:${endDate}`
   const hit = await readCache<Awaited<ReturnType<typeof getGA4Demographics>>>(cacheKey)
   if (hit) return hit
   const fresh = await getGA4Demographics(startDate, endDate)
-  if (fresh.ok) await writeCache(cacheKey, fresh, DEFAULT_TTL_SECONDS)
+  // A result with a failed report is shown but not cached, so one transient
+  // Google error does not stick for the TTL.
+  if (fresh.ok && fresh.complete) await writeCache(cacheKey, fresh, DEFAULT_TTL_SECONDS)
   return fresh
 })
