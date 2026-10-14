@@ -8,6 +8,7 @@
  */
 
 export const HOLD_LABEL = 'hold-for-matt'
+export const APPROVED_LABEL = 'approved-by-matt'
 export const STALE_LABEL = 'stale'
 export const KEEP_BRANCH_LABEL = 'keep-branch'
 
@@ -34,6 +35,10 @@ export const REQUIRED_CHECK_NAMES = Object.freeze([
 
 export const HOLD_LABEL_COLOR = '8B1E1E'
 export const HOLD_LABEL_DESCRIPTION = 'Do not auto-merge. Wait for Matt.'
+export const APPROVED_LABEL_COLOR = '1B7A4F'
+export const APPROVED_LABEL_DESCRIPTION =
+  'Matt approved. Remove hold-for-matt and auto-merge when checks pass.'
+export const APPROVED_PRS_PATH = '.github/approved-prs'
 export const STALE_LABEL_COLOR = 'BDBDBD'
 export const STALE_LABEL_DESCRIPTION =
   'Open PR older than 3 days. Rebase and merge, or it will close and keep the branch for 7 days.'
@@ -67,15 +72,76 @@ export function titleLooksLikeHold(title) {
 }
 
 /**
- * @param {{ draft?: boolean, labels?: unknown, title?: unknown }} pr
+ * Optional `.github/approved-prs` list: one positive integer per line.
+ * `#` starts a comment. Preferred source of truth is the approved-by-matt label.
+ * @param {unknown} text
+ * @returns {number[]}
+ */
+export function parseApprovedPrList(text) {
+  if (typeof text !== 'string') return []
+  const out = []
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.replace(/#.*$/, '').trim()
+    if (!trimmed) continue
+    const n = Number(trimmed)
+    if (Number.isInteger(n) && n > 0) out.push(n)
+  }
+  return out
+}
+
+/**
+ * @param {{
+ *   labels?: unknown,
+ *   number?: unknown,
+ *   approvedNumbers?: unknown,
+ * }} pr
+ */
+export function isApprovedByMatt(pr) {
+  if (hasLabel(pr?.labels, APPROVED_LABEL)) return true
+  const number = Number(pr?.number)
+  if (!Number.isInteger(number) || number <= 0) return false
+  if (!Array.isArray(pr?.approvedNumbers)) return false
+  return pr.approvedNumbers.some((item) => Number(item) === number)
+}
+
+/**
+ * @param {{
+ *   title?: unknown,
+ *   labels?: unknown,
+ *   number?: unknown,
+ *   approvedNumbers?: unknown,
+ * }} pr
+ */
+export function shouldApplyTitleHold(pr) {
+  if (isApprovedByMatt(pr)) return false
+  return titleLooksLikeHold(pr?.title)
+}
+
+/**
+ * @param {{
+ *   labels?: unknown,
+ *   number?: unknown,
+ *   approvedNumbers?: unknown,
+ * }} pr
+ */
+export function shouldRemoveHoldLabel(pr) {
+  return isApprovedByMatt(pr) && hasLabel(pr?.labels, HOLD_LABEL)
+}
+
+/**
+ * @param {{
+ *   draft?: boolean,
+ *   labels?: unknown,
+ *   title?: unknown,
+ *   number?: unknown,
+ *   approvedNumbers?: unknown,
+ * }} pr
  */
 export function shouldQueueAutoMerge(pr) {
   if (pr?.draft) return false
+  if (isApprovedByMatt(pr)) return true
   if (hasLabel(pr?.labels, HOLD_LABEL)) return false
-  if (titleLooksLikeHold(pr?.title) && !hasLabel(pr?.labels, HOLD_LABEL)) {
-    // Title already holds for Matt even when the label is missing.
-    return false
-  }
+  if (titleLooksLikeHold(pr?.title)) return false
   return true
 }
 
@@ -89,8 +155,8 @@ export function shouldQueueAutoMerge(pr) {
  * @returns {'skip-hold' | 'none' | 'mark-stale' | 'wait-stale' | 'close'}
  */
 export function staleDecision(input) {
-  if (hasLabel(input?.labels, HOLD_LABEL)) return 'skip-hold'
-  if (titleLooksLikeHold(input?.title)) return 'skip-hold'
+  if (!isApprovedByMatt(input) && hasLabel(input?.labels, HOLD_LABEL)) return 'skip-hold'
+  if (!isApprovedByMatt(input) && titleLooksLikeHold(input?.title)) return 'skip-hold'
   const now = input?.now ?? Date.now()
   const created = new Date(input.createdAt).getTime()
   if (!Number.isFinite(created)) return 'none'

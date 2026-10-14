@@ -2,15 +2,23 @@
 /**
  * pr-auto-merge.mjs — queue squash auto-merge, or merge when required checks pass.
  *
- * Skips drafts and hold-for-matt (label or HOLD title). Creates the hold and
- * stale labels when the token can. Used by .github/workflows/pr-auto-merge.yml.
+ * Skips drafts and hold-for-matt (label or HOLD title) unless the PR is
+ * approved (`approved-by-matt` or `.github/approved-prs`). Approval removes
+ * the hold, stops a title re-hold, and queues/squash-merges. Creates the hold,
+ * approved, and stale labels when the token can. Used by
+ * .github/workflows/pr-auto-merge.yml.
  *
  * Usage:
  *   node scripts/pr-auto-merge.mjs --pr 562
  *   node scripts/pr-auto-merge.mjs --ensure-labels
  */
+import { existsSync, readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import {
+  APPROVED_LABEL,
+  APPROVED_LABEL_COLOR,
+  APPROVED_LABEL_DESCRIPTION,
+  APPROVED_PRS_PATH,
   HOLD_LABEL,
   HOLD_LABEL_COLOR,
   HOLD_LABEL_DESCRIPTION,
@@ -21,9 +29,11 @@ import {
   STALE_LABEL_COLOR,
   STALE_LABEL_DESCRIPTION,
   mergeAction,
+  parseApprovedPrList,
   requiredChecksStatus,
+  shouldApplyTitleHold,
   shouldQueueAutoMerge,
-  titleLooksLikeHold,
+  shouldRemoveHoldLabel,
 } from './lib/pr-housekeeping.mjs'
 
 function gh(args) {
@@ -56,6 +66,11 @@ function parseArgs(argv) {
   return out
 }
 
+function loadApprovedNumbers() {
+  if (!existsSync(APPROVED_PRS_PATH)) return []
+  return parseApprovedPrList(readFileSync(APPROVED_PRS_PATH, 'utf8'))
+}
+
 function ensureLabel(name, color, description) {
   const created = gh([
     'api',
@@ -81,12 +96,21 @@ function ensureLabel(name, color, description) {
   return false
 }
 
-function applyTitleHolds() {
+function applyTitleHolds(approvedNumbers) {
   const listed = gh(['pr', 'list', '--state', 'open', '--limit', '100', '--json', 'number,title,labels'])
   if (!listed.ok) fail(listed.stderr || 'gh pr list failed')
   const prs = JSON.parse(listed.stdout || '[]')
   for (const pr of prs) {
-    if (!titleLooksLikeHold(pr.title)) continue
+    if (
+      !shouldApplyTitleHold({
+        title: pr.title,
+        labels: pr.labels,
+        number: pr.number,
+        approvedNumbers,
+      })
+    ) {
+      continue
+    }
     const add = gh(['pr', 'edit', String(pr.number), '--add-label', HOLD_LABEL])
     if (add.ok) console.log(`#${pr.number} labeled ${HOLD_LABEL} from title`)
     else console.error(`#${pr.number} could not add ${HOLD_LABEL}: ${add.stderr || add.stdout}`.trim())
@@ -99,7 +123,7 @@ function disableAutoMerge(number) {
   else console.log(`#${number} auto-merge already off or unavailable`)
 }
 
-function handlePr(number) {
+function handlePr(number, approvedNumbers) {
   const viewed = gh([
     'pr',
     'view',
@@ -113,11 +137,27 @@ function handlePr(number) {
     console.log(`#${number} is ${pr.state}; skip`)
     return
   }
-  if (titleLooksLikeHold(pr.title)) {
+  const decision = {
+    draft: pr.isDraft,
+    labels: pr.labels,
+    title: pr.title,
+    number: pr.number,
+    approvedNumbers,
+  }
+  if (shouldRemoveHoldLabel(decision)) {
+    const removed = gh(['pr', 'edit', String(number), '--remove-label', HOLD_LABEL])
+    if (removed.ok) console.log(`#${number} removed ${HOLD_LABEL} (approved)`)
+    else console.error(`#${number} could not remove ${HOLD_LABEL}: ${removed.stderr || removed.stdout}`.trim())
+    decision.labels = (pr.labels || []).filter((label) => {
+      const name = typeof label === 'string' ? label : label?.name
+      return name !== HOLD_LABEL
+    })
+  }
+  if (shouldApplyTitleHold(decision)) {
     const add = gh(['pr', 'edit', String(number), '--add-label', HOLD_LABEL])
     if (add.ok) console.log(`#${number} labeled ${HOLD_LABEL} from title`)
   }
-  if (!shouldQueueAutoMerge({ draft: pr.isDraft, labels: pr.labels, title: pr.title })) {
+  if (!shouldQueueAutoMerge(decision)) {
     disableAutoMerge(number)
     console.log(`#${number} skipped (draft or hold-for-matt)`)
     return
@@ -146,13 +186,15 @@ function handlePr(number) {
 }
 
 const args = parseArgs(process.argv.slice(2))
+const approvedNumbers = loadApprovedNumbers()
 if (args.ensureLabels || args.applyTitleHolds || args.pr) {
   ensureLabel(HOLD_LABEL, HOLD_LABEL_COLOR, HOLD_LABEL_DESCRIPTION)
+  ensureLabel(APPROVED_LABEL, APPROVED_LABEL_COLOR, APPROVED_LABEL_DESCRIPTION)
   ensureLabel(STALE_LABEL, STALE_LABEL_COLOR, STALE_LABEL_DESCRIPTION)
   ensureLabel(KEEP_BRANCH_LABEL, KEEP_BRANCH_LABEL_COLOR, KEEP_BRANCH_LABEL_DESCRIPTION)
 }
-if (args.applyTitleHolds) applyTitleHolds()
-if (args.pr) handlePr(args.pr)
+if (args.applyTitleHolds) applyTitleHolds(approvedNumbers)
+if (args.pr) handlePr(args.pr, approvedNumbers)
 if (!args.ensureLabels && !args.applyTitleHolds && !args.pr) {
   fail('usage: node scripts/pr-auto-merge.mjs --pr N [--ensure-labels] [--apply-title-holds]')
 }

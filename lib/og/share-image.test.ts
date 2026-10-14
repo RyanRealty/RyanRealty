@@ -4,9 +4,14 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import {
   ogImageForPlace,
   shareOgImagePath,
-  shortOgTitle,
 } from '@/lib/og/share-image-url'
-import { resolvePlaceOgPhoto } from '@/lib/og/resolve-photo'
+import {
+  OG_PHOTO_AERIAL,
+  OG_PHOTO_DOWNTOWN,
+  OG_PHOTO_LANDSCAPE,
+  resolveOgFallbackPhoto,
+  resolvePlaceOgPhoto,
+} from '@/lib/og/resolve-photo'
 import { resolveCardPhotoSrc } from '@/lib/og/share-card'
 import { GET } from '@/app/api/og/route'
 
@@ -33,18 +38,19 @@ const KEY_ROUTES = [
   },
   {
     path: '/',
-    ogImage: shareOgImagePath({ type: 'default', title: 'Bend · Central Oregon' }),
+    ogImage: shareOgImagePath({ type: 'default' }),
   },
 ] as const
 
-describe('shortOgTitle', () => {
-  it('keeps a short place name and drops a brand tail', () => {
-    expect(shortOgTitle('Sunriver Homes for Sale | Sunriver, OR')).toBe('Sunriver Homes for Sale')
-    expect(shortOgTitle('Bend · Central Oregon')).toBe('Bend · Central Oregon')
-  })
-
-  it('refuses top-team copy and never invents a client name', () => {
-    expect(shortOgTitle('Central Oregon top team')).toBe('')
+describe('resolveOgFallbackPhoto', () => {
+  it('picks an aerial for community and neighborhood, downtown for blog, landscape otherwise', () => {
+    expect(resolveOgFallbackPhoto('community')).toBe(OG_PHOTO_AERIAL)
+    expect(resolveOgFallbackPhoto('neighborhood')).toBe(OG_PHOTO_AERIAL)
+    expect(resolveOgFallbackPhoto('city')).toBe(OG_PHOTO_AERIAL)
+    expect(resolveOgFallbackPhoto('blog')).toBe(OG_PHOTO_DOWNTOWN)
+    expect(resolveOgFallbackPhoto('guide')).toBe(OG_PHOTO_DOWNTOWN)
+    expect(resolveOgFallbackPhoto('default')).toBe(OG_PHOTO_LANDSCAPE)
+    expect(resolveOgFallbackPhoto('listing')).toBe(OG_PHOTO_LANDSCAPE)
   })
 })
 
@@ -53,7 +59,11 @@ describe('resolveCardPhotoSrc', () => {
     expect(resolveCardPhotoSrc('/images/kb/sunriver-deschutes-river.jpg')).toBe(
       'https://ryan-realty.com/images/kb/sunriver-deschutes-river.jpg',
     )
-    expect(resolveCardPhotoSrc(null)).toMatch(/^https:\/\/ryan-realty\.com\/images\/kb\//)
+    expect(resolveCardPhotoSrc(null, 'default')).toBe(
+      `https://ryan-realty.com${OG_PHOTO_LANDSCAPE}`,
+    )
+    expect(resolveCardPhotoSrc(null, 'blog')).toBe(`https://ryan-realty.com${OG_PHOTO_DOWNTOWN}`)
+    expect(resolveCardPhotoSrc(null, 'community')).toBe(`https://ryan-realty.com${OG_PHOTO_AERIAL}`)
   })
 })
 
@@ -95,7 +105,7 @@ describe('share-card metadata', () => {
       name: 'Sunriver',
       city: 'Sunriver',
     })
-    expect(community.ogImage).toBe(shareOgImagePath({ type: 'community', slug: 'sunriver', title: 'Sunriver' }))
+    expect(community.ogImage).toBe(shareOgImagePath({ type: 'community', slug: 'sunriver' }))
     expect(community.ogImage).toContain('type=community')
     expect(community.ogImage).toContain('slug=sunriver')
     expect(ogImageForPlace({ placeKind: 'community', slug: 'sunriver', title: 'Sunriver second home' })).toContain(
@@ -104,13 +114,25 @@ describe('share-card metadata', () => {
     expect(resolvePlaceOgPhoto('community', 'sunriver')).toMatch(/sunriver/i)
     expect(resolvePlaceOgPhoto('city', 'bend')).toMatch(/bend/i)
   })
+
+  it('default pageMetadata uses the landscape card with no title query', () => {
+    const meta = pageMetadata({
+      title: 'Bend Oregon Real Estate',
+      description: 'Homes for sale in Bend and Central Oregon.',
+      path: '/',
+    })
+    const image = Array.isArray(meta.openGraph?.images) ? meta.openGraph.images[0] : null
+    const url = image && typeof image === 'object' && 'url' in image ? String(image.url) : ''
+    expect(url).toBe('https://ryan-realty.com/api/og?type=default')
+  })
 })
 
 describe('/api/og share cards', () => {
-  it('returns 200 image/png for the default card and a Sunriver community card', async () => {
+  it('returns 200 image/png for default, community, and blog fallback cards', async () => {
     const cases = [
-      'http://localhost/api/og?type=default&title=Bend%20%C2%B7%20Central%20Oregon',
-      'http://localhost/api/og?type=community&slug=sunriver&title=Sunriver%20second%20home',
+      'http://localhost/api/og?type=default',
+      'http://localhost/api/og?type=community&slug=sunriver',
+      'http://localhost/api/og?type=blog',
     ]
     for (const href of cases) {
       const res = await GET(new Request(href))

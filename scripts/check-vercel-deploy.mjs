@@ -12,6 +12,8 @@
  *   node scripts/check-vercel-deploy.mjs                 # check HEAD SHA
  *   node scripts/check-vercel-deploy.mjs <commitSha>     # check a specific SHA
  *   npm run deploy:verify                                # alias
+ *   npm run deploy:verify -- --no-file [<commitSha>]     # read and print, write nothing
+ *                                                        # (or DEPLOY_VERIFY_NO_FILE=1)
  *
  * Behavior:
  *   - Polls Vercel API for the production deployment matching the SHA.
@@ -21,6 +23,10 @@
  *     is SUPERSEDED (exit 0), not a failed compile.
  *   - On ERROR: fetches the last build-log lines and prints them.
  *   - Exit codes: 0 = READY | SKIP | SUPERSEDED, 1 = ERROR, 2 = TIMEOUT/missing-config.
+ *   - On READY it runs the live checks (runLiveChecks) and hands each failure to the
+ *     work graph as ONE claimable DEPLOY-* node, or prints who already holds it, and
+ *     closes the open node of a check that now passes. Filing never changes the exit
+ *     code and never throws; see lib/data/loop/deploy-defects.ts.
  *
  * Setup (one-time):
  *   - VERCEL_TOKEN in .env.local or shell env (https://vercel.com/account/tokens).
@@ -46,6 +52,8 @@ import {
   runSitemapUrlHealth,
 } from './lib/sitemap-url-health.mjs'
 import { checkInlineScripts, formatInlineScriptReport } from './lib/inline-script-health.mjs'
+// Every failure files ONE claimable work node (or says who holds it); a pass closes it.
+import { createDefectReport, noFileRequested } from './lib/deploy-defect-report.mjs'
 import {
   DEFAULT_TIMEOUT_MS,
   DEFAULT_SKIP_WAIT_MS,
@@ -59,7 +67,9 @@ const SKIP_WAIT_MS = Number(process.env.DEPLOY_VERIFY_SKIP_WAIT_MS ?? DEFAULT_SK
 const POLL_INTERVAL_MS = Number(process.env.DEPLOY_VERIFY_POLL_MS ?? 8000)
 
 const argv = process.argv.slice(2)
-const targetSha = argv[0] && /^[0-9a-f]{7,40}$/.test(argv[0]) ? argv[0] : null
+// Flags (--no-file) are not the SHA: only a bare 7-40 hex argument names a commit.
+const positional = argv.filter((a) => !a.startsWith('-'))
+const targetSha = positional[0] && /^[0-9a-f]{7,40}$/.test(positional[0]) ? positional[0] : null
 
 function out(msg) {
   process.stdout.write(`[deploy:verify] ${msg}\n`)
@@ -280,11 +290,11 @@ function formatLogTail(events) {
 // withTimeoutFallback rail-timeout count. Founding baseline after the G70 +
 // skippableRail work: compile ~53s, SSG ~76s (499 pages), 0 timeouts — down
 // from 11.2min SSG and 352 timeouts. Thresholds are set at "the class came
-// back", not at noise level: SSG > 300s or > 50 rail timeouts returns true
+// back", not at noise level: SSG > 300s or > 50 rail timeouts is a regression
 // (deploy:verify exits 1) so the regression is caught the day it ships, from
 // the REAL build log — no static gate can see this. BUILD_TELEMETRY_ALLOW_SLOW=1
 // acknowledges a known-slow deploy. Fails open: telemetry unavailable (no
-// token, API error) never blocks a READY verdict.
+// token, API error) never blocks a READY verdict (reportBuildTelemetry returns null).
 const SSG_ALERT_SECONDS = 300
 const RAIL_TIMEOUT_ALERT = 50
 
@@ -301,9 +311,9 @@ async function reportBuildTelemetry(apiToken, teamId, deployId) {
     const res = await fetch(`https://api.vercel.com/v3/deployments/${deployId}/events${qs}`, {
       headers: { authorization: `Bearer ${apiToken}` },
     })
-    if (!res.ok) return false
+    if (!res.ok) return null
     const events = await res.json()
-    if (!Array.isArray(events)) return false
+    if (!Array.isArray(events)) return null
     const texts = events.map((e) => e?.payload?.text ?? e?.text ?? '').filter(Boolean)
 
     let compileSecs = null
@@ -320,23 +330,291 @@ async function reportBuildTelemetry(apiToken, teamId, deployId) {
       }
       if (t.includes('timed out after')) timeouts += 1
     }
-    if (ssgSecs == null && compileSecs == null) return false
+    if (ssgSecs == null && compileSecs == null) return null
 
-    out(
-      `build telemetry: compile ${compileSecs ?? '?'}s · SSG ${ssgSecs ?? '?'}s` +
-        `${ssgPages ? ` (${ssgPages} pages)` : ''} · ${timeouts} rail timeout(s)`,
-    )
-    const regressed = (ssgSecs != null && ssgSecs > SSG_ALERT_SECONDS) || timeouts > RAIL_TIMEOUT_ALERT
-    if (regressed && process.env.BUILD_TELEMETRY_ALLOW_SLOW !== '1') {
+    const summary =
+      `compile ${compileSecs ?? '?'}s · SSG ${ssgSecs ?? '?'}s` +
+      `${ssgPages ? ` (${ssgPages} pages)` : ''} · ${timeouts} rail timeout(s)`
+    out(`build telemetry: ${summary}`)
+    // The keys name the alert crossed, never the measured number: a re-run that reads
+    // 305s then 310s is the same defect (lib/data/loop/deploy-defects.ts fingerprint).
+    const keys = []
+    if (ssgSecs != null && ssgSecs > SSG_ALERT_SECONDS) keys.push(`static generation over the ${SSG_ALERT_SECONDS}s alert`)
+    if (timeouts > RAIL_TIMEOUT_ALERT) keys.push(`withTimeoutFallback rail timeouts over the ${RAIL_TIMEOUT_ALERT} alert`)
+    const slow = keys.length > 0
+    const allowed = process.env.BUILD_TELEMETRY_ALLOW_SLOW === '1'
+    if (slow && !allowed) {
       out('✗ BUILD REGRESSION — the deploy is READY but the build-cost class returned:')
       out(`  SSG ${ssgSecs}s (alert > ${SSG_ALERT_SECONDS}s) · ${timeouts} rail timeouts (alert > ${RAIL_TIMEOUT_ALERT}).`)
       out('  See docs/MECHANICAL_GATES.md G70. BUILD_TELEMETRY_ALLOW_SLOW=1 acknowledges a known-slow deploy.')
-      return true
     }
-    return false
+    return {
+      regressed: slow && !allowed,
+      acknowledged: slow && allowed,
+      keys,
+      detail: [summary],
+      evidence: summary,
+    }
   } catch {
-    return false
+    return null
   }
+}
+
+// ── the live checks, run against the READY production deploy ────────────────
+//
+// Every check records its result with `defects` (scripts/lib/deploy-defect-report.mjs)
+// and the whole run's failures and passes go to the work graph ONCE, before this
+// returns: a failure files one claimable DEPLOY-* node (or says who already holds
+// it), a pass closes the open node for that check (lib/data/loop/deploy-defects.ts,
+// ci:deploy-defect-filing). On 2026-10-14 two sessions saw this check flag the same
+// noindex sitemap URLs and both built a fix.
+//
+// EXIT CODE. The first problem decides it, exactly as when each failing check
+// exited at once: 1 = a check failed, 2 = a check could not run. Every check now
+// runs even after an earlier one fails, so each distinct failure is filed in the
+// same run; filing never changes the code, and it never throws (a database that
+// cannot be reached prints a line and the verdict stands). `--no-file` (or
+// DEPLOY_VERIFY_NO_FILE=1) reads and prints, and writes nothing.
+async function runLiveChecks({ defects, apiToken, teamId, deployId, usingCliFallback }) {
+  let code = 0
+  const problem = (c) => {
+    if (code === 0) code = c
+  }
+  const finish = () => {
+    const { lines } = defects.flush()
+    if (lines.length > 0) {
+      out(defects.write ? 'deploy-found defects:' : 'deploy-found defects (--no-file: nothing written):')
+      for (const l of lines) out(`  ${l}`)
+    }
+    return code
+  }
+  const guarded = async (family, fn) => {
+    try {
+      await fn()
+    } catch (e) {
+      err(`${family} check could not run: ${e instanceof Error ? e.message : String(e)}`)
+      problem(2)
+    }
+  }
+
+  out('check production URL: https://ryan-realty.com')
+  let homeHtml = ''
+  try {
+    const live = await fetchWithTransportRetry('https://ryan-realty.com/', {
+      method: 'GET',
+      redirect: 'follow',
+      headers: { 'user-agent': CI_PROBE_USER_AGENT },
+      signal: AbortSignal.timeout(20_000),
+    })
+    out(`ryan-realty.com GET ${live.status}`)
+    if (live.status >= 500) {
+      err(`production host https://ryan-realty.com returned ${live.status}`)
+      defects.record({ family: 'homepage', status: 'fail', keys: [`https://ryan-realty.com/ returned HTTP ${live.status}`] })
+      problem(1)
+      // The host is down: no other live check can say anything useful.
+      return finish()
+    }
+    defects.record({ family: 'homepage', status: 'pass', evidence: `GET / answered ${live.status}` })
+    homeHtml = await live.text()
+  } catch (e) {
+    err(`ryan-realty.com check failed: ${e instanceof Error ? e.message : String(e)}`)
+    problem(2)
+    return finish()
+  }
+
+  // ── inline-script parse + GTM loader (TRACK-2) ─────────────────────
+  // 2026-09-17..09-22: the homepage's inline GTM bootstrap was a
+  // SyntaxError, so gtm.js never loaded and browser GA4 read zero for
+  // five days while this deploy check (200, READY) and every gate passed.
+  // Parse every inline classic <script> production actually served and
+  // require the gtm.js loader text. INLINE_SCRIPT_CHECK_SKIP=1 is the
+  // acknowledged-outage escape.
+  await guarded('inline-scripts', async () => {
+    if (process.env.INLINE_SCRIPT_CHECK_SKIP === '1') {
+      out('inline scripts: SKIPPED (INLINE_SCRIPT_CHECK_SKIP=1)')
+      defects.record({ family: 'inline-scripts', status: 'skipped' })
+      return
+    }
+    const scripts = checkInlineScripts(homeHtml)
+    const report = formatInlineScriptReport(scripts)
+    for (const line of report.lines) out(`inline scripts: ${line}`)
+    if (!report.ok) {
+      err('✗ INLINE SCRIPT CHECK FAILED — the homepage ships a script that cannot run, or no GTM loader.')
+      err('  A classic <script> with a parse error executes nothing; browser analytics stops with it.')
+      problem(1)
+      defects.record({
+        family: 'inline-scripts',
+        status: 'fail',
+        keys: [
+          ...scripts.failures.map((f) => `inline script #${f.index}: ${f.message}`),
+          ...(scripts.hasGtmLoader ? [] : ['homepage has no GTM loader text (googletagmanager.com/gtm.js)']),
+        ],
+        lines: report.lines,
+      })
+    } else {
+      defects.record({ family: 'inline-scripts', status: 'pass', evidence: report.lines[0] })
+    }
+  })
+
+  // ── retired /_next/image answers at the edge (TRACK-3) ─────────────
+  // images.unoptimized (Matt lock 2026-09-13) removed the optimizer; every
+  // stale /_next/image?url=X then rendered the ~143 KB HTML 404 page.
+  // middleware.ts now 308s it to X (lib/routing/legacy-next-image.ts).
+  // The unit test proves the mapping; only production can prove Vercel
+  // routes /_next/image through middleware, so ask it.
+  await guarded('legacy-image', async () => {
+    if (process.env.LEGACY_IMAGE_SMOKE_SKIP === '1') {
+      out('legacy /_next/image: SKIPPED (LEGACY_IMAGE_SMOKE_SKIP=1)')
+      defects.record({ family: 'legacy-image', status: 'skipped' })
+      return
+    }
+    let probe
+    try {
+      probe = await fetchWithTransportRetry('https://ryan-realty.com/_next/image?url=%2Ffavicon.ico&w=64&q=75', {
+        method: 'GET',
+        redirect: 'manual',
+        headers: { 'user-agent': CI_PROBE_USER_AGENT },
+        signal: AbortSignal.timeout(20_000),
+      })
+    } catch (e) {
+      err(`legacy /_next/image check failed: ${e instanceof Error ? e.message : String(e)}`)
+      problem(2)
+      return
+    }
+    const location = probe.headers.get('location') ?? ''
+    out(`legacy /_next/image: ${probe.status} -> ${location || '(no location)'}`)
+    if (probe.status !== 308 || !/^(https:\/\/ryan-realty\.com)?\/favicon\.ico$/.test(location)) {
+      err('✗ LEGACY IMAGE CHECK FAILED — /_next/image?url=/favicon.ico did not 308 to /favicon.ico.')
+      err('  Stale optimizer URLs are rendering the app instead of resolving to the image.')
+      problem(1)
+      defects.record({
+        family: 'legacy-image',
+        status: 'fail',
+        keys: ['/_next/image?url=/favicon.ico: want a 308 to /favicon.ico'],
+        lines: [`/_next/image?url=/favicon.ico: ${probe.status} -> ${location || '(no location)'}`],
+      })
+    } else {
+      defects.record({ family: 'legacy-image', status: 'pass', evidence: `308 -> ${location}` })
+    }
+  })
+
+  // ── sitemap smoke (SITE-54) ────────────────────────────────────────
+  // The index plus all five children, browser-clearing UA, concurrent,
+  // 300s each (the route's own maxDuration). On 2026-09-09 geo.xml and
+  // core.xml both returned 504 on production while the deploy was READY,
+  // `/` answered 200 and build telemetry was green — nothing in the repo
+  // could see it. SITEMAP_SMOKE_SKIP=1 is the acknowledged-outage escape.
+  await guarded('sitemap-smoke', async () => {
+    if (process.env.SITEMAP_SMOKE_SKIP === '1') {
+      out('sitemap smoke: SKIPPED (SITEMAP_SMOKE_SKIP=1)')
+      defects.record({ family: 'sitemap-smoke', status: 'skipped' })
+      return
+    }
+    const smokeTimeout = Number(process.env.SITEMAP_SMOKE_TIMEOUT_MS ?? 300_000)
+    const smoke = await probeSitemapClasses('https://ryan-realty.com', {
+      timeoutMs: smokeTimeout,
+    })
+    for (const line of formatSitemapSmoke(smoke.results)) out(`sitemap smoke: ${line}`)
+    if (!smoke.ok) {
+      err('✗ SITEMAP SMOKE FAILED — a sitemap Google reads is not a 200 with entries.')
+      err('  Google cannot discover the affected URL class while this is red.')
+      problem(1)
+      const bad = smoke.results.filter((r) => !(r.status === 200 && r.entries > 0))
+      defects.record({
+        family: 'sitemap-smoke',
+        status: 'fail',
+        keys: bad.map((r) => `${r.path}: ${r.status == null ? 'no response' : r.status !== 200 ? `HTTP ${r.status}` : 'urlset has no entries'}`),
+        lines: formatSitemapSmoke(bad),
+      })
+    } else {
+      defects.record({ family: 'sitemap-smoke', status: 'pass', evidence: `${smoke.results.length} sitemaps answered 200 with entries` })
+    }
+  })
+
+  // ── live SEO baseline (Matt 2026-10-04) ────────────────────────────
+  // robots groups, the image sitemap, and a sample of every sitemap's
+  // pages as Google is served them: title, description, canonical, one
+  // H1, BreadcrumbList, alt attributes, the listing lead photo's
+  // priority. Rules: scripts/lib/live-seo-audit.mjs. LIVE_SEO_SKIP=1 is
+  // the acknowledged-outage escape, same as the sitemap smoke.
+  await guarded('live-seo', async () => {
+    if (process.env.LIVE_SEO_SKIP === '1') {
+      out('live seo: SKIPPED (LIVE_SEO_SKIP=1)')
+      defects.record({ family: 'live-seo', status: 'skipped' })
+      return
+    }
+    const seo = await runLiveSeoAudit('https://ryan-realty.com', { ua: LIVE_SEO_UA })
+    for (const l of seo.lines) out(`live seo: ${l}`)
+    for (const w of seo.warns) out(`live seo: warn · ${w}`)
+    if (seo.fails.length > 0) {
+      err(`✗ LIVE SEO FAILED (${seo.fails.length}) — production serves a page below the SEO baseline:`)
+      for (const f of seo.fails) err(`  - ${f}`)
+      problem(1)
+      defects.record({ family: 'live-seo', status: 'fail', keys: seo.fails })
+    } else {
+      out('live seo: ✓ baseline holds')
+      defects.record({
+        family: 'live-seo',
+        status: 'pass',
+        evidence: seo.lines.join('; '),
+        scope: { checkedPaths: seo.checkedPaths, listedPaths: seo.listedPaths },
+      })
+    }
+  })
+
+  // ── every sitemap URL (200, self canonical, not noindex) ──────────
+  // The sample above is the rich baseline. This walk is the inventory:
+  // every loc Google is given must stay a real indexable page on
+  // https://ryan-realty.com. SITEMAP_URL_HEALTH_SKIP=1 is the escape.
+  // The URLs an open deploy-found node names are walked even under the cap, so a
+  // pass proves they are fixed (or gone from the sitemap), not merely unsampled.
+  await guarded('sitemap-url-health', async () => {
+    if (process.env.SITEMAP_URL_HEALTH_SKIP === '1') {
+      out('sitemap url health: SKIPPED (SITEMAP_URL_HEALTH_SKIP=1)')
+      defects.record({ family: 'sitemap-url-health', status: 'skipped' })
+      return
+    }
+    const maxUrls = process.env.SITEMAP_URL_HEALTH_MAX
+      ? Number(process.env.SITEMAP_URL_HEALTH_MAX)
+      : DEFAULT_DEPLOY_SITEMAP_URL_HEALTH_MAX
+    const health = await runSitemapUrlHealth('https://ryan-realty.com', {
+      ua: LIVE_SEO_UA,
+      maxUrls,
+      concurrency: Number(process.env.SITEMAP_URL_HEALTH_CONCURRENCY ?? 8),
+      priorityUrls: defects.priorityPaths('sitemap-url-health').map((p) => `https://ryan-realty.com${p}`),
+    })
+    for (const line of health.lines) out(`sitemap url health: ${line}`)
+    if (health.fails.length > 0) {
+      err(`✗ SITEMAP URL HEALTH FAILED (${health.fails.length} of ${health.checked}):`)
+      for (const f of health.fails) err(`  - ${f}`)
+      problem(1)
+      defects.record({ family: 'sitemap-url-health', status: 'fail', keys: health.fails })
+    } else {
+      out(`sitemap url health: ✓ ${health.checked} URLs are 200, self-canonical, indexable`)
+      defects.record({
+        family: 'sitemap-url-health',
+        status: 'pass',
+        evidence: `${health.checked} URLs are 200, self-canonical, indexable`,
+        scope: { checkedPaths: health.checkedPaths, listedPaths: health.listedPaths },
+      })
+    }
+  })
+
+  if (!usingCliFallback) {
+    await guarded('build-telemetry', async () => {
+      const t = await reportBuildTelemetry(apiToken, teamId, deployId)
+      if (!t) return
+      if (t.regressed) {
+        problem(1)
+        defects.record({ family: 'build-telemetry', status: 'fail', keys: t.keys, lines: t.detail })
+      } else if (t.acknowledged) {
+        defects.record({ family: 'build-telemetry', status: 'skipped' })
+      } else {
+        defects.record({ family: 'build-telemetry', status: 'pass', evidence: t.evidence })
+      }
+    })
+  }
+  return finish()
 }
 
 async function main() {
@@ -354,6 +632,7 @@ async function main() {
 
   const { projectId, teamId } = loadProjectMeta()
   const sha = (targetSha || getHeadSha()).toLowerCase()
+  const defects = createDefectReport({ sha, write: !noFileRequested(argv) })
 
   if (usingCliFallback) {
     out('no API token found; using Vercel CLI, then GitHub Vercel status, for deploy checks')
@@ -422,143 +701,7 @@ async function main() {
       if (state === 'READY') {
         const url = deployment.url ? `https://${deployment.url}` : '(no url)'
         out(`READY in ${(Date.now() - startedAt) / 1000}s — ${url}`)
-        out('check production URL: https://ryan-realty.com')
-        let homeHtml = ''
-        try {
-          const live = await fetchWithTransportRetry('https://ryan-realty.com/', {
-            method: 'GET',
-            redirect: 'follow',
-            headers: { 'user-agent': CI_PROBE_USER_AGENT },
-            signal: AbortSignal.timeout(20_000),
-          })
-          out(`ryan-realty.com GET ${live.status}`)
-          if (live.status >= 500) {
-            err(`production host https://ryan-realty.com returned ${live.status}`)
-            process.exit(1)
-          }
-          homeHtml = await live.text()
-        } catch (e) {
-          err(`ryan-realty.com check failed: ${e instanceof Error ? e.message : String(e)}`)
-          process.exit(2)
-        }
-
-        // ── inline-script parse + GTM loader (TRACK-2) ─────────────────────
-        // 2026-09-17..09-22: the homepage's inline GTM bootstrap was a
-        // SyntaxError, so gtm.js never loaded and browser GA4 read zero for
-        // five days while this deploy check (200, READY) and every gate passed.
-        // Parse every inline classic <script> production actually served and
-        // require the gtm.js loader text. INLINE_SCRIPT_CHECK_SKIP=1 is the
-        // acknowledged-outage escape.
-        if (process.env.INLINE_SCRIPT_CHECK_SKIP === '1') {
-          out('inline scripts: SKIPPED (INLINE_SCRIPT_CHECK_SKIP=1)')
-        } else {
-          const report = formatInlineScriptReport(checkInlineScripts(homeHtml))
-          for (const line of report.lines) out(`inline scripts: ${line}`)
-          if (!report.ok) {
-            err('✗ INLINE SCRIPT CHECK FAILED — the homepage ships a script that cannot run, or no GTM loader.')
-            err('  A classic <script> with a parse error executes nothing; browser analytics stops with it.')
-            process.exit(1)
-          }
-        }
-
-        // ── retired /_next/image answers at the edge (TRACK-3) ─────────────
-        // images.unoptimized (Matt lock 2026-09-13) removed the optimizer; every
-        // stale /_next/image?url=X then rendered the ~143 KB HTML 404 page.
-        // middleware.ts now 308s it to X (lib/routing/legacy-next-image.ts).
-        // The unit test proves the mapping; only production can prove Vercel
-        // routes /_next/image through middleware, so ask it.
-        if (process.env.LEGACY_IMAGE_SMOKE_SKIP === '1') {
-          out('legacy /_next/image: SKIPPED (LEGACY_IMAGE_SMOKE_SKIP=1)')
-        } else {
-          try {
-            const probe = await fetchWithTransportRetry('https://ryan-realty.com/_next/image?url=%2Ffavicon.ico&w=64&q=75', {
-              method: 'GET',
-              redirect: 'manual',
-              headers: { 'user-agent': CI_PROBE_USER_AGENT },
-              signal: AbortSignal.timeout(20_000),
-            })
-            const location = probe.headers.get('location') ?? ''
-            out(`legacy /_next/image: ${probe.status} -> ${location || '(no location)'}`)
-            if (probe.status !== 308 || !/^(https:\/\/ryan-realty\.com)?\/favicon\.ico$/.test(location)) {
-              err('✗ LEGACY IMAGE CHECK FAILED — /_next/image?url=/favicon.ico did not 308 to /favicon.ico.')
-              err('  Stale optimizer URLs are rendering the app instead of resolving to the image.')
-              process.exit(1)
-            }
-          } catch (e) {
-            err(`legacy /_next/image check failed: ${e instanceof Error ? e.message : String(e)}`)
-            process.exit(2)
-          }
-        }
-
-        // ── sitemap smoke (SITE-54) ────────────────────────────────────────
-        // The index plus all five children, browser-clearing UA, concurrent,
-        // 300s each (the route's own maxDuration). On 2026-09-09 geo.xml and
-        // core.xml both returned 504 on production while the deploy was READY,
-        // `/` answered 200 and build telemetry was green — nothing in the repo
-        // could see it. SITEMAP_SMOKE_SKIP=1 is the acknowledged-outage escape.
-        if (process.env.SITEMAP_SMOKE_SKIP === '1') {
-          out('sitemap smoke: SKIPPED (SITEMAP_SMOKE_SKIP=1)')
-        } else {
-          const smokeTimeout = Number(process.env.SITEMAP_SMOKE_TIMEOUT_MS ?? 300_000)
-          const smoke = await probeSitemapClasses('https://ryan-realty.com', {
-            timeoutMs: smokeTimeout,
-          })
-          for (const line of formatSitemapSmoke(smoke.results)) out(`sitemap smoke: ${line}`)
-          if (!smoke.ok) {
-            err('✗ SITEMAP SMOKE FAILED — a sitemap Google reads is not a 200 with entries.')
-            err('  Google cannot discover the affected URL class while this is red.')
-            process.exit(1)
-          }
-        }
-
-        // ── live SEO baseline (Matt 2026-10-04) ────────────────────────────
-        // robots groups, the image sitemap, and a sample of every sitemap's
-        // pages as Google is served them: title, description, canonical, one
-        // H1, BreadcrumbList, alt attributes, the listing lead photo's
-        // priority. Rules: scripts/lib/live-seo-audit.mjs. LIVE_SEO_SKIP=1 is
-        // the acknowledged-outage escape, same as the sitemap smoke.
-        if (process.env.LIVE_SEO_SKIP === '1') {
-          out('live seo: SKIPPED (LIVE_SEO_SKIP=1)')
-        } else {
-          const seo = await runLiveSeoAudit('https://ryan-realty.com', { ua: LIVE_SEO_UA })
-          for (const l of seo.lines) out(`live seo: ${l}`)
-          for (const w of seo.warns) out(`live seo: warn · ${w}`)
-          if (seo.fails.length > 0) {
-            err(`✗ LIVE SEO FAILED (${seo.fails.length}) — production serves a page below the SEO baseline:`)
-            for (const f of seo.fails) err(`  - ${f}`)
-            process.exit(1)
-          }
-          out('live seo: ✓ baseline holds')
-        }
-
-        // ── every sitemap URL (200, self canonical, not noindex) ──────────
-        // The sample above is the rich baseline. This walk is the inventory:
-        // every loc Google is given must stay a real indexable page on
-        // https://ryan-realty.com. SITEMAP_URL_HEALTH_SKIP=1 is the escape.
-        if (process.env.SITEMAP_URL_HEALTH_SKIP === '1') {
-          out('sitemap url health: SKIPPED (SITEMAP_URL_HEALTH_SKIP=1)')
-        } else {
-          const maxUrls = process.env.SITEMAP_URL_HEALTH_MAX
-            ? Number(process.env.SITEMAP_URL_HEALTH_MAX)
-            : DEFAULT_DEPLOY_SITEMAP_URL_HEALTH_MAX
-          const health = await runSitemapUrlHealth('https://ryan-realty.com', {
-            ua: LIVE_SEO_UA,
-            maxUrls,
-            concurrency: Number(process.env.SITEMAP_URL_HEALTH_CONCURRENCY ?? 8),
-          })
-          for (const line of health.lines) out(`sitemap url health: ${line}`)
-          if (health.fails.length > 0) {
-            err(`✗ SITEMAP URL HEALTH FAILED (${health.fails.length} of ${health.checked}):`)
-            for (const f of health.fails) err(`  - ${f}`)
-            process.exit(1)
-          }
-          out(`sitemap url health: ✓ ${health.checked} URLs are 200, self-canonical, indexable`)
-        }
-
-        const regressed = usingCliFallback
-          ? false
-          : await reportBuildTelemetry(apiToken, teamId, deployId)
-        process.exit(regressed ? 1 : 0)
+        process.exit(await runLiveChecks({ defects, apiToken, teamId, deployId, usingCliFallback }))
       }
       if (state === 'CANCELED') {
         if (skippableTip) {
