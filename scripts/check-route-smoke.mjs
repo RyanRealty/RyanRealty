@@ -520,8 +520,25 @@ function timedOutFullPage(result) {
     !result.predetermined &&
     !result.resolvingRedirect &&
     !result.listingSegment &&
-    !result.refusal &&
     !HOP_ROUTES.has(result.path)
+  )
+}
+
+/**
+ * A listing refusal that served the loading.tsx shell (HTTP 200, title
+ * "Listing loading", no noindex) during the concurrent pass. The same
+ * streamed-shell problem the refusal gate exists to catch: React flushed
+ * before the miss path wrote robots. Run 38596963689 / 38596961264.
+ * One serial retry, same as a timed-out full page. A real missing noindex
+ * still fails on the retry.
+ */
+function streamedRefusalShell(result) {
+  return (
+    Boolean(result.refusal) &&
+    !result.ok &&
+    result.status === 200 &&
+    (/listing loading/i.test(result.title ?? '') ||
+      (result.reasons ?? []).some((reason) => /noindex/i.test(reason) || /no <h1>/i.test(reason)))
   )
 }
 
@@ -614,7 +631,10 @@ async function main() {
   // with the server to itself, and that still fails.
   const lookupUnavailable = (r) => !r.ok && r.status === 503 && r.lookup === 'unavailable'
   const needsSerial = (i) =>
-    timedOutFullPage(results[i]) || hopPassedThrough(results[i], toCheck[i]) || lookupUnavailable(results[i])
+    timedOutFullPage(results[i]) ||
+    hopPassedThrough(results[i], toCheck[i]) ||
+    lookupUnavailable(results[i]) ||
+    streamedRefusalShell(results[i])
   // The server keeps rendering a page after the client gives up on it, so the
   // renders the pool abandoned drain before the serial retries begin.
   if (results.some((_, i) => needsSerial(i))) await new Promise((r) => setTimeout(r, RETRY_SETTLE_MS))
@@ -630,6 +650,13 @@ async function main() {
       const retry = await checkRoute(toCheck[i])
       results[i] = retry.ok
         ? { ...retry, title: `${retry.title ?? ''} (hopped on a serial retry; the concurrent pass missed the edge lookup budget)` }
+        : retry
+      continue
+    }
+    if (streamedRefusalShell(results[i]) || (timedOutFullPage(results[i]) && toCheck[i].refusal)) {
+      const retry = await checkRoute(toCheck[i])
+      results[i] = retry.ok
+        ? { ...retry, title: `${retry.title ?? ''} (answered on a serial retry after a streamed listing shell)` }
         : retry
       continue
     }
