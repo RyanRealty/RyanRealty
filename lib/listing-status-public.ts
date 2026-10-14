@@ -48,6 +48,13 @@ export const PUBLIC_ON_MARKET_STATUSES: ListingStatus[] = [
 ]
 
 /**
+ * listings.xml: on-market only. Active Under Contract stays (Active family).
+ * Pending is included. Closed / Expired / Withdrawn / Canceled / Coming Soon
+ * never ship. lastmod is the row's ModificationTimestamp.
+ */
+export const LISTING_SITEMAP_STATUSES: ListingStatus[] = [...PUBLIC_ON_MARKET_STATUSES]
+
+/**
  * WHAT A PUBLIC COUNT CALLS A LISTING (SITE-193, 2026-09-24).
  *
  * PUBLIC_ACTIVE_STATUSES answers "may a visitor SEE it", and it holds Active

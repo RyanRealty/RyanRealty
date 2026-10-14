@@ -34,17 +34,20 @@ describe('priceDropBands', () => {
     item({ id: 'c', cutPct: 12, city: 'Bend', citySlug: 'bend' }),
   ]
 
-  it('leads with every cut and drops empty bands', () => {
+  it('partitions every cut into one band and never repeats a home', () => {
     const bands = priceDropBands(items)
-    expect(bands.map((b) => b.key)).toEqual(['all', 'under-5', '5-10', '10-plus'])
-    expect(bands[0]!.items).toHaveLength(3)
+    expect(bands.map((b) => b.key)).toEqual(['under-5', '5-10', '10-plus'])
     expect(bands.find((b) => b.key === 'under-5')!.items.map((row) => row.id)).toEqual(['a'])
+    expect(bands.find((b) => b.key === '5-10')!.items.map((row) => row.id)).toEqual(['b'])
     expect(bands.find((b) => b.key === '10-plus')!.items.map((row) => row.id)).toEqual(['c'])
+    const ids = bands.flatMap((band) => band.items.map((row) => row.id))
+    expect(ids).toEqual(['a', 'b', 'c'])
+    expect(new Set(ids).size).toBe(ids.length)
   })
 
   it('omits a band that has no homes', () => {
     const bands = priceDropBands([item({ id: 'only', cutPct: 11 })])
-    expect(bands.map((b) => b.key)).toEqual(['all', '10-plus'])
+    expect(bands.map((b) => b.key)).toEqual(['10-plus'])
   })
 })
 

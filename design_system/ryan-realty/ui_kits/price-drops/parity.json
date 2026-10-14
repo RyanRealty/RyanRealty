@@ -1,7 +1,7 @@
 {
   "route": "app/price-drops/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). There is no index.html in this directory. The visual target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
-  "note": "Homes grain fix 2026-08-14. Rhythm: THREE of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb, Field of the cut houses as a V3Carousel photo rail (count is a caption, never an Instrument hero), Drawing of the week's cuts, Sheet, Quiet, Footer. The empty window substitutes a Quiet for the Field and is still three patterns. Every figure comes from ONE getPriceDrops({ limit: 48, days: 7 }) call. Absent is not zero: a read that did not answer comes back degraded, the page says it could not load, Dataset / updated / count figures are omitted rather than published as 0, and refuseDegradedIsr limits that copy's ISR lifetime to 60 s (never noStore(), which is an HTTP 500 inside a Next 16 ISR render). A genuinely empty window renders the empty Quiet and caches normally. Single-family is property_sub_type 'Single Family Residence' (MARKET_TRUTH D1), not bare property type A. Drop math is previous list price to current list price. Field rows sort by lastDropPct descending. HideAwareListingGrid is a declared deletion: hidden-home subtraction stays on /search. SITE-70: photographs open via shadcn-carousel -> V3Carousel; ItemList JSON-LD lists the cut homes.",
+  "note": "Homes grain fix 2026-08-14. Rhythm: THREE of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb, Field of the cut houses as a V3Carousel photo rail (count is a caption, never an Instrument hero), Drawing of the week's cuts, Sheet, Quiet, Footer. The empty window substitutes a Quiet for the Field and is still three patterns. Every figure comes from ONE getPriceDrops({ limit: PRICE_DROPS_LIST_LIMIT, days: 7 }) call. Absent is not zero: a read that did not answer comes back degraded, the page says it could not load, Dataset / updated / count figures are omitted rather than published as 0, and refuseDegradedIsr limits that copy's ISR lifetime to 60 s (never noStore(), which is an HTTP 500 inside a Next 16 ISR render). A genuinely empty window renders the empty Quiet and caches normally. Single-family is property_sub_type 'Single Family Residence' (MARKET_TRUTH D1), not bare property type A. Drop math is previous list price to current list price. Field rows sort by lastDropPct descending. HideAwareListingGrid is a declared deletion: hidden-home subtraction stays on /search. SITE-70: photographs open via shadcn-carousel -> V3Carousel; ItemList JSON-LD lists the cut homes.",
   "deletions": [
     "KbHero: the dark photo hero and its live-glance counts. The counts survive as Instrument figures when the pull is non-empty.",
     "KbFeatured: the poster grid of the biggest percent reductions. Those homes are Field rows now, sorted by lastDropPct descending.",
@@ -35,8 +35,13 @@
       "blocking": true
     },
     {
+      "name": "PriceDropCatalog",
+      "section": "Every qualifying cut as a filterable list with load-more. The opening dials stay a preview; this is the catalog so a 90-home week is not capped at 48.",
+      "blocking": true
+    },
+    {
       "name": "PriceDropAlertsSheet",
-      "section": "Pattern 5, once, in app/price-drops/_v3/PriceDropAlertsSheet.client.tsx. Wraps V3Sheet. Capture contract unchanged (see dataLayer).",
+      "section": "Pattern 5, once, in app/price-drops/_v3/PriceDropAlertsSheet.client.tsx. Wraps V3Sheet. Price-drop alert: price_change on, ads consent and gclid/fbclid/utm on the CRM sourceUrl.",
       "blocking": true
     },
     {
@@ -71,8 +76,8 @@
     ]
   },
   "dataLayer": {
-    "getPriceDrops": "lib/data/listings/getPriceDrops.ts. { limit: 48, days: 7 }. No .catch() empty swallow. `total` is the whole window, `cap` is the list cap the drawing states, and `degraded: true` (the read did not answer) renders the could-not-load Quiet with no count and calls refuseDegradedIsr, never noStore(). THE ONLY READ ON THIS PAGE.",
-    "submitSearchAlertSignup": "app/actions/search-alert-capture.ts, bound to PriceDropAlertsSheet. Contract: { email, filters: DROPS_ALERT_FILTERS { propertyType: 'A', propertySubTypes: 'Single Family Residence' }, plus { city } on a city page, company }, so the alert follows the single-family population the page lists.",
+    "getPriceDrops": "lib/data/listings/getPriceDrops.ts. { limit: PRICE_DROPS_LIST_LIMIT (500), days: 7 }. Sanity filter drops cuts over 40% and ~10x decimal-shift typos. `total` / `totalReduced` / `medianDropPct` are the whole qualifying window. `degraded: true` renders the could-not-load Quiet. THE ONLY READ ON THIS PAGE.",
+    "submitSearchAlertSignup": "app/actions/search-alert-capture.ts, bound to PriceDropAlertsSheet. Contract: { email, filters: DROPS_ALERT_FILTERS { propertyType: 'A', propertySubTypes: 'Single Family Residence' }, plus { city } on a city page, company, events: PRICE_DROP_ALERT_EVENTS, landingSearch, optional adMatchConsent }.",
     "note": "Route-local constants and Field/JSON-LD builders live in app/price-drops/_v3/ so the route file stays under the ci:file-size-budget floor."
   },
   "sectionOrder": [
@@ -81,8 +86,9 @@
     "PriceDropsOpening -- the H1 and the count of homes that cut price",
     "V3Field #cuts -- the cut houses on V3ListingDial per cut-size band (Matt 2026-09-24, it was the shadcn carousel): one house large with its cut on the photograph in the card's own words, the rest as thumbnails, 03 / 12; cut-size switch + city doors (price, city, address, beds/baths/sqft)",
     "V3Drawing #spread -- distribution of this week's cuts (after photographs)",
+    "PriceDropCatalog #all-cuts -- every qualifying home, city / price / beds filters, load more",
     "V3SourceLine -- the trace and the stamp under the set",
-    "PriceDropAlertsSheet -- the ask: tell me when a home cuts price",
+    "PriceDropAlertsSheet -- the ask: email me when a home drops its price",
     "V3Quiet #edges -- keep looking",
     "V3Footer"
   ],

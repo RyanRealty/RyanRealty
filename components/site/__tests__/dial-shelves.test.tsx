@@ -268,12 +268,15 @@ describe('price drops on the dial', () => {
     const html = renderToStaticMarkup(<PriceDropsFold items={items} railLabel="Cuts" showCityDoors={false} />)
     const eager = (html.match(/<img\b[^>]*>/g) ?? []).filter((tag) => !tag.includes('loading="lazy"'))
     expect(eager).toHaveLength(1)
-    const firstBand = html.indexOf('id="pd-cuts-all"')
-    const secondBand = html.search(/id="pd-cuts-(under-5|5-10|10-plus)"/)
+    // The fold no longer opens on an "all cuts" reprint. The first size
+    // band is the first paint; later bands stay lazy.
+    const firstBand = html.search(/id="pd-cuts-(under-5|5-10|10-plus)"/)
+    const rest = html.slice(firstBand + 1)
+    const secondBandRel = rest.search(/id="pd-cuts-(under-5|5-10|10-plus)"/)
     const at = html.indexOf(eager[0]!)
     expect(firstBand).toBeGreaterThanOrEqual(0)
     expect(at).toBeGreaterThan(firstBand)
-    if (secondBand > 0) expect(at).toBeLessThan(secondBand)
+    if (secondBandRel >= 0) expect(at).toBeLessThan(firstBand + 1 + secondBandRel)
   })
 })
 
