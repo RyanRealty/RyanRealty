@@ -21,6 +21,7 @@ import {
   addTagFromPerson,
   assignBrokerFromPerson,
   removeTagFromPerson,
+  updateIdentityFromPerson,
   updateSourceFromPerson,
   updateStageFromPerson,
 } from '../actions'
@@ -141,6 +142,10 @@ export default async function PersonPage({
         <LeadHeader
           personId={card.personId}
           name={card.name}
+          firstName={card.firstName}
+          lastName={card.lastName}
+          leadType={card.leadType}
+          updateIdentity={updateIdentityFromPerson.bind(null, card.personId)}
           stage={card.stage}
           assignedBroker={card.assignedBroker}
           source={card.source}
@@ -175,6 +180,10 @@ export default async function PersonPage({
     <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
       <PersonIdentityHeader
         name={card.name}
+        firstName={card.firstName}
+        lastName={card.lastName}
+        leadType={card.leadType}
+        updateIdentity={updateIdentityFromPerson.bind(null, card.personId)}
         whoLabels={[]}
         stage={card.stage}
         assignedBroker={card.assignedBroker}

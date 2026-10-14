@@ -1,4 +1,6 @@
 import { EntityTitle, StateWord } from '@/components/admin/v2'
+import type { PersonLeadType } from '@/lib/crm/person-identity-edit'
+import { PersonIdentityEditor } from '@/components/admin/crm/PersonIdentityEditor'
 import { LeadMoreMenu } from './LeadMoreMenu'
 
 function initials(name: string | null): string {
@@ -13,6 +15,10 @@ function initials(name: string | null): string {
 export function LeadHeader(props: {
   personId: number
   name: string | null
+  firstName: string
+  lastName: string
+  leadType: PersonLeadType
+  updateIdentity: (formData: FormData) => Promise<void>
   stage: string
   assignedBroker: string | null
   source: string | null
@@ -68,6 +74,13 @@ export function LeadHeader(props: {
             </StateWord>
           ))}
         </div>
+        <PersonIdentityEditor
+          firstName={props.firstName}
+          lastName={props.lastName}
+          leadType={props.leadType}
+          layout="3"
+          action={props.updateIdentity}
+        />
         <div style={{ marginTop: 4, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', fontFamily: 'var(--a-font-mono)' }}>
           {props.phone ? (
             <a href={`tel:${props.phone}`} style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>

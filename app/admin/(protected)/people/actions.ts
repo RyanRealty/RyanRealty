@@ -28,6 +28,7 @@ import {
   updateCrmStageAction,
 } from '@/app/actions/crm'
 import { updatePersonFieldAction } from '@/app/actions/crm-person-detail'
+import { updatePersonIdentityAction } from '@/app/actions/crm-person-identity'
 import { startBpoForContactAction } from '@/app/actions/contact-bpo'
 import { saveDraftAction } from '@/app/actions/crm-inbox'
 
@@ -171,6 +172,22 @@ export async function updateSourceFromPerson(personId: number, formData: FormDat
   const r = await updatePersonFieldAction(personId, 'source', value)
   revalidatePath(personPath(personId))
   if (!r.ok) redirect(errorUrl(personId, `Source not updated — ${r.error ?? 'unknown error'}`))
+}
+
+function layoutQuery(formData: FormData): string {
+  return String(formData.get('layout') ?? '') === '3' ? 'v=3&' : ''
+}
+
+export async function updateIdentityFromPerson(personId: number, formData: FormData): Promise<void> {
+  const firstName = String(formData.get('firstName') ?? '')
+  const lastName = String(formData.get('lastName') ?? '')
+  const leadType = String(formData.get('leadType') ?? '')
+  const r = await updatePersonIdentityAction(personId, firstName, lastName, leadType)
+  revalidatePath(personPath(personId))
+  const q = layoutQuery(formData)
+  if (!r.ok) {
+    redirect(`${personPath(personId)}?${q}error=${encodeURIComponent(`Name not updated — ${r.error}`)}`)
+  }
 }
 
 export async function addTagFromPerson(personId: number, formData: FormData): Promise<void> {
