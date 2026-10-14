@@ -8,6 +8,7 @@
     "ci:imagine-no-paid-api",
     "ci:studio-techniques",
     "ci:content-rules",
+    "ci:content-queue",
     "ci:broker-own-book",
     "ci:commit-compiles",
     "ci:count-degraded-read",
