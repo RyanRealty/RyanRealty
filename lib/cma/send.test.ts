@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { SolicitScreen } from '@/lib/cma/solicit-screen'
 
 /**
  * sendCmaToLead's two rails: the broker's own Gmail first, Resend when Gmail
@@ -21,8 +22,8 @@ const h = vi.hoisted(() => ({
   recordEmailEvent: vi.fn(),
   ensureNativeLead: vi.fn(),
   stampCmaPersonId: vi.fn(),
-  screenAddressForSolicitation: vi.fn(async () => ({
-    ok: true as const,
+  screenAddressForSolicitation: vi.fn(async (): Promise<SolicitScreen> => ({
+    ok: true,
     checked: 1,
     detail: 'clear',
   })),
@@ -289,6 +290,33 @@ describe('sendCmaToLead', () => {
       sinceIso: null,
       subjectListingKey: 'ZZTESTKEYLOT33',
     })
+  })
+
+  it('refuses an expired letter when live MLS status at send time is Active', async () => {
+    const { getCmaAdminRowBySlug } = await import('@/lib/data')
+    vi.mocked(getCmaAdminRowBySlug).mockResolvedValueOnce({
+      ...h.row,
+      request_source: 'expired-outreach-queue',
+      doc_type: 'expired-audit',
+      subject_address: '123 Smith St, Bend, OR 97701',
+      subject_city: 'Bend',
+      subject_listing_key: 'EXPIRED-KEY',
+    })
+    h.screenAddressForSolicitation.mockResolvedValueOnce({
+      ok: false,
+      reason: 'listed',
+      detail: 'The address is on the MLS right now as Active (NEW-KEY). A listed seller is not ours to solicit.',
+      listingKey: 'NEW-KEY',
+      checked: 1,
+    })
+
+    const res = await sendCmaToLead(SLUG)
+
+    expect(res.ok).toBe(false)
+    expect(res.error).toMatch(/Not sent/)
+    expect(res.error).toMatch(/Active/)
+    expect(h.gmailSend).not.toHaveBeenCalled()
+    expect(h.sendEmail).not.toHaveBeenCalled()
   })
 
   it('refuses a cold send when the county owner is a company and does not mail', async () => {
