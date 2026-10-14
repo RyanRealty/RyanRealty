@@ -30,6 +30,7 @@ Technique library: `techniques/` (one recipe per file) + `techniques/registry.js
 2. Pick the type card in `rules/VIDEO_TYPES.md`: listing, market_update, news_civic, closing, neighborhood_spotlight, buyer_ad, brand_film, story_teaser. Every card = hook, intro, body, payoff, end card.
 3. Write `brief.json` to `templates/brief.schema.json` (video_type, hook text + time, length, every number with source and exact window, footage with rights, end card) and `timeline.json` (beats with role, start, end, text, number, optional text boxes).
 4. Run `node .claude/skills/ryan-studio/tools/video_gate.mjs brief.json timeline.json`. Non-zero exit = fix it; do not render. Tests: `node --test .claude/skills/ryan-studio/tools/tests/`.
-5. Then follow `motion-stats-craft`, `imagine-video-craft`, `motion-render-quality`. Creative Desk watches every render with audio. Matt posts himself; never publish.
+5. Render through the one factory: `npm run studio:render -- brief.json timeline.json` (runs video_gate, renders to `out/studio/<slug>/final.mp4` with its manifest, then `video:check`). Sample: `lib/studio/timeline/fixtures/bend-mos.*.json`. Contract: `docs/plans/STUDIO_ONE_FACTORY.md`.
+6. Then follow `motion-stats-craft`, `imagine-video-craft`, `motion-render-quality`. Creative Desk watches every render with audio. Matt posts himself; never publish.
 
 Items marked PROPOSED in VIDEO_TYPES.md are not rules until Matt says yes. Box source of truth: `/workspace/studio/` (keep both in sync).

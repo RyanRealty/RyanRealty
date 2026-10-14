@@ -97,6 +97,7 @@ const STUDIO_MOTION_TRACE_INCLUDES = [
   './node_modules/geist/dist/fonts/geist-sans/Geist-Regular.woff2',
   './node_modules/geist/dist/fonts/geist-sans/Geist-Medium.woff2',
   './node_modules/geist/dist/fonts/geist-sans/Geist-SemiBold.woff2',
+  './node_modules/geist/dist/fonts/geist-sans/Geist-Bold.woff2',
   './public/brand/logo-horizontal-navy.png',
   './public/brand/wordmark-stacked-navy.png',
 ]

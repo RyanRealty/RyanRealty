@@ -158,14 +158,25 @@ export type RenderMotionInput = {
   ffmpeg: string
   /** Frames at which to read back the rendered text and pull a still. */
   stills: Array<{ cueId: string; t: number }>
+  /**
+   * Times at which to read back every visible text with its box, from the page
+   * itself (no still is pulled). The timeline renderer writes the manifest's
+   * `texts` from these, so the record is what was drawn.
+   */
+  probes?: number[]
   launchBrowser: (viewport: { width: number; height: number }) => Promise<Browser>
 }
+
+/** One visible text read back from the page: its cue, its words, its box in film pixels. */
+export type DrawnText = { cue: string | null; text: string; x: number; y: number; w: number; h: number; opacity: number }
 
 export type RenderMotionResult = {
   body: Buffer
   stills: Array<{ cueId: string; t: number; jpg: Buffer }>
   /** Text actually visible in the page at each still, for the §0 re-check. */
   renderedText: string[]
+  /** What the page drew at each probe time (RenderMotionInput.probes), in order. Always set by renderMotion. */
+  probed?: Array<{ t: number; frame: number; texts: DrawnText[] }>
   fonts: Array<{ family: string; weight: string; status: string }>
   frames: number
   captured: number
@@ -263,6 +274,12 @@ export async function renderMotion(input: RenderMotionInput): Promise<RenderMoti
     })
 
     const stillFrames = new Map(input.stills.map((s) => [Math.round(s.t * fps), s]))
+    const probeFrames = new Map<number, number[]>()
+    for (const t of input.probes ?? []) {
+      const frame = Math.min(frames - 1, Math.max(0, Math.round(t * fps)))
+      probeFrames.set(frame, [...(probeFrames.get(frame) ?? []), t])
+    }
+    const probed: NonNullable<RenderMotionResult['probed']> = []
     const renderedText: string[] = []
     let previous = ''
     let png: Buffer | null = null
@@ -300,6 +317,14 @@ export async function renderMotion(input: RenderMotionInput): Promise<RenderMoti
         )) as string[]
         renderedText.push(...visible)
       }
+      const probeTimes = probeFrames.get(i)
+      if (probeTimes) {
+        const texts = (await page.evaluate(() =>
+          (window as unknown as { __rrTextBoxes: () => DrawnText[] }).__rrTextBoxes(),
+        )) as DrawnText[]
+        for (const t of probeTimes) probed.push({ t, frame: i, texts })
+        renderedText.push(...texts.map((d) => d.text))
+      }
       if (!ff.stdin?.write(png) && !ffClosed) {
         // Back-pressure: wait for ffmpeg to drain, to exit, or for its stdin to
         // break, then drop the listeners so a long film does not pile them up.
@@ -336,7 +361,7 @@ export async function renderMotion(input: RenderMotionInput): Promise<RenderMoti
       if (pulled.code === 0) stills.push({ ...still, jpg: await readFile(jpgPath) })
     }
 
-    return { body, stills, renderedText, fonts, frames, captured, ms: Date.now() - started }
+    return { body, stills, renderedText, probed, fonts, frames, captured, ms: Date.now() - started }
   } finally {
     await browser?.close().catch(() => undefined)
     await rm(dir, { recursive: true, force: true }).catch(() => undefined)

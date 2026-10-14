@@ -30,6 +30,7 @@ import { MOS_BALANCED_MAX, MOS_SELLER_MAX, marketVerdict } from '@/lib/market/cl
 import { formatDate } from '@/lib/format/date'
 import { unauthorisedFigures } from '../caption'
 import { presence, progress } from './ease'
+import { REVEAL_SCALE_FROM, REVEAL_SECONDS, holdDrift, revealPose } from './reveal'
 import { CHART_DRAW_SECONDS, chartGeometry, dotAt, drawProgress, type ChartPoint, type MotionSeries } from './chart'
 import { cameraAt, mapGeometry, type MapGeometry, type MotionOutline } from './map'
 import { ENDCARD, endcardLayout, endcardState, endcardTimes, type EndcardOptions, type EndcardTimes } from './endcard'
@@ -119,7 +120,25 @@ export type MotionSubject = {
   outline?: MotionOutline
 }
 
-type CueTiming = { id: string; start: number; end: number }
+/**
+ * Where a card sits, px from the top at 1080 wide. Set by the timeline planner
+ * (lib/studio/timeline), which keeps cards above the caption band; the
+ * format planners leave it unset and the page's own layout applies.
+ */
+export type CuePlace = {
+  top: number
+  /** The card sits on a cream paper beat (no footage under it): navy ink, no scrim panel. */
+  paper?: boolean
+}
+
+type CueTiming = { id: string; start: number; end: number; place?: CuePlace }
+
+/**
+ * What a timeline text card is for. 'question' and 'turn' are the two halves
+ * of the question + secret hook (lib/studio/timeline/hooks.ts); 'payoff' is a
+ * payoff line; 'plain' is any other display line.
+ */
+export type TextTone = 'plain' | 'question' | 'turn' | 'payoff'
 
 export type MotionCue =
   | (CueTiming & {
@@ -193,6 +212,41 @@ export type MotionCue =
       agent: MotionAgent | null
     })
   | (CueTiming & {
+      /** A display line over footage or paper (timeline films): Amboqia words, never a figure. */
+      kind: 'text'
+      tone: TextTone
+      eyebrow: string | null
+      line: string
+    })
+  | (CueTiming & {
+      /**
+       * A hero number (timeline films): the eased number reveal, then the hold
+       * drift (reveal.ts). The value is a verified figure, in Geist; the unit
+       * line is display words; the scope and as-of lines are the footer the
+       * RULEBOOK asks for (§3: definition, geography and date on screen).
+       */
+      kind: 'number'
+      eyebrow: string | null
+      value: string
+      unit: string | null
+      scope: string | null
+      asOf: string | null
+      figureKeys: string[]
+    })
+  | (CueTiming & {
+      /** One burned-in caption card, timed to the spoken words (lib/studio/voice). Hard cut in and out. */
+      kind: 'caption'
+      text: string
+      /** Indices into the film's spoken words. */
+      words: number[]
+    })
+  | (CueTiming & {
+      /** The topic call to action, its own card before the end card (never on it). */
+      kind: 'cta'
+      style: 'send_invite' | 'plain'
+      line: string
+    })
+  | (CueTiming & {
       /** Matt's locked end card (endcard.ts). Its own clock: options.start is this cue's start. */
       kind: 'endcard'
       words: [string, string, string]
@@ -215,6 +269,22 @@ export type MotionPlan = {
   footageSeconds?: number
   /** What the planner chose not to draw, and why. Recorded on the draft. */
   notes: string[]
+  /**
+   * Timeline films: every held card drifts this many px across its hold
+   * (reveal.ts), so no frame is ever frozen. Unset: no drift (format films).
+   */
+  holdDriftPx?: number
+  /**
+   * The loop seam (lib/studio/timeline/seam.ts): from `from` to the end, every
+   * card but the end card is drawn as it is at t = 0, so the end card's iris
+   * opens onto the exact opening picture and the last frame is frame 0.
+   */
+  loopEcho?: { from: number }
+  /**
+   * 'captioned': the film burns in captions, so cards sit above the caption
+   * band at their planned `place` and inside the safe area (x 960).
+   */
+  layout?: 'captioned'
 }
 
 /**
@@ -245,6 +315,10 @@ export const CUE_PARTS: Record<MotionCue['kind'], Array<{ part: string; delay: n
     { part: 'mark', delay: 0.15 },
     { part: 'cta', delay: 0.3 },
   ],
+  text: [{ part: 'card', delay: 0 }],
+  number: [{ part: 'card', delay: 0 }],
+  caption: [{ part: 'card', delay: 0 }],
+  cta: [{ part: 'card', delay: 0 }],
   // The end card keeps its own clock (endcard.ts); the delays are unused.
   endcard: [
     { part: 'card', delay: 0 },
@@ -295,7 +369,10 @@ function roomsLine(figures: Record<string, string>): { text: string | null; keys
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never
 /** A lead card before it is placed in time. */
-type LeadDraft = DistributiveOmit<Exclude<MotionCue, { kind: 'closer' | 'endcard' }>, 'id' | 'start' | 'end'>
+type LeadDraft = DistributiveOmit<
+  Exclude<MotionCue, { kind: 'closer' | 'endcard' | 'text' | 'number' | 'caption' | 'cta' }>,
+  'id' | 'start' | 'end'
+>
 
 /** The listing cards: address first, then what it costs and holds. */
 function listingLeads(subject: MotionSubject, slots: number): LeadDraft[] {
@@ -678,6 +755,14 @@ export function cueTexts(cue: MotionCue): string[] {
       return [cue.agent ? 'Listed by' : '', cue.agent?.name ?? '', cue.cta]
     case 'endcard':
       return [...cue.words, cue.cta, cue.phone]
+    case 'text':
+      return [cue.eyebrow ?? '', cue.line]
+    case 'number':
+      return [cue.eyebrow ?? '', cue.value, cue.unit ?? '', cue.scope ?? '', cue.asOf ?? '']
+    case 'caption':
+      return [cue.text]
+    case 'cta':
+      return [cue.line]
   }
 }
 
@@ -700,7 +785,9 @@ export function figureLeaks(plan: MotionPlan, subject: MotionSubject, rendered?:
     if (cue.kind === 'meter') {
       authored.push(String(cue.thresholds[0]), String(cue.thresholds[1]), String(Math.round(cue.domainMax)))
     }
-    if ((cue.kind === 'figure' || cue.kind === 'meter' || cue.kind === 'chart') && cue.asOf) authored.push(cue.asOf)
+    if ((cue.kind === 'figure' || cue.kind === 'meter' || cue.kind === 'chart' || cue.kind === 'number') && cue.asOf) {
+      authored.push(cue.asOf)
+    }
     // A chart's scale labels are a ruler at round values, not a claim.
     if (cue.kind === 'chart') authored.push(...cue.gridlines.map((g) => g.label))
     if (cue.kind === 'closer' && cue.agent) authored.push(cue.agent.name)
@@ -776,9 +863,23 @@ function endcardFrame(cue: Extract<MotionCue, { kind: 'endcard' }>, t: number, s
  */
 export function frameState(plan: MotionPlan, t: number, scale = 1): ElementState[] {
   const out: ElementState[] = []
+  const driftPx = plan.holdDriftPx ?? 0
   for (const cue of plan.cues) {
     if (cue.kind === 'endcard') {
       out.push(...endcardFrame(cue, t, scale))
+      continue
+    }
+    // The loop seam: once the end card starts to open, every other card is
+    // drawn exactly as it is on frame 0, so the iris reveals the opening picture.
+    const tc = plan.loopEcho && t >= plan.loopEcho.from ? 0 : t
+    if (cue.kind === 'caption') {
+      // A caption is timed to the word: it hard-cuts in on its first word and
+      // out at its end, never fades (lib/studio/voice/captionStyle.ts).
+      out.push({ id: `${cue.id}-card`, opacity: tc >= cue.start && tc < cue.end ? 1 : 0, y: 0 })
+      continue
+    }
+    if (cue.kind === 'number') {
+      out.push(numberFrame(cue, tc, scale, driftPx))
       continue
     }
     const exit = cue.kind === 'closer' ? 0 : EXIT_SECONDS
@@ -786,50 +887,77 @@ export function frameState(plan: MotionPlan, t: number, scale = 1): ElementState
       // A paper film's picture (the chart's axis, the map) is up on frame 0:
       // no entrance, so the opening frame is a picture and not blank paper.
       const instant = cue.kind === 'chart' || cue.kind === 'map'
-      const p = presence(t, { start: cue.start + delay, end: cue.end }, instant ? 0 : ENTER_SECONDS, exit)
+      const p = presence(tc, { start: cue.start + delay, end: cue.end }, instant ? 0 : ENTER_SECONDS, exit)
+      // A held card keeps rising slowly once it has landed (reveal.ts), so no
+      // stretch of a timeline film is ever frozen.
+      const drift =
+        driftPx > 0 && !instant && cue.kind !== 'closer'
+          ? holdDrift(tc, cue.start + delay + ENTER_SECONDS, cue.end, driftPx) * scale
+          : 0
       const state: ElementState = {
         id: `${cue.id}-${part}`,
         opacity: Math.round(p * 1000) / 1000,
-        y: instant ? 0 : Math.round((1 - p) * TRAVEL_PX * scale * 100) / 100,
+        y: instant ? 0 : Math.round(((1 - p) * TRAVEL_PX * scale - drift) * 100) / 100 + 0,
       }
       if (cue.kind === 'chart' && part === 'axis') {
-        const drawn = drawProgress(t, cue.drawStart)
+        const drawn = drawProgress(tc, cue.drawStart)
         const x = cue.x0 + (cue.x1 - cue.x0) * drawn
-        const dot = t >= cue.drawStart ? dotAt(cue.points, x) : null
-        const dotIn = progress(t, cue.drawStart, 0.2)
+        const dot = tc >= cue.drawStart ? dotAt(cue.points, x) : null
+        const dotIn = progress(tc, cue.drawStart, 0.2)
         // Nothing of the line before it starts; then the reveal ends at the dot.
-        state.reveal = t < cue.drawStart ? 0 : Math.round(x * 100) / 100
+        state.reveal = tc < cue.drawStart ? 0 : Math.round(x * 100) / 100
         state.dot = dot ? [dot.x, dot.y, round3(dotIn)] : [cue.x0, cue.first.y, 0]
         const landed = cue.drawStart + CHART_DRAW_SECONDS
         // The first month is up from frame 0 with its ring; the latest lands
         // on the frame the dot reaches it ("a reaction starts on the frame of
         // its cause").
-        state.labels = [1, round3(presence(t, { start: landed, end: cue.end }, ENTER_SECONDS, 0))]
+        state.labels = [1, round3(presence(tc, { start: landed, end: cue.end }, ENTER_SECONDS, 0))]
       }
       if (cue.kind === 'map' && part === 'card') {
-        const camera = cameraAt(cue.geometry, t, cue.zoomStart, cue.zoomSeconds)
+        const camera = cameraAt(cue.geometry, tc, cue.zoomStart, cue.zoomSeconds)
         state.camera = [camera.s, camera.tx, camera.ty]
-        state.draw = round3(drawProgress(t, cue.drawStart, cue.drawSeconds))
-        state.fill = round3(presence(t, { start: cue.drawStart + cue.drawSeconds - 0.2, end: cue.end }, ENTER_SECONDS, 0))
+        state.draw = round3(drawProgress(tc, cue.drawStart, cue.drawSeconds))
+        state.fill = round3(presence(tc, { start: cue.drawStart + cue.drawSeconds - 0.2, end: cue.end }, ENTER_SECONDS, 0))
         // The locator is up from frame 0 to show where the camera is going,
         // then fades over 9 frames as the outline takes over.
-        state.locator = round3(presence(t, { start: 0, end: cue.drawStart + 0.3 }, 0, 0.3))
+        state.locator = round3(presence(tc, { start: 0, end: cue.drawStart + 0.3 }, 0, 0.3))
         // The city gives way while the camera leaves it, so no city line is
         // ever seen cut by the map's edge.
         state.context = round3(
-          cue.zoomSeconds > 0 ? 1 - drawProgress(t, cue.zoomStart, cue.zoomSeconds * MAP_DRAW_OVERLAP) : 1,
+          cue.zoomSeconds > 0 ? 1 - drawProgress(tc, cue.zoomStart, cue.zoomSeconds * MAP_DRAW_OVERLAP) : 1,
         )
       }
       if (cue.kind === 'meter' && part === 'card') {
         // The marker draws on from the left edge to its value once the card is
         // in, the meter's one movement. The number itself never counts up.
-        const travel = presence(t, { start: cue.start + ENTER_SECONDS, end: cue.end }, 0.6, 0)
+        const travel = presence(tc, { start: cue.start + ENTER_SECONDS, end: cue.end }, 0.6, 0)
         state.marker = Math.round(travel * 1000) / 1000
       }
       out.push(state)
     }
   }
   return out
+}
+
+/**
+ * The hero number (technique `eased_number_reveal`): scale 0.92 to 1 and
+ * opacity 0 to 1 over 12 frames on the brand ease, then the slow hold drift,
+ * then the ordinary exit fade. Pure in t; reveal.ts holds the curves.
+ */
+function numberFrame(cue: Extract<MotionCue, { kind: 'number' }>, t: number, scale: number, driftPx: number): ElementState {
+  const id = `${cue.id}-card`
+  if (t < cue.start || t > cue.end) return { id, opacity: 0, y: 0, x: 0, scale: REVEAL_SCALE_FROM }
+  const pose = revealPose(t, cue.start)
+  // The exit alone: with no entrance, presence is 1 until the exit fade starts.
+  const falling = presence(t, { start: cue.start, end: cue.end }, 0, EXIT_SECONDS)
+  const drift = driftPx > 0 ? holdDrift(t, cue.start + REVEAL_SECONDS, cue.end, driftPx) * scale : 0
+  return {
+    id,
+    opacity: Math.round(Math.min(pose.opacity, falling) * 1000) / 1000,
+    y: Math.round(-drift * 100) / 100 + 0,
+    x: 0,
+    scale: pose.scale,
+  }
 }
 
 /**
@@ -847,12 +975,16 @@ export function stillTimes(plan: MotionPlan): Array<{ cueId: string; t: number }
     }
     // A chart or map still is taken once its picture has finished: the line
     // landed with both labels in, the outline drawn and filled.
+    // A caption is up for as little as 0.4 s: its still is its midpoint.
+    if (cue.kind === 'caption') return { cueId: cue.id, t: Math.round(((cue.start + cue.end) / 2) * 1000) / 1000 }
     const settled =
       cue.kind === 'chart'
         ? cue.drawStart + CHART_DRAW_SECONDS + ENTER_SECONDS + 0.2
         : cue.kind === 'map'
           ? cue.drawStart + cue.drawSeconds + ENTER_SECONDS
-          : cue.start + 1.3
+          : cue.kind === 'number'
+            ? cue.start + REVEAL_SECONDS + 0.3
+            : cue.start + 1.3
     return { cueId: cue.id, t: Math.round(Math.min(settled, cue.end - 0.35) * 1000) / 1000 }
   })
 }

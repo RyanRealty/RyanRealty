@@ -1,5 +1,5 @@
 {
- "version": "2026-10-13b",
+ "version": "2026-10-13c",
  "_doc": "One factory (docs/plans/STUDIO_ONE_FACTORY.md). A technique is on the menu only when it is real: status 'ready' and, for kind 'code', a lib/studio module plus the test that holds it (ci:studio-techniques checks both exist). 'planned' techniques are ideas with a named home; video_gate refuses them in a brief. Categories feed video:check checks 15 and 16: every film needs one ready hook, scene and type technique, and its hook + scene set may not repeat any of the last five films.",
  "categories": {
   "hook": "How the first 1 to 2 s stops the scroll.",
@@ -18,8 +18,9 @@
    "source": "RULEBOOK 2b (calm eased entrances, 2026-10-09)",
    "category": "type",
    "kind": "code",
-   "status": "planned",
-   "home": "lib/studio/motion/cues.ts (scale-in, then hold drift)"
+   "status": "ready",
+   "module": "lib/studio/motion/reveal.ts",
+   "test": "lib/studio/motion/reveal.test.ts"
   },
   "subframe_motion_blur": {
    "name": "Subframe motion blur",
@@ -68,8 +69,9 @@
    "source": "Matt core recipe: loopable",
    "category": "transition",
    "kind": "code",
-   "status": "planned",
-   "home": "lib/studio/motion/endcard.ts loop option over frame 0 (the renderer must lay frame 0 under the card first)"
+   "status": "ready",
+   "module": "lib/studio/timeline/seam.ts",
+   "test": "lib/studio/timeline/seam.test.ts"
   },
   "imagine_imperfection": {
    "name": "Ask for imperfection",
@@ -122,8 +124,9 @@
    "source": "r5-meta-ad-library hook pattern #3",
    "category": "hook",
    "kind": "code",
-   "status": "planned",
-   "home": "lib/studio/timeline (hook planner: a sourced figure on screen by 1.0 s)"
+   "status": "ready",
+   "module": "lib/studio/timeline/hooks.ts",
+   "test": "lib/studio/timeline/hooks.test.ts"
   },
   "question_secret_hook": {
    "name": "Question + secret hook",
@@ -131,8 +134,9 @@
    "source": "r5 hook pattern #1",
    "category": "hook",
    "kind": "code",
-   "status": "planned",
-   "home": "lib/studio/timeline (hook planner: a question card, then the turn)"
+   "status": "ready",
+   "module": "lib/studio/timeline/hooks.ts",
+   "test": "lib/studio/timeline/hooks.test.ts"
   },
   "send_invite_hook": {
    "name": "Send-invite line",
@@ -140,8 +144,9 @@
    "source": "video-skills-research #4 (sends per reach)",
    "category": "cta",
    "kind": "code",
-   "status": "planned",
-   "home": "lib/studio/timeline (payoff line before the end card)"
+   "status": "ready",
+   "module": "lib/studio/timeline/hooks.ts",
+   "test": "lib/studio/timeline/hooks.test.ts"
   },
   "line_draw_riding_dot": {
    "name": "Line drawn on with a riding dot",

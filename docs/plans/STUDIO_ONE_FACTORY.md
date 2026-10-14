@@ -1,8 +1,11 @@
 # One video factory, measured output (Matt 2026-10-13)
 
-Status 2026-10-13: `npm run video:check` (`lib/studio/qa/`), the locked end card
-(`lib/studio/motion/endcard.ts`) and the voice and captions (`lib/studio/voice/`) are
-built. `npm run studio:render` is being built and is not available until this line changes.
+Status 2026-10-13: built and in use. `npm run studio:render` (`lib/studio/timeline/`,
+`scripts/studio-render.ts`) renders brief + timeline through the motion stage over a
+footage plate (`lib/video/plate.ts`), with the voice and captions (`lib/studio/voice/`),
+the score, the locked end card (`lib/studio/motion/endcard.ts`) and the loop seam, writes
+the manifest, then runs `npm run video:check` (`lib/studio/qa/`). Sample:
+`lib/studio/timeline/fixtures/bend-mos.*.json`.
 
 Matt's ruling, 2026-10-13: "One factory + output check." Every video, from any bot (Claude,
 Grok, Imagine, Cursor), renders through the repo's Studio code (`lib/studio`). Grok
@@ -112,3 +115,11 @@ test. A check that cannot be measured fails, never passes by default.
 - `lib/studio/motion/endcard.ts`: the locked end card as a pure function of t (END_CARD_SPEC), plus its golden still.
 - `lib/studio/voice/`: ElevenLabs v3 with timestamps, caption cards from word timings, VO mixed over the score.
 - `lib/studio/timeline/` + `scripts/studio-render.ts`: brief + timeline in, film + manifest out.
+  timeline.json keeps today's beats (id, role, start, end, text, number, boxes) and adds per
+  beat `footage` ({ src, in, move }), `scene` ({ kind: a registry scene technique, ...params })
+  and `cards` (text, number, question, turn), plus top-level `voice` ({ script, voice,
+  display, start }), `cta` (its own card before the end card) and `score` (mood). The
+  renderer records in `manifest.techniques` only what it proved the page drew.
+- `lib/video/plate.ts`: each beat's clip trimmed, scaled to cover at one scale and cropped
+  (recorded), 30 fps, audio stripped; cream paper for a beat with no footage; frame 0 held
+  under the end card for the loop seam.

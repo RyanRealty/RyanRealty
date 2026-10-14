@@ -330,7 +330,7 @@ describe('buildMotionPage: paper', () => {
     const html = buildMotionPage({ plan, width: 1080, height: 1920, assets })
     expect(html).toContain('<body class="paper">')
     // On paper the page is opaque throughout, so the field needs no see-through edge.
-    expect(html).toContain('<section class="endcard" id="endcard-card">')
+    expect(html).toContain('<section class="endcard" id="endcard-card" data-cue="endcard">')
     expect(html).toMatch(/\.endcard\{[^}]*\}/)
     expect(html.match(/\.endcard\{[^}]*\}/)![0]).not.toContain('mask-image')
     expect(html).toContain('id="lead1-reveal"')

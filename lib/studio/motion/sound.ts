@@ -34,6 +34,9 @@ export function scoreFor(plan: MotionPlan, spec: MotionSpec, subject: MotionSubj
 
   const endsOnEndcard = plan.cues.some((cue) => cue.kind === 'endcard')
   for (const cue of plan.cues) {
+    // Captions follow the voice word by word; a note or a chord on each would
+    // turn the score into a metronome. The voice is their sound.
+    if (cue.kind === 'caption') continue
     // A new chord on every card: the music turns the page with the picture.
     sections.push({ start: sections.length === 0 ? 0 : cue.start, end: cue.end })
     switch (cue.kind) {

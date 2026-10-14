@@ -35,6 +35,14 @@ describe('parseSpokenNumber', () => {
     expect(value('five hundred dollars')).toEqual({ values: [500], unit: 'dollar' })
   })
 
+  it('reads "and a half" as one half more, and nothing looser', () => {
+    expect(value('three and a half')).toEqual({ values: [3.5], unit: null })
+    expect(value('twenty and a half percent')).toEqual({ values: [20.5], unit: 'percent' })
+    expect(value('and a half')).toBeNull()
+    expect(value('a half')).toBeNull()
+    expect(value('three and a')).toBeNull()
+  })
+
   it('reads a spoken year', () => {
     expect(value('twenty twenty six')?.values).toContain(2026)
     expect(value('nineteen ninety nine')?.values).toContain(1999)
@@ -74,6 +82,13 @@ describe('alignCaption', () => {
     expect(alignCaption('$475K', words('four hundred seventy five thousand dollars')).ok).toBe(true)
     expect(alignCaption('3.5 MONTHS', words('three point five months')).ok).toBe(true)
     expect(alignCaption('2026', words('twenty twenty six')).ok).toBe(true)
+    expect(alignCaption('Bend has 3.5 months', words('Bend has three and a half months')).ok).toBe(true)
+    expect(alignCaption('3.5', words('three and a half')).ok).toBe(true)
+  })
+
+  it('does not let "and a half" stand in for another value or swallow a plain "a"', () => {
+    expect(alignCaption('3.6 months', words('three and a half months')).ok).toBe(false)
+    expect(alignCaption('3 a month', words('three a month')).ok).toBe(true)
   })
 
   it('matches a figure the voice reads out as digits', () => {

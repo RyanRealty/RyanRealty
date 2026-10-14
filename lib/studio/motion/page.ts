@@ -27,6 +27,7 @@ import { CUE_PARTS, type MotionCue, type MotionPlan } from './cues'
 import { CHART_BOX, END_LABEL_DX, LABEL_MONTH_Y, LABEL_VALUE_Y, LEADER_TOP, SCALE_LABEL_X, TEXT_LEFT } from './chart'
 import { ENDCARD, endcardLayout } from './endcard'
 import { MAP_BOX } from './map'
+import { CAPTION_STYLE } from '../voice/captionStyle'
 
 const NAVY = '#102742'
 const CREAM = '#faf8f4'
@@ -166,7 +167,7 @@ function endcardHtml(cue: Extract<MotionCue, { kind: 'endcard' }>, assets: Motio
   const words = (['quality', 'local', 'service'] as const)
     .map((part, i) => `<p class="ec-word" id="${cue.id}-${part}"><span data-text>${esc(cue.words[i])}</span></p>`)
     .join('')
-  return `<section class="endcard" id="${cue.id}-card"><div class="ec-stage" id="${cue.id}-stage">
+  return `<section class="endcard" id="${cue.id}-card" data-cue="${cue.id}"><div class="ec-stage" id="${cue.id}-stage">
 <img class="ec-logo" id="${cue.id}-logo" src="${assets.endcardLogo}" alt="Ryan Realty"/>
 ${words}
 <div class="ec-callbox"><div class="ec-pill" id="${cue.id}-pill"><span data-text>${esc(cue.cta)}</span></div><p class="ec-phone" id="${cue.id}-phone" data-text>${esc(cue.phone)}</p></div>
@@ -200,11 +201,51 @@ function endcardCss(cue: Extract<MotionCue, { kind: 'endcard' }>, s: number, pap
 `
 }
 
-function cardHtml(cue: MotionCue, assets: MotionAssets, paper: boolean): string {
+/**
+ * A planned place (timeline films): the card's top edge, px at 1080, and
+ * whether it sits on a cream paper beat. Format films leave it unset.
+ */
+function placeAttrs(cue: MotionCue, s: number): string {
+  if (!cue.place) return ''
+  const top = Math.round(cue.place.top * s * 100) / 100
+  return ` style="top:${top}px;bottom:auto"`
+}
+
+/**
+ * Timeline cards (text, number, call to action): the navy scrim panel over
+ * footage, navy ink straight on a cream paper beat. Words are Amboqia; a
+ * figure is Geist and never Amboqia ("Amboqia never sits on a number").
+ */
+function timelineCardHtml(cue: Extract<MotionCue, { kind: 'text' | 'number' | 'cta' }>, s: number): string {
+  const id = `${cue.id}-card`
+  const ground = cue.place?.paper ? ' on-paper' : ''
+  const attrs = `id="${id}" data-cue="${cue.id}"${placeAttrs(cue, s)}`
+  switch (cue.kind) {
+    case 'text':
+      return `<section class="tcard tone-${cue.tone}${ground}" ${attrs}>${textEl('p', 'eyebrow', cue.eyebrow)}${textEl('h2', 'tline', cue.line)}</section>`
+    case 'number':
+      return `<section class="tcard ncard${ground}" ${attrs}>${textEl('p', 'eyebrow', cue.eyebrow)}${textEl('p', 'nvalue', cue.value)}${textEl('p', 'nunit', cue.unit)}<div class="nfoot">${textEl('p', 'nscope', cue.scope)}${textEl('p', 'nasof', cue.asOf)}</div></section>`
+    case 'cta':
+      return `<section class="tcard ccard style-${cue.style}${ground}" ${attrs}>${textEl('h2', 'tline', cue.line)}</section>`
+  }
+}
+
+/** A burned-in caption card: the look is lib/studio/voice/captionStyle.ts, data only. */
+function captionHtml(cue: Extract<MotionCue, { kind: 'caption' }>): string {
+  return `<p class="caption" id="${cue.id}-card" data-cue="${cue.id}"><span data-text>${esc(cue.text)}</span></p>`
+}
+
+function cardHtml(cue: MotionCue, assets: MotionAssets, paper: boolean, s = 1): string {
   const id = `${cue.id}-card`
   const ink = paper ? NAVY : CREAM
   const ground = paper ? CREAM : NAVY
   switch (cue.kind) {
+    case 'text':
+    case 'number':
+    case 'cta':
+      return timelineCardHtml(cue, s)
+    case 'caption':
+      return captionHtml(cue)
     case 'endcard':
       return endcardHtml(cue, assets)
     case 'chart':
@@ -212,11 +253,11 @@ function cardHtml(cue: MotionCue, assets: MotionAssets, paper: boolean): string 
     case 'map':
       return mapHtml(cue)
     case 'title':
-      return `<section class="card lead title" id="${id}">${textEl('p', 'eyebrow', cue.eyebrow || null)}${textEl('h1', 'line', cue.line)}${textEl('p', 'value small', cue.value)}${textEl('p', 'detail', cue.detail)}</section>`
+      return `<section class="card lead title" id="${id}" data-cue="${cue.id}"${placeAttrs(cue, s)}>${textEl('p', 'eyebrow', cue.eyebrow || null)}${textEl('h1', 'line', cue.line)}${textEl('p', 'value small', cue.value)}${textEl('p', 'detail', cue.detail)}</section>`
     case 'figure':
-      return `<section class="card lead figure" id="${id}">${textEl('p', 'eyebrow', cue.eyebrow)}${textEl('p', 'value', cue.value)}${textEl('p', 'detail', cue.detail)}${textEl('p', 'asof', cue.asOf)}</section>`
+      return `<section class="card lead figure" id="${id}" data-cue="${cue.id}"${placeAttrs(cue, s)}>${textEl('p', 'eyebrow', cue.eyebrow)}${textEl('p', 'value', cue.value)}${textEl('p', 'detail', cue.detail)}${textEl('p', 'asof', cue.asOf)}</section>`
     case 'meter':
-      return `<section class="card lead meter" id="${id}">${textEl('p', 'eyebrow', cue.eyebrow)}<div class="valuerow">${textEl('span', 'value', cue.value)}${textEl('span', 'unit', 'months of supply')}</div>${meterSvg(cue, ink, ground)}${textEl('p', 'verdict', cue.verdict, `${cue.id}-verdict`)}${textEl('p', 'asof', cue.asOf)}</section>`
+      return `<section class="card lead meter" id="${id}" data-cue="${cue.id}"${placeAttrs(cue, s)}>${textEl('p', 'eyebrow', cue.eyebrow)}<div class="valuerow">${textEl('span', 'value', cue.value)}${textEl('span', 'unit', 'months of supply')}</div>${meterSvg(cue, ink, ground)}${textEl('p', 'verdict', cue.verdict, `${cue.id}-verdict`)}${textEl('p', 'asof', cue.asOf)}</section>`
     case 'closer': {
       const mark = `<img class="mark" id="${cue.id}-mark" src="${assets.wordmark}" alt="Ryan Realty"/>`
       const cta = textEl('p', 'cta', cue.cta, `${cue.id}-cta`)
@@ -313,6 +354,29 @@ window.__rrVisibleText = function () {
   }
   return out;
 };
+window.__rrTextBoxes = function () {
+  var out = [];
+  var nodes = document.querySelectorAll('[data-text]');
+  for (var i = 0; i < nodes.length; i++) {
+    var o = 1;
+    for (var n = nodes[i]; n && n !== document.body; n = n.parentElement) {
+      o *= Number(getComputedStyle(n).opacity);
+    }
+    if (!(o > 0.5)) continue;
+    var r = nodes[i].getBoundingClientRect();
+    var owner = nodes[i].closest('[data-cue]');
+    out.push({
+      cue: owner ? owner.getAttribute('data-cue') : null,
+      text: nodes[i].textContent || '',
+      x: Math.round(r.left * 100) / 100,
+      y: Math.round(r.top * 100) / 100,
+      w: Math.round(r.width * 100) / 100,
+      h: Math.round(r.height * 100) / 100,
+      opacity: Math.round(o * 1000) / 1000
+    });
+  }
+  return out;
+};
 window.__rrPrepare = function () {
   var shots = document.querySelectorAll('img.headshot');
   for (var i = 0; i < shots.length; i++) {
@@ -333,6 +397,42 @@ window.__rrPrepare = function () {
   }
 };
 `
+
+/**
+ * Timeline cards and captions (lib/studio/timeline). Over footage a card is
+ * the navy scrim panel, the one sanctioned treatment for type over a moving
+ * picture; on a cream paper beat it is navy ink with no panel. Cards are 840
+ * wide from x 90, so their right edge (930) stays inside the safe line at 960.
+ * Captions take their whole look from CAPTION_STYLE (data only).
+ */
+function timelineCardCss(px: (n: number) => string): string {
+  const c = CAPTION_STYLE
+  const b = c.box
+  const family = [c.font.family, ...c.font.fallbacks].join(',')
+  return `
+.tcard{position:absolute;left:${px(90)};width:${px(840)};padding:${px(40)} ${px(48)} ${px(44)};background:rgba(16,39,66,0.78);border-radius:${px(14)};color:${CREAM};box-shadow:0 ${px(2)} ${px(24)} rgba(16,39,66,0.55);opacity:0;transform-origin:50% 50%;will-change:transform,opacity}
+.tcard .eyebrow{margin-bottom:${px(14)}}
+.tcard .tline{font:400 ${px(84)}/1.04 'RR Amboqia I','RR Amboqia',serif;letter-spacing:-0.01em;font-synthesis:none;text-wrap:balance}
+.tcard.tone-plain,.tcard.tone-payoff,.tcard.tone-question,.tcard.tone-turn,.tcard.ccard{width:auto;max-width:${px(840)}}
+.tcard.tone-question .tline{font-size:${px(80)}}
+.tcard.tone-turn .tline{font-size:${px(72)}}
+.tcard.tone-payoff .tline{font-size:${px(104)};line-height:1}
+.ncard .nvalue{font:600 ${px(240)}/0.92 'RR Geist',sans-serif;letter-spacing:-0.035em;font-variant-numeric:tabular-nums;font-synthesis:none}
+.ncard .nunit{font:400 ${px(64)}/1.05 'RR Amboqia I','RR Amboqia',serif;margin-top:${px(14)};font-synthesis:none}
+.ncard .nfoot{margin-top:${px(26)};padding-top:${px(18)};border-top:${px(2)} solid rgba(250,248,244,0.28)}
+.ncard .nscope{font:500 ${px(28)}/1.3 'RR Geist',sans-serif;color:rgba(250,248,244,0.86)}
+.ncard .nasof{font:400 ${px(26)}/1.3 'RR Geist',sans-serif;color:rgba(250,248,244,0.72);margin-top:${px(4)}}
+.ccard .tline{font-size:${px(72)}}
+.tcard.on-paper{background:transparent;box-shadow:none;color:${NAVY}}
+.tcard.on-paper .eyebrow{color:rgba(16,39,66,0.72)}
+.tcard.on-paper .nfoot{border-top-color:rgba(16,39,66,0.2)}
+.tcard.on-paper .nscope{color:rgba(16,39,66,0.86)}
+.tcard.on-paper .nasof{color:rgba(16,39,66,0.62)}
+.layout-captioned .card{left:${px(90)};width:${px(840)};padding:${px(44)} ${px(34)}}
+.layout-captioned .card .verdict{font-size:${px(46)};text-wrap:balance}
+.caption{position:absolute;left:${px(b.x)};top:${px(b.y)};width:${px(b.w)};height:${px(b.h)};display:flex;align-items:center;justify-content:center;opacity:0;margin:0;font-family:${family};font-weight:${c.font.weight};font-size:${px(c.sizePx)};line-height:${c.lineHeight};letter-spacing:${c.letterSpacingEm}em;text-transform:${c.textTransform};text-align:${c.align};color:${c.color.fill};-webkit-text-stroke:${px(c.outlinePx * 2)} ${c.color.outline};paint-order:stroke fill;text-shadow:0 ${px(c.shadow.offsetYPx)} ${px(c.shadow.blurPx)} ${c.color.shadow};font-synthesis:none}
+`
+}
 
 /** The whole page for a plan. */
 export function buildMotionPage(input: {
@@ -424,6 +524,17 @@ html,body{background:${CREAM}}
     : ''
   const endcard = plan.cues.find((cue): cue is Extract<MotionCue, { kind: 'endcard' }> => cue.kind === 'endcard')
   const endCss = endcard ? endcardCss(endcard, s, paper) : ''
-  const body = plan.cues.map((cue) => cardHtml(cue, assets, paper)).join('\n')
-  return `<!doctype html><html><head><meta charset="utf-8"><style>${css}${paperCss}${endCss}</style></head><body${paper ? ' class="paper"' : ''}>${body}<script>${RUNTIME}</script></body></html>`
+  const timeline = plan.cues.some((cue) => cue.kind === 'text' || cue.kind === 'number' || cue.kind === 'cta' || cue.kind === 'caption')
+  const hasCaptions = plan.cues.some((cue) => cue.kind === 'caption')
+  // Fonts fail loudly: a caption without its bold face would be drawn in the
+  // semibold one and nobody would notice.
+  if (hasCaptions && !f.geist700) throw new Error('Captions need Geist Bold (assets.fonts.geist700); refusing to draw them in another weight')
+  // Declared only when captions are drawn, so a format film's font set is unchanged.
+  const boldFace = hasCaptions && f.geist700
+    ? `@font-face{font-family:'RR Geist';src:url(${f.geist700}) format('woff2');font-weight:700;font-style:normal;font-display:block}\n`
+    : ''
+  const timelineCss = timeline ? timelineCardCss(px) : ''
+  const classes = [paper ? 'paper' : '', plan.layout === 'captioned' ? 'layout-captioned' : ''].filter(Boolean).join(' ')
+  const body = plan.cues.map((cue) => cardHtml(cue, assets, paper, s)).join('\n')
+  return `<!doctype html><html><head><meta charset="utf-8"><style>${boldFace}${css}${paperCss}${timelineCss}${endCss}</style></head><body${classes ? ` class="${classes}"` : ''}>${body}<script>${RUNTIME}</script></body></html>`
 }

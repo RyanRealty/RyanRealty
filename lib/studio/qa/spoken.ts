@@ -22,9 +22,15 @@ const SCALES: Record<string, number> = { thousand: 1e3, million: 1e6, billion: 1
 const PERCENT_WORDS = new Set(['percent'])
 const DOLLAR_WORDS = new Set(['dollar', 'dollars'])
 
+/**
+ * "and a half" closes a spoken number ("three and a half" is 3.5), so "a" and
+ * "half" may sit inside a run of number words. They parse only in that tail.
+ */
+const HALF_TAIL = ['and', 'a', 'half'] as const
+
 const NUMBER_WORDS = new Set([
   ...Object.keys(UNITS), ...Object.keys(TEENS), ...Object.keys(TENS), ...Object.keys(SCALES),
-  'hundred', 'point', 'and', ...PERCENT_WORDS, ...DOLLAR_WORDS,
+  'hundred', 'point', 'and', 'a', 'half', ...PERCENT_WORDS, ...DOLLAR_WORDS,
 ])
 
 export function isNumberWord(token: string): boolean {
@@ -119,6 +125,12 @@ export function parseSpokenNumber(tokens: string[]): SpokenNumber | null {
     body = tokens.slice(0, -1)
   }
   if (body.length === 0) return null
+  // "<number> and a half": the number plus one half, nothing else.
+  const n = body.length
+  if (n > HALF_TAIL.length && HALF_TAIL.every((w, i) => body[n - HALF_TAIL.length + i] === w)) {
+    const whole = parseCardinal(body.slice(0, n - HALF_TAIL.length))
+    return whole === null ? null : { values: [whole + 0.5], unit }
+  }
   const point = body.indexOf('point')
   if (point >= 0) {
     const whole = point === 0 ? 0 : parseCardinal(body.slice(0, point))
