@@ -158,8 +158,9 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
       : null
   const bendShare = bendMetroUsers !== null && data.totalUsers ? bendMetroUsers / data.totalUsers : null
 
-  const lpTotals = data.sellerLpTotals.state === 'ok' ? data.sellerLpTotals.rows[0] : null
-  const lpUsers = lpTotals ? lpTotals.users : data.sellerLpTotals.state === 'empty' ? 0 : null
+  // No seller-page events is "not tracked in this range", not zero visitors:
+  // the event has fired on /sell only since 2026-10-14 (see the lane note).
+  const lpUsers = data.sellerLpTotals.state === 'ok' ? (data.sellerLpTotals.rows[0]?.users ?? null) : null
 
   const ageWithheld = ageSection.state === 'withheld'
   const ageValue = age55.share !== null ? formatShare(age55.share) : ageWithheld ? 'Withheld' : null
@@ -191,7 +192,11 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
             value: bendMetroUsers === null ? null : formatInt(bendMetroUsers),
             caption: bendShare === null ? null : `${formatShare(bendShare)} of all`,
           },
-          { label: 'Seller LP visitors', value: lpUsers === null ? null : formatInt(lpUsers) },
+          {
+            label: 'Seller LP visitors',
+            value: lpUsers === null ? null : formatInt(lpUsers),
+            caption: data.sellerLpTotals.state === 'empty' ? 'no seller page events in range' : null,
+          },
           {
             label: 'Age 55+ share',
             value: ageValue,
@@ -232,8 +237,9 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
       <section aria-label="Seller LP visitors by age">
         <SectionHead>Seller LP visitors by age</SectionHead>
         <LaneNote>
-          /lp/seller-home-value visitors only. Tells you whether your HNW elderly Bend targeting is reaching the right
-          age bracket.
+          Seller page visitors only: the view_landing_page event with variant seller-home-value, which /sell and
+          /sell/valuation send. That event has fired there only since 2026-10-14, so an earlier range reads empty even
+          when /sell had visitors. Tells you whether your HNW elderly Bend targeting is reaching the right age bracket.
         </LaneNote>
         <ReportSection
           section={lpAgeSection}
@@ -252,7 +258,7 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
               cell: (b) => (isKnownBucket(b.ageBracket) && lpAgeBase > 0 ? formatShare(b.users / lpAgeBase) : '—'),
             },
           ]}
-          empty={<>No /lp/seller-home-value visitors with age data in this window.</>}
+          empty={<>No seller page events with age data in this window.</>}
         />
       </section>
 
@@ -274,7 +280,7 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
             { key: 'users', header: 'Users', numeric: true, cell: (c) => formatInt(c.users) },
             { key: 'visits', header: 'Visits', numeric: true, cell: (c) => formatInt(c.eventCount) },
           ]}
-          empty={<>No /lp/seller-home-value visitors with geo data in this window.</>}
+          empty={<>No seller page events with city data in this window.</>}
         />
       </section>
 
