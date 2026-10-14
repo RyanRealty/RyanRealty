@@ -195,6 +195,111 @@ function sortedKeys(keys: readonly SpringKey[]): SpringKey[] {
   return [...keys].sort((a, b) => a[0] - b[0])
 }
 
+/** Value and rate at `at` of the chain started at rest on key `base`'s target (keys sorted). */
+function chain(ks: readonly SpringKey[], omega: number, zeta: number, at: number, base: number): { value: number; rate: number } {
+  let value = ks[base][1]
+  let rate = 0
+  for (let i = base + 1; i < ks.length; i++) {
+    const tau = at - ks[i][0]
+    if (tau <= 0) break
+    const move = ks[i][1] - ks[i - 1][1]
+    value += move * step(tau, omega, zeta)
+    rate += move * stepRate(tau, omega, zeta)
+  }
+  return { value, rate }
+}
+
+/**
+ * What a clamp or a snap has to know about one set of keys and one spring, worked out ONCE and not
+ * on every frame: which key each segment rests on (`base`, a function of the live key alone) and
+ * where each key's target is first touched (`contact`). The hard landing used to rescan up to 4000
+ * samples per key on every call; with this it costs the same few steps as a plain track.
+ */
+type Plan = {
+  /** The key the chain rests on while key `a` is the live one. */
+  base: number[]
+  /** Per key s (index 0 unused): the target it chases, the side it starts from, and when it is first reached. */
+  landing: Array<{ trivial: boolean; side: number; target: number; contact: number }>
+  /** Snap tolerance per key. */
+  tol: number[]
+  omega: number
+  zeta: number
+}
+
+/**
+ * The plan for keys that are already sorted and checked. Every number below is the one the per-frame
+ * code used to compute, in the same order and with the same arithmetic, so the output is bit-identical.
+ */
+function planFor(ks: readonly SpringKey[], omega: number, zeta: number, snap: number, clamp: boolean): Plan {
+  const n = ks.length
+  // Snap tolerance per key: the fraction of that key's own move, or the last real move when a key repeats its target.
+  const tol: number[] = [0]
+  for (let i = 1; i < n; i++) {
+    const move = Math.abs(ks[i][1] - ks[i - 1][1])
+    tol.push(move > 0 ? snap * move : tol[i - 1])
+  }
+  /** At rest on key s's target at `at`: within tolerance in distance and speed/omega together. */
+  const atRest = (at: number, base: number, s: number): boolean => {
+    if (!(tol[s] > 0)) return false
+    const { value, rate } = chain(ks, omega, zeta, at, base)
+    return Math.hypot(value - ks[s][1], rate / omega) <= tol[s]
+  }
+  const scan = Math.PI / (8 * omega)
+  const landing: Plan['landing'] = [{ trivial: false, side: 0, target: 0, contact: Infinity }]
+  const base: number[] = [0, 0]
+  /**
+   * The value has reached key s's target by `until`: it started the segment on one side of it and is now
+   * on it or past it. Sampled 16 times an undamped period (a swing past the target lasts at least 8
+   * samples), and at `until` itself, so it never un-lands. `contact` is the first sample that is on or
+   * past it; a query is only ever made at or before the next key, so that is as far as it is looked for.
+   */
+  const landed = (s: number, b: number, until: number): boolean => {
+    const l = landing[s]
+    return l.trivial || l.contact < until || l.side * (chain(ks, omega, zeta, until, b).value - l.target) >= 0
+  }
+  for (let s = 1; s < n; s++) {
+    const t0 = ks[s][0]
+    const target = ks[s][1]
+    const b = base[s]
+    const from = chain(ks, omega, zeta, t0, b).value
+    const side = Math.sign(target - from)
+    let contact = Infinity
+    if (clamp && from !== target) {
+      // A spring that has not touched its target in 4000 samples (an hour of film at 16 rad/s) is settled onto it.
+      const last = Math.min(s + 1 < n ? ks[s + 1][0] : Infinity, t0 + 4000 * scan)
+      for (let at = t0 + scan; at < last; at += scan) {
+        if (side * (chain(ks, omega, zeta, at, b).value - target) >= 0) {
+          contact = at
+          break
+        }
+      }
+    }
+    landing.push({ trivial: from === target, side, target, contact })
+    // A key whose motion had stopped (rested within the snap tolerance, or landed on a clamp) before the
+    // next key arrived starts that next move from rest, so the output never jumps at a retarget.
+    if (s + 1 < n) {
+      const end = ks[s + 1][0]
+      base.push((snap && atRest(end, b, s)) || (clamp && landed(s, b, end)) ? s : b)
+    }
+  }
+  return { base, landing, tol, omega, zeta }
+}
+
+/** Plans, by what they were made from: the keys' own numbers, the spring and the options. Small, and emptied when full. */
+const PLANS = new Map<string, Plan>()
+const PLANS_MAX = 256
+
+function cachedPlan(ks: readonly SpringKey[], omega: number, zeta: number, snap: number, clamp: boolean): Plan {
+  const id = `${omega}|${zeta}|${snap}|${clamp ? 1 : 0}|${ks.map((k) => `${k[0]},${k[1]}`).join(';')}`
+  let plan = PLANS.get(id)
+  if (!plan) {
+    if (PLANS.size >= PLANS_MAX) PLANS.clear()
+    plan = planFor(ks, omega, zeta, snap, clamp)
+    PLANS.set(id, plan)
+  }
+  return plan
+}
+
 /**
  * The value at t of a spring chasing a target that is keys[0][1] until the next
  * key, then each later key's value from its own time on. See the file header.
@@ -212,64 +317,19 @@ export function track(t: number, keys: readonly SpringKey[], cfg: TrackCfg): num
   let active = 0
   while (active + 1 < n && ks[active + 1][0] <= t) active++
 
-  /** Value and rate at `at` of the chain started at rest on key `base`'s target. */
-  const chain = (at: number, base: number): { value: number; rate: number } => {
-    let value = ks[base][1]
-    let rate = 0
-    for (let i = base + 1; i < n; i++) {
-      const tau = at - ks[i][0]
-      if (tau <= 0) break
-      const move = ks[i][1] - ks[i - 1][1]
-      value += move * step(tau, omega, zeta)
-      rate += move * stepRate(tau, omega, zeta)
-    }
-    return { value, rate }
-  }
-
-  // Snap tolerance per key: the fraction of that key's own move, or the last
-  // real move when a key repeats its target.
-  const tol: number[] = [0]
-  for (let i = 1; i < n; i++) {
-    const move = Math.abs(ks[i][1] - ks[i - 1][1])
-    tol.push(move > 0 ? snap * move : tol[i - 1])
-  }
-  /** At rest on key s's target at `at`: within tolerance in distance and speed/omega together. */
-  const atRest = (at: number, base: number, s: number): boolean => {
-    if (!(tol[s] > 0)) return false
-    const { value, rate } = chain(at, base)
-    return Math.hypot(value - ks[s][1], rate / omega) <= tol[s]
-  }
-
-  // A key whose motion had stopped (rested within the snap tolerance, or landed on a clamp) before the
-  // next key arrived starts that next move from rest, so the output never jumps at a retarget.
-  const scan = Math.PI / (8 * omega)
-  /**
-   * The value has reached key s's target by `until`: it started the segment on one side of it and is now
-   * on it or past it. Sampled 16 times an undamped period (a swing past the target lasts at least 8
-   * samples), and at `until` itself, so it never un-lands.
-   */
-  const landed = (s: number, base: number, until: number): boolean => {
-    const t0 = ks[s][0]
-    const target = ks[s][1]
-    const from = chain(t0, base).value
-    if (from === target) return true
-    const side = Math.sign(target - from)
-    // A spring that has not touched its target in 4000 samples (an hour of film at 16 rad/s) is settled onto it.
-    const last = Math.min(until, t0 + 4000 * scan)
-    for (let at = t0 + scan; at < last; at += scan) if (side * (chain(at, base).value - target) >= 0) return true
-    return side * (chain(until, base).value - target) >= 0
-  }
-  let base = 0
-  if (snap || cfg.clamp) {
-    for (let s = 1; s < active; s++) {
-      const end = ks[s + 1][0]
-      if ((snap && atRest(end, base, s)) || (cfg.clamp && landed(s, base, end))) base = s
-    }
-  }
-
   const target = ks[active][1]
   if (active === 0) return target
-  if (snap && atRest(t, base, active)) return target
-  if (cfg.clamp && landed(active, base, t)) return target
-  return chain(t, base).value
+  if (!snap && !cfg.clamp) return chain(ks, omega, zeta, t, 0).value
+
+  const plan = cachedPlan(ks, omega, zeta, snap, Boolean(cfg.clamp))
+  const base = plan.base[active]
+  if (snap && plan.tol[active] > 0) {
+    const { value, rate } = chain(ks, omega, zeta, t, base)
+    if (Math.hypot(value - target, rate / omega) <= plan.tol[active]) return target
+  }
+  if (cfg.clamp) {
+    const l = plan.landing[active]
+    if (l.trivial || l.contact < t || l.side * (chain(ks, omega, zeta, t, base).value - l.target) >= 0) return target
+  }
+  return chain(ks, omega, zeta, t, base).value
 }

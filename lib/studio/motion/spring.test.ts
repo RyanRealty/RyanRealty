@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ENDCARD, endcardState, endcardTimes } from './endcard'
 import { crossing, critical, settleTime, step, stepRate, track, type SpringKey, type TrackCfg } from './spring'
 
@@ -349,6 +349,133 @@ describe('track', () => {
       const plain = track(0.4, ks, { omega: 16, zeta: 0.3 })
       expect(track(0.4, ks, cfgSnap)).toBe(plain)
     })
+  })
+})
+
+/**
+ * The per-frame `track` this file's clamp and snap had before they were planned once per set of keys
+ * (a hard landing rescanned up to 4000 samples per key on every call). Kept here as the reference
+ * the planned one has to equal to the bit.
+ */
+function referenceTrack(t: number, keys: readonly SpringKey[], cfg: TrackCfg): number {
+  const { omega, zeta } = cfg
+  const ks = [...keys].sort((a, b) => a[0] - b[0])
+  const n = ks.length
+  if (n === 1) return ks[0][1]
+  const snap = cfg.snap != null && cfg.snap > 0 ? cfg.snap : 0
+  let active = 0
+  while (active + 1 < n && ks[active + 1][0] <= t) active++
+  const chain = (at: number, base: number): { value: number; rate: number } => {
+    let value = ks[base][1]
+    let rate = 0
+    for (let i = base + 1; i < n; i++) {
+      const tau = at - ks[i][0]
+      if (tau <= 0) break
+      const move = ks[i][1] - ks[i - 1][1]
+      value += move * step(tau, omega, zeta)
+      rate += move * stepRate(tau, omega, zeta)
+    }
+    return { value, rate }
+  }
+  const tol: number[] = [0]
+  for (let i = 1; i < n; i++) {
+    const move = Math.abs(ks[i][1] - ks[i - 1][1])
+    tol.push(move > 0 ? snap * move : tol[i - 1])
+  }
+  const atRest = (at: number, base: number, s: number): boolean => {
+    if (!(tol[s] > 0)) return false
+    const { value, rate } = chain(at, base)
+    return Math.hypot(value - ks[s][1], rate / omega) <= tol[s]
+  }
+  const scan = Math.PI / (8 * omega)
+  const landed = (s: number, base: number, until: number): boolean => {
+    const t0 = ks[s][0]
+    const target = ks[s][1]
+    const from = chain(t0, base).value
+    if (from === target) return true
+    const side = Math.sign(target - from)
+    const last = Math.min(until, t0 + 4000 * scan)
+    for (let at = t0 + scan; at < last; at += scan) if (side * (chain(at, base).value - target) >= 0) return true
+    return side * (chain(until, base).value - target) >= 0
+  }
+  let base = 0
+  if (snap || cfg.clamp) {
+    for (let s = 1; s < active; s++) {
+      const end = ks[s + 1][0]
+      if ((snap && atRest(end, base, s)) || (cfg.clamp && landed(s, base, end))) base = s
+    }
+  }
+  const target = ks[active][1]
+  if (active === 0) return target
+  if (snap && atRest(t, base, active)) return target
+  if (cfg.clamp && landed(active, base, t)) return target
+  return chain(t, base).value
+}
+
+describe('clamp and snap, planned once per set of keys', () => {
+  const KEYSETS: Array<[string, SpringKey[]]> = [
+    ['one move', [[0.4, 0], [0.4, 100]]],
+    ['a retarget in flight', [[0, 0], [0, 100], [0.1, 40]]],
+    ['a retarget after a landing, then another', [[0, 0], [0, 100], [0.4, 30], [0.9, 80]]],
+    ['a repeated target, moves down and up, given out of order', [[1.2, 55], [0, 20], [0, 100], [0.3, 100], [0.7, 10], [2.5, 90]]],
+    ['two keys at one time, then a zero move', [[0, 5], [0.25, 5], [0.25, 60], [0.25, 20], [1.6, 20]]],
+  ]
+  const CFGS: TrackCfg[] = [
+    ...CASES.flatMap(([omega, zeta]) => [{ omega, zeta, clamp: true }, { omega, zeta, snap: 0.01 }, { omega, zeta, clamp: true, snap: 0.02 }]),
+  ]
+  const TIMES = [...Array.from({ length: 56 }, (_, i) => i * 0.0613), 0.1, 0.25, 0.3, 0.4, 0.7, 0.9, 1.2, 1.6, 2.5].sort((a, b) => a - b)
+
+  it('returns exactly what the per-frame computation returned, for every spring, key set and time', () => {
+    let calls = 0
+    for (const [name, keys] of KEYSETS) {
+      for (const cfg of CFGS) {
+        for (const t of TIMES) {
+          const want = referenceTrack(t, keys, cfg)
+          const got = track(t, keys, cfg)
+          if (!Object.is(got, want)) throw new Error(`${name}, ${JSON.stringify(cfg)}, t=${t}: ${got} is not ${want}`)
+          calls++
+        }
+      }
+    }
+    expect(calls).toBeGreaterThan(5000)
+  })
+
+  it('does not rescan on every frame: after the first call a hard landing costs a handful of steps, not thousands of samples', () => {
+    // A critical spring never reaches its target, so the old code scanned all 4000 samples on every call.
+    const keys: SpringKey[] = [[0, 0], [0, 100], [1.5, 40], [3, 70]]
+    const cfg: TrackCfg = { omega: 12, zeta: 1, clamp: true }
+    track(0.5, keys, cfg)
+    const exp = vi.spyOn(Math, 'exp')
+    try {
+      const frames = 300
+      for (let i = 0; i < frames; i++) track(i / 30, keys, cfg)
+      // Per call: a few chains of at most 3 keys, two exponentials each. The rescan was 4000 samples x 3 keys.
+      expect(exp.mock.calls.length / frames).toBeLessThan(40)
+    } finally {
+      exp.mockRestore()
+    }
+  })
+
+  it('follows keys edited in place: a plan is made from the numbers, never from the array', () => {
+    const keys: SpringKey[] = [[0, 0], [0.2, 100], [0.9, 30]]
+    const cfg: TrackCfg = { omega: 16, zeta: 0.3, clamp: true, snap: 0.01 }
+    const before = TIMES.map((t) => track(t, keys, cfg))
+    expect(before).toEqual(TIMES.map((t) => referenceTrack(t, keys, cfg)))
+    ;(keys as Array<[number, number]>)[2] = [0.5, 150]
+    ;(keys as Array<[number, number]>)[1] = [0.2, 60]
+    const after = TIMES.map((t) => track(t, keys, cfg))
+    expect(after).toEqual(TIMES.map((t) => referenceTrack(t, keys, cfg)))
+    expect(after).not.toEqual(before)
+  })
+
+  it('keeps the plain spring and the end card\'s drop on the path it always had (no clamp, no snap)', () => {
+    const G = ENDCARD.logo
+    const T = endcardTimes()
+    const keys: SpringKey[] = [[T.start, -G.dropPx], [T.start, 0]]
+    for (let i = -60; i <= 900; i++) {
+      const t = i / 240
+      expect(Object.is(track(t, keys, { omega: G.omega, zeta: G.zeta }), referenceTrack(t, keys, { omega: G.omega, zeta: G.zeta }))).toBe(true)
+    }
   })
 })
 
