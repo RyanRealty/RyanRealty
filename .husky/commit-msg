@@ -9,6 +9,9 @@ node scripts/check-site-node.mjs "$1"
 # SEO decisions: removing or loosening a pinned entry in data/seo/decisions.json
 # needs an `SEO-decision: <who, when, why>` trailer. Override: SEO_DECISION_OK=1.
 node scripts/check-seo-decisions.mjs "$1"
+# Tracking decisions: removing or loosening a pinned entry in data/analytics/decisions.json
+# needs a `Tracking-decision: <who, when, why>` trailer. Override: TRACKING_DECISION_OK=1.
+node scripts/check-tracking-decisions.mjs "$1"
 # Technique approval: a commit that adds or changes an approved row in the studio
 # technique registry needs `Approved-by: matt` and the technique's name. No override.
 node scripts/check-technique-approval.mjs "$1"

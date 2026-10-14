@@ -1,0 +1,131 @@
+# Hosted migrations — post-merge apply (never a hand `npm run db:push`).
+#
+# On push to main touching supabase/migrations/**:
+#   1. `supabase db push --dry-run` against production (dwvlophlbvvygjfxcrhm)
+#   2. Log every pending file
+#   3. Apply the migrations in THAT push
+#   4. Already-applied SQL (Chief of Staff hand-applying #473, MCP timestamp
+#      mismatch) is repaired, not failed
+#   5. On failure, open or comment on a `migration-failed` issue
+#
+# Secrets (repo Actions secrets; names only, never log values):
+#   SUPABASE_ACCESS_TOKEN
+#   SUPABASE_DB_PASSWORD
+# If either is missing the job fails and lists those exact names.
+#
+# Does not pass `--include-all` on apply. Pre-2026-10-01 history was recorded
+# under MCP timestamps, not file versions (docs/DATABASE_FOR_AI_AGENTS.md §8.12).
+# `20261013180000_crm_suppressions_cleared.sql` is a standing hold.
+
+name: Hosted migrations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Dry-run only unless this dispatch is on a push SHA with migration files
+        required: false
+        default: 'manual dry-run'
+
+concurrency:
+  group: hosted-migrations
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: dwvlophlbvvygjfxcrhm
+      SUPABASE_BIN: supabase
+      BEFORE_SHA: ${{ github.event.before }}
+      AFTER_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.76.16
+
+      - name: Dry-run then apply hosted migrations
+        id: apply
+        run: node scripts/apply-hosted-migrations.mjs
+
+      - name: Open or comment on migration-failed
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'Hosted migration apply failed'
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            const sha = context.sha
+            const body = [
+              '## Hosted migration apply failed',
+              '',
+              `**Run:** [${runUrl}](${runUrl})`,
+              `**SHA:** ${sha}`,
+              `**Event:** ${context.eventName}`,
+              '',
+              'Dry-run + apply against production `dwvlophlbvvygjfxcrhm` failed.',
+              'If the log says secrets are missing, add these repo Actions secrets (values never go in the issue):',
+              '- `SUPABASE_ACCESS_TOKEN`',
+              '- `SUPABASE_DB_PASSWORD`',
+              '',
+              'Do not leave `npm run db:push` as a hand step. Fix the Action and re-run.',
+            ].join('\n')
+
+            const labels = ['migration-failed']
+            try {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'migration-failed',
+                color: 'b60205',
+                description: 'Production supabase db push / hosted apply failed',
+              })
+            } catch (error) {
+              if (error.status !== 422) {
+                core.warning(`Could not create migration-failed label: ${error.message}`)
+              }
+            }
+
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'migration-failed',
+              per_page: 5,
+            })
+
+            if (issues.length > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues[0].number,
+                body: `Failed again — [run ${context.runId}](${runUrl}) — ${sha} — ${new Date().toISOString()}`,
+              })
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels,
+              })
+            }

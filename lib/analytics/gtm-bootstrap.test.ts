@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { gtmBootstrapScript } from './gtm-bootstrap'
 import { RESTRICTED_CONSENT_REGIONS } from './consent-regions'
 import { consentModeDefaultJs } from './consent-defaults'
+import { consentRegionRestrictedFromCookieHeader } from './consent-regions'
+import { CONSENT_COOKIE, parseConsentCookie } from '@/lib/identity/consent'
 
 const VISITOR_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
@@ -259,5 +261,101 @@ describe('first-paint page_view', () => {
   it('pushes no page_view when the page is suppressed (a signed-in broker browser)', () => {
     const rows = run('https://ryan-realty.com/cities/bend', { cookie: 'rr_internal=1' })
     expect(rows.map(eventName).filter(Boolean)).toEqual([])
+  })
+})
+
+/**
+ * Visitor intent (Matt 2026-10-14, GTM version 10): the first-paint page_view
+ * carries the label and market this browser stored on an earlier page, read
+ * inline before hydration, only when analytics consent holds.
+ */
+describe('first-paint page_view carries the stored visitor intent', () => {
+  const STORED = JSON.stringify({ intent: 'seller', primaryMarket: 'bend', markets: { bend: 2 } })
+
+  function firstPageView(opts: {
+    cookie?: string
+    stored?: string | null
+    gpc?: boolean
+    storageThrows?: boolean
+  }): Record<string, unknown> | undefined {
+    const href = 'https://ryan-realty.com/cities/bend'
+    const u = new URL(href)
+    const script = gtmBootstrapScript('city', 'GTM-TEST123')
+    const fakeScript = { parentNode: { insertBefore: () => {} } }
+    const document = { cookie: opts.cookie ?? '', getElementsByTagName: () => [fakeScript], createElement: () => ({}), head: { appendChild: () => {} } }
+    const localStorage = {
+      getItem: (key: string) => {
+        if (opts.storageThrows) throw new Error('SecurityError')
+        return key === 'rr_visitor_intent_v1' ? (opts.stored ?? null) : null
+      },
+    }
+    const window: { dataLayer?: unknown[]; localStorage: typeof localStorage } = { dataLayer: [], localStorage }
+    new Function('window', 'document', 'location', 'navigator', 'dataLayer', script)(
+      window,
+      document,
+      { href, search: u.search, pathname: u.pathname, hostname: u.hostname },
+      { userAgent: VISITOR_UA, webdriver: false, globalPrivacyControl: opts.gpc === true },
+      window.dataLayer,
+    )
+    return (window.dataLayer ?? []).find(
+      (r): r is Record<string, unknown> => !!r && typeof r === 'object' && (r as { event?: unknown }).event === 'page_view',
+    )
+  }
+
+  const ACCEPT = `ryan_realty_cookie_consent=${encodeURIComponent(JSON.stringify({ analytics: true, marketing: false }))}`
+  const DECLINE = `ryan_realty_cookie_consent=${encodeURIComponent(JSON.stringify({ analytics: false, marketing: false }))}`
+
+  it('adds visitor_intent and primary_market to the page_view object itself', () => {
+    expect(firstPageView({ cookie: `rr_cr=0`, stored: STORED })).toEqual({
+      event: 'page_view',
+      page_type: 'city',
+      page_location: 'https://ryan-realty.com/cities/bend',
+      visitor_intent: 'seller',
+      primary_market: 'bend',
+    })
+    expect(firstPageView({ cookie: `a=b; ${ACCEPT}; rr_cr=1`, stored: STORED })).toMatchObject({ visitor_intent: 'seller' })
+  })
+
+  it('an empty consent cookie is no answer (parseConsentCookie), so the region decides', () => {
+    expect(firstPageView({ cookie: 'ryan_realty_cookie_consent=; rr_cr=0', stored: STORED })).toMatchObject({ visitor_intent: 'seller' })
+    expect(firstPageView({ cookie: 'ryan_realty_cookie_consent=; rr_cr=1', stored: STORED })).not.toHaveProperty('visitor_intent')
+  })
+
+  it('reads nothing without analytics consent: GPC, a stored decline, or no answer in a restricted region', () => {
+    for (const opts of [
+      { cookie: `rr_cr=0`, stored: STORED, gpc: true },
+      { cookie: `${DECLINE}; rr_cr=0`, stored: STORED },
+      { cookie: `rr_cr=1`, stored: STORED },
+      { cookie: '', stored: STORED },
+    ]) {
+      const view = firstPageView(opts)
+      expect(view).toBeDefined()
+      expect(view).not.toHaveProperty('visitor_intent')
+      expect(view).not.toHaveProperty('primary_market')
+    }
+  })
+
+  it('decides consent exactly as hasAnalyticsConsent does (GPC, stored answer, else the region cookie)', () => {
+    const answers = ['', `${CONSENT_COOKIE}=`, ACCEPT, DECLINE, `${CONSENT_COOKIE}=all`, `${CONSENT_COOKIE}=garbage`]
+    const regions = ['', 'rr_cr=0', 'rr_cr=1']
+    for (const answer of answers)
+      for (const region of regions)
+        for (const gpc of [false, true]) {
+          const cookie = [answer, region].filter(Boolean).join('; ')
+          // hasAnalyticsConsent (components/CookieConsentBanner.tsx), from the same parts it is built from.
+          const raw = cookie.split('; ').find((row) => row.startsWith(`${CONSENT_COOKIE}=`))?.split('=')[1]
+          const stored = parseConsentCookie(raw)
+          const expected = !gpc && (stored !== null ? stored.analytics : !consentRegionRestrictedFromCookieHeader(cookie))
+          const view = firstPageView({ cookie, stored: STORED, gpc })
+          expect(view?.visitor_intent === 'seller', `${cookie || '(no cookie)'} gpc=${gpc}`).toBe(expected)
+        }
+  })
+
+  it('sends the plain page_view when storage is empty, blocked or holds garbage', () => {
+    const plain = { event: 'page_view', page_type: 'city', page_location: 'https://ryan-realty.com/cities/bend' }
+    expect(firstPageView({ cookie: 'rr_cr=0', stored: null })).toEqual(plain)
+    expect(firstPageView({ cookie: 'rr_cr=0', storageThrows: true })).toEqual(plain)
+    expect(firstPageView({ cookie: 'rr_cr=0', stored: '{nope' })).toEqual(plain)
+    expect(firstPageView({ cookie: 'rr_cr=0', stored: JSON.stringify({ intent: 'landlord', primaryMarket: '<script>' }) })).toEqual(plain)
   })
 })

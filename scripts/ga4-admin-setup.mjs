@@ -86,6 +86,12 @@ const DESIRED_CUSTOM_DIMENSIONS = [
 
   // User-scoped — make every event for an identified person filterable by these
   { parameterName: 'assigned_broker',    displayName: 'Assigned Broker',    scope: 'USER',  description: 'Broker the lead has been routed to (from canonical-lead-tagger)' },
+  // Visitor intent and market (Matt 2026-10-14). GTM version 10 sets both user
+  // properties on every GA4 hit from the flat dataLayer keys
+  // (lib/analytics/ga4-browser-events.ts GA4_USER_PROPERTIES); the values come
+  // from lib/analytics/visitor-intent.ts, the CRM's page categories.
+  { parameterName: 'visitor_intent',     displayName: 'Visitor intent',     scope: 'USER',  description: 'buyer, seller, both or browsing, from the pages and actions this browser saw (lib/analytics/visitor-intent.ts)' },
+  { parameterName: 'primary_market',     displayName: 'Primary market',     scope: 'USER',  description: 'The Central Oregon city or community slug this browser viewed most (lib/analytics/visitor-intent.ts)' },
 ]
 
 // Key events = the live property's list (read 2026-10-14 by npm run analytics:audit),
