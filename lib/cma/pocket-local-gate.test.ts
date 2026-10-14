@@ -524,7 +524,7 @@ describe('an on-market subject has a listing window', () => {
       activeFrom: '2026-05-01',
       offDate: null,
     })
-    expect(window).toEqual({ city: 'Bend', listDate: '2026-05-01', offDate: '2026-10-08' })
+    expect(window).toEqual({ city: 'Bend', listDate: '2026-05-01', offDate: '2026-10-08', ongoing: true })
     expect(listingWindowDates(window)).toEqual({ city: 'Bend', listDate: '2026-05-01', offDate: '2026-10-08' })
     const read = localReadForSet({
       subject,
@@ -552,7 +552,7 @@ describe('an on-market subject has a listing window', () => {
         activeFrom: '2026-03-06',
         offDate: null,
       }),
-    ).toEqual({ city: 'Bend', listDate: '2026-03-06', offDate: null })
+    ).toEqual({ city: 'Bend', listDate: '2026-03-06', offDate: null, ongoing: false })
     expect(
       subjectListingWindow({
         city: 'Bend',

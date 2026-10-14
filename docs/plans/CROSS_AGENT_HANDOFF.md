@@ -27,6 +27,10 @@ Surface: Cursor cloud. Branch `cursor/analytics-sot-readme-5e14`. `docs/analytic
 
 **This pass.** `docs/analytics/README.md` is the analytics SoT (GA4 property, measurement ID, GTM container live version 7 — Merge never Overwrite, browser dataLayer events, server `generate_lead`, buyer form_ids, consent, daily 8 AM PT offline cron including #543 `qualify_lead` / `close_convert_lead`). Pointers in CLAUDE.md (shrink-only) and AGENTS.md.
 
+## Earlier — 2026-10-14 (Cursor, reader-5 leftover reads)
+
+Surface: Cursor cloud. PR #559 landed. Thin-window own-listing-unsold and own-ground sold count. Closed stale #552. Nothing sent.
+
 ## Earlier — 2026-10-14 (Claude, buyer landing pages)
 
 Surface: Claude Code cloud. PR #548 (`claude/festive-ramanujan-xfbo6b`). `/buy/concessions` and `/buy/alerts` open like `/sell`: `V3Stage`, sourced figures, ask in the first viewport. Same lead and tracking tokens. Nothing sent.

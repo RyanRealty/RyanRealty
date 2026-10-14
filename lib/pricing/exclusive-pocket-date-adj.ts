@@ -123,6 +123,28 @@ export type PocketLocalMissing = 'no-listing-window' | 'too-few-sales' | 'one-sa
 export type PocketLocalHalf = { ppsf: number | null; n: number; from: string; to: string }
 
 /**
+ * THE HOME'S OWN LISTING AS THE LOCAL READ (Matt 2026-10-09, 3062 NW Kelly
+ * Hill: "it's definitely going to be closer to 716. It's listed at 699
+ * currently, and it hasn't sold."). A home on the market today, not under
+ * contract, whose ask has come down during its current stretch, is its own
+ * evidence that the local market did not rise: it has sat unsold through its
+ * asks. When its listing window holds too few local sales to give a per-foot
+ * verdict, that record stands in for the local read, and own-ground sales
+ * move down with the city index as they would if the local read had fallen.
+ * Every figure is the subject's own MLS record.
+ */
+export type PocketOwnListing = {
+  /** The Pacific day the current stretch on the market began. */
+  since: string
+  /** The ask in effect when that stretch began. */
+  firstAsk: number
+  /** The ask today. Under `firstAsk` by construction. */
+  ask: number
+  /** Whole calendar days from `since` to the letter date. */
+  days: number | null
+}
+
+/**
  * The home's own local read, reduced to what the date gate and the date
  * sentences need. `verdict` is null exactly when the local page prints no
  * per-foot rise, fall or flat.
@@ -138,16 +160,57 @@ export type PocketLocalRead = {
   productNoun: string | null
   early: PocketLocalHalf | null
   late: PocketLocalHalf | null
+  /**
+   * True when the window runs from the day the home came on the market to the
+   * letter date because it is on the market today (Matt 2026-10-09). The
+   * sentences then say "since your home came on the market", never "while
+   * your home was listed". Absent on a failed listing's window.
+   */
+  ongoing?: boolean
+  /**
+   * The home's own listing, standing in for a local read too thin to judge
+   * (PocketOwnListing). Only on an on-market home with no per-foot verdict.
+   */
+  ownListing?: PocketOwnListing | null
 }
 
 /** Which way the gate went, stored on the time-adjustment basis. */
-export type PocketDateBranch = 'local-fell' | 'local-held-flat' | 'local-rose' | 'no-local-read'
+export type PocketDateBranch = 'local-fell' | 'local-held-flat' | 'local-rose' | 'own-listing-unsold' | 'no-local-read'
 
-export function pocketDateBranch(local: Pick<PocketLocalRead, 'verdict'>): PocketDateBranch {
+export function pocketDateBranch(local: Pick<PocketLocalRead, 'verdict' | 'ownListing'>): PocketDateBranch {
   if (local.verdict === 'fell') return 'local-fell'
   if (local.verdict === 'held flat') return 'local-held-flat'
   if (local.verdict === 'rose') return 'local-rose'
+  if (local.ownListing) return 'own-listing-unsold'
   return 'no-local-read'
+}
+
+/**
+ * True when the gate lets a sale move down with the city index: the local
+ * per-foot read fell, or, with no per-foot verdict, the home's own listing
+ * has sat unsold through its asks (Matt 2026-10-09). Every reader of the gate
+ * asks this one question, so the move and the sentence cannot disagree.
+ */
+export function pocketLocalAllowsDown(local: Pick<PocketLocalRead, 'verdict' | 'ownListing'>): boolean {
+  if (local.verdict === 'fell') return true
+  return local.verdict == null && local.ownListing != null
+}
+
+function wholeDollars(n: number): string {
+  return `$${Math.round(n).toLocaleString('en-US')}`
+}
+
+/**
+ * The engine-note reason a cooling move was allowed, for the stored records:
+ * "The local read fell" or the home's own listing in figures.
+ */
+export function pocketDownReason(local: Pick<PocketLocalRead, 'verdict' | 'ownListing'>): string {
+  const own = local.verdict == null ? local.ownListing : null
+  if (own) {
+    const days = own.days != null ? `, ${own.days} ${own.days === 1 ? 'day' : 'days'}` : ''
+    return `The home has been on the market since ${own.since}${days}, not sold and not under contract, its ask cut from ${wholeDollars(own.firstAsk)} to ${wholeDollars(own.ask)}; that listing stands in for the local read (Matt 2026-10-09)`
+  }
+  return 'The local read fell'
 }
 
 /** A local read with no verdict, for a letter that has nothing to read. */
@@ -199,14 +262,15 @@ function refuseDateMove(path: MarketPath): MarketPath {
 export function applyExclusivePocketDateAdj(
   path: MarketPath,
   exclusivePocket: boolean,
-  local?: Pick<PocketLocalRead, 'verdict'>,
+  local?: Pick<PocketLocalRead, 'verdict' | 'ownListing'>,
 ): MarketPath {
   if (!exclusivePocket) return path
   if (path.factor === 1) return path
   // Rising city index: refuse the pump, whatever the local read says.
   if (path.factor > 1) return refuseDateMove(path)
-  // Cooling: kept only when the home's own ground fell too, if we know it.
-  if (local !== undefined && local.verdict !== 'fell') return refuseDateMove(path)
+  // Cooling: kept only when the home's own ground fell too, if we know it, or
+  // when the home's own unsold listing stands in for a read too thin to judge.
+  if (local !== undefined && !pocketLocalAllowsDown(local)) return refuseDateMove(path)
   return path
 }
 
@@ -227,7 +291,7 @@ export function exclusivePocketPathNote(
   const cityPct = ((cityPath.factor - 1) * 100).toFixed(1)
   const used = applied ?? (cityPath.factor <= 1 ? cityPath : { ...cityPath, factor: 1 })
   // A cooling the local gate refused (Matt 2026-10-08, down only if local fell).
-  if (local !== undefined && local.verdict !== 'fell' && cityPath.factor < 1 && used.factor === 1) {
+  if (local !== undefined && !pocketLocalAllowsDown(local) && cityPath.factor < 1 && used.factor === 1) {
     return `${address}: exclusive pocket, not moved for date. ${pocketLocalReadNote(local)} The city index would have moved it ${cityPct}%. Story class does not adjust.`
   }
   if (used.factor < 1) {
@@ -261,6 +325,7 @@ function wholeUsd(n: number | null | undefined): string {
  */
 export function pocketLocalReadNote(local: PocketLocalRead): string {
   if (local.verdict == null) {
+    const listed = local.ongoing ? 'since it came on the market' : 'while it was listed'
     const why =
       local.missing === 'no-listing-window'
         ? 'the home has no dated listing period to read over'
@@ -268,7 +333,8 @@ export function pocketLocalReadNote(local: PocketLocalRead): string {
           ? 'one half of the listing held a single sale, which is not a trend'
           : local.missing === 'no-living-area'
             ? 'the sales carry no per-foot figure'
-            : 'too few sales closed in the home\'s own place while it was listed'
+            : `too few sales closed in the home's own place ${listed}`
+    if (local.ownListing) return `No local per-foot read: ${why}. ${pocketDownReason(local)}.`
     return `No local per-foot read: ${why}, so there is no local evidence of a fall.`
   }
   const where = `${local.place ?? 'the home\'s own place'}${local.sized ? ', homes about this size' : ''}`
@@ -370,19 +436,28 @@ export function exclusivePocketSetNote(
   const detail = describeAppliedDateAdjustments(applied ?? [])
   const gate = local !== undefined ? ` ${pocketLocalReadNote(local)}` : ''
   if (coolingApplied && detail) {
-    const why = local !== undefined ? `${gate} The local read fell, so these sales move down with the ${place} city index.` : ''
+    // The home's own unsold listing already says itself in the gate note; the
+    // "local read fell" clause is only for a per-foot read that fell.
+    const why =
+      local === undefined
+        ? ''
+        : local.verdict === 'fell'
+          ? `${gate} The local read fell, so these sales move down with the ${place} city index.`
+          : `${gate} These sales move down with the ${place} city index.`
     return `These sales are the exclusive pocket.${why} ${detail} ${pocketIndexDownClause(place)} Story class does not adjust.`
   }
   if (coolingApplied) {
     return `These sales are the exclusive pocket.${gate} Flex-style cooling date adjustment moves a sale down along the ${place} city index where its month sat above today's level. ${pocketIndexDownClause(place)} Story class does not adjust.`
   }
-  if (local !== undefined && local.verdict !== 'fell') {
+  if (local !== undefined && !pocketLocalAllowsDown(local)) {
     return `These sales are the exclusive pocket.${gate} A sale on the home's own ground moves down along the ${place} city index only when that local read fell, so no sale is moved for the month it sold and each one stands at its sold price. Story class does not adjust.`
   }
   if (local !== undefined) {
+    const lead = local.verdict === 'fell' ? 'The local read fell, but no' : 'No'
+    const leadNoIndex = local.verdict === 'fell' ? 'The local read fell, but there' : 'There'
     return indexAvailable
-      ? `These sales are the exclusive pocket.${gate} The local read fell, but no sale closed in a month the ${place} city index sat above today's level, so no sale is moved for the month it sold. Story class does not adjust.`
-      : `These sales are the exclusive pocket.${gate} The local read fell, but there is no ${place} city index to move a sale by, so no sale is moved for the month it sold. Story class does not adjust.`
+      ? `These sales are the exclusive pocket.${gate} ${lead} sale closed in a month the ${place} city index sat above today's level, so no sale is moved for the month it sold. Story class does not adjust.`
+      : `These sales are the exclusive pocket.${gate} ${leadNoIndex} is no ${place} city index to move a sale by, so no sale is moved for the month it sold. Story class does not adjust.`
   }
   return `These sales are the exclusive pocket. Date adjustment is not applied along the ${place} city index. That series includes tracts already excluded from this set. No sale is moved for the month it sold. Story class does not adjust.`
 }
