@@ -6,7 +6,7 @@
 import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
 import { parentPlaceArea } from '@/lib/pricing/comp-area'
 import { median } from '@/lib/cma/market-status'
-import { letterProductNoun, productClass } from '@/lib/cma/market-area'
+import { letterProductNoun, multiUnitNoun, productClass, productNounPlural } from '@/lib/cma/market-area'
 import { formatCalendarDay } from '@/lib/format/date'
 
 const FAILED = new Set(['Expired', 'Canceled', 'Withdrawn'])
@@ -36,9 +36,8 @@ export type PlacePricingTarget = {
 
 /** The product in the letter's own words, plural: "single-family homes", "townhouses". */
 export function productPlural(subType: string | null | undefined): string {
-  const noun = letterProductNoun(subType)
-  if (noun === 'townhouse') return 'townhouses'
-  if (noun === 'condo') return 'condos'
+  const noun = letterProductNoun(subType) ?? multiUnitNoun(subType)
+  if (noun) return productNounPlural(noun)
   return productClass(subType?.trim() || null) === 'detached' ? 'single-family homes' : 'homes'
 }
 

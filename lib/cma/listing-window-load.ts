@@ -8,7 +8,7 @@
  */
 
 import { getCmaCityClosedDuring } from '@/lib/data/cma/builderReads'
-import { compPoolPropertySubType, letterProductNoun, marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
+import { compPoolPropertySubType, compPoolPropertyType, letterProductNoun, marketAreaName, multiUnitNoun, resolveMarketArea } from '@/lib/cma/market-area'
 import {
   chooseListingMarket,
   closesFromRows,
@@ -118,6 +118,8 @@ export async function loadListingWindowCloses(
       window.listDate,
       window.offDate,
       compPoolPropertySubType(input.propertySubType ?? null),
+      // A 2-4 unit home's window reads segment C, the duplexes that closed.
+      compPoolPropertyType(input.propertySubType ?? null),
     )
   } catch (err) {
     console.error('[listing-window-market]', err)
@@ -155,7 +157,8 @@ export function measureListingWindowMarket(
     propertySubType: input.propertySubType ?? null,
   })
   if (!move) return null
-  const productNoun = letterProductNoun(input.propertySubType)
+  // A duplex names itself on the chart the way a townhouse does (Matt 2026-10-14).
+  const productNoun = letterProductNoun(input.propertySubType) ?? multiUnitNoun(input.propertySubType)
   return { ...move, asOf: input.asOf.slice(0, 10), ...(productNoun ? { productNoun } : {}) }
 }
 

@@ -153,6 +153,8 @@ export interface BpoBuildInput {
   client?: BpoClientLink
   /** buildBpo sets this on itself after a review drop on an ADU-first set (see CmaBuildInput.aduFallback). Never set by a caller. */
   aduFallback?: { heldAfterReview: number } | null
+  /** buildBpo sets this on itself after a review drop on a same-unit-count set (see CmaBuildInput.unitsFallback). Never set by a caller. */
+  unitsFallback?: { heldAfterReview: number } | null
 }
 
 export interface BpoBuildResult {

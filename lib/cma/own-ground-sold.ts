@@ -21,6 +21,7 @@
  * from ONE query shape").
  */
 import { selectCmaCompsPool, type CmaListingRow } from '@/lib/data/cma/builderReads'
+import { compPoolPropertyType } from '@/lib/cma/market-area'
 import { getPlatGroundBounds } from '@/lib/data/cma/platGroundBounds'
 import { assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
 import { platGroundReach, subjectPlatGround } from '@/lib/pricing/plat-ground'
@@ -108,14 +109,16 @@ export async function readOwnGroundSold(args: {
   const name = usableSubdivision(subject.subdivision)
   if (!name || !subject.city || !(args.months > 0)) return null
   const since = monthsBefore(args.asOf, args.months)
+  // A 2-4 unit home's ground is read on its own segment (Matt 2026-10-14).
+  const segment = compPoolPropertyType(subject.propertySubType)
   try {
     const ground = subjectPlatGround(subject)
     const [named, box] = await Promise.all([
-      selectCmaCompsPool({ cityIlike: subject.city, subdivisionIlike: `${name}%`, closeDateGte: since, limit: NAMED_LIMIT }),
+      selectCmaCompsPool({ cityIlike: subject.city, subdivisionIlike: `${name}%`, closeDateGte: since, limit: NAMED_LIMIT, propertyType: segment }),
       getPlatGroundBounds(ground, { city: subject.city }),
     ])
     const boxed = box
-      ? await selectCmaCompsPool({ cityIlike: subject.city, closeDateGte: since, bounds: box, limit: BOX_LIMIT })
+      ? await selectCmaCompsPool({ cityIlike: subject.city, closeDateGte: since, bounds: box, limit: BOX_LIMIT, propertyType: segment })
       : []
     const byKey = new Map<string, CmaListingRow>()
     for (const r of [...named, ...boxed]) {
@@ -135,7 +138,7 @@ export async function readOwnGroundSold(args: {
       n: sold.length,
       capped: named.length >= NAMED_LIMIT || boxed.length >= BOX_LIMIT,
       source:
-        `listings, Closed, PropertyType A, any size and sub type, City ILIKE '${subject.city}', CloseDate >= ${since}: ` +
+        `listings, Closed, PropertyType ${segment}, any size and sub type, City ILIKE '${subject.city}', CloseDate >= ${since}: ` +
         `SubdivisionName ILIKE '${name}%' (${named.length} rows) and the box around the recorded plats (${boxed.length} rows), ` +
         `kept when the point sits on the subject's own ground (platGroundReach): ${sold.length}`,
     }

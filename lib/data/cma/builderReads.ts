@@ -8,6 +8,7 @@
  */
 
 import 'server-only'
+import { MULTI_UNIT_COMP_SUB_TYPES } from '@/lib/cma/market-area'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { LatLngBounds } from '@/lib/cma/market-area'
 import { getPlatGroundBounds } from '@/lib/data/cma/platGroundBounds'
@@ -31,6 +32,9 @@ const LISTING_CMA_COLUMNS = [
   // the unit the self-exclusion read the whole building as "the subject's own
   // listing" (363 Bluff: 20 of its own best comps dropped as self).
   'unit_number:details->>UnitNumber',
+  // The unit count, also only in the payload. The multi-unit ladder prices a
+  // duplex from two-unit sales first (lib/cma/comps.ts, Matt 2026-10-14).
+  'units_total:details->>NumberOfUnitsTotal',
   'StreetNumber',
   'StreetName',
   'City',
@@ -487,8 +491,10 @@ export type CmaWindowCloseRow = {
 }
 
 /**
- * Closed single-family sales in one city between two dates, inclusive.
- * The listing-window story splits these into the subdivision, the neighborhood
+ * Closed sales of the subject's product in one city between two dates,
+ * inclusive: single-family by default, or the segment the caller names (C
+ * for a 2-4 unit home, lib/cma/market-area.ts compPoolPropertyType). The
+ * listing-window story splits these into the subdivision, the neighborhood
  * polygon, and the city. The cache cannot serve an arbitrary listing period.
  */
 export async function getCmaCityClosedDuring(
@@ -496,6 +502,7 @@ export async function getCmaCityClosedDuring(
   fromIso: string,
   toIso: string,
   propertySubType?: string | null,
+  propertyType?: string | null,
 ): Promise<CmaWindowCloseRow[]> {
   const sb = client()
   if (!sb || !city.trim() || !fromIso || !toIso) return []
@@ -509,9 +516,10 @@ export async function getCmaCityClosedDuring(
         'ClosePrice, CloseDate, TotalLivingAreaSqFt, Latitude, Longitude, SubdivisionName, property_sub_type, concessions_amount',
       )
       .eq('City', city)
-      .eq('PropertyType', 'A')
+      .eq('PropertyType', propertyType?.trim() || 'A')
       .eq('StandardStatus', 'Closed')
     if (sub) q = q.eq('property_sub_type', sub)
+    else if (propertyType?.trim() === 'C') q = q.in('property_sub_type', [...MULTI_UNIT_COMP_SUB_TYPES])
     const { data, error } = await q
       .gte('CloseDate', fromIso)
       .lte('CloseDate', toIso)

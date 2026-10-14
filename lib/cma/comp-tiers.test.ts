@@ -38,3 +38,33 @@ describe('the disclosed widening (Matt 2026-09-09)', () => {
     }
   })
 })
+
+describe('a 2-4 unit home walks past its plats (Matt 2026-10-14, the multi-unit ladder)', () => {
+  it('a named duplex finishes its plat and the touching plats, then the neighborhood, the community, the rings and the widening', () => {
+    const names = compTierLadder('Center Addition', { multiUnit: true }).map((t) => t.name)
+    expect(names.slice(0, 8)).toEqual([
+      'subdivision-6mo',
+      'subdivision-12mo',
+      'subdivision-18mo',
+      'subdivision-24mo',
+      'adjacent-subdivision-6mo',
+      'adjacent-subdivision-12mo',
+      'adjacent-subdivision-18mo',
+      'adjacent-subdivision-24mo',
+    ])
+    expect(names[8]).toBe('neighborhood-6mo')
+    for (const rung of ['neighborhood-24mo', 'community-24mo', 'competing-area-12mo', 'citywide-12mo', 'widened-disclosed-24mo']) {
+      expect(names).toContain(rung)
+    }
+    // No pocket or quarter-mile ring: those are for a home with no recorded plat.
+    expect(names.some((n) => n.startsWith('pocket-') || n.startsWith('nearby-'))).toBe(false)
+    expect(names.indexOf('adjacent-subdivision-24mo')).toBeLessThan(names.indexOf('neighborhood-6mo'))
+    expect(names.indexOf('citywide-12mo')).toBeLessThan(names.indexOf('widened-disclosed-24mo'))
+  })
+
+  it('a named house still stops at the touching plats, and an unnamed home\'s ladder is unchanged', () => {
+    expect(compTierLadder('Center Addition').map((t) => t.name)).toEqual(compTierLadder('Center Addition', { multiUnit: false }).map((t) => t.name))
+    expect(compTierLadder('Center Addition')[compTierLadder('Center Addition').length - 1]?.name).toBe('adjacent-subdivision-24mo')
+    expect(compTierLadder(null, { multiUnit: true }).map((t) => t.name)).toEqual(compTierLadder(null).map((t) => t.name))
+  })
+})
