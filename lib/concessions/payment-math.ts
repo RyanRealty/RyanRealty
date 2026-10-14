@@ -13,6 +13,9 @@
 
 export const TERM_MONTHS = 360
 
+/** One discount point costs 1% of the loan amount (definition, not a market rate). */
+export const POINT_FRACTION_OF_LOAN = 0.01
+
 export type LoanType = 'conventional' | 'fha' | 'va' | 'usda'
 export type Occupancy = 'principal' | 'second' | 'investment'
 
@@ -52,14 +55,6 @@ export type CompareResult = {
   capDollars: number
   withinCap: boolean
 }
-
-/** Documented 7.40% scenario used by payment_math.py when live PMMS is missing. */
-export const FALLBACK_PMMS = {
-  ratePct: 7.4,
-  weekStart: '2026-10-08',
-  sourceName: 'Freddie Mac PMMS 30-yr',
-  sourceUrl: 'https://www.freddiemac.com/pmms',
-} as const
 
 export const DEFAULT_COMPARE: Omit<CompareInput, 'ratePct'> = {
   price: 695_850,
@@ -113,7 +108,7 @@ export function comparePriceCutVsConcession(input: CompareInput): CompareResult 
   const cutLoan = Math.max(0, price - dollars) * (1 - downFraction)
   const cutPi = monthlyPI(cutLoan, input.ratePct, termMonths)
 
-  const points = loan > 0 ? dollars / (loan * 0.01) : 0
+  const points = loan > 0 ? dollars / (loan * POINT_FRACTION_OF_LOAN) : 0
   const concessionRate = rateAfterBuydown(input.ratePct, points, input.pointsPer025)
   const concessionPi = monthlyPI(loan, concessionRate, termMonths)
 
