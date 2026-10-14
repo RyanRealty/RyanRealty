@@ -93,3 +93,62 @@ describe('the unstable_cache door', () => {
     })
   })
 })
+
+describe('what the data cache keeps of a failed read (search matrix, 2026-10-14)', () => {
+  it('serves a RETURNED null for the whole window, even after the read has recovered', async () => {
+    // The matrix build used to return null when its inventory read hit a
+    // statement timeout. unstable_cache stored that null for the hour, so a
+    // blip stood in for the last good value until the window ran out.
+    const h = staticGenerationHarness()
+    let healthy = false
+    const build = vi.fn(async () => (healthy ? { positive: ['/homes-for-sale/bend/condos'] } : null))
+    const read = unstable_cache(build, ['returned-null'], { revalidate: 3600, tags: ['listings'] })
+    await h.run(async () => {
+      expect(await read()).toBeNull()
+      await h.flushWrites()
+      healthy = true
+      h.clock.now += 120_000
+      expect(await read()).toBeNull()
+    })
+    expect(build).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not store a THROWN failure, so the next read runs again and recovers', async () => {
+    const h = staticGenerationHarness()
+    let healthy = false
+    const build = vi.fn(async () => {
+      if (!healthy) throw new Error('canceling statement due to statement timeout')
+      return { positive: ['/homes-for-sale/bend/condos'] }
+    })
+    const read = unstable_cache(build, ['thrown-failure'], { revalidate: 3600, tags: ['listings'] })
+    await h.run(async () => {
+      await expect(read()).rejects.toThrow('statement timeout')
+      healthy = true
+      h.clock.now += 120_000
+      expect(await read()).toEqual({ positive: ['/homes-for-sale/bend/condos'] })
+    })
+    expect(build).toHaveBeenCalledTimes(2)
+  })
+
+  it('re-runs a WARM entry when it is read from inside another unstable_cache callback', async () => {
+    // app/sitemap.ts builds inside getClassRows (lib/sitemap-class-rows.ts), an
+    // unstable_cache callback, so the sitemap's matrix read never sees the warm
+    // entry the page reads: every universe build is a live database read, and
+    // it is also why a last-known-good value cannot be read back from the data
+    // cache there. Next 16.1.6, unstable-cache.js: `!isNestedUnstableCache`.
+    const h = staticGenerationHarness()
+    const inner = vi.fn(async () => ({ built: true }))
+    const readInner = unstable_cache(inner, ['nested-inner'], { revalidate: 3600, tags: ['listings'] })
+    const readOuter = unstable_cache(async () => readInner(), ['nested-outer'], { revalidate: 3600, tags: ['x'] })
+    await h.run(async () => {
+      await readInner()
+      await h.flushWrites()
+      expect(inner).toHaveBeenCalledTimes(1)
+      await readInner() // a top-level read is served from the entry
+      expect(inner).toHaveBeenCalledTimes(1)
+      await readOuter() // the same read, nested, runs the callback again
+      await h.flushWrites()
+      expect(inner).toHaveBeenCalledTimes(2)
+    })
+  })
+})

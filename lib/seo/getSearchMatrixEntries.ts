@@ -26,6 +26,16 @@
  * inventory read returns null here — the sitemap skips the matrix for that
  * regeneration (safe: transient omission), and the noindex decision fails
  * OPEN (never noindex a live page on a read blip).
+ *
+ * 2026-10-14: the two halves are different on purpose. The PAGE fails open
+ * because it has to render something and must never noindex a live page on a
+ * blip. The SITEMAP is a submission, so it never reads an unknown decision as
+ * "index": app/sitemap.ts omits the city x preset URLs that need a verified
+ * decision (lib/seo/place-type-twin.ts presetNeedsVerifiedDecision), the way
+ * getSearchMatrixSitemapEntries below already returns [] for the four-segment
+ * matrix. Until then an unknown decision emitted every city x preset URL,
+ * including the verified-thin ones the page noindexes and the type presets whose
+ * page canonicalizes to /cities/{city}/types/{type}.
  */
 
 import { cache } from 'react'
@@ -151,9 +161,8 @@ function splitByCount(counts: Map<string, number>): { positive: string[]; all: s
   return { positive, all }
 }
 
-async function buildSerializedMatrix(): Promise<SerializedMatrix | null> {
+async function buildSerializedMatrix(): Promise<SerializedMatrix> {
   const built = await assembleSearchMatrix()
-  if (!built) return null
   const byPath = splitByCount(built.countByPath)
   const byCityPreset = splitByCount(built.countByCityPreset)
   // The geo key space collapses 41,748 paths to ~1,500 "city/area" pairs: a
@@ -175,6 +184,8 @@ async function buildSerializedMatrix(): Promise<SerializedMatrix | null> {
 // Same TTL + invalidation tag the raw inventory read used to carry, so refresh
 // behaviour is unchanged — only WHAT is stored changed. `null` fallback keeps
 // the fail-OPEN contract: a failed read must never read as "zero inventory".
+// The null is only ever the FINAL fallback, after the throw and the uncached
+// retry; the build never returns it, so it is never cached (2026-10-14).
 const cachedSerializedMatrix = makeResilientCached<[], SerializedMatrix | null>(
   buildSerializedMatrix,
   ['search-matrix-built-v1'],
@@ -225,14 +236,25 @@ const getSearchMatrix = cache(async (): Promise<MatrixDecisions | null> => {
   }
 })
 
-/** The uncached assembly — inventory + geos → matrix. Runs on a cache miss only. */
-const assembleSearchMatrix = async (): Promise<MatrixBuildResult | null> => {
+/**
+ * The uncached assembly — inventory + geos → matrix. Runs on a cache miss only.
+ *
+ * THROWS when the inventory read failed (2026-10-14). It used to return null,
+ * and a RETURNED null is a value to unstable_cache: it is stored for the whole
+ * revalidate window (pinned on Next 16.1.6's real unstable_cache in
+ * lib/data/cache/next-cache.test.ts), so one statement timeout turned into an
+ * hour of "unknown" for every reader and replaced the last good matrix, and
+ * makeResilientCached never got to retry because nothing was thrown
+ * (lib/data/cache/resilient.ts: the fetch fn THROWS on a DB error). A throw is
+ * never cached and earns the one uncached retry before the null fallback.
+ */
+const assembleSearchMatrix = async (): Promise<MatrixBuildResult> => {
   const [inventory, neighborhoods, descriptionKeys] = await Promise.all([
     getSearchMatrixInventory(),
     getMatrixNeighborhoods(),
     getSubdivisionDescriptionKeys(),
   ])
-  if (!inventory) return null
+  if (!inventory) throw new Error('[getSearchMatrix] inventory read failed (see [getSearchMatrixInventory])')
 
   const descKeySet = new Set(descriptionKeys ?? [])
   const geos: MatrixGeo[] = []
@@ -390,8 +412,12 @@ export async function getMatrixCityPresetNoIndex(citySlug: string, presetSlug: s
  *
  * This resolves the matrix ONCE, so the caller can do synchronous Set
  * lookups for every combo — same underlying data, same classification, one
- * database-backed read instead of ~1,080. `null` = the read failed; callers
- * fail OPEN exactly like getMatrixCityPresetNoIndex does on a null matrix.
+ * database-backed read instead of ~1,080. `null` = the read failed, so the
+ * decision is UNKNOWN. The page-side callers fail OPEN on it exactly like
+ * getMatrixCityPresetNoIndex does on a null matrix; the SITEMAP does not
+ * (2026-10-14): app/sitemap.ts omits every preset that needs a verified
+ * decision while this is null, because a submitted URL the page noindexes or
+ * canonicalizes away is the defect, and a thinner file is not.
  */
 export async function getMatrixCityPresetDecisionSet(): Promise<{
   positiveCityPresets: Set<string>
@@ -411,7 +437,10 @@ export async function getMatrixCityPresetDecisionSet(): Promise<{
 /**
  * Pure, synchronous form of the getMatrixCityPresetNoIndex decision over an
  * already-resolved set pair (from getMatrixCityPresetDecisionSet). Byte-for-
- * byte the same branches as the async version.
+ * byte the same branches as the async version, so a null decision answers
+ * false (page-side fail OPEN). A SITEMAP caller must test for the null itself
+ * first (app/sitemap.ts does): false here is "not known to be noindex", not
+ * "known to be indexable".
  */
 export function matrixCityPresetNoIndexFromSet(
   decision: { positiveCityPresets: Set<string>; cityPresetKeys: Set<string> } | null,

@@ -22,7 +22,7 @@ import { getAllNeighborhoodsWithCity } from '@/lib/data'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { subdivisionSitemapUrls } from '@/lib/data/subdivisions/subdivision-index'
 import { getBrowsePairSitemapPaths } from '@/lib/seo/getBrowsePairDecision'
-import { cityPresetTypeTwin, placeTypeSitemapPaths } from '@/lib/seo/place-type-twin'
+import { cityPresetTypeTwin, placeTypeSitemapPaths, presetNeedsVerifiedDecision } from '@/lib/seo/place-type-twin'
 import {
   getSearchMatrixSitemapEntries,
   getMatrixCityPresetDecisionSet,
@@ -428,7 +428,23 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // getMatrixCityPresetDecisionSet() resolves the same matrix once; the
     // loop then does a synchronous Set lookup per combo
     // (matrixCityPresetNoIndexFromSet), same classification, same output.
+    //
+    // 2026-10-14: null here means the decision is UNKNOWN, and the sitemap does
+    // not fail open on it any more. Production, 16:05Z: matrix.xml served 808
+    // URLs, nearly every city x every indexable preset (18 x 45) and no
+    // four-segment row, because the matrix inventory read hit "canceling
+    // statement due to statement timeout" while four cold class builds hit the
+    // database at once. This build re-reads the matrix live: it runs inside
+    // getClassRows, an unstable_cache callback, and a nested unstable_cache read
+    // bypasses its warm entry (lib/data/cache/next-cache.test.ts). The page reads
+    // that warm entry and serves noindex (or a canonical to
+    // /cities/{city}/types/{type}), so 69 of 400 sampled URLs were ones the site
+    // itself refuses to index. The page keeps failing OPEN (it must render
+    // something, and a read blip must never noindex a live page). The sitemap is
+    // a submission: an unknown decision omits every preset that needs a verified
+    // one for this regeneration, which is safe (a thinner file, never a wrong one).
     const matrixCityPresetDecision = await started['matrix-city-preset-decision']
+    let undecidedPresetUrlsOmitted = 0
 
     for (const city of cities) {
       const key = cityEntityKey(city)
@@ -448,18 +464,30 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       // noindex, so submitting them would only trigger "submitted but noindex".
       const presetSlugs = getIndexablePresetSlugs()
       for (const preset of presetSlugs) {
+        // 2026-10-14: no decision (a failed or timed-out matrix read) means the
+        // page's verdict for this preset is unknown to the sitemap. A preset
+        // the matrix can count may be a verified zero (the page noindexes it)
+        // or a type preset with a twin (the page canonicalizes it away), and
+        // the sitemap never submits either, so it is omitted until the next
+        // regeneration reads a decision. A preset the matrix cannot count is
+        // always index, self-canonical on the page and needs no decision.
+        if (matrixCityPresetDecision === null && presetNeedsVerifiedDecision(preset)) {
+          undecidedPresetUrlsOmitted += 1
+          continue
+        }
         // W3.1: skip a {city}/{preset} combo with a VERIFIED zero city-wide count
-        // (§0 — the search page noindexes it too; unknown states fail OPEN).
-        // Fails OPEN on a failed/never-resolved matrix read, exactly as
-        // before: an unknown inventory state emits the URL rather than
-        // silently dropping a live page from the sitemap.
+        // (§0 — the search page noindexes it too; unknown states fail OPEN on
+        // the PAGE: a combo the matrix never enumerated stays in, and the
+        // null-decision case is handled above, not here).
         if (matrixCityPresetNoIndexFromSet(matrixCityPresetDecision, key, preset)) continue
         // SITE-179: Bend new-construction lives at /new-construction.
         if (isBendNewConstructionSearchTwinPath(`/homes-for-sale/${key}/${preset}`)) continue
         // EXP-6: a type preset with verified inventory canonicalizes to
         // /cities/{city}/types/{type}; the types leg below submits that page
         // instead (lib/seo/place-type-twin.ts — the search route's metadata
-        // reads the same rule).
+        // reads the same rule). With no decision a type preset never reaches
+        // here (presetNeedsVerifiedDecision above), so the twin can never slip
+        // through on a null set.
         if (cityPresetTypeTwin(key, preset, matrixCityPresetDecision?.positiveCityPresets ?? null)) continue
         dynamicPages.push({
           url: `${baseUrl}/homes-for-sale/${key}/${preset}`,
@@ -470,11 +498,21 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       }
     }
 
+    // One line when the decision was unknown, so a thin matrix.xml names its
+    // cause in the runtime log (the leg-timing line below only carries wall
+    // times; a failed read and a slow one look the same there).
+    if (matrixCityPresetDecision === null) {
+      console.warn(
+        `[sitemap] matrix-city-preset-decision unresolved: omitted ${undecidedPresetUrlsOmitted} city x preset URLs that need a verified decision`,
+      )
+    }
+
     // Place-type pages (EXP-6): /cities/{city}/types/{type} and
     // /communities/{community}/types/{type}, each only with a VERIFIED positive
     // active count from the same matrix decision set as the preset loop above,
     // so a type page is submitted exactly when its preset twin is not. A failed
-    // matrix read submits none (the twins then stay in, fail-open as before).
+    // matrix read submits none, and (2026-10-14) now omits the type presets
+    // too, rather than leaving the twins in.
     for (const path of placeTypeSitemapPaths(cities.map((c) => cityEntityKey(c)), matrixCityPresetDecision)) {
       dynamicPages.push({ url: `${baseUrl}${path}`, lastModified: now, changeFrequency: 'daily', priority: 0.75 })
     }

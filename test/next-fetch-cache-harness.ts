@@ -37,6 +37,13 @@ export type StaticGenerationHarness = {
   run<T>(fn: () => Promise<T>): Promise<T>
   /** Settle every cache write the work store has queued. */
   flushWrites(): Promise<void>
+  /**
+   * Start a new render over the same cache entries: the work store forgets the
+   * writes and revalidations the previous render queued, as a fresh request or
+   * ISR pass would. Needed to see a stale entry revalidate instead of handing
+   * back the pending write the earlier render left behind.
+   */
+  newRender(): void
 }
 
 export function staticGenerationHarness(route = '/cities/[slug]'): StaticGenerationHarness {
@@ -76,6 +83,9 @@ export function staticGenerationHarness(route = '/cities/[slug]'): StaticGenerat
     run: (fn) => workAsyncStorage.run(workStore as never, fn),
     async flushWrites() {
       await Promise.all(Object.values(workStore.pendingRevalidates ?? {}))
+    },
+    newRender() {
+      workStore.pendingRevalidates = undefined
     },
   }
 }

@@ -115,6 +115,17 @@ const CHECKS = [
     guards: ['placeTypeSitemapPaths', 'cityPresetTypeTwin'],
     why: 'submit the type pages and drop their preset twins by the same rule',
   },
+  // ── An UNKNOWN decision (2026-10-14). matrix.xml served 808 URLs when the
+  // matrix inventory read timed out, because a null decision was read as
+  // "index": 69 of 400 sampled URLs were verified-thin presets the page
+  // noindexes or type presets it canonicalizes away. The page fails open; the
+  // sitemap must not, so the preset loop asks presetNeedsVerifiedDecision before
+  // it emits anything while the decision is null.
+  {
+    file: 'app/sitemap.ts',
+    guards: ['presetNeedsVerifiedDecision'],
+    why: 'omit the presets that need a verified decision while the decision is unknown (a null decision is never "index")',
+  },
   {
     file: 'app/search/[...slug]/search-metadata.ts',
     guards: ['resolvePresetTypeTwinPath'],
