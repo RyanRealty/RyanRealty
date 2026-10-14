@@ -47,7 +47,7 @@ async function readBatch(keys: readonly string[]): Promise<PhotoRow[]> {
     const { data, error } = await supabase
       .from('listings')
       .select('ListingKey, PhotoURL, media_suppressed, permit_internet_yn, idx_participant, Photos:details->Photos')
-      .in('ListingKey', keys as string[])
+      .in('ListingKey', keys as string[]) // @canonical-key — keys are listing_tile_mv listing_key (the listings.xml set)
     if (!error) return (data ?? []) as PhotoRow[]
     lastError = error
     await new Promise((r) => setTimeout(r, 400 + Math.random() * 400))

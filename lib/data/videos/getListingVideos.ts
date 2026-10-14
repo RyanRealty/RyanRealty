@@ -169,7 +169,7 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
     const { data: events, error: eventsErr } = await supabase
       .from('listing_history')
       .select('event, event_date')
-      .eq('listing_key', canonicalKey)
+      .eq('listing_key', canonicalKey) // @canonical-key — resolved from the listings row above
       .in('event', ['Video', 'VirtualTour'])
       .order('event_date', { ascending: false })
       .limit(100)

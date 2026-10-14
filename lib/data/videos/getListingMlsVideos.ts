@@ -103,6 +103,7 @@ export async function getListingMlsVideosByKeys(
     const pages = await Promise.all(
       all.slice(i, i + BATCH_CONCURRENCY).map((batch) =>
         withOneRetry(() => {
+          // @canonical-key — callers pass listing_tile_mv listing_key values (tiles, the listings.xml set)
           const base = supabase.from('listings').select(SELECT).in('ListingKey', batch)
           return options.onlyFlagged ? base.or('has_virtual_tour.eq.true,virtual_tour_url.not.is.null') : base
         }, 'listings video batch'),
@@ -165,7 +166,7 @@ async function readMediaHistoryDates(listingKeys: readonly string[], now: Date):
           const { data, error } = await supabase
             .from('listing_history')
             .select('listing_key, event, event_date')
-            .in('listing_key', batch)
+            .in('listing_key', batch) // @canonical-key — ListingKey values read back off listings rows above
             .in('event', ['Video', 'VirtualTour'])
             .order('event_date', { ascending: false })
             .limit(1000)
@@ -232,7 +233,7 @@ export async function getListingVideoPlacesByKeys(listingKeys: readonly string[]
               .select(
                 'ListingKey, StreetNumber, StreetName, City, ListOfficeName, StreetDirPrefix:details->>StreetDirPrefix, StreetSuffix:details->>StreetSuffix, StreetDirSuffix:details->>StreetDirSuffix',
               )
-              .in('ListingKey', batch),
+              .in('ListingKey', batch), // @canonical-key — listing_tile_mv listing_key values whose video qualified
           'listings place batch',
         ),
       ),
