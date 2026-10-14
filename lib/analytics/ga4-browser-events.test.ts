@@ -9,12 +9,13 @@ import {
   GA4_PAGE_VIEW_TAG_NAME,
   GA4_PAGE_VIEW_TRIGGER_NAME,
   GA4_PARAMS_KEY,
+  GA4_USER_PROPERTIES,
   ga4BrowserEventTriggerRegex,
   ga4ListingKey,
   ga4ParamsFrom,
   pushDataLayerEvent,
 } from './ga4-browser-events'
-import { buildGtmImport, GTM_IMPORT_PATH } from '../../scripts/build-gtm-ga4-import'
+import { buildGtmImport, gtmVariableFor, GTM_IMPORT_PATH, GTM_TAG_NAME } from '../../scripts/build-gtm-ga4-import'
 
 const read = (p: string) => readFileSync(p, 'utf8')
 
@@ -140,19 +141,70 @@ describe('GTM steps stay in step with the code', () => {
 
   it('the doc carries the exact trigger regex and every parameter row', () => {
     expect(doc).toContain(ga4BrowserEventTriggerRegex())
-    for (const p of GA4_EVENT_PARAMS) expect(doc).toContain(`| \`${p.name}\` | \`DLV - ga4 ${p.name}\` | \`${p.from}\` |`)
-    expect(doc).toContain(`${GA4_EVENT_PARAMS.length} Data Layer Variables`)
+    for (const p of GA4_EVENT_PARAMS) expect(doc).toContain(`| \`${p.name}\` | \`${gtmVariableFor(p)}\` | \`${p.from}\` |`)
+    expect(doc).toContain(`${buildGtmImport().containerVersion.variable.length} variables`)
     expect(doc).toContain(`(${GA4_EVENT_PARAMS.length} rows.`)
   })
 
   it('the doc carries the page_view tag and every one of its parameter rows', () => {
     expect(doc).toContain(`\`${GA4_PAGE_VIEW_TAG_NAME}\``)
     expect(doc).toContain(`\`${GA4_PAGE_VIEW_TRIGGER_NAME}\``)
-    for (const p of GA4_PAGE_VIEW_PARAMS) expect(doc).toContain(`| \`${p.name}\` | \`DLV - ga4 ${p.name}\` | \`${p.from}\``)
+    for (const p of GA4_PAGE_VIEW_PARAMS) expect(doc).toContain(`| \`${p.name}\` | \`${gtmVariableFor(p)}\` | \`${p.from}\``)
     expect(doc).toContain('`send_page_view` = `false`')
+  })
+
+  it('the doc carries every user property row (GTM version 10)', () => {
+    for (const p of GA4_USER_PROPERTIES) expect(doc).toContain(`| \`${p.name}\` | \`${gtmVariableFor(p)}\` | \`${p.from}\` |`)
   })
 
   it('the committed GTM import file is the generated one (npx tsx scripts/build-gtm-ga4-import.ts)', () => {
     expect(JSON.parse(read(GTM_IMPORT_PATH))).toEqual(buildGtmImport())
+  })
+})
+
+/**
+ * GTM version 10 (2026-10-14, live): both GA4 Event tags send content_group from
+ * page_type and set the user properties visitor_intent / primary_market from
+ * their flat dataLayer keys (lib/analytics/visitor-intent.ts).
+ */
+describe('GTM version 10: content group and visitor-intent user properties', () => {
+  type Param = { key: string; value?: string; list?: Array<{ map: Array<{ key: string; value: string }> }> }
+  type Tag = { name: string; parameter: Param[] }
+  const container = buildGtmImport().containerVersion
+  const tags = container.tag as unknown as Tag[]
+  const rows = (tag: Tag, key: string, k: string, v: string) =>
+    Object.fromEntries(
+      (tag.parameter.find((p) => p.key === key)?.list ?? []).map((row) => {
+        const m = Object.fromEntries(row.map.map((x) => [x.key, x.value]))
+        return [m[k], m[v]]
+      }),
+    )
+
+  it('the user properties are the two flat keys', () => {
+    expect(GA4_USER_PROPERTIES.map((p) => [p.name, p.from])).toEqual([
+      ['visitor_intent', 'visitor_intent'],
+      ['primary_market', 'primary_market'],
+    ])
+  })
+
+  it.each([GTM_TAG_NAME, GA4_PAGE_VIEW_TAG_NAME])('%s sets both user properties and sends content_group from page_type', (name) => {
+    const tag = tags.find((t) => t.name === name)!
+    expect(rows(tag, 'userProperties', 'name', 'value')).toEqual({
+      visitor_intent: '{{DLV - ga4 visitor_intent}}',
+      primary_market: '{{DLV - ga4 primary_market}}',
+    })
+    expect(rows(tag, 'eventSettingsTable', 'parameter', 'parameterValue').content_group).toBe('{{DLV - ga4 page_type}}')
+  })
+
+  it('content_group reuses the page_type variable; the user properties get one variable each', () => {
+    const vars = container.variable.map((v) => [v.name, v.parameter.find((p) => p.key === 'name')?.value])
+    expect(vars).toContainEqual(['DLV - ga4 visitor_intent', 'visitor_intent'])
+    expect(vars).toContainEqual(['DLV - ga4 primary_market', 'primary_market'])
+    expect(vars.filter(([, key]) => key === 'page_type')).toEqual([['DLV - ga4 page_type', 'page_type']])
+    expect(new Set(vars.map(([name]) => name)).size).toBe(vars.length)
+  })
+
+  it('content_group never enters ga4_params (it is page context, read flat)', () => {
+    expect(ga4ParamsFrom({ content_group: 'sell', page_type: 'sell' })).toEqual({})
   })
 })

@@ -1,0 +1,134 @@
+{
+  "note": "Pinned tracking and measurement decisions (GA4, GTM, Google tag, links, dashboards). Each entry is a call Matt made; the live setup must keep it. Entries with `check` are verified against live GA4 and GTM by `npm run analytics:audit` (a mismatch is a FAIL: the setup drifted, so fix the setup, not the entry). Entries with `code` name the test or file that holds them. Entries with `manual` say where to look; no read-only API exposes them. Adding an entry is free. Removing one, or changing its check, code or manual, needs a `Tracking-decision: <who, when, why>` commit trailer (scripts/check-tracking-decisions.mjs, commit-msg hook). SEO and AEO calls live in data/seo/decisions.json. Read both before any tracking, SEO, AEO or traffic work.",
+  "decisions": [
+    {
+      "id": "page-view-one-sender",
+      "decided": "Matt 2026-10-14",
+      "why": "One page_view per page. The dataLayer push (inline GTM bootstrap on first paint, PageViewTracker once per pathname change) is sent by the GTM tag 'GA4 - page_view' with page_type. Before GTM version 9 the Google tag plus enhanced measurement's history events counted every ?bbox= map move as a page view and sent no page_type.",
+      "check": { "fact": "gtm.pageViewOwner", "equals": "GA4 - page_view" }
+    },
+    {
+      "id": "history-page-views-off",
+      "decided": "Matt 2026-10-14",
+      "why": "Enhanced measurement 'Page changes based on browser history events' stays off while the dataLayer owns page_view, or client-side navigations count twice.",
+      "check": { "fact": "ga4.historyPageViews", "equals": false }
+    },
+    {
+      "id": "google-tag-initialization",
+      "decided": "Matt 2026-10-14",
+      "why": "The Google tag fires on Initialization - All Pages so its configuration is set before any event tag (GTM version 8).",
+      "check": { "fact": "gtm.googleTagOnInitialization", "equals": true }
+    },
+    {
+      "id": "google-signals-on",
+      "decided": "Matt (owner decision, docs/analytics/README.md)",
+      "why": "Google Signals stays ON. Do not disable.",
+      "check": { "fact": "ga4.signals", "equals": "GOOGLE_SIGNALS_ENABLED" }
+    },
+    {
+      "id": "retention-14-months",
+      "decided": "Matt (owner decision, docs/analytics/README.md)",
+      "why": "Event data retention at the Standard-tier maximum.",
+      "check": { "fact": "ga4.retention", "equals": "FOURTEEN_MONTHS" }
+    },
+    {
+      "id": "key-events",
+      "decided": "Matt 2026-10-14",
+      "why": "Nine key events. Matt removed four that nothing sent (schedule_showing, listing_showing_click, listing_inquiry, home_valuation_cta_click). A new key event needs a sender first and changes what Google Ads imports.",
+      "check": {
+        "fact": "ga4.keyEvents",
+        "equals": ["call_initiated", "close_convert_lead", "cma_anchor_click", "cma_downloaded", "email_agent", "generate_lead", "purchase", "qualify_lead", "tour_requested"]
+      }
+    },
+    {
+      "id": "ai-assistants-channel-group",
+      "decided": "Matt (owner decision, docs/analytics/README.md)",
+      "why": "The primary channel group is 'AI Assistants (Custom)', so ChatGPT, Perplexity and similar referrals show as their own channel. Do not delete the group.",
+      "check": { "fact": "ga4.primaryChannelGroup", "equals": "AI Assistants (Custom)" }
+    },
+    {
+      "id": "google-ads-linked",
+      "decided": "Matt (owner decision, docs/analytics/README.md)",
+      "why": "GA4 is linked to Google Ads customer 5881785778 so key events can be imported as Ads conversions from the link, never from an in-page AW- tag.",
+      "check": { "fact": "ga4.googleAdsLinks", "includes": ["5881785778"] }
+    },
+    {
+      "id": "dwell-seconds-dimension",
+      "decided": "Matt 2026-10-14",
+      "why": "dwell carries the seconds threshold reached (event parameter 'seconds', GTM version 9), registered as the event-scoped custom dimension 'Dwell seconds' so time on page shows in reports.",
+      "check": { "fact": "ga4.customDimensions", "includes": ["seconds:EVENT"] }
+    },
+    {
+      "id": "generate-lead-server-only",
+      "decided": "Matt (docs/analytics/README.md)",
+      "why": "generate_lead is sent once, from the server (Measurement Protocol). No browser tag sends it; a browser copy would double count every lead.",
+      "code": "lib/analytics/ga4-browser-events.test.ts"
+    },
+    {
+      "id": "crm-contacts-tagged-in-ga4",
+      "decided": "Matt 2026-10-14",
+      "why": "A known CRM contact is tagged in GA4 when they come back, with a hashed CRM id as user_id. Never a name, email or phone: GA4 forbids personal information. Who the person is lives in the CRM timeline.",
+      "code": "components/AnalyticsIdentityBridge.tsx"
+    },
+    {
+      "id": "business-profile-linked",
+      "decided": "Matt 2026-10-14",
+      "why": "Google Business Profile (Ryan Realty, 115 NW Oregon Ave Suite #2) is linked to the GA4 property.",
+      "manual": "GA4 Admin > Product links > Google Business Profile links"
+    },
+    {
+      "id": "no-second-gtm-admin",
+      "decided": "Matt 2026-10-14",
+      "why": "Matt stays the only GTM administrator. GTM's 'add another administrator' recommendation is declined on purpose; do not raise it again.",
+      "manual": "GTM Admin > User Management (account and container)"
+    },
+    {
+      "id": "service-account-read-only",
+      "decided": "Matt 2026-10-14",
+      "why": "The repo's service account has Read on the GTM container, never Publish. Code requests only the tagmanager.readonly scope; publishing is a person in the GTM UI.",
+      "manual": "GTM Admin > Container User Management > viewer@ryanrealty.iam.gserviceaccount.com"
+    },
+    {
+      "id": "user-provided-data-auto-detect-off",
+      "decided": "Matt 2026-10-14",
+      "why": "The Google tag does not scan pages for emails, phones or names. On listing pages it would pick up the broker's own contact details.",
+      "manual": "Google tag (GT-P3MG72KR) > Allow user-provided data capabilities > Automatically detect user-provided data: off"
+    },
+    {
+      "id": "cross-domain-ryan-realty",
+      "decided": "Matt 2026-10-14",
+      "why": "Configure your domains has one condition, contains ryan-realty.com, so the site's own subdomains are not outbound clicks or referrals. Never add the *.vercel.app deployment hosts Google suggests.",
+      "manual": "Google tag (GT-P3MG72KR) > Configure your domains"
+    },
+    {
+      "id": "visitor-intent-definition",
+      "decided": "Matt 2026-10-14",
+      "why": "GA4 segments visitors as buyer, seller, both or browsing with ONE definition, the page categories the CRM and sales funnel already use (visitorPageCategoryFromPath). Seller: any seller_intent page or address_submit / place_value_answer. Buyer: 3+ listing_detail views in 30 days, any buyer_intent page, or save_listing / schedule_tour_click / ask_question_click / tour_requested. Sent as the GA4 user property visitor_intent; stored in the browser only with analytics consent.",
+      "code": "lib/analytics/visitor-intent.ts"
+    },
+    {
+      "id": "primary-market",
+      "decided": "Matt 2026-10-14",
+      "why": "GA4 segments visitors by the market they shop: the Central Oregon service-area city or the community slug they viewed most, as the user property primary_market. Subdivisions count no market (a plat is finer than a market). A tie keeps the market reported before, so the value does not flip-flop.",
+      "code": "lib/analytics/visitor-intent.test.ts"
+    },
+    {
+      "id": "content-group-is-page-type",
+      "decided": "Matt 2026-10-14",
+      "why": "GA4's built-in Content group is page_type, so the standard reports group pages by the site's own taxonomy (lib/analytics/page-type.ts) with no second mapping. Both GA4 Event tags send content_group = {{DLV - ga4 page_type}} since GTM version 10; npm run analytics:audit also fails if a tag stops sending it.",
+      "manual": "GTM tags 'GA4 - page_view' and 'GA4 - dataLayer events' > Event Parameters > content_group"
+    },
+    {
+      "id": "buyer-seller-audiences-behavior-only",
+      "decided": "Matt 2026-10-14",
+      "why": "Buyer and seller audiences (Buyers - active / hot, Sellers - interested / started valuation, Visitor intent: buyer / seller / both) use only site behavior and the visitor_intent user property. Never age, gender, interests, ZIP, city or other geography: they can feed housing ads, and fair housing forbids targeting on those. scripts/ga4-admin.mjs refuses to build one that names such a field.",
+      "manual": "GA4 Admin > Data display > Audiences (each Buyers -, Sellers - and Visitor intent: audience's conditions)"
+    },
+    {
+      "id": "one-dashboard-plus-ga4-view",
+      "decided": "Matt 2026-10-14",
+      "why": "One plain-English admin dashboard (leads from the CRM, sources, what visitors look at, buyer vs seller intent, markets, Google search) replaces the scattered report pages, and the same view exists inside GA4 as a custom report collection.",
+      "manual": "/admin/analytics and GA4 Reports > Library"
+    }
+  ]
+}

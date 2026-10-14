@@ -34,6 +34,8 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Video.** One factory (Matt 2026-10-13): every video, any bot or machine, renders via `npm run studio:render`; Imagine makes footage only. Nothing reaches Matt until `npm run video:check -- <mp4> --final` passes. Rules: `.claude/skills/ryan-studio/SKILL.md`.
 
+**Social queue.** Every GBP, LinkedIn and X post is a draft in `content-queue/<slug>/<platform>.md` that passes `npm run ci:content-queue` (required via `merge-gate`). It posts only from `.github/workflows/content-queue-publish.yml` with `approved: true` (Matt's say-so) and `CONTENT_QUEUE_LIVE=true`. Rules: section "Social content queue" below.
+
 ---
 
 ## Process land path (this file is the source)
@@ -49,8 +51,20 @@ These outrank every later line in this file, every skill, and every handoff or p
 7. **New process rules.** A standing process rule Matt issues lands in this file in the same PR as the work it governs.
 8. **DB writes.** Bots may write to the Ryan Realty Supabase DB when a task Matt asked for needs it. Sends stay drafts. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` in `lib/data/prospecting/drip-schedule.ts` stays `true`. Approved CMA and email wording do not change without Matt's sign-off.
 9. **merge-gate.** CI job `merge-gate` is the required land-path rollup: lint, gates, unit, and on app PRs build / e2e / a11y. Do not require Lighthouse or content-floor. A ruleset or branch protection on `main` should require `merge-gate` + `security-scan`, block direct pushes and force-pushes, require a PR, and let repository admins bypass in an emergency. This session's GitHub App token 403s Administration (`Resource not accessible by integration`); do not push an empty commit to `main` until the API shows protection is active.
+10. **Post-merge steps are automated.** A merge to `main` must not leave `npm run db:push`, a hosted schema apply, or any other required production step as a hand command. `.github/workflows/supabase-migrations.yml` dry-runs then applies `supabase/migrations/**` on push to `main` (project `dwvlophlbvvygjfxcrhm`). Already-applied SQL is tolerated. A failed run opens or comments on a `migration-failed` issue. Never tell anyone to run `npm run db:push` after merge.
 
 ---
+
+## Social content queue (Matt 2026-10-14)
+
+Blog articles are redistributed to Google Business Profile, LinkedIn (Matt's profile and the company page) and X. Code: `scripts/content-queue/`. Workflow: `.github/workflows/content-queue-publish.yml`.
+
+1. **One file per post.** `content-queue/<slug>/<platform>.md`, platform one of `gbp`, `linkedin-personal`, `linkedin-company`, `x-post-<n>`, `x-article`. Frontmatter: `platform`, `source_url` (`https://ryan-realty.com/blog/<slug>`), `link`, `scheduled_at` (ISO with offset), `approved` (default `false`). `content-queue/<slug>/source.md` is the article snapshot the gate traces against; refresh it from `blog_posts` when the article changes.
+2. **Gate (`npm run ci:content-queue`, in `ci:gates`, lane `always`).** A draft fails on: a person name not in the source article; any number not in the source article; a missing or malformed UTM (`utm_source=gbp|linkedin|x`, `utm_medium=social`, `utm_campaign=<slug>`, host `ryan-realty.com`, link present in the body); more than 30% 5-word-shingle overlap with the source; no `Ryan Realty LLC`; guarantee language; an em or en dash; a platform length limit (GBP 1500, LinkedIn 3000, X post 280 with URLs counted as 23). `scripts/content-queue/fixtures/bad/*` must each fail for their `expect_fail` reason; if the gate stops catching one, CI goes red. Never weaken a rule to pass a draft; fix the draft.
+3. **Publishing.** Dry run by default. A live post needs the repo variable `CONTENT_QUEUE_LIVE=true`, `approved: true` on that draft, a green gate, and credentials. Only Matt approves; a bot sets `approved: true` only on Matt's explicit word for those items. The daily 9:00 AM PT run posts items whose `scheduled_at` falls on that PT date.
+4. **X Articles** have no public create API. `x-article` drafts become ready-to-paste files in the run artifact (`.content-queue-out/<slug>.x-article.paste.md`); Matt pastes them in X.
+5. **Cadence.** GBP weekly, LinkedIn personal 2x a week, company page 1x a week, one X Article per article plus 3-5 short X posts a week. Social platforms cannot backdate; older articles are a scheduled catch-up.
+6. **Credentials** (names only): tokens live in Supabase `google_business_profile_auth`, `linkedin_auth`, `x_auth` (the app's token heartbeat refreshes GBP and X). GitHub secrets `GOOGLE_BUSINESS_PROFILE_ACCOUNT_ID`, `GOOGLE_BUSINESS_PROFILE_LOCATION_ID`, `LINKEDIN_PERSON_ID`, `LINKEDIN_ORGANIZATION_ID`, plus the existing Supabase secrets.
 
 ## Ad copy, voiceover and captions
 
@@ -558,7 +572,9 @@ Put it on the work graph (`loop_work_nodes` / `/admin/loop`), not `orchestrate.t
 # Create a new migration
 npm run db:migration <name>
 
-# Push migrations to Supabase
+# Local / linked CLI only. After merge, do not run this by hand.
+# .github/workflows/supabase-migrations.yml dry-runs then applies
+# supabase/migrations/** on push to main.
 npm run db:push
 
 # Check for migration drift (pre-push hook)
@@ -567,6 +583,7 @@ npm run db:guard
 
 Naming: `YYYYMMDDHHMMSS_description_snake_case.sql`
 Always idempotent: use `IF NOT EXISTS`, `IF EXISTS`, `ON CONFLICT DO NOTHING`.
+Post-merge apply is automated (CORE RULES process land path item 10).
 
 ---
 
@@ -577,7 +594,7 @@ Always idempotent: use `IF NOT EXISTS`, `IF EXISTS`, `ON CONFLICT DO NOTHING`.
 | `npm run build` fails with type errors | Check for missing imports, incorrect types. Run `npx tsc --noEmit` for detailed errors. |
 | Design token lint fails | Replace hardcoded colors with semantic tokens. See `CLAUDE.md` for the mapping. |
 | Pre-push hook fails | Run `npm run quality:local:strict` to see what's failing. Fix or use `SKIP_LOCAL_GATES=1`. |
-| Supabase migration drift | Run `npm run db:push` to sync migrations, or `SKIP_DB_GUARD=1` to bypass check. |
+| Hosted migration failed | The apply-on-main Action failed; see the `migration-failed` issue and the workflow run. Do not leave `npm run db:push` as a hand step. |
 | Tests fail on CI but pass locally | Ensure env vars are set in GitHub Secrets. Check if test depends on Supabase connection. |
 
 ---
