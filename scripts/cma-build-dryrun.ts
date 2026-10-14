@@ -398,6 +398,9 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   })
   const subject = resolved.subject
   if (!subject) return { ...base, error: resolved.trace }
+  // The build refuses a multi-unit subject before comps (lib/cma/build.ts);
+  // the dry run reports the same failure so the fleet score matches production.
+  if (resolved.refusal) return { ...base, error: resolved.refusal }
 
   // Same stamp the build applies before anything reads the subject: the failed
   // final cycle's ask, status, and its own days on market (lib/cma/build.ts).

@@ -118,6 +118,12 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       await recordFailure(slug, resolved.trace)
       return { ok: false, error: resolved.trace, slug }
     }
+    // A multi-unit home is never priced from single-family sales (rule 23,
+    // Matt 2026-10-14); the CMA build refuses on the same field.
+    if (resolved.refusal) {
+      await recordFailure(slug, resolved.refusal)
+      return { ok: false, error: resolved.refusal, slug }
+    }
     const subject = resolved.subject
 
     // 2. Comps + market context in parallel (shared CMA engine).
