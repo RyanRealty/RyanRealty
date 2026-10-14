@@ -1,12 +1,13 @@
-# Current — 2026-10-14 (Cursor, listings-failure no-cache, merging #511)
+# Current — 2026-10-14 (Cursor, #511 landed)
 
-Surface: Cursor cloud. Branch `cursor/listings-failure-no-cache-fd1f` rebased onto origin/main `5293aa46c` (includes #539 main CI reds, #538 geo-guard, #528 buyer-answer pages, #533, #512, #532, #521). Matt approved merge of PR #511. Do not `git push` main. Nothing sent.
+Surface: Cursor cloud. `origin/main` `ab4342b1d` via `gh pr merge 511 --squash`. Vercel production `dpl_DxsJe4yx8UPjJyvPS31av5AFEUzK` READY on ryan-realty.com. Do not `git push` main. Nothing sent.
 
-**What this branch does.** Community and resort pages throw `ListingsUnavailableError` after one retry when the listings or community read does not answer, so Next keeps the last good ISR copy. A cold miss is HTTP 500 + noindex. `CommunityDegraded` is deleted. #521's fold stays. Type links keep #539 `#homes-dial-<group>`. `ci:sitemap-url-health` walks sitemap locs for 200 / self-canonical on `https://ryan-realty.com` / not noindex.
+**What landed.** Community and resort pages throw `ListingsUnavailableError` after one retry so ISR keeps the last good copy. A cold miss is HTTP 500 + noindex. `CommunityDegraded` is deleted. `ci:sitemap-url-health` is in the gates chain. Live Tetherow 200, 11 SFR homes, self-canonical, real tiles. Sunriver condos 200, 28 listings.
 
 **Not this change.** Do not send. Do not apply hosted SQL.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `AGENTS.md` CORE RULES.
+
 
 ## Earlier — 2026-10-14 (Cursor, make main CI green)
 
