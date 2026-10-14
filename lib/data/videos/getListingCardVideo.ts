@@ -52,7 +52,9 @@ export async function getListingCardVideo(listingKey: string): Promise<ListingCa
   const key = parsed.data.listingKey
   // v2 2026-09-25: Vimeo srcs carry the unlisted-video privacy hash (v1 could
   // hold a hashless src, which the player refuses to play).
-  const cached = unstable_cache(() => resolveCardVideo(key), ['listing-card-video-v2', key], {
+  // v3 2026-10-14: srcs are cleanListingMediaUrl's (a SafeLinks-wrapped
+  // YouTube or Vimeo now resolves to its player instead of a watch link).
+  const cached = unstable_cache(() => resolveCardVideo(key), ['listing-card-video-v3', key], {
     revalidate: CACHE_WINDOWS.videos,
     tags: [cacheTag.listing(key), cacheTag.videos],
   })

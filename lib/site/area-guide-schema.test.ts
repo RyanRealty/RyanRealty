@@ -64,12 +64,13 @@ describe('areaGuideVideoSchema', () => {
     expect(String(ld.url)).toMatch(/\/communities\/tetherow$/)
   })
 
-  it('is the file alone when the cut is not on the channel', () => {
-    const ld = buildJsonLd(
-      areaGuideVideoSchema('River Meadows', '/subdivisions/river-meadows', { url: 'https://x/rm.mp4' })!,
-    )
-    expect(ld.name).toBe('River Meadows area guide')
-    expect(ld.embedUrl).toBeUndefined()
-    expect(ld.contentUrl).toBe('https://x/rm.mp4')
+  it('emits nothing when the cut is not on the channel (no still, no date: an invalid VideoObject)', () => {
+    expect(areaGuideVideoSchema('River Meadows', '/subdivisions/river-meadows', { url: 'https://x/rm.mp4' })).toBeNull()
+    expect(
+      areaGuideVideoSchema('River Meadows', '/subdivisions/river-meadows', {
+        url: 'https://x/rm.mp4',
+        youtube: { id: 'abcDEF12345', url: 'https://www.youtube.com/watch?v=abcDEF12345', title: null, thumbnailUrl: null, publishedAt: '2025-05-29', durationSeconds: null },
+      }),
+    ).toBeNull()
   })
 })

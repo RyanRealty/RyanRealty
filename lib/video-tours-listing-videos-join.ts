@@ -4,6 +4,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { resolveListingKeyFromRow } from '@/lib/pick-video-from-details'
+import { cleanListingMediaUrl } from '@/lib/listing/listing-media-url'
 
 export const LISTING_VIDEO_SELECT_MAIN =
   'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, City, StreetNumber, StreetName, PhotoURL, StandardStatus, details, ModificationTimestamp, has_virtual_tour, year_built, price_per_sqft'
@@ -93,7 +94,7 @@ export async function fetchVideoRowsViaListingVideosJoin(
   const urlByKey = new Map<string, string>()
   for (const lv of lvRows) {
     const lk = String(lv.listing_key ?? '').trim()
-    const vu = String(lv.video_url ?? '').trim()
+    const vu = cleanListingMediaUrl(String(lv.video_url ?? ''))
     if (lk && vu && !urlByKey.has(lk)) urlByKey.set(lk, vu)
   }
   const keys = [...urlByKey.keys()]
@@ -164,7 +165,8 @@ export function parseVideoListingRowsFromCacheJson(raw: unknown): VideoListingRo
     if (!item || typeof item !== 'object') continue
     const o = item as Record<string, unknown>
     const listing_key = String(o.listing_key ?? '').trim()
-    const video_url = String(o.video_url ?? '').trim()
+    // The cache row was written before 2026-10-14 cleaning; clean on read too.
+    const video_url = cleanListingMediaUrl(String(o.video_url ?? ''))
     if (!listing_key || !video_url) continue
     const src = o.video_source
     if (!isVideoSource(src)) continue

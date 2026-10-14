@@ -50,7 +50,29 @@ Read this before changing any URL, redirect, title, canonical or robots rule.
 - **Structured data (JSON-LD)**
   - **Root**: `RealEstateAgent` (Ryan Realty) and `WebSite` with `SearchAction` (in `components/JsonLd.tsx`).
   - **Search (city/subdivision)**: `WebPage` (with `primaryImageOfPage` when banner exists), `BreadcrumbList`, `Place`, and `ItemList` (first 10 listing URLs).
-  - **Listing**: `Product` + `Offer` + `Place`, plus `image` (first photo), and `BreadcrumbList` (Home → Homes for Sale → City → [optional Neighborhood] → Community → Street Address). Google has no documented rich-result type for `RealEstateListing`; `Product` + `Offer` is the documented path for listing-page enrichment.
+  - **Listing**: `RealEstateListing` (no `Product` node; corrected 2026-10-14) with address, geo, beds, baths, floor size, lot, year built, `availability`, an `Offer` only while the home is on the market, `datePosted` / `dateModified`, the Quick facts as `additionalProperty`, a `Residence` `about`, and `image` (up to 10 gallery photos); plus `BreadcrumbList` (the visible place trail, ending at the street address) and one `VideoObject` per qualifying MLS video tour (see Listing media). Built by `buildListingJsonLd` in `app/listing/[listingKey]/listing-json-ld.ts` through `lib/site/json-ld.ts`. Google has no rich-result type for `RealEstateListing`; the node is there so search engines and answer engines read the facts the page prints.
+
+## Listing media (photos and video tours, 2026-10-14)
+
+What a listing exposes to search engines, and the MLS limits it stays inside.
+
+**Photos.**
+- `/sitemaps/listings.xml` gives each listing URL its lead photo. The whole gallery, up to 30 photos per listing, is in `/sitemaps/listing-photos/{1..24}.xml` (listed by the sitemap index; a listing's part is a stable hash of its ListingKey, about 1.1 to 1.3 MB per file). Same listing set, locs and lastmod as listings.xml. Code: `lib/data/sitemap/listing-photo-sitemap.ts`, `getListingSitemapPhotos.ts`, `app/sitemaps/listing-photos/[part]/route.ts`.
+- Every photo URL is the 1600x1200 render on the MLS's own CDN (Spark), the URL the listing page loads. Nothing is copied.
+- Gallery alt text: the MLS photo Caption leads, exactly as the listing broker wrote it, then the address sentence ("Kitchen with quartz island. 2750 NE Great Horned Place, Bend, OR, photo 3 of 54"). A blank, file-name or number-only caption falls back to "address, city, photo n of N". A caption with an email, phone number or link is withheld, never edited (`publishListingPhotoCaption`).
+- JSON-LD `image` carries the first 10 photos.
+
+**Video tours.**
+- The listing video is the listing broker's work: we link or embed it from its host and never re-host it.
+- Every stored or served video/tour URL passes `cleanListingMediaUrl` (`lib/listing/listing-media-url.ts`): mail-scanner rewrites (Microsoft SafeLinks, Proofpoint, Google and Facebook redirects) are unwrapped to the real link, unreadable wrappers (Mimecast, Cisco, Sophos) are dropped, and no URL carrying an email address ships. A SafeLinks `data` parameter names the recipient, another brokerage's agent; 112 listings carried a wrapper or an email in these fields on 2026-10-14.
+- A `VideoObject` (listing page and `/videos`) and a `/sitemaps/video.xml` entry are emitted only for a YouTube or Vimeo player with a real date: the MLS media record's ModificationTimestamp, or for a listing's only record of a kind stamped with the feed's 1970 sentinel, its latest listing_history `Video` / `VirtualTour` event. Thumbnail: YouTube's own still; for Vimeo, the listing's MLS lead photo. No contentUrl and no Ryan Realty publisher; the description credits the listing brokerage. Code: `lib/listing/listing-video-assembly.ts`, `publish-listing-video-schema.ts`, `lib/data/videos/getListingMlsVideos.ts`.
+- Place pages: the area-guide `VideoObject` (`areaGuideVideoSchema`) is emitted only when complete (YouTube still and publish date). A community is looked up by its public slug and its durable registry key (Juniper Preserve's guide is tagged `pronghorn`).
+
+**MLS limits (Oregon Data Share rules, Aug 2024; `ci:ods-compliance`).**
+- Display and search indexing of IDX listings are allowed. No database handoff or feed to a third party: the sitemaps list our own pages and point at MLS-hosted media.
+- Never modify another broker's listing information. Captions and remarks show as written or not at all; video titles are our own label ("Video tour of {address}"), sourced to the MLS listing and its brokerage.
+- Do not re-host listing photos or videos without license confirmation. Hotlink the Spark CDN.
+- Honor `permit_internet_yn`, `permit_address_internet_yn`, `idx_participant` and `media_suppressed` (no photos, no videos). The public listing views already drop the opt-outs; the media reads check the flags again. Coming Soon never shows.
 
 ## Images & Core Web Vitals
 
@@ -119,7 +141,7 @@ This section is the single reference for how key entities appear in schema.org J
 ### Entities
 
 - **Ryan Realty** — Root `RealEstateAgent` and `WebSite` with `SearchAction` in [components/JsonLd.tsx](components/JsonLd.tsx). Name, areaServed (GeoCircle Central Oregon), sameAs (social URLs when set).
-- **Listings** — Each listing page outputs `Product` + `Offer` + `Place` and `RealEstateListing` with `offeredBy` (RealEstateAgent when ListAgentName/ListOfficeName exist), `amenityFeature` from listings.amenities when present. See [components/listing/ListingJsonLd.tsx](components/listing/ListingJsonLd.tsx). **Important**: All URLs in structured data MUST match the canonical URL generated by `listingDetailPath()` which uses MLS number (ListNumber) + address slug with optional neighborhood hierarchy. Google has no documented rich-result type for `RealEstateListing`; `Product` + `Offer` is the primary enrichment path.
+- **Listings** — Each listing page outputs `RealEstateListing` (with a nested `Offer` while on the market, and `listingAgent` only when a Ryan Realty broker is the listing agent), `BreadcrumbList`, and a `VideoObject` per qualifying MLS video tour. No `Product` node. See [`app/listing/[listingKey]/listing-json-ld.ts`](../app/listing/[listingKey]/listing-json-ld.ts) and [`lib/site/json-ld.ts`](../lib/site/json-ld.ts). **Important**: All URLs in structured data MUST match the canonical URL generated by `listingDetailPath()` which uses MLS number (ListNumber) + address slug with optional neighborhood hierarchy (`listingCanonicalHref`, one expression for the canonical, the sitemap and the JSON-LD).
 - **Brokers** — Team profile pages output `Person`/`RealEstateAgent` with name, image, url, worksFor (brokerage). Brokers table: display_name, title, bio, photo_url, email, phone.
 - **Cities and subdivisions** — Search pages output `WebPage`, `BreadcrumbList`, `Place`, `ItemList`. Resort communities additionally get Resort/GolfCourse/AmenityFeature via [ResortCommunityJsonLd](app/search/[...slug]/ResortCommunityJsonLd.tsx).
 - **Market reports** — Report pages use appropriate schema for Article/Report and BreadcrumbList.

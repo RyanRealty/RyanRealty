@@ -1,7 +1,13 @@
 /**
  * Build embed iframe HTML for YouTube and Vimeo URLs so listing videos play inline.
  * When the MLS provides only a video URL (no ObjectHtml), we can still embed it.
+ *
+ * Every URL that enters here goes through cleanListingMediaUrl first
+ * (2026-10-14): an MLS video link rewritten by a mail scanner (Microsoft
+ * SafeLinks, Proofpoint, Google redirect) is unwrapped to the real target, and
+ * no URL that carries an email address leaves this module.
  */
+import { cleanListingMediaUrl } from '@/lib/listing/listing-media-url'
 
 /** Watch, short, embed, youtu.be — video IDs are 11 chars. */
 const YOUTUBE_REGEX =
@@ -98,6 +104,9 @@ export function parseListingVideoEmbedForTile(urlOrHtml: string): ListingTileVid
     if (extracted) trimmed = extracted
     else return null
   }
+  const cleaned = cleanListingMediaUrl(trimmed)
+  if (!cleaned) return null
+  trimmed = cleaned
   if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) return null
 
   const yt = trimmed.match(YOUTUBE_REGEX)
@@ -125,7 +134,8 @@ export function parseListingVideoEmbedForTile(urlOrHtml: string): ListingTileVid
 
 export function getVideoEmbedHtml(url: string, autoplay = true): string | null {
   if (!url || typeof url !== 'string') return null
-  const trimmed = url.trim()
+  const trimmed = cleanListingMediaUrl(url)
+  if (!trimmed) return null
   const yt = trimmed.match(YOUTUBE_REGEX)
   if (yt) {
     const id = yt[1]
@@ -179,6 +189,12 @@ export function normalizeEmbed(
     else return null
   }
   if (url.startsWith('//')) url = `https:${url}`
+  // Unwrap a mail-scanner rewrite and refuse an email-bearing URL before any
+  // host check, so a SafeLinks-wrapped YouTube embeds as YouTube and a
+  // wrapper the reader cannot decode never ships as a watch link.
+  const cleaned = cleanListingMediaUrl(url)
+  if (!cleaned) return null
+  url = cleaned
   if (!/^https?:\/\//i.test(url)) return null
   const low = url.toLowerCase()
   const hint = (hintSource ?? '').toLowerCase()
