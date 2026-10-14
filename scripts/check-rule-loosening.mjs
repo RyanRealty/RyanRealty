@@ -130,8 +130,10 @@ async function main() {
       parents.push(null)
     }
   }
-  process.removeAllListeners('warning')
-  const { compareResolved } = await import(pathToFileURL(join(resolve(dirname(fileURLToPath(import.meta.url)), '..'), 'lib/content/process/threshold-path.ts')).href)
+  // threshold-path.ts is TypeScript: plain Node reads it only from 22.18, and CI (and a hook run
+  // from it) is on Node 20. So it is read through the repo's tsx (tsImport) on every Node.
+  const { tsImport } = await import('tsx/esm/api')
+  const { compareResolved } = await tsImport(pathToFileURL(join(resolve(dirname(fileURLToPath(import.meta.url)), '..'), 'lib/content/process/threshold-path.ts')).href, import.meta.url)
   const { removedIds, loosened } = looseningProblems(parents[0] ?? null, after, compareResolved, parents.slice(1))
   const lines = []
   if (removedIds.length) {

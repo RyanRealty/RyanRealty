@@ -17,8 +17,8 @@
  * code's behaviour (see the title); IDs are issued once and never reused.
  *
  * Plain TypeScript with no imports: scripts/check-content-rules.mjs imports this
- * file directly (Node strips the types), so keep it free of imports and of
- * syntax that needs a compile step.
+ * file through tsx (CI runs it on Node 20), so keep it free of imports and of
+ * syntax that needs a build step beyond type erasure.
  */
 
 export type DeliverableType = 'video' | 'still' | 'carousel' | 'post_copy' | 'paid_ad'

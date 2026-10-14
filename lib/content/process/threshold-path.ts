@@ -2,8 +2,9 @@
  * lib/content/process/threshold-path.ts - read the number a rule holds, and
  * say whether one reading is looser than another.
  *
- * Plain TypeScript with no imports: scripts/check-content-rules.mjs imports this
- * file directly (Node strips the types), and so does the rules file's own test.
+ * Plain TypeScript with no imports: scripts/check-content-rules.mjs and
+ * scripts/check-rule-loosening.mjs import this file through tsx (CI runs them on
+ * Node 20), and so does the rules file's own test.
  * The data comes in as arguments, so the gate and the code read one definition.
  *
  * A rule's threshold names where its number lives:

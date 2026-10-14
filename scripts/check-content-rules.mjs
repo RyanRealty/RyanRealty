@@ -191,9 +191,11 @@ export function nextBaseline(rules, resolved, previous) {
 }
 
 async function loadReal(root) {
-  // Node strips the types of these files; they import nothing that needs a compile step.
-  process.removeAllListeners('warning')
-  const load = (rel) => import(pathToFileURL(join(root, rel)).href)
+  // The files are TypeScript. Plain Node reads them only from 22.18 (type stripping); CI's
+  // gates job runs Node 20, which throws ERR_UNKNOWN_FILE_EXTENSION. So every Node reads them
+  // the same way, through the repo's tsx (tsImport), and Node 22 proves what Node 20 runs.
+  const { tsImport } = await import('tsx/esm/api')
+  const load = (rel) => tsImport(pathToFileURL(join(root, rel)).href, import.meta.url)
   const [{ RULES, CAPS, UNRATCHETED }, tp, th] = await Promise.all([
     load('lib/content/process/rules.ts'),
     load('lib/content/process/threshold-path.ts'),

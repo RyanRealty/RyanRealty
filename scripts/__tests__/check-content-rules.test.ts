@@ -304,6 +304,18 @@ describe('the real gate against a sandbox of the tree', () => {
     expect(JSON.parse(gate('--json').out).pass).toBe(true)
   })
 
+  it('runs on a Node that cannot read .ts itself, as CI does (Node 20)', () => {
+    fresh()
+    // Node 22.18+ strips types natively; switch that off so this run is Node 20's. The gate reads
+    // its TypeScript itself (through tsx), or it dies with ERR_UNKNOWN_FILE_EXTENSION.
+    const noStrip = process.features?.typescript ? ['--no-experimental-strip-types'] : []
+    const r = spawnSync(process.execPath, [...noStrip, at('scripts/check-content-rules.mjs')], { encoding: 'utf8', cwd: sandbox })
+    const out = `${r.stdout}${r.stderr}`
+    expect(out).not.toMatch(/ERR_UNKNOWN_FILE_EXTENSION/)
+    expect(r.status, out).toBe(0)
+    expect(out).toMatch(/ci:content-rules OK/)
+  })
+
   it('fails a loosened number, names the rule, and still exits 0 with --report', () => {
     fresh()
     const rule = ruleHolding('defaults.min_hold_s')

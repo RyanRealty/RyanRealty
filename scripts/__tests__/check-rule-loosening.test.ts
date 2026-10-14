@@ -140,10 +140,10 @@ describe('the commit-msg hook against a throwaway repository', () => {
     writeFileSync(file(), `${JSON.stringify(b, null, 2)}\n`)
     repo.git('add', BASELINE)
   }
-  function hook(message: string) {
+  function hook(message: string, nodeFlags: string[] = []) {
     const msg = join(dir, 'COMMIT_EDITMSG')
     writeFileSync(msg, message)
-    const r = spawnSync(process.execPath, [SCRIPT, msg], { encoding: 'utf8', env: repo.env, cwd: repo.work })
+    const r = spawnSync(process.execPath, [...nodeFlags, SCRIPT, msg], { encoding: 'utf8', env: repo.env, cwd: repo.work })
     return { status: r.status, out: `${r.stdout}${r.stderr}` }
   }
 
@@ -170,6 +170,20 @@ describe('the commit-msg hook against a throwaway repository', () => {
     expect(r.out).toMatch(/R-002: .*audio\.lufsMin: -15 -> -18/)
     expect(r.out).toMatch(/Approved-by: matt/)
     expect(r.out).toMatch(/Rule-loosened: R-002/)
+  })
+
+  it('judges a number on a Node that cannot read .ts itself, as CI and a hook on Node 20 run it', () => {
+    // Node 22.18+ strips types natively; switch that off so this run is Node 20's. The hook
+    // reads threshold-path.ts itself (through tsx), or it dies with ERR_UNKNOWN_FILE_EXTENSION.
+    const noStrip = process.features?.typescript ? ['--no-experimental-strip-types'] : []
+    const b = clone(base())
+    b.thresholds['R-002'].value = -18
+    stage(b)
+    const refused = hook('loosen loudness', noStrip)
+    expect(refused.out).not.toMatch(/ERR_UNKNOWN_FILE_EXTENSION/)
+    expect(refused.status).toBe(1)
+    expect(refused.out).toMatch(/R-002: .*audio\.lufsMin: -15 -> -18/)
+    expect(hook('loosen loudness\n\nApproved-by: matt\nRule-loosened: R-002\n', noStrip).status).toBe(0)
   })
 
   it('lets a looser number through with Approved-by: matt and the rule named', () => {
