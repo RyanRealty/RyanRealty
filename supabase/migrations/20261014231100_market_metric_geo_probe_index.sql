@@ -1,0 +1,28 @@
+-- Index for the Market Truth neighborhood slug probe (resolveNeighborhoodMetricSlug,
+-- lib/data/market-truth/neighborhood-metric-slug.ts), read by every
+-- /cities/{city}/{neighborhood} render and by getGeoSnapshot's neighborhood path.
+--
+-- THE COST. The probe asks "does any mt-v1 row exist for these two slugs":
+--   select geo_slug from market_metric
+--   where definition_id = 'mt-v1' and geo_type = 'neighborhood'
+--     and geo_slug = any('{crooked-river-ranch,terrebonne-crooked-river-ranch}')
+-- No index leads with geo_type: the primary key leads with stat_id and
+-- market_metric_lookup_idx is partial (WHERE is_publishable), which the probe
+-- does not filter on. Production's auto_explain (2026-10-14, threshold 10 s)
+-- logged the plan as an Index Only Scan on market_metric_pkey whose Index Cond
+-- names only the trailing columns: the whole 190 MB primary key read per probe
+-- (planner cost 46,007; the table holds about 1.52M rows, pg_class). 107 probes
+-- ran longer than 10 s that day (avg 15 s, max 48 s), during the production
+-- builds whose reads timed out, and each one pulled the whole key through a
+-- 1 GB buffer cache.
+--
+-- THE FIX. A btree that leads with the probe's own equality columns, so the
+-- probe is an index-only lookup of the handful of rows for two slugs.
+--
+-- Plain CREATE INDEX, the form the repo records for a transactional replay
+-- (20261009030000_listings_parcel_number_index.sql). It holds a SHARE lock on
+-- market_metric while it builds: reads go on, and the compute jobs' writes to
+-- market_metric wait for the build (seconds, on 1.5M rows of three short text
+-- columns).
+CREATE INDEX IF NOT EXISTS market_metric_geo_probe_idx
+  ON public.market_metric (geo_type, geo_slug, definition_id);
