@@ -1,6 +1,6 @@
 # Current — 2026-10-14 (Cursor, HTML payload budget)
 
-Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `e534ef5a4` (merged, not rebased: #538 city living/cost geo-guard, #528 buyer answers, #533 sitemap, #521 fold). Land path is `gh pr merge 527 --squash` after this PR's own CI. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/html-payload-budget-7682` from origin/main `29fd04d93` (merged, not rebased: #536 /buy slugs, #538 city living/cost, #528 buyer answers, #533 sitemap, #521 fold). Land path is `gh pr merge 527 --squash` after this PR's own CI. Nobody pushes main. Nothing sent.
 
 **What this branch does.** Caps public listing SSR grids at 24 cards (`SSR_GRID_PAGE`; home rails 36). Community fold grid and map homes past 24 load from `GET /api/place/homes`. Search SSR no longer reads cookies (`getSession` / saved / liked); viewer state hydrates after paint so `/homes-for-sale/bend` can use the public `s-maxage=60` header. Listing media flight capped at 24 photos. `ci:page-payload` shrink-only ratchet plus a 200 KB hard fail when serialized unique listing cards exceed one grid page. Community fold layout from #521 is kept; only the card cap is ours. #528/#538 buyer-answer routes and #533 listing-index / sitemap policy are taken from main as-is.
 
