@@ -8,7 +8,7 @@ row into `twilio_webhook_raw_events`, return TwiML/200. CRM, DNC clear, STOP
 run after ack or `/api/cron/twilio-webhook-replay`. Gate `ci:twilio-webhook-ack`.
 Hosted migration applied. Founding: 11200/11203 SM872130d80ef66b91a9a3f1bd837eb53e.
 
-Next: rebase on origin/main, PR auto-merge, production READY, signed POST 200.
+Next: second commit (tsc types + G16 snapshot), push, PR auto-merge, production READY, signed POST 200.
 
 Skills read: database-canonical-reference, crm-up-to-snuff.
 

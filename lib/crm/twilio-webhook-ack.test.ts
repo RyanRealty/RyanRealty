@@ -10,13 +10,33 @@ const {
   markTwilioRawEventProcessed,
   markTwilioRawEventError,
   listUnprocessedTwilioRawEvents,
-} = vi.hoisted(() => ({
-  insertTwilioRawEvent: vi.fn(async () => ({ ok: true as const, id: 11, persisted: true as const })),
-  claimTwilioRawEvent: vi.fn(async () => true),
-  markTwilioRawEventProcessed: vi.fn(async () => {}),
-  markTwilioRawEventError: vi.fn(async () => {}),
-  listUnprocessedTwilioRawEvents: vi.fn(async () => []),
-}))
+} = vi.hoisted(() => {
+  type PersistOk = { ok: true; id: number; persisted: true }
+  type PersistFail = { ok: false; persisted: false; error: string }
+  return {
+    insertTwilioRawEvent: vi.fn(async (_row?: { kind: string; providerSid: string; payload: Record<string, string> }): Promise<PersistOk | PersistFail> => ({
+      ok: true,
+      id: 11,
+      persisted: true,
+    })),
+    claimTwilioRawEvent: vi.fn(async () => true),
+    markTwilioRawEventProcessed: vi.fn(async () => {}),
+    markTwilioRawEventError: vi.fn(async () => {}),
+    listUnprocessedTwilioRawEvents: vi.fn(async (): Promise<
+      Array<{
+        id: number
+        kind: 'inbound-sms' | 'voice' | 'voice-complete' | 'recording'
+        provider_sid: string
+        payload: Record<string, string>
+        received_at: string
+        processed_at: string | null
+        processing_started_at: string | null
+        process_attempts: number
+        last_error: string | null
+      }>
+    > => []),
+  }
+})
 
 vi.mock('@/lib/data/crm/twilioRawEvents', () => ({
   insertTwilioRawEvent,

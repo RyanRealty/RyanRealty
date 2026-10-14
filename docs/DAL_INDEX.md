@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-10-14T22:42:11.665Z
+**Generated:** 2026-10-14T23:20:19.470Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -2581,6 +2581,16 @@ Companion files:
 **Tables:** `email_events`
 
 **Selected columns:** `email_key`, `event`, `occurred_at`, `person_id`
+
+---
+
+### `lib/data/crm/twilioRawEvents.ts`
+
+**Exports:** `TWILIO_RAW_PERSIST_MS`, `TWILIO_RAW_STALE_LOCK_MS`, `insertTwilioRawEvent`, `listUnprocessedTwilioRawEvents`, `claimTwilioRawEvent`, `markTwilioRawEventProcessed`, `markTwilioRawEventError`, `findTwilioRawEvent`
+
+**Tables:** `twilio_webhook_raw_events`
+
+**Selected columns:** `id`, `kind`, `provider_sid`, `payload`, `received_at`, `processed_at`, `processing_started_at`, `process_attempts`, `last_error`
 
 ---
 
@@ -5769,6 +5779,7 @@ Companion files:
 | `tc_offers` | `listDealAudits()`, `getDealParties()`, `inboundReferralFeePctForDeal()`, `ensureDealPartiesFromFile()`, `peopleEmailsByNames()`, `getDealsForPerson()`, `getPartyNamesByDealIds()`, `linkUniqueCycleParties()`, `addPersonToDeal()`, `removePersonFromDeal()`, `createDealWithPeople()`, `listDealOffers()`, `getDealOffer()`, `getLatestSaleCycle()` <br /> `lib/data/tc/deal-audit.ts` · `lib/data/tc/deal-people.ts` · `lib/data/tc/listDealOffers.ts` |
 | `tc_principal_reviews` | `listDealAudits()` <br /> `lib/data/tc/deal-audit.ts` |
 | `tc_tasks` | `getClientIdentity()`, `hasClientDeals()`, `listClientDeals()`, `getClientDeal()`, `clientDocumentUrl()`, `getPortalSigningRecipient()`, `listDealTasks()`, `listFileDeadlineTasks()` <br /> `lib/data/tc/client-transactions.ts` · `lib/data/tc/task-reads.ts` |
+| `twilio_webhook_raw_events` | `TWILIO_RAW_PERSIST_MS()`, `TWILIO_RAW_STALE_LOCK_MS()`, `insertTwilioRawEvent()`, `listUnprocessedTwilioRawEvents()`, `claimTwilioRawEvent()`, `markTwilioRawEventProcessed()`, `markTwilioRawEventError()`, `findTwilioRawEvent()` <br /> `lib/data/crm/twilioRawEvents.ts` |
 | `user_events` | `filtersToParamMap()`, `otherFilterChips()`, `enabledEventTypes()`, `summarizeAreaShapes()`, `activityLabel()`, `toClientPortalAlert()`, `collectAreaIds()`, `getClientPortalView()` <br /> `lib/data/crm/getClientPortalView.ts` |
 | `valuation_requests` | `getDeltaSyncCursor()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `setListingFreezeFlags()`, `getAdminOverrideFlags()`, `getHeldMediaByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()` <br /> `lib/data/sync/syncWrites.ts` |
 | `video_tours_cache` | `getDeltaSyncCursor()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `setListingFreezeFlags()`, `getAdminOverrideFlags()`, `getHeldMediaByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()`, `getRecentListingVideoRows()`, `getVideoToursCacheListings()`, `getAnyListingVideoRows()`, `fetchListingVideosUncached()`, `getListingVideos()` <br /> `lib/data/sync/syncWrites.ts` · `lib/data/videos/getListingVideoRows.ts` · `lib/data/videos/getListingVideos.ts` |

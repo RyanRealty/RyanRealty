@@ -79,11 +79,13 @@ export async function withAckBudget<T>(promise: Promise<T>, ms: number, fallback
   }
 }
 
-export function scheduleAfterAck(work: () => Promise<void>): void {
-  const run = () =>
-    work().catch((err) => {
-      console.error('[twilio-webhook] after-ack failed', err)
-    })
+export function scheduleAfterAck(work: () => Promise<unknown>): void {
+  const run = (): Promise<void> =>
+    Promise.resolve(work())
+      .then(() => undefined)
+      .catch((err) => {
+        console.error('[twilio-webhook] after-ack failed', err)
+      })
   try {
     after(run)
     return
