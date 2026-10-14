@@ -58,6 +58,17 @@ describe('filterRogueCityUrls (W1.3/P0.3 output-based drift backstop)', () => {
     expect(filterRogueCityUrls([{ url: '//ryan-realty.com/cities/redmond/canyon-rim' }], allowed).length).toBe(1)
   })
 
+  it('keeps each registered city buyer answer, and still drops an unregistered one', async () => {
+    const { buyerAnswerSitemapPaths } = await import('./buyer-answers/registry')
+    const cityChildren = buyerAnswerSitemapPaths().filter((p) => /^\/cities\/[^/]+\/[^/]+$/.test(p))
+    // The seven live on 2026-10-14: cost, living, buying and from-out-of-state.
+    expect(cityChildren).toEqual(expect.arrayContaining(['/cities/bend/cost', '/cities/redmond/buying', '/cities/bend/from-out-of-state']))
+    const entries = cityChildren.map((path) => ({ url: `${BASE}${path}` }))
+    expect(filterRogueCityUrls(entries, allowed)).toEqual(entries)
+    expect(cityChildren).not.toContain('/cities/madras/cost')
+    expect(filterRogueCityUrls([{ url: `${BASE}/cities/madras/cost` }, { url: rogueTemplate }], allowed)).toEqual([])
+  })
+
   it('keeps sanctioned neighborhood URLs (both with and without a trailing slash)', () => {
     const entries = [
       { url: `${BASE}/cities/bend/larkspur` },
