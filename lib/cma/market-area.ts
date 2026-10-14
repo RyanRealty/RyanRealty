@@ -278,7 +278,9 @@ export function productClass(subType: string | null): ProductClass | null {
     s.includes('duplex') ||
     s.includes('triplex') ||
     s.includes('quadruplex') ||
+    s.includes('quadplex') ||
     s.includes('fourplex') ||
+    s.includes('4-plex') ||
     s.includes('multi family') ||
     s.includes('multi-family')
   ) {
@@ -379,6 +381,87 @@ export function letterProductMatch(
 
 /** D1: detached is this MLS value, not PropertyType A. */
 export const DETACHED_PROPERTY_SUB_TYPE = 'Single Family Residence'
+
+/**
+ * THE 2-4 UNIT PRODUCT (Matt 2026-10-14, the multi-unit ladder). A duplex,
+ * triplex or fourplex is priced from closed sales of the same kind of building,
+ * never from single-family sales (rule 23). These readers name that product
+ * for the ladder, the letter and the listings reads, which pin PropertyType C
+ * for it the way they pin A for a house.
+ */
+export function isMultiUnitSubType(subType: string | null | undefined): boolean {
+  return productClass(subType ?? null) === 'multi-2-4'
+}
+
+/** The unit count an MLS 2-4 unit sub type names. Null for Multi Family and any other value. */
+export function unitsFromSubType(subType: string | null | undefined): number | null {
+  const s = (subType ?? '').toLowerCase()
+  if (!s) return null
+  if (s.includes('duplex')) return 2
+  if (s.includes('triplex')) return 3
+  if (s.includes('quadruplex') || s.includes('fourplex') || s.includes('quadplex') || s.includes('4-plex')) return 4
+  return null
+}
+
+/**
+ * The MLS sub types a letter's competition, came-off and listing-window reads
+ * admit for a 2-4 unit home: the ones that name their count. A Multi Family
+ * row names none, and in this MLS it is mostly an apartment building, so
+ * those reads leave it out (the comp ladder reads its NumberOfUnitsTotal
+ * instead, lib/cma/comps.ts).
+ */
+export const MULTI_UNIT_COMP_SUB_TYPES = ['Duplex', 'Triplex', 'Quadruplex'] as const
+
+/** The MLS 2-4 unit sub type for a unit count; Multi Family when the count is unknown. */
+export function multiUnitSubTypeFor(units: number | null | undefined): string {
+  if (units === 2) return 'Duplex'
+  if (units === 3) return 'Triplex'
+  if (units === 4) return 'Quadruplex'
+  return 'Multi Family'
+}
+
+export type MultiUnitNoun = 'duplex' | 'triplex' | 'fourplex' | 'multi-unit home'
+
+/** What a letter calls a 2-4 unit subject. Null for every other product. */
+export function multiUnitNoun(subType: string | null | undefined): MultiUnitNoun | null {
+  if (!isMultiUnitSubType(subType)) return null
+  const units = unitsFromSubType(subType)
+  if (units === 2) return 'duplex'
+  if (units === 3) return 'triplex'
+  if (units === 4) return 'fourplex'
+  return 'multi-unit home'
+}
+
+/** The plural a letter prints for a product noun: townhouses, condos, duplexes, homes. */
+export function productNounPlural(noun: string | null | undefined): string {
+  switch ((noun ?? '').trim().toLowerCase()) {
+    case 'townhouse':
+      return 'townhouses'
+    case 'condo':
+      return 'condos'
+    case 'duplex':
+      return 'duplexes'
+    case 'triplex':
+      return 'triplexes'
+    case 'fourplex':
+      return 'fourplexes'
+    case 'multi-unit home':
+      return 'multi-unit homes'
+    default:
+      return 'homes'
+  }
+}
+
+/**
+ * The MLS segment letter the listings reads pin for this product: C
+ * (Residential Income) for a 2-4 unit home, A (Residential) for everything
+ * else here. Land keeps its own D read in lib/cma/comps.ts. A duplex pulled
+ * against A returns the few duplexes typed as houses, which is how a duplex
+ * subject once had no pool at all.
+ */
+export function compPoolPropertyType(subType: string | null | undefined): 'A' | 'C' {
+  return isMultiUnitSubType(subType) ? 'C' : 'A'
+}
 
 /**
  * `property_sub_type` the comps SQL should eq. Detached always pins D1 SFR.

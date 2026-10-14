@@ -11,6 +11,7 @@ import {
 } from './resolve-photo'
 
 const NAVY = '#102742'
+const CREAM = '#faf8f4'
 
 const OG_CACHE =
   'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800'
@@ -64,15 +65,18 @@ export function withOgCache(image: ImageResponse): ImageResponse {
 
 /**
  * 1200×630 share image: the photo, a subtle navy tint along the bottom
- * edge, and the real wordmark. No title or price overlay — iMessage and
- * Slack already print og:title under the image.
+ * edge (so iMessage's auto-sampled bar leans #102742), and the real
+ * wordmark. No title overlay — the preview bar already prints og:title.
+ * Listings may add a small price · beds/baths chip when it stays short.
  */
 export function renderShareCard(input: {
   photoSrc?: string | null
   fallback?: OgPhotoKind
+  chip?: string | null
 }): ImageResponse {
   const photo = resolveCardPhotoSrc(input.photoSrc, input.fallback ?? 'default')
   const logo = ogLogoSrc()
+  const chip = input.chip?.trim() || ''
 
   return withOgCache(
     new ImageResponse(
@@ -105,22 +109,42 @@ export function renderShareCard(input: {
               left: 0,
               bottom: 0,
               width: OG_IMAGE_WIDTH,
-              height: 180,
+              height: 200,
               display: 'flex',
               backgroundImage:
-                'linear-gradient(180deg, rgba(16,39,66,0) 0%, rgba(16,39,66,0.42) 100%)',
+                'linear-gradient(180deg, rgba(16,39,66,0) 0%, rgba(16,39,66,0.28) 50%, rgba(16,39,66,0.62) 100%)',
             }}
           />
           <div
             style={{
               display: 'flex',
               alignItems: 'flex-end',
+              justifyContent: 'space-between',
               width: '100%',
               height: '100%',
               padding: '0 48px 36px',
             }}
           >
             <img src={logo} alt="" width={240} height={48} />
+            {chip ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '10px 18px',
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(16,39,66,0.88)',
+                  color: CREAM,
+                  fontSize: 24,
+                  fontWeight: 600,
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.1,
+                  whiteSpace: 'pre',
+                }}
+              >
+                {chip.replace(/ /g, '\u00A0')}
+              </div>
+            ) : null}
           </div>
         </div>
       ),

@@ -352,6 +352,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   const { classifyStory } = await import('@/lib/pricing/classes')
   const { checkDateAdjustments } = await import('@/lib/pricing/market-path')
   const { getPricingMarketIndex } = await import('@/lib/data/pricing/facts')
+  const { pricingMarketFor } = await import('@/lib/cma/subject-units')
   const { citySlug } = await import('@/lib/pricing/classes')
   const { getCmaMarketContext } = await import('@/lib/cma/market')
   const { evaluateAccuracyContract } = await import('@/lib/cma/contract')
@@ -519,7 +520,8 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
 
   // The index is a fact about the CITY, not about which ladder found the sales
   // (lib/cma/build.ts step 4). This script mirrored the old facts-only load.
-  const marketIndex = await getPricingMarketIndex(citySlug(subject.city))
+  // A 2-4 unit home is not moved by the single-family index (lib/cma/build.ts, 2026-10-14).
+  const marketIndex = subject.multiUnit ? [] : await getPricingMarketIndex(citySlug(subject.city))
   // EXACTLY the branch lib/cma/build.ts takes (step 4, `usePath`). Before
   // 2026-09-08 this script always took the year-over-year `adjustComps` path,
   // so its date adjustments were not the ones the document prints and the R2d
@@ -594,13 +596,20 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
             exclusivePocket: true, pocketLocal,
           }).adjusted,
         )
-      : adjustComps(subject, selection.comps, market)
+      : adjustComps(subject, selection.comps, pricingMarketFor(subject, market))
   let pricing = priceCmaSet({
-    subject, adjusted, market, input: {}, site: null,
+    subject, adjusted,
+    // Nor by the market context's single-family year-over-year figure (lib/cma/build.ts).
+    market: pricingMarketFor(subject, market),
+    input: {}, site: null,
     selection: { pricingSales: selection.pricingSales ?? [], tiersUsed: selection.tiersUsed ?? [] },
     marketIndex, asOf,
     indexUnavailableReason:
-      marketIndex.length > 0 ? null : `no monthly index rows for ${citySlug(subject.city) || 'this city'}`,
+      marketIndex.length > 0
+        ? null
+        : subject.multiUnit
+          ? 'the city index and the year-over-year figure measure single-family homes, so a 2-4 unit home\'s sales are not moved for their date'
+          : `no monthly index rows for ${citySlug(subject.city) || 'this city'}`,
     computePricing,
     holdFailedAskUnderSaleSet: true,
     pocketLocal: exclusivePocket ? pocketLocal : undefined,

@@ -18,7 +18,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { readRrSessionId } from '@/lib/tracking'
+import { readRrSessionId, trackEvent } from '@/lib/tracking'
 
 export function ListingFoldActions({
   listingKey,
@@ -36,7 +36,11 @@ export function ListingFoldActions({
 
   return (
     <div className="listing-face__fold" id="listing-fold-actions">
-      <a className="listing-face__fold-action" href={askHref}>
+      <a
+        className="listing-face__fold-action"
+        href={askHref}
+        onClick={() => trackEvent('ask_question_click', { listing_key: listingKey, surface: 'listing_fold' })}
+      >
         Talk to a broker
       </a>
       <a
@@ -49,7 +53,11 @@ export function ListingFoldActions({
       >
         Watch this price
       </a>
-      <a className="listing-face__fold-action listing-face__fold-action--primary" href={walkHref}>
+      <a
+        className="listing-face__fold-action listing-face__fold-action--primary"
+        href={walkHref}
+        onClick={() => trackEvent('schedule_tour_click', { listing_key: listingKey, surface: 'listing_fold' })}
+      >
         Walk through it
       </a>
       <ListingWatchPriceSheet

@@ -114,6 +114,10 @@ describe('listChangedFiles (no prev): the commit asked for, a merge against its 
       cwd: dir,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      // Pre-commit sets GIT_DIR / GIT_INDEX_FILE to this repo; a temp repo must not inherit them.
+      env: Object.fromEntries(
+        Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
+      ),
     }).trim()
   const commit = (file, msg) => {
     mkdirSync(join(dir, file, '..'), { recursive: true })

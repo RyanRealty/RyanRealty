@@ -22,6 +22,9 @@ import {
   HOLD_LABEL,
   HOLD_LABEL_COLOR,
   HOLD_LABEL_DESCRIPTION,
+  KEEP_BRANCH_LABEL,
+  KEEP_BRANCH_LABEL_COLOR,
+  KEEP_BRANCH_LABEL_DESCRIPTION,
   STALE_LABEL,
   STALE_LABEL_COLOR,
   STALE_LABEL_DESCRIPTION,
@@ -31,6 +34,7 @@ import {
   shouldApplyTitleHold,
   shouldQueueAutoMerge,
   shouldRemoveHoldLabel,
+  shouldStampApprovedLabel,
 } from './lib/pr-housekeeping.mjs'
 
 function gh(args) {
@@ -98,14 +102,20 @@ function applyTitleHolds(approvedNumbers) {
   if (!listed.ok) fail(listed.stderr || 'gh pr list failed')
   const prs = JSON.parse(listed.stdout || '[]')
   for (const pr of prs) {
-    if (
-      !shouldApplyTitleHold({
-        title: pr.title,
-        labels: pr.labels,
-        number: pr.number,
-        approvedNumbers,
-      })
-    ) {
+    const decision = {
+      title: pr.title,
+      labels: pr.labels,
+      number: pr.number,
+      approvedNumbers,
+    }
+    if (shouldStampApprovedLabel(decision)) {
+      const stamped = gh(['pr', 'edit', String(pr.number), '--add-label', APPROVED_LABEL])
+      if (stamped.ok) {
+        console.log(`#${pr.number} labeled ${APPROVED_LABEL} from ${APPROVED_PRS_PATH}`)
+        decision.labels = [...(pr.labels || []), { name: APPROVED_LABEL }]
+      }
+    }
+    if (!shouldApplyTitleHold(decision)) {
       continue
     }
     const add = gh(['pr', 'edit', String(pr.number), '--add-label', HOLD_LABEL])
@@ -140,6 +150,17 @@ function handlePr(number, approvedNumbers) {
     title: pr.title,
     number: pr.number,
     approvedNumbers,
+  }
+  if (shouldStampApprovedLabel(decision)) {
+    const stamped = gh(['pr', 'edit', String(number), '--add-label', APPROVED_LABEL])
+    if (stamped.ok) {
+      console.log(`#${number} labeled ${APPROVED_LABEL} from ${APPROVED_PRS_PATH}`)
+      decision.labels = [...(pr.labels || []), { name: APPROVED_LABEL }]
+    } else {
+      console.error(
+        `#${number} could not add ${APPROVED_LABEL}: ${stamped.stderr || stamped.stdout}`.trim(),
+      )
+    }
   }
   if (shouldRemoveHoldLabel(decision)) {
     const removed = gh(['pr', 'edit', String(number), '--remove-label', HOLD_LABEL])
@@ -188,6 +209,7 @@ if (args.ensureLabels || args.applyTitleHolds || args.pr) {
   ensureLabel(HOLD_LABEL, HOLD_LABEL_COLOR, HOLD_LABEL_DESCRIPTION)
   ensureLabel(APPROVED_LABEL, APPROVED_LABEL_COLOR, APPROVED_LABEL_DESCRIPTION)
   ensureLabel(STALE_LABEL, STALE_LABEL_COLOR, STALE_LABEL_DESCRIPTION)
+  ensureLabel(KEEP_BRANCH_LABEL, KEEP_BRANCH_LABEL_COLOR, KEEP_BRANCH_LABEL_DESCRIPTION)
 }
 if (args.applyTitleHolds) applyTitleHolds(approvedNumbers)
 if (args.pr) handlePr(args.pr, approvedNumbers)

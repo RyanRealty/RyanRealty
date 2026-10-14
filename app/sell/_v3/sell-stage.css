@@ -629,3 +629,22 @@
   justify-self: start;
   white-space: normal;
 }
+
+/* The commission guide door under the 3% plan (AIV c2, 2026-10-09). */
+.v3 .sell-plan-more {
+  max-width: var(--v3-measure, 68ch);
+  margin: 0 auto;
+  padding: 0 var(--v3-gutter, 1.25rem) 2rem;
+}
+/* `color` on a bare `a` lives in @layer base so Tailwind's utilities layer
+   keeps winning (ci:css-layers). */
+@layer base {
+  .v3 .sell-plan-more a {
+    color: var(--v3-ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--v3-tap);
+  }
+}

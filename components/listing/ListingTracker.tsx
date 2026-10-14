@@ -54,9 +54,10 @@ export default function ListingTracker({ listingKey, listingId, price, community
       milestones.forEach((m) => {
         if (pct >= m && !scrollMilestones.current.has(m)) {
           scrollMilestones.current.add(m)
-          trackEvent('scroll_depth', { listing_key: listingKey, depth_percent: m })
-          // W1.3: dual-sink to the first-party store so per-person scroll depth
-          // on listing-detail pages is visible in the CRM (GA4-only before).
+          // First-party only. GA4's scroll_depth comes from V3SectionTracker,
+          // which runs on every public page including this one; a second push
+          // here sent two scroll_depth per quartile (live test 2026-10-14).
+          // W1.3: per-person scroll depth on listing-detail pages in the CRM.
           fireFirstPartyEvent('scroll_depth', {
             listingMls: listingId,
             scrollDepthPct: m,
@@ -77,7 +78,9 @@ export default function ListingTracker({ listingKey, listingId, price, community
       times.forEach((s) => {
         if (elapsed >= s && !timeMilestones.current.has(s)) {
           timeMilestones.current.add(s)
-          trackEvent('scroll_depth', { listing_key: listingKey, time_on_page_seconds: s })
+          // Time on page is dwell, not scroll_depth: sent as scroll_depth it
+          // reached GA4 with no depth and no time (2026-10-14 audit).
+          trackEvent('dwell', { listing_key: listingKey, seconds: s })
         }
       })
     }, 5000)

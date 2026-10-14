@@ -92,7 +92,7 @@ import {
   letterIsFrozen,
   unsoldPeersFor,
 } from '@/lib/cma/matrix-sets'
-import { letterProductMatch, productClass } from '@/lib/cma/market-area'
+import { isMultiUnitSubType, letterProductMatch, productClass } from '@/lib/cma/market-area'
 import { realSubdivisionName } from '@/lib/pricing/classes'
 import { namedSalesPlace, salesAreaIsBounded } from '@/lib/pricing/comp-area'
 import {
@@ -1581,9 +1581,9 @@ export function streetSaleMonth(closeDate: string | null | undefined): string {
  * table the blueprint cut.
  */
 function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): string {
-  // The street count is closed single-family sales. A townhouse or condo
-  // letter does not print that line and call it this home.
-  if (productClass(a.subject.propertySubType) === 'attached') return ''
+  // The street count is closed single-family sales. A townhouse, condo or
+  // duplex letter does not print that line and call it this home.
+  if (productClass(a.subject.propertySubType) === 'attached' || isMultiUnitSubType(a.subject.propertySubType)) return ''
   const f = a.subdivisionStory?.facts
   const name = cleanText(f?.name ?? null)
   if (!f || !name || !(f.totalSales > 0)) return ''

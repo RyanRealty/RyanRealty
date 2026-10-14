@@ -4,6 +4,8 @@ import { listingMlsFromPath, pageTypeFromPath, visitorPageCategoryFromPath } fro
 describe('pageTypeFromPath', () => {
   it('maps the live public surfaces', () => {
     expect(pageTypeFromPath('/')).toBe('home')
+    // The prerendered home page renders with pathname /index (live HTML 2026-10-14).
+    expect(pageTypeFromPath('/index')).toBe('home')
     expect(pageTypeFromPath('/homes-for-sale/bend/awbrey-butte')).toBe('search')
     expect(pageTypeFromPath('/homes-for-sale/bend/some-street-220215519')).toBe('listing')
     expect(pageTypeFromPath('/cities/bend')).toBe('city')

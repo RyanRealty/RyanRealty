@@ -209,7 +209,37 @@ if (!container) {
     gtm.triggers = (live.trigger || []).length
     gtm.variables = (live.variable || []).length
     const ga4Tags = (live.tag || []).filter((t) => t.type === 'googtag' || t.type === 'gaawc')
-    if (ga4Tags.length !== 1) finding('FAIL', 'gtm', `Live container has ${ga4Tags.length} Google tags for GA4; it must have exactly 1 (it owns page_view).`)
+    if (ga4Tags.length !== 1) finding('FAIL', 'gtm', `Live container has ${ga4Tags.length} Google tags for GA4; it must have exactly 1.`)
+    // ONE page_view sender (docs/analytics/README.md "page_view"). Either the
+    // Google tag sends it (send_page_view on, enhanced measurement's history
+    // page views on) or, since GTM version 9, the "GA4 - page_view" tag on the
+    // dataLayer push (send_page_view false, history page views off). Any other
+    // mix sends none or two per page.
+    const param = (t, key) => (t.parameter || []).find((p) => p.key === key)
+    const configRows = (t) =>
+      (param(t, 'configSettingsTable')?.list || []).map((row) => Object.fromEntries((row.map || []).map((m) => [m.key, m.value])))
+    const googleTag = ga4Tags[0]
+    // googtag: configSettingsTable row send_page_view=false. Legacy gaawc: the sendPageView checkbox.
+    const googleTagSendsPageView = !googleTag
+      ? false
+      : googleTag.type === 'gaawc'
+        ? String(param(googleTag, 'sendPageView')?.value ?? 'true').toLowerCase() !== 'false'
+        : !configRows(googleTag).some((r) => r.parameter === 'send_page_view' && String(r.parameterValue).toLowerCase() === 'false')
+    const pageViewTags = (live.tag || []).filter((t) => t.type === 'gaawe' && param(t, 'eventName')?.value === 'page_view')
+    const stream = Array.isArray(cfg.streams) ? cfg.streams.find((s) => s.measurementId === 'G-ST40W4WM6T') : null
+    const pageChanges = stream && !isErr(stream.enhancedMeasurement) ? stream.enhancedMeasurement?.pageChangesEnabled : undefined
+    const historyPageViews = typeof pageChanges === 'boolean' ? pageChanges : null
+    gtm.pageViewOwner = googleTagSendsPageView ? 'google tag' : pageViewTags.length ? pageViewTags.map((t) => t.name).join(', ') : 'none'
+    gtm.historyPageViews = historyPageViews
+    if (googleTagSendsPageView && pageViewTags.length)
+      finding('FAIL', 'gtm', `Two page_view senders: the Google tag and ${pageViewTags.map((t) => `"${t.name}"`).join(', ')}. Set send_page_view false on the Google tag or remove the tag.`)
+    else if (!googleTagSendsPageView && pageViewTags.length === 0)
+      finding('FAIL', 'gtm', 'No page_view sender: the Google tag has send_page_view false and no GA4 Event tag sends page_view.')
+    else if (pageViewTags.length > 1) finding('FAIL', 'gtm', `${pageViewTags.length} GA4 Event tags send page_view; one is the rule.`)
+    else if (!googleTagSendsPageView && historyPageViews === true)
+      finding('FAIL', 'ga4', 'Enhanced measurement "page changes based on browser history events" is on while the dataLayer owns page_view: every client-side navigation and every ?bbox= map move counts twice. Turn it off in GA4 Admin > Data streams.')
+    else if (googleTagSendsPageView && historyPageViews === false)
+      finding('WARN', 'ga4', 'The Google tag owns page_view but enhanced measurement history page views are off: client-side navigations send no page_view.')
     const regexTrigger = (live.trigger || []).find((t) => t.name === 'CE - GA4 browser events')
     const regex = regexTrigger?.customEventFilter?.[0]?.parameter?.find((p) => p.key === 'arg1')?.value || ''
     const live_names = new Set((regex.match(/^\^\((.*)\)\$$/)?.[1] || '').split('|').filter(Boolean))

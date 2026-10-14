@@ -243,7 +243,16 @@ export function HomeHeroSearch({
           placeholder="Bend, Tetherow, or an address"
           items={morphItems}
           onQueryChange={setQuery}
-          onSelect={(item) => go(item.id)}
+          onSelect={(item) => {
+            // Picking a suggestion is a search too (V3ChromeSearch does the same);
+            // only a typed-and-submitted query reached onBuySubmit's event.
+            try {
+              trackEvent('search', { surface: 'home_hero', search_term: item.title })
+            } catch {
+              // tracking optional
+            }
+            go(item.id)
+          }}
           {...(wide
             ? {
                 panelMaxWidth: 1040,

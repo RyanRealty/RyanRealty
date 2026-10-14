@@ -87,6 +87,22 @@ export function listingHasSharePhoto(photoUrl: string | null | undefined): boole
 }
 
 /**
+ * Small price · beds/baths chip on the listing card. Address stays in
+ * og:title (the preview bar). Skip when there is nothing to print, or
+ * when the line would be too long to stay a chip.
+ */
+const LISTING_CHIP_MAX = 36
+
+export function listingShareChip(listing: ListingShareFields): string | undefined {
+  const parts = [publishedPriceText(listing), bedBathFacts(listing)].filter(
+    (part): part is string => Boolean(part),
+  )
+  if (parts.length === 0) return undefined
+  const chip = parts.join(' · ')
+  return chip.length <= LISTING_CHIP_MAX ? chip : undefined
+}
+
+/**
  * Root-relative listing card path. Always the listing type so the image is
  * the MLS hero, or the landscape fallback — never the generic default card.
  */

@@ -17,6 +17,12 @@ import {
   productTypeCompatible,
   keepSameProductType,
   compPoolPropertySubType,
+  compPoolPropertyType,
+  isMultiUnitSubType,
+  multiUnitNoun,
+  multiUnitSubTypeFor,
+  productNounPlural,
+  unitsFromSubType,
   DETACHED_PROPERTY_SUB_TYPE,
   bathCountCompatible,
   marketAreaName,
@@ -274,5 +280,48 @@ describe('productClass — every MLS sub type reaches a class (2026-08-26)', () 
   it('still drops attached product for an unknown subject on soft surfaces', () => {
     expect(keepSameProductType(null, 'Townhouse')).toBe(false)
     expect(keepSameProductType(null, 'Single Family Residence')).toBe(true)
+  })
+})
+
+describe('the 2-4 unit product readers (Matt 2026-10-14, the multi-unit ladder)', () => {
+  it('reads the unit count off the MLS sub type', () => {
+    expect(unitsFromSubType('Duplex')).toBe(2)
+    expect(unitsFromSubType('Triplex')).toBe(3)
+    expect(unitsFromSubType('Quadruplex')).toBe(4)
+    expect(unitsFromSubType('Fourplex')).toBe(4)
+    expect(unitsFromSubType('Multi Family')).toBeNull()
+    expect(unitsFromSubType('Single Family Residence')).toBeNull()
+    expect(unitsFromSubType(null)).toBeNull()
+  })
+
+  it('names the product for the letter, and the segment for the reads', () => {
+    expect(isMultiUnitSubType('Duplex')).toBe(true)
+    expect(isMultiUnitSubType('Multi Family')).toBe(true)
+    expect(isMultiUnitSubType('Townhouse')).toBe(false)
+    expect(multiUnitNoun('Duplex')).toBe('duplex')
+    expect(multiUnitNoun('Quadruplex')).toBe('fourplex')
+    expect(multiUnitNoun('Multi Family')).toBe('multi-unit home')
+    expect(multiUnitNoun('Single Family Residence')).toBeNull()
+    expect(multiUnitSubTypeFor(2)).toBe('Duplex')
+    expect(multiUnitSubTypeFor(4)).toBe('Quadruplex')
+    expect(multiUnitSubTypeFor(null)).toBe('Multi Family')
+    expect(compPoolPropertyType('Duplex')).toBe('C')
+    expect(compPoolPropertyType('Single Family Residence')).toBe('A')
+    expect(compPoolPropertyType(null)).toBe('A')
+  })
+
+  it('pluralises every product noun the letter uses', () => {
+    expect(productNounPlural('townhouse')).toBe('townhouses')
+    expect(productNounPlural('condo')).toBe('condos')
+    expect(productNounPlural('duplex')).toBe('duplexes')
+    expect(productNounPlural('fourplex')).toBe('fourplexes')
+    expect(productNounPlural('multi-unit home')).toBe('multi-unit homes')
+    expect(productNounPlural(null)).toBe('homes')
+  })
+
+  it('a duplex subject still matches a triplex sale (one 2-4 unit class) and never a house', () => {
+    expect(productTypeCompatible('Duplex', 'Triplex')).toBe(true)
+    expect(productTypeCompatible('Duplex', 'Single Family Residence')).toBe(false)
+    expect(compPoolPropertySubType('Duplex')).toBeNull()
   })
 })

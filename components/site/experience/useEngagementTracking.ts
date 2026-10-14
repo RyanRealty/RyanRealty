@@ -12,7 +12,8 @@
  *
  * Events fired:
  *   section_view       — once, when 55%+ of the section enters viewport
- *   scroll_depth       — at 25 / 50 / 75 / 100 of page scroll (page-level, once per quartile)
+ *   scroll_depth       — at 25 / 50 / 75 / 100 of page scroll, first-party store only
+ *                        (GA4 gets V3SectionTracker's; page-level, once per quartile)
  *   dwell              — at 15s / 45s / 120s since mount (page-level, once per threshold)
  *   exit_intent        — mouseleave toward top (desktop) or visibility-hidden (mobile)
  *   module_interact    — call the returned `trackInteract(action)` fn from click handlers
@@ -39,90 +40,99 @@ type ReturnValue = {
   trackInteract: (action: string) => void
 }
 
-// Page-level scroll depth tracking — installed once, shared across all hook instances
-const scrollDepthFired = new Set<number>()
-let scrollHandlerInstalled = false
+/**
+ * Page-level listeners: scroll depth, dwell and exit intent, installed ONCE per
+ * page however many sections use the hook, and removed when the last of them
+ * unmounts. Before 2026-10-14 they were module-level and never removed, so
+ * after a visitor left /subdivisions client-side they kept firing on every later
+ * page, stamped page_type 'subdivision'.
+ */
+// What already fired on this page, kept across a full unmount and remount of
+// the page's sections (a filter that empties and refills the list) so one page
+// view never sends the same dwell or scroll milestone twice.
+let firedFor: { path: string; scroll: Set<number>; dwell: Set<number> } | null = null
 
-function installScrollDepth(pageType: string) {
-  if (scrollHandlerInstalled || typeof window === 'undefined') return
-  scrollHandlerInstalled = true
+function firedOnThisPage() {
+  const path = window.location.pathname
+  if (!firedFor || firedFor.path !== path) firedFor = { path, scroll: new Set(), dwell: new Set() }
+  return firedFor
+}
 
+function installPageLevel(pageType: string): () => void {
+  const timers: ReturnType<typeof setTimeout>[] = []
+  const fired = firedOnThisPage()
+
+  // Scroll depth: first-party only. GA4's scroll_depth comes from
+  // V3SectionTracker, which runs on every public page; a second push here sent
+  // two per quartile (2026-10-14 audit).
   const QUARTILES = [25, 50, 75, 100]
+  const scrollFired = fired.scroll
   const onScroll = () => {
-    const scrollTop = window.scrollY
     const docHeight = document.documentElement.scrollHeight - window.innerHeight
     if (docHeight <= 0) return
-    const pct = Math.round((scrollTop / docHeight) * 100)
+    const pct = Math.round((window.scrollY / docHeight) * 100)
     for (const q of QUARTILES) {
-      if (pct >= q && !scrollDepthFired.has(q)) {
-        scrollDepthFired.add(q)
-        trackEvent('scroll_depth', { depth: q, page_type: pageType })
-        // W1.3: dual-sink page-scroll depth to the first-party store so per-person
-        // drop-off on experience-archetype pages is visible in the CRM (GA4-only before).
+      if (pct >= q && !scrollFired.has(q)) {
+        scrollFired.add(q)
+        // W1.3: per-person drop-off on experience-archetype pages in the CRM.
         fireFirstPartyEvent('scroll_depth', { scrollDepthPct: q, metadata: { surface: 'experience', pageType } })
       }
     }
   }
-
   window.addEventListener('scroll', onScroll, { passive: true })
-}
 
-// Page-level dwell tracking — installed once
-const dwellFired = new Set<number>()
-let dwellHandlerInstalled = false
-
-function installDwell(pageType: string) {
-  if (dwellHandlerInstalled || typeof window === 'undefined') return
-  dwellHandlerInstalled = true
-
-  const THRESHOLDS = [15, 45, 120]
+  // Dwell at 15s / 45s / 120s on this page.
   const start = Date.now()
-
-  for (const t of THRESHOLDS) {
-    setTimeout(() => {
-      if (!dwellFired.has(t)) {
-        dwellFired.add(t)
-        trackEvent('dwell' as Parameters<typeof trackEvent>[0], {
-          seconds: t,
-          page_type: pageType,
-          elapsed: Math.round((Date.now() - start) / 1000),
-        })
-      }
-    }, t * 1000)
+  for (const t of [15, 45, 120]) {
+    if (fired.dwell.has(t)) continue
+    timers.push(
+      setTimeout(() => {
+        fired.dwell.add(t)
+        trackEvent('dwell', { seconds: t, page_type: pageType, elapsed: Math.round((Date.now() - start) / 1000) })
+      }, t * 1000),
+    )
   }
-}
 
-// Page-level exit intent — installed once
-let exitHandlerInstalled = false
-
-function installExitIntent(pageType: string) {
-  if (exitHandlerInstalled || typeof window === 'undefined') return
-  exitHandlerInstalled = true
-
-  // Desktop: mouse leaves near the top edge
+  // Exit intent, once: the mouse leaves near the top edge (desktop) or the page
+  // is hidden (mobile tab switch / home button).
+  const pageDepth = () =>
+    Math.round((window.scrollY / Math.max(document.documentElement.scrollHeight - window.innerHeight, 1)) * 100)
+  const removeExit = () => {
+    document.removeEventListener('mouseleave', onMouseLeave)
+    document.removeEventListener('visibilitychange', onVisibilityChange)
+  }
   const onMouseLeave = (e: MouseEvent) => {
-    if (e.clientY < 40) {
-      const depth = Math.round(
-        (window.scrollY / Math.max(document.documentElement.scrollHeight - window.innerHeight, 1)) * 100,
-      )
-      trackEvent('exit_intent_shown', { page_type: pageType, scroll_depth: depth })
-      document.removeEventListener('mouseleave', onMouseLeave)
-    }
+    if (e.clientY >= 40) return
+    trackEvent('exit_intent_shown', { page_type: pageType, scroll_depth: pageDepth() })
+    removeExit()
   }
-
-  // Mobile: page hidden (tab switch / home button)
   const onVisibilityChange = () => {
-    if (document.visibilityState === 'hidden') {
-      const depth = Math.round(
-        (window.scrollY / Math.max(document.documentElement.scrollHeight - window.innerHeight, 1)) * 100,
-      )
-      trackEvent('exit_intent_shown', { page_type: pageType, scroll_depth: depth })
-      document.removeEventListener('visibilitychange', onVisibilityChange)
-    }
+    if (document.visibilityState !== 'hidden') return
+    trackEvent('exit_intent_shown', { page_type: pageType, scroll_depth: pageDepth() })
+    removeExit()
   }
-
   document.addEventListener('mouseleave', onMouseLeave)
   document.addEventListener('visibilitychange', onVisibilityChange)
+
+  return () => {
+    window.removeEventListener('scroll', onScroll)
+    for (const id of timers) clearTimeout(id)
+    removeExit()
+  }
+}
+
+let pageLevel: { users: number; remove: () => void } | null = null
+
+function acquirePageLevel(pageType: string): () => void {
+  if (!pageLevel) pageLevel = { users: 0, remove: installPageLevel(pageType) }
+  pageLevel.users += 1
+  return () => {
+    if (!pageLevel) return
+    pageLevel.users -= 1
+    if (pageLevel.users > 0) return
+    pageLevel.remove()
+    pageLevel = null
+  }
 }
 
 export function useEngagementTracking(
@@ -158,12 +168,11 @@ export function useEngagementTracking(
     return () => observer.disconnect()
   }, [sectionId, resolvedPageType, position, ref])
 
-  // Page-level events — install once regardless of which section mounts first
+  // Page-level events: one install per page, removed when the page's last
+  // section unmounts (a client-side navigation away).
   useEffect(() => {
     if (typeof window === 'undefined') return
-    installScrollDepth(resolvedPageType)
-    installDwell(resolvedPageType)
-    installExitIntent(resolvedPageType)
+    return acquirePageLevel(resolvedPageType)
   }, [resolvedPageType])
 
   const trackInteract = useCallback(

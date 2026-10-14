@@ -7,6 +7,7 @@ import {
   TabularNumber,
 } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
+import { trackEvent } from '@/lib/tracking'
 import { displaySubdivision, listingCanonicalHref } from '@/lib/slug'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { daysLiveOnMarket } from '@/lib/listing/days-live'
@@ -451,7 +452,10 @@ export function PriceCtaStrip({
           </>
         ) : (
           <Button size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
-            <a href={tourHref}>
+            <a
+              href={tourHref}
+              onClick={() => trackEvent('schedule_tour_click', { listing_key: listing.listingKey, surface: 'listing_price_strip' })}
+            >
               <ActionSwapText value="tour">Tour</ActionSwapText>
             </a>
           </Button>

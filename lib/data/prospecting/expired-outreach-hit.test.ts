@@ -123,6 +123,62 @@ describe('expiredOutreachListingHits — relist still blocks', () => {
       }),
     ).toBe(true)
   })
+
+  it('blocks an Active relist stamped at the same second as expire (same-sync race)', () => {
+    expect(
+      hit({
+        listing: listing({
+          StandardStatus: 'Active',
+          CloseDate: null,
+          status_change_timestamp: EXPIRE,
+          parcel_number: null,
+        }),
+        subjectParcel: null,
+      }),
+    ).toBe(true)
+  })
+
+  it('blocks an Active relist with no status_change stamp yet', () => {
+    expect(
+      hit({
+        listing: listing({
+          StandardStatus: 'Active',
+          CloseDate: null,
+          status_change_timestamp: null,
+          parcel_number: null,
+        }),
+        subjectParcel: null,
+      }),
+    ).toBe(true)
+  })
+
+  it('still allows a Closed sale before expire', () => {
+    expect(
+      hit({
+        listing: listing({
+          StandardStatus: 'Closed',
+          CloseDate: BEFORE,
+          status_change_timestamp: BEFORE,
+          parcel_number: null,
+        }),
+        subjectParcel: null,
+      }),
+    ).toBe(false)
+  })
+
+  it('blocks a Closed sale stamped at the same second as expire', () => {
+    expect(
+      hit({
+        listing: listing({
+          StandardStatus: 'Closed',
+          CloseDate: EXPIRE,
+          status_change_timestamp: EXPIRE,
+          parcel_number: null,
+        }),
+        subjectParcel: null,
+      }),
+    ).toBe(true)
+  })
 })
 
 describe('isClosedStatus is the Closed classifier', () => {
@@ -169,5 +225,29 @@ describe('existing-path wiring (no new gate)', () => {
     expect(SEND_SRC.slice(intro, email)).toMatch(/verifyNotRelisted/)
     expect(SEND_SRC.slice(email)).toMatch(/verifyNotRelisted/)
     expect(SEND_SRC).not.toMatch(/sendCmaToLead\([\s\S]{0,200}verifyNotRelisted/)
+  })
+
+  it('sendCmaToLead re-reads live MLS status at the address before a letter leaves', () => {
+    const send = readFileSync(join(process.cwd(), 'lib/cma/send.ts'), 'utf8')
+    const start = send.indexOf('export async function sendCmaToLead')
+    const body = send.slice(start)
+    const screen = body.indexOf('await screenAddressForSolicitation')
+    const wire = body.search(/await sendGmailMessage|await sendEmail/)
+    expect(start).toBeGreaterThan(-1)
+    expect(screen).toBeGreaterThan(-1)
+    expect(wire).toBeGreaterThan(screen)
+    expect(body).toMatch(/ctx\.origin === 'expired' \|\| ctx\.origin === 'fsbo'/)
+  })
+
+  it('drip drain re-checks live status before a first-touch send', () => {
+    const drain = readFileSync(join(process.cwd(), 'lib/data/prospecting/drip-drain.ts'), 'utf8')
+    expect(drain).toContain('EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP')
+    expect(drain).toContain('verifyNotRelisted')
+    expect(drain.indexOf('verifyNotRelisted')).toBeLessThan(drain.indexOf('sendProspectingEmailIntro'))
+  })
+
+  it('keeps the expired first-touch drip hard stop on', () => {
+    const schedule = readFileSync(join(process.cwd(), 'lib/data/prospecting/drip-schedule.ts'), 'utf8')
+    expect(schedule).toMatch(/export const EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP = true/)
   })
 })

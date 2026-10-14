@@ -5,6 +5,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import {
   listingHasSharePhoto,
   listingOgImagePath,
+  listingShareChip,
   listingShareOgTitle,
 } from '@/lib/og/listing-share'
 
@@ -58,6 +59,45 @@ describe('listingShareOgTitle', () => {
         baths: 2,
       }),
     ).toBe('61637 SE Evie Drive, Bend, OR 97702 · 2 bath')
+  })
+})
+
+describe('listingShareChip', () => {
+  it('is a short price · beds/baths line, never the address', () => {
+    expect(listingShareChip(EVIE)).toBe('$634,900 · 4 bed, 3 bath')
+    expect(listingShareChip(EVIE)?.includes('Evie')).toBe(false)
+  })
+
+  it('uses the close price on a sold home and drops a missing room', () => {
+    expect(
+      listingShareChip({
+        ...EVIE,
+        status: 'Closed',
+        listPrice: 1_250_000,
+        closePrice: 1_100_000,
+        beds: 3,
+        baths: 3,
+      }),
+    ).toBe('$1,100,000 · 3 bed, 3 bath')
+    expect(
+      listingShareChip({
+        ...EVIE,
+        listPrice: null,
+        beds: null,
+        baths: 2,
+      }),
+    ).toBe('2 bath')
+  })
+
+  it('omits the chip when there is nothing short to print', () => {
+    expect(
+      listingShareChip({
+        ...EVIE,
+        listPrice: null,
+        beds: null,
+        baths: null,
+      }),
+    ).toBeUndefined()
   })
 })
 
@@ -151,10 +191,15 @@ describe('listing URL shapes and social crawlers', () => {
     expect(page).not.toMatch(/ogImage: `\/api\/og\?type=listing/)
     expect(route).toContain('getListingLookup')
     expect(route).toContain('listingHasSharePhoto')
+    expect(route).toContain('listingShareChip')
     expect(route).not.toContain('listingShareCardLines')
     expect(route).not.toContain('getListingTiles')
-    expect(card).not.toMatch(/fontSize/)
     expect(card).not.toMatch(/subtitle/)
     expect(card).toMatch(/navy tint/)
+    expect(card).toMatch(/#102742/)
+    expect(card).toMatch(/chip/)
+    expect(card).toMatch(/whiteSpace: 'pre'/)
+    expect(card).toMatch(/\\u00A0/)
+    expect(card).not.toMatch(/input\.title/)
   })
 })

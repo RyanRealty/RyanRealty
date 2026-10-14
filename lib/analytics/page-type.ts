@@ -172,7 +172,9 @@ export function visitorPageCategoryFromPath(pathname: string): string {
 
 export function pageTypeFromPath(pathname: string): PageType {
   const p = (pathname || '/').toLowerCase().replace(/\/+$/, '') || '/'
-  if (p === '/') return 'home'
+  // The prerendered home page renders with pathname `/index` (live HTML on
+  // 2026-10-14 carried page_type:'other' in its GTM bootstrap), so both mean home.
+  if (p === '/' || p === '/index') return 'home'
   if (listingMlsFromPath(p) || p.startsWith('/listing') || p.startsWith('/our-homes')) return 'listing'
   if (
     p.startsWith('/search') ||

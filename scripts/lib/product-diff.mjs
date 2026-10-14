@@ -100,7 +100,15 @@ export function listChangedFiles(opts = {}) {
     const out = execSync(cmd, {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
-      ...(opts.cwd ? { cwd: opts.cwd } : {}),
+      ...(opts.cwd
+        ? {
+            cwd: opts.cwd,
+            // A pre-commit hook sets GIT_DIR to this repo. Honor cwd.
+            env: Object.fromEntries(
+              Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
+            ),
+          }
+        : {}),
     })
     return out.split('\n').map((s) => s.trim()).filter(Boolean)
   } catch {

@@ -39,9 +39,11 @@ const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim() || 'G-ST40W4WM
  *
  * Pushes page_type onto dataLayer before gtm.js so the Google tag can stamp
  * every hit. Also queues assigned_broker (USER) from ?agent= / cookie so the
- * first-paint page_view is not broker-blind. First-paint page_view stays on
- * the GTM Google tag (All Pages). PageViewTracker stamps page_type + broker
- * and sends SPA page_view.
+ * first-paint page_view is not broker-blind. The bootstrap pushes that
+ * first-paint page_view itself, right after gtm.js; GTM's "GA4 - page_view"
+ * tag sends it (the Google tag has send_page_view false, GTM version 9).
+ * PageViewTracker stamps page_type + broker and pushes one page_view per
+ * pathname change after that.
  */
 export default function GTMHead() {
   const pathname = usePathname()

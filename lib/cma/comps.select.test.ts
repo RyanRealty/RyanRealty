@@ -1083,7 +1083,7 @@ describe('selectComps — a sale with an ADU never prices a home without one (Ma
 
   it('keeps it for a subject whose MLS details say ADU while its remarks are silent (units.aduYn on the wall, 2026-10-14)', async () => {
     const sel = await selectComps(
-      subject({ subdivision: 'Kenwood', publicRemarks: null, units: { multiUnit: false, reasons: [], unitsTotal: null, aduYn: true, aduSqft: 520, aduType: 'Detached', priorMultiUnit: null } }),
+      subject({ subdivision: 'Kenwood', publicRemarks: null, units: { multiUnit: false, multiUnitTyped: false, reasons: [], unitsTotal: null, aduYn: true, aduSqft: 520, aduType: 'Detached', priorMultiUnit: null } }),
     )
     expect(keys(sel)).toContain('NORTON')
     expect(sel.diagnostics.excluded_totals.adu_sale).toBe(0)
@@ -1098,5 +1098,101 @@ describe('selectComps — a sale with an ADU never prices a home without one (Ma
     expect(sel.diagnostics.excluded_totals.adu_sale).toBe(0)
     // Skipped before any wall, so no total describes the plain sales.
     expect(sel.diagnostics.excluded_totals.product_type).toBe(0)
+  })
+})
+
+describe('selectComps — a multi-unit subject prices from PropertyType C closes (Matt 2026-10-14, the multi-unit ladder)', () => {
+  const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10)
+  const RECENT = daysAgo(45)
+  const unit = (key: string, i: number, over: Record<string, unknown> = {}) =>
+    closedRow({
+      ListingKey: key,
+      StreetNumber: String(400 + i),
+      StreetName: 'Olney',
+      ClosePrice: 620_000,
+      CloseDate: RECENT,
+      TotalLivingAreaSqFt: 2100,
+      BedroomsTotal: 3,
+      BathroomsTotal: 3,
+      property_sub_type: 'Duplex',
+      public_remarks: 'Two units, each with its own entrance and laundry.',
+      ...over,
+    })
+  const keys = (sel: Awaited<ReturnType<typeof selectComps>>) => sel.comps.map((c) => c.listingKey).sort()
+  const irving = () =>
+    subject({
+      streetAddress: '429 Irving',
+      subdivision: 'Kenwood',
+      sqft: 2149,
+      beds: 3,
+      baths: 4,
+      propertySubType: 'Duplex',
+      propertyType: 'C',
+      multiUnit: { units: 2, propertySubType: 'Duplex', sqft: 2149, sqftBasis: null, basis: 'prior' },
+      // The current record's remarks name an ADU, not a duplex: not a wall on this ladder.
+      publicRemarks: 'Prime midtown location. A 1,629 sq ft main home and a 520 sq ft ADU.',
+    })
+  const pool = [
+    unit('D1', 1),
+    unit('D2', 2),
+    unit('D3', 3),
+    unit('D4', 4),
+    unit('D5', 5, { public_remarks: 'Detached duplex near downtown.' }),
+    // A triplex: the same 2-4 unit class, another count.
+    unit('T1', 6, { property_sub_type: 'Triplex' }),
+    // Multi Family with a count of four: admitted on the class pass only.
+    unit('M4', 7, { property_sub_type: 'Multi Family', units_total: 4 }),
+    // Multi Family with no count on record: never admitted.
+    unit('M0', 8, { property_sub_type: 'Multi Family', units_total: null }),
+    // An apartment building typed Multi Family with twelve units: never admitted.
+    unit('M12', 9, { property_sub_type: 'Multi Family', units_total: 12 }),
+  ]
+
+  beforeEach(() => {
+    selectCmaCompsPool.mockReset()
+    selectCmaCompsByKeys.mockReset()
+    selectCmaCompsByKeys.mockResolvedValue([])
+    selectCmaCompsPool.mockImplementation(async (opts: Record<string, unknown>) => (opts.subdivisionIlike === 'Kenwood' ? pool : []))
+  })
+
+  it('asks every pool read for segment C with no sub type pin, and the trace says so', async () => {
+    const sel = await selectComps(irving(), { sameUnitsOnly: true })
+    expect(selectCmaCompsPool.mock.calls.length).toBeGreaterThan(0)
+    for (const [opts] of selectCmaCompsPool.mock.calls as unknown as Array<[{ propertyType?: string; propertySubType?: string | null }]>) {
+      expect(opts.propertyType).toBe('C')
+      expect(opts.propertySubType ?? null).toBeNull()
+    }
+    expect(sel.trace.some((t) => t.includes("PropertyType='C'"))).toBe(true)
+  })
+
+  it('the same-units pass seats duplexes only, skipped before any wall counts the rest', async () => {
+    const sel = await selectComps(irving(), { sameUnitsOnly: true })
+    expect(keys(sel)).toEqual(['D1', 'D2', 'D3', 'D4', 'D5'])
+    expect(sel.diagnostics.excluded_totals.product_type).toBe(0)
+  })
+
+  it('the class pass admits the triplex and the counted Multi Family row, and refuses an uncounted or twelve-unit one', async () => {
+    const sel = await selectComps(irving(), { sameUnitsOnly: false })
+    const got = keys(sel)
+    expect(got).toContain('T1')
+    expect(got).toContain('M4')
+    expect(got).not.toContain('M0')
+    expect(got).not.toContain('M12')
+    expect(sel.diagnostics.excluded_totals.product_type).toBeGreaterThanOrEqual(2)
+  })
+
+  it('a custom-built duplex still walks the listings ladder', async () => {
+    const sel = await selectComps({ ...irving(), yearBuilt: new Date().getFullYear() - 1, newConstructionYn: true }, { sameUnitsOnly: true })
+    expect(sel.trace.some((t) => t.includes('listings SQL ladder is disabled'))).toBe(false)
+    expect(sel.diagnostics.ladder.some((r) => r.ran)).toBe(true)
+  })
+
+  it('a duplex sale never reaches a house: the same pool against a detached subject prices nothing', async () => {
+    selectCmaCompsPool.mockImplementation(async (opts: Record<string, unknown>) =>
+      opts.subdivisionIlike === 'Kenwood' ? pool.map((r) => ({ ...r, PropertyType: 'A' })) : [],
+    )
+    const sel = await selectComps(subject({ subdivision: 'Kenwood', sqft: 2149 }))
+    expect(sel.comps).toHaveLength(0)
+    expect(sel.diagnostics.excluded_totals.product_type).toBeGreaterThan(0)
   })
 })

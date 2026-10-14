@@ -8,7 +8,7 @@
  */
 
 import type { CmaWindowCloseRow } from '@/lib/data/cma/builderReads'
-import { marketAreaName, productTypeCompatible, resolveMarketArea } from '@/lib/cma/market-area'
+import { marketAreaName, productNounPlural, productTypeCompatible, resolveMarketArea } from '@/lib/cma/market-area'
 import { usd } from '@/lib/cma/render-blocks'
 import { formatCalendarDay } from '@/lib/format/date'
 import { realSubdivisionName } from '@/lib/pricing/classes'
@@ -522,14 +522,10 @@ export function listingMarketSource(move: ListingMarketMove): string {
   const lateSpan = spokenSpan(move.late.from, move.late.to)
   const year = move.late.to.slice(0, 4)
   const lateLabeled = year && !lateSpan.includes(year) ? `${lateSpan}, ${year}` : lateSpan
-  const homes =
-    move.productNoun === 'townhouse'
-      ? 'Townhouses'
-      : move.productNoun === 'condo'
-        ? 'Condos'
-        : move.productNoun
-          ? move.productNoun
-          : 'Single-family homes'
+  // The product's plural, capitalised: Townhouses, Condos, Duplexes (lib/cma/market-area.ts).
+  const homes = move.productNoun
+    ? productNounPlural(move.productNoun).replace(/^./, (c) => c.toUpperCase())
+    : 'Single-family homes'
   const earlySales = `${move.early.n} closed ${move.early.n === 1 ? 'sale' : 'sales'}`
   return `${earlySales} ${spokenSpan(move.early.from, move.early.to)}, then ${move.late.n} from ${lateLabeled}. ${homes} in ${move.place}${size}.${net} Oregon Data Share MLS.${measured}`
 }

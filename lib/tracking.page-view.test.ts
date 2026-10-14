@@ -4,8 +4,8 @@
  * Client trackPageView stamps assigned_broker (USER, via gtag set) and
  * broker_slug (EVENT, on the dataLayer page_view push) when ?agent= is known.
  * Same custom-definition names as generate_lead. It never calls
- * gtag('event','page_view') -- GTM's Google tag owns that event, and a second
- * gtag copy would double-count.
+ * gtag('event','page_view'): the dataLayer push is the one page_view, sent by
+ * GTM's "GA4 - page_view" tag, and a gtag copy would double-count.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { applyVisitBrokerToGtag, trackPageView } from './tracking'

@@ -7,8 +7,9 @@
  * Every sentence restates LISTING_TERMS, PLAN_GROUPS or the listing-time FAQ
  * in sell-constants.ts. Nothing is promised that the plan does not say.
  */
+import Link from 'next/link'
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from '@/components/site/v3'
-import { LISTING_TERMS, PLAN_GROUPS } from './sell-constants'
+import { COMMISSION_GUIDE_ROUTE, LISTING_TERMS, PLAN_GROUPS } from './sell-constants'
 
 export const SELL_HOW_STEPS = [
   {
@@ -73,6 +74,11 @@ export function SellHowWeSell() {
           {LISTING_TERMS.fee} {LISTING_TERMS.buyerAgent}.
         </p>
       </details>
+      <p className="sell-plan-more">
+        <Link href={COMMISSION_GUIDE_ROUTE} data-sell-cta="commission-guide">
+          How commission works in Bend, in dollars
+        </Link>
+      </p>
       {/* Quiet, below the plan, so it never competes with the one main button
           (Matt 2026-10-08). The net sheet ships in its own PR (#436); link the
           page itself, never the bare /tools index. */}

@@ -71,7 +71,7 @@
  */
 
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
-import { productTypeCompatible } from '@/lib/cma/market-area'
+import { isMultiUnitSubType, productTypeCompatible } from '@/lib/cma/market-area'
 import {
   isPriceTierExclusion,
   ppsf,
@@ -387,8 +387,10 @@ function structureSupported(subject: CmaSubject, comp: CmaComp): boolean {
   ) {
     return true
   }
-  // Rule 23, read exactly as both ladders read it: symmetric, null remarks fail open.
-  if (multiUnitFromRemarks(comp.publicRemarks) !== multiUnitFromRemarks(subject.publicRemarks)) return true
+  // Rule 23, read exactly as both ladders read it: symmetric, null remarks
+  // fail open, and not a wall on a multi-unit subject (its product is the
+  // typed 2-4 unit class, held above).
+  if (!isMultiUnitSubType(subject.propertySubType) && multiUnitFromRemarks(comp.publicRemarks) !== multiUnitFromRemarks(subject.publicRemarks)) return true
   // The ADU wall, read exactly as both ladders read it: not symmetric.
   if (aduSaleRefused(subject.publicRemarks, comp.publicRemarks, subject.units?.aduYn)) return true
   const texts = textOf(subject, comp)

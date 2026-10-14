@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   APPROVED_LABEL,
   CLOSE_AFTER_STALE_MS,
+  CLOSED_BRANCH_GRACE_MS,
   HOLD_LABEL,
+  KEEP_BRANCH_LABEL,
   REQUIRED_CHECK_NAMES,
   STALE_AFTER_MS,
   STALE_LABEL,
   hasLabel,
+  headBranchCleanupDecision,
   isApprovedByMatt,
   mergeAction,
   parseApprovedPrList,
@@ -14,6 +17,7 @@ import {
   shouldApplyTitleHold,
   shouldQueueAutoMerge,
   shouldRemoveHoldLabel,
+  shouldStampApprovedLabel,
   staleDecision,
   titleLooksLikeHold,
 } from '../lib/pr-housekeeping.mjs'
@@ -84,6 +88,14 @@ describe('shouldApplyTitleHold and shouldRemoveHoldLabel', () => {
     )
     expect(shouldRemoveHoldLabel({ labels: [HOLD_LABEL] })).toBe(false)
     expect(shouldRemoveHoldLabel({ labels: [APPROVED_LABEL] })).toBe(false)
+  })
+
+  it('stamps approved-by-matt when the list approved the PR', () => {
+    expect(shouldStampApprovedLabel({ number: 590, approvedNumbers: [590] })).toBe(true)
+    expect(
+      shouldStampApprovedLabel({ labels: [APPROVED_LABEL], number: 590, approvedNumbers: [590] }),
+    ).toBe(false)
+    expect(shouldStampApprovedLabel({ labels: [HOLD_LABEL], number: 590 })).toBe(false)
   })
 })
 
@@ -210,5 +222,89 @@ describe('requiredChecksStatus', () => {
     expect(hasLabel([{ name: HOLD_LABEL }], HOLD_LABEL)).toBe(true)
     const pending = REQUIRED_CHECK_NAMES.map((name) => ({ name, bucket: 'pending' }))
     expect(requiredChecksStatus(pending)).toBe('pending')
+  })
+})
+
+describe('headBranchCleanupDecision', () => {
+  const closedWeekAgo = NOW - CLOSED_BRANCH_GRACE_MS - 1
+  const closedYesterday = NOW - 24 * 60 * 60 * 1000
+
+  it('never deletes main or a branch with an open PR', () => {
+    expect(headBranchCleanupDecision({ branchName: 'main', hasOpenPr: false, latestClosedPr: { merged: true } })).toBe(
+      'keep-protected',
+    )
+    expect(
+      headBranchCleanupDecision({
+        branchName: 'cursor/open-work',
+        hasOpenPr: true,
+        latestClosedPr: { merged: true },
+      }),
+    ).toBe('keep-open-pr')
+  })
+
+  it('deletes a merged PR head the same day', () => {
+    expect(
+      headBranchCleanupDecision({
+        branchName: 'fix/landed',
+        hasOpenPr: false,
+        latestClosedPr: { merged: true, closedAt: NOW, labels: [] },
+        now: NOW,
+      }),
+    ).toBe('delete-merged')
+  })
+
+  it('waits 7 days after a closed-unmerged PR, then deletes', () => {
+    expect(
+      headBranchCleanupDecision({
+        branchName: 'fix/closed',
+        hasOpenPr: false,
+        latestClosedPr: { merged: false, closedAt: closedYesterday, labels: [] },
+        now: NOW,
+      }),
+    ).toBe('keep-recent-closed')
+    expect(
+      headBranchCleanupDecision({
+        branchName: 'fix/closed',
+        hasOpenPr: false,
+        latestClosedPr: { merged: false, closedAt: closedWeekAgo, labels: [] },
+        now: NOW,
+      }),
+    ).toBe('delete-closed')
+  })
+
+  it('keeps labeled and no-PR branches', () => {
+    expect(
+      headBranchCleanupDecision({
+        branchName: 'claude/market-report-subscription',
+        hasOpenPr: false,
+        latestClosedPr: { merged: false, closedAt: closedWeekAgo, labels: [] },
+        now: NOW,
+      }),
+    ).toBe('keep-named')
+    expect(
+      headBranchCleanupDecision({
+        branchName: 'fix/fsbo-zillow-mapped-output',
+        hasOpenPr: false,
+        latestClosedPr: { merged: false, closedAt: closedWeekAgo, labels: [] },
+        now: NOW,
+      }),
+    ).toBe('keep-named')
+    expect(
+      headBranchCleanupDecision({
+        branchName: 'fix/kept-by-label',
+        hasOpenPr: false,
+        latestClosedPr: { merged: false, closedAt: closedWeekAgo, labels: [KEEP_BRANCH_LABEL] },
+        now: NOW,
+      }),
+    ).toBe('keep-label')
+    expect(
+      headBranchCleanupDecision({
+        branchName: 'fix/held',
+        hasOpenPr: false,
+        latestClosedPr: { merged: true, labels: [HOLD_LABEL] },
+        now: NOW,
+      }),
+    ).toBe('keep-label')
+    expect(headBranchCleanupDecision({ branchName: 'tip/sell-landing-rebuild', hasOpenPr: false })).toBe('keep-no-pr')
   })
 })

@@ -53,6 +53,7 @@ describe('/api/og listing cards', () => {
     expect(body.photoSrc).toBe(LISTING.photoUrl)
     expect(body.title).toBeUndefined()
     expect(body.subtitle).toBeUndefined()
+    expect(body.chip).toBe('$634,900 · 4 bed, 3 bath')
     expect(body.fallback).toBe('listing')
   })
 
@@ -63,7 +64,11 @@ describe('/api/og listing cards', () => {
     )
     expect(lookup).toHaveBeenCalledWith('20260824231914656196000000')
     expect(renderCard).toHaveBeenCalledWith(
-      expect.objectContaining({ photoSrc: LISTING.photoUrl, fallback: 'listing' }),
+      expect.objectContaining({
+        photoSrc: LISTING.photoUrl,
+        fallback: 'listing',
+        chip: '$634,900 · 4 bed, 3 bath',
+      }),
     )
   })
 
@@ -74,6 +79,7 @@ describe('/api/og listing cards', () => {
     expect(body.photoSrc).toBeUndefined()
     expect(body.fallback).toBe('listing')
     expect(body.title).toBeUndefined()
+    expect(body.chip).toBeUndefined()
   })
 
   it('uses the landscape fallback when the listing is missing', async () => {
@@ -83,5 +89,6 @@ describe('/api/og listing cards', () => {
     expect(body.fallback).toBe('listing')
     expect(body.photoSrc).toBeUndefined()
     expect(body.title).toBeUndefined()
+    expect(body.chip).toBeUndefined()
   })
 })
