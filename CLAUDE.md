@@ -521,7 +521,7 @@ in Cursor's bundled paths, **read that skill before doing the work**.
 
 **Mandatory:** the built-in `code-review` skill on every meaningful change before ship,
 `npm run deploy:verify` after a production deploy, `design_system/ryan-realty/SKILL.md` when
-shadcn/ui compliance is in question, §0 and §7 on any Supabase/SQL/analytics task. Everything
+shadcn/ui compliance is in question, §0/§7 SQL, [docs/analytics/README.md](docs/analytics/README.md). Everything
 else fires on trigger match.
 
 ## Sister skill libraries
