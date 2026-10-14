@@ -10,14 +10,19 @@
 import { RULES, type Rule } from './rules'
 import type { StampProblem } from './stamp'
 
+/**
+ * Compiled patterns, by the pattern's own text. A rule's id is not the key: a
+ * custom rule list (a test's, a rules file under review) may give two different
+ * patterns the same id, and a cache keyed by id would answer with the first.
+ */
 const compiled = new Map<string, RegExp>()
 
 function regexOf(rule: Rule): RegExp | null {
   if (!rule.fixtureMatch) return null
-  let re = compiled.get(rule.id)
+  let re = compiled.get(rule.fixtureMatch)
   if (!re) {
     re = new RegExp(rule.fixtureMatch, 'i')
-    compiled.set(rule.id, re)
+    compiled.set(rule.fixtureMatch, re)
   }
   return re
 }
