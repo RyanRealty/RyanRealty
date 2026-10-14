@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-10-14T20:47:49.649Z
+**Generated:** 2026-10-14T21:38:10.813Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -1570,7 +1570,7 @@ Companion files:
 
 **Selected columns:** `id`, `first_name`, `last_name`, `name`, `addresses`, `deleted`, `property_address`
 
-**Cache keys:** `crm-county-owner-records-v1`
+**Cache keys:** `crm-county-owner-records-v2`
 
 **Cache tags:** `'crm-county-owner-records'`
 
