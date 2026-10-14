@@ -8,7 +8,7 @@ import { sendEvent } from '@/lib/crm/send-event'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { registerForCmaDocument, CMA_DOCUMENT_TERMS_VERSION } from '@/lib/data/cma/getPublishedCma'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
-import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { fireLeadGenerated, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 
 /**
  * "Download the full market analysis" — the registration behind a published CMA.
@@ -193,12 +193,13 @@ export async function registerForCmaDocumentAction(input: CmaDownloadInput): Pro
     }
   }
 
+  await persistGaClientIdFromCookies(personId)
   try {
     await fireLeadGenerated({
       lp_variant: 'published-cma',
       lead_type: 'listing_inquiry',
       form_id: 'listing_cma_download',
-      fub_person_id: personId ?? undefined,
+      crm_person_id: personId,
     })
   } catch {
     // best-effort
@@ -319,12 +320,13 @@ export async function requestListingCmaAction(input: CmaDownloadInput): Promise<
     }
   }
 
+  await persistGaClientIdFromCookies(personId)
   try {
     await fireLeadGenerated({
       lp_variant: 'listing-pricing-read',
       lead_type: 'listing_inquiry',
       form_id: 'listing_cma_request',
-      fub_person_id: personId ?? undefined,
+      crm_person_id: personId,
     })
   } catch {
     // best-effort
