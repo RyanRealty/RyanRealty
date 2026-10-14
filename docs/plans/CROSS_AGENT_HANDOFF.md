@@ -1,10 +1,22 @@
 # Current — 2026-10-14 (Cursor, agent rules: PR merge + DB writes)
 
-Surface: Cursor cloud. Branch `cursor/agent-rules-main-db-136e` from origin/main `befee8c88` (merged, not rebased: #548, #452, #549, #489, #542, #488, #485). Matt approved merging #544 once checks pass. Known main flakes allowed: `/sell` content-floor, `/communities/tetherow` page-payload, Lighthouse JSON. Nothing sent. Nobody pushes main. No rebuild.
+Surface: Cursor cloud. Branch `cursor/agent-rules-main-db-136e` from origin/main `a0030cbdc` (merged, not rebased: #546, #559, #548, #452, #549, #489, #542, #488, #485). Matt approved merging #544 once checks pass. Known main flakes allowed: `/sell` content-floor, `/communities/tetherow` page-payload, Lighthouse JSON. Nothing sent. Nobody pushes main. No rebuild.
 
 **What this branch does.** Agent instruction files match Matt 2026-10-13: branch and PR only, never `git push` `main`; merge your own PR once CI checks pass, then verify the production deploy. Bots may write to Ryan Realty Supabase when a task Matt asked for needs it. That replaces the old production-DB read-only rule. Sends, the expired drip hard stop, and the other standing rules stay.
 
 **Still open.** Hold #471 (stale: merge would revert the rule-31 map cache, `cleared_at`, and industry exclusion). Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
+
+Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
+
+## Earlier — 2026-10-14 (Cursor, reader-5 leftover reads)
+
+Surface: Cursor cloud. Branch `cursor/reader-5-leftover-reads-52cc` / PR #559, merged onto current `origin/main` `befee8c88` (normal merge, no rebase). Closed stale #552. Nobody pushes main. Nothing sent. No CMA rows written.
+
+**What this branch does.** (1) Thin-window own-listing-unsold: an Active home whose ask was cut, with no per-foot local verdict, stands in as its own local read so own-ground sales move down with the city index. (2) Own-ground sold count: when own-subdivision rungs find nothing, one any-size read of the subject's ground; the letter says "No home sold" only on a real zero.
+
+**Live dry-run 2026-10-14 (read-only, `scripts/cma-build-dryrun.ts`).** Kelly Hill `cma-3062-nw-kelly-hill`: same 5 comps both sides (2955 Bordeaux $800k, 2974 Chardonnay $735k, 3080 Kelly Hill $788k, 3074 Kelly Hill $645k, 2370 Summerhill $649,900). Main rec $696,000 band $625,650–$788,042 branch `no-local-read`. New rec $676,000 band $620,000–$733,116 branch `own-listing-unsold` (ask $699,999, 3.4% under, inside stored leftover band $674,070–$733,116). Saginaw `cma-915-saginaw`: both sides fail at 4 price-setting sales (628 Portland, 536 Saginaw, 1527 10th, 620 Portland); no rec/band. New `own_ground_sold` n=0 (Park Place% 0 rows and plat box 0 rows).
+
+**Held.** #471 stays open: merge conflicts with later main and would drop `loadCmaMapTile` / `CMA_MAP_MS`. #452 landed. Do not send. Do not rebuild letters. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not merge the phase-pool branch.
 
 Skills read: `.cursor/rules/git-commit.mdc`, `.cursor/skills/site-queue/SKILL.md`.
 
