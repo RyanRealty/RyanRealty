@@ -33,6 +33,9 @@ const REQUIRED = {
     'https://www.google-analytics.com',
     'https://*.adtrafficquality.google',
     'https://connect.facebook.net',
+    // Microsoft Clarity: the tag (www.clarity.ms) and clarity.js (scripts.clarity.ms).
+    'https://*.clarity.ms',
+    'https://c.bing.com',
   ],
   'connect-src': [
     'https://*.google-analytics.com',
@@ -52,6 +55,10 @@ const REQUIRED = {
     // logs nothing. See the CSP comment block in next.config.ts.
     'https://*.gstatic.com',
     'https://*.googleapis.com',
+    // Microsoft Clarity's collector ([a-z].clarity.ms/collect) and c.bing.com,
+    // per learn.microsoft.com/en-us/clarity/setup-and-installation/clarity-csp.
+    'https://*.clarity.ms',
+    'https://c.bing.com',
   ],
 }
 
