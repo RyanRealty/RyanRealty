@@ -53,8 +53,17 @@ export function noteProblems(name, text) {
   return out
 }
 
-/** The frozen file must not grow a Current block again. */
+/** The first line that marks the old file frozen. The freeze check applies once it is there. */
+export const FROZEN_HEADER = '# Cross-agent handoff (frozen'
+
+/**
+ * The frozen file must not grow a Current block again. Enforced once the file
+ * carries FROZEN_HEADER: the header lands in its own one-line change after the
+ * notes folder is live, so the PR that introduced the notes never had to edit
+ * the one file every other open PR was editing.
+ */
 export function frozenFileProblems(text) {
+  if (!String(text ?? '').startsWith(FROZEN_HEADER)) return []
   const at = currentHeadingLines(text)
   if (!at.length) return []
   return [

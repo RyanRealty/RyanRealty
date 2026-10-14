@@ -97,10 +97,15 @@ describe('one handoff note per session (Matt 2026-10-14)', () => {
   })
 
   it('fails a Current block written back into the frozen file, and says where to write', () => {
-    const r = gate(repo({ frozen: '# Current — 2026-10-14 (bot)\n\nx\n' }))
+    const r = gate(repo({ frozen: '# Cross-agent handoff (frozen 2026-10-14)\n\n# Current — 2026-10-14 (bot)\n\nx\n' }))
     expect(r.status).toBe(1)
     expect(r.stderr).toMatch(/is frozen/)
     expect(r.stderr).toMatch(/docs\/plans\/handoffs\//)
+  })
+
+  it('before the freeze header lands, the old file is not checked', () => {
+    const r = gate(repo({ frozen: '# Current — 2026-10-14 (bot)\n\nx\n' }))
+    expect(r.status, r.stdout + r.stderr).toBe(0)
   })
 
   it('fails a misnamed note, a note with no title, and an overlong note', () => {

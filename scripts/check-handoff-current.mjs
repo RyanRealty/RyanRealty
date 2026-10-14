@@ -4,7 +4,8 @@
  *
  * Since 2026-10-14 (Matt): one handoff note per session in docs/plans/handoffs/
  * (scripts/lib/handoff-notes.mjs). This gate fails when:
- *   - docs/plans/CROSS_AGENT_HANDOFF.md (frozen history) grows a "# Current" block again,
+ *   - docs/plans/CROSS_AGENT_HANDOFF.md, once it carries the frozen header, grows a
+ *     "# Current" block again,
  *   - docs/plans/handoffs/README.md is missing,
  *   - a note is misnamed, has no "# " title, carries a "# Current" heading, or
  *     runs past the line cap.
@@ -37,4 +38,4 @@ if (problems.length) {
   process.exit(1)
 }
 const newest = newestNotes(names, 1)[0]
-console.log(`✓ ${names.length - 1} handoff note(s) in ${NOTES_DIR}/${newest ? `, newest ${newest}` : ''}; ${FROZEN_FILE} frozen.`)
+console.log(`✓ ${names.length - 1} handoff note(s) in ${NOTES_DIR}/${newest ? `, newest ${newest}` : ''}.`)
