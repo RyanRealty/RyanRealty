@@ -24,10 +24,10 @@ runs:
       if: inputs.playwright == 'true'
       shell: bash
       run: npx playwright install --with-deps chromium
-    # The runtime jobs start alongside the build, not after it, so checkout,
-    # npm ci and the browser install above overlap the ~5 minute build. Wait
-    # here for the build job's artifact, and fail at once if that job ends
-    # without one: a failed build still fails every job that needs it.
+    # The runtime jobs run after the build job (needs: build in ci.yml, so a
+    # waiting job never holds a runner the build needs). The artifact list can
+    # lag the upload by a probe or two, so wait for it here, and fail at once
+    # if the build ended without one.
     - name: Wait for the build
       shell: bash
       env:

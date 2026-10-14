@@ -20,10 +20,18 @@ concurrency:
 #   lint · gates (ci:gates + type check) ·        start at once, no build needed
 #     test:unit (3 shards)
 #   build                                         one production build, packed
-#   smoke · content-floor (4) · a11y ·            start with the build (checkout,
-#     lighthouse (4) · e2e                        npm ci, browsers), then unpack
-#                                                 it and start a fresh server
+#   smoke · content-floor (4) · a11y ·            start AFTER the build (needs:
+#     lighthouse (4) · e2e                        build), unpack it, start a server
 #   lint-and-build                                fails if ANY job above failed
+#
+# WHY the runtime jobs wait for `build` instead of starting beside it
+# (2026-10-14). Started beside it, the 11 runtime jobs per PR each took a
+# runner at once and polled for the artifact. With several bot PRs open, those
+# pollers filled the account's concurrent-runner pool, so the `build` jobs they
+# waited on never got a runner: on #563 `build` sat queued 40 minutes while
+# its own lighthouse / content-floor jobs held runners, hit their 15-minute
+# timeout and were cancelled. Overlapping npm ci with the build saved about a
+# minute per job; holding a runner for nothing cost the whole run.
 #
 # Shards split the work, never the bar: vitest --shard runs every test file
 # exactly once across the shards; LHCI_SHARD and CONTENT_FLOOR_SHARD split the
@@ -275,7 +283,7 @@ jobs:
   # mutely on every PR from 2026-07-25; scripts/wait-for-server.mjs reports
   # each probe and the server log is dumped on failure (.github/actions/use-build).
   smoke:
-    needs: changes
+    needs: [changes, build]
     if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -321,7 +329,7 @@ jobs:
   # carried when its contentFloor was seeded on parity.json. Lower a floor only
   # by hand, in the same commit. 27 classes, about 10 s each: split 4 ways.
   content-floor:
-    needs: changes
+    needs: [changes, build]
     if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -346,7 +354,7 @@ jobs:
   # aggregate a11y score misses). It always wanted a fresh server (it flaked
   # after Lighthouse's 24 passes on 2026-08-21); it now has one to itself.
   a11y:
-    needs: changes
+    needs: [changes, build]
     if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -365,7 +373,7 @@ jobs:
   # took 9.5 minutes on one runner, so LHCI_SHARD splits the URLs 4 ways;
   # each URL keeps its 3 runs and its assertions.
   lighthouse:
-    needs: changes
+    needs: [changes, build]
     if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -385,7 +393,7 @@ jobs:
         run: npm run ci:lighthouse
 
   e2e:
-    needs: changes
+    needs: [changes, build]
     if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     permissions:
