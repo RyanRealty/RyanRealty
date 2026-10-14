@@ -24,6 +24,14 @@ describe('SITE-129 community fold inventory', () => {
     expect(PAGE).not.toMatch(/MorphingSearch|morphing-search/)
   })
 
+  it('seeds one SSR card page and fetches the rest after paint', () => {
+    expect(PAGE).toMatch(/<CommunityHomesGrid[\s\S]*?homes=\{placeHomes\.slice\(0, SSR_GRID_PAGE\)\}/)
+    expect(PAGE).toMatch(/homes=\{placeHomes\.slice\(0, SSR_GRID_PAGE\)\}/)
+    expect(PAGE).toMatch(/homesSrc=\{placeHomes\.length > SSR_GRID_PAGE \? communityHomesSrc\(slug\)/)
+    expect(PAGE).toMatch(/homesCountLabel=\{placeHomesCountLabel\(placeHomes\)\}/)
+  })
+
+
   it('never clamps the belonging facts mid-sentence at 375 (SITE-193)', () => {
     // "$2,052 HOA a year from homes here. 3…" was a one-line clamp inside an
     // 8rem photograph: the facts print whole and the photograph grows instead.
