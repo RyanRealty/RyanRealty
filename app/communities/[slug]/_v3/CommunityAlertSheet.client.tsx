@@ -141,7 +141,10 @@ export function CommunityAlertsStrip({
       }
       const result = await submitSearchAlertSignup({
         email: input.email,
+        // No property type: every type, once a day (Matt 2026-10-14). The
+        // first email goes at signup.
         filters,
+        frequency: 'daily',
         // The trap's own answer, never a constant. See the header.
         company: input.company,
         sessionId: readRrSessionId(), // hydration-safe
@@ -198,8 +201,8 @@ export function CommunityAlertsStrip({
       {...figure}
       id={id}
       href={newestFirstHref(browseHref)}
-      promise={`We'll email you every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''} as it comes on the market, with any price change on those homes in the same email. Unsubscribe any time.`}
-      stickyNote={placeAlertsStickyNote(copy.scopeLine, 'Every new listing, with its price changes. Unsubscribe any time.')}
+      promise={`We'll email you every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''}, every property type, each morning, with any price change on those homes in the same email. Unsubscribe any time.`}
+      stickyNote={placeAlertsStickyNote(copy.scopeLine, 'Every new listing, every property type, each morning. Unsubscribe any time.')}
       stickyEnabled={false}
       placeholder=""
       updatedAt={updatedAt}

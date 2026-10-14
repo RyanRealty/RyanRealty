@@ -24,10 +24,11 @@ const BINDERS = [
   'app/cities/[slug]/[neighborhoodSlug]/_v3/NeighborhoodAlertsSheet.client.tsx',
   'app/communities/[slug]/_v3/CommunityAlertSheet.client.tsx',
   'app/subdivisions/[slug]/_v3/SubdivisionAlertSheet.client.tsx',
+  'app/_v3/place-alerts/PlaceAlertsStrip.client.tsx',
 ]
 
 const PROMISE_LITERAL =
-  "promise={`We'll email you every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''} as it comes on the market, with any price change on those homes in the same email. Unsubscribe any time.`}"
+  "promise={`We'll email you every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''}, every property type, each morning, with any price change on those homes in the same email. Unsubscribe any time.`}"
 
 /**
  * The strip's cadence sentence. It stays a LITERAL in each binder — the file
@@ -36,7 +37,7 @@ const PROMISE_LITERAL =
  * (placeAlertsStickyNote, which folds the scope in front of it) may move; the
  * sentence may not leave the binder.
  */
-const STICKY_NOTE_LITERAL = "'Every new listing, with its price changes. Unsubscribe any time.'"
+const STICKY_NOTE_LITERAL = "'Every new listing, every property type, each morning. Unsubscribe any time.'"
 
 describe('publishableNewCount', () => {
   it('publishes only a real positive count', () => {
@@ -149,11 +150,11 @@ describe('placeAlertsCopy', () => {
     const copy = placeAlertsCopy({ placeName: 'Crosswater', scopeName: 'Crosswater', newCount30d: null, geoType: 'neighborhood', geoSlug: 'crosswater' })
     expect(copy.count).toBeNull()
     expect(copy.source).toBeUndefined()
-    expect(copy.claim).toBe('Hear about new listings in Crosswater the day they hit the market.')
+    expect(copy.claim).toBe('Get every new listing in Crosswater in your inbox each morning.')
     expect(copy.stickyClaim).toEqual({
-      before: 'Hear about new listings in',
+      before: 'Get every new listing in',
       place: 'Crosswater',
-      after: 'the day they hit the market.',
+      after: 'in your inbox each morning.',
     })
     expect(copy.scopeLine).toBeNull()
     expect(copy.submitLabel).toBe('Send me new listings')
@@ -167,7 +168,7 @@ describe('placeAlertsCopy', () => {
     // The scope line says it; the promise does not say it again 200px away.
     expect(copy.promiseScope).toBeNull()
     expect(placeAlertsScope('Bend', 'Bend')).toBe('Bend')
-    expect(copy.sent.heading).toBe("You're set. We'll email you when something new lists in Bend.")
+    expect(copy.sent.heading).toBe("You're set. Watch your inbox for new Bend listings.")
     expect(copy.stickyLabel).toBe('Bend listing alerts')
   })
 

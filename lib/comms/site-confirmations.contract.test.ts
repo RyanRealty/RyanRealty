@@ -131,3 +131,17 @@ describe('the confirmations are system sends, and say nothing they cannot back',
     expect(confirmed).toBeGreaterThan(persisted)
   })
 })
+
+describe('the search confirmation names the real cadence (Matt 2026-10-14)', () => {
+  it('daily says each morning, and never one email per home', async () => {
+    const { searchAlertCadenceSentence } = await import('./site-confirmations')
+    expect(searchAlertCadenceSentence('daily')).toContain('one email each morning')
+    for (const cadence of ['daily', 'instant', 'weekly', 'monthly', null]) {
+      const line = searchAlertCadenceSentence(cadence)
+      expect(line).not.toMatch(/one email about that home/i)
+      expect(line).toMatch(/stop it/)
+      expect(line).not.toContain('—')
+    }
+    expect(searchAlertCadenceSentence('instant')).toContain('within the hour')
+  })
+})
