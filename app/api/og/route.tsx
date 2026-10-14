@@ -1,6 +1,6 @@
 import { getBlogPostForOgBySlug, getBrokerForOgBySlug } from '@/lib/data/brokers/getBrokers'
 import { getListingLookup } from '@/lib/data/listings/getListingDetail'
-import { listingHasSharePhoto } from '@/lib/og/listing-share'
+import { listingHasSharePhoto, listingShareChip } from '@/lib/og/listing-share'
 import { renderShareCard } from '@/lib/og/share-card'
 import { resolvePlaceOgPhoto } from '@/lib/og/resolve-photo'
 
@@ -21,6 +21,7 @@ export async function GET(request: Request) {
         return renderShareCard({
           photoSrc: lookup.listing.photoUrl,
           fallback: 'listing',
+          chip: listingShareChip(lookup.listing),
         })
       }
     } catch (err) {
