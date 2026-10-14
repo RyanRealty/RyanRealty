@@ -6,6 +6,7 @@ import {
   STALE_AFTER_MS,
   STALE_LABEL,
   hasLabel,
+  mergeAction,
   requiredChecksStatus,
   shouldQueueAutoMerge,
   staleDecision,
@@ -99,6 +100,13 @@ describe('requiredChecksStatus', () => {
     expect(
       requiredChecksStatus(ready.map((c) => (c.name === 'lint' ? { ...c, state: 'FAILURE' } : c))),
     ).toBe('failed')
+  })
+
+  it('does not squash while required checks are pending unless auto-merge can queue', () => {
+    expect(mergeAction({ requiredStatus: 'pending', allowAutoMerge: false })).toBe('wait')
+    expect(mergeAction({ requiredStatus: 'pending', allowAutoMerge: true })).toBe('queue-auto')
+    expect(mergeAction({ requiredStatus: 'ready', allowAutoMerge: false })).toBe('squash-now')
+    expect(mergeAction({ requiredStatus: 'failed', allowAutoMerge: true })).toBe('failed')
   })
 
   it('reads gh bucket names', () => {

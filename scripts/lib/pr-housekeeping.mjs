@@ -94,6 +94,17 @@ export function staleDecision(input) {
  * @param {Array<{ name?: string, state?: string, bucket?: string }>} checks
  * @returns {'ready' | 'pending' | 'failed'}
  */
+/**
+ * @param {{ requiredStatus: 'ready' | 'pending' | 'failed', allowAutoMerge: boolean }} input
+ * @returns {'squash-now' | 'queue-auto' | 'wait' | 'failed'}
+ */
+export function mergeAction(input) {
+  if (input.requiredStatus === 'failed') return 'failed'
+  if (input.requiredStatus === 'ready') return 'squash-now'
+  if (input.allowAutoMerge) return 'queue-auto'
+  return 'wait'
+}
+
 export function requiredChecksStatus(checks) {
   const byName = new Map()
   for (const check of checks ?? []) {
