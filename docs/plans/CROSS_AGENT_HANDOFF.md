@@ -1,8 +1,8 @@
 # Current — 2026-10-14 (Cursor, Tetherow page-payload baseline)
 
-Surface: Cursor cloud. Branch `cursor/tetherow-payload-baseline-58a6` (#553) merged `origin/main` (handoff conflict only). Matt/CoS approved a normal merge once CI is green except `/sell` content-floor and the Lighthouse JSON flake. Nobody pushes main. Nothing sent.
+Surface: Cursor cloud. Branch `cursor/tetherow-payload-baseline-58a6` (#553). Closed #554 with the note that trimming under 710 KB drops visible homes, sold rows, and map pins. Nobody pushes main. Nothing sent.
 
-**What this branch does.** Resets `ci:page-payload` for `/communities/tetherow` from 710,608 to 797,069 bytes. Local `next start` measured 797,069 three times (22 listing cards). The 24-card SSR cap cannot shrink Tetherow; the growth is #525 footer by-area plus the existing fold that parity still requires in the served HTML. Other ratchet pages kept their shrink-only numbers. Hard 200 KB / 24-card dump line unchanged.
+**What this branch does.** Resets `ci:page-payload` for `/communities/tetherow` from 710,608 to 841,616 bytes. Live production identity on current main is 825,232 (21 #homes cards, 22 serialized listing keys, 35 sold thumbs). Local `next start` was 797,069. Baseline is 825,232 + 16 KiB so the next on-market home does not fail the shrink-only line. Other ratchet pages kept their numbers. Hard 200 KB / 24-card dump line unchanged.
 
 **Not this change.** Do not merge `cursor/ai-voiceover-scripts-8a9c` unless Matt asks. Do not merge the SMS suppression branch. Do not apply `20261013180000_crm_suppressions_cleared.sql`. Do not run the CRM backfill. Do not send. Do not merge `fix/cma-phase-match`. Do not rebuild letters. Hold #452. Hold #471.
 
