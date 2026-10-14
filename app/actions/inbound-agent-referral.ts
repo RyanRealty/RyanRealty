@@ -12,7 +12,7 @@
 
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { queueBrokerAlert } from '@/lib/crm/broker-alerts'
-import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { fireLeadGenerated, persistGaClientIdFromCookies } from '@/lib/lead-tracking'
 import {
   DEFAULT_INBOUND_FEE_PCT,
   INBOUND_REFERRAL_SOURCE,
@@ -122,10 +122,12 @@ export async function submitInboundAgentReferral(
       ].join('\n'),
     }).catch(() => {})
 
+    await persistGaClientIdFromCookies(client.personId)
     await fireLeadGenerated({
       lp_variant: 'inbound-agent-referral',
       lead_type: parsed.intent === 'sell' ? 'seller_listing' : 'buyer_question',
       form_id: 'inbound_agent_referral',
+      crm_person_id: client.personId,
       extra: {
         referral: 'inbound',
         area: parsed.area,

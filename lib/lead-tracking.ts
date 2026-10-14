@@ -209,6 +209,25 @@ async function requestContext(): Promise<{
 }
 
 /**
+ * First-touch write of the `_ga` cookie onto `crm_people.custom.gaClientId`.
+ * Every lead form action calls this after the CRM person exists so offline
+ * conversions can stitch later, even when generate_lead is skipped (decline,
+ * GPC, or a path that never reaches fireLeadGenerated). Never overwrites an
+ * existing id. Fail-soft: never throws.
+ */
+export async function persistGaClientIdFromCookies(
+  personId: number | null | undefined,
+): Promise<void> {
+  try {
+    const cookieStore = await cookies()
+    await rememberGaClientId(personId, readGa4ClientIdFromCookies(cookieStore))
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.warn(`[lead-tracking] persistGaClientIdFromCookies failed: ${msg}`)
+  }
+}
+
+/**
  * The GA4 params of one generate_lead, or null when the lead_type or form_id
  * is not on the fixed lists (then nothing is sent and the log says why).
  * Exported for lead-event.test.ts.
@@ -260,16 +279,16 @@ export async function fireLeadGenerated(params: FireLeadParams): Promise<void> {
       return
     }
     const { clientId, utm, analyticsAllowed } = await requestContext()
+    // First-touch persist is first-party CRM state, not a GA4 send. Every form
+    // fill that created a person keeps the cookie so #543 can stitch later,
+    // even when GPC or a decline blocks generate_lead.
+    await rememberGaClientId(params.crm_person_id ?? params.fub_person_id, clientId)
     if (!analyticsAllowed) {
       console.info(`[lead-tracking] ${eventName} not sent to GA4 for ${params.lp_variant}: GPC or a cookie decline`)
       return
     }
     const eventParams = leadEventParams(params, mergeLeadAttribution(utm, params.attribution))
     if (!eventParams) return
-    // Offline conversions (qualify_lead / close_convert_lead) run from cron
-    // and have no request cookies. Persist the `_ga` client_id on the contact
-    // so that later send can stitch to the same GA4 user.
-    void rememberGaClientId(params.crm_person_id ?? params.fub_person_id, clientId)
     await fireGa4Event({
       eventName,
       clientId,
