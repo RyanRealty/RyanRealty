@@ -36,6 +36,8 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Social queue.** Every GBP, LinkedIn and X post is a draft in `content-queue/<slug>/<platform>.md` that passes `npm run ci:content-queue` (required via `merge-gate`). It posts only from `.github/workflows/content-queue-publish.yml` when `CONTENT_QUEUE_LIVE=true`. A draft that passes the gate is publishable (no `approved: true` door; Matt 2026-10-14 11:59 PT). LinkedIn is on for Matt's profile and the company page. Threads stays off the old `/api/social/publish` door. Rules: section "Social content queue" below.
 
+**Twilio inbound ack.** `/api/twilio/inbound-sms`, `/api/twilio/voice`, `/api/twilio/voice-complete`, and `/api/twilio/recording` validate the Twilio signature, persist the raw payload in one fast insert (`twilio_webhook_raw_events`, 2s statement timeout), and return TwiML/200 immediately. CRM enrichment, timeline writes, DNC auto-clear, and opt-out handling run after the ack (`after` / waitUntil) or via `/api/cron/twilio-webhook-replay`. STOP keywords still opt out. Never await Supabase or CRM work on the Twilio webhook hot path. Gate: `ci:twilio-webhook-ack`. Founding case: 11200/11203 on SM872130d80ef66b91a9a3f1bd837eb53e.
+
 ---
 
 ## Process land path (this file is the source)
@@ -53,8 +55,21 @@ These outrank every later line in this file, every skill, and every handoff or p
 9. **Tracked client email.** All client and lead emails go out through the CRM tracked send (`sendGovernedEmail` / `sendOneOffEmail` on the Resend rail: signed `/api/track/e/click` links, open pixel, `email_events`, `crm_timeline`). Never Gmail directly (not the composer, not DWD, not a personal mailbox). Matt's per-item send approval still applies.
 10. **merge-gate.** CI job `merge-gate` is the required land-path rollup: lint, gates, unit, and on app PRs build / e2e / a11y. Do not require Lighthouse or content-floor. A ruleset or branch protection on `main` should require `merge-gate` + `security-scan`, block direct pushes and force-pushes, require a PR, and let repository admins bypass in an emergency. This session's GitHub App token 403s Administration (`Resource not accessible by integration`); do not push an empty commit to `main` until the API shows protection is active.
 11. **Post-merge steps are automated.** A merge to `main` must not leave `npm run db:push`, a hosted schema apply, or any other required production step as a hand command. `.github/workflows/supabase-migrations.yml` dry-runs then applies `supabase/migrations/**` on push to `main` (project `dwvlophlbvvygjfxcrhm`). Already-applied SQL is tolerated. A failed run opens or comments on a `migration-failed` issue. Never tell anyone to run `npm run db:push` after merge.
+12. **Twilio inbound ack.** Validate the signature, persist the raw payload (`twilio_webhook_raw_events`), return TwiML/200, then do CRM / timeline / STOP work after the ack or via the replay cron. Never block the carrier webhook on Supabase.
 
 ---
+
+## Twilio inbound webhooks (Matt 2026-10-14)
+
+Twilio errors 11200 / 11203 fire when the inbound SMS or voice webhook does not return 2xx within about 15 seconds. A slow Supabase pooler must not hold that ack.
+
+1. Validate `X-Twilio-Signature` (`verifiedTwilioParams`). Reject spoofed posts with 403.
+2. Persist the raw form payload with one fast insert into `twilio_webhook_raw_events` (unique on `kind` + MessageSid / CallSid / RecordingSid). The insert RPC has a 2s `statement_timeout`. If the insert fails, log `[twilio-raw-event-fallback]` and still ack.
+3. Return TwiML or 200 immediately. STOP / START / HELP replies are decided from the body on this path. Voice TwiML routing lookups are budgeted the same 2s and fail open to env / voicemail.
+4. CRM enrichment, timeline writes, DNC auto-clear (`clearNonOptOutSuppressions`), broker forwards, and STOP/START suppression writes run after the response via `after()` (Vercel waitUntil) or `/api/cron/twilio-webhook-replay`. Replay is idempotent on the provider sid.
+5. STOP keywords must still opt out. The hot-path TwiML promises it; the processor and the cron both write `addSuppression`.
+
+Gate: `ci:twilio-webhook-ack` (in `ci:gates`, lane `always`).
 
 ## Social content queue (Matt 2026-10-14)
 

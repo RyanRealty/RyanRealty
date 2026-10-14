@@ -13,6 +13,7 @@ keeps being violated, the answer is a new gate, not more prose.
 | # | Gate | Mechanism | Source |
 |---|---|---|---|
 | G1 | DAL boundary — no raw `from('<table>')` outside `lib/data/` | ESLint `no-restricted-syntax` (error) + `scripts/check-dal-boundary.mjs` (ratcheted) | Plan §4 + CLAUDE.md §6 |
+| **G-twilio-ack** | **Twilio inbound webhooks ack under the 15s deadline** — signature, one 2s raw insert into `twilio_webhook_raw_events`, TwiML/200, then CRM / timeline / STOP after ack or via `/api/cron/twilio-webhook-replay`. STOP still opts out. Founding case: 11200/11203 on SM872130d80ef66b91a9a3f1bd837eb53e. | `scripts/check-twilio-webhook-ack.mjs` (`ci:twilio-webhook-ack`, always lane) + `lib/crm/twilio-webhook-ack.test.ts` | AGENTS.md Twilio inbound ack; Matt 2026-10-14 |
 | G4 | Design tokens — no raw hex, no retired fonts, no bg-image hero | `scripts/lint-design-tokens.js --base-diff` | CLAUDE.md §5 / Plan §10 |
 | G5 | SEO route metadata + JSON-LD authoring | `scripts/check-seo-routes.mjs` + `scripts/check-seo-authoring.mjs` | Plan §1 |
 | G6 | **Mockup parity** — every gated route imports every component the matching mockup contract requires | `scripts/check-mockup-parity.mjs` (ratcheted) + per-route `design_system/ryan-realty/ui_kits/<route>/parity.json` | Plan §1 + Wave 3 §9 |
