@@ -118,4 +118,10 @@ describe('server events join the visitor GA4 session (2026-10-14)', () => {
     expect(p.session_id).toBeUndefined()
     expect(p.page_location).toBeUndefined()
   })
+
+  it('a provider webhook still honors a broker browser cookie', async () => {
+    h.headers = { cookie: 'rr_internal=1' }
+    await fireLeadGenerated({ ...LEAD, form_id: 'meta_lead_ad', serverToServer: true } as never)
+    expect(h.fireGa4Event).not.toHaveBeenCalled()
+  })
 })

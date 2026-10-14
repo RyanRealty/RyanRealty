@@ -63,7 +63,7 @@ const TOKEN = signPersonLinkToken(PERSON, 'document')
 
 beforeEach(() => {
   state.cookies = { rr_vid: 'vid-A' }
-  state.headers = { 'user-agent': HUMAN_UA }
+  state.headers = { 'user-agent': HUMAN_UA, host: 'ryan-realty.com' }
   state.cookieSet.mockReset()
   state.backfill.mockReset()
   state.backfill.mockResolvedValue({ ok: true, sessionFound: true, alreadyIdentified: false, eventsBackfilled: 3, errors: [] })

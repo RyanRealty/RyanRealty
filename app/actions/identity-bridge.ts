@@ -15,7 +15,7 @@
 
 import { cookies, headers } from 'next/headers'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
-import { ga4ServerContext, ga4ServerSendAllowed, ga4SessionEventParams } from '@/lib/analytics/ga4-server-context'
+import { ga4ServerEventParams, ga4ServerSend } from '@/lib/analytics/ga4-server-context'
 import {
   backfillSessionToFub,
   isAutomatedSession,
@@ -162,18 +162,17 @@ async function bridgeIdentifiedPerson(
   // funnel and ties future events on this browser to a known id.
   // The browser's own GA4 session (lib/analytics/ga4-server-context.ts), and
   // nothing at all under GPC, a decline, or a request GA4 does not count.
-  const ga4 = await ga4ServerContext()
-  if (ga4ServerSendAllowed(ga4)) {
+  const ga4 = await ga4ServerSend()
+  if (ga4) {
     void fireGa4Event({
       eventName: 'person_identified',
       clientId: ga4.clientId,
-      eventParams: {
-        ...ga4SessionEventParams(ga4),
+      eventParams: ga4ServerEventParams(ga4.ctx, {
         person_id: id,
         identify_source: 'email-click',
         source: 'crm',
         medium: 'email',
-      },
+      }),
     }).catch((e) => console.warn('[identity-bridge] GA4 event failed:', e))
   }
 

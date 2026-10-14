@@ -21,8 +21,8 @@
  *   npm run analytics:audit -- --days=7
  *   npm run analytics:audit -- --json   # machine-readable
  *
- * Exit code: 0 when every check passes, 1 when any FAIL line is printed, 2 when
- * credentials are missing.
+ * Exit code: 0 when every check passes, 1 when any FAIL or ERROR (an API read that
+ * failed) is printed, 2 when credentials are missing.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { google } from 'googleapis'
@@ -112,8 +112,12 @@ cfg.customDimensions = await safe(async () => ((await adminB.properties.customDi
 cfg.googleAdsLinks = await safe(async () => ((await adminB.properties.googleAdsLinks.list({ parent: P })).data.googleAdsLinks || []).map((l) => l.customerId))
 cfg.primaryChannelGroup = await safe(async () => ((await adminA.properties.channelGroups.list({ parent: P })).data.channelGroups || []).find((c) => c.primary)?.displayName || 'Default channel group')
 report.sections.ga4Config = cfg
-if (cfg.retention !== 'FOURTEEN_MONTHS') finding('FAIL', 'ga4', `Event data retention is ${JSON.stringify(cfg.retention)}, not 14 months.`)
-if (cfg.signals !== 'GOOGLE_SIGNALS_ENABLED') finding('WARN', 'ga4', `Google Signals is ${JSON.stringify(cfg.signals)}. Matt's decision is ON.`)
+// An API error is reported as ERROR (could not read), never as a finding about
+// the data: a failed read is a fact about the query, not about tracking (CLAUDE.md §0).
+const isErr = (v) => v && typeof v === 'object' && !Array.isArray(v) && 'error' in v
+for (const [k, v] of Object.entries(cfg)) if (isErr(v)) finding('ERROR', 'ga4', `Could not read GA4 ${k}: ${v.error}`)
+if (!isErr(cfg.retention) && cfg.retention !== 'FOURTEEN_MONTHS') finding('FAIL', 'ga4', `Event data retention is ${JSON.stringify(cfg.retention)}, not 14 months.`)
+if (!isErr(cfg.signals) && cfg.signals !== 'GOOGLE_SIGNALS_ENABLED') finding('WARN', 'ga4', `Google Signals is ${JSON.stringify(cfg.signals)}. Matt's decision is ON.`)
 
 // ── GA4 data health ─────────────────────────────────────────────────────────
 const health = {}
@@ -128,8 +132,10 @@ health.leadEventsByHost = await safe(() =>
   run({ dimensions: [{ name: 'hostName' }], metrics: [{ name: 'eventCount' }], dimensionFilter: { filter: { fieldName: 'eventName', stringFilter: { value: 'generate_lead' } } }, limit: 10 }),
 )
 report.sections.ga4Health = health
+for (const [k, v] of Object.entries({ events, totals, channels: health.channels, hostnames: health.hostnames, leadEventsByHost: health.leadEventsByHost }))
+  if (isErr(v)) finding('ERROR', 'ga4', `Could not read the GA4 ${k} report: ${v.error}`)
 
-if (!evCount.session_start) finding('FAIL', 'ga4', `session_start is 0 over ${DAYS} days: the browser Google tag is not reaching GA4 (outage canary).`)
+if (Array.isArray(events) && !evCount.session_start) finding('FAIL', 'ga4', `session_start is 0 over ${DAYS} days: the browser Google tag is not reaching GA4 (outage canary).`)
 if (Array.isArray(health.channels)) {
   const total = health.channels.reduce((a, r) => a + r[1], 0)
   const unassigned = health.channels.find((r) => r[0] === 'Unassigned')?.[1] || 0
@@ -147,7 +153,7 @@ if (Array.isArray(health.leadEventsByHost)) {
   const orphan = health.leadEventsByHost.find((r) => r[0] === '(not set)')?.[1] || 0
   if (total && orphan / total > 0.2) finding('WARN', 'ga4', `${orphan} of ${total} generate_lead events have no hostname: they are not joined to the visitor's GA4 session (lib/analytics/ga4-server-context.ts).`)
 }
-if (Array.isArray(cfg.keyEvents)) {
+if (Array.isArray(cfg.keyEvents) && Array.isArray(events)) {
   const dead = cfg.keyEvents.filter((k) => !evCount[k] && k !== 'purchase')
   health.keyEventsWithNoEvents = dead
   if (dead.length) finding('INFO', 'ga4', `Key events with 0 events in ${DAYS} days: ${dead.join(', ')}.`)
@@ -173,6 +179,7 @@ sc.searchTotals = await safe(async () => {
   return { startDate: start, endDate: end, clicks: r.clicks ?? 0, impressions: r.impressions ?? 0, ctr: r.ctr ?? 0, position: r.position ?? null }
 })
 report.sections.searchConsole = sc
+for (const [k, v] of Object.entries(sc)) if (isErr(v)) finding('ERROR', 'gsc', `Could not read Search Console ${k}: ${v.error}`)
 if (Array.isArray(sc.sitemaps)) {
   for (const m of sc.sitemaps) {
     if (m.errors) finding('FAIL', 'gsc', `Sitemap ${m.path} has ${m.errors} errors.`)
@@ -228,7 +235,7 @@ if (!container) {
 report.sections.gtm = gtm
 
 // ── Output ──────────────────────────────────────────────────────────────────
-const failed = report.findings.some((f) => f.level === 'FAIL')
+const failed = report.findings.some((f) => f.level === 'FAIL' || f.level === 'ERROR')
 if (JSON_OUT) {
   console.log(JSON.stringify(report, null, 2))
 } else {
@@ -259,7 +266,7 @@ if (JSON_OUT) {
   line(`  ${JSON.stringify(gtm)}`)
   line()
   line(`Findings (${report.findings.length})`)
-  for (const f of report.findings) line(`  ${f.level.padEnd(4)} [${f.area}] ${f.text}`)
+  for (const f of report.findings) line(`  ${f.level.padEnd(5)} [${f.area}] ${f.text}`)
   if (!report.findings.length) line('  none')
 }
 process.exit(failed ? 1 : 0)

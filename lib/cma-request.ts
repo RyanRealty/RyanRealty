@@ -517,24 +517,14 @@ export async function createCmaRequest(
     // valuation_requested/90d against ~10 real submissions.
     // 2026-09-07: the place-page field (SITE-01) is a visitor submission too.
     if (requestSource === 'seller-lp' || requestSource === 'fsbo-lp' || requestSource === 'place-page') {
-      // Read the request before anything is detached from it.
-      let ga4Allowed = true
-      let clientId: string | undefined
-      let sessionParams: Record<string, string | number> = {}
-      try {
-        const { ga4ServerContext, ga4ServerSendAllowed, ga4SessionEventParams } = await import('@/lib/analytics/ga4-server-context')
-        const ga4 = await ga4ServerContext()
-        ga4Allowed = ga4ServerSendAllowed(ga4)
-        clientId = ga4.clientId
-        sessionParams = ga4SessionEventParams(ga4)
-      } catch {
-        // Not inside a request: no visitor cookies to read.
-      }
-      if (ga4Allowed) void fireGa4Event({
+      // Read the request before anything is detached from it. Fails closed:
+      // a request that cannot be read sends nothing.
+      const { ga4ServerSend, ga4ServerEventParams } = await import('@/lib/analytics/ga4-server-context')
+      const ga4 = await ga4ServerSend()
+      if (ga4) void fireGa4Event({
         eventName: 'valuation_requested',
-        clientId,
-        eventParams: {
-          ...sessionParams,
+        clientId: ga4.clientId,
+        eventParams: ga4ServerEventParams(ga4.ctx, {
           cma_slug: slug,
           lp_variant: requestSource === 'fsbo-lp' ? 'fsbo' : requestSource === 'place-page' ? 'place-page' : 'seller-home-value',
           broker_slug: broker.slug,
@@ -542,7 +532,7 @@ export async function createCmaRequest(
           lead_type: 'seller',
           subject_city: input.parsedCity ?? undefined,
           subject_state: input.parsedState ?? undefined,
-        },
+        }),
         userProperties: {
           // Short CRM slug (matt/rebecca/paul) — lead-tracking types this
           // property in the short space; the cmas ROW keeps the full slug.

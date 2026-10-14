@@ -35,7 +35,7 @@
 
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 import { rememberGaClientId } from '@/lib/data/analytics/gaClientId'
-import { ga4ServerContext, ga4ServerSendAllowed, ga4SessionEventParams } from '@/lib/analytics/ga4-server-context'
+import { ga4ServerEventParams, ga4ServerSend, type Ga4ServerContext } from '@/lib/analytics/ga4-server-context'
 import {
   isLeadFormId,
   isLeadType,
@@ -188,32 +188,28 @@ export function attributionParamsFromSearch(search: string | URLSearchParams): L
   return out
 }
 
-async function requestContext(): Promise<{
+/**
+ * The request side of a server GA4 event, or null when it must not be sent:
+ * GPC or a stored decline (Matt 2026-10-08), a request GA4 does not count (a
+ * broker's own browser, automation, /admin, a non-production host;
+ * lib/analytics/ga-suppression.ts, Matt 2026-10-05), or a request that could
+ * not be read. The lead record in our own CRM is written by the caller either way.
+ */
+async function requestContext(opts: { serverToServer?: boolean } = {}): Promise<{
   clientId: string | undefined
   utm: LeadAttributionParams
-  /**
-   * False under Global Privacy Control (Sec-GPC: 1) or a stored banner decline
-   * (Matt 2026-10-08), and on any request GA4 must not count: a broker's own
-   * browser, automation, /admin or a preview host (lib/analytics/ga-suppression.ts,
-   * Matt 2026-10-05). The lead record in our own CRM is written by the caller either way.
-   */
-  analyticsAllowed: boolean
-  /** session_id / session_number / page_location: joins the event to the visitor's GA4 session. */
-  sessionParams: Record<string, string | number>
-}> {
-  const ctx = await ga4ServerContext()
+  ctx: Ga4ServerContext | null
+} | null> {
+  const send = await ga4ServerSend(opts)
+  if (!send) return null
+  if (opts.serverToServer) return { clientId: undefined, utm: {}, ctx: null }
   let utm: LeadAttributionParams = {}
   try {
-    utm = attributionParamsFromSearch(new URL(ctx.referer).searchParams)
+    utm = attributionParamsFromSearch(new URL(send.ctx.referer).searchParams)
   } catch {
     // Referer not parseable. No UTMs to capture.
   }
-  return {
-    clientId: ctx.clientId,
-    utm,
-    analyticsAllowed: ga4ServerSendAllowed(ctx),
-    sessionParams: ga4SessionEventParams(ctx),
-  }
+  return { clientId: send.clientId, utm, ctx: send.ctx }
 }
 
 /**
@@ -267,13 +263,12 @@ export async function fireLeadGenerated(params: FireLeadParams): Promise<void> {
       )
       return
     }
-    const { clientId, utm, analyticsAllowed, sessionParams } = params.serverToServer
-      ? { clientId: undefined, utm: {}, analyticsAllowed: true, sessionParams: {} }
-      : await requestContext()
-    if (!analyticsAllowed) {
+    const req = await requestContext({ serverToServer: params.serverToServer })
+    if (!req) {
       console.info(`[lead-tracking] ${eventName} not sent to GA4 for ${params.lp_variant}: GPC, a cookie decline, or a request GA4 does not count`)
       return
     }
+    const { clientId, utm, ctx } = req
     const eventParams = leadEventParams(params, mergeLeadAttribution(utm, params.attribution))
     if (!eventParams) return
     // Offline conversions (qualify_lead / close_convert_lead) run from cron
@@ -283,7 +278,7 @@ export async function fireLeadGenerated(params: FireLeadParams): Promise<void> {
     await fireGa4Event({
       eventName,
       clientId,
-      eventParams: { ...sessionParams, ...eventParams },
+      eventParams: ga4ServerEventParams(ctx, eventParams),
       userProperties: params.broker_slug ? { assigned_broker: params.broker_slug } : undefined,
     })
   } catch (e) {
@@ -304,12 +299,12 @@ export async function fireNonLeadEvent(params: {
   extra?: Record<string, string | number | boolean | undefined | null>
 }): Promise<void> {
   try {
-    const { clientId, utm, analyticsAllowed, sessionParams } = await requestContext()
-    if (!analyticsAllowed) return
+    const req = await requestContext()
+    if (!req) return
     await fireGa4Event({
       eventName: params.event_name,
-      clientId,
-      eventParams: { ...sessionParams, lp_variant: params.lp_variant, ...utm, ...(params.extra ?? {}), form_id: params.form_id },
+      clientId: req.clientId,
+      eventParams: ga4ServerEventParams(req.ctx, { lp_variant: params.lp_variant, ...req.utm, ...(params.extra ?? {}), form_id: params.form_id }),
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)

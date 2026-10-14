@@ -249,8 +249,11 @@ do_push() {
   # Every new session hit that on its first push (2026-10-14). A named branch
   # with no upstream is published to the same name and tracked (-u). main,
   # wt/* and a detached HEAD keep the upstream rule: they must never mint a branch.
-  if [ "$#" -eq 0 ] && ! git rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1; then
-    _br=$(git rev-parse --abbrev-ref HEAD)
+  # "No upstream" is read from the branch's own config (branch.<name>.merge),
+  # not from whether @{u} resolves: a configured upstream whose tracking ref was
+  # pruned must keep its configured target, never be re-pointed by -u.
+  _br=$(git rev-parse --abbrev-ref HEAD)
+  if [ "$#" -eq 0 ] && [ "$_br" != "HEAD" ] && [ -z "$(git config --get "branch.$_br.merge" 2>/dev/null)" ]; then
     case "$_br" in
       main | wt/* | HEAD) git -c push.default=upstream push >"$PUSH_LOG" 2>&1 ;;
       *) git push -u origin "$_br" >"$PUSH_LOG" 2>&1 ;;
