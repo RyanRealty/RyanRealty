@@ -1,0 +1,46 @@
+-- Partial index for the listings sitemap's keyset pages, matching the status
+-- set it reads since #533: Active, Active Under Contract, Pending.
+--
+-- lib/data/sitemap/getListingSitemapRows.ts pages listing_tile_mv by
+-- `WHERE standard_status IN (LISTING_SITEMAP_STATUSES)
+--  [AND listing_key > $last] ORDER BY listing_key LIMIT 1000`, reading as the
+-- `anon` role (statement_timeout = 3s, plan_cache_mode = force_custom_plan).
+--
+-- 20260916080000 gave that read listing_tile_mv_src_public_active_key, whose
+-- predicate is Active + Active Under Contract. #533 (merged 2026-10-13 23:46Z)
+-- added Pending to LISTING_SITEMAP_STATUSES. A three-status IN-list does not
+-- imply a two-status predicate, so the planner fell back to the unique
+-- listing_tile_mv_key over all ~600K rows and filtered status through the heap,
+-- the exact plan the 09-16 index had removed.
+--
+-- Measured on production, 2026-10-14, first page, three statuses
+-- (EXPLAIN ANALYZE, BUFFERS, quiet database, warm cache):
+--   before: Index Scan using listing_tile_mv_key, Rows Removed by Filter
+--           577,011, Buffers shared hit=305,760 read=2,050,
+--           Execution Time 3,622 ms -> over anon's 3s on every first page.
+--   after:  Index Scan using listing_tile_mv_src_on_market_key, no status
+--           filter left, Buffers shared hit=807 read=113, Execution Time
+--           351 ms (same statement, first run after the build).
+--
+-- Applied to production through the Supabase MCP migration channel on
+-- 2026-10-14 during delivery; the hosted-migrations Action then finds the
+-- index present and IF NOT EXISTS makes this file a no-op.
+--
+-- What that cost (Supabase postgres_logs, "canceling statement due to
+-- statement timeout", grouped by query_id 4231575862387612922):
+--   2026-10-13: 0.   2026-10-14 00:00-19:59Z: 588, the largest source on the
+--   database. Each call retries the page up to 4 times (withRetry), and every
+--   sitemap universe build ran it too, so a post-deploy deploy:verify smoke
+--   (six sitemaps fetched at once) put ~20 of these 300K-buffer walks on the
+--   database inside 15 seconds. The matrix inventory read (59 ms alone),
+--   getCommunityBySlug and get_place_schools then timed out behind them.
+--
+-- The predicate is exactly LISTING_SITEMAP_STATUSES, so the IN-list proves it.
+-- lib/data/sitemap/listingSitemapIndex.test.ts fails if that status set and
+-- this predicate ever drift apart again. The 09-16 two-status index stays: the
+-- Active + Active Under Contract readers still use it.
+--
+-- Additive and reversible: DROP INDEX public.listing_tile_mv_src_on_market_key.
+CREATE INDEX IF NOT EXISTS listing_tile_mv_src_on_market_key
+  ON public.listing_tile_mv_src USING btree (listing_key)
+  WHERE standard_status IN ('Active', 'Active Under Contract', 'Pending');
