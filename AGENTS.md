@@ -90,9 +90,9 @@ All ad work (copy, captions, voice, video, avatar) follows this same process on 
 
 1. Same process on every tool. Never drop to a generic script because the tool changed.
 2. Warm and conversational, like a friendly person on a phone call: short sentences, one idea each, light filler, natural pauses. Never scripted, robotic, broadcast, or market-report, and never complicated.
-3. The voiceover is a female voice.
+3. The voiceover is a female voice. **Default engine: Grok TTS, voice Eve** (Matt 2026-10-14, the receptionist's voice), through `lib/grok/tts.ts` (TS) or `scripts/_voice_lib.py` `synth_vo` (Python). ElevenLabs is an explicit opt-in only (`voice.engine: 'elevenlabs'` / `engine="elevenlabs"`); never the fallback. CI: `lib/studio/voice/engine.test.ts` fails if the default engine or voice changes.
 4. TikTok-style burned-in captions, 1-4 words per card, timed from the final rendered audio's timestamps. Never estimated.
-5. Write the VO in the confirmed engine's official markup. ElevenLabs v3/v4: ellipses, line breaks, and audio tags; no `<break>`. ElevenLabs v2: `<break time>`; no audio tags. Grok TTS: inline `[pause]` / `[breath]`; no SSML. Money is spoken words on every engine.
+5. Write the VO in the confirmed engine's official markup. ElevenLabs v3/v4: ellipses, line breaks, and audio tags; no `<break>`. ElevenLabs v2: `<break time>`; no audio tags. Grok TTS (default): inline `[pause]` / `[long-pause]` / `[breath]`, punctuation for pacing, speed about 0.95 for a phone-call feel, `with_timestamps: true` for captions; no SSML. Money is spoken words on every engine.
 6. Facts and numbers stay exactly as in the approved brief. Say "buyers have leverage," never "buyer's market." No em dashes, no client names or addresses, no "top team." Financing ads carry "Not lending advice. Talk to your lender." Nothing publishes without Matt.
 
 ---
@@ -582,7 +582,7 @@ Put it on the work graph (`loop_work_nodes` / `/admin/loop`), not `orchestrate.t
 7. **Geographic hierarchy**: City > optional Neighborhood > Community. "Community" = MLS SubdivisionName. Neighborhoods are higher-level areas that may contain multiple communities. Not every city has defined neighborhoods. The system gracefully handles both cases.
 8. **geo_slug format**: Community-level cache keys use `citySlug:communitySlug` (colon-separated) via `subdivisionEntityKey()`. Never use hyphen-separated format for cache keys.
 9. **Data architecture rule**: See `.cursor/rules/data-architecture.mdc` for stats computation, JSONB strategy, query patterns, caching, performance non-negotiables, and scalability design.
-10. **`market_metric` is cached.** Public pages and routes never query `public.market_metric` live. Reads go through `lib/data/market-truth` (`getMetrics`, `getDetachedOverlays`, `resolveNeighborhoodMetricSlug`, and the admin boards), each wrapped in `unstable_cache` (≥1h, keyed by geo and segment) with in-flight dedupe. `community_subdivisions` is the same pattern, with RPC concurrency capped at 2. Held by `ci:market-metric-cached`.
+10. **`market_metric` is cached.** Public pages and routes never query `public.market_metric` live. Reads go through `lib/data/market-truth` (`getMetrics`, `getDetachedOverlays`, `resolveNeighborhoodMetricSlug`, and the admin boards), each wrapped in `unstable_cache` (≥1h) with in-flight dedupe. `getMetrics` caches per input set and reads only the stats, windows and periods asked for, never a whole geo's history (a whole-slice read timed the zip pages out of their market sections, 2026-10-15). `community_subdivisions` is the same pattern, with RPC concurrency capped at 2. Held by `ci:market-metric-cached`.
 
 ---
 

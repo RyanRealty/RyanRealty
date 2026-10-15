@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   DEFINITION_ID,
   STATS,
@@ -27,6 +27,7 @@ import {
   getMetric,
   getMetrics,
   orderByPrimaryKey,
+  segmentStatPairsFilter,
   staleReason,
 } from '@/lib/data/market-truth/getMetric'
 
@@ -99,6 +100,8 @@ function mockMetricRows(rows: Record<string, unknown>[]) {
   builder.eq = vi.fn(self)
   builder.in = vi.fn(self)
   builder.gte = vi.fn(self)
+  builder.lt = vi.fn(self)
+  builder.or = vi.fn(self)
   builder.order = vi.fn(self)
   builder.limit = vi.fn(self)
   builder.range = vi.fn(self)
@@ -107,12 +110,16 @@ function mockMetricRows(rows: Record<string, unknown>[]) {
 }
 
 describe('getMetrics cache contract', () => {
-  it('wraps the store read in unstable_cache with a 14-day lookback', async () => {
+  it('caches the narrowed read for an input set, keeps the 14-day lookback, and reads no whole-geo slice', async () => {
     const src = readFileSync(resolve('lib/data/market-truth/getMetric.ts'), 'utf8')
     expect(src).toMatch(/unstable_cache/)
-    expect(src).toMatch(/METRIC_LOOKBACK_DAYS = 14/)
-    expect(src).toMatch(/market-metric-slice-v1/)
+    expect(src).toMatch(/market-metric-picked-v2/)
     expect(src).toMatch(/CACHE_WINDOWS\.marketMetric/)
+    // Which rows may answer is #634's rule: computed in the last 14 days.
+    expect(src).toMatch(/METRIC_LOOKBACK_DAYS = 14/)
+    // #634's per-(geo, segment) slice ran 1,000+ rows a slice and timed the
+    // zip, city and sell pages out of their market sections (2026-10-15).
+    expect(src).not.toMatch(/fetchMetricSlice/)
   })
 })
 
@@ -272,6 +279,8 @@ describe('getMetrics reads every page, newest first (2026-10-01)', () => {
       builder.eq = vi.fn(self)
       builder.in = vi.fn(self)
       builder.gte = vi.fn(self)
+      builder.lt = vi.fn(self)
+      builder.or = vi.fn(self)
       builder.order = vi.fn(self)
       builder.range = vi.fn((from: number, to: number) => {
         ranges.push([from, to])
@@ -307,3 +316,261 @@ describe('orderByPrimaryKey (stable pages over a shared computed_at)', () => {
   })
 })
 
+
+/**
+ * A market_metric store that answers the filters getMetrics sends, the way
+ * PostgREST would. `fullRead` ignores the narrowing filters (the publishable
+ * flag, the segment/stat pairs and the period_end bounds) but keeps the
+ * 14-day computed_at lookback, which decides what may answer. That is a read
+ * of every eligible row, the reference the two-stage read must agree with.
+ */
+function serveStore(rows: Record<string, unknown>[], opts: { fullRead: boolean }) {
+  const requests: string[][] = []
+  fromImpl.mockImplementation(() => {
+    const tests: Array<(row: Record<string, unknown>) => boolean> = []
+    const notes: string[] = []
+    let range: [number, number] = [0, 999]
+    const builder: Record<string, unknown> = {}
+    const self = () => builder
+    builder.select = vi.fn(self)
+    builder.order = vi.fn(self)
+    builder.in = vi.fn((column: string, values: unknown[]) => {
+      const wanted = new Set(values.map(String))
+      tests.push((row) =>
+        wanted.has(column === 'period_end' ? String(row[column]).slice(0, 10) : String(row[column])),
+      )
+      return builder
+    })
+    builder.eq = vi.fn((column: string, value: unknown) => {
+      notes.push(`${column}=${String(value)}`)
+      if (!opts.fullRead) tests.push((row) => row[column] === value)
+      return builder
+    })
+    builder.gte = vi.fn((column: string, value: string) => {
+      notes.push(`${column}>=${value}`)
+      if (column === 'computed_at') tests.push((row) => Date.parse(String(row[column])) >= Date.parse(value))
+      else if (!opts.fullRead) tests.push((row) => String(row[column]).slice(0, 10) >= value)
+      return builder
+    })
+    builder.lt = vi.fn((column: string, value: string) => {
+      notes.push(`${column}<${value}`)
+      if (!opts.fullRead) tests.push((row) => String(row[column]).slice(0, 10) < value)
+      return builder
+    })
+    builder.or = vi.fn((expr: string) => {
+      // The one shape getMetrics sends: and(segment.eq."S",stat_id.in.("a","b")),...
+      const groups = [...expr.matchAll(/and\(segment\.eq\."([^"]+)",stat_id\.in\.\(([^)]*)\)\)/g)].map((m) => ({
+        segment: m[1],
+        stats: new Set([...m[2]!.matchAll(/"([^"]+)"/g)].map((q) => q[1])),
+      }))
+      notes.push(`pairs=${groups.map((g) => `${g.segment}:${[...g.stats].join('+')}`).join(';')}`)
+      if (!opts.fullRead) tests.push((row) => groups.some((g) => row.segment === g.segment && g.stats.has(String(row.stat_id))))
+      return builder
+    })
+    builder.range = vi.fn((from: number, to: number) => {
+      range = [from, to]
+      return builder
+    })
+    builder.then = (resolve: (v: unknown) => void) => {
+      requests.push(notes)
+      const pk = (row: Record<string, unknown>) => METRIC_PRIMARY_KEY.map((c) => String(row[c])).join('|')
+      const matched = rows
+        .filter((row) => tests.every((t) => t(row)))
+        .sort((a, b) =>
+          String(a.computed_at) === String(b.computed_at)
+            ? pk(a).localeCompare(pk(b))
+            : String(b.computed_at).localeCompare(String(a.computed_at)),
+        )
+      resolve({ data: matched.slice(range[0], range[1] + 1), error: null })
+    }
+    return builder
+  })
+  return requests
+}
+
+/** Deterministic generator (mulberry32), so a failing store can be replayed by seed. */
+function rng(seed: number) {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = a
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function dayOffset(iso: string, days: number): string {
+  return new Date(Date.parse(`${iso}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10)
+}
+
+const STORE_STATS = ['active_count', 'median_list_active', 'months_of_supply', 'median_days_to_contract'] as const
+const STORE_SEGMENTS = ['condo', 'land'] as const
+
+function generatedStore(seed: number): Record<string, unknown>[] {
+  const next = rng(seed)
+  const rows: Record<string, unknown>[] = []
+  for (const stat_id of STORE_STATS) {
+    for (const segment of STORE_SEGMENTS) {
+      for (const window_months of [0, 12, 24, 36]) {
+        for (let d = 0; d <= 43; d++) {
+          if (next() < 0.45) continue
+          const period_end = dayOffset('2026-09-01', d)
+          rows.push(
+            metricRow({
+              stat_id,
+              segment,
+              window_months,
+              period_end,
+              // Some windows lag their period end (staleReason refuses those).
+              complete_through: dayOffset(period_end, next() < 0.1 ? -9 : -1),
+              computed_at: `${dayOffset(period_end, 1)}T06:2${Math.floor(next() * 10)}:00Z`,
+              is_publishable: next() < 0.55,
+              value: next() < 0.1 ? null : Math.round(next() * 1000),
+              sample_n: 40,
+            }),
+          )
+        }
+      }
+    }
+  }
+  return rows
+}
+
+function storeInputs(): Parameters<typeof getMetrics>[0] {
+  const inputs: Parameters<typeof getMetrics>[0] = []
+  for (const stat of STORE_STATS) {
+    for (const segment of STORE_SEGMENTS) {
+      inputs.push({ stat, geoType: 'city', geoSlug: 'bend', segment })
+      inputs.push({ stat, geoType: 'city', geoSlug: 'bend', segment, windowMonths: 12 })
+    }
+  }
+  inputs.push({ stat: 'active_count', geoType: 'city', geoSlug: 'bend', segment: 'condo', windowMonths: 0, periodEnd: '2026-09-15' })
+  inputs.push({ stat: 'months_of_supply', geoType: 'city', geoSlug: 'madras', segment: 'condo' })
+  return inputs
+}
+
+describe('getMetrics reads the recent days first, then history only for what they leave open (2026-10-14)', () => {
+  beforeEach(() => {
+    fromImpl.mockReset()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    // The cut is three period_end days back: 2026-10-11.
+    vi.setSystemTime(new Date('2026-10-14T20:00:00Z'))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('answers every input exactly as the full read does, over 60 generated stores', async () => {
+    for (let seed = 1; seed <= 60; seed++) {
+      const store = generatedStore(seed)
+      const inputs = storeInputs()
+      serveStore(store, { fullRead: true })
+      const reference = await getMetrics(inputs)
+      serveStore(store, { fullRead: false })
+      const recentFirst = await getMetrics(inputs)
+      expect(recentFirst, `seed ${seed}`).toEqual(reference)
+    }
+  })
+
+  it('makes one read when the recent days answer every input, and never reads past the cut', async () => {
+    const store = [
+      metricRow({ stat_id: 'active_count', segment: 'condo', period_end: '2026-10-14', complete_through: '2026-10-13', computed_at: '2026-10-14T18:21:58Z', value: 214 }),
+      metricRow({ stat_id: 'active_count', segment: 'condo', period_end: '2026-10-13', complete_through: '2026-10-12', computed_at: '2026-10-14T06:22:47Z', value: 210 }),
+      metricRow({ stat_id: 'active_count', segment: 'condo', period_end: '2026-08-23', complete_through: '2026-08-22', computed_at: '2026-08-23T06:20:00Z', value: 150 }),
+    ]
+    const requests = serveStore(store, { fullRead: false })
+    const [cell] = await getMetrics([{ stat: 'active_count', geoType: 'city', geoSlug: 'bend', segment: 'condo' }])
+    expect(cell?.value).toBe(214)
+    expect(requests).toEqual([
+      ['is_publishable=true', 'computed_at>=2026-09-30T20:00:00.000Z', 'pairs=condo:active_count', 'period_end>=2026-10-11'],
+    ])
+  })
+
+  it('reads history for an input whose recent rows are all withheld, and answers with its last publishable row', async () => {
+    // A segment whose sample fell under the floor this week: the newest
+    // publishable row is the one the full read has always returned.
+    const store = [
+      metricRow({ stat_id: 'median_list_active', segment: 'land', period_end: '2026-10-14', complete_through: '2026-10-13', computed_at: '2026-10-14T18:21:58Z', is_publishable: false, withheld_reason: 'below_min_n', value: 410000 }),
+      metricRow({ stat_id: 'median_list_active', segment: 'land', period_end: '2026-10-02', complete_through: '2026-10-01', computed_at: '2026-10-02T06:21:00Z', value: 389000 }),
+      metricRow({ stat_id: 'median_list_active', segment: 'land', period_end: '2026-09-20', complete_through: '2026-09-19', computed_at: '2026-09-20T06:21:00Z', value: 375000 }),
+    ]
+    const requests = serveStore(store, { fullRead: false })
+    const [cell] = await getMetrics([{ stat: 'median_list_active', geoType: 'city', geoSlug: 'bend', segment: 'land' }])
+    expect(cell?.value).toBe(389000)
+    expect(requests).toEqual([
+      ['is_publishable=true', 'computed_at>=2026-09-30T20:00:00.000Z', 'pairs=land:median_list_active', 'period_end>=2026-10-11'],
+      ['is_publishable=true', 'computed_at>=2026-09-30T20:00:00.000Z', 'pairs=land:median_list_active', 'period_end<2026-10-11'],
+    ])
+  })
+
+  it('answers nothing from a row computed before the 14-day lookback', async () => {
+    const store = [
+      metricRow({ stat_id: 'median_list_active', segment: 'land', period_end: '2026-09-20', complete_through: '2026-09-19', computed_at: '2026-09-20T06:21:00Z', value: 375000 }),
+    ]
+    serveStore(store, { fullRead: false })
+    const [cell] = await getMetrics([{ stat: 'median_list_active', geoType: 'city', geoSlug: 'bend', segment: 'land' }])
+    expect(cell).toBeNull()
+  })
+
+  it('skips the recent read when every input is pinned to a period_end before the cut', async () => {
+    const store = [
+      metricRow({ stat_id: 'median_close', segment: 'condo', window_months: 1, period_end: '2026-09-30', complete_through: '2026-10-13', computed_at: '2026-10-14T06:22:00Z', value: 512000 }),
+    ]
+    const requests = serveStore(store, { fullRead: false })
+    const [cell] = await getMetrics([
+      { stat: 'median_close', geoType: 'city', geoSlug: 'bend', segment: 'condo', windowMonths: 1, periodEnd: '2026-09-30' },
+    ])
+    expect(cell?.value).toBe(512000)
+    expect(requests).toHaveLength(1)
+    expect(requests[0]).toContain('period_end<2026-10-11')
+  })
+
+  it('pages the history read past 1,000 rows to the one row that answers', async () => {
+    // 1,000 newer rows the pick refuses (their closed window lags its period
+    // end), then the one fresh row, which lands on the history read's second page.
+    const lagging = Array.from({ length: 1000 }, (_, i) =>
+      metricRow({
+        stat_id: 'months_of_supply',
+        segment: 'condo',
+        window_months: 12,
+        period_end: `2026-10-${String(2 + (i % 8)).padStart(2, '0')}`,
+        complete_through: '2026-09-20',
+        computed_at: '2026-10-10T06:00:00Z',
+        value: 9,
+      }),
+    )
+    const answer = metricRow({
+      stat_id: 'months_of_supply',
+      segment: 'condo',
+      window_months: 12,
+      period_end: '2026-10-01',
+      complete_through: '2026-09-30',
+      computed_at: '2026-10-01T06:00:00Z',
+      value: 4.2,
+    })
+    const requests = serveStore([...lagging, answer], { fullRead: false })
+    const [cell] = await getMetrics([
+      { stat: 'months_of_supply', geoType: 'city', geoSlug: 'bend', segment: 'condo', windowMonths: 12 },
+    ])
+    expect(cell?.value).toBe(4.2)
+    // One recent read, then two history pages.
+    expect(requests).toHaveLength(3)
+    expect(requests[1]).toContain('period_end<2026-10-11')
+  })
+})
+
+describe('segmentStatPairsFilter', () => {
+  it('asks each segment for its own stats only, quoted', () => {
+    expect(
+      segmentStatPairsFilter([
+        { stat: 'active_count', geoType: 'zip', geoSlug: '97702', segment: 'condo' },
+        { stat: 'months_of_supply', geoType: 'zip', geoSlug: '97702', segment: 'condo' },
+        { stat: 'active_count', geoType: 'zip', geoSlug: '97702', segment: 'multifamily_2_4' },
+      ]),
+    ).toBe(
+      'and(segment.eq."condo",stat_id.in.("active_count","months_of_supply")),' +
+        'and(segment.eq."multifamily_2_4",stat_id.in.("active_count"))',
+    )
+  })
+})

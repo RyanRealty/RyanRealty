@@ -6,9 +6,16 @@
  */
 import { normalizeTo10, toE164 } from '@/lib/crm/twilio'
 
-/** Twilio numbers whose unknown callers get the receptionist. Default: spare test line only. */
+/** Runtime env read (bracket access) so Vercel can change these without a rebuild. */
+function envValue(name: string): string {
+  return String(process.env[name] ?? '').trim()
+}
+
+/** Twilio numbers whose unknown callers get the receptionist.
+ *  Production (Matt 2026-10-15): spare + main. Default (unset env / rollback): spare only. */
 export function receptionistLines(): string[] {
-  return (process.env.RECEPTIONIST_LINES ?? '+15412245025').split(',').map((s) => normalizeTo10(s)).filter((s): s is string => !!s)
+  const raw = envValue('RECEPTIONIST_LINES') || '+15412245025'
+  return raw.split(',').map((s) => normalizeTo10(s)).filter((s): s is string => !!s)
 }
 
 export function isReceptionistLine(dialed: string | null | undefined): boolean {
@@ -20,9 +27,9 @@ export function isReceptionistLine(dialed: string | null | undefined): boolean {
 export const XAI_SIP_URI = `sip:${process.env.XAI_SIP_NUMBER ?? '+15412245025'}@sip.voice.x.ai;transport=tls`
 
 
-/** Optional test override: every transfer goes to this number instead (never ring Matt during tests). */
+/** Optional test override. Empty / unset is null so transfers ring real broker cells. */
 export function transferTestTarget(): string | null {
-  return toE164(process.env.RECEPTIONIST_TRANSFER_TEST_TARGET ?? '')
+  return toE164(envValue('RECEPTIONIST_TRANSFER_TEST_TARGET'))
 }
 
 /** Allowlist check for a REFER target coming back from Twilio (ReferTransferTarget like "<tel:+1541...>"). */

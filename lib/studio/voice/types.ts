@@ -14,16 +14,19 @@ export type SpokenWord = { word: string; start: number; end: number }
 /** One caption card: `captions[i]` in the manifest. `words` are indices into the spoken-word list. */
 export type CaptionCard = { text: string; start: number; end: number; words: number[] }
 
-/** The engine's character-level timing, as ElevenLabs returns it (camelCased). Seconds from the first sample of the audio. */
+/** The engine's character-level timing (ElevenLabs alignment or Grok graph_chars/graph_times, camelCased). Seconds from the first sample of the audio. */
 export type CharacterAlignment = {
   characters: string[]
   characterStartTimesSeconds: number[]
   characterEndTimesSeconds: number[]
 }
 
+/** Voice engines. 'grok' (Grok TTS, Eve) is the enforced default; 'elevenlabs' is opt-in only. */
+export type VoiceEngine = 'grok' | 'elevenlabs'
+
 /** The manifest's `voice` block. */
 export type ManifestVoice = {
-  engine: 'elevenlabs'
+  engine: VoiceEngine
   model: string
   voiceId: string
   words: SpokenWord[]

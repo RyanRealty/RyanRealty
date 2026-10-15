@@ -42,7 +42,8 @@ import cv2, numpy as np
 
 LOOP_MAX_DIFF = 0.20
 LOOP_MIN_SSIM = 0.35
-CTA_WORDS = re.compile(r"run your numbers|call (us|today)|text (us|now)|dm (us|me)|link in bio|book (a|now|your)|schedule|get started|contact us|learn more|visit|let'?s talk|reach out|tap|swipe", re.I)
+# \b both sides: OCR noise off plain footage ("Tag tape") must not read as a CTA (E2 v12, 2026-10-14).
+CTA_WORDS = re.compile(r"\b(?:run your numbers|call (us|today)|text (us|now)|dm (us|me)|link in bio|book (a|now|your)|schedule|get started|contact us|learn more|visit|let'?s talk|reach out|tap|swipe)\b", re.I)
 PRICE = re.compile(r"\$\s?\d[\d,\.]*\s?[kmKM]?")
 SOLD = re.compile(r"\b(closed|sold)\b", re.I)
 

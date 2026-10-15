@@ -72,8 +72,10 @@ beforeEach(() => {
 })
 
 describe('the GPC notice: no session id, nothing identifying in it', () => {
+  // A CLAIMED cookie counts here (consent integrity, 2026-10-14): recording an
+  // opt-out is the safe direction; only an opt-IN needs a verified identity.
   it('records the suppression for the contact on the signed rr_pid cookie, and writes nothing else', async () => {
-    const res = await track({ gpc: true }, { cookies: { rr_pid: personCookieValue(PERSON), rr_vid: VID } })
+    const res = await track({ gpc: true }, { cookies: { rr_pid: personCookieValue(PERSON, 'claimed'), rr_vid: VID } })
     expect(res.status).toBe(200)
     expect(await res.json()).toMatchObject({ ok: true, dropped: true, reason: 'gpc_opt_out', suppressionRecorded: true })
     expect(gpc.suppress).toHaveBeenCalledTimes(1)
@@ -102,7 +104,7 @@ describe('the GPC notice: no session id, nothing identifying in it', () => {
   })
 
   it('a decline does not stop the opt-out being recorded for a contact we know', async () => {
-    await track({ gpc: true, consent: 'declined' }, { cookies: { rr_pid: personCookieValue(PERSON) } })
+    await track({ gpc: true, consent: 'declined' }, { cookies: { rr_pid: personCookieValue(PERSON, 'verified') } })
     expect(gpc.suppress).toHaveBeenCalledWith(PERSON)
     nothingWritten()
   })
@@ -126,7 +128,7 @@ describe('the other shapes GPC arrives in', () => {
   it('the Sec-GPC header alone drops an ordinary event before any write', async () => {
     await track(
       { sessionId: '00000000-0000-4000-8000-000000000002', eventType: 'page_view', pageUrl: 'https://ryan-realty.com/sell', consent: 'all' },
-      { secGpc: true, cookies: { rr_pid: personCookieValue(PERSON) } },
+      { secGpc: true, cookies: { rr_pid: personCookieValue(PERSON, 'verified') } },
     )
     expect(gpc.suppress).toHaveBeenCalledWith(PERSON)
     nothingWritten()

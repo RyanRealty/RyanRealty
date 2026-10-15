@@ -86,13 +86,21 @@ export function renderConsentBarHtml(params: {
   personId: number
   address: string | null
   smsConsentText: string
+  /**
+   * The signed `?_pid=` link token the bar was shown for, when that is how the
+   * recipient proved who they are. The POST accepts it as proof, so the answer
+   * lands even when no verified cookie was set (Global Privacy Control, a banner
+   * decline). Already in the page's own address; never a cookie value.
+   */
+  proof?: string | null
 }): string {
   const addr = params.address ? escapeHtml(params.address) : 'your home'
   return `
 <div id="rr-consent-bar" style="position:fixed;left:0;right:0;bottom:0;z-index:2147483000;background:${CREAM};color:${NAVY};border-top:1px solid rgba(16,39,66,0.12);box-shadow:0 -8px 30px rgb(16 39 66 / 0.08);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <form method="POST" action="/api/cma/register" style="max-width:920px;margin:0 auto;padding:14px 20px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;">
     <input type="hidden" name="slug" value="${escapeHtml(params.slug)}">
-    <input type="hidden" name="pid" value="${params.personId}">
+    <input type="hidden" name="pid" value="${params.personId}">${params.proof ? `
+    <input type="hidden" name="proof" value="${escapeHtml(params.proof)}">` : ''}
     <span style="font-size:14px;font-weight:600;flex:1 1 220px;">Keep this report current?</span>
     <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.4;flex:1 1 260px;"><input type="checkbox" name="emailOptIn" value="1" style="margin-top:2px"><span>Email me when the market moves for ${addr}.</span></label>
     <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.4;flex:2 1 320px;color:rgba(16,39,66,0.8);"><input type="checkbox" name="smsOptIn" value="1" style="margin-top:2px"><span>${escapeHtml(params.smsConsentText)}</span></label>
