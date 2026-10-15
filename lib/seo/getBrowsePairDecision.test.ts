@@ -29,7 +29,7 @@ const MV = [
   // bend/cambria: 22 closed, 3 for sale -> sold-history, emitted
   { cityLower: 'bend', subdivisionName: 'Cambria', rows: [row('Closed', 22), row('Expired', 3), row('Canceled', 4), row('Active', 3)] },
   // bend/boulevard: indexable plat twin
-  { cityLower: 'bend', subdivisionName: 'Boulevard', rows: [row('Closed', 40), row('Active', 1)] },
+  { cityLower: 'bend', subdivisionName: 'Boulevard', rows: [row('Closed', 40), row('Active', 4)] },
   // bend/amundson: 7 closed, none for sale -> thin
   { cityLower: 'bend', subdivisionName: 'Amundson', rows: [row('Closed', 7)] },
   // bend/aspenb: an MLS code -> withheld
@@ -138,17 +138,89 @@ describe('getBrowsePairDecision (page)', () => {
 })
 
 describe('getBrowsePairSitemapPaths (sitemap) — the same decision', () => {
-  it('emits only sold-history pairs of the listed cities', async () => {
+  it('submits self-canonical pairs as themselves and a plat twin as the page it canonicalizes to', async () => {
     const paths = await getBrowsePairSitemapPaths(['bend', 'la-pine'])
-    expect(paths).toEqual(['/homes-for-sale/bend/cambria', '/homes-for-sale/la-pine/forest-view-est'])
-    // Not the plat twin, not the thin pair, not the MLS code, not the community.
+    expect(paths).toEqual([
+      '/homes-for-sale/bend/cambria',
+      '/homes-for-sale/la-pine/forest-view-est',
+      '/subdivisions/boulevard',
+    ])
+    // The plat twin is never submitted as itself; neither is the thin pair, the MLS code or the community.
     for (const dropped of ['boulevard', 'amundson', 'aspenb', 'tetherow']) {
       expect(paths).not.toContain(`/homes-for-sale/bend/${dropped}`)
     }
   })
 
+  it('submits each /subdivisions/{slug} once even when two pairs twin to the same plat (a word break)', async () => {
+    inventory.mockResolvedValue([
+      ...MV,
+      { cityLower: 'bend', subdivisionName: 'Deschutes RiverWoods', rows: [row('Closed', 3046), row('Active', 16)] },
+      { cityLower: 'bend', subdivisionName: 'Deschutes River Woods', rows: [row('Closed', 12), row('Active', 4)] },
+    ])
+    indexable.mockResolvedValue([
+      { slug: 'boulevard', name: 'Boulevard', citySlug: 'bend', closedCount: 40 },
+      { slug: 'deschutes-river-woods', name: 'Deschutes River Woods', citySlug: 'bend', closedCount: 3058 },
+    ])
+    platCounts.mockResolvedValue([
+      { slug: 'boulevard', label: 'Boulevard', topCityLower: 'bend' },
+      { slug: 'deschutes-river-woods', label: 'Deschutes River Woods', topCityLower: 'bend' },
+    ])
+    const paths = await getBrowsePairSitemapPaths(['bend'])
+    expect(paths.filter((p) => p === '/subdivisions/deschutes-river-woods')).toHaveLength(1)
+    expect(paths).not.toContain('/homes-for-sale/bend/deschutes-riverwoods')
+    expect(paths).not.toContain('/homes-for-sale/bend/deschutes-river-woods')
+  })
+
   it('emits nothing when the inventory read failed (thinner sitemap, never a fabricated one)', async () => {
     inventory.mockResolvedValue([])
     expect(await getBrowsePairSitemapPaths(['bend'])).toEqual([])
+  })
+
+  it('fails closed when the indexable plat set could not be read: no pair, so no plat twin goes out as itself', async () => {
+    // The 2026-10-14 incident: geo.xml was built with an empty plat set, the
+    // page-side decision then fell open, and 69 plat twins went out as pairs.
+    indexable.mockResolvedValue([])
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      expect(await getBrowsePairSitemapPaths(['bend', 'la-pine'])).toEqual([])
+      expect(error).toHaveBeenCalledWith(expect.stringContaining('browse pairs withheld'))
+    } finally {
+      error.mockRestore()
+    }
+    // The page, reading the same unreadable set, still fails open: indexable, self canonical.
+    const page = await getBrowsePairDecision('bend', 'boulevard', async () => null)
+    expect(page.decision.index).toBe(true)
+    expect(page.decision.canonicalPath).toBe('/homes-for-sale/bend/boulevard')
+    expect(page.decision.emit).toBe(false)
+  })
+
+  it('judges the pairs against the plat set the caller hands in, not a second read of it', async () => {
+    const handed = Promise.resolve([{ slug: 'boulevard', name: 'Boulevard', citySlug: 'bend', closedCount: 40 }])
+    indexable.mockRejectedValue(new Error('a second read of the plat set must not happen'))
+    const paths = await getBrowsePairSitemapPaths(['bend'], handed)
+    expect(paths).toContain('/subdivisions/boulevard')
+    expect(paths).toContain('/homes-for-sale/bend/cambria')
+    expect(indexable).not.toHaveBeenCalled()
+  })
+
+  it('the pairs it submits and the pages the page canonicalizes to are the same URLs', async () => {
+    // For every pair of the MV, the sitemap URL is the canonical the page serves
+    // whenever the page is indexable and the pair is submitted at all.
+    const index = await (await import('./getBrowsePairDecision')).getBrowsePairIndex()
+    const submitted = new Set(await getBrowsePairSitemapPaths(['bend', 'la-pine']))
+    for (const key of index.pairs.keys()) {
+      const [city, area] = key.split('/') as [string, string]
+      if (city !== 'bend' && city !== 'la-pine') continue
+      const { decision } = await getBrowsePairDecision(city, area, async () => null)
+      const self = `/homes-for-sale/${city}/${area}`
+      if (submitted.has(self)) {
+        expect(decision.canonicalPath, self).toBe(self)
+        expect(decision.index, self).toBe(true)
+      }
+      if (decision.kind === 'plat-twin') {
+        expect(submitted.has(self), self).toBe(false)
+        expect(submitted.has(decision.canonicalPath!), self).toBe(true)
+      }
+    }
   })
 })

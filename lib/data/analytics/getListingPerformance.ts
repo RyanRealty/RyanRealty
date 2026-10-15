@@ -66,13 +66,27 @@ function topSource(m: Map<string, number>): string {
 export async function getListingPerformance({
   startDate,
   endDate,
+  sinceIso,
+  untilIso,
+  humanOnly = false,
 }: {
   startDate: string
   endDate: string
+  /** Exact instants, when the caller's days are not UTC days (the Website view uses Pacific days). */
+  sinceIso?: string
+  untilIso?: string
+  /**
+   * Leave out views from sessions flagged as automation
+   * (visitor_sessions.is_automated), filtered in the database through the
+   * session foreign key. Measured 2026-10-14 for UTC days Oct 7-13: flagged sessions
+   * owned 3,081 of the 4,122 listing views. Off unless asked for; the Website
+   * view and the listing-performance page both ask for it (2026-10-14).
+   */
+  humanOnly?: boolean
 }): Promise<ListingPerformanceResult> {
   const supabase = createServiceClient()
-  const since = `${startDate}T00:00:00.000Z`
-  const until = `${endDate}T23:59:59.999Z`
+  const since = sinceIso ?? `${startDate}T00:00:00.000Z`
+  const until = untilIso ?? `${endDate}T23:59:59.999Z`
 
   // Pull listing_view events for the selected range, then aggregate in JS.
   // Paged read — PostgREST caps single responses at 1,000 rows, so a bare
@@ -88,18 +102,23 @@ export async function getListingPerformance({
     event_at: string
     source_domain: string
   }>(
-    (from, to) =>
-      supabase
-        .from('visitor_events')
-        .select(
-          'session_id, listing_mls, listing_street, listing_city, listing_state, listing_price, page_url, event_at, source_domain',
-        )
+    (from, to) => {
+      const cols =
+        'session_id, listing_mls, listing_street, listing_city, listing_state, listing_price, page_url, event_at, source_domain'
+      const base = humanOnly
+        ? supabase
+            .from('visitor_events')
+            .select(`${cols}, visitor_sessions!inner(is_automated)`)
+            .eq('visitor_sessions.is_automated', false)
+        : supabase.from('visitor_events').select(cols)
+      return base
         .eq('event_type', 'listing_view')
         .not('listing_mls', 'is', null)
         .gte('event_at', since)
         .lte('event_at', until)
         .order('id', { ascending: true })
-        .range(from, to),
+        .range(from, to)
+    },
     50000,
   )
   if (error) {

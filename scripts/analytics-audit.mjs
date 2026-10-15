@@ -140,8 +140,24 @@ health.hostnames = await safe(() => run({ dimensions: [{ name: 'hostName' }], me
 health.leadEventsByHost = await safe(() =>
   run({ dimensions: [{ name: 'hostName' }], metrics: [{ name: 'eventCount' }], dimensionFilter: { filter: { fieldName: 'eventName', stringFilter: { value: 'generate_lead' } } }, limit: 10 }),
 )
+// Known contacts (crm-contacts-tagged-in-ga4): the events that carry a user_id
+// and how many users. user_id is a hashed CRM id (lib/analytics/ga4-user-id.ts).
+// session_start and user_engagement come only from the browser Google tag, so a
+// user id on them proves the browser path (AnalyticsIdentityBridge); the server
+// path (generate_lead, person_identified, the page-view mirror) shows on those names.
+health.userIdByEvent = await safe(() =>
+  run({
+    dimensions: [{ name: 'eventName' }],
+    metrics: [{ name: 'eventCount' }, { name: 'totalUsers' }],
+    dimensionFilter: { filter: { fieldName: 'signedInWithUserId', stringFilter: { value: 'yes' } } },
+    orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+    limit: 50,
+  }),
+)
+const signedIn = await safe(() => run({ dimensions: [{ name: 'signedInWithUserId' }], metrics: [{ name: 'activeUsers' }] }))
+health.knownContactUsers = Array.isArray(signedIn) ? (signedIn.find((r) => r[0] === 'yes')?.[1] ?? 0) : signedIn
 report.sections.ga4Health = health
-for (const [k, v] of Object.entries({ events, totals, channels: health.channels, hostnames: health.hostnames, leadEventsByHost: health.leadEventsByHost }))
+for (const [k, v] of Object.entries({ events, totals, channels: health.channels, hostnames: health.hostnames, leadEventsByHost: health.leadEventsByHost, userIdByEvent: health.userIdByEvent, knownContactUsers: health.knownContactUsers }))
   if (isErr(v)) finding('ERROR', 'ga4', `Could not read the GA4 ${k} report: ${v.error}`)
 
 if (Array.isArray(events) && !evCount.session_start) finding('FAIL', 'ga4', `session_start is 0 over ${DAYS} days: the browser Google tag is not reaching GA4 (outage canary).`)
@@ -161,6 +177,12 @@ if (Array.isArray(health.leadEventsByHost)) {
   const total = health.leadEventsByHost.reduce((a, r) => a + r[1], 0)
   const orphan = health.leadEventsByHost.find((r) => r[0] === '(not set)')?.[1] || 0
   if (total && orphan / total > 0.2) finding('WARN', 'ga4', `${orphan} of ${total} generate_lead events have no hostname: they are not joined to the visitor's GA4 session (lib/analytics/ga4-server-context.ts).`)
+}
+if (Array.isArray(health.userIdByEvent)) {
+  const browserUid = health.userIdByEvent.filter((r) => r[0] === 'session_start' || r[0] === 'user_engagement').reduce((a, r) => a + r[1], 0)
+  health.userIdOnBrowserEvents = browserUid
+  // A week is enough: the site sees known contacts every week (113 in the 30 days to 2026-10-14).
+  if (!browserUid && DAYS >= 7) finding('WARN', 'ga4', `No session_start or user_engagement event carried a user_id in ${DAYS} days: known CRM contacts are not tagged by the browser (components/AnalyticsIdentityBridge.tsx, /api/identity/me).`)
 }
 if (Array.isArray(cfg.keyEvents) && Array.isArray(events)) {
   const dead = cfg.keyEvents.filter((k) => !evCount[k] && k !== 'purchase')
@@ -394,6 +416,15 @@ if (!container) {
       if (!readsKey(params.content_group, 'page_type'))
         finding('FAIL', 'gtm', `"${tagName}" does not send content_group from page_type (GTM version 10).`)
     }
+    // Known contacts (data/analytics/decisions.json "crm-contacts-tagged-in-ga4").
+    // AnalyticsIdentityBridge calls gtag('set', { user_id }) and the Google tag
+    // (googtag) applies that command to every later hit: no tag field maps it
+    // (read 2026-10-14, version 10; GA4 showed user ids on session_start and
+    // user_engagement, which only the browser tag sends). Reported, not failed:
+    // a Google tag field `user_id` would be a second route, not a missing one.
+    gtm.googleTagConfigFields = googleTag ? configRows(googleTag).map((r) => r.parameter) : []
+    const userIdField = googleTag ? configRows(googleTag).find((r) => r.parameter === 'user_id')?.parameterValue : undefined
+    gtm.userIdSource = userIdField ? `Google tag field user_id = ${userIdField}` : "gtag('set') from AnalyticsIdentityBridge"
     const regexTrigger = (live.trigger || []).find((t) => t.name === 'CE - GA4 browser events')
     const regex = regexTrigger?.customEventFilter?.[0]?.parameter?.find((p) => p.key === 'arg1')?.value || ''
     const live_names = new Set((regex.match(/^\^\((.*)\)\$$/)?.[1] || '').split('|').filter(Boolean))
@@ -486,6 +517,7 @@ if (JSON_OUT) {
   line(`  channels ${JSON.stringify(health.channels)}`)
   line(`  hostnames ${JSON.stringify(health.hostnames)}`)
   line(`  generate_lead by hostname ${JSON.stringify(health.leadEventsByHost)}`)
+  line(`  known contacts (active users with a user_id) ${JSON.stringify(health.knownContactUsers)} · events with a user_id [event, events, total users] ${JSON.stringify(health.userIdByEvent)}`)
   line(`  top events ${JSON.stringify(Object.entries(evCount).sort((a, b) => b[1] - a[1]).slice(0, 25))}`)
   line()
   line(`Personal information in GA4 (counts only; ${personData.window}; FAIL from ${personData.checkFrom})`)

@@ -36,7 +36,7 @@
 import { cookies } from 'next/headers'
 import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-protocol'
 import { rememberGaClientId } from '@/lib/data/analytics/gaClientId'
-import { ga4ServerEventParams, ga4ServerSend, type Ga4ServerContext } from '@/lib/analytics/ga4-server-context'
+import { ga4KnownContact, ga4ServerEventParams, ga4ServerSend, type Ga4ServerContext } from '@/lib/analytics/ga4-server-context'
 import {
   ga4LeadExtra,
   isLeadFormId,
@@ -301,6 +301,10 @@ export async function fireLeadGenerated(params: FireLeadParams): Promise<void> {
     await fireGa4Event({
       eventName,
       clientId,
+      // The contact the lead resolved to: sent as the hashed GA4 user id the
+      // browser tag uses, analytics tier only. The submit is often the visit's
+      // last hit, so this can be the only one that names the contact.
+      knownContact: ga4KnownContact(ctx, typeof eventParams.crm_person_id === 'number' ? eventParams.crm_person_id : null),
       eventParams: ga4ServerEventParams(ctx, eventParams),
       userProperties: params.broker_slug ? { assigned_broker: params.broker_slug } : undefined,
     })

@@ -350,6 +350,13 @@ export async function buildAllUrls(
     // budget on every cold build. Started together they cost the slowest one.
     // The shared deadline above still bounds each.
     const subdivisionCitySlugs = [...CENTRAL_OREGON_CITY_SLUGS]
+    // ONE read of the indexable plat set per build, handed to both legs that
+    // judge against it: the plat pages below and the browse pairs, which a
+    // plat twin leaves for its /subdivisions/{slug} target. Two reads in one
+    // build can disagree (2026-10-14: geo.xml's pairs behaved as if the set
+    // were empty, with no plat page listed, while llms-subdivisions.txt, the
+    // same set, listed 2,950 plats).
+    const indexableSubdivisionsRead = getIndexableSubdivisions()
     const started = {
       // The city list reads listing_search_mv (maintained incrementally since
       // 2026-09-24), not raw `listings`. The raw scan paged 589K rows through an
@@ -373,10 +380,10 @@ export async function buildAllUrls(
       ),
       'subdivision-browse-pairs': leg(
         'subdivision-browse-pairs',
-        getBrowsePairSitemapPaths(subdivisionCitySlugs),
+        getBrowsePairSitemapPaths(subdivisionCitySlugs, indexableSubdivisionsRead),
         [] as string[],
       ),
-      'indexable-subdivisions': leg('indexable-subdivisions', getIndexableSubdivisions(), []),
+      'indexable-subdivisions': leg('indexable-subdivisions', indexableSubdivisionsRead, []),
       // The cities whose /open-houses/<city> page is indexable this week (it is
       // noindex on an empty calendar, SITE-27). null = unknown: keep them all.
       'open-house-cities': leg('open-house-cities', openHouseCitySlugsWithEvents(), null as Set<string> | null),
@@ -612,6 +619,13 @@ export async function buildAllUrls(
     // The aggregate now happens once a night inside the MV. Same rows, same
     // classification (classifyLifetimeBuckets) — see
     // lib/data/subdivisions/getSubdivisionCityInventory.ts.
+    //
+    // The leg hands back the URL browsePairSitemapPath() gives each pair
+    // (lib/seo/browse-pair-decision.ts): the pair itself when its page is
+    // self-canonical, /subdivisions/{slug} when its page canonicalizes there
+    // (a plat twin), nothing when the plat set could not be read. The plat
+    // pages leg below lists the same /subdivisions/{slug} URLs; the final pass
+    // (finalizeSitemapEntries) submits each path once.
     const browsePairPaths = await started['subdivision-browse-pairs']
     for (const path of browsePairPaths) {
       // SITE-183 / SITE-182: a registry community's area twin
@@ -636,6 +650,12 @@ export async function buildAllUrls(
     // a city, neighborhood or community name (/subdivisions/bend, /sisters,
     // /la-pine). Nothing to change here: the set decides, this leg submits it.
     const indexableSubdivisions = await started['indexable-subdivisions']
+    if (indexableSubdivisions.length === 0) {
+      // getIndexableSubdivisions answers [] when a read failed (it never
+      // throws, and production holds 2,950 plats), so this leg is empty by
+      // failure, not by fact. Say so: the failed read is otherwise silent.
+      console.error('[sitemap] indexable plat set empty: no /subdivisions/{slug} page submitted by this build (a failed read, not a finding)')
+    }
     for (const url of subdivisionSitemapUrls(indexableSubdivisions, baseUrl)) {
       dynamicPages.push({
         url,

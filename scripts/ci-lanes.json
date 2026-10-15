@@ -19,6 +19,7 @@
     "ci:crm-secrets",
     "ci:crm-sms-safety",
     "ci:inbound-message-enrich",
+    "ci:inbound-consent-clear",
     "ci:person-identity-edit",
     "ci:csp",
     "ci:dal-boundary",
@@ -32,6 +33,7 @@
     "ci:email-link-tracking",
     "ci:email-send-gated",
     "ci:broker-reply-sender",
+    "ci:from-domain",
     "ci:pdf-trace-guard",
     "ci:entity-scope",
     "ci:gates-wired",
@@ -139,7 +141,8 @@
     "ci:process-canon",
     "ci:claude-canon",
     "ci:core-rules-prefix",
-    "ci:loop-skills-canon"
+    "ci:loop-skills-canon",
+    "ci:worktree-cleanup"
   ],
   "path": {
     "ci:plat-families": [

@@ -6,7 +6,8 @@
 // states the question it answers, and each metric keeps ONE source page.
 // Deliberately a hub, not 35 rebuilt report UIs — the existing pages behind
 // these links carry the machinery until each migrates. DSCR lives here as a
-// tool (Matt's IA amendment 2026-08-05).
+// tool (Matt's IA amendment 2026-08-05). The Website page (/admin/analytics,
+// Matt 2026-10-14) is linked first: the one place to read the website.
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { VerdictLine } from '@/components/admin/v2'
@@ -20,7 +21,7 @@ const GROUPS: ReportGroup[] = [
   {
     title: 'The business',
     reports: [
-      { name: 'Site & marketing overview', href: '/admin/analytics', question: 'How is the whole funnel doing this week?' },
+      { name: 'Website', href: '/admin/analytics', question: 'Who visited this week, what they looked at, where they came from, and who reached out?' },
       { name: 'Lead flow', href: '/admin/reports/lead-flow', question: 'Where did leads come from and where did they go?' },
       { name: 'Leads', href: '/admin/reports/leads', question: 'Who came in, one row per lead?' },
       { name: 'Broker production', href: '/admin/reports/brokers', question: 'What has each broker closed and banked?' },
@@ -93,6 +94,16 @@ export default async function ReportsHubPage() {
           <b>{total} reports, one home.</b> Every number has one page that owns it.
         </VerdictLine>
       </div>
+
+      {/* Matt 2026-10-14: the one website page comes first. */}
+      <p style={{ margin: '0 0 14px', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+        For the website in plain words (visitors, where they are, what they look at, where they came from, and who
+        reached out), start with{' '}
+        <Link href="/admin/analytics" style={{ color: 'var(--a-accent)' }}>
+          the Website page
+        </Link>
+        .
+      </p>
 
       {GROUPS.map((g) => (
         <section key={g.title} aria-label={g.title}>

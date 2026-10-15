@@ -8,7 +8,7 @@
  * skipped must not wait out the cap and exit 2. A CANCELED deploy that lost
  * to a newer production build is superseded, not a broken commit.
  */
-import { classifyDiff, isVercelSkippable, listChangedFiles } from './product-diff.mjs'
+import { classifyProductDiff, isVercelSkippable, listChangedFiles } from './product-diff.mjs'
 
 export const DEFAULT_TIMEOUT_MS = 15 * 60 * 1000
 export const DEFAULT_SKIP_WAIT_MS = 45 * 1000
@@ -27,7 +27,12 @@ const ACTIVE_STATES = new Set(['READY', 'BUILDING', 'QUEUED', 'INITIALIZING', 'P
  * @param {{ cwd?: string, prev?: string }} [opts]  prev: as listChangedFiles (default: the env range)
  */
 export function classifyTip(sha, opts = {}) {
-  return classifyDiff(listChangedFiles({ head: sha, cwd: opts.cwd, prev: opts.prev }), { skippable: isVercelSkippable })
+  return classifyProductDiff(listChangedFiles({ head: sha, cwd: opts.cwd, prev: opts.prev }), {
+    skippable: isVercelSkippable,
+    head: sha,
+    cwd: opts.cwd,
+    prev: opts.prev,
+  })
 }
 
 /**
