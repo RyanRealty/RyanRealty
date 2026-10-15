@@ -7,6 +7,13 @@ const mockFrom = vi.fn()
 vi.mock('@/lib/data/client', () => ({
   createServiceClient: () => ({ from: mockFrom }),
 }))
+vi.mock('@/lib/data/cache/next-cache', () => ({
+  unstable_cache: (fn: unknown) => fn,
+}))
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react')>()
+  return { ...actual, cache: (fn: unknown) => fn }
+})
 
 import { resolveNeighborhoodMetricSlug } from '@/lib/data/market-truth/neighborhood-metric-slug'
 import { DEFINITION_ID } from '@/lib/data/market-truth/registry'
@@ -14,28 +21,30 @@ import { DEFINITION_ID } from '@/lib/data/market-truth/registry'
 type Recorded = {
   table: string
   eqs: Array<[string, unknown]>
-  ins: Array<[string, unknown[]]>
+  limits: number[]
 }
 
 function mockMetricRows(slugs: string[]) {
-  const rec: Recorded = { table: '', eqs: [], ins: [] }
-  const chain: Record<string, unknown> = {}
-  chain.select = () => chain
-  chain.eq = (col: string, val: unknown) => {
-    rec.eqs.push([col, val])
-    return chain
-  }
-  chain.in = (col: string, vals: unknown[]) => {
-    rec.ins.push([col, vals as unknown[]])
-    return chain
-  }
-  chain.then = (resolveThen: (v: unknown) => unknown, rejectThen?: (e: unknown) => unknown) =>
-    Promise.resolve({
-      data: slugs.map((geo_slug) => ({ geo_slug })),
-      error: null,
-    }).then(resolveThen, rejectThen)
+  const rec: Recorded = { table: '', eqs: [], limits: [] }
   mockFrom.mockImplementation((table: string) => {
     rec.table = table
+    let currentSlug = ''
+    const chain: Record<string, unknown> = {}
+    chain.select = () => chain
+    chain.eq = (col: string, val: unknown) => {
+      rec.eqs.push([col, val])
+      if (col === 'geo_slug') currentSlug = String(val)
+      return chain
+    }
+    chain.limit = (n: number) => {
+      rec.limits.push(n)
+      return chain
+    }
+    chain.then = (resolveThen: (v: unknown) => unknown, rejectThen?: (e: unknown) => unknown) =>
+      Promise.resolve({
+        data: slugs.includes(currentSlug) ? [{ geo_slug: currentSlug }] : [],
+        error: null,
+      }).then(resolveThen, rejectThen)
     return chain
   })
   return rec
@@ -55,7 +64,8 @@ describe('resolveNeighborhoodMetricSlug', () => {
     expect(rec.table).toBe('market_metric')
     expect(rec.eqs).toContainEqual(['definition_id', DEFINITION_ID])
     expect(rec.eqs).toContainEqual(['geo_type', 'neighborhood'])
-    expect(rec.ins).toContainEqual(['geo_slug', ['sunriver', 'sunriver-sunriver']])
+    expect(rec.eqs).toContainEqual(['geo_slug', 'sunriver'])
+    expect(rec.limits).toEqual([1])
   })
 
   it('uses bend-larkspur when only the prefixed slug has a row', async () => {
@@ -63,6 +73,7 @@ describe('resolveNeighborhoodMetricSlug', () => {
     await expect(
       resolveNeighborhoodMetricSlug({ citySlug: 'bend', neighborhoodSlug: 'larkspur' }),
     ).resolves.toBe('bend-larkspur')
+    expect(mockFrom).toHaveBeenCalledTimes(2)
   })
 
   it('uses northwest-crossing when the unprefixed slug has a row', async () => {
@@ -80,6 +91,7 @@ describe('resolveNeighborhoodMetricSlug', () => {
     await expect(
       resolveNeighborhoodMetricSlug({ citySlug: 'bend', neighborhoodSlug: 'old-bend' }),
     ).resolves.toBe('bend-old-bend')
+    expect(mockFrom).toHaveBeenCalledTimes(2)
   })
 })
 
