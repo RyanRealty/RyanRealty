@@ -25,6 +25,7 @@ function plan(over: {
   tags?: string[]
   suppressions?: InboundConsentSuppression[]
   eventId?: string | null
+  custom?: unknown
 }) {
   return planInboundConsentClear({
     event: over.event,
@@ -33,6 +34,7 @@ function plan(over: {
     tags: over.tags ?? DNC_TAGS,
     suppressions: over.suppressions ?? DNC_SUPPRESSIONS,
     eventId: over.eventId ?? 'evt-1',
+    custom: over.custom,
   })
 }
 
@@ -56,6 +58,7 @@ describe('clearable vs protected flags', () => {
     expect(isClearableContactTag('contact:do-not-call')).toBe(true)
     expect(isClearableContactTag('contact:do-not-text')).toBe(true)
     expect(isClearableContactTag('compliance:dnc-registry')).toBe(true)
+    expect(isClearableContactTag('sms-consent:no')).toBe(true)
     expect(isClearableContactTag('broker:matt')).toBe(false)
     expect(isClearableContactTag('unsubscribed')).toBe(false)
     expect(isClearableContactTag('compliance:hard-stop')).toBe(false)
@@ -120,11 +123,42 @@ describe('planInboundConsentClear — Matt 2026-10-14 inbound consent', () => {
   })
 
   it('a contact with no prior tracked send is not cleared', () => {
-    const out = plan({ event: 'call', hasTrackedSend: false })
+    const out = plan({
+      event: 'call',
+      hasTrackedSend: false,
+      custom: { cmaConsent: { sms: false, email: false } },
+    })
     expect(out.action).toBe('skip-no-send')
     expect(out.tagsToRemove).toEqual([])
     expect(out.nextTags).toEqual(DNC_TAGS)
     expect(out.suppressionIdsToClear).toEqual([])
+    expect(out.cmaConsentReset).toBe(false)
+  })
+
+  it('resets CMA consent and declined-SMS state after a tracked send', () => {
+    const out = plan({
+      event: 'call',
+      tags: ['sms-consent:no', 'broker:matt'],
+      suppressions: [],
+      custom: { cmaConsent: { sms: false, email: false, slug: 'cma-x' } },
+    })
+    expect(out.action).toBe('clear')
+    expect(out.cmaConsentReset).toBe(true)
+    expect(out.nextCmaConsent).toMatchObject({ sms: true, email: true, slug: 'cma-x' })
+    expect(out.tagsToRemove).toEqual(['sms-consent:no'])
+    expect(out.nextTags).toEqual(['broker:matt', 'sms-consent:yes'])
+    expect(out.noteBody).toMatch(/Reset CMA consent/)
+  })
+
+  it('STOP never resets CMA consent', () => {
+    const out = plan({
+      event: 'sms',
+      smsBody: 'STOP',
+      custom: { cmaConsent: { sms: false, email: false } },
+    })
+    expect(out.action).toBe('skip-stop')
+    expect(out.cmaConsentReset).toBe(false)
+    expect(out.nextCmaConsent).toMatchObject({ sms: false, email: false })
   })
 })
 

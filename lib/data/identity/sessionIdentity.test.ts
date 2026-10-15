@@ -180,14 +180,14 @@ describe('insertVisitorSession — safe before the automation migration', () => 
   })
 })
 
-describe('clearProvisionalAutomation — a second event proves a person', () => {
+describe('clearProvisionalAutomation — a sign of a person clears a provisional class', () => {
   it('clears only a provisional flag and never a UA-based one', async () => {
     db.visitor_sessions.push(
       { session_id: 's-deep', rr_vid: 'vid-D', is_automated: true, automation_reason: 'contact-deep-link' },
       { session_id: 's-bot', rr_vid: 'vid-E', is_automated: true, automation_reason: 'headless' },
     )
-    await clearProvisionalAutomation(sb, 's-deep', ['contact-deep-link'])
-    await clearProvisionalAutomation(sb, 's-bot', ['contact-deep-link'])
+    await clearProvisionalAutomation(sb, 's-deep')
+    await clearProvisionalAutomation(sb, 's-bot')
     expect(db.visitor_sessions.find((r) => r.session_id === 's-deep')).toMatchObject({ is_automated: false, automation_reason: null })
     expect(db.visitor_sessions.find((r) => r.session_id === 's-bot')).toMatchObject({ is_automated: true, automation_reason: 'headless' })
   })

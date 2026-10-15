@@ -25,7 +25,13 @@
  * processed events.
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { IDENTIFIABLE_SESSION_FILTER, sessionBlocksIdentification } from '@/lib/analytics/automation'
+import {
+  IDENTIFIABLE_SESSION_FILTER,
+  isProvisionalReason,
+  sessionBlocksIdentification,
+} from '@/lib/analytics/automation'
+// The one provisional-flag clear (DAL boundary): identification proves a person.
+import { clearProvisionalFlags } from '@/lib/data/identity/provisionalAutomation'
 
 // `tracked_link:<channel>` = a SIGNED person token on a link we sent
 // (lib/identity/link-token.ts, P7 identity loop 2026-09-23); `rr_pid_cookie` =
@@ -203,6 +209,10 @@ export async function stitchVisitorIdentity(params: {
     } catch (e) {
       console.warn('[visitor-backfill] rr_vid back-stitch failed:', e instanceof Error ? e.message : String(e))
     }
+    // The browser just identified is a person's: its provisionally flagged
+    // sessions (stitched above, since a provisional flag never blocks) leave the
+    // automation count.
+    await clearProvisionalFlags(supabase, { column: 'rr_vid', value: params.rrVid })
   }
 }
 
@@ -389,6 +399,12 @@ export async function backfillSessionToFub(params: {
       .eq('session_id', params.sessionId)
       .is('identified_at', null)
     if (updateErr) errors.push(`session update failed: ${updateErr.message}`)
+  }
+  // Identified, so a person: a provisional flag (a cold arrival that read as a
+  // machine) no longer holds. The browser-wide clear in stitchVisitorIdentity
+  // below needs an rr_vid; this one does not.
+  if (session.is_automated === true && isProvisionalReason(session.automation_reason)) {
+    await clearProvisionalFlags(supabase, { column: 'session_id', value: params.sessionId })
   }
 
   // ─── 1b. Stitch the durable first-party visitor id into the identity graph ──
