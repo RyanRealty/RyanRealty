@@ -123,12 +123,14 @@ export function buildReviewAskText(input: ReviewAskDraftInput = {}): string {
   return `${hi}thank you again for trusting us with ${place}. If you have two minutes, would you leave us a Google review? ${GBP_REVIEW_URL} Thank you!${sign}`
 }
 
-/** True for the email or text this module drafts (any version of the body). */
+/**
+ * True for a draft that is a review ask: it carries the Business Profile
+ * write-review link. That covers this module's drafts (any version: the
+ * 2026-08-16 drafts were titled "Google review") and an ask a broker wrote
+ * with the same link, which is just as much an ask already waiting.
+ */
 export function isReviewAskDraft(input: { subject?: string | null; body?: string | null }): boolean {
-  const body = input.body ?? ''
-  if (!body.includes(GBP_REVIEW_URL)) return false
-  const subject = (input.subject ?? '').trim()
-  return subject === REVIEW_ASK_SUBJECT || subject === ''
+  return (input.body ?? '').includes(GBP_REVIEW_URL)
 }
 
 // ── Has this person been asked before? ───────────────────────────────────────
@@ -163,12 +165,23 @@ export function isSentReviewAsk(row: { kind: string; title: string | null; hasRe
 }
 
 /**
- * Body markers of a review link that was sent: Google's write-review form
- * (any place id) and the Business Profile short review link. The brokers'
- * signature carries a maps search link ("Read our Google reviews"), which is
- * neither.
+ * Our Business Profile's short review link token. It decodes to cid
+ * 11038319841912529644, the profile in lib/brand/contact.ts (checked
+ * 2026-10-14), and is the link Matt's own closing-day thank-you emails carried
+ * ("a review would go a long way: Google: https://g.page/r/<token>/review").
  */
-export const SENT_REVIEW_LINK_MARKERS: readonly string[] = ['writereview', 'g.page/r/']
+export const GBP_SHORT_REVIEW_TOKEN = 'CeyiV6Zp_S-ZEBM'
+
+/**
+ * Body markers of OUR review link in a sent message: the profile's place id
+ * (the write-review form) and its short review token. Another business's
+ * review link (a vendor email forwarded to a client) is neither, and neither
+ * is the brokers' signature link ("Read our Google reviews", a maps search).
+ */
+export const SENT_REVIEW_LINK_MARKERS: readonly string[] = [
+  new URL(GBP_REVIEW_URL).searchParams.get('placeid') ?? GBP_REVIEW_URL,
+  GBP_SHORT_REVIEW_TOKEN,
+]
 
 // ── Who gets one ─────────────────────────────────────────────────────────────
 

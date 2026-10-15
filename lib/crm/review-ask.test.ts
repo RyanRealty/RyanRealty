@@ -109,8 +109,9 @@ describe('recognizing an ask', () => {
     expect(isReviewAskDraft({ subject: REVIEW_ASK_SUBJECT, body: buildReviewAskBody('x') })).toBe(true)
     expect(isReviewAskDraft({ subject: REVIEW_ASK_SUBJECT, body: `Hi,\n\n${GBP_REVIEW_URL}\n` })).toBe(true)
     expect(isReviewAskDraft({ subject: null, body: buildReviewAskText({}) })).toBe(true)
-    expect(isReviewAskDraft({ subject: 'Hi', body: buildReviewAskBody('x') })).toBe(false)
+    expect(isReviewAskDraft({ subject: 'Google review', body: `Leave a review: ${GBP_REVIEW_URL}` })).toBe(true)
     expect(isReviewAskDraft({ subject: REVIEW_ASK_SUBJECT, body: 'thanks' })).toBe(false)
+    expect(isReviewAskDraft({ subject: 'Closing gift', body: 'Hi Dana' })).toBe(false)
   })
 
   it('finds asks brokers already sent by hand, and not deal mail that mentions a review', () => {

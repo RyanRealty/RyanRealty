@@ -86,7 +86,7 @@ describe('Matt picks past clients: one draft each, never sent', () => {
     seed({
       crm_people: [person(1, { tags: ['fleet:test'] }), person(2, { emails: [{ value: 'paul@ryan-realty.com' }] }), person(3), person(4)],
       crm_timeline: [
-        { id: 1, person_id: 3, kind: 'email_out', title: 'A quick favor', body: 'leave us a Google review (https://search.google.com/local/writereview?placeid=x)', ts: '2026-01-01' },
+        { id: 1, person_id: 3, kind: 'email_out', title: 'A quick favor', body: 'leave us a Google review (https://search.google.com/local/writereview?placeid=ChIJfVsN4o3IuFQR7KJXpmn9L5k)', ts: '2026-01-01' },
       ],
     })
     const r = await draftReviewAskAction([1, 2, 3, 4])

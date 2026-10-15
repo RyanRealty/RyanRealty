@@ -242,15 +242,20 @@ describe('a real Vault closing drafts one ask per eligible party, for Matt to ap
     expect(drafts()).toHaveLength(1)
   })
 
-  it('a g.page review link sent by hand counts as asked', async () => {
+  it('our short review link sent by hand counts as asked; a vendor review link forwarded does not', async () => {
     seed({
       tc_cycles: [cycle('c1', 'd1', '2026-10-04')],
       tc_deals: [deal('d1')],
-      tc_deal_people: [link('d1', 1)],
-      crm_people: [person(1)],
-      crm_timeline: [{ id: 6, person_id: 1, kind: 'sms_out', title: 'Text sent', body: 'Would you? https://g.page/r/abc/review', ts: '2026-01-02' }],
+      tc_deal_people: [link('d1', 1), link('d1', 2, 'seller')],
+      crm_people: [person(1), person(2)],
+      crm_timeline: [
+        { id: 6, person_id: 1, kind: 'email_out', title: 'Thank You!', body: 'A review would go a long way: Google: https://g.page/r/CeyiV6Zp_S-ZEBM/review', ts: '2026-05-15' },
+        { id: 7, person_id: 2, kind: 'email_out', title: 'Fwd: Delivery notification', body: 'please leave us a Google review here: https://g.page/r/CTAGg9VMA_Y6EBI/review', ts: '2026-07-19' },
+      ],
     })
-    expect((await run()).skipped).toEqual({ 'already-asked': 1 })
+    const s = await run()
+    expect(s.skipped).toEqual({ 'already-asked': 1 })
+    expect(drafts().map((d) => d.person_id)).toEqual([2])
   })
 
   it('a dry run writes nothing', async () => {
