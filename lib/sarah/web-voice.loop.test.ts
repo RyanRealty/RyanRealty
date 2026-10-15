@@ -64,7 +64,12 @@ class FakeCtx {
     return { gain: { value: 0 }, connect() {}, disconnect() {} }
   }
   createBuffer(_c: number, length: number, sampleRate: number) {
-    return { length, duration: length / sampleRate, sampleRate, copyToChannel() {} } as AudioBuffer
+    return {
+      length,
+      duration: length / sampleRate,
+      sampleRate,
+      copyToChannel() {},
+    } as unknown as AudioBuffer
   }
   createBufferSource() {
     return {
