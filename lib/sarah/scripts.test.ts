@@ -17,6 +17,10 @@ const COPY_KEYS = [
   'YES_CONSENT_TEXT',
   'LISTING_TEASER_EN',
   'WEB_HELP_EN',
+  'LET_ME_FIND_OUT_EN',
+  'PUBLIC_RECORDS_VERIFY_EN',
+  'PUBLIC_RECORDS_NOT_LEGAL_EN',
+  'PUBLIC_RECORDS_NOT_FOUND_EN',
 ] as const
 
 describe('Sarah public copy', () => {

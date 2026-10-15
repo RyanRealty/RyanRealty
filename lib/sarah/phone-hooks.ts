@@ -23,10 +23,12 @@
  * 6. Urgent: warm transfer to Matt's cell via the existing transfer_call tool
  *    / receptionist-refer allowlist. If no answer in ~25s, take a message and
  *    send Matt an URGENT SMS.
- * 7. Call end: keep logReceptionistCall, then the shared Sarah CRM recap
+ * 7. Public records: register LOOKUP_PUBLIC_RECORDS_TOOL from ./public-records
+ *    and run runLookupPublicRecords for the call. Do not invent a permit.
+ * 8. Call end: keep logReceptionistCall, then the shared Sarah CRM recap
  *    pipeline (later PR): note, stage/tag updates attributed "by Sarah", recap
  *    SMS or email.
- * 8. Outbound AI dials: only placeSarahOutboundCall after evaluateOutboundDial
+ * 9. Outbound AI dials: only placeSarahOutboundCall after evaluateOutboundDial
  *    returns ok. SARAH_OUTBOUND_ENABLED stays off. Never dial banned sources.
  *
  * This file is the stable import. Notify/SMS/Twilio REST stay in the phone

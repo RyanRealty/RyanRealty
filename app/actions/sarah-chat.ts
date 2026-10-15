@@ -10,6 +10,7 @@ import {
   placeUnknownFactEn,
 } from '@/lib/sarah/listing-answer'
 import { getSarahPlaceFacts } from '@/lib/sarah/place-facts'
+import { answerPublicRecordsQuestion, classifyPublicRecordsQuestion } from '@/lib/sarah/public-records'
 import { WEB_HELP_EN } from '@/lib/sarah/scripts'
 
 export type SarahChatInput = {
@@ -39,7 +40,10 @@ export async function answerSarahChat(input: SarahChatInput): Promise<SarahChatR
 
     if (page.kind === 'listing' && page.listNumber) {
       const facts = await getSarahListingFacts(page.listNumber)
-      const reply = answerListingQuestion(question, facts, broker)
+      const recordsIntent = classifyPublicRecordsQuestion(question)
+      const reply = recordsIntent
+        ? await answerPublicRecordsQuestion({ question, facts, brokerFirstName: broker })
+        : answerListingQuestion(question, facts, broker)
       const safe = reply === WEB_HELP_EN ? listingUnknownFactEn(broker) : reply
       return { data: { reply: safe, listNumber: page.listNumber, pageKind: page.kind }, error: null }
     }

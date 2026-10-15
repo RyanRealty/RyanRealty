@@ -150,6 +150,24 @@ export const STALE_LISTING_EN =
 
 export const LISTING_FACT_PREFIX_EN = 'The listing shows'
 
+export const LET_ME_FIND_OUT_EN = 'Let me try and find out.'
+
+export const PUBLIC_RECORDS_VERIFY_EN =
+  'This is from public records and should be verified.'
+
+export const PUBLIC_RECORDS_NOT_LEGAL_EN =
+  'This is not a legal or zoning determination. Based on the code, a broker or the city can confirm what applies to this lot.'
+
+export const PUBLIC_RECORDS_NOT_FOUND_EN =
+  'I did not find that in the public records I can read.'
+
+export function publicRecordsBrokerOfferEn(
+  brokerFirstName = DEFAULT_DESK_BROKER_FIRST_NAME,
+): string {
+  const first = brokerFirstName.trim() || DEFAULT_DESK_BROKER_FIRST_NAME
+  return `I can connect you with ${first} if you want to talk it through.`
+}
+
 export const UNKNOWN_FACT_EN =
   "That fact isn't in the listing data I have. I can have Matt follow up."
 

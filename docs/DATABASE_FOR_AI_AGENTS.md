@@ -545,7 +545,7 @@ Tier breakdown (kept from prior version):
 - **Parking:** `garage_yn`, `garage_spaces`, `carport_spaces`, `parking_total`
 - **Systems:** `heating_yn`, `cooling_yn`, `sewer`, `water`
 - **Financial:** `tax_annual_amount`, `tax_assessed_value`, `tax_year`, `association_fee`, `association_fee_frequency`, `hoa_monthly`, `buyer_financing`, `concessions_amount`
-- **Location:** `county`, `elementary_school`, `middle_school`, `high_school`, `school_district`, `view_description`, `parcel_number`
+- **Location:** `county`, `elementary_school`, `middle_school`, `high_school`, `school_district`, `view_description`, `parcel_number` (Deschutes DIAL account id; Sarah public-records permit lookup uses it)
 - **Dates:** `pending_timestamp`, `purchase_contract_date`, `off_market_date`, `status_change_timestamp`, `listing_contract_date`
 - **Agent:** `list_agent_email`, `list_agent_mls_id`, `buyer_agent_name`, `buyer_agent_mls_id`, `buyer_office_name`
 - **Boundary tags** (added 2026-05-14, populated by `tag_listing_boundaries` RPC):

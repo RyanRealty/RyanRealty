@@ -14,6 +14,7 @@ Another workstream owns `app/api/voice/*`, `app/api/twilio/*`, and `lib/grok/voi
 5. Recording objection: `evaluateSarahTurn` mode `stop-recording`. End the AI session. Do not keep recording. Take a callback number.
 6. Urgent: warm transfer to Matt via the existing transfer tool and `receptionist-refer` allowlist. If no answer in about 25 seconds, take a message and send Matt an URGENT SMS.
 7. Guardrails: run `evaluateSarahTurn` on each caller turn (or post-filter with `findGuardrailViolations`) so a model slip cannot quote a price opinion or steer.
+7a. Public records: add `LOOKUP_PUBLIC_RECORDS_TOOL` from `lib/sarah` and run `runLookupPublicRecords` for the function call. Do not invent a permit, zone, or year. The prompt already tells her to say "Let me try and find out" and to offer the assigned broker.
 
 ## On hangup
 

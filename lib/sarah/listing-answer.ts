@@ -100,7 +100,7 @@ function formatMoney(n: number): string {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-function extractShopPhrase(remarks: string | null): string | null {
+export function extractShopPhrase(remarks: string | null): string | null {
   if (!remarks) return null
   const sentences = remarks.split(/(?<=[.!?])\s+/)
   const hit = sentences.find((s) => SHOP_RE.test(s))

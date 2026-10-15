@@ -35,6 +35,10 @@ export type SarahListingFacts = {
   otherStructures: string | null
   interiorFeatures: string | null
   exteriorFeatures: string | null
+  county: string | null
+  parcelNumber: string | null
+  latitude: number | null
+  longitude: number | null
 }
 
 const FACTS_SELECT = [
@@ -59,6 +63,10 @@ const FACTS_SELECT = [
   'association_fee_frequency',
   'property_sub_type',
   'public_remarks',
+  'county',
+  'parcel_number',
+  'Latitude',
+  'Longitude',
   'permit_internet_yn',
   'idx_participant',
   // toast-ok: one ListNumber row; OtherStructures is not a typed column.
@@ -129,5 +137,9 @@ export async function getSarahListingFacts(mlsNumber: string): Promise<SarahList
     otherStructures: formatMlsMultiSelect(asText(row.OtherStructures)),
     interiorFeatures: formatMlsMultiSelect(asText(row.InteriorFeatures)),
     exteriorFeatures: formatMlsMultiSelect(asText(row.ExteriorFeatures)),
+    county: asText(row.county),
+    parcelNumber: asText(row.parcel_number),
+    latitude: asNumber(row.Latitude),
+    longitude: asNumber(row.Longitude),
   }
 }

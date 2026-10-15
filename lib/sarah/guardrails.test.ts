@@ -119,6 +119,9 @@ describe('system prompt', () => {
     const voice = buildSarahSystemPrompt({ channel: 'voice' })
     expect(voice).toMatch(/Thanks for calling Ryan Realty in Bend/)
     expect(voice).toMatch(/not a person and not a licensed broker/)
+    expect(prompt).toMatch(/Let me try and find out/)
+    expect(prompt).toMatch(/lookup_public_records/)
+    expect(prompt).toMatch(/Never give a legal or zoning determination/)
   })
 })
 
