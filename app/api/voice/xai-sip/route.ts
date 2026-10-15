@@ -15,8 +15,7 @@ import { forwardCellForBroker } from '@/lib/crm/twilio'
 import { transferTestTarget } from '@/lib/voice/receptionist-routing'
 import { RECEPTIONIST_GREETING, RECEPTIONIST_PROMPT, transferFailedGreeting } from '@/lib/voice/receptionist-prompt'
 import { addConferenceParticipant, findConferenceParticipantCallSid, setConferenceParticipantMuted, stopConferenceRecordings } from '@/lib/voice/sarah-conference'
-import { notifySarahLiveSession } from '@/lib/sarah/phone-hooks'
-import { evaluateSarahTurn } from '@/lib/sarah/guardrails'
+import { evaluateSarahTurn, notifyLiveSession, sarahSessionConferenceJoin, sessionIdFromSarahConference } from '@/lib/sarah'
 import { lookupPersonByPhone, TWILIO_PUBLIC_ORIGIN } from '@/lib/crm/twilio'
 
 export const runtime = 'nodejs'
@@ -62,7 +61,7 @@ export async function POST(req: Request) {
   after(async () => {
     try {
       const person = fromPhone ? await lookupPersonByPhone(fromPhone) : null
-      await notifySarahLiveSession({
+      await notifyLiveSession({
         channel: 'voice',
         sessionId: conference || callId,
         personId: person?.personId ?? null,
@@ -94,7 +93,9 @@ export async function POST(req: Request) {
               statusCallback: `${TWILIO_PUBLIC_ORIGIN}/api/voice/sarah-conference`,
             })
             if (!added.ok) return false
-            const sarahLeg = await findConferenceParticipantCallSid(conference, 'sarah')
+            const sessionId = sessionIdFromSarahConference(conference)
+            const sessionLabel = sessionId ? sarahSessionConferenceJoin(sessionId).label : 'session'
+            const sarahLeg = await findConferenceParticipantCallSid(conference, sessionLabel)
             if (sarahLeg) await setConferenceParticipantMuted(conference, sarahLeg, true)
             return true
           },

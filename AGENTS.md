@@ -90,9 +90,9 @@ All ad work (copy, captions, voice, video, avatar) follows this same process on 
 
 1. Same process on every tool. Never drop to a generic script because the tool changed.
 2. Warm and conversational, like a friendly person on a phone call: short sentences, one idea each, light filler, natural pauses. Never scripted, robotic, broadcast, or market-report, and never complicated.
-3. The voiceover is a female voice.
+3. The voiceover is a female voice. **Default engine: Grok TTS, voice Eve** (Matt 2026-10-14, the receptionist's voice), through `lib/grok/tts.ts` (TS) or `scripts/_voice_lib.py` `synth_vo` (Python). ElevenLabs is an explicit opt-in only (`voice.engine: 'elevenlabs'` / `engine="elevenlabs"`); never the fallback. CI: `lib/studio/voice/engine.test.ts` fails if the default engine or voice changes.
 4. TikTok-style burned-in captions, 1-4 words per card, timed from the final rendered audio's timestamps. Never estimated.
-5. Write the VO in the confirmed engine's official markup. ElevenLabs v3/v4: ellipses, line breaks, and audio tags; no `<break>`. ElevenLabs v2: `<break time>`; no audio tags. Grok TTS: inline `[pause]` / `[breath]`; no SSML. Money is spoken words on every engine.
+5. Write the VO in the confirmed engine's official markup. ElevenLabs v3/v4: ellipses, line breaks, and audio tags; no `<break>`. ElevenLabs v2: `<break time>`; no audio tags. Grok TTS (default): inline `[pause]` / `[long-pause]` / `[breath]`, punctuation for pacing, speed about 0.95 for a phone-call feel, `with_timestamps: true` for captions; no SSML. Money is spoken words on every engine.
 6. Facts and numbers stay exactly as in the approved brief. Say "buyers have leverage," never "buyer's market." No em dashes, no client names or addresses, no "top team." Financing ads carry "Not lending advice. Talk to your lender." Nothing publishes without Matt.
 
 ---

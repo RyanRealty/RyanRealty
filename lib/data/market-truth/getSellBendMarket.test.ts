@@ -6,6 +6,8 @@ import {
   assembleDetachedHeadlines,
   assembleSupplyFloor,
   cityDetachedSlug,
+  overlayMapKey,
+  readDetachedOverlay,
   overlayDetachedLayers,
   overlayDetachedMarket,
   withholdDetachedHeadlines,
@@ -14,6 +16,8 @@ import {
 } from '@/lib/data/market-truth/getSellBendMarket'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { marketVerdict } from '@/lib/market/classify'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { CORE_CITY_SLUGS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
 
 const BEND_MT: SellBendMarket = {
   activeCount: 775,
@@ -135,6 +139,13 @@ describe('getSellBendMarket', () => {
   it('hyphenates cache city slugs the way market_metric keys them', () => {
     expect(cityDetachedSlug('la pine')).toBe('la-pine')
     expect(cityDetachedSlug('Bend')).toBe('bend')
+    expect(overlayMapKey('city', 'la pine')).toBe('city:la-pine')
+    expect(overlayMapKey('city', 'la-pine')).toBe('city:la-pine')
+    expect(overlayMapKey('city', canonicalCityCacheSlug('la-pine'))).toBe('city:la-pine')
+    const map = new Map([['city:la-pine', { ok: true }]])
+    expect(readDetachedOverlay(map, 'city', 'la pine')?.ok).toBe(true)
+    expect(readDetachedOverlay(map, 'city', 'la-pine')?.ok).toBe(true)
+    expect(readDetachedOverlay(map, 'city', 'bend')).toBeUndefined()
   })
 
   it('CMA city grain reads the same city detached helper as /sell', () => {
@@ -196,9 +207,17 @@ describe('getSellBendMarket', () => {
     const hub = readFileSync(resolve('app/housing-market/page.tsx'), 'utf8')
     const pulse = readFileSync(resolve('lib/data/market/getMarketPulse.ts'), 'utf8')
     expect(geo).toMatch(/leftoverHudKpis/)
+    expect(geo).toMatch(/readDetachedOverlay/)
+    expect(geo).toMatch(/housingMarketTakeaways/)
+    expect(geo).not.toMatch(/mtOverlays\.get\(`\$\{leftoverGeo\}:\$\{geoSlug\}`\)/)
     expect(geo).not.toMatch(/getMarketPulse\(/)
     expect(hub).toMatch(/getMarketPulse/)
     expect(pulse).toMatch(/getDetachedOverlays/)
+    for (const slug of CORE_CITY_SLUGS) {
+      expect(overlayMapKey('city', canonicalCityCacheSlug(slug)), slug).toBe(
+        overlayMapKey('city', slug),
+      )
+    }
   })
 
   it('RECON Bend detached 4.454 months is 4.5 display and a balanced verdict', () => {

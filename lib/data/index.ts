@@ -429,6 +429,8 @@ export {
   getDetachedOverlays,
   getDetachedInventories,
   cityDetachedSlug,
+  overlayMapKey,
+  readDetachedOverlay,
 } from '@/lib/data/market-truth/getSellBendMarket'
 export type {
   SellBendMarket,

@@ -11,6 +11,7 @@ import {
   GOOD_DEAL_EN,
   HAS_AGENT_WRAP_EN,
   HAS_AGENT_WRAP_ES,
+  CONTRACT_ADVICE_EN,
   OFFER_EN,
   PRICE_VALUE_EN,
   PRICE_VALUE_ES,
@@ -36,6 +37,7 @@ export type GuardrailTopic =
   | 'has-agent'
   | 'recording-objection'
   | 'make-offer'
+  | 'contract-advice'
   | 'urgent'
   | 'spanish'
   | 'listing-showing'
@@ -75,6 +77,8 @@ const HAS_AGENT_RE =
 const RECORDING_OBJECTION_RE =
   /\b(don'?t .{0,24}record|stop recording|no recording|object to .{0,16}record)/i
 const OFFER_RE = /\b(make an offer|write an offer|submit an offer|put in an offer)\b/i
+const CONTRACT_ADVICE_RE =
+  /\b(earnest money|contingen(cy|cies)|purchase agreement|listing agreement|explain (the |this )?contract|what does (the |this )?contract|should I (sign|offer|counter)|legal advice|brokerage advice|representation agreement|inspection contingency)\b/i
 const URGENT_RE =
   /\b(closing today|lock(ed)? out|lockout|access problem|attorney|sue|lawsuit|legal threat|deal (is )?(falling|fell) (apart|through)|emergency)\b/i
 const SHOWING_RE = /\b(see it|showing|tour|walk through|look at the (home|house))\b/i
@@ -117,6 +121,7 @@ export function classifyVisitorMessage(text: string): GuardrailTopic[] {
   if (GOOD_DEAL_RE.test(text)) topics.push('good-deal')
   if (PRICE_RE.test(text)) topics.push('price-opinion')
   if (OFFER_RE.test(text)) topics.push('make-offer')
+  if (CONTRACT_ADVICE_RE.test(text)) topics.push('contract-advice')
   if (CMA_RE.test(text)) topics.push('cma-value')
   if (SHOWING_RE.test(text)) topics.push('listing-showing')
   if (topics.length === 0) topics.push('other')
@@ -217,6 +222,7 @@ function refusalFor(
     return { topic: 'human-check', reply: lang === 'es' ? ARE_YOU_REAL_ES : ARE_YOU_REAL_EN }
   }
   if (topics.includes('make-offer')) return { topic: 'make-offer', reply: OFFER_EN }
+  if (topics.includes('contract-advice')) return { topic: 'contract-advice', reply: CONTRACT_ADVICE_EN }
   return null
 }
 

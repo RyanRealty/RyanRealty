@@ -594,7 +594,7 @@ export function V3AlertsStrip({
                 <p className="v3-alerts__sent-body">{sent.body}</p>
               </div>
             ) : (
-              <form className="v3-alerts__form" onSubmit={onCalloutSubmit} noValidate aria-busy={sending}>
+              <form data-clarity-mask="True" className="v3-alerts__form" onSubmit={onCalloutSubmit} noValidate aria-busy={sending}>
                 <p className="v3-alerts__promise">{promise}</p>
                 <div className="v3-alerts__row">
                   <div className="v3-alerts__field">
@@ -647,7 +647,7 @@ export function V3AlertsStrip({
         aria-hidden={!on}
         inert={!on}
       >
-        <form className="v3-alerts-sticky__inner" onSubmit={onStickySubmit} noValidate aria-busy={sending}>
+        <form data-clarity-mask="True" className="v3-alerts-sticky__inner" onSubmit={onStickySubmit} noValidate aria-busy={sending}>
           <div className="v3-alerts-sticky__text">
             <p className="v3-alerts-sticky__line">
               {shownCount ? (

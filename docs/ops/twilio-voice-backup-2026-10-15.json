@@ -1,6 +1,7 @@
 {
   "capturedAt": "2026-10-15T02:10:00Z",
-  "note": "Backup of Twilio voice routing before Sarah conference + main-line switch. No secrets. Rollback main line by leaving RECEPTIONIST_LINES unset (defaults to spare only) and keeping these voice URLs.",
+  "updatedAt": "2026-10-15T03:24:00Z",
+  "note": "Backup of Twilio voice routing before Sarah conference + main-line switch. No secrets. Main line stays off Sarah. Spare +15412245025 is the only receptionist line.",
   "sipTrunk": {
     "sid": "TK2c20738ac8af5c7635ffa7e07f663e82",
     "friendlyName": "Grok Voice receptionist test (xAI SIP)",
@@ -48,10 +49,13 @@
     }
   ],
   "productionEnv": {
-    "RECEPTIONIST_LINES": null,
-    "RECEPTIONIST_TRANSFER_TEST_TARGET": "+15005550006",
+    "RECEPTIONIST_LINES": "+15412245025",
+    "RECEPTIONIST_TRANSFER_TEST_TARGET": null,
+    "RECEPTIONIST_TRANSFER_TEST_TARGET_removedValue": "+15005550006",
+    "RECEPTIONIST_TRANSFER_TEST_TARGET_removedAt": "2026-10-15T03:23:00Z",
+    "RECEPTIONIST_TRANSFER_TEST_TARGET_note": "Was production env id kBox8e2hR0u7YSj8 (Twilio magic number +15005550006). Emptied 2026-10-15T02:54Z, then renamed to RECEPTIONIST_TRANSFER_TEST_TARGET_REMOVED at 2026-10-15T03:23Z because Vercel MCP has no env-delete. process.env.RECEPTIONIST_TRANSFER_TEST_TARGET is unset after the next production deploy. Transfers ring real broker cells.",
     "TWILIO_FORWARD_MATT": "+15412136706",
-    "note": "RECEPTIONIST_TRANSFER_TEST_TARGET must be removed before the main-line cutover or every transfer goes to Twilio's magic test number."
+    "note": "Sarah is enabled on the spare only. Do not add +15417033095 to RECEPTIONIST_LINES until an unknown-From spare test succeeds."
   },
   "xaiVoicePrice": {
     "model": "grok-voice-3.0",

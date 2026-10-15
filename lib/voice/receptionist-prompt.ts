@@ -3,8 +3,8 @@
  * this file only re-exports them so the SIP session does not fork a second
  * prompt. Counsel Matter #3 greeting is verbatim via sarahGreeting('voice').
  */
-import { buildSarahSystemPrompt, sarahGreeting } from '@/lib/sarah/persona'
-import { RECORDING_OBJECTION_EN, SARAH_NAME } from '@/lib/sarah/scripts'
+import { SARAH_NAME, buildSarahSystemPrompt, sarahGreeting } from '@/lib/sarah'
+import { RECORDING_OBJECTION_EN } from '@/lib/sarah/scripts'
 
 const NAME = (process.env.RECEPTIONIST_NAME ?? SARAH_NAME).trim() || SARAH_NAME
 

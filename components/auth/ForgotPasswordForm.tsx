@@ -38,7 +38,7 @@ export default function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+    <form data-clarity-mask="True" onSubmit={handleSubmit} className="mt-6 space-y-4">
       <div>
         <Label htmlFor="forgot-email" className="block text-sm font-medium text-muted-foreground">
           Email

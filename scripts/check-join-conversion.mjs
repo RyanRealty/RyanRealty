@@ -59,8 +59,12 @@ checks.push({
 
 const today = src('app/admin/(protected)/today/page.tsx')
 checks.push({
-  label: 'Today reads the same DAL the packet reads',
-  ok: /getJoinConversionStats/.test(today) && /join\.visits7d/.test(today),
+  // Matt approved the 2026-10-14 admin audit (#637): Today became a short
+  // right-now strip and dropped the /join line. The rule that stays: if Today
+  // shows the /join figure, it reads it from the DAL the packet reads, never a
+  // count of its own.
+  label: 'Today reads the same DAL the packet reads (when it shows /join at all)',
+  ok: !/\/join this week|join\.visits|conversions7d/.test(today) || (/getJoinConversionStats/.test(today) && /join\.visits7d/.test(today)),
 })
 
 const joinPage = src('app/join/page.tsx')
