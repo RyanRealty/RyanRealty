@@ -9,13 +9,15 @@ import {
   grokRealtimeWebSocketUrl,
 } from '@/lib/grok/realtime-browser'
 import { buildSarahSystemPrompt, sarahGreeting } from './persona'
-import { WEB_VOICE_NOTICE_EN } from './scripts'
+import { WEB_VOICE_NOTICE_EN, WEB_VOICE_TALK_EN } from './scripts'
+import { createSarahVoicePlayback } from './voice-playback'
 import { SARAH_MIC_CONSTRAINTS, type SarahArmedMic } from './web-voice-arm'
 
 export type SarahVoiceStatus = 'idle' | 'asking' | 'connecting' | 'listening' | 'speaking' | 'error'
 
 export type SarahVoiceHandle = {
   stop: () => void
+  underruns: () => number
 }
 
 const MAX_MS = 5 * 60_000
@@ -60,12 +62,32 @@ export async function startSarahVoiceSession(opts: {
   mute.gain.value = 0
   const playCtx = opts.armed?.playCtx ?? new AudioContext({ sampleRate: GROK_REALTIME_SAMPLE_RATE })
   if (playCtx.state === 'suspended') void playCtx.resume()
+  const publishUnderruns = (count: number) => {
+    if (typeof window === 'undefined') return
+    Object.assign(window, { __sarahVoiceUnderruns: count })
+  }
+  const playback = createSarahVoicePlayback(playCtx, {
+    onUnderrun: publishUnderruns,
+  })
+  publishUnderruns(0)
   let stopped = false
   let playing = false
+  let ignoreAudio = false
+
+  const bargeIn = () => {
+    playback.bargeIn()
+    playing = false
+    ignoreAudio = true
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'response.cancel' }))
+    }
+    opts.onStatus('listening')
+  }
 
   const stop = () => {
     if (stopped) return
     stopped = true
+    playback.stop()
     try {
       ws.close()
     } catch {
@@ -91,8 +113,8 @@ export async function startSarahVoiceSession(opts: {
           instructions: `${buildSarahSystemPrompt({
             channel: 'web',
             brokerFirstName: opts.brokerFirstName,
-          })}\nOn voice, keep turns short. ${WEB_VOICE_NOTICE_EN}`,
-          turn_detection: { type: 'server_vad' },
+          })}\n${WEB_VOICE_TALK_EN} ${WEB_VOICE_NOTICE_EN}`,
+          turn_detection: { type: 'server_vad', create_response: true, interrupt_response: true },
         },
       }),
     )
@@ -130,23 +152,20 @@ export async function startSarahVoiceSession(opts: {
     } catch {
       return
     }
+    if (event.type === 'input_audio_buffer.speech_started') {
+      bargeIn()
+      return
+    }
+    if (event.type === 'response.created') {
+      ignoreAudio = false
+    }
     if (event.type === 'response.output_audio.delta' && event.delta) {
+      if (ignoreAudio) return
       playing = true
       opts.onStatus('speaking')
-      const binary = atob(event.delta)
-      const bytes = new Uint8Array(binary.length)
-      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
-      const pcm = new Int16Array(bytes.buffer)
-      const float = new Float32Array(pcm.length)
-      for (let i = 0; i < pcm.length; i += 1) float[i] = (pcm[i] ?? 0) / 0x8000
-      const buf = playCtx.createBuffer(1, float.length, GROK_REALTIME_SAMPLE_RATE)
-      buf.copyToChannel(float, 0)
-      const node = playCtx.createBufferSource()
-      node.buffer = buf
-      node.connect(playCtx.destination)
-      node.start()
+      playback.pushBase64Pcm16(event.delta)
     }
-    if (event.type === 'response.done' && playing) {
+    if ((event.type === 'response.done' || event.type === 'response.cancelled') && playing) {
       playing = false
       opts.onStatus('listening')
     }
@@ -169,5 +188,5 @@ export async function startSarahVoiceSession(opts: {
     if (!stopped) stop()
   })
 
-  return { stop }
+  return { stop, underruns: () => playback.underruns() }
 }

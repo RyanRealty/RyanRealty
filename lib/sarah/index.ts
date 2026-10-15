@@ -26,6 +26,7 @@ export {
   WEB_HELP_EN,
   WEB_SAVED_NOTICE_EN,
   WEB_VOICE_NOTICE_EN,
+  WEB_VOICE_TALK_EN,
   bookingPendingEn,
   webGreetingEn,
   YES_CONSENT_TEXT,
