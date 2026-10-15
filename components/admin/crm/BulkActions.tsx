@@ -310,6 +310,10 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
       disabled: isPending,
     },
     { label: 'Add to newsletter', onSelect: () => openAction('newsletter'), disabled: isPending || !hasIds },
+    // Principal only (same flag as Assign Agent): each review ask needs Matt's yes.
+    ...(canAssignBroker
+      ? [{ label: 'Draft review asks', onSelect: () => openAction('review_ask'), disabled: isPending || !hasIds }]
+      : []),
     { label: 'Assign a saved search', onSelect: () => openAction('saved_search'), disabled: isPending },
   ]
 
@@ -449,7 +453,7 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
         title={currentSpec?.title ?? ''}
         description={
           legacyResult
-            ? `Done. ${legacyResult.assigned} ${open === 'merge_people' ? 'merged' : 'added'}, ${legacyResult.skipped} skipped.`
+            ? `Done. ${legacyResult.assigned} ${open === 'merge_people' ? 'merged' : open === 'review_ask' ? 'drafted, nothing sent' : 'added'}, ${legacyResult.skipped} skipped.`
             : isDelete
               ? `This will soft-delete the selected contacts — they will disappear from all lists. This cannot be undone in bulk.`
               : isLegacy

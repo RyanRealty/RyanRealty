@@ -31,6 +31,7 @@ import { updatePersonFieldAction } from '@/app/actions/crm-person-detail'
 import { updatePersonIdentityAction } from '@/app/actions/crm-person-identity'
 import { startBpoForContactAction } from '@/app/actions/contact-bpo'
 import { saveDraftAction } from '@/app/actions/crm-inbox'
+import { draftReviewAskAction } from '@/app/actions/crm-review-ask'
 
 const BASE = '/admin/people'
 
@@ -82,6 +83,18 @@ export async function saveEmailDraftFromPerson(personId: number, formData: FormD
   revalidatePath(personPath(personId))
   if (!r.ok) redirect(errorUrl(personId, `Draft not saved — ${r.error ?? 'unknown error'}`))
   redirect(`${personPath(personId)}?flash=${encodeURIComponent('Email draft saved.')}`)
+}
+
+/**
+ * Draft a Google review ask for this person (Matt's pick). Never sends: the
+ * draft waits in his Drafts until he opens it and presses Send.
+ */
+export async function draftReviewAskFromPerson(personId: number): Promise<void> {
+  const r = await draftReviewAskAction([personId])
+  revalidatePath(personPath(personId))
+  if (!r.ok) redirect(errorUrl(personId, `Review ask not drafted: ${r.error}`))
+  if (r.drafted === 0) redirect(errorUrl(personId, `Review ask not drafted: ${r.skipped[0]?.reason ?? 'skipped'}.`))
+  redirect(`${personPath(personId)}?flash=${encodeURIComponent('Review ask drafted. It is waiting in Drafts and has not been sent.')}`)
 }
 
 export async function saveSmsDraftFromPerson(personId: number, formData: FormData): Promise<void> {

@@ -82,3 +82,36 @@ describe('wrapPlainTextHtml — bare URLs become trackable anchors', () => {
     expect(wrapPlainTextHtml('no links here')).not.toContain('<a ')
   })
 })
+
+describe('typed [words](url) links read as short linked words', () => {
+  const REVIEW = 'https://search.google.com/local/writereview?placeid=ChIJfVsN4o3IuFQR7KJXpmn9L5k'
+
+  it('renders the words as the anchor and never shows the raw address', () => {
+    const html = wrapPlainTextHtml(`Here is the form: [Leave a Google review](${REVIEW}). Thank you.`)
+    expect(html).toContain(`<a href="${REVIEW.replace('&', '&amp;')}" style="color:#102742">Leave a Google review</a>. Thank you.`)
+    expect(html).not.toContain(`>${REVIEW}<`)
+    expect(html).not.toContain('[Leave')
+  })
+
+  it('still links a bare URL beside a typed link, each once', () => {
+    const html = wrapPlainTextHtml(`[Our reviews](https://ryan-realty.com/reviews) and https://ryan-realty.com/sell`)
+    expect(html.match(/<a href=/g)?.length).toBe(2)
+    expect(html).toContain('>Our reviews</a>')
+    expect(html).toContain('>https://ryan-realty.com/sell</a>')
+  })
+
+  it('a plain body with a typed link always carries an HTML part, and the text part spells it out', () => {
+    const { html, plain } = prepareOutboundEmailBody(`Hi,\n\n[Leave a Google review](${REVIEW})`, 'text')
+    expect(html).toContain('>Leave a Google review</a>')
+    expect(plain).toBe(`Hi,\n\nLeave a Google review (${REVIEW})`)
+  })
+
+  it('a plain body without one is unchanged (no HTML part)', () => {
+    expect(prepareOutboundEmailBody('Hi there', 'text')).toEqual({ html: null, plain: 'Hi there' })
+  })
+
+  it('ignores a bracket pair whose target is not http(s)', () => {
+    const html = wrapPlainTextHtml('[click](javascript:alert(1))')
+    expect(html).not.toContain('<a ')
+  })
+})

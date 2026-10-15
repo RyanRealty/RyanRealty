@@ -20,6 +20,7 @@ import { Button, SectionHead } from '@/components/admin/v2'
 import {
   addTagFromPerson,
   assignBrokerFromPerson,
+  draftReviewAskFromPerson,
   removeTagFromPerson,
   updateIdentityFromPerson,
   updateSourceFromPerson,
@@ -141,6 +142,7 @@ export default async function PersonPage({
         </Suspense>
         <LeadHeader
           personId={card.personId}
+          canDraftReviewAsk={ctx.role === 'superuser'}
           name={card.name}
           firstName={card.firstName}
           lastName={card.lastName}
@@ -237,6 +239,14 @@ export default async function PersonPage({
         <Link href={`/admin/people/${card.personId}/tools`}>
           <Button variant="quiet">All tools</Button>
         </Link>
+        {ctx.role === 'superuser' ? (
+          // Drafts a Google review ask into Matt's Drafts. Never sends.
+          <form action={draftReviewAskFromPerson.bind(null, card.personId)}>
+            <Button variant="quiet" type="submit">
+              Draft review ask
+            </Button>
+          </form>
+        ) : null}
       </div>
 
       {sp.flash ? (

@@ -129,6 +129,88 @@ export async function getDraftsForPerson(
 }
 
 /**
+ * The owner's drafts for many people at once (the review-ask stager checks a
+ * whole closing or a bulk pick in one read). Throws on a failed read: a caller
+ * deciding whether a slot is free must not read "unknown" as "empty".
+ */
+export async function getDraftsForPeople(
+  personIds: readonly number[],
+  brokerSlug: string | null,
+): Promise<Map<number, { text: MessageDraft | null; email: MessageDraft | null }>> {
+  const owner = ownerKey(brokerSlug)
+  const out = new Map<number, { text: MessageDraft | null; email: MessageDraft | null }>()
+  const ids = [...new Set(personIds.filter((id) => Number.isInteger(id) && id > 0))]
+  const sb = createServiceClient()
+  for (let i = 0; i < ids.length; i += 200) {
+    let q = sb
+      .from('crm_message_drafts')
+      .select('person_id,broker_slug,channel,subject,body,updated_at')
+      .in('person_id', ids.slice(i, i + 200))
+    q = owner === null ? q.is('broker_slug', null) : q.eq('broker_slug', owner)
+    const { data, error } = await q
+    if (error) throw new Error(`crm_message_drafts read failed: ${error.message}`)
+    for (const r of (data ?? []) as Array<{
+      person_id: number
+      broker_slug: string | null
+      channel: string
+      subject: string | null
+      body: string | null
+      updated_at: string
+    }>) {
+      const slot = out.get(r.person_id) ?? { text: null, email: null }
+      const draft: MessageDraft = {
+        personId: r.person_id,
+        brokerSlug: r.broker_slug,
+        channel: r.channel === 'email' ? 'email' : 'text',
+        subject: r.subject,
+        body: r.body ?? '',
+        updatedAt: r.updated_at,
+      }
+      if (draft.channel === 'email') slot.email = draft
+      else slot.text = draft
+      out.set(r.person_id, slot)
+    }
+  }
+  return out
+}
+
+/**
+ * Every draft for these people, whoever owns it. The review-ask stager uses it
+ * to see an ask already waiting in any broker's Drafts, not only its own.
+ * Throws on a failed read.
+ */
+export async function listDraftsForPeopleAnyOwner(personIds: readonly number[]): Promise<MessageDraft[]> {
+  const ids = [...new Set(personIds.filter((id) => Number.isInteger(id) && id > 0))]
+  const out: MessageDraft[] = []
+  const sb = createServiceClient()
+  for (let i = 0; i < ids.length; i += 200) {
+    const { data, error } = await sb
+      .from('crm_message_drafts')
+      .select('person_id,broker_slug,channel,subject,body,updated_at')
+      .in('person_id', ids.slice(i, i + 200))
+    if (error) throw new Error(`crm_message_drafts read failed: ${error.message}`)
+    for (const r of (data ?? []) as Array<{
+      person_id: number
+      broker_slug: string | null
+      channel: string
+      subject: string | null
+      body: string | null
+      updated_at: string
+    }>) {
+      out.push({
+        personId: r.person_id,
+        brokerSlug: r.broker_slug,
+        channel: r.channel === 'email' ? 'email' : 'text',
+        subject: r.subject,
+        body: r.body ?? '',
+        updatedAt: r.updated_at,
+      })
+    }
+  }
+  return out
+}
+
+/**
  * Upsert a draft for (person, acting broker, channel). Returns { ok } so the
  * calling action can surface a clean error. The caller has already guarded
  * access + scope; this is storage only.

@@ -50,7 +50,30 @@ export function prepareOutboundEmailBody(
   if (isHtmlBody(body, format)) {
     return { html: body, plain: htmlToPlainText(body) }
   }
+  // A typed `[words](url)` link only reads as words in HTML, so a plain body
+  // that carries one always goes out with its HTML part (which is also the
+  // part click tracking wraps). The text part spells the address out.
+  if (hasMarkdownLink(body)) {
+    return { html: wrapPlainTextHtml(body), plain: markdownLinksToPlain(body) }
+  }
   return { html: null, plain: body }
+}
+
+/**
+ * `[linked words](https://address)` in a typed body. The composer is plain
+ * text, so this is how a draft carries a link as a few short words instead of
+ * the raw address (Matt's email rule: links are short linked words, never a
+ * raw URL). Only http(s) targets, one line, at most 120 characters of words.
+ */
+const MARKDOWN_LINK_SOURCE = String.raw`\[([^\]\n]{1,120})\]\((https?:\/\/[^\s)<"]+)\)`
+
+export function hasMarkdownLink(text: string): boolean {
+  return new RegExp(MARKDOWN_LINK_SOURCE).test(text)
+}
+
+/** The text/plain rendering of a typed link: `words (https://address)`. */
+export function markdownLinksToPlain(text: string): string {
+  return text.replace(new RegExp(MARKDOWN_LINK_SOURCE, 'g'), (_m, words: string, url: string) => `${words} (${url})`)
 }
 
 /**
@@ -67,7 +90,13 @@ export function prepareOutboundEmailBody(
  * click — which is exactly what a plain-text batch send used to produce.
  */
 function linkifyEscaped(escaped: string): string {
-  return escaped.replace(/https?:\/\/[^\s<]+/g, (raw) => {
+  // One pass over both shapes, so the address inside a typed `[words](url)`
+  // is never linkified a second time inside its own href.
+  const token = new RegExp(`${MARKDOWN_LINK_SOURCE}|https?:\\/\\/[^\\s<]+`, 'g')
+  return escaped.replace(token, (raw: string, words?: string, mdUrl?: string) => {
+    if (words !== undefined && mdUrl !== undefined) {
+      return `<a href="${mdUrl}" style="color:#102742">${words}</a>`
+    }
     const trimmed = raw.replace(/[.,;:!?]+$/, '')
     const url = trimmed.endsWith(')') && !trimmed.includes('(') ? trimmed.slice(0, -1) : trimmed
     const tail = raw.slice(url.length)

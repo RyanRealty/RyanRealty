@@ -4,6 +4,7 @@ import { getConversationTriageState } from '@/lib/data/crm/getConversationTriage
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { MessagesThreadControls } from './MessagesThreadControls'
 import { getDraftsForPerson } from '@/lib/data/crm/drafts'
+import { isReviewAskDraft } from '@/lib/crm/review-ask'
 import { requirePersonInScope } from '@/app/actions/crm'
 import { addUnknownCallerPersonAction } from '@/app/actions/crm-inbox'
 import { searchPeopleForMergeAction, linkUnknownCallerToPersonAction } from '@/app/actions/crm-person-gaps'
@@ -165,7 +166,9 @@ export async function MessagesThread({
 
         <div className="av2-composer">
           <ComposeSurface
-            initialChannel={initialChannel}
+            // A staged review ask (the only draft) opens on its email, so
+            // approving it is read, then Send. Every other thread keeps Text.
+            initialChannel={drafts.email && !drafts.text && isReviewAskDraft(drafts.email) ? 'email' : initialChannel}
             initialPeople={
               card
                 ? [

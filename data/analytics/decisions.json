@@ -165,6 +165,12 @@
       "decided": "Matt 2026-10-14",
       "why": "Automation is flagged, never deleted: a crawler, scraper, headless browser or our own tooling keeps its visitor_sessions row and events with is_automated = true and an automation_reason, so the call stays auditable and reversible. Every visitor count (the Website dashboard, /admin/visitors, lead sources, funnels) must leave flagged sessions out. The rules and their measured hits live in docs/TRACKING_POLICY.md 'Automation'; scripts/audit-visitor-automation.ts replays them over any window and lists every session that proved to be a person which a rule flagged on arrival.",
       "code": "lib/analytics/automation.test.ts"
+    },
+    {
+      "id": "gbp-review-asks-drafted-for-approval",
+      "decided": "Matt 2026-10-14",
+      "why": "Review asks are drafted for Matt's approval after real closings and for picked past clients; each send needs his yes. Closings come from the Vault (daily cron review-ask-on-close); picks come from the person page and the CRM list bulk action. Every draft waits in his CRM Drafts (/admin/messages?f=drafts) and goes out only when he presses Send; nothing enqueues or auto-sends. Email by default, a text only with SMS consent, never a test or internal contact, never twice for the same person and deal. Google review count decides whether AI assistants name the brokerage.",
+      "code": "lib/data/tc/stageReviewAsksForRecentCloses.test.ts"
     }
   ]
 }

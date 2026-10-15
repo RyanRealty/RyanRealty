@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { ConfirmDialog, Dialog, Menu, SelectField, TextField, Button } from '@/components/admin/v2'
 import { deleteCrmPersonAction, logCrmCallAction } from '@/app/actions/crm-person-detail'
+import { draftReviewAskAction } from '@/app/actions/crm-review-ask'
 
 const CALL_OUTCOMES = ['Spoke with lead', 'Left voicemail', 'No answer', 'Wrong number', 'Do not contact', 'Other']
 
-export function LeadMoreMenu(props: { personId: number; toolsHref: string }) {
+export function LeadMoreMenu(props: { personId: number; toolsHref: string; canDraftReviewAsk?: boolean }) {
   const router = useRouter()
   const [logOpen, setLogOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -33,6 +34,25 @@ export function LeadMoreMenu(props: { personId: number; toolsHref: string }) {
             },
           },
           { label: 'Log call', onSelect: () => setLogOpen(true) },
+          ...(props.canDraftReviewAsk
+            ? [
+                {
+                  // Drafts a Google review ask into Drafts. Never sends.
+                  label: 'Draft review ask',
+                  disabled: pending,
+                  onSelect: () =>
+                    start(async () => {
+                      const r = await draftReviewAskAction([props.personId])
+                      if (!r.ok) toast.error(r.error)
+                      else if (r.drafted === 0) toast.error(`Not drafted: ${r.skipped[0]?.reason ?? 'skipped'}.`)
+                      else {
+                        toast.success('Review ask drafted. It is waiting in Drafts and has not been sent.')
+                        router.refresh()
+                      }
+                    }),
+                },
+              ]
+            : []),
           { label: 'Classic tools', href: props.toolsHref },
           { label: 'Delete', danger: true, onSelect: () => setDeleteOpen(true) },
         ]}

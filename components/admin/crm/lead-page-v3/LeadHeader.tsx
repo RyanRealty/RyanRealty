@@ -25,6 +25,8 @@ export function LeadHeader(props: {
   phone: string | null
   email: string | null
   tags: string[]
+  /** Matt only: the More menu offers "Draft review ask" (never sends). */
+  canDraftReviewAsk?: boolean
 }) {
   const meta = [
     props.phone ? null : 'No phone',
@@ -107,7 +109,11 @@ export function LeadHeader(props: {
             Call
           </a>
         ) : null}
-        <LeadMoreMenu personId={props.personId} toolsHref={`/admin/people/${props.personId}/tools`} />
+        <LeadMoreMenu
+          personId={props.personId}
+          toolsHref={`/admin/people/${props.personId}/tools`}
+          canDraftReviewAsk={props.canDraftReviewAsk === true}
+        />
       </div>
     </header>
   )

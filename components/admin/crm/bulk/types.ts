@@ -44,6 +44,7 @@ export type ActionId =
   | 'add_collaborator'
   | 'remove_collaborator'
   | 'merge_people'
+  | 'review_ask'
 
 /** The two legacy (ids-only, non-job) actions return this shape. */
 export type BulkLegacyResult =

@@ -34,6 +34,7 @@ import {
 import { BulkEmailSendOptions } from '@/components/admin/crm/bulk/EmailSendOptions'
 import type { BulkEmailSendVia } from '@/lib/crm/bulk-email-identity'
 import { bulkMergePeopleAction } from '@/app/actions/crm-person-gaps'
+import { draftReviewAskAction } from '@/app/actions/crm-review-ask'
 import { TIMEFRAME_OPTIONS } from '@/components/admin/shared/people-list/people-list-utils'
 import { getFiltersSummary } from '@/lib/search-filters'
 import { PROPERTY_TYPES } from '@/lib/property-type'
@@ -810,6 +811,34 @@ const mergePeople = defineBulkAction<MergePeopleValue>({
   },
 })
 
+// ── review_ask (legacy — ids only; drafts, never sends) ───────────────────────
+
+type ReviewAskValue = Record<string, never>
+
+function ReviewAskFields({ ctx }: BulkFieldsProps<ReviewAskValue>) {
+  if (ctx.legacyResult) return null
+  return (
+    <p className="text-xs" style={{ color: 'var(--a-text-2)', margin: 0 }}>
+      Drafts a Google review ask for each checked contact. Nothing is sent: every draft waits in your Drafts until
+      you open it and press Send. Test and internal contacts, anyone already asked, and anyone with another draft
+      waiting are skipped. Email first; a text only with text consent.
+    </p>
+  )
+}
+
+const reviewAsk = defineBulkAction<ReviewAskValue>({
+  id: 'review_ask',
+  title: 'Draft review asks',
+  initialValue: {},
+  Fields: ReviewAskFields,
+  validate: (_v, ctx) => (ctx.selectedIds.length === 0 ? 'Check the contacts to ask' : null),
+  run: async (_v, _sel, ctx) => {
+    const res = await draftReviewAskAction(ctx.selectedIds)
+    if (!res.ok) return { mode: 'legacy', result: { ok: false, error: res.error } }
+    return { mode: 'legacy', result: { ok: true, assigned: res.drafted, skipped: res.skipped.length } }
+  },
+})
+
 // ── Registry ───────────────────────────────────────────────────────────────────
 
 export const BULK_ACTION_REGISTRY: Record<ActionId, BulkActionSpec<any>> = {
@@ -830,4 +859,5 @@ export const BULK_ACTION_REGISTRY: Record<ActionId, BulkActionSpec<any>> = {
   add_collaborator: addCollaborator,
   remove_collaborator: removeCollaborator,
   merge_people: mergePeople,
+  review_ask: reviewAsk,
 }
