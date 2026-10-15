@@ -34,8 +34,9 @@ import { getResortCommunityBySlug } from '@/lib/data/communities/registry'
 import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
 import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
 import { slugify } from '@/lib/slug'
+import type { IndexableSubdivision } from '@/lib/data/subdivisions/subdivision-index'
 import {
-  browsePairPath,
+  browsePairSitemapPath,
   decideBrowsePair,
   type BrowsePairDecision,
   type BrowsePairFacts,
@@ -148,11 +149,17 @@ export function buildBrowsePairIndex(
   return out
 }
 
-/** One cached read of each input, memoized per request. */
-export const getBrowsePairIndex = cache(async (): Promise<BrowsePairIndex> => {
+/**
+ * One read of each input. `indexableRead` lets a caller that already holds the
+ * indexable plat set (or its in-flight read) share it, so one caller never
+ * judges a pair against a different plat set than the one it submits.
+ */
+async function readBrowsePairIndex(
+  indexableRead: PromiseLike<readonly IndexableSubdivision[]> = getIndexableSubdivisions(),
+): Promise<BrowsePairIndex> {
   const [entries, indexable, platCounts] = await Promise.all([
     getSubdivisionCityInventory(),
-    getIndexableSubdivisions(),
+    indexableRead,
     getPlatClosedCounts(),
   ])
   // Every one of these reads THROWS on a failed or empty result inside its
@@ -165,7 +172,10 @@ export const getBrowsePairIndex = cache(async (): Promise<BrowsePairIndex> => {
     platLabels: new Map(platCounts.map((p) => [p.slug, p.label])),
     cityPlats: buildCityPlatIndex(platCounts),
   }
-})
+}
+
+/** One cached read of each input, memoized per request. */
+export const getBrowsePairIndex = cache(() => readBrowsePairIndex())
 
 /** The registry resort community serving (city, area), if any. */
 export function communityForPair(citySlug: string, areaSlug: string): BrowsePairFacts['community'] {
@@ -219,20 +229,36 @@ export async function getBrowsePairDecision(
 }
 
 /**
- * The sitemap's browse leg: every pair of the given cities whose decision is
- * `emit`, as root-relative paths, sorted. Same decision function as the page,
- * so a submitted URL is always indexable and self-canonical.
+ * The sitemap's browse leg: the URL browsePairSitemapPath() gives each pair of
+ * the given cities, as root-relative paths, each once, sorted. Same decision
+ * function as the page, so a submitted URL is the self-canonical URL of an
+ * indexable page: a plat twin comes out as /subdivisions/{slug} (the page its
+ * canonical names), never as the twin.
+ *
+ * `indexableRead` is the sitemap's own read of the indexable plat set. The
+ * sitemap passes the SAME read to its plat-page leg, so the pairs and the plat
+ * pages are judged against one set (two reads inside one build can disagree,
+ * and did on 2026-10-14). When that set could not be read, no pair is
+ * submitted: the page fails open on an unreadable set and keeps a self
+ * canonical, the sitemap cannot prove one, so it says so in the log and thins.
  */
-export async function getBrowsePairSitemapPaths(citySlugs: readonly string[]): Promise<string[]> {
-  const index = await getBrowsePairIndex()
+export async function getBrowsePairSitemapPaths(
+  citySlugs: readonly string[],
+  indexableRead?: PromiseLike<readonly IndexableSubdivision[]>,
+): Promise<string[]> {
+  const index = indexableRead ? await readBrowsePairIndex(indexableRead) : await getBrowsePairIndex()
   const cities = new Set(citySlugs.map((c) => c.trim().toLowerCase()))
-  const out: string[] = []
+  const out = new Set<string>()
   for (const key of index.pairs.keys()) {
     const [citySlug, areaSlug] = key.split('/') as [string, string]
     if (!cities.has(citySlug)) continue
-    if (decideBrowsePair(browsePairFacts(index, citySlug, areaSlug, null)).emit) {
-      out.push(browsePairPath(citySlug, areaSlug))
-    }
+    const path = browsePairSitemapPath(browsePairFacts(index, citySlug, areaSlug, null))
+    if (path) out.add(path)
   }
-  return out.sort()
+  if (index.inventoryKnown && index.indexablePlats === null) {
+    console.error(
+      '[sitemap] browse pairs withheld: the indexable plat set could not be read, so a plat twin cannot be told from a self-canonical pair',
+    )
+  }
+  return [...out].sort()
 }
