@@ -6,7 +6,8 @@
  */
 import { createServiceClient } from '@/lib/supabase/service'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
-import { DEFAULT_DESK_BROKER, forwardCellForBroker, sendSms } from '@/lib/crm/twilio'
+import { DEFAULT_DESK_BROKER } from '@/lib/crm/twilio'
+import { queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import { generateGrokStructured } from '@/lib/grok/text'
 import type { TranscriptLine } from '@/lib/grok/voice-sip'
 
@@ -72,36 +73,32 @@ export async function logReceptionistCall(callId: string, fromHeader: string, li
   )
 }
 
-/** Text a caller's message to the broker's cell from the main line, and log it on the caller's CRM record. */
+/** Queue the caller's message as a broker alert text (governed broker-alert path) and log it on the caller's CRM record. */
 export async function deliverReceptionistMessage(
   callId: string,
   fromHeader: string,
   m: { who: 'matt' | 'rebecca' | 'paul'; caller_name: string; callback_number: string; message: string },
 ): Promise<boolean> {
-  const cell = await forwardCellForBroker(m.who)
-  const mainLine = (process.env.TWILIO_NUMBER_MATT ?? '+15417033095').trim()
-  if (!cell) return false
-  const phone = callerFromSipHeader(fromHeader)
-  const body = `Ryan Realty receptionist message for ${m.who === 'matt' ? 'Matt' : m.who === 'rebecca' ? 'Rebecca' : 'Paul'}: ${m.caller_name || 'Caller'} (${m.callback_number || phone || 'no number'}) - ${m.message}`.slice(0, 600)
-  const res = await sendSms({ from: mainLine, to: cell, body })
+  const phone = callerFromSipHeader(fromHeader) || callerFromSipHeader(m.callback_number)
+  if (!phone) return false
+  const { match } = await findOrCreatePersonByPhone({ phone, source: 'inbound-call', assignBroker: m.who })
+  if (!match) return false
+  const who = m.who === 'matt' ? 'Matt' : m.who === 'rebecca' ? 'Rebecca' : 'Paul'
+  const body = `Receptionist message for ${who}: ${m.caller_name || 'Caller'} (${m.callback_number || phone}) - ${m.message}`.slice(0, 600)
+  const queued = await queueBrokerAlert({ broker: m.who, personId: match.personId, kind: `receptionist-message:${callId}`, body })
   try {
-    if (phone) {
-      const { match } = await findOrCreatePersonByPhone({ phone, source: 'inbound-call', assignBroker: m.who })
-      if (match) {
-        await createServiceClient().from('crm_timeline').upsert({
-          person_id: match.personId,
-          kind: 'note',
-          title: `Receptionist message for ${m.who}`,
-          body,
-          payload: { xaiCallId: callId, deliveredTo: m.who, smsSid: res.ok ? res.sid : null, smsError: res.ok ? null : res.error },
-          broker: m.who,
-          source: 'grok-receptionist',
-          dedupe_key: `xai:msg:${callId}:${m.who}`,
-        }, { onConflict: 'dedupe_key', ignoreDuplicates: true })
-      }
-    }
+    await createServiceClient().from('crm_timeline').upsert({
+      person_id: match.personId,
+      kind: 'note',
+      title: `Receptionist message for ${who}`,
+      body,
+      payload: { xaiCallId: callId, deliveredTo: m.who, alertQueued: queued },
+      broker: m.who,
+      source: 'grok-receptionist',
+      dedupe_key: `xai:msg:${callId}:${m.who}`,
+    }, { onConflict: 'dedupe_key', ignoreDuplicates: true })
   } catch (e) {
     console.error('[receptionist-log] message log failed', e)
   }
-  return res.ok
+  return queued
 }

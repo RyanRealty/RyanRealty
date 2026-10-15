@@ -136,7 +136,6 @@ if (suppress && (!dncLine || !/'sms'/.test(dncLine[1]))) {
 const BROKER_ONLY_SENDS = new Map([
   ['app/api/twilio/inbound-sms/route.ts', "forwards an inbound text to the broker's own cell"],
   ['lib/agent/send.ts', 'the SMS agent answers a whitelisted broker cell only'],
-  ['lib/voice/receptionist-log.ts', "texts a receptionist caller message to the broker's own forwarding cell only"],
 ])
 
 function sourceFiles(dir, acc = []) {
