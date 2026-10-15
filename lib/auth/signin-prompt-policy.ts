@@ -6,7 +6,9 @@
  */
 
 const AUTH_PATHS = new Set(['/login', '/signup', '/forgot-password'])
-const LEAD_PATHS = new Set(['/contact', '/sell/valuation', '/refer-a-client', '/join'])
+// UX review (2026-10-15): /sell carries the valuation ask and /book the
+// calendar; the sign-in sheet covered the address field there.
+const LEAD_PATHS = new Set(['/contact', '/sell', '/sell/valuation', '/book', '/tools/seller-net-sheet', '/refer-a-client', '/join'])
 
 export type SignInPromptSkipReason =
   | 'outreach'

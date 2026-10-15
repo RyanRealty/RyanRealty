@@ -143,10 +143,13 @@ export function V3SarahAssistant() {
     [dismissTeaser, teaserKind],
   )
 
+  const launcherRef = useRef<HTMLButtonElement | null>(null)
   const closePanel = useCallback(() => {
     setSheetDy(0)
     dragRef.current = null
     setPanelOpen(false)
+    // UX review F17: closing returns focus to the button that opened it.
+    requestAnimationFrame(() => launcherRef.current?.focus())
   }, [])
 
   useEffect(() => {
@@ -376,6 +379,7 @@ export function V3SarahAssistant() {
 
         <button
           type="button"
+          ref={launcherRef}
           className="v3-sarah__launcher"
           data-sarah="launcher"
           aria-label={

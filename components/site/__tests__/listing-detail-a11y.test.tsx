@@ -274,11 +274,13 @@ describe('gallery, tour, and street view occupy history so Back stays on the lis
     expect(gallery).not.toMatch(/listing-gallery z-\[110\]/)
   })
 
-  it('keeps the gallery as a centered Dialog, not a fullscreen overlay', () => {
+  // UX review F30 (Matt 2026-10-15): full screen on phones only; from sm up
+  // the gallery stays a centered Dialog.
+  it('keeps the gallery as a centered Dialog from sm up, full screen only on phones', () => {
     expect(gallery).toMatch(/sm:max-w-3xl/)
-    expect(gallery).not.toMatch(/translate-x-0/)
-    expect(gallery).not.toMatch(/h-dvh/)
-    expect(gallery).not.toMatch(/sm:max-w-none/)
+    expect(gallery).not.toMatch(/(?<!max-sm:)translate-x-0/)
+    expect(gallery).not.toMatch(/(?<!max-sm:)h-dvh/)
+    expect(gallery).not.toMatch(/(?<![a-z-])sm:max-w-none/)
     expect(tour).toMatch(/translate-x-0/)
     expect(tour).toMatch(/translate-y-0/)
     expect(street).toMatch(/translate-x-0/)
