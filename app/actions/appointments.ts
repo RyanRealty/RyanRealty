@@ -21,6 +21,7 @@ import { sendAppointmentInvites } from '@/lib/crm/appointment-invites'
 import { scopeBroker } from '@/lib/crm/scope'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
 import { isActiveBrokerSlug } from '@/lib/brokers/directory'
+import { zonedInstant } from '@/lib/booking/slots'
 import {
   CRM_APPOINTMENT_TYPES_TAG,
   CRM_APPOINTMENT_OUTCOMES_TAG,
@@ -34,21 +35,23 @@ function isBrokerSlug(v: string): v is CrmBrokerSlug {
   return isActiveBrokerSlug(v)
 }
 
+const PT = 'America/Los_Angeles'
+
 /**
- * Coerce a datetime-local string (YYYY-MM-DDTHH:mm) to an ISO 8601 string
- * with seconds and the explicit Z so Postgres stores it as UTC.
- * Browsers emit "2026-07-04T09:00" from datetime-local inputs; Postgres needs
- * a full timestamptz. We treat the value as UTC (server is UTC, admins are
- * Pacific time but the calendar displays UTC labels — consistent with how
- * Google Calendar / CRM handle it for a single-timezone brokerage).
+ * Coerce a datetime-local string (YYYY-MM-DDTHH:mm) to a true UTC instant.
+ * Browsers emit "2026-07-04T09:00" with no zone; that wall time is Pacific.
+ * Appending Z stored 9:00 UTC (2am PT). zonedInstant keeps 9:00 PT.
  */
 function toTimestamptz(raw: string): string {
   if (!raw) throw new Error('Timestamp is required')
-  // Already has seconds or timezone suffix — leave it alone.
-  if (raw.length >= 19 && (raw.includes('Z') || raw.includes('+'))) return raw
-  // Pad seconds if missing (YYYY-MM-DDTHH:mm → YYYY-MM-DDTHH:mm:00)
+  // Already a zoned instant — leave it alone.
+  if (raw.includes('Z') || /[+-]\d{2}:\d{2}$/.test(raw)) return raw
   const padded = raw.length === 16 ? `${raw}:00` : raw
-  return `${padded}Z`
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/.exec(padded)
+  if (!m) throw new Error('Invalid timestamp')
+  const instant = zonedInstant(m[1], Number(m[2]) * 60 + Number(m[3]), PT)
+  if (!instant) throw new Error('Invalid timestamp')
+  return instant.toISOString()
 }
 
 // ── createAppointmentAction ───────────────────────────────────────────────────

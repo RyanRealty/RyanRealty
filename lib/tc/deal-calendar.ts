@@ -1,5 +1,12 @@
+import { zonedInstant } from '@/lib/booking/slots'
 import { addBankingDays } from './banking-days'
 import { BROKER_FILE_NAME, brokerEmailFromFileName } from './deal-scope'
+
+const PT = 'America/Los_Angeles'
+
+function allDayPacificIso(dateKey: string): string | null {
+  return zonedInstant(dateKey, 0, PT)?.toISOString() ?? null
+}
 
 export type DealCalendarItem = {
   kind: string
@@ -246,13 +253,16 @@ export async function syncDealCalendar(dealId: string): Promise<{ synced: number
         .maybeSingle()
 
       let apptId = existing?.crm_appointment_id ?? null
+      const startAt = allDayPacificIso(item.date)
+      const endAt = allDayPacificIso(nextDay(item.date))
+      if (!startAt || !endAt) continue
       if (!apptId && typeId) {
         const { data: appt, error } = await sb
           .from('crm_appointments')
           .insert({
             title: item.title,
-            start_at: `${item.date}T00:00:00Z`,
-            end_at: `${nextDay(item.date)}T00:00:00Z`,
+            start_at: startAt,
+            end_at: endAt,
             all_day: true,
             timezone: 'America/Los_Angeles',
             description: `Vault ${item.kind}`,
@@ -264,7 +274,7 @@ export async function syncDealCalendar(dealId: string): Promise<{ synced: number
           .single()
         if (!error) apptId = appt?.id ?? null
       } else if (apptId) {
-        await sb.from('crm_appointments').update({ title: item.title, start_at: `${item.date}T00:00:00Z`, end_at: `${nextDay(item.date)}T00:00:00Z` }).eq('id', apptId)
+        await sb.from('crm_appointments').update({ title: item.title, start_at: startAt, end_at: endAt }).eq('id', apptId)
       }
 
       let gcalId = existing?.gcal_event_id ?? null

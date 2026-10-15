@@ -161,6 +161,17 @@ export default async function SellerNetSheetPage({ searchParams }: Props) {
             Seller net sheet for Bend, Oregon
           </V3Heading>
           <p className="v3-net-answer">{copy.answer}</p>
+          {/* UX review F34: the calculator is the job. Jump straight to it;
+              the sources line now sits under the calculator. */}
+          <p>
+            <Link href="#calculator">Enter your numbers</Link>
+          </p>
+        </section>
+
+        <CalculatorSheet id="calculator" headingId="calculator-heading" eyebrow="Estimate" heading="Your net sheet">
+          <NetSheetCalculator defaultPrice={calcPrice} defaultClosingDate={defaultClosingDate} />
+        </CalculatorSheet>
+        <section className="v3-net-section" aria-label="Sources">
           <p className="v3-net-answer-source">
             {`Median: Oregon Data Share MLS, single-family homes in Bend, as of ${copy.asOfLabel} (`}
             <Link href={NET_SHEET_LINKS.bendMarket}>Bend housing market</Link>
@@ -170,10 +181,6 @@ export default async function SellerNetSheetPage({ searchParams }: Props) {
             <Link href={NET_SHEET_LINKS.costToSell}>Every line explained</Link>.
           </p>
         </section>
-
-        <CalculatorSheet id="calculator" headingId="calculator-heading" eyebrow="Estimate" heading="Your net sheet">
-          <NetSheetCalculator defaultPrice={calcPrice} defaultClosingDate={defaultClosingDate} />
-        </CalculatorSheet>
 
         <section id="worked-example" className="v3-net-section" aria-labelledby="worked-example-heading">
           <V3Heading level={2} id="worked-example-heading">

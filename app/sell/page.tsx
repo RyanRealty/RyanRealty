@@ -397,7 +397,7 @@ export default async function SellPage() {
           action={{ label: 'Value my home', href: FORM_ANCHOR, variant: 'ghost' }}
         >
           <SellCapture
-            eyebrow="Free. No listing agreement."
+            eyebrow="Free written valuation in 24 hours. No listing agreement."
             placement="stage"
             proof={heroProof}
             trace={

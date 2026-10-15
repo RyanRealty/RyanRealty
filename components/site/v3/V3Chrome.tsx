@@ -863,6 +863,35 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
         </div>
 
         <nav className="v3-chrome__menu-nav" aria-label={NAME.sections}>
+          {/* UX review F14: the four jobs most visitors came for, before the
+              full catalog of pages. */}
+          <div className="v3-chrome__menu-group">
+            <p className="v3-chrome__menu-title" id={`${menuId}-tasks`}>
+              Start here
+            </p>
+            <ul className="v3-chrome__menu-list" aria-labelledby={`${menuId}-tasks`}>
+              <li>
+                <Link href="/homes-for-sale" onClick={close} className="v3-chrome__menu-link">
+                  Search homes for sale
+                </Link>
+              </li>
+              <li>
+                <Link href={VALUATION_FORM.href} onClick={close} className="v3-chrome__menu-link">
+                  {VALUATION_FORM.label}
+                </Link>
+              </li>
+              <li>
+                <Link href="/book" onClick={close} className="v3-chrome__menu-link">
+                  Book time with a broker
+                </Link>
+              </li>
+              <li>
+                <a href={`tel:${CONTACT.phoneDirectTel}`} onClick={close} className="v3-chrome__menu-link">
+                  Call or text {CONTACT.phoneDirect}
+                </a>
+              </li>
+            </ul>
+          </div>
           {NAV_GROUPS.filter(
             (group) => PRIMARY_BAR_KEYS.has(group.key) || group.key === ACCOUNT_KEY,
           ).map((group, index) => {

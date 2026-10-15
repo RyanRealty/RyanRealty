@@ -18,7 +18,7 @@ export const VERDICT_LABEL: Record<Verdict, string> = {
 
 /** What the months-of-supply figure means, without a market-type label. */
 export const VERDICT_THRESHOLD: Record<Verdict, string> = {
-  seller: 'listings are getting absorbed faster than they are replaced',
+  seller: 'the market holds few homes relative to the recent sales pace',
   balanced: 'the sales pace and the listings on the market are close',
   buyer: 'buyers have leverage',
 }

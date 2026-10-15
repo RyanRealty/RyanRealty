@@ -180,10 +180,17 @@ export default async function Home() {
 
   const townCount = TOWN_ORDER.filter((slug) => cityBySlug.has(slug)).length || TOWN_ORDER.length
   const listedNow = pulseBundle?.counts.forSale
-  const heroEyebrow =
+  const listedEyebrow =
     typeof listedNow === 'number' && Number.isFinite(listedNow) && listedNow > 0
       ? `${listedNow.toLocaleString('en-US')} listed`
       : 'Central Oregon'
+  // UX review F35: say who we are above the fold, from the live Google
+  // summary only (no fallback rating), ahead of the inventory count.
+  const heroRating =
+    reviewSummary && reviewSummary.count > 0 && Number.isFinite(reviewSummary.averageRating)
+      ? `${reviewSummary.averageRating.toFixed(1)} on Google`
+      : null
+  const heroEyebrow = ['Local brokers', heroRating, listedEyebrow].filter(Boolean).join(' · ')
 
   const doors = [
     {

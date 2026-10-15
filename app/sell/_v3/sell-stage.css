@@ -635,3 +635,19 @@
     min-block-size: var(--v3-tap);
   }
 }
+
+/* UX review F23: the fee line under every seller ask. */
+.sell-fee-line {
+  margin: var(--v3-space-sm) 0 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--v3-navy) 82%, transparent);
+}
+
+@layer base {
+  .sell-fee-line a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}

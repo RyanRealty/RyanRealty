@@ -13,17 +13,11 @@ export function ListingQuickFacts(input: ListingQuickFactsInput) {
   return (
     <section className="listing-quick-facts" aria-labelledby="listing-quick-facts-heading">
       <h2 id="listing-quick-facts-heading" className="sec-title">
-        Quick facts
+        At a glance
       </h2>
       <p className="listing-quick-facts__answer">{facts.sentence}</p>
-      <dl className="listing-quick-facts__list">
-        {facts.rows.map((row) => (
-          <div key={row.term} className="listing-spec-row">
-            <dt>{row.term}</dt>
-            <dd>{row.value}</dd>
-          </div>
-        ))}
-      </dl>
+      {/* UX review F28: the rows repeated the Facts section below, so the
+          answer block keeps the sentence and Facts carries the table. */}
     </section>
   )
 }

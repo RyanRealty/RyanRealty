@@ -22,6 +22,7 @@ import {
   V3_ROOT_CLASS,
 } from '@/components/site/v3'
 import { normalizeAgentSlug } from '@/lib/agent-attribution'
+import { CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import BookingClient from './BookingClient'
 
 /**
@@ -57,6 +58,9 @@ export default async function BookPage({
   // Full web slugs (paul-stevenson, matthew-ryan) are what a CMA stamps.
   // The short form is what the calendar is keyed on. Unknown stays Matt.
   const brokerSlug = normalizeAgentSlug(params.agent) ?? 'matt'
+  // UX review F05: "Book time with Matt" landed on a generic page. When the
+  // link names a broker, say whose calendar this is.
+  const namedBroker = normalizeAgentSlug(params.agent) ? CRM_BROKER_DISPLAY[brokerSlug] ?? null : null
 
   // SITE-06: a tour booked from a listing page carries the house with it.
   // The KEY comes from the query string; the ADDRESS is read back off the
@@ -124,14 +128,16 @@ export default async function BookPage({
           item rather than a loose paragraph the token scope would not style. */}
       <V3Quiet
         id="book-intro"
-        heading="Book time with a broker"
+        heading={namedBroker ? `Book time with ${namedBroker}` : 'Book time with a broker'}
         headingLevel={1}
         items={[
           {
             kind: 'prose',
             body: listingContext
               ? `Pick a time to walk through ${listingContext.addressLine}. A licensed Oregon broker will meet you there, not a call center.`
-              : 'Pick a time that works. A licensed Oregon broker will be on the other end, not a call center.',
+              : namedBroker
+                ? `Pick a time that works. You will talk with ${namedBroker}, not a call center.`
+                : 'Pick a time that works. A licensed Oregon broker will be on the other end, not a call center.',
           },
         ]}
       />

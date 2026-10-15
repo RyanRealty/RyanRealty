@@ -442,6 +442,10 @@ function applySearchFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>
   // ── Property type / sub-type ──────────────────────────────────────────────
   const ptCodes = propertyTypeFilterToCodes(parsed.propertyType)
   if (ptCodes && ptCodes.length > 0) query = query.in('property_type', ptCodes)
+  // Homes-for-sale search never lists commercial leases ('G') unless the
+  // visitor asks for them: a $1/sqft/month warehouse is not a home for sale
+  // (UX review F02).
+  else query = query.or('property_type.is.null,property_type.neq.G')
   if (parsed.propertySubType) {
     // EXACT resolution (plan §4.4, 2026-07-30 — supersedes the W3.2 substring
     // contract). The old `*value*` ILIKE papered over the 'Condo' vs

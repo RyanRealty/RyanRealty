@@ -191,6 +191,7 @@ export function V3SarahAssistant() {
     [dismissTeaser, teaserKind],
   )
 
+  const launcherRef = useRef<HTMLButtonElement | null>(null)
   const closePanel = useCallback(() => {
     setSheetDy(0)
     dragRef.current = null
@@ -198,6 +199,8 @@ export function V3SarahAssistant() {
     voiceRef.current = null
     setVoiceStatus('idle')
     setPanelOpen(false)
+    // UX review F17: closing returns focus to the button that opened it.
+    requestAnimationFrame(() => launcherRef.current?.focus())
   }, [])
 
   useEffect(() => {
@@ -508,6 +511,7 @@ export function V3SarahAssistant() {
 
         <button
           type="button"
+          ref={launcherRef}
           className="v3-sarah__launcher"
           data-sarah="launcher"
           aria-label={
@@ -525,6 +529,9 @@ export function V3SarahAssistant() {
         >
           <SarahFace className="v3-sarah__avatar" size={56} alt={SARAH_AVATAR_ALT} />
           {showBadge ? <span className="v3-sarah__badge" data-sarah-teaser="badge" /> : null}
+          {/* UX review F36: say "AI" on the button itself, so nobody takes the
+              photo for one of the brokers before opening the chat. */}
+          {!panelOpen ? <span className="v3-sarah__ai-tag" aria-hidden="true">AI</span> : null}
         </button>
       </div>
     </div>

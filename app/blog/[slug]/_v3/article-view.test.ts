@@ -179,3 +179,13 @@ describe('months-of-supply chip reads the figure, never the threshold', () => {
     expect(chips).toEqual(['31 days'])
   })
 })
+
+describe('basis prices are not the section answer (UX review F03)', () => {
+  it('skips the "on a $X sale" basis and keeps the fee', () => {
+    const view = buildBlogArticleView(
+      '<h2>Our listing fee, in dollars</h2><p>On a $765,000 sale, which is the Bend median, that is $22,950.</p>',
+    )
+    expect(view.figures[0]?.value).toBe('$22,950')
+  })
+})
+

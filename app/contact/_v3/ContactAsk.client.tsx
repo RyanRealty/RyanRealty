@@ -23,6 +23,7 @@ import { publishTourConfirmation } from '@/lib/contact/publish-tour-confirmation
 import { CONTACT_FIELD_IDS, CONTACT_TRAP } from './contact-constants'
 import { ContactField } from './ContactField.client'
 import { ContactFieldDemoContext, type ContactFieldDemo } from './contact-field-demo'
+import { useShotTriggers } from './use-shot-triggers'
 
 const BASE_INQUIRY_OPTIONS = [
   { value: 'Buying', label: 'Buying' },
@@ -185,19 +186,23 @@ export function ContactAsk({
     [adCookies, adMatch, defaultInquiryType, intent, isTour, listingKey, listingSummary, restricted, smsConsent],
   )
 
+  const shotTriggers = useShotTriggers()
+
   return (
     <ContactFieldDemoContext.Provider value={fieldDemo}>
       <div className="contact-ask-root">
-        <div className="contact-ask__taste">
-          <Button type="button" variant="ghost" data-taste="error-open" onClick={() => setFieldDemo('error')}>
+        {shotTriggers ? (
+        <div className="contact-ask__taste" aria-hidden="true">
+          <Button type="button" variant="ghost" tabIndex={-1} data-taste="error-open" onClick={() => setFieldDemo('error')}>
             Show field error
           </Button>
-          <Button type="button" variant="ghost" data-taste="success-open" onClick={() => setFieldDemo('success')}>
+          <Button type="button" variant="ghost" tabIndex={-1} data-taste="success-open" onClick={() => setFieldDemo('success')}>
             Show field success
           </Button>
           <Button
             type="button"
             variant="ghost"
+            tabIndex={-1}
             data-taste="sent-open"
             onClick={() => {
               setFieldDemo('idle')
@@ -207,13 +212,14 @@ export function ContactAsk({
             Show sent
           </Button>
         </div>
+        ) : null}
         <V3Ask
           id="write"
           className="contact-ask"
           eyebrow="Talk to a broker"
           heading={isTour ? 'Request a tour' : 'Send a message'}
           headingLevel={2}
-          lede={isTour && listingSummary ? listingSummary : undefined}
+          lede={listingSummary ? (isTour ? listingSummary : `About ${listingSummary}`) : undefined}
           fields={fields}
           Field={ContactField}
           consent={

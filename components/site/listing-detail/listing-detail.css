@@ -1782,11 +1782,13 @@ h1.listing-ask {
   align-items: baseline;
   gap: 0.55rem 1rem;
   margin: 0.35rem 0 0;
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body-lg);
+  /* UX review F27: buyers scan for the price first. It was body-lg under a
+     display-1 address; it now reads as a figure in the display face. */
+  font-family: var(--v3-font-display, var(--v3-font-body));
+  font-size: var(--v3-size-display-2);
   font-weight: var(--v3-weight-semibold);
   font-variant-numeric: tabular-nums;
-  line-height: 1.3;
+  line-height: 1.15;
   color: var(--v3-navy);
 }
 
@@ -2965,4 +2967,47 @@ body:has([data-slot='dialog-content'][data-state='open']) .v3.v3-chrome {
     text-decoration: underline;
     text-underline-offset: 0.12em;
   }
+}
+
+/* UX review F28: sticky section links under the site header. */
+.listing-section-nav {
+  position: sticky;
+  top: var(--v3-chrome-h, 64px);
+  z-index: 20;
+  margin: var(--v3-space-md) 0;
+  border-block: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
+  background: var(--v3-cream);
+}
+
+.listing-section-nav ul {
+  display: flex;
+  gap: var(--v3-space-md);
+  margin: 0;
+  padding: 0.6rem 0;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+@layer base {
+  .listing-section-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    white-space: nowrap;
+    font-size: var(--v3-size-body-sm);
+    font-weight: var(--v3-weight-medium);
+    color: var(--v3-navy);
+    text-decoration: none;
+  }
+}
+
+.listing-section-nav a:hover,
+.listing-section-nav a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.listing-detail h2[id] {
+  scroll-margin-top: calc(var(--v3-chrome-h, 64px) + 56px);
 }

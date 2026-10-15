@@ -5,6 +5,7 @@ import {
   officeDayForDateKey,
   overlaps,
   DEFAULT_SLOT_POLICY,
+  zonedInstant,
   type BusyInterval,
 } from './slots'
 
@@ -100,6 +101,13 @@ describe('generateDaySlots', () => {
   it('uses the documented default policy', () => {
     expect(DEFAULT_SLOT_POLICY.slotMinutes).toBe(30)
     expect(DEFAULT_SLOT_POLICY.minLeadMinutes).toBe(120)
+  })
+})
+
+describe('zonedInstant', () => {
+  it('stores a 10 AM PT wall time as 17:00Z during PDT', () => {
+    expect(zonedInstant('2026-10-15', 10 * 60, TZ)?.toISOString())
+      .toBe('2026-10-15T17:00:00.000Z')
   })
 })
 

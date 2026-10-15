@@ -1085,6 +1085,16 @@ button.srch-chip--key {
   gap: 0.15rem;
 }
 
+/* UX review F12: at "Any price" the full-width navy fill read as a dark bar,
+   not a slider. A light fill with navy thumbs reads as a range control. */
+.srch-price-rail .v3-range__beui [data-beui-fill] {
+  background: color-mix(in srgb, var(--v3-navy) 18%, transparent);
+}
+
+.srch-price-rail .v3-range__beui [data-beui-thumb] {
+  background: var(--v3-navy);
+}
+
 /* House-sheet language on the All-filters overlay (catalog: house-sheet). */
 .srch-sheet {
   background: var(--v3-surface, rgba(255, 255, 255, 1));

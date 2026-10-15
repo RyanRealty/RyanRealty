@@ -15,6 +15,7 @@ const live = {
   flow: readFileSync(join(REPO, 'lib/sarah/intent-flow.ts'), 'utf8'),
   cookie: readFileSync(join(REPO, 'components/CookieConsentBanner.tsx'), 'utf8'),
   chrome: readFileSync(join(REPO, 'components/site/v3/V3Chrome.tsx'), 'utf8'),
+  globals: readFileSync(join(REPO, 'app/globals.css'), 'utf8'),
   provider: readFileSync(join(REPO, 'components/site/providers/RootProvider.tsx'), 'utf8'),
   publicLayer: readFileSync(join(REPO, 'components/layout/PublicClientLayer.tsx'), 'utf8'),
 }
@@ -41,6 +42,17 @@ describe('ci:sarah-panel', () => {
       files: { ...live, chrome: live.chrome.replace('aria-modal={menuHidden ? undefined : true}', 'aria-modal="true"') },
     })
     expect(p.join('\n')).toMatch(/aria-modal/)
+  })
+
+  it('fails if F19 hides Sarah for a hidden chrome dialog', () => {
+    const p = sarahPanelProblems({
+      root: REPO,
+      files: {
+        ...live,
+        globals: live.globals.replaceAll("[aria-modal='true']:not([hidden])", "[aria-modal='true']"),
+      },
+    })
+    expect(p.join('\n')).toMatch(/F19 hide-on-modal/)
   })
 
   it('fails if cookie settings is removed', () => {

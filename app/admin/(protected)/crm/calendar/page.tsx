@@ -12,9 +12,8 @@
  * (amber — §1.10), deal closings (green — §2.5.3 taxonomy re-skinned).
  * < md keeps the existing MobileCalendar until the M6 mobile slice (§29).
  *
- * Time conventions (preserved from the existing backend):
- *   appointments = wall-clock stored as UTC → wall* parsing;
- *   tasks = true instants → zoned* (America/Los_Angeles) day + minutes.
+ * Time conventions: appointments and tasks are true UTC instants. Display
+ * both in America/Los_Angeles via zoned* / appointmentEvents.
  * Broker scope is enforced AT THE DATA LAYER (getAppointments /
  * getCalendarExtras take brokerScope); the "Everyone ▾" agent filter is
  * superuser-only (§2.15).
@@ -30,9 +29,9 @@
  * Carried over verbatim: requireAdminPage('calendar.use'), the getCrmAccess
  * guard + redirect, the §2.1 Day default and isViewMode allowlist, the ?date=
  * / legacy ?month=YYYY-MM resolution and its todayKey fallback, the §2.15
- * superuser-only agent rule and the brokerScope it derives, apptEvents with its
- * wall-clock parsing and 62-day multi-day cap, the amber open-task mapping via
- * zonedDateKey/zonedMinutes, the closing mapping's `close_date.slice(0, 10)`,
+ * superuser-only agent rule and the brokerScope it derives, appointmentEvents
+ * with its Pacific zoned parsing and 62-day multi-day cap, the amber open-task
+ * mapping via zonedDateKey/zonedMinutes, the closing mapping's `close_date.slice(0, 10)`,
  * the month∪week fetch window and the scheduleNeedsFetch second read, the
  * today/tomorrow schedule filter, appointmentsById, the guest-name resolution,
  * the crmActive broker filter, and all seven server-action wrappers.
@@ -40,8 +39,8 @@
  * Dates: nothing swapped, and one swap was actively rejected. `close_date` is a
  * bare date and is read with a string slice — routing it through formatDate
  * would parse it as UTC, re-project to America/Los_Angeles and move the printed
- * closing back one calendar day. zonedDateKey stays on the true instants
- * (crm_tasks.due_at), wall* stays on the wall-clock appointment columns.
+ * closing back one calendar day. zonedDateKey / appointmentEvents stay on the
+ * true instants (crm_tasks.due_at and crm_appointments.start_at).
  *
  * Shape changed, data did not: the page's own <main> is GONE — ConsoleShell
  * owns the single landmark and this page rendered a second one; the mobile
@@ -78,12 +77,11 @@ import {
 import { listFileDeadlineTasks } from '@/lib/data/tc/task-reads'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import {
+  appointmentEvents,
   isDateKey,
   monthGrid,
   shiftDays,
   time12,
-  wallDateKey,
-  wallMinutes,
   weekRange,
   type CalEvent,
 } from '@/lib/crm/calendar'
@@ -103,42 +101,7 @@ function isViewMode(v: string | undefined): v is CalendarViewMode {
 
 /** Map an appointment to per-day CalEvents (multi-day spans emit one per day). */
 function apptEvents(a: AppointmentRow): CalEvent[] {
-  const startKey = wallDateKey(a.startAt)
-  const endKey = wallDateKey(a.endAt)
-  const base = {
-    kind: 'appointment' as const,
-    title: a.title,
-    personId: a.personId,
-    personName: a.personName,
-    broker: a.brokerSlug,
-    apptId: a.id,
-  }
-  if (endKey <= startKey) {
-    const startMin = a.allDay ? -1 : wallMinutes(a.startAt)
-    return [{
-      ...base,
-      id: `appt:${a.id}`,
-      dateKey: startKey,
-      startMin,
-      endMin: a.allDay ? -1 : wallMinutes(a.endAt),
-      allDay: a.allDay,
-      timeLabel: a.allDay ? '' : time12(startMin),
-    }]
-  }
-  // Multi-day: render as an all-day block on each covered day (§2.5.3).
-  const out: CalEvent[] = []
-  for (let d = startKey, i = 0; d <= endKey && i < 62; d = shiftDays(d, 1), i++) {
-    out.push({
-      ...base,
-      id: `appt:${a.id}:${d}`,
-      dateKey: d,
-      startMin: -1,
-      endMin: -1,
-      allDay: true,
-      timeLabel: '',
-    })
-  }
-  return out
+  return appointmentEvents(a)
 }
 
 async function loadEvents(brokerScope: string | null, from: string, to: string): Promise<{

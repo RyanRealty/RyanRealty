@@ -16,7 +16,7 @@ describe('placeTakeaways', () => {
     const t = placeTakeaways(BEND)
     expect(t).toEqual([
       'Bend has 726 single-family homes for sale as of Oct 3, 2026, at a median asking price of $897,500.',
-      'Bend has 3.6 months of supply, so listings are getting absorbed faster than they are replaced.',
+      'Bend has 3.6 months of supply, so the market holds few homes relative to the recent sales pace.',
       'The median single-family home in Bend sold for $759,500 in September 2026.',
       'The median sale price in Bend over the last 12 months is up 3.2% from the 12 months before.',
     ])
@@ -49,7 +49,7 @@ describe('placeTakeaways', () => {
   })
 
   it('reads the verdict the way marketVerdict computes it, at the 4.0 edge too', () => {
-    expect(placeTakeaways({ place: 'X', monthsOfSupply: 4 })[0]).toContain('listings are getting absorbed faster than they are replaced')
+    expect(placeTakeaways({ place: 'X', monthsOfSupply: 4 })[0]).toContain('the market holds few homes relative to the recent sales pace')
     expect(placeTakeaways({ place: 'X', monthsOfSupply: 5.1 })[0]).toContain('the sales pace and the listings on the market are close')
     expect(placeTakeaways({ place: 'X', monthsOfSupply: 6 })[0]).toContain('buyers have leverage')
   })

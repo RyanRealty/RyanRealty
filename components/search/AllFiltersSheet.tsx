@@ -11,7 +11,7 @@
  * hands the parent a full param-update map on Apply.
  */
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useUrlSearchParams } from '@/lib/search/url-search-params.client'
 import { cn } from '@/lib/utils'
 import './search-ledger.css'
@@ -439,6 +439,26 @@ export type AllFiltersSheetProps = {
   contextDefaults?: Record<string, string>
 }
 
+function CategoryWrap({ advanced, label, children }: { advanced: boolean; label: string; children: ReactNode }) {
+  if (!advanced) {
+    return (
+      <section className="flex flex-col gap-3">
+        <p className="srch-label">{label}</p>
+        {children}
+      </section>
+    )
+  }
+  return (
+    <details className="group flex flex-col gap-3">
+      <summary className="srch-label flex min-h-11 cursor-pointer list-none items-center justify-between">
+        {label}
+        <span aria-hidden="true" className="text-base transition-transform group-open:rotate-45">+</span>
+      </summary>
+      <div className="mt-3 flex flex-col gap-3">{children}</div>
+    </details>
+  )
+}
+
 export default function AllFiltersSheet({
   open,
   onOpenChange,
@@ -577,7 +597,11 @@ export default function AllFiltersSheet({
   const applyFindHit = useCallback(
     (hit: FindFilterHit) => {
       if (hit.kind === 'field') {
-        document.getElementById(fieldAnchorId(hit.fieldKey))?.scrollIntoView({ block: 'center' })
+        const anchor = document.getElementById(fieldAnchorId(hit.fieldKey))
+        // F10: advanced groups are collapsed; open the one holding the hit.
+        const group = anchor?.closest('details')
+        if (group && !group.open) group.open = true
+        anchor?.scrollIntoView({ block: 'center' })
         return
       }
       if (hit.kind === 'boolean') setParam(hit.fieldKey, '1')
@@ -815,10 +839,10 @@ export default function AllFiltersSheet({
               return (
                 <Fragment key={id}>
                   {index > 0 && <Separator />}
-                  <section className="flex flex-col gap-3">
-                    <p className="srch-label">
-                      {label}
-                    </p>
+                  {/* UX review F10 (Matt approved 2026-10-15): price, size and
+                      type stay open; the other MLS groups fold under their
+                      own label so the sheet opens on the common filters. */}
+                  <CategoryWrap advanced={index >= 3} label={label}>
                     {ranges.map((def) => (
                       <div key={def.key} id={fieldAnchorId(def.key)}>
                         <RangeFieldRow
@@ -920,7 +944,7 @@ export default function AllFiltersSheet({
                         />
                       </div>
                     ))}
-                  </section>
+                  </CategoryWrap>
                 </Fragment>
               )
             })}

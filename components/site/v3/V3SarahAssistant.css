@@ -65,6 +65,23 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   cursor: pointer;
 }
 
+.v3-sarah__ai-tag {
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  transform: translateX(-50%);
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  font-family: var(--v3-font-body);
+  font-size: 10px;
+  font-weight: var(--v3-weight-semibold);
+  line-height: 14px;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+
 .v3-sarah__launcher:focus-visible {
   outline: var(--v3-focus-ring);
   outline-offset: var(--v3-focus-offset);
