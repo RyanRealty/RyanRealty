@@ -1,6 +1,6 @@
 /** Grok Voice 3.0 receptionist prompt for the Ryan Realty test line (spare 541-224-5025). */
-/** Optional first name (Matt TBD). Unset = no name. */
-const NAME = (process.env.RECEPTIONIST_NAME ?? '').trim()
+/** Receptionist first name (Matt chose Sarah 2026-10-14); env override. */
+const NAME = (process.env.RECEPTIONIST_NAME ?? 'Sarah').trim()
 export const RECEPTIONIST_GREETING =
   `Thanks for calling Ryan Realty, this is ${NAME ? `${NAME}, ` : ''}Matt's assistant, and this call may be recorded. We try to catch as many calls as we can so we can get you an answer quickly. How can I help?`
 
