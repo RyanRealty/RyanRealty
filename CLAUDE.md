@@ -341,10 +341,7 @@ One video factory, lib/studio: footage, drawn scenes, type, score.
 **Every Grok call goes through [`lib/grok/`](lib/grok/)** (text, JSON, search,
 vision, stills, edits, motion). Model ids sit in `lib/grok/client.ts`, gated by
 `ci:grok-models`. Never call `api.x.ai` elsewhere.
-**Voiceover = Grok TTS, voice Eve, by default (Matt 2026-10-14):** `lib/grok/tts.ts`
-(`synthesizeGrokSpeech`, with_timestamps) behind `lib/studio/timeline/voice.ts`
-`defaultVoiceProvider`. ElevenLabs only with an explicit `engine: 'elevenlabs'`.
-Guarded by `lib/studio/voice/engine.test.ts`.
+VO default: Grok TTS Eve (`lib/grok/tts.ts`; AGENTS.md).
 
 
 **Production is the Studio:** [`lib/studio/`](lib/studio/), `/admin/studio`.
