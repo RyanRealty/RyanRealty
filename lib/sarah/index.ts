@@ -70,9 +70,20 @@ export {
   sarahSpanishDisclosure,
 } from './persona'
 export {
+  SARAH_BARGE_ROLES,
   SARAH_LIVE_CONFERENCE_PREFIX,
+  isSarahLiveConference,
+  mattConferenceJoin,
+  notifyLiveSession,
   notifySarahLiveSession,
   sarahLiveConferenceName,
+  sarahLiveViewPath,
+  sarahSessionConferenceJoin,
+  sessionIdFromSarahConference,
+  type NotifyLiveSessionResult,
+  type SarahBargeRole,
+  type SarahConferenceJoin,
+  type SarahConferenceLabel,
   type SarahLiveSessionInput,
 } from './phone-hooks'
 export {
