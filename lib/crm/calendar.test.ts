@@ -13,6 +13,9 @@ import {
   wallDateKey,
   wallMinutes,
   eventsByDate,
+  appointmentEvents,
+  formatAppointmentWhen,
+  zonedDateTimeParts,
   type CalEvent,
 } from './calendar'
 
@@ -68,10 +71,44 @@ describe('lib/crm/calendar — §09 calendar math', () => {
     expect(time12(12 * 60)).toBe('12pm')
   })
 
-  it('wall-clock parsing reads the stored wall time, not a converted instant', () => {
+  it('wall-clock parsing reads ISO digits (not the appointment display path)', () => {
     expect(wallDateKey('2026-07-04T09:30:00+00:00')).toBe('2026-07-04')
     expect(wallMinutes('2026-07-04T09:30:00+00:00')).toBe(9 * 60 + 30)
     expect(wallMinutes('2026-07-04T00:00:00Z')).toBe(0)
+  })
+
+  it('a 10 AM PT booking prints 10am in the invite and on the calendar', () => {
+    // 2026-10-15 is PDT (UTC-7). 10:00 PT stores as 17:00Z.
+    const startAt = '2026-10-15T17:00:00.000Z'
+    const endAt = '2026-10-15T17:30:00.000Z'
+    expect(wallMinutes(startAt)).toBe(17 * 60)
+    expect(time12(wallMinutes(startAt))).toBe('5pm')
+
+    const when = formatAppointmentWhen({
+      startAt, endAt, allDay: false, timezone: 'America/Los_Angeles',
+    })
+    expect(when).toContain('10am')
+    expect(when).not.toContain('5pm')
+    expect(when).toBe('Thursday, Oct 15, 10am–10:30am (Pacific Time)')
+
+    const [ev] = appointmentEvents({
+      id: 52,
+      title: 'Buying',
+      startAt,
+      endAt,
+      allDay: false,
+      personId: null,
+      personName: null,
+      brokerSlug: 'matt',
+    })
+    expect(ev.dateKey).toBe('2026-10-15')
+    expect(ev.timeLabel).toBe('10am')
+    expect(ev.startMin).toBe(10 * 60)
+    expect(ev.endMin).toBe(10 * 60 + 30)
+
+    const parts = zonedDateTimeParts(startAt)
+    expect(parts.dateKey).toBe('2026-10-15')
+    expect(parts.hhmm).toBe('10:00')
   })
 
   it('eventsByDate groups per day with all-day first, then start time', () => {
