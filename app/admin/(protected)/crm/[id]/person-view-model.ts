@@ -155,8 +155,25 @@ export function buildTimelineItems(
   timeline: TimelineRowLike[],
   engagement: EmailEngagement,
 ): TimelineItem[] {
+  // A delivery receipt folds into the email_out row it belongs to (that row
+  // already shows the email). A listing alert or newsletter has no email_out
+  // row, so its delivery shows as its own entry (Matt 2026-10-15: show
+  // delivered on the contact timeline).
+  const sentTitles = new Set(
+    timeline.filter((t) => t.kind === 'email_out').map((t) => (t.title ?? '').trim()).filter(Boolean),
+  )
+  const deliveryFolds = (t: TimelineRowLike) => {
+    const label = (t.payload ?? {}).label
+    return typeof label === 'string' && sentTitles.has(label.trim())
+  }
   return timeline
-    .filter((t) => t.kind !== 'email_open' && t.kind !== 'email_click' && t.kind !== 'sms_click')
+    .filter(
+      (t) =>
+        t.kind !== 'email_open' &&
+        t.kind !== 'email_click' &&
+        t.kind !== 'sms_click' &&
+        !(t.kind === 'email_delivered' && deliveryFolds(t)),
+    )
     .map((t) => {
       const eng = engagement[(t.title ?? '').trim()]
       // A delivery or bounce row's title is the event; the email it happened to

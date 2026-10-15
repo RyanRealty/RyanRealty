@@ -132,6 +132,7 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     act(() => {
       container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
     })
+    expect(container.querySelector('[data-sarah="root"]')?.getAttribute('data-sarah-open')).toBe('1')
     expect(container.querySelector('[data-sarah="panel"]')?.getAttribute('data-sarah-surface')).toBe('sheet')
     expect(container.querySelector('[data-sarah="scrim"]')).not.toBeNull()
     expect(container.querySelector('[data-sarah="mic"]')).not.toBeNull()

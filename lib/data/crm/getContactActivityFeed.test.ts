@@ -19,6 +19,15 @@ describe('getContactActivityFeed pure helpers (2.1)', () => {
       expect(classifyTimelineKind('stage_change').category).toBe('milestone')
       expect(classifyTimelineKind('home_valuation').category).toBe('milestone')
     })
+    it('files the Resend delivery receipt as an email event the lead timeline shows (Matt 2026-10-15)', () => {
+      expect(classifyTimelineKind('email_delivered')).toEqual({ category: 'email', direction: null, label: 'Email delivered' })
+    })
+    it('labels the bounce, complaint, unsubscribe and CMA-reply kinds instead of humanizing them', () => {
+      expect(classifyTimelineKind('email_bounce')).toEqual({ category: 'email', direction: null, label: 'Email bounced' })
+      expect(classifyTimelineKind('email_complaint').label).toBe('Spam complaint')
+      expect(classifyTimelineKind('email_unsubscribe').label).toBe('Unsubscribed')
+      expect(classifyTimelineKind('cma_replied')).toEqual({ category: 'milestone', direction: 'in', label: 'Replied about a report' })
+    })
     it('humanizes an unknown kind to category other', () => {
       expect(classifyTimelineKind('some_new_kind')).toEqual({ category: 'other', direction: null, label: 'Some new kind' })
       expect(classifyTimelineKind('')).toEqual({ category: 'other', direction: null, label: 'Activity' })
@@ -79,7 +88,7 @@ describe('getContactActivityFeed pure helpers (2.1)', () => {
     it('classifies the email lifecycle kinds as email with no direction', () => {
       expect(classifyTimelineKind('email_delivered')).toEqual({ category: 'email', direction: null, label: 'Email delivered' })
       expect(classifyTimelineKind('email_bounce')).toEqual({ category: 'email', direction: null, label: 'Email bounced' })
-      expect(classifyTimelineKind('email_complaint')).toEqual({ category: 'email', direction: null, label: 'Marked an email as spam' })
+      expect(classifyTimelineKind('email_complaint')).toEqual({ category: 'email', direction: null, label: 'Spam complaint' })
       expect(classifyTimelineKind('email_unsubscribe')).toEqual({ category: 'email', direction: null, label: 'Unsubscribed' })
     })
     it('previews a lifecycle row with the email it happened to, not the event title', () => {

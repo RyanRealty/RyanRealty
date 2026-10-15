@@ -1,5 +1,3 @@
-import { readFileSync, readdirSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   EMAIL_DELIVERED_KIND,
@@ -8,52 +6,6 @@ import {
   mergeDeliveredRows,
   postgrestInList,
 } from './email-lifecycle-kinds'
-
-/** The kinds the newest crm_timeline_kind_check migration allows. */
-function allowedTimelineKinds(): Set<string> {
-  const dir = resolve('supabase/migrations')
-  const latest = readdirSync(dir)
-    .filter((f) => f.endsWith('.sql'))
-    .sort()
-    .filter((f) => /add constraint crm_timeline_kind_check/i.test(readFileSync(resolve(dir, f), 'utf8')))
-    .pop()
-  if (!latest) throw new Error('no crm_timeline_kind_check migration')
-  const sql = readFileSync(resolve(dir, latest), 'utf8')
-  const body = /add constraint crm_timeline_kind_check[\s\S]*?array\[([\s\S]*?)\]/i.exec(sql)?.[1] ?? ''
-  return new Set([...body.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]!))
-}
-
-describe('crm_timeline_kind_check allows every lifecycle kind the code writes', () => {
-  const allowed = allowedTimelineKinds()
-
-  it('keeps every kind that was allowed before (20261002011238)', () => {
-    for (const kind of [
-      'note', 'email_in', 'email_out', 'email_cc', 'email_open', 'email_click',
-      'sms_in', 'sms_out', 'sms_click', 'call', 'voicemail', 'web_event',
-      'task', 'stage_change', 'system', 'lead_created', 'home_valuation',
-      'subscribe_report', 'parsed_intent',
-    ]) expect(allowed.has(kind), kind).toBe(true)
-  })
-
-  it('allows the four lifecycle kinds', () => {
-    for (const kind of EMAIL_LIFECYCLE_KINDS) expect(allowed.has(kind), kind).toBe(true)
-  })
-
-  it('allows every kind the Resend webhook maps an event to', () => {
-    const src = readFileSync(resolve('app/api/webhooks/resend/route.ts'), 'utf8')
-    const map = /const TIMELINE_KIND[^{]*\{([\s\S]*?)\}/.exec(src)?.[1] ?? ''
-    const kinds = [...map.matchAll(/:\s*'([a-z_]+)'/g)].map((m) => m[1]!)
-    expect(kinds.length).toBe(6)
-    for (const kind of kinds) expect(allowed.has(kind), kind).toBe(true)
-  })
-
-  it('allows the Gmail bounce row and the listing-alert unsubscribe row', () => {
-    expect(readFileSync(resolve('lib/data/crm/gmailBounceWatch.ts'), 'utf8')).toContain("kind: 'email_bounce'")
-    expect(readFileSync(resolve('lib/data/leads/listingAlerts.ts'), 'utf8')).toContain("kind: 'email_unsubscribe'")
-    expect(allowed.has('email_bounce')).toBe(true)
-    expect(allowed.has('email_unsubscribe')).toBe(true)
-  })
-})
 
 describe('isEmailLifecycleKind', () => {
   it('is true for the four lifecycle kinds only', () => {

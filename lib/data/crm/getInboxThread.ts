@@ -114,8 +114,8 @@ export type InboxThreadItemData = ActivityFeedItem & {
 export async function getConversationThreadFull(personId: number, limit = 100): Promise<InboxThreadItemData[]> {
   if (!Number.isFinite(personId) || personId <= 0) return []
   const sb = createServiceClient()
-  // Delivery rows (one per email we send) stay out of the reading pane: they
-  // would fill its window on a contact with a daily alert. A bounce, spam
+  // A delivery receipt is not a message: it would render as a note line per
+  // send and fill the window on a contact with a daily alert. A bounce, spam
   // complaint or unsubscribe still shows as a system line in the thread.
   const { data } = await sb
     .from('crm_timeline')

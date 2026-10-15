@@ -43,6 +43,7 @@ const resolveSession = cache(async (): Promise<{ user: AuthUser } | null> => {
     user: {
       id: user.id,
       email: user.email ?? null,
+      email_confirmed_at: user.email_confirmed_at ?? null,
       avatar_url: normalizeAvatarUrl(user),
       user_metadata: user.user_metadata,
     },

@@ -69,7 +69,7 @@ const KIND_MAP: Record<string, KindMeta> = {
   // never reads as the contact's last message (lib/crm/email-lifecycle-kinds.ts).
   email_delivered: { category: 'email', direction: null, label: 'Email delivered' },
   email_bounce: { category: 'email', direction: null, label: 'Email bounced' },
-  email_complaint: { category: 'email', direction: null, label: 'Marked an email as spam' },
+  email_complaint: { category: 'email', direction: null, label: 'Spam complaint' },
   email_unsubscribe: { category: 'email', direction: null, label: 'Unsubscribed' },
   call: { category: 'call', direction: null, label: 'Call' },
   voicemail: { category: 'call', direction: 'in', label: 'Voicemail' },
@@ -82,6 +82,8 @@ const KIND_MAP: Record<string, KindMeta> = {
   lead_created: { category: 'milestone', direction: 'in', label: 'New lead' },
   home_valuation: { category: 'milestone', direction: null, label: 'Home valuation requested' },
   subscribe_report: { category: 'milestone', direction: null, label: 'Subscribed to a market report' },
+  // The reply stamp against a sent CMA (lib/data/cma/engagementAlerts.ts).
+  cma_replied: { category: 'milestone', direction: 'in', label: 'Replied about a report' },
   parsed_intent: { category: 'web', direction: null, label: 'Website intent detected' },
   // web_event was missing — the 14.8K CRM site-activity rows fell through to
   // 'other' and mis-rendered as "Web event". Classify as website activity. (fix)

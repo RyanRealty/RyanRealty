@@ -85,3 +85,15 @@ describe('buildTimelineItems: email lifecycle rows', () => {
     expect(items.map((i) => i.body)).toEqual(['River West homes: 3 new listings', 'Mailbox full', null, 'River West homes'])
   })
 })
+
+describe('buildTimelineItems: a delivery receipt folds into the email_out row it belongs to', () => {
+  it('drops the delivery of a sent email and keeps the email_out row', () => {
+    const timeline = [
+      { id: 1, kind: 'email_out', ts: '2026-10-15T10:00:00Z', title: 'Market update', payload: {} },
+      { id: 2, kind: 'email_delivered', ts: '2026-10-15T10:00:05Z', title: 'Email delivered', payload: { label: 'Market update' } },
+      { id: 3, kind: 'email_bounce', ts: '2026-10-15T10:01:00Z', title: 'Email bounced', payload: {} },
+    ]
+    const items = buildTimelineItems(timeline, buildEmailEngagement(timeline))
+    expect(items.map((i) => i.kind)).toEqual(['email_out', 'email_bounce'])
+  })
+})

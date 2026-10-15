@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
+  COOKIE_CHANNELS,
   LINK_CHANNELS,
   identifiedViaForChannel,
   isLegacyRawPersonId,
   looksLikePersonToken,
+  signPersonCookieToken,
   signPersonLinkToken,
+  verifyPersonCookieToken,
   verifyPersonLinkToken,
 } from './link-token'
-import { personCookieValue, readPersonCookie, signedPersonIdFromCookie } from './person-cookie'
 
 describe('signed person token — round trip (P7 identity loop)', () => {
   it('verifies back to the same person and channel for every channel', () => {
@@ -76,22 +78,33 @@ describe('identified_via label', () => {
   })
 })
 
-describe('rr_pid cookie', () => {
-  it('writes a signed cookie value and reads it back as signed', () => {
-    const v = personCookieValue(64115)
-    expect(v).not.toBe('64115')
-    expect(readPersonCookie(v)).toEqual({ personId: 64115, signed: true })
-    expect(signedPersonIdFromCookie(v)).toBe(64115)
+describe('link tokens and rr_pid cookie values are different things (consent integrity, 2026-10-14)', () => {
+  it('a cookie value is never a link: pasting your own rr_pid into ?_pid= identifies nobody', () => {
+    for (const provenance of ['verified', 'claimed'] as const) {
+      const cookie = signPersonCookieToken(64115, provenance)
+      expect(verifyPersonCookieToken(cookie)).toEqual({ personId: 64115, channel: provenance })
+      expect(verifyPersonLinkToken(cookie)).toBeNull()
+    }
   })
 
-  it('reads a legacy bare-id cookie as UNSIGNED, and access decisions get null', () => {
-    expect(readPersonCookie('64115')).toEqual({ personId: 64115, signed: false })
-    expect(signedPersonIdFromCookie('64115')).toBeNull()
+  it('a link token is never a cookie value', () => {
+    for (const channel of LINK_CHANNELS) {
+      expect(verifyPersonCookieToken(signPersonLinkToken(64115, channel))).toBeNull()
+    }
   })
 
-  it('reads nothing from garbage', () => {
-    expect(readPersonCookie('')).toBeNull()
-    expect(readPersonCookie(undefined)).toBeNull()
-    expect(readPersonCookie('64115.cookie.forged')).toBeNull()
+  it('the provenance is under the signature: claimed cannot be edited to verified', () => {
+    const claimed = signPersonCookieToken(64115, 'claimed')
+    expect(verifyPersonCookieToken(claimed.replace('.claimed.', '.verified.'))).toBeNull()
+  })
+
+  it('cookie channels are not link channels', () => {
+    for (const c of COOKIE_CHANNELS) expect((LINK_CHANNELS as readonly string[]).includes(c)).toBe(false)
+  })
+
+  it('throws on a provenance outside verified | claimed (a programmer error)', () => {
+    // @ts-expect-error provenance outside the union
+    expect(() => signPersonCookieToken(5, 'cookie')).toThrow()
+    expect(() => signPersonCookieToken(0, 'verified')).toThrow()
   })
 })

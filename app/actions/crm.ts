@@ -344,6 +344,8 @@ export async function getCrmPersonFull(id: number): Promise<CrmPersonFull> {
   // alert's rows cannot push real history out of the newest-100 window.
   const [points, timeline, tasks, suppressions, enrollments, geo, cma, visitors, delivered] = await Promise.all([
     sb.from('crm_contact_points').select('id,kind,value,label,is_primary,status').eq('person_id', id).order('is_primary', { ascending: false }),
+    // Delivery receipts would fill the 100-row window and the All count (one per send);
+    // they are read apart below (getPersonDeliveredRows) and merged in.
     sb.from('crm_timeline').select('id,ts,kind,title,body,source,broker,payload,starred', { count: 'exact' }).eq('person_id', id).neq('kind', EMAIL_DELIVERED_KIND).order('ts', { ascending: false }).limit(100),
     sb.from('crm_tasks').select('id,name,type,due_at,completed_at,assigned_broker,fub_legacy_id').eq('person_id', id).order('completed_at', { ascending: true, nullsFirst: true }).order('due_at', { ascending: true }).limit(50),
     sb.from('crm_suppressions').select('id,channel,reason,source').eq('person_id', id).is('cleared_at', null),

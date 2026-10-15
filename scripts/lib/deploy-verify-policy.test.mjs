@@ -7,6 +7,7 @@ import {
   classifyTip,
   isSkippableTip,
   findSupersedingDeploy,
+  pickDeployForSha,
   concurrentBuilds,
   DEFAULT_TIMEOUT_MS,
   DEFAULT_SKIP_WAIT_MS,
@@ -140,5 +141,41 @@ describe('concurrentBuilds', () => {
   it('without a build window of our own there is nothing to compare', () => {
     expect(concurrentBuilds({ uid: 'dpl_ours', state: 'READY' }, [{ uid: 'x', buildingAt: 1, ready: 2, state: 'READY' }])).toEqual([])
     expect(concurrentBuilds(ours, null)).toEqual([])
+  })
+})
+
+describe('pickDeployForSha', () => {
+  const sha = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+  const other = { created: 5000, state: 'READY', sha: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', uid: 'dpl_other' }
+
+  it('takes the READY build over a newer CANCELED duplicate of the same commit', () => {
+    const ready = { created: 1000, state: 'READY', sha, uid: 'dpl_ready' }
+    const dup = { created: 2000, state: 'CANCELED', sha, uid: 'dpl_dup' }
+    expect(pickDeployForSha([other, dup, ready], sha)).toEqual(ready)
+  })
+
+  it('takes a build still in flight over a CANCELED or ERROR row', () => {
+    const building = { created: 1000, state: 'BUILDING', sha, uid: 'dpl_b' }
+    const canceled = { created: 3000, state: 'CANCELED', sha, uid: 'dpl_c' }
+    const errored = { created: 2000, state: 'ERROR', sha, uid: 'dpl_e' }
+    expect(pickDeployForSha([canceled, errored, building], sha)).toEqual(building)
+  })
+
+  it('reports ERROR before CANCELED when nothing else exists', () => {
+    const canceled = { created: 3000, state: 'CANCELED', sha, uid: 'dpl_c' }
+    const errored = { created: 2000, state: 'ERROR', sha, uid: 'dpl_e' }
+    expect(pickDeployForSha([canceled, errored], sha)).toEqual(errored)
+  })
+
+  it('takes the newest row within one state, and matches a short SHA', () => {
+    const older = { created: 1000, state: 'READY', sha, uid: 'dpl_old' }
+    const newer = { created: 2000, state: 'READY', meta: { githubCommitSha: sha }, uid: 'dpl_new' }
+    expect(pickDeployForSha([older, newer], sha.slice(0, 7))).toEqual(newer)
+  })
+
+  it('returns null when no row is this commit', () => {
+    expect(pickDeployForSha([other], sha)).toBeNull()
+    expect(pickDeployForSha([], sha)).toBeNull()
+    expect(pickDeployForSha([other], '')).toBeNull()
   })
 })
