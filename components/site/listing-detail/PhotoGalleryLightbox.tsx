@@ -192,7 +192,13 @@ export function PhotoGalleryLightbox({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) dismiss() }}>
       <DialogContent
-        className={cn('sm:max-w-3xl', TRANSITIONS_MODAL_SURFACE)}
+        // UX review F30 (Matt approved 2026-10-15): full screen on phones,
+        // swipe (onTouchStart/End below) and the photo count stay.
+        className={cn(
+          'sm:max-w-3xl',
+          'max-sm:inset-0 max-sm:top-0 max-sm:left-0 max-sm:h-[100dvh] max-sm:w-screen max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none max-sm:flex max-sm:flex-col max-sm:justify-center',
+          TRANSITIONS_MODAL_SURFACE,
+        )}
         overlayClassName="bg-foreground/50"
       >
         <DialogHeader>
@@ -252,7 +258,7 @@ export function PhotoGalleryLightbox({
             ‹
           </Button>
           {current ? (
-            <div className="relative aspect-[4/3] w-full bg-background">
+            <div className="relative aspect-[4/3] w-full bg-background max-sm:aspect-auto max-sm:h-[62dvh]">
               <SparkSafeImage
                 src={preferListingMosaicPhotoUrl(current.url)}
                 alt={altText}
