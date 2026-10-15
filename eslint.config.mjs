@@ -48,7 +48,7 @@ const eslintConfig = defineConfig([
           // lib/data/leads/listingAlerts.ts). saved_searches stays UNBANNED
           // because the legacy public-search feature in app/actions/saved-searches.ts
           // still queries it directly by design.
-          selector: "CallExpression[callee.property.name='from'][arguments.0.value=/^(listings|listing_videos|video_tours_cache|listing_history|market_stats_cache|market_pulse_live|engagement_metrics|properties|neighborhoods|communities|cities|listing_photos|listing_agents|open_houses|boundaries|neighborhood_subdivisions|subdivision_flags|app_config|activity_events|expired_listings|cmas|cma_comps|guest_search_alerts|listing_alerts|blog_posts|guides|market_reports)$/]",
+          selector: "CallExpression[callee.property.name='from'][arguments.0.value=/^(listings|listing_videos|video_tours_cache|listing_history|market_stats_cache|market_pulse_live|market_metric|engagement_metrics|properties|neighborhoods|communities|cities|listing_photos|listing_agents|open_houses|boundaries|neighborhood_subdivisions|subdivision_flags|app_config|activity_events|expired_listings|cmas|cma_comps|guest_search_alerts|listing_alerts|blog_posts|guides|market_reports)$/]",
           message: "DAL boundary: supabase.from('<table>') is banned outside lib/data/. Use the canonical function from @/lib/data/ instead. See docs/DATA_ACCESS_LAYER.md.",
         },
         {

@@ -11,8 +11,10 @@ export const MESSAGES_DEFAULT_FOLDER = 'inbox' as const
 export const LISTINGS_DEFAULT_STATUS = 'Active' as const
 export const EMAIL_CAMPAIGNS_REDIRECT = '/admin/audiences' as const
 export const CMA_NAV_HREF = '/admin/valuations' as const
-/** Mobile main padding that clears the 56px FAB sitting at bottom-20 above the tab bar. */
+/** Mobile main padding under the tab bar. The + FAB lives in the header on phones. */
 export const ADMIN_MOBILE_MAIN_PADDING = 'pb-36' as const
+/** Header slot the mobile + FAB portals into so it cannot cover row actions. */
+export const ADMIN_FAB_HEADER_SLOT_ID = 'admin-console-header-actions'
 export const CMA_QUEUE_PAGE_READ_LIMIT = 200
 
 export const PROSPECTING_STATUSES = [

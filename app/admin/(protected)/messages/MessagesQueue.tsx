@@ -85,8 +85,8 @@ export async function MessagesQueue({
 
   return (
     <nav className="av2-convlist" aria-label="Conversations">
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '12px 16px 8px' }}>
-        <div style={{ flex: 1 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '12px 16px 8px' }}>
+        <div style={{ flex: '0 0 auto', minWidth: '12.5rem' }}>
           <MessagesFolderSelect current={folder} />
         </div>
         {folder !== 'recent' && folder !== 'closed' ? (
