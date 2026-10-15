@@ -5,11 +5,9 @@
 
 .v3-sarah {
   position: fixed;
-  right: calc(
-    var(--v3-sarah-gutter) + var(--v3-space-md) + env(safe-area-inset-right, 0px)
-  );
+  right: calc(var(--v3-sarah-inset) + env(safe-area-inset-right, 0px));
   bottom: calc(
-    var(--rr-dock-h, 0px) + var(--rr-sticky-bottom, 0px) + var(--v3-space-md) +
+    var(--rr-dock-h, 0px) + var(--rr-sticky-bottom, 0px) + var(--v3-sarah-inset) +
       env(safe-area-inset-bottom, 0px)
   );
   z-index: 140;
@@ -38,8 +36,24 @@ body:has([aria-modal='true']:not([hidden])) .v3-sarah {
 body:has([data-cookie-notice='bar']) .v3-sarah {
   bottom: calc(
     var(--v3-cookie-bar-h, 5.5rem) + var(--rr-dock-h, 0px) + var(--rr-sticky-bottom, 0px) +
-      var(--v3-space-md) + env(safe-area-inset-bottom, 0px)
+      var(--v3-sarah-inset) + env(safe-area-inset-bottom, 0px)
   );
+}
+
+@media (max-width: 63.99rem) {
+  .v3-sarah {
+    bottom: calc(
+      var(--rr-dock-h, 0px) + var(--rr-sticky-bottom, 0px) + var(--v3-sarah-inset) +
+        env(safe-area-inset-bottom, 0px) + var(--v3-sarah-toolbar)
+    );
+  }
+
+  body:has([data-cookie-notice='bar']) .v3-sarah {
+    bottom: calc(
+      var(--v3-cookie-bar-h, 5.5rem) + var(--rr-dock-h, 0px) + var(--rr-sticky-bottom, 0px) +
+        var(--v3-sarah-inset) + env(safe-area-inset-bottom, 0px) + var(--v3-sarah-toolbar)
+    );
+  }
 }
 
 .v3-sarah__launcher,
@@ -55,31 +69,17 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   box-sizing: border-box;
   width: var(--v3-sarah-fab);
   height: var(--v3-sarah-fab);
-  min-width: var(--v3-tap);
-  min-height: var(--v3-tap);
+  min-width: var(--v3-sarah-fab);
+  min-height: var(--v3-sarah-fab);
   padding: 0;
   overflow: hidden;
-  border: var(--v3-rule-weight-hairline) solid var(--v3-cream);
+  border: 2px solid var(--v3-cream);
   border-radius: 50%;
   background: var(--v3-navy);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--v3-navy) 35%, transparent),
+    var(--v3-sarah-glow);
   cursor: pointer;
-}
-
-.v3-sarah__ai-tag {
-  position: absolute;
-  left: 50%;
-  bottom: 3px;
-  transform: translateX(-50%);
-  padding: 0 5px;
-  border-radius: 999px;
-  background: var(--v3-navy);
-  color: var(--v3-cream);
-  font-family: var(--v3-font-body);
-  font-size: 10px;
-  font-weight: var(--v3-weight-semibold);
-  line-height: 14px;
-  letter-spacing: 0.04em;
-  pointer-events: none;
 }
 
 .v3-sarah__launcher:focus-visible {
@@ -459,9 +459,99 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
 
 .v3-sarah__composer .v3-sarah__mic[data-sarah-voice='listening'],
 .v3-sarah__composer .v3-sarah__mic[data-sarah-voice='speaking'],
-.v3-sarah__composer .v3-sarah__mic[data-sarah-voice='connecting'] {
+.v3-sarah__composer .v3-sarah__mic[data-sarah-voice='connecting'],
+.v3-sarah__composer .v3-sarah__mic[data-sarah-voice='thinking'] {
   background: var(--v3-focus);
   color: var(--v3-navy);
+}
+
+.v3-sarah__voice-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  padding: 0.35rem 1.1rem 0.15rem;
+}
+
+.v3-sarah__voice-orb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--v3-sarah-orb);
+  height: var(--v3-sarah-orb);
+  min-width: var(--v3-sarah-orb);
+  min-height: var(--v3-sarah-orb);
+  padding: 0;
+  overflow: hidden;
+  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+  border-radius: 50%;
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  cursor: pointer;
+}
+
+.v3-sarah__voice-orb svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.v3-sarah__voice-orb[data-sarah-voice='listening'],
+.v3-sarah__voice-orb[data-sarah-voice='connecting'],
+.v3-sarah__voice-orb[data-sarah-voice='asking'] {
+  animation: v3-sarah-listen 1.6s var(--v3-ease-out) infinite;
+}
+
+.v3-sarah__voice-orb[data-sarah-voice='thinking'] {
+  animation: v3-sarah-think 1.2s var(--v3-ease-out) infinite;
+}
+
+.v3-sarah__voice-orb[data-sarah-voice='speaking'] {
+  background: var(--v3-focus);
+  color: var(--v3-navy);
+}
+
+.v3-sarah__voice-wave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  height: 1.5rem;
+}
+
+.v3-sarah__voice-wave i {
+  display: block;
+  width: 0.18rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.v3-sarah__voice-orb[data-sarah-voice='listening'] .v3-sarah__voice-wave i,
+.v3-sarah__voice-orb[data-sarah-voice='connecting'] .v3-sarah__voice-wave i,
+.v3-sarah__voice-orb[data-sarah-voice='asking'] .v3-sarah__voice-wave i {
+  animation: v3-sarah-wave 1.1s ease-in-out infinite;
+}
+
+.v3-sarah__voice-orb[data-sarah-voice='speaking'] .v3-sarah__voice-wave i {
+  animation: v3-sarah-speak 0.55s ease-in-out infinite;
+}
+
+.v3-sarah__voice-orb[data-sarah-voice='thinking'] .v3-sarah__voice-wave i {
+  animation: v3-sarah-think-bar 1s ease-in-out infinite;
+}
+
+.v3-sarah__voice-wave i:nth-child(2) { animation-delay: 0.08s; }
+.v3-sarah__voice-wave i:nth-child(3) { animation-delay: 0.16s; }
+.v3-sarah__voice-wave i:nth-child(4) { animation-delay: 0.24s; }
+.v3-sarah__voice-wave i:nth-child(5) { animation-delay: 0.32s; }
+
+.v3-sarah__voice-hint {
+  margin: 0;
+  color: var(--v3-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: 1.4;
+  text-align: center;
 }
 
 .v3-sarah__composer button:focus-visible {
@@ -502,10 +592,68 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   }
 }
 
+@keyframes v3-sarah-listen {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--v3-navy) 22%, transparent);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--v3-navy) 0%, transparent);
+  }
+}
+
+@keyframes v3-sarah-think {
+  0%,
+  100% {
+    transform: scale(0.96);
+    opacity: 0.86;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes v3-sarah-wave {
+  0%,
+  100% {
+    height: 0.35rem;
+  }
+  50% {
+    height: 0.95rem;
+  }
+}
+
+@keyframes v3-sarah-speak {
+  0%,
+  100% {
+    height: 0.45rem;
+  }
+  50% {
+    height: 1.35rem;
+  }
+}
+
+@keyframes v3-sarah-think-bar {
+  0%,
+  100% {
+    height: 0.3rem;
+    opacity: 0.55;
+  }
+  50% {
+    height: 0.7rem;
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .v3-sarah__teaser,
   .v3-sarah__panel,
-  .v3-sarah__scrim {
+  .v3-sarah__scrim,
+  .v3-sarah__voice-orb,
+  .v3-sarah__voice-wave i {
     animation: none;
   }
 

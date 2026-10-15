@@ -18,18 +18,38 @@ import {
 
 class FakeAudioContext {
   state: AudioContextState = 'suspended'
+  sampleRate = 48_000
+  destination = {}
   resume = vi.fn(async () => {
     this.state = 'running'
   })
   close = vi.fn(async () => {
     this.state = 'closed'
   })
+  createMediaStreamDestination = vi.fn(() => ({ stream: { getTracks: () => [] } }))
+}
+
+function fakeAudioEl() {
+  return {
+    play: vi.fn(async () => undefined),
+    pause: vi.fn(),
+    setAttribute: vi.fn(),
+    remove: vi.fn(),
+    srcObject: null as MediaStream | null,
+    src: '',
+    autoplay: false,
+    preload: '',
+  }
 }
 
 function installMediaMocks(getUserMedia: () => Promise<MediaStream>) {
   const gum = vi.fn(getUserMedia)
-  vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: gum } })
+  vi.stubGlobal('navigator', {
+    mediaDevices: { getUserMedia: gum },
+    sendBeacon: vi.fn(() => true),
+  })
   vi.stubGlobal('AudioContext', FakeAudioContext)
+  vi.stubGlobal('document', { createElement: vi.fn(() => fakeAudioEl()) })
   return gum
 }
 
@@ -68,9 +88,10 @@ describe('Sarah iOS mic tap', () => {
     installMediaMocks(() => Promise.resolve({ getTracks: () => [] } as unknown as MediaStream))
     const armed = armSarahMicOnTap()
     expect(armed.captureCtx.state).toBe('running')
-    expect(armed.playCtx.state).toBe('running')
+    expect(armed.playCtx).toBe(armed.captureCtx)
     expect(armed.captureCtx.resume).toHaveBeenCalled()
-    expect(armed.playCtx.resume).toHaveBeenCalled()
+    expect(armed.speaker.play).toHaveBeenCalled()
+    expect(armed.playDest).toBeTruthy()
   })
 
   it('maps NotAllowedError to the permission line and other errors to start-fail', () => {
@@ -101,7 +122,16 @@ describe('Sarah iOS mic tap', () => {
     expect(GROK_REALTIME_VOICE).toBe('eve')
     expect(grokRealtimeSessionVoice()).toEqual({
       voice: 'eve',
-      audio: { output: { voice: 'eve' } },
+      audio: {
+        input: {
+          format: { type: 'audio/pcm', rate: 24_000 },
+          transcription: { model: 'grok-transcribe' },
+        },
+        output: {
+          voice: 'eve',
+          format: { type: 'audio/pcm', rate: 24_000 },
+        },
+      },
     })
   })
 

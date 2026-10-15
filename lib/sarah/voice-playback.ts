@@ -51,7 +51,7 @@ export function resampleToRate(input: Float32Array, fromRate: number, toRate: nu
 
 export function createSarahVoicePlayback(
   ctx: PlayCtx,
-  opts?: { leadSec?: number; onUnderrun?: (count: number) => void },
+  opts?: { leadSec?: number; onUnderrun?: (count: number) => void; destination?: AudioNode },
 ): SarahVoicePlayback {
   const lead = opts?.leadSec ?? SARAH_VOICE_LEAD_SEC
   const nodes: AudioBufferSourceNode[] = []
@@ -85,7 +85,7 @@ export function createSarahVoicePlayback(
       buf.copyToChannel(Float32Array.from(pcm), 0)
       const node = ctx.createBufferSource()
       node.buffer = buf
-      node.connect(ctx.destination)
+      node.connect(opts?.destination ?? ctx.destination)
       const now = ctx.currentTime
       if (nextAt === 0) {
         nextAt = now + lead

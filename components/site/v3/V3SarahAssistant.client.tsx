@@ -35,6 +35,10 @@ import { listingUnknownFactEn, shouldAnswerFromPage } from '@/lib/sarah/listing-
 import {
   SARAH_NAME,
   WEB_HELP_EN,
+  WEB_VOICE_HINT_END_EN,
+  WEB_VOICE_HINT_LISTEN_EN,
+  WEB_VOICE_HINT_SPEAK_EN,
+  WEB_VOICE_HINT_THINK_EN,
   WEB_VOICE_NOTICE_EN,
 } from '@/lib/sarah/scripts'
 import {
@@ -62,7 +66,7 @@ import { trackEvent } from '@/lib/tracking'
 import './tokens.css'
 import './V3SarahAssistant.css'
 
-type ChatLine = { from: 'sarah' | 'visitor'; text: string; notice?: string }
+type ChatLine = { from: 'sarah' | 'visitor'; text: string; notice?: string; voice?: boolean }
 
 function sessionStore(): Storage | null {
   if (typeof sessionStorage === 'undefined') return null
@@ -314,12 +318,15 @@ export function V3SarahAssistant() {
               if (!takeVoiceErrorSlot(voiceErrorPostedRef.current)) return
               setLines((prev) => [...prev, { from: 'sarah', text: message }])
             },
-            onTranscript: (from, text) => {
-              if (from === 'visitor') {
-                acceptVisitor(text)
-                return
-              }
-              setLines((prev) => [...prev, { from, text }])
+            onTranscript: (from, text, meta) => {
+              setLines((prev) => {
+                const last = prev[prev.length - 1]
+                if (meta?.interim && last?.voice && last.from === from) {
+                  return [...prev.slice(0, -1), { from, text, voice: true }]
+                }
+                if (last?.voice && last.from === from && last.text === text) return prev
+                return [...prev, { from, text, voice: true }]
+              })
             },
           })
           voiceRef.current = handle
@@ -332,7 +339,7 @@ export function V3SarahAssistant() {
         }
       })()
     },
-    [acceptVisitor, desk.slug],
+    [desk.slug],
   )
 
   const onSheetPointerDown = useCallback(
@@ -368,15 +375,31 @@ export function V3SarahAssistant() {
 
   const showBubble = teaserOn && offer && teaserKind === 'bubble'
   const showBadge = teaserOn && offer && teaserKind === 'badge'
-  const micBusy = voiceStatus === 'listening' || voiceStatus === 'connecting' || voiceStatus === 'speaking'
+  const voiceLive =
+    voiceStatus === 'asking' ||
+    voiceStatus === 'connecting' ||
+    voiceStatus === 'listening' ||
+    voiceStatus === 'thinking' ||
+    voiceStatus === 'speaking'
+  const micBusy = voiceLive
   const micLabel =
     voiceStatus === 'listening'
       ? 'Listening. Stop talking with Sarah'
       : voiceStatus === 'connecting' || voiceStatus === 'asking'
         ? 'Connecting to Sarah voice'
-        : voiceStatus === 'speaking'
-          ? 'Sarah is speaking. Stop voice'
-          : 'Talk to Sarah'
+        : voiceStatus === 'thinking'
+          ? 'Sarah is thinking. Stop voice'
+          : voiceStatus === 'speaking'
+            ? 'Sarah is speaking. Stop voice'
+            : 'Talk to Sarah'
+  const voiceHint =
+    voiceStatus === 'speaking'
+      ? WEB_VOICE_HINT_SPEAK_EN
+      : voiceStatus === 'thinking'
+        ? WEB_VOICE_HINT_THINK_EN
+        : voiceLive
+          ? WEB_VOICE_HINT_LISTEN_EN
+          : WEB_VOICE_HINT_END_EN
 
   return (
     <div className={V3_ROOT_CLASS}>
@@ -444,7 +467,56 @@ export function V3SarahAssistant() {
               ))}
               <div ref={latestRef} data-sarah="latest" />
             </div>
-            {chips && chips.length > 0 ? (
+            <div className="v3-sarah__voice-stage" data-sarah="voice-stage" data-sarah-voice={voiceStatus}>
+              <button
+                type="button"
+                className="v3-sarah__mic v3-sarah__voice-orb"
+                aria-label={micLabel}
+                data-sarah="mic"
+                data-sarah-voice={voiceStatus}
+                aria-pressed={micBusy}
+                onClick={() => {
+                  if (
+                    voiceStatus === 'listening' ||
+                    voiceStatus === 'connecting' ||
+                    voiceStatus === 'speaking' ||
+                    voiceStatus === 'thinking' ||
+                    voiceStatus === 'asking'
+                  ) {
+                    voiceRef.current?.stop()
+                    voiceRef.current = null
+                    setVoiceStatus('idle')
+                    return
+                  }
+                  const started = beginSarahVoiceFromMicTap()
+                  if (!started.ok) {
+                    setVoiceStatus('error')
+                    if (takeVoiceErrorSlot(voiceErrorPostedRef.current)) {
+                      setLines((prev) => [...prev, { from: 'sarah', text: started.message }])
+                    }
+                    return
+                  }
+                  continueVoiceAfterArm(started.armed)
+                }}
+              >
+                {voiceLive ? (
+                  <span className="v3-sarah__voice-wave" aria-hidden="true">
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                  </span>
+                ) : (
+                  <Mic aria-hidden="true" strokeWidth={1.75} />
+                )}
+                <span className="sr-only">{micLabel}</span>
+              </button>
+              <p className="v3-sarah__voice-hint" data-sarah="voice-hint">
+                {voiceLive ? `${voiceHint}. ${WEB_VOICE_HINT_END_EN}` : WEB_VOICE_HINT_LISTEN_EN}
+              </p>
+            </div>
+            {chips && chips.length > 0 && !voiceLive ? (
               <div className="v3-sarah__hints" data-sarah="intent-chips">
                 {flow.step === 'intent' ? (
                   <p className="v3-sarah__hints-kicker">Here&apos;s a starting point</p>
@@ -471,34 +543,6 @@ export function V3SarahAssistant() {
                 send()
               }}
             >
-              <button
-                type="button"
-                className="v3-sarah__mic"
-                aria-label={micLabel}
-                data-sarah="mic"
-                data-sarah-voice={voiceStatus}
-                aria-pressed={micBusy}
-                onClick={() => {
-                  if (voiceStatus === 'listening' || voiceStatus === 'connecting' || voiceStatus === 'speaking') {
-                    voiceRef.current?.stop()
-                    voiceRef.current = null
-                    setVoiceStatus('idle')
-                    return
-                  }
-                  const started = beginSarahVoiceFromMicTap()
-                  if (!started.ok) {
-                    setVoiceStatus('error')
-                    if (takeVoiceErrorSlot(voiceErrorPostedRef.current)) {
-                      setLines((prev) => [...prev, { from: 'sarah', text: started.message }])
-                    }
-                    return
-                  }
-                  continueVoiceAfterArm(started.armed)
-                }}
-              >
-                <Mic aria-hidden="true" strokeWidth={1.75} />
-                <span className="sr-only">{micLabel}</span>
-              </button>
               <input
                 type="text"
                 name="sarah-message"
@@ -555,11 +599,8 @@ export function V3SarahAssistant() {
             else openPanel(showBadge)
           }}
         >
-          <SarahFace className="v3-sarah__avatar" size={56} alt={SARAH_AVATAR_ALT} />
+          <SarahFace className="v3-sarah__avatar" size={68} alt={SARAH_AVATAR_ALT} />
           {showBadge ? <span className="v3-sarah__badge" data-sarah-teaser="badge" /> : null}
-          {/* UX review F36: say "AI" on the button itself, so nobody takes the
-              photo for one of the brokers before opening the chat. */}
-          {!panelOpen ? <span className="v3-sarah__ai-tag" aria-hidden="true">AI</span> : null}
         </button>
       </div>
     </div>

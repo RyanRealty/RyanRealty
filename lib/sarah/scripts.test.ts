@@ -6,6 +6,10 @@ const COPY_KEYS = [
   'WEB_SAVED_NOTICE_EN',
   'WEB_VOICE_NOTICE_EN',
   'WEB_VOICE_TALK_EN',
+  'WEB_VOICE_HINT_LISTEN_EN',
+  'WEB_VOICE_HINT_END_EN',
+  'WEB_VOICE_HINT_SPEAK_EN',
+  'WEB_VOICE_HINT_THINK_EN',
   'VOICE_GREETING_EN',
   'PRICE_VALUE_EN',
   'CONTRACT_ADVICE_EN',
@@ -48,6 +52,8 @@ describe('Sarah public copy', () => {
     expect(scripts.WEB_VOICE_NOTICE_EN).toMatch(/Voice chats are recorded and transcribed/)
     expect(scripts.WEB_VOICE_TALK_EN).toMatch(/contractions/)
     expect(scripts.WEB_VOICE_TALK_EN).toMatch(/Don't read lists/)
+    expect(scripts.WEB_VOICE_HINT_LISTEN_EN).toBe('Just start talking')
+    expect(scripts.WEB_VOICE_HINT_END_EN).toBe('Tap to end')
     expect(scripts.bookingPendingEn('Paul')).toMatch(/Paul will confirm/)
   })
 

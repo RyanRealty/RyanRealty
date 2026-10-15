@@ -112,7 +112,7 @@ describe('Sarah voice playback buffer', () => {
     expect(src).toContain("type: 'server_vad'")
     expect(src).toContain('interrupt_response: true')
     expect(src).toContain('createSarahVoicePlayback')
-    expect(src).toContain("event.type === 'input_audio_buffer.speech_started'")
+    expect(src).toContain('isSarahSpeechStarted')
     expect(src).toContain("type: 'response.cancel'")
     expect(src).not.toContain('node.start()')
   })
