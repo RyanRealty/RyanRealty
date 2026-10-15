@@ -41,8 +41,7 @@ import {
 import { getPersonForCmaKickoff } from '@/lib/data/crm/cmaKickoff'
 import { searchPeopleByName } from '@/lib/data/crm/searchPeople'
 import { revalidatePerson } from '@/lib/crm/revalidate-person'
-
-export { rebuildCmaAction, type RebuildCmaInput } from '@/app/actions/cma-rebuild'
+import { rebuildCmaAction as runRebuildCma, type RebuildCmaInput } from '@/app/actions/cma-rebuild'
 
 async function requireAdmin(): Promise<string | null> {
   const session = await getSession()
@@ -151,6 +150,12 @@ export async function buildCmaAdminAction(
     console.error('[buildCmaAdminAction]', e)
     return { data: null, error: 'Build failed unexpectedly' }
   }
+}
+
+export async function rebuildCmaAction(
+  input: RebuildCmaInput,
+): Promise<{ data: { slug: string } | null; error: string | null }> {
+  return runRebuildCma(input)
 }
 
 /**

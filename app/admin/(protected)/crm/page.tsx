@@ -245,7 +245,7 @@ async function CrmPeopleBody({ access, sp }: { access: CrmAccess; sp: SearchPara
     .filter((t) => t.isActive && !t.isProtected)
     .map((t) => ({ key: t.key, label: t.label }))
   const areaOptions: Array<{ key: string; label: string }> = []
-  const templateOptions: Array<{ id: number; name: string; channel: string }> = []
+  const templateOptions: Array<{ id: number; name: string; channel: 'email' | 'sms' }> = []
   const sequenceOptions: Array<{ id: number; name: string }> = []
   const brokerPicker = activeBrokerSlugs().map((b) => ({ key: b, label: brokerDisplayName(b) }))
   const scopeBrokers = activeBrokerSlugs().map((slug) => ({
