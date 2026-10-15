@@ -106,7 +106,7 @@ describe('a client document view is always mirrored to GA4 (the document runs no
   it('an essential-tier reader is NOT mirrored (Matt 2026-10-14: no analytics consent)', async () => {
     await track(pageView({ pageUrl: DOC, pageCategory: 'client-document', consent: 'essential' }), { _ga: GA_COOKIE })
     // a document send would land after the response (its id is read first): give it time
-    await new Promise((r) => setTimeout(r, 50))
+    await new Promise((r) => setTimeout(r, 250))
     expect(ga4.fire).not.toHaveBeenCalled()
   })
 
@@ -248,7 +248,7 @@ describe('a known contact\'s mirrored hit carries the hashed user id the browser
     const token = signPersonLinkToken(PERSON, 'document')
     await track(pageView({ pageUrl: `${DOC}&_pid=${token}`, pageCategory: 'client-document', consent: 'essential' }), { rr_vid: VID })
     expect(store.session(SESSION)).toMatchObject({ crm_person_id: PERSON })
-    await new Promise((r) => setTimeout(r, 50))
+    await new Promise((r) => setTimeout(r, 250))
     expect(ga4.fire).not.toHaveBeenCalled()
   })
 

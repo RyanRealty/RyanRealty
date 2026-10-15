@@ -211,6 +211,8 @@ const unattributed = await safe(async () => {
     },
   })
   const byDay = {}
+  // A report past its row limit is cut, and the counts would read low: say so.
+  if (Number(d.rowCount || 0) > (d.rows || []).length) byDay.truncated = { rowCount: Number(d.rowCount), read: (d.rows || []).length }
   for (const r of d.rows || []) {
     const [day, source, browser, landing] = (r.dimensionValues || []).map((v) => v.value)
     const n = Number(r.metricValues?.[0]?.value || 0)
@@ -227,6 +229,10 @@ const unattributed = await safe(async () => {
 })
 report.sections.unattributedSessions = unattributed
 if (isErr(unattributed)) finding('ERROR', 'ga4', `Could not read the (not set) session breakdown: ${unattributed.error}`)
+else if (unattributed.truncated) {
+  finding('WARN', 'ga4', `The (not set) session breakdown hit its row limit (${unattributed.truncated.read} of ${unattributed.truncated.rowCount} rows); use a shorter --days.`)
+  delete unattributed.truncated
+}
 
 // ── Personal information in GA4 (Matt 2026-10-14) ───────────────────────────
 // GA4's terms forbid personal information, and a mailing address is one. Until

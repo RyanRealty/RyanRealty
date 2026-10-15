@@ -71,7 +71,7 @@ import {
   classifyAutomation,
 } from '@/lib/analytics/automation'
 import { campaignDetailsParams, ga4SessionParams, parseVisit } from '@/lib/analytics/ga4-visit'
-import { ga4MirrorSends } from '@/lib/analytics/ga4-mirror'
+import { ga4MirrorSends, isGa4MirrorView } from '@/lib/analytics/ga4-mirror'
 import {
   decideGaSuppressionForPage,
   hasAutomationMarker,
@@ -131,12 +131,13 @@ export async function OPTIONS(request: NextRequest) {
  * The opaque row id of the CMA or BPO a client-document view is on, as a GA4
  * param (`cma_id` / `bpo_id`). GA4 sees the page as `/cma/[document]`
  * (stripGa4UrlParams), because the slug is the subject's street address; the
- * id keeps the view attributable to its document. Read only when the mirror
- * can send (GA4_API_SECRET set) and capped at GA4_DOC_ID_BUDGET_MS, so the
- * tracker's request never waits long on it. Empty on any other page, on a
- * failed or slow read: the view is still counted.
+ * id keeps the view attributable to its document. Read after the response
+ * (mirrorAfterResponse), only when the mirror can send (GA4_API_SECRET set),
+ * and capped at GA4_DOC_ID_BUDGET_MS so a stuck read cannot hold the function
+ * open. Empty on any other page, on a failed or timed-out read: the view is
+ * still counted, without the id.
  */
-const GA4_DOC_ID_BUDGET_MS = 400
+const GA4_DOC_ID_BUDGET_MS = 3000
 
 async function ga4DocumentIdParams(pageUrl: string): Promise<Record<string, string>> {
   if (!process.env.GA4_API_SECRET?.trim()) return {}
@@ -795,7 +796,7 @@ export async function POST(request: NextRequest) {
   // a CMA, which runs no Google tag) carries it: GA4 read 2026-10-14 showed 12
   // users with a user id against 113 contacts on the site in 30 days, and 13 of
   // the missing ones had read only their report at the analytics tier.
-  const mirrorGa4 = ga4MirrorSends({ eventType, consent, pageCategory: body.pageCategory })
+  const mirrorGa4 = ga4MirrorSends({ eventType, consent, pageCategory: body.pageCategory, pageUrl })
   // Automation never reaches GA4: a crawler render mirrored as a page_view is
   // exactly the inflation TRACK-1 measured, and GA4's known-bot filter does
   // not see Measurement Protocol hits. A provisional contact-deep-link session
@@ -822,73 +823,80 @@ export async function POST(request: NextRequest) {
       )
       const gaCookie = request.cookies.get('_ga')?.value
       const fromCookie = clientIdFromGaCookie(gaCookie)
-      const isView = eventType === 'page_view' || eventType === 'listing_view'
       // ga4MirrorSends already left out every view the browser's Google tag
-      // counts (a site page at the analytics tier). A raw-HTML client document
-      // (/cma, /bpo) loads no gtag at all, so its views are mirrored for a reader
-      // at the analytics tier (the most engaged recipients).
-      {
-        const pagePath = (() => {
-          try {
-            return new URL(pageUrl).pathname
-          } catch {
-            return undefined
-          }
-        })()
-        const { pageTypeFromPath } = await import('@/lib/analytics/page-type')
-        const pageType = pagePath ? pageTypeFromPath(pagePath) : undefined
-        const meta = body.metadata && typeof body.metadata === 'object' ? body.metadata : {}
-        const intent = typeof meta.intent === 'string' ? meta.intent : undefined
-        const source = typeof meta.source === 'string' ? meta.source : undefined
-        const thing = typeof meta.thing === 'string' ? meta.thing : undefined
-        const broker = visitBrokerGa4Fields(
-          resolveVisitBrokerSlug({
-            agentParam: typeof body.agent === 'string' ? body.agent : null,
-            cookieValue: request.cookies.get(AGENT_ATTRIB_COOKIE)?.value,
-            pageUrl,
-            utmContent: campaign?.content,
-            utmTerm: campaign?.term,
-          }),
-        )
-        // TRACK-1: a per-visit numeric session id (not the browser-lifetime
-        // rr_session_id) and, on the first event of a visit, campaign_details
-        // with the source / medium / campaign the tracker captured, so GA4 can
-        // draw sessions and attribute them.
-        const visit = parseVisit(body.visit)
-        const campaignDetails = visit?.start ? campaignDetailsParams(campaign ?? body.campaign) : null
-        const knownPersonId = session && typeof session.crm_person_id === 'number' ? session.crm_person_id : null
-        // A CMA or BPO is counted as /cma/[document] with its opaque row id,
-        // never its address slug (Matt 2026-10-14). Read after the response.
-        const isDocument = body.pageCategory === 'client-document'
-        mirrorAfterResponse(async () => fireGa4Event({
-          eventName: isView ? 'page_view' : eventType,
-          clientId: fromCookie || clientIdFromSessionId(sessionId),
-          // fireGa4Event sends the hashed id at the analytics tier only.
-          knownContact: { personId: knownPersonId, trackingLevel: consent },
-          precedingEvents: campaignDetails ? [{ name: 'campaign_details', params: campaignDetails }] : undefined,
-          userProperties: {
-            ...(intent ? { intent } : {}),
-            ...(broker?.userProperties ?? {}),
-          },
-          eventParams: {
-            // GA4-safe (strip-identity.ts): GA4 is a third party, so no contact
-            // id, no address or text a person typed, and no CMA or BPO address
-            // slug or title leaves the building (Matt 2026-10-14). No fallback
-            // to the stored URL: an address GA4 may not see is sent as nothing.
-            page_location: stripGa4UrlParams(pageUrl),
-            page_title: ga4SafePageTitle(pageUrl, body.pageTitle),
-            page_referrer: stripGa4UrlParams(body.referrer),
-            page_path: ga4SafePagePath(pagePath),
-            ...(isDocument ? await ga4DocumentIdParams(pageUrl) : {}),
-            page_type: pageType,
-            ...ga4SessionParams(visit, sessionId),
-            intent,
-            source,
-            thing,
-            ...(broker?.eventParams ?? {}),
-          },
-        }))
-      }
+      // counts (a site page at the analytics tier) and everything at the
+      // essential tier. A raw-HTML client document (/cma, /bpo) loads no gtag, so
+      // its views are mirrored for a reader at the analytics tier.
+      const isView = isGa4MirrorView(eventType)
+      const pagePath = (() => {
+        try {
+          return new URL(pageUrl).pathname
+        } catch {
+          return undefined
+        }
+      })()
+      const { pageTypeFromPath } = await import('@/lib/analytics/page-type')
+      const pageType = pagePath ? pageTypeFromPath(pagePath) : undefined
+      const meta = body.metadata && typeof body.metadata === 'object' ? body.metadata : {}
+      const intent = typeof meta.intent === 'string' ? meta.intent : undefined
+      const source = typeof meta.source === 'string' ? meta.source : undefined
+      const thing = typeof meta.thing === 'string' ? meta.thing : undefined
+      const broker = visitBrokerGa4Fields(
+        resolveVisitBrokerSlug({
+          agentParam: typeof body.agent === 'string' ? body.agent : null,
+          cookieValue: request.cookies.get(AGENT_ATTRIB_COOKIE)?.value,
+          pageUrl,
+          utmContent: campaign?.content,
+          utmTerm: campaign?.term,
+        }),
+      )
+      // TRACK-1: a per-visit numeric session id (not the browser-lifetime
+      // rr_session_id) and, on the first event of a visit, campaign_details
+      // with the source / medium / campaign the tracker captured, so GA4 can
+      // draw sessions and attribute them.
+      const visit = parseVisit(body.visit)
+      const campaignDetails = visit?.start ? campaignDetailsParams(campaign ?? body.campaign) : null
+      const knownPersonId = session && typeof session.crm_person_id === 'number' ? session.crm_person_id : null
+      // A CMA or BPO is counted as /cma/[document] with its opaque row id,
+      // never its address slug (Matt 2026-10-14). Read after the response.
+      const isDocument = body.pageCategory === 'client-document'
+      const eventName = isView ? 'page_view' : eventType
+      mirrorAfterResponse(async () => {
+        try {
+          // A CMA or BPO's opaque row id, read after the response.
+          const documentIds = isDocument ? await ga4DocumentIdParams(pageUrl) : {}
+          await fireGa4Event({
+            eventName,
+            clientId: fromCookie || clientIdFromSessionId(sessionId),
+            // fireGa4Event sends the hashed id at the analytics tier only.
+            knownContact: { personId: knownPersonId, trackingLevel: consent },
+            precedingEvents: campaignDetails ? [{ name: 'campaign_details', params: campaignDetails }] : undefined,
+            userProperties: {
+              ...(intent ? { intent } : {}),
+              ...(broker?.userProperties ?? {}),
+            },
+            eventParams: {
+              // GA4-safe (strip-identity.ts): GA4 is a third party, so no contact
+              // id, no address or text a person typed, and no CMA or BPO address
+              // slug or title leaves the building (Matt 2026-10-14). No fallback
+              // to the stored URL: an address GA4 may not see is sent as nothing.
+              page_location: stripGa4UrlParams(pageUrl),
+              page_title: ga4SafePageTitle(pageUrl, body.pageTitle),
+              page_referrer: stripGa4UrlParams(body.referrer),
+              page_path: ga4SafePagePath(pagePath),
+              ...documentIds,
+              page_type: pageType,
+              ...ga4SessionParams(visit, sessionId),
+              intent,
+              source,
+              thing,
+              ...(broker?.eventParams ?? {}),
+            },
+          })
+        } catch (err) {
+          console.warn('[visitors/track] ga4 mirror send failed:', err instanceof Error ? err.message : String(err))
+        }
+      })
     } catch (err) {
       console.warn(
         '[visitors/track] ga4 page_view mirror failed:',

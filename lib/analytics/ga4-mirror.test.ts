@@ -136,6 +136,13 @@ describe('ga4MirrorSends: what the server copies to GA4', () => {
     expect(ga4MirrorSends({ eventType: 'listing_view', consent, pageCategory: 'listing' })).toBe(false)
   })
 
+  it('a client-document view must be on a /cma or /bpo address: a site page posting that category is the browser tag\'s', () => {
+    expect(ga4MirrorSends({ eventType: 'page_view', consent: 'analytics', pageCategory: 'client-document', pageUrl: 'https://ryan-realty.com/cma/cma-828-florida' })).toBe(true)
+    expect(ga4MirrorSends({ eventType: 'page_view', consent: 'analytics', pageCategory: 'client-document', pageUrl: 'https://ryan-realty.com/bpo/bpo-1-main' })).toBe(true)
+    expect(ga4MirrorSends({ eventType: 'page_view', consent: 'analytics', pageCategory: 'client-document', pageUrl: 'https://ryan-realty.com/homes-for-sale/bend' })).toBe(false)
+    expect(ga4MirrorSends({ eventType: 'page_view', consent: 'analytics', pageCategory: 'client-document', pageUrl: 'not a url' })).toBe(false)
+  })
+
   it('an event type the mirror does not carry is never sent', () => {
     expect(ga4MirrorSends({ eventType: 'cta_click', consent: 'all', pageCategory: 'client-document' })).toBe(false)
   })

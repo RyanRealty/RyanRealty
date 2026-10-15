@@ -133,12 +133,35 @@ export const GA4_MIRROR_EVENT_TYPES = ['page_view', 'listing_view', 'intent_decl
  * Suppression (admin, a broker's browser, automation, non-production) is
  * decided separately and applies on top.
  */
-export function ga4MirrorSends(input: { eventType: string; consent: string; pageCategory?: string | null }): boolean {
+export function ga4MirrorSends(input: { eventType: string; consent: string; pageCategory?: string | null; pageUrl?: string | null }): boolean {
   if (!(GA4_MIRROR_EVENT_TYPES as readonly string[]).includes(input.eventType)) return false
   if (input.consent !== 'analytics' && input.consent !== 'all') return false
-  const isView = input.eventType === 'page_view' || input.eventType === 'listing_view'
-  if (isView && input.pageCategory !== 'client-document') return false
+  if (isGa4MirrorView(input.eventType) && !isClientDocumentView(input.pageCategory, input.pageUrl)) return false
   return true
+}
+
+/** A view event (page_view, listing_view); the mirror sends it to GA4 as `page_view`. */
+export function isGa4MirrorView(eventType: string): boolean {
+  return eventType === 'page_view' || eventType === 'listing_view'
+}
+
+/** A client document (/cma/<slug>, /bpo/<slug>) runs no Google tag. */
+const CLIENT_DOCUMENT_PATH_RE = /^\/(?:cma|bpo)\/[^/]+/i
+
+/**
+ * A view on a raw-HTML client document. The tracker's own category is not
+ * enough: the page address must be one too, so a site page that posts
+ * `client-document` by mistake is not counted twice (the browser tag counts it).
+ * Without an address (older callers) the category decides.
+ */
+function isClientDocumentView(pageCategory: string | null | undefined, pageUrl: string | null | undefined): boolean {
+  if (pageCategory !== 'client-document') return false
+  if (pageUrl === undefined || pageUrl === null) return true
+  try {
+    return CLIENT_DOCUMENT_PATH_RE.test(new URL(pageUrl).pathname)
+  } catch {
+    return false
+  }
 }
 
 /**

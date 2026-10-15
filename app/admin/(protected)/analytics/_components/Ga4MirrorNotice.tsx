@@ -20,6 +20,7 @@ import { VerdictLine } from '@/components/admin/v2'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   GA4_LEAD_SOURCE_RELIABLE_FROM,
+  GA4_MIRROR_CONSENTED_ONLY_SINCE,
   GA4_MIRROR_ESSENTIAL_ONLY_SINCE,
   GA4_TRAFFIC_RELIABLE_FROM,
   ga4WindowNeedsTrafficCaveat,
@@ -75,8 +76,9 @@ export async function Ga4MirrorNotice({ startDate, endDate }: { startDate?: stri
           <b>Google Analytics visits before {day(GA4_TRAFFIC_RELIABLE_FROM)} are inflated.</b> Until{' '}
           {day(GA4_MIRROR_ESSENTIAL_ONLY_SINCE)} our server also sent every page view to Google Analytics without saying
           where the visit came from, so those days show extra visits, mostly filed as Unassigned, and their sources,
-          engagement and visit length are off. Since then it only does that for visitors who have not allowed analytics
-          cookies. From {day(GA4_TRAFFIC_RELIABLE_FROM)} the sources are reliable, and leads carry their source from{' '}
+          engagement and visit length are off. After that it did so only for visitors who had not allowed analytics
+          cookies, and from {day(GA4_MIRROR_CONSENTED_ONLY_SINCE)} not for them either. From{' '}
+          {day(GA4_TRAFFIC_RELIABLE_FROM)} the sources are reliable, and leads carry their source from{' '}
           {day(GA4_LEAD_SOURCE_RELIABLE_FROM)}. Page views and event counts were always real. For every visitor, use the
           Website tab.
         </VerdictLine>
