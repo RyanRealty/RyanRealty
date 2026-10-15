@@ -302,7 +302,7 @@
     "ci:commit-compiles": "node scripts/check-commit-compiles.mjs",
     "ci:gates": "node scripts/run-ci-gates.mjs",
     "ci:content-queue": "node scripts/content-queue/check.mjs && node scripts/content-queue/publish.mjs --self-test",
-    "ci:studio-rules": "node --test .claude/skills/ryan-studio/tools/tests/video_gate.test.mjs .claude/skills/ryan-studio/tools/tests/video_render_gate.test.mjs",
+    "ci:studio-rules": "node --test .claude/skills/ryan-studio/tools/tests/render_gate_cta_words.test.mjs .claude/skills/ryan-studio/tools/tests/video_gate.test.mjs .claude/skills/ryan-studio/tools/tests/video_render_gate.test.mjs",
     "ci:private-remarks": "node scripts/check-private-remarks.mjs",
     "ci:deals-copy": "node scripts/check-deals-copy.mjs",
     "ci:imagine-no-paid-api": "node scripts/check-imagine-no-paid-api.mjs",
