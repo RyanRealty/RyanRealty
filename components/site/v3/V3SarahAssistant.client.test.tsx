@@ -4,8 +4,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import React, { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+import { captureSarahLead } from '@/app/actions/sarah-capture'
+import { answerSarahChat } from '@/app/actions/sarah-chat'
 import { trackEvent } from '@/lib/tracking'
-import { WEB_GREETING_EN, WEB_SAVED_NOTICE_EN, WEB_VOICE_NOTICE_EN } from '@/lib/sarah/scripts'
+import { WEB_HELP_EN, WEB_VOICE_NOTICE_EN } from '@/lib/sarah/scripts'
+import { WEB_BRINGS_YOU_HERE_EN, WEB_DISCLOSURE_LINE_EN } from '@/lib/sarah/intent-flow'
 import { SARAH_TEASER_COPY, SARAH_TEASER_DELAY_MS, SARAH_TEASER_SESSION_KEY } from '@/lib/sarah/teaser'
 import { V3SarahAssistant } from './V3SarahAssistant.client'
 
@@ -13,6 +16,22 @@ const nav = { pathname: '/homes-for-sale/bend/20556-empire-220226741' }
 
 vi.mock('next/navigation', () => ({ usePathname: () => nav.pathname }))
 vi.mock('@/lib/tracking', () => ({ trackEvent: vi.fn() }))
+vi.mock('@/app/actions/sarah-capture', () => ({
+  captureSarahLead: vi.fn(async () => ({ data: { personId: 1, cmaSlug: null, stage: 'Lead' }, error: null })),
+}))
+vi.mock('@/app/actions/sarah-chat', () => ({
+  answerSarahChat: vi.fn(async () => ({
+    data: {
+      reply:
+        "The listing does not give the shop's build year. The home was built in 2020. The remarks describe a 20x30 powered shop with loft, epoxy floors, and partial insulation/sheetrock. I can have Matt find out.",
+      listNumber: '220222095',
+    },
+    error: null,
+  })),
+}))
+vi.mock('@/app/actions/sarah-voice', () => ({
+  mintSarahVoiceToken: vi.fn(async () => ({ data: null, error: 'skip' })),
+}))
 vi.mock('@/app/actions/sarah-desk', () => ({
   getSarahDeskBroker: vi.fn(async () => ({
     data: {
@@ -76,6 +95,8 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     nav.pathname = '/homes-for-sale/bend/20556-empire-220226741'
     wide = true
     vi.mocked(trackEvent).mockReset()
+    vi.mocked(captureSarahLead).mockClear()
+    vi.mocked(answerSarahChat).mockClear()
     sessionStorage.clear()
     stubMedia()
     vi.useFakeTimers()
@@ -138,7 +159,7 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     expect(container.querySelector('[data-sarah="mic"]')).not.toBeNull()
   })
 
-  it('opens the panel from the bubble, tracks the click, and stays dismissed', () => {
+  it('opens the panel from the bubble, tracks the click, and stays dismissed', async () => {
     act(() => {
       vi.advanceTimersByTime(SARAH_TEASER_DELAY_MS)
     })
@@ -148,29 +169,26 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     })
     expect(trackEvent).toHaveBeenCalledWith('sarah_teaser_clicked', { surface: 'listing', cta: 'bubble' })
     expect(container.querySelector('[data-sarah="panel"]')).not.toBeNull()
-    expect(container.querySelector('[data-sarah="desk"]')?.getAttribute('data-sarah-broker')).toBe('matt')
-    expect(container.querySelector('[data-sarah="desk-line"]')?.textContent).toBe('Matt Ryan')
-    const deskLinks = [...container.querySelectorAll<HTMLAnchorElement>('.v3-sarah__desk-actions a')].map((a) => ({
-      href: a.getAttribute('href'),
-      text: a.textContent,
-    }))
-    expect(deskLinks).toEqual([
-      { href: 'tel:+15417033095', text: 'Call' },
-      { href: 'sms:+15417033095', text: 'Text' },
-      { href: 'mailto:matt@ryan-realty.com', text: 'Email' },
+    expect(container.querySelector('[data-sarah="panel"]')?.getAttribute('data-sarah-broker')).toBe('matt')
+    expect(container.querySelector('.v3-sarah__panel-role')).toBeNull()
+    const chips = [...container.querySelectorAll<HTMLButtonElement>('[data-sarah="intent-chips"] [data-sarah-chip]')].map(
+      (btn) => ({ id: btn.getAttribute('data-sarah-chip'), text: btn.textContent }),
+    )
+    expect(chips).toEqual([
+      { id: 'buyer', text: "I'm looking for a home" },
+      { id: 'seller', text: 'Thinking of selling' },
+      { id: 'home-worth', text: "What's my home worth?" },
+      { id: 'question', text: 'I have a question' },
     ])
-    expect(container.querySelector('.v3-sarah__desk-actions button')?.textContent).toBe('Book a time')
+    expect(container.querySelector('.v3-sarah__desk-actions')).toBeNull()
     expect(container.querySelector('[data-sarah="mic"]')).not.toBeNull()
     expect(container.querySelector('[data-sarah="panel"]')?.getAttribute('data-sarah-surface')).toBe('card')
-    act(() => {
+    expect(container.querySelector('[data-sarah="panel"]')?.textContent).toContain(WEB_BRINGS_YOU_HERE_EN)
+    await act(async () => {
       container.querySelector<HTMLButtonElement>('[data-sarah="mic"]')?.click()
+      await Promise.resolve()
     })
     expect(container.querySelector('[data-sarah="panel"]')?.textContent).toContain(WEB_VOICE_NOTICE_EN)
-    act(() => {
-      container.querySelector<HTMLButtonElement>('.v3-sarah__desk-actions button')?.click()
-    })
-    expect(container.querySelector('[data-sarah="panel"]')?.textContent).toMatch(/book a time with Matt/i)
-    expect(container.querySelector('[data-sarah="panel"]')?.textContent).toMatch(/Matt will confirm/)
     expect(container.querySelector('[data-sarah-teaser]')).toBeNull()
     expect(sessionStorage.getItem(SARAH_TEASER_SESSION_KEY)).toBe('1')
 
@@ -184,16 +202,113 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     expect(container.querySelector('[data-sarah-teaser]')).toBeNull()
   })
 
-  it('opens with Matt\'s short intro and the saved-chats notice, not the Counsel unlicensed line', () => {
+  it('opens by asking what brings them here, with one disclosure line and no broker chrome', () => {
     act(() => {
       container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
     })
     const panel = container.querySelector('[data-sarah="panel"]')
-    expect(panel?.textContent).toContain(WEB_GREETING_EN)
-    expect(panel?.querySelector('[data-sarah="saved-notice"]')?.textContent).toBe(WEB_SAVED_NOTICE_EN)
-    expect(panel?.querySelector('.v3-sarah__panel-role')?.textContent).toBe("with Matt's team")
-    expect(WEB_GREETING_EN).not.toMatch(/not a licensed broker/i)
-    expect(panel?.querySelector('.v3-sarah__panel-role')?.textContent).not.toMatch(/not a licensed broker/i)
+    expect(panel?.textContent).toContain(WEB_BRINGS_YOU_HERE_EN)
+    expect(panel?.querySelector('[data-sarah="saved-notice"]')?.textContent).toBe(WEB_DISCLOSURE_LINE_EN)
+    expect(panel?.querySelectorAll('.v3-sarah__msg--sarah').length).toBe(1)
+    expect(panel?.querySelector('.v3-sarah__panel-role')).toBeNull()
+    expect(panel?.querySelector('.v3-sarah__desk-who')).toBeNull()
+    expect(WEB_DISCLOSURE_LINE_EN).not.toMatch(/not a licensed broker/i)
+    expect(container.querySelector('[data-sarah="launcher"] img')?.getAttribute('srcset')).toContain('2x')
+  })
+
+  it('starts the buyer flow from Hi I would like to look at homes here', async () => {
+    act(() => {
+      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+    })
+    const input = container.querySelector<HTMLInputElement>('input[name="sarah-message"]')
+    expect(input).not.toBeNull()
+    await act(async () => {
+      const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')
+      proto?.set?.call(input, 'Hi I would like to look at homes here')
+      input!.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    const panel = container.querySelector('[data-sarah="panel"]')
+    expect(panel?.textContent).toMatch(/Which area/)
+    expect(container.querySelector('[data-sarah="intent-chips"]')).toBeNull()
+  })
+
+  it('runs the buyer qualifying flow and writes the CRM capture', async () => {
+    act(() => {
+      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+    })
+    const panel = container.querySelector('[data-sarah="panel"]')
+    expect(panel?.textContent).toContain(WEB_BRINGS_YOU_HERE_EN)
+    act(() => {
+      container.querySelector<HTMLButtonElement>('[data-sarah-chip="buyer"]')?.click()
+    })
+    expect(panel?.textContent).toMatch(/Which area/)
+
+    async function typeAndSend(text: string) {
+      const input = container.querySelector<HTMLInputElement>('input[name="sarah-message"]')
+      expect(input).not.toBeNull()
+      await act(async () => {
+        const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')
+        proto?.set?.call(input, text)
+        input!.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+      await act(async () => {
+        container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+      })
+    }
+
+    await typeAndSend('Bend')
+    await typeAndSend('around 700k')
+    await typeAndSend('this year')
+    await typeAndSend('Alex Rivera')
+    await typeAndSend('alex@example.com')
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(captureSarahLead).toHaveBeenCalledWith({
+      intent: 'buyer',
+      answers: expect.objectContaining({
+        area: 'Bend',
+        budget: 'around 700k',
+        timeline: 'this year',
+        name: 'Alex Rivera',
+        email: 'alex@example.com',
+      }),
+      startCma: false,
+    })
+    expect(panel?.textContent).toMatch(/saved that/)
+    expect(container.querySelector('[data-sarah-chip="handoff-call"]')?.textContent).toBe('Call')
+  })
+
+  it('answers a listing-page shop question from listing data, not WEB_HELP_EN', async () => {
+    unmount()
+    nav.pathname = '/homes-for-sale/redmond/josie-meadows/4722-zenith-ave-220222095'
+    await mount()
+    act(() => {
+      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+    })
+    const input = container.querySelector<HTMLInputElement>('input[name="sarah-message"]')
+    await act(async () => {
+      const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')
+      proto?.set?.call(input, 'when was the shop built')
+      input!.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    const panel = container.querySelector('[data-sarah="panel"]')
+    expect(answerSarahChat).toHaveBeenCalledWith({
+      pagePath: '/homes-for-sale/redmond/josie-meadows/4722-zenith-ave-220222095',
+      question: 'when was the shop built',
+    })
+    expect(panel?.textContent).toMatch(/20x30 powered shop/)
+    expect(panel?.textContent).not.toContain(WEB_HELP_EN)
   })
 
   it('does not tease a city browse page', async () => {

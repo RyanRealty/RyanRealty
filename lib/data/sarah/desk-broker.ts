@@ -11,6 +11,7 @@ export type SarahAssignedLookup = {
   authEmail?: string | null
   authUserId?: string | null
   rrVid?: string | null
+  phone?: string | null
 }
 
 async function assignedForPersonId(
@@ -67,6 +68,19 @@ export async function lookupSarahAssignedBroker(input: SarahAssignedLookup): Pro
         .eq('rr_vid', rrVid)
         .maybeSingle()
       const personId = Number((data as { crm_person_id?: number | null } | null)?.crm_person_id)
+      if (Number.isFinite(personId) && personId > 0) return assignedForPersonId(sb, personId)
+    }
+
+    const phone = String(input.phone ?? '').replace(/\D/g, '').slice(-10)
+    if (phone.length === 10) {
+      const { data } = await sb
+        .from('crm_contact_points')
+        .select('person_id')
+        .eq('kind', 'phone')
+        .eq('value', phone)
+        .limit(1)
+        .maybeSingle()
+      const personId = Number((data as { person_id?: number | null } | null)?.person_id)
       if (Number.isFinite(personId) && personId > 0) return assignedForPersonId(sb, personId)
     }
   } catch (err) {

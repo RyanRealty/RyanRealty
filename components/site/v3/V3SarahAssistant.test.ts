@@ -18,21 +18,25 @@ describe('V3SarahAssistant · listing teaser', () => {
     expect(LAYOUT).not.toMatch(/<V3PhoneDock/)
   })
 
-  it('puts Call, Text, Email, and Book a time on the resolved desk broker', () => {
+  it('asks what brings them here with intent chips and no broker chrome row', () => {
     expect(SRC).toContain("from '@/app/actions/sarah-desk'")
     expect(SRC).toContain('getSarahDeskBroker')
     expect(SRC).toContain('deskBrokerFromAssigned')
-    expect(SRC).toContain('brokerJoinedLine')
-    expect(SRC).toContain('tel:${desk.phoneTel}')
-    expect(SRC).toContain('sms:${desk.phoneTel}')
-    expect(SRC).toContain('mailto:${desk.email}')
-    expect(SRC).toContain('Book a time')
-    expect(SRC).toContain("action: 'call'")
-    expect(SRC).toContain("action: 'text'")
-    expect(SRC).toContain("action: 'email'")
-    expect(SRC).toContain("action: 'book'")
+    expect(SRC).toContain('WEB_BRINGS_YOU_HERE_EN')
+    expect(SRC).toContain('SARAH_INTENT_CHIPS')
+    expect(SRC).toContain('data-sarah="intent-chips"')
+    expect(SRC).toContain('captureSarahLead')
     expect(SRC).toContain('data-sarah="mic"')
-    expect(CSS).toContain('.v3-sarah__desk-actions')
+    expect(SRC).toContain('mintSarahVoiceToken')
+    expect(SRC).not.toContain('Your broker is')
+    expect(SRC).not.toContain('v3-sarah__desk-actions')
+    expect(SRC).not.toContain('Book a time')
+    expect(SRC).not.toContain('v3-sarah__panel-role')
+    expect(SRC).toContain('scrollToLatest')
+    expect(SRC).toContain('SARAH_AVATAR_SRCSET')
+    expect(CSS).toContain('.v3-sarah__hints')
+    expect(CSS).toContain('--v3-sarah-face')
+    expect(CSS).not.toContain('.v3-sarah__desk-actions')
   })
 
   it('is a compact desktop card and a mobile bottom sheet, not a giant square', () => {
@@ -53,9 +57,9 @@ describe('V3SarahAssistant · listing teaser', () => {
     expect(SRC).toContain("data-sarah-open={panelOpen ? '1' : '0'}")
   })
 
-  it('uses Matt\'s short web intro and does not put unlicensed status in the chrome', () => {
-    expect(SRC).toContain('webGreetingEn')
-    expect(SRC).toContain('WEB_SAVED_NOTICE_EN')
+  it('opens on the approved question with one disclosure line and no unlicensed chrome', () => {
+    expect(SRC).toContain('WEB_BRINGS_YOU_HERE_EN')
+    expect(SRC).toContain('WEB_DISCLOSURE_LINE_EN')
     expect(SRC).toContain('data-sarah="saved-notice"')
     expect(SRC).toContain('WEB_VOICE_NOTICE_EN')
     expect(SRC).not.toMatch(/AI assistant, not a licensed broker/)

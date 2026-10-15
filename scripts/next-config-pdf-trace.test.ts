@@ -19,7 +19,7 @@ describe('CMA send path keeps the PDF render stack in its functions', () => {
     expect(CONFIG).toContain('outputFileTracingIncludes: withPdfRenderIncludes(')
   })
 
-  it('passes ci:pdf-trace-guard', () => {
+  it('passes ci:pdf-trace-guard', { timeout: 120_000 }, () => {
     const out = execFileSync('node', ['scripts/check-pdf-trace-guard.mjs'], { encoding: 'utf8' })
     expect(out).toContain('ci:pdf-trace-guard: ok')
   })

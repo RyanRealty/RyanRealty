@@ -24,6 +24,7 @@ describe('classifyCmaOrigin', () => {
     expect(classifyCmaOrigin('crm-kickoff')).toBe('broker')
     expect(classifyCmaOrigin('cli-rebuild')).toBe('internal')
     expect(classifyCmaOrigin('brain-queue')).toBe('internal')
+    expect(classifyCmaOrigin('sarah-chat')).toBe('internal')
   })
 
   it('reads the lane-recovery sources the 2026-09-07 backfill writes', () => {

@@ -1,10 +1,13 @@
 /* Sarah — listing-detail teaser + bottom-end launcher.
-   Cookie bar and phone dock own the bottom edge; this disc sits above
-   --rr-dock-h / --rr-sticky-bottom. Jax stays mid-end (z-95). */
+   Cookie bar owns the bottom edge when present. The disc sits where the
+   old phone-dock FAB lived, inset so it does not cover the scrollbar.
+   Cookie settings (bottom-left gear) is the only extra public floater. */
 
 .v3-sarah {
   position: fixed;
-  right: calc(var(--v3-space-md) + env(safe-area-inset-right, 0px));
+  right: calc(
+    var(--v3-sarah-gutter) + var(--v3-space-md) + env(safe-area-inset-right, 0px)
+  );
   bottom: calc(
     var(--rr-dock-h, 0px) + var(--rr-sticky-bottom, 0px) + var(--v3-space-md) +
       env(safe-area-inset-bottom, 0px)
@@ -69,12 +72,18 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   outline-offset: var(--v3-focus-offset);
 }
 
-.v3-sarah__avatar {
+.v3-sarah__avatar,
+.v3-sarah__panel-head img,
+.v3-sarah__msg--sarah img,
+.v3-sarah__teaser-photo img {
   display: block;
+  object-fit: cover;
+  object-position: var(--v3-sarah-face);
+}
+
+.v3-sarah__avatar {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: 50% 22%;
 }
 
 .v3-sarah__badge {
@@ -93,13 +102,15 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   display: flex;
   align-items: center;
   gap: var(--v3-space-sm);
-  max-width: min(18rem, calc(100vw - var(--v3-sarah-fab) - 2.5rem));
+  max-width: min(18rem, calc(100vw - var(--v3-sarah-fab) - 3.5rem));
   padding: var(--v3-space-sm) var(--v3-space-md);
   border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+  border-radius: var(--v3-sarah-panel-radius);
   background: var(--v3-cream);
   color: var(--v3-navy);
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-body);
+  line-height: 1.4;
   animation: v3-sarah-teaser-in var(--v3-dur-enter) var(--v3-ease-out);
 }
 
@@ -132,11 +143,8 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
 }
 
 .v3-sarah__teaser-photo img {
-  display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: 50% 22%;
 }
 
 .v3-sarah__dismiss {
@@ -241,8 +249,8 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   display: flex;
   align-items: center;
   gap: var(--v3-space-sm);
-  padding: var(--v3-space-sm) var(--v3-space-md);
-  border-bottom: var(--v3-rule-weight-hairline) solid var(--v3-focus);
+  padding: 0.85rem 1.1rem 0.75rem;
+  border-bottom: var(--v3-rule-weight-hairline) solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
   touch-action: none;
 }
 
@@ -252,23 +260,16 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
 }
 
 .v3-sarah__panel-head img {
-  width: 2rem;
-  height: 2rem;
-  object-fit: cover;
-  object-position: 50% 22%;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 50%;
 }
 
 .v3-sarah__panel-name {
   font-family: var(--v3-font-display);
   font-size: var(--v3-size-body-lg);
-}
-
-.v3-sarah__panel-role {
-  display: block;
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body-sm);
-  color: color-mix(in srgb, var(--v3-navy) 70%, transparent);
+  letter-spacing: 0.01em;
+  line-height: 1.2;
 }
 
 .v3-sarah__messages {
@@ -276,13 +277,15 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--v3-space-sm);
-  padding: var(--v3-space-md);
+  gap: 0.7rem;
+  padding: 1rem 1.1rem;
+  scroll-behavior: smooth;
 }
 
 .v3-sarah__msg {
   display: flex;
-  gap: var(--v3-space-sm);
+  align-items: flex-end;
+  gap: 0.55rem;
   max-width: 100%;
 }
 
@@ -293,111 +296,112 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
 .v3-sarah__msg-stack {
   display: flex;
   flex-direction: column;
-  gap: var(--v3-space-xs);
+  gap: 0.35rem;
   min-width: 0;
+  max-width: 17.5rem;
 }
 
 .v3-sarah__msg-body {
   margin: 0;
-  padding: var(--v3-space-sm) var(--v3-space-md);
-  border: var(--v3-rule-weight-hairline) solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
-  background: var(--v3-cream);
+  padding: 0.7rem 0.95rem;
+  border: var(--v3-rule-weight-hairline) solid color-mix(in srgb, var(--v3-navy) 14%, transparent);
+  border-radius: 1.15rem 1.15rem 1.15rem 0.35rem;
+  background: color-mix(in srgb, var(--v3-cream) 88%, var(--v3-navy));
+  font-size: var(--v3-size-body);
+  line-height: 1.45;
 }
 
 .v3-sarah__saved {
   margin: 0;
-  padding: 0 var(--v3-space-sm);
+  padding: 0 0.15rem;
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-body-sm);
-  color: color-mix(in srgb, var(--v3-navy) 68%, transparent);
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--v3-navy) 64%, transparent);
 }
 
 .v3-sarah__msg--visitor .v3-sarah__msg-body {
   background: var(--v3-navy);
   color: var(--v3-cream);
   border-color: var(--v3-navy);
+  border-radius: 1.15rem 1.15rem 0.35rem 1.15rem;
 }
 
 .v3-sarah__msg--sarah img {
   flex: none;
   width: 1.75rem;
   height: 1.75rem;
-  object-fit: cover;
-  object-position: 50% 22%;
   border-radius: 50%;
 }
 
-.v3-sarah__desk-who {
+.v3-sarah__hints {
   display: flex;
-  align-items: center;
-  gap: var(--v3-space-xs);
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0 1.1rem 0.85rem;
+}
+
+.v3-sarah__hints-kicker {
   margin: 0;
-  max-width: 7.5rem;
+  font-family: var(--v3-font-body);
   font-size: var(--v3-size-body-sm);
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--v3-navy) 68%, transparent);
 }
 
-.v3-sarah__desk-who img {
-  flex: none;
-  width: 1.75rem;
-  height: 1.75rem;
-  object-fit: cover;
-  object-position: 50% 22%;
-  border-radius: 50%;
+.v3-sarah__hint-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  align-items: stretch;
 }
 
-.v3-sarah__desk-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--v3-space-xs);
-  padding: var(--v3-space-sm) var(--v3-space-md);
+.v3-sarah__hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--v3-tap);
+  padding: 0.65rem 0.7rem;
+  border: var(--v3-rule-weight-hairline) solid color-mix(in srgb, var(--v3-navy) 28%, transparent);
+  border-radius: 999px;
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
 }
 
-/* Layered so a Tailwind color utility on these controls still wins (ci:css-layers). */
-@layer base {
-  .v3-sarah__desk-actions a,
-  .v3-sarah__desk-actions button {
-    display: grid;
-    place-items: center;
-    min-height: var(--v3-tap);
-    padding: 0 var(--v3-space-sm);
-    border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
-    border-radius: var(--v3-radius-mark);
-    background: var(--v3-cream);
-    color: var(--v3-navy);
-    font-family: var(--v3-font-display);
-    font-size: var(--v3-size-body-sm);
-    text-decoration: none;
-    cursor: pointer;
-  }
+.v3-sarah__hint:hover {
+  border-color: var(--v3-navy);
 }
 
-.v3-sarah__desk-actions a:hover,
-.v3-sarah__desk-actions button:hover {
-  border-color: var(--v3-focus);
-}
-
-.v3-sarah__desk-actions a:focus-visible,
-.v3-sarah__desk-actions button:focus-visible {
+.v3-sarah__hint:focus-visible {
   outline: var(--v3-focus-ring);
   outline-offset: var(--v3-focus-offset);
 }
 
 .v3-sarah__composer {
   display: flex;
-  gap: var(--v3-space-sm);
-  padding: var(--v3-space-sm) var(--v3-space-md) var(--v3-space-md);
-  border-top: var(--v3-rule-weight-hairline) solid var(--v3-focus);
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.75rem 1.1rem 1rem;
+  border-top: var(--v3-rule-weight-hairline) solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
 }
 
 .v3-sarah__composer input {
   flex: 1;
   min-width: 0;
   min-height: var(--v3-tap);
-  padding: 0 var(--v3-space-sm);
-  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+  padding: 0 0.9rem;
+  border: var(--v3-rule-weight-hairline) solid color-mix(in srgb, var(--v3-navy) 28%, transparent);
+  border-radius: 999px;
   background: var(--v3-cream);
   color: var(--v3-navy);
   font: inherit;
+  line-height: 1.4;
 }
 
 .v3-sarah__composer input:focus-visible {
@@ -405,27 +409,42 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   outline-offset: var(--v3-focus-offset);
 }
 
-/* Layered so a Tailwind color utility on the button still wins (ci:css-layers). */
-@layer base {
-  .v3-sarah__composer button {
-    flex: none;
-    min-width: var(--v3-tap);
-    min-height: var(--v3-tap);
-    padding: 0 var(--v3-space-sm);
-    border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
-    background: var(--v3-navy);
-    color: var(--v3-cream);
-    font-family: var(--v3-font-display);
-    cursor: pointer;
-  }
+.v3-sarah__composer button {
+  flex: none;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  padding: 0 0.95rem;
+  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+  border-radius: 999px;
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  font-family: var(--v3-font-display);
+  cursor: pointer;
 }
 
 .v3-sarah__composer .v3-sarah__mic {
-  width: var(--v3-tap);
+  display: grid;
+  place-items: center;
+  width: var(--v3-sarah-mic);
+  min-width: var(--v3-sarah-mic);
+  height: var(--v3-sarah-mic);
+  min-height: var(--v3-sarah-mic);
   padding: 0;
-  background: var(--v3-cream);
+  border-radius: 50%;
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+}
+
+.v3-sarah__composer .v3-sarah__mic svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.v3-sarah__composer .v3-sarah__mic[data-sarah-voice='listening'],
+.v3-sarah__composer .v3-sarah__mic[data-sarah-voice='speaking'],
+.v3-sarah__composer .v3-sarah__mic[data-sarah-voice='connecting'] {
+  background: var(--v3-focus);
   color: var(--v3-navy);
-  font-size: var(--v3-size-body-sm);
 }
 
 .v3-sarah__composer button:focus-visible {
@@ -471,5 +490,9 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   .v3-sarah__panel,
   .v3-sarah__scrim {
     animation: none;
+  }
+
+  .v3-sarah__messages {
+    scroll-behavior: auto;
   }
 }

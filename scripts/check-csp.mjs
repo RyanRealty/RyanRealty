@@ -59,6 +59,9 @@ const REQUIRED = {
     // per learn.microsoft.com/en-us/clarity/setup-and-installation/clarity-csp.
     'https://*.clarity.ms',
     'https://c.bing.com',
+    // Sarah Eve realtime voice (browser WebSocket + ephemeral token mint).
+    'https://api.x.ai',
+    'wss://api.x.ai',
   ],
 }
 
