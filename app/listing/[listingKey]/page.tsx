@@ -38,6 +38,7 @@ import { listingIndexPolicy, listingOffMarketAnchor } from '@/lib/listing/listin
 import { listingCommunityDoor } from '@/lib/listing/listing-community-door'
 import { publishListingOffMarketFacts } from '@/lib/listing/publish-listing-offmarket'
 import { ListingOffMarketFacts } from '@/components/site/listing-detail/ListingOffMarketFacts'
+import { ListingSectionNav } from '@/components/site/listing-detail/ListingSectionNav.client'
 import { ListingOutOfAreaNotice } from '@/components/site/listing-detail/ListingOutOfAreaNotice'
 import { buildListingOutOfAreaNotice } from '@/components/site/listing-detail/listing-out-of-area'
 import { outOfAreaListingPolicy } from '@/lib/data/listings/service-area'
@@ -707,6 +708,13 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
         }),
         medianPpsf: leftoverPace?.medianPpsf ?? null,
         placeName: leftoverGrain?.name ?? null,
+        // F29: the medians are detached homes; land and attached homes skip.
+        detached:
+          listing.propertyType === 'D'
+            ? false
+            : listing.propertySubType
+              ? /single family|detached/i.test(listing.propertySubType)
+              : null,
         asOfLabel: (() => {
           const iso = leftoverLayers?.headlines?.computedAt ?? leftoverLayers?.inventory?.computedAt ?? null
           return iso ? formatCalendarDate(iso) : null
@@ -905,6 +913,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           browseLabel={similarLabel}
         />
       ) : null}
+      <ListingSectionNav />
       <ListingQuickFacts
         street={street}
         city={listing.city}

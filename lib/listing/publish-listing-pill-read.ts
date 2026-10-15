@@ -28,6 +28,8 @@ export type ListingPillReadInput = {
   placeName: string | null | undefined
   /** When the place figures were computed, already formatted; optional. */
   asOfLabel?: string | null
+  /** The medians are detached homes; a condo or lot is not compared against them (F29). */
+  detached?: boolean | null
 }
 
 export type PublishedListingPillRead = {
@@ -50,30 +52,31 @@ export const LISTING_PILL_READ_SOURCE_NAME = 'regional MLS through Oregon Data S
 
 const money = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`
 
+/*
+ * UX review F29 (Matt approved 2026-10-15): neutral, plain comparisons. The
+ * old lines ("is about 4.9 times the 23…", "is inside the 34…") judged the
+ * home. Now: what this home shows, then what is typical, no verdict.
+ */
 function daysClause(daysLive: number, typical: number, place: string): string {
   const d = Math.round(daysLive)
   const t = Math.round(typical)
   if (t <= 0) return ''
-  if (d <= t) {
-    return `${d} ${d === 1 ? 'day' : 'days'} listed is inside the ${t} a typical ${place} home takes to go under contract`
-  }
-  const ratio = d / t
-  const how = ratio >= 2 ? `about ${ratio.toFixed(1).replace(/\.0$/, '')} times` : 'longer than'
-  return `${d} days listed is ${how} the ${t} a typical ${place} home takes to go under contract`
+  return `listed ${d} ${d === 1 ? 'day' : 'days'}; a typical ${place} home goes under contract in ${t} days`
 }
 
 function ppsfClause(ppsf: number, median: number, place: string): string {
   if (!(median > 0) || !(ppsf > 0)) return ''
   const pct = ((ppsf - median) / median) * 100
-  const tenths = Math.round(Math.abs(pct) * 10) / 10
-  if (tenths === 0) return `${money(ppsf)} a square foot matches the ${place} closed median`
-  const dir = pct > 0 ? 'over' : 'under'
-  return `${money(ppsf)} a square foot is ${tenths.toFixed(1)}% ${dir} the ${place} closed median of ${money(median)}`
+  const whole = Math.round(Math.abs(pct))
+  if (whole === 0) return `${money(ppsf)} a square foot, in line with the ${place} median of ${money(median)}`
+  const dir = pct > 0 ? 'above' : 'below'
+  return `${money(ppsf)} a square foot, about ${whole}% ${dir} the ${place} median of ${money(median)}`
 }
 
 export function publishListingPillRead(input: ListingPillReadInput): PublishedListingPillRead | null {
   const place = (input.placeName ?? '').trim()
   if (!place) return null
+  if (input.detached === false) return null
   const clauses: string[] = []
   if (input.daysLive != null && Number.isFinite(input.daysLive) && input.daysLive >= 0 && input.daysToPending != null && Number.isFinite(input.daysToPending)) {
     const c = daysClause(input.daysLive, input.daysToPending, place)
