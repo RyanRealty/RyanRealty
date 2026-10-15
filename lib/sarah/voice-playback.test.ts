@@ -33,7 +33,7 @@ function fakeCtx(rate = GROK_REALTIME_SAMPLE_RATE) {
         copyToChannel(src: Float32Array) {
           data.set(src)
         },
-      } as AudioBuffer
+      } as unknown as AudioBuffer
     },
     createBufferSource() {
       const node = {

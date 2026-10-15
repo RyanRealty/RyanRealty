@@ -82,7 +82,7 @@ export function createSarahVoicePlayback(
       const pcm = resampleToRate(decodeBase64Pcm16(b64), SARAH_VOICE_SOURCE_RATE, ctx.sampleRate)
       if (pcm.length === 0) return
       const buf = ctx.createBuffer(1, pcm.length, ctx.sampleRate)
-      buf.copyToChannel(pcm, 0)
+      buf.copyToChannel(Float32Array.from(pcm), 0)
       const node = ctx.createBufferSource()
       node.buffer = buf
       node.connect(ctx.destination)
