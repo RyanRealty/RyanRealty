@@ -12,6 +12,8 @@ export type SipSessionConfig = {
   /** Resolve a transfer target to an E.164 number; null disables that target. */
   resolveTransfer?: (who: TransferTarget) => string | null
   /** Called once when the call ends with the cleaned transcript lines. */
+  /** take_message tool handler; returns whether the message was delivered. */
+  onMessage?: (m: { who: TransferTarget; caller_name: string; callback_number: string; message: string }) => Promise<boolean>
   onEnd?: (lines: TranscriptLine[]) => Promise<void>
 }
 export type TranscriptLine = { speaker: 'caller' | 'agent'; text: string }
@@ -41,6 +43,22 @@ const TRANSFER_TOOL = {
       reason: { type: 'string' },
     },
     required: ['who'],
+  },
+}
+
+const MESSAGE_TOOL = {
+  type: 'function',
+  name: 'take_message',
+  description: 'Deliver a message from the caller to Matt, Rebecca, or Paul by text.',
+  parameters: {
+    type: 'object',
+    properties: {
+      who: { type: 'string', enum: ['matt', 'rebecca', 'paul'] },
+      caller_name: { type: 'string' },
+      callback_number: { type: 'string' },
+      message: { type: 'string' },
+    },
+    required: ['who', 'caller_name', 'callback_number', 'message'],
   },
 }
 
@@ -79,7 +97,7 @@ export function runSipCall(callId: string, from: string, cfg: SipSessionConfig):
           instructions: cfg.instructions,
           turn_detection: { type: 'server_vad' },
           audio: { input: { transcription: { model: 'grok-transcribe' } } },
-          ...(cfg.resolveTransfer ? { tools: [TRANSFER_TOOL] } : {}),
+          tools: [...(cfg.resolveTransfer ? [TRANSFER_TOOL] : []), ...(cfg.onMessage ? [MESSAGE_TOOL] : [])],
         },
       }))
       ws.send(JSON.stringify({
@@ -101,12 +119,26 @@ export function runSipCall(callId: string, from: string, cfg: SipSessionConfig):
       }))
       ws.send(JSON.stringify({ type: 'response.create' }))
     }
+    const handleMessage = async (fnCallId: string, argsRaw: string) => {
+      let a: Record<string, string> = {}
+      try { a = JSON.parse(argsRaw || '{}') } catch { /* empty */ }
+      const who: TransferTarget = a.who === 'rebecca' || a.who === 'paul' ? a.who : 'matt'
+      const ok = await (cfg.onMessage?.({ who, caller_name: a.caller_name ?? '', callback_number: a.callback_number ?? '', message: a.message ?? '' }) ?? Promise.resolve(false)).catch(() => false)
+      log(`message for=${who} delivered=${ok}`)
+      if (ws.readyState !== WebSocket.OPEN) return
+      ws.send(JSON.stringify({ type: 'conversation.item.create', item: { type: 'function_call_output', call_id: fnCallId, output: JSON.stringify({ delivered: ok }) } }))
+      ws.send(JSON.stringify({ type: 'response.create' }))
+    }
     ws.on('message', (raw) => {
       let e: { type?: string; transcript?: string; error?: unknown; name?: string; call_id?: string; arguments?: string }
       try { e = JSON.parse(raw.toString()) } catch { return }
       if (!e.type) return
       if (e.type === 'response.function_call_arguments.done' && e.name === 'transfer_call') {
         void handleTransfer(e.call_id ?? '', e.arguments ?? '{}')
+        return
+      }
+      if (e.type === 'response.function_call_arguments.done' && e.name === 'take_message') {
+        void handleMessage(e.call_id ?? '', e.arguments ?? '{}')
         return
       }
       if (e.type === 'error') log(`error ${JSON.stringify(e.error ?? e)}`)

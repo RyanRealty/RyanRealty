@@ -6,7 +6,7 @@
  */
 import { NextResponse } from 'next/server'
 import { TWILIO_PUBLIC_ORIGIN, forwardCellForBroker, verifiedTwilioParams } from '@/lib/crm/twilio'
-import { AGENT_LINES, escapeXml, parseReferTarget, transferTestTarget } from '@/lib/voice/receptionist-routing'
+import { escapeXml, parseReferTarget, transferTestTarget } from '@/lib/voice/receptionist-routing'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -20,12 +20,13 @@ export async function POST(request: Request) {
   if (!verified.ok) return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
   const p = verified.params
   const site = TWILIO_PUBLIC_ORIGIN
-  let matt: string | null = null
-  try { matt = await forwardCellForBroker('matt') } catch { matt = null }
-  const target = parseReferTarget(p.ReferTransferTarget, [matt, AGENT_LINES.rebecca, AGENT_LINES.paul, transferTestTarget()])
+  const cells: Record<string, string | null> = {}
+  for (const b of ['matt', 'rebecca', 'paul']) { try { cells[b] = await forwardCellForBroker(b) } catch { cells[b] = null } }
+  const target = parseReferTarget(p.ReferTransferTarget, [...Object.values(cells), transferTestTarget()])
+  const who = Object.keys(cells).find((k) => cells[k] && cells[k] === target) ?? 'matt'
   console.log(`[receptionist-refer] call=${p.CallSid ?? ''} raw=${p.ReferTransferTarget ?? ''} target=${target ?? 'rejected'}`)
   if (!target) {
-    return xml(`<?xml version="1.0" encoding="UTF-8"?>\n<Response><Redirect method="POST">${site}/api/voice/receptionist-complete?transfer=1</Redirect></Response>`)
+    return xml(`<?xml version="1.0" encoding="UTF-8"?>\n<Response><Redirect method="POST">${site}/api/voice/receptionist-complete?transfer=matt</Redirect></Response>`)
   }
   // Test mode: the test target never rings a phone; it proves the REFER reached us.
   if (target === transferTestTarget()) {
@@ -34,6 +35,6 @@ export async function POST(request: Request) {
   const callerId = escapeXml(p.From || p.To || '')
   return xml(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial timeout="25" answerOnBridge="true" callerId="${callerId}" action="${site}/api/voice/receptionist-complete?transfer=1" method="POST">${target}</Dial>
+  <Dial timeout="25" answerOnBridge="true" callerId="${callerId}" action="${site}/api/voice/receptionist-complete?transfer=${who}" method="POST">${target}</Dial>
 </Response>`)
 }

@@ -5,6 +5,7 @@
  */
 import { NextResponse } from 'next/server'
 import { TWILIO_PUBLIC_ORIGIN, verifiedTwilioParams } from '@/lib/crm/twilio'
+import { XAI_SIP_URI } from '@/lib/voice/receptionist-routing'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -14,6 +15,12 @@ export async function POST(request: Request) {
   if (!verified.ok) return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
   const status = verified.params.DialCallStatus ?? ''
   const site = TWILIO_PUBLIC_ORIGIN
+  const who = new URL(request.url).searchParams.get('transfer')
+  // Unanswered transfer → back to the receptionist to take a message for that broker.
+  if (status !== 'completed' && (who === 'matt' || who === 'rebecca' || who === 'paul')) {
+    return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?>
+<Response><Dial answerOnBridge="true" timeout="20" action="${site}/api/voice/receptionist-complete" method="POST"><Sip>${XAI_SIP_URI}?X-Transfer-Failed=${who}</Sip></Dial></Response>`, { status: 200, headers: { 'Content-Type': 'text/xml' } })
+  }
   const body = status === 'completed'
     ? '<Response><Hangup/></Response>'
     : `<Response>

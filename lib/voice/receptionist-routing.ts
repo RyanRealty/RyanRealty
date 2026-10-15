@@ -19,7 +19,6 @@ export function isReceptionistLine(dialed: string | null | undefined): boolean {
 /** The registered xAI SIP endpoint (BYO number phone_8kd3wo7vNfmRVGNm). */
 export const XAI_SIP_URI = `sip:${process.env.XAI_SIP_NUMBER ?? '+15412245025'}@sip.voice.x.ai;transport=tls`
 
-export const AGENT_LINES = { rebecca: '+15412503380', paul: '+15415023436' } as const
 
 /** Optional test override: every transfer goes to this number instead (never ring Matt during tests). */
 export function transferTestTarget(): string | null {
