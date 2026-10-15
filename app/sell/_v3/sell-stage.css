@@ -644,8 +644,10 @@
   color: color-mix(in srgb, var(--v3-navy) 82%, transparent);
 }
 
-.sell-fee-line a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+@layer base {
+  .sell-fee-line a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 }

@@ -2989,15 +2989,17 @@ body:has([data-slot='dialog-content'][data-state='open']) .v3.v3-chrome {
   scrollbar-width: none;
 }
 
-.listing-section-nav a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  white-space: nowrap;
-  font-size: var(--v3-size-body-sm);
-  font-weight: var(--v3-weight-medium);
-  color: var(--v3-navy);
-  text-decoration: none;
+@layer base {
+  .listing-section-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    white-space: nowrap;
+    font-size: var(--v3-size-body-sm);
+    font-weight: var(--v3-weight-medium);
+    color: var(--v3-navy);
+    text-decoration: none;
+  }
 }
 
 .listing-section-nav a:hover,
