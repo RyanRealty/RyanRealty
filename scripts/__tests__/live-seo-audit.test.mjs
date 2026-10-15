@@ -152,7 +152,7 @@ describe('auditDecision (data/seo/decisions.json)', () => {
         status: 200,
         page: pageShape,
         html:
-          '<div id="takeaways" class="v3-takeaways v3-takeaways--lede"><p class="v3-takeaways__lead">Bend has 3.5 months of supply, so listings are getting absorbed faster than they are replaced.</p></div>' +
+          '<div id="takeaways" class="v3-takeaways v3-takeaways--lede"><p class="v3-takeaways__lead">Bend has 3.5 months of supply, so the market holds few homes relative to the recent sales pace.</p></div>' +
           '<table class="v3-chart__table"></table>' +
           '<h2>Are home prices going up in Bend?</h2>',
       },

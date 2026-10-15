@@ -476,6 +476,13 @@ export async function countSearchListings(params: Record<string, string>): Promi
     .map((s) => s.trim())
     .filter(Boolean)
   if (neighborhoodParts[0]) filter.neighborhood = neighborhoodParts[0]
+  // UX review F06: the list counts "homes on this map", so the preview must
+  // count the same map area or "Show 1,196 homes" applies to 990.
+  const bboxParts = (params.bbox ?? '').split(',').map(Number)
+  if (bboxParts.length === 4 && bboxParts.every(Number.isFinite)) {
+    const [west, south, east, north] = bboxParts
+    if (west < east && south < north) filter.bbox = { west, south, east, north }
+  }
 
   for (const def of SEARCH_FIELDS) {
     if (def.kind === 'boolean') {

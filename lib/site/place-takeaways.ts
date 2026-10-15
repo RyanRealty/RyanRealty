@@ -78,7 +78,7 @@ export type PlaceTakeawaysInput = {
 }
 
 const MEANING: Record<string, string> = {
-  sellers: 'listings are getting absorbed faster than they are replaced',
+  sellers: 'the market holds few homes relative to the recent sales pace',
   balanced: 'the sales pace and the listings on the market are close',
   buyers: 'buyers have leverage',
 }
@@ -100,7 +100,7 @@ function days(n: number | null | undefined): string | null {
 }
 
 const THRESHOLD_CLAUSE: Record<string, string> = {
-  sellers: 'listings are getting absorbed faster than they are replaced',
+  sellers: 'the market holds few homes relative to the recent sales pace',
   balanced: 'the sales pace and the listings on the market are close',
   buyers: 'buyers have leverage',
 }

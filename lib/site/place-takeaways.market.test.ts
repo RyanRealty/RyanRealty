@@ -33,7 +33,7 @@ describe('placeTakeaways, market variant', () => {
       'As of Oct 8, 2026, the median sale price of a single-family home in Bend was $759,000 in September 2026, down 1.0% from $766,750 in September 2025.',
       "Over the last 12 months, Bend's median sale price was $765,000 on 2,206 sales, down 1.3% from the 12 months before.",
       'Bend homes that closed in the last 90 days spent a median 31 days on the market before going under contract, and over the last 12 months the median time from listing to closing was 64 days.',
-      'Bend has 3.5 months of supply (listings are getting absorbed faster than they are replaced).',
+      'Bend has 3.5 months of supply (the market holds few homes relative to the recent sales pace).',
     ])
   })
 
@@ -41,7 +41,7 @@ describe('placeTakeaways, market variant', () => {
     const text = placeTakeaways(BEND_MARKET).join(' ')
     for (const needle of [
       '$759,000', 'down 1.0%', '$766,750', '$765,000', '2,206', 'down 1.3%', '31 days', '64 days',
-      '3.5 months of supply', 'listings are getting absorbed faster than they are replaced', 'As of Oct 8, 2026',
+      '3.5 months of supply', 'the market holds few homes relative to the recent sales pace', 'As of Oct 8, 2026',
     ]) {
       expect(text).toContain(needle)
     }
@@ -59,7 +59,7 @@ describe('placeTakeaways, market variant', () => {
       'As of Oct 8, 2026, the median sale price of a single-family home in Bend was $759,000 in September 2026.',
       "Over the last 12 months, Bend's median sale price was $765,000.",
       'Bend homes that closed in the last 90 days spent a median 31 days on the market before going under contract.',
-      'Bend has 3.5 months of supply (listings are getting absorbed faster than they are replaced).',
+      'Bend has 3.5 months of supply (the market holds few homes relative to the recent sales pace).',
     ])
     const bare = placeTakeaways({
       place: 'Bend',
@@ -136,7 +136,7 @@ describe('placeTakeaways, place variant unchanged', () => {
   it('city (/cities/bend)', () => {
     expect(placeTakeaways(BEND_PLACE)).toEqual([
       '714 single-family houses with a Bend address are for sale as of Oct 8, 2026, at a median asking price of $874,750.',
-      'Bend has 3.5 months of supply, so listings are getting absorbed faster than they are replaced.',
+      'Bend has 3.5 months of supply, so the market holds few homes relative to the recent sales pace.',
       'The median single-family home in Bend sold for $759,000 in September 2026.',
       'The median sale price in Bend over the last 12 months is down 1.3% from the 12 months before.',
     ])

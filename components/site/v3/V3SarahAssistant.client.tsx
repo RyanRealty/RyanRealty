@@ -393,6 +393,9 @@ export function V3SarahAssistant() {
         >
           <img className="v3-sarah__avatar" src={SARAH_AVATAR_SRC} alt={SARAH_AVATAR_ALT} width={56} height={56} />
           {showBadge ? <span className="v3-sarah__badge" data-sarah-teaser="badge" /> : null}
+          {/* UX review F36: say "AI" on the button itself, so nobody takes the
+              photo for one of the brokers before opening the chat. */}
+          {!panelOpen ? <span className="v3-sarah__ai-tag" aria-hidden="true">AI</span> : null}
         </button>
       </div>
     </div>
