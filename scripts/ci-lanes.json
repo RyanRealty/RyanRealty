@@ -69,6 +69,7 @@
     "ci:maps-safety",
     "ci:market-formula",
     "ci:market-truth",
+    "ci:market-metric-cached",
     "ci:no-jsdom-serverless",
     "ci:no-public-em-dash",
     "ci:no-report-rpc",
@@ -850,6 +851,13 @@
       "scripts/check-market-truth.mjs",
       "scripts/market-truth-gate-baseline.json",
       "supabase/migrations/**market*"
+    ],
+    "ci:market-metric-cached": [
+      "lib/data/market-truth/**",
+      "lib/data/cache/**",
+      "app/**",
+      "components/**",
+      "scripts/check-market-metric-cached.mjs"
     ],
     "ci:marketing-request-intake": [
       "app/marketing/**",

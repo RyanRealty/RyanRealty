@@ -30,6 +30,10 @@ export const CACHE_WINDOWS = {
   marketStats: 21600,
   marketPulse: 900,
   marketReport: 3600,
+  /** Market Truth cells (`market_metric`). Compute is daily; 1h is the floor. */
+  marketMetric: 3600,
+  /** GIS plat membership RPC. Boundaries rarely move; 1h stops build stampedes. */
+  communitySubdivisions: 3600,
   videos: 600,
   activity: 60,
   brokers: 86400,

@@ -353,6 +353,12 @@ The seven production migration-history labels that carried the name were renamed
 those migrations ran (`statements`) still names the old functions: it is the record of
 what ran, not a live object, and is not rewritten. The gate reads the repo only.
 
+## market_metric is cached (added 2026-10-14)
+
+| Gate | npm | What it fails on |
+|---|---|---|
+| `check-market-metric-cached.mjs` | `ci:market-metric-cached` | a page, route, or component that calls `.from('market_metric')`, or a `lib/` file that queries it without wrapping `unstable_cache` from `@/lib/data/cache/next-cache`. Founding case: 2026-10-14, production `dwvlophlbvvygjfxcrhm` (MEDIUM 4GB) hung ~3 hours; Query Performance showed a service_role PostgREST select on `market_metric` at 7,635 calls / 539ms mean (41–63% of DB time) plus a geo_slug probe at 611 calls / 1.1s mean. Reads go through `lib/data/market-truth` with a ≥1h cache. |
+
 ## Mail sent as a named sender (added 2026-09-30)
 
 | Gate | npm | What it fails on |
