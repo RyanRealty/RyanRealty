@@ -1,0 +1,31 @@
+-- market_metric geo lookup (2026-10-14 hang).
+--
+-- WHY. Query Performance on dwvlophlbvvygjfxcrhm (MEDIUM 4GB) showed a
+-- PostgREST select on public.market_metric filtered by definition_id /
+-- geo_type / geo_slug (sometimes window_months = ANY) as service_role:
+-- 7,635 calls, 539ms mean, max 3.5s, 41–63% of DB time from ~20:31Z until
+-- the restart at 23:10Z. A second geo_slug probe ran 611 calls at 1.1s mean
+-- (max 16s). The table holds ~1.54M history rows. The primary key leads
+-- with stat_id, so a neighborhood geo_slug IN-list (sunriver: 21,699 rows)
+-- cannot range the unique index; EXPLAIN of that probe estimated cost
+-- 49,676 for an index-only walk. market_metric_lookup_idx is partial on
+-- is_publishable and omits definition_id, so getMetrics (which does not
+-- filter is_publishable) cannot use it.
+--
+-- THE FIX. B-tree leading with the filters the app actually sends, then
+-- computed_at DESC so the 14-day lookback / newest-first page is an index
+-- range. Prefix (definition_id, geo_type, geo_slug) serves the slug probe
+-- at limit 1.
+--
+-- EXPLAIN (production, quiet, 2026-10-14): tetherow getMetrics 7ms via
+-- pkey; sunriver geo_slug probe 24ms / 1,000 rows of 21,699. The 539ms
+-- mean was the same plan under a CPU-pinned stampede. This index plus
+-- the 1h unstable_cache in lib/data/market-truth is what stops the hang.
+-- listing_tile_mv sitemap walks were indexed in 20261014200000 (#618);
+-- this file does not duplicate that.
+--
+-- Applied to production 2026-10-14 with CREATE INDEX CONCURRENTLY through
+-- execute_sql (CONCURRENTLY cannot run inside a transaction). This file
+-- records the end state; a transactional replay uses the plain form.
+CREATE INDEX IF NOT EXISTS market_metric_def_geo_lookup_idx
+  ON public.market_metric (definition_id, geo_type, geo_slug, segment, stat_id, computed_at DESC);

@@ -10,6 +10,7 @@ import { DEFAULT_DESK_BROKER } from '@/lib/crm/twilio'
 import { queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import { generateGrokStructured } from '@/lib/grok/text'
 import type { TranscriptLine } from '@/lib/grok/voice-sip'
+import { applySarahCrmUpdate, planSarahCrmUpdate } from '@/lib/voice/sarah-crm'
 
 export type Qualification = {
   summary: string
@@ -58,19 +59,41 @@ export async function logReceptionistCall(callId: string, fromHeader: string, li
   const { match } = await findOrCreatePersonByPhone({ phone, source: 'inbound-call', assignBroker: DEFAULT_DESK_BROKER })
   if (!match) return
   const sb = createServiceClient()
+  const broker = match.broker ?? DEFAULT_DESK_BROKER
   await sb.from('crm_timeline').upsert(
     {
       person_id: match.personId,
       kind: 'call',
-      title: 'Receptionist call (Grok)',
+      title: 'Sarah call',
       body: q?.summary ? `${q.summary}\n\n${transcript}` : transcript,
-      payload: { xaiCallId: callId, fromNumber: phone, transcript: lines, summary: q?.summary ?? null, qualification: q },
-      broker: match.broker ?? DEFAULT_DESK_BROKER,
+      payload: { xaiCallId: callId, fromNumber: phone, transcript: lines, summary: q?.summary ?? null, qualification: q, by: 'Sarah' },
+      broker,
       source: 'grok-receptionist',
       dedupe_key: `xai:call:${callId}`,
     },
     { onConflict: 'dedupe_key', ignoreDuplicates: true },
   )
+  try {
+    const { data: person } = await sb.from('crm_people').select('stage,name').eq('id', match.personId).maybeSingle()
+    const { data: lastStage } = await sb
+      .from('crm_timeline')
+      .select('source')
+      .eq('person_id', match.personId)
+      .eq('kind', 'stage_change')
+      .order('ts', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    const plan = planSarahCrmUpdate({
+      qualification: q,
+      transcript,
+      currentStage: (person?.stage as string | null) ?? null,
+      lastStageSource: (lastStage?.source as string | null) ?? null,
+      currentName: (person?.name as string | null) ?? match.name,
+    })
+    await applySarahCrmUpdate({ personId: match.personId, broker, callId, plan })
+  } catch (e) {
+    console.error('[receptionist-log] sarah CRM update failed', e)
+  }
 }
 
 /** Queue the caller's message as a broker alert text (governed broker-alert path) and log it on the caller's CRM record. */

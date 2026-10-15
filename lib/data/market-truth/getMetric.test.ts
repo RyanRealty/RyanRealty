@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   DEFINITION_ID,
@@ -11,6 +13,13 @@ const { fromImpl } = vi.hoisted(() => ({ fromImpl: vi.fn() }))
 vi.mock('@/lib/data/client', () => ({
   createServiceClient: () => ({ from: fromImpl }),
 }))
+vi.mock('@/lib/data/cache/next-cache', () => ({
+  unstable_cache: (fn: unknown) => fn,
+}))
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react')>()
+  return { ...actual, cache: (fn: unknown) => fn }
+})
 
 import {
   METRIC_PRIMARY_KEY,
@@ -89,12 +98,23 @@ function mockMetricRows(rows: Record<string, unknown>[]) {
   builder.select = vi.fn(self)
   builder.eq = vi.fn(self)
   builder.in = vi.fn(self)
+  builder.gte = vi.fn(self)
   builder.order = vi.fn(self)
   builder.limit = vi.fn(self)
   builder.range = vi.fn(self)
   builder.then = (resolve: (v: unknown) => void) => resolve({ data: rows, error: null })
   fromImpl.mockReturnValue(builder)
 }
+
+describe('getMetrics cache contract', () => {
+  it('wraps the store read in unstable_cache with a 14-day lookback', async () => {
+    const src = readFileSync(resolve('lib/data/market-truth/getMetric.ts'), 'utf8')
+    expect(src).toMatch(/unstable_cache/)
+    expect(src).toMatch(/METRIC_LOOKBACK_DAYS = 14/)
+    expect(src).toMatch(/market-metric-slice-v1/)
+    expect(src).toMatch(/CACHE_WINDOWS\.marketMetric/)
+  })
+})
 
 describe('getMetric / getMetrics', () => {
   beforeEach(() => {
@@ -251,6 +271,7 @@ describe('getMetrics reads every page, newest first (2026-10-01)', () => {
       builder.select = vi.fn(self)
       builder.eq = vi.fn(self)
       builder.in = vi.fn(self)
+      builder.gte = vi.fn(self)
       builder.order = vi.fn(self)
       builder.range = vi.fn((from: number, to: number) => {
         ranges.push([from, to])

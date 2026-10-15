@@ -31,6 +31,10 @@ const prospecting = read('app/admin/(protected)/prospecting/page.tsx')
 const filterSelect = read('app/admin/(protected)/prospecting/FilterSelect.tsx')
 const messages = read('app/admin/(protected)/messages/page.tsx')
 const folderSelect = read('app/admin/(protected)/messages/MessagesFolderSelect.tsx')
+const messagesQueue = read('app/admin/(protected)/messages/MessagesQueue.tsx')
+const peopleSidebar = read('components/admin/shared/people-list/PeopleSidebar.tsx')
+const prospectBatch = read('lib/data/prospecting/batch.ts')
+const prospectList = read('lib/data/prospecting/list.ts')
 const listings = read('app/admin/(protected)/listings/page.tsx')
 const listingsAction = read('app/actions/admin-listings.ts')
 const fab = read('components/console/ConsoleQuickAction.tsx')
@@ -73,6 +77,12 @@ if (!/resolveMessagesFolder/.test(messages)) {
 if (!/if \(e\.target\.value === 'inbox'\) next\.delete\('f'\)/.test(folderSelect)) {
   failures.push("messages folder select: inbox is the default — omit ?f= for Needs attention")
 }
+if (!/minWidth:\s*'12\.5rem'/.test(folderSelect) || !/maxWidth:\s*'none'/.test(folderSelect)) {
+  failures.push('messages folder select: must keep Needs attention readable on a 375px toolbar (minWidth 12.5rem, maxWidth none)')
+}
+if (!/flexWrap:\s*'wrap'/.test(messagesQueue) || !/minWidth:\s*'12\.5rem'/.test(messagesQueue)) {
+  failures.push('messages queue: folder chip must not flex:1 squeeze on mobile')
+}
 
 if (!/resolveListingsStatus/.test(listings)) {
   failures.push('listings: must resolve status through resolveListingsStatus (default Active)')
@@ -87,8 +97,17 @@ if (!/error:\s*string\s*\|\s*null/.test(listingsAction) && !/error:/.test(listin
 if (!/isConsoleFabSuppressed/.test(fab)) {
   failures.push('ConsoleQuickAction: must hide via isConsoleFabSuppressed (includes /admin/valuations)')
 }
+if (!/ADMIN_FAB_HEADER_SLOT_ID/.test(fab) || !/createPortal/.test(fab)) {
+  failures.push('ConsoleQuickAction: mobile + must portal into ADMIN_FAB_HEADER_SLOT_ID')
+}
+if (/fixed bottom-20 right-5/.test(fab)) {
+  failures.push('ConsoleQuickAction: must not pin the + over row actions at 375 (move it to the header)')
+}
+if (!/admin-console-header-actions/.test(shell)) {
+  failures.push('ConsoleShell: must render #admin-console-header-actions for the mobile +')
+}
 if (!/pb-36/.test(shell) || /<main className="[^"]*pb-24/.test(shell)) {
-  failures.push('ConsoleShell: mobile main padding must be pb-36 so the FAB does not cover row actions')
+  failures.push('ConsoleShell: mobile main padding must be pb-36 so the tab bar does not cover the last row')
 }
 
 if (!/dedupeInboundReplies|capRightNow/.test(today)) {
@@ -119,9 +138,31 @@ if (!limitMatch || Number(limitMatch[1]) > 250) {
 if (!/RetryCmaForm/.test(valuations)) {
   failures.push('valuations: failed builds must offer RetryCmaForm')
 }
+{
+  const failedAt = valuations.indexOf('aria-label="Failed builds"')
+  const draftsAt = valuations.indexOf('aria-label="CMA drafts"')
+  if (failedAt < 0 || draftsAt < 0 || failedAt > draftsAt) {
+    failures.push('valuations: Failed builds must render above CMA drafts')
+  }
+  if ((valuations.match(/aria-label="Failed builds"/g) ?? []).length !== 1) {
+    failures.push('valuations: Failed builds must appear once')
+  }
+}
 
 if (!defaults.includes("PROSPECTING_DEFAULT_STATUS = 'sendable'")) {
   failures.push('queue-defaults: PROSPECTING_DEFAULT_STATUS must be sendable')
+}
+if (!defaults.includes("ADMIN_FAB_HEADER_SLOT_ID = 'admin-console-header-actions'")) {
+  failures.push('queue-defaults: ADMIN_FAB_HEADER_SLOT_ID must name the header portal slot')
+}
+if (!/prospectOutreachAlreadySent/.test(prospectBatch) || !/PROSPECTING_RELIST_IN_CHUNK/.test(prospectBatch)) {
+  failures.push('prospecting batch: skip already-sent rows and paginate listings .in()')
+}
+if (!/PROSPECTING_WORKLIST_READ_LIMIT/.test(prospectList)) {
+  failures.push('prospecting list: must cap the default worklist read')
+}
+if (!/defaultOpen=\{col\.views\.some/.test(peopleSidebar)) {
+  failures.push('PeopleSidebar: collection groups must start collapsed unless they hold the active view')
 }
 if (!/listCmaQueue\(\{\s*limit:\s*CMA_QUEUE_READ_LIMIT/.test(cmasPage) && !/CMA_QUEUE_PAGE_READ_LIMIT/.test(cmasPage)) {
   failures.push('cmas page: must read a capped page, not an unbounded firehose')
@@ -132,4 +173,4 @@ if (failures.length) {
   for (const f of failures) console.error('  ' + f)
   process.exit(1)
 }
-console.log('✓ admin queue cleanup: redirects, defaults, FAB spacing, Today strip, CMA cap.')
+console.log('✓ admin queue cleanup: redirects, defaults, header FAB, Today strip, CMA cap.')

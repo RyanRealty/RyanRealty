@@ -243,6 +243,8 @@
      listing's photo strip puts its counter there, 2026-09-25). */
   --v3-dog-fab: 4.25rem;
   --v3-dog-clear: calc(var(--v3-dog-fab) + var(--v3-space-md));
+  /* Sarah launcher: bottom-end disc, smaller than Jax, above the dock. */
+  --v3-sarah-fab: 3.5rem;
 
   /* Chrome + listing/split first-slice sizes (2026-08-29).
      Chrome bar is 64px with a 2px navy rule. Mosaic/carousel/card/map sizes

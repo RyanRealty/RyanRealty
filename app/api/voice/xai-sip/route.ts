@@ -1,21 +1,22 @@
 /**
- * Grok Voice 3.0 receptionist over xAI SIP (Matt 2026-10-14, test line only).
+ * Grok Voice receptionist over xAI SIP.
  *
- * Flow: caller dials the spare Twilio number (+1 541-224-5025) -> Twilio Elastic
- * SIP trunk -> sip.voice.x.ai -> xAI POSTs a signed `realtime.call.incoming`
- * webhook here -> we join the call over WebSocket and run the receptionist
- * prompt until the call ends. Transcripts go to the function logs with the
- * `[xai-sip]` prefix. Matt's primary line (541-703-3095) is never routed here.
- *
- * Env: XAI_API_KEY, XAI_SIP_WEBHOOK_SECRET (signing secret from POST /v2/phone-numbers).
+ * Inbound: Twilio /api/twilio/voice puts the caller in conference sarah-live-{CallSid}
+ * and adds this SIP URI as a participant. xAI POSTs realtime.call.incoming here.
+ * Persona/guardrails come from lib/sarah. Transfers prefer the conference so Matt
+ * can barge; SIP REFER remains the fallback.
  */
 import { NextResponse, after } from 'next/server'
-import { runSipCall } from '@/lib/grok/voice-sip'
+import { runSipCall, type TransferTarget } from '@/lib/grok/voice-sip'
 import { verifyXaiWebhook } from '@/lib/voice/xai-sip'
 import { logReceptionistCall, deliverReceptionistMessage } from '@/lib/voice/receptionist-log'
+import { callerFromSipHeader } from '@/lib/voice/receptionist-log'
 import { forwardCellForBroker } from '@/lib/crm/twilio'
 import { transferTestTarget } from '@/lib/voice/receptionist-routing'
 import { RECEPTIONIST_GREETING, RECEPTIONIST_PROMPT, transferFailedGreeting } from '@/lib/voice/receptionist-prompt'
+import { addConferenceParticipant, findConferenceParticipantCallSid, setConferenceParticipantMuted, stopConferenceRecordings } from '@/lib/voice/sarah-conference'
+import { evaluateSarahTurn, notifyLiveSession, sarahSessionConferenceJoin, sessionIdFromSarahConference } from '@/lib/sarah'
+import { lookupPersonByPhone, TWILIO_PUBLIC_ORIGIN } from '@/lib/crm/twilio'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -24,6 +25,10 @@ export const maxDuration = 800
 type IncomingEvent = {
   type?: string
   data?: { call_id?: string; sip_headers?: { name: string; value: string }[] }
+}
+
+function header(headers: { name: string; value: string }[] | undefined, name: string): string | null {
+  return headers?.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ?? null
 }
 
 export async function POST(req: Request) {
@@ -42,13 +47,68 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, ignored: event.type ?? null })
   }
   const callId = event.data.call_id
-  const from = event.data.sip_headers?.find((h) => h.name.toLowerCase() === 'from')?.value ?? 'unknown'
+  const from = header(event.data.sip_headers, 'from') ?? 'unknown'
+  const conference =
+    header(event.data.sip_headers, 'x-sarah-conference') ??
+    header(event.data.sip_headers, 'X-Sarah-Conference')
   const cells: Record<string, string | null> = {}
   for (const b of ['matt', 'rebecca', 'paul']) { try { cells[b] = await forwardCellForBroker(b) } catch { cells[b] = null } }
   const test = transferTestTarget()
-  const resolveTransfer = (who: 'matt' | 'rebecca' | 'paul') => test ?? cells[who] ?? null
-  const failed = event.data.sip_headers?.find((h) => h.name.toLowerCase() === 'x-transfer-failed')?.value ?? null
+  const resolveTransfer = (who: TransferTarget) => test ?? cells[who] ?? null
+  const failed = header(event.data.sip_headers, 'x-transfer-failed')
   const greeting = failed ? transferFailedGreeting(failed) : RECEPTIONIST_GREETING
-  after(() => runSipCall(callId, from, { instructions: RECEPTIONIST_PROMPT, greeting, resolveTransfer: failed ? undefined : resolveTransfer, onMessage: (m) => deliverReceptionistMessage(callId, from, m), onEnd: (lines) => logReceptionistCall(callId, from, lines) }))
+  const fromPhone = callerFromSipHeader(from)
+  after(async () => {
+    try {
+      const person = fromPhone ? await lookupPersonByPhone(fromPhone) : null
+      await notifyLiveSession({
+        channel: 'voice',
+        sessionId: conference || callId,
+        personId: person?.personId ?? null,
+        displayName: person?.name ?? null,
+        contact: fromPhone,
+        summary: 'Inbound Sarah call',
+        xaiCallId: callId,
+      })
+    } catch (e) {
+      console.error('[xai-sip] notifyLiveSession failed', e)
+    }
+    await runSipCall(callId, from, {
+      instructions: RECEPTIONIST_PROMPT,
+      greeting,
+      resolveTransfer: failed ? undefined : resolveTransfer,
+      onTransfer: failed || !conference
+        ? undefined
+        : async (who) => {
+            const target = resolveTransfer(who)
+            if (!target || !conference) return false
+            const fromLine = process.env.TWILIO_NUMBER_MARKETING?.trim() || '+15412245025'
+            const added = await addConferenceParticipant({
+              conference,
+              from: fromLine,
+              to: target,
+              label: `broker-${who}`,
+              endConferenceOnExit: false,
+              timeout: 25,
+              statusCallback: `${TWILIO_PUBLIC_ORIGIN}/api/voice/sarah-conference`,
+            })
+            if (!added.ok) return false
+            const sessionId = sessionIdFromSarahConference(conference)
+            const sessionLabel = sessionId ? sarahSessionConferenceJoin(sessionId).label : 'session'
+            const sarahLeg = await findConferenceParticipantCallSid(conference, sessionLabel)
+            if (sarahLeg) await setConferenceParticipantMuted(conference, sarahLeg, true)
+            return true
+          },
+      onCallerTurn: async (text) => {
+        const turn = evaluateSarahTurn({ visitorText: text, greeted: true })
+        if (turn.mode === 'stop-recording' && conference) {
+          await stopConferenceRecordings(conference)
+        }
+        return turn
+      },
+      onMessage: (m) => deliverReceptionistMessage(callId, from, m),
+      onEnd: (lines) => logReceptionistCall(callId, from, lines),
+    })
+  })
   return NextResponse.json({ ok: true })
 }

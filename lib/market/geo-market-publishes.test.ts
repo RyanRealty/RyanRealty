@@ -31,4 +31,21 @@ describe('geoMarketPublishes', () => {
     })
     expect(geoMarketPublishes(hud, [])).toBe(true)
   })
+
+  it('publishes La Pine from leftover HUD (169 active, 8.7 months), and keeps a true miss off the index', () => {
+    const hud = leftoverHudKpis({
+      grain: 'city',
+      headlines: { activeCount: 169, monthsOfSupply: 8.74, medianListPrice: 490000 },
+      inventory: { activeCount: 169, medianListPrice: 490000 },
+      pace: EMPTY_PUBLIC_PACE,
+    })
+    expect(geoMarketPublishes(hud, [])).toBe(true)
+    const miss = leftoverHudKpis({
+      grain: 'city',
+      headlines: null,
+      inventory: null,
+      pace: EMPTY_PUBLIC_PACE,
+    })
+    expect(geoMarketPublishes(miss, [])).toBe(false)
+  })
 })

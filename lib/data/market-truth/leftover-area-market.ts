@@ -5,7 +5,7 @@
 import type { AreaMarket } from '@/lib/area-market'
 import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
-import { cityDetachedSlug, getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { cityDetachedSlug, getDetachedOverlays, readDetachedOverlay } from '@/lib/data/market-truth/getSellBendMarket'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 
 export async function leftoverCityAreaMarket(args: {
@@ -18,7 +18,7 @@ export async function leftoverCityAreaMarket(args: {
     getDetachedOverlays([{ geoType: 'city', geoSlug }]).catch(() => new Map()),
     getPublicDetachedPace({ geoType: 'city', geoSlug }).catch(() => EMPTY_PUBLIC_PACE),
   ])
-  const layers = overlays.get(`city:${geoSlug}`)
+  const layers = readDetachedOverlay(overlays, 'city', geoSlug)
   const hud = leftoverHudKpis({
     grain: 'city',
     headlines: layers?.headlines ?? null,

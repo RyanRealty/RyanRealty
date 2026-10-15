@@ -1319,7 +1319,7 @@ export function V3Sheet({
       </div>
 
       {echoed.length > 0 ? (
-        <dl className="v3-sheet-echo" aria-label={echoLabel} key={`echo-${step.id}`}>
+        <dl className="v3-sheet-echo" data-clarity-mask="True" aria-label={echoLabel} key={`echo-${step.id}`}>
           {echoed.map((e) => (
             <div className="v3-sheet-echo-row" key={e.name}>
               <dt className="v3-sheet-echo-label">{e.label}</dt>
@@ -1330,6 +1330,7 @@ export function V3Sheet({
       ) : null}
 
       <form
+        data-clarity-mask="True"
         className="v3-sheet-step"
         key={step.id}
         onSubmit={handleSubmit}

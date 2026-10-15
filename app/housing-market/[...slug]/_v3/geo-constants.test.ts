@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { overlayMapKey } from '@/lib/data/market-truth/getSellBendMarket'
 import { resolveGeo } from './geo-constants'
 
 describe('resolveGeo — city cache slug', () => {
@@ -7,6 +8,7 @@ describe('resolveGeo — city cache slug', () => {
     expect(geo.geoType).toBe('city')
     expect(geo.citySlug).toBe('la-pine')
     expect(geo.geoSlug).toBe('la pine')
+    expect(overlayMapKey('city', geo.geoSlug)).toBe('city:la-pine')
     expect(geo.geoName).toBe('La Pine')
   })
 

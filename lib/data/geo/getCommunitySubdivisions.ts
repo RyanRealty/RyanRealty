@@ -25,9 +25,11 @@
  * stored and every render paid the RPC. The largest 500-row page measured
  * 1,364,815 bytes. `total` comes from PostgREST's exact count of the
  * function's result set (verified live: 1,621 for Bend), so the page count is
- * known after page 0 and the rest read in parallel. The assembled list is
- * returned in the RPC's own published order (activeHomes desc, label, slug)
- * so callers that slice a top N keep seeing the same head.
+ * known after page 0 and the rest read in parallel (capped at 2 in-flight
+ * RPC pages so a build walking every city/community cannot pin the
+ * database). Each page is cached ≥1h. The assembled list is returned in the
+ * RPC's own published order (activeHomes desc, label, slug) so callers that
+ * slice a top N keep seeing the same head.
  *
  * Throws on a transient RPC error (never caches an empty page) — same
  * no-poison contract as getGeoBoundaryMapData / getBoundaryGeoJSON.
@@ -40,6 +42,7 @@ import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { supabaseAnon } from '@/lib/data/client'
 import type { BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { dedupeInflight, withConcurrency } from '@/lib/data/cache/inflight'
 
 export type CommunitySubdivisionInput = {
   geoType: 'city' | 'neighborhood'
@@ -66,6 +69,10 @@ type RpcRow = {
  * rows (largest measured page 1.36 MB) keeps every page storable with margin.
  */
 const PAGE = 500
+
+/** A full-geo walk (city pages + listing atlas) must not open every RPC at once. */
+export const COMMUNITY_SUBDIVISIONS_RPC_CONCURRENCY = 2
+const runRpc = withConcurrency(COMMUNITY_SUBDIVISIONS_RPC_CONCURRENCY)
 
 type CommunitySubdivisionPage = {
   rows: CommunitySubdivision[]
@@ -136,14 +143,19 @@ function readPage(
   geoSlug: string,
   page: number,
 ): Promise<CommunitySubdivisionPage> {
-  return unstable_cache(
-    () => fetchCommunitySubdivisionPage(geoType, geoSlug, page),
-    ['community-subdivisions-v2', geoType, geoSlug, 'page', String(page)],
-    {
-      revalidate: CACHE_WINDOWS.geoNeighborhood,
-      tags: [cacheTag.neighborhood(geoSlug), 'boundaries'],
-    },
-  )()
+  const key = `community-subdivisions:${geoType}:${geoSlug}:${page}`
+  return dedupeInflight(key, () =>
+    runRpc(() =>
+      unstable_cache(
+        () => fetchCommunitySubdivisionPage(geoType, geoSlug, page),
+        ['community-subdivisions-v3', geoType, geoSlug, 'page', String(page)],
+        {
+          revalidate: CACHE_WINDOWS.communitySubdivisions,
+          tags: [cacheTag.neighborhood(geoSlug), 'boundaries'],
+        },
+      )(),
+    ),
+  )
 }
 
 /** The RPC's own published order: most homes for sale first, then name, then slug. */

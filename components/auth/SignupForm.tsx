@@ -140,7 +140,7 @@ export default function SignupForm({ next, googleClientId = null }: Props) {
           <span className="bg-card px-2 text-muted-foreground">or</span>
         </div>
       </div>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form data-clarity-mask="True" onSubmit={handleSubmit} className="space-y-4">
         <div>
           <Label htmlFor="signup-name" className="block text-sm font-medium text-muted-foreground">
             Full name (optional)

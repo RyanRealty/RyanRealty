@@ -3,19 +3,8 @@
  * announce recording, forward the call to the right broker's cell, record
  * dual-channel, and log a `call` timeline entry.
  *
- * Routing rule (the "each business number forwards to that broker's cell" rule):
- * resolve the broker from the DIALED Twilio line (params.To) FIRST. A call to
- * Paul's line forwards to Paul and creates a Paul-assigned lead. Only the shared
- * marketing line (no single owner) falls back to the caller's existing
- * assignment, then the default desk.
- *
- * Unanswered calls fall through to /api/twilio/voice-complete (voicemail).
- * Recordings + voicemails are transcribed via /api/twilio/recording.
- *
- * Compliance (Matt directive 2026-06-24 — record both legs, announce): a "may be
- * recorded" announcement plays before connecting. Continuing past it is consent
- * in every state (out-of-state callers can be in two-party-consent states like
- * California). Disable recording entirely with CRM_CALL_RECORDING=false.
+ * Hot path (AGENTS.md — Twilio inbound ack): signature, raw persist, TwiML.
+ * Find-or-create, timeline, and alerts run after the ack.
  */
 
 import { NextResponse } from 'next/server'
@@ -26,11 +15,12 @@ import {
   DEFAULT_DESK_BROKER,
   brokerForTwilioNumber,
   forwardCellForBroker,
-  verifiedTwilioParams,
   lookupPersonByPhone,
   normalizeTo10,
 } from '@/lib/crm/twilio'
-import { XAI_SIP_URI, isReceptionistLine } from '@/lib/voice/receptionist-routing'
+import { sarahLiveConferenceName } from '@/lib/sarah'
+import { isReceptionistLine, XAI_SIP_URI } from '@/lib/voice/receptionist-routing'
+import { callerConferenceTwiml } from '@/lib/voice/sarah-conference'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { isNumberBlocked, isStirSpamSuspected } from '@/lib/data/crm/getBlockedNumber'
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
@@ -38,9 +28,9 @@ import { isWithinOfficeHours } from '@/lib/crm/office-hours'
 import { lookupCaller } from '@/lib/crm/lookup'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
+import { ackTwilioWebhook, withAckBudget, TWILIO_RAW_PERSIST_MS } from '@/lib/crm/twilio-webhook-ack'
 import { applyInboundConsentClear } from '@/lib/data/crm/applyInboundConsentClear'
 
-/** Reject TwiML — a blocked/spam caller is hung up on, never ringing a broker. */
 function rejectResponse(): NextResponse {
   return xml('<?xml version="1.0" encoding="UTF-8"?>\n<Response><Reject reason="rejected"/></Response>')
 }
@@ -53,7 +43,6 @@ function xml(body: string): NextResponse {
   return new NextResponse(body, { status: 200, headers: { 'Content-Type': 'text/xml' } })
 }
 
-/** Voicemail TwiML — used when no forward number resolves, so a caller is never dropped. */
 function voicemailResponse(site: string): NextResponse {
   return xml(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -64,46 +53,98 @@ function voicemailResponse(site: string): NextResponse {
 }
 
 export async function POST(request: Request) {
-  const verified = await verifiedTwilioParams(request)
-  if (!verified.ok) return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  const params = verified.params
+  return ackTwilioWebhook({
+    request,
+    kind: 'voice',
+    process: processVoiceInbound,
+    respond: buildVoiceTwiml,
+  })
+}
 
+/** TwiML only — routing lookups are budgeted so a slow DB still rings. */
+export async function buildVoiceTwiml(params: Record<string, string>): Promise<NextResponse> {
   const site = TWILIO_PUBLIC_ORIGIN
   const from = params.From ?? ''
   const dialed = params.To ?? ''
-
-  // 0. Spam / block gate. A manually-blocked number is always rejected before it
-  //    can ring a broker. StirVerstat (SHAKEN/STIR) flags low-attestation calls —
-  //    the same signal carriers use to label "Spam Likely"; we tag every call with
-  //    it so a broker can one-tap block, and optionally auto-reject when
-  //    CRM_AUTO_BLOCK_SPAM_CALLS=true.
   const stirVerstat = params.StirVerstat ?? null
   const spamSuspected = isStirSpamSuspected(stirVerstat)
-  // Fail OPEN: a DB error in the block lookup must never 500 the webhook — that
-  // would make a live caller hear a Twilio error instead of reaching a broker.
-  // A rare missed block is far cheaper than a dropped real call.
-  try {
-    if (await isNumberBlocked(from)) return rejectResponse()
-  } catch (e) {
-    console.error('[twilio/voice] block lookup failed (continuing to dial):', e)
-  }
+
+  const receptionistLine = isReceptionistLine(dialed)
+  const [blocked, dialedBroker, existing] = await Promise.all([
+    withAckBudget(isNumberBlocked(from).catch(() => false), TWILIO_RAW_PERSIST_MS, false),
+    withAckBudget(brokerForTwilioNumber(dialed), TWILIO_RAW_PERSIST_MS, null),
+    withAckBudget(
+      lookupPersonByPhone(from)
+        .then((person) => ({ ok: true as const, person }))
+        .catch(() => ({ ok: false as const, person: null })),
+      TWILIO_RAW_PERSIST_MS,
+      { ok: false as const, person: null },
+    ),
+  ])
+  if (blocked) return rejectResponse()
   if (spamSuspected && process.env.CRM_AUTO_BLOCK_SPAM_CALLS === 'true') return rejectResponse()
 
-  // 1. Who owns the DIALED line? (null = shared marketing line / unrecognized.)
-  const dialedBroker = await brokerForTwilioNumber(dialed)
+  // Fail open to "known" on lookup timeout/error so a slow DB rings through
+  // instead of hiding a client behind the receptionist (Matt 2026-10-14).
+  const knownCaller = !existing.ok || !!existing.person
+  const forwardingBroker: CrmBrokerSlug = dialedBroker ?? existing.person?.broker ?? DEFAULT_DESK_BROKER
+  const target = await withAckBudget(forwardCellForBroker(forwardingBroker), TWILIO_RAW_PERSIST_MS, null)
 
-  // 1b. Receptionist line (Matt 2026-10-14): was the caller ALREADY known before
-  //     find-or-create runs? Known = a CRM person with this phone. Fail OPEN to
-  //     "known" so a DB error rings Matt instead of hiding a client.
-  const receptionistLine = isReceptionistLine(dialed)
-  let knownCaller = true
-  if (receptionistLine) {
-    try { knownCaller = !!(await lookupPersonByPhone(from)) } catch (e) { console.error('[twilio/voice] known-caller lookup failed (ringing through):', e) }
+  if (receptionistLine && !knownCaller && normalizeTo10(from) !== normalizeTo10(target)) {
+    const recOn = process.env.CRM_CALL_RECORDING !== 'false'
+    const callSid = (params.CallSid ?? '').trim()
+    if (!callSid) {
+      return xml(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say>This call is recorded and transcribed.</Say>
+  <Dial answerOnBridge="true" timeout="20" action="${site}/api/voice/receptionist-complete" method="POST" referUrl="${site}/api/voice/receptionist-refer" referMethod="POST"${recOn ? ` record="record-from-answer-dual" recordingStatusCallback="${site}/api/twilio/recording" recordingStatusCallbackEvent="completed"` : ''}><Sip>${XAI_SIP_URI}</Sip></Dial>
+</Response>`)
+    }
+    return xml(callerConferenceTwiml({
+      site,
+      conferenceName: sarahLiveConferenceName(callSid),
+      record: recOn,
+    }))
   }
 
-  // 2. Find/create the caller. A new lead created on a specific broker's line is
-  //    assigned to THAT broker; on the marketing line it goes to the default desk.
-  //    The create never blocks the dial — wrap it so a DB failure still rings.
+  if (!target) {
+    console.error(`[twilio/voice] no forward number for broker=${forwardingBroker} (dialed=${dialed}); routing to voicemail`)
+    return voicemailResponse(site)
+  }
+
+  let companySettings: Awaited<ReturnType<typeof getCrmCompanySettings>> | null = null
+  try {
+    companySettings = await withAckBudget(getCrmCompanySettings(), TWILIO_RAW_PERSIST_MS, null)
+  } catch {
+    companySettings = null
+  }
+
+  if (companySettings && !isWithinOfficeHours(companySettings.office_hours, companySettings.time_zone, new Date())) {
+    return voicemailResponse(site)
+  }
+
+  const recording =
+    process.env.CRM_CALL_RECORDING !== 'false' &&
+    (companySettings?.call_recording_enabled ?? true)
+  const recAttrs = recording
+    ? ` record="record-from-answer-dual" recordingStatusCallback="${site}/api/twilio/recording" recordingStatusCallbackEvent="completed"`
+    : ''
+  const announce = recording ? '<Say>This call may be recorded for quality purposes.</Say>' : ''
+  return xml(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  ${announce}
+  <Dial timeout="25" callerId="${from || dialed}" action="${site}/api/twilio/voice-complete" method="POST"${recAttrs}>${target}</Dial>
+</Response>`)
+}
+
+/** CRM person + timeline + alerts. Runs after TwiML. */
+export async function processVoiceInbound(params: Record<string, string>): Promise<void> {
+  const from = params.From ?? ''
+  const dialed = params.To ?? ''
+  const stirVerstat = params.StirVerstat ?? null
+  const spamSuspected = isStirSpamSuspected(stirVerstat)
+  const dialedBroker = await brokerForTwilioNumber(dialed)
+
   let match: { personId: number; name: string | null; broker: CrmBrokerSlug | null } | null = null
   let created = false
   try {
@@ -115,17 +156,12 @@ export async function POST(request: Request) {
     match = res.match
     created = res.created
   } catch (e) {
-    console.error('[twilio/voice] find-or-create failed (continuing to dial):', e)
+    console.error('[twilio/voice] find-or-create failed:', e)
   }
 
-  // 3. Forwarding target: the dialed line's broker wins; else the caller's
-  //    existing assignment; else the default desk. forwardCellForBroker returns
-  //    null only if nothing resolves (→ voicemail, never a dropped call).
   const forwardingBroker: CrmBrokerSlug = dialedBroker ?? match?.broker ?? DEFAULT_DESK_BROKER
   const target = await forwardCellForBroker(forwardingBroker)
 
-  // 4. Log the inbound call (idempotent on dedupe_key, crash-safe — a logging
-  //    failure must never prevent the TwiML response).
   if (match) {
     try {
       const sb = createServiceClient()
@@ -166,13 +202,10 @@ export async function POST(request: Request) {
         console.warn('[twilio/voice] inbound consent clear failed', e)
       }
     } catch (e) {
-      console.error('[twilio/voice] timeline/alert write failed (continuing):', e)
+      console.error('[twilio/voice] timeline/alert write failed:', e)
     }
   }
 
-  // 4b. Caller-ID enrichment for a brand-new lead: resolve the caller's name
-  //     (CNAM) + line type via Twilio Lookup AFTER the response, so the dial is
-  //     never delayed. Only overwrites a placeholder name ("Call lead 555…").
   if (match && created) {
     const personId = match.personId
     const callerPhone = from
@@ -193,52 +226,4 @@ export async function POST(request: Request) {
       }
     })
   }
-
-  // 4c. Unknown caller on a receptionist line → Grok receptionist over xAI SIP.
-  //     A broker calling from their own cell always rings through. If the SIP
-  //     leg fails, receptionist-complete takes a voicemail.
-  if (receptionistLine && !knownCaller && normalizeTo10(from) !== normalizeTo10(target)) {
-    const recOn = process.env.CRM_CALL_RECORDING !== 'false'
-    const rec = recOn ? ` record="record-from-answer-dual" recordingStatusCallback="${site}/api/twilio/recording" recordingStatusCallbackEvent="completed"` : ''
-    return xml(`<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Dial answerOnBridge="true" timeout="20" action="${site}/api/voice/receptionist-complete" method="POST"${rec}><Sip referUrl="${site}/api/voice/receptionist-refer" referMethod="POST">${XAI_SIP_URI}</Sip></Dial>
-</Response>`)
-  }
-
-  // 5. No forward number resolved → voicemail rather than a dropped/misrouted call.
-  if (!target) {
-    console.error(`[twilio/voice] no forward number for broker=${forwardingBroker} (dialed=${dialed}); routing to voicemail`)
-    return voicemailResponse(site)
-  }
-
-  // 5.5 Company settings (spec §15/§1): office hours + the recording master
-  //     switch are admin-configurable. Fail open — a settings-read failure must
-  //     never drop a live call (defaults keep recording on + hours unrestricted).
-  let companySettings: Awaited<ReturnType<typeof getCrmCompanySettings>> | null = null
-  try { companySettings = await getCrmCompanySettings() } catch { companySettings = null }
-
-  //     Office hours (§1.5, inbound only): when blocks are configured and the
-  //     call arrives outside every block, route to voicemail instead of ringing.
-  //     Empty blocks = always open (the pre-office-hours behavior).
-  if (companySettings && !isWithinOfficeHours(companySettings.office_hours, companySettings.time_zone, new Date())) {
-    return voicemailResponse(site)
-  }
-
-  // 6. Dial the broker's cell, recording both legs with the caller already on
-  //    notice. Pass the CALLER's number as caller ID so the broker sees who is
-  //    calling and can call back directly (CRM's forwarding behavior).
-  //    Recording = env kill-switch AND the Company Settings master switch (AC-3).
-  const recording =
-    process.env.CRM_CALL_RECORDING !== 'false' &&
-    (companySettings?.call_recording_enabled ?? true)
-  const recAttrs = recording
-    ? ` record="record-from-answer-dual" recordingStatusCallback="${site}/api/twilio/recording" recordingStatusCallbackEvent="completed"`
-    : ''
-  const announce = recording ? '<Say>This call may be recorded for quality purposes.</Say>' : ''
-  return xml(`<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  ${announce}
-  <Dial timeout="25" callerId="${from || dialed}" action="${site}/api/twilio/voice-complete" method="POST"${recAttrs}>${target}</Dial>
-</Response>`)
 }
