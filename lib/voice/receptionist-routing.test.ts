@@ -18,6 +18,13 @@ describe('receptionist routing', () => {
     expect(isReceptionistLine('+15417033095')).toBe(false)
     expect(receptionistLines()).toEqual(['5412245025'])
   })
+  it('enables spare and main when RECEPTIONIST_LINES lists both', () => {
+    process.env.RECEPTIONIST_LINES = '+15412245025,+15417033095'
+    expect(isReceptionistLine('+15412245025')).toBe(true)
+    expect(isReceptionistLine('+15417033095')).toBe(true)
+    expect(isReceptionistLine('+15412503380')).toBe(false)
+    expect(receptionistLines()).toEqual(['5412245025', '5417033095'])
+  })
   it('treats an empty transfer test target as unset', () => {
     process.env.RECEPTIONIST_TRANSFER_TEST_TARGET = ''
     expect(transferTestTarget()).toBeNull()
