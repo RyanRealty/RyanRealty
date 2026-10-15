@@ -13,8 +13,10 @@ export {
   GROK_REALTIME_MODEL,
   GROK_REALTIME_SAMPLE_RATE,
   GROK_REALTIME_VOICE,
+  grokRealtimeSessionVoice,
   grokRealtimeSubprotocol,
   grokRealtimeWebSocketUrl,
+  isGrokEveVoice,
 } from './realtime-browser'
 
 export const GROK_CLIENT_SECRET_MAX_SECONDS = 300
