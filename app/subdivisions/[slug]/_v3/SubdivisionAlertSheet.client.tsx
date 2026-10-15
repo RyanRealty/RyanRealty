@@ -83,14 +83,16 @@ export function SubdivisionAlertsStrip({
 }: Props) {
   const submit = useCallback<V3AlertsSubmit>(
     async (input) => {
+      // No property type: every type, once a day (Matt 2026-10-14). The
+      // first email goes at signup.
       const filters: Record<string, string> = {
         city,
         ...(subdivision ? { subdivision } : {}),
-        propertyType: 'A',
       }
       const result = await submitSearchAlertSignup({
         email: input.email,
         filters,
+        frequency: 'daily',
         company: input.company,
         sessionId: readRrSessionId(), // hydration-safe
       })
@@ -100,7 +102,6 @@ export function SubdivisionAlertsStrip({
           communityName: placeName,
           city,
           subdivision: subdivision || undefined,
-          extraFilters: { propertyType: 'A' },
         }),
       )
       fireSearchEvent('alert_create', {
@@ -159,10 +160,10 @@ export function SubdivisionAlertsStrip({
       source={source}
       id={id}
       href={newestFirstHref(browseHref)}
-      promise={`We'll email you every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''} as it comes on the market, with any price change on those homes in the same email. Unsubscribe any time.`}
+      promise={`We'll email you every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''}, every property type, each morning, with any price change on those homes in the same email. Unsubscribe any time.`}
       stickyNote={placeAlertsStickyNote(
         copy.scopeLine,
-        'Every new listing, with its price changes. Unsubscribe any time.',
+        'Every new listing, every property type, each morning. Unsubscribe any time.',
       )}
       updatedAt={updatedAt}
       trap={TRAP}

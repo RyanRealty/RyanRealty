@@ -42,12 +42,13 @@ export function OriginBadge({ origin }: { origin: string | null }) {
 }
 
 /**
- * Compact sends / opens / clicks rollup + last-open date for one subscription,
- * aggregated from email_events by the DAL. Em dash = never engaged.
+ * Compact sent / delivered / opened / clicked rollup + last-open date for one
+ * subscription, counted per email by the DAL (EngagementFold). Em dash = never
+ * engaged.
  */
 export function EngagementCell({ engagement }: { engagement: SubscriptionEngagement }) {
-  const { sends, opens, clicks, lastOpenAt } = engagement
-  if (sends === 0 && opens === 0 && clicks === 0) {
+  const { sends, delivered, opens, clicks, bounced, lastOpenAt } = engagement
+  if (sends === 0 && delivered === 0 && opens === 0 && clicks === 0) {
     return <span className="text-sm" style={{ color: 'var(--a-text-2)' }}>—</span>
   }
   // Spans, not div/p: this renders inside a grid cell that is itself a <span>
@@ -57,10 +58,10 @@ export function EngagementCell({ engagement }: { engagement: SubscriptionEngagem
       {/* truncate, not bare whitespace-nowrap: a <td> grew to fit its content,
           a grid track does not, so nowrap text would spill into the next cell. */}
       <span className="block truncate text-sm tabular-nums" style={{ color: 'var(--a-text)' }}>
-        {sends.toLocaleString('en-US')} sent · {opens.toLocaleString('en-US')} opened · {clicks.toLocaleString('en-US')} clicked
+        {sends.toLocaleString('en-US')} sent · {delivered.toLocaleString('en-US')} delivered · {opens.toLocaleString('en-US')} opened · {clicks.toLocaleString('en-US')} clicked
       </span>
       <span className="block truncate text-xs tabular-nums" style={{ color: 'var(--a-text-2)' }}>
-        Last open {formatDate(lastOpenAt)}
+        Last open {formatDate(lastOpenAt)}{bounced > 0 ? ` · ${bounced.toLocaleString('en-US')} bounced` : ''}
       </span>
     </span>
   )

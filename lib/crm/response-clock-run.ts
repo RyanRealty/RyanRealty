@@ -104,8 +104,9 @@ type PersonRow = {
 /**
  * What this person asked us for, in the words a broker glancing at a text needs.
  * Read off the tags, the source and the address the intake stamped into custom —
- * no extra query, and it degrades to "to talk to a broker", which is true of
- * every one of these rows.
+ * no extra query, and it degrades to "a conversation", which is true of
+ * every one of these rows. "Asked for a conversation" is the line the people
+ * list prints — never "Asked for to talk to a broker".
  */
 export function askOf(person: {
   source?: string | null
@@ -128,7 +129,7 @@ export function askOf(person: {
   if (source === 'website-booking' || tags.includes('source:website-booking')) return 'a time on the calendar'
   if (source === 'idx-registration' || tags.includes('source:idx-registration')) return 'listing alerts'
   if (source === 'buyer-lp' || tags.includes('source:buyer-lp')) return 'listing alerts'
-  return 'to talk to a broker'
+  return 'a conversation'
 }
 
 /** Every site submit inside the window that the clock is allowed to flag. */

@@ -48,6 +48,7 @@ import {
   getRecentBlogPosts,
   getDetachedOverlays,
   getCityListings,
+  getCommunityBySlug,
 } from '@/lib/data'
 import { getCoMarketAnnualCity } from '@/lib/data/analytics/getCoMarketAnnualCity'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
@@ -69,6 +70,8 @@ import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { placeTakeaways } from '@/lib/site/place-takeaways'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { PlaceAlertsStrip } from '@/app/_v3/place-alerts/PlaceAlertsStrip.client'
+import { cityAlertScope, communityAlertScope } from '@/lib/buyer-answers/place-alert-scope'
 import {
   V3_ROOT_CLASS,
   V3Breadcrumb,
@@ -301,6 +304,22 @@ const loadGeoMarket = cache(async (slugKey: string) => {
       })
     : null
   const homes = isCity ? cityHomesRows(cityTiles) : []
+  // WHAT THE PAGE'S LISTING ALERT SENDS (Matt 2026-10-14). A city market page
+  // alerts the city; a resort community's market page alerts that community
+  // with the same city + subdivision /communities/[slug] feeds its own strip
+  // (lib/buyer-answers/place-alert-scope). A failed community read drops the
+  // strip, never the page.
+  const communityRecord =
+    publishes && !isCity && geo.communitySlug
+      ? await getCommunityBySlug(geo.communitySlug).catch(() => null)
+      : null
+  const alertScope = !publishes
+    ? null
+    : isCity
+      ? cityAlertScope({ cityName, citySlug: geo.citySlug })
+      : communityRecord && geo.communitySlug
+        ? communityAlertScope({ community: communityRecord, slug: geo.communitySlug, placeName: geoName })
+        : null
   const insightClause = insightBoard ? cityInsightMetaClause(cityName, insightBoard) : null
   const insightVariables = insightBoard ? cityInsightDatasetVariables(insightBoard) : []
 
@@ -333,6 +352,7 @@ const loadGeoMarket = cache(async (slugKey: string) => {
     insightVariables,
     takeaways,
     answerReport,
+    alertScope,
   }
 })
 
@@ -491,6 +511,23 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     currentMonthKey,
   })
   const sheet = <GeoInquirySheet geoName={geoName} />
+  // The listing-alert signup: a different ask from the inquiry sheet above (new
+  // listings by email, not a conversation), mounted right after the page's
+  // listings (the city's homes section) or, with none, after the opening.
+  const alerts = data.alertScope ? (
+    <PlaceAlertsStrip
+      id="alerts"
+      placeName={data.alertScope.placeName}
+      scopeName={data.alertScope.scopeName}
+      filters={data.alertScope.filters}
+      browseHref={data.alertScope.browseHref}
+      geoType={data.alertScope.geoType}
+      geoSlug={data.alertScope.geoSlug}
+      // A city page with no homes section puts the strip straight under the
+      // opening, whose foot carries the page's filled button: step down.
+      emphasis={data.isCity && data.homes.length === 0 ? 'ghost' : 'primary'}
+    />
+  ) : null
 
   const crumbTrail = [
     { label: 'Home', href: '/' },
@@ -526,6 +563,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             closedTrace={cityClosed.trace}
             chart={cityChart}
             sheet={sheet}
+            alerts={alerts}
             publicSegments={publicSegments}
             publicPace={publicPace}
             publicMix={publicMix}
@@ -552,6 +590,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             faqs={faqs}
             chart={communityChart}
             sheet={sheet}
+            alerts={alerts}
             takeaways={data.takeaways}
           />
         )}

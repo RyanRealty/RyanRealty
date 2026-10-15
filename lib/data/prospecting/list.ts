@@ -250,8 +250,17 @@ export async function listProspects(filters: ProspectListFilters): Promise<Prosp
   try {
     rawRows = kind === 'expired' ? await cachedFetchExpiredRows(baseFilters) : await cachedFetchFsboRows(baseFilters)
   } catch (e) {
-    console.error('[prospecting] listProspects cache read threw:', e instanceof Error ? e.message : e)
-    rawRows = []
+    const message = e instanceof Error ? e.message : 'prospecting read failed'
+    console.error('[prospecting] listProspects cache read threw:', message)
+    return {
+      rows: [],
+      total: 0,
+      summary: EMPTY_SUMMARY,
+      page,
+      pageSize,
+      cities: [],
+      error: 'The prospecting database did not answer in time.',
+    }
   }
 
   // Batch the doc + compliance resolution for the WHOLE matching set (spec §7):
@@ -312,5 +321,5 @@ export async function listProspects(filters: ProspectListFilters): Promise<Prosp
     return finalizeRow(patched, engagementMap[skeleton.id])
   })
 
-  return { rows, total, summary, page, pageSize, cities }
+  return { rows, total, summary, page, pageSize, cities, error: null }
 }
