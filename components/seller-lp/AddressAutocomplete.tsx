@@ -141,6 +141,9 @@ export default function AddressAutocomplete({
             new g.maps.LatLng(BEND.lat - 0.7, BEND.lng - 0.9),
             new g.maps.LatLng(BEND.lat + 0.7, BEND.lng + 0.9),
           ),
+          // Only Central Oregon suggestions; "1000 NW Wall St" offered Ann
+          // Arbor and Los Angeles under the Bend hit (UX review F22).
+          strictBounds: true,
         })
         const mine = [...document.querySelectorAll('.pac-container')].filter(
           (el) => !before.has(el),
