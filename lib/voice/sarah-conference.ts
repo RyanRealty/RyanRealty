@@ -1,25 +1,12 @@
 /**
- * Named Twilio conference for a live Sarah call so Matt can listen, coach,
- * or barge. Conference name is the shared lib/sarah contract:
- * sarah-live-{sessionId} (inbound CallSid).
+ * Twilio REST + TwiML for a live Sarah conference. Names and participant
+ * flags come from @/lib/sarah (sarahLiveConferenceName, sarahSessionConferenceJoin,
+ * mattConferenceJoin). This file does not re-define those.
  */
-import { sarahLiveConferenceName } from '@/lib/sarah/phone-hooks'
+import { mattConferenceJoin, type SarahBargeRole } from '@/lib/sarah'
 import { escapeXml, XAI_SIP_URI } from '@/lib/voice/receptionist-routing'
 import { RECEPTIONIST_RECORDING_NOTICE } from '@/lib/voice/receptionist-prompt'
 import { toE164 } from '@/lib/crm/twilio'
-
-export type SarahBargeMode = 'listen' | 'coach' | 'barge'
-
-export function sarahConferenceName(callSid: string): string {
-  return sarahLiveConferenceName(callSid.trim())
-}
-
-export function conferenceSessionId(friendlyName: string): string | null {
-  const prefix = 'sarah-live-'
-  if (!friendlyName.startsWith(prefix)) return null
-  const id = friendlyName.slice(prefix.length).trim()
-  return id || null
-}
 
 export function sipUriForConference(conferenceName: string): string {
   const base = XAI_SIP_URI.split('?')[0]
@@ -51,29 +38,35 @@ export function silentWaitTwiml(): string {
 }
 
 export function bargeTwiml(opts: {
-  conferenceName: string
-  mode: SarahBargeMode
+  sessionId: string
+  mode: SarahBargeRole
   coachCallSid?: string | null
 }): string {
-  const name = escapeXml(opts.conferenceName)
-  if (opts.mode === 'listen') {
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say>Joining Sarah's call on mute.</Say>
-  <Dial><Conference beep="false" muted="true" startConferenceOnEnter="false" endConferenceOnExit="false">${name}</Conference></Dial>
-</Response>`
-  }
-  if (opts.mode === 'coach' && opts.coachCallSid) {
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say>Joining Sarah's call as coach. Only Sarah can hear you until you barge in.</Say>
-  <Dial><Conference beep="false" startConferenceOnEnter="false" endConferenceOnExit="false" coach="${escapeXml(opts.coachCallSid)}">${name}</Conference></Dial>
-</Response>`
-  }
+  const join = mattConferenceJoin(opts.sessionId, opts.mode)
+  const name = escapeXml(join.conferenceName)
+  const muted = join.muted ? ' muted="true"' : ''
+  const coach = join.coach && opts.coachCallSid ? ` coach="${escapeXml(opts.coachCallSid)}"` : ''
+  const start = join.startConferenceOnEnter ? 'true' : 'false'
+  const end = join.endConferenceOnExit ? 'true' : 'false'
+  const line = (() => {
+    switch (opts.mode) {
+      case 'listen':
+        return "Joining Sarah's call on mute."
+      case 'coach':
+        return "Joining Sarah's call as coach. Only Sarah can hear you until you barge in."
+      case 'barge':
+        return "Joining Sarah's call."
+      default: {
+        const _never: never = opts.mode
+        void _never
+        return "Joining Sarah's call."
+      }
+    }
+  })()
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say>Joining Sarah's call.</Say>
-  <Dial><Conference beep="false" startConferenceOnEnter="false" endConferenceOnExit="false">${name}</Conference></Dial>
+  <Say>${escapeXml(line)}</Say>
+  <Dial><Conference beep="false"${muted} startConferenceOnEnter="${start}" endConferenceOnExit="${end}"${coach}>${name}</Conference></Dial>
 </Response>`
 }
 
@@ -257,8 +250,8 @@ export async function stopConferenceRecordings(conference: string): Promise<numb
 export async function startBargeCall(opts: {
   toCell: string
   fromNumber: string
-  conferenceName: string
-  mode: SarahBargeMode
+  sessionId: string
+  mode: SarahBargeRole
   site: string
 }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
   const c = twilioCreds()
@@ -266,7 +259,8 @@ export async function startBargeCall(opts: {
   const to = toE164(opts.toCell)
   const from = toE164(opts.fromNumber)
   if (!to || !from) return { ok: false, error: 'Broker phone not configured' }
-  const url = `${opts.site.replace(/\/+$/, '')}/api/voice/sarah-barge?conference=${encodeURIComponent(opts.conferenceName)}&mode=${encodeURIComponent(opts.mode)}`
+  const join = mattConferenceJoin(opts.sessionId, opts.mode)
+  const url = `${opts.site.replace(/\/+$/, '')}/api/voice/sarah-barge?conference=${encodeURIComponent(join.conferenceName)}&mode=${encodeURIComponent(opts.mode)}`
   try {
     const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${c.sid}/Calls.json`, {
       method: 'POST',
