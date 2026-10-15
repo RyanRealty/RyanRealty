@@ -240,13 +240,20 @@ function readVoice(r: Reader, raw: unknown, path: string): TimelineVoice | undef
     r.add(path, 'must be an object { script, voice, display?, start? }')
     return undefined
   }
-  r.exact(raw, path, ['script', 'voice', 'display', 'start', 'model', 'seed', 'settings'])
+  r.exact(raw, path, ['engine', 'script', 'voice', 'display', 'start', 'model', 'seed', 'settings'])
+  const engine = raw.engine === undefined ? 'grok' : r.oneOf(raw, 'engine', path, ['grok', 'elevenlabs'] as const)
   const script = r.str(raw, 'script', path, { copy: true })
   if (script) {
-    if (/<break/i.test(script)) r.add(join(path, 'script'), 'ElevenLabs v3 takes no <break> tags; use ellipses and audio tags')
-    if (/\d/.test(script)) r.add(join(path, 'script'), 'ElevenLabs v3 scripts spell numbers out; no digits')
+    if (/<break/i.test(script)) r.add(join(path, 'script'), 'no <break> tags; Grok uses [pause] / [long-pause], ElevenLabs v3 uses ellipses')
+    if (/\d/.test(script)) r.add(join(path, 'script'), 'voiceover scripts spell numbers out; no digits')
   }
-  const voice = r.oneOf(raw, 'voice', path, ['ellen', 'victoria'] as const)
+  // Grok TTS Eve is the enforced default (Matt 2026-10-14). ElevenLabs voices only with engine: 'elevenlabs'.
+  const voice =
+    engine === 'elevenlabs'
+      ? r.oneOf(raw, 'voice', path, ['ellen', 'victoria'] as const)
+      : raw.voice === undefined
+        ? ('eve' as const)
+        : r.oneOf(raw, 'voice', path, ['eve'] as const)
   const start = r.num(raw, 'start', path, { optional: true, min: 0 })
   const model = r.str(raw, 'model', path, { optional: true })
   const seed = r.num(raw, 'seed', path, { optional: true, min: 0 })
@@ -274,8 +281,8 @@ function readVoice(r: Reader, raw: unknown, path: string): TimelineVoice | undef
       }
     }
   }
-  if (!script || !voice) return undefined
-  const out: TimelineVoice = { script, voice }
+  if (!script || !voice || !engine) return undefined
+  const out: TimelineVoice = { engine, script, voice }
   if (display) out.display = display
   if (start !== undefined) out.start = start
   if (model) out.model = model
