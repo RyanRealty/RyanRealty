@@ -1,10 +1,12 @@
 # AI voiceover scripts that sound human
 
-Last updated: 2026-10-14
+Last updated: 2026-10-14 (Grok TTS Eve made the default)
 
 Ryan Realty binding: written voice stays [`marketing_brain_skills/brand-voice/VOICE.md`](../marketing_brain_skills/brand-voice/VOICE.md). Agent rules live in AGENTS.md "Ad copy, voiceover and captions." This file is the engine markup and caption process. Do not invent a second brand voice.
 
 Words before markup (Matt 2026-10-14): the ad-strategist ([`.claude/agents/ad-strategist.md`](../.claude/agents/ad-strategist.md)) writes the script on the whiteboard first, in plain English a 75-year-old follows on first hearing, context first, dollars not percentages (VOICE.md "Plain English, context first"). This file only decides how an engine says those words; it never rewrites them.
+
+**Default engine (Matt 2026-10-14): Grok TTS, voice Eve.** Every Studio and producer voiceover uses it unless ElevenLabs is explicitly opted in. So the engine is confirmed: write Grok markup first.
 
 Rule zero: find out which engine AND model will render the voice before you format anything. Markup that one engine follows gets read aloud or ignored by another. If the engine isn't confirmed, write a clean plain script (punctuation only) plus one marked-up version per likely engine, and label each.
 
@@ -29,7 +31,12 @@ Re-check the official docs if this file is more than about 3 months old, because
 - Settings: stability 0.5, similarity_boost 0.75, style 0 are the common start. Speed 0.7 to 1.2.
 - Numbers: always spell out (Flash/Turbo misread figures like "$1,000,000").
 
-**xAI / Grok TTS** (`/v1/tts`)
+**xAI / Grok TTS** (`/v1/tts`) — DEFAULT, voice `eve`
+- Write it like a phone call: one idea per short sentence, contractions ("you'd", "it's"), a question to open ("Moving up?"). Questions and `?` lift the pitch naturally; `!` adds energy, so use it sparingly for a warm read.
+- `[pause]` between ideas, `[long-pause]` only to let a number land. `"Or..."` gives a soft hesitation. Put one `[breath]` before the CTA at most.
+- Speed 0.95 reads relaxed; 1.0 is brisk. Make two or three takes and pick by ear; there is no seed.
+- Request `output_format: { codec: 'wav', sample_rate: 48000 }` for post-production; `with_timestamps` returns `graph_chars` / `graph_times` that `lib/studio/voice/words.ts` turns into caption words (tags are dropped).
+- Tags the API refuses or reads aloud: none of the ElevenLabs bracket moods (`[warm]`, `[excited]`) are Grok tags; leave them out.
 - Pauses: inline `[pause]`, `[long-pause]`, plus commas, periods, and paragraph breaks.
 - Nonverbal inline tags: `[laugh]` `[chuckle]` `[giggle]` `[breath]` `[inhale]` `[exhale]` `[sigh]` `[tsk]`.
 - Wrapping tags: `<whisper>...</whisper>` is confirmed. `<soft>`, `<slow>`, `<emphasis>` come from a third-party SDK page, so verify them.
