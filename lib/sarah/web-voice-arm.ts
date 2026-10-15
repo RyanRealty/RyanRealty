@@ -68,3 +68,14 @@ export function takeVoiceErrorSlot(state: { posted: boolean }): boolean {
   state.posted = true
   return true
 }
+
+export function beginSarahVoiceFromMicTap():
+  | { ok: true; armed: SarahArmedMic }
+  | { ok: false; message: string } {
+  try {
+    return { ok: true, armed: armSarahMicOnTap() }
+  } catch (err) {
+    logSarahVoiceError(err)
+    return { ok: false, message: sarahVoiceErrorMessage(err) }
+  }
+}

@@ -8,6 +8,7 @@ import {
   WEB_VOICE_PERMISSION_EN,
   WEB_VOICE_START_FAIL_EN,
   armSarahMicOnTap,
+  beginSarahVoiceFromMicTap,
   continueSarahVoiceAfterArm,
   isNotAllowedError,
   logSarahVoiceError,
@@ -50,12 +51,14 @@ describe('Sarah iOS mic tap', () => {
       return { secret: 'tok' }
     })
 
-    const armed = armSarahMicOnTap()
+    const started = beginSarahVoiceFromMicTap()
+    expect(started.ok).toBe(true)
+    if (!started.ok) throw new Error('expected armed mic')
     expect(gum).toHaveBeenCalledTimes(1)
     expect(order).toEqual(['getUserMedia'])
     expect(mintToken).not.toHaveBeenCalled()
 
-    const { token } = await continueSarahVoiceAfterArm(armed, mintToken)
+    const { token } = await continueSarahVoiceAfterArm(started.armed, mintToken)
     expect(token).toEqual({ secret: 'tok' })
     expect(order).toEqual(['getUserMedia', 'mintToken'])
     expect(order.indexOf('getUserMedia')).toBeLessThan(order.indexOf('mintToken'))
@@ -104,11 +107,14 @@ describe('Sarah iOS mic tap', () => {
 
   it('arms the mic in the tap handler before mintSarahVoiceToken', () => {
     const client = readFileSync(join(import.meta.dirname, '../../components/site/v3/V3SarahAssistant.client.tsx'), 'utf8')
-    const armAt = client.indexOf('armSarahMicOnTap()')
-    const continueAt = client.indexOf('continueSarahVoiceAfterArm(armed, mintSarahVoiceToken)')
-    expect(armAt).toBeGreaterThan(-1)
-    expect(continueAt).toBeGreaterThan(armAt)
+    expect(client).not.toContain('armSarahMicOnTap()')
+    expect(client).not.toContain('hydration-safe')
+    const tapAt = client.indexOf('beginSarahVoiceFromMicTap()')
+    const continueAt = client.indexOf('continueVoiceAfterArm(started.armed)')
+    expect(tapAt).toBeGreaterThan(-1)
+    expect(continueAt).toBeGreaterThan(tapAt)
     expect(client.indexOf('await mintSarahVoiceToken()')).toBe(-1)
+    expect(client).toMatch(/onClick=\{\(\) => \{[\s\S]*beginSarahVoiceFromMicTap\(\)/)
   })
 
   it('sets Permissions-Policy microphone=(self) in next.config, middleware, and vercel.json', () => {

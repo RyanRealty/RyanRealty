@@ -56,6 +56,20 @@ let wide = true
 
 function stubMedia() {
   mediaListeners.clear()
+  Object.defineProperty(navigator, 'mediaDevices', {
+    configurable: true,
+    value: {
+      getUserMedia: vi.fn(async () => ({ getTracks: () => [] })),
+    },
+  })
+  vi.stubGlobal(
+    'AudioContext',
+    class {
+      state = 'running'
+      resume = vi.fn(async () => undefined)
+      close = vi.fn(async () => undefined)
+    },
+  )
   window.matchMedia = ((query: string) => ({
     get matches() {
       if (query === '(min-width: 64rem)') return wide
@@ -105,6 +119,7 @@ describe('V3SarahAssistant listing teaser behavior', () => {
 
   afterEach(() => {
     unmount()
+    vi.unstubAllGlobals()
     vi.useRealTimers()
   })
 

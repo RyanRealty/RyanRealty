@@ -49,12 +49,13 @@ import {
 } from '@/lib/sarah/teaser'
 import { startSarahVoiceSession, type SarahVoiceHandle, type SarahVoiceStatus } from '@/lib/sarah/web-voice'
 import {
-  armSarahMicOnTap,
+  beginSarahVoiceFromMicTap,
   continueSarahVoiceAfterArm,
   logSarahVoiceError,
   releaseSarahArmedMic,
   sarahVoiceErrorMessage,
   takeVoiceErrorSlot,
+  type SarahArmedMic,
 } from '@/lib/sarah/web-voice-arm'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { trackEvent } from '@/lib/tracking'
@@ -285,69 +286,54 @@ export function V3SarahAssistant() {
     [acceptVisitor, desk.slug],
   )
 
-  const requestVoice = useCallback(() => {
-    if (voiceStatus === 'listening' || voiceStatus === 'connecting' || voiceStatus === 'speaking') {
-      voiceRef.current?.stop()
-      voiceRef.current = null
-      setVoiceStatus('idle')
-      return
-    }
-    trackEvent('click_cta', { cta: 'sarah_voice', action: 'start', surface: desk.slug })
-    setVoiceStatus('asking')
-    setLines((prev) => {
-      if (prev.some((line) => line.text === WEB_VOICE_NOTICE_EN)) return prev
-      return [...prev, { from: 'sarah', text: WEB_VOICE_NOTICE_EN }]
-    })
-    let armed
-    try {
-      armed = armSarahMicOnTap() // hydration-safe: tap handler, not render
-    } catch (err) {
-      setVoiceStatus('error')
-      logSarahVoiceError(err)
-      if (takeVoiceErrorSlot(voiceErrorPostedRef.current)) {
-        const message = sarahVoiceErrorMessage(err)
-        setLines((prev) => [...prev, { from: 'sarah', text: message }])
-      }
-      return
-    }
-    void (async () => {
-      try {
-        const { token } = await continueSarahVoiceAfterArm(armed, mintSarahVoiceToken)
-        if (!token.data) {
-          setVoiceStatus('error')
-          releaseSarahArmedMic(armed)
-          if (takeVoiceErrorSlot(voiceErrorPostedRef.current)) {
-            setLines((prev) => [...prev, { from: 'sarah', text: token.error ?? WEB_VOICE_NOTICE_EN }])
-          }
-          return
-        }
-        const handle = await startSarahVoiceSession({
-          secret: token.data.secret,
-          brokerFirstName: token.data.brokerFirstName,
-          armed,
-          onStatus: setVoiceStatus,
-          onError: (message) => {
-            if (!takeVoiceErrorSlot(voiceErrorPostedRef.current)) return
-            setLines((prev) => [...prev, { from: 'sarah', text: message }])
-          },
-          onTranscript: (from, text) => {
-            if (from === 'visitor') {
-              acceptVisitor(text)
-              return
+  const continueVoiceAfterArm = useCallback(
+    (armed: SarahArmedMic) => {
+      trackEvent('click_cta', { cta: 'sarah_voice', action: 'start', surface: desk.slug })
+      setVoiceStatus('asking')
+      setLines((prev) => {
+        if (prev.some((line) => line.text === WEB_VOICE_NOTICE_EN)) return prev
+        return [...prev, { from: 'sarah', text: WEB_VOICE_NOTICE_EN }]
+      })
+      void (async () => {
+        try {
+          const { token } = await continueSarahVoiceAfterArm(armed, mintSarahVoiceToken)
+          if (!token.data) {
+            setVoiceStatus('error')
+            releaseSarahArmedMic(armed)
+            if (takeVoiceErrorSlot(voiceErrorPostedRef.current)) {
+              setLines((prev) => [...prev, { from: 'sarah', text: token.error ?? WEB_VOICE_NOTICE_EN }])
             }
-            setLines((prev) => [...prev, { from, text }])
-          },
-        })
-        voiceRef.current = handle
-      } catch (err) {
-        setVoiceStatus('error')
-        logSarahVoiceError(err)
-        if (takeVoiceErrorSlot(voiceErrorPostedRef.current)) {
-          setLines((prev) => [...prev, { from: 'sarah', text: sarahVoiceErrorMessage(err) }])
+            return
+          }
+          const handle = await startSarahVoiceSession({
+            secret: token.data.secret,
+            brokerFirstName: token.data.brokerFirstName,
+            armed,
+            onStatus: setVoiceStatus,
+            onError: (message) => {
+              if (!takeVoiceErrorSlot(voiceErrorPostedRef.current)) return
+              setLines((prev) => [...prev, { from: 'sarah', text: message }])
+            },
+            onTranscript: (from, text) => {
+              if (from === 'visitor') {
+                acceptVisitor(text)
+                return
+              }
+              setLines((prev) => [...prev, { from, text }])
+            },
+          })
+          voiceRef.current = handle
+        } catch (err) {
+          setVoiceStatus('error')
+          logSarahVoiceError(err)
+          if (takeVoiceErrorSlot(voiceErrorPostedRef.current)) {
+            setLines((prev) => [...prev, { from: 'sarah', text: sarahVoiceErrorMessage(err) }])
+          }
         }
-      }
-    })()
-  }, [acceptVisitor, desk.slug, voiceStatus])
+      })()
+    },
+    [acceptVisitor, desk.slug],
+  )
 
   const onSheetPointerDown = useCallback(
     (e: PointerEvent<HTMLElement>) => {
@@ -492,7 +478,23 @@ export function V3SarahAssistant() {
                 data-sarah="mic"
                 data-sarah-voice={voiceStatus}
                 aria-pressed={micBusy}
-                onClick={requestVoice}
+                onClick={() => {
+                  if (voiceStatus === 'listening' || voiceStatus === 'connecting' || voiceStatus === 'speaking') {
+                    voiceRef.current?.stop()
+                    voiceRef.current = null
+                    setVoiceStatus('idle')
+                    return
+                  }
+                  const started = beginSarahVoiceFromMicTap()
+                  if (!started.ok) {
+                    setVoiceStatus('error')
+                    if (takeVoiceErrorSlot(voiceErrorPostedRef.current)) {
+                      setLines((prev) => [...prev, { from: 'sarah', text: started.message }])
+                    }
+                    return
+                  }
+                  continueVoiceAfterArm(started.armed)
+                }}
               >
                 <Mic aria-hidden="true" strokeWidth={1.75} />
                 <span className="sr-only">{micLabel}</span>
