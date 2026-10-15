@@ -253,7 +253,7 @@ export default function ConsoleShell({
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 px-4 pt-5 pb-24 sm:px-6 sm:pt-7 lg:px-8 lg:pb-8">{children}</main>
+        <main className="min-w-0 flex-1 px-4 pt-5 pb-36 sm:px-6 sm:pt-7 lg:px-8 lg:pb-8">{children}</main>
       </div>
 
       {/* Global "+" quick-action FAB — rides every console surface, context-aware on a lead.

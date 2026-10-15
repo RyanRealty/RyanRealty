@@ -12,6 +12,7 @@ import { listCmasForAdmin } from '@/lib/data'
 import { listBposForAdmin } from '@/lib/data/bpo/reads'
 import { formatDate } from '@/lib/format/date'
 import { QueueRow, QuietRow, VerdictLine } from '@/components/admin/v2'
+import { RetryCmaForm } from './RetryCmaForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -166,9 +167,12 @@ export default async function ValuationsPage() {
                 context={c.build_error ?? 'build failed'}
                 age={daysAgo(c.created_at, nowMs)}
                 action={
-                  <Link href={`/admin/cmas/${c.slug}`} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-                    Open
-                  </Link>
+                  <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                    <RetryCmaForm slug={c.slug} />
+                    <Link href={`/admin/cmas/${c.slug}`} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                      Open
+                    </Link>
+                  </span>
                 }
               />
             ))}

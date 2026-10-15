@@ -4,6 +4,7 @@
     "ci:studio-rules",
     "ci:video-freeze",
     "ci:private-remarks",
+    "ci:admin-queue-cleanup",
     "ci:deals-copy",
     "ci:imagine-no-paid-api",
     "ci:studio-techniques",
@@ -1602,6 +1603,18 @@
       "lib/geo/basemap-source.ts",
       "scripts/check-atlas-props-budget.mjs",
       "scripts/lib/atlas-props-weight.mjs"
+    ],
+    "ci:admin-queue-cleanup": [
+      "app/admin/**",
+      "components/admin/**",
+      "components/console/**",
+      "lib/admin/**",
+      "lib/data/cma/unified-queue.ts",
+      "lib/data/prospecting/**",
+      "lib/data/crm/getMessagesInbox.ts",
+      "lib/crm/response-clock-run.ts",
+      "app/actions/admin-listings.ts",
+      "scripts/check-admin-queue-cleanup.mjs"
     ]
   },
   "nightly": [
