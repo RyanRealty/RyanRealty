@@ -62,6 +62,10 @@ describe('V3SarahAssistant · listing teaser', () => {
     expect(SRC).toContain('WEB_DISCLOSURE_LINE_EN')
     expect(SRC).toContain('data-sarah="saved-notice"')
     expect(SRC).toContain('WEB_VOICE_NOTICE_EN')
+    expect(SRC).toContain('data-sarah="voice-stage"')
+    expect(SRC).toContain('WEB_VOICE_HINT_LISTEN_EN')
+    expect(SRC).toContain('WEB_VOICE_HINT_END_EN')
+    expect(SRC).not.toContain('v3-sarah__ai-tag')
     expect(SRC).not.toMatch(/AI assistant, not a licensed broker/)
   })
 

@@ -14,7 +14,16 @@ describe('Grok browser realtime helpers', () => {
     expect(GROK_REALTIME_VOICE).toBe('eve')
     expect(grokRealtimeSessionVoice()).toEqual({
       voice: 'eve',
-      audio: { output: { voice: 'eve' } },
+      audio: {
+        input: {
+          format: { type: 'audio/pcm', rate: 24_000 },
+          transcription: { model: 'grok-transcribe' },
+        },
+        output: {
+          voice: 'eve',
+          format: { type: 'audio/pcm', rate: 24_000 },
+        },
+      },
     })
     expect(grokRealtimeWebSocketUrl()).toBe(
       'wss://api.x.ai/v1/realtime?model=grok-voice-latest&voice=eve',

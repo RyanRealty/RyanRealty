@@ -40,6 +40,15 @@ export const WEB_SAVED_NOTICE_EN = 'Chats are saved so our team can follow up.'
 export const WEB_VOICE_NOTICE_EN =
   "You're talking with Sarah, an AI assistant. Voice chats are recorded and transcribed so our team can follow up."
 
+/** Spoken style for the Eve realtime session. Not shown in the panel. */
+export const WEB_VOICE_TALK_EN =
+  "On voice, talk like a person on a phone. Use contractions. Keep sentences short. One idea each. Don't read lists. Don't sound like a report. If they start talking, stop and listen."
+
+export const WEB_VOICE_HINT_LISTEN_EN = 'Just start talking'
+export const WEB_VOICE_HINT_END_EN = 'Tap to end'
+export const WEB_VOICE_HINT_SPEAK_EN = 'Sarah is talking'
+export const WEB_VOICE_HINT_THINK_EN = 'Sarah is thinking'
+
 /** Counsel inbound greeting, phone. Verbatim. */
 export const VOICE_GREETING_EN =
   "Thanks for calling Ryan Realty in Bend. This is Sarah, the office's AI assistant. I'm not a person and I'm not a licensed broker. This call is recorded and transcribed to help our team follow up. I can share listing details, set up a showing, or connect you with one of our licensed brokers. How can I help?"

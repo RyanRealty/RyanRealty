@@ -9,6 +9,11 @@ const XAI_HTTP = 'https://api.x.ai/v1'
 export const GROK_REALTIME_MODEL = 'grok-voice-latest'
 export const GROK_REALTIME_VOICE = SARAH_VOICE_ID
 export const GROK_REALTIME_SAMPLE_RATE = 24_000
+export const GROK_REALTIME_PCM = {
+  type: 'audio/pcm',
+  rate: GROK_REALTIME_SAMPLE_RATE,
+} as const
+export const GROK_REALTIME_TRANSCRIBE = 'grok-transcribe'
 
 /** xAI session.created default is Ara (`xai_ara`) unless voice is on the URL. */
 export function grokRealtimeWebSocketUrl(): string {
@@ -25,11 +30,29 @@ export function grokRealtimeWebSocketUrl(): string {
  */
 export function grokRealtimeSessionVoice(): {
   voice: typeof GROK_REALTIME_VOICE
-  audio: { output: { voice: typeof GROK_REALTIME_VOICE } }
+  audio: {
+    input: {
+      format: typeof GROK_REALTIME_PCM
+      transcription: { model: typeof GROK_REALTIME_TRANSCRIBE }
+    }
+    output: {
+      voice: typeof GROK_REALTIME_VOICE
+      format: typeof GROK_REALTIME_PCM
+    }
+  }
 } {
   return {
     voice: GROK_REALTIME_VOICE,
-    audio: { output: { voice: GROK_REALTIME_VOICE } },
+    audio: {
+      input: {
+        format: GROK_REALTIME_PCM,
+        transcription: { model: GROK_REALTIME_TRANSCRIBE },
+      },
+      output: {
+        voice: GROK_REALTIME_VOICE,
+        format: GROK_REALTIME_PCM,
+      },
+    },
   }
 }
 

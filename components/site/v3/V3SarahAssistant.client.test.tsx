@@ -56,6 +56,29 @@ let wide = true
 
 function stubMedia() {
   mediaListeners.clear()
+  Object.defineProperty(navigator, 'mediaDevices', {
+    configurable: true,
+    value: {
+      getUserMedia: vi.fn(async () => ({ getTracks: () => [] })),
+    },
+  })
+  Object.defineProperty(navigator, 'sendBeacon', {
+    configurable: true,
+    value: vi.fn(() => true),
+  })
+  vi.stubGlobal(
+    'AudioContext',
+    class {
+      state = 'running'
+      sampleRate = 48_000
+      destination = {}
+      resume = vi.fn(async () => undefined)
+      close = vi.fn(async () => undefined)
+      createMediaStreamDestination = () => ({ stream: { getTracks: () => [] } })
+    },
+  )
+  HTMLMediaElement.prototype.play = vi.fn(async () => undefined)
+  HTMLMediaElement.prototype.pause = vi.fn()
   window.matchMedia = ((query: string) => ({
     get matches() {
       if (query === '(min-width: 64rem)') return wide
@@ -105,6 +128,7 @@ describe('V3SarahAssistant listing teaser behavior', () => {
 
   afterEach(() => {
     unmount()
+    vi.unstubAllGlobals()
     vi.useRealTimers()
   })
 
@@ -182,6 +206,9 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     ])
     expect(container.querySelector('.v3-sarah__desk-actions')).toBeNull()
     expect(container.querySelector('[data-sarah="mic"]')).not.toBeNull()
+    expect(container.querySelector('[data-sarah="voice-stage"]')).not.toBeNull()
+    expect(container.querySelector('[data-sarah="voice-hint"]')?.textContent).toContain('Just start talking')
+    expect(container.querySelector('.v3-sarah__ai-tag')).toBeNull()
     expect(container.querySelector('[data-sarah="panel"]')?.getAttribute('data-sarah-surface')).toBe('card')
     expect(container.querySelector('[data-sarah="panel"]')?.textContent).toContain(WEB_BRINGS_YOU_HERE_EN)
     await act(async () => {
