@@ -197,6 +197,8 @@ export type PricingSale = {
   bathsFull?: number | null
   bathsHalf?: number | null
   sqft: number
+  /** The main home's area when `sqft` on record includes the sale's ADU (lib/pricing/adu-value.ts withMainSqft). */
+  mainSqft?: number | null
   lotAcres: number | null
   yearBuilt: number | null
   storyClass: StoryClass

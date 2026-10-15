@@ -104,11 +104,12 @@ export function adjustComps(
     // The size move is the facts walk's, through the same function (Matt
     // 2026-10-08: every sale is adjusted for size the same way, whichever
     // search found it).
-    const size = sizeAdjustmentFor({ subjectSqft, saleSqft: comp.sqft, timeAdjustedPrice })
+    // The main home where the record counted the sale's ADU too (lib/pricing/adu-value.ts withMainSqft).
+    const size = sizeAdjustmentFor({ subjectSqft, saleSqft: comp.mainSqft ?? comp.sqft, timeAdjustedPrice })
     const ppsfTimeAdjusted = size.ppsfTimeAdjusted
     const sizeAdjustment = size.sizeAdjustment
     const adjustedPrice = timeAdjustedPrice + sizeAdjustment
-    const sizeProximity = subjectSqft > 0 ? 1 / (1 + Math.abs(subjectSqft - comp.sqft) / subjectSqft) : 1
+    const sizeProximity = subjectSqft > 0 ? 1 / (1 + Math.abs(subjectSqft - (comp.mainSqft ?? comp.sqft)) / subjectSqft) : 1
     const recency = 1 / (1 + monthsSinceClose / 12)
     const out: AdjustedCompInternal = {
       ...comp,
@@ -179,7 +180,10 @@ export function applyStreetAnchor(
   const sameStreet = ctx.adjusted.filter((c) =>
     sameStreetPeer(
       { streetAddress: ctx.subject.streetAddress, city: ctx.subject.city, sqft: subjectSqft },
-      { address: c.address, city: c.city, sqft: c.sqft },
+      // The main home where the record counted the sale's ADU too (lib/pricing/adu-value.ts
+      // withMainSqft): 513 Irving's 1,612 on record is a 1,040 sq ft house and its unit, not a
+      // same-size peer of a 1,629 sq ft home (2026-10-15).
+      { address: c.address, city: c.city, sqft: c.mainSqft ?? c.sqft },
     ),
   )
   if (sameStreet.length === 0) return null

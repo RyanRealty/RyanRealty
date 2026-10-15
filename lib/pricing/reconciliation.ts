@@ -53,12 +53,16 @@ export interface ReconcilableSale {
   listingKey: string
   address: string
   sqft: number
+  /** The main home where the record counted the sale's ADU too (lib/pricing/adu-value.ts withMainSqft). */
+  mainSqft?: number | null
   closePrice: number
   closeDate: string
   monthsSinceClose: number
   timeAdjustment: number
   sizeAdjustment: number
   storyAdjustment?: number
+  /** What the subject's ADU adds against this sale (lib/pricing/adu-value.ts). */
+  aduAdjustment?: number
   /** Recorded seller concession. Omitted fixtures stay on date, size, and story only. */
   concessionsAmount?: number | null
   adjustedPrice: number
@@ -152,14 +156,21 @@ export function grossAdjustmentPct(sale: ReconcilableSale): number {
     Math.abs(sale.timeAdjustment) +
     Math.abs(sale.sizeAdjustment) +
     Math.abs(sale.storyAdjustment ?? 0) +
+    Math.abs(sale.aduAdjustment ?? 0) +
     concessionDollars(sale)
   return round1((gross / sale.closePrice) * 100)
 }
 
 /** "the same size as yours" · "60 square feet smaller than yours". */
+/** The area the size line compared: the main home where the record counted the unit too. */
+function sizedSqft(sale: Pick<ReconcilableSale, 'sqft' | 'mainSqft'>): number {
+  return sale.mainSqft != null && sale.mainSqft > 0 ? sale.mainSqft : sale.sqft
+}
+
 function sizePhrase(sale: ReconcilableSale, subjectSqft: number): string {
-  if (!(subjectSqft > 0) || !(sale.sqft > 0)) return 'the same layout as yours'
-  const delta = Math.round(sale.sqft - subjectSqft)
+  const sqft = sizedSqft(sale)
+  if (!(subjectSqft > 0) || !(sqft > 0)) return 'the same layout as yours'
+  const delta = Math.round(sqft - subjectSqft)
   if (delta === 0) return 'the same size as yours'
   const n = Math.abs(delta).toLocaleString('en-US')
   return `${n} square ${Math.abs(delta) === 1 ? 'foot' : 'feet'} ${delta > 0 ? 'larger' : 'smaller'} than yours`
@@ -242,6 +253,7 @@ function adjustmentClaim(sale: ReconcilableSale): string {
   if (Math.abs(sale.timeAdjustment) >= 1) parts.push('date')
   if (Math.abs(sale.sizeAdjustment) >= 1) parts.push('size')
   if (Math.abs(sale.storyAdjustment ?? 0) >= 1) parts.push('story')
+  if (Math.abs(sale.aduAdjustment ?? 0) >= 1) parts.push('the ADU')
   if (concessionDollars(sale) >= 1) parts.push('seller concessions')
   if (parts.length === 0) return ''
   if (parts.length === 1) return parts[0]!
@@ -318,7 +330,7 @@ export function reconcileAdjustedSales(args: {
 
   const smallestGross = Math.min(...usable.map(grossAdjustmentPct))
   const closestSize =
-    args.subjectSqft > 0 ? Math.min(...usable.map((s) => Math.abs(s.sqft - args.subjectSqft))) : null
+    args.subjectSqft > 0 ? Math.min(...usable.map((s) => Math.abs(sizedSqft(s) - args.subjectSqft))) : null
   const mostRecent = Math.min(...usable.map((s) => s.monthsSinceClose))
 
   const printed = printedWeightPercents(shares)
@@ -328,7 +340,7 @@ export function reconcileAdjustedSales(args: {
     const leads: string[] = []
     // "closest in size to yours" adds nothing beside "the same size as yours",
     // and printing both reads as padding.
-    if (closestSize != null && closestSize > 0 && Math.abs(s.sqft - args.subjectSqft) === closestSize) {
+    if (closestSize != null && closestSize > 0 && Math.abs(sizedSqft(s) - args.subjectSqft) === closestSize) {
       leads.push('closest in size to yours')
     }
     if (s.monthsSinceClose === mostRecent) leads.push('the most recent sale')

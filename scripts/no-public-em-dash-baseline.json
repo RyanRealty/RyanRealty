@@ -7,7 +7,7 @@
     "app/subdivisions/[slug]/_v3/subdivision-traces.ts": 2,
     "components/site/v3/V3ListingClose.client.tsx": 2,
     "components/site/v3/V3ListingRow.tsx": 1,
-    "components/site/v3/V3ProofBlock.view.ts": 3,
+    "components/site/v3/V3ProofBlock.view.ts": 2,
     "components/site/v3/V3StickyAsk.client.tsx": 1,
     "lib/site/publish-plat-unsold.ts": 1,
     "lib/site/registry-metadata.ts": 1

@@ -54,6 +54,7 @@ import { cameOffStatus } from '@/lib/cma/listing-status'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
 import { concessionOffClose, concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
 import { joinAnd, movesADollar } from '@/lib/cma/adjustments-applied'
+import { aduDollarsOnCover } from '@/lib/cma/adu-chapter'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
 import { newHomeRateParagraph } from '@/lib/cma/new-home-rate'
 import { resaleNeverOwnedParagraph } from '@/lib/cma/resale-never-owned'
@@ -686,10 +687,12 @@ export function adjustmentMoveClause(comps: readonly CmaAdjustedComp[]): string 
   const date = comps.filter((c) => movesADollar(c.timeAdjustment)).length
   const size = comps.filter((c) => movesADollar(c.sizeAdjustment)).length
   const story = comps.filter((c) => movesADollar(c.storyAdjustment)).length
+  const adu = comps.filter((c) => movesADollar(c.aduAdjustment)).length
   const credit = comps.filter((c) => movesADollar(concessionOffClose(c))).length
   if (size > 0) groups.push({ label: 'size', n: size })
   if (date > 0) groups.push({ label: 'date', n: date })
   if (story > 0) groups.push({ label: 'style', n: story })
+  if (adu > 0) groups.push({ label: 'the ADU', n: adu })
   if (credit > 0) groups.push({ label: 'seller concessions', n: credit })
   if (groups.length === 0) return ''
   const one = (g: { label: string; n: number }) => {
@@ -800,11 +803,25 @@ function dateBasisLine(input: { subject: CmaSubject; comps: readonly CmaAdjusted
  * sales produce it; this rate stays on the list price, the one figure every
  * document carries.
  */
-export function perSquareFootSentence(sqft: number, price: number, opts?: { onMarket?: boolean }): string {
+export function perSquareFootSentence(
+  sqft: number,
+  price: number,
+  opts?: { onMarket?: boolean; adu?: { dollars: number; sqft: number } | null },
+): string {
   // A home on the market carries an opinion of value on its cover, not a
   // price (rule 27).
   const phrase = opts?.onMarket === true ? COVER_VALUE_PHRASE : COVER_PRICE_PHRASE
   const cover = `${phrase.charAt(0).toUpperCase()}${phrase.slice(1)}`
+  // A price that carries the ADU dollars (lib/pricing/adu-value.ts) is two
+  // parts, and the per-foot figure is the main home's alone: the whole price
+  // over the main home's area would print a rate no sale in the grid shows
+  // (Matt 2026-10-14).
+  const adu = opts?.adu
+  if (adu && adu.dollars > 0 && adu.sqft > 0 && price > adu.dollars) {
+    return `${cover} comes to ${usd(Math.round((price - adu.dollars) / sqft))} per square foot across your home's ${int(
+      sqft,
+    )} square feet, with ${usd(adu.dollars)} on top for the ${int(adu.sqft)} square foot ADU.`
+  }
   return `${cover} comes to ${usd(Math.round(price / sqft))} per square foot across your home's ${int(sqft)} square feet.`
 }
 
@@ -812,7 +829,9 @@ function perSquareFootLine(input: { subject: CmaSubject; pricing: CmaPricing; on
   const sqft = input.subject.sqft
   const price = input.pricing.recommended
   if (sqft == null || !(sqft > 0) || price == null || !(price > 0)) return ''
-  return `<p class="small">${esc(perSquareFootSentence(sqft, price, { onMarket: input.onMarket }))}</p>`
+  return `<p class="small">${esc(
+    perSquareFootSentence(sqft, price, { onMarket: input.onMarket, adu: aduDollarsOnCover(input.pricing) }),
+  )}</p>`
 }
 
 /**

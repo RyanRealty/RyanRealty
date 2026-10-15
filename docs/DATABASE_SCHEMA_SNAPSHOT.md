@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-10-15T01:18:38.828Z
+**Generated:** 2026-10-15T04:47:37.147Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -59,7 +59,7 @@ One row per MLS-history event for a listing. snake_case columns; `listing_key` r
 | `sort_order` | integer | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
 
-### `listings` · **rows ≈ 700,963**
+### `listings` · **rows ≈ 597,899**
 
 Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case columns** — `"ListingKey"`, `"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"Latitude"`, `"Longitude"`, etc. The `details` jsonb column carries the raw RETS payload. **Never aggregate from this table at request time** — use `listing_tile_mv` / `market_pulse_live` / `market_stats_cache`.
 
@@ -287,7 +287,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 73,964**
+### `similar_listings_mv` · **rows ≈ 73,930**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 

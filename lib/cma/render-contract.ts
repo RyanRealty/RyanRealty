@@ -427,3 +427,161 @@ export function readRangeRuleKept(pricing: unknown): number | null {
   const n = num(obj(obj(pricing)?.rangeRule)?.kept)
   return n != null && n >= 0 ? Math.round(n) : null
 }
+
+// ── What the ADU adds, and the duplex cross-check ───────────────────────────
+
+export type AduValuePairRead = {
+  listingKey: string | null
+  address: string
+  subdivision: string | null
+  closeDate: string | null
+  closePrice: number
+  mainSqft: number | null
+  miles: number | null
+  aduSqft: number
+  aduSqftSource: string | null
+  plainComps: number | null
+  plainPpsf: number | null
+  plainBasis: string | null
+  mainValue: number | null
+  aduDollars: number
+  aduPerSqft: number
+}
+
+export type AduValueRead = {
+  subjectAduSqft: number
+  radiusMiles: number
+  aduSalesSeen: number
+  unpaired: number
+  minimumPairs: number
+  windowMonths: number | null
+  pairs: AduValuePairRead[]
+  /** How many pairs the rate was read over; the list above is capped for print. */
+  pairsCounted: number
+  rate: { lowerQuartile: number; median: number; upperQuartile: number } | null
+  /** The least and the most a unit brought per square foot over every pair; null when the row did not store them. */
+  perSqftLow: number | null
+  perSqftHigh: number | null
+  dollars: number | null
+}
+
+/**
+ * `pricing.aduValue` (lib/pricing/adu-value.ts), or null.
+ *
+ * Rejected, because the chapter would print a figure the row does not hold:
+ * no positive subject ADU area, no pair list, a pair with no address, no
+ * positive sale price, no positive unit area or a non-numeric unit figure, a
+ * rate without its three numbers, or dollars that are not the lower-quartile
+ * rate times the subject's area to the hundred (§0: the printed sum adds up).
+ */
+export function readStoredAduValue(pricing: unknown): AduValueRead | null {
+  const v = obj(obj(pricing)?.aduValue)
+  if (!v) return null
+  const subjectAduSqft = num(v.subjectAduSqft)
+  const radiusMiles = num(v.radiusMiles)
+  const minimumPairs = num(v.minimumPairs)
+  if (subjectAduSqft == null || !(subjectAduSqft > 0) || radiusMiles == null || !(radiusMiles > 0)) return null
+  if (minimumPairs == null || !(minimumPairs > 0) || !Array.isArray(v.pairs)) return null
+  const pairs: AduValuePairRead[] = []
+  for (const raw of v.pairs) {
+    const p = obj(raw)
+    if (!p) return null
+    const address = str(p.address)
+    const closePrice = num(p.closePrice)
+    const aduSqft = num(p.aduSqft)
+    const aduDollars = num(p.aduDollars)
+    const aduPerSqft = num(p.aduPerSqft)
+    if (!address || closePrice == null || !(closePrice > 0) || aduSqft == null || !(aduSqft > 0)) return null
+    if (aduDollars == null || aduPerSqft == null) return null
+    pairs.push({
+      listingKey: str(p.listingKey),
+      address,
+      subdivision: str(p.subdivision),
+      closeDate: str(p.closeDate),
+      closePrice,
+      mainSqft: num(p.mainSqft),
+      miles: num(p.miles),
+      aduSqft,
+      aduSqftSource: str(p.aduSqftSource),
+      plainComps: num(p.plainComps),
+      plainPpsf: num(p.plainPpsf),
+      plainBasis: str(p.plainBasis),
+      mainValue: num(p.mainValue),
+      aduDollars,
+      aduPerSqft,
+    })
+  }
+  const r = obj(v.rate)
+  const rate =
+    r && num(r.lowerQuartile) != null && num(r.median) != null && num(r.upperQuartile) != null
+      ? { lowerQuartile: num(r.lowerQuartile)!, median: num(r.median)!, upperQuartile: num(r.upperQuartile)! }
+      : null
+  const dollars = num(v.dollars)
+  if (dollars != null) {
+    if (!rate) return null
+    const expected = Math.round((rate.lowerQuartile * subjectAduSqft) / 100) * 100
+    if (Math.abs(expected - dollars) > 1) return null
+  }
+  const aduSalesSeen = num(v.aduSalesSeen) ?? pairs.length
+  const unpaired = num(v.unpaired) ?? 0
+  const windowMonths = num(v.windowMonths)
+  const counted = num(v.pairsCounted)
+  const pairsCounted = counted != null && counted >= pairs.length ? Math.round(counted) : pairs.length
+  return {
+    subjectAduSqft,
+    radiusMiles,
+    aduSalesSeen,
+    unpaired,
+    minimumPairs,
+    windowMonths: windowMonths != null && windowMonths > 0 ? windowMonths : null,
+    pairs,
+    pairsCounted,
+    rate,
+    perSqftLow: num(v.perSqftLow),
+    perSqftHigh: num(v.perSqftHigh),
+    dollars,
+  }
+}
+
+export type MultiUnitCrossCheckRead = {
+  units: number | null
+  propertySubType: string
+  /** Which pass priced it: the subject's own unit count, or every two- to four-unit sale. */
+  outcome: 'same-units' | 'class' | null
+  sqft: number | null
+  sqftBasis: string | null
+  compsHeld: number
+  recommended: number | null
+  valueLow: number | null
+  valueHigh: number | null
+}
+
+/**
+ * `pricing.multiUnitCrossCheck` (lib/cma/build.ts duplexCrossCheck), or null.
+ * A figure needs its band both ways round; a read with no figure still
+ * prints, as the sentence that no duplex figure could be set beside the price.
+ */
+export function readMultiUnitCrossCheck(pricing: unknown): MultiUnitCrossCheckRead | null {
+  const x = obj(obj(pricing)?.multiUnitCrossCheck)
+  if (!x) return null
+  const propertySubType = str(x.propertySubType)
+  if (!propertySubType) return null
+  const compsHeld = num(x.compsHeld) ?? 0
+  const recommended = num(x.recommended)
+  const valueLow = num(x.valueLow)
+  const valueHigh = num(x.valueHigh)
+  const priced = recommended != null && recommended > 0
+  if (priced && (valueLow == null || valueHigh == null || !(valueLow > 0) || !(valueHigh >= valueLow))) return null
+  const outcome = x.outcome === 'same-units' || x.outcome === 'class' ? x.outcome : null
+  return {
+    units: num(x.units),
+    propertySubType,
+    outcome,
+    sqft: num(x.sqft),
+    sqftBasis: str(x.sqftBasis),
+    compsHeld: compsHeld > 0 ? Math.round(compsHeld) : 0,
+    recommended: priced ? recommended : null,
+    valueLow: priced ? valueLow : null,
+    valueHigh: priced ? valueHigh : null,
+  }
+}

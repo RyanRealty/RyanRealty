@@ -184,6 +184,8 @@ export type { ListingRawRow } from '@/lib/data/listings/getListingRawRow'
 // Commercial leases (MLS 'G'): the unit of the rent, from the raw payload.
 export { getLeaseRateOptions } from '@/lib/data/listings/getLeaseRateOptions'
 export type { LeaseRateOptionsByKey } from '@/lib/data/listings/getLeaseRateOptions'
+export { getAduFacts } from '@/lib/data/listings/getAduFacts'
+export type { AduFacts, AduFactsByKey } from '@/lib/data/listings/getAduFacts'
 export { getLeaseTerms } from '@/lib/data/listings/getLeaseTerms'
 export type { LeaseTermsByKey } from '@/lib/data/listings/getLeaseTerms'
 export { getLeaseLeadPhotos } from '@/lib/data/listings/getLeaseLeadPhotos'

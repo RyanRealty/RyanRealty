@@ -29,6 +29,7 @@ import {
 import { resolveCmaSubject } from '@/lib/cma/subject'
 import { brokerCompRefusal, selectComps, MIN_COMPS } from '@/lib/cma/comps'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
+import { compAduFacts, readAduValue } from '@/lib/pricing/adu-value'
 import { pricingFailureMessage } from '@/lib/pricing/price-set'
 import { loadBpoEngineInputs, priceBpoAdjusted, bpoCompMap } from '@/lib/bpo/engine'
 import { judgeComps } from '@/lib/cma/judge'
@@ -247,12 +248,25 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       : []
     const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
 
+    // What the ADU adds, the same line the CMA carries (lib/cma/build.ts, lib/pricing/adu-value.ts).
+    const subjectAduSqft =
+      subject.units?.aduYn === true && (subject.units.aduSqft ?? 0) > 0 ? subject.units.aduSqft! : null
+    const aduLine = subjectAduSqft != null && !subject.multiUnit && selection.diagnostics.adu_preference?.outcome !== 'adu-sales'
+    const aduValue = aduLine
+      ? await readAduValue({
+          subject: { latitude: subject.latitude, longitude: subject.longitude, aduSqft: subjectAduSqft, listingKey: subject.listingKey },
+          asOf: generatedAtIso.slice(0, 10),
+        })
+      : null
+    const compAdu = aduValue?.dollars != null ? await compAduFacts(selection.comps) : null
+    if (aduValue) for (const line of aduValue.trace) selection.trace.push(line)
+    const adu = aduValue && compAdu && subjectAduSqft != null ? { value: aduValue, subjectAduSqft, compAdu } : null
     // 4. Adjust comps + reconcile to the opinion (weak-tier comps carry half
     // weight in the reconciliation, matching the CMA engine).
     const deriveAll = (set: typeof selection.comps) => {
       const priced = priceBpoAdjusted({
         subject, set, market, selection, marketIndex, asOf: generatedAtIso.slice(0, 10), tierByKey,
-        priceOverride: input.priceOverride ?? null, adjustComps, computePricing,
+        priceOverride: input.priceOverride ?? null, adjustComps, computePricing, adu,
       })
       if (!priced.p) return { adj: priced.adj, p: null, op: null }
       return { ...priced, p: priced.p, op: deriveOpinion(subject, priced.p, market, history, { priceOverride: input.priceOverride ?? null }) }
@@ -492,6 +506,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         sqft: c.sqft,
         time_adjustment: c.timeAdjustment,
         size_adjustment: c.sizeAdjustment,
+        adu_adjustment: c.aduAdjustment ?? null,
         adjusted_price: c.adjustedPrice,
         weight: c.weight,
         selection_tier: c.selectionTier,

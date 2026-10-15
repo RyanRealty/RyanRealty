@@ -70,6 +70,7 @@ import { realSubdivisionName } from '@/lib/pricing/classes'
 import { formatCalendarDay } from '@/lib/format/date'
 import { isPocketTimeBasis } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { adjustmentNouns, adjustmentsApplied } from '@/lib/cma/adjustments-applied'
+import { aduMethodSentences } from '@/lib/cma/adu-chapter'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const INDEX_BASIS = 'city-monthly-index-trailing-3'
@@ -705,6 +706,8 @@ export function salesMethodSentences(input: {
   return [
     ...searchNote(input.subject, input.comps, input.searchTail, input.searchHead),
     ...dateNote(input.subject, input.comps, input.pricing),
+    // The ADU line, when a printed sale carries it (lib/cma/adu-chapter.ts).
+    ...aduMethodSentences(input.pricing, input.comps),
     ...askShareNote(input.subject, input.pricing, input.onMarket === true),
   ].map((s) => sanitizeLetterEmDash(s))
 }
