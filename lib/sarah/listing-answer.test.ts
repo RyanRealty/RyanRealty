@@ -39,6 +39,10 @@ const ZENITH: SarahListingFacts = {
   otherStructures: 'Storage, Workshop, Second Garage, RV/Boat Storage',
   interiorFeatures: 'Pantry, Kitchen Island, Walk-In Closet(s)',
   exteriorFeatures: null,
+  county: 'Deschutes',
+  parcelNumber: '280444',
+  latitude: 44.241837,
+  longitude: -121.224638,
 }
 
 const PATH = '/homes-for-sale/redmond/josie-meadows/4722-zenith-ave-220222095'

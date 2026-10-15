@@ -135,3 +135,12 @@ export {
   shouldAnswerFromListing,
   shouldAnswerFromPage,
 } from './listing-answer'
+export {
+  LOOKUP_PUBLIC_RECORDS_TOOL,
+  answerPublicRecordsQuestion,
+  classifyPublicRecordsQuestion,
+  formatPublicRecordsReply,
+  lookupPublicRecords,
+  runLookupPublicRecords,
+  type PublicRecordsIntent,
+} from './public-records'

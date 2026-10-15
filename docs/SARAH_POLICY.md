@@ -1,6 +1,6 @@
-# Sarah policy (version 1.0.0-2026-10-15)
+# Sarah policy (version 1.1.0-2026-10-15)
 
-Written policy for Ryan Realty's unlicensed AI assistant, kept under ORS 696.237 and OAR 863-015-0140. Supervising principal broker and on-call licensee: Matt Ryan. Research basis: Counsel Matter #3 (2026-10-14), including Addendum A. Not a licensed attorney's sign-off.
+Written policy for Ryan Realty's unlicensed AI assistant, kept under ORS 696.237 and OAR 863-015-0140. Supervising principal broker and on-call licensee: Matt Ryan. Research basis: Counsel Matter #3 (2026-10-14), including Addendum A. Not a licensed attorney's sign-off. Policy version 1.1.0-2026-10-15 adds public-records lookup.
 
 ## Scope
 
@@ -20,7 +20,7 @@ A prompt or guardrail change is a dated entry in the append-only log (later PR) 
 
 ## Data she may read
 
-Published MLS listing fields from the Spark sync, attributed as "The listing shows". Commute estimates from a maps API, labeled estimates. School assignment as listed, plus a pointer to the Bend-La Pine boundary lookup. Never quality judgments. Never another broker's contact info.
+Published MLS listing fields from the Spark sync, attributed as "The listing shows". Stored `listings.parcel_number` (the Deschutes DIAL account), county, and coordinates. Public-records tools: Deschutes County DIAL permits (one user-initiated page, cached), Deschutes LandFD zoning, Crook County GIS taxlots, and the verified city/county zoning registry (`data/zoning/definitions.json`) for Bend, Redmond, Sisters, and La Pine ADU/lot rules. Commute estimates from a maps API, labeled estimates. School assignment as listed, plus a pointer to the Bend-La Pine boundary lookup. Never quality judgments. Never another broker's contact info. Public-records answers are facts from those sources, not legal or zoning determinations. Jefferson County has no public taxlot or permit layer.
 
 ## Escalation
 
