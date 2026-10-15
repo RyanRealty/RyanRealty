@@ -48,6 +48,14 @@ import {
   type SarahTeaserKind,
 } from '@/lib/sarah/teaser'
 import { startSarahVoiceSession, type SarahVoiceHandle, type SarahVoiceStatus } from '@/lib/sarah/web-voice'
+import {
+  armSarahMicOnTap,
+  continueSarahVoiceAfterArm,
+  logSarahVoiceError,
+  releaseSarahArmedMic,
+  sarahVoiceErrorMessage,
+  takeVoiceErrorSlot,
+} from '@/lib/sarah/web-voice-arm'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { trackEvent } from '@/lib/tracking'
 import './tokens.css'
@@ -109,6 +117,7 @@ export function V3SarahAssistant() {
   const shownRef = useRef(false)
   const dragRef = useRef<{ y: number; dy: number } | null>(null)
   const voiceRef = useRef<SarahVoiceHandle | null>(null)
+  const voiceErrorPostedRef = useRef({ posted: false })
   const flowRef = useRef(flow)
   const messagesRef = useRef<HTMLDivElement | null>(null)
   const latestRef = useRef<HTMLDivElement | null>(null)
@@ -289,19 +298,36 @@ export function V3SarahAssistant() {
       if (prev.some((line) => line.text === WEB_VOICE_NOTICE_EN)) return prev
       return [...prev, { from: 'sarah', text: WEB_VOICE_NOTICE_EN }]
     })
-    void (async () => {
-      const token = await mintSarahVoiceToken()
-      if (!token.data) {
-        setVoiceStatus('error')
-        setLines((prev) => [...prev, { from: 'sarah', text: token.error ?? WEB_VOICE_NOTICE_EN }])
-        return
+    let armed
+    try {
+      armed = armSarahMicOnTap()
+    } catch (err) {
+      setVoiceStatus('error')
+      logSarahVoiceError(err)
+      if (takeVoiceErrorSlot(voiceErrorPostedRef.current)) {
+        const message = sarahVoiceErrorMessage(err)
+        setLines((prev) => [...prev, { from: 'sarah', text: message }])
       }
+      return
+    }
+    void (async () => {
       try {
+        const { token } = await continueSarahVoiceAfterArm(armed, mintSarahVoiceToken)
+        if (!token.data) {
+          setVoiceStatus('error')
+          releaseSarahArmedMic(armed)
+          if (takeVoiceErrorSlot(voiceErrorPostedRef.current)) {
+            setLines((prev) => [...prev, { from: 'sarah', text: token.error ?? WEB_VOICE_NOTICE_EN }])
+          }
+          return
+        }
         const handle = await startSarahVoiceSession({
           secret: token.data.secret,
           brokerFirstName: token.data.brokerFirstName,
+          armed,
           onStatus: setVoiceStatus,
           onError: (message) => {
+            if (!takeVoiceErrorSlot(voiceErrorPostedRef.current)) return
             setLines((prev) => [...prev, { from: 'sarah', text: message }])
           },
           onTranscript: (from, text) => {
@@ -313,12 +339,12 @@ export function V3SarahAssistant() {
           },
         })
         voiceRef.current = handle
-      } catch {
+      } catch (err) {
         setVoiceStatus('error')
-        setLines((prev) => [
-          ...prev,
-          { from: 'sarah', text: 'I need microphone permission to talk. You can keep typing.' },
-        ])
+        logSarahVoiceError(err)
+        if (takeVoiceErrorSlot(voiceErrorPostedRef.current)) {
+          setLines((prev) => [...prev, { from: 'sarah', text: sarahVoiceErrorMessage(err) }])
+        }
       }
     })()
   }, [acceptVisitor, desk.slug, voiceStatus])

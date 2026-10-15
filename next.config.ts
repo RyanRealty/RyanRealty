@@ -278,6 +278,7 @@ const nextConfig: NextConfig = {
         headers: [
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Permissions-Policy', value: 'microphone=(self)' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           // GA4 + Google Ads need more than www.google-analytics.com: gtag requests
           // hit www.google.com/g/collect and the regional *.analytics.google.com /

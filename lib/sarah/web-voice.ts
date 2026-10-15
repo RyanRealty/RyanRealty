@@ -10,6 +10,7 @@ import {
 } from '@/lib/grok/realtime-browser'
 import { buildSarahSystemPrompt, sarahGreeting } from './persona'
 import { WEB_VOICE_NOTICE_EN } from './scripts'
+import { SARAH_MIC_CONSTRAINTS, type SarahArmedMic } from './web-voice-arm'
 
 export type SarahVoiceStatus = 'idle' | 'asking' | 'connecting' | 'listening' | 'speaking' | 'error'
 
@@ -41,21 +42,24 @@ function floatTo16(input: Float32Array): Int16Array {
 export async function startSarahVoiceSession(opts: {
   secret: string
   brokerFirstName: string
+  armed?: SarahArmedMic
   onStatus: (status: SarahVoiceStatus) => void
   onError: (message: string) => void
   onTranscript?: (from: 'sarah' | 'visitor', text: string) => void
 }): Promise<SarahVoiceHandle> {
   opts.onStatus('connecting')
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
-  })
+  const stream = opts.armed
+    ? await opts.armed.streamPromise
+    : await navigator.mediaDevices.getUserMedia(SARAH_MIC_CONSTRAINTS)
   const ws = new WebSocket(grokRealtimeWebSocketUrl(), [grokRealtimeSubprotocol(opts.secret)])
-  const audioCtx = new AudioContext({ sampleRate: GROK_REALTIME_SAMPLE_RATE })
+  const audioCtx = opts.armed?.captureCtx ?? new AudioContext({ sampleRate: GROK_REALTIME_SAMPLE_RATE })
+  if (audioCtx.state === 'suspended') void audioCtx.resume()
   const source = audioCtx.createMediaStreamSource(stream)
   const processor = audioCtx.createScriptProcessor(2048, 1, 1)
   const mute = audioCtx.createGain()
   mute.gain.value = 0
-  const playCtx = new AudioContext({ sampleRate: GROK_REALTIME_SAMPLE_RATE })
+  const playCtx = opts.armed?.playCtx ?? new AudioContext({ sampleRate: GROK_REALTIME_SAMPLE_RATE })
+  if (playCtx.state === 'suspended') void playCtx.resume()
   let stopped = false
   let playing = false
 
