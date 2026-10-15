@@ -499,6 +499,7 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | `lib/analytics/submit-alert-signup.ts` | Client wrappers for the alert-capture actions; push `sign_up` only on a counted submit |
 | `lib/analytics/ga-suppression.ts` | The one "may this reach GA4" rule, browser and server |
 | `lib/analytics/automation.ts` | Automation and crawler classifier |
+| `lib/analytics/chrome-releases.ts` | Chrome stable release dates (Chromium schedule) the automation classifier's stale-browser rule reads |
 | `lib/analytics/internal-user-cookie.ts` | `rr_internal` cookie (broker browsers) |
 | `lib/analytics/non-production-build.ts` | No Google tag on dev or preview builds |
 | `lib/analytics/ga4-demographic-sections.ts` | GA4 report states for the demographics page: withheld when Google's privacy thresholds remove every group, never a 0 or an error |

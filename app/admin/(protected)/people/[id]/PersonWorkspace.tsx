@@ -71,6 +71,8 @@ import { sendDeliverableForPerson } from '@/app/actions/send-deliverable'
 import { startBpoFromPerson } from '../actions'
 import type { PersonNoteRow } from '@/lib/data/crm/getPersonNotes'
 import { PersonWorkspaceV3, type PersonWorkspaceV3Details } from './PersonWorkspaceV3'
+import { PersonConsentEditor } from './PersonConsentEditor'
+import { readPersonChannelConsent } from '@/lib/crm/person-channel-consent'
 
 export type PersonWorkspaceSearch = {
   intent?: string
@@ -153,6 +155,11 @@ export async function PersonWorkspace({
   // acting broker's scope — getCrmPersonFull returns the empty bundle
   // otherwise, and the identity header above still renders from the card). ──
   const person = full.person
+  const consent = readPersonChannelConsent({
+    tags: person?.tags ?? card.tags,
+    custom: person?.custom ?? null,
+    suppressions: full.suppressions,
+  })
   let fold: React.ReactNode = null
   if (person) {
     const personLike = person as unknown as MergePersonLike & { assigned_broker?: string | null }
@@ -296,6 +303,7 @@ export async function PersonWorkspace({
           memberships={memberships}
           reportSub={reportSub}
           siteActivity={siteActivity}
+          consent={consent}
           composer={{
             personId: idNum,
             initialChannel,
@@ -519,6 +527,11 @@ export async function PersonWorkspace({
               <ContactEmailEngagement engagement={emailTracking} />
             </div>
           ) : null}
+        </section>
+
+        <section aria-label="Consent" style={{ marginBottom: 20 }}>
+          <SectionHead>Consent</SectionHead>
+          <PersonConsentEditor personId={idNum} sms={consent.sms} email={consent.email} call={consent.call} />
         </section>
 
         <TasksSection

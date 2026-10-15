@@ -28,7 +28,8 @@
  *      their events, scripted form submits screened out by the p06
  *      quality:suspect rule), and the person page renders getPersonSiteActivity.
  *   8. The automation class stays wired: UA classification plus the
- *      provisional contact-deep-link shape, and the next event clears it.
+ *      provisional cold-arrival classes (contact-deep-link, stale-browser,
+ *      datacenter-geo), cleared by a sign of a person or by identification.
  *   9. Automation is honored everywhere, not only by the track route (Matt
  *      2026-09-29): the identify actions refuse it (by the request's user agent, by
  *      the browser's own navigator.webdriver sent with the call, and by the session
@@ -169,7 +170,11 @@ export function missingWiring(read) {
     ['app/api/visitors/track/route.ts', /identifySessionAndBrowser\(/, 'track route no longer identifies + back-stitches the visit'],
     ['app/api/visitors/track/route.ts', /classifyAutomation\(/, 'track route no longer classifies automation'],
     ['app/api/visitors/track/route.ts', /classifyArrivalShape\(/, 'track route no longer flags the contact-deep-link crawler shape'],
-    ['app/api/visitors/track/route.ts', /clearProvisionalAutomation\(/, 'track route no longer clears a provisional automation flag on the next event'],
+    ['app/api/visitors/track/route.ts', /clearProvisionalAutomation\(/, 'track route no longer clears a provisional automation flag on a sign of a person'],
+    ['app/api/visitors/track/route.ts', /if \(provisionalStill && personEvidence && !sessionWrite\.inserted\) \{\s*await clearProvisionalAutomation\(/, 'track route no longer clears a stored provisional flag on the event that shows a person, or clears it on one that does not (a section render would clear the crawler)', CODE],
+    ['app/api/visitors/track/route.ts', /!automation\.automated &&\s*!provisionalStill\s*\)/, 'the GA4 mirror sends views of a session still flagged as a provisional automation class', CODE],
+    ['lib/data/identity/sessionIdentity.ts', /if \(sessionStamped && !browserStitch\) await clearProvisionalAutomation\(/, 'identifying a session without a browser stitch no longer clears its provisional automation flag (an identified contact would stay out of the counts)', CODE],
+    ['lib/visitor-backfill.ts', /await clearProvisionalFlags\(supabase, \{ column: 'rr_vid'/, 'the browser back-stitch no longer clears provisional automation flags on the identified browser', CODE],
     ['app/api/visitors/track/route.ts', /personCookieValue\(/, 'track route no longer sets the signed rr_pid cookie'],
     ['lib/data/identity/sessionIdentity.ts', /stitchBrowserToPerson\(/, 'identify no longer stitches the browser (identity map + back-stitch)'],
     ['lib/visitor-backfill.ts', /export async function stitchBrowserToPerson[\s\S]{0,400}stitchVisitorIdentity\(/, 'the browser stitch seam no longer calls stitchVisitorIdentity'],
@@ -233,7 +238,11 @@ export function missingWiring(read) {
     ['public/rr-doc-tracker.js', /var automated = navigator\.webdriver === true \? '&webdriver=1' : ''/, 'the client-document tracker no longer tells the identify ping the browser is automated', CODE],
     ['lib/identity/consent.ts', /void args\.search/, 'arrivalConsent reads the arrival query to auto-grant marketing from an ad click', CODE],
     ['public/rr-doc-tracker.js', /var consentAtArrival = function \(\) \{\s*return consentNow\(\)\s*\}/, 'the client-document tracker auto-grants marketing from a campaign link', CODE],
-    ['app/api/visitors/track/route.ts', /body\.pageCategory !== 'client-document'/, 'a consented reader of a client document can drop out of the GA4 mirror (the document runs no gtag)', CODE],
+    // The mirror's rule moved into ga4MirrorSends (lib/analytics/ga4-mirror.ts,
+    // Matt 2026-10-14): the route must hand it the page category and address,
+    // and the rule must keep a client-document view.
+    ['app/api/visitors/track/route.ts', /ga4MirrorSends\(\{ eventType, consent, pageCategory: body\.pageCategory, pageUrl \}\)/, 'a consented reader of a client document can drop out of the GA4 mirror (the document runs no gtag)', CODE],
+    ['lib/analytics/ga4-mirror.ts', /if \(isGa4MirrorView\(input\.eventType\) && !isClientDocumentView\(input\.pageCategory, input\.pageUrl\)\) return false/, 'the GA4 mirror rule drops a consented reader of a client document (the document runs no gtag)', CODE],
     ['components/site/v3/V3SectionTracker.client.tsx', /const ctx = firstPartyEventContext\(\)/, 'V3SectionTracker no longer posts the shared context (consent, session, campaign)', CODE],
     ['components/site/v3/V3SectionTracker.client.tsx', /if \(level !== 'all' && level !== 'analytics'\) return/, 'V3SectionTracker posts empty section and scroll rows for a visitor at the essential tier', CODE],
     // Rule 11: the session rule, in both copies.

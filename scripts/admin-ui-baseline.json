@@ -58,7 +58,7 @@
       "h2": 1
     },
     "app/admin/(protected)/today/page.tsx": {
-      "input": 6
+      "input": 3
     },
     "app/admin/(protected)/valuations/page.tsx": {
       "h2": 5
@@ -68,8 +68,6 @@
     }
   },
   "legacyPages": [],
-  "extraPrimaryButtons": {
-    "app/admin/(protected)/today/page.tsx": 1
-  },
+  "extraPrimaryButtons": {},
   "distinctWidths": 5
 }

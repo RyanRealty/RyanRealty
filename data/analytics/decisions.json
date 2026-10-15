@@ -161,6 +161,12 @@
       "code": "scripts/ga4-admin.mjs"
     },
     {
+      "id": "automation-flagged-not-deleted",
+      "decided": "Matt 2026-10-14",
+      "why": "Automation is flagged, never deleted: a crawler, scraper, headless browser or our own tooling keeps its visitor_sessions row and events with is_automated = true and an automation_reason, so the call stays auditable and reversible. Every visitor count (the Website dashboard, /admin/visitors, lead sources, funnels) must leave flagged sessions out. The rules and their measured hits live in docs/TRACKING_POLICY.md 'Automation'; scripts/audit-visitor-automation.ts replays them over any window and lists every session that proved to be a person which a rule flagged on arrival.",
+      "code": "lib/analytics/automation.test.ts"
+    },
+    {
       "id": "no-person-data-in-ga4",
       "decided": "Matt 2026-10-14",
       "why": "GA4 receives no personal information: Google's GA4 terms forbid it, and a mailing address is personal information. Every page_location and page_referrer GA4 gets (the browser page_view, gtag('set') before every other hit, the server mirror, every Measurement Protocol event) goes through stripGa4UrlParams (app/api/visitors/track/strip-identity.ts): /cma/<address slug> and /bpo/<slug> become /cma/[document] and /bpo/[document] with the opaque cma_id or bpo_id, a typed ?address= or ?inquiry= and any email or phone value are removed, and a legacy utm_campaign=<cma slug> becomes cma-letter. The address still prefills /sell and /contact; only GA4's copy loses it. No GA4 parameter is named for a person (valuation_requested sends cma_id, never cma_slug), and lead events give GA4 labels and ids only, never a caller's free text. The audit fails if GA4 holds new person data from 2026-10-21.",

@@ -162,7 +162,7 @@ export const DESTINATIONS: NavDestination[] = [
     defaultOpen: true,
     children: [
       { label: 'Worklist', href: '/admin/valuations', icon: 'file-search', capability: 'valuations.view' },
-      { label: 'CMAs', href: '/admin/cmas', icon: 'file-search', capability: 'prospecting.view' },
+      { label: 'CMAs', href: '/admin/valuations', icon: 'file-search', capability: 'prospecting.view' },
       { label: 'Price opinions', href: '/admin/bpo', icon: 'gauge', capability: 'prospecting.view' },
     ],
   },
