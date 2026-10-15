@@ -39,6 +39,7 @@ export const LEGACY_IDENTITY_PARAM = '_fuid'
 /**
  * Which sender minted the token. Lands in visitor_sessions.identified_via as
  * `tracked_link:<channel>` so the activity view can say how a person arrived.
+ * Only these identify a visitor from a URL (`?_pid=`).
  */
 export const LINK_CHANNELS = [
   'email', // broker composer, governed email, one-off admin email
@@ -50,11 +51,31 @@ export const LINK_CHANNELS = [
   'sms', // composer / governed SMS, short-link redirect
   'prospecting',
   'personal', // a broker copied the contact's personal link (DM, Gmail, text from a phone)
-  'cookie', // the rr_pid first-party cookie value
 ] as const
 export type LinkChannel = (typeof LINK_CHANNELS)[number]
 
+/**
+ * The rr_pid first-party cookie value (lib/identity/person-cookie.ts). The
+ * channel IS the identity's provenance, under the signature, so nobody can
+ * upgrade it (consent integrity, 2026-10-14):
+ *   - `verified`: minted from a channel the person controls: a signed link we
+ *     sent to their own email or phone, or a sign-in with a confirmed email.
+ *   - `claimed`: minted from something a visitor merely typed, or carried over
+ *     from it: a form submit's email maps the browser's rr_vid, and the next
+ *     session on that browser is born identified (rr_vid_carryover). Good for
+ *     analytics, the CRM timeline and Known people; never proof for consent.
+ *   - `cookie`: every value minted before 2026-10-14, provenance unknown. Read
+ *     as unverified (fail closed); the person verifies by the normal path.
+ * Never accepted from a URL: verifyPersonLinkToken refuses these channels, so
+ * a visitor cannot paste their own claimed cookie into `?_pid=` and come back
+ * verified.
+ */
+export const COOKIE_CHANNELS = ['verified', 'claimed', 'cookie'] as const
+export type CookieChannel = (typeof COOKIE_CHANNELS)[number]
+export type IdentityProvenance = 'verified' | 'claimed'
+
 const CHANNEL_SET = new Set<string>(LINK_CHANNELS)
+const COOKIE_CHANNEL_SET = new Set<string>(COOKIE_CHANNELS)
 
 const TOKEN_RE = /^([1-9]\d{0,11})\.([a-z]{2,12})\.([A-Za-z0-9_-]{22})$/
 const LEGACY_RAW_RE = /^[1-9]\d{0,11}$/
@@ -93,18 +114,14 @@ export function signPersonLinkToken(personId: number, channel: LinkChannel): str
 
 export type VerifiedPersonToken = { personId: number; channel: LinkChannel }
 
-/**
- * Verify a token. Returns null for anything that is not a well-formed token
- * signed by this server, INCLUDING a bare legacy id (`64115`): an unsigned id
- * identifies nobody. Never throws on input.
- */
-export function verifyPersonLinkToken(value: unknown): VerifiedPersonToken | null {
+/** Signature check over one parsed value, for a given set of channels. Never throws. */
+function verifyToken(value: unknown, channels: Set<string>): { personId: number; channel: string } | null {
   if (typeof value !== 'string') return null
   const m = TOKEN_RE.exec(value.trim())
   if (!m) return null
   const personId = Number(m[1])
   const channel = m[2]
-  if (!validPersonId(personId) || !CHANNEL_SET.has(channel)) return null
+  if (!validPersonId(personId) || !channels.has(channel)) return null
   let expected: string
   try {
     expected = mac(personId, channel)
@@ -114,7 +131,35 @@ export function verifyPersonLinkToken(value: unknown): VerifiedPersonToken | nul
   const a = Buffer.from(m[3])
   const b = Buffer.from(expected)
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null
-  return { personId, channel: channel as LinkChannel }
+  return { personId, channel }
+}
+
+/**
+ * Verify a token. Returns null for anything that is not a well-formed LINK
+ * token signed by this server, INCLUDING a bare legacy id (`64115`): an
+ * unsigned id identifies nobody. A cookie value (COOKIE_CHANNELS) is refused
+ * too: it is not a link we sent. Never throws on input.
+ */
+export function verifyPersonLinkToken(value: unknown): VerifiedPersonToken | null {
+  const v = verifyToken(value, CHANNEL_SET)
+  return v ? { personId: v.personId, channel: v.channel as LinkChannel } : null
+}
+
+/** Mint an rr_pid cookie value carrying its provenance. Throws on a bad id or provenance. */
+export function signPersonCookieToken(personId: number, provenance: IdentityProvenance): string {
+  if (!validPersonId(personId)) throw new Error(`[identity] bad person id: ${String(personId)}`)
+  if (provenance !== 'verified' && provenance !== 'claimed') {
+    throw new Error(`[identity] unknown provenance: ${String(provenance)}`)
+  }
+  return `${personId}.${provenance}.${mac(personId, provenance)}`
+}
+
+export type VerifiedPersonCookieToken = { personId: number; channel: CookieChannel }
+
+/** Verify an rr_pid cookie value. Link tokens and anything unsigned read as null. Never throws. */
+export function verifyPersonCookieToken(value: unknown): VerifiedPersonCookieToken | null {
+  const v = verifyToken(value, COOKIE_CHANNEL_SET)
+  return v ? { personId: v.personId, channel: v.channel as CookieChannel } : null
 }
 
 /** Shape check only (no signature check): does this look like a minted token? */

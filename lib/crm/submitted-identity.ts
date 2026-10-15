@@ -18,6 +18,8 @@
  * A household sharing a laptop is the ordinary case here, not an edge case.
  */
 
+import type { PersonCookieProvenance } from '@/lib/identity/person-cookie'
+
 export type SubmittedIdentity = {
   /** The person to write against, or null to let the email-first create path run. */
   personId: number | null
@@ -52,4 +54,27 @@ export function resolveSubmittedIdentity(args: {
   }
 
   return { personId: null, alreadyKnown: false }
+}
+
+/**
+ * May an opt-in ticked in THIS submit (SMS consent, email updates) be recorded
+ * against the person resolveSubmittedIdentity chose? (consent integrity, 2026-10-14)
+ *
+ *  - The submit carried an email: the person is the one those typed details
+ *    name or create. That is first-party consent given with the form's own
+ *    disclosure, and it stands.
+ *  - No email: the person came from the rr_pid cookie, a guess left over from an
+ *    earlier visit. It counts only when the cookie is VERIFIED (a signed link we
+ *    sent them, or a confirmed sign-in, lib/identity/person-cookie.ts). A
+ *    claimed cookie names whoever's email was once typed into a form on this
+ *    browser; a legacy or unsigned one proves nothing at all. Recording consent
+ *    for that person would let a stranger opt someone else in.
+ */
+export function submittedConsentCounts(args: {
+  hasEmail: boolean
+  /** PersonCookieRead.provenance of the rr_pid cookie, or null when there is none. */
+  cookieProvenance: PersonCookieProvenance | null
+}): boolean {
+  if (args.hasEmail) return true
+  return args.cookieProvenance === 'verified'
 }
