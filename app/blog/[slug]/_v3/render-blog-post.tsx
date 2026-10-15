@@ -54,6 +54,7 @@ import { generateBlogSchema } from '@/lib/structured-data'
 import ShareButton from '@/components/ShareButton'
 import { formatDate } from '@/lib/format/date'
 import { blogUpdatedLabel } from '../updated-label'
+import { blogIndexHref } from '../../_v3/blog-index-paths'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
@@ -327,7 +328,7 @@ export async function renderBlogPost(
                 {category ? (
                   <Link
                     className="v3-blog-byline-link"
-                    href={`/blog?category=${encodeURIComponent(category)}`}
+                    href={blogIndexHref({ category, page: 1 })}
                   >
                     More in {category}
                   </Link>
@@ -433,7 +434,7 @@ export async function renderBlogPost(
             ...(tagBody ? [{ kind: 'prose' as const, term: 'Tags', body: tagBody }] : []),
             { label: 'All posts', href: '/blog' },
             ...(category
-              ? [{ label: `More in ${category}`, href: `/blog?category=${encodeURIComponent(category)}` }]
+              ? [{ label: `More in ${category}`, href: blogIndexHref({ category, page: 1 }) }]
               : []),
             { label: 'Value my home', href: valuationHref(`/blog/${post.slug}`) },
           ]}
