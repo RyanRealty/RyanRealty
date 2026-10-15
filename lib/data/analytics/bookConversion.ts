@@ -78,6 +78,9 @@ export type BookConversionReport = {
 
 const PAGE = 1000
 
+/** The crm_timeline kinds the touch and stage-move tally counts; the read asks for no others. */
+const BOOK_TOUCH_KINDS = ['email_out', 'sms_out', 'call', 'email_in', 'sms_in', 'stage_change']
+
 /**
  * Pull the stage transition out of a `stage_change` row.
  *
@@ -156,6 +159,9 @@ export async function getBookConversion(startIso: string, endIso: string): Promi
     const { data, error } = await sb
       .from('crm_timeline')
       .select('id,kind,title,payload,person_id')
+      // Only the kinds the switch below counts: delivery receipts alone add
+      // hundreds of rows a day to this paged scan.
+      .in('kind', BOOK_TOUCH_KINDS)
       .gte('ts', startIso)
       .lte('ts', endIso)
       .order('id', { ascending: true })

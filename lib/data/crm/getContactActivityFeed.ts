@@ -63,6 +63,13 @@ const KIND_MAP: Record<string, KindMeta> = {
   email: { category: 'email', direction: null, label: 'Email' },
   email_open: { category: 'email', direction: 'in', label: 'Email opened' },
   email_click: { category: 'email', direction: 'in', label: 'Email link clicked' },
+  // Resend delivery receipts (one per send, ~300-490 a day). Recorded since
+  // 20261015030000 taught crm_timeline_kind_check the kind; filed as system so
+  // they stay off the lead timeline and the right-now strip by default.
+  email_delivered: { category: 'system', direction: null, label: 'Email delivered' },
+  email_bounce: { category: 'email', direction: null, label: 'Email bounced' },
+  email_complaint: { category: 'email', direction: null, label: 'Spam complaint' },
+  email_unsubscribe: { category: 'email', direction: null, label: 'Unsubscribed' },
   call: { category: 'call', direction: null, label: 'Call' },
   voicemail: { category: 'call', direction: 'in', label: 'Voicemail' },
   note: { category: 'note', direction: null, label: 'Note' },
@@ -74,6 +81,8 @@ const KIND_MAP: Record<string, KindMeta> = {
   lead_created: { category: 'milestone', direction: 'in', label: 'New lead' },
   home_valuation: { category: 'milestone', direction: null, label: 'Home valuation requested' },
   subscribe_report: { category: 'milestone', direction: null, label: 'Subscribed to a market report' },
+  // The reply stamp against a sent CMA (lib/data/cma/engagementAlerts.ts).
+  cma_replied: { category: 'milestone', direction: 'in', label: 'Replied about a report' },
   parsed_intent: { category: 'web', direction: null, label: 'Website intent detected' },
   // web_event was missing — the 14.8K CRM site-activity rows fell through to
   // 'other' and mis-rendered as "Web event". Classify as website activity. (fix)
