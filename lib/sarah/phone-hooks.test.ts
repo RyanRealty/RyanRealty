@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  mattConferenceJoin as mattConferenceJoinFromBarrel,
+  notifyLiveSession as notifyLiveSessionFromBarrel,
+  sarahSessionConferenceJoin as sarahSessionConferenceJoinFromBarrel,
+} from './index'
+import {
   isSarahLiveConference,
   mattConferenceJoin,
   notifyLiveSession,
@@ -21,6 +26,9 @@ describe('phone-line hook points', () => {
 
   it('exports notifyLiveSession as the name the phone line calls', async () => {
     expect(notifySarahLiveSession).toBe(notifyLiveSession)
+    expect(notifyLiveSessionFromBarrel).toBe(notifyLiveSession)
+    expect(sarahSessionConferenceJoinFromBarrel).toBe(sarahSessionConferenceJoin)
+    expect(mattConferenceJoinFromBarrel).toBe(mattConferenceJoin)
     const result = await notifyLiveSession({
       channel: 'voice',
       sessionId: 'abc-123',
