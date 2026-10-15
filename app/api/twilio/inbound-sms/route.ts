@@ -2,16 +2,21 @@
  * Twilio inbound SMS webhook (blueprint §5.5) — the "right agent depending on
  * the client" router.
  *
- * 1. Validate the Twilio signature (reject spoofed posts).
- * 2. Match the sender against crm_contact_points → known contact: write
- *    sms_in to their timeline, alert the ASSIGNED broker (email + task).
- * 3. Unknown sender → create a lead (source inbound-sms), alert immediately.
- * 4. STOP/UNSUBSCRIBE keywords → suppression chokepoint (sms channel).
+ * Hot path (AGENTS.md — Twilio inbound ack): validate signature, persist the
+ * raw payload, return TwiML/200. CRM, timeline, DNC auto-clear, and STOP/START
+ * opt-out run after the ack (or via twilio-webhook-replay).
  */
 
 import { NextResponse, after } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { DEFAULT_DESK_BROKER, brokerForTwilioNumber, verifiedTwilioParams, brokerTwilioNumber, forwardCellForBroker, normalizeTo10, sendSms, MARKETING_NUMBER } from '@/lib/crm/twilio'
+import { DEFAULT_DESK_BROKER, brokerForTwilioNumber, brokerTwilioNumber, forwardCellForBroker, normalizeTo10, sendSms, MARKETING_NUMBER } from '@/lib/crm/twilio'
+import {
+  ackTwilioWebhook,
+  smsKeywordReply,
+  STOP_WORDS,
+  START_WORDS,
+  HELP_WORDS,
+} from '@/lib/crm/twilio-webhook-ack'
 import { getBrokerTelephony } from '@/lib/data/crm/getBrokerTelephony'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { markConversationUnreadOnInbound } from '@/app/actions/crm-inbox'
@@ -37,10 +42,6 @@ export const dynamic = 'force-dynamic'
 // which Vercel counts against this same function's execution budget. The
 // webhook itself still acks in well under a second on every branch.
 export const maxDuration = 300
-
-const STOP_WORDS = new Set(['stop', 'stopall', 'unsubscribe', 'cancel', 'end', 'quit'])
-const START_WORDS = new Set(['start', 'unstop', 'yes', 'resubscribe'])
-const HELP_WORDS = new Set(['help', 'info'])
 
 /** Extract Twilio MMS media (mediaSid + contentType + url) from the webhook params so
  *  client-sent photos/docs are captured, not silently dropped. Capped at 10.
@@ -186,10 +187,16 @@ async function logInbound(sid: string, from: string, to: string, o: InboundOutco
 // crm-gmail-sync email path can classify inbound EMAIL replies the same way.
 
 export async function POST(request: Request) {
-  const verified = await verifiedTwilioParams(request)
-  if (!verified.ok) return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  const params = verified.params
+  return ackTwilioWebhook({
+    request,
+    kind: 'inbound-sms',
+    process: processInboundSms,
+    respond: (params) => twiml(smsKeywordReply(params.Body)),
+  })
+}
 
+/** CRM / timeline / opt-out / DNC-clear. Runs after the TwiML ack. */
+export async function processInboundSms(params: Record<string, string>): Promise<void> {
   const from = params.From ?? ''
   const to = params.To ?? ''
   const body = (params.Body ?? '').trim()
@@ -200,7 +207,7 @@ export async function POST(request: Request) {
   const { isNumberBlocked } = await import('@/lib/data/crm/getBlockedNumber')
   if (await isNumberBlocked(from)) {
     await logInbound(sid, from, to, { outcome: 'dropped', reason: 'blocked number' })
-    return twiml()
+    return
   }
 
   // Reply-loop guard / broker SMS agent branch (docs/plans/BROKER_SMS_AGENT_2026-07-31.md
@@ -229,7 +236,7 @@ export async function POST(request: Request) {
     // silent no-ops — every outcome here acks Twilio the same way the
     // pre-agent guard below did.
     await logInbound(sid, from, to, { outcome: 'agent', reason: `broker sms agent: ${result.status}` })
-    return twiml()
+    return
   }
   // A broker texting a COLLEAGUE's business line (Matt's cell → Paul's line) is
   // an internal message, not a lead and not a reply loop: relay it to the
@@ -254,7 +261,7 @@ export async function POST(request: Request) {
         reason: dialedLineOwner ? `${senderBroker} texted own business line` : `${senderBroker} texted the shared marketing line`,
       })
     }
-    return twiml()
+    return
   }
 
   const firstToken = body.toLowerCase().split(/\s+/)[0] ?? ''
@@ -388,7 +395,7 @@ export async function POST(request: Request) {
     // HELP keyword → carrier-required help reply (does not change subscription).
     if (HELP_WORDS.has(firstToken)) {
       await logInbound(sid, from, to, { outcome: 'dropped', reason: 'HELP keyword' })
-      return twiml('Ryan Realty. Reply STOP to opt out. Msg and data rates may apply. For help visit ryan-realty.com/contact.')
+      return
     }
 
     // STOP handling (leading-token match) → suppression chokepoint
@@ -399,7 +406,7 @@ export async function POST(request: Request) {
         title: 'SMS opt-out (STOP) — sms channel suppressed', source: 'twilio',
       })
       await logInbound(sid, from, to, { outcome: 'dropped', reason: 'STOP keyword' })
-      return twiml('You have been unsubscribed and will not receive further texts. Reply START to resubscribe.')
+      return
     }
 
     // START handling (audit p0.3): the STOP reply promises "Reply START to
@@ -412,7 +419,7 @@ export async function POST(request: Request) {
         title: 'SMS opt-in (START) — sms stop-keyword suppression removed', source: 'twilio',
       })
       await logInbound(sid, from, to, { outcome: 'dropped', reason: 'START keyword' })
-      return twiml('You are resubscribed and will receive texts again. Reply STOP to opt out.')
+      return
     }
 
     // Route the alert to the dialed line's broker (the contact's assignment for
@@ -580,9 +587,8 @@ export async function POST(request: Request) {
       `Text from ${match.name ?? from} (${from}):\n${displayBody.slice(0, 400)}\n\nReply (sends from your business line): ryan-realty.com/admin/people/${match.personId}#comms`,
     )
     await logInbound(sid, from, to, forwarded)
-    return twiml()
+    return
   }
 
   await logInbound(sid, from, to, { outcome: 'forward_failed', reason: 'no CRM person for sender' })
-  return twiml()
 }
