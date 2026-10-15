@@ -31,7 +31,7 @@ describe('parseTimeline', () => {
     expect(r.value.beats[0].footage?.src).toMatch(/^https:\/\//)
     expect(r.value.beats[0].cards?.[0]).toMatchObject({ kind: 'number', number: 'bend_sfr_mos' })
     expect(r.value.beats[1].scene).toMatchObject({ kind: 'meter_fill_verdict', number: 'bend_sfr_mos' })
-    expect(r.value.voice).toMatchObject({ voice: 'ellen', start: 0.25, display: { 'three and a half': '3.5' } })
+    expect(r.value.voice).toMatchObject({ engine: 'grok', voice: 'eve', start: 0.25, display: { 'three and a half': '3.5' } })
     expect(r.value.cta).toMatchObject({ kind: 'send_invite', start: 8.7, end: 12.2 })
     const scene = r.value.beats[1].scene
     expect(scene?.kind === 'meter_fill_verdict' && scene.show_value).toBe(false)
@@ -61,9 +61,9 @@ describe('parseTimeline', () => {
         expect.stringMatching(/^beats\[1\]\.role: must be one of hook, intro, body, payoff, endcard/),
         expect.stringMatching(/^beats\[0\]\.cards\[0\]\.kind: must be one of/),
         expect.stringMatching(/^voice\.script: .*em or en dash/),
-        expect.stringMatching(/^voice\.script: ElevenLabs v3 takes no <break> tags/),
+        expect.stringMatching(/^voice\.script: no <break> tags/),
         expect.stringMatching(/^voice\.script: .*no digits/),
-        expect.stringMatching(/^voice\.voice: must be one of ellen, victoria/),
+        expect.stringMatching(/^voice\.voice: must be one of eve/),
         expect.stringMatching(/^cta\.end: the call to action runs into the end card/),
         expect.stringMatching(/^cta\.text: a send-invite line/),
       ]),

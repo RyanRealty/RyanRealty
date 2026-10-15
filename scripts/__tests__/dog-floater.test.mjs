@@ -26,10 +26,10 @@ describe('ci:dog-floater lock', () => {
     expect(dogFloaterProblems({ root: REPO })).toEqual([])
   })
 
-  it('refuses a layout that drops the floater', () => {
+  it('refuses remounting the floating broker disc', () => {
     const p = dogFloaterProblems({
       root: REPO,
-      files: { ...live, layout: live.layout.replace('<V3DogFloater />', '') },
+      files: { ...live, layout: live.layout.replace('<V3SarahAssistant />', '<V3DogFloater />\n          <V3SarahAssistant />') },
     })
     expect(p.join('\n')).toMatch(/V3DogFloater/)
   })
@@ -42,7 +42,7 @@ describe('ci:dog-floater lock', () => {
   it('refuses remounting the sticky phone dock', () => {
     const p = dogFloaterProblems({
       root: REPO,
-      files: { ...live, layout: live.layout.replace('<V3DogFloater />', '<V3PhoneDock />\n          <V3DogFloater />') },
+      files: { ...live, layout: live.layout.replace('<V3SarahAssistant />', '<V3PhoneDock />\n          <V3SarahAssistant />') },
     })
     expect(p.join('\n')).toMatch(/V3PhoneDock|sticky/)
   })

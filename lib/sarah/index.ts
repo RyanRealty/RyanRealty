@@ -91,6 +91,14 @@ export {
   type SarahLiveSessionInput,
 } from './phone-hooks'
 export {
+  SARAH_BROKER_HEADSHOT,
+  SARAH_DEFAULT_BROKER_SLUG,
+  brokerJoinedLine,
+  deskBrokerFromAssigned,
+  deskBrokerSlug,
+  type SarahDeskBroker,
+} from './desk-broker'
+export {
   SARAH_TEASER_COPY,
   SARAH_TEASER_DELAY_MS,
   SARAH_TEASER_SESSION_KEY,

@@ -13,6 +13,22 @@ const nav = { pathname: '/homes-for-sale/bend/20556-empire-220226741' }
 
 vi.mock('next/navigation', () => ({ usePathname: () => nav.pathname }))
 vi.mock('@/lib/tracking', () => ({ trackEvent: vi.fn() }))
+vi.mock('@/app/actions/sarah-desk', () => ({
+  getSarahDeskBroker: vi.fn(async () => ({
+    data: {
+      slug: 'matt',
+      firstName: 'Matt',
+      fullName: 'Matt Ryan',
+      photoSrc: '/images/brokers/ryan-matt.png',
+      photoAlt: 'Matt Ryan',
+      phoneDisplay: '541.703.3095',
+      phoneTel: '+15417033095',
+      email: 'matt@ryan-realty.com',
+      contactHref: '/contact?agent=matt',
+    },
+    error: null,
+  })),
+}))
 
 ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -39,11 +55,14 @@ function stubMedia() {
 let container: HTMLDivElement
 let root: Root | null = null
 
-function mount() {
+async function mount() {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
   act(() => root!.render(React.createElement(V3SarahAssistant)))
+  await act(async () => {
+    await Promise.resolve()
+  })
 }
 
 function unmount() {
@@ -53,14 +72,14 @@ function unmount() {
 }
 
 describe('V3SarahAssistant listing teaser behavior', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     nav.pathname = '/homes-for-sale/bend/20556-empire-220226741'
     wide = true
     vi.mocked(trackEvent).mockReset()
     sessionStorage.clear()
     stubMedia()
     vi.useFakeTimers()
-    mount()
+    await mount()
   })
 
   afterEach(() => {
@@ -91,11 +110,11 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     expect(trackEvent).toHaveBeenCalledWith('sarah_teaser_shown', { surface: 'listing', cta: 'bubble' })
   })
 
-  it('shows only a launcher badge on a phone listing page', () => {
+  it('shows only a launcher badge on a phone listing page', async () => {
     unmount()
     wide = false
     stubMedia()
-    mount()
+    await mount()
     act(() => {
       vi.advanceTimersByTime(SARAH_TEASER_DELAY_MS)
     })
@@ -115,6 +134,17 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     })
     expect(trackEvent).toHaveBeenCalledWith('sarah_teaser_clicked', { surface: 'listing', cta: 'bubble' })
     expect(container.querySelector('[data-sarah="panel"]')).not.toBeNull()
+    expect(container.querySelector('[data-sarah="desk"]')?.getAttribute('data-sarah-broker')).toBe('matt')
+    expect(container.querySelector('[data-sarah="desk-line"]')?.textContent).toBe('Your broker is Matt Ryan')
+    const deskLinks = [...container.querySelectorAll<HTMLAnchorElement>('.v3-sarah__desk-actions a')].map((a) => ({
+      href: a.getAttribute('href'),
+      text: a.textContent,
+    }))
+    expect(deskLinks).toEqual([
+      { href: 'tel:+15417033095', text: 'Call' },
+      { href: 'sms:+15417033095', text: 'Text' },
+      { href: '/contact?agent=matt', text: 'Message' },
+    ])
     expect(container.querySelector('[data-sarah-teaser]')).toBeNull()
     expect(sessionStorage.getItem(SARAH_TEASER_SESSION_KEY)).toBe('1')
 
@@ -140,10 +170,10 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     expect(panel?.querySelector('.v3-sarah__panel-role')?.textContent).not.toMatch(/not a licensed broker/i)
   })
 
-  it('does not tease a city browse page', () => {
+  it('does not tease a city browse page', async () => {
     unmount()
     nav.pathname = '/homes-for-sale/bend'
-    mount()
+    await mount()
     act(() => {
       vi.advanceTimersByTime(SARAH_TEASER_DELAY_MS)
     })

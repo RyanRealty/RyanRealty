@@ -14,10 +14,27 @@ describe('V3SarahAssistant · listing teaser', () => {
   it('is mounted on the public layout and exported from the barrel', () => {
     expect(LAYOUT).toContain('<V3SarahAssistant')
     expect(BARREL).toContain("from './V3SarahAssistant.client'")
+    expect(LAYOUT).not.toMatch(/V3DogFloater/)
+    expect(LAYOUT).not.toMatch(/<V3PhoneDock/)
+  })
+
+  it('puts Call, Text, and Message on the resolved desk broker', () => {
+    expect(SRC).toContain("from '@/app/actions/sarah-desk'")
+    expect(SRC).toContain('getSarahDeskBroker')
+    expect(SRC).toContain('deskBrokerFromAssigned')
+    expect(SRC).toContain('brokerJoinedLine')
+    expect(SRC).toContain('tel:${desk.phoneTel}')
+    expect(SRC).toContain('sms:${desk.phoneTel}')
+    expect(SRC).toContain('desk.contactHref')
+    expect(SRC).toContain("action: 'call'")
+    expect(SRC).toContain("action: 'text'")
+    expect(SRC).toContain("action: 'message'")
+    expect(CSS).toContain('.v3-sarah__desk')
+    expect(CSS).toContain('.v3-sarah__desk-actions')
   })
 
   it('uses Matt\'s short web intro and does not put unlicensed status in the chrome', () => {
-    expect(SRC).toContain('WEB_GREETING_EN')
+    expect(SRC).toContain('webGreetingEn')
     expect(SRC).toContain('WEB_SAVED_NOTICE_EN')
     expect(SRC).toContain('data-sarah="saved-notice"')
     expect(SRC).toMatch(/AI assistant/)
