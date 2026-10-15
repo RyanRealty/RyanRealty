@@ -44,6 +44,8 @@ export type StaticGenerationHarness = {
    * back the pending write the earlier render left behind.
    */
   newRender(): void
+  /** The entry keys Next has written, in write order. */
+  keys(): string[]
 }
 
 export function staticGenerationHarness(route = '/cities/[slug]'): StaticGenerationHarness {
@@ -86,6 +88,9 @@ export function staticGenerationHarness(route = '/cities/[slug]'): StaticGenerat
     },
     newRender() {
       workStore.pendingRevalidates = undefined
+    },
+    keys() {
+      return [...entries.keys()]
     },
   }
 }

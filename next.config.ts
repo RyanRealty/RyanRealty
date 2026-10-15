@@ -619,6 +619,30 @@ const nextConfig: NextConfig = {
     // edge-cache headers + a refactored layout (no top-level headers()
     // / cookies() reads in the shell) so the function response is at
     // least cacheable at the CDN even though the route is still dynamic.
+
+    // STATIC GENERATION AGAINST ONE DATABASE (2026-10-14). Next 16.1.6 renders
+    // `staticGenerationMaxConcurrency` pages at once in EACH export worker
+    // (default 8; next/dist/export/worker.js), and the production build runs 7
+    // workers ("Generating static pages using 7 workers"): 56 place pages at a
+    // time, each racing a dozen Supabase reads. PostgREST's pool cannot take
+    // that: its log carried "PGRST003 Timed out acquiring connection from
+    // connection pool" during the day's builds; a read of the small
+    // subdivision_flags table averaged 394 ms from the solo build f7b23980c and
+    // 108 to 134 ms between builds (Supabase edge logs); and that queue wait
+    // is what tripped the withTimeoutFallback rails (up to 104 timeouts in a
+    // contended build). Three per worker is 21 pages in flight:
+    // the build is bound by the database, not by render CPU, so the queue
+    // shrinks without the work going slower.
+    staticGenerationMaxConcurrency: 3,
+    // Attempts per page, not retries: Next runs a page this many times before
+    // it fails the build (next/dist/export/worker.js exportPageWithRetry; the
+    // default 1 means one attempt). Four production builds died that day on
+    // ONE page each whose listings read was refused under contention
+    // (ListingsUnavailableError: /communities/mountain-high, broken-top,
+    // northwest-crossing, black-butte-ranch/types/single-family). A page that
+    // still refuses on the third attempt still fails the build: the refusal
+    // rule (lib/site/listings-unavailable.ts) is untouched.
+    staticGenerationRetryCount: 3,
   },
   // Include CMA drafts + finalized assets so /api/cma/[slug]/pdf can read
   // them from disk inside the serverless function (avoids the SSO wall on

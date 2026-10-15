@@ -35,19 +35,38 @@ export function makeResilientCached<A extends unknown[], T>(
   fallback: T,
 ): (...args: A) => Promise<T> {
   const cached = unstable_cache(fetchFn, keyParts, opts)
+  const label = resilientLabel(keyParts)
   return async (...args: A): Promise<T> => {
     try {
       return await cached(...args)
-    } catch {
+    } catch (first) {
       // Transient error bubbled up (NOT cached). One uncached retry before
       // falling back, so a blip doesn't strand the page on the fallback.
       try {
         return await fetchFn(...args)
-      } catch {
+      } catch (second) {
+        // SAY SO (2026-10-14). This used to fall back in silence, so a read
+        // that timed out twice looked exactly like an empty result: the
+        // sitemap read the indexable plat set as unreadable on production
+        // and emitted no /subdivisions URLs with nothing in the log to say
+        // why. The fallback still serves; the line names the read and both
+        // errors. Only the key's first part is printed, never its arguments.
+        console.warn(
+          `[resilient-cache:${label}] read failed twice; serving the fallback. ` +
+            `first: ${errorText(first)}; retry: ${errorText(second)}`,
+        )
         return fallback
       }
     }
   }
+}
+
+function resilientLabel(keyParts: string[]): string {
+  return String(keyParts[0] ?? 'unnamed').slice(0, 80)
+}
+
+function errorText(err: unknown): string {
+  return (err instanceof Error ? err.message : String(err)).replace(/\s+/g, ' ').slice(0, 200)
 }
 
 /**
