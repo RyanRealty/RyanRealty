@@ -1,10 +1,12 @@
 /**
  * getPlaceSchools — attendance-area schools that cover one place polygon.
  *
- * Source: public.get_place_schools. That RPC intersects boundaries
- * geo_type='school' (Deschutes County GIS attendance) with the place polygon
- * and keeps a school only when it covers at least 5% of the place. The share
- * is the cut and the sort key. It is not a published figure.
+ * Source: public.get_place_schools. A school is kept only when its boundaries
+ * geo_type='school' polygon (Deschutes County GIS attendance) covers at least
+ * 5% of the place polygon. The share is the cut and the sort key. It is not a
+ * published figure. The RPC reads public.place_school_shares, measured nightly
+ * by refresh_place_school_shares, and measures live only a place the last
+ * refresh did not see (migration 20261014233000).
  *
  * Names and levels come from data/co-schools.ts. A boundary slug with no
  * registry page is omitted, so the list never links to a missing school.
