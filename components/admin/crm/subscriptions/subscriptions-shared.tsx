@@ -51,17 +51,28 @@ export function EngagementCell({ engagement }: { engagement: SubscriptionEngagem
   if (sends === 0 && delivered === 0 && opens === 0 && clicks === 0) {
     return <span className="text-sm" style={{ color: 'var(--a-text-2)' }}>—</span>
   }
+  const n = (value: number) => value.toLocaleString('en-US')
+  const delivery = `${n(sends)} sent · ${n(delivered)} delivered`
+  const engagementLine = `${n(opens)} opened · ${n(clicks)} clicked`
+  const lastLine = `Last open ${formatDate(lastOpenAt)}${bounced > 0 ? ` · ${n(bounced)} bounced` : ''}`
   // Spans, not div/p: this renders inside a grid cell that is itself a <span>
   // (av2-rgrid__c), so a block element here would be invalid nesting.
+  // Delivery and engagement sit on two lines: on one line at 1440 the track
+  // truncated after "opened", so the click count, the one a broker acts on,
+  // was the part that disappeared (live check 2026-10-15). The full sentence
+  // rides in the title for any width that still clips.
   return (
-    <span className="block min-w-0">
+    <span className="block min-w-0" title={`${delivery} · ${engagementLine} · ${lastLine}`}>
       {/* truncate, not bare whitespace-nowrap: a <td> grew to fit its content,
           a grid track does not, so nowrap text would spill into the next cell. */}
       <span className="block truncate text-sm tabular-nums" style={{ color: 'var(--a-text)' }}>
-        {sends.toLocaleString('en-US')} sent · {delivered.toLocaleString('en-US')} delivered · {opens.toLocaleString('en-US')} opened · {clicks.toLocaleString('en-US')} clicked
+        {delivery}
+      </span>
+      <span className="block truncate text-sm tabular-nums" style={{ color: 'var(--a-text)' }}>
+        {engagementLine}
       </span>
       <span className="block truncate text-xs tabular-nums" style={{ color: 'var(--a-text-2)' }}>
-        Last open {formatDate(lastOpenAt)}{bounced > 0 ? ` · ${bounced.toLocaleString('en-US')} bounced` : ''}
+        {lastLine}
       </span>
     </span>
   )

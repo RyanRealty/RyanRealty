@@ -1,6 +1,7 @@
 # 2026-10-14 (Claude cloud, place-page listing alerts: daily, every property type)
 
-Branch: `claude/place-alerts-daily-all-types`. PR: opened from this branch with auto-merge.
+Branch: `claude/place-alerts-daily-all-types`. PR #629 merged as `9f4b120` (2026-10-15);
+follow-up `claude/place-alerts-hub-cell` (hub cell two lines, DAL index refresh).
 
 Matt's ask: every area page carries a quick email-only "new listings for this area"
 signup, every property type, daily by default, first email right away, and every
@@ -25,7 +26,12 @@ Found, not changed (asked Matt):
 - 10 active alerts have 10+ sends and no open or click ever (1,903 emails); several
   look bot-entered. Sunset rule proposed, not built.
 
-Next: merge, production READY, live signup test to `matt+alerts-test@ryan-realty.com`
-(sent, delivered, opened, clicked), clean up the test contact.
+Live proof 2026-10-15 on ryan-realty.com /cities/bend/river-west, `matt+alerts-test@`:
+row `444e36d9` `{neighborhoodSlug: bend-river-west}` daily; confirmation 01:17:02; first
+email 01:17:08 "River West homes: the 12 newest listings" (inbox, List-Unsubscribe
+One-Click, 26 tracked links, pixel); email_events sent 01:17:08.055, delivered .189, open
+01:17:46, click 01:17:53; hub row "1 sent · 1 delivered · 1 opened · 1 clicked"; one-click
+unsubscribe POST recorded `unsubscribe` + timeline. Test person 64828 soft-deleted, tagged
+`test:place-alerts-e2e-2026-10-15`, enrollment 218 stopped, task 1354 closed.
 
 Skills read: endtoend, crm-e2e. Node: none (Matt direct ask).
