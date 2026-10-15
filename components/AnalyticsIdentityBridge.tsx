@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { rememberClarityUserId } from '@/lib/analytics/clarity'
 import { hasAnalyticsConsent } from './CookieConsentBanner'
 
 /**
@@ -15,6 +16,9 @@ import { hasAnalyticsConsent } from './CookieConsentBanner'
  *      (lib/analytics/ga4-user-id.ts); cleared if the banner turns it off.
  *   2. Re-initializes Meta Pixel with advanced matching via
  *      fbq('init', PIXEL_ID, { em: <sha256> }).
+ *   3. Hands the same hashed user_id to Microsoft Clarity's identify
+ *      (lib/analytics/clarity.ts), so Matt can filter recordings to a known
+ *      contact. Only the hash; Clarity is called only while it is recording.
  *
  * Waits up to 3s for window.gtag / window.fbq (both gate on cookie consent).
  * Ad-blockers are honored: if either global never appears, it no-ops.
@@ -45,8 +49,8 @@ const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim()
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()
 
 async function waitForGlobal<T>(getter: () => T | undefined, maxMs = 3000, stepMs = 250): Promise<T | undefined> {
-  const start = Date.now()
-  while (Date.now() - start < maxMs) {
+  const start = Date.now() // hydration-safe: called only from the mount effect's async identity sync
+  while (Date.now() - start < maxMs) { // hydration-safe: same, never during render
     const v = getter()
     if (v) return v
     await new Promise((r) => setTimeout(r, stepMs))
@@ -81,6 +85,9 @@ function setGa4UserId(gtag: (...args: unknown[]) => void, userId: string | null)
 }
 
 async function applyIdentity(payload: IdentityPayload): Promise<void> {
+  // The same hashed id GA4 gets as user_id; never an email, name or phone.
+  // An unknown visitor (a sign-out, another person on the device) clears it.
+  rememberClarityUserId(payload.identified ? payload.hashedUserId : null)
   if (!payload.identified) return
 
   // An essential-tier visit reaches GA4 under an anonymous client id and

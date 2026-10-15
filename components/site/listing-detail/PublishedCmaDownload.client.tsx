@@ -225,7 +225,7 @@ export function PublishedCmaDownload({ listingKey, subjectAddress, terms, termsV
   }
 
   return (
-    <form onSubmit={submit} noValidate style={KB_PANEL_STYLE} data-testid="published-cma-register-form">
+    <form data-clarity-mask="True" onSubmit={submit} noValidate style={KB_PANEL_STYLE} data-testid="published-cma-register-form">
       <div className="display" style={{ fontSize: 'clamp(17px,1.7vw,20px)' }}>
         Where should we send it
       </div>
