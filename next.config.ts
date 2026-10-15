@@ -317,6 +317,16 @@ const nextConfig: NextConfig = {
         source,
         headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }],
       })),
+      // A client document whose address is a person's home (/cma/<slug>,
+      // /bpo/<slug>, and the static copies the /cma route can redirect to): a
+      // link out of it sends only the origin as the referrer, so the next page,
+      // its tags and every vendor never receive the subject's address in
+      // document.referrer (Matt 2026-10-14: no person addresses in GA4;
+      // strip-identity.ts GA4_PERSON_DOCUMENT_PREFIXES).
+      ...['/cma/:path*', '/bpo/:path*', '/cmas/:path*', '/drafts/:path*'].map((source) => ({
+        source,
+        headers: [{ key: 'Referrer-Policy', value: 'strict-origin' }],
+      })),
       {
         source: '/sign/:path*',
         headers: [

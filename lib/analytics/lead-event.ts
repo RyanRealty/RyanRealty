@@ -15,6 +15,8 @@
  * anywhere but fireLeadGenerated, and any browser generate_lead.
  */
 
+import { ga4SafePagePath, ga4SafeParamValue, isPersonParamName } from '@/app/api/visitors/track/strip-identity'
+
 /** The fixed lead_type list. A new value is a decision for Matt, not a code edit. */
 export const LEAD_TYPES = [
   'seller_valuation', // wants a value: valuation, CMA, home-worth forms
@@ -88,4 +90,69 @@ export function contactLeadType(input: {
   if (/sell|seller|both/.test(lower)) return 'seller_listing'
   if (/buy|relocat/.test(lower)) return 'buyer_question'
   return 'contact_general'
+}
+
+/**
+ * The /contact "How can we help" values a page or link can send. The /about box
+ * puts what a person TYPED into `?inquiry=`, and /contact turns that into a
+ * select option, so the submitted value can be free text. GA4 gets one of
+ * these or `Other` (Matt 2026-10-14: no free text in GA4).
+ */
+export const GA4_INQUIRY_TYPES = [
+  'Buying',
+  'Selling',
+  'Both',
+  'General Inquiry',
+  'Relocation',
+  'Join the team',
+  'Commercial lease',
+] as const
+
+export function ga4InquiryType(value: unknown): string | undefined {
+  if (typeof value !== 'string' || !value.trim()) return undefined
+  const v = value.trim().toLowerCase()
+  return GA4_INQUIRY_TYPES.find((t) => t.toLowerCase() === v) ?? 'Other'
+}
+
+/** A label or id: no whitespace, so never a sentence, a name or a street address. */
+const GA4_LABEL_RE = /^[A-Za-z0-9][A-Za-z0-9_.:/#-]{0,99}$/
+
+/**
+ * The GA4 copy of a lead or non-lead event's `extra` (lib/lead-tracking.ts).
+ * Labels and ids only, never a person's words: callers put free text here (a
+ * housing-market inquiry's context held the sender's name and message, a
+ * referral's area is typed), and GA4's terms forbid personal information.
+ *
+ *   - a person-named key (`address`, `email`, `cma_slug`) is dropped;
+ *   - `inquiry_type` is mapped to GA4_INQUIRY_TYPES;
+ *   - `page_path` goes through ga4SafePagePath;
+ *   - any other string must be label-shaped (GA4_LABEL_RE, no whitespace) after
+ *     ga4SafeParamValue, or it is dropped; numbers and booleans pass.
+ *
+ * The CRM and broker alerts keep the full text; only GA4's copy is cut.
+ */
+export function ga4LeadExtra(
+  extra: Record<string, string | number | boolean | undefined | null> | undefined,
+): Record<string, string | number | boolean> {
+  const out: Record<string, string | number | boolean> = {}
+  for (const [k, v] of Object.entries(extra ?? {})) {
+    if (v === undefined || v === null || isPersonParamName(k)) continue
+    if (k === 'inquiry_type') {
+      const t = ga4InquiryType(v)
+      if (t) out[k] = t
+      continue
+    }
+    if (k === 'page_path') {
+      const p = typeof v === 'string' ? ga4SafePagePath(v) : undefined
+      if (p) out[k] = p
+      continue
+    }
+    if (typeof v !== 'string') {
+      if (typeof v !== 'number' || Number.isFinite(v)) out[k] = v
+      continue
+    }
+    const safe = ga4SafeParamValue(k, v.trim())
+    if (typeof safe === 'string' && GA4_LABEL_RE.test(safe)) out[k] = safe
+  }
+  return out
 }

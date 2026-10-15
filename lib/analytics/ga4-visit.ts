@@ -22,6 +22,8 @@
  * Pure: no I/O.
  */
 
+import { ga4SafeParamValue } from '@/app/api/visitors/track/strip-identity'
+
 export const VISIT_IDLE_MS = 30 * 60 * 1000
 
 export type VisitContext = { id: number; number: number; start: boolean }
@@ -62,7 +64,12 @@ export type CampaignFields = {
  */
 export function campaignDetailsParams(campaign: CampaignFields | null | undefined): Record<string, string> | null {
   if (!campaign) return null
-  const clean = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 100) : null)
+  // GA4-safe too (Matt 2026-10-14): a legacy CMA link's utm_campaign is the
+  // document slug, the subject's street address; GA4 gets `cma-letter`.
+  const clean = (v: unknown, name = 'source') => {
+    const safe = typeof v === 'string' ? ga4SafeParamValue(name, v.trim()) : undefined
+    return typeof safe === 'string' && safe ? safe.slice(0, 100) : null
+  }
   let source = clean(campaign.source)
   let medium = clean(campaign.medium)
   if (!source) return null
@@ -72,14 +79,14 @@ export function campaignDetailsParams(campaign: CampaignFields | null | undefine
   }
   const out: Record<string, string> = { source }
   if (medium) out.medium = medium
-  const name = clean(campaign.campaign)
+  const name = clean(campaign.campaign, 'campaign')
   if (name) {
     out.campaign = name
     out.campaign_id = name
   }
-  const content = clean(campaign.content)
+  const content = clean(campaign.content, 'content')
   if (content) out.content = content
-  const term = clean(campaign.term)
+  const term = clean(campaign.term, 'term')
   if (term) out.term = term
   return out
 }

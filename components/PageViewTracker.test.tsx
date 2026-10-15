@@ -13,7 +13,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const state = vi.hoisted(() => ({ pathname: '/', analytics: true }))
-vi.mock('next/navigation', () => ({ usePathname: () => state.pathname }))
+vi.mock('next/navigation', () => ({ usePathname: () => state.pathname, useSearchParams: () => new URLSearchParams(window.location.search) }))
 vi.mock('./CookieConsentBanner', () => ({ hasMarketingConsent: () => false, hasAnalyticsConsent: () => state.analytics }))
 
 import PageViewTracker from './PageViewTracker'
@@ -73,6 +73,31 @@ describe('PageViewTracker', () => {
         page_referrer: 'https://ryan-realty.com/',
       }),
     ])
+  })
+
+  it('a navigation to a typed home address sends GA4 the page without it, on the page_view and on every later hit', async () => {
+    // No person addresses in GA4 (Matt 2026-10-14): the homepage box lands on /sell?address=<typed>.
+    await renderAt('/')
+    await renderAt('/sell?from=%2F&address=123%20Test%20Ln%2C%20Bend%20OR')
+    expect(pageViews()).toEqual([
+      expect.objectContaining({ page_type: 'sell', page_location: 'https://ryan-realty.com/sell?from=%2F', page_referrer: 'https://ryan-realty.com/' }),
+    ])
+    const sets = (window.dataLayer ?? []).filter((r) => Object.prototype.toString.call(r) === '[object Arguments]').map((r) => Array.from(r as ArrayLike<unknown>))
+    expect(sets).toEqual([['set', { page_location: 'https://ryan-realty.com/sell?from=%2F', page_referrer: 'https://ryan-realty.com/' }]])
+    // the set comes before the page_view, so every hit after it carries the safe address
+    const rows = window.dataLayer ?? []
+    expect(rows.findIndex((r) => Object.prototype.toString.call(r) === '[object Arguments]')).toBeLessThan(
+      rows.findIndex((r) => (r as Record<string, unknown>)?.event === 'page_view'),
+    )
+    expect(JSON.stringify(rows.map((r) => (Object.prototype.toString.call(r) === '[object Arguments]' ? Array.from(r as ArrayLike<unknown>) : r)))).not.toContain('Test')
+  })
+
+  it('a query-only change sends no page_view but keeps every later hit on the safe current address', async () => {
+    await renderAt('/homes-for-sale/bend')
+    await renderAt('/homes-for-sale/bend?bbox=-121.4,44.0,-121.2,44.1&email=pat%40example.com')
+    expect(pageViews()).toEqual([])
+    const sets = (window.dataLayer ?? []).filter((r) => Object.prototype.toString.call(r) === '[object Arguments]').map((r) => Array.from(r as ArrayLike<unknown>))
+    expect(sets).toEqual([['set', { page_location: 'https://ryan-realty.com/homes-for-sale/bend?bbox=-121.4%2C44.0%2C-121.2%2C44.1' }]])
   })
 
   it('does not count a query-only change (a map move rewriting ?bbox=)', async () => {

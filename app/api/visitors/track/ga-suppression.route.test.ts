@@ -33,6 +33,9 @@ const HUMAN_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 const SESSION = '00000000-0000-4000-8000-000000000077'
 const PAGE = 'https://ryan-realty.com/homes-for-sale/bend'
+// The control is an event the mirror sends on any page: an intent event at the
+// analytics tier. Essential-tier events are not mirrored at all (Matt
+// 2026-10-14), and a site page view at the analytics tier is the browser tag's.
 
 function track(over: Record<string, unknown>, opts: { cookie?: string; ua?: string; origin?: string } = {}): Promise<Response> {
   const origin = opts.origin ?? 'https://ryan-realty.com'
@@ -48,8 +51,8 @@ function track(over: Record<string, unknown>, opts: { cookie?: string; ua?: stri
       body: JSON.stringify({
         sessionId: SESSION,
         sourceDomain: 'ryan-realty.com',
-        eventType: 'page_view',
-        consent: 'essential',
+        eventType: 'intent_declared',
+        consent: 'analytics',
         pageUrl: PAGE,
         pageCategory: 'search',
         ...over,

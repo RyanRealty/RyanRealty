@@ -237,7 +237,11 @@ export function missingWiring(read) {
     ['public/rr-doc-tracker.js', /var automated = navigator\.webdriver === true \? '&webdriver=1' : ''/, 'the client-document tracker no longer tells the identify ping the browser is automated', CODE],
     ['lib/identity/consent.ts', /void args\.search/, 'arrivalConsent reads the arrival query to auto-grant marketing from an ad click', CODE],
     ['public/rr-doc-tracker.js', /var consentAtArrival = function \(\) \{\s*return consentNow\(\)\s*\}/, 'the client-document tracker auto-grants marketing from a campaign link', CODE],
-    ['app/api/visitors/track/route.ts', /body\.pageCategory !== 'client-document'/, 'a consented reader of a client document can drop out of the GA4 mirror (the document runs no gtag)', CODE],
+    // The mirror's rule moved into ga4MirrorSends (lib/analytics/ga4-mirror.ts,
+    // Matt 2026-10-14): the route must hand it the page category and address,
+    // and the rule must keep a client-document view.
+    ['app/api/visitors/track/route.ts', /ga4MirrorSends\(\{ eventType, consent, pageCategory: body\.pageCategory, pageUrl \}\)/, 'a consented reader of a client document can drop out of the GA4 mirror (the document runs no gtag)', CODE],
+    ['lib/analytics/ga4-mirror.ts', /if \(isGa4MirrorView\(input\.eventType\) && !isClientDocumentView\(input\.pageCategory, input\.pageUrl\)\) return false/, 'the GA4 mirror rule drops a consented reader of a client document (the document runs no gtag)', CODE],
     ['components/site/v3/V3SectionTracker.client.tsx', /const ctx = firstPartyEventContext\(\)/, 'V3SectionTracker no longer posts the shared context (consent, session, campaign)', CODE],
     ['components/site/v3/V3SectionTracker.client.tsx', /if \(level !== 'all' && level !== 'analytics'\) return/, 'V3SectionTracker posts empty section and scroll rows for a visitor at the essential tier', CODE],
     // Rule 11: the session rule, in both copies.

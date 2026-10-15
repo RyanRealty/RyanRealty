@@ -171,6 +171,24 @@
       "decided": "Matt 2026-10-14",
       "why": "Automation is flagged, never deleted: a crawler, scraper, headless browser or our own tooling keeps its visitor_sessions row and events with is_automated = true and an automation_reason, so the call stays auditable and reversible. Every visitor count (the Website dashboard, /admin/visitors, lead sources, funnels) must leave flagged sessions out. The rules and their measured hits live in docs/TRACKING_POLICY.md 'Automation'; scripts/audit-visitor-automation.ts replays them over any window and lists every session that proved to be a person which a rule flagged on arrival.",
       "code": "lib/analytics/automation.test.ts"
+    },
+    {
+      "id": "no-person-data-in-ga4",
+      "decided": "Matt 2026-10-14",
+      "why": "GA4 receives no personal information: Google's GA4 terms forbid it, and a mailing address is personal information. Every page_location and page_referrer GA4 gets (the browser page_view, gtag('set') before every other hit, the server mirror, every Measurement Protocol event) goes through stripGa4UrlParams (app/api/visitors/track/strip-identity.ts): /cma/<address slug> and /bpo/<slug> become /cma/[document] and /bpo/[document] with the opaque cma_id or bpo_id, a typed ?address= or ?inquiry= and any email or phone value are removed, and a legacy utm_campaign=<cma slug> becomes cma-letter. The address still prefills /sell and /contact; only GA4's copy loses it. No GA4 parameter is named for a person (valuation_requested sends cma_id, never cma_slug), and lead events give GA4 labels and ids only, never a caller's free text. The audit fails if GA4 holds new person data from 2026-10-21.",
+      "code": "lib/analytics/ga4-no-person-data.test.ts"
+    },
+    {
+      "id": "no-person-data-in-ga4-live",
+      "decided": "Matt 2026-10-14",
+      "why": "The live half of no-person-data-in-ga4: npm run analytics:audit counts CMA and BPO document paths, page_locations and referrers carrying a person param, and CMA-slug campaign names in GA4, and fails on any dated 2026-10-21 or later (a week for tabs opened on the old code to close). It counts and never prints a value.",
+      "check": { "fact": "ga4.personDataHitsSinceFix", "equals": 0 }
+    },
+    {
+      "id": "ga4-mirror-consented-only",
+      "decided": "Matt 2026-10-14",
+      "why": "The server copy of first-party events to GA4 (Measurement Protocol, app/api/visitors/track) sends nothing for an essential-tier visitor: one in a privacy-law region who has not accepted cookies, or who allowed marketing only. Those hits carried no source, so they were GA4 (not set) sessions, and the visitor had not consented. At the analytics tier it sends only client-document views (/cma, /bpo, which run no Google tag) and the intent events intent_declared, welcome_back, email_opt and sms_opt; a site page view is the browser tag's to count. First-party visitor_sessions still records every visit, so the site's own dashboard keeps counting them. One rule: ga4MirrorSends.",
+      "code": "lib/analytics/ga4-mirror.test.ts"
     }
   ]
 }

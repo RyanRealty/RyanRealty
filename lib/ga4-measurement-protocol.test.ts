@@ -155,6 +155,70 @@ describe('fireGa4Event — per-visit session + campaign_details (TRACK-1, P7)', 
   })
 })
 
+/**
+ * No personal information reaches GA4 (Matt 2026-10-14). Every server sender
+ * goes through fireGa4Event, so it is the one place that holds the rule for all
+ * of them: generate_lead, valuation_requested (which sent `cma_slug`, the
+ * subject's street address, until 2026-10-14), person_identified, the page-view
+ * mirror and its campaign_details.
+ */
+describe('fireGa4Event sends GA4 no personal information, whatever the caller passes', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
+  })
+
+  it('a CMA view: no address slug, title or person param reaches the payload', async () => {
+    vi.stubEnv('GA4_MEASUREMENT_ID', 'G-TEST')
+    vi.stubEnv('GA4_API_SECRET', 'secret')
+    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    await fireGa4Event({
+      eventName: 'page_view',
+      clientId: '1.2',
+      precedingEvents: [{ name: 'campaign_details', params: { source: 'cma', medium: 'email', campaign: 'cma-828-florida', campaign_id: 'cma-828-florida' } }],
+      userProperties: { assigned_broker: 'matt', email: 'pat@example.com' },
+      eventParams: {
+        page_location: 'https://ryan-realty.com/cma/cma-828-florida?utm_campaign=cma-828-florida&rr_doc=cma-828-florida',
+        page_path: '/cma/cma-828-florida',
+        page_title: 'Pricing report · 828 NW Florida Ave · Bend, OR 97703',
+        page_referrer: 'https://ryan-realty.com/sell?address=828%20NW%20Florida%20Ave',
+        cma_slug: 'cma-828-florida',
+        cma_id: '0b7d5c1e-1111-4222-8333-444455556666',
+        thing: 'pat@example.com',
+      },
+    })
+    const raw = String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body)
+    expect(raw).not.toMatch(/828|florida|example\.com/i)
+    const body = JSON.parse(raw)
+    expect(body.events[0].params).toMatchObject({ campaign: 'cma-letter', campaign_id: 'cma-letter' })
+    expect(body.events[1].params).toMatchObject({
+      page_location: 'https://ryan-realty.com/cma/[document]?utm_campaign=cma-letter',
+      page_path: '/cma/[document]',
+      page_title: 'CMA',
+      page_referrer: 'https://ryan-realty.com/sell',
+      cma_id: '0b7d5c1e-1111-4222-8333-444455556666',
+    })
+    expect(body.events[1].params).not.toHaveProperty('cma_slug')
+    expect(body.events[1].params).not.toHaveProperty('thing')
+    expect(body.user_properties).toEqual({ assigned_broker: { value: 'matt' } })
+  })
+
+  it('a lead submitted from /sell?address= keeps its page, minus the address', async () => {
+    vi.stubEnv('GA4_MEASUREMENT_ID', 'G-TEST')
+    vi.stubEnv('GA4_API_SECRET', 'secret')
+    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    await fireGa4Event({
+      eventName: 'generate_lead',
+      clientId: '1.2',
+      eventParams: { lead_type: 'seller_valuation', form_id: 'sell_value', page_location: 'https://ryan-realty.com/sell?address=61234%20SE%20River%20Rd&utm_source=gbp' },
+    })
+    const body = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body))
+    expect(body.events[0].params).toMatchObject({ lead_type: 'seller_valuation', form_id: 'sell_value', page_location: 'https://ryan-realty.com/sell?utm_source=gbp' })
+  })
+})
+
 describe('sessionFromGaStreamCookie (the _ga_<stream> cookie)', () => {
   it('reads the GS1 format', async () => {
     const { sessionFromGaStreamCookie } = await import('./ga4-measurement-protocol')

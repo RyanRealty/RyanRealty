@@ -526,7 +526,9 @@ export async function createCmaRequest(
         clientId: ga4.clientId,
         knownContact: ga4KnownContact(ga4.ctx, linkedPersonId),
         eventParams: ga4ServerEventParams(ga4.ctx, {
-          cma_slug: slug,
+          // The CMA's opaque row id, never its slug: the slug is the subject's
+          // street address, and GA4 receives no person addresses (Matt 2026-10-14).
+          cma_id: cmaRow.id,
           lp_variant: requestSource === 'fsbo-lp' ? 'fsbo' : requestSource === 'place-page' ? 'place-page' : 'seller-home-value',
           broker_slug: broker.slug,
           lead_classification: input.leadClassification ?? undefined,

@@ -83,7 +83,8 @@ describe('check-identity-loop — rules 4-7: wiring on the real tree', () => {
     ['app/api/track/e/click/route.ts', "event: 'click_automated'", "event: 'click'", 'the email click redirect records automation as an ordinary click'],
     ['public/rr-doc-tracker.js', "if (consentAtArrival() === 'declined') {", 'if (false) {', 'the client-document tracker no longer stops for a visitor who declined'],
     ['public/rr-doc-tracker.js', 'campaign: source.campaign', 'campaign: undefined', 'the client-document tracker no longer sends the arrival campaign'],
-    ['app/api/visitors/track/route.ts', "body.pageCategory !== 'client-document'", 'true', 'a consented reader of a client document can drop out of the GA4 mirror (the document runs no gtag)'],
+    ['app/api/visitors/track/route.ts', 'ga4MirrorSends({ eventType, consent, pageCategory: body.pageCategory, pageUrl })', 'ga4MirrorSends({ eventType, consent, pageUrl })', 'a consented reader of a client document can drop out of the GA4 mirror (the document runs no gtag)'],
+    ['lib/analytics/ga4-mirror.ts', 'if (isGa4MirrorView(input.eventType) && !isClientDocumentView(input.pageCategory, input.pageUrl)) return false', 'if (isGa4MirrorView(input.eventType)) return false', 'the GA4 mirror rule drops a consented reader of a client document (the document runs no gtag)'],
     ['components/site/v3/V3SectionTracker.client.tsx', 'const ctx = firstPartyEventContext()', 'const ctx = null', 'V3SectionTracker no longer posts the shared context (consent, session, campaign)'],
     ['components/site/v3/V3SectionTracker.client.tsx', "if (level !== 'all' && level !== 'analytics') return", 'if (false) return', 'V3SectionTracker posts empty section and scroll rows for a visitor at the essential tier'],
     // the review of 2026-09-30

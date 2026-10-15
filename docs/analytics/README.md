@@ -82,7 +82,40 @@ What the container holds:
 
 The page pushes `page_view` to the dataLayer and `GA4 - page_view` sends it: the inline GTM bootstrap once on first paint (right after `gtm.js`, so a visitor who leaves before hydration still counts), then `components/PageViewTracker.tsx` once per **pathname** change. A query-only change is not a page view: the search map rewrites `?bbox=` on every pan and zoom, the gallery writes `?photo=N`, the identity bridges strip params. Enhanced measurement's history page views counted all of those (2026-10-14 audit: one map zoom sent a second `page_view`) and carried no `page_type`.
 
-It depends on two settings outside the code, both set 2026-10-14: the Google tag's `send_page_view` = `false`, and GA4 enhanced measurement **Page changes based on browser history events** off. Turning either back on doubles or drops page views; `npm run analytics:audit` fails on any mix but one sender. `page_location` is identity-stripped (`_pid`, `_fuid`, `rr_doc`, the same `GA4_STRIP_PARAMS` as the server mirror): the Google tag used to send a tracked email link's contact id to Google on first paint, before `PersonIdentityBridge` cleaned the address bar.
+It depends on two settings outside the code, both set 2026-10-14: the Google tag's `send_page_view` = `false`, and GA4 enhanced measurement **Page changes based on browser history events** off. Turning either back on doubles or drops page views; `npm run analytics:audit` fails on any mix but one sender. `page_location` is GA4-safe (next section): the Google tag used to send a tracked email link's contact id to Google on first paint, before `PersonIdentityBridge` cleaned the address bar.
+
+### No personal information in GA4 (Matt 2026-10-14)
+
+Google's GA4 terms forbid personal information, and a mailing address is personal information. Pinned as `no-person-data-in-ga4` and `no-person-data-in-ga4-live` in `data/analytics/decisions.json`.
+
+**One implementation:** `stripGa4UrlParams` in `app/api/visitors/track/strip-identity.ts`, with `ga4SafeUrlJs` as the same function for the inline bootstrap (a test runs both over one case list). It:
+
+- makes `/cma/<slug>`, `/bpo/<slug>` and the static copies (`/cmas/<slug>/…`, `/drafts/<slug>/…`) into `/<prefix>/[document]`; the slug is the subject's street address;
+- removes `GA4_STRIP_PARAMS`: the identity params (`_pid`, `_fuid`), `rr_doc`, and `PERSON_TEXT_PARAMS` (`address`, `inquiry`, `email`, `phone`, `name`, `message`, …), matched without regard to case;
+- removes any param whose value is an email address, a phone number, or a link into a person document or carrying a person param (`/login?next=/cma/<slug>`);
+- turns a legacy `utm_campaign=<cma slug>` into `cma-letter`, and drops the fragment.
+
+The page itself keeps everything: `/sell?address=` still prefills the form and `/contact?inquiry=` the select. Only what GA4 receives changes.
+
+**Where it runs:**
+
+| Path | How |
+|---|---|
+| First paint | `lib/analytics/gtm-bootstrap.ts` pushes the safe `page_location` on the `page_view`, and `gtag('set', { page_location, page_referrer })` before `gtm.js`, so every other hit on the page carries the safe address too |
+| Client-side navigation | `PageViewTracker` calls `setGa4PageLocation` (`lib/analytics/ga4-browser-events.ts`) before its `page_view`; `pushDataLayerEvent` sets it again when only the query changed |
+| Browser event params | `ga4ParamsFrom` drops an email or phone value from any parameter and makes a CMA slug in `lp_campaign` `cma-letter` |
+| Every Measurement Protocol event | `fireGa4Event` runs `ga4SafeEventParams` on the event and on `campaign_details`: person-named params dropped (`GA4_PERSON_PARAM_NAME_RE`), page fields made safe, a CMA or BPO `page_title` replaced with a fixed label |
+| Lead events | `ga4LeadExtra` (`lib/analytics/lead-event.ts`): labels and ids only, `inquiry_type` mapped to a fixed list. The CRM keeps the full text |
+| CMA and BPO views | The mirror sends `/cma/[document]` plus `cma_id` (or `bpo_id`), the row's opaque uuid, so a view is still counted and attributable. `valuation_requested` sends `cma_id`, never `cma_slug` |
+| Referrer | `/cma`, `/bpo`, `/cmas`, `/drafts` send `Referrer-Policy: strict-origin`, so a click out of a document never carries its address to the next page or any vendor |
+
+**No GTM change was needed.** Verified on production 2026-10-14 with every Google request blocked in the browser: after `gtag('set', { page_location, page_referrer })`, a dataLayer event (`GA4 - dataLayer events`), `scroll_depth`, and enhanced measurement's own `form_start` all sent that `dl=` and `dr=`.
+
+**Why a list of names and not an allowlist of params:** the site's own query params (search filters, `q`, `keywords`, `bbox`, `utm_*`, click ids) are what GA4 reports on, and listing search text is a search for a public listing. The person-text list names every box that puts a person's own words in the address (2026-10-14 sweep: the homepage and /zip value boxes, the /about box, sign-in `next=`), and the value rules catch an email, phone or person-document link under any name. A new box that navigates with typed text adds its param to `PERSON_TEXT_PARAMS`.
+
+**Gates:** `lib/analytics/ga4-no-person-data.test.ts` fails when any file writes a `page_location` or `page_referrer` that did not come from `stripGa4UrlParams`; `ga4-browser-events.test.ts` fails when a registry parameter, alias or user property is named for a person; `strip-identity.test.ts`, `gtm-bootstrap.test.ts`, `ga4-measurement-protocol.test.ts`, `ga4-mirror.client-document.test.ts` and `lead-event.test.ts` hold the behavior. `npm run analytics:audit` counts (never prints) what GA4 holds and fails on any new person data dated 2026-10-21 or later.
+
+**What GA4 already holds** (GA4 Data API, property 527333348, 430 days to 2026-10-14, counted by `npm run analytics:audit -- --days=430`): 29 distinct CMA/BPO document paths (94 events); 99 distinct page_locations with a person param (317 events: `message` 44, `_pid` 45, `_fuid` 19, `inquiry` 6, `rr_doc` 2, `address` 1, `email` 1); 27 distinct referrers (181 events); 25 distinct page_locations carrying a legacy `utm_campaign=<cma slug>` (55 events); 7 CMA-slug session campaign names (10 sessions). Removing them is a GA4 data-deletion request (Admin > Data collection and modification > Data deletion requests), Matt's call. The campaign-name count is informational in the audit, never a FAIL: GA4 credits a later direct visit to the earlier campaign, so an old slug keeps showing on new sessions after nothing sends it.
 
 ### Import rule (do not skip)
 
@@ -225,7 +258,7 @@ Every server sender that runs inside the visitor's request reads one context:
 
 - `client_id` from the `_ga` cookie.
 - `session_id` and `session_number` from the `_ga_<stream>` cookie. `sessionFromGaStreamCookie` parses the GS1 and GS2 formats.
-- `page_location` from the Referer, with identity params stripped.
+- `page_location` from the Referer, GA4-safe (`stripGa4UrlParams`: no contact id, typed address, inquiry or CMA slug).
 - Consent: GPC or a decline means nothing is sent.
 - The same suppression rule the browser tag loader uses (`lib/analytics/ga-suppression.ts`): a broker's own browser, automation, `/admin` and non-production hosts send nothing.
 
@@ -239,7 +272,7 @@ A new server event must go through `ga4ServerContext()`. Never call `fireGa4Even
 
 ### Known contacts carry a user_id (2026-10-14)
 
-A known CRM contact is one GA4 user, in the browser and on the server (decision `crm-contacts-tagged-in-ga4`). The user_id is `ga4UserIdForPerson()` in `lib/analytics/ga4-user-id.ts`: `crm-<sha256 of crm_people.id>`, never a name, email or phone. It goes only on hits from a visitor at the analytics tier or above (`ga4UserIdAllowedAt`); an essential-tier visit reaches GA4 under an anonymous client id and nothing else (`docs/TRACKING_POLICY.md` tier table). Server callers never build the string: they pass `knownContact: { personId, trackingLevel }` and `fireGa4Event` derives it (`ga4UserIdFor`), so no caller can send a raw id or an email as the user_id.
+A known CRM contact is one GA4 user, in the browser and on the server (decision `crm-contacts-tagged-in-ga4`). The user_id is `ga4UserIdForPerson()` in `lib/analytics/ga4-user-id.ts`: `crm-<sha256 of crm_people.id>`, never a name, email or phone. It goes only on hits from a visitor at the analytics tier or above (`ga4UserIdAllowedAt`); an essential-tier visit does not reach GA4 at all since 2026-10-14 (`docs/TRACKING_POLICY.md` tier table). Server callers never build the string: they pass `knownContact: { personId, trackingLevel }` and `fireGa4Event` derives it (`ga4UserIdFor`), so no caller can send a raw id or an email as the user_id.
 
 | Path | How the user_id gets there |
 |---|---|
@@ -288,9 +321,22 @@ UTM on paid / organic buyer links (`lib/analytics/utm.ts`, `docs/analytics/buyer
 - GA4 audiences built on it, managed by `scripts/ga4-admin.mjs` (`apply-audiences` runs the audience step only): **LP visitors 7d / 30d — no conversion** (`view_landing_page`, excluding `generate_lead`) and **High-intent sellers** (`scroll_depth` with `page_type` `sell` and `depth` over 74; `audiences/16124906126`, rebuilt 2026-10-14). Audience filters cannot be edited; a rebuild goes through `REBUILT_AUDIENCES`.
 - CRM credit for a buyer lead (saved search, alert, save, price watch, the /buy forms) is the landing link of the live visit, else the page's own link when there is no live visit (`lib/crm/visit-attribution.ts`, Matt 2026-10-09). The browser keeps no landing context.
 
-### Server page-view mirror (kept on purpose)
+### Server mirror: consented visitors only (Matt 2026-10-14)
 
-`app/api/visitors/track` still mirrors essential-tier `page_view` (and a few intent events) through Measurement Protocol (`lib/analytics/ga4-mirror.ts`, on since 2026-08-10). **That mirror stays.** Since 2026-10-09 it skips views the browser tag already counts (analytics-tier visitors), so it now covers essential-tier visitors and `/cma` / `/bpo` client documents only. Unassigned sessions fell from hundreds a day to 3 on 2026-10-12 and 17 on 2026-10-13 (GA4 Data API, `sessionDefaultChannelGroup = Unassigned` by date, read 2026-10-14). A 28-day window still shows mostly Unassigned until the older days age out. Consequence: GA4 **geography is unreliable** (MP hits do not carry a real visitor geo), and sessions / source / medium / engagement are shaped by the mirror. Use first-party `visitor_sessions` / Search Console when geography or organic counts matter. `session_start` / `first_visit` still come only from the browser tag — those are the outage canary (`lib/analytics/ga4-tracking-health.ts`).
+`app/api/visitors/track` copies a few first-party events to GA4 through the Measurement Protocol. The rule is one function, `ga4MirrorSends` in `lib/analytics/ga4-mirror.ts`, held by `ga4-mirror.test.ts`. Pinned as `ga4-mirror-consented-only` in `data/analytics/decisions.json`.
+
+| Visitor | What the mirror sends |
+|---|---|
+| Essential tier: a privacy-law region (EEA, UK, CH) or unknown country with no banner answer, or marketing-only | **Nothing**, since 2026-10-14 (`GA4_MIRROR_CONSENTED_ONLY_SINCE`). Not a page view, not a `/cma` or `/bpo` view, not an intent event. Those hits carried no source and the visitor had not consented to analytics. First-party `visitor_sessions` / `visitor_events` still record the visit, so the site's own dashboard keeps counting it. |
+| Analytics or all tier, a site page | No `page_view` / `listing_view`: the browser's Google tag counts them (since 2026-10-09). |
+| Analytics or all tier, a client document (`/cma`, `/bpo`, page category `client-document`) | `page_view` (and `listing_view`), as `/cma/[document]` with `cma_id` / `bpo_id`: the document runs no Google tag. |
+| Analytics or all tier, any page | `intent_declared`, `welcome_back`, `email_opt`, `sms_opt` (no browser tag sends them). |
+
+Suppression (`/admin`, a broker's browser, automation, a non-production host) applies on top. A decline or GPC sends nothing anywhere.
+
+History: on since 2026-08-10 for every essential-tier view; from 2026-10-09 it skipped views the browser counts (analytics-tier site pages); from 2026-10-14 it also skips the essential tier. GA4 sessions with source `(not set)` on 2026-10-12 and 2026-10-13 (GA4 Data API, property 527333348, `sessionSource` x `browser` x `landingPage`, `npm run analytics:audit -- --days=3`): 3 of 38 and 19 of 65. Of the 19 on 2026-10-13, 1 had a browser and 18 were server-only: 4 landed on a site page (the essential-tier copies this change stops) and 14 on a client document. Removing the site-page ones leaves about 16 of 97 sessions over the two days (16%, from 21%), assuming every document reader was at the analytics tier (US readers default to it). The rest is client-document views: they carry the first-party visit as the GA4 session, not the browser's `_ga_<stream>` session, so `campaign_details` is their only source. The audit prints this breakdown per day ("(not set)-source sessions by day").
+
+Consequence that still holds: GA4 geography is unreliable for mirrored hits (no visitor geo on Measurement Protocol), so use first-party `visitor_sessions` / Search Console when geography or organic counts matter. `session_start` / `first_visit` come only from the browser tag; those are the outage canary (`lib/analytics/ga4-tracking-health.ts`).
 
 ---
 
@@ -392,6 +438,7 @@ One set per URL, via `buildTrackedUrl` in `lib/analytics/utm.ts`. Existing `utm_
 - Use `ryanrealty.vercel.app` on any outward URL.
 - Write a new GA4, Search Console or GTM probe, script or scratch audit. Extend `scripts/analytics-audit.mjs` and the Registry.
 - Send a server GA4 event with only a `client_id`. Use `ga4ServerContext()`.
+- Hand GA4 a `page_location` or `page_referrer` that did not go through `stripGa4UrlParams`, or a parameter named for a person (`cma_slug`, `address`, `email`). See "No personal information in GA4".
 - Run `scripts/ga4-admin.mjs apply`. Change GA4 Admin config only through `scripts/ga4-admin-setup.mjs` (dry-run first).
 
 ---
@@ -420,7 +467,7 @@ The claude.ai shared skill of that name was written before these live reads. Whe
 | GTM version 6 had 34 variables, and 4 may need restoring | Version 6 had 29 variables and version 7 has 30. Version 7 added `DLV - ga4 lead_type` and dropped none. Nothing needs restoring. |
 | Custom dimensions registered: `lead_type`, `form_id`, `lp_variant` | 33 are registered. Those three are among them. |
 | Search Console is linked to GA4 | The API cannot read this link. Confirm it in GA4 Admin → Product links → Search Console. |
-| Server page views through the Measurement Protocol stay | They do, but only for essential-tier visitors and client documents since 2026-10-09 (see "Server page-view mirror"). |
+| Server page views through the Measurement Protocol stay | Only client documents and intent events, at the analytics tier, since 2026-10-14 (see "Server mirror: consented visitors only"). |
 | (not in the guide) | Server lead events had no GA4 session, so every lead was Unassigned. Fixed by #563 (see "Server events join the visitor's GA4 session"). |
 
 ---
@@ -438,7 +485,7 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | `lib/lead-tracking.ts` | `generate_lead` (`fireLeadGenerated`) and the non-lead form events |
 | `app/actions/identity-bridge.ts` | `person_identified` on an email-click identify |
 | `lib/cma-request.ts` | `valuation_requested` for seller LP, FSBO LP and place-page submissions |
-| `app/api/visitors/track/route.ts` | The page-view mirror (essential tier and client documents) |
+| `app/api/visitors/track/route.ts` | The server mirror: client documents and intent events, analytics tier only (`ga4MirrorSends`) |
 | `lib/marketing/send-offline-ga4.ts` | `qualify_lead` / `close_convert_lead` from the daily offline cron |
 
 ### Reading Google APIs (app and crons)

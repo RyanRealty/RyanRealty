@@ -12,9 +12,12 @@ import {
   GA4_USER_PROPERTIES,
   ga4BrowserEventTriggerRegex,
   ga4ListingKey,
+  GA4_PARAM_ALIASES,
   ga4ParamsFrom,
   pushDataLayerEvent,
+  setGa4PageLocation,
 } from './ga4-browser-events'
+import { isPersonParamName } from '@/app/api/visitors/track/strip-identity'
 import { buildGtmImport, gtmVariableFor, GTM_IMPORT_PATH, GTM_TAG_NAME } from '../../scripts/build-gtm-ga4-import'
 
 const read = (p: string) => readFileSync(p, 'utf8')
@@ -206,5 +209,65 @@ describe('GTM version 10: content group and visitor-intent user properties', () 
 
   it('content_group never enters ga4_params (it is page context, read flat)', () => {
     expect(ga4ParamsFrom({ content_group: 'sell', page_type: 'sell' })).toEqual({})
+  })
+})
+
+/**
+ * No personal information reaches GA4 (Matt 2026-10-14; GA4's terms forbid it).
+ * Found live 2026-10-14: on /sell?address=<typed address>, view_landing_page and
+ * every other dataLayer event went to GA4 with that address as dl=, because the
+ * GTM event tag reads the browser's location. A `gtag('set')` with the safe
+ * address now precedes the event, and no registry names a person parameter.
+ */
+describe('browser GA4 events carry no personal information', () => {
+  it('no GA4 parameter, page_view parameter, user property or alias is named like a person or a person document', () => {
+    const names = [
+      ...GA4_EVENT_PARAMS.map((p) => p.name),
+      ...GA4_EVENT_PARAMS.map((p) => p.from.replace(`${GA4_PARAMS_KEY}.`, '')),
+      ...GA4_PAGE_VIEW_PARAMS.map((p) => p.name),
+      ...GA4_USER_PROPERTIES.map((p) => p.name),
+      ...Object.keys(GA4_PARAM_ALIASES),
+      ...Object.values(GA4_PARAM_ALIASES),
+    ]
+    expect(names.filter(isPersonParamName)).toEqual([])
+  })
+
+  it('drops an email address or phone number from any parameter, and a CMA slug from lp_campaign', () => {
+    expect(
+      ga4ParamsFrom({ cta: 'pat@example.com', context: '(541) 555-1212', lp_campaign: 'cma-1975-harriman', lp_content: 'cma-letter', source: 'hero' }),
+    ).toEqual({ lp_campaign: 'cma-letter', lp_content: 'cma-letter', source: 'hero' })
+  })
+
+  const g = globalThis as unknown as { window?: { dataLayer?: unknown[]; location?: { href: string } } }
+  const isArgs = (row: unknown): row is ArrayLike<unknown> => Object.prototype.toString.call(row) === '[object Arguments]'
+  afterEach(() => {
+    delete g.window
+  })
+
+  it('setGa4PageLocation pushes a gtag set command (an arguments object) with the safe address and referrer', () => {
+    g.window = { dataLayer: [] }
+    setGa4PageLocation('https://ryan-realty.com/contact?inquiry=Sell%20my%20place&utm_source=gbp', 'https://ryan-realty.com/cma/cma-828-florida')
+    const [cmd] = g.window.dataLayer ?? []
+    expect(isArgs(cmd)).toBe(true)
+    expect(Array.from(cmd as ArrayLike<unknown>)).toEqual([
+      'set',
+      { page_location: 'https://ryan-realty.com/contact?utm_source=gbp', page_referrer: 'https://ryan-realty.com/cma/[document]' },
+    ])
+  })
+
+  it('an event on a page whose address holds a typed home address is preceded by the safe page_location', () => {
+    g.window = { dataLayer: [], location: { href: 'https://ryan-realty.com/sell?address=123%20Test%20Ln&from=%2F' } }
+    pushDataLayerEvent('view_landing_page', { lp_variant: 'seller-home-value' })
+    const rows = g.window.dataLayer ?? []
+    expect(isArgs(rows[0])).toBe(true)
+    expect(Array.from(rows[0] as ArrayLike<unknown>)).toEqual(['set', { page_location: 'https://ryan-realty.com/sell?from=%2F' }])
+    expect(rows.slice(1)).toEqual([
+      { [GA4_PARAMS_KEY]: null },
+      { event: 'view_landing_page', lp_variant: 'seller-home-value', [GA4_PARAMS_KEY]: { lp_variant: 'seller-home-value' } },
+    ])
+    // the next event on the same address does not set it again
+    pushDataLayerEvent('click_cta', { cta: 'get value' })
+    expect(rows.filter(isArgs)).toHaveLength(1)
+    expect(JSON.stringify(rows.map((r) => (isArgs(r) ? Array.from(r) : r)))).not.toContain('Test')
   })
 })

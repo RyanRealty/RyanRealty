@@ -29,6 +29,7 @@
  */
 import { randomUUID } from 'node:crypto'
 import { isNonProductionPageLocation } from '@/lib/analytics/non-production-host'
+import { ga4SafeEventParams, ga4SafeUserProperties } from '@/app/api/visitors/track/strip-identity'
 import { ga4UserIdFor } from '@/lib/analytics/ga4-user-id'
 import type { TrackingConsentLevel } from '@/lib/identity/consent'
 
@@ -180,8 +181,13 @@ export async function fireGa4Event(params: Ga4MpFireParams): Promise<Ga4MpFireRe
   }
 
   const clientId = params.clientId?.trim() || randomUUID()
-  const eventParams = sanitizeParams(params.eventParams || {})
-  const userProperties = params.userProperties ? sanitizeUserProperties(params.userProperties) : undefined
+  // No personal information reaches GA4 (Matt 2026-10-14; GA4's terms forbid
+  // it). Whatever a sender passes, page_location / page_referrer / page_path /
+  // page_title lose a person's address, typed text and CMA slug, a
+  // person-named param (cma_slug, address, email) is dropped, and so is any
+  // email or phone value (app/api/visitors/track/strip-identity.ts).
+  const eventParams = sanitizeParams(ga4SafeEventParams(params.eventParams || {}))
+  const userProperties = params.userProperties ? sanitizeUserProperties(ga4SafeUserProperties(params.userProperties)) : undefined
 
   // Session params ride on every event in the request so a prepended
   // campaign_details lands in the same GA4 session as the page view.
@@ -194,7 +200,7 @@ export async function fireGa4Event(params: Ga4MpFireParams): Promise<Ga4MpFireRe
     .slice(0, 5)
     .map((e) => ({
       name: e.name.trim().slice(0, 40),
-      params: { ...sanitizeParams(e.params || {}), ...sessionCarry },
+      params: { ...sanitizeParams(ga4SafeEventParams(e.params || {})), ...sessionCarry },
     }))
   const userId = params.knownContact ? ga4UserIdFor(params.knownContact.personId, params.knownContact.trackingLevel) : null
   const payload: Record<string, unknown> = {

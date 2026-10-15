@@ -38,6 +38,7 @@ import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-
 import { rememberGaClientId } from '@/lib/data/analytics/gaClientId'
 import { ga4KnownContact, ga4ServerEventParams, ga4ServerSend, type Ga4ServerContext } from '@/lib/analytics/ga4-server-context'
 import {
+  ga4LeadExtra,
   isLeadFormId,
   isLeadType,
   type LeadFormId,
@@ -242,7 +243,9 @@ export function leadEventParams(
   utm: LeadAttributionParams = {},
 ): Record<string, string | number | boolean | undefined | null> | null {
   if (!isLeadType(params.lead_type) || !isLeadFormId(params.form_id)) return null
-  const extra = { ...(params.extra ?? {}) }
+  // Labels and ids only: a caller's free text (a name, a message, a typed
+  // area) never reaches GA4 (lib/analytics/lead-event.ts ga4LeadExtra).
+  const extra: Record<string, string | number | boolean | undefined | null> = ga4LeadExtra(params.extra)
   delete extra.lead_type
   delete extra.form_id
   delete extra.value
@@ -328,7 +331,7 @@ export async function fireNonLeadEvent(params: {
     await fireGa4Event({
       eventName: params.event_name,
       clientId: req.clientId,
-      eventParams: ga4ServerEventParams(req.ctx, { lp_variant: params.lp_variant, ...req.utm, ...(params.extra ?? {}), form_id: params.form_id }),
+      eventParams: ga4ServerEventParams(req.ctx, { lp_variant: params.lp_variant, ...req.utm, ...ga4LeadExtra(params.extra), form_id: params.form_id }),
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)

@@ -136,6 +136,10 @@ describe('stale-browser: a long-superseded desktop Chrome on a cold arrival', ()
     expect(spies.ga4).not.toHaveBeenCalled()
     await track(event(sid(11), { pageUrl: 'https://ryan-realty.com/homes-for-sale/bend' }))
     expect(store.session(sid(11))).toMatchObject({ is_automated: false })
+    // An essential-tier view is never mirrored (Matt 2026-10-14); once the
+    // visitor allows analytics, an event the mirror carries goes out.
+    expect(spies.ga4).not.toHaveBeenCalled()
+    await track(event(sid(11), { pageUrl: 'https://ryan-realty.com/homes-for-sale/bend', eventType: 'intent_declared', consent: 'analytics' }))
     expect(spies.ga4).toHaveBeenCalledTimes(1)
   })
 
@@ -151,9 +155,12 @@ describe('stale-browser: a long-superseded desktop Chrome on a cold arrival', ()
     expect(store.session(sid(7))).toMatchObject({ is_automated: false })
   })
 
-  it('a current build on the same cold arrival is never flagged, and its view is mirrored', async () => {
+  it('a current build on the same cold arrival is never flagged, and its mirrored events go out', async () => {
     await track(event(sid(8)), { ua: CURRENT_UA })
     expect(store.session(sid(8))).toMatchObject({ is_automated: false })
+    // essential-tier view: first-party only (Matt 2026-10-14)
+    expect(spies.ga4).not.toHaveBeenCalled()
+    await track(event(sid(8), { eventType: 'intent_declared', consent: 'analytics' }), { ua: CURRENT_UA })
     expect(spies.ga4).toHaveBeenCalledTimes(1)
   })
 
