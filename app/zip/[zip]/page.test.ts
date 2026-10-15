@@ -163,9 +163,11 @@ describe('ZIP page is on the v3 barrel', () => {
   })
 
   it('keeps both capture contracts byte for byte', () => {
-    // Alerts: same server action, same filter map, same honeypot key.
+    // Alerts: same server action and honeypot key. The filter is the whole ZIP,
+    // every property type, daily (Matt 2026-10-14): no propertyType pin.
     expect(ALERTS_SHEET).toMatch(/submitSearchAlertSignup/)
-    expect(ALERTS_SHEET).toMatch(/propertyType: 'A', postalCode: zip/)
+    expect(ALERTS_SHEET).toMatch(/filters: \{ postalCode: zip \},\s*\n\s*frequency: 'daily'/)
+    expect(ALERTS_SHEET).not.toMatch(/filters: \{[^}]*propertyType/)
     expect(ALERTS_SHEET).toMatch(/trap=\{\{ name: 'company'/)
     // Sell: same valuation navigation, and `from` still names the surface that
     // converted (2026-07-15 conversion audit).

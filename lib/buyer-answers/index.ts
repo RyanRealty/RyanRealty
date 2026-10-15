@@ -5,6 +5,7 @@ export type {
   BuyerAnswerKind,
   BuyerAnswerModel,
   BuyerAnswerPlaceKind,
+  PlaceAlertScope,
   BuyerAnswerTableRow,
 } from './types'
 export {

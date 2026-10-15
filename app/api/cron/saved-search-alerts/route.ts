@@ -21,7 +21,9 @@ export async function GET(request: Request) {
   // 600-row default scan budget: large enough that the weekly-cadence
   // neighborhood-default cohort (thousands of rows, mostly not-due skips
   // against a cached search result) fully cycles every day across the
-  // 4x-daily cron. Emails per run stay capped inside runListingAlerts (200).
+  // hourly cron (vercel.json). Daily rows go at the 07:00 Pacific slot
+  // (lib/saved-search-cadence.ts). Emails per run stay capped inside
+  // runListingAlerts (200).
   const maxAlerts = Math.min(1000, Math.max(1, Number(url.searchParams.get('limit') ?? '600') || 600))
   const dryRun = url.searchParams.get('dryRun') === '1'
 

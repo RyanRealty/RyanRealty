@@ -198,6 +198,36 @@ describe('place-type pages', () => {
     expect(FIELD).toMatch(/placeTypeSortFromSearch\(window\.location\.search\)/)
   })
 
+  /**
+   * Matt 2026-10-14: every area page carries a quick "get new listings for this
+   * area" signup. The type pages offer the PLACE's alert (every property type,
+   * daily), directly after the listings, with the sticky repeat anchored to
+   * #homes. placeName is the city or community, never "Bend condos".
+   */
+  it('mounts the shared listing-alert strip directly after #homes', () => {
+    for (const src of [CITY, COMM]) {
+      expect(src).toMatch(/import \{ PlaceAlertsStrip \} from '@\/app\/_v3\/place-alerts\/PlaceAlertsStrip\.client'/)
+      expect(src.match(/<PlaceAlertsStrip/g)?.length).toBe(1)
+      expect(src).toMatch(/id="alerts"/)
+      expect(src).toMatch(/stickyAfter="homes"/)
+      const homes = src.indexOf('id="homes"')
+      const strip = src.indexOf('<PlaceAlertsStrip')
+      const quiet = src.indexOf('<V3Quiet\n          ariaLabel={`')
+      expect(homes).toBeGreaterThan(-1)
+      expect(strip).toBeGreaterThan(homes)
+      expect(quiet).toBeGreaterThan(strip)
+    }
+    // the city page's alert is the city's, named as the city
+    expect(CITY).toMatch(/placeName=\{cityName\}/)
+    expect(CITY).toMatch(/filters=\{\{ city: cityName \}\}/)
+    expect(CITY).toMatch(/browseHref=\{homesForSalePath\(cityName\)\}/)
+    expect(CITY).not.toMatch(/placeName=\{[^}]*spec\./)
+    // the community page's alert is the community page's own city + subdivision
+    expect(COMM).toMatch(/communityAlertScope\(\{ community, slug, placeName: publicName \}\)/)
+    expect(COMM).toMatch(/filters=\{alertScope\.filters\}/)
+    expect(COMM).toMatch(/\{alertScope \? \(/)
+  })
+
   it('labels the list Homes for sale, not photographed listings', () => {
     for (const src of [CITY, COMM]) {
       expect(src).toMatch(/<V3Heading level=\{2\}>Homes for sale<\/V3Heading>/)

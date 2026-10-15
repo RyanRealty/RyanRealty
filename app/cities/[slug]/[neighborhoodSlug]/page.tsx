@@ -21,6 +21,7 @@ import { notFound } from 'next/navigation'
 import { readCityOpenHouses, openHouseRows, OPEN_HOUSE_TRACE } from '@/lib/kb/place-open-houses'
 import type { Metadata } from 'next'
 import { getNeighborhoodBySlug, getCommunitiesInNeighborhood } from '@/app/actions/cities'
+import { BEND_DISTRICTS } from '@/lib/neighborhood-areas'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import {
   getPublicDetachedMonthly,
@@ -1030,6 +1031,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
                 id="alerts"
                 cityName={cityName}
                 neighborhoodName={neighborhood.name}
+                areaSlug={BEND_DISTRICTS.some((d) => d.slug === boundaryNeighborhoodSlug) ? boundaryNeighborhoodSlug : null}
                 geoSlug={metricNeighborhoodSlug}
                 newCount30d={publicPace.newCount30d}
                 updatedAt={leftoverStamp}
