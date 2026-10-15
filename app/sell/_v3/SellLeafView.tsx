@@ -61,7 +61,7 @@ export function SellLeafView({
           posterSrc={posterSrc}
           action={{ label: 'Value my home', href: '#get-value', variant: 'ghost' }}
         >
-          <SellCapture eyebrow="Free. No listing agreement." placement="stage">
+          <SellCapture eyebrow="Free written valuation in 24 hours. No listing agreement." placement="stage">
             <SellValueForm pagePath={path} />
           </SellCapture>
         </V3Stage>
