@@ -57,7 +57,8 @@ export function derivePersonRightNow(input: {
   nowMs?: number
 }): PersonRightNow {
   const nowMs = input.nowMs ?? Date.now()
-  const visible = input.timeline.filter((item) => !item.system)
+  // A delivery or bounce row is about our email, not the contact: not "Last activity".
+  const visible = input.timeline.filter((item) => !item.system && !item.lifecycle)
   const last = visible[0] ?? null
   const lastMessage =
     visible.find(

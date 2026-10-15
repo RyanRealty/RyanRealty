@@ -12,6 +12,7 @@
  */
 import { formatDate } from '@/lib/format/date'
 import { timelineEmailBody } from '@/lib/crm/email-body'
+import { isEmailLifecycleKind } from '@/lib/crm/email-lifecycle-kinds'
 import { mergeTagOptions } from '@/lib/data/crm/getPersonDetailExtras'
 import { CRM_STAGES } from '@/lib/crm/constants'
 import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
@@ -158,12 +159,15 @@ export function buildTimelineItems(
     .filter((t) => t.kind !== 'email_open' && t.kind !== 'email_click' && t.kind !== 'sms_click')
     .map((t) => {
       const eng = engagement[(t.title ?? '').trim()]
+      // A delivery or bounce row's title is the event; the email it happened to
+      // is payload.label (the subject, or the alert name).
+      const label = isEmailLifecycleKind(t.kind) ? (t.payload ?? {}).label : null
       return {
         id: t.id,
         kind: t.kind,
         ts: t.ts,
         title: t.title,
-        body: t.body ? timelineEmailBody(t.body) : null,
+        body: t.body ? timelineEmailBody(t.body) : typeof label === 'string' && label.trim() ? label.trim() : null,
         broker: t.broker,
         source: t.source,
         starred: Boolean(t.starred),

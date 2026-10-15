@@ -85,6 +85,24 @@ describe('mergePersonTimeline', () => {
     expect(filterPersonTimeline(items, 'all', { showSystem: true })).toHaveLength(1)
   })
 
+  it('shows a delivery row on the timeline, flagged as an email lifecycle row', () => {
+    const items = mergePersonTimeline({
+      feed: [
+        feed({
+          id: 4,
+          ts: '2026-10-15T14:00:00Z',
+          kind: 'email_delivered',
+          category: 'email',
+          label: 'Email delivered',
+          snippet: 'River West homes: 3 new listings',
+        }),
+      ],
+    })
+    expect(items[0]).toMatchObject({ channel: 'email', direction: null, system: false, lifecycle: true, title: 'Email delivered' })
+    expect(filterPersonTimeline(items, 'all')).toHaveLength(1)
+    expect(filterPersonTimeline(items, 'email')).toHaveLength(1)
+  })
+
   it('merges page views as visit rows without dropping notes', () => {
     const note: PersonNoteRow = { id: 4, ts: '2025-11-07T17:38:00Z', body: 'Location note', broker: null }
     const items = mergePersonTimeline({

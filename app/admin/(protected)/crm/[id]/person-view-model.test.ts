@@ -71,3 +71,17 @@ describe('buildTimelineItems — click URLs ride the email_out row', () => {
     expect(items[0]!.clickUrls).toEqual(['https://ryan-realty.com/reviews'])
   })
 })
+
+describe('buildTimelineItems: email lifecycle rows', () => {
+  it('keeps delivery, bounce, spam and unsubscribe rows, with the email they happened to as the body', () => {
+    const timeline = [
+      { id: 1, kind: 'email_delivered', ts: '2026-10-15T14:00:00Z', title: 'Email delivered', payload: { label: 'River West homes: 3 new listings' } },
+      { id: 2, kind: 'email_bounce', ts: '2026-10-15T13:00:00Z', title: 'Bounce', body: 'Mailbox full', payload: { label: 'x' } },
+      { id: 3, kind: 'email_complaint', ts: '2026-10-15T12:00:00Z', title: 'Spam complaint', payload: {} },
+      { id: 4, kind: 'email_unsubscribe', ts: '2026-10-15T11:00:00Z', title: 'Unsubscribed from a listing alert', payload: { label: 'River West homes' } },
+    ]
+    const items = buildTimelineItems(timeline, buildEmailEngagement(timeline))
+    expect(items.map((i) => i.kind)).toEqual(['email_delivered', 'email_bounce', 'email_complaint', 'email_unsubscribe'])
+    expect(items.map((i) => i.body)).toEqual(['River West homes: 3 new listings', 'Mailbox full', null, 'River West homes'])
+  })
+})
