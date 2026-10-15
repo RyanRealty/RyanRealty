@@ -308,10 +308,13 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
 
   if (sarah) {
     if (!sarah.includes('getSarahDeskBroker') || !sarah.includes('deskBrokerFromAssigned')) {
-      p.push(`${PATHS.sarah}: Call / Text / Message must resolve the CRM desk broker (Matt fallback).`)
+      p.push(`${PATHS.sarah}: Call / Text / Email / Book must resolve the CRM desk broker (Matt fallback).`)
     }
     if (!sarah.includes('tel:${desk.phoneTel}') || !sarah.includes('sms:${desk.phoneTel}')) {
       p.push(`${PATHS.sarah}: Call and Text must use the resolved broker's line.`)
+    }
+    if (!sarah.includes('mailto:${desk.email}') || !sarah.includes('Book a time')) {
+      p.push(`${PATHS.sarah}: Email and Book a time must sit on the Sarah desk chips.`)
     }
     if (!sarah.includes('brokerJoinedLine')) {
       p.push(`${PATHS.sarah}: takeover copy must use brokerJoinedLine (not a hardcoded Matt has joined).`)

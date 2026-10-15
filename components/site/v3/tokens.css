@@ -243,8 +243,16 @@
      listing's photo strip puts its counter there, 2026-09-25). */
   --v3-dog-fab: 4.25rem;
   --v3-dog-clear: calc(var(--v3-dog-fab) + var(--v3-space-md));
-  /* Sarah launcher: bottom-end disc, smaller than Jax, above the dock. */
+  /* Sarah launcher: bottom-end disc, smaller than Jax, above the dock.
+     Panel (Matt 2026-10-15): compact card on desktop, bottom sheet on phone.
+     Warm stone (--v3-focus) is the gold-adjacent accent; retired gold hex stays out. */
   --v3-sarah-fab: 3.5rem;
+  --v3-sarah-panel-w: 23.75rem;
+  --v3-sarah-panel-h: 35rem;
+  --v3-sarah-panel-radius: 1rem;
+  --v3-sarah-sheet-radius: 1.25rem;
+  --v3-sarah-sheet-max: 85vh;
+  --v3-sarah-glow: 0 0 28px color-mix(in srgb, var(--v3-navy) 22%, transparent);
 
   /* Chrome + listing/split first-slice sizes (2026-08-29).
      Chrome bar is 64px with a 2px navy rule. Mosaic/carousel/card/map sizes
