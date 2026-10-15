@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
-_voice_lib.py — shared ElevenLabs Victoria TTS helper for every Ryan Realty
+DEFAULT ENGINE (Matt 2026-10-14): Grok TTS, voice Eve (xAI POST /v1/tts). synth_vo() speaks with
+Grok Eve unless engine="elevenlabs" is passed explicitly (or STUDIO_VOICE_ENGINE=elevenlabs).
+The ElevenLabs Victoria constants below are kept for that opt-in only.
+
+_voice_lib.py — shared TTS helper (Grok Eve default; ElevenLabs Victoria opt-in) for every Ryan Realty
 Python producer that generates voiceover.
 
 Canonical settings + voice ID + model live HERE. Producers MUST NOT hardcode
@@ -132,6 +136,63 @@ def wrap_phonemes(text: str, names: dict[str, str] | None = None) -> str:
 # Core API calls
 # ─────────────────────────────────────────────────────────────────────────────
 
+GROK_TTS_URL = "https://api.x.ai/v1/tts"
+GROK_DEFAULT_VOICE = "eve"  # locked default (Matt 2026-10-14); CI: lib/studio/voice/engine.test.ts
+DEFAULT_ENGINE = "grok"
+
+
+def _xai_key() -> str:
+    key = os.environ.get("XAI_API_KEY")
+    if not key:
+        sys.stderr.write("ERROR: XAI_API_KEY not set (Grok TTS is the default voice engine).\n")
+        sys.exit(2)
+    return key
+
+
+def synth_vo_grok(
+    text: str,
+    out_path: Path,
+    *,
+    voice_id: str = GROK_DEFAULT_VOICE,
+    speed: float | None = None,
+    codec: str = "mp3",
+    sample_rate: int = 44100,
+    with_timestamps: bool = False,
+    timeout: int = 120,
+) -> Path:
+    """Synthesize VO with Grok TTS (default voice Eve). Speech tags: [pause] [long-pause] [breath]...
+
+    With with_timestamps=True, also writes <out_path>.timestamps.json (graph_chars / graph_times).
+    """
+    import base64
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    body: dict = {
+        "text": text,
+        "voice_id": voice_id,
+        "language": "en",
+        "output_format": {"codec": codec, "sample_rate": sample_rate},
+        "with_timestamps": with_timestamps,
+    }
+    if speed is not None:
+        body["speed"] = speed
+    req = urllib.request.Request(
+        GROK_TTS_URL,
+        data=json.dumps(body).encode(),
+        headers={"Authorization": f"Bearer {_xai_key()}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        raw = resp.read()
+    if with_timestamps:
+        payload = json.loads(raw)
+        out_path.write_bytes(base64.b64decode(payload["audio"]))
+        Path(str(out_path) + ".timestamps.json").write_text(json.dumps(payload.get("audio_timestamps") or {}))
+    else:
+        out_path.write_bytes(raw)
+    return out_path
+
+
 def synth_vo(
     text: str,
     out_path: Path,
@@ -140,8 +201,9 @@ def synth_vo(
     settings: dict | None = None,
     model: str | None = None,
     timeout: int = 60,
+    engine: str | None = None,
 ) -> Path:
-    """Synthesize VO via ElevenLabs Victoria. Writes MP3 to out_path. Returns the path.
+    """Synthesize VO. DEFAULT: Grok TTS Eve. engine="elevenlabs" (explicit opt-in) uses ElevenLabs Victoria. Writes MP3 to out_path. Returns the path.
 
     Args:
         text: The VO script for this segment. Numbers spelled out
@@ -155,6 +217,10 @@ def synth_vo(
     Raises:
         urllib.error.HTTPError on API failure.
     """
+    engine = engine or os.environ.get("STUDIO_VOICE_ENGINE") or DEFAULT_ENGINE
+    if engine != "elevenlabs":
+        return synth_vo_grok(text, out_path, timeout=max(timeout, 120))
+
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 

@@ -96,7 +96,7 @@ export function ListingGuestSaveSheet({
             Sign in with Google any time to see every home you have saved in one place.
           </p>
         ) : (
-          <form onSubmit={onSubmit} className="flex flex-col gap-3 px-4">
+          <form data-clarity-mask="True" onSubmit={onSubmit} className="flex flex-col gap-3 px-4">
             <div className="sr-only" aria-hidden>
               <Label htmlFor="guest-save-company">Company</Label>
               <Input

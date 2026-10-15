@@ -1,0 +1,73 @@
+{
+  "capturedAt": "2026-10-15T02:10:00Z",
+  "updatedAt": "2026-10-15T03:24:00Z",
+  "note": "Backup of Twilio voice routing before Sarah conference + main-line switch. No secrets. Main line stays off Sarah. Spare +15412245025 is the only receptionist line.",
+  "sipTrunk": {
+    "sid": "TK2c20738ac8af5c7635ffa7e07f663e82",
+    "friendlyName": "Grok Voice receptionist test (xAI SIP)",
+    "phoneNumbersAttached": [],
+    "originationUrl": "sip:+15412245025@sip.voice.x.ai;transport=tls",
+    "transferMode": "disable-all"
+  },
+  "numbers": [
+    {
+      "sid": "PNfbf222de5fd895bcd9aa50846d8973e2",
+      "phoneNumber": "+15417033095",
+      "friendlyName": "Ryan Realty — Matt Ryan (primary)",
+      "voiceUrl": "https://ryan-realty.com/api/twilio/voice",
+      "voiceMethod": "POST",
+      "voiceFallbackUrl": "",
+      "smsUrl": "https://ryan-realty.com/api/twilio/inbound-sms",
+      "statusCallback": "https://ryan-realty.com/api/twilio/status",
+      "trunkSid": null
+    },
+    {
+      "sid": "PN78ff4715d409732e9130c8cd29911360",
+      "phoneNumber": "+15412245025",
+      "friendlyName": "Ryan Realty — legacy spare (do not release)",
+      "voiceUrl": "https://ryan-realty.com/api/twilio/voice",
+      "voiceMethod": "POST",
+      "smsUrl": "https://ryan-realty.com/api/twilio/inbound-sms",
+      "statusCallback": "https://ryan-realty.com/api/twilio/status",
+      "trunkSid": null
+    },
+    {
+      "sid": "PN16a98df5523a40ebd6a18a03ba14703d",
+      "phoneNumber": "+15412503380",
+      "friendlyName": "Ryan Realty — Rebecca Peterson",
+      "voiceUrl": "https://ryan-realty.com/api/twilio/voice",
+      "smsUrl": "https://ryan-realty.com/api/twilio/inbound-sms",
+      "trunkSid": null
+    },
+    {
+      "sid": "PN5e8e441ad51b43e41f180c37f7069521",
+      "phoneNumber": "+15415023436",
+      "friendlyName": "Ryan Realty — Paul Stevenson",
+      "voiceUrl": "https://ryan-realty.com/api/twilio/voice",
+      "smsUrl": "https://ryan-realty.com/api/twilio/inbound-sms",
+      "trunkSid": null
+    }
+  ],
+  "productionEnv": {
+    "RECEPTIONIST_LINES": "+15412245025",
+    "RECEPTIONIST_TRANSFER_TEST_TARGET": null,
+    "RECEPTIONIST_TRANSFER_TEST_TARGET_removedValue": "+15005550006",
+    "RECEPTIONIST_TRANSFER_TEST_TARGET_removedAt": "2026-10-15T03:23:00Z",
+    "RECEPTIONIST_TRANSFER_TEST_TARGET_note": "Was production env id kBox8e2hR0u7YSj8 (Twilio magic number +15005550006). Emptied 2026-10-15T02:54Z, then renamed to RECEPTIONIST_TRANSFER_TEST_TARGET_REMOVED at 2026-10-15T03:23Z because Vercel MCP has no env-delete. process.env.RECEPTIONIST_TRANSFER_TEST_TARGET is unset after the next production deploy. Transfers ring real broker cells.",
+    "TWILIO_FORWARD_MATT": "+15412136706",
+    "note": "Sarah is enabled on the spare only. Do not add +15417033095 to RECEPTIONIST_LINES until an unknown-From spare test succeeds."
+  },
+  "xaiVoicePrice": {
+    "model": "grok-voice-3.0",
+    "speechToSpeechPerMinuteUsd": 0.08,
+    "perHourUsd": 4.8,
+    "textInputUsd": 0.004,
+    "source": "https://docs.x.ai/developers/pricing",
+    "checkedAt": "2026-10-15T02:10:00Z"
+  },
+  "rollbackMainLine": [
+    "Do not set RECEPTIONIST_LINES, or set it to +15412245025 only.",
+    "Keep +15417033095 voice URL at https://ryan-realty.com/api/twilio/voice — known callers still Dial Matt.",
+    "Do not attach any number to TK2c20738ac8af5c7635ffa7e07f663e82 unless switching away from Dial/conference SIP."
+  ]
+}

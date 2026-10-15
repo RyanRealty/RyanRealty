@@ -11,7 +11,13 @@ export type SipSessionConfig = {
   voice?: string
   /** Resolve a transfer target to an E.164 number; null disables that target. */
   resolveTransfer?: (who: TransferTarget) => string | null
-  /** Called once when the call ends with the cleaned transcript lines. */
+  /**
+   * Optional conference / barge transfer. When this returns true, skip SIP REFER.
+   * referSipCall stays the fallback so an unanswered conference add can still REFER.
+   */
+  onTransfer?: (who: TransferTarget, reason: string) => Promise<boolean>
+  /** Caller transcript hook (recording objection, urgent escalate). */
+  onCallerTurn?: (text: string) => Promise<{ mode: string; reply?: string | null } | void>
   /** take_message tool handler; returns whether the message was delivered. */
   onMessage?: (m: { who: TransferTarget; caller_name: string; callback_number: string; message: string }) => Promise<boolean>
   onEnd?: (lines: TranscriptLine[]) => Promise<void>
@@ -107,7 +113,25 @@ export function runSipCall(callId: string, from: string, cfg: SipSessionConfig):
     })
     const handleTransfer = async (fnCallId: string, argsRaw: string) => {
       let who: TransferTarget = 'matt'
-      try { const a = JSON.parse(argsRaw || '{}'); if (a.who === 'rebecca' || a.who === 'paul') who = a.who } catch { /* default matt */ }
+      let reason = ''
+      try {
+        const a = JSON.parse(argsRaw || '{}') as { who?: string; reason?: string }
+        if (a.who === 'rebecca' || a.who === 'paul') who = a.who
+        reason = String(a.reason ?? '')
+      } catch { /* default matt */ }
+      if (cfg.onTransfer) {
+        const bridged = await cfg.onTransfer(who, reason).catch(() => false)
+        log(`conference transfer who=${who} ok=${bridged}`)
+        if (bridged) {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'conversation.item.create',
+              item: { type: 'function_call_output', call_id: fnCallId, output: JSON.stringify({ ok: true, note: 'Connected in conference.' }) },
+            }))
+          }
+          return
+        }
+      }
       const target = cfg.resolveTransfer?.(who) ?? null
       log(`transfer requested who=${who} target=${target ?? 'none'}`)
       const r = target ? await referSipCall(callId, target) : { ok: false, status: 0 }
@@ -142,7 +166,30 @@ export function runSipCall(callId: string, from: string, cfg: SipSessionConfig):
         return
       }
       if (e.type === 'error') log(`error ${JSON.stringify(e.error ?? e)}`)
-      else if (/input_audio_transcription\.completed$/.test(e.type)) { log(`CALLER: ${e.transcript ?? ''}`); lines.push({ speaker: 'caller', text: e.transcript ?? '' }) }
+      else if (/input_audio_transcription\.completed$/.test(e.type)) {
+        const text = e.transcript ?? ''
+        log(`CALLER: ${text}`)
+        lines.push({ speaker: 'caller', text })
+        if (cfg.onCallerTurn && text.trim()) {
+          void cfg.onCallerTurn(text).then((turn) => {
+            if (!turn || ws.readyState !== WebSocket.OPEN) return
+            if (turn.mode === 'stop-recording') {
+              log('recording objection — ending AI session')
+              if (turn.reply) {
+                ws.send(JSON.stringify({
+                  type: 'response.create',
+                  response: { instructions: `Say exactly: "${turn.reply}" Then stop.` },
+                }))
+              }
+              setTimeout(() => { try { ws.close() } catch { /* already closed */ } }, 8000)
+              return
+            }
+            if (turn.mode === 'escalate') {
+              void handleTransfer('urgent', JSON.stringify({ who: 'matt', reason: 'urgent' }))
+            }
+          }).catch((err) => log(`onCallerTurn failed ${(err as Error).message}`))
+        }
+      }
       else if (/output_audio_transcript\.done$|audio_transcript\.done$/.test(e.type)) { log(`AGENT: ${e.transcript ?? ''}`); lines.push({ speaker: 'agent', text: e.transcript ?? '' }) }
     })
     ws.on('error', (err) => log(`ws error ${err.message}`))

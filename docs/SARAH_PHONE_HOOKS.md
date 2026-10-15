@@ -1,13 +1,13 @@
 # Sarah phone-line hook points
 
-Another workstream owns `app/api/voice/*` and `lib/grok/voice-sip.ts`. Do not edit those files to wire Sarah. Import from `lib/sarah` instead.
+Another workstream owns `app/api/voice/*`, `app/api/twilio/*`, and `lib/grok/voice-sip.ts`. Do not edit those files to wire Sarah. Import from `lib/sarah` instead.
 
 ## On inbound answer
 
 1. Greeting: `sarahGreeting('voice')` (Counsel verbatim). Replace `RECEPTIONIST_GREETING`.
 2. Model instructions: `buildSarahSystemPrompt({ channel: 'voice', listingFreshness })`. Replace `RECEPTIONIST_PROMPT`. Drop the qualify-the-caller interview.
-3. Live alert: `notifySarahLiveSession({ channel: 'voice', sessionId, ... })`.
-4. Barge-in: put the SIP leg in Twilio conference `sarahLiveConferenceName(sessionId)` (`sarah-live-{sessionId}`). Matt joins listen/coach, then can cut in. Use existing `referSipCall` only as the transfer path.
+3. Live alert: `notifyLiveSession({ channel: 'voice', sessionId, deskBrokerSlug, ... })` (`notifySarahLiveSession` is the same function). `deskBrokerSlug` is the CRM assigned broker, Matt when unassigned.
+4. Barge-in: put the SIP/AI leg in Twilio conference `sarahLiveConferenceName(sessionId)` using `sarahSessionConferenceJoin(sessionId)` (starts and ends the conference). Matt joins with `mattConferenceJoin(sessionId, 'listen' | 'coach' | 'barge')`. Use existing `referSipCall` only as the transfer path.
 
 ## During the call
 

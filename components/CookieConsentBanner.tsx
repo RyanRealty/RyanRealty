@@ -386,7 +386,7 @@ export default function CookieConsentBanner() {
               Essential (always on): sign-in session, your cookie choice.
             </p>
             <Label className="flex items-start justify-between gap-3">
-              <span className="min-w-0 text-sm">Analytics: Google (Google Analytics)</span>
+              <span className="min-w-0 text-sm">Analytics: Google (Google Analytics) and Microsoft (Clarity)</span>
               <Switch
                 className="mt-0.5 shrink-0"
                 data-consent-toggle="analytics"

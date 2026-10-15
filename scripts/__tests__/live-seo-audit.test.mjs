@@ -125,6 +125,42 @@ describe('auditDecision (data/seo/decisions.json)', () => {
     expect(auditDecision(d, { status: 200, page: live(), html: '<main></main>' }, O).join()).toMatch(/no longer contains/)
   })
 
+  it('aeo-market-lead-and-tables fails the HUD-only one-sentence drop and passes the place fallback', () => {
+    const { decisions } = JSON.parse(readFileSync(new URL('../../data/seo/decisions.json', import.meta.url), 'utf8'))
+    const d = decisions.find((row) => row.id === 'aeo-market-lead-and-tables')
+    expect(d).toBeTruthy()
+    const pageShape = parsePage(
+      `<html><head><title>Bend housing market | Ryan Realty</title>` +
+        `<link rel="canonical" href="${O}/housing-market/bend"/></head>` +
+        `<body><h1>Bend housing market</h1></body></html>`,
+    )
+    const miss = auditDecision(
+      d,
+      {
+        status: 200,
+        page: pageShape,
+        html: '<main><table class="v3-chart__table"></table></main>',
+      },
+      O,
+    ).join('\n')
+    expect(miss).toMatch(/id="takeaways"/)
+    expect(miss).toMatch(/v3-takeaways__lead/)
+    expect(miss).toMatch(/Are home prices going up in Bend/)
+    const hit = auditDecision(
+      d,
+      {
+        status: 200,
+        page: pageShape,
+        html:
+          '<div id="takeaways" class="v3-takeaways v3-takeaways--lede"><p class="v3-takeaways__lead">Bend has 3.5 months of supply, so listings are getting absorbed faster than they are replaced.</p></div>' +
+          '<table class="v3-chart__table"></table>' +
+          '<h2>Are home prices going up in Bend?</h2>',
+      },
+      O,
+    )
+    expect(hit).toEqual([])
+  })
+
   it('passes the page as decided', () => {
     expect(auditDecision(page, { status: 200, page: live() }, O)).toEqual([])
   })

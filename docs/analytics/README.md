@@ -327,6 +327,33 @@ Honor GPC and a stored decline everywhere. **Meta Pixel loads only after marketi
 
 ---
 
+## Microsoft Clarity (session recordings and heatmaps)
+
+Matt approved Clarity on 2026-10-14 to see where visitors click, scroll, get stuck or leave (pinned: `clarity-session-recordings` in `data/analytics/decisions.json`). Code: `lib/analytics/clarity.ts` (the rule, the values, the runtime) and `components/ClarityRecorder.tsx` (mounted once in `AnalyticsScripts`, beside `PageViewTracker`, so never on `/admin`). Tests: `lib/analytics/clarity.test.ts`, `components/ClarityRecorder.test.tsx`.
+
+**Switch it on:** set `CLARITY_PROJECT_ID` in `lib/analytics/clarity.ts` to the id Matt sends (public by design: it ships in the tag URL, like the GA4 measurement id) and ship. While it is `null` nothing loads, nothing is read and nothing is called. In Clarity's project settings, turn **Cookies** off (Clarity's consent mode) so Clarity sets cookies only on the page's consent signal; the code sends that signal either way. **Linking Clarity to GA4** (Clarity Settings, Setup, Google Analytics integration) is an OAuth grant on Matt's Google account: it needs his yes and is done by him in Clarity's UI, never from code.
+
+**When it loads** (`decideClarity`, all must hold, re-decided on every address change, banner answer and unmount):
+
+| Condition | Source |
+|---|---|
+| `CLARITY_PROJECT_ID` set, production build | `lib/analytics/non-production-build.ts` |
+| GA4 may count the page: not `/admin` (the CRM lives there), a `ryan-realty.com` host, not automation, not a broker's browser (`rr_internal=1`) | `decideGaSuppression`, `lib/analytics/ga-suppression.ts` |
+| Not a page whose address is a secret (`/sign`, `/cma-drafts`, the unsubscribe pages) | `isPrivatePath`, the set `PageViewTracker` skips |
+| Not a signed-in personal area (`/account`, `/dashboard`) | `CLARITY_EXCLUDED_PREFIXES` |
+| No person token, secret or typed text in the address (`_pid`, `_fuid`, `rr_doc`, `private-paths.ts` `SECRET_URL_PARAMS`, `token_hash`, `email`, `phone`, `address`, `inquiry`, `message`) | `CLARITY_BLOCKING_PARAMS`; Clarity sends the full page address, so a `?_pid=` arrival is recorded only after `PersonIdentityBridge` cleans the address bar, and `/sell?address=` (the home page's value box) and `/contact?inquiry=` (the /about box) are not recorded |
+| Analytics consent under the GA4 rule: GPC off; a stored banner answer with analytics on, or no answer outside a restricted region (`rr_cr=0`) | `hasAnalyticsConsent()` |
+
+**Consent** (Microsoft's `consentv2` API). On load: `analytics_Storage` granted, `ad_Storage` granted only with the marketing choice (Clarity's own tag syncs Microsoft's MUID cookie only when ad storage is granted). A changed marketing answer sends a new `consentv2`. A withdrawal (decline or GPC) sends `consentv2` denied, which makes Clarity erase `_clck` / `_clsk` and end the session, then `stop`, because clarity-js answers a denial by restarting itself cookieless 250 ms later and our rule is no recording without analytics consent. The page is not reloaded; Clarity stays off until the next full page load. `stop` and `start` are methods of the clarity-js object every `clarity(...)` call dispatches to, not rows in Microsoft's API table. A personal area or an unmount halts it with `stop`; the next public page resumes it with `start`.
+
+**Navigation guard:** clarity-js wraps `history.pushState` / `replaceState` and restarts itself on every address change, and its `stop` sends a final upload. A halt decided in a React effect after the navigation would still send the excluded page's address and title. So the runtime judges every `pushState`, `replaceState` and `popstate` destination with the same decision BEFORE the address changes and stops Clarity first (`installNavigationGuard`). A sign-out or another person on the device clears the identify id for later pages.
+
+**What Clarity is told:** `clarity('identify', <hashed id>)` only for a known contact, the same `crm-<sha256>` / `em-<sha256>` GA4 gets as `user_id` (`AnalyticsIdentityBridge` hands it over; Clarity hashes it again in the browser). Tags: `page_type` (`lib/analytics/page-type.ts`), `visitor_intent` and `primary_market` (`lib/analytics/visitor-intent.ts`). Every value is checked against its shape, so an email, phone or name is dropped. clarity-js resets tags and the id on every Clarity page and treats every address change (a `?bbox=` map move included) as a new page, so they are applied from a `metadata` callback with recall on, the pattern Microsoft's own tag uses.
+
+**Masking:** Clarity masks input boxes and dropdowns in every mode. `data-clarity-mask` gives an element and its children clarity-js's `TextImage` privacy: text and `data-*` attributes masked, image `src` dropped. The public lead forms carry `data-clarity-mask="True"`, as do the `V3Ask` confirmation text and the address plate and map image the /sell stage paints outside its form: the `V3Sheet` and `V3Ask` primitives (alert sheets, place value, contact, concessions, leverage), the listing tour and ask forms (`V3ListingClose`), `V3AlertsStrip`, the seller value form and its sheet (`SellValueForm`), booking, the rental, newsletter, save-search, guest-save, CMA download, lead landing and lead capture forms, and sign-in, sign-up and password reset. `clarity.test.ts` fails if one loses it. Admin surfaces are untouched (Clarity never loads there).
+
+**CSP:** `https://*.clarity.ms` and `https://c.bing.com` in `script-src` and `connect-src` (`next.config.ts`, held by `ci:csp`), the hosts on Microsoft's CSP page. Disclosure: `/cookies` (`_clck`, `_clsk`, Microsoft's own cookies, a "Session recordings" section), `/privacy` (third-party sharing) and the banner's analytics switch label.
+
 ## Lead capture surfaces (server)
 
 Every real lead calls `fireLeadGenerated` after the CRM person exists. A new form adds a `form_id` to `LEAD_FORM_IDS` and a test in `lib/analytics/lead-event.test.ts`.
@@ -475,6 +502,7 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | `lib/analytics/own-site-links.ts` | Finds ryan-realty.com links in a message so each can be decorated (tracked) |
 | `lib/analytics/web-vitals-sample.ts` | Validates one real-user Web Vitals sample before `public.web_vitals` stores it |
 | `lib/analytics/visitor-intent.ts` | Visitor intent (buyer / seller / both / browsing) and primary market, from the shared page categories; the `rr_visitor_intent_v1` memory behind the GA4 user properties |
+| `lib/analytics/clarity.ts` | Microsoft Clarity: when it may record, the consent and tag values it is sent, and the browser runtime `components/ClarityRecorder.tsx` drives |
 | `lib/analytics/ga4-user-id.ts` | The one GA4 user_id of a known contact (hashed CRM id), and the tier rule for sending it |
 
 ---
@@ -495,6 +523,7 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | GA4 audiences | `scripts/ga4-admin.mjs` (`apply-audiences`, `--dry-run`, `--group=visitor-intent`) |
 | Visitor intent and market | `lib/analytics/visitor-intent.ts` |
 | MP page-view mirror | `lib/analytics/ga4-mirror.ts` |
+| Clarity recordings and heatmaps | `lib/analytics/clarity.ts`, `components/ClarityRecorder.tsx` |
 | GTM bootstrap | `lib/analytics/gtm-bootstrap.ts` |
 | Offline Meta + GA4 | `lib/meta-offline-conversions.ts`, `lib/marketing/offline-milestones.ts`, `lib/marketing/offline-ga4.ts`, `app/api/cron/offline-conversions/route.ts` |
 | GTM import | `docs/gtm/ga4-browser-events.import.json`, `docs/GTM_GA4_BROWSER_EVENTS.md` |

@@ -71,3 +71,15 @@ export {
   CURSOR_GROK_MODEL,
 } from './cursor-cli'
 
+export {
+  GROK_TTS_DEFAULT_VOICE,
+  GROK_TTS_ENGINE,
+  GROK_TTS_MODEL,
+  GROK_TTS_DEFAULT_FORMAT,
+  blankWrappingTags,
+  grokTtsBody,
+  listGrokVoices,
+  synthesizeGrokSpeech,
+  type GrokSpeech,
+  type GrokTtsOptions,
+} from './tts'

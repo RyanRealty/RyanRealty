@@ -97,6 +97,7 @@ const ITEMS: V3QuietItem[] = [
     body: [
       'Resend, transactional and marketing email.',
       'Google Analytics (GA4), site analytics, including Google Signals.',
+      'Microsoft Clarity, session recordings and heatmaps of how our pages are used, only when analytics is allowed. What you type in a form is masked and never recorded. See our cookie policy.',
       'Meta, advertising and analytics when you interact with our ads or use Meta products.',
       'Once you accept marketing cookies, Meta and Google may collect information about your online activities over time and across different websites and online services.',
       'Each has its own privacy policy. We do not sell your personal information.',
@@ -209,7 +210,7 @@ export default function PrivacyPage() {
         <div id="sms">
           <V3Quiet
             id="privacy"
-            eyebrow="Updated October 8, 2026"
+            eyebrow="Updated October 14, 2026"
             heading="Privacy and cookies"
             headingLevel={1}
             items={ITEMS}

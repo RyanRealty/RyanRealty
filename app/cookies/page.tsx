@@ -125,6 +125,29 @@ const COOKIES: CookieRow[] = [
       'Measures site usage and distinguishes visitors. Set when analytics is allowed: by default outside the European Economic Area, the UK, and Switzerland, or after you accept. Not set if you decline, send a Global Privacy Control signal, or visit from a region that requires opt-in.',
   },
   {
+    name: '_clck',
+    provider: 'Microsoft Clarity (Microsoft)',
+    type: 'Analytics',
+    duration: '1 year',
+    purpose:
+      'Session recordings and heatmaps. Keeps one Clarity visitor ID across your visits. Set only when analytics is allowed, and deleted if you turn analytics off.',
+  },
+  {
+    name: '_clsk',
+    provider: 'Microsoft Clarity (Microsoft)',
+    type: 'Analytics',
+    duration: '1 day',
+    purpose: 'Joins the pages of one visit into a single Clarity recording. Set only when analytics is allowed.',
+  },
+  {
+    name: 'MUID, CLID, ANONCHK, MR and SM',
+    provider: 'Microsoft Clarity (Microsoft)',
+    type: 'Analytics',
+    duration: 'Set by Microsoft',
+    purpose:
+      'Cookies Microsoft may set on its own domains when Clarity runs. MUID identifies a browser across Microsoft sites; Clarity syncs it only when advertising storage is allowed, which here means after you accept marketing cookies.',
+  },
+  {
     name: '_fbp',
     provider: 'Meta (Facebook)',
     type: 'Marketing',
@@ -160,6 +183,16 @@ const ITEMS: V3QuietItem[] = [
   ),
   {
     kind: 'prose',
+    term: 'Session recordings (Microsoft Clarity)',
+    body: [
+      'When analytics is allowed, Microsoft Clarity records how our pages are used: clicks, taps, scrolling and mouse movement, so we can see where a page confuses people or where they leave. It is analytics, so it follows your analytics choice: off if you decline, if your browser sends a Global Privacy Control signal, or in the European Economic Area, the UK and Switzerland until you accept.',
+      'It does not record what you type. Text in form fields is masked in your browser before anything is sent, and our contact, valuation, tour, booking and alert forms are masked in full. It does not run on your account pages or for our own brokers.',
+      'We label recordings with the kind of page, whether a visit looks like buying or selling, and the area you looked at most. If you are already a contact of ours, we add a one-way hashed ID so your agent can find your visits. Never your name, email or phone.',
+      'If you turn analytics off, Clarity stops and the Clarity cookies on our site are deleted.',
+    ],
+  },
+  {
+    kind: 'prose',
     term: 'How we recognize returning visitors',
     body: 'If you continue with Google or Facebook, contact us, or follow a link we send you, we may associate your activity with your contact record in our own client-relationship system. A first-party cookie then lets us recognize you on later visits so your agent can see the homes you care about. We may also send a one-way hashed version of your email or phone to Google and Meta so they can match you to your visit for advertising measurement. We do not send Google or Meta your raw email or phone.',
   },
@@ -188,7 +221,7 @@ export default function CookiePolicyPage() {
 
         <V3Quiet
           id="cookies"
-          eyebrow="Updated October 8, 2026"
+          eyebrow="Updated October 14, 2026"
           heading="Cookie policy"
           headingLevel={1}
           items={ITEMS}

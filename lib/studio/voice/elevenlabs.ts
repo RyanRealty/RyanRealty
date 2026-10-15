@@ -308,6 +308,6 @@ export async function synthesizeWithTimestamps(options: SynthesizeOptions, deps:
 }
 
 /** The manifest's `voice` block: what made the sound, and when each word is said. */
-export function manifestVoice(synthesis: Pick<Synthesis, 'engine' | 'model' | 'voiceId'>, words: SpokenWord[]): ManifestVoice {
+export function manifestVoice(synthesis: { engine: ManifestVoice['engine']; model: string; voiceId: string }, words: SpokenWord[]): ManifestVoice {
   return { engine: synthesis.engine, model: synthesis.model, voiceId: synthesis.voiceId, words }
 }

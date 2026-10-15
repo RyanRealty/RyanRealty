@@ -18,8 +18,20 @@
  *
  * TIMEOUT. The route's own ceiling is maxDuration 300, so a probe that gives up
  * sooner reports a failure the platform did not have. The default budget is
- * therefore 300s per class, and the classes are fetched CONCURRENTLY so the
- * whole smoke costs one class's worth of wall clock, not six.
+ * therefore 300s per class.
+ *
+ * TWO WAVES, NOT SIX AT ONCE (2026-10-14). core, geo, content and matrix are
+ * four filters of ONE url universe, which an instance builds once and keeps
+ * for ten minutes (buildUniverseOnce, lib/sitemap-class-rows.ts). Asked for
+ * all four at the same moment right after a deploy, four cold instances each
+ * built it, and each build ran the search-matrix inventory read
+ * (getSearchMatrixInventory, listing_search_mv, the anon role's 3 s statement
+ * timeout): Supabase's edge log shows that read from 4 instances at once at
+ * 16:05Z (two of them 500, statement timeout) and from 5 at 16:24Z. The
+ * smoke now asks for the index, core and listings first (listings reads its
+ * own rows, not the universe), then the other three, by which time the
+ * universe core built is in memory to reuse. The whole smoke costs at most two
+ * classes' worth of wall clock.
  *
  * USER AGENT. CI_PROBE_USER_AGENT, not a hand-typed browser string:
  * middleware.ts 403s automation UAs and `npm run ci:probe-ua` fails any probe
@@ -38,6 +50,12 @@ export const SITEMAP_SMOKE_PATHS = Object.freeze([
   '/sitemaps/listings.xml',
   '/sitemaps/matrix.xml',
 ])
+
+/**
+ * Asked for first, together: the index, one class that builds the url
+ * universe, and listings (its own read). The rest follow once these answer.
+ */
+export const SITEMAP_SMOKE_FIRST_WAVE = Object.freeze(['/sitemap.xml', '/sitemaps/core.xml', '/sitemaps/listings.xml'])
 
 /** Matches the route's own maxDuration — a shorter budget invents failures. */
 export const SITEMAP_SMOKE_TIMEOUT_MS = 300_000
@@ -78,42 +96,50 @@ export async function probeSitemapClasses(origin, opts = {}) {
   const retryDelayMs = opts.retryDelayMs ?? RETRY_DELAY_MS
   const base = String(origin).replace(/\/$/, '')
 
-  const results = await Promise.all(
-    paths.map(async (path) => {
-      const startedAt = Date.now()
-      let lastError = null
-      for (let attempt = 0; attempt <= retries; attempt++) {
-        if (attempt > 0) await new Promise((r) => setTimeout(r, retryDelayMs))
-        try {
-          const res = await doFetch(`${base}${path}`, {
-            method: 'GET',
-            redirect: 'follow',
-            headers: { 'user-agent': CI_PROBE_USER_AGENT },
-            signal: AbortSignal.timeout(timeoutMs),
-          })
-          const body = res.status === 200 ? await res.text() : ''
-          return {
-            path,
-            status: res.status,
-            entries: body ? countEntries(body) : 0,
-            ms: Date.now() - startedAt,
-            error: null,
-            retried: attempt,
-          }
-        } catch (e) {
-          lastError = e instanceof Error ? e.message : String(e)
+  const probeOne = async (path) => {
+    const startedAt = Date.now()
+    let lastError = null
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, retryDelayMs))
+      try {
+        const res = await doFetch(`${base}${path}`, {
+          method: 'GET',
+          redirect: 'follow',
+          headers: { 'user-agent': CI_PROBE_USER_AGENT },
+          signal: AbortSignal.timeout(timeoutMs),
+        })
+        const body = res.status === 200 ? await res.text() : ''
+        return {
+          path,
+          status: res.status,
+          entries: body ? countEntries(body) : 0,
+          ms: Date.now() - startedAt,
+          error: null,
+          retried: attempt,
         }
+      } catch (e) {
+        lastError = e instanceof Error ? e.message : String(e)
       }
-      return {
-        path,
-        status: null,
-        entries: 0,
-        ms: Date.now() - startedAt,
-        error: lastError,
-        retried: retries,
-      }
-    }),
-  )
+    }
+    return {
+      path,
+      status: null,
+      entries: 0,
+      ms: Date.now() - startedAt,
+      error: lastError,
+      retried: retries,
+    }
+  }
+
+  // A caller naming its own paths gets one wave; the default list goes in two.
+  const firstWave = opts.paths ? paths : paths.filter((p) => SITEMAP_SMOKE_FIRST_WAVE.includes(p))
+  const secondWave = paths.filter((p) => !firstWave.includes(p))
+  const byPath = new Map()
+  for (const wave of [firstWave, secondWave]) {
+    if (wave.length === 0) continue
+    for (const r of await Promise.all(wave.map(probeOne))) byPath.set(r.path, r)
+  }
+  const results = paths.map((p) => byPath.get(p))
 
   const ok = results.every((r) => r.status === 200 && r.entries > 0)
   return { ok, results }

@@ -4,7 +4,9 @@ import {
   SARAH_TEASER_COPY,
   SARAH_TEASER_DELAY_MS,
   SARAH_TEASER_SESSION_KEY,
+  SARAH_TEASER_WIDE_MQ,
   isSarahListingTeaserPath,
+  listingTeaserKind,
   persistTeaserDismissed,
   shouldOfferListingTeaser,
   teaserDismissedInSession,
@@ -41,5 +43,11 @@ describe('listing teaser', () => {
     expect(shouldOfferListingTeaser({ pathname: path, dismissed: false, panelOpen: false })).toBe(true)
     expect(shouldOfferListingTeaser({ pathname: path, dismissed: true, panelOpen: false })).toBe(false)
     expect(shouldOfferListingTeaser({ pathname: path, dismissed: false, panelOpen: true })).toBe(false)
+  })
+
+  it('uses a bubble on a wide window and a badge on a phone', () => {
+    expect(listingTeaserKind(true)).toBe('bubble')
+    expect(listingTeaserKind(false)).toBe('badge')
+    expect(SARAH_TEASER_WIDE_MQ).toBe('(min-width: 64rem)')
   })
 })
