@@ -95,6 +95,10 @@ export const SHOWING_ASK_EN = 'Would you like to schedule a showing to see the h
 /** Listing-detail teaser. Does not open the panel. Desktop bubble; mobile badge only. */
 export const LISTING_TEASER_EN = 'Questions about this home? I can help.'
 
+/** After the greeting, when the visitor's turn is not a hard refusal. */
+export const WEB_HELP_EN =
+  'I can share what the listing shows, set up a showing, or connect you with one of our licensed brokers. What would you like to know?'
+
 export const SHOWING_ASK_ES = '¿Le gustaría programar una visita para ver la casa?'
 
 export const BOOKING_PENDING_EN =

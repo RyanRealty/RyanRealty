@@ -13,6 +13,7 @@ const COPY_KEYS = [
   'CMA_KICKOFF_EN',
   'YES_CONSENT_TEXT',
   'LISTING_TEASER_EN',
+  'WEB_HELP_EN',
 ] as const
 
 describe('Sarah public copy', () => {

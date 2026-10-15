@@ -9,6 +9,14 @@ import { LISTING_TEASER_EN } from './scripts'
 export const SARAH_TEASER_DELAY_MS = 30_000
 export const SARAH_TEASER_SESSION_KEY = 'rr_sarah_teaser_dismissed'
 export const SARAH_TEASER_COPY = LISTING_TEASER_EN
+/** Matches the site phone-dock hide: bubble on a wide window, badge on a phone. */
+export const SARAH_TEASER_WIDE_MQ = '(min-width: 64rem)'
+
+export type SarahTeaserKind = 'bubble' | 'badge'
+
+export function listingTeaserKind(isWideViewport: boolean): SarahTeaserKind {
+  return isWideViewport ? 'bubble' : 'badge'
+}
 
 export function isSarahListingTeaserPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false
