@@ -9,6 +9,7 @@ describe('leftoverCityAreaMarket', () => {
     expect(SRC).toMatch(/leftoverHudKpis/)
     expect(SRC).toMatch(/leftoverHudPublishes/)
     expect(SRC).toMatch(/getDetachedOverlays/)
+    expect(SRC).toMatch(/readDetachedOverlay/)
     expect(SRC).toMatch(/getPublicDetachedPace/)
     expect(SRC).not.toMatch(/getMarketPulse/)
   })

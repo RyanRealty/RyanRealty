@@ -47,6 +47,7 @@ import {
   getCompleteMonthlyMarketDetail,
   getRecentBlogPosts,
   getDetachedOverlays,
+  readDetachedOverlay,
   getCityListings,
   getCommunityBySlug,
 } from '@/lib/data'
@@ -67,7 +68,7 @@ import { geoMarketLeftoverGrain, geoMarketPublishes } from '@/lib/market/geo-mar
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
-import { placeTakeaways } from '@/lib/site/place-takeaways'
+import { housingMarketTakeaways, placeTakeaways } from '@/lib/site/place-takeaways'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PlaceAlertsStrip } from '@/app/_v3/place-alerts/PlaceAlertsStrip.client'
@@ -199,7 +200,7 @@ const loadGeoMarket = cache(async (slugKey: string) => {
   const completePriceMonths = priceHistory.filter((p) => p.periodStart.slice(0, 7) !== currentMonthKey)
   const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, completePriceMonths)
 
-  const mt = leftoverGeo ? mtOverlays.get(`${leftoverGeo}:${geoSlug}`) : undefined
+  const mt = leftoverGeo ? readDetachedOverlay(mtOverlays, leftoverGeo, geoSlug) : undefined
   const hud = leftoverHudKpis({
     grain: leftoverGeo ?? 'city',
     headlines: mt?.headlines ?? null,
@@ -258,7 +259,7 @@ const loadGeoMarket = cache(async (slugKey: string) => {
   // City market pages get the 'market' set (brief 2026-10-08): sale price
   // first, then the 12-month change, pace, and supply, rendered directly under
   // the H1. Community market pages keep the place set.
-  const takeaways = placeTakeaways({
+  const takeawaysInput = {
     ...(isCity
       ? {
           variant: 'market' as const,
@@ -277,7 +278,8 @@ const loadGeoMarket = cache(async (slugKey: string) => {
     monthsOfSupply: mosRaw,
     saleMedian: saleMedian ? { value: saleMedian.value, when: `in ${saleMedian.monthLabel}` } : null,
     yoyMedian: publicPace.yoyMedian,
-  })
+  }
+  const takeaways = isCity ? housingMarketTakeaways(takeawaysInput) : placeTakeaways(takeawaysInput)
 
   // HOW HOMES HERE GET BOUGHT (2026-08-27). The full report is the ONE surface
   // for the all-property-types financing mix: the six-brokerage sweep found no

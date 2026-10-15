@@ -9,8 +9,13 @@ HERE = os.path.dirname(os.path.abspath(__file__)); GATE = os.path.join(HERE, "..
 E2 = os.environ.get("E2_V3", "/workspace/creative-desk/buyer-pivot/concessions/e2/e2_v3_silent.mp4")
 def gate(*a): r = subprocess.run([sys.executable, GATE, *a], capture_output=True, text=True); return r.returncode, r.stdout
 ok = True
+import re as _re
+_src = open(GATE).read(); _m = _re.search(r'^CTA_WORDS = re\.compile\(r"(.*)", re\.I\)$', _src, _re.M)
+_cta = _re.compile(_m.group(1), _re.I)
 def check(c, m):
     global ok; print(("PASS " if c else "FAIL ") + m); ok &= bool(c)
+check(not _cta.search("Ye Tag tape eee A Oe * Be Sg"), "junk OCR 'tape' is not a CTA")
+check(bool(_cta.search("Tap to call")), "a real 'tap' is a CTA")
 if os.path.exists(E2):
     rc, out = gate(E2, "--silent")
     check(rc == 1, "e2_v3 exits 1"); check("END CARD" in out, "e2_v3 fails END CARD"); check("LOOP" in out, "e2_v3 fails LOOP")

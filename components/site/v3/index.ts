@@ -284,8 +284,8 @@ export {
   type V3WorkWithUsProps,
 } from './V3PhoneDock.client'
 /**
- * SITE-134 (Matt 2026-09-19): sitewide floating dog circle. Five-door menu.
- * Replaces sticky Call / Text / Work-with-us bars. Header Work with us is out (SITE-155).
+ * Retired from the public layout (Sarah owns Call / Text / Email / Book).
+ * Still exported because ci:public-v3 requires every V3*.tsx to leave the barrel.
  */
 export { V3DogFloater, DOG_FLOATER_MENUS } from './V3DogFloater.client'
 export { V3SarahAssistant } from './V3SarahAssistant.client'

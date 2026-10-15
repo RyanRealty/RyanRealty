@@ -112,7 +112,7 @@ async function run(argv: string[]): Promise<number> {
   const { runSteps } = await import('../lib/content/process/run')
   const { fetchAndCheckFreshness, gitRunner } = await import('../lib/content/process/freshness')
   const { formatRun } = await import('../lib/content/process/report')
-  const { elevenLabsProvider } = await import('../lib/studio/timeline/voice')
+  const { defaultVoiceProvider } = await import('../lib/studio/timeline/voice')
   const { studioFfmpeg } = await import('../lib/studio/timeline/ffmpeg')
   const { launchMotionChrome } = await import('../lib/studio/motion/endcard-render')
   const { checkoutRoots } = await import('../lib/studio/timeline/render')
@@ -134,7 +134,7 @@ async function run(argv: string[]): Promise<number> {
     deps: {
       render: {
         ffmpeg,
-        voiceProvider: elevenLabsProvider(),
+        voiceProvider: defaultVoiceProvider(), // Grok TTS Eve unless the timeline writes engine: 'elevenlabs'
         launchBrowser: launchMotionChrome,
         log: (line) => console.log(`  ${line}`),
         // Outlines come from the boundaries table through the DAL, never drawn by hand.

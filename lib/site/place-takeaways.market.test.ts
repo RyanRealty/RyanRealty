@@ -4,7 +4,7 @@
  * Figures are the live Oct 8, 2026 Bend values the brief traces (§2, M1 to M8).
  */
 import { describe, expect, it } from 'vitest'
-import { placeTakeaways } from './place-takeaways'
+import { housingMarketTakeaways, placeTakeaways } from './place-takeaways'
 
 const BEND_PLACE = {
   place: 'Bend',
@@ -85,6 +85,48 @@ describe('placeTakeaways, market variant', () => {
 
   it('writes no dash of any kind', () => {
     for (const s of placeTakeaways(BEND_MARKET)) expect(s).not.toMatch(/\u2014|\u2013| -- /)
+  })
+})
+
+describe('housingMarketTakeaways', () => {
+  it('keeps the sale-led market set when two or more sentences publish', () => {
+    expect(housingMarketTakeaways(BEND_MARKET)).toEqual(placeTakeaways(BEND_MARKET))
+  })
+
+  it('falls back to the HUD place set when only months of supply remains', () => {
+    const hudOnly = housingMarketTakeaways({
+      place: 'Bend',
+      addressScope: true,
+      asOfLabel: 'Oct 13, 2026',
+      active: 706,
+      medianList: 849_950,
+      monthsOfSupply: 3.5,
+    })
+    expect(hudOnly).toEqual(placeTakeaways({
+      place: 'Bend',
+      addressScope: true,
+      asOfLabel: 'Oct 13, 2026',
+      active: 706,
+      medianList: 849_950,
+      monthsOfSupply: 3.5,
+    }))
+    expect(hudOnly.length).toBeGreaterThanOrEqual(2)
+    expect(hudOnly.join(' ')).toContain('3.5 months of supply')
+    expect(hudOnly.join(' ')).toContain('$849,950')
+    expect(hudOnly.join(' ')).not.toMatch(/buyer's market|buyers market/)
+    for (const s of hudOnly) expect(s).not.toMatch(/\u2014|\u2013| -- /)
+  })
+
+  it('names La Pine supply as buyers have leverage, not a buyer market', () => {
+    const t = housingMarketTakeaways({
+      place: 'La Pine',
+      addressScope: true,
+      active: 169,
+      medianList: 490_000,
+      monthsOfSupply: 8.7,
+    })
+    expect(t.join(' ')).toContain('buyers have leverage')
+    expect(t.join(' ')).not.toMatch(/buyer's market|buyers market/)
   })
 })
 

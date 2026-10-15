@@ -1,8 +1,9 @@
 /**
  * lib/studio/timeline/voice.ts: the film's voice and captions on ONE clock.
  *
- * ElevenLabs v3 with timestamps (lib/studio/voice/elevenlabs.ts) speaks the
- * timeline's script in a named female voice; the engine's own character timing
+ * Grok TTS with timestamps (lib/grok/tts.ts, voice Eve) is the DEFAULT engine
+ * (Matt 2026-10-14); ElevenLabs v3 (lib/studio/voice/elevenlabs.ts) speaks only when
+ * the timeline writes engine: 'elevenlabs'. The engine's own character timing
  * becomes spoken words (words.ts), the words are moved onto the film's clock by
  * the voice's start offset, and the caption cards are built from those very
  * words (captions.ts). The mix (mix.ts) places the audio at the same offset, so
@@ -15,8 +16,11 @@
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { GROK_TTS_MODEL, synthesizeGrokSpeech, type GrokTtsDeps } from '../../grok/tts'
 import {
+  DEFAULT_GROK_VOICE,
   DEFAULT_MODEL,
+  resolveVoiceEngine,
   alignmentToWords,
   buildCaptions,
   decodeVoiceAudio,
@@ -24,10 +28,11 @@ import {
   synthesizeWithTimestamps,
   voiceIdFor,
   type CaptionCard,
+  type CharacterAlignment,
   type ClientDeps,
   type SpokenWord,
   type StereoAudio,
-  type Synthesis,
+  type VoiceEngine,
   type VoiceSettings,
 } from '../voice'
 import type { TimelineVoice } from './types'
@@ -36,6 +41,8 @@ import type { TimelineVoice } from './types'
 export const DEFAULT_VOICE_START = 0.3
 
 export type VoiceRequest = {
+  /** Default 'grok'. Absent in old cache keys, which are therefore ElevenLabs-era entries and never collide. */
+  engine?: VoiceEngine
   text: string
   voiceId: string
   model: string
@@ -43,9 +50,47 @@ export type VoiceRequest = {
   voiceSettings?: VoiceSettings
 }
 
-/** Something that speaks a line with timing. The real one calls ElevenLabs; tests stub it. */
-export type VoiceProvider = (request: VoiceRequest) => Promise<Synthesis>
+/** What any engine hands back: the audio, the exact text sent, and the engine's own character timing. */
+export type VoiceSynthesis = {
+  engine: VoiceEngine
+  model: string
+  voiceId: string
+  text: string
+  outputFormat: string
+  audio: Buffer
+  alignment: CharacterAlignment
+}
 
+/** Something that speaks a line with timing. The real ones call Grok TTS or ElevenLabs; tests stub it. */
+export type VoiceProvider = (request: VoiceRequest) => Promise<VoiceSynthesis>
+
+/** Grok TTS (xAI /v1/tts, with_timestamps, wav 48 kHz). The DEFAULT provider. */
+export function grokProvider(deps: GrokTtsDeps = {}): VoiceProvider {
+  return (request) =>
+    synthesizeGrokSpeech(
+      {
+        text: request.text,
+        voiceId: request.voiceId || DEFAULT_GROK_VOICE,
+        ...(request.voiceSettings?.speed !== undefined ? { speed: request.voiceSettings.speed } : {}),
+      },
+      deps,
+    )
+}
+
+/**
+ * The provider for a request's engine: Grok unless the request says 'elevenlabs'. Use this in
+ * scripts instead of picking an engine by hand, so the default stays enforced in one place.
+ */
+export function defaultVoiceProvider(deps: { grok?: GrokTtsDeps; elevenlabs?: ClientDeps } = {}): VoiceProvider {
+  const grok = grokProvider(deps.grok)
+  let eleven: VoiceProvider | null = null
+  return (request) => {
+    if (resolveVoiceEngine(request.engine) === 'elevenlabs') return (eleven ??= elevenLabsProvider(deps.elevenlabs))(request)
+    return grok(request)
+  }
+}
+
+/** ElevenLabs v3: explicit opt-in only (timeline voice.engine = 'elevenlabs'). */
 export function elevenLabsProvider(deps: ClientDeps = {}): VoiceProvider {
   return (request) =>
     synthesizeWithTimestamps(
@@ -63,6 +108,7 @@ export function elevenLabsProvider(deps: ClientDeps = {}): VoiceProvider {
 /** The cache key: every input that changes the sound. */
 export function voiceCacheKey(request: VoiceRequest): string {
   const shaped = {
+    ...(resolveVoiceEngine(request.engine) === 'grok' ? { engine: 'grok' } : {}),
     text: request.text,
     voiceId: request.voiceId,
     model: request.model,
@@ -72,14 +118,14 @@ export function voiceCacheKey(request: VoiceRequest): string {
   return createHash('sha256').update(JSON.stringify(shaped)).digest('hex').slice(0, 32)
 }
 
-type CachedSynthesis = Omit<Synthesis, 'audio'> & { audioBase64: string }
+type CachedSynthesis = Omit<VoiceSynthesis, 'audio'> & { audioBase64: string }
 
 /** Speak through the cache: a hit costs nothing. */
 export async function cachedSynthesis(
   request: VoiceRequest,
   provider: VoiceProvider,
   cacheDir: string | null,
-): Promise<{ synthesis: Synthesis; cached: boolean }> {
+): Promise<{ synthesis: VoiceSynthesis; cached: boolean }> {
   const key = voiceCacheKey(request)
   const file = cacheDir ? join(cacheDir, `${key}.json`) : null
   if (file && existsSync(file)) {
@@ -98,7 +144,7 @@ export async function cachedSynthesis(
 
 /** The film's voice: what made it, its words and captions on the film clock, and its samples. */
 export type FilmVoice = {
-  engine: 'elevenlabs'
+  engine: VoiceEngine
   model: string
   voiceId: string
   /** Seconds into the film where the voice's first sample plays. */
@@ -140,13 +186,27 @@ export async function speakTimeline(
     voiceId?: string
   },
 ): Promise<FilmVoice> {
-  const voiceId = opts.voiceId ?? voiceIdFor(voice.voice, opts.env)
-  const request: VoiceRequest = {
-    text: voice.script,
-    voiceId,
-    model: voice.model ?? DEFAULT_MODEL,
-    ...(voice.seed !== undefined ? { seed: voice.seed } : {}),
-    ...(voice.settings ? { voiceSettings: voice.settings } : {}),
+  const engine = resolveVoiceEngine(voice.engine)
+  let request: VoiceRequest
+  if (engine === 'elevenlabs') {
+    const name = voice.voice === 'ellen' || voice.voice === 'victoria' ? voice.voice : null
+    if (!name && !opts.voiceId) throw new Error("engine 'elevenlabs' needs voice 'ellen' or 'victoria'")
+    request = {
+      engine,
+      text: voice.script,
+      voiceId: opts.voiceId ?? voiceIdFor(name!, opts.env),
+      model: voice.model ?? DEFAULT_MODEL,
+      ...(voice.seed !== undefined ? { seed: voice.seed } : {}),
+      ...(voice.settings ? { voiceSettings: voice.settings } : {}),
+    }
+  } else {
+    request = {
+      engine,
+      text: voice.script,
+      voiceId: opts.voiceId ?? DEFAULT_GROK_VOICE,
+      model: GROK_TTS_MODEL,
+      ...(voice.settings?.speed !== undefined ? { voiceSettings: { speed: voice.settings.speed } } : {}),
+    }
   }
   const { synthesis, cached } = await cachedSynthesis(request, opts.provider, opts.cacheDir)
   const voiceWords = alignmentToWords(synthesis.alignment)
