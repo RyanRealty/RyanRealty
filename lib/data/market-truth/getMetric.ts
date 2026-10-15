@@ -2,7 +2,8 @@
  * The only read path for a Market Truth figure.
  * Shadow store: public.market_metric. /sell Bend (active, months of supply,
  * verdict) reads this. Other public surfaces stay on pulse until their recon.
- * getMetrics is the batch form — one round trip, same stale / publishable /
+ * getMetrics is the batch form: one narrowed read (two when the recent days
+ * leave an input open), cached per input set, same stale / publishable /
  * window pick as getMetric.
  */
 import { cache } from 'react'
@@ -60,22 +61,33 @@ export class UnknownStatError extends Error {
 const METRIC_PAGE = 1000
 
 /**
+ * Which rows may answer: only rows computed in the last 14 days (#634). A cell
+ * the compute stopped writing ages out instead of printing as current (§0).
+ * This is a rule about what is eligible, not a speed-up: both reads apply it.
+ */
+export const METRIC_LOOKBACK_DAYS = 14
+
+/**
  * How far back, in period_end days, getMetrics' first read reaches. The
  * compute writes one period_end per day, so the first read holds the last four
- * days of rows; any input it cannot answer is read again over all history.
+ * days of rows; any input it cannot answer is read again over the older
+ * period_ends inside the lookback.
  */
 export const METRIC_RECENT_PERIOD_DAYS = 3
 
 /**
- * Cap on concurrent market_metric reads in one process. Each read is one
- * narrowed query (or two), so this bounds a page that asks for many figures
- * at once without queueing it behind whole-history slices.
+ * Cap on concurrent market_metric queries in one process (#634's 3). It wraps
+ * the store reads only, so an answer already cached never waits for a slot.
  */
-const READ_CONCURRENCY = 6
+const READ_CONCURRENCY = 3
 const runRead = withConcurrency(READ_CONCURRENCY)
 
 function isoDateDaysAgo(days: number, now = Date.now()): string {
   return new Date(now - days * 86_400_000).toISOString().slice(0, 10)
+}
+
+function lookbackSince(now = Date.now()): string {
+  return new Date(now - METRIC_LOOKBACK_DAYS * 86_400_000).toISOString()
 }
 
 /** market_metric's primary key, in order: the tiebreak that makes offset paging stable. */
@@ -231,15 +243,13 @@ export function segmentStatPairsFilter(inputs: GetMetricInput[]): string {
 }
 
 /**
- * Every publishable market_metric row the inputs could pick, newest first,
- * paged past PostgREST's 1,000-row cap. `periodEndFrom` keeps only rows whose
- * period_end is on or after that date; `pairsOnly` reads each segment's own
- * stats instead of every stat for every segment.
+ * Every eligible market_metric row the inputs could pick, newest first, paged
+ * past PostgREST's 1,000-row cap: publishable, computed inside the lookback,
+ * and only each segment's own stats. `from` and `before` bound period_end.
  */
 async function readCandidateRows(
   inputs: GetMetricInput[],
-  periodEndFrom: string | null,
-  pairsOnly = false,
+  bounds: { from?: string; before?: string },
 ): Promise<Record<string, unknown>[]> {
   const sb = createServiceClient()
   const windows = inputs.every((input) => input.windowMonths != null)
@@ -248,6 +258,7 @@ async function readCandidateRows(
   const periodEnds = inputs.every((input) => Boolean(input.periodEnd))
     ? unique(inputs.map((input) => String(input.periodEnd).slice(0, 10)))
     : null
+  const since = lookbackSince()
   const rows: Record<string, unknown>[] = []
   for (let from = 0; ; from += METRIC_PAGE) {
     let query = sb
@@ -265,15 +276,18 @@ async function readCandidateRows(
       // a withheld row is never read. It also puts the read on
       // market_metric_lookup_idx, the partial index over publishable rows.
       .eq('is_publishable', true)
+      .gte('computed_at', since)
+      .or(segmentStatPairsFilter(inputs))
     if (windows) query = query.in('window_months', windows)
     if (periodEnds) query = query.in('period_end', periodEnds)
-    if (periodEndFrom) query = query.gte('period_end', periodEndFrom)
-    if (pairsOnly) query = query.or(segmentStatPairsFilter(inputs))
+    if (bounds.from) query = query.gte('period_end', bounds.from)
+    if (bounds.before) query = query.lt('period_end', bounds.before)
     // computed_at is shared by every row one compute run writes, so the
     // primary key breaks the tie: offset pages over a non-unique order can
     // skip a row or repeat one between pages.
-    const { data, error } = await orderByPrimaryKey(query.order('computed_at', { ascending: false }))
-      .range(from, from + METRIC_PAGE - 1)
+    const page0 = from
+    const ordered = orderByPrimaryKey(query.order('computed_at', { ascending: false }))
+    const { data, error } = await runRead(async () => await ordered.range(page0, page0 + METRIC_PAGE - 1))
 
     if (error) throw new Error(`getMetrics: ${error.message}`)
     const page = (data ?? []) as Record<string, unknown>[]
@@ -294,11 +308,19 @@ async function readCandidateRows(
  * stores).
  */
 async function readPickedRows(inputs: GetMetricInput[]): Promise<(Record<string, unknown> | null)[]> {
-  const recent = await readCandidateRows(inputs, isoDateDaysAgo(METRIC_RECENT_PERIOD_DAYS))
+  const cut = isoDateDaysAgo(METRIC_RECENT_PERIOD_DAYS)
+  // An input pinned to a period_end before the cut (a monthly series point)
+  // has no row on or after it: skip the recent read when every input is one.
+  const allPinnedBeforeCut = inputs.every(
+    (input) => input.periodEnd && String(input.periodEnd).slice(0, 10) < cut,
+  )
+  const recent = allPinnedBeforeCut ? [] : await readCandidateRows(inputs, { from: cut })
   const picked = inputs.map((input) => pickRow(recent, input))
   const unanswered = inputs.filter((_, i) => picked[i] == null)
   if (unanswered.length > 0) {
-    const history = await readCandidateRows(unanswered, null, true)
+    // The recent read already held every row on or after the cut for these
+    // inputs, and none answered, so history reads only the older period_ends.
+    const history = await readCandidateRows(unanswered, { before: cut })
     inputs.forEach((input, i) => {
       if (picked[i] == null) picked[i] = pickRow(history, input)
     })
@@ -366,14 +388,15 @@ export async function getMetrics(inputs: GetMetricInput[]): Promise<(MetricResul
   //     public segments, three at a time. The zip, city and sell pages' 3 s
   //     budgets ran out and they rendered without their market sections
   //     (/zip/97702 lost 5 sections; content-floor red on every PR from
-  //     2026-10-15). The slice also dropped any cell not rewritten within 14
-  //     days, and some are written once (new_listings_30d, 2026-10-12).
+  //     2026-10-15).
   //   * So each set of inputs is one query narrowed by stat, geo, segment,
-  //     window and period, over the last few period_end days, plus a history
-  //     query only for the inputs those days leave open.
+  //     window and period over the last few period_end days, plus a query of
+  //     the older period_ends only for the inputs those days leave open. Which
+  //     rows may answer is #634's rule unchanged (publishable, computed in the
+  //     last 14 days), so every figure is the one the slice read gave.
   const keys = inputs.map(canonicalInput)
   const canonical = unique(keys).sort()
-  const picked = await runRead(() => loadPickedDeduped(JSON.stringify(canonical)))
+  const picked = await loadPickedDeduped(JSON.stringify(canonical))
   const at = new Map(canonical.map((key, i) => [key, i]))
   return keys.map((key) => {
     const row = picked[at.get(key)!] ?? null

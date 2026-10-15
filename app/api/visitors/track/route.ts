@@ -54,7 +54,10 @@ import {
   PERSON_COOKIE,
   personCookieOptions,
   personCookieValue,
+  personCookieWrite,
+  readPersonCookie,
   signedPersonIdFromCookie,
+  type IdentityProvenance,
 } from '@/lib/identity/person-cookie'
 import {
   clearProvisionalAutomation,
@@ -643,8 +646,12 @@ export async function POST(request: NextRequest) {
   // automation is never identified.
   let identifiedNow = false
   // The signed rr_pid cookie is (re)issued whenever this request identifies a
-  // browser, so /api/identity/me and the landing-page forms know them too.
-  let setPersonCookieFor: number | null = null
+  // browser, so /api/identity/me and the landing-page forms know them too. It
+  // carries the identity's PROVENANCE (lib/identity/person-cookie.ts): a signed
+  // link on this request is `verified`; a carryover is `claimed`, because the
+  // identity map may hold nothing stronger than an email someone typed into a
+  // form. Consent capture accepts only `verified`.
+  let personCookie: { personId: number; provenance: IdentityProvenance } | null = null
   if (sessionWrite.inserted && rrVid && !token && !automation.automated) {
     const known = await readIdentityMapForVid(supabase, rrVid)
     if (known?.personId) {
@@ -657,7 +664,7 @@ export async function POST(request: NextRequest) {
         stitchBrowser: false,
       })
       identifiedNow = res.sessionStamped
-      if (res.sessionStamped) setPersonCookieFor = known.personId
+      if (res.sessionStamped) personCookie = { personId: known.personId, provenance: 'claimed' }
       // A browser already mapped to a contact is a person, whatever it landed on:
       // identifySessionAndBrowser clears a provisional flag when it stamps.
     } else if (known?.email) {
@@ -741,7 +748,8 @@ export async function POST(request: NextRequest) {
   // back-stitches every anonymous session on the same rr_vid, and maps the
   // rr_vid so the next visit, and this person's other devices once they click
   // from them, are born identified.
-  const cookiePersonId = signedPersonIdFromCookie(request.cookies.get(PERSON_COOKIE)?.value)
+  const currentPersonCookie = readPersonCookie(request.cookies.get(PERSON_COOKIE)?.value)
+  const cookiePersonId = currentPersonCookie?.signed ? currentPersonCookie.personId : null
   const decision: ArrivalDecision = planArrivalIdentity({
     token,
     tokenPersonExists,
@@ -765,9 +773,21 @@ export async function POST(request: NextRequest) {
       session.fub_person_id = decision.personId
       session.identified_at = session.identified_at ?? new Date().toISOString()
     }
-    if (res.sessionStamped && cookiePersonId !== decision.personId) setPersonCookieFor = decision.personId
+    // Only the signed link proves who this is. An identification from the
+    // cookie itself keeps the cookie it came from (same person, no rewrite).
+    if (res.sessionStamped && token?.personId === decision.personId) {
+      personCookie = { personId: decision.personId, provenance: 'verified' }
+    }
   }
-  if (setPersonCookieFor && setPersonCookieFor === cookiePersonId) setPersonCookieFor = null
+  // The link's person already owns this session (a second view of the landing
+  // page, or a session born from a claimed carryover): the link still proves
+  // them, so a claimed or legacy cookie is upgraded to verified.
+  if (decision.kind === 'already' && token && tokenPersonExists && token.personId === decision.personId) {
+    personCookie = { personId: decision.personId, provenance: 'verified' }
+  }
+  const personCookieProvenance = personCookie
+    ? personCookieWrite(currentPersonCookie, personCookie.personId, personCookie.provenance)
+    : null
 
   // ─── GA4 Measurement Protocol page_view mirror (2026-08-10) ─────────────
   // Mirror view events when the browser is not counting them.
@@ -1018,8 +1038,12 @@ export async function POST(request: NextRequest) {
     },
     { headers: corsHeaders(origin) },
   )
-  if (setPersonCookieFor) {
-    response.cookies.set(PERSON_COOKIE, personCookieValue(setPersonCookieFor), personCookieOptions())
+  if (personCookie && personCookieProvenance) {
+    response.cookies.set(
+      PERSON_COOKIE,
+      personCookieValue(personCookie.personId, personCookieProvenance),
+      personCookieOptions(),
+    )
   }
   return response
 }

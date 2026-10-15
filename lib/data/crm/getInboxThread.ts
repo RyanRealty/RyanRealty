@@ -117,6 +117,8 @@ export async function getConversationThreadFull(personId: number, limit = 100): 
     .from('crm_timeline')
     .select('id,ts,kind,title,body,payload,broker,source')
     .eq('person_id', personId)
+    // A delivery receipt is not a message: it would render as a note line per send.
+    .neq('kind', 'email_delivered')
     .order('ts', { ascending: false })
     .limit(Math.min(Math.max(limit, 1), 500))
   if (!data) return []

@@ -43,6 +43,44 @@ export function isSkippableTip(status) {
   return status === 'skip' || status === 'empty'
 }
 
+const IN_FLIGHT_STATES = new Set(['BUILDING', 'QUEUED', 'INITIALIZING', 'PENDING'])
+
+function shaMatches(d, want) {
+  const got = String(d?.sha || d?.meta?.githubCommitSha || '').toLowerCase()
+  return Boolean(got && want && (got === want || got.startsWith(want) || want.startsWith(got)))
+}
+
+function stateRank(d) {
+  const st = String(d?.state || '').toUpperCase()
+  if (st === 'READY') return 0
+  if (IN_FLIGHT_STATES.has(st)) return 1
+  if (st === 'CANCELED') return 3
+  return 2
+}
+
+/**
+ * The production deployment that speaks for a SHA when Vercel holds more than
+ * one for it. A manual redeploy, or a duplicate push event, leaves a second row
+ * for the same commit, and the duplicate is often CANCELED. Taking the newest
+ * row read that CANCELED duplicate and failed the verify while the commit's
+ * other build was READY and live (2026-10-14). The order is READY, then a build
+ * still in flight, then ERROR, then CANCELED; the newest wins within a state.
+ *
+ * @template {{ created?: number, state?: string, sha?: string, meta?: { githubCommitSha?: string } }} T
+ * @param {T[]} list
+ * @param {string} sha
+ * @returns {T | null}
+ */
+export function pickDeployForSha(list, sha) {
+  const want = String(sha || '').toLowerCase()
+  if (!Array.isArray(list) || !want) return null
+  const hits = list.filter((d) => shaMatches(d, want))
+  if (hits.length === 0) return null
+  return [...hits].sort(
+    (a, b) => stateRank(a) - stateRank(b) || (Number(b?.created) || 0) - (Number(a?.created) || 0),
+  )[0]
+}
+
 /**
  * A newer production deployment in an active state means Vercel canceled
  * this SHA in favor of a later push — not that this tree failed to compile.

@@ -61,11 +61,16 @@ vi.mock('@/lib/cma/market-area-hydrate', () => ({
   hydrateCmaMarketArea: vi.fn(async (args: unknown) => args),
 }))
 
+const jar = vi.hoisted(() => ({ values: {} as Record<string, string> }))
 vi.mock('next/headers', () => ({
-  cookies: vi.fn(async () => ({ get: () => undefined })),
+  cookies: vi.fn(async () => ({
+    get: (name: string) => (name in jar.values ? { value: jar.values[name] } : undefined),
+  })),
 }))
 
 import { CMA_IMMERSIVE_MS, serveCmaDocument } from './serve-document'
+import { personCookieValue } from '@/lib/identity/person-cookie'
+import { signPersonLinkToken } from '@/lib/identity/link-token'
 
 const DRAFT_SLUG = 'cma-850-quince-redmond-97756'
 
@@ -585,5 +590,80 @@ describe('D27 — a delivered CMA is frozen', () => {
     expect(calls.length).toBeGreaterThan(0)
     for (const call of calls) expect(call).toContain('false')
     expect(src).not.toMatch(/immersiveFromRow\([^)]*,\s*true\s*\)/)
+  })
+})
+
+/**
+ * Who gets the consent bar (consent integrity, 2026-10-14). The bar records SMS
+ * and email consent, so it is shown only to a visitor PROVEN to be the
+ * document's person: the signed `?_pid=` on the link we sent, or the VERIFIED
+ * rr_pid cookie that link set. A claimed cookie is what a stranger holds after
+ * typing the person's email into any form on their own browser.
+ */
+describe('the consent bar', () => {
+  const PERSON = 12959
+  const SLUG = 'cma-2566-keats'
+
+  beforeEach(() => {
+    jar.values = {}
+    getCmaServeHead.mockReset()
+    getCmaServeHead.mockResolvedValue({ html_path: `db:cmas.html_content:${SLUG}`, status: 'delivered', broker_slug: 'matthew-ryan' })
+    getCmaRenderSourceBySlug.mockReset()
+    getCmaRenderSourceBySlug.mockResolvedValue({ ...draftFromRenderArgs, status: 'delivered' })
+    getCmaAccessIdentity.mockReset()
+    getCmaAccessIdentity.mockResolvedValue({
+      personId: PERSON,
+      clientEmail: 'owner@msn.com',
+      clientName: 'Owner',
+      subjectAddress: '2566 Keats, Bend, OR 97701',
+      personEmails: ['owner@msn.com'],
+      claimedBy: null,
+      consentRecorded: false,
+    })
+    renderImmersiveCmaHtml.mockImplementation(() => '<html><body>REPORT</body></html>')
+  })
+
+  async function html(query = ''): Promise<string> {
+    const result = await serveCmaDocument({
+      slug: SLUG,
+      requestUrl: `https://ryan-realty.com/cma/${SLUG}${query}`,
+      isAdmin: false,
+      viewerEmail: null,
+    })
+    expect(result.kind).toBe('html')
+    return result.kind === 'html' ? result.html : ''
+  }
+
+  it('shows for the recipient arriving on the signed link we sent, and carries that link as its proof', async () => {
+    const token = signPersonLinkToken(PERSON, 'document')
+    const page = await html(`?_pid=${token}`)
+    expect(page).toContain('rr-consent-bar')
+    expect(page).toContain(`name="proof" value="${token}"`)
+  })
+
+  it('shows for a browser holding the VERIFIED cookie that link set (no proof field: the cookie is the proof)', async () => {
+    jar.values.rr_pid = personCookieValue(PERSON, 'verified')
+    const page = await html()
+    expect(page).toContain('rr-consent-bar')
+    expect(page).not.toContain('name="proof"')
+  })
+
+  it('does not show for a CLAIMED cookie (the person\'s email typed into a form on this browser)', async () => {
+    jar.values.rr_pid = personCookieValue(PERSON, 'claimed')
+    const page = await html()
+    expect(page).toContain('REPORT') // the report itself still opens for anyone with the link
+    expect(page).not.toContain('rr-consent-bar')
+  })
+
+  it('does not show for a bare id, or a cookie value pasted into ?_pid=', async () => {
+    jar.values.rr_pid = String(PERSON)
+    expect(await html()).not.toContain('rr-consent-bar')
+    jar.values = {}
+    expect(await html(`?_pid=${personCookieValue(PERSON, 'claimed')}`)).not.toContain('rr-consent-bar')
+  })
+
+  it('does not show for a verified cookie naming someone else', async () => {
+    jar.values.rr_pid = personCookieValue(PERSON + 1, 'verified')
+    expect(await html()).not.toContain('rr-consent-bar')
   })
 })

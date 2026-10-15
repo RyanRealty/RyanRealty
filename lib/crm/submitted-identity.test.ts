@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveSubmittedIdentity } from './submitted-identity'
+import { resolveSubmittedIdentity, submittedConsentCounts } from './submitted-identity'
 
 describe('resolveSubmittedIdentity', () => {
   it('THE REGRESSION: a different email on a cookied browser never inherits the cookie person', () => {
@@ -37,5 +37,21 @@ describe('resolveSubmittedIdentity', () => {
     expect(
       resolveSubmittedIdentity({ cookiePersonId: null, emailPersonId: null, hasEmail: true }),
     ).toEqual({ personId: null, alreadyKnown: false })
+  })
+})
+
+describe('submittedConsentCounts (consent integrity, 2026-10-14)', () => {
+  it('a submit that carried an email: the box is that person\'s own consent, whatever the cookie', () => {
+    for (const cookieProvenance of ['verified', 'claimed', 'legacy', 'unsigned', null] as const) {
+      expect(submittedConsentCounts({ hasEmail: true, cookieProvenance })).toBe(true)
+    }
+  })
+
+  it('no email: only a VERIFIED cookie makes the box that person\'s consent', () => {
+    expect(submittedConsentCounts({ hasEmail: false, cookieProvenance: 'verified' })).toBe(true)
+    expect(submittedConsentCounts({ hasEmail: false, cookieProvenance: 'claimed' })).toBe(false)
+    expect(submittedConsentCounts({ hasEmail: false, cookieProvenance: 'legacy' })).toBe(false)
+    expect(submittedConsentCounts({ hasEmail: false, cookieProvenance: 'unsigned' })).toBe(false)
+    expect(submittedConsentCounts({ hasEmail: false, cookieProvenance: null })).toBe(false)
   })
 })

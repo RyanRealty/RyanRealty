@@ -138,7 +138,9 @@ describe('form wiring', () => {
   })
 
   it('stores a checked EU match on the person, and still builds the lead', () => {
-    expect(sellerAction).toContain('adMatchConsentCustom(submission.adMatchConsent === true')
+    // Recorded for the person the submit proves (consent integrity, 2026-10-14):
+    // the typed email's person, or a verified cookie's on a no-email submit.
+    expect(sellerAction).toContain('adMatchConsentCustom(consentCounts && submission.adMatchConsent === true')
     expect(sellerAction).toContain('createCmaRequest')
     expect(contactAction).toContain("formData.get('adMatchConsent') === 'yes'")
     expect(contactAction).toContain('adMatchConsentCustom(true, new Date().toISOString())')

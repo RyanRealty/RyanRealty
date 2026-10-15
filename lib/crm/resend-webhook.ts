@@ -52,6 +52,33 @@ export function isFreshTimestamp(svixTimestamp: string, nowMs: number, tolerance
 
 export type ResendEventType = 'delivered' | 'opened' | 'clicked' | 'bounced' | 'complained' | 'unsubscribed'
 
+/**
+ * Resend event type -> crm_timeline `kind`. Every value here must be in the
+ * `crm_timeline_kind_check` vocabulary (supabase/migrations, newest definition):
+ * `email_delivered`, `email_bounce`, `email_complaint` and `email_unsubscribe`
+ * were missing from it until 20261015030000, so every delivered and bounce
+ * event failed the constraint and the route never said so (418 rows in 24 h,
+ * measured 2026-10-15). `lib/observability/check-vocabulary.contract.test.ts` holds the
+ * two lists together.
+ */
+export const RESEND_TIMELINE_KIND: Record<ResendEventType, string> = {
+  delivered: 'email_delivered',
+  opened: 'email_open',
+  clicked: 'email_click',
+  bounced: 'email_bounce',
+  complained: 'email_complaint',
+  unsubscribed: 'email_unsubscribe',
+}
+
+export const RESEND_TIMELINE_TITLE: Record<ResendEventType, string> = {
+  delivered: 'Email delivered',
+  opened: 'Email opened',
+  clicked: 'Email link clicked',
+  bounced: 'Email bounced',
+  complained: 'Spam complaint',
+  unsubscribed: 'Unsubscribed',
+}
+
 const EVENT_MAP: Record<string, ResendEventType> = {
   'email.delivered': 'delivered',
   'email.opened': 'opened',
