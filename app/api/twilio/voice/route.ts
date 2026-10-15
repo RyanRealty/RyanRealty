@@ -18,7 +18,8 @@ import {
   lookupPersonByPhone,
   normalizeTo10,
 } from '@/lib/crm/twilio'
-import { XAI_SIP_URI, isReceptionistLine } from '@/lib/voice/receptionist-routing'
+import { isReceptionistLine, XAI_SIP_URI } from '@/lib/voice/receptionist-routing'
+import { callerConferenceTwiml, sarahConferenceName } from '@/lib/voice/sarah-conference'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { isNumberBlocked, isStirSpamSuspected } from '@/lib/data/crm/getBlockedNumber'
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
@@ -90,13 +91,19 @@ export async function buildVoiceTwiml(params: Record<string, string>): Promise<N
 
   if (receptionistLine && !knownCaller && normalizeTo10(from) !== normalizeTo10(target)) {
     const recOn = process.env.CRM_CALL_RECORDING !== 'false'
-    const rec = recOn
-      ? ` record="record-from-answer-dual" recordingStatusCallback="${site}/api/twilio/recording" recordingStatusCallbackEvent="completed"`
-      : ''
-    return xml(`<?xml version="1.0" encoding="UTF-8"?>
+    const callSid = (params.CallSid ?? '').trim()
+    if (!callSid) {
+      return xml(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial answerOnBridge="true" timeout="20" action="${site}/api/voice/receptionist-complete" method="POST" referUrl="${site}/api/voice/receptionist-refer" referMethod="POST"${rec}><Sip>${XAI_SIP_URI}</Sip></Dial>
+  <Say>This call is recorded and transcribed.</Say>
+  <Dial answerOnBridge="true" timeout="20" action="${site}/api/voice/receptionist-complete" method="POST" referUrl="${site}/api/voice/receptionist-refer" referMethod="POST"${recOn ? ` record="record-from-answer-dual" recordingStatusCallback="${site}/api/twilio/recording" recordingStatusCallbackEvent="completed"` : ''}><Sip>${XAI_SIP_URI}</Sip></Dial>
 </Response>`)
+    }
+    return xml(callerConferenceTwiml({
+      site,
+      conferenceName: sarahConferenceName(callSid),
+      record: recOn,
+    }))
   }
 
   if (!target) {
