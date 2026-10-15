@@ -335,20 +335,23 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   padding: var(--v3-space-sm) var(--v3-space-md);
 }
 
-.v3-sarah__desk-actions a,
-.v3-sarah__desk-actions button {
-  display: grid;
-  place-items: center;
-  min-height: var(--v3-tap);
-  padding: 0 var(--v3-space-sm);
-  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
-  border-radius: var(--v3-radius-mark);
-  background: var(--v3-cream);
-  color: var(--v3-navy);
-  font-family: var(--v3-font-display);
-  font-size: var(--v3-size-body-sm);
-  text-decoration: none;
-  cursor: pointer;
+/* Layered so a Tailwind color utility on these controls still wins (ci:css-layers). */
+@layer base {
+  .v3-sarah__desk-actions a,
+  .v3-sarah__desk-actions button {
+    display: grid;
+    place-items: center;
+    min-height: var(--v3-tap);
+    padding: 0 var(--v3-space-sm);
+    border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+    border-radius: var(--v3-radius-mark);
+    background: var(--v3-cream);
+    color: var(--v3-navy);
+    font-family: var(--v3-font-display);
+    font-size: var(--v3-size-body-sm);
+    text-decoration: none;
+    cursor: pointer;
+  }
 }
 
 .v3-sarah__desk-actions a:hover,
