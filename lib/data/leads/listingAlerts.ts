@@ -226,7 +226,17 @@ export type ListingAlertInput = {
  */
 export async function upsertListingAlert(
   input: ListingAlertInput,
-): Promise<{ ok: boolean; error?: string; id?: string }> {
+): Promise<{
+  ok: boolean
+  error?: string
+  id?: string
+  /** True when this call minted the row (no (email, filters_hash) row existed). */
+  created?: boolean
+  /** False when the resurrection guard kept an explicit opt-out muted. */
+  active?: boolean
+  /** The cadence the row carries after this call (the stored one wins). */
+  frequency?: SavedSearchFrequency
+}> {
   const supabase = createServiceClient()
   const email = input.email.trim().toLowerCase()
   const crmPersonId = input.crmPersonId
@@ -271,7 +281,14 @@ export async function upsertListingAlert(
     console.error('[upsertListingAlert]', error.message)
     return { ok: false, error: 'persist_failed' }
   }
-  return { ok: true, id: (data as { id: string } | null)?.id }
+  // notification_frequency is NOT NULL, so a stored value means the row existed.
+  return {
+    ok: true,
+    id: (data as { id: string } | null)?.id,
+    created: storedFrequency == null,
+    active: !optedOut,
+    frequency: normalizeSavedSearchFrequency(storedFrequency ?? input.frequency ?? 'instant'),
+  }
 }
 
 /**
@@ -596,6 +613,52 @@ export async function updateListingAlertRecipients(
  *   removes ONLY that recipient — the primary and everyone else keep
  *   receiving. Checked second so a primary match never scans recipients.
  */
+/**
+ * The opt-out is an email event like any other (Matt 2026-10-14: alerts are
+ * tracked "just like we're doing everything else"). One email_events
+ * 'unsubscribe' row keyed to the alert, so the Delivery tab and the person's
+ * email history see it, and one crm_timeline row so the broker sees it on the
+ * contact. Best-effort: the opt-out itself already landed and must never fail
+ * on reporting.
+ */
+async function recordAlertUnsubscribe(
+  supabase: ReturnType<typeof createServiceClient>,
+  row: { id: string; email: string; name: string | null; crm_person_id: number | null },
+): Promise<void> {
+  try {
+    const { recordEmailEvent } = await import('@/lib/crm/email-events')
+    await recordEmailEvent({
+      recipientEmail: row.email,
+      personId: row.crm_person_id,
+      sendType: 'alert',
+      event: 'unsubscribe',
+      emailKey: `listing-alert:${row.id}:unsubscribe`,
+      subject: row.name ?? null,
+    })
+    const personId =
+      row.crm_person_id ??
+      (await resolveCrmPersonId(supabase, { email: row.email.trim().toLowerCase(), fubPersonId: null, crmPersonId: null }))
+    if (personId) {
+      await supabase.from('crm_timeline').upsert(
+        {
+          person_id: personId,
+          // 'system', not 'email_unsubscribe': crm_timeline_kind_check does not
+          // allow the email_* provider kinds (verified 2026-10-14), so that row
+          // would be refused. The email_events row above carries the event type.
+          kind: 'system',
+          title: 'Unsubscribed from a listing alert',
+          source: 'listing-alert',
+          payload: { alertId: row.id, email: row.email, label: row.name ?? null },
+          dedupe_key: `alert-unsub:${row.id}:${row.email.trim().toLowerCase()}`,
+        },
+        { onConflict: 'dedupe_key', ignoreDuplicates: true },
+      )
+    }
+  } catch (err) {
+    console.warn('[deactivateListingAlertByToken] unsubscribe event not recorded', err instanceof Error ? err.message : err)
+  }
+}
+
 export async function deactivateListingAlertByToken(token: string): Promise<{ ok: boolean; matched: boolean; error?: string }> {
   const trimmed = (token ?? '').trim()
   if (!trimmed) return { ok: true, matched: false }
@@ -604,9 +667,14 @@ export async function deactivateListingAlertByToken(token: string): Promise<{ ok
     .from(TABLE)
     .update({ is_active: false, updated_at: new Date().toISOString() })
     .eq('unsubscribe_token', trimmed)
-    .select('id')
+    .select('id, email, name, crm_person_id')
   if (error) return { ok: false, matched: false, error: error.message }
-  if ((data?.length ?? 0) > 0) return { ok: true, matched: true }
+  if ((data?.length ?? 0) > 0) {
+    for (const row of data as Array<{ id: string; email: string; name: string | null; crm_person_id: number | null }>) {
+      await recordAlertUnsubscribe(supabase, row)
+    }
+    return { ok: true, matched: true }
+  }
 
   // Additional-recipient token: jsonb containment on the recipients array.
   // Fail-soft pre-migration (missing column errors → token simply unmatched).
@@ -619,6 +687,7 @@ export async function deactivateListingAlertByToken(token: string): Promise<{ ok
     if (findErr || !rows?.length) return { ok: true, matched: false }
     let matched = false
     for (const row of rows as Array<{ id: string; recipients: ListingAlertRecipientEntry[] | null }>) {
+      const removed = (row.recipients ?? []).find((r) => (r?.unsubscribe_token ?? '').trim() === trimmed)
       const remaining = (row.recipients ?? []).filter(
         (r) => (r?.unsubscribe_token ?? '').trim() !== trimmed,
       )
@@ -627,7 +696,12 @@ export async function deactivateListingAlertByToken(token: string): Promise<{ ok
         .from(TABLE)
         .update({ recipients: remaining.length > 0 ? remaining : null, updated_at: new Date().toISOString() })
         .eq('id', row.id)
-      if (!updErr) matched = true
+      if (!updErr) {
+        matched = true
+        if (removed?.email) {
+          await recordAlertUnsubscribe(supabase, { id: row.id, email: removed.email, name: null, crm_person_id: null })
+        }
+      }
     }
     return { ok: true, matched }
   } catch {

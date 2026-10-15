@@ -3,9 +3,10 @@
 // page cannot hang on the full CRM inbox working set.
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/admin/v2'
 import { requireAdminPage } from '@/lib/admin/require-admin'
+import '@/components/admin/v2/admin-v2.css'
 import { scopeBroker } from '@/lib/crm/scope'
+import { resolveMessagesFolder } from '@/lib/admin/queue-defaults'
 import { MessagesQueue, type MessagesFolder } from './MessagesQueue'
 import { MessagesThread } from './MessagesThread'
 
@@ -20,7 +21,7 @@ function QueueFallback() {
         </Link>
       </div>
       <div className="av2-sysnote" style={{ padding: 24 }}>
-        Loading recent threads.
+        Loading threads.
       </div>
     </nav>
   )
@@ -39,7 +40,7 @@ function ThreadFallback() {
 export default async function MessagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ c?: string; f?: string; m?: string; folder?: string }>
+  searchParams: Promise<{ c?: string; f?: string; m?: string; folder?: string; q?: string; auto?: string }>
 }) {
   const ctx = await requireAdminPage('inbox.view')
   const access = { email: ctx.email, role: ctx.role, brokerSlug: ctx.brokerSlug }
@@ -48,9 +49,9 @@ export default async function MessagesPage({
   const selectedId = Number(sp.c) || null
   // ?folder= is the retired /admin/crm/inbox param (same keys) — deep links in
   // old texts/emails arrive here via the config redirect with query intact.
-  const f = sp.f ?? sp.folder
-  const folder: MessagesFolder =
-    f === 'inbox' || f === 'assigned' || f === 'drafts' || f === 'sent' || f === 'closed' ? f : 'recent'
+  const folder = resolveMessagesFolder(sp.f ?? sp.folder) as MessagesFolder
+  const threadQuery = String(sp.q ?? '').trim()
+  const showAutomation = sp.auto === '1'
   // Inbox deep-link compat (fold slice 3): ?m=sms|email preselects the
   // composer channel — the FAB and mobile links carried this into the inbox.
   const initialChannel = sp.m === 'email' ? ('email' as const) : ('text' as const)
@@ -58,7 +59,14 @@ export default async function MessagesPage({
   return (
     <div className={`av2-scope av2-msgs ${selectedId ? 'av2-msgs--thread' : 'av2-msgs--list'}`}>
       <Suspense fallback={<QueueFallback />}>
-        <MessagesQueue brokerScope={brokerScope} actingBroker={ctx.brokerSlug} selectedId={selectedId} folder={folder} />
+        <MessagesQueue
+          brokerScope={brokerScope}
+          actingBroker={ctx.brokerSlug}
+          selectedId={selectedId}
+          folder={folder}
+          q={threadQuery}
+          showAutomation={showAutomation}
+        />
       </Suspense>
 
       {selectedId && access ? (
@@ -70,11 +78,6 @@ export default async function MessagesPage({
           <div className="av2-scroll">
             <div className="av2-sysnote">
               Pick a conversation, or start a new message.
-              <div style={{ marginTop: 12 }}>
-                <Link href="/admin/messages/new" style={{ textDecoration: 'none' }}>
-                  <Button variant="quiet">New message</Button>
-                </Link>
-              </div>
             </div>
           </div>
         </section>

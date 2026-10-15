@@ -116,15 +116,15 @@ describe('getCommunitySubdivisions (SITE-209 paging)', () => {
     })
   })
 
-  it('caches each page under its own v2 key on the geoNeighborhood window', async () => {
+  it('caches each page under its own v3 key for at least an hour', async () => {
     await getCommunitySubdivisions({ geoType: 'city', geoSlug: 'bend' })
     expect(h.cacheKeys).toEqual([
-      ['community-subdivisions-v2', 'city', 'bend', 'page', '0'],
-      ['community-subdivisions-v2', 'city', 'bend', 'page', '1'],
-      ['community-subdivisions-v2', 'city', 'bend', 'page', '2'],
+      ['community-subdivisions-v3', 'city', 'bend', 'page', '0'],
+      ['community-subdivisions-v3', 'city', 'bend', 'page', '1'],
+      ['community-subdivisions-v3', 'city', 'bend', 'page', '2'],
     ])
     for (const opts of h.cacheOpts) {
-      expect(opts.revalidate).toBeGreaterThan(0)
+      expect(opts.revalidate).toBeGreaterThanOrEqual(3600)
       expect(opts.tags).toContain('boundaries')
     }
   })
@@ -161,7 +161,7 @@ describe('getCommunitySubdivisions (SITE-209 paging)', () => {
     expect(out).toHaveLength(49)
     expect(h.calls).toHaveLength(1)
     expect(h.calls[0]!.range).toEqual([0, 499])
-    expect(h.cacheKeys).toEqual([['community-subdivisions-v2', 'neighborhood', 'broken-top', 'page', '0']])
+    expect(h.cacheKeys).toEqual([['community-subdivisions-v3', 'neighborhood', 'broken-top', 'page', '0']])
   })
 
   it('reads page 0 alone when the total is exactly one page', async () => {

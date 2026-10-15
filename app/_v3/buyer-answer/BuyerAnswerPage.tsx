@@ -15,6 +15,7 @@ import {
 } from '@/components/site/v3'
 import type { BuyerAnswerModel } from '@/lib/buyer-answers'
 import { MLS_SOURCE } from '@/lib/buyer-answers'
+import { PlaceAlertsStrip } from '@/app/_v3/place-alerts/PlaceAlertsStrip.client'
 import './buyer-answer.css'
 
 export function BuyerAnswerPage({ model }: { model: BuyerAnswerModel }) {
@@ -121,6 +122,24 @@ export function BuyerAnswerPage({ model }: { model: BuyerAnswerModel }) {
             </>
           )}
         </section>
+
+        {/* THE ALERT SIGNUP (Matt 2026-10-14): directly after the listings
+            grid. Its own section, so no two adjacent sections share a pattern
+            (the homes dial above, the questions below). The alert is the
+            primary place's every-type daily alert; a vs page offers the first
+            place's. No place that maps to an area, no strip. */}
+        {model.alert ? (
+          <PlaceAlertsStrip
+            id="alerts"
+            placeName={model.alert.placeName}
+            scopeName={model.alert.scopeName}
+            filters={model.alert.filters}
+            browseHref={model.alert.browseHref}
+            geoType={model.alert.geoType}
+            geoSlug={model.alert.geoSlug}
+            emphasis="primary"
+          />
+        ) : null}
 
         <section id="questions" className="v3-buyer-section" aria-labelledby="questions-heading">
           <V3Heading level={2} id="questions-heading">

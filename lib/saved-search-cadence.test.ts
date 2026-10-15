@@ -127,9 +127,17 @@ describe('isCadenceDue', () => {
     expect(isCadenceDue({ notification_frequency: 'instant', last_notified_at: fiftySixMinAgo }, now)).toBe(true)
   })
 
-  it('daily is due after 24 hours, not before', () => {
-    expect(isCadenceDue({ notification_frequency: 'daily', last_notified_at: hoursAgo(23) }, now)).toBe(false)
-    expect(isCadenceDue({ notification_frequency: 'daily', last_notified_at: hoursAgo(25) }, now)).toBe(true)
+  it('daily is due once per Pacific day at the morning slot, never the same local day', () => {
+    // 2026-07-21T12:00Z is 05:00 PDT: before the 07:00 slot, so not due even a day later.
+    expect(isCadenceDue({ notification_frequency: 'daily', last_notified_at: hoursAgo(25) }, now)).toBe(false)
+    const eightAm = new Date('2026-07-21T15:00:00.000Z') // 08:00 PDT
+    const before = (h: number) => new Date(eightAm.getTime() - h * 60 * 60 * 1000).toISOString()
+    // Sent yesterday afternoon (17h ago): due this morning.
+    expect(isCadenceDue({ notification_frequency: 'daily', last_notified_at: before(17) }, eightAm)).toBe(true)
+    // Sent at 00:30 today (a late-night signup's first email): not again today.
+    expect(isCadenceDue({ notification_frequency: 'daily', last_notified_at: before(7.5) }, eightAm)).toBe(false)
+    // Sent at the 07:00 slot an hour ago: not again today.
+    expect(isCadenceDue({ notification_frequency: 'daily', last_notified_at: before(1) }, eightAm)).toBe(false)
   })
 
   it('weekly is due after 7 days, not before', () => {
@@ -143,9 +151,11 @@ describe('isCadenceDue', () => {
     expect(isCadenceDue({ notification_frequency: 'monthly', last_notified_at: daysAgo(45) }, now)).toBe(true)
   })
 
-  it('an unknown stored frequency falls back to the daily interval', () => {
-    expect(isCadenceDue({ notification_frequency: 'yearly', last_notified_at: hoursAgo(23) }, now)).toBe(false)
-    expect(isCadenceDue({ notification_frequency: 'yearly', last_notified_at: hoursAgo(25) }, now)).toBe(true)
+  it('an unknown stored frequency falls back to the daily slot', () => {
+    const eightAm = new Date('2026-07-21T15:00:00.000Z') // 08:00 PDT
+    const before = (h: number) => new Date(eightAm.getTime() - h * 60 * 60 * 1000).toISOString()
+    expect(isCadenceDue({ notification_frequency: 'yearly', last_notified_at: before(1) }, eightAm)).toBe(false)
+    expect(isCadenceDue({ notification_frequency: 'yearly', last_notified_at: before(25) }, eightAm)).toBe(true)
   })
 
   it('an unparseable timestamp is treated as never-notified (due)', () => {

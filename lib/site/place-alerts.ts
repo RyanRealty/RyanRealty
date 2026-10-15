@@ -11,7 +11,7 @@
  * on-market date falls in the last 30 days, Coming Soon excluded, canceled and
  * withdrawn counted because they did come to market
  * (scripts/sql/compute_market_metrics_hud_windows_shadow.sql, new_30). So the
- * claim says HOUSES, not listings: the alert filter (`propertyType: 'A'`, or a
+ * claim says HOUSES, not listings: the alert filter (every property type, Matt 2026-10-14, or a
  * community's subdivision) is wider than the count, and a sentence that named
  * the wider set with the narrower number would be the wrong kind of round.
  *
@@ -38,10 +38,13 @@
  * offer agree at a glance (a neighborhood figure beside a city-wide alert; a
  * community figure beside an alert the MLS files under several names). The
  * wording the binders share (the test beside this file holds the three to one
- * literal): the alert cron runs hourly (vercel.json) and sends one email per
- * alert per run with everything new in it (app/actions/saved-search-alerts.ts),
- * so the sentence is "every new listing", never "one email per
- * listing". Price changes ride on the same row: every row this capture writes
+ * literal): every place capture writes a DAILY row with no property type
+ * (Matt 2026-10-14), the cron sends it at the morning slot
+ * (lib/saved-search-cadence.ts DAILY_SEND_HOUR_LOCAL) with everything new in
+ * one email, and the first email goes at signup
+ * (app/actions/search-alert-capture.ts), so the sentence is "every new
+ * listing ... each morning", never "one email per listing". Price changes
+ * ride on the same row: every row this capture writes
  * takes the table's default event toggles, and `price_change` is on
  * (docs/DATABASE_SCHEMA_SNAPSHOT.md, listing_alerts.events). Both directions
  * are sent under "Price changes", so the copy says changes, not drops.
@@ -149,7 +152,7 @@ export function placeAlertsClaimParts(
   noun: PlaceAlertsNoun = HOUSES,
 ): PlaceAlertsStickyClaim {
   if (n == null) {
-    return { before: 'Hear about new listings in', place: scopeName, after: 'the day they hit the market.' }
+    return { before: 'Get every new listing in', place: scopeName, after: 'in your inbox each morning.' }
   }
   const after = 'in the last 30 days.'
   if (earnsDisplayFigure(n)) return { before: `${units(n, noun)} came on the market in`, place: placeName, after }
@@ -327,8 +330,8 @@ export function placeAlertsCopy(input: PlaceAlertsInput): PlaceAlertsCopy {
     submitLabel: 'Send me new listings',
     browseLabel: `See the newest ${input.placeName} listings`,
     sent: {
-      heading: `You're set. We'll email you when something new lists in ${input.scopeName}.`,
-      body: 'Price changes on those homes ride along in the same email. Pause or unsubscribe from any of them.',
+      heading: `You're set. Watch your inbox for new ${input.scopeName} listings.`,
+      body: 'One email each morning when something new lists, every property type, with price changes on those homes. Unsubscribe from any of them.',
     },
     source:
       n == null

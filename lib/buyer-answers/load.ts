@@ -28,6 +28,12 @@ import { BUY_LINKS, buildAnswer, buyerAnswerByline } from './copy'
 import { buildFaqs } from './faq'
 import { formatDays, formatMlsDate, formatMos, formatUsd, formatUsdExact, mlsCitation } from './format'
 import { buyerAnswerListingRows } from './listings'
+import {
+  bendDistrictAlertScope,
+  cityAlertScope,
+  communityAlertScope,
+  type PlaceAlertScope,
+} from './place-alert-scope'
 import { masterHoaAnnual, sourcedStr } from './sourced'
 
 const LISTING_LIMIT = 12
@@ -85,6 +91,8 @@ async function readCityListings(cityName: string): Promise<ListingTile[]> {
 type PlaceBundle = {
   figures: BuyerAnswerFigures
   tiles: ListingTile[]
+  /** The area this place's listing-alert signup sends, or null when none maps. */
+  alert: PlaceAlertScope | null
 }
 
 async function loadCommunityFigures(publicSlug: string): Promise<PlaceBundle | null> {
@@ -130,6 +138,10 @@ async function loadCommunityFigures(publicSlug: string): Promise<PlaceBundle | n
       listingCount: tiles.length,
     },
     tiles,
+    // The community page's own city + subdivision (lib/buyer-answers/place-alert-scope).
+    alert: community
+      ? communityAlertScope({ community, slug: publicSlug, placeName: publicName })
+      : null,
   }
 }
 
@@ -158,6 +170,7 @@ async function loadCityFigures(citySlug: string): Promise<PlaceBundle | null> {
       listingCount: tiles.length,
     },
     tiles,
+    alert: cityAlertScope({ cityName: cityMlsName(citySlug), citySlug }),
   }
 }
 
@@ -204,6 +217,7 @@ async function loadNeighborhoodFigures(hoodSlug: string): Promise<PlaceBundle | 
       listingCount: tiles.length,
     },
     tiles,
+    alert: bendDistrictAlertScope({ hoodSlug, hoodLabel: district.label, cityName: 'Bend' }),
   }
 }
 
@@ -309,6 +323,8 @@ export async function loadBuyerAnswer(path: string): Promise<BuyerAnswerModel | 
     listingsEmpty: `No matching homes are for sale in ${listingsPlace} right now.`,
     listingsHref: `/homes-for-sale/${place.citySlug}`,
     otherHub: other ? { href: other.hubHref, label: `${other.name} page` } : undefined,
+    // A vs page is about two places; the signup is the first one's.
+    alert: bundle.alert,
   }
 }
 
