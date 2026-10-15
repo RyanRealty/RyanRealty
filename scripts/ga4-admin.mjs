@@ -224,17 +224,30 @@ const AUDIENCES = [
     membershipDurationDays: 540,
     spec: { kind: 'returning_visitors' },
   },
+  // Known CRM contacts: the site sets GA4 user_id to the hashed CRM id for a
+  // recognized contact (components/AnalyticsIdentityBridge.tsx), which GA4
+  // exposes as "Signed in with user ID" = yes. These replaced the Identified
+  // leads audiences on 2026-10-14: those tested customEvent:fub_person_id
+  // against '.+', which "(not set)" matches, so they held every visitor (and
+  // nothing has sent fub_person_id since 2026-08). Descriptions stay under
+  // GA4's ~100 character limit.
   {
-    displayName: 'Identified Facebook leads',
-    description: 'Has a CRM person id AND first arrived from facebook or instagram. Named leads from Meta.',
+    displayName: 'Known contacts (CRM)',
+    description: 'Visitors the site recognized as a CRM contact (signed in with user ID).',
     membershipDurationDays: 540,
-    spec: { kind: 'identified_facebook_leads' },
+    spec: { kind: 'known_contacts' },
   },
   {
-    displayName: 'Identified Google leads',
-    description: 'Has a CRM person id AND first arrived from google. Named leads from Google.',
+    displayName: 'Known contacts from Google',
+    description: 'Known CRM contacts whose first visit came from Google.',
     membershipDurationDays: 540,
-    spec: { kind: 'identified_google_leads' },
+    spec: { kind: 'known_contacts_google' },
+  },
+  {
+    displayName: 'Known contacts from Facebook or Instagram',
+    description: 'Known CRM contacts whose first visit came from Facebook or Instagram.',
+    membershipDurationDays: 540,
+    spec: { kind: 'known_contacts_facebook' },
   },
   {
     displayName: 'Real site traffic',
@@ -420,15 +433,35 @@ function dimContains(fieldName, value) {
   }
 }
 
-// Regex leaf. With value '.+' this means "dimension is set to any non-empty
-// value" — the canonical "fub_person_id is present" test.
-function dimRegex(fieldName, value) {
-  return {
-    dimensionOrMetricFilter: {
-      fieldName,
-      stringFilter: { matchType: 'FULL_REGEXP', value },
-    },
+// A recognized CRM contact: GA4's built-in "Signed in with user ID".
+const KNOWN_CONTACT_LEAF = dimensionFilterStringEquals('signedInWithUserId', 'yes')
+
+/**
+ * True for a leaf that tests "this dimension has any value" (a regex such as
+ * '.+' or '.*', or a non-empty match). GA4 fills a missing custom dimension
+ * with the literal "(not set)", which such a test matches, so the audience
+ * holds every visitor. That is how the Identified leads audiences counted
+ * everyone until 2026-10-14. buildAudiencePayload refuses one.
+ */
+export function isPresenceTest(leaf) {
+  const f = leaf?.dimensionOrMetricFilter
+  const sf = f?.stringFilter
+  if (!sf || typeof sf.value !== 'string') return false
+  if (sf.matchType === 'FULL_REGEXP' || sf.matchType === 'PARTIAL_REGEXP') {
+    // .+  .*  ^.+$  \S+  [^\s]+  (each optionally anchored)
+    return /^\^?(\.|\\S|\[\^\\s\])[+*]\$?$/.test(sf.value.trim())
   }
+  return false
+}
+
+/** Every dimensionOrMetricFilter leaf anywhere in a filter tree. */
+function leavesIn(node, out = []) {
+  if (Array.isArray(node)) for (const n of node) leavesIn(n, out)
+  else if (node && typeof node === 'object') {
+    if (node.dimensionOrMetricFilter) out.push(node)
+    for (const v of Object.values(node)) leavesIn(v, out)
+  }
+  return out
 }
 
 // INCLUDE clause whose single orGroup ORs together every leaf in `leaves`.
@@ -604,20 +637,18 @@ function buildAudiencePayload(parent, audience) {
       ]
       break
 
-    case 'identified_facebook_leads':
-      // FUB Person ID is set (regex .+ = any non-empty value) AND first source is Meta.
-      // Two INCLUDE clauses AND together at the user level.
-      base.requestBody.filterClauses = [
-        includeMultiOr([dimRegex('customEvent:fub_person_id', '.+')]),
-        includeMultiOr(FACEBOOK_SOURCE_LEAVES),
-      ]
+    case 'known_contacts':
+      base.requestBody.filterClauses = [includeMultiOr([KNOWN_CONTACT_LEAF])]
       break
 
-    case 'identified_google_leads':
-      base.requestBody.filterClauses = [
-        includeMultiOr([dimRegex('customEvent:fub_person_id', '.+')]),
-        includeMultiOr(GOOGLE_SOURCE_LEAVES),
-      ]
+    case 'known_contacts_facebook':
+      // A known contact AND first source is Meta. Two INCLUDE clauses AND
+      // together at the user level.
+      base.requestBody.filterClauses = [includeMultiOr([KNOWN_CONTACT_LEAF]), includeMultiOr(FACEBOOK_SOURCE_LEAVES)]
+      break
+
+    case 'known_contacts_google':
+      base.requestBody.filterClauses = [includeMultiOr([KNOWN_CONTACT_LEAF]), includeMultiOr(GOOGLE_SOURCE_LEAVES)]
       break
 
     case 'real_site_traffic':
@@ -705,6 +736,12 @@ function buildAudiencePayload(parent, audience) {
 
     default:
       throw new Error(`Unknown audience spec.kind: ${audience.spec.kind}`)
+  }
+  const presence = leavesIn(base.requestBody.filterClauses).filter(isPresenceTest)
+  if (presence.length) {
+    throw new Error(
+      `${audience.displayName}: ${presence.map((l) => l.dimensionOrMetricFilter.fieldName).join(', ')} tested for "any value", which "(not set)" matches, so the audience would hold every visitor. Test a real value instead.`,
+    )
   }
   if (audience.group === 'visitor-intent') {
     const banned = fieldNamesIn(base.requestBody.filterClauses).filter((f) => FAIR_HOUSING_BANNED_FIELDS.test(f))

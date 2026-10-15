@@ -8,7 +8,7 @@
  * skipped must not wait out the cap and exit 2. A CANCELED deploy that lost
  * to a newer production build is superseded, not a broken commit.
  */
-import { classifyDiff, isVercelSkippable, listChangedFiles } from './product-diff.mjs'
+import { classifyProductDiff, isVercelSkippable, listChangedFiles } from './product-diff.mjs'
 
 export const DEFAULT_TIMEOUT_MS = 15 * 60 * 1000
 export const DEFAULT_SKIP_WAIT_MS = 45 * 1000
@@ -27,7 +27,12 @@ const ACTIVE_STATES = new Set(['READY', 'BUILDING', 'QUEUED', 'INITIALIZING', 'P
  * @param {{ cwd?: string, prev?: string }} [opts]  prev: as listChangedFiles (default: the env range)
  */
 export function classifyTip(sha, opts = {}) {
-  return classifyDiff(listChangedFiles({ head: sha, cwd: opts.cwd, prev: opts.prev }), { skippable: isVercelSkippable })
+  return classifyProductDiff(listChangedFiles({ head: sha, cwd: opts.cwd, prev: opts.prev }), {
+    skippable: isVercelSkippable,
+    head: sha,
+    cwd: opts.cwd,
+    prev: opts.prev,
+  })
 }
 
 /**
@@ -61,4 +66,57 @@ export function findSupersedingDeploy(canceled, others, ourSha) {
     return d
   }
   return null
+}
+
+/**
+ * The other production builds whose build window overlapped this one.
+ *
+ * The build telemetry tripwire in check-vercel-deploy.mjs (G70) reads a slow
+ * static generation as the build-cost class returning. On 2026-10-14 nine
+ * production builds ran in 48 minutes, one to three at a time, and every one
+ * of them read 192 to 372 s of static generation with 33 to 104 rail timeouts,
+ * while every build that ran alone before and after read 106 to 168 s with 6
+ * to 36. A build that shared the database with another build proves nothing
+ * about the code; the next solo build is the measurement. The caller names the
+ * builds this returns so a reader can see the crowd instead of a regression.
+ *
+ * A deployment's window runs from `buildingAt` to `ready` (Vercel sets `ready`
+ * on an ERROR too); one still building ends at `now`. A deployment with no
+ * `buildingAt` never built (ignoreCommand canceled it) and cannot have
+ * contended.
+ *
+ * @param {{ uid?: string, id?: string, buildingAt?: number, ready?: number, state?: string }} target
+ * @param {Array<{ uid?: string, id?: string, buildingAt?: number, ready?: number, state?: string, sha?: string, meta?: { githubCommitSha?: string } }>} others
+ * @param {number} [now]
+ * @returns {Array<{ id: string, sha: string, state: string }>}
+ */
+export function concurrentBuilds(target, others, now = Date.now()) {
+  const ours = buildWindow(target, now)
+  if (!ours) return []
+  const selfId = String(target?.uid ?? target?.id ?? '')
+  const out = []
+  for (const d of Array.isArray(others) ? others : []) {
+    const id = String(d?.uid ?? d?.id ?? '')
+    if (!id || id === selfId) continue
+    const w = buildWindow(d, now)
+    if (!w) continue
+    if (w.start < ours.end && w.end > ours.start) {
+      out.push({
+        id,
+        sha: String(d?.sha || d?.meta?.githubCommitSha || '').slice(0, 7),
+        state: String(d?.state || '').toUpperCase(),
+      })
+    }
+  }
+  return out
+}
+
+function buildWindow(d, now) {
+  const start = Number(d?.buildingAt) || 0
+  if (!start) return null
+  const state = String(d?.state || '').toUpperCase()
+  const ready = Number(d?.ready) || 0
+  const end = ready || (ACTIVE_STATES.has(state) && state !== 'READY' ? now : 0)
+  if (!end || end < start) return null
+  return { start, end }
 }

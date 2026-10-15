@@ -18,7 +18,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Plus, Phone, MessageSquare, Mail, StickyNote, CheckSquare, Workflow, Calculator,
   UserPlus, Briefcase, PenSquare, ListChecks, Zap, X,
@@ -28,6 +29,34 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { getNextRecommendation, type CrmNextRec } from '@/app/actions/crm-next-rec'
 import { cn } from '@/lib/utils'
 import { isLeadPageV3Enabled } from '@/lib/admin/lead-page-v3'
+import { ADMIN_FAB_HEADER_SLOT_ID, isConsoleFabSuppressed } from '@/lib/admin/queue-defaults'
+
+const LG_PX = 1024
+const FAB_STYLE = { backgroundColor: 'var(--a-btn-bg, var(--console-info))', color: 'var(--a-btn-fg, #fff)' } as const
+const FAB_DESKTOP =
+  'hidden lg:flex fixed bottom-5 right-5 z-40 h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 [[data-crm-comms]_&]:hidden [[data-kb-open]_&]:hidden'
+const FAB_HEADER =
+  'flex h-10 w-10 items-center justify-center rounded-full text-primary-foreground shadow-sm transition-transform hover:scale-105 active:scale-95 lg:hidden [[data-crm-comms]_&]:hidden [[data-kb-open]_&]:hidden'
+
+function useBelowLg(): boolean {
+  const [below, setBelow] = useState(false)
+  useLayoutEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${LG_PX - 1}px)`)
+    const apply = () => setBelow(mql.matches)
+    apply()
+    mql.addEventListener('change', apply)
+    return () => mql.removeEventListener('change', apply)
+  }, [])
+  return below
+}
+
+function useHeaderSlot(): HTMLElement | null {
+  const [slot, setSlot] = useState<HTMLElement | null>(null)
+  useLayoutEffect(() => {
+    setSlot(document.getElementById(ADMIN_FAB_HEADER_SLOT_ID))
+  }, [])
+  return slot
+}
 
 type Item = { label: string; href: string; icon: React.ComponentType<{ className?: string }> }
 
@@ -38,7 +67,7 @@ const GLOBAL: Item[] = [
   { label: 'View pipeline', href: '/admin/crm/deals', icon: Briefcase },
   { label: 'Compose email', href: '/admin/messages/new?channel=email', icon: PenSquare },
   { label: 'Text', href: '/admin/messages/new', icon: MessageSquare },
-  { label: 'Start a CMA', href: '/admin/cmas', icon: Calculator },
+  { label: 'Start a CMA', href: '/admin/valuations', icon: Calculator },
   { label: 'Workflows', href: '/admin/crm/sequences', icon: ListChecks },
 ]
 
@@ -76,6 +105,22 @@ function ActionGrid({ items, onPick }: { items: Item[]; onPick: () => void }) {
   )
 }
 
+function HeaderFabLink() {
+  return (
+    <a href="#add-person" aria-label="New contact" className={FAB_HEADER} style={FAB_STYLE}>
+      <UserPlus className="h-5 w-5" />
+    </a>
+  )
+}
+
+function HeaderFabButton({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button type="button" onClick={onOpen} aria-label="Quick actions" className={FAB_HEADER} style={FAB_STYLE}>
+      <Plus className="h-5 w-5" />
+    </button>
+  )
+}
+
 export default function ConsoleQuickAction() {
   const pathname = usePathname() ?? ''
   const leadId = leadIdFrom(pathname)
@@ -83,7 +128,7 @@ export default function ConsoleQuickAction() {
   // §26: the mobile inbox owns its own FAB (compose sheet) — a second generic
   // FAB there violates the single-FAB rule (§25.12 / mob-02). Hooks above run
   // unconditionally; bail before render only.
-  const suppressed = pathname.startsWith('/admin/crm/inbox') || pathname.startsWith('/admin/messages')
+  const suppressed = isConsoleFabSuppressed(pathname)
   // §29: the mobile Calendar (Screen A) + Tasks (Screen C) own their FABs at
   // < md; the desktop layouts keep this quick action (they have no §29 FAB).
   const mobileSuppressed =
@@ -92,6 +137,8 @@ export default function ConsoleQuickAction() {
   const [rec, setRec] = useState<CrmNextRec | null>(null)
   const [recLoading, setRecLoading] = useState(false)
   const [hideOnLeadV3, setHideOnLeadV3] = useState(false)
+  const belowLg = useBelowLg()
+  const headerSlot = useHeaderSlot()
 
   useEffect(() => {
     const personOnly = /^\/admin\/(?:people|crm)\/\d+$/.test(pathname)
@@ -151,7 +198,7 @@ export default function ConsoleQuickAction() {
         { label: 'Add note', href: '#notes', icon: StickyNote },
         { label: 'Add task', href: '#tasks', icon: CheckSquare },
         { label: 'Enroll in workflow', href: '#overview', icon: Workflow },
-        { label: 'Start a CMA', href: '/admin/cmas', icon: Calculator },
+        { label: 'Start a CMA', href: '/admin/valuations', icon: Calculator },
       ]
     : []
 
@@ -163,43 +210,50 @@ export default function ConsoleQuickAction() {
 
   const addPersonSurface =
     !leadId && (pathname === '/admin/people' || pathname === '/admin/crm')
+  const hideHeaderFab = Boolean(mobileSuppressed && isMobile)
+  const portalHeader =
+    belowLg && headerSlot && !hideHeaderFab
+      ? createPortal(
+          addPersonSurface ? (
+            <HeaderFabLink />
+          ) : (
+            <HeaderFabButton onOpen={() => setOpen(true)} />
+          ),
+          headerSlot,
+        )
+      : null
 
   if (addPersonSurface) {
     return (
-      <a
-        href="#add-person"
-        aria-label="New contact"
-        className={cn(
-          'fixed bottom-20 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 lg:bottom-5 [[data-crm-comms]_&]:hidden [[data-kb-open]_&]:hidden',
-          mobileSuppressed ? 'hidden md:flex' : 'flex',
-        )}
-        style={{ backgroundColor: 'var(--a-btn-bg, var(--console-info))', color: 'var(--a-btn-fg, #fff)' }}
-      >
-        <UserPlus className="h-6 w-6" />
-      </a>
+      <>
+        {portalHeader}
+        <a
+          href="#add-person"
+          aria-label="New contact"
+          className={cn(FAB_DESKTOP, mobileSuppressed && 'max-md:hidden')}
+          style={FAB_STYLE}
+        >
+          <UserPlus className="h-6 w-6" />
+        </a>
+      </>
     )
   }
 
   return (
     <>
+      {portalHeader}
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Quick actions"
         className={cn(
-          // Matt directive 2026-07-02 (punch list #1): the bottom tab bar now
-          // renders on EVERY mobile route incl. pushed detail, so the FAB always
-          // sits above it (bottom-20) below lg; lg+ has no tab bar (bottom-5).
-          // Hidden while the soft keyboard is up ([data-kb-open]) and while the
-          // mobile Comms tab's pinned composer owns the bottom edge
-          // ([data-crm-comms]) — 2026-07-15 audit: the "+" sat on the send row.
-          'fixed bottom-20 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 lg:bottom-5 [[data-crm-comms]_&]:hidden [[data-kb-open]_&]:hidden',
+          // Desktop only: phones portal this into ADMIN_FAB_HEADER_SLOT_ID so
+          // the + cannot cover Today's Open, People chevrons, or Listings rows.
+          FAB_DESKTOP,
           // §29 single-FAB rule: hidden at < md on calendar/tasks (their own FAB).
-          mobileSuppressed ? 'hidden md:flex' : 'flex',
+          mobileSuppressed && 'max-md:hidden',
         )}
-        // v2 accent (11C): the FAB is global admin chrome, so it speaks the
-        // locked admin language rather than the retired console palette.
-        style={{ backgroundColor: 'var(--a-btn-bg, var(--console-info))', color: 'var(--a-btn-fg, #fff)' }}
+        style={FAB_STYLE}
       >
         <Plus className="h-6 w-6" />
       </button>

@@ -5,8 +5,9 @@
  * controls. Every edit posts to the SAME gated server action the legacy
  * workspace used (updateCrmStageAction, assignCrmBrokerAction,
  * updatePersonFieldAction('source'), add/removeCrmTagAction) via the
- * people/actions.ts wrappers; selects auto-submit on change. Name, phone, and
- * email editing stays behind the All-tools door for now.
+ * people/actions.ts wrappers; selects auto-submit on change. Name and lead type
+ * edit inline on PersonIdentityHeader / LeadHeader. Phone and email stay on
+ * All tools.
  */
 import { Button, SelectField, TextField } from '@/components/admin/v2'
 import { CRM_STAGES } from '@/lib/crm/constants'

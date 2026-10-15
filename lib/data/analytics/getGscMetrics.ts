@@ -30,6 +30,32 @@ export type GscScopeResult = {
   unreadable: boolean
 }
 
+/**
+ * The latest date the GSC snapshot holds (account-scope impressions), or null
+ * when none is stored or the read failed. Search Console runs 2-3 days behind
+ * and the snapshot cron stores a day only once Google has reported it
+ * (lib/marketing-brain/gsc-reported-days.ts), so a window ending today is
+ * short at the tail. A comparison must end at this date, not at today, or the
+ * later period reads as a drop.
+ */
+export async function getGscLatestDate(): Promise<string | null> {
+  const client = createServiceClient()
+  const { data, error } = await client
+    .from('marketing_channel_daily')
+    .select('date')
+    .eq('channel', 'gsc')
+    .eq('scope', 'account')
+    .eq('metric', 'impressions')
+    .order('date', { ascending: false })
+    .limit(1)
+  if (error) {
+    console.error('[getGscLatestDate]', error.message)
+    return null
+  }
+  const date = (data?.[0] as { date?: string } | undefined)?.date
+  return typeof date === 'string' ? date.slice(0, 10) : null
+}
+
 /** Per-query or per-page aggregate over a date range (scope='campaign' for queries, 'page' for URLs). */
 export async function getGscScopeAggregate(
   scope: GscScope,
@@ -129,4 +155,60 @@ export async function getGscAccountTotals(sinceDate: string, endDate: string): P
     pos: acc.posN > 0 ? acc.posSum / acc.posN : 0,
     unreadable: false,
   }
+}
+
+export type GscDay = {
+  date: string
+  /** False when the row has no impressions: Google had not reported the day yet. */
+  reported: boolean
+  clicks: number
+  impressions: number
+  /** Google's average position that day (1 = top); null when not reported. */
+  position: number | null
+}
+
+/**
+ * Account-level Search Console figures per day (ascending), for a trend line.
+ * Search Console runs 2-3 days behind. The snapshot cron writes a row for a
+ * day Google has not reported yet with every metric 0 (2026-10-12, read
+ * 2026-10-14: clicks, impressions, avg_ctr and avg_position all 0), so a day
+ * with no impressions is marked `reported: false` and callers must not read
+ * it as a zero day.
+ */
+export async function getGscDaily(
+  sinceDate: string,
+  untilDate: string,
+): Promise<{ days: GscDay[]; unreadable: boolean }> {
+  const client = createServiceClient()
+  const { rows, error } = await fetchPagedRows<{ date: string; metric: string; value: number }>(
+    (from, to) =>
+      client
+        .from('marketing_channel_daily')
+        .select('date, metric, value')
+        .eq('channel', 'gsc')
+        .eq('scope', 'account')
+        .in('metric', ['clicks', 'impressions', 'avg_position'])
+        .gte('date', sinceDate)
+        .lte('date', untilDate)
+        .order('date', { ascending: true })
+        .order('metric', { ascending: true })
+        .range(from, to),
+  )
+  if (error) {
+    console.error('[getGscDaily]', error.message)
+    return { days: [], unreadable: true }
+  }
+  const byDate = new Map<string, GscDay>()
+  for (const r of rows) {
+    const date = String(r.date)
+    const d = byDate.get(date) ?? { date, reported: false, clicks: 0, impressions: 0, position: null }
+    const v = Number(r.value) || 0
+    if (r.metric === 'clicks') d.clicks += v
+    else if (r.metric === 'impressions') d.impressions += v
+    else if (r.metric === 'avg_position') d.position = v > 0 ? v : null
+    byDate.set(date, d)
+  }
+  const days = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date))
+  for (const d of days) d.reported = d.impressions > 0
+  return { days, unreadable: false }
 }

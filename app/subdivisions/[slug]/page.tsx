@@ -172,6 +172,7 @@ import { platCaption } from './_v3/plat-caption'
 import './_v3/plat-opening.css'
 import './_v3/plat-fold.css'
 import { SubdivisionAlertsStrip } from './_v3/SubdivisionAlertSheet.client'
+import { PlaceAlertsStrip } from '@/app/_v3/place-alerts/PlaceAlertsStrip.client'
 import { platNewCount30dFromTiles } from './_v3/plat-fold-figures'
 import {
   platAtlasListingKeys,
@@ -1939,6 +1940,24 @@ async function renderSubdivisionPage({ params }: Props) {
               ))}
             </div>
             <V3SourceLine source={inventorySource} asOf={inventory?.readAt ?? null} sourceName={PLAT_FEED} />
+            {/* THE ALERT SIGNUP WHEN THERE IS NO MAP (Matt 2026-10-14). The
+                fold's SubdivisionAlertsStrip above lives inside the map's
+                figure column, so a plat with no map showed only door buttons
+                and no signup. Same filter the fold strip sends: the plat's
+                city plus its MLS name, every property type. No city to scope to
+                (placeCity null) means no strip, never a guess. The doors above
+                carry the page's one filled button, so this one steps down. */}
+            {placeCity ? (
+              <PlaceAlertsStrip
+                id="alerts"
+                placeName={displayName}
+                filters={{ city: placeCity, subdivision: displayName }}
+                browseHref={browseHref ?? `/subdivisions/${slug}`}
+                geoType="neighborhood"
+                geoSlug={slug}
+                emphasis="ghost"
+              />
+            ) : null}
           </>
         )}
 

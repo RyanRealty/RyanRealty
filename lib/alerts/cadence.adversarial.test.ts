@@ -152,3 +152,48 @@ describe('H5 base cadence regressions', () => {
     expect(fired).toHaveLength(3)
   })
 })
+
+describe('daily morning slot (Matt 2026-10-14: daily is the place-page default)', () => {
+  it('fires once per Pacific day, at 07:00, after a mid-afternoon first send', () => {
+    // First tick is the signup's own first send (never notified = due) at
+    // 15:00 PDT on 2026-08-03. Every later send lands on the 07:00 slot.
+    const fired = replay({ notification_frequency: 'daily' }, '2026-08-03T22:00:00Z', 5 * 24)
+    expect(fired[0]).toBe('2026-08-03 Mon 15')
+    expect(fired.slice(1).map((f) => f.slice(15))).toEqual(['07', '07', '07', '07', '07'])
+    expect(fired.slice(1).map((f) => f.slice(0, 10))).toEqual([
+      '2026-08-04',
+      '2026-08-05',
+      '2026-08-06',
+      '2026-08-07',
+      '2026-08-08',
+    ])
+  })
+
+  it('never drifts: thirty days of hourly ticks hold the 07:00 slot', () => {
+    const fired = replay({ notification_frequency: 'daily' }, '2026-08-01T07:00:00Z', 30 * 24)
+    expect(fired).toHaveLength(30)
+    expect(fired.slice(1).every((f) => f.endsWith(' 07'))).toBe(true)
+  })
+
+  it('a late-night first send does not get a second email the same local day', () => {
+    // 23:00 PDT first send, then 07:00 the next morning, eight hours later.
+    const fired = replay({ notification_frequency: 'daily' }, '2026-08-04T06:00:00Z', 26)
+    expect(fired).toEqual(['2026-08-03 Mon 23', '2026-08-04 Tue 07'])
+  })
+
+  it('an early-morning first send waits for the next day, not the same 07:00', () => {
+    const fired = replay({ notification_frequency: 'daily' }, '2026-08-04T09:00:00Z', 30)
+    expect(fired).toEqual(['2026-08-04 Tue 02', '2026-08-05 Wed 07'])
+  })
+
+  it('holds 07:00 Pacific across the DST fall-back weekend', () => {
+    const fired = replay({ notification_frequency: 'daily' }, '2026-10-30T15:00:00Z', 5 * 24)
+    expect(fired.slice(1).every((f) => f.endsWith(' 07'))).toBe(true)
+    expect(fired.slice(1).map((f) => f.slice(0, 10))).toEqual([
+      '2026-10-31',
+      '2026-11-01',
+      '2026-11-02',
+      '2026-11-03',
+    ])
+  })
+})

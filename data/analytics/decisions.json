@@ -71,6 +71,12 @@
       "code": "components/AnalyticsIdentityBridge.tsx"
     },
     {
+      "id": "known-contact-user-id-server-events",
+      "decided": "Matt 2026-10-14 (crm-contacts-tagged-in-ga4), carried to server events 2026-10-14; the tier rule is the consent tier table in docs/TRACKING_POLICY.md",
+      "why": "A known contact is one GA4 user wherever the hit comes from. The page-view mirror, generate_lead, person_identified and valuation_requested send the same hashed CRM id the browser tag gets (lib/analytics/ga4-user-id.ts), and only at the analytics tier: an essential-tier visit reaches GA4 under an anonymous client id and nothing else. A client document (/cma, /bpo) runs no Google tag, so before this a recipient reading their report was never counted as known (GA4 read 2026-10-14: 12 users with a user id against 113 contacts on the site in 30 days).",
+      "code": "lib/analytics/ga4-user-id.test.ts"
+    },
+    {
       "id": "business-profile-linked",
       "decided": "Matt 2026-10-14",
       "why": "Google Business Profile (Ryan Realty, 115 NW Oregon Ave Suite #2) is linked to the GA4 property.",
@@ -135,6 +141,36 @@
       "decided": "Matt 2026-10-14",
       "why": "Microsoft Clarity session recordings and heatmaps, to see where visitors click, scroll, get stuck or leave. Loads only under the GA4 consent rule (hasAnalyticsConsent: GPC off, a restricted region needs an explicit yes) and the GA4 suppression rule (never /admin or the CRM, never a broker's browser or automation), never on a private-path page, /account or /dashboard, or an address carrying a person token or typed text. Every history navigation is judged before the address changes, so Clarity stops before it can restart on an excluded page. A withdrawal sends consentv2 denied and stops it without a reload. It is told only page_type, visitor_intent, primary_market and, for a known contact, the hashed id GA4 gets as user_id; never a name, email or phone. Public lead forms carry data-clarity-mask. Off until Matt sends the project id (CLARITY_PROJECT_ID in lib/analytics/clarity.ts). Linking Clarity to GA4 is an OAuth grant in Clarity's settings and needs Matt's yes.",
       "code": "lib/analytics/clarity.test.ts"
+    },
+    {
+      "id": "gbp-website-utm",
+      "decided": "Matt 2026-05-24 (confirmed 2026-10-14)",
+      "why": "The Business Profile Website link is https://ryan-realty.com/?utm_source=gbp&utm_medium=organic&utm_campaign=profile. Source gbp separates profile visits from other Google traffic; medium organic keeps them in GA4's Organic Search channel. Do not rename the campaign: it splits the history.",
+      "manual": "GET /api/admin/gbp/set-website-utm?dryRun=true reads the live link (Business Profile > Edit profile > Website)"
+    },
+    {
+      "id": "no-anonymous-visitor-identification",
+      "decided": "Matt 2026-10-14",
+      "why": "No vendor that puts a name or email on an anonymous visitor by matching data-broker files (RB2B and similar). A visitor is identified only when they give their details or arrive from our own tracked email or text. Those tools draw wiretap class actions and conflict with Oregon's privacy law, and contacting people who never reached out risks the brand.",
+      "manual": "No such script in GTM or the site; a new vendor tag needs this entry changed first"
+    },
+    {
+      "id": "crm-homeowner-known-contacts-only",
+      "decided": "Matt 2026-10-14",
+      "why": "For a known CRM contact, county ownership records may be matched to show whether they own a home and which one, on the CRM profile only. Never for anonymous visitors, never on a public page, email or export.",
+      "manual": "CRM person profile > County records"
+    },
+    {
+      "id": "known-contact-audiences",
+      "decided": "Matt 2026-10-14",
+      "why": "Audiences for recognized CRM contacts test GA4's Signed in with user ID = yes (the site sets user_id to the hashed CRM id). Never test a custom dimension for 'any value' (.+, not empty): GA4's literal '(not set)' matches it, so the audience holds everyone. The retired vendor CRM's fub_person_id field is archived; GA4 names no vendor CRM.",
+      "code": "scripts/ga4-admin.mjs"
+    },
+    {
+      "id": "automation-flagged-not-deleted",
+      "decided": "Matt 2026-10-14",
+      "why": "Automation is flagged, never deleted: a crawler, scraper, headless browser or our own tooling keeps its visitor_sessions row and events with is_automated = true and an automation_reason, so the call stays auditable and reversible. Every visitor count (the Website dashboard, /admin/visitors, lead sources, funnels) must leave flagged sessions out. The rules and their measured hits live in docs/TRACKING_POLICY.md 'Automation'; scripts/audit-visitor-automation.ts replays them over any window and lists every session that proved to be a person which a rule flagged on arrival.",
+      "code": "lib/analytics/automation.test.ts"
     }
   ]
 }

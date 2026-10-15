@@ -13,11 +13,15 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { toFeedItem, type ActivityFeedItem } from '@/lib/data/crm/getContactActivityFeed'
 import { readSmsDelivery, deliverySummary } from '@/lib/crm/sms-delivery'
 import { firstPersonAddress, type PersonAddress } from '@/lib/crm/person-address'
+import { leadTypeFromPerson, type PersonLeadType } from '@/lib/crm/person-identity-edit'
 
 /** The condensed contact card for the inbox reading-pane sidebar (spec §6). */
 export type InboxContactCard = {
   personId: number
   name: string | null
+  firstName: string
+  lastName: string
+  leadType: PersonLeadType
   stage: string
   assignedBroker: string | null
   lenderName: string | null
@@ -41,22 +45,46 @@ export async function getInboxContactCard(personId: number): Promise<InboxContac
   const sb = createServiceClient()
   const { data } = await sb
     .from('crm_people')
-    .select('id,name,stage,assigned_broker,lender_name,source,price,timeframe,tags,emails,phones,picture_url,addresses')
+    .select('id,name,first_name,last_name,custom,stage,assigned_broker,lender_name,source,price,timeframe,tags,emails,phones,picture_url,addresses')
     .eq('id', personId)
     .eq('deleted', false)
     .maybeSingle()
   if (!data) return null
   const emails = Array.isArray(data.emails) ? (data.emails as Array<{ value?: string }>) : []
+  const tags = Array.isArray(data.tags) ? (data.tags as string[]) : []
+  const custom =
+    data.custom && typeof data.custom === 'object' && !Array.isArray(data.custom)
+      ? (data.custom as Record<string, unknown>)
+      : {}
+  let firstName = String((data.first_name as string | null) ?? '').trim()
+  let lastName = String((data.last_name as string | null) ?? '').trim()
+  if (!firstName && !lastName) {
+    const parts = String((data.name as string | null) ?? '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+    firstName = parts[0] ?? ''
+    lastName = parts.slice(1).join(' ')
+  }
   return {
     personId: Number(data.id),
     name: (data.name as string | null) ?? null,
+    firstName,
+    lastName,
+    leadType: leadTypeFromPerson({
+      name: (data.name as string | null) ?? null,
+      first_name: firstName || null,
+      last_name: lastName || null,
+      tags,
+      custom,
+    }),
     stage: String(data.stage ?? 'Lead'),
     assignedBroker: (data.assigned_broker as string | null) ?? null,
     lenderName: (data.lender_name as string | null) ?? null,
     source: (data.source as string | null) ?? null,
     price: typeof data.price === 'number' ? data.price : data.price != null ? Number(data.price) : null,
     timeframe: (data.timeframe as string | null) ?? null,
-    tags: Array.isArray(data.tags) ? (data.tags as string[]) : [],
+    tags,
     email: emails.find((e) => e.value)?.value ?? null,
     // The number a text goes to (primary first), the one getSendTarget uses.
     phone: primaryPhoneValue(data.phones),

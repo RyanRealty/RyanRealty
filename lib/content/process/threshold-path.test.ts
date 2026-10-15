@@ -71,6 +71,13 @@ describe('compareValue', () => {
     expect(compareValue(['a', 'b'], ['b', 'a'], 'higher')).toBe('same')
   })
 
+  it('compares a list where fewer is tighter (the glosses that let an insider term pass): any item added is looser, items only taken away are tighter', () => {
+    expect(compareValue(['a', 'b'], ['a', 'b', 'c'], 'lower')).toBe('looser')
+    expect(compareValue(['a', 'b'], ['a'], 'lower')).toBe('tighter')
+    expect(compareValue(['a', 'b'], ['b', 'c'], 'lower')).toBe('looser')
+    expect(compareValue(['a', 'b'], ['b', 'a'], 'lower')).toBe('same')
+  })
+
   it('a reading that is gone or changed kind is looser: nothing passes by default', () => {
     expect(compareValue(3, undefined, 'lower')).toBe('looser')
     expect(compareValue(3, ['a'], 'lower')).toBe('looser')

@@ -6,11 +6,12 @@
 // every query, aggregation, filter, expected-CTR constant and date-range
 // contract is carried over verbatim, just relocated.
 import { Suspense } from 'react'
-import { getGscAccountTotals, getGscScopeAggregate } from '@/lib/data/analytics/getGscMetrics'
+import { getGscAccountTotals, getGscLatestDate, getGscScopeAggregate } from '@/lib/data/analytics/getGscMetrics'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import { DataList, Figures, Loading, Trouble } from '../_components/v2/kit'
 import { RangeControl } from '../_components/v2/RangeControl'
 import { resolveDateRange } from '../_lib/queries'
+import { comparableGscHalves } from '../_lib/gsc-halves'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -29,7 +30,9 @@ const stripQ = (s: string) => s.startsWith('query:') ? s.slice(6) : s
 const stripP = (s: string) => { try { return new URL(s).pathname || '/' } catch { return s } }
 
 async function HeadlineKpis({ sinceDate, endDate }: { sinceDate: string; endDate: string }) {
-  const c = await getGscAccountTotals(sinceDate, endDate)
+  const [c, latest] = await Promise.all([getGscAccountTotals(sinceDate, endDate), getGscLatestDate()])
+  // Google runs 2-3 days behind; say how far its data reaches inside the range.
+  const reportedNote = latest && latest < endDate ? <> Google has reported through {latest}.</> : null
   if (c.unreadable) {
     return (
       <Trouble>
@@ -43,7 +46,7 @@ async function HeadlineKpis({ sinceDate, endDate }: { sinceDate: string; endDate
       <VerdictLine tone={c.clicks > 0 ? 'ok' : 'attention'}>
         {c.clicks > 0 ? (
           <>
-            <b>{fmt(c.clicks)} clicks</b> from Google search, {sinceDate} to {endDate}.
+            <b>{fmt(c.clicks)} clicks</b> from Google search, {sinceDate} to {endDate}.{reportedNote}
           </>
         ) : (
           <>
@@ -94,12 +97,22 @@ async function TopQueries({ sinceDate, endDate }: { sinceDate: string; endDate: 
 }
 
 async function SlippingQueries({ sinceDate, endDate }: { sinceDate: string; endDate: string }) {
-  const start = new Date(`${sinceDate}T00:00:00Z`).getTime()
-  const end = new Date(`${endDate}T00:00:00Z`).getTime()
-  const mid = new Date((start + end) / 2).toISOString().slice(0, 10)
+  // Compare equal halves that end on the latest day Google has reported, not
+  // on today: a calendar split left the second half 2-3 days short, so every
+  // query read as slipping.
+  const halves = comparableGscHalves(sinceDate, endDate, await getGscLatestDate())
+  if (!halves) {
+    return (
+      <section aria-label="Slipping queries">
+        <SectionHead>Slipping queries</SectionHead>
+        <p className="av2-note">Google has not reported enough days in this range to compare two halves. Widen the range.</p>
+      </section>
+    )
+  }
+  const { first, second } = halves
   const [earlierRes, laterRes] = await Promise.all([
-    getGscScopeAggregate('campaign', sinceDate, mid),
-    getGscScopeAggregate('campaign', mid, endDate),
+    getGscScopeAggregate('campaign', first.from, first.to),
+    getGscScopeAggregate('campaign', second.from, second.to),
   ])
   if (earlierRes.unreadable || laterRes.unreadable) {
     return <Trouble>Could not load slipping queries from marketing_channel_daily. Retry before trusting this section.</Trouble>
@@ -125,8 +138,8 @@ async function SlippingQueries({ sinceDate, endDate }: { sinceDate: string; endD
     <section aria-label="Slipping queries">
       <SectionHead>Slipping queries</SectionHead>
       <p className="av2-note">
-        Queries that lost clicks from the first half of this range ({sinceDate} to {mid}) to the
-        second half ({mid} to {endDate}). Same GSC snapshot. A class fix, not a new page.
+        Queries with fewer clicks from {second.from} to {second.to}, the latest days Google has reported, than in
+        the same number of days from {first.from} to {first.to}. Same GSC snapshot. A class fix, not a new page.
       </p>
       <DataList
         label="Slipping queries"

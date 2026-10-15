@@ -58,6 +58,7 @@ Northwest Crossing is a searched place people treat as a neighborhood (schools, 
 - One Field of this place’s houses (photo, price, beds/baths/sqft, street) bound to a map of **this** boundary
 - One source line when a number is shown
 - Alerts as one Sheet, not a covering overlay
+- **Every area page carries the alerts ask (Matt 2026-10-14).** City, neighborhood, community, subdivision, ZIP, and the pages under them (type pages, buyer-answer pages, the market page). Email only. The row it writes is the area with **no property type** (every type) and `notification_frequency: 'daily'`; a Bend district alerts by its polygon (`neighborhoodSlug`), not the whole city. The first email goes at signup (`runListingAlerts({ alertIds })` from the capture action), the rest at the 07:00 Pacific slot (`lib/saved-search-cadence.ts`). Every send is tracked: sent, delivered, opened, clicked, in `email_events` and per alert in `/admin/crm/subscriptions`. Pages with no count of their own mount `app/_v3/place-alerts/PlaceAlertsStrip.client.tsx`. Plan: `docs/plans/PLACE_ALERTS_DAILY_2026-10-14.md`.
 - FAQ as disclosures, not a wall
 - Structured data (Place + Dataset + FAQ) from the same live figures the page shows — for Google and for LLMs
 

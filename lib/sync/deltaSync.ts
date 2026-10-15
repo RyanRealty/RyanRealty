@@ -50,6 +50,10 @@ import { restoreServedAgain } from '@/lib/sync/mlsRemovedRestore'
 import { syncAuxiliaryTablesForFinalization } from '@/app/api/admin/sync/_shared/listing-completeness'
 import { processNewExpiredListings } from '@/lib/expired-listing-processor'
 import { createServiceClient } from '@/lib/supabase/service'
+import { revalidateTag } from 'next/cache'
+import { cacheTag } from '@/lib/data/cache/unstable-cache'
+import { indexNowEnabled, submitIndexNow, type IndexNowResult } from '@/lib/seo/indexnow'
+import { listingIndexNowUrls, type ListingPageChange } from '@/lib/seo/indexnow-listings'
 
 // ── Canonical reconciled constants (prefer the hardened cron lane) ──────────
 
@@ -99,6 +103,11 @@ export type ExistingListingLite = {
   property_sub_type?: string | null
   TotalLivingAreaSqFt?: number | null
   media_finalized?: boolean | null
+  /** What the public page shows for photos, so a photo change is told to
+   *  IndexNow (leadPhotoChanged). Optional like the facts above. */
+  PhotoURL?: string | null
+  photos_count?: number | null
+  media_suppressed?: boolean | null
 }
 
 /** A raw Spark delta result as returned by the listings feed. CustomFields is
@@ -163,6 +172,15 @@ export type DeltaPlan = {
   priceHistoryRows: PriceHistoryRow[]
   statusHistoryRows: StatusHistoryRow[]
   finalizeTargets: FinalizeTarget[]
+  /** IndexNow: why each row's public page changed, by ListNumber
+   *  (lib/seo/indexnow-listings.ts). The execute pass submits only rows that
+   *  were written. A row Spark touched with no visible change is not here. */
+  pageChanges: Map<string, Set<ListingPageChange>>
+  /** The lead photo each photo-fix candidate (a row Spark sent with no
+   *  PhotoURL) showed before this run, by ListNumber, so a photo the fix pass
+   *  finds counts as a change only when it differs. Never set for a
+   *  media-suppressed listing: its page shows no photo either way. */
+  photoBefore: Map<string, string | null>
   maxProcessedTs: string | null
   counters: {
     fetched: number
@@ -176,6 +194,26 @@ export type DeltaPlan = {
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100
+}
+
+function addPageChange(changes: Map<string, Set<ListingPageChange>>, listNumber: string, reason: ListingPageChange): void {
+  const set = changes.get(listNumber) ?? new Set<ListingPageChange>()
+  set.add(reason)
+  changes.set(listNumber, set)
+}
+
+/**
+ * True when the photos the listing page shows changed: a new lead photo, or a
+ * different photo count. A row Spark sent without photos is not a change here
+ * (the photo-fix pass fills it, and decides then; see photoBefore). A
+ * media-suppressed listing shows no photos, so nothing about them is a change.
+ */
+export function leadPhotoChanged(existing: ExistingListingLite, row: Record<string, unknown>): boolean {
+  if (existing.media_suppressed === true) return false
+  const next = typeof row.PhotoURL === 'string' ? row.PhotoURL.trim() : ''
+  if (next && existing.PhotoURL !== undefined && next !== (existing.PhotoURL ?? '').trim()) return true
+  const count = row.photos_count
+  return typeof count === 'number' && typeof existing.photos_count === 'number' && count !== existing.photos_count
 }
 
 /**
@@ -233,6 +271,8 @@ export function computeDeltaPlan(
     priceHistoryRows: [],
     statusHistoryRows: [],
     finalizeTargets: [],
+    pageChanges: new Map(),
+    photoBefore: new Map(),
     maxProcessedTs: null,
     counters: { fetched: 0, newListings: 0, priceChanges: 0, statusChanges: 0, skippedFinalized: 0, reopenedFinalized: 0 },
   }
@@ -286,7 +326,15 @@ export function computeDeltaPlan(
 
     const nowTerminal = status ? isTerminalStatus(status) : false
 
+    // IndexNow: a row Spark sent with no lead photo goes to the photo-fix
+    // pass, which compares what it finds against what the page showed.
+    if (!row.PhotoURL && existing?.media_suppressed !== true) {
+      plan.photoBefore.set(listNumber, existing?.PhotoURL ?? null)
+    }
+    if (reopened) addPageChange(plan.pageChanges, listNumber, 'reopened')
+
     if (!existing) {
+      addPageChange(plan.pageChanges, listNumber, 'new')
       plan.counters.newListings++
       plan.activityEvents.push({
         listing_key: listingKey,
@@ -306,7 +354,10 @@ export function computeDeltaPlan(
       const oldStatus = existing.StandardStatus
       const oldPrice = existing.ListPrice
 
+      if (leadPhotoChanged(existing, row)) addPageChange(plan.pageChanges, listNumber, 'photo')
+
       if (oldStatus !== status) {
+        addPageChange(plan.pageChanges, listNumber, 'status')
         plan.counters.statusChanges++
         plan.statusHistoryRows.push({
           listing_key: listingKey,
@@ -355,6 +406,7 @@ export function computeDeltaPlan(
       }
 
       if (price != null && oldPrice != null && price !== oldPrice) {
+        addPageChange(plan.pageChanges, listNumber, 'price')
         plan.counters.priceChanges++
         plan.priceHistoryRows.push({
           listing_key: listingKey,
@@ -483,6 +535,89 @@ export type ExecuteRunResult = {
   skippedFinalized: number
   reopenedFinalized: number
   expired: ExpiredStats | null
+  indexNow: DeltaIndexNowSummary
+}
+
+/** What the run told IndexNow (lib/seo/indexnow.ts). */
+export type DeltaIndexNowSummary = {
+  /** Indexable canonical URLs of written rows whose page changed. */
+  urls: number
+  submitted: number
+  ok: boolean
+  skipped: IndexNowResult['skipped']
+}
+
+const listNumberOf = (row: Record<string, unknown>) => String(row.ListNumber ?? '').trim()
+
+/**
+ * The changed rows whose page changed the way the plan says. A broker
+ * override wins over Spark on the page (upsertListingRows re-applies it), so:
+ * a row whose status is overridden is left out (Spark's row cannot say what
+ * the page shows, or whether it is public), and a price change on a row whose
+ * price is overridden is no change at all. Pure; exported for tests.
+ */
+export function indexNowCandidates(
+  changed: readonly Record<string, unknown>[],
+  pageChanges: ReadonlyMap<string, ReadonlySet<ListingPageChange>>,
+  overrides: ReadonlyMap<string, { status: boolean; listPrice: boolean }>,
+): Record<string, unknown>[] {
+  return changed.filter((row) => {
+    const o = overrides.get(listNumberOf(row))
+    if (!o) return true
+    if (o.status) return false
+    const reasons = [...(pageChanges.get(listNumberOf(row)) ?? [])]
+    return reasons.some((r) => !(r === 'price' && o.listPrice))
+  })
+}
+
+/**
+ * Tell IndexNow about the written rows whose public page changed. Started
+ * after the writes and awaited at the end of the run, so it overlaps the
+ * run's tail instead of adding to it. Each listing's cached reads expire
+ * first, so the crawler IndexNow sends reads the page as written, not a
+ * stale-while-revalidate copy. Production only; one small override read; each
+ * request has a short timeout; nothing here throws, so it can never fail or
+ * stall the sync.
+ */
+async function runIndexNow(
+  written: readonly Record<string, unknown>[],
+  pageChanges: ReadonlyMap<string, ReadonlySet<ListingPageChange>>,
+  nowIso: string,
+): Promise<DeltaIndexNowSummary> {
+  if (!indexNowEnabled()) return { urls: 0, submitted: 0, ok: true, skipped: 'disabled' }
+  try {
+    const changed = written.filter((row) => pageChanges.has(listNumberOf(row)))
+    if (changed.length === 0) return { urls: 0, submitted: 0, ok: true, skipped: 'empty' }
+    const overrides = await getAdminOverrideFlags(changed.map(listNumberOf))
+    const rows = indexNowCandidates(changed, pageChanges, overrides)
+    expireListingReads(rows)
+    const urls = listingIndexNowUrls(rows, new Date(nowIso))
+    const r = await submitIndexNow(urls)
+    return { urls: urls.length, submitted: r.submitted, ok: r.ok, skipped: r.skipped }
+  } catch (err) {
+    console.error('[deltaSync] IndexNow skipped this tick (non-fatal).', err instanceof Error ? err.message : err)
+    return { urls: 0, submitted: 0, ok: false, skipped: null }
+  }
+}
+
+/**
+ * Expire the cached detail, photo and video reads of these listings at once
+ * (cacheTag.listing, by ListingKey and by MLS number, the two keys a listing
+ * URL resolves through). Without it the first visit after a change, often the
+ * crawler itself on a quiet listing, is served the pre-change read while the
+ * cache refreshes behind it. Outside a Next request (a script) there is no
+ * cache to expire, and revalidateTag throws; that is not a sync failure.
+ */
+function expireListingReads(rows: readonly Record<string, unknown>[]): void {
+  try {
+    const keys = new Set<string>()
+    for (const row of rows) {
+      for (const k of [row.ListingKey, row.ListNumber]) if (typeof k === 'string' && k.trim()) keys.add(k.trim())
+    }
+    for (const k of keys) revalidateTag(cacheTag.listing(k), { expire: 0 })
+  } catch (err) {
+    console.warn('[deltaSync] listing cache expiry skipped (non-fatal).', err instanceof Error ? err.message : err)
+  }
 }
 
 /** Read existing rows for a set of ListNumbers, chunked under the DB's 5000-row
@@ -732,12 +867,14 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
   let historyRowsInserted = 0
   let photosFixed = 0
   let listingsFinalized = 0
+  // Rows that actually landed: the only ones IndexNow hears about.
+  const written: Record<string, unknown>[] = []
 
   // 1. Upsert listings (chunked).
   for (let i = 0; i < plan.rowsToUpsert.length; i += DELTA_SYNC.UPSERT_CHUNK) {
     const chunk = plan.rowsToUpsert.slice(i, i + DELTA_SYNC.UPSERT_CHUNK)
     const r = await upsertListingRows(chunk)
-    if (r.ok) totalUpserted += chunk.length
+    if (r.ok) { totalUpserted += chunk.length; written.push(...chunk) }
     else { upsertFailed = true; console.error('[deltaSync] upsert error.', r.error) }
   }
 
@@ -792,6 +929,8 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
       console.error('[deltaSync] reopened rows skipped this tick.', err instanceof Error ? err.message : err)
       dropFromPlan(plan, new Set(plan.reopened.map((r) => r.listingKey)))
     }
+    // dropFromPlan took out every reopened row that did not land.
+    written.push(...plan.reopenedRows)
   }
 
   // 1b. Divert confidential keys to listing_private (best-effort).
@@ -854,17 +993,27 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
   }
 
   // 6. Photo-fix pass for rows upserted without a PhotoURL (reopened rows included).
-  const photoKeys = [...plan.rowsToUpsert, ...plan.reopenedRows]
+  const photoRows = [...plan.rowsToUpsert, ...plan.reopenedRows]
     .filter((r) => !r.PhotoURL && r.ListingKey)
-    .map((r) => r.ListingKey as string)
     .slice(0, DELTA_SYNC.MAX_PHOTO_FIXES)
-  for (const key of photoKeys) {
+  for (const row of photoRows) {
+    const key = row.ListingKey as string
     const url = await fetchPhotoForListingCore(accessToken, key)
     if (url) {
       const r = await updateListingPhotoUrl(key, url)
-      if (r.ok) photosFixed++
+      if (r.ok) {
+        photosFixed++
+        // A lead photo the page did not show before this run is a page change.
+        const num = String(row.ListNumber ?? '').trim()
+        if (plan.photoBefore.has(num) && (plan.photoBefore.get(num) ?? '') !== url) {
+          addPageChange(plan.pageChanges, num, 'photo')
+        }
+      }
     }
   }
+
+  // 7. IndexNow, after the writes. Overlaps the rest of the run; awaited below.
+  const indexNowPending = runIndexNow(written, plan.pageChanges, nowIso)
 
   // Cursor: advance only as far as safely drained (cursor-safety p0.1).
   const nextCursor = computeNextDeltaCursor({ upsertFailed, truncated, runStartedAt, maxProcessedTs: plan.maxProcessedTs })
@@ -902,6 +1051,8 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
     console.warn('[deltaSync] recordSyncRun failed (non-fatal).', err instanceof Error ? err.message : err)
   }
 
+  const indexNow = await indexNowPending
+
   return {
     ok: !upsertFailed,
     partial: upsertFailed || truncated,
@@ -921,5 +1072,6 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
     skippedFinalized: plan.counters.skippedFinalized,
     reopenedFinalized: plan.counters.reopenedFinalized,
     expired,
+    indexNow,
   }
 }

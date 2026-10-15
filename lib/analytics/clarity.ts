@@ -66,12 +66,12 @@ import { MARKET_SLUG_MAX, VISITOR_INTENTS } from './visitor-intent'
 import { GA4_STRIP_PARAMS } from '@/app/api/visitors/track/strip-identity'
 
 /**
- * The Clarity project id. Matt creates the project in Clarity and sends the id;
- * set it here and Clarity turns on. It is public by design: it ships in every
- * page's tag request (www.clarity.ms/tag/<id>), like the GA4 measurement id.
- * null = off: nothing loads, nothing is called.
+ * The Clarity project id: Matt's "Ryan Realty" project, created 2026-10-14
+ * (clarity.microsoft.com/projects/view/yxw12mqn71). It is public by design: it
+ * ships in every page's tag request (www.clarity.ms/tag/<id>), like the GA4
+ * measurement id. null = off: nothing loads, nothing is called.
  */
-export const CLARITY_PROJECT_ID: string | null = null
+export const CLARITY_PROJECT_ID: string | null = 'yxw12mqn71'
 
 /** Microsoft's tag loader. The tag then loads clarity.js from scripts.clarity.ms. */
 export const CLARITY_TAG_BASE = 'https://www.clarity.ms/tag/'

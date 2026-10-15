@@ -129,7 +129,11 @@ export default function PeopleSidebar({ views, activeViewId, totalCount, stages 
       <p className="mt-4 px-2 text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--a-text-2)' }}>Collections</p>
       <div className="mt-1 space-y-1">
         {collections.map((col) => (
-          <SidebarGroup key={col.label} title={col.label} defaultOpen>
+          <SidebarGroup
+            key={col.label}
+            title={col.label}
+            defaultOpen={col.views.some((v) => v.id === activeViewId)}
+          >
             {col.views.map((v) => (
               <SidebarRow
                 key={v.id}
@@ -144,14 +148,14 @@ export default function PeopleSidebar({ views, activeViewId, totalCount, stages 
           </SidebarGroup>
         ))}
         {myViews.length > 0 ? (
-          <SidebarGroup title="My views" defaultOpen>
+          <SidebarGroup title="My views" defaultOpen={myViews.some((v) => v.id === activeViewId)}>
             {myViews.map((v) => (
               <SidebarRow key={v.id} href={href(v.id)} label={v.name} count={v.count} active={activeViewId === v.id} title={describeSegment(v.ast)} indent />
             ))}
           </SidebarGroup>
         ) : null}
         {sharedViews.length > 0 ? (
-          <SidebarGroup title="Shared with you" defaultOpen>
+          <SidebarGroup title="Shared with you" defaultOpen={sharedViews.some((v) => v.id === activeViewId)}>
             {sharedViews.map((v) => (
               <SidebarRow key={v.id} href={href(v.id)} label={v.name} count={v.count} active={activeViewId === v.id} title={describeSegment(v.ast)} indent />
             ))}

@@ -39,9 +39,40 @@ import {
   type ProspectDocState,
   type ProspectKind,
 } from './types'
+import { prospectOutreachAlreadySent } from './outreach-sent'
 
 type Sb = ReturnType<typeof createServiceClient>
 type RawRow = Record<string, unknown>
+
+/** Paginate listings `.in()` so a large street/parcel set cannot fan into one seq scan. */
+export const PROSPECTING_RELIST_IN_CHUNK = 80
+
+function chunkValues(values: string[], size: number): string[][] {
+  const out: string[][] = []
+  for (let i = 0; i < values.length; i += size) out.push(values.slice(i, i + size))
+  return out
+}
+
+async function listingsInChunks(
+  sb: Sb,
+  column: 'StreetNumber' | 'parcel_number' | 'ListingKey',
+  values: string[],
+  select: string,
+  statusOr?: string,
+): Promise<{ data: RawRow[]; error: { message: string } | null }> {
+  if (values.length === 0) return { data: [], error: null }
+  const parts = await Promise.all(
+    chunkValues(values, PROSPECTING_RELIST_IN_CHUNK).map((part) => {
+      const q = sb.from('listings').select(select).in(column, part)
+      return statusOr ? q.or(statusOr) : q
+    }),
+  )
+  const error = parts.find((p) => p.error)?.error ?? null
+  return {
+    data: parts.flatMap((p) => (p.error ? [] : ((p.data ?? []) as unknown as RawRow[]))),
+    error,
+  }
+}
 
 function num(v: unknown): number | null {
   return v == null ? null : Number(v)
@@ -236,10 +267,12 @@ export async function resolveComplianceBatch(
   const sb = createServiceClient()
   const idKey = kind === 'expired' ? 'listing_key' : 'fsbo_url'
 
-  // ── Batch the relist read: one listings query scoped to the street numbers
-  // present. Expired rows also pull Closed (sold after expire) and, when the
-  // original listing has a parcel_number, same-taxlot siblings.
-  const nums = [...new Set(rows.map((r) => streetNumber(r.street_address as string | null)).filter((n): n is string => !!n))]
+  // ── Batch the relist read: listings queries scoped to unsent rows only.
+  // Already-sent rows classify as `sent` from the outreach stamp; skip their
+  // street/parcel probe (EXPLAIN: unindexed parcel_number was 4–22s; now
+  // idx_listings_parcel_number + chunked .in()). Send still uses verifyNotRelisted.
+  const probeRows = rows.filter((r) => !prospectOutreachAlreadySent(r))
+  const nums = [...new Set(probeRows.map((r) => streetNumber(r.street_address as string | null)).filter((n): n is string => !!n))]
   const listingByNumber = new Map<string, ExpiredOutreachListing[]>()
   const listingByParcel = new Map<string, ExpiredOutreachListing[]>()
   const parcelByListingKey = new Map<string, string>()
@@ -247,23 +280,25 @@ export async function resolveComplianceBatch(
   // parcel_number column when present, else taxlot from enrichment_notes.
   const parcelByFsboId = new Map<string, string>()
   if (kind === 'expired') {
-    const keys = [...new Set(rows.map((r) => String(r.listing_key ?? '')).filter(Boolean))]
+    const keys = [...new Set(probeRows.map((r) => String(r.listing_key ?? '')).filter(Boolean))]
     if (keys.length > 0) {
-      const { data: anchors, error: anchorErr } = await sb
-        .from('listings')
-        .select('ListingKey, parcel_number')
-        .in('ListingKey', keys) // @canonical-key prospect.listing_key is the RETS key
+      const { data: anchors, error: anchorErr } = await listingsInChunks(
+        sb,
+        'ListingKey',
+        keys,
+        'ListingKey, parcel_number',
+      )
       if (anchorErr) {
         console.error('[prospecting] resolveComplianceBatch parcel read failed:', anchorErr.message)
       } else {
-        for (const a of (anchors ?? []) as RawRow[]) {
+        for (const a of anchors) {
           const parcel = normalizeParcelNumber(a.parcel_number)
           if (parcel) parcelByListingKey.set(String(a.ListingKey), parcel)
         }
       }
     }
   } else {
-    for (const r of rows) {
+    for (const r of probeRows) {
       const id = String(r.fsbo_url ?? '')
       if (!id) continue
       const parcel = parcelFromEnrichmentNotes(r.enrichment_notes as string | null)
@@ -279,17 +314,13 @@ export async function resolveComplianceBatch(
   if (nums.length > 0 || parcels.length > 0) {
     // Both kinds use the Closed-inclusive status OR — FSBO hard-skips Closed
     // after detect the same way expired hard-skips Closed after expire.
-    const streetQ =
-      nums.length > 0
-        ? sb.from('listings').select(EXPIRED_OUTREACH_LISTING_SELECT).in('StreetNumber', nums).or(EXPIRED_OUTREACH_STATUS_OR)
-        : Promise.resolve({ data: [] as ExpiredOutreachListing[], error: null })
-    // Unindexed in prod: seq scan ~4s mean / 22s max. btree:
-    // supabase/migrations/20261009030000_listings_parcel_number_index.sql
-    const parcelQ =
-      parcels.length > 0
-        ? sb.from('listings').select(EXPIRED_OUTREACH_LISTING_SELECT).in('parcel_number', parcels).or(EXPIRED_OUTREACH_STATUS_OR)
-        : Promise.resolve({ data: [] as ExpiredOutreachListing[], error: null })
-    const [streetRes, parcelRes] = await Promise.all([streetQ, parcelQ])
+    // idx_listings_parcel_number (hosted CONCURRENTLY 2026-10-15; IF NOT EXISTS
+    // in 20261015020000) + idx_listings_address_lookup. Paginate .in() at
+    // PROSPECTING_RELIST_IN_CHUNK.
+    const [streetRes, parcelRes] = await Promise.all([
+      listingsInChunks(sb, 'StreetNumber', nums, EXPIRED_OUTREACH_LISTING_SELECT, EXPIRED_OUTREACH_STATUS_OR),
+      listingsInChunks(sb, 'parcel_number', parcels, EXPIRED_OUTREACH_LISTING_SELECT, EXPIRED_OUTREACH_STATUS_OR),
+    ])
     if (streetRes.error) {
       console.error('[prospecting] resolveComplianceBatch relist read failed:', streetRes.error.message)
     } else {

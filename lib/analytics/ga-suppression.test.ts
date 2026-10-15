@@ -50,6 +50,8 @@ const CASES: Array<[string, Partial<GaSuppressionInput>, string | null]> = [
   ['a lookalike host', { host: 'ryan-realty.com.evil.example' }, 'non-production-host'],
   ['a host that ends in the name without a dot', { host: 'notryan-realty.com' }, 'non-production-host'],
   ['navigator.webdriver', { webdriver: true }, 'automation'],
+  ['a HeadlessChrome client hint behind a desktop user agent', { clientHints: '"Chromium";v="150", "Not.A/Brand";v="24", "HeadlessChrome";v="150"' }, 'automation'],
+  ['the client hints of Chrome a person uses', { clientHints: '"Google Chrome";v="154", "Chromium";v="154", "Not=A?Brand";v="24"' }, null],
   ['a HeadlessChrome user agent', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/146.0.0.0 Safari/537.36' }, 'automation'],
   ['a declared crawler', { userAgent: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' }, 'automation'],
   ['an empty user agent', { userAgent: '' }, 'automation'],
@@ -64,7 +66,9 @@ const CASES: Array<[string, Partial<GaSuppressionInput>, string | null]> = [
 /** Runs the shipped inline expression against a stub page. */
 function runJs(input: GaSuppressionInput): boolean {
   const location = { pathname: input.pathname, hostname: input.host, search: input.search ?? '' }
-  const navigator = { userAgent: input.userAgent, webdriver: input.webdriver }
+  // The browser reads the same brand list from navigator.userAgentData.brands.
+  const brands = [...String(input.clientHints ?? '').matchAll(/"([^"]*)";v="[^"]*"/g)].map((m) => ({ brand: m[1] }))
+  const navigator = { userAgent: input.userAgent, webdriver: input.webdriver, userAgentData: brands.length ? { brands } : undefined }
   const document = { cookie: input.cookieHeader ?? '' }
   return new Function('location', 'navigator', 'document', `return ${GA_SUPPRESS_JS}`)(location, navigator, document) as boolean
 }

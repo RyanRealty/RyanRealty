@@ -46,6 +46,8 @@ import { fetchConversationParticipants, groupShapeOf, parseConversationMedia } f
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { markConversationUnreadOnInbound } from '@/app/actions/crm-inbox'
 import { addSuppression, clearNonOptOutSuppressions, removeSuppression } from '@/lib/crm/suppressions'
+import { applyInboundConsentClear } from '@/lib/data/crm/applyInboundConsentClear'
+import { isSmsStopKeyword } from '@/lib/crm/inbound-consent-clear'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import { sendCrmEmail } from '@/lib/crm/gmail'
 import { mailboxForSlug } from '@/lib/data/brokers/directory'
@@ -159,14 +161,28 @@ export async function POST(request: Request) {
 
   // Author sent the inbound — lift their import / non-opt-out suppressions.
   // Passive group members did not text us; their suppressions stay.
-  try {
-    await clearNonOptOutSuppressions({
-      personId: match.personId,
-      clearedBy: 'conversations-events',
-      clearedReason: `inbound sms_in ${messageSid}`,
-    })
-  } catch (e) {
-    console.warn('[twilio/conversations-events] clear non-opt-out suppressions failed', e)
+  // TCPA: an explicit STOP keyword must never clear DNC / no-SMS flags.
+  if (!isSmsStopKeyword(body)) {
+    try {
+      await clearNonOptOutSuppressions({
+        personId: match.personId,
+        clearedBy: 'conversations-events',
+        clearedReason: `inbound sms_in ${messageSid}`,
+      })
+    } catch (e) {
+      console.warn('[twilio/conversations-events] clear non-opt-out suppressions failed', e)
+    }
+    try {
+      await applyInboundConsentClear({
+        personId: match.personId,
+        event: 'sms',
+        eventId: messageSid,
+        smsBody: body,
+        broker: match.broker ?? alertBroker,
+      })
+    } catch (e) {
+      console.warn('[twilio/conversations-events] inbound consent clear failed', e)
+    }
   }
 
   // Shadow-write ONE inbound message into the conversation model (RC1), keyed on

@@ -39,6 +39,11 @@ export type ExistingListingRow = {
   property_sub_type: string | null
   TotalLivingAreaSqFt: number | null
   media_finalized: boolean | null
+  /** What the page shows for photos: the delta diff tells IndexNow about a
+   *  photo change (lib/sync/deltaSync.ts leadPhotoChanged). */
+  PhotoURL: string | null
+  photos_count: number | null
+  media_suppressed: boolean | null
 }
 
 export type SyncState = {
@@ -100,7 +105,7 @@ export async function getExistingListingsByListNumbers(
     const { data, error } = await sb
       .from('listings')
       .select(
-        'ListNumber, ListingKey, StandardStatus, ListPrice, is_finalized, City, CloseDate, ClosePrice, property_sub_type, TotalLivingAreaSqFt, media_finalized',
+        'ListNumber, ListingKey, StandardStatus, ListPrice, is_finalized, City, CloseDate, ClosePrice, property_sub_type, TotalLivingAreaSqFt, media_finalized, PhotoURL, photos_count, media_suppressed',
       )
       .in('ListNumber', unique.slice(i, i + 500))
     // A failed read must stop the tick (the cursor holds and the window retries),

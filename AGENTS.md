@@ -1,12 +1,12 @@
 # CORE RULES (read first; these override everything below and any handoff or plan doc)
 
-These outrank every later line in this file, every skill, and every handoff or plan (including `docs/plans/CMA_HANDOFF.md`). A later line that says to wait, or to `git push` `main`, is stale. Process rules live in `AGENTS.md` only. `CLAUDE.md` and `.cursor/rules` point here. New process rules land in `AGENTS.md` in the same PR.
+These outrank every later line, skill, and plan. Process rules live in `AGENTS.md` only. New ones land there in the same PR.
 
 **PRs only.** Never push or fast-forward to `main`. Branch, open a PR, merge. Unfinished work is `npm run push` only.
 
-**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except `hold-for-matt` without `approved-by-matt`. Approval (label or `.github/approved-prs`) unholds and merges when `merge-gate` is green.
+**Auto-merge.** Open every PR with `gh pr merge --auto --squash --delete-branch`, except `hold-for-matt` without `approved-by-matt`.
 
-**Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason. The stale job keeps the branch for 7 days; the daily head-branch cleanup then deletes it unless labeled `keep-branch` or `hold-for-matt`. Merged PR head branches delete the same day. Never `main`. Never a branch that still has an open PR.
+**Stale PRs.** No PR older than 3 days: rebase and merge it, or close it with a reason.
 
 **Done.** Merged, Vercel production **READY**, and the live URL checked. `npm run ship` is the land path.
 
@@ -34,7 +34,11 @@ These outrank every later line in this file, every skill, and every handoff or p
 
 **Video.** One factory (Matt 2026-10-13): every video, any bot or machine, renders via `npm run studio:render`; Imagine makes footage only. Nothing reaches Matt until `npm run video:check -- <mp4> --final` passes. Rules: `.claude/skills/ryan-studio/SKILL.md`.
 
-**Social queue.** Every GBP, LinkedIn and X post is a draft in `content-queue/<slug>/<platform>.md` that passes `npm run ci:content-queue` (required via `merge-gate`). It posts only from `.github/workflows/content-queue-publish.yml` when `CONTENT_QUEUE_LIVE=true`. A draft that passes the gate is publishable (no `approved: true` door; Matt 2026-10-14 11:59 PT). LinkedIn is on for Matt's profile and the company page. Threads stays off the old `/api/social/publish` door. Rules: section "Social content queue" below.
+**Social queue.** Drafts in `content-queue/` must pass `npm run ci:content-queue`. No `approved: true` door. Details in AGENTS.md.
+
+**Worktrees.** After your PR merges or closes, remove your own worktree or clone (`npm run wt:cleanup`). Never remove a checkout with uncommitted changes, unpushed commits, stashes, or one another session is using.
+
+**Twilio inbound ack.** `/api/twilio/inbound-sms`, `/api/twilio/voice`, `/api/twilio/voice-complete`, and `/api/twilio/recording` validate the Twilio signature, persist the raw payload in one fast insert (`twilio_webhook_raw_events`, 2s statement timeout), and return TwiML/200 immediately. CRM enrichment, timeline writes, DNC auto-clear, and opt-out handling run after the ack (`after` / waitUntil) or via `/api/cron/twilio-webhook-replay`. STOP keywords still opt out. Never await Supabase or CRM work on the Twilio webhook hot path. Gate: `ci:twilio-webhook-ack`. Founding case: 11200/11203 on SM872130d80ef66b91a9a3f1bd837eb53e.
 
 ---
 
@@ -50,10 +54,24 @@ These outrank every later line in this file, every skill, and every handoff or p
 6. **Waits.** No `sleep` polls. Use `gh pr checks --watch` or the CI wait the tool already has. R-221 still bans sitting on `gh run view` in a loop. **R-221:** do not poll GitHub Actions.
 7. **New process rules.** A standing process rule Matt issues lands in this file in the same PR as the work it governs.
 8. **DB writes.** Bots may write to the Ryan Realty Supabase DB when a task Matt asked for needs it. Sends stay drafts. `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP` in `lib/data/prospecting/drip-schedule.ts` stays `true`. Approved CMA and email wording do not change without Matt's sign-off.
-9. **merge-gate.** CI job `merge-gate` is the required land-path rollup: lint, gates, unit, and on app PRs build / e2e / a11y. Do not require Lighthouse or content-floor. A ruleset or branch protection on `main` should require `merge-gate` + `security-scan`, block direct pushes and force-pushes, require a PR, and let repository admins bypass in an emergency. This session's GitHub App token 403s Administration (`Resource not accessible by integration`); do not push an empty commit to `main` until the API shows protection is active.
-10. **Post-merge steps are automated.** A merge to `main` must not leave `npm run db:push`, a hosted schema apply, or any other required production step as a hand command. `.github/workflows/supabase-migrations.yml` dry-runs then applies `supabase/migrations/**` on push to `main` (project `dwvlophlbvvygjfxcrhm`). Already-applied SQL is tolerated. A failed run opens or comments on a `migration-failed` issue. Never tell anyone to run `npm run db:push` after merge.
+9. **Tracked client email.** All client and lead emails go out through the CRM tracked send (`sendGovernedEmail` / `sendOneOffEmail` on the Resend rail: signed `/api/track/e/click` links, open pixel, `email_events`, `crm_timeline`). Never Gmail directly (not the composer, not DWD, not a personal mailbox). Default From is `"Matt Ryan · Ryan Realty" <matt@ryan-realty.com>` (`SEND_DOMAIN` in `lib/email/broker-identity.ts`; `ci:from-domain`); Reply-To stays the broker's Workspace mailbox. Matt's per-item send approval still applies.
+10. **merge-gate.** CI job `merge-gate` is the required land-path rollup: lint, gates, unit, and on app PRs build / e2e / a11y. Do not require Lighthouse or content-floor. A ruleset or branch protection on `main` should require `merge-gate` + `security-scan`, block direct pushes and force-pushes, require a PR, and let repository admins bypass in an emergency. This session's GitHub App token 403s Administration (`Resource not accessible by integration`); do not push an empty commit to `main` until the API shows protection is active.
+11. **Post-merge steps are automated.** A merge to `main` must not leave `npm run db:push`, a hosted schema apply, or any other required production step as a hand command. `.github/workflows/supabase-migrations.yml` dry-runs then applies `supabase/migrations/**` on push to `main` (project `dwvlophlbvvygjfxcrhm`). Already-applied SQL is tolerated. A failed run opens or comments on a `migration-failed` issue. Never tell anyone to run `npm run db:push` after merge.
+12. **Twilio inbound ack.** Validate the signature, persist the raw payload (`twilio_webhook_raw_events`), return TwiML/200, then do CRM / timeline / STOP work after the ack or via the replay cron. Never block the carrier webhook on Supabase.
 
 ---
+
+## Twilio inbound webhooks (Matt 2026-10-14)
+
+Twilio errors 11200 / 11203 fire when the inbound SMS or voice webhook does not return 2xx within about 15 seconds. A slow Supabase pooler must not hold that ack.
+
+1. Validate `X-Twilio-Signature` (`verifiedTwilioParams`). Reject spoofed posts with 403.
+2. Persist the raw form payload with one fast insert into `twilio_webhook_raw_events` (unique on `kind` + MessageSid / CallSid / RecordingSid). The insert RPC has a 2s `statement_timeout`. If the insert fails, log `[twilio-raw-event-fallback]` and still ack.
+3. Return TwiML or 200 immediately. STOP / START / HELP replies are decided from the body on this path. Voice TwiML routing lookups are budgeted the same 2s and fail open to env / voicemail.
+4. CRM enrichment, timeline writes, DNC auto-clear (`clearNonOptOutSuppressions`), broker forwards, and STOP/START suppression writes run after the response via `after()` (Vercel waitUntil) or `/api/cron/twilio-webhook-replay`. Replay is idempotent on the provider sid.
+5. STOP keywords must still opt out. The hot-path TwiML promises it; the processor and the cron both write `addSuppression`.
+
+Gate: `ci:twilio-webhook-ack` (in `ci:gates`, lane `always`).
 
 ## Social content queue (Matt 2026-10-14)
 
@@ -138,6 +156,7 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 31. The live letter draws the one comps map (2026-10-09, 2745 Aldrich). render_args omits the tile, so every view rebuilds it. That rebuild is not an optional 4-second read. The map has its own budget, long enough for a cold boundary read and the static tile, and it starts with the other serve reads. A finished tile is cached by the document slug plus a hash of the map inputs (the coordinates, the product, and the homes the map pins), through the unstable_cache door. A stored row gets that map with no database write. The plat polygons are read together. When the tile cannot be drawn, the page prints no map caption, no pin legend, and no sentence that says every pin above. A cream scatter with no tile is not that map. The matrices do not claim a map that is not there. Held by lib/cma/serve-map.test.ts, lib/cma/map-tile-cache.test.ts, lib/cma/map-tile-parallel.test.ts, and the lookpass --check map image assertion in lib/cma/lookpass-chapters.ts.
 32. A stored competition or unsold row with no subdivision and no plat prints when the build drew that set on the area the letter is filtering, and a delivered or finalized letter prints the competition and unsold rows it was signed with (Matt 2026-10-09, 2902 Pinnacle and 1195 Remarkable). The render dropped every blank place and then rewrote the sentence to "0 homes" and "No other listing like yours" over five stored rivals and three unsold homes in those same plats. A blank place is the build's own area decision when the filter area is that drawn area. Otherwise the row is tested on its coordinates when the area kind can test them, and a blank with neither is still outside (2566 Keats). A delivered or finalized letter does not re-test those rows and does not restate the counts (serve-document.ts D27). A draft still drops a named subdivision outside the sales plats (rule 24, 3177 Coho). The count sentence matches the rows drawn. A new build stores subdivision, platSlug, and coordinates on every rival and unsold peer. Held by lib/cma/render-area-filter.test.ts and scripts/cma-render-audit.ts.
 33. Basis and limits names a chapter only when that chapter is on the page (reader review 2026-10-09, 1648 Pheasant, 3177 Coho, and 2382 Jackson; SKILL.md §0.3 rule 33). The sentence that zoning, buildability, rental, and covenant statements are preliminary reads of published code and recorded documents as of the verification dates shown beside them prints only when those statements and a verification date are rendered in the same document. Stored development or rental data is not that chapter. The seller letter and the immersive walk OPINION_CHAPTER_ORDER, which does not include the use-of-property page, so the sentence stays off those documents. The rest of the disclosure stays. Held by lib/cma/expected-sale.test.ts and lib/cma/render-sections.test.ts.
+34. **Inbound reply clears DNC / no-SMS (Matt 2026-10-14).** When a contact who received any CRM-tracked email from us (CMA, expired, FSBO, or any `email_events` send) then reaches out by inbound call, voicemail, SMS, or email reply, automatically remove their do-not-call and do-not-text / no-SMS opt-out flags and the matching contact tags (`contact:do-not-call`, `contact:do-not-text`, `compliance:dnc-registry`, `sms-consent:no`), reset `custom.cmaConsent` `{sms, email}` back to allowed, and write a timeline note recording what was cleared and why (the inbound event). Exception (TCPA): an inbound SMS whose first token is an explicit STOP / opt-out keyword (`STOP`, `STOPALL`, `UNSUBSCRIBE`, `CANCEL`, `END`, `QUIT`) must still opt them out and must never clear flags or CMA consent. Do not clear broker flags (`broker:*`) or the email unsubscribe flag. Do not clear `compliance:hard-stop`, litigator, deceased, bounce, or complaint. A contact with no prior tracked send is not cleared. The person page has an admin control to view and edit SMS, email, and call consent; each change logs a timeline note. STOP still wins on that control. Hook: `applyInboundConsentClear` from the Twilio voice / voicemail / inbound-SMS / conversations-events webhooks and Gmail reply ingestion; `setPersonChannelConsentAction` on `/admin/people/[id]`. Held by `lib/crm/inbound-consent-clear.test.ts`, `lib/crm/person-channel-consent.test.ts`, and `ci:inbound-consent-clear`.
 
 
 `docs/EXECUTION_PLAN.md` and `docs/SITE_SPEC.md` are 2026-05-22 fossils (SITE_SPEC still describes an AgentFire WordPress cutover that already shipped). Do not execute them.
@@ -199,7 +218,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 1. Branch name: `wt/<topic>-YYYYMMDD` (or harness names like `claude/…`). Push the branch before stop, or write the handoff.
 2. Path: sibling dir such as `../RyanRealty-wt-<topic>` — not nested inside the primary tree.
 3. Session end: unfinished work is `npm run push` plus a handoff note (branch, absolute path, next step) in `docs/plans/handoffs/`. A finished unit is `npm run ship`. No force-push or reset. Rebase only to land a PR.
-4. Cleanup when merged: delete branch, `git worktree remove <path>`, `git worktree prune`. Run `node scripts/worktree-hygiene.mjs` at session start/end.
+4. **Cleanup after your PR merges or closes.** Remove your own worktree or clone: `git worktree remove <path>`, then `git worktree prune`, then delete the local branch. Or run `npm run wt:cleanup` (live) / `npm run wt:cleanup:dry` (print only). Never remove a checkout with uncommitted changes, unpushed commits, stashes, or one another session is using. The script refuses those. `npm run ship` and the post-merge / post-checkout hooks call it; a launchd job on the Mini (`scripts/install-cleanup-launchd.sh`, once) catches leftovers. Run `node scripts/worktree-hygiene.mjs` at session start if you want a status list.
 5. Never leave the only copy of valued commits in an unpushed worktree with no handoff line.
 
 ### What the other environment should read
@@ -563,6 +582,7 @@ Put it on the work graph (`loop_work_nodes` / `/admin/loop`), not `orchestrate.t
 7. **Geographic hierarchy**: City > optional Neighborhood > Community. "Community" = MLS SubdivisionName. Neighborhoods are higher-level areas that may contain multiple communities. Not every city has defined neighborhoods. The system gracefully handles both cases.
 8. **geo_slug format**: Community-level cache keys use `citySlug:communitySlug` (colon-separated) via `subdivisionEntityKey()`. Never use hyphen-separated format for cache keys.
 9. **Data architecture rule**: See `.cursor/rules/data-architecture.mdc` for stats computation, JSONB strategy, query patterns, caching, performance non-negotiables, and scalability design.
+10. **`market_metric` is cached.** Public pages and routes never query `public.market_metric` live. Reads go through `lib/data/market-truth` (`getMetrics`, `getDetachedOverlays`, `resolveNeighborhoodMetricSlug`, and the admin boards), each wrapped in `unstable_cache` (≥1h, keyed by geo and segment) with in-flight dedupe. `community_subdivisions` is the same pattern, with RPC concurrency capped at 2. Held by `ci:market-metric-cached`.
 
 ---
 

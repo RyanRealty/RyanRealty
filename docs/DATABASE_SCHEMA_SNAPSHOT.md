@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-10-14T01:41:58.419Z
+**Generated:** 2026-10-15T01:18:38.828Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -59,7 +59,7 @@ One row per MLS-history event for a listing. snake_case columns; `listing_key` r
 | `sort_order` | integer | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
 
-### `listings` · **rows ≈ 698,135**
+### `listings` · **rows ≈ 700,963**
 
 Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case columns** — `"ListingKey"`, `"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"Latitude"`, `"Longitude"`, etc. The `details` jsonb column carries the raw RETS payload. **Never aggregate from this table at request time** — use `listing_tile_mv` / `market_pulse_live` / `market_stats_cache`.
 
@@ -242,7 +242,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 
 ## Listings — derived (materialized views)
 
-### `listing_tile_mv` · **rows ≈ 600,098**
+### `listing_tile_mv` · **rows ≈ 597,699**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. A view over the table listing_tile_mv_src, kept current every minute by pg_cron `listing-mv-drain` (20260924173000; a matview refreshed every 30 minutes before that). The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -287,7 +287,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 73,834**
+### `similar_listings_mv` · **rows ≈ 73,964**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -356,7 +356,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 21,378**
+### `market_stats_cache` · **rows ≈ 21,504**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -539,7 +539,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 721**
+### `cmas` · **rows ≈ 723**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -630,19 +630,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `content_queue_published` · **rows ≈ 0**
-
-| Column | Type | Nullable | Default |
-|---|---|---|---|
-| `content_item` | text | no |  |
-| `channel` | text | no |  |
-| `published_date` | date | no |  |
-| `status` | text | no | 'claimed'::text |
-| `remote_id` | text | yes |  |
-| `posted_at` | timestamp with time zone | yes |  |
-| `created_at` | timestamp with time zone | no | now() |
-
-### `expired_listings` · **rows ≈ 691**
+### `expired_listings` · **rows ≈ 693**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -1469,6 +1457,18 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `rationale` | text | yes |  |
 | `cost_usd` | numeric | yes | 0 |
 | `raw_response` | jsonb | yes |  |
+
+### `content_queue_published`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `content_item` | text | no |  |
+| `channel` | text | no |  |
+| `published_date` | date | no |  |
+| `status` | text | no | 'claimed'::text |
+| `remote_id` | text | yes |  |
+| `posted_at` | timestamp with time zone | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
 
 ### `crm_appointment_outcomes`
 
@@ -4367,6 +4367,26 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `effective_to` | date | yes |  |
 | `computed_at` | timestamp with time zone | no | now() |
 
+### `place_school_share_places`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `geo_type` | text | no |  |
+| `geo_slug` | text | no |  |
+| `computed_at` | timestamp with time zone | no | now() |
+
+### `place_school_shares`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `geo_type` | text | no |  |
+| `geo_slug` | text | no |  |
+| `ordinal` | integer | no |  |
+| `school_geo_slug` | text | no |  |
+| `school_geo_label` | text | no |  |
+| `share` | numeric | no |  |
+| `computed_at` | timestamp with time zone | no | now() |
+
 ### `post_sync_pipeline_runs`
 
 | Column | Type | Nullable | Default |
@@ -4823,6 +4843,139 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | Column | Type | Nullable | Default |
 |---|---|---|---|
 | `listing_key` | text | no |  |
+
+### `sarah_call_consents`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `person_id` | bigint | no |  |
+| `source` | text | no |  |
+| `channel` | text | no | 'call'::text |
+| `inquiry` | text | yes |  |
+| `session_id` | uuid | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `recorded_at` | timestamp with time zone | no | now() |
+
+### `sarah_guardrail_revisions`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `entry_id` | text | no |  |
+| `approved_by` | text | no |  |
+| `approved_on` | date | no |  |
+| `summary` | text | no |  |
+| `payload` | jsonb | no | '{}'::jsonb |
+| `created_at` | timestamp with time zone | no | now() |
+
+### `sarah_sessions`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no |  |
+| `channel` | text | no |  |
+| `status` | text | no | 'active'::text |
+| `control` | text | no | 'sarah'::text |
+| `conference_name` | text | no |  |
+| `person_id` | bigint | yes |  |
+| `visitor_name` | text | yes |  |
+| `visitor_email` | text | yes |  |
+| `visitor_phone` | text | yes |  |
+| `visitor_time_zone` | text | yes |  |
+| `page_url` | text | yes |  |
+| `summary` | text | yes |  |
+| `widget_token` | text | no |  |
+| `caller_call_sid` | text | yes |  |
+| `twilio_conference_sid` | text | yes |  |
+| `notified_at` | timestamp with time zone | yes |  |
+| `lead_created_at` | timestamp with time zone | yes |  |
+| `last_turn_at` | timestamp with time zone | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+| `ended_at` | timestamp with time zone | yes |  |
+| `visitor_language` | text | yes |  |
+| `summary_en` | text | yes |  |
+| `spam_verdict` | text | yes |  |
+| `escalation_kind` | text | yes |  |
+| `escalation_started_at` | timestamp with time zone | yes |  |
+
+### `sarah_showing_requests`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no |  |
+| `session_id` | uuid | yes |  |
+| `person_id` | bigint | yes |  |
+| `listing_key` | text | yes |  |
+| `listing_label` | text | yes |  |
+| `proposed_times` | jsonb | no | '[]'::jsonb |
+| `raw_times_text` | text | no |  |
+| `visitor_time_zone` | text | no |  |
+| `status` | text | no | 'pending'::text |
+| `confirmed_slot_index` | integer | yes |  |
+| `confirmed_at` | timestamp with time zone | yes |  |
+| `matt_proposed_times` | jsonb | yes |  |
+| `visitor_confirmed_at` | timestamp with time zone | yes |  |
+| `appointment_id` | bigint | yes |  |
+| `matt_notified_at` | timestamp with time zone | yes |  |
+| `reminder_sent_at` | timestamp with time zone | yes |  |
+| `visitor_confirm_sent_at` | timestamp with time zone | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `sarah_spam_blocks`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `email` | text | yes |  |
+| `ip_hash` | text | yes |  |
+| `reason` | text | no | 'sarah-spam'::text |
+| `created_at` | timestamp with time zone | no | now() |
+
+### `sarah_transcript_flags`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `review_id` | uuid | no |  |
+| `session_id` | uuid | yes |  |
+| `turn_id` | uuid | yes |  |
+| `category` | text | no |  |
+| `excerpt` | text | no |  |
+| `rule_id` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+
+### `sarah_transcript_reviews`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `week_of` | text | no |  |
+| `window_start` | timestamp with time zone | no |  |
+| `window_end` | timestamp with time zone | no |  |
+| `sessions_total` | integer | no | 0 |
+| `sessions_sampled` | integer | no | 0 |
+| `flag_count` | integer | no | 0 |
+| `digest_sent_at` | timestamp with time zone | yes |  |
+| `digest_to` | text | yes |  |
+| `signed_off_by` | text | yes |  |
+| `signed_off_at` | timestamp with time zone | yes |  |
+| `signed_off_note` | text | yes |  |
+| `policy_version` | text | no |  |
+| `created_at` | timestamp with time zone | no | now() |
+
+### `sarah_turns`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no |  |
+| `session_id` | uuid | no |  |
+| `role` | text | no |  |
+| `content` | text | no |  |
+| `source` | text | no | 'chat'::text |
+| `created_at` | timestamp with time zone | no | now() |
 
 ### `saved_cities`
 
@@ -5993,6 +6146,20 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `fetched_at` | timestamp with time zone | no |  |
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
+
+### `twilio_webhook_raw_events`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `kind` | text | no |  |
+| `provider_sid` | text | no |  |
+| `payload` | jsonb | no |  |
+| `received_at` | timestamp with time zone | no | now() |
+| `processed_at` | timestamp with time zone | yes |  |
+| `processing_started_at` | timestamp with time zone | yes |  |
+| `process_attempts` | integer | no | 0 |
+| `last_error` | text | yes |  |
 
 ### `user_activities`
 

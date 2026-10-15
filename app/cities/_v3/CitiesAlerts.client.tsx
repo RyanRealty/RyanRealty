@@ -41,6 +41,9 @@ export function CitiesAlertsStrip({ id = 'fold-alerts', newCount30d, updatedAt }
     const result = await submitSearchAlertSignup({
       email: input.email,
       filters: { city: '', propertyType: PROPERTY_TYPE },
+      // Daily, first email at signup (Matt 2026-10-14). The region stays
+      // houses: with no place and no type the filter would be the whole feed.
+      frequency: 'daily',
       company: input.company,
       sessionId: readRrSessionId(), // hydration-safe
     })
@@ -63,7 +66,7 @@ export function CitiesAlertsStrip({ id = 'fold-alerts', newCount30d, updatedAt }
       ? newCount30d >= PLACE_ALERTS_FIGURE_MIN
         ? 'houses came on the market in Central Oregon in the last 30 days.'
         : `${formatCount(newCount30d)} houses came on the market in Central Oregon in the last 30 days.`
-      : 'Hear about new listings in Central Oregon the day they hit the market.'
+      : 'Get every new Central Oregon house listing in your inbox each morning.'
 
   return (
     <V3AlertsStrip
@@ -74,19 +77,19 @@ export function CitiesAlertsStrip({ id = 'fold-alerts', newCount30d, updatedAt }
       href={newestFirstHref('/search')}
       browseLabel="See the newest Central Oregon listings"
       stickyClaim={{
-        before: 'Hear about new listings in',
+        before: 'Get every new house listing in',
         place: 'Central Oregon',
-        after: 'the day they hit the market.',
+        after: 'in your inbox each morning.',
       }}
       stickyNote={placeAlertsStickyNote(
         null,
-        'Every new listing, with its price changes. Unsubscribe any time.',
+        'Every new house listing, each morning. Unsubscribe any time.',
       )}
-      promise="We'll email you every new listing in Central Oregon as it comes on the market, with any price change on those homes in the same email. Unsubscribe any time."
+      promise="We'll email you every new listing of a house in Central Oregon each morning, with any price change on those homes in the same email. Unsubscribe any time."
       submitLabel="Send me new listings"
       sent={{
-        heading: "You're set. We'll email you when something new lists in Central Oregon.",
-        body: 'One email when something new lists, with any price change on those homes in the same note. Unsubscribe any time.',
+        heading: "You're set. Watch your inbox for new Central Oregon listings.",
+        body: 'One email each morning when a new house lists, with any price change on those homes in the same note. Unsubscribe any time.',
       }}
       source={newCount30d != null ? ALERT_SOURCE : undefined}
       updatedAt={updatedAt}

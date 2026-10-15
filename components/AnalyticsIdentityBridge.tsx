@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { rememberClarityUserId } from '@/lib/analytics/clarity'
+import { hasAnalyticsConsent } from './CookieConsentBanner'
 
 /**
  * Bridges identified-visitor state into GA4 and Meta Pixel.
@@ -9,19 +10,18 @@ import { rememberClarityUserId } from '@/lib/analytics/clarity'
  * On mount, fetches /api/identity/me. If the visitor is known (either via
  * the rr_pid cookie or a signed-in session), this component:
  *
- *   1. Sets GA4 `user_id` via gtag('set') — never gtag('config'), which
- *      would fire a second page_view on top of the GTM Google tag.
+ *   1. Sets GA4 `user_id` via gtag('set'), never gtag('config'), which
+ *      would fire a second page_view on top of the GTM Google tag. Only at
+ *      the analytics tier (hasAnalyticsConsent), the rule the server follows
+ *      (lib/analytics/ga4-user-id.ts); cleared if the banner turns it off.
  *   2. Re-initializes Meta Pixel with advanced matching via
- *      fbq('init', PIXEL_ID, { em: <sha256> }) (strengthens Meta's
- *      person-stitch for ad attribution).
+ *      fbq('init', PIXEL_ID, { em: <sha256> }).
  *   3. Hands the same hashed user_id to Microsoft Clarity's identify
  *      (lib/analytics/clarity.ts), so Matt can filter recordings to a known
  *      contact. Only the hash; Clarity is called only while it is recording.
  *
- * Waits up to 3s for window.gtag / window.fbq to be loaded by the
- * <GoogleAnalytics /> and <MetaPixel /> components (both of which gate on
- * cookie consent). Ad-blockers are honored automatically: if either global
- * never appears, the bridge silently no-ops.
+ * Waits up to 3s for window.gtag / window.fbq (both gate on cookie consent).
+ * Ad-blockers are honored: if either global never appears, it no-ops.
  *
  * Identity flips during a session, for example an anonymous visitor
  * clicks an email-click link mid-session and identifyPersonFromEmailClick
@@ -71,20 +71,30 @@ async function fetchIdentity(): Promise<IdentityPayload | null> {
   }
 }
 
+/**
+ * Point every later GA4 hit at this user id, or at none. The GTM Google tag
+ * applies a gtag('set') command to the hits after it (GA4 read 2026-10-14: the
+ * id rode on session_start and user_engagement); the dataLayer key is kept for
+ * any GTM variable that reads it.
+ */
+function setGa4UserId(gtag: (...args: unknown[]) => void, userId: string | null): void {
+  // set, not a second measurement-id config: that would fire another page_view.
+  gtag('set', { user_id: userId })
+  window.dataLayer = window.dataLayer || []
+  window.dataLayer.push({ user_id: userId ?? undefined })
+}
+
 async function applyIdentity(payload: IdentityPayload): Promise<void> {
   // The same hashed id GA4 gets as user_id; never an email, name or phone.
   // An unknown visitor (a sign-out, another person on the device) clears it.
   rememberClarityUserId(payload.identified ? payload.hashedUserId : null)
   if (!payload.identified) return
 
-  if (GA4_ID && payload.hashedUserId) {
+  // An essential-tier visit reaches GA4 under an anonymous client id and
+  // nothing else (docs/TRACKING_POLICY.md tier table), browser or server.
+  if (GA4_ID && payload.hashedUserId && hasAnalyticsConsent()) {
     const gtag = await waitForGlobal(() => window.gtag)
-    if (gtag) {
-      // set, not a second measurement-id config: that would fire another page_view.
-      gtag('set', { user_id: payload.hashedUserId })
-      window.dataLayer = window.dataLayer || []
-      window.dataLayer.push({ user_id: payload.hashedUserId })
-    }
+    if (gtag) setGa4UserId(gtag, payload.hashedUserId)
   }
 
   if (PIXEL_ID && payload.hashedEmail) {
@@ -101,6 +111,7 @@ async function applyIdentity(payload: IdentityPayload): Promise<void> {
 export default function AnalyticsIdentityBridge() {
   const fired = useRef(false)
   const lastHashRef = useRef<string | null>(null)
+  const lastPayloadRef = useRef<IdentityPayload | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -113,6 +124,7 @@ export default function AnalyticsIdentityBridge() {
       const sig = `${payload.hashedUserId ?? ''}|${payload.hashedEmail ?? ''}`
       if (sig === lastHashRef.current) return
       lastHashRef.current = sig
+      lastPayloadRef.current = payload
       await applyIdentity(payload)
       fired.current = true
     }
@@ -126,10 +138,20 @@ export default function AnalyticsIdentityBridge() {
     window.addEventListener('person-identified', handler)
     window.addEventListener('auth-state-changed', handler)
 
+    // The banner answer changed mid-page: tag the known visitor once analytics
+    // is on, and drop the id the moment it is off.
+    const onConsent = () => {
+      const userId = lastPayloadRef.current?.hashedUserId
+      if (!GA4_ID || !userId || typeof window.gtag !== 'function') return
+      setGa4UserId(window.gtag, hasAnalyticsConsent() ? userId : null)
+    }
+    window.addEventListener('cookie-consent', onConsent)
+
     return () => {
       cancelled = true
       window.removeEventListener('person-identified', handler)
       window.removeEventListener('auth-state-changed', handler)
+      window.removeEventListener('cookie-consent', onConsent)
     }
   }, [])
 

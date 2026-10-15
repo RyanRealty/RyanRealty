@@ -237,3 +237,48 @@ describe('buildListingAlertEmail — typed-event sections (Phase 3)', () => {
     expect(out.text).not.toContain('!')
   })
 })
+
+describe('the first email (Matt 2026-10-14: the first alert goes at signup)', () => {
+  const base = {
+    searchName: 'Bend homes',
+    listings: [],
+    browseAllUrl: 'https://ryan-realty.com/homes-for-sale/bend',
+    unsubscribeUrl: 'https://ryan-realty.com/alerts/unsubscribe?token=t',
+    sections: [
+      {
+        kind: 'new',
+        label: 'New listings',
+        listings: [
+          { address: '1 A St', price: 500000, detailUrl: 'https://ryan-realty.com/l/1' },
+          { address: '2 B St', price: 600000, detailUrl: 'https://ryan-realty.com/l/2' },
+        ],
+      },
+    ],
+  }
+
+  it('says "newest", not "new", because nothing was sent before it', () => {
+    const built = buildListingAlertEmail({ ...base, firstSend: { cadence: 'daily' } })
+    expect(built.subject).toBe('Bend homes: the 2 newest listings')
+    expect(built.html).toContain('The 2 newest listings')
+    expect(built.html).toContain('On the market now')
+    expect(built.html).not.toContain('2 new listings')
+  })
+
+  it('tells the subscriber what comes next, in the row cadence', () => {
+    expect(buildListingAlertEmail({ ...base, firstSend: { cadence: 'daily' } }).text).toContain(
+      'From here you get one email each morning when something new comes on the market.',
+    )
+    expect(buildListingAlertEmail({ ...base, firstSend: { cadence: 'instant' } }).text).toContain('checked every hour')
+    expect(buildListingAlertEmail({ ...base, firstSend: { cadence: 'weekly' } }).text).toContain('one email a week')
+  })
+
+  it('a later email keeps the plain new-listings subject', () => {
+    expect(buildListingAlertEmail(base).subject).toBe('2 new listings for Bend homes')
+  })
+
+  it('no em dash in the new copy', () => {
+    const built = buildListingAlertEmail({ ...base, firstSend: { cadence: 'daily' } })
+    expect(built.text).not.toContain('—')
+    expect(built.subject).not.toContain('—')
+  })
+})

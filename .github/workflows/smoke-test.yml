@@ -1,13 +1,14 @@
 name: Post-Deploy Smoke Tests
 
 on:
-  # Trigger after successful deployment to main
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
-    branches: [main]
-
-  # Trigger on Vercel preview deployments
+  # One trigger per production deploy: Vercel's deployment_status. The CI
+  # workflow_run trigger on main was dropped 2026-10-14. It crawled the same
+  # canonical site ~1 minute after main CI (median 7.1 min), which is about
+  # when Vercel's production build (median 7.3 min) goes live, so it either
+  # repeated the deployment_status crawl or tested the previous deploy. 133
+  # crawls ran for 94 production deploys in 50 hours, all inside the
+  # post-deploy window where production Supabase already times out most.
+  # Notes: docs/plans/handoffs/2026-10-15T0014Z-claude-youthful-wilson-386f51.md
   deployment_status:
 
   # Allow manual triggering with custom URL
@@ -18,6 +19,12 @@ on:
         required: false
         default: ""
 
+# Every run tests the same canonical domain, so the newest run supersedes an
+# older one still crawling it (back-to-back merges deploy minutes apart).
+concurrency:
+  group: post-deploy-smoke
+  cancel-in-progress: true
+
 # The failure-issue step needs issues:write — without it the create-issue call
 # 403s and every failure is silent (observed Jul 2–17: ~400 red runs, no issue).
 permissions:
@@ -27,11 +34,14 @@ permissions:
 jobs:
   smoke-test:
     runs-on: ubuntu-latest
+    # Production deploys only: a preview deploy does not change the canonical
+    # site this job tests.
     if: >-
       ${{
         github.event_name == 'workflow_dispatch' ||
-        github.event.workflow_run.conclusion == 'success' ||
-        (github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success')
+        (github.event_name == 'deployment_status' &&
+          github.event.deployment_status.state == 'success' &&
+          github.event.deployment.environment == 'Production')
       }}
 
     env:

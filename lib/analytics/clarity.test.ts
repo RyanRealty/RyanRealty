@@ -49,9 +49,12 @@ function decide(over: Partial<ClarityDecisionInput>) {
 }
 
 describe('CLARITY_PROJECT_ID', () => {
-  it('ships null, so nothing loads until Matt sends the id', () => {
-    expect(CLARITY_PROJECT_ID).toBeNull()
-    expect(decideClarity({ ...ALLOWED, projectId: CLARITY_PROJECT_ID })).toEqual({ load: false, reason: 'no-project-id' })
+  it("is Matt's project id (set 2026-10-14), and loads only when every other condition holds", () => {
+    expect(CLARITY_PROJECT_ID).toBe('yxw12mqn71')
+    expect(decideClarity({ ...ALLOWED, projectId: CLARITY_PROJECT_ID }).load).toBe(true)
+  })
+  it('loads nothing with no project id', () => {
+    expect(decideClarity({ ...ALLOWED, projectId: null })).toEqual({ load: false, reason: 'no-project-id' })
   })
 })
 

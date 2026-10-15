@@ -116,6 +116,33 @@ function localDayStamp(at: Date, timeZone: string): string {
   }).format(at)
 }
 
+/**
+ * THE DAILY SLOT (Matt 2026-10-14: daily is the default for every place-page
+ * signup). A daily alert goes out once per Pacific calendar day, on the first
+ * hourly cron tick at or after this local hour.
+ *
+ * It used to mean "24 hours after the last send". On an hourly cron that
+ * drifts: a send at 4:00:20 is not 24 hours old at the next day's 4:00:05
+ * tick, so it went at 5:00, then 6:00, walking around the clock about an hour
+ * a day. A morning slot keeps the email where a buyer reads it, with the
+ * overnight listings in it.
+ *
+ * The first email after signup is sent at signup (runListingAlerts with
+ * alertIds), whatever the hour. The next one is the following morning slot,
+ * never the same local day, so the closest two sends can sit is the gap from
+ * a late-night signup to 7:00 the next morning.
+ */
+export const DAILY_SEND_HOUR_LOCAL = 7
+
+/** Local hour (0..23) for a moment, in `timeZone`. */
+export function localHour(at: Date, timeZone: string = CADENCE_TIME_ZONE): number {
+  const part = new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', hourCycle: 'h23' })
+    .formatToParts(at)
+    .find((p) => p.type === 'hour')
+  const hour = part ? Number(part.value) : NaN
+  return Number.isFinite(hour) ? hour % 24 : at.getUTCHours()
+}
+
 /** Local day-of-week (0=Sunday..6=Saturday) for a moment, in `timeZone`. */
 export function localDayOfWeek(at: Date, timeZone: string = CADENCE_TIME_ZONE): number {
   const name = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(at)
@@ -159,5 +186,12 @@ export function isCadenceDue(
   if (!alert.last_notified_at) return true
   const last = new Date(alert.last_notified_at).getTime()
   if (!Number.isFinite(last)) return true
+
+  // Daily: the morning slot, at most once per Pacific day. See DAILY_SEND_HOUR_LOCAL.
+  if (cadence === 'daily') {
+    if (localHour(now, CADENCE_TIME_ZONE) < DAILY_SEND_HOUR_LOCAL) return false
+    return localDayStamp(new Date(last), CADENCE_TIME_ZONE) !== localDayStamp(now, CADENCE_TIME_ZONE)
+  }
+
   return now.getTime() - last >= CADENCE_INTERVAL_MS[cadence]
 }

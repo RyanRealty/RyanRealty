@@ -13,10 +13,10 @@
  *      (measured 2026-07-10 against matt@ryan-realty.com via the Gmail API).
  *
  * This helper resolves the subscription's assigned broker to a named sender.
- * The From address stays on the verified Resend domain (mail.ryan-realty.com
- * — SPF/DKIM alignment is per-domain, so any local part is fully
- * authenticated); replies route to the broker's real Workspace mailbox where
- * the CRM Gmail sync already logs them to the timeline.
+ * The From address uses the verified Resend root domain (ryan-realty.com,
+ * verified 2026-10-14; mail.ryan-realty.com remains verified as a fallback).
+ * Display name stays `"Name · Ryan Realty"`; replies route to the broker's
+ * real Workspace mailbox where the CRM Gmail sync already logs them.
  *
  * Accepts the short broker keys the CRM uses ('matt' | 'paul' | 'rebecca'),
  * the full roster slugs ('matthew-ryan', ...), or a broker mailbox address
@@ -27,7 +27,8 @@
 import { BROKERS } from '@/lib/brand/contact'
 import type { ShellBroker } from '@/lib/email/shell'
 
-const SEND_DOMAIN = 'mail.ryan-realty.com'
+/** Verified Resend From domain for CRM and tracked sends. One central value. */
+export const SEND_DOMAIN = 'ryan-realty.com'
 
 /**
  * Absolute-HTTPS headshots (email can't load relative/app assets). The
@@ -41,7 +42,7 @@ const HEADSHOTS: Record<string, string> = {
 }
 
 export type BrokerSendIdentity = {
-  /** RFC 5322 From with display name, e.g. `"Matt Ryan · Ryan Realty" <matt@mail.ryan-realty.com>`. */
+  /** RFC 5322 From with display name, e.g. `"Matt Ryan · Ryan Realty" <matt@ryan-realty.com>`. */
   from: string
   /** The broker's real, monitored mailbox. */
   replyTo: string
