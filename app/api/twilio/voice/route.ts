@@ -95,7 +95,7 @@ export async function buildVoiceTwiml(params: Record<string, string>): Promise<N
       : ''
     return xml(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial answerOnBridge="true" timeout="20" action="${site}/api/voice/receptionist-complete" method="POST"${rec}><Sip referUrl="${site}/api/voice/receptionist-refer" referMethod="POST">${XAI_SIP_URI}</Sip></Dial>
+  <Dial answerOnBridge="true" timeout="20" action="${site}/api/voice/receptionist-complete" method="POST" referUrl="${site}/api/voice/receptionist-refer" referMethod="POST"${rec}><Sip>${XAI_SIP_URI}</Sip></Dial>
 </Response>`)
   }
 
