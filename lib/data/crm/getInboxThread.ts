@@ -11,6 +11,7 @@ import 'server-only'
 import { primaryPhoneValue } from '@/lib/crm/primary-phone'
 import { createServiceClient } from '@/lib/supabase/service'
 import { toFeedItem, type ActivityFeedItem } from '@/lib/data/crm/getContactActivityFeed'
+import { EMAIL_DELIVERED_KIND } from '@/lib/crm/email-lifecycle-kinds'
 import { readSmsDelivery, deliverySummary } from '@/lib/crm/sms-delivery'
 import { firstPersonAddress, type PersonAddress } from '@/lib/crm/person-address'
 import { leadTypeFromPerson, type PersonLeadType } from '@/lib/crm/person-identity-edit'
@@ -113,12 +114,14 @@ export type InboxThreadItemData = ActivityFeedItem & {
 export async function getConversationThreadFull(personId: number, limit = 100): Promise<InboxThreadItemData[]> {
   if (!Number.isFinite(personId) || personId <= 0) return []
   const sb = createServiceClient()
+  // A delivery receipt is not a message: it would render as a note line per
+  // send and fill the window on a contact with a daily alert. A bounce, spam
+  // complaint or unsubscribe still shows as a system line in the thread.
   const { data } = await sb
     .from('crm_timeline')
     .select('id,ts,kind,title,body,payload,broker,source')
     .eq('person_id', personId)
-    // A delivery receipt is not a message: it would render as a note line per send.
-    .neq('kind', 'email_delivered')
+    .neq('kind', EMAIL_DELIVERED_KIND)
     .order('ts', { ascending: false })
     .limit(Math.min(Math.max(limit, 1), 500))
   if (!data) return []

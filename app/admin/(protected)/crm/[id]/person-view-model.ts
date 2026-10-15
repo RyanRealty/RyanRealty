@@ -12,6 +12,7 @@
  */
 import { formatDate } from '@/lib/format/date'
 import { timelineEmailBody } from '@/lib/crm/email-body'
+import { isEmailLifecycleKind } from '@/lib/crm/email-lifecycle-kinds'
 import { mergeTagOptions } from '@/lib/data/crm/getPersonDetailExtras'
 import { CRM_STAGES } from '@/lib/crm/constants'
 import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
@@ -154,24 +155,36 @@ export function buildTimelineItems(
   timeline: TimelineRowLike[],
   engagement: EmailEngagement,
 ): TimelineItem[] {
+  // A delivery receipt folds into the email_out row it belongs to (that row
+  // already shows the email). A listing alert or newsletter has no email_out
+  // row, so its delivery shows as its own entry (Matt 2026-10-15: show
+  // delivered on the contact timeline).
+  const sentTitles = new Set(
+    timeline.filter((t) => t.kind === 'email_out').map((t) => (t.title ?? '').trim()).filter(Boolean),
+  )
+  const deliveryFolds = (t: TimelineRowLike) => {
+    const label = (t.payload ?? {}).label
+    return typeof label === 'string' && sentTitles.has(label.trim())
+  }
   return timeline
-    // email_delivered is a per-send receipt (Resend), not activity: the send's
-    // own email_out row already shows the email.
     .filter(
       (t) =>
         t.kind !== 'email_open' &&
         t.kind !== 'email_click' &&
         t.kind !== 'sms_click' &&
-        t.kind !== 'email_delivered',
+        !(t.kind === 'email_delivered' && deliveryFolds(t)),
     )
     .map((t) => {
       const eng = engagement[(t.title ?? '').trim()]
+      // A delivery or bounce row's title is the event; the email it happened to
+      // is payload.label (the subject, or the alert name).
+      const label = isEmailLifecycleKind(t.kind) ? (t.payload ?? {}).label : null
       return {
         id: t.id,
         kind: t.kind,
         ts: t.ts,
         title: t.title,
-        body: t.body ? timelineEmailBody(t.body) : null,
+        body: t.body ? timelineEmailBody(t.body) : typeof label === 'string' && label.trim() ? label.trim() : null,
         broker: t.broker,
         source: t.source,
         starred: Boolean(t.starred),

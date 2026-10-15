@@ -19,8 +19,8 @@ describe('getContactActivityFeed pure helpers (2.1)', () => {
       expect(classifyTimelineKind('stage_change').category).toBe('milestone')
       expect(classifyTimelineKind('home_valuation').category).toBe('milestone')
     })
-    it('files the Resend delivery receipt as system, so the lead timeline hides it by default', () => {
-      expect(classifyTimelineKind('email_delivered')).toEqual({ category: 'system', direction: null, label: 'Email delivered' })
+    it('files the Resend delivery receipt as an email event the lead timeline shows (Matt 2026-10-15)', () => {
+      expect(classifyTimelineKind('email_delivered')).toEqual({ category: 'email', direction: null, label: 'Email delivered' })
     })
     it('labels the bounce, complaint, unsubscribe and CMA-reply kinds instead of humanizing them', () => {
       expect(classifyTimelineKind('email_bounce')).toEqual({ category: 'email', direction: null, label: 'Email bounced' })
@@ -84,6 +84,21 @@ describe('getContactActivityFeed pure helpers (2.1)', () => {
       expect(classifyTimelineKind('email_cc')).toEqual({ category: 'email', direction: null, label: 'Copied on an email' })
       expect(classifyTimelineKind('web_event')).toEqual({ category: 'web', direction: null, label: 'Website activity' })
       expect(classifyTimelineKind('lead_created')).toEqual({ category: 'milestone', direction: 'in', label: 'New lead' })
+    })
+    it('classifies the email lifecycle kinds as email with no direction', () => {
+      expect(classifyTimelineKind('email_delivered')).toEqual({ category: 'email', direction: null, label: 'Email delivered' })
+      expect(classifyTimelineKind('email_bounce')).toEqual({ category: 'email', direction: null, label: 'Email bounced' })
+      expect(classifyTimelineKind('email_complaint')).toEqual({ category: 'email', direction: null, label: 'Spam complaint' })
+      expect(classifyTimelineKind('email_unsubscribe')).toEqual({ category: 'email', direction: null, label: 'Unsubscribed' })
+    })
+    it('previews a lifecycle row with the email it happened to, not the event title', () => {
+      const delivered = toFeedItem({ id: 10, ts: 't', kind: 'email_delivered', title: 'Email delivered', body: null, payload: { label: 'River West homes: 3 new listings' }, source: 'resend' })
+      expect(delivered.label).toBe('Email delivered')
+      expect(delivered.snippet).toBe('River West homes: 3 new listings')
+      const bounce = toFeedItem({ id: 11, ts: 't', kind: 'email_bounce', title: 'Email bounced', body: null, payload: {}, source: 'resend' })
+      expect(bounce.snippet).toBe('Email bounced')
+      const sent = toFeedItem({ id: 12, ts: 't', kind: 'email_out', title: 'Subject', body: null, payload: { label: 'other' }, source: 'app' })
+      expect(sent.snippet).toBe('Subject')
     })
     it('flags CRM-redacted content as contentHidden', () => {
       const hidden = toFeedItem({ id: 9, ts: 't', kind: 'email_out', body: null, payload: { contentHidden: true }, source: 'fub-import' })

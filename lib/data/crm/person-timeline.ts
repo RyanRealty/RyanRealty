@@ -9,6 +9,7 @@ import type { ConversationMessage } from '@/lib/data/crm/getContactConversation'
 import type { ActivityFeedItem } from '@/lib/data/crm/getContactActivityFeed'
 import type { PersonNoteRow } from '@/lib/data/crm/getPersonNotes'
 import type { ContactEmailSend } from '@/lib/data/crm/getContactEmailEngagement'
+import { isEmailLifecycleKind } from '@/lib/crm/email-lifecycle-kinds'
 
 export type PersonTimelineChannel =
   | 'sms'
@@ -29,6 +30,9 @@ export type PersonTimelineItem = {
   body: string | null
   href: string | null
   system: boolean
+  /** What happened to an email we sent (delivered, bounced, spam, unsubscribed).
+   *  Shown, but never the contact's last activity (lib/crm/email-lifecycle-kinds.ts). */
+  lifecycle?: boolean
 }
 
 export type PersonTimelinePageView = {
@@ -167,6 +171,7 @@ export function mergePersonTimeline(input: {
       body: snippet(f.snippet),
       href: null,
       system: f.category === 'system',
+      ...(isEmailLifecycleKind(f.kind) ? { lifecycle: true } : {}),
     })
   }
 

@@ -15,6 +15,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { groupInfoFromPayload } from '@/lib/crm/group-message'
+import { isEmailLifecycleKind, postgrestInList } from '@/lib/crm/email-lifecycle-kinds'
 
 export type ActivityCategory = 'message' | 'email' | 'call' | 'note' | 'system' | 'milestone' | 'web' | 'other'
 
@@ -63,10 +64,10 @@ const KIND_MAP: Record<string, KindMeta> = {
   email: { category: 'email', direction: null, label: 'Email' },
   email_open: { category: 'email', direction: 'in', label: 'Email opened' },
   email_click: { category: 'email', direction: 'in', label: 'Email link clicked' },
-  // Resend delivery receipts (one per send, ~300-490 a day). Recorded since
-  // 20261015030000 taught crm_timeline_kind_check the kind; filed as system so
-  // they stay off the lead timeline and the right-now strip by default.
-  email_delivered: { category: 'system', direction: null, label: 'Email delivered' },
+  // What happened to an email we sent (Resend webhook, Gmail bounce watch,
+  // listing-alert unsubscribe). No direction: not a message either way, so it
+  // never reads as the contact's last message (lib/crm/email-lifecycle-kinds.ts).
+  email_delivered: { category: 'email', direction: null, label: 'Email delivered' },
   email_bounce: { category: 'email', direction: null, label: 'Email bounced' },
   email_complaint: { category: 'email', direction: null, label: 'Spam complaint' },
   email_unsubscribe: { category: 'email', direction: null, label: 'Unsubscribed' },
@@ -117,7 +118,13 @@ function toPlainPreview(s: string): string {
 }
 
 /** Pure: a short preview for a feed item, from its title/body/payload. */
-export function buildSnippet(row: { title?: string | null; body?: string | null; payload?: unknown }): string | null {
+export function buildSnippet(row: { kind?: string | null; title?: string | null; body?: string | null; payload?: unknown }): string | null {
+  // A lifecycle row's title is the event ("Email delivered"); the email it
+  // happened to is payload.label (the subject, or the alert name).
+  if (isEmailLifecycleKind(row.kind)) {
+    const label = (row.payload as { label?: unknown } | null)?.label
+    if (typeof label === 'string' && label.trim()) return toPlainPreview(label.trim())
+  }
   const body = typeof row.body === 'string' ? toPlainPreview(row.body) : ''
   if (body) return body.length > 200 ? body.slice(0, 197) + '...' : body
   const title = typeof row.title === 'string' ? row.title.trim() : ''
@@ -143,6 +150,7 @@ export function toFeedItem(row: Record<string, unknown>): ActivityFeedItem {
     direction: meta.direction,
     label: meta.label,
     snippet: buildSnippet({
+      kind,
       title: row.title as string | null,
       body: row.body as string | null,
       payload: row.payload,
@@ -156,15 +164,19 @@ export function toFeedItem(row: Record<string, unknown>): ActivityFeedItem {
   }
 }
 
-export async function getContactActivityFeed(crmPersonId: number, limit = 100): Promise<ActivityFeedItem[]> {
+export async function getContactActivityFeed(
+  crmPersonId: number,
+  limit = 100,
+  opts: { excludeKinds?: readonly string[] } = {},
+): Promise<ActivityFeedItem[]> {
   if (!Number.isFinite(crmPersonId) || crmPersonId <= 0) return []
   const sb = createServiceClient()
-  const { data } = await sb
+  let query = sb
     .from('crm_timeline')
     .select('id,ts,kind,title,body,payload,broker,source')
     .eq('person_id', crmPersonId)
-    .order('ts', { ascending: false })
-    .limit(Math.min(Math.max(limit, 1), 500))
+  if (opts.excludeKinds?.length) query = query.not('kind', 'in', postgrestInList(opts.excludeKinds))
+  const { data } = await query.order('ts', { ascending: false }).limit(Math.min(Math.max(limit, 1), 500))
   if (!data) return []
   return data.map((r) => toFeedItem(r as Record<string, unknown>))
 }

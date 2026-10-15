@@ -75,4 +75,18 @@ describe('derivePersonRightNow', () => {
     })
     expect(strip.lastActivity.title).toContain('Text sent')
   })
+
+  it('never takes an email delivery or bounce as last activity or last message', () => {
+    const strip = derivePersonRightNow({
+      nowMs: now,
+      timeline: [
+        item({ id: 'deliv', ts: '2026-10-13T17:00:00Z', channel: 'email', direction: null, title: 'Email delivered', lifecycle: true }),
+        item({ id: 'bounce', ts: '2026-10-13T16:58:00Z', channel: 'email', direction: null, title: 'Email bounced', lifecycle: true }),
+        item({ id: 'out', ts: '2026-10-13T16:53:00Z' }),
+      ],
+      tasks: [],
+    })
+    expect(strip.lastActivity.title).toContain('Text sent')
+    expect(strip.lastMessage?.channel).toBe('sms')
+  })
 })

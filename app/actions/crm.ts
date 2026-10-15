@@ -13,6 +13,8 @@ import { revalidatePerson } from '@/lib/crm/revalidate-person'
 import { revalidatePath } from 'next/cache'
 import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { createServiceClient } from '@/lib/supabase/service'
+import { EMAIL_DELIVERED_KIND, mergeDeliveredRows } from '@/lib/crm/email-lifecycle-kinds'
+import { getPersonDeliveredRows } from '@/lib/data/crm/getPersonDeliveredRows'
 import {
   CRM_STAGES,
   type CrmBrokerSlug,
@@ -338,10 +340,13 @@ export async function getCrmPersonFull(id: number): Promise<CrmPersonFull> {
   }
 
   const fubId = person?.fub_legacy_id ?? null
-  const [points, timeline, tasks, suppressions, enrollments, geo, cma, visitors] = await Promise.all([
+  // Deliveries (one per email sent) are read apart and merged, so a daily
+  // alert's rows cannot push real history out of the newest-100 window.
+  const [points, timeline, tasks, suppressions, enrollments, geo, cma, visitors, delivered] = await Promise.all([
     sb.from('crm_contact_points').select('id,kind,value,label,is_primary,status').eq('person_id', id).order('is_primary', { ascending: false }),
-    // Delivery receipts would fill the 100-row window and the All count (one per send).
-    sb.from('crm_timeline').select('id,ts,kind,title,body,source,broker,payload,starred', { count: 'exact' }).eq('person_id', id).neq('kind', 'email_delivered').order('ts', { ascending: false }).limit(100),
+    // Delivery receipts would fill the 100-row window and the All count (one per send);
+    // they are read apart below (getPersonDeliveredRows) and merged in.
+    sb.from('crm_timeline').select('id,ts,kind,title,body,source,broker,payload,starred', { count: 'exact' }).eq('person_id', id).neq('kind', EMAIL_DELIVERED_KIND).order('ts', { ascending: false }).limit(100),
     sb.from('crm_tasks').select('id,name,type,due_at,completed_at,assigned_broker,fub_legacy_id').eq('person_id', id).order('completed_at', { ascending: true, nullsFirst: true }).order('due_at', { ascending: true }).limit(50),
     sb.from('crm_suppressions').select('id,channel,reason,source').eq('person_id', id).is('cleared_at', null),
     sb.from('crm_sequence_enrollments').select('id,status,step_index,crm_sequences(name)').eq('person_id', id),
@@ -349,12 +354,15 @@ export async function getCrmPersonFull(id: number): Promise<CrmPersonFull> {
     fubId ? sb.from('cma_deliveries').select('*').eq('fub_person_id', fubId).order('created_at', { ascending: false }).limit(5) : Promise.resolve({ data: [] }),
     // visitor_sessions keys on session_id (no `id` column — selecting it errors and reads 0 forever)
     fubId ? sb.from('visitor_sessions').select('session_id', { count: 'exact', head: true }).eq('fub_person_id', fubId) : Promise.resolve({ count: 0 }),
+    getPersonDeliveredRows(id),
   ])
 
   // Merge the first-party website trail (visitor_events via this person's
   // identified sessions) into the timeline view — every site touchpoint
   // visible on the contact, no data duplication (read-time merge).
-  let merged = (timeline.data ?? []) as CrmTimelineRow[]
+  const windowRows = (timeline.data ?? []) as CrmTimelineRow[]
+  let merged = mergeDeliveredRows(windowRows, delivered.rows as CrmTimelineRow[], 100)
+  const deliveredShown = merged.length - windowRows.length
   if (fubId) {
     const { data: sessions } = await sb
       .from('visitor_sessions')
@@ -384,7 +392,7 @@ export async function getCrmPersonFull(id: number): Promise<CrmPersonFull> {
       }))
       merged = [...merged, ...visitorRows]
         .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())
-        .slice(0, 100)
+        .slice(0, 100 + deliveredShown)
     }
   }
 
@@ -392,7 +400,7 @@ export async function getCrmPersonFull(id: number): Promise<CrmPersonFull> {
     person,
     contactPoints: (points.data ?? []) as CrmPersonFull['contactPoints'],
     timeline: merged,
-    timelineTotal: timeline.count ?? 0,
+    timelineTotal: (timeline.count ?? 0) + delivered.total,
     tasks: (tasks.data ?? []) as CrmTaskRow[],
     suppressions: (suppressions.data ?? []) as CrmPersonFull['suppressions'],
     enrollments: (enrollments.data ?? []) as unknown as CrmPersonFull['enrollments'],

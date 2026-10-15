@@ -642,10 +642,9 @@ async function recordAlertUnsubscribe(
       await supabase.from('crm_timeline').upsert(
         {
           person_id: personId,
-          // 'system', not 'email_unsubscribe': crm_timeline_kind_check does not
-          // allow the email_* provider kinds (verified 2026-10-14), so that row
-          // would be refused. The email_events row above carries the event type.
-          kind: 'system',
+          // Lifecycle kind (migration 20261015040000): shown on the timeline,
+          // never the contact's last activity (lib/crm/email-lifecycle-kinds.ts).
+          kind: 'email_unsubscribe',
           title: 'Unsubscribed from a listing alert',
           source: 'listing-alert',
           payload: { alertId: row.id, email: row.email, label: row.name ?? null },

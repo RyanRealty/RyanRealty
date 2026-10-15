@@ -30,6 +30,7 @@ import {
   classifyTimelineKind,
   type ActivityFeedItem,
 } from '@/lib/data/crm/getContactActivityFeed'
+import { EMAIL_LIFECYCLE_KINDS } from '@/lib/crm/email-lifecycle-kinds'
 import { listDraftsByPerson } from '@/lib/data/crm/drafts'
 
 /** The four triage buckets a conversation moves through. */
@@ -631,5 +632,8 @@ async function buildInboxWorkingSet(
  * runs requirePersonInScope before opening a thread).
  */
 export async function getConversationThread(personId: number, limit = 100): Promise<ActivityFeedItem[]> {
-  return getContactActivityFeed(personId, limit)
+  // A conversation is messages, not what happened to them: a contact on a daily
+  // alert has a delivery row a day, which would fill the AI draft's 12-row
+  // context before a real message (lib/crm/email-lifecycle-kinds.ts).
+  return getContactActivityFeed(personId, limit, { excludeKinds: EMAIL_LIFECYCLE_KINDS })
 }
