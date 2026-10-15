@@ -244,15 +244,18 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   outline-offset: var(--v3-focus-offset);
 }
 
-.v3-sarah__composer button {
-  min-width: var(--v3-tap);
-  min-height: var(--v3-tap);
-  padding: 0 var(--v3-space-md);
-  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
-  background: var(--v3-navy);
-  color: var(--v3-cream);
-  font-family: var(--v3-font-display);
-  cursor: pointer;
+/* Layered so a Tailwind color utility on the button still wins (ci:css-layers). */
+@layer base {
+  .v3-sarah__composer button {
+    min-width: var(--v3-tap);
+    min-height: var(--v3-tap);
+    padding: 0 var(--v3-space-md);
+    border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+    background: var(--v3-navy);
+    color: var(--v3-cream);
+    font-family: var(--v3-font-display);
+    cursor: pointer;
+  }
 }
 
 .v3-sarah__composer button:focus-visible {
