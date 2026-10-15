@@ -91,6 +91,47 @@ export default async function ValuationsPage() {
         </VerdictLine>
       </div>
 
+      {(cmaFailed.length > 0 || bpoFailed.length > 0) && (
+        <section aria-label="Failed builds">
+          <h2 className="av2-lane-head">Failed builds</h2>
+          <ul className="av2-queue">
+            {cmaFailed.slice(0, 8).map((c) => (
+              <QueueRow
+                key={c.slug}
+                kind="Failed"
+                kindTone="down"
+                title={c.subject_address ?? c.slug}
+                context={c.build_error ?? 'build failed'}
+                age={daysAgo(c.created_at, nowMs)}
+                action={
+                  <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                    <RetryCmaForm slug={c.slug} />
+                    <Link href={`/admin/cmas/${c.slug}`} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                      Open
+                    </Link>
+                  </span>
+                }
+              />
+            ))}
+            {bpoFailed.slice(0, 8).map((b) => (
+              <QueueRow
+                key={b.id}
+                kind="Failed"
+                kindTone="down"
+                title={b.subjectAddress ?? b.slug}
+                context={b.buildError ?? 'build failed'}
+                age={daysAgo(b.createdAt, nowMs)}
+                action={
+                  <Link href="/admin/bpo" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                    Open board
+                  </Link>
+                }
+              />
+            ))}
+          </ul>
+        </section>
+      )}
+
       {cmaDrafts.length > 0 && (
         <section aria-label="CMA drafts">
           <h2 className="av2-lane-head">CMA drafts to review</h2>
@@ -143,47 +184,6 @@ export default async function ValuationsPage() {
                   .filter(Boolean)
                   .join(' · ')}
                 age={daysAgo(b.builtAt ?? b.createdAt, nowMs)}
-                action={
-                  <Link href="/admin/bpo" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-                    Open board
-                  </Link>
-                }
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {(cmaFailed.length > 0 || bpoFailed.length > 0) && (
-        <section aria-label="Failed builds">
-          <h2 className="av2-lane-head">Failed builds</h2>
-          <ul className="av2-queue">
-            {cmaFailed.slice(0, 8).map((c) => (
-              <QueueRow
-                key={c.slug}
-                kind="Failed"
-                kindTone="down"
-                title={c.subject_address ?? c.slug}
-                context={c.build_error ?? 'build failed'}
-                age={daysAgo(c.created_at, nowMs)}
-                action={
-                  <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-                    <RetryCmaForm slug={c.slug} />
-                    <Link href={`/admin/cmas/${c.slug}`} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-                      Open
-                    </Link>
-                  </span>
-                }
-              />
-            ))}
-            {bpoFailed.slice(0, 8).map((b) => (
-              <QueueRow
-                key={b.id}
-                kind="Failed"
-                kindTone="down"
-                title={b.subjectAddress ?? b.slug}
-                context={b.buildError ?? 'build failed'}
-                age={daysAgo(b.createdAt, nowMs)}
                 action={
                   <Link href="/admin/bpo" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
                     Open board
