@@ -36,7 +36,7 @@ import {
   ToolbarSelect,
 } from '@/components/admin/v2'
 import { RichTextBody } from '@/app/admin/(protected)/crm/settings/_components/templates/RichTextBody'
-import { time12, wallDateKey, wallMinutes } from '@/lib/crm/calendar'
+import { zonedDateTimeParts } from '@/lib/crm/calendar'
 import type { AppointmentRow, AppointmentType, AppointmentOutcome } from '@/lib/data/crm/getAppointments'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -187,10 +187,12 @@ export default function AppointmentModal({
     if (open && !prevOpen.current) {
       if (appointment) {
         setTitle(appointment.title)
-        setStartDate(wallDateKey(appointment.startAt))
-        setEndDate(wallDateKey(appointment.endAt))
-        setStartTime(minutesToHHMM(wallMinutes(appointment.startAt)))
-        setEndTime(minutesToHHMM(wallMinutes(appointment.endAt)))
+        const start = zonedDateTimeParts(appointment.startAt)
+        const end = zonedDateTimeParts(appointment.endAt)
+        setStartDate(start.dateKey)
+        setEndDate(end.dateKey)
+        setStartTime(start.hhmm)
+        setEndTime(end.hhmm)
         setTimezone(appointment.timezone ?? 'America/Los_Angeles')
         setAllDay(appointment.allDay)
         setLocation(appointment.location ?? '')

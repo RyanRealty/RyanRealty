@@ -32,6 +32,7 @@ import {
   TextAreaField,
   TextField,
 } from '@/components/admin/v2'
+import { zonedDateTimeParts } from '@/lib/crm/calendar'
 import type { AppointmentRow, AppointmentType, AppointmentOutcome } from '@/lib/data/crm/getAppointments'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -180,8 +181,10 @@ export default function AppointmentSheet({
       if (appointment) {
         // Edit mode: seed from the existing row
         setTitle(appointment.title)
-        setStartAt(appointment.startAt.slice(0, 16))
-        setEndAt(appointment.endAt.slice(0, 16))
+        const start = zonedDateTimeParts(appointment.startAt)
+        const end = zonedDateTimeParts(appointment.endAt)
+        setStartAt(`${start.dateKey}T${start.hhmm}`)
+        setEndAt(`${end.dateKey}T${end.hhmm}`)
         setAllDay(appointment.allDay)
         setLocation(appointment.location ?? '')
         setDesc(appointment.description ?? '')

@@ -1,5 +1,6 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { formatAppointmentWhen } from '@/lib/crm/calendar'
 
 /**
  * Send the §2.11 invitation email to each contact invitee's PRIMARY email
@@ -32,18 +33,14 @@ export async function sendAppointmentInvites(params: {
 
   const { mailboxForSlug } = await import('@/lib/data/brokers/directory')
   const { sendGovernedEmail } = await import('@/lib/comms/sendGovernedEmail')
-  const { taskGroupLabel, time12, wallDateKey, wallMinutes } = await import('@/lib/crm/calendar')
   const mailbox = await mailboxForSlug(params.brokerSlug)
 
-  const dayLabel = taskGroupLabel(wallDateKey(params.startAt))
-  const tzLabel =
-    params.timezone === 'America/New_York' ? 'Eastern Time'
-    : params.timezone === 'America/Chicago' ? 'Central Time'
-    : params.timezone === 'America/Denver' ? 'Mountain Time'
-    : 'Pacific Time'
-  const when = params.allDay
-    ? `${dayLabel} (all day)`
-    : `${dayLabel}, ${time12(wallMinutes(params.startAt))}–${time12(wallMinutes(params.endAt))} (${tzLabel})`
+  const when = formatAppointmentWhen({
+    startAt: params.startAt,
+    endAt: params.endAt,
+    allDay: params.allDay,
+    timezone: params.timezone,
+  })
   const notesPlain = (params.description ?? '')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<[^>]+>/g, '')
