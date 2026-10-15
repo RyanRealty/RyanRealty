@@ -114,6 +114,17 @@ describe('a history step moves focus out of the bar only when it moves the reade
     expect(inBar()).toBe(false)
   })
 
+  it('does not claim to be a modal while the always-mounted menu is hidden', () => {
+    mount('/homes-for-sale/bend')
+    expect(overlay().hidden).toBe(true)
+    expect(overlay().getAttribute('aria-modal')).not.toBe('true')
+    openMenu()
+    expect(overlay().getAttribute('aria-modal')).toBe('true')
+    escape()
+    expect(overlay().hidden).toBe(true)
+    expect(overlay().getAttribute('aria-modal')).not.toBe('true')
+  })
+
   it('takes focus out of the bar on a hash change', () => {
     mount('/homes-for-sale/bend')
     menuButton().focus()

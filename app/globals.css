@@ -582,10 +582,19 @@
 /* UX review F19: while a modal dialog or sheet is open (filters, save, sign-in,
    photos), the floating cookie button and the chat launcher step aside so they
    never sit on the sheet's own buttons or fields. Cookie settings stays in
-   the footer. */
-body:has([role='dialog'][data-state='open'], [role='alertdialog'][data-state='open'], [aria-modal='true'])
+   the footer. The chrome nav dialog stays mounted with [hidden] for SEO —
+   do not treat that leftover aria-modal as an open sheet. */
+body:has(
+    [role='dialog'][data-state='open']:not([hidden]),
+    [role='alertdialog'][data-state='open']:not([hidden]),
+    [aria-modal='true']:not([hidden])
+  )
   [data-cookie-settings='icon'],
-body:has([role='dialog'][data-state='open'], [role='alertdialog'][data-state='open'], [aria-modal='true'])
+body:has(
+    [role='dialog'][data-state='open']:not([hidden]),
+    [role='alertdialog'][data-state='open']:not([hidden]),
+    [aria-modal='true']:not([hidden])
+  )
   .v3-sarah {
   display: none !important;
 }

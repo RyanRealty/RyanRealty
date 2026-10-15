@@ -17,6 +17,8 @@ const PATHS = Object.freeze({
   capture: 'app/actions/sarah-capture.ts',
   flow: 'lib/sarah/intent-flow.ts',
   cookie: 'components/CookieConsentBanner.tsx',
+  chrome: 'components/site/v3/V3Chrome.tsx',
+  globals: 'app/globals.css',
   provider: 'components/site/providers/RootProvider.tsx',
   publicLayer: 'components/layout/PublicClientLayer.tsx',
 })
@@ -42,6 +44,8 @@ export function sarahPanelProblems({ root = process.cwd(), files = {} } = {}) {
   const capture = readRel(root, PATHS.capture, files.capture)
   const flow = readRel(root, PATHS.flow, files.flow)
   const cookie = readRel(root, PATHS.cookie, files.cookie)
+  const chrome = readRel(root, PATHS.chrome, files.chrome)
+  const globals = readRel(root, PATHS.globals, files.globals)
   const provider = readRel(root, PATHS.provider, files.provider)
   const publicLayer = readRel(root, PATHS.publicLayer, files.publicLayer)
 
@@ -129,6 +133,19 @@ export function sarahPanelProblems({ root = process.cwd(), files = {} } = {}) {
     if (!css.includes('--v3-sarah-face') || !css.includes('object-fit: cover')) {
       p.push(`${PATHS.css}: every Sarah avatar must cover and sit on --v3-sarah-face.`)
     }
+    if (!css.includes('.v3-chrome__overlay[hidden]') || !css.includes(':not([hidden])')) {
+      p.push(`${PATHS.css}: hidden chrome dialog must not blank the disc; visible modals still hide it.`)
+    }
+  }
+
+  if (chrome == null) p.push(`${PATHS.chrome}: missing.`)
+  else if (chrome.includes('aria-modal="true"')) {
+    p.push(`${PATHS.chrome}: aria-modal must stay off while the always-mounted menu is hidden.`)
+  }
+
+  if (globals == null) p.push(`${PATHS.globals}: missing.`)
+  else if (!globals.includes("[aria-modal='true']:not([hidden])")) {
+    p.push(`${PATHS.globals}: F19 hide-on-modal must ignore a [hidden] chrome dialog.`)
   }
 
   if (cookie == null) p.push(`${PATHS.cookie}: missing.`)

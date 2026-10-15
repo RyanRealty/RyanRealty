@@ -840,14 +840,16 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
           tree AND out of the tab order at once, so there is no
           invisible-but-focusable link and no aria-hidden wrapper around
           reachable controls. Going from display:none to display:flex is also
-          what starts the entrance, so the animation still runs on open. */}
+          what starts the entrance, so the animation still runs on open.
+          aria-modal is on only while open: leaving it true on this hidden
+          dialog blanks Sarah and the cookie gear (body:has). */}
       <div
         id={menuId}
         ref={overlayRef}
         hidden={menuHidden}
         className="v3-chrome__overlay"
         role="dialog"
-        aria-modal="true"
+        aria-modal={menuHidden ? undefined : true}
         aria-label={NAME.menu}
       >
         <div className="v3-chrome__overlay-bar">

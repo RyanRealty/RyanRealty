@@ -20,6 +20,21 @@
   pointer-events: none;
 }
 
+/* Chrome keeps the site menu in the HTML as role=dialog + [hidden] so crawlers
+   still see every destination. A hide-on-modal rule that matches any
+   [aria-modal="true"] then blanks this disc (and the cookie gear) on every
+   page. Restore the disc while that overlay is hidden; a visible modal still
+   covers it. */
+body:has(.v3-chrome__overlay[hidden]) .v3-sarah {
+  display: flex !important;
+}
+
+body:has([role='dialog'][data-state='open']:not([hidden])) .v3-sarah,
+body:has([role='alertdialog'][data-state='open']:not([hidden])) .v3-sarah,
+body:has([aria-modal='true']:not([hidden])) .v3-sarah {
+  display: none !important;
+}
+
 body:has([data-cookie-notice='bar']) .v3-sarah {
   bottom: calc(
     var(--v3-cookie-bar-h, 5.5rem) + var(--rr-dock-h, 0px) + var(--rr-sticky-bottom, 0px) +
@@ -409,17 +424,19 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   outline-offset: var(--v3-focus-offset);
 }
 
-.v3-sarah__composer button {
-  flex: none;
-  min-width: var(--v3-tap);
-  min-height: var(--v3-tap);
-  padding: 0 0.95rem;
-  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
-  border-radius: 999px;
-  background: var(--v3-navy);
-  color: var(--v3-cream);
-  font-family: var(--v3-font-display);
-  cursor: pointer;
+@layer base {
+  .v3-sarah__composer button {
+    flex: none;
+    min-width: var(--v3-tap);
+    min-height: var(--v3-tap);
+    padding: 0 0.95rem;
+    border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+    border-radius: 999px;
+    background: var(--v3-navy);
+    color: var(--v3-cream);
+    font-family: var(--v3-font-display);
+    cursor: pointer;
+  }
 }
 
 .v3-sarah__composer .v3-sarah__mic {
