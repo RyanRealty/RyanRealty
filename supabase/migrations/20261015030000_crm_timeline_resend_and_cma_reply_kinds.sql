@@ -30,6 +30,13 @@
 -- Live definition read 2026-10-15 matched 20261002011238_crm_timeline_email_cc_kind
 -- exactly (19 kinds). Every existing kind is kept. Dropped and re-added in ONE
 -- ALTER TABLE so there is no instant with no constraint.
+--
+-- At 03:45Z on 2026-10-15 the four Resend kinds were also applied to production
+-- by hand (applied version 20261015034529, `crm_timeline_email_lifecycle_kinds`,
+-- no file in this repo); the live constraint read afterwards had those four and
+-- still lacked cma_replied. This file is a superset of that one, so it is safe
+-- on top of it: drop-if-exists and re-add, every kind the live constraint holds
+-- is in the list below, so no row can fail the re-validation.
 alter table public.crm_timeline
   drop constraint if exists crm_timeline_kind_check,
   add constraint crm_timeline_kind_check
