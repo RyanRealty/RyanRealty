@@ -9,8 +9,14 @@
  */
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import { getSarahDeskBroker } from '@/app/actions/sarah-desk'
 import { V3_ROOT_CLASS } from './atoms'
 import { SARAH_AVATAR_ALT, SARAH_AVATAR_SRC } from '@/lib/sarah/assets'
+import {
+  brokerJoinedLine,
+  deskBrokerFromAssigned,
+  type SarahDeskBroker,
+} from '@/lib/sarah/desk-broker'
 import { evaluateSarahTurn } from '@/lib/sarah/guardrails'
 import { SARAH_NAME, WEB_GREETING_EN, WEB_HELP_EN } from '@/lib/sarah/scripts'
 import {
@@ -50,6 +56,8 @@ export function V3SarahAssistant() {
   const [draft, setDraft] = useState('')
   const [greeted, setGreeted] = useState(true)
   const [lines, setLines] = useState<ChatLine[]>(() => [{ from: 'sarah', text: WEB_GREETING_EN }])
+  const [desk, setDesk] = useState<SarahDeskBroker>(() => deskBrokerFromAssigned(null))
+  const takeover = false
   const shownRef = useRef(false)
   const teaserKind: SarahTeaserKind = listingTeaserKind(wide)
   const offer = shouldOfferListingTeaser({
@@ -60,6 +68,16 @@ export function V3SarahAssistant() {
 
   useEffect(() => {
     setDismissed(teaserDismissedInSession(sessionStore()))
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    void getSarahDeskBroker().then((got) => {
+      if (!cancelled && got.data) setDesk(got.data)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   useEffect(() => {
@@ -174,6 +192,34 @@ export function V3SarahAssistant() {
                   <p className="v3-sarah__msg-body">{line.text}</p>
                 </div>
               ))}
+            </div>
+            <div className="v3-sarah__desk" data-sarah="desk" data-sarah-broker={desk.slug} data-sarah-takeover={takeover ? '1' : '0'}>
+              <p className="v3-sarah__desk-who">
+                <img src={desk.photoSrc} alt="" width={28} height={28} />
+                <span data-sarah="desk-line">
+                  {takeover ? brokerJoinedLine(desk) : `Your broker is ${desk.fullName}`}
+                </span>
+              </p>
+              <nav className="v3-sarah__desk-actions" aria-label={`Reach ${desk.fullName}`}>
+                <a
+                  href={`tel:${desk.phoneTel}`}
+                  onClick={() => trackEvent('click_cta', { cta: 'sarah_desk', action: 'call', surface: desk.slug })}
+                >
+                  Call
+                </a>
+                <a
+                  href={`sms:${desk.phoneTel}`}
+                  onClick={() => trackEvent('click_cta', { cta: 'sarah_desk', action: 'text', surface: desk.slug })}
+                >
+                  Text
+                </a>
+                <a
+                  href={desk.contactHref}
+                  onClick={() => trackEvent('click_cta', { cta: 'sarah_desk', action: 'message', surface: desk.slug })}
+                >
+                  Message
+                </a>
+              </nav>
             </div>
             <form
               className="v3-sarah__composer"

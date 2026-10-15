@@ -36,6 +36,7 @@ const PATHS = Object.freeze({
   dock: 'components/site/v3/V3PhoneDock.client.tsx',
   stickyCss: 'components/site/v3/V3StickyAsk.css',
   listingPage: 'app/listing/[listingKey]/page.tsx',
+  sarah: 'components/site/v3/V3SarahAssistant.client.tsx',
   helper: 'lib/site/floater-broker.ts',
   builder: 'scripts/build-jax-head.mjs',
   assetNavy: 'public/brand/jax-head-navy.png',
@@ -78,6 +79,7 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   const dock = readRel(root, PATHS.dock, files.dock)
   const stickyCss = readRel(root, PATHS.stickyCss, files.stickyCss)
   const listingPage = readRel(root, PATHS.listingPage, files.listingPage)
+  const sarah = readRel(root, PATHS.sarah, files.sarah)
   const helper = readRel(root, PATHS.helper, files.helper)
   const builder = readRel(root, PATHS.builder, files.builder)
   const gazeTest = readRel(root, PATHS.gazeTest, files.gazeTest)
@@ -287,17 +289,32 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   p.push(...sealSourceProblems(builder, PATHS.builder))
 
   if (barrel == null || !barrel.includes("from './V3DogFloater.client'")) {
-    p.push(`${PATHS.barrel}: V3DogFloater must leave through the v3 barrel.`)
+    p.push(`${PATHS.barrel}: leftover V3DogFloater source still leaves through the v3 barrel (ci:public-v3).`)
   }
 
   if (layout == null) {
     p.push(`${PATHS.layout}: missing.`)
   } else {
-    if (!layout.includes('<V3DogFloater') || !layout.includes('V3DogFloater')) {
-      p.push(`${PATHS.layout}: public layout must mount <V3DogFloater />.`)
+    if (/<V3DogFloater[\s/>]/.test(layout) || layout.includes('<V3DogFloater')) {
+      p.push(`${PATHS.layout}: floating broker disc (V3DogFloater) must stay unmounted. Contact lives in Sarah.`)
     }
     if (/<V3PhoneDock[\s/>]/.test(layout)) {
-      p.push(`${PATHS.layout}: sticky V3PhoneDock returned. SITE-134 replaces that bar.`)
+      p.push(`${PATHS.layout}: sticky V3PhoneDock returned. Call / Text live in Sarah.`)
+    }
+    if (!layout.includes('<V3SarahAssistant')) {
+      p.push(`${PATHS.layout}: public layout must mount <V3SarahAssistant />.`)
+    }
+  }
+
+  if (sarah) {
+    if (!sarah.includes('getSarahDeskBroker') || !sarah.includes('deskBrokerFromAssigned')) {
+      p.push(`${PATHS.sarah}: Call / Text / Message must resolve the CRM desk broker (Matt fallback).`)
+    }
+    if (!sarah.includes('tel:${desk.phoneTel}') || !sarah.includes('sms:${desk.phoneTel}')) {
+      p.push(`${PATHS.sarah}: Call and Text must use the resolved broker's line.`)
+    }
+    if (!sarah.includes('brokerJoinedLine')) {
+      p.push(`${PATHS.sarah}: takeover copy must use brokerJoinedLine (not a hardcoded Matt has joined).`)
     }
   }
 
