@@ -217,6 +217,10 @@ export const DESTINATIONS: NavDestination[] = [
     capability: 'performance.view',
     defaultOpen: false,
     children: [
+      // Matt 2026-10-14: ONE page for the website (visitors, sources, leads,
+      // Google search) that "actually makes sense". /admin/analytics opens on
+      // it; superuser-only like its layout gate, so the capability matches.
+      { label: 'Website', href: '/admin/analytics', icon: 'globe', capability: 'performance.view' },
       { label: 'Home', href: '/admin/reports', icon: 'bar-chart', capability: 'performance.view' },
       { label: 'Marketing approvals', href: '/admin/approval-queue', icon: 'badge-check', capability: 'approvals.act' },
       { label: 'DSCR screen', href: '/admin/dscr', icon: 'trending-up', capability: 'financials.view' },

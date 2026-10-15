@@ -2,7 +2,7 @@
  * From / Reply-To / signature defaults for a CRM batch email.
  *
  * Lead-facing cohort sends used to ride Resend's bare RESEND_FROM (a noreply
- * local-part on mail.ryan-realty.com) with no signature. Two failures:
+ * local-part) with no signature. Two failures:
  *
  *   1. Replies vanished — Reply-To was whatever the worker happened to freeze,
  *      and the From line itself was a mailbox nobody reads, so clients who

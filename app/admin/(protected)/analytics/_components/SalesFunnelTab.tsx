@@ -36,8 +36,8 @@ function parseDoor(raw: string | undefined): CaptureDoorId | null {
 
 function countLabel(kind: 'people' | 'sessions' | 'events'): string {
   if (kind === 'people') return 'people'
-  if (kind === 'sessions') return 'sessions'
-  return 'events'
+  if (kind === 'sessions') return 'visits'
+  return 'actions'
 }
 
 function funnelHref(sp: Record<string, string | undefined>, patch: Record<string, string | null>): string {
@@ -96,9 +96,9 @@ export async function SalesFunnelTab({
   } else if (leads === 0) {
     verdict = `No inbound ${audienceWord} leads in this window.`
   } else if (audience === 'recruit') {
-    verdict = `Of ${formatInt(leads)} recruit inquiries, ${formatInt(working)} started a conversation. ${formatInt(funnel.joinConverts)} /join converts. Signed ICA is UNMEASURED. ${formatInt(funnel.stock.activeBrokersNow)} brokers are on the team now.`
+    verdict = `Of ${formatInt(leads)} recruit inquiries, ${formatInt(working)} started a conversation. ${formatInt(funnel.joinConverts)} signed up on the join page. Signed agreements are not measured. ${formatInt(funnel.stock.activeBrokersNow)} brokers are on the team now.`
   } else if (funnel.clientUnmeasured) {
-    verdict = `Of ${formatInt(leads)} inbound ${audienceWord} leads, ${formatInt(working)} got a broker touch. Signed-client is UNMEASURED for this audience.`
+    verdict = `Of ${formatInt(leads)} inbound ${audienceWord} leads, ${formatInt(working)} got a broker touch. Signed clients are not measured for ${audienceWord}s.`
   } else {
     verdict = `Of ${formatInt(leads)} inbound ${audienceWord} leads, ${formatInt(working)} got a broker touch. ${formatInt(clients ?? 0)} reached Listed or later.`
   }
@@ -112,14 +112,13 @@ export async function SalesFunnelTab({
       <VerdictLine tone={tone}>{verdict}</VerdictLine>
 
       <p className="av2-note">
-        Cohort flow for {range.startDate} to {range.endDate}. Spine counts unique {audienceWord} people after a
-        CRM person exists, and unique sessions before that. Capture doors are first-recorded source events.
-        Addressable market is not a stage. Every platform uses its own snapshot. Those counts are never added
-        together.
+        Who moved through the {audienceWord} funnel from {range.startDate} to {range.endDate}. Before someone is a
+        contact we count visits; after, we count people. Where they came in is the form or path that first created
+        them. Each platform&apos;s &ldquo;saw us&rdquo; number is its own count and is never added to another.
       </p>
 
       <section aria-label="Saw us">
-        <SectionHead>Saw us (platform analytics, never summed)</SectionHead>
+        <SectionHead>Saw us (each platform&apos;s own count, never added together)</SectionHead>
         {DISCOVERY_GROUP_ORDER.map((group) => {
           const cards = funnel.discovery.filter((ch) => ch.group === group)
           if (cards.length === 0) return null
@@ -132,7 +131,7 @@ export async function SalesFunnelTab({
                     <div className="av2-funnel-disc__k">{ch.label}</div>
                     <div className="av2-funnel-disc__n">
                       {ch.count === null ? (
-                        <StateWord state="waiting">UNMEASURED</StateWord>
+                        <StateWord state="waiting">Not measured</StateWord>
                       ) : (
                         formatInt(Math.round(ch.count))
                       )}
@@ -156,13 +155,14 @@ export async function SalesFunnelTab({
           )
         })}
         <p className="av2-funnel-gap">
-          Identity join from saw-us to a site visit is UNMEASURED. Those datasets do not share a person id.
+          We cannot tell which of these people later visited the site: the platforms do not tell us who they are.
         </p>
       </section>
 
       {funnel.ga4Sessions != null ? (
         <p className="av2-note">
-          GA4 (consent-gated) reported {formatInt(Math.round(funnel.ga4Sessions))} sessions in this window.{' '}
+          Google Analytics (visitors who allow analytics cookies) reported {formatInt(Math.round(funnel.ga4Sessions))}{' '}
+          visits in this window.{' '}
           {funnel.ga4SessionsCaveat}
         </p>
       ) : funnel.ga4SessionsCaveat ? (
@@ -171,13 +171,13 @@ export async function SalesFunnelTab({
 
       {funnel.unclassifiedVisits > 0 ? (
         <p className="av2-note">
-          {formatInt(funnel.unclassifiedVisits)} other visits in this window have no {audienceWord} intent tag and
-          are not in this spine.
+          {formatInt(funnel.unclassifiedVisits)} other visits in this window opened no {audienceWord} page and are not
+          counted in the steps below.
         </p>
       ) : null}
 
-      <section aria-label="Cohort spine">
-        <SectionHead>Cohort spine</SectionHead>
+      <section aria-label="Step by step">
+        <SectionHead>Step by step</SectionHead>
         <div style={{ marginBottom: 'var(--a-s4)' }}>
           {funnel.stages.map((s, i) => {
             const n = s.count
@@ -202,7 +202,7 @@ export async function SalesFunnelTab({
                 </div>
                 <div className="av2-step__n">
                   {n === null ? (
-                    <StateWord state="waiting">UNMEASURED</StateWord>
+                    <StateWord state="waiting">Not measured</StateWord>
                   ) : (
                     <b style={{ color: 'var(--a-text)' }}>{formatInt(n)}</b>
                   )}
@@ -214,23 +214,24 @@ export async function SalesFunnelTab({
           })}
         </div>
         <p className="av2-note">
-          Visited → engaged → identified is nested sessions. Lead → working → client is nested people who became
-          inbound leads in this window. Visit does not nest into lead: phone, Meta lead forms, and portals skip the
-          site. A conversion is only printed when the later stage is a subset of the earlier one.
+          Visited, engaged and identified count visits; each is part of the one before. Lead, working and client count
+          people who became leads in this window; each is part of the one before. Visits do not lead straight into
+          leads, because phone calls, Facebook lead forms and listing portals never touch the site, so a percentage is
+          only shown when one step is truly part of the one before it.
         </p>
       </section>
 
-      <section aria-label="Capture doors">
-        <SectionHead>Capture doors (events)</SectionHead>
+      <section aria-label="Where they came in">
+        <SectionHead>Where they came in (forms and paths)</SectionHead>
         <DataList
-          label="Capture doors"
+          label="Where they came in"
           rows={funnel.doors}
           cap={funnel.doors.length}
           rowKey={(d) => d.id}
           columns={[
             {
               key: 'door',
-              header: 'Door',
+              header: 'Form or path',
               lead: true,
               cell: (d) => (
                 <Link href={funnelHref(sp, { door: d.id, stage: 'lead' })} style={{ color: 'var(--a-accent)' }}>
@@ -239,7 +240,7 @@ export async function SalesFunnelTab({
                 </Link>
               ),
             },
-            { key: 'events', header: 'Events', num: true, cell: (d) => formatInt(d.events) },
+            { key: 'events', header: 'Leads', num: true, cell: (d) => formatInt(d.events) },
             { key: 'working', header: 'Touched', num: true, cell: (d) => formatInt(d.working) },
             {
               key: 'clients',
@@ -248,12 +249,11 @@ export async function SalesFunnelTab({
               cell: (d) => (funnel.clientUnmeasured ? '—' : formatInt(d.clients)),
             },
           ]}
-          empty={<>No attributable {audienceWord} capture events in this window.</>}
+          empty={<>No {audienceWord} leads came in through a form or path in this window.</>}
         />
         <p className="av2-note">
-          First recorded source on the CRM person. A later second door is not counted here unless that source
-          replaced the first. Manual entries are listed and tagged so they are not read as marketing wins. Farm,
-          Import, and Sphere lists are excluded.
+          The first way each person came in, as the CRM recorded it. People typed in by hand are marked so they are not
+          read as marketing wins. Farm, import and sphere lists are left out.
         </p>
       </section>
 
@@ -263,7 +263,7 @@ export async function SalesFunnelTab({
         </SectionHead>
         <p className="av2-note">
           {audience === 'recruit'
-            ? 'Each active broker’s consumer inbound leads (seller and buyer, not recruits) assigned to them in this window, plus Listed-or-later on their book. This is the business a recruit joins.'
+            ? 'Each active broker’s buyer and seller leads assigned to them in this window, plus their listings that reached Listed or later. This is the business a recruit joins.'
             : `This ${audienceWord} cohort split by assigned broker.`}
         </p>
         <DataList
@@ -275,20 +275,20 @@ export async function SalesFunnelTab({
             { key: 'broker', header: 'Broker', lead: true, cell: (b) => b.name },
             { key: 'leads', header: 'Inbound', num: true, cell: (b) => formatInt(b.inboundLeads) },
             { key: 'working', header: 'Touched', num: true, cell: (b) => formatInt(b.working) },
-            { key: 'listed', header: 'Listed+', num: true, cell: (b) => formatInt(b.listedPlus) },
+            { key: 'listed', header: 'Listed or later', num: true, cell: (b) => formatInt(b.listedPlus) },
           ]}
           empty={<>No assigned inbound in this window.</>}
         />
       </section>
 
       <section aria-label="Now on the board">
-        <SectionHead>Stock (now, not this cohort)</SectionHead>
+        <SectionHead>Right now (not just this window)</SectionHead>
         <Figures
           figures={[
             {
               label: 'Brokers on the team now',
               value: formatInt(funnel.stock.activeBrokersNow),
-              caption: 'Active crm_active brokers',
+              caption: 'Brokers active in the CRM',
             },
             {
               label: 'Sellers Listed or later, now',
@@ -297,21 +297,21 @@ export async function SalesFunnelTab({
             },
             {
               label: 'Buyer-rep signed, now',
-              value: 'UNMEASURED',
-              caption: 'No signed buyer-rep writer',
+              value: 'Not measured',
+              caption: 'Signed buyer agreements are not recorded',
             },
             {
               label: 'Referral handoffs recorded',
               value:
                 funnel.stock.referralHandoffs === null ? 'no table' : formatInt(funnel.stock.referralHandoffs),
-              caption: 'Signatures UNMEASURED (no signed-date column)',
+              caption: 'Signing dates are not recorded',
             },
             ...(audience === 'recruit'
               ? [
                   {
-                    label: '/join converts this window',
+                    label: 'Join-page sign-ups this window',
                     value: formatInt(funnel.joinConverts),
-                    caption: 'visitor_events join_convert, not an ICA',
+                    caption: 'Sign-ups on the join page, not signed agreements',
                   },
                 ]
               : []),
@@ -323,7 +323,7 @@ export async function SalesFunnelTab({
         <SectionHead>{members.title}</SectionHead>
         {members.unmeasuredReason ? (
           <div className="av2-empty">
-            <StateWord state="waiting">UNMEASURED</StateWord> {members.unmeasuredReason}
+            <StateWord state="waiting">Not measured</StateWord> {members.unmeasuredReason}
           </div>
         ) : (
           <>
@@ -347,7 +347,7 @@ export async function SalesFunnelTab({
                       m.name
                     ),
                 },
-                { key: 'door', header: 'Door', cell: (m) => m.doorLabel },
+                { key: 'door', header: 'Came in through', cell: (m) => m.doorLabel },
                 {
                   key: 'when',
                   header: 'When',
@@ -355,40 +355,40 @@ export async function SalesFunnelTab({
                   cell: (m) => m.createdAt.slice(0, 10),
                 },
               ]}
-              empty={<>{members.note ?? 'Click a stage or a door.'}</>}
+              empty={<>{members.note ?? 'Tap a step or a form above.'}</>}
             />
           </>
         )}
       </section>
 
       <section aria-label="Holes">
-        <SectionHead>UNMEASURED on purpose</SectionHead>
+        <SectionHead>Not measured yet</SectionHead>
         <DataList
-          label="Unmeasured holes"
+          label="Not measured yet"
           rows={funnel.holes}
           cap={funnel.holes.length}
           rowKey={(h) => h.id}
           columns={[
-            { key: 'hole', header: 'Hole', lead: true, cell: (h) => h.label },
+            { key: 'hole', header: 'What', lead: true, cell: (h) => h.label },
             { key: 'why', header: 'Why', cell: (h) => h.reason },
           ]}
-          empty={<>No holes listed.</>}
+          empty={<>Nothing listed.</>}
         />
       </section>
 
       <section aria-label="Landing-page event funnel">
         <SectionHead>
-          Landing-page event funnel (GA4)
+          Landing-page steps (Google Analytics)
           {lpVariant ? (
             <>
               {' '}
-              <StateWord state="accent">lp_variant = {lpVariant}</StateWord>
+              <StateWord state="accent">Landing page: {lpVariant}</StateWord>
             </>
           ) : null}
         </SectionHead>
         <VariantControl variants={ga4.availableVariants} current={lpVariant} />
         <p className="av2-note">
-          Event counts, not unique people. Kept as a landing-page diagnostic. It is not the cohort spine above.
+          Counts of actions, not people. A check on the landing pages, separate from the steps above.
         </p>
         <div style={{ marginBottom: 'var(--a-s4)' }}>
           {ga4.steps.map((step, i) => {

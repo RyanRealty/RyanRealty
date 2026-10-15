@@ -93,10 +93,16 @@ vi.mock('@/app/actions/crm-inbox', () => ({ markConversationUnreadOnInbound: (id
 const addSuppression = vi.fn(async (_p: unknown) => {})
 const removeSuppression = vi.fn(async (_p: unknown) => {})
 const clearNonOptOutSuppressions = vi.fn(async (_p: unknown) => ({ cleared: 0 }))
+const applyInboundConsentClear = vi.fn(async (_p: unknown) => ({
+  ok: true, applied: false, personId: 52283, skipped: 'nothing-to-clear', tagsRemoved: [], suppressionsCleared: 0, timelineId: null,
+}))
 vi.mock('@/lib/crm/suppressions', () => ({
   addSuppression: (p: unknown) => addSuppression(p),
   removeSuppression: (p: unknown) => removeSuppression(p),
   clearNonOptOutSuppressions: (p: unknown) => clearNonOptOutSuppressions(p),
+}))
+vi.mock('@/lib/data/crm/applyInboundConsentClear', () => ({
+  applyInboundConsentClear: (p: unknown) => applyInboundConsentClear(p),
 }))
 
 const queueBrokerAlert = vi.fn(async (_p: unknown) => {})
@@ -173,6 +179,9 @@ describe('conversations-events — group inbound recording', () => {
     expect(clearNonOptOutSuppressions).toHaveBeenCalledWith(
       expect.objectContaining({ personId: 52283, clearedBy: 'conversations-events' }),
     )
+    expect(applyInboundConsentClear).toHaveBeenCalledWith(
+      expect.objectContaining({ personId: 52283, event: 'sms', smsBody: 'hello from the group' }),
+    )
     expect(markUnread).toHaveBeenCalledWith(52283)
     // Broker follow-up: reply task on the author's contact — upserted on a
     // per-message dedupe_key so a webhook retry can't stack duplicate tasks.
@@ -206,6 +215,8 @@ describe('conversations-events — group inbound recording', () => {
     expect(addSuppression).toHaveBeenCalledWith(
       expect.objectContaining({ personId: 52283, channel: 'sms', reason: 'stop-keyword' }),
     )
+    expect(clearNonOptOutSuppressions).not.toHaveBeenCalled()
+    expect(applyInboundConsentClear).not.toHaveBeenCalled()
     expect(inserts.some((i) => i.table === 'crm_tasks')).toBe(false)
     expect(upserts.some((u) => u.table === 'crm_tasks')).toBe(false)
     // START clears it again.
