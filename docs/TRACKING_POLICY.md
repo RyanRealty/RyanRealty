@@ -172,7 +172,7 @@ declined was still recorded and identified on a CMA or BPO document).
 |---|---|---|---|
 | **Declined** | banner answered with analytics AND marketing off, or an unreadable consent cookie | nothing: no session, no event, no identification, no GA4 mirror. On client documents (`/cma`, `/bpo`) as on every page: the script posts nothing and stores no session id | everything |
 | **GPC** | `Sec-GPC: 1` or `navigator.globalPrivacyControl` | nothing; if the browser was already identified, a durable `channel='all'` suppression on that contact. Both trackers, the site's and the client document's, write no identifier (no session id, no lifecycle record, no first-touch capture, no consent cookie) and post no event: once per page load they send a notice that carries the signal and nothing else (`{ gpc: true }`), and no identify ping. The route checks GPC before anything else, drops the request, and finds the contact from what the browser already carries on every request here: the signed `rr_pid` cookie, else its `rr_vid` in `visitor_identity_map` (a tracker from before 2026-09-30 still names its session). Until 2026-09-30 the site tracker minted a session id and posted every event with its address and campaign, while the document tracker sent nothing, so a known contact reading a report under GPC was never suppressed. GPC wins over the US analytics default and over a stored marketing accept for tags and recording | everything |
-| **Essential** | no banner answer in a restricted region (EEA, UK, CH) or with unknown country, or marketing-only | browser session id, `rr_vid`, page URL (identity params stripped), page title and category, event type and time, referrer, landing page, campaign params (`utm_*`, `fbclid`, `gclid`), the automation class label (below), and **identification of a person who clicked a link we sent them, signed in, or submitted a form** (the session's `crm_person_id`; the signed `rr_pid` cookie for a link or a sign-in, and for a form submit from its next session on); page views mirrored to GA4 under an anonymous client id, never a GA4 user id | the user-agent string, IP geo, listing meta columns, scroll depth, dwell, the event metadata blob; no looking-at broker text |
+| **Essential** | no banner answer in a restricted region (EEA, UK, CH) or with unknown country, or marketing-only | browser session id, `rr_vid`, page URL (identity params stripped), page title and category, event type and time, referrer, landing page, campaign params (`utm_*`, `fbclid`, `gclid`), the automation class label (below), and **identification of a person who clicked a link we sent them, signed in, or submitted a form** (the session's `crm_person_id`; the signed `rr_pid` cookie for a link or a sign-in, and for a form submit from its next session on); nothing sent to GA4 (the server mirror skips this tier since 2026-10-14, Matt: no source, no consent) | the user-agent string, IP geo, listing meta columns, scroll depth, dwell, the event metadata blob; no looking-at broker text |
 | **Analytics / all** | analytics granted (explicit accept, or no banner answer outside restricted regions with no GPC) | everything above, plus user agent, IP geo, listing meta, scroll, dwell, metadata; the looking-at broker text on a listing view; a known contact's GA4 hits carry the hashed CRM id as `user_id` (`lib/analytics/ga4-user-id.ts`) | — |
 
 Identification at essential is disclosed in `app/privacy/page.tsx` ("Once you sign in,
@@ -494,7 +494,7 @@ of the person id (or of a signed-in visitor's email), and a SHA-256 of a signed-
 visitor's email for Meta Pixel advanced matching. The server sends the same `user_id`
 (`lib/analytics/ga4-user-id.ts`) on the page-view mirror, `generate_lead`,
 `person_identified` and `valuation_requested` for a known contact, at the analytics tier
-only: an essential-tier visit reaches GA4 under an anonymous client id and nothing else
+only: an essential-tier visit does not reach GA4 at all (since 2026-10-14)
 (`docs/analytics/README.md` "Known contacts carry a user_id").
 
 **Measured, the 30 days to 2026-09-23** (supabase-js reads, fetched 2026-09-23T02:49Z,
@@ -544,7 +544,10 @@ screens them out.
 ## GA4 Measurement Protocol mirror (TRACK-1, 2026-09-23)
 
 The track route mirrors page views the browser is not counting into GA4 (commit 416911b31, Matt's
-decision; kept). Restricted-region and other essential-tier views still go through the mirror.
+decision; kept). Since 2026-10-14 (Matt) it sends nothing for an essential-tier visitor
+(restricted region or unknown country with no banner answer, or marketing-only): those hits
+carried no source and the visitor had not consented. The rule is `ga4MirrorSends`
+(`lib/analytics/ga4-mirror.ts`).
 Since 2026-09-23 each mirrored hit carries a **per-visit numeric
 `session_id`** (the Unix second the visit began; a new visit after 30 minutes idle, and,
 since 2026-09-29, on a different campaign: a visit is a session, see "Sessions") and
@@ -556,9 +559,9 @@ a secondary view.
 
 The mirror skips a site page_view/listing_view at the analytics or all tier (the browser
 Google tag counts those views; gating on `_ga` double-counted the first hit because the
-cookie is often not set yet). Essential-tier views are still mirrored. A raw-HTML client
+cookie is often not set yet). Essential-tier events are not mirrored at all. A raw-HTML client
 document (`/cma`, `/bpo`, page category `client-document`) runs no gtag, so its views are
-always mirrored, whatever the tier (`ga4-mirror.client-document.test.ts`). An ad-blocked
+mirrored for a reader at the analytics or all tier (`ga4-mirror.client-document.test.ts`). An ad-blocked
 visitor at the analytics tier is no longer mirrored; first-party Supabase still has them.
 
 **No personal information reaches GA4 (Matt 2026-10-14).** Google's GA4 terms forbid it. A

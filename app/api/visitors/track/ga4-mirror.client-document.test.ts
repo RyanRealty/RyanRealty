@@ -103,9 +103,11 @@ describe('a client document view is always mirrored to GA4 (the document runs no
     )
   })
 
-  it('an essential-tier reader is mirrored, as it always was', async () => {
+  it('an essential-tier reader is NOT mirrored (Matt 2026-10-14: no analytics consent)', async () => {
     await track(pageView({ pageUrl: DOC, pageCategory: 'client-document', consent: 'essential' }), { _ga: GA_COOKIE })
-    expect(ga4.fire).toHaveBeenCalledTimes(1)
+    // a document send would land after the response (its id is read first): give it time
+    await new Promise((r) => setTimeout(r, 50))
+    expect(ga4.fire).not.toHaveBeenCalled()
   })
 
   it('a consented reader with no _ga cookie is mirrored on the session client id', async () => {
@@ -126,9 +128,20 @@ describe('every other page keeps the double-count guard', () => {
     expect(ga4.fire).not.toHaveBeenCalled()
   })
 
-  it('an essential-tier visitor on a site page is mirrored (client gtag is consent-denied)', async () => {
+  // Matt 2026-10-14: those hits carried no source (most of GA4's "(not set)"
+  // sessions) and the visitor had not consented. visitor_events still has them.
+  it('an essential-tier page_view on a site page is NEVER mirrored', async () => {
     await track(pageView({ pageUrl: 'https://ryan-realty.com/homes-for-sale/bend', pageCategory: 'search', consent: 'essential' }), { _ga: GA_COOKIE })
-    expect(ga4.fire).toHaveBeenCalledTimes(1)
+    await track(pageView({ pageUrl: 'https://ryan-realty.com/homes-for-sale/bend', pageCategory: 'search', consent: 'essential', eventType: 'listing_view' }))
+    expect(ga4.fire).not.toHaveBeenCalled()
+    expect(store.session(SESSION)).toBeTruthy()
+  })
+
+  it('an essential-tier intent event is not mirrored; at the analytics tier it is', async () => {
+    await track(pageView({ pageUrl: 'https://ryan-realty.com/sell', pageCategory: 'seller', consent: 'essential', eventType: 'intent_declared' }))
+    expect(ga4.fire).not.toHaveBeenCalled()
+    await track(pageView({ pageUrl: 'https://ryan-realty.com/sell', pageCategory: 'seller', consent: 'analytics', eventType: 'intent_declared' }))
+    await vi.waitFor(() => expect(ga4.fire).toHaveBeenCalledTimes(1))
   })
 })
 
@@ -151,7 +164,7 @@ describe('a client document reaches GA4 without the subject address', () => {
         pageTitle: 'Pricing report · 828 NW Florida Ave · Bend, OR 97703',
         referrer: 'https://ryan-realty.com/sell?address=828%20NW%20Florida%20Ave',
         pageCategory: 'client-document',
-        consent: 'essential',
+        consent: 'analytics',
         campaign: { source: 'cma', medium: 'email', campaign: 'cma-828-florida' },
         visit: { id: Math.floor(Date.now() / 1000), number: 1, start: true },
       }),
@@ -179,7 +192,7 @@ describe('a client document reaches GA4 without the subject address', () => {
         pageUrl: 'https://ryan-realty.com/bpo/bpo-61234-se-river-rd-bend',
         pageTitle: 'Broker Price Opinion · 61234 SE River Rd',
         pageCategory: 'client-document',
-        consent: 'essential',
+        consent: 'analytics',
       }),
     )
     await fired()
@@ -191,8 +204,8 @@ describe('a client document reaches GA4 without the subject address', () => {
     expect(sent()).not.toMatch(/61234|river/i)
   })
 
-  it('a site page view with a typed address is mirrored without it', async () => {
-    await track(pageView({ pageUrl: 'https://ryan-realty.com/sell?address=12%20Elm%20St&from=%2F', pageCategory: 'seller', consent: 'essential' }))
+  it('an intent event on a page holding a typed address is mirrored without it', async () => {
+    await track(pageView({ pageUrl: 'https://ryan-realty.com/sell?address=12%20Elm%20St&from=%2F', pageCategory: 'seller', consent: 'analytics', eventType: 'intent_declared' }))
     await fired()
     expect(ga4.fire).toHaveBeenCalledWith(
       expect.objectContaining({ eventParams: expect.objectContaining({ page_location: 'https://ryan-realty.com/sell?from=%2F' }) }),
@@ -231,20 +244,19 @@ describe('a known contact\'s mirrored hit carries the hashed user id the browser
     expect(sentUserId()).toBe(UID)
   })
 
-  it('an essential-tier recipient is mirrored under the anonymous client id only', async () => {
+  it('an essential-tier recipient is identified first-party and sent to GA4 not at all (Matt 2026-10-14)', async () => {
     const token = signPersonLinkToken(PERSON, 'document')
     await track(pageView({ pageUrl: `${DOC}&_pid=${token}`, pageCategory: 'client-document', consent: 'essential' }), { rr_vid: VID })
     expect(store.session(SESSION)).toMatchObject({ crm_person_id: PERSON })
-    expect(ga4.fire).toHaveBeenCalledTimes(1)
-    expect(sentUserId()).toBeNull()
+    await new Promise((r) => setTimeout(r, 50))
+    expect(ga4.fire).not.toHaveBeenCalled()
   })
 
-  it('a known contact on an essential-tier site page is mirrored with no user id', async () => {
+  it('a known contact on an essential-tier site page is not mirrored', async () => {
     store.db.visitor_identity_map.push({ rr_vid: VID, crm_person_id: PERSON })
     await track(pageView({ pageUrl: 'https://ryan-realty.com/homes-for-sale/bend', pageCategory: 'search', consent: 'essential' }), { rr_vid: VID })
     expect(store.session(SESSION)).toMatchObject({ crm_person_id: PERSON })
-    expect(ga4.fire).toHaveBeenCalledTimes(1)
-    expect(sentUserId()).toBeNull()
+    expect(ga4.fire).not.toHaveBeenCalled()
   })
 
   it('an anonymous reader carries none', async () => {

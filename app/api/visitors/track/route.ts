@@ -71,6 +71,7 @@ import {
   classifyAutomation,
 } from '@/lib/analytics/automation'
 import { campaignDetailsParams, ga4SessionParams, parseVisit } from '@/lib/analytics/ga4-visit'
+import { ga4MirrorSends } from '@/lib/analytics/ga4-mirror'
 import {
   decideGaSuppressionForPage,
   hasAutomationMarker,
@@ -775,29 +776,26 @@ export async function POST(request: NextRequest) {
   // the analytics tier is no longer mirrored; first-party Supabase still has
   // them.
   //
-  // Essential-tier views are still mirrored (browser gtag is consent-denied).
-  // Client documents (`pageCategory: 'client-document'`) load no gtag, so they
-  // are always mirrored, whatever the tier. Non-view mirrored events
-  // (intent_declared, welcome_back, email_opt, sms_opt) are unchanged.
+  // ESSENTIAL TIER: NOTHING (Matt 2026-10-14). A visitor who has not allowed
+  // analytics (a privacy-law region with no banner answer, or marketing only)
+  // is not copied to GA4 at all: those hits carried no source and the visitor
+  // had not consented. visitor_events above still records the visit.
+  // At the analytics tier: client documents (`pageCategory: 'client-document'`,
+  // no Google tag) and the intent events (intent_declared, welcome_back,
+  // email_opt, sms_opt). The rule is ga4MirrorSends (lib/analytics/ga4-mirror.ts).
   // A decline never reaches here. Never blocks the visitor response.
   // No-op without GA4_API_SECRET.
   //
   // KNOWN CONTACTS (2026-10-14, data/analytics/decisions.json
   // "crm-contacts-tagged-in-ga4"): a mirrored hit from a session that belongs to
   // a CRM contact carries the same hashed user_id the browser tag gets from
-  // /api/identity/me, at the analytics tier only (an essential-tier visit reaches
-  // GA4 under an anonymous client id and nothing else). The mirror runs AFTER the
+  // /api/identity/me, at the analytics tier (an essential-tier visit is not
+  // mirrored at all since 2026-10-14). The mirror runs AFTER the
   // identify step above so the view that identifies the visit (a tracked link to
   // a CMA, which runs no Google tag) carries it: GA4 read 2026-10-14 showed 12
   // users with a user id against 113 contacts on the site in 30 days, and 13 of
   // the missing ones had read only their report at the analytics tier.
-  const mirrorGa4 =
-    eventType === 'page_view' ||
-    eventType === 'listing_view' ||
-    eventType === 'intent_declared' ||
-    eventType === 'welcome_back' ||
-    eventType === 'email_opt' ||
-    eventType === 'sms_opt'
+  const mirrorGa4 = ga4MirrorSends({ eventType, consent, pageCategory: body.pageCategory })
   // Automation never reaches GA4: a crawler render mirrored as a page_view is
   // exactly the inflation TRACK-1 measured, and GA4's known-bot filter does
   // not see Measurement Protocol hits. A provisional contact-deep-link session
@@ -825,14 +823,11 @@ export async function POST(request: NextRequest) {
       const gaCookie = request.cookies.get('_ga')?.value
       const fromCookie = clientIdFromGaCookie(gaCookie)
       const isView = eventType === 'page_view' || eventType === 'listing_view'
-      // A raw-HTML client document (/cma, /bpo) loads no gtag at all, so the
-      // premise of this guard, "the browser's own gtag is counting this view", is
-      // false there. Before 2026-09-29 the document tracker always posted at
-      // 'essential' and every report open was mirrored; it now posts the visitor's
-      // real tier, and a consented reader with a _ga cookie would have dropped out
-      // of GA4 entirely (the most engaged recipients).
-      const clientHasGtag = isView && !minimalOnly && body.pageCategory !== 'client-document'
-      if (!clientHasGtag) {
+      // ga4MirrorSends already left out every view the browser's Google tag
+      // counts (a site page at the analytics tier). A raw-HTML client document
+      // (/cma, /bpo) loads no gtag at all, so its views are mirrored for a reader
+      // at the analytics tier (the most engaged recipients).
+      {
         const pagePath = (() => {
           try {
             return new URL(pageUrl).pathname

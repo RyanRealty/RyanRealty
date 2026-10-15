@@ -127,9 +127,15 @@ describe('MP mirror double-count guard', () => {
     expect(ga4.fire).not.toHaveBeenCalled()
   })
 
-  it('essential tier is still mirrored', async () => {
+  it('an essential-tier page_view is NEVER mirrored (Matt 2026-10-14: no source, no consent)', async () => {
     await track({ consent: 'essential' }, { country: 'DE', cookie: `_ga=${GA_COOKIE}` })
-    expect(ga4.fire).toHaveBeenCalledTimes(1)
+    expect(ga4.fire).not.toHaveBeenCalled()
+  })
+
+  it('an essential-tier client document view or intent event is not mirrored either', async () => {
+    await track({ consent: 'essential', pageUrl: 'https://ryan-realty.com/cma/cma-828-florida', pageCategory: 'client-document' }, { country: 'DE' })
+    await track({ consent: 'essential', eventType: 'intent_declared' }, { country: 'DE' })
+    expect(ga4.fire).not.toHaveBeenCalled()
   })
 
   it('a client document at the analytics tier is still mirrored (no gtag on the document)', async () => {

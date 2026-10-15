@@ -171,6 +171,12 @@
       "decided": "Matt 2026-10-14",
       "why": "The live half of no-person-data-in-ga4: npm run analytics:audit counts CMA and BPO document paths, page_locations and referrers carrying a person param, and CMA-slug campaign names in GA4, and fails on any dated 2026-10-21 or later (a week for tabs opened on the old code to close). It counts and never prints a value.",
       "check": { "fact": "ga4.personDataHitsSinceFix", "equals": 0 }
+    },
+    {
+      "id": "ga4-mirror-consented-only",
+      "decided": "Matt 2026-10-14",
+      "why": "The server copy of first-party events to GA4 (Measurement Protocol, app/api/visitors/track) sends nothing for an essential-tier visitor: one in a privacy-law region who has not accepted cookies, or who allowed marketing only. Those hits carried no source, so they were GA4 (not set) sessions, and the visitor had not consented. At the analytics tier it sends only client-document views (/cma, /bpo, which run no Google tag) and the intent events intent_declared, welcome_back, email_opt and sms_opt; a site page view is the browser tag's to count. First-party visitor_sessions still records every visit, so the site's own dashboard keeps counting them. One rule: ga4MirrorSends.",
+      "code": "lib/analytics/ga4-mirror.test.ts"
     }
   ]
 }

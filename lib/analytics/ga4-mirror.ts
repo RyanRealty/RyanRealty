@@ -19,6 +19,9 @@
  * artifacts of the mirror while it runs. Page views and event counts are real
  * first-party events relayed, and are NOT stamped.
  *
+ * NOW (Matt 2026-10-14): nothing for the essential tier; at the analytics tier
+ * only client-document views and the intent events (ga4MirrorSends below).
+ *
  * Keeping or retiring the mirror is Matt's decision (his commit); P7 owns the
  * track route and may add session/attribution fields to it. When the mirror is
  * retired, or starts carrying a per-visit session id and traffic source, update
@@ -94,11 +97,49 @@ export function stampMirrorInflated<T extends RowKey & { metadata?: Record<strin
 
 /**
  * Since this day the mirror skips views the browser tag already counts
- * (analytics-tier visitors), so it covers only visitors who have not allowed
- * analytics cookies, plus /cma and /bpo client documents (docs/analytics/README.md
- * "Server page-view mirror").
+ * (analytics-tier visitors). From 2026-10-09 to GA4_MIRROR_CONSENTED_ONLY_SINCE
+ * it covered visitors who had not allowed analytics cookies plus /cma and /bpo
+ * client documents; since then, client documents and intent events at the
+ * analytics tier only (docs/analytics/README.md "Server mirror").
  */
 export const GA4_MIRROR_ESSENTIAL_ONLY_SINCE = '2026-10-09'
+
+/**
+ * Since this day (deployed the evening of 2026-10-14 PT) the mirror sends
+ * NOTHING for an essential-tier visitor: one in a privacy-law region who has
+ * not accepted cookies, or who allowed marketing only (Matt 2026-10-14). Those
+ * hits carried no source and the visitor had not consented to analytics.
+ * First-party visitor_sessions / visitor_events still record the visit, so the
+ * site's own dashboard keeps counting it. See ga4MirrorSends.
+ */
+export const GA4_MIRROR_CONSENTED_ONLY_SINCE = '2026-10-15'
+
+/** The track route's event types the mirror can copy to GA4. */
+export const GA4_MIRROR_EVENT_TYPES = ['page_view', 'listing_view', 'intent_declared', 'welcome_back', 'email_opt', 'sms_opt'] as const
+
+/**
+ * Whether app/api/visitors/track copies one first-party event to GA4 through
+ * the Measurement Protocol. The one rule, so a test holds it:
+ *
+ *   - essential tier (anything short of analytics consent): never
+ *     (Matt 2026-10-14, GA4_MIRROR_CONSENTED_ONLY_SINCE);
+ *   - a page_view / listing_view on a site page: never, the browser's Google
+ *     tag counts it (since 2026-10-09);
+ *   - a page_view / listing_view on a raw-HTML client document (/cma, /bpo,
+ *     page category `client-document`): yes, the document runs no Google tag;
+ *   - intent_declared, welcome_back, email_opt, sms_opt: yes (no browser tag
+ *     sends them).
+ *
+ * Suppression (admin, a broker's browser, automation, non-production) is
+ * decided separately and applies on top.
+ */
+export function ga4MirrorSends(input: { eventType: string; consent: string; pageCategory?: string | null }): boolean {
+  if (!(GA4_MIRROR_EVENT_TYPES as readonly string[]).includes(input.eventType)) return false
+  if (input.consent !== 'analytics' && input.consent !== 'all') return false
+  const isView = input.eventType === 'page_view' || input.eventType === 'listing_view'
+  if (isView && input.pageCategory !== 'client-document') return false
+  return true
+}
 
 /**
  * First day GA4 sessions and traffic sources read as reliable: Unassigned

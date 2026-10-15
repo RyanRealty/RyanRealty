@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  GA4_MIRROR_CONSENTED_ONLY_SINCE,
+  GA4_MIRROR_ESSENTIAL_ONLY_SINCE,
+  GA4_MIRROR_EVENT_TYPES,
   GA4_MP_PAGE_VIEW_MIRROR_SINCE,
   GA4_TRAFFIC_RELIABLE_FROM,
   ga4LastDaysNeedTrafficCaveat,
+  ga4MirrorSends,
   ga4WindowNeedsTrafficCaveat,
   isGa4PageViewMirrorOn,
   isMirrorShapedRow,
@@ -98,5 +102,45 @@ describe('ga4WindowNeedsTrafficCaveat — say it only where it applies', () => {
   it('the last N days, from a fixed now', () => {
     expect(ga4LastDaysNeedTrafficCaveat(30, Date.parse('2026-10-14T12:00:00Z'))).toBe(true)
     expect(ga4LastDaysNeedTrafficCaveat(30, Date.parse('2026-11-12T12:00:00Z'))).toBe(false)
+  })
+})
+
+/**
+ * Matt 2026-10-14: the mirror sends nothing for an essential-tier visitor (a
+ * privacy-law region with no banner answer, or marketing only). Those hits
+ * carried no source, so they were GA4 "(not set)" sessions, and the visitor had
+ * not consented. First-party visitor_events still records them.
+ */
+describe('ga4MirrorSends: what the server copies to GA4', () => {
+  it('FAILS if an essential-tier page_view is mirrored', () => {
+    expect(ga4MirrorSends({ eventType: 'page_view', consent: 'essential', pageCategory: 'search' })).toBe(false)
+    expect(ga4MirrorSends({ eventType: 'listing_view', consent: 'essential', pageCategory: 'listing' })).toBe(false)
+  })
+
+  it('sends nothing at all for the essential tier, client documents and intent events included', () => {
+    for (const eventType of GA4_MIRROR_EVENT_TYPES) {
+      for (const pageCategory of ['client-document', 'search', null]) {
+        expect(ga4MirrorSends({ eventType, consent: 'essential', pageCategory }), `${eventType} ${pageCategory}`).toBe(false)
+      }
+    }
+    expect(ga4MirrorSends({ eventType: 'page_view', consent: 'declined', pageCategory: 'client-document' })).toBe(false)
+  })
+
+  it.each(['analytics', 'all'])('at the %s tier: a client document view and the intent events, never a site page view', (consent) => {
+    expect(ga4MirrorSends({ eventType: 'page_view', consent, pageCategory: 'client-document' })).toBe(true)
+    expect(ga4MirrorSends({ eventType: 'listing_view', consent, pageCategory: 'client-document' })).toBe(true)
+    for (const eventType of ['intent_declared', 'welcome_back', 'email_opt', 'sms_opt']) {
+      expect(ga4MirrorSends({ eventType, consent, pageCategory: 'search' })).toBe(true)
+    }
+    expect(ga4MirrorSends({ eventType: 'page_view', consent, pageCategory: 'search' })).toBe(false)
+    expect(ga4MirrorSends({ eventType: 'listing_view', consent, pageCategory: 'listing' })).toBe(false)
+  })
+
+  it('an event type the mirror does not carry is never sent', () => {
+    expect(ga4MirrorSends({ eventType: 'cta_click', consent: 'all', pageCategory: 'client-document' })).toBe(false)
+  })
+
+  it('the stop is dated after the essential-only window began', () => {
+    expect(GA4_MIRROR_CONSENTED_ONLY_SINCE > GA4_MIRROR_ESSENTIAL_ONLY_SINCE).toBe(true)
   })
 })

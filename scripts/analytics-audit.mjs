@@ -190,6 +190,44 @@ if (Array.isArray(cfg.keyEvents) && Array.isArray(events)) {
   if (dead.length) finding('INFO', 'ga4', `Key events with 0 events in ${DAYS} days: ${dead.join(', ')}.`)
 }
 
+// ── Sessions with no source, by origin (Matt 2026-10-14) ────────────────────
+// GA4 sessions whose source is "(not set)", per day, split by where their hits
+// came from: a browser (the Google tag sets a browser) or the server alone
+// (Measurement Protocol sets none), and by the session's landing page: a client
+// document (/cma, /bpo), a site page, or none. Server-only sessions landing on a
+// site page are the page-view mirror's essential-tier copies, which stopped
+// 2026-10-14 (Matt: no source, and the visitor had not consented); analytics-tier
+// site views were never mirrored after 2026-10-09. Counts only: a landing path is
+// classified, never printed (a document's path is a person's address before the
+// 2026-10-14 strip).
+const unattributed = await safe(async () => {
+  const { data: d } = await data.properties.runReport({
+    property: P,
+    requestBody: {
+      dateRanges: [{ startDate: `${DAYS}daysAgo`, endDate: 'yesterday' }],
+      dimensions: [{ name: 'date' }, { name: 'sessionSource' }, { name: 'browser' }, { name: 'landingPage' }],
+      metrics: [{ name: 'sessions' }],
+      limit: 100000,
+    },
+  })
+  const byDay = {}
+  for (const r of d.rows || []) {
+    const [day, source, browser, landing] = (r.dimensionValues || []).map((v) => v.value)
+    const n = Number(r.metricValues?.[0]?.value || 0)
+    const row = (byDay[day] ||= { sessions: 0, notSet: 0, notSetBrowser: 0, notSetServerSitePage: 0, notSetServerDocument: 0, notSetServerNoPage: 0 })
+    row.sessions += n
+    if (source !== '(not set)') continue
+    row.notSet += n
+    if (browser && browser !== '(not set)') row.notSetBrowser += n
+    else if (!landing || landing === '(not set)') row.notSetServerNoPage += n
+    else if (/^\/(cma|bpo|cmas|drafts)\//i.test(landing)) row.notSetServerDocument += n
+    else row.notSetServerSitePage += n
+  }
+  return Object.fromEntries(Object.entries(byDay).sort(([a], [b]) => a.localeCompare(b)))
+})
+report.sections.unattributedSessions = unattributed
+if (isErr(unattributed)) finding('ERROR', 'ga4', `Could not read the (not set) session breakdown: ${unattributed.error}`)
+
 // ── Personal information in GA4 (Matt 2026-10-14) ───────────────────────────
 // GA4's terms forbid personal information, and a mailing address is one. Until
 // 2026-10-14 GA4 received a CMA or BPO subject's address slug as the page path
@@ -517,6 +555,11 @@ if (JSON_OUT) {
   line(`  channels ${JSON.stringify(health.channels)}`)
   line(`  hostnames ${JSON.stringify(health.hostnames)}`)
   line(`  generate_lead by hostname ${JSON.stringify(health.leadEventsByHost)}`)
+  if (!isErr(unattributed)) {
+    line('  (not set)-source sessions by day: total · browser · server on a site page · server on a document · server, no page')
+    for (const [day, r] of Object.entries(unattributed).slice(-14))
+      line(`    ${day}: ${r.notSet} of ${r.sessions} · ${r.notSetBrowser} · ${r.notSetServerSitePage} · ${r.notSetServerDocument} · ${r.notSetServerNoPage}`)
+  }
   line(`  known contacts (active users with a user_id) ${JSON.stringify(health.knownContactUsers)} · events with a user_id [event, events, total users] ${JSON.stringify(health.userIdByEvent)}`)
   line(`  top events ${JSON.stringify(Object.entries(evCount).sort((a, b) => b[1] - a[1]).slice(0, 25))}`)
   line()
