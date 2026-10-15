@@ -518,7 +518,9 @@ export function communityAnswerMarketLink(input: {
   communityMarketHref: string
   cityReportHref: string
 }): { label: string; href: string } | null {
-  if (!redirectsAwayFromSearch(input.communityMarketHref)) {
+  // UX review F08: when the community has no report of its own, place-links
+  // falls back to the city report. Label it as the city's, not the community's.
+  if (!redirectsAwayFromSearch(input.communityMarketHref) && input.communityMarketHref !== input.cityReportHref) {
     return { label: `${input.name} market report`, href: input.communityMarketHref }
   }
   if (input.cityReportHref.trim()) {

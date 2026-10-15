@@ -94,6 +94,9 @@ const QUALIFIER_LEAD_RE = /\b(more than|less than|about|roughly|nearly|almost|at
  * thing; a chip reading "48 years" says another.
  */
 const RANGE_LEAD_RE = /(?:\bto|–|—|-)\s*$/
+// "On a $765,000 sale, ... that's $22,950": the price after "on a" is the
+// basis of the example, not the section's answer (UX review F03).
+const BASIS_LEAD_RE = /\b(?:on|for)\s+an?\s+$/i
 
 export type BlogFigure = {
   /** Stable per-post id, used for the disclosure's aria wiring. */
@@ -281,7 +284,7 @@ function collectFigures(segments: Segment[]): BlogFigure[] {
           // number: "$1,349,000, from 11 closings" is not a figure called
           // "$1,349,000,".
           const lead = text.slice(Math.max(0, hit.index - 16), hit.index)
-          if (WINDOW_LEAD_RE.test(lead) || RANGE_LEAD_RE.test(lead)) continue
+          if (WINDOW_LEAD_RE.test(lead) || RANGE_LEAD_RE.test(lead) || BASIS_LEAD_RE.test(lead)) continue
           // A threshold in a scale is not this paragraph's reading.
           const tail = text.slice(hit.index + hit[0].length, hit.index + hit[0].length + 24)
           if (THRESHOLD_TAIL_RE.test(tail) || THRESHOLD_LEAD_RE.test(lead)) continue
