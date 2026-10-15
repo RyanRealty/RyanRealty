@@ -8,14 +8,14 @@ import { DEFAULT_SMS_TIMEZONE, minuteOfDayInTimeZone } from '@/lib/crm/quiet-hou
 import { CALLBACK_PHONE_DISPLAY, informationalVoicemailEn, outboundOpenerEn, YES_CONSENT_TEXT } from './scripts'
 
 /** Default off. Set SARAH_OUTBOUND_ENABLED=true only after Counsel confirms. */
-export type SarahOutboundEnv = {
-  SARAH_OUTBOUND_ENABLED?: string
-  SARAH_OUTBOUND_KILL_SWITCH?: string
+function envFlag(env: object, name: string): boolean {
+  return (env as Record<string, unknown>)[name] === 'true'
 }
 
-export function sarahOutboundEnabled(env: SarahOutboundEnv = process.env): boolean {
-  if (env.SARAH_OUTBOUND_KILL_SWITCH === 'true') return false
-  return env.SARAH_OUTBOUND_ENABLED === 'true'
+/** Default off. Reads SARAH_OUTBOUND_ENABLED / SARAH_OUTBOUND_KILL_SWITCH. */
+export function sarahOutboundEnabled(env: object = process.env): boolean {
+  if (envFlag(env, 'SARAH_OUTBOUND_KILL_SWITCH')) return false
+  return envFlag(env, 'SARAH_OUTBOUND_ENABLED')
 }
 
 export const OUTBOUND_WINDOW_START_HOUR = 9
@@ -84,7 +84,7 @@ export type OutboundDialInput = {
   now?: Date
   wantsPitch?: boolean
   optOutFailedToLog?: boolean
-  env?: SarahOutboundEnv
+  env?: object
 }
 
 export type OutboundDialDecision =
