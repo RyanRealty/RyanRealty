@@ -14,8 +14,8 @@
  *
  * Exit 0 when the film renders and every check passes; 1 when a check fails or
  * the render is refused; 2 for bad usage. Never publishes; never writes under
- * public/. The voice is ElevenLabs v3 (ELEVENLABS_API_KEY and the named voice's
- * ELEVENLABS_VOICE_ID_* from the environment); syntheses are cached under
+ * public/. The voice is Grok TTS, voice Eve, by default (XAI_API_KEY; Matt 2026-10-14);
+ * ElevenLabs v3 only when the timeline writes engine: 'elevenlabs'; syntheses are cached under
  * out/studio/.cache so a re-render pays nothing.
  */
 import 'dotenv/config'
@@ -82,7 +82,7 @@ async function main(): Promise<number> {
   }
 
   const { renderTimelineFilm, readJson, RenderError, assertNotPublic } = await import('../lib/studio/timeline/render')
-  const { elevenLabsProvider } = await import('../lib/studio/timeline/voice')
+  const { defaultVoiceProvider } = await import('../lib/studio/timeline/voice')
   const { studioFfmpeg } = await import('../lib/studio/timeline/ffmpeg')
   const { launchMotionChrome } = await import('../lib/studio/motion/endcard-render')
   const { checkVideo } = await import('../lib/studio/qa/check')
@@ -121,7 +121,7 @@ async function main(): Promise<number> {
       },
       {
         ffmpeg,
-        voiceProvider: elevenLabsProvider(),
+        voiceProvider: defaultVoiceProvider(), // Grok TTS Eve unless the timeline writes engine: 'elevenlabs'
         launchBrowser: launchMotionChrome,
         log: (line) => console.log(`  ${line}`),
         // Outlines come from the boundaries table through the DAL, never drawn by hand.

@@ -6,7 +6,7 @@ Another workstream owns `app/api/voice/*`, `app/api/twilio/*`, and `lib/grok/voi
 
 1. Greeting: `sarahGreeting('voice')` (Counsel verbatim). Replace `RECEPTIONIST_GREETING`.
 2. Model instructions: `buildSarahSystemPrompt({ channel: 'voice', listingFreshness })`. Replace `RECEPTIONIST_PROMPT`. Drop the qualify-the-caller interview.
-3. Live alert: `notifyLiveSession({ channel: 'voice', sessionId, ... })` (`notifySarahLiveSession` is the same function).
+3. Live alert: `notifyLiveSession({ channel: 'voice', sessionId, deskBrokerSlug, ... })` (`notifySarahLiveSession` is the same function). `deskBrokerSlug` is the CRM assigned broker, Matt when unassigned.
 4. Barge-in: put the SIP/AI leg in Twilio conference `sarahLiveConferenceName(sessionId)` using `sarahSessionConferenceJoin(sessionId)` (starts and ends the conference). Matt joins with `mattConferenceJoin(sessionId, 'listen' | 'coach' | 'barge')`. Use existing `referSipCall` only as the transfer path.
 
 ## During the call

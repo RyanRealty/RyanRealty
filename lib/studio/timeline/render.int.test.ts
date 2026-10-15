@@ -175,7 +175,7 @@ describe.skipIf(!hasMedia || !hasChrome)('studio:render, a 10.5 s film with no n
     const timeline = {
       fps: 30,
       score: 'calm',
-      voice: { script: SCRIPT, voice: 'ellen', start: 0.3 },
+      voice: { script: SCRIPT, voice: 'eve', start: 0.3 },
       beats: [
         {
           id: 'hook',

@@ -2,11 +2,10 @@
 /**
  * check-dog-floater.mjs — SITE-153 floating dog CTA.
  *
- * Refuse if the public layout drops V3DogFloater, remounts a sticky
- * phone dock, parks the FAB on the cookie bar, ships continuous idle,
- * a Close link, the wrong six doors, stretches the broker photo, drops
- * Matt as the unattributed default, or leaves a finger's look standing
- * on a phone (SITE-210). Wired as ci:dog-floater.
+ * Refuse if the public layout remounts V3DogFloater or a sticky phone
+ * dock (Sarah owns Call / Text / Message), drops Sarah, or if leftover
+ * floater source stretches the broker photo or hard-codes a non-Matt
+ * fallback. Wired as ci:dog-floater.
  *
  * Usage: node scripts/check-dog-floater.mjs
  */
@@ -24,5 +23,5 @@ if (failures.length) {
 }
 
 console.log(
-  `${DOG_FLOATER_GATE} OK: V3DogFloater mounted mid-end, brief flip/spin/invert, attributed broker headshot (Matt default), exact six doors, no Close link, a finger's look released on lift, sticky phone dock stays down.`,
+  `${DOG_FLOATER_GATE} OK: V3DogFloater and V3PhoneDock stay unmounted, Sarah owns Call/Text/Message, CRM desk broker (Matt fallback), leftover floater source still locked.`,
 )
