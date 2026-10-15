@@ -29,6 +29,7 @@ import { SectionHead, StateWord, VerdictLine, type AdminState } from '@/componen
 import { DataGrid, GridSkeleton, LaneNote, NumberStrip, Stamp, StatePanel } from '../_components/v2/DataGrid'
 import { DateRangePicker } from '../_components/DateRangePicker'
 import { resolveDateRange } from '../_lib/queries'
+import { classifyIntent, INTENT_PLAIN_MEANING } from '@/lib/data/analytics/intentSplit'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -105,15 +106,8 @@ type Insight = {
   message: string
 }
 
-function classifyIntent(tags: string[]): 'seller' | 'buyer' | 'both' | 'browsing' | 'unknown' {
-  const hasSeller = tags.includes('seller_intent')
-  const hasBuyer  = tags.includes('buyer_intent')
-  if (hasSeller && hasBuyer) return 'both'
-  if (hasSeller) return 'seller'
-  if (hasBuyer)  return 'buyer'
-  if (tags.length > 0) return 'browsing'  // has listing_viewer / area_researcher / mortgage_curious
-  return 'unknown'
-}
+// classifyIntent is the one reading of intent_tags, shared with the Website
+// view of /admin/analytics (lib/data/analytics/intentSplit.ts).
 
 function topByCount<T>(items: T[], key: (t: T) => string | null | undefined, fallback = '—'): string {
   const tally = new Map<string, number>()
@@ -306,6 +300,8 @@ async function FunnelContent({ range }: { range: { startDate: string; endDate: s
         .from('visitor_sessions')
         .select('session_id, utm_source, utm_medium, utm_campaign, ip_city, engagement_score, peak_score, intent_tags, identified_at, fub_person_id, hot_lead_fired_at, source_domain')
         .gte('first_seen_at', cutoff)
+        // The range has an end too: without it a past window read through today.
+        .lte('first_seen_at', `${range.endDate}T23:59:59.999Z`)
         .order('session_id', { ascending: true })
         .range(from, to),
     5000,
@@ -324,8 +320,8 @@ async function FunnelContent({ range }: { range: { startDate: string; endDate: s
   if (rows.length === 0) {
     return (
       <StatePanel>
-        No visitor sessions from {cutoff.slice(0, 10)} to {range.endDate} yet. Once the WordPress snippet starts firing
-        tracked events to /api/visitors/track, sessions appear here and the funnel populates in real time.
+        No visits recorded from {cutoff.slice(0, 10)} to {range.endDate}. Visits appear here as soon as the site records
+        them; pick a wider range above.
       </StatePanel>
     )
   }
@@ -392,9 +388,9 @@ async function FunnelContent({ range }: { range: { startDate: string; endDate: s
       <section aria-label="Intent split">
         <SectionHead>Intent split — who is looking to do what</SectionHead>
         <LaneNote>
-          Visitors classified by behavioral intent (which categories of pages they engaged with). Seller intent = visited
-          /free-home-valuation or similar. Buyer intent = visited /buyers, /relocation, /explore. Browsing = viewed
-          listings but did not signal seller/buyer. Total sessions: {formatInt(totalSessions)}.
+          Visits grouped by the pages they opened. Seller: {INTENT_PLAIN_MEANING.seller} Buyer:{' '}
+          {INTENT_PLAIN_MEANING.buyer} Browsing: {INTENT_PLAIN_MEANING.browsing} Unknown:{' '}
+          {INTENT_PLAIN_MEANING.unknown} Total visits: {formatInt(totalSessions)}.
         </LaneNote>
         <DataGrid
           label="Intent split"
@@ -450,8 +446,9 @@ async function FunnelContent({ range }: { range: { startDate: string; endDate: s
           empty={<>No traffic source has enough sessions (3+) to chart a funnel yet.</>}
         />
         <Stamp>
-          Stage rules: Engaged = score ≥ 20. Intent = visitor hit a seller_intent or buyer_intent page. Identified =
-          signed in via One-Tap, FB, or form. Hot lead = score crossed 100 and the hot-lead task fired.
+          Stage rules: Engaged = did more than open one page (an engagement score of 20 or more). Intent = opened a
+          selling page or a buyer page. Identified = signed in, or came from a link we sent or a form. Hot lead = the
+          score crossed 100 and a hot-lead task was made.
         </Stamp>
       </section>
     </>
@@ -483,7 +480,7 @@ export default async function FunnelBreakdownPage({ searchParams }: { searchPara
       </Suspense>
 
       <Stamp>
-        Source visitor_sessions + visitor_events (the real-time tables, not GA4). Updates the moment events land.
+        From our own site tracking, not Google Analytics. Updates the moment a visit is recorded.
       </Stamp>
     </div>
   )

@@ -24,6 +24,7 @@
  * exact GA4 count, no longer a sum of the top-25 city rows.
  */
 import { Suspense, type ReactNode } from 'react'
+import Link from 'next/link'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import { getGA4DemographicsCached as getGA4Demographics } from '@/lib/ga4-cache'
 import {
@@ -138,7 +139,11 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
         <p style={{ margin: 0 }}>Google Analytics did not return the audience reports for this range: {data.error}.</p>
         <p style={{ margin: 'var(--a-s2) 0 0' }}>
           GA4_NOT_CONFIGURED means the property ID or service-account environment variables are missing. Anything else
-          is Google refusing every report, usually access or quota.
+          is Google refusing every report, usually access or quota. For where visitors are, use the{' '}
+          <Link href="/admin/analytics" style={{ color: 'var(--a-accent)' }}>
+            Website page
+          </Link>
+          , which reads our own visit log.
         </p>
       </StatePanel>
     )
@@ -307,6 +312,15 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
       {/* 4. Geography (top cities) */}
       <section aria-label="Top cities">
         <SectionHead>Top cities</SectionHead>
+        <LaneNote>
+          Google Analytics only sees visitors who allow analytics cookies, and before Oct 9, 2026 the extra page views our
+          server sent it carried no visitor location, so city counts that include those days undercount real places. For
+          locations from our own visit log, use Where visitors are on the{' '}
+          <Link href="/admin/analytics" style={{ color: 'var(--a-accent)' }}>
+            Website page
+          </Link>
+          .
+        </LaneNote>
         <ReportSection
           section={data.topCities}
           label="Top cities"
