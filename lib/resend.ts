@@ -4,8 +4,8 @@ import { Resend } from 'resend'
 /**
  * Resolve the verified From address (CONTACT360 9.1).
  *
- * Order: an explicit per-send `from` → `RESEND_FROM` (the verified
- * mail.ryan-realty.com sender) → in PRODUCTION, FAIL (never send from the
+ * Order: an explicit per-send `from` → `RESEND_FROM` (fallback when a send
+ * does not pass From; CRM/tracked sends pass `brokerSendIdentity`) → in PRODUCTION, FAIL (never send from the
  * `onboarding@resend.dev` sandbox — it lands in spam and fails DKIM, tanking
  * sender reputation). The sandbox is allowed only in development.
  */

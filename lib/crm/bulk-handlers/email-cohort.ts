@@ -91,7 +91,7 @@ export type EmailCohortParams = {
   includeSignature?: boolean | null
   /**
    * 'gmail' sends from the actor's Workspace mailbox (true From). Default
-   * 'resend' uses the named mail.ryan-realty.com identity with Reply-To the
+   * 'resend' uses the named ryan-realty.com identity with Reply-To the
    * real mailbox — the volume-safe path for a list of thousands.
    */
   sendVia?: 'resend' | 'gmail' | null

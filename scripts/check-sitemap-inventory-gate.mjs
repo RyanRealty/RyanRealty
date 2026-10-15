@@ -108,6 +108,25 @@ const CHECKS = [
     guards: ['isSameCityPlat'],
     why: 'keep the plat door to a plat in the same city',
   },
+  // ── The URL a browse pair goes out as (2026-10-14). Live 23:10Z, geo.xml
+  // listed 69 of its 225 pairs (la-pine/black-bear-meadows, bend/lazy-river-west
+  // ...) whose pages serve rel=canonical to /subdivisions/{slug}, and no
+  // /subdivisions/{slug} at all: the build had judged the pairs without the plat
+  // set, and the page fails open on that where the sitemap must not. The leg
+  // takes its URLs from ONE function, browsePairSitemapPath: a plat twin goes out
+  // as the plat page its canonical names, a self-canonical pair as itself, and
+  // nothing while the plat set is unreadable. The plat pages leg submits the same
+  // /subdivisions/{slug} set.
+  {
+    file: 'lib/seo/getBrowsePairDecision.ts',
+    guards: ['browsePairSitemapPath'],
+    why: 'submit a pair as the URL its page is canonical at (a plat twin as /subdivisions/{slug}), never a URL that canonicalizes away',
+  },
+  {
+    file: 'app/sitemap.ts',
+    guards: ['getIndexableSubdivisions', 'subdivisionSitemapUrls'],
+    why: 'submit the /subdivisions/{slug} pages the plat twins canonicalize to',
+  },
   // ── Place-type twins (EXP-6): the type page is submitted exactly when its
   // preset twin canonicalizes to it.
   {
@@ -164,6 +183,36 @@ for (const { file, guards, why } of CHECKS) {
     problems.push(
       `${file}: does not CALL ${missing.map((g) => `${g}()`).join(' and ')} — the 2-segment {city}/{preset} guard cannot ${why}.`,
     )
+  }
+}
+
+// The browse leg and the plat-page leg are judged against ONE read of the
+// indexable plat set: app/sitemap.ts hands its read to getBrowsePairSitemapPaths
+// as the second argument. Without it the leg reads the set a second time, and
+// two reads inside one build can disagree (2026-10-14).
+{
+  const file = 'app/sitemap.ts'
+  const p = join(process.cwd(), file)
+  if (existsSync(p)) {
+    const sf = ts.createSourceFile(file, readFileSync(p, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+    let sharesRead = false
+    const visit = (node) => {
+      if (
+        ts.isCallExpression(node) &&
+        ts.isIdentifier(node.expression) &&
+        node.expression.text === 'getBrowsePairSitemapPaths' &&
+        node.arguments.length >= 2
+      ) {
+        sharesRead = true
+      }
+      ts.forEachChild(node, visit)
+    }
+    visit(sf)
+    if (!sharesRead) {
+      problems.push(
+        `${file}: getBrowsePairSitemapPaths() is not handed the build's read of the indexable plat set (second argument), so the browse pairs and the plat pages can be judged against two different sets.`,
+      )
+    }
   }
 }
 

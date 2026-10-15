@@ -34,7 +34,7 @@ describe('rollDiscovery', () => {
     const out = rollDiscovery([{ channel: 'tiktok', metric: 'followers_count', value: 800 }])
     expect(out.find((c) => c.id === 'llm')?.count).toBeNull()
     expect(out.find((c) => c.id === 'tiktok')?.count).toBeNull()
-    expect(out.find((c) => c.id === 'tiktok')?.unmeasuredReason).toMatch(/cumulative/i)
+    expect(out.find((c) => c.id === 'tiktok')?.unmeasuredReason).toMatch(/running totals/i)
   })
 
   it('uses 0 plus a missing-rows caveat when the writer exists but the window is empty', () => {
@@ -42,7 +42,7 @@ describe('rollDiscovery', () => {
     const youtube = out.find((c) => c.id === 'youtube')
     expect(youtube?.count).toBe(0)
     expect(youtube?.unmeasuredReason).toBeNull()
-    expect(youtube?.caveat).toMatch(/No youtube snapshot/i)
+    expect(youtube?.caveat).toMatch(/No YouTube views were saved/i)
   })
 
   it('covers every connected snapshot platform we ingest', () => {

@@ -75,12 +75,12 @@ async function readSalesFunnelMembers(input: SalesFunnelMembersInput): Promise<S
 
   if (!stage && !door) {
     return {
-      title: 'Select a stage or a door',
+      title: 'Pick a step or a form',
       countKind: 'people',
       total: 0,
       shown: 0,
       members: [],
-      note: 'Click a spine stage or a capture door to see the people in this cohort.',
+      note: 'Tap a step or a form above to see the people in it.',
       unmeasuredReason: null,
     }
   }

@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { TWILIO_PUBLIC_ORIGIN, DEFAULT_DESK_BROKER, brokerForTwilioNumber, verifiedTwilioParams } from '@/lib/crm/twilio'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
+import { applyInboundConsentClear } from '@/lib/data/crm/applyInboundConsentClear'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -54,6 +55,16 @@ export async function POST(request: Request) {
         },
         { onConflict: 'dedupe_key', ignoreDuplicates: true },
       )
+      try {
+        await applyInboundConsentClear({
+          personId: match.personId,
+          event: 'voicemail',
+          eventId: params.CallSid ?? null,
+          broker: dialedBroker ?? match.broker,
+        })
+      } catch (e) {
+        console.warn('[twilio/voice-complete] inbound consent clear failed', e)
+      }
     }
   } catch (e) {
     console.error('[twilio/voice-complete] voicemail log failed (continuing):', e)
