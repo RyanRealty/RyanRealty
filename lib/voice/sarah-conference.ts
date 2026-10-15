@@ -49,7 +49,7 @@ export function bargeTwiml(opts: {
   const start = join.startConferenceOnEnter ? 'true' : 'false'
   const end = join.endConferenceOnExit ? 'true' : 'false'
   const line = (() => {
-    switch (join.role) {
+    switch (opts.mode) {
       case 'listen':
         return "Joining Sarah's call on mute."
       case 'coach':
@@ -57,7 +57,7 @@ export function bargeTwiml(opts: {
       case 'barge':
         return "Joining Sarah's call."
       default: {
-        const _never: never = join.role
+        const _never: never = opts.mode
         void _never
         return "Joining Sarah's call."
       }
