@@ -172,6 +172,21 @@ function marketTakeaways(place: string, input: PlaceTakeawaysInput): string[] {
   return out
 }
 
+/**
+ * City /housing-market takeaways. Prefer the sale-led market set. When that
+ * set is one sentence or none (leftover monthly or pace missed the read, so
+ * only months of supply remains), use the place set from the HUD figures the
+ * page already prints. Fewer than two sentences drops the #takeaways
+ * markup (V3TakeawaysLead), which failed aeo-market-lead-and-tables on
+ * production /housing-market/bend.
+ */
+export function housingMarketTakeaways(input: PlaceTakeawaysInput): string[] {
+  const market = placeTakeaways({ ...input, variant: 'market' })
+  if (market.length >= 2) return market
+  const place = placeTakeaways({ ...input, variant: 'place' })
+  return place.length >= 2 ? place : market.length > 0 ? market : place
+}
+
 /** Up to four standalone sentences, fewer when the page withholds a figure. */
 export function placeTakeaways(input: PlaceTakeawaysInput): string[] {
   const place = input.place.trim()
