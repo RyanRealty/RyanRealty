@@ -365,6 +365,8 @@ export interface ProspectListResult {
   pageSize: number
   /** Distinct cities present in the unfiltered set, for the city filter Select. */
   cities: string[]
+  /** Set when the base read failed — never look like an empty bucket. */
+  error?: string | null
 }
 
 export type SendGuardCode =

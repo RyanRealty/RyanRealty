@@ -25,9 +25,9 @@ import { prospectDetailHref, prospectQueueReviewLabel } from '@/lib/data/prospec
 import { isProspectDocClientReady } from '@/lib/data/prospecting/doc-ready'
 import { ProspectDetailHardLink } from '@/components/admin/prospecting/ProspectDetailHardLink.client'
 import { formatDate } from '@/lib/format/date'
-import { Button, HiddenField, QueueRow, SearchField, VerdictLine } from '@/components/admin/v2'
+import { HiddenField, QueueRow, SearchField, VerdictLine } from '@/components/admin/v2'
 import type { AdminState } from '@/components/admin/v2'
-import { buildProspectDocFromWorklist } from './actions'
+import { resolveProspectingStatus } from '@/lib/admin/queue-defaults'
 import { ProspectFilterSelect } from './FilterSelect'
 
 export const dynamic = 'force-dynamic'
@@ -35,7 +35,6 @@ export const dynamic = 'force-dynamic'
 // segment room so the form action never times out mid-build.
 export const maxDuration = 300
 
-const STATUSES: ProspectStatusFilter[] = ['all', 'sendable', 'needs-audit', 'no-phone', 'sent', 'excluded']
 const PAGE_SIZE = 24
 
 function str(v: string | string[] | undefined): string | undefined {
@@ -67,7 +66,7 @@ function hrefFor(
 ): string {
   const p = new URLSearchParams()
   if (kind !== 'expired') p.set('kind', kind)
-  if (status !== 'all') p.set('status', status)
+  if (status !== 'sendable') p.set('status', status)
   if (q) p.set('q', q)
   // Expired defaults to City of Bend — only emit city when cleared or non-default.
   if (cityExplicitAll) p.set('city', 'all')
@@ -178,10 +177,7 @@ export default async function ProspectingPage({
   const sp = await searchParams
 
   const kind: ProspectKind = str(sp.kind) === 'fsbo' ? 'fsbo' : 'expired'
-  const statusRaw = str(sp.status)
-  const status: ProspectStatusFilter = STATUSES.includes(statusRaw as ProspectStatusFilter)
-    ? (statusRaw as ProspectStatusFilter)
-    : 'all'
+  const status = resolveProspectingStatus(str(sp.status)) as ProspectStatusFilter
   const q = str(sp.q) ?? null
   const page = Math.max(1, Number(str(sp.page) ?? '1') || 1)
   // Desk first-touch wants oldest unsent on top (Matt 2026-09-03). Default
@@ -211,7 +207,13 @@ export default async function ProspectingPage({
           verdict line and one dropdown share a row. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', margin: '0 0 10px' }}>
         <div style={{ flex: '1 1 260px', minWidth: 220 }}>
-          <VerdictLine tone={summary.sendable > 0 || summary.needsAudit > 0 ? 'attention' : 'ok'}>
+          <VerdictLine tone={result.error ? 'attention' : summary.sendable > 0 || summary.needsAudit > 0 ? 'attention' : 'ok'}>
+            {result.error ? (
+              <>
+                <b>Prospecting could not be read.</b> {result.error}
+              </>
+            ) : (
+              <>
             <b>{summary.sendable} ready to send</b> · {summary.needsAudit} need an audit · {summary.sent} sent
             {/* Blocked count in the header, not only the filter dropdown (FSBO
                 Desk 2026-10-09: 76 of 76 blocked read as "0 / 0 / 0"). */}
@@ -222,6 +224,8 @@ export default async function ProspectingPage({
             >
               {summary.excluded} blocked
             </Link>
+              </>
+            )}
           </VerdictLine>
         </div>
         <ProspectFilterSelect kind={kind} status={status} q={q} city={city} counts={counts} />
@@ -276,7 +280,7 @@ export default async function ProspectingPage({
 
       <form method="GET" style={{ margin: '4px 0 16px' }}>
         {kind !== 'expired' ? <HiddenField name="kind" value={kind} /> : null}
-        {status !== 'all' ? <HiddenField name="status" value={status} /> : null}
+        {status !== 'sendable' ? <HiddenField name="status" value={status} /> : null}
         {cityExplicitAll ? <HiddenField name="city" value="all" /> : null}
         {!cityExplicitAll && city && !(kind === 'expired' && city === PROSPECT_EXPIRED_DEFAULT_CITY) ? (
           <HiddenField name="city" value={city} />
@@ -299,13 +303,6 @@ export default async function ProspectingPage({
           // Hard document nav (location.assign) — plain <a> still soft-navs under
           // Next 16 and can stick on (protected)/loading.tsx skeleton forever.
           const openHref = prospectDetailHref(row.kind, row.id)
-          const draftBuilt =
-            row.doc.state === 'ready' && !isProspectDocClientReady(row.doc.status)
-          // Build only when there is truly no usable audit yet (Nugget: Build OK; no fake Review).
-          const needsBuild =
-            bucket === 'needs-audit' &&
-            !draftBuilt &&
-            (row.doc.state === 'none' || row.doc.state === 'failed')
           const reviewLabel = prospectQueueReviewLabel(kind)
           return (
             <QueueRow
@@ -322,52 +319,26 @@ export default async function ProspectingPage({
               context={rowContext(row, bucket)}
               age={daysAgo(kind === 'expired' ? row.expiredAt : row.detectedAt)}
               action={
-                bucket === 'sendable' ? (
-                  <ProspectDetailHardLink href={openHref} className="av2-btn" style={{ textDecoration: 'none' }}>
-                    {reviewLabel}
-                  </ProspectDetailHardLink>
-                ) : draftBuilt && row.doc.state === 'ready' ? (
-                  <span style={{ display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
-                    <a
-                      href={`/admin/cmas/${row.doc.slug}`}
-                      className="av2-btn av2-btn--quiet"
-                      style={{ textDecoration: 'none' }}
-                    >
-                      {row.doc.status === 'draft' ? 'Review CMA' : 'Open CMA'}
-                    </a>
-                    <ProspectDetailHardLink href={openHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-                      Open
-                    </ProspectDetailHardLink>
-                  </span>
-                ) : needsBuild ? (
-                  <span style={{ display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
-                    <form action={buildProspectDocFromWorklist}>
-                      <HiddenField name="kind" value={row.kind} />
-                      <HiddenField name="id" value={row.id} />
-                      <Button variant="quiet" type="submit">
-                        {row.doc.state === 'failed' ? 'Retry build' : 'Build audit'}
-                      </Button>
-                    </form>
-                    <ProspectDetailHardLink href={openHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-                      Open
-                    </ProspectDetailHardLink>
-                  </span>
-                ) : (
-                  <ProspectDetailHardLink href={openHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-                    Open
-                  </ProspectDetailHardLink>
-                )
+                <ProspectDetailHardLink
+                  href={openHref}
+                  className={bucket === 'sendable' ? 'av2-btn' : 'av2-btn av2-btn--quiet'}
+                  style={{ textDecoration: 'none' }}
+                >
+                  {bucket === 'sendable' ? reviewLabel : 'Open'}
+                </ProspectDetailHardLink>
               }
             />
           )
         })}
         {result.rows.length === 0 ? (
           <li className="av2-sysnote" style={{ padding: 16 }}>
-            {q
+            {result.error
+              ? result.error
+              : q
               ? 'No prospects match. Try fewer letters or a street name.'
               : kind === 'expired' && city === PROSPECT_EXPIRED_DEFAULT_CITY && !cityExplicitAll
                 ? 'No City of Bend expireds in this bucket. Switch City to All cities for outskirts.'
-              : status === 'all'
+                : status === 'all'
                 ? `No ${kind === 'expired' ? 'expired listings' : 'FSBOs'} captured yet.`
                 : `Nothing in this bucket right now.`}
           </li>
@@ -402,8 +373,8 @@ export default async function ProspectingPage({
           Ready
         </Link>
         {' · '}
-        <Link href="/admin/cmas" style={{ color: 'var(--a-accent)' }}>
-          All CMAs
+        <Link href="/admin/valuations" style={{ color: 'var(--a-accent)' }}>
+          Valuations
         </Link>
         . Price opinions live in{' '}
         <Link href="/admin/bpo" style={{ color: 'var(--a-accent)' }}>

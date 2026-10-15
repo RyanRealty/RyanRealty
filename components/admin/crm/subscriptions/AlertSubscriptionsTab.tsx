@@ -6,7 +6,7 @@
  * table (unified 2026-07-07): 'user' rows carry a user_id (signed-in saved
  * searches), 'guest' rows do not. Search + status + frequency (+ origin for
  * guest) filters, a paginated table with a checkbox column, per-row
- * engagement (sends / opens / clicks / last open from email_events), a
+ * engagement (sent / delivered / opened / clicked / last open from email_events), a
  * per-row actions menu (edit criteria, rendered email preview, assign
  * broker, pause/resume, delete), and a selection toolbar for bulk pause /
  * resume / re-cadence / delete via app/actions/subscriptions-admin.ts.

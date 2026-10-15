@@ -63,15 +63,17 @@ import {
   clearProvisionalAutomation,
   identifySessionAndBrowser,
   insertVisitorSession,
+  isMissingColumnError,
   readIdentityMapForVid,
   readSessionIdentity,
   stampSessionEmailOnly,
 } from '@/lib/data/identity/sessionIdentity'
 import { personExistsById } from '@/lib/data/crm/personExistsById'
 import {
-  PROVISIONAL_AUTOMATION_REASONS,
   classifyArrivalShape,
   classifyAutomation,
+  isPersonEvidence,
+  isProvisionalReason,
 } from '@/lib/analytics/automation'
 import { campaignDetailsParams, ga4SessionParams, parseVisit } from '@/lib/analytics/ga4-visit'
 import {
@@ -323,8 +325,36 @@ function readIpGeo(req: NextRequest): { country?: string; region?: string; city?
   return {
     country: country?.trim() ? country.trim().toUpperCase().slice(0, 2) : undefined,
     region:  region?.trim()  ? region.trim().slice(0, 64) : undefined,
-    // Vercel sends URL-encoded city names (e.g. "Bend" or "San%20Francisco")
-    city:    city?.trim()    ? decodeURIComponent(city.trim()).slice(0, 64) : undefined,
+    // Vercel sends URL-encoded city names (e.g. "Bend" or "San%20Francisco").
+    // Read at every tier for the automation class, so a malformed value (a
+    // client can send cf-ipcity itself) must not throw the request.
+    city:    city?.trim()    ? decodeCity(city.trim()).slice(0, 64) : undefined,
+  }
+}
+
+/**
+ * The IP geo Vercel's edge sets on every request (x-vercel-ip-*), for the
+ * automation class only. A client cannot set these on Vercel, while it can send
+ * cf-* itself, and the region is the ISO code DATACENTER_LOCALITIES compares
+ * against (lib/analytics/automation.ts).
+ */
+function readVercelGeo(req: NextRequest): { country?: string; region?: string; city?: string } {
+  const h = req.headers
+  const country = h.get('x-vercel-ip-country')?.trim()
+  const region = h.get('x-vercel-ip-country-region')?.trim()
+  const city = h.get('x-vercel-ip-city')?.trim()
+  return {
+    country: country ? country.toUpperCase().slice(0, 2) : undefined,
+    region: region ? region.slice(0, 64) : undefined,
+    city: city ? decodeCity(city).slice(0, 64) : undefined,
+  }
+}
+
+function decodeCity(raw: string): string {
+  try {
+    return decodeURIComponent(raw)
+  } catch {
+    return raw
   }
 }
 
@@ -453,7 +483,9 @@ export async function POST(request: NextRequest) {
   // itself stays intact for the reads that legitimately need the whole thing
   // (slug parsing, GA4's page_location) — nothing there persists an id.
   const storedPageUrl = stripIdentityParams(pageUrl) ?? pageUrl
-  // Geo + UA describe the PERSON, and stay gated on analytics consent.
+  // Geo + UA describe the PERSON, and stay gated on analytics consent. The
+  // automation classifier below still READS the user agent and Vercel's geo at
+  // every tier (reading to classify is not storing: docs/TRACKING_POLICY.md).
   const geo = minimalOnly ? {} as ReturnType<typeof readIpGeo> : readIpGeo(request)
   const userAgent = minimalOnly ? undefined : (request.headers.get('user-agent')?.slice(0, 512) || undefined)
   // Campaign parameters describe the LINK THAT WAS CLICKED, not the visitor, and
@@ -511,15 +543,28 @@ export async function POST(request: NextRequest) {
     userAgent: request.headers.get('user-agent'),
     webdriver: body.webdriver,
     marker: hasAutomationMarker({ cookieHeader, search: (() => { try { return new URL(pageUrl).search } catch { return '' } })() }),
+    clientHints: request.headers.get('sec-ch-ua'),
   })
   const rawToken = arrivalTokenFrom({ identityToken: body.identityToken, pageUrl })
   const token = rawToken ? verifyPersonLinkToken(rawToken) : null
-  // Behavioural and PROVISIONAL (lib/analytics/automation.ts): the listing
-  // contact-form deep link a crawler lands on. Stored at birth, cleared below
-  // by the session's next event; never blocks identification.
+  // Behavioural and PROVISIONAL (lib/analytics/automation.ts): a cold arrival
+  // (no referrer, campaign or token) on the listing contact-form deep link, from
+  // a desktop Chrome build long superseded, or from a datacenter town. Every
+  // event of a session carries the same landing page, referrer, user agent and
+  // geo, so this is recomputed on each one. Stored at birth unless this very
+  // event shows a person, cleared below by the first event that does
+  // (isPersonEvidence) or by identification; never blocks identification.
   const arrivalShape = automation.automated
     ? { automated: false, reason: null }
-    : classifyArrivalShape({ landingPage: body.landingPage, referrer: body.referrer, hasToken: !!rawToken })
+    : classifyArrivalShape({
+        landingPage: body.landingPage,
+        referrer: body.referrer,
+        hasToken: !!rawToken,
+        userAgent: request.headers.get('user-agent'),
+        geo: readVercelGeo(request),
+        atMs: Date.now(),
+      })
+  const personEvidence = isPersonEvidence({ eventType, pageUrl, landingPage: body.landingPage })
   // A signed-in broker's browser (`rr_internal=1`, set on admin sign-in) is
   // flagged `internal` at birth: left out of counts of outside visitors and
   // never mirrored to GA4, but still a person, so identification proceeds
@@ -529,7 +574,10 @@ export async function POST(request: NextRequest) {
     ? automation
     : internalBrowser
       ? { automated: true, reason: 'internal' as const }
-      : arrivalShape
+      : arrivalShape.automated && !personEvidence
+        ? arrivalShape
+        : { automated: false, reason: null }
+  const provisionalAtBirth = birthClass.automated && isProvisionalReason(birthClass.reason)
   let tokenPersonExists = true
   if (token && !automation.automated) {
     const [owner, exists] = await Promise.all([
@@ -586,13 +634,6 @@ export async function POST(request: NextRequest) {
     // 23505 = unique_violation = session already exists, expected on revisit.
     console.warn('[visitors/track] session insert failed:', sessionWrite.message)
   }
-  // A later event on a session that was born with the provisional shape (the
-  // tracker re-sends the same landing page on every event) proves a person is
-  // reading on: clear the flag. Only sessions with that landing pay the write.
-  if (!sessionWrite.inserted && sessionWrite.code === '23505' && arrivalShape.automated) {
-    await clearProvisionalAutomation(supabase, sessionId, PROVISIONAL_AUTOMATION_REASONS)
-  }
-
   // Identity carryover at session birth (2026-09-01). stitchVisitorIdentity
   // stamps person ids only onto sessions that EXIST at stitch time, so a new
   // session from the same browser days later was born unidentified — the
@@ -611,9 +652,6 @@ export async function POST(request: NextRequest) {
   // identity map may hold nothing stronger than an email someone typed into a
   // form. Consent capture accepts only `verified`.
   let personCookie: { personId: number; provenance: IdentityProvenance } | null = null
-  // True once the carryover below clears a provisional automation flag: the
-  // mirror then sends this known contact's first view like any other.
-  let provisionalCleared = false
   if (sessionWrite.inserted && rrVid && !token && !automation.automated) {
     const known = await readIdentityMapForVid(supabase, rrVid)
     if (known?.personId) {
@@ -627,11 +665,8 @@ export async function POST(request: NextRequest) {
       })
       identifiedNow = res.sessionStamped
       if (res.sessionStamped) personCookie = { personId: known.personId, provenance: 'claimed' }
-      // A browser already mapped to a contact is a person, whatever it landed on.
-      if (res.sessionStamped && arrivalShape.automated) {
-        await clearProvisionalAutomation(supabase, sessionId, PROVISIONAL_AUTOMATION_REASONS)
-        provisionalCleared = true
-      }
+      // A browser already mapped to a contact is a person, whatever it landed on:
+      // identifySessionAndBrowser clears a provisional flag when it stamps.
     } else if (known?.email) {
       await stampSessionEmailOnly(supabase, sessionId, known.email)
     }
@@ -679,18 +714,33 @@ export async function POST(request: NextRequest) {
 
   // 3. Fetch the updated session for the response payload. Snippet uses this
   //    to decide whether to keep showing the sign-in modal, open a soft wall,
-  //    or skip both.
-  const { data: sessRow, error: readSessErr } = await supabase
-    .from('visitor_sessions')
-    .select('engagement_score, intent_tags, fub_person_id, crm_person_id, first_seen_at, identified_at')
-    .eq('session_id', sessionId)
-    .maybeSingle()
-
-  if (readSessErr) {
-    console.warn('[visitors/track] session read failed:', readSessErr.message)
+  //    or skip both. Read before the GA4 mirror (2026-10-14): the stored
+  //    automation flag decides whether this event clears a provisional class
+  //    and whether it may reach GA4.
+  const readSession = (columns: string) =>
+    supabase.from('visitor_sessions').select(columns).eq('session_id', sessionId).maybeSingle()
+  const SESSION_COLUMNS = 'engagement_score, intent_tags, fub_person_id, crm_person_id, first_seen_at, identified_at'
+  let sessRead = await readSession(`${SESSION_COLUMNS}, is_automated, automation_reason`)
+  // A database from before migration 20260923120000 has no flag columns.
+  if (sessRead.error && isMissingColumnError(sessRead.error)) sessRead = await readSession(SESSION_COLUMNS)
+  if (sessRead.error) {
+    console.warn('[visitors/track] session read failed:', sessRead.error.message)
   }
+  const session = (sessRead.data ?? null) as Record<string, unknown> | null
 
-  const session = sessRow ?? null
+  // A later event that shows a person (a second page, a scroll, a search, a
+  // click, a form: isPersonEvidence) clears a provisional class on the STORED
+  // session, whatever this request's own geo or token says (an address can
+  // change mid-session). A section rendering in view or a repeat view of the
+  // landing page does not: a headless crawler's tall viewport fires those on
+  // load. Only a session still carrying a provisional reason pays the write.
+  let provisionalStill = session
+    ? session.is_automated === true && isProvisionalReason(session.automation_reason)
+    : sessionWrite.inserted && provisionalAtBirth
+  if (provisionalStill && personEvidence && !sessionWrite.inserted) {
+    await clearProvisionalAutomation(supabase, sessionId)
+    provisionalStill = false
+  }
 
   // ─── Identify the visit (P7) ─────────────────────────────────────────────
   // The signed token on the link just clicked, else the signed rr_pid cookie
@@ -716,6 +766,9 @@ export async function POST(request: NextRequest) {
     })
     if (res.sessionStamped) {
       identifiedNow = true
+      // Identified, so a person: identifySessionAndBrowser cleared any
+      // provisional automation flag, and this view may reach GA4.
+      provisionalStill = false
       session.crm_person_id = decision.personId
       session.fub_person_id = decision.personId
       session.identified_at = session.identified_at ?? new Date().toISOString()
@@ -772,8 +825,9 @@ export async function POST(request: NextRequest) {
     eventType === 'sms_opt'
   // Automation never reaches GA4: a crawler render mirrored as a page_view is
   // exactly the inflation TRACK-1 measured, and GA4's known-bot filter does
-  // not see Measurement Protocol hits. A provisional contact-deep-link session
-  // loses only its first view; a later event proves a person and mirrors.
+  // not see Measurement Protocol hits. Nor does a session still carrying a
+  // provisional class (a cold arrival that reads as a machine): its views mirror
+  // from the event that shows a person.
   // ONE suppression decision with the browser's Google tag loader
   // (lib/analytics/ga-suppression.ts, Matt 2026-10-05): never /admin, never a
   // non-production host, never automation (user agent, navigator.webdriver, our
@@ -783,12 +837,13 @@ export async function POST(request: NextRequest) {
     userAgent: request.headers.get('user-agent'),
     webdriver: body.webdriver,
     cookieHeader,
+    clientHints: request.headers.get('sec-ch-ua'),
   })
   if (
     mirrorGa4 &&
     !gaSuppression.suppress &&
     !automation.automated &&
-    !(sessionWrite.inserted && arrivalShape.automated && !provisionalCleared)
+    !provisionalStill
   ) {
     try {
       const { fireGa4Event, clientIdFromGaCookie, clientIdFromSessionId } = await import(

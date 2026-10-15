@@ -28,6 +28,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { getNextRecommendation, type CrmNextRec } from '@/app/actions/crm-next-rec'
 import { cn } from '@/lib/utils'
 import { isLeadPageV3Enabled } from '@/lib/admin/lead-page-v3'
+import { isConsoleFabSuppressed } from '@/lib/admin/queue-defaults'
 
 type Item = { label: string; href: string; icon: React.ComponentType<{ className?: string }> }
 
@@ -38,7 +39,7 @@ const GLOBAL: Item[] = [
   { label: 'View pipeline', href: '/admin/crm/deals', icon: Briefcase },
   { label: 'Compose email', href: '/admin/messages/new?channel=email', icon: PenSquare },
   { label: 'Text', href: '/admin/messages/new', icon: MessageSquare },
-  { label: 'Start a CMA', href: '/admin/cmas', icon: Calculator },
+  { label: 'Start a CMA', href: '/admin/valuations', icon: Calculator },
   { label: 'Workflows', href: '/admin/crm/sequences', icon: ListChecks },
 ]
 
@@ -83,7 +84,7 @@ export default function ConsoleQuickAction() {
   // §26: the mobile inbox owns its own FAB (compose sheet) — a second generic
   // FAB there violates the single-FAB rule (§25.12 / mob-02). Hooks above run
   // unconditionally; bail before render only.
-  const suppressed = pathname.startsWith('/admin/crm/inbox') || pathname.startsWith('/admin/messages')
+  const suppressed = isConsoleFabSuppressed(pathname)
   // §29: the mobile Calendar (Screen A) + Tasks (Screen C) own their FABs at
   // < md; the desktop layouts keep this quick action (they have no §29 FAB).
   const mobileSuppressed =
@@ -151,7 +152,7 @@ export default function ConsoleQuickAction() {
         { label: 'Add note', href: '#notes', icon: StickyNote },
         { label: 'Add task', href: '#tasks', icon: CheckSquare },
         { label: 'Enroll in workflow', href: '#overview', icon: Workflow },
-        { label: 'Start a CMA', href: '/admin/cmas', icon: Calculator },
+        { label: 'Start a CMA', href: '/admin/valuations', icon: Calculator },
       ]
     : []
 

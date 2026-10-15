@@ -19,6 +19,7 @@ const PLACE_SHEETS = [
   'app/communities/[slug]/_v3/CommunityAlertSheet.client.tsx',
   'app/subdivisions/[slug]/_v3/SubdivisionAlertSheet.client.tsx',
   'app/zip/[zip]/_v3/ZipAlertsSheet.client.tsx',
+  'app/_v3/place-alerts/PlaceAlertsStrip.client.tsx',
 ] as const
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -50,12 +51,12 @@ describe('SITE-120 the sticky ask talks like a person', () => {
     for (const rel of PLACE_SHEETS) {
       const src = readFileSync(join(ROOT, rel), 'utf8')
       if (rel.endsWith('place-alerts.ts')) {
-        expect(src).toContain('Hear about new listings in')
+        expect(src).toContain('Get every new listing in')
         expect(src).toContain('Send me new listings')
-        expect(src).toContain("You're set. We'll email you when something new lists in")
+        expect(src).toContain("You're set. Watch your inbox for new")
         continue
       }
-      expect(src, rel).toContain('Every new listing, with its price changes. Unsubscribe any time.')
+      expect(src, rel).toContain('Every new listing, every property type, each morning. Unsubscribe any time.')
       expect(src, rel).toContain("We'll email you every new listing")
     }
   })

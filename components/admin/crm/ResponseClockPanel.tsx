@@ -40,7 +40,11 @@ function minutesLabel(seconds: number | null): string {
   return minutes < 10 ? `${minutes.toFixed(1)} min` : `${Math.round(minutes)} min`
 }
 
-export default async function ResponseClockPanel() {
+export default async function ResponseClockPanel({
+  showMethodology = false,
+}: {
+  showMethodology?: boolean
+}) {
   const report = await getResponseClockReport().catch(() => null)
 
   if (!report) {
@@ -66,8 +70,11 @@ export default async function ResponseClockPanel() {
     stale > 0 ? (
       <>
         {' '}
-        Further back, <b>{stale}</b> of the last 28 days&rsquo; {stats28d.leadsAllHours} site submits still
-        have no human touch at all.
+        Further back,{' '}
+        <Link href="/admin/crm?clock=28d" style={{ color: 'inherit' }}>
+          <b>{stale}</b> still untouched
+        </Link>
+        {' '}over the last 28 days.
       </>
     ) : null
 
@@ -142,18 +149,27 @@ export default async function ResponseClockPanel() {
         </ul>
       ) : null}
 
-      <ReportNumbers items={figures} />
-
-      <p
-        style={{
-          fontSize: 'var(--a-text-xs)',
-          color: 'var(--a-text-2)',
-          margin: 'var(--a-s2) 0 0',
-          maxWidth: '68ch',
-        }}
-      >
-        Last 28 days. {sourceLine}
-      </p>
+      {showMethodology ? (
+        <>
+          <ReportNumbers items={figures} />
+          <p
+            style={{
+              fontSize: 'var(--a-text-xs)',
+              color: 'var(--a-text-2)',
+              margin: 'var(--a-s2) 0 0',
+              maxWidth: '68ch',
+            }}
+          >
+            Last 28 days. {sourceLine}
+          </p>
+        </>
+      ) : stale > 0 ? (
+        <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: 'var(--a-s2) 0 0' }}>
+          <Link href="/admin/crm?clock=28d" style={{ color: 'var(--a-accent)' }}>
+            Untouched over 28 days
+          </Link>
+        </p>
+      ) : null}
     </section>
   )
 }

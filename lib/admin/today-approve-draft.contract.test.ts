@@ -35,8 +35,10 @@ describe('Today Yes stamps a ready draft', () => {
     expect(todaySrc).not.toMatch(/publisher-sweep/)
     expect(todaySrc).not.toMatch(/from ['"]@\/lib\/crm\/twilio['"]/)
 
-    expect(pageSrc).toMatch(/TodayApproveDraftForm/)
-    expect(pageSrc).toMatch(/approveReadyDraftToday|TodayApproveDraftForm/)
+    // Approvals moved off Today (2026-10-14 queue cleanup). The stamp still
+    // lives on the approval queue; Today only links there.
+    expect(pageSrc).not.toMatch(/TodayApproveDraftForm/)
+    expect(pageSrc).toMatch(/\/admin\/crm\/approvals/)
     expect(formSrc).toMatch(/useTransition/)
     expect(formSrc).toMatch(/toast/)
     expect(formSrc).toMatch(/'Yes'/)
