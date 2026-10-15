@@ -54,6 +54,7 @@ import {
 import { CommsSection } from './CommsSection'
 import { timelineArtifactDoor } from '@/lib/crm/timeline-artifacts'
 import { HomesSection } from './HomesSection'
+import { CountyRecordsSection } from './CountyRecordsSection'
 import { SiteActivitySection } from './SiteActivitySection'
 import { SendSection } from './SendSection'
 import { TasksSection } from './TasksSection'
@@ -536,6 +537,18 @@ export async function PersonWorkspace({
           }
         >
           <HomesSection personId={idNum} personEmails={personEmails} />
+        </Suspense>
+
+        {/* Matt 2026-10-14: does the county name them as an owner, and of what. */}
+        <Suspense
+          fallback={
+            <section aria-label="County records">
+              <SectionHead>County records</SectionHead>
+              <div className="av2-sysnote" style={{ padding: 12 }}>Reading county records…</div>
+            </section>
+          }
+        >
+          <CountyRecordsSection personId={idNum} />
         </Suspense>
 
         {/* P7 identity loop: what they looked at, page by page, on every device. */}

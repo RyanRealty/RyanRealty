@@ -10,9 +10,13 @@
  *
  * Suppression, checked here on the listings row itself (belt and braces: the
  * caller's listing set already comes from listing_tile_mv, whose predicates
- * drop the ODS opt-outs):
+ * drop the internet and non-IDX opt-outs):
  *   media_suppressed    owner media-removal request: no photos at all
  *   permit_internet_yn  seller internet opt-out (ODS §5-3 B)
+ *   permit_address_internet_yn  seller withheld the address: the listing
+ *                       page is a 404 (getListingDetail), so its address-
+ *                       bearing URL never goes in a sitemap. listing_tile_mv
+ *                       does NOT drop these rows, so this check is the filter.
  *   idx_participant     non-IDX listing brokerage (ODS §5-3 G)
  *
  * Throws when a batch still fails after its retry: the route answers an error
@@ -30,6 +34,7 @@ type PhotoRow = {
   PhotoURL: string | null
   media_suppressed: boolean | null
   permit_internet_yn: boolean | null
+  permit_address_internet_yn: boolean | null
   idx_participant: boolean | null
   Photos: unknown
 }
@@ -46,7 +51,7 @@ async function readBatch(keys: readonly string[]): Promise<PhotoRow[]> {
   for (let attempt = 0; attempt < 2; attempt++) {
     const { data, error } = await supabase
       .from('listings')
-      .select('ListingKey, PhotoURL, media_suppressed, permit_internet_yn, idx_participant, Photos:details->Photos')
+      .select('ListingKey, PhotoURL, media_suppressed, permit_internet_yn, permit_address_internet_yn, idx_participant, Photos:details->Photos')
       .in('ListingKey', keys as string[]) // @canonical-key — keys are listing_tile_mv listing_key (the listings.xml set)
     if (!error) return (data ?? []) as PhotoRow[]
     lastError = error
@@ -68,7 +73,12 @@ export async function getListingSitemapPhotos(listingKeys: readonly string[]): P
       for (const row of rows) {
         const key = String(row.ListingKey ?? '').trim()
         if (!key) continue
-        if (row.media_suppressed === true || row.permit_internet_yn === false || row.idx_participant === false) continue
+        if (
+          row.media_suppressed === true ||
+          row.permit_internet_yn === false ||
+          row.permit_address_internet_yn === false ||
+          row.idx_participant === false
+        ) continue
         const urls = listingSitemapPhotoUrls(row.Photos, row.PhotoURL)
         if (urls.length > 0) out.set(key, urls)
       }

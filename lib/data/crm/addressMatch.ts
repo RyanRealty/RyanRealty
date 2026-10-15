@@ -20,7 +20,7 @@ export type StreetAddressParts = {
 // stores a freeform "123 NW Bond St"; the MLS side stores "Bond" in street_name
 // (often with no suffix at all). Folding both to the same core lets
 // "123 NW Bond St" match "123 Bond Street".
-const SUFFIX_CANON: Record<string, string> = {
+export const SUFFIX_CANON: Record<string, string> = {
   st: 'st',
   street: 'st',
   ave: 'ave',

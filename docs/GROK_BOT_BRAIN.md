@@ -39,6 +39,10 @@ A coding restyle bot does not load the CMA handoff novel. A CRM bot does not loa
 3. Tell it to read this file, then `docs/GROK_BOT_COMPANY.md`, then only its door.
 4. Connect GitHub once. Plugins are shared. Do not re-auth per bot.
 
+## Worktrees
+
+After your PR merges or closes, remove your own worktree or clone (`npm run wt:cleanup` or `git worktree remove` then prune). Never remove a checkout with uncommitted changes, unpushed commits, stashes, or one another session is using. Script: `scripts/cleanup-merged-worktrees.sh`. Detail: AGENTS.md → Worktrees.
+
 ## Do not
 
 - Re-arm THE LOOP or `LOOP_SENTINEL`
