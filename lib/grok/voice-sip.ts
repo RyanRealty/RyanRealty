@@ -11,6 +11,23 @@ export type SipSessionConfig = {
   voice?: string
   /** Resolve a transfer target to an E.164 number; null disables that target. */
   resolveTransfer?: (who: TransferTarget) => string | null
+  /** Called once when the call ends with the cleaned transcript lines. */
+  onEnd?: (lines: TranscriptLine[]) => Promise<void>
+}
+export type TranscriptLine = { speaker: 'caller' | 'agent'; text: string }
+
+/** Drop empty lines and consecutive repeats (xAI can emit the same final line twice). */
+export function cleanTranscript(lines: TranscriptLine[]): TranscriptLine[] {
+  const out: TranscriptLine[] = []
+  for (const l of lines) {
+    const text = l.text.replace(/\s+/g, ' ').trim()
+    if (!text) continue
+    const prev = out[out.length - 1]
+    if (prev && prev.speaker === l.speaker && (prev.text === text || text.startsWith(prev.text))) { prev.text = text; continue }
+    if (prev && prev.speaker === l.speaker && prev.text.startsWith(text)) continue
+    out.push({ speaker: l.speaker, text })
+  }
+  return out
 }
 
 const TRANSFER_TOOL = {
@@ -47,7 +64,11 @@ export function runSipCall(callId: string, from: string, cfg: SipSessionConfig):
     const ws = new WebSocket(`wss://api.x.ai/v1/realtime?call_id=${encodeURIComponent(callId)}`, {
       headers: { Authorization: `Bearer ${process.env.XAI_API_KEY ?? ''}` },
     })
-    const done = () => resolve()
+    const lines: TranscriptLine[] = []
+    const done = async () => {
+      try { await cfg.onEnd?.(cleanTranscript(lines)) } catch (err) { log(`onEnd failed ${(err as Error).message}`) }
+      resolve()
+    }
     const timer = setTimeout(() => { log('max duration reached'); ws.close() }, 780_000)
     ws.on('open', () => {
       log(`joined from=${from}`)
@@ -89,11 +110,11 @@ export function runSipCall(callId: string, from: string, cfg: SipSessionConfig):
         return
       }
       if (e.type === 'error') log(`error ${JSON.stringify(e.error ?? e)}`)
-      else if (/input_audio_transcription\.completed$/.test(e.type)) log(`CALLER: ${e.transcript ?? ''}`)
-      else if (/output_audio_transcript\.done$|audio_transcript\.done$/.test(e.type)) log(`AGENT: ${e.transcript ?? ''}`)
+      else if (/input_audio_transcription\.completed$/.test(e.type)) { log(`CALLER: ${e.transcript ?? ''}`); lines.push({ speaker: 'caller', text: e.transcript ?? '' }) }
+      else if (/output_audio_transcript\.done$|audio_transcript\.done$/.test(e.type)) { log(`AGENT: ${e.transcript ?? ''}`); lines.push({ speaker: 'agent', text: e.transcript ?? '' }) }
     })
     ws.on('error', (err) => log(`ws error ${err.message}`))
-    ws.on('close', (code) => { clearTimeout(timer); log(`ended code=${code}`); done() })
+    ws.on('close', (code) => { clearTimeout(timer); log(`ended code=${code}`); void done() })
   })
 }
 

@@ -12,6 +12,7 @@
 import { NextResponse, after } from 'next/server'
 import { runSipCall } from '@/lib/grok/voice-sip'
 import { verifyXaiWebhook } from '@/lib/voice/xai-sip'
+import { logReceptionistCall } from '@/lib/voice/receptionist-log'
 import { forwardCellForBroker } from '@/lib/crm/twilio'
 import { AGENT_LINES, transferTestTarget } from '@/lib/voice/receptionist-routing'
 import { RECEPTIONIST_GREETING, RECEPTIONIST_PROMPT } from '@/lib/voice/receptionist-prompt'
@@ -46,6 +47,6 @@ export async function POST(req: Request) {
   try { matt = await forwardCellForBroker('matt') } catch { matt = null }
   const test = transferTestTarget()
   const resolveTransfer = (who: 'matt' | 'rebecca' | 'paul') => test ?? (who === 'matt' ? matt : AGENT_LINES[who])
-  after(() => runSipCall(callId, from, { instructions: RECEPTIONIST_PROMPT, greeting: RECEPTIONIST_GREETING, resolveTransfer }))
+  after(() => runSipCall(callId, from, { instructions: RECEPTIONIST_PROMPT, greeting: RECEPTIONIST_GREETING, resolveTransfer, onEnd: (lines) => logReceptionistCall(callId, from, lines) }))
   return NextResponse.json({ ok: true })
 }
