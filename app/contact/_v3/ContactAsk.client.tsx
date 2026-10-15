@@ -219,7 +219,7 @@ export function ContactAsk({
           eyebrow="Talk to a broker"
           heading={isTour ? 'Request a tour' : 'Send a message'}
           headingLevel={2}
-          lede={isTour && listingSummary ? listingSummary : undefined}
+          lede={listingSummary ? (isTour ? listingSummary : `About ${listingSummary}`) : undefined}
           fields={fields}
           Field={ContactField}
           consent={

@@ -124,13 +124,17 @@ export default function BookingClient({ days, brokerSlug, timeZone, available, l
         </p>
       ) : null}
       <div>
-        <Label className="mb-3 block">Pick a day</Label>
-        <div className="flex flex-wrap gap-2">
+        <Label className="mb-3 block" id="book-day-label">Pick a day</Label>
+        {/* UX review F18/F25: selection is announced (aria-pressed), and on a
+            phone the 18 days scroll sideways instead of filling the screen. */}
+        <div role="group" aria-labelledby="book-day-label" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
           {days.map((d) => (
             <Button
               key={d.dateKey}
               type="button"
               variant={d.dateKey === dayKey ? 'default' : 'outline'}
+              aria-pressed={d.dateKey === dayKey}
+              className="shrink-0"
               onClick={() => { setDayKey(d.dateKey); setSlotIso('') }}
             >
               {d.label}
@@ -141,13 +145,14 @@ export default function BookingClient({ days, brokerSlug, timeZone, available, l
 
       {day ? (
         <div>
-          <Label className="mb-3 block">Pick a time</Label>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Label className="mb-3 block" id="book-time-label">Pick a time</Label>
+          <div role="group" aria-labelledby="book-time-label" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {day.slots.map((s) => (
               <Button
                 key={s.startIso}
                 type="button"
                 variant={s.startIso === slotIso ? 'default' : 'outline'}
+                aria-pressed={s.startIso === slotIso}
                 onClick={() => setSlotIso(s.startIso)}
                 className={cn(s.startIso === slotIso && 'ring-2 ring-ring')}
               >
@@ -155,7 +160,7 @@ export default function BookingClient({ days, brokerSlug, timeZone, available, l
               </Button>
             ))}
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">Times are {timeZone.replace('America/', '').replace('_', ' ')}.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Times are {timeZone === 'America/Los_Angeles' ? 'Pacific time' : timeZone.replace('America/', '').replace('_', ' ')}.</p>
         </div>
       ) : null}
 

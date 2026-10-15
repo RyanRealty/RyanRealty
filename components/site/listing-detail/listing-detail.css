@@ -1782,11 +1782,13 @@ h1.listing-ask {
   align-items: baseline;
   gap: 0.55rem 1rem;
   margin: 0.35rem 0 0;
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body-lg);
+  /* UX review F27: buyers scan for the price first. It was body-lg under a
+     display-1 address; it now reads as a figure in the display face. */
+  font-family: var(--v3-font-display, var(--v3-font-body));
+  font-size: var(--v3-size-display-2);
   font-weight: var(--v3-weight-semibold);
   font-variant-numeric: tabular-nums;
-  line-height: 1.3;
+  line-height: 1.15;
   color: var(--v3-navy);
 }
 
