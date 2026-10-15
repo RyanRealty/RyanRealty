@@ -14,7 +14,7 @@ import {
   type OutboundDialInput,
 } from './outbound'
 
-const ON_ENV = { SARAH_OUTBOUND_ENABLED: 'true' } as NodeJS.ProcessEnv
+const ON_ENV = { SARAH_OUTBOUND_ENABLED: 'true' }
 const TEXT_CONSENT: OutboundConsentRecord = {
   kind: 'inbound-text',
   sourceText: 'What is the HOA fee on that listing?',
@@ -56,8 +56,9 @@ describe('sarahOutboundEnabled', () => {
 
 describe('evaluateOutboundDial', () => {
   it('refuses when the flag is off', () => {
-    expect(dial({ env: {} }).ok).toBe(false)
-    if (!dial({ env: {} }).ok) expect(dial({ env: {} }).reason).toBe('flag-off')
+    const d = dial({ env: {} })
+    expect(d.ok).toBe(false)
+    if (!d.ok) expect(d.reason).toBe('flag-off')
   })
 
   it('refuses with no consent record', () => {

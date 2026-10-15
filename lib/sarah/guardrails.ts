@@ -119,9 +119,8 @@ export function classifyVisitorMessage(text: string): GuardrailTopic[] {
   if (OFFER_RE.test(text)) topics.push('make-offer')
   if (CMA_RE.test(text)) topics.push('cma-value')
   if (SHOWING_RE.test(text)) topics.push('listing-showing')
-  if (topics.length === 0 || (topics.length === 1 && topics[0] === 'spanish')) {
-    if (!topics.includes('other') && topics.every((t) => t === 'spanish')) topics.push('other')
-  }
+  if (topics.length === 0) topics.push('other')
+  else if (topics.length === 1 && topics[0] === 'spanish') topics.push('other')
   return topics
 }
 

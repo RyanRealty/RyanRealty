@@ -4,11 +4,16 @@
  * no toll-free number, flag OFF by default. Pure functions. The dialer must
  * call evaluateOutboundDial before every attempt and refuse when ok is false.
  */
-import { hourInTimeZone, DEFAULT_SMS_TIMEZONE } from '@/lib/crm/quiet-hours'
+import { DEFAULT_SMS_TIMEZONE, minuteOfDayInTimeZone } from '@/lib/crm/quiet-hours'
 import { CALLBACK_PHONE_DISPLAY, informationalVoicemailEn, outboundOpenerEn, YES_CONSENT_TEXT } from './scripts'
 
 /** Default off. Set SARAH_OUTBOUND_ENABLED=true only after Counsel confirms. */
-export function sarahOutboundEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export type SarahOutboundEnv = {
+  SARAH_OUTBOUND_ENABLED?: string
+  SARAH_OUTBOUND_KILL_SWITCH?: string
+}
+
+export function sarahOutboundEnabled(env: SarahOutboundEnv = process.env): boolean {
   if (env.SARAH_OUTBOUND_KILL_SWITCH === 'true') return false
   return env.SARAH_OUTBOUND_ENABLED === 'true'
 }
@@ -79,7 +84,7 @@ export type OutboundDialInput = {
   now?: Date
   wantsPitch?: boolean
   optOutFailedToLog?: boolean
-  env?: NodeJS.ProcessEnv
+  env?: SarahOutboundEnv
 }
 
 export type OutboundDialDecision =
@@ -103,22 +108,10 @@ export function isBannedLeadSource(source: string | null | undefined): boolean {
 }
 
 export function inOutboundCallingWindow(now: Date, timeZone: string = DEFAULT_SMS_TIMEZONE): boolean {
-  const hour = hourInTimeZone(now, timeZone)
-  if (hour < OUTBOUND_WINDOW_START_HOUR) return false
-  if (hour > OUTBOUND_WINDOW_END_HOUR) return false
-  if (hour === OUTBOUND_WINDOW_END_HOUR) {
-    const minute = Number(
-      new Intl.DateTimeFormat('en-US', {
-        minute: 'numeric',
-        hourCycle: 'h23',
-        timeZone,
-      })
-        .formatToParts(now)
-        .find((p) => p.type === 'minute')?.value ?? '99',
-    )
-    return minute <= OUTBOUND_WINDOW_END_MINUTE
-  }
-  return true
+  const minuteOfDay = minuteOfDayInTimeZone(now, timeZone)
+  const start = OUTBOUND_WINDOW_START_HOUR * 60
+  const end = OUTBOUND_WINDOW_END_HOUR * 60 + OUTBOUND_WINDOW_END_MINUTE
+  return minuteOfDay >= start && minuteOfDay <= end
 }
 
 function daysBetween(iso: string, now: Date): number {
