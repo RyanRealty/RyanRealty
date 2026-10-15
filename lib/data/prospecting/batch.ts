@@ -68,7 +68,10 @@ async function listingsInChunks(
     }),
   )
   const error = parts.find((p) => p.error)?.error ?? null
-  return { data: parts.flatMap((p) => (p.data ?? []) as RawRow[]), error }
+  return {
+    data: parts.flatMap((p) => (p.error ? [] : ((p.data ?? []) as unknown as RawRow[]))),
+    error,
+  }
 }
 
 function num(v: unknown): number | null {
