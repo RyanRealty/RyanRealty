@@ -17,7 +17,7 @@ export function AboutInquiry({ id = 'write' }: { id?: string } = {}) {
       <p className="about-inquiry__hint">
         The full conversation continues on <a href="/contact">Contact</a>.
       </p>
-      <form className="about-inquiry flex w-full items-center gap-2" action="/contact" method="get">
+      <form data-clarity-mask="True" className="about-inquiry flex w-full items-center gap-2" action="/contact" method="get">
         <Input
           id="about-inquiry"
           name="inquiry"

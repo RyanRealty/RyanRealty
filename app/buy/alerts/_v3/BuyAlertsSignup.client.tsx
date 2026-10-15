@@ -136,7 +136,7 @@ export function BuyAlertsSignup() {
           </p>
         </div>
       ) : (
-        <form className="buy-alerts-form" onSubmit={onSubmit} noValidate={false}>
+        <form data-clarity-mask="True" className="buy-alerts-form" onSubmit={onSubmit} noValidate={false}>
           <div className="buy-alerts-trap" aria-hidden="true">
             <label htmlFor="buy-alerts-company">Company</label>
             <input

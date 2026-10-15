@@ -121,6 +121,8 @@ export const GA4_BROWSER_EVENTS = [
   'nav_interact',
   'dwell',
   'module_interact',
+  'sarah_teaser_shown',
+  'sarah_teaser_clicked',
   // components/NotFoundClient.tsx
   'page_not_found',
   // components/WebVitalsReporter.tsx (Next's metric names, sent as-is since 2026-05)

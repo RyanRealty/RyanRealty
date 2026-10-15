@@ -298,7 +298,14 @@ const nextConfig: NextConfig = {
           // map from 1 tile image to 44. Also *.googleapis.com, data:, blob:.
           //
           // *.ingest.us.sentry.io: browser error reports (lib/observability/client-errors.ts).
-          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googletagmanager.com https://www.googletagmanager.com https://*.google-analytics.com https://www.google-analytics.com https://www.google.com https://maps.googleapis.com https://maps.gstatic.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.adtrafficquality.google https://connect.facebook.net; style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.ingest.us.sentry.io https://tiles.openfreemap.org https://elevation-tiles-prod.s3.amazonaws.com https://accounts.google.com https://*.supabase.co https://*.google-analytics.com https://www.google-analytics.com https://*.analytics.google.com https://www.google.com https://www.googletagmanager.com https://*.doubleclick.net https://*.adtrafficquality.google https://api.elevenlabs.io https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.gstatic.com data: blob: https://pagead2.googlesyndication.com https://*.googlesyndication.com https://connect.facebook.net https://www.facebook.com https://*.facebook.com https://analytics.google.com; worker-src 'self' blob:; frame-src 'self' https://dwvlophlbvvygjfxcrhm.supabase.co https://accounts.google.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://*.aryeo.com https://*.matterport.com https://*.zillow.com https://drive.google.com https://*.cloudflarestream.com https://*.videodelivery.net https://googleads.g.doubleclick.net https://*.doubleclick.net https://www.google.com https://*.adtrafficquality.google;" },
+          //
+          // Microsoft Clarity (lib/analytics/clarity.ts): https://*.clarity.ms and
+          // https://c.bing.com in script-src and connect-src, the hosts Microsoft's
+          // CSP page lists (learn.microsoft.com/en-us/clarity/setup-and-installation/clarity-csp).
+          // The tag is www.clarity.ms/tag/<id>, the library scripts.clarity.ms, the
+          // collector a lettered host such as k.clarity.ms/collect; its c.gif sync
+          // images are covered by img-src https:.
+          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googletagmanager.com https://www.googletagmanager.com https://*.google-analytics.com https://www.google-analytics.com https://www.google.com https://maps.googleapis.com https://maps.gstatic.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.adtrafficquality.google https://connect.facebook.net https://*.clarity.ms https://c.bing.com; style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.ingest.us.sentry.io https://tiles.openfreemap.org https://elevation-tiles-prod.s3.amazonaws.com https://accounts.google.com https://*.supabase.co https://*.google-analytics.com https://www.google-analytics.com https://*.analytics.google.com https://www.google.com https://www.googletagmanager.com https://*.doubleclick.net https://*.adtrafficquality.google https://api.elevenlabs.io https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.gstatic.com data: blob: https://pagead2.googlesyndication.com https://*.googlesyndication.com https://connect.facebook.net https://www.facebook.com https://*.facebook.com https://analytics.google.com https://*.clarity.ms https://c.bing.com; worker-src 'self' blob:; frame-src 'self' https://dwvlophlbvvygjfxcrhm.supabase.co https://accounts.google.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://*.aryeo.com https://*.matterport.com https://*.zillow.com https://drive.google.com https://*.cloudflarestream.com https://*.videodelivery.net https://googleads.g.doubleclick.net https://*.doubleclick.net https://www.google.com https://*.adtrafficquality.google;" },
         ],
       },
       // A page whose address carries a secret (lib/analytics/private-paths.ts):
@@ -629,6 +636,30 @@ const nextConfig: NextConfig = {
     // edge-cache headers + a refactored layout (no top-level headers()
     // / cookies() reads in the shell) so the function response is at
     // least cacheable at the CDN even though the route is still dynamic.
+
+    // STATIC GENERATION AGAINST ONE DATABASE (2026-10-14). Next 16.1.6 renders
+    // `staticGenerationMaxConcurrency` pages at once in EACH export worker
+    // (default 8; next/dist/export/worker.js), and the production build runs 7
+    // workers ("Generating static pages using 7 workers"): 56 place pages at a
+    // time, each racing a dozen Supabase reads. PostgREST's pool cannot take
+    // that: its log carried "PGRST003 Timed out acquiring connection from
+    // connection pool" during the day's builds; a read of the small
+    // subdivision_flags table averaged 394 ms from the solo build f7b23980c and
+    // 108 to 134 ms between builds (Supabase edge logs); and that queue wait
+    // is what tripped the withTimeoutFallback rails (up to 104 timeouts in a
+    // contended build). Three per worker is 21 pages in flight:
+    // the build is bound by the database, not by render CPU, so the queue
+    // shrinks without the work going slower.
+    staticGenerationMaxConcurrency: 3,
+    // Attempts per page, not retries: Next runs a page this many times before
+    // it fails the build (next/dist/export/worker.js exportPageWithRetry; the
+    // default 1 means one attempt). Four production builds died that day on
+    // ONE page each whose listings read was refused under contention
+    // (ListingsUnavailableError: /communities/mountain-high, broken-top,
+    // northwest-crossing, black-butte-ranch/types/single-family). A page that
+    // still refuses on the third attempt still fails the build: the refusal
+    // rule (lib/site/listings-unavailable.ts) is untouched.
+    staticGenerationRetryCount: 3,
   },
   // Include CMA drafts + finalized assets so /api/cma/[slug]/pdf can read
   // them from disk inside the serverless function (avoids the SSO wall on

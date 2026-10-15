@@ -200,6 +200,29 @@ function assembleInventory(
 
 export type OverlayGeo = 'city' | 'region' | 'neighborhood'
 
+/** Map key getDetachedOverlays stores: hyphen city/neighborhood, lowercased region. */
+export function overlayMapKey(geoType: OverlayGeo, geoSlug: string): string {
+  const slug = geoType === 'region' ? geoSlug.trim().toLowerCase() : cityDetachedSlug(geoSlug)
+  return slug ? `${geoType}:${slug}` : ''
+}
+
+/**
+ * Read an overlay the same way getDetachedOverlays stores it.
+ * Callers that pass the cache space-form (`la pine`) must not look up that
+ * raw string: the map is keyed `city:la-pine`. Founding miss: production
+ * /housing-market/la-pine served the noindex not-found shell while leftover
+ * HUD for `la-pine` was publishable (169 active, 8.7 months of supply).
+ */
+export function readDetachedOverlay<T>(
+  map: Map<string, T>,
+  geoType: OverlayGeo,
+  geoSlug: string,
+): T | undefined {
+  const key = overlayMapKey(geoType, geoSlug)
+  if (key && map.has(key)) return map.get(key)
+  return map.get(`${geoType}:${geoSlug}`)
+}
+
 type OverlayPayload = {
   normalized: Array<{ geoType: OverlayGeo; geoSlug: string }>
   latest: Array<[string, MetricRow]>
@@ -341,11 +364,18 @@ export async function getDetachedOverlays(
   const out = new Map<string, DetachedOverlay>()
   const { normalized, latest } = await loadOverlayRows(keys)
   for (const k of normalized) {
-    out.set(`${k.geoType}:${k.geoSlug}`, {
+    const overlay: DetachedOverlay = {
       headlines: assembleDetachedHeadlines(k.geoType, k.geoSlug, latest),
       inventory: assembleInventory(k.geoType, k.geoSlug, latest),
       supplyFloor: assembleSupplyFloor(k.geoType, k.geoSlug, latest),
-    })
+    }
+    out.set(overlayMapKey(k.geoType, k.geoSlug), overlay)
+  }
+  // Alias the caller's raw slug so `city:la pine` and `city:la-pine` both hit.
+  for (const original of keys) {
+    const key = overlayMapKey(original.geoType, original.geoSlug)
+    const overlay = key ? out.get(key) : undefined
+    if (overlay) out.set(`${original.geoType}:${original.geoSlug}`, overlay)
   }
   return out
 }

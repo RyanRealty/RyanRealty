@@ -76,7 +76,7 @@ export default function RentalLeadForm({
   }
 
   return (
-    <div className="rc-lead">
+    <div className="rc-lead" data-clarity-mask="True">
       <p className="rc-lead__prose">
         Send your numbers to a Ryan Realty broker for real rent comps and a second look.
       </p>

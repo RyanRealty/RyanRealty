@@ -11,13 +11,15 @@ avatar (launcher + her messages). Policy `docs/SARAH_POLICY.md`, phone
 hooks `docs/SARAH_PHONE_HOOKS.md`. Did not touch `app/api/voice/*` or
 `lib/grok/voice-sip.ts`. Calling window reuses `minuteOfDayInTimeZone`.
 
+Phone line owns `app/api/voice/*`, `app/api/twilio/*`, `lib/grok/voice-sip.ts`.
+It should import `notifyLiveSession`, `sarahSessionConferenceJoin`,
+`mattConferenceJoin`, `sarahGreeting`, and `evaluateSarahTurn` from `lib/sarah`.
+
 ## Next
-PR2: listing-detail teaser bubble (desktop photo + copy; mobile badge
-only), session dismiss, reduced-motion, `sarah_teaser_shown` /
-`sarah_teaser_clicked`. Then CRM logging, alerts, takeover, voice button.
+Land this PR so the phone agent can reuse persona/guardrails. Teaser UI is
+on `cursor/sarah-listing-teaser-a1ab`. Then CRM logging and alerts.
 
 ## Held
-Outbound flag off. Phone line must import `lib/sarah` (see hook doc).
-Do not edit the CI-locked SMS checkbox.
+Outbound flag off. Do not edit voice/twilio/SIP files from this workstream.
 
 Skills read: AGENTS.md CORE RULES, Counsel memo, sarah-spec.

@@ -115,7 +115,7 @@ export default function LoginForm({ next, googleClientId = null }: Props) {
           <span className="bg-card px-2 text-muted-foreground">or</span>
         </div>
       </div>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form data-clarity-mask="True" onSubmit={handleSubmit} className="space-y-4">
         <div>
           <Label htmlFor="login-email" className="block text-sm font-medium text-muted-foreground">
             Email

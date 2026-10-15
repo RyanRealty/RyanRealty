@@ -159,7 +159,7 @@ export default function BookingClient({ days, brokerSlug, timeZone, available, l
         </div>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2" data-clarity-mask="True">
         <div>
           <Label htmlFor="book-name">Your name</Label>
           <Input id="book-name" value={form.name} autoComplete="name"
@@ -186,7 +186,7 @@ export default function BookingClient({ days, brokerSlug, timeZone, available, l
         </div>
       </div>
 
-      <div>
+      <div data-clarity-mask="True">
         <Label htmlFor="book-note">Anything we should know? <span className="text-muted-foreground">(optional)</span></Label>
         <Textarea id="book-note" rows={3} value={form.note}
           onChange={(e) => setForm({ ...form, note: e.target.value })} />

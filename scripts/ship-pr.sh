@@ -100,6 +100,10 @@ if [ "$open" = "OPEN" ]; then
       exit 2
       ;;
   esac
+  # One production build at a time: wait while another is building, so two
+  # builds never prerender against the database together
+  # (scripts/lib/production-build-gate.mjs). Never fails the ship.
+  node scripts/wait-for-production-build.mjs || true
   gh pr merge --merge --match-head-commit "$head"
   git fetch origin main
 fi

@@ -121,6 +121,8 @@ describe('D26 leftover housing instrument and leftover as-of', () => {
     const geo = readFileSync(resolve('app/housing-market/[...slug]/page.tsx'), 'utf8')
     const figures = readFileSync(resolve('app/housing-market/[...slug]/_v3/geo-figures.ts'), 'utf8')
     expect(geo).toMatch(/geoMarketPublishes/)
+    expect(geo).toMatch(/readDetachedOverlay/)
+    expect(geo).not.toMatch(/mtOverlays\.get\(`\$\{leftoverGeo\}:\$\{geoSlug\}`\)/)
     expect(geo).not.toMatch(/getMarketPulse\(/)
     expect(figures).toMatch(/Oregon Data Share MLS/)
     expect(figures).toMatch(/under contract now/)

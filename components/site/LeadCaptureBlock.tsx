@@ -196,6 +196,7 @@ export function LeadCaptureBlock({
           </Stack>
 
           <form
+            data-clarity-mask="True"
             onSubmit={handleSubmit}
             className={cn(
               'tool-skin p-6 border',

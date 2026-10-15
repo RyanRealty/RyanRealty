@@ -243,7 +243,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
               </Card>
             ) : (
               <Card className="absolute right-0 top-full z-50 mt-1 w-72 rounded-none shadow-none">
-                <form onSubmit={handleGuestSave} className="p-4">
+                <form data-clarity-mask="True" onSubmit={handleGuestSave} className="p-4">
                   <Input
                     type="text"
                     name="company"
@@ -337,6 +337,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
           ) : (
             <Card className="absolute left-0 top-full z-50 mt-1 w-72 shadow-md">
             <form
+              data-clarity-mask="True"
               onSubmit={handleSave}
               className="p-4"
             >
