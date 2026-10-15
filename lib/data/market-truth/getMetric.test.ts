@@ -100,6 +100,7 @@ function mockMetricRows(rows: Record<string, unknown>[]) {
   builder.eq = vi.fn(self)
   builder.in = vi.fn(self)
   builder.gte = vi.fn(self)
+  builder.lt = vi.fn(self)
   builder.or = vi.fn(self)
   builder.order = vi.fn(self)
   builder.limit = vi.fn(self)
@@ -109,14 +110,15 @@ function mockMetricRows(rows: Record<string, unknown>[]) {
 }
 
 describe('getMetrics cache contract', () => {
-  it('caches the narrowed read for an input set, and reads no whole-geo slice', async () => {
+  it('caches the narrowed read for an input set, keeps the 14-day lookback, and reads no whole-geo slice', async () => {
     const src = readFileSync(resolve('lib/data/market-truth/getMetric.ts'), 'utf8')
     expect(src).toMatch(/unstable_cache/)
     expect(src).toMatch(/market-metric-picked-v2/)
     expect(src).toMatch(/CACHE_WINDOWS\.marketMetric/)
-    // #634's per-(geo, segment) 14-day slice ran 1,000+ rows a slice and timed
-    // the zip, city and sell pages out of their market sections (2026-10-15).
-    expect(src).not.toMatch(/METRIC_LOOKBACK_DAYS/)
+    // Which rows may answer is #634's rule: computed in the last 14 days.
+    expect(src).toMatch(/METRIC_LOOKBACK_DAYS = 14/)
+    // #634's per-(geo, segment) slice ran 1,000+ rows a slice and timed the
+    // zip, city and sell pages out of their market sections (2026-10-15).
     expect(src).not.toMatch(/fetchMetricSlice/)
   })
 })
@@ -277,6 +279,8 @@ describe('getMetrics reads every page, newest first (2026-10-01)', () => {
       builder.eq = vi.fn(self)
       builder.in = vi.fn(self)
       builder.gte = vi.fn(self)
+      builder.lt = vi.fn(self)
+      builder.or = vi.fn(self)
       builder.order = vi.fn(self)
       builder.range = vi.fn((from: number, to: number) => {
         ranges.push([from, to])
@@ -315,10 +319,10 @@ describe('orderByPrimaryKey (stable pages over a shared computed_at)', () => {
 
 /**
  * A market_metric store that answers the filters getMetrics sends, the way
- * PostgREST would. `fullRead` ignores the two narrowing filters (the
- * publishable flag and the period_end cut), so every read sees every row:
- * that is the read getMetrics made before 2026-10-14, the reference the
- * recent-first read must agree with.
+ * PostgREST would. `fullRead` ignores the narrowing filters (the publishable
+ * flag, the segment/stat pairs and the period_end bounds) but keeps the
+ * 14-day computed_at lookback, which decides what may answer. That is a read
+ * of every eligible row, the reference the two-stage read must agree with.
  */
 function serveStore(rows: Record<string, unknown>[], opts: { fullRead: boolean }) {
   const requests: string[][] = []
@@ -344,7 +348,13 @@ function serveStore(rows: Record<string, unknown>[], opts: { fullRead: boolean }
     })
     builder.gte = vi.fn((column: string, value: string) => {
       notes.push(`${column}>=${value}`)
-      if (!opts.fullRead) tests.push((row) => String(row[column]).slice(0, 10) >= value)
+      if (column === 'computed_at') tests.push((row) => Date.parse(String(row[column])) >= Date.parse(value))
+      else if (!opts.fullRead) tests.push((row) => String(row[column]).slice(0, 10) >= value)
+      return builder
+    })
+    builder.lt = vi.fn((column: string, value: string) => {
+      notes.push(`${column}<${value}`)
+      if (!opts.fullRead) tests.push((row) => String(row[column]).slice(0, 10) < value)
       return builder
     })
     builder.or = vi.fn((expr: string) => {
@@ -472,7 +482,9 @@ describe('getMetrics reads the recent days first, then history only for what the
     const requests = serveStore(store, { fullRead: false })
     const [cell] = await getMetrics([{ stat: 'active_count', geoType: 'city', geoSlug: 'bend', segment: 'condo' }])
     expect(cell?.value).toBe(214)
-    expect(requests).toEqual([['is_publishable=true', 'period_end>=2026-10-11']])
+    expect(requests).toEqual([
+      ['is_publishable=true', 'computed_at>=2026-09-30T20:00:00.000Z', 'pairs=condo:active_count', 'period_end>=2026-10-11'],
+    ])
   })
 
   it('reads history for an input whose recent rows are all withheld, and answers with its last publishable row', async () => {
@@ -487,9 +499,64 @@ describe('getMetrics reads the recent days first, then history only for what the
     const [cell] = await getMetrics([{ stat: 'median_list_active', geoType: 'city', geoSlug: 'bend', segment: 'land' }])
     expect(cell?.value).toBe(389000)
     expect(requests).toEqual([
-      ['is_publishable=true', 'period_end>=2026-10-11'],
-      ['is_publishable=true', 'pairs=land:median_list_active'],
+      ['is_publishable=true', 'computed_at>=2026-09-30T20:00:00.000Z', 'pairs=land:median_list_active', 'period_end>=2026-10-11'],
+      ['is_publishable=true', 'computed_at>=2026-09-30T20:00:00.000Z', 'pairs=land:median_list_active', 'period_end<2026-10-11'],
     ])
+  })
+
+  it('answers nothing from a row computed before the 14-day lookback', async () => {
+    const store = [
+      metricRow({ stat_id: 'median_list_active', segment: 'land', period_end: '2026-09-20', complete_through: '2026-09-19', computed_at: '2026-09-20T06:21:00Z', value: 375000 }),
+    ]
+    serveStore(store, { fullRead: false })
+    const [cell] = await getMetrics([{ stat: 'median_list_active', geoType: 'city', geoSlug: 'bend', segment: 'land' }])
+    expect(cell).toBeNull()
+  })
+
+  it('skips the recent read when every input is pinned to a period_end before the cut', async () => {
+    const store = [
+      metricRow({ stat_id: 'median_close', segment: 'condo', window_months: 1, period_end: '2026-09-30', complete_through: '2026-10-13', computed_at: '2026-10-14T06:22:00Z', value: 512000 }),
+    ]
+    const requests = serveStore(store, { fullRead: false })
+    const [cell] = await getMetrics([
+      { stat: 'median_close', geoType: 'city', geoSlug: 'bend', segment: 'condo', windowMonths: 1, periodEnd: '2026-09-30' },
+    ])
+    expect(cell?.value).toBe(512000)
+    expect(requests).toHaveLength(1)
+    expect(requests[0]).toContain('period_end<2026-10-11')
+  })
+
+  it('pages the history read past 1,000 rows to the one row that answers', async () => {
+    // 1,000 newer rows the pick refuses (their closed window lags its period
+    // end), then the one fresh row, which lands on the history read's second page.
+    const lagging = Array.from({ length: 1000 }, (_, i) =>
+      metricRow({
+        stat_id: 'months_of_supply',
+        segment: 'condo',
+        window_months: 12,
+        period_end: `2026-10-${String(2 + (i % 8)).padStart(2, '0')}`,
+        complete_through: '2026-09-20',
+        computed_at: '2026-10-10T06:00:00Z',
+        value: 9,
+      }),
+    )
+    const answer = metricRow({
+      stat_id: 'months_of_supply',
+      segment: 'condo',
+      window_months: 12,
+      period_end: '2026-10-01',
+      complete_through: '2026-09-30',
+      computed_at: '2026-10-01T06:00:00Z',
+      value: 4.2,
+    })
+    const requests = serveStore([...lagging, answer], { fullRead: false })
+    const [cell] = await getMetrics([
+      { stat: 'months_of_supply', geoType: 'city', geoSlug: 'bend', segment: 'condo', windowMonths: 12 },
+    ])
+    expect(cell?.value).toBe(4.2)
+    // One recent read, then two history pages.
+    expect(requests).toHaveLength(3)
+    expect(requests[1]).toContain('period_end<2026-10-11')
   })
 })
 
