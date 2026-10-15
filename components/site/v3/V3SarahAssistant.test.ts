@@ -33,6 +33,14 @@ describe('V3SarahAssistant · listing teaser', () => {
     expect(CSS).toContain('.v3-sarah__desk-actions')
   })
 
+  it('uses Matt\'s short web intro and does not put unlicensed status in the chrome', () => {
+    expect(SRC).toContain('webGreetingEn')
+    expect(SRC).toContain('WEB_SAVED_NOTICE_EN')
+    expect(SRC).toContain('data-sarah="saved-notice"')
+    expect(SRC).toMatch(/AI assistant/)
+    expect(SRC).not.toMatch(/AI assistant, not a licensed broker/)
+  })
+
   it('uses the approved avatar for the launcher, teaser, and Sarah messages', () => {
     expect(SRC).toContain('SARAH_AVATAR_SRC')
     expect(SRC).toContain("from '@/lib/sarah/assets'")

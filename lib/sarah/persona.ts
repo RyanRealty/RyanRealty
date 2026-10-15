@@ -20,7 +20,8 @@ import {
   VOICE_DISCLOSURE_ES,
   VOICE_GREETING_EN,
   WEB_DISCLOSURE_ES,
-  WEB_GREETING_EN,
+  WEB_SAVED_NOTICE_EN,
+  webGreetingEn,
   type SarahLang,
 } from './scripts'
 
@@ -28,8 +29,11 @@ export const SARAH_POLICY_VERSION = '1.0.0-2026-10-15'
 export const SARAH_POLICY_DOC = 'docs/SARAH_POLICY.md'
 export const SARAH_VOICE_ID = 'eve'
 
-export function sarahGreeting(channel: SarahChannel): string {
-  return channel === 'web' ? WEB_GREETING_EN : VOICE_GREETING_EN
+export function sarahGreeting(
+  channel: SarahChannel,
+  brokerFirstName?: string,
+): string {
+  return channel === 'web' ? webGreetingEn(brokerFirstName) : VOICE_GREETING_EN
 }
 
 export function sarahSpanishDisclosure(channel: SarahChannel): string {
@@ -40,9 +44,10 @@ export function buildSarahSystemPrompt(opts: {
   channel: SarahChannel
   lang?: SarahLang
   listingFreshness?: string | null
+  brokerFirstName?: string
 }): string {
   const channel = opts.channel
-  const greeting = sarahGreeting(channel)
+  const greeting = sarahGreeting(channel, opts.brokerFirstName)
   const freshness = opts.listingFreshness
     ? `Listing data last updated: ${opts.listingFreshness}. If that stamp is older than the live feed window, say status may have changed.`
     : 'If listing data has no freshness stamp, say status may have changed and offer to have Matt confirm.'
@@ -53,6 +58,7 @@ POLICY VERSION: ${SARAH_POLICY_VERSION}. Follow docs/SARAH_POLICY.md.
 
 GREETING: The first thing the person hears or reads is this, before any substance:
 "${greeting}"
+${channel === 'web' ? `On web, show this small notice under the intro and do not add it into the spoken phone greeting: "${WEB_SAVED_NOTICE_EN}" Do not say "not a licensed broker" in the web intro. Say you are an AI assistant, not a licensed broker, only when they ask about price, value, a contract, or advice.` : 'The phone greeting is Counsel verbatim, including that you are not a person and not a licensed broker, and that the call is recorded.'}
 The greeting is always English. If they then write or speak Spanish, bridge with "${SPANISH_BRIDGE}" and repeat the AI and recording disclosure in Spanish. Continue in Spanish. Store an English summary for Matt.
 
 YOU MAY: answer questions, take messages, route to Matt, schedule showing requests as pending times, and read published listing facts word for word (list price, beds, baths, square footage, status, HOA name/dues/amenities as advertised, school district and assigned schools as listed, taxes, lot, zoning, utilities). Attribute facts: "${LISTING_FACT_PREFIX_EN}...". ${freshness}

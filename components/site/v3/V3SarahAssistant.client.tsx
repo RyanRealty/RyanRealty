@@ -18,7 +18,12 @@ import {
   type SarahDeskBroker,
 } from '@/lib/sarah/desk-broker'
 import { evaluateSarahTurn } from '@/lib/sarah/guardrails'
-import { SARAH_NAME, WEB_GREETING_EN, WEB_HELP_EN } from '@/lib/sarah/scripts'
+import {
+  SARAH_NAME,
+  WEB_HELP_EN,
+  WEB_SAVED_NOTICE_EN,
+  webGreetingEn,
+} from '@/lib/sarah/scripts'
 import {
   SARAH_TEASER_COPY,
   SARAH_TEASER_DELAY_MS,
@@ -34,7 +39,7 @@ import { trackEvent } from '@/lib/tracking'
 import './tokens.css'
 import './V3SarahAssistant.css'
 
-type ChatLine = { from: 'sarah' | 'visitor'; text: string }
+type ChatLine = { from: 'sarah' | 'visitor'; text: string; notice?: string }
 
 function sessionStore(): Storage | null {
   if (typeof sessionStorage === 'undefined') return null
@@ -55,8 +60,10 @@ export function V3SarahAssistant() {
   const [dismissed, setDismissed] = useState(false)
   const [draft, setDraft] = useState('')
   const [greeted, setGreeted] = useState(true)
-  const [lines, setLines] = useState<ChatLine[]>(() => [{ from: 'sarah', text: WEB_GREETING_EN }])
   const [desk, setDesk] = useState<SarahDeskBroker>(() => deskBrokerFromAssigned(null))
+  const [lines, setLines] = useState<ChatLine[]>(() => [
+    { from: 'sarah', text: webGreetingEn(deskBrokerFromAssigned(null).firstName), notice: WEB_SAVED_NOTICE_EN },
+  ])
   const takeover = false
   const shownRef = useRef(false)
   const teaserKind: SarahTeaserKind = listingTeaserKind(wide)
@@ -79,6 +86,16 @@ export function V3SarahAssistant() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    const next = webGreetingEn(desk.firstName)
+    setLines((prev) => {
+      const first = prev[0]
+      if (prev.length !== 1 || first?.from !== 'sarah' || !first.notice) return prev
+      if (first.text === next) return prev
+      return [{ ...first, text: next }]
+    })
+  }, [desk.firstName])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -167,7 +184,7 @@ export function V3SarahAssistant() {
                 <div className="v3-sarah__panel-name" id={titleId}>
                   {SARAH_NAME}
                 </div>
-                <span className="v3-sarah__panel-role">AI assistant, not a licensed broker</span>
+                <span className="v3-sarah__panel-role">AI assistant</span>
               </div>
               <button
                 type="button"
@@ -189,7 +206,14 @@ export function V3SarahAssistant() {
                   {line.from === 'sarah' ? (
                     <img src={SARAH_AVATAR_SRC} alt="" width={28} height={28} />
                   ) : null}
-                  <p className="v3-sarah__msg-body">{line.text}</p>
+                  <div className="v3-sarah__msg-stack">
+                    <p className="v3-sarah__msg-body">{line.text}</p>
+                    {line.notice ? (
+                      <p className="v3-sarah__saved" data-sarah="saved-notice">
+                        {line.notice}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
               ))}
             </div>
