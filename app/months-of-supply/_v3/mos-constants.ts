@@ -65,7 +65,7 @@ export const MOS_MARKET_TYPE_QUESTION =
   'What does a high or low months of supply mean?'
 
 export const MOS_MARKET_TYPE_ANSWER_TAIL =
-  ' At the low end, listings are getting absorbed faster than new inventory can replace them, and sellers hold more leverage on price and terms. At the high end, buyers have more homes to choose from and more room to negotiate.'
+  ' At the low end, few homes are listed relative to the sales pace, and sellers hold more leverage on price and terms. At the high end, buyers have more homes to choose from and more room to negotiate.'
 
 /** Questions 1, 3 and 4, verbatim. The page splices question 2 into position. */
 export const MOS_FAQ_FIRST: MosFaq = {

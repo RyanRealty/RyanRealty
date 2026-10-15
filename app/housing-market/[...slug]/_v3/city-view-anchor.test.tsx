@@ -70,7 +70,7 @@ describe('/housing-market/<city> keeps #takeaways (aeo-market-lead-and-tables)',
         sheet: null,
         takeaways: [
           '706 single-family houses with a Bend address are for sale as of Oct 13, 2026, at a median asking price of $849,950.',
-          'Bend has 3.5 months of supply, so listings are getting absorbed faster than they are replaced.',
+          'Bend has 3.5 months of supply, so the market holds few homes relative to the recent sales pace.',
         ],
       } as unknown as Parameters<typeof CityMarketView>[0]),
     )
