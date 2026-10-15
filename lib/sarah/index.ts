@@ -4,6 +4,9 @@ export {
   MATT_CHAT_PHOTO_SRC,
   SARAH_AVATAR_ALT,
   SARAH_AVATAR_SRC,
+  SARAH_AVATAR_SRCSET,
+  SARAH_AVATAR_SRC_2X,
+  SARAH_AVATAR_SRC_3X,
 } from './assets'
 export {
   BOOKING_PENDING_EN,
@@ -100,6 +103,15 @@ export {
   deskBrokerSlug,
   type SarahDeskBroker,
 } from './desk-broker'
+export {
+  SARAH_INTENT_CHIPS,
+  WEB_BRINGS_YOU_HERE_EN,
+  WEB_DISCLOSURE_LINE_EN,
+  applyIntentTurn,
+  initialFlow,
+  matchIntentChip,
+  type SarahIntent,
+} from './intent-flow'
 export {
   SARAH_TEASER_COPY,
   SARAH_TEASER_DELAY_MS,

@@ -8,23 +8,32 @@
  * prefers-reduced-motion is honored in CSS (duration tokens + a media query).
  */
 import { useCallback, useEffect, useId, useRef, useState, type PointerEvent } from 'react'
+import { Mic } from 'lucide-react'
 import { usePathname } from 'next/navigation'
+import { captureSarahLead } from '@/app/actions/sarah-capture'
 import { getSarahDeskBroker } from '@/app/actions/sarah-desk'
+import { mintSarahVoiceToken } from '@/app/actions/sarah-voice'
 import { V3_ROOT_CLASS } from './atoms'
-import { SARAH_AVATAR_ALT, SARAH_AVATAR_SRC } from '@/lib/sarah/assets'
+import { SARAH_AVATAR_ALT, SARAH_AVATAR_SRC, SARAH_AVATAR_SRCSET } from '@/lib/sarah/assets'
 import {
-  brokerJoinedLine,
   deskBrokerFromAssigned,
   type SarahDeskBroker,
 } from '@/lib/sarah/desk-broker'
 import { evaluateSarahTurn } from '@/lib/sarah/guardrails'
 import {
+  applyIntentTurn,
+  initialFlow,
+  matchIntentChip,
+  SARAH_INTENT_CHIPS,
+  WEB_BRINGS_YOU_HERE_EN,
+  WEB_DISCLOSURE_LINE_EN,
+  type FlowChip,
+  type FlowState,
+} from '@/lib/sarah/intent-flow'
+import {
   SARAH_NAME,
   WEB_HELP_EN,
-  WEB_SAVED_NOTICE_EN,
   WEB_VOICE_NOTICE_EN,
-  bookingPendingEn,
-  webGreetingEn,
 } from '@/lib/sarah/scripts'
 import {
   SARAH_TEASER_COPY,
@@ -36,6 +45,7 @@ import {
   teaserDismissedInSession,
   type SarahTeaserKind,
 } from '@/lib/sarah/teaser'
+import { startSarahVoiceSession, type SarahVoiceHandle, type SarahVoiceStatus } from '@/lib/sarah/web-voice'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { trackEvent } from '@/lib/tracking'
 import './tokens.css'
@@ -52,6 +62,32 @@ function sessionStore(): Storage | null {
   }
 }
 
+function greetingLines(): ChatLine[] {
+  return [{ from: 'sarah', text: WEB_BRINGS_YOU_HERE_EN, notice: WEB_DISCLOSURE_LINE_EN }]
+}
+
+function SarahFace({
+  className,
+  size,
+  alt = '',
+}: {
+  className?: string
+  size: number
+  alt?: string
+}) {
+  return (
+    <img
+      className={className}
+      src={SARAH_AVATAR_SRC}
+      srcSet={SARAH_AVATAR_SRCSET}
+      sizes={`${size}px`}
+      alt={alt}
+      width={size}
+      height={size}
+    />
+  )
+}
+
 export function V3SarahAssistant() {
   const pathname = usePathname()
   const hidden = shouldHidePublicChrome(pathname)
@@ -63,13 +99,18 @@ export function V3SarahAssistant() {
   const [draft, setDraft] = useState('')
   const [greeted, setGreeted] = useState(true)
   const [desk, setDesk] = useState<SarahDeskBroker>(() => deskBrokerFromAssigned(null))
-  const [lines, setLines] = useState<ChatLine[]>(() => [
-    { from: 'sarah', text: webGreetingEn(deskBrokerFromAssigned(null).firstName), notice: WEB_SAVED_NOTICE_EN },
-  ])
+  const [lines, setLines] = useState<ChatLine[]>(() => greetingLines())
+  const [flow, setFlow] = useState<FlowState>(() => initialFlow())
+  const [chips, setChips] = useState<FlowChip[] | null>([...SARAH_INTENT_CHIPS])
   const [sheetDy, setSheetDy] = useState(0)
-  const takeover = false
+  const [voiceStatus, setVoiceStatus] = useState<SarahVoiceStatus>('idle')
   const shownRef = useRef(false)
   const dragRef = useRef<{ y: number; dy: number } | null>(null)
+  const voiceRef = useRef<SarahVoiceHandle | null>(null)
+  const flowRef = useRef(flow)
+  const messagesRef = useRef<HTMLDivElement | null>(null)
+  const latestRef = useRef<HTMLDivElement | null>(null)
+  flowRef.current = flow
   const teaserKind: SarahTeaserKind = listingTeaserKind(wide)
   const offer = shouldOfferListingTeaser({
     pathname,
@@ -91,15 +132,20 @@ export function V3SarahAssistant() {
     }
   }, [])
 
+  const scrollToLatest = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    const end = latestRef.current
+    const box = messagesRef.current
+    if (end && typeof end.scrollIntoView === 'function') {
+      end.scrollIntoView({ block: 'end', behavior })
+      return
+    }
+    if (box) box.scrollTop = box.scrollHeight
+  }, [])
+
   useEffect(() => {
-    const next = webGreetingEn(desk.firstName)
-    setLines((prev) => {
-      const first = prev[0]
-      if (prev.length !== 1 || first?.from !== 'sarah' || !first.notice) return prev
-      if (first.text === next) return prev
-      return [{ ...first, text: next }]
-    })
-  }, [desk.firstName])
+    if (!panelOpen) return
+    scrollToLatest(lines.length <= 1 ? 'auto' : 'smooth')
+  }, [lines, chips, panelOpen, scrollToLatest])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -146,6 +192,9 @@ export function V3SarahAssistant() {
   const closePanel = useCallback(() => {
     setSheetDy(0)
     dragRef.current = null
+    voiceRef.current?.stop()
+    voiceRef.current = null
+    setVoiceStatus('idle')
     setPanelOpen(false)
   }, [])
 
@@ -158,35 +207,101 @@ export function V3SarahAssistant() {
     return () => window.removeEventListener('keydown', onKey)
   }, [panelOpen, closePanel])
 
+  const acceptVisitor = useCallback(
+    (text: string) => {
+      const trimmed = text.trim()
+      if (!trimmed) return
+      const guard = evaluateSarahTurn({ visitorText: trimmed, greeted })
+      setGreeted(true)
+      const hardStop =
+        guard.mode === 'wrap-has-agent' || guard.mode === 'stop-recording' || guard.mode === 'escalate'
+      const intentHit = matchIntentChip(trimmed)
+      if (hardStop || (guard.mode === 'refuse' && !intentHit && flow.step === 'intent')) {
+        const reply =
+          guard.reply ??
+          (guard.mode === 'escalate'
+            ? "I'll have a licensed broker call you as soon as possible. What's the best number?"
+            : WEB_HELP_EN)
+        setLines((prev) => [...prev, { from: 'visitor', text: trimmed }, { from: 'sarah', text: reply }])
+        return
+      }
+      const turn = applyIntentTurn(flowRef.current, trimmed, desk.firstName)
+      setFlow(turn.next)
+      flowRef.current = turn.next
+      setChips(turn.chips)
+      setLines((prev) => [...prev, { from: 'visitor', text: trimmed }, { from: 'sarah', text: turn.reply }])
+      if (turn.capture) {
+        void captureSarahLead({
+          intent: turn.next.intent ?? 'question',
+          answers: turn.next.answers,
+          startCma: turn.startCma,
+        })
+      }
+    },
+    [desk.firstName, greeted],
+  )
+
   const send = useCallback(() => {
     const text = draft.trim()
     if (!text) return
     setDraft('')
-    const turn = evaluateSarahTurn({ visitorText: text, greeted })
-    setGreeted(true)
-    const reply =
-      turn.reply ??
-      (turn.mode === 'escalate'
-        ? "I'll have a licensed broker call you as soon as possible. What's the best number?"
-        : WEB_HELP_EN)
-    setLines((prev) => [...prev, { from: 'visitor', text }, { from: 'sarah', text: reply }])
-  }, [draft, greeted])
+    acceptVisitor(text)
+  }, [acceptVisitor, draft])
 
-  const bookTime = useCallback(() => {
-    trackEvent('click_cta', { cta: 'sarah_desk', action: 'book', surface: desk.slug })
-    const visitor = `I'd like to book a time with ${desk.firstName}.`
-    const reply = bookingPendingEn(desk.firstName)
-    setGreeted(true)
-    setLines((prev) => [...prev, { from: 'visitor', text: visitor }, { from: 'sarah', text: reply }])
-  }, [desk.firstName, desk.slug])
+  const tapChip = useCallback(
+    (label: string) => {
+      trackEvent('click_cta', { cta: 'sarah_intent', action: label, surface: desk.slug })
+      acceptVisitor(label)
+    },
+    [acceptVisitor, desk.slug],
+  )
 
   const requestVoice = useCallback(() => {
-    trackEvent('click_cta', { cta: 'sarah_voice', action: 'notice', surface: desk.slug })
+    if (voiceStatus === 'listening' || voiceStatus === 'connecting' || voiceStatus === 'speaking') {
+      voiceRef.current?.stop()
+      voiceRef.current = null
+      setVoiceStatus('idle')
+      return
+    }
+    trackEvent('click_cta', { cta: 'sarah_voice', action: 'start', surface: desk.slug })
+    setVoiceStatus('asking')
     setLines((prev) => {
       if (prev.some((line) => line.text === WEB_VOICE_NOTICE_EN)) return prev
       return [...prev, { from: 'sarah', text: WEB_VOICE_NOTICE_EN }]
     })
-  }, [desk.slug])
+    void (async () => {
+      const token = await mintSarahVoiceToken()
+      if (!token.data) {
+        setVoiceStatus('error')
+        setLines((prev) => [...prev, { from: 'sarah', text: token.error ?? WEB_VOICE_NOTICE_EN }])
+        return
+      }
+      try {
+        const handle = await startSarahVoiceSession({
+          secret: token.data.secret,
+          brokerFirstName: token.data.brokerFirstName,
+          onStatus: setVoiceStatus,
+          onError: (message) => {
+            setLines((prev) => [...prev, { from: 'sarah', text: message }])
+          },
+          onTranscript: (from, text) => {
+            if (from === 'visitor') {
+              acceptVisitor(text)
+              return
+            }
+            setLines((prev) => [...prev, { from, text }])
+          },
+        })
+        voiceRef.current = handle
+      } catch {
+        setVoiceStatus('error')
+        setLines((prev) => [
+          ...prev,
+          { from: 'sarah', text: 'I need microphone permission to talk. You can keep typing.' },
+        ])
+      }
+    })()
+  }, [acceptVisitor, desk.slug, voiceStatus])
 
   const onSheetPointerDown = useCallback(
     (e: PointerEvent<HTMLElement>) => {
@@ -221,6 +336,15 @@ export function V3SarahAssistant() {
 
   const showBubble = teaserOn && offer && teaserKind === 'bubble'
   const showBadge = teaserOn && offer && teaserKind === 'badge'
+  const micBusy = voiceStatus === 'listening' || voiceStatus === 'connecting' || voiceStatus === 'speaking'
+  const micLabel =
+    voiceStatus === 'listening'
+      ? 'Listening. Stop talking with Sarah'
+      : voiceStatus === 'connecting' || voiceStatus === 'asking'
+        ? 'Connecting to Sarah voice'
+        : voiceStatus === 'speaking'
+          ? 'Sarah is speaking. Stop voice'
+          : 'Talk to Sarah'
 
   return (
     <div className={V3_ROOT_CLASS}>
@@ -240,6 +364,7 @@ export function V3SarahAssistant() {
             className="v3-sarah__panel"
             data-sarah="panel"
             data-sarah-surface={wide ? 'card' : 'sheet'}
+            data-sarah-broker={desk.slug}
             aria-labelledby={titleId}
             style={sheetDy ? { transform: `translateY(${sheetDy}px)` } : undefined}
             onPointerDown={onSheetPointerDown}
@@ -251,19 +376,12 @@ export function V3SarahAssistant() {
               <span />
             </div>
             <div className="v3-sarah__panel-head" data-sarah-drag="">
-              <img src={SARAH_AVATAR_SRC} alt="" width={32} height={32} />
+              <SarahFace size={36} />
               <div className="v3-sarah__panel-titles">
                 <div className="v3-sarah__panel-name" id={titleId}>
                   {SARAH_NAME}
                 </div>
-                <span className="v3-sarah__panel-role">with {desk.firstName}&apos;s team</span>
               </div>
-              <p className="v3-sarah__desk-who" data-sarah="desk" data-sarah-broker={desk.slug} data-sarah-takeover={takeover ? '1' : '0'}>
-                <img src={desk.photoSrc} alt="" width={28} height={28} />
-                <span data-sarah="desk-line">
-                  {takeover ? brokerJoinedLine(desk) : desk.fullName}
-                </span>
-              </p>
               <button
                 type="button"
                 className="v3-sarah__dismiss"
@@ -273,33 +391,7 @@ export function V3SarahAssistant() {
                 ×
               </button>
             </div>
-            <nav className="v3-sarah__desk-actions" aria-label={`Reach ${desk.fullName}`}>
-              <a
-                href={`tel:${desk.phoneTel}`}
-                onClick={() => trackEvent('click_cta', { cta: 'sarah_desk', action: 'call', surface: desk.slug })}
-              >
-                Call
-              </a>
-              <a
-                href={`sms:${desk.phoneTel}`}
-                onClick={() => trackEvent('click_cta', { cta: 'sarah_desk', action: 'text', surface: desk.slug })}
-              >
-                Text
-              </a>
-              <a
-                href={`mailto:${desk.email}`}
-                onClick={() => trackEvent('click_cta', { cta: 'sarah_desk', action: 'email', surface: desk.slug })}
-              >
-                Email
-              </a>
-              <button
-                type="button"
-                onClick={bookTime}
-              >
-                Book a time
-              </button>
-            </nav>
-            <div className="v3-sarah__messages">
+            <div className="v3-sarah__messages" ref={messagesRef} data-sarah="messages">
               {lines.map((line, i) => (
                 <div
                   key={`${line.from}-${i}`}
@@ -307,20 +399,39 @@ export function V3SarahAssistant() {
                     line.from === 'sarah' ? 'v3-sarah__msg v3-sarah__msg--sarah' : 'v3-sarah__msg v3-sarah__msg--visitor'
                   }
                 >
-                  {line.from === 'sarah' ? (
-                    <img src={SARAH_AVATAR_SRC} alt="" width={28} height={28} />
-                  ) : null}
+                  {line.from === 'sarah' ? <SarahFace size={28} /> : null}
                   <div className="v3-sarah__msg-stack">
                     <p className="v3-sarah__msg-body">{line.text}</p>
                     {line.notice ? (
-                      <p className="v3-sarah__saved" data-sarah="saved-notice">
+                      <p className="v3-sarah__saved" data-sarah="saved-notice" data-sarah-disclosure="">
                         {line.notice}
                       </p>
                     ) : null}
                   </div>
                 </div>
               ))}
+              <div ref={latestRef} data-sarah="latest" />
             </div>
+            {chips && chips.length > 0 ? (
+              <div className="v3-sarah__hints" data-sarah="intent-chips">
+                {flow.step === 'intent' ? (
+                  <p className="v3-sarah__hints-kicker">Here&apos;s a starting point</p>
+                ) : null}
+                <div className="v3-sarah__hint-row">
+                  {chips.map((chip) => (
+                    <button
+                      key={chip.id}
+                      type="button"
+                      className="v3-sarah__hint"
+                      data-sarah-chip={chip.id}
+                      onClick={() => tapChip(chip.label)}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <form
               className="v3-sarah__composer"
               onSubmit={(e) => {
@@ -331,11 +442,14 @@ export function V3SarahAssistant() {
               <button
                 type="button"
                 className="v3-sarah__mic"
-                aria-label="Talk to Sarah"
+                aria-label={micLabel}
                 data-sarah="mic"
+                data-sarah-voice={voiceStatus}
+                aria-pressed={micBusy}
                 onClick={requestVoice}
               >
-                Mic
+                <Mic aria-hidden="true" strokeWidth={1.75} />
+                <span className="sr-only">{micLabel}</span>
               </button>
               <input
                 type="text"
@@ -344,6 +458,7 @@ export function V3SarahAssistant() {
                 autoComplete="off"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
+                onFocus={() => scrollToLatest()}
               />
               <button type="submit">Send</button>
             </form>
@@ -358,7 +473,7 @@ export function V3SarahAssistant() {
               onClick={() => openPanel(true)}
             >
               <span className="v3-sarah__teaser-photo">
-                <img src={SARAH_AVATAR_SRC} alt="" width={36} height={36} />
+                <SarahFace size={36} />
               </span>
               <span>{SARAH_TEASER_COPY}</span>
             </button>
@@ -391,7 +506,7 @@ export function V3SarahAssistant() {
             else openPanel(showBadge)
           }}
         >
-          <img className="v3-sarah__avatar" src={SARAH_AVATAR_SRC} alt={SARAH_AVATAR_ALT} width={56} height={56} />
+          <SarahFace className="v3-sarah__avatar" size={56} alt={SARAH_AVATAR_ALT} />
           {showBadge ? <span className="v3-sarah__badge" data-sarah-teaser="badge" /> : null}
         </button>
       </div>

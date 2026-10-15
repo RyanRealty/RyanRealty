@@ -1,9 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { MATT_CHAT_PHOTO_SRC, SARAH_AVATAR_ALT, SARAH_AVATAR_SRC } from './assets'
+import {
+  MATT_CHAT_PHOTO_SRC,
+  SARAH_AVATAR_ALT,
+  SARAH_AVATAR_SRC,
+  SARAH_AVATAR_SRCSET,
+  SARAH_AVATAR_SRC_2X,
+  SARAH_AVATAR_SRC_3X,
+} from './assets'
 
 describe('Sarah avatar asset', () => {
   it('is the approved avatar, used for the launcher and Sarah messages', () => {
     expect(SARAH_AVATAR_SRC).toBe('/images/sarah/avatar.jpg')
+    expect(SARAH_AVATAR_SRC_2X).toBe('/images/sarah/avatar@2x.jpg')
+    expect(SARAH_AVATAR_SRC_3X).toBe('/images/sarah/avatar@3x.jpg')
+    expect(SARAH_AVATAR_SRCSET).toContain('2x')
+    expect(SARAH_AVATAR_SRCSET).toContain('3x')
     expect(SARAH_AVATAR_ALT.toLowerCase()).toContain('sarah')
     expect(SARAH_AVATAR_ALT.toLowerCase()).toContain('ai')
   })

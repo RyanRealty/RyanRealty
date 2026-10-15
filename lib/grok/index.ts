@@ -72,6 +72,14 @@ export {
 } from './cursor-cli'
 
 export {
+  GROK_CLIENT_SECRET_MAX_SECONDS,
+  GROK_REALTIME_MODEL,
+  GROK_REALTIME_VOICE,
+  mintGrokRealtimeClientSecret,
+  grokRealtimeWebSocketUrl,
+  grokRealtimeSubprotocol,
+} from './realtime'
+export {
   GROK_TTS_DEFAULT_VOICE,
   GROK_TTS_ENGINE,
   GROK_TTS_MODEL,

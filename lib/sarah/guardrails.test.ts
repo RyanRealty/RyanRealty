@@ -103,7 +103,8 @@ describe('system prompt', () => {
     const prompt = buildSarahSystemPrompt({ channel: 'web' })
     expect(prompt).not.toMatch(/pre-approved/i)
     expect(prompt).not.toMatch(/proof of funds/i)
-    expect(prompt).toMatch(/Do not interview budget, financing, or timeline/)
+    expect(prompt).toMatch(/do not interview budget, financing, or timeline/)
+    expect(prompt).toMatch(/short intent flow may ask area, budget, and timeline/)
     expect(prompt).toMatch(/not a licensed broker|unlicensed/i)
     expect(prompt).toMatch(/Are there a couple of times/)
     expect(prompt).toMatch(/YOU MAY NOT[\s\S]*Auto-book Matt's calendar/)
@@ -124,5 +125,12 @@ describe('system prompt', () => {
 describe('classifyVisitorMessage', () => {
   it('returns other for a normal listing question', () => {
     expect(classifyVisitorMessage('How many square feet does the listing show?')).toContain('other')
+  })
+
+  it('lets a home-worth chip continue into the qualifying flow instead of the price-opinion refuse', () => {
+    const turn = evaluateSarahTurn({ visitorText: "What's my home worth?", greeted: true })
+    expect(turn.mode).toBe('continue')
+    expect(turn.topic).toBe('cma-value')
+    expect(turn.reply).toBeNull()
   })
 })
