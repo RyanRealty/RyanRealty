@@ -54,6 +54,9 @@ import {
 
 type RawRow = Record<string, unknown>
 
+/** Default worklist cap. ~770 expired+FSBO rows today; raise if the table grows past this. */
+export const PROSPECTING_WORKLIST_READ_LIMIT = 800
+
 // Fail-closed default when a per-row compliance entry is somehow missing.
 const FAILSAFE_COMPLIANCE: ProspectComplianceState = {
   hardStop: true,
@@ -102,11 +105,10 @@ async function fetchRawProspectRows(kind: ProspectKind, filters: BaseListFilters
     if (filters.dateAfter) q = q.gte(dateColumn, filters.dateAfter)
     if (filters.dateBefore) q = q.lte(dateColumn, filters.dateBefore)
 
-    // The prospect universe is small (~150-160 rows/kind, spec §0) — this cap
-    // documents the bound explicitly rather than relying on PostgREST's
-    // implicit 1,000-row default (the old unbounded reads this replaces
-    // silently truncated there, spec Defect 11).
-    return q.order(dateColumn, { ascending: false, nullsFirst: false }).limit(1000)
+    // Cap the default worklist read. The table is hundreds of rows, not the
+    // 1,000-row PostgREST default; listings relist cost is skip-sent + chunked
+    // `.in()` in resolveComplianceBatch, not this scan.
+    return q.order(dateColumn, { ascending: false, nullsFirst: false }).limit(PROSPECTING_WORKLIST_READ_LIMIT)
   }
 
   let { data, error } = await runQuery(prospectSelect(kind))

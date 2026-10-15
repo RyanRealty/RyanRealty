@@ -44,7 +44,8 @@ export {
   type DripSequence,
 } from './drip'
 
-export { listProspects } from './list'
+export { listProspects, PROSPECTING_WORKLIST_READ_LIMIT } from './list'
+export { prospectOutreachAlreadySent } from './outreach-sent'
 export { classifyProspect, type ProspectBucket } from './classify'
 export { isProspectDocClientReady, isProspectDocReady } from './doc-ready'
 export { prospectDetailHref, prospectQueueReviewLabel } from './detail-href'

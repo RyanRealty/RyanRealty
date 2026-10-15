@@ -33,7 +33,7 @@ export function MessagesFolderSelect({ current }: { current: string }) {
         const qs = next.toString()
         router.push(`/admin/messages${qs ? `?${qs}` : ''}`)
       }}
-      style={{ width: '100%' }}
+      style={{ width: 'auto', minWidth: '12.5rem', maxWidth: 'none' }}
     >
       {MESSAGE_FOLDERS.map(([value, label]) => (
         <option key={value} value={value}>
