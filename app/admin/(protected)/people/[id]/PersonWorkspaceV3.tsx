@@ -20,7 +20,10 @@ import type { ContactRelationship } from '@/lib/data/crm/getContactRelationships
 import type { PersonDealLink } from '@/lib/data/tc/deal-people'
 import type { PersonAddress } from '@/lib/crm/person-address'
 import { FieldEditors } from './FieldEditors'
+import { PersonConsentEditor } from './PersonConsentEditor'
+import type { PersonChannelConsentView } from '@/lib/crm/person-channel-consent'
 import { HomesSection } from './HomesSection'
+import { CountyRecordsSection } from './CountyRecordsSection'
 import { PersonAddressEditor } from './PersonAddressEditor'
 import { PersonDeals } from './PersonDeals'
 import { PersonNotesAdd } from './PersonNotesAdd'
@@ -101,6 +104,7 @@ export function PersonWorkspaceV3(props: {
   reportSub: ContactReportSubscription | null
   siteActivity: PersonSiteActivity
   composer: ComponentProps<typeof LeadComposer>
+  consent: PersonChannelConsentView
 }) {
   const openTasks = props.tasks.filter((t) => !t.completed_at)
   const strip = derivePersonRightNow({
@@ -168,6 +172,22 @@ export function PersonWorkspaceV3(props: {
             </div>
           </SidebarSec>
 
+          <SidebarSec
+            title="Consent"
+            meta={
+              props.consent.sms.allowed && props.consent.email.allowed && props.consent.call.allowed
+                ? 'allowed'
+                : 'restricted'
+            }
+          >
+            <PersonConsentEditor
+              personId={props.personId}
+              sms={props.consent.sms}
+              email={props.consent.email}
+              call={props.consent.call}
+            />
+          </SidebarSec>
+
           <SidebarSec title="Notes" meta={props.notes.length === 1 ? '1 note' : `${props.notes.length} notes`}>
             <PersonNotesAdd personId={props.personId} notes={props.notes} hideHeading latestOnly />
           </SidebarSec>
@@ -203,6 +223,12 @@ export function PersonWorkspaceV3(props: {
                 : `No visits identified to this contact in the last ${props.siteActivity.windowDays} days.`}
             </p>
             <PersonalLinkCopy href={personalLink} />
+          </SidebarSec>
+
+          <SidebarSec title="County records" meta="Deschutes, Crook">
+            <Suspense fallback={<p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>Reading county records…</p>}>
+              <CountyRecordsSection personId={props.personId} hideHeading />
+            </Suspense>
           </SidebarSec>
 
           <SidebarSec

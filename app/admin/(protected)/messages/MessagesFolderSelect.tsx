@@ -10,12 +10,12 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ToolbarSelect } from '@/components/admin/v2'
 
 export const MESSAGE_FOLDERS = [
-  ['recent', 'Recent'],
   ['inbox', 'Needs attention'],
   ['assigned', 'Assigned'],
   ['drafts', 'Drafts'],
   ['sent', 'Sent'],
   ['closed', 'Closed'],
+  ['recent', 'Recent'],
 ] as const
 
 export function MessagesFolderSelect({ current }: { current: string }) {
@@ -27,13 +27,13 @@ export function MessagesFolderSelect({ current }: { current: string }) {
       value={current}
       onChange={(e) => {
         const next = new URLSearchParams(params.toString())
-        if (e.target.value === 'recent') next.delete('f')
+        if (e.target.value === 'inbox') next.delete('f')
         else next.set('f', e.target.value)
         next.delete('c')
         const qs = next.toString()
         router.push(`/admin/messages${qs ? `?${qs}` : ''}`)
       }}
-      style={{ width: '100%' }}
+      style={{ width: 'auto', minWidth: '12.5rem', maxWidth: 'none' }}
     >
       {MESSAGE_FOLDERS.map(([value, label]) => (
         <option key={value} value={value}>

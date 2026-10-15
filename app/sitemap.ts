@@ -88,6 +88,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return buildAllUrls(baseUrl, now)
 }
 
+export type BuildAllUrlsOptions = {
+  /**
+   * Include the listing-detail URLs (getListingSitemapRows). Default true, so
+   * the monolith fallback above still lists every public URL.
+   *
+   * The per-class children pass false (lib/sitemap-class-rows.ts). Every
+   * listing URL classifies as 'listings', and getClassRows('listings') reads
+   * getListingSitemapRows itself and returns before it builds this universe,
+   * so in core, geo, matrix and content the listing leg was read and thrown
+   * away. It was also the slowest leg (13-28s in production on 2026-10-14),
+   * and four of those class builds start together after every deploy.
+   */
+  listings?: boolean
+}
+
 /**
  * Build the complete list of sitemap URLs. Called once per chunk request.
  * In production with caching (revalidate: 3600), this is efficient enough.
@@ -97,7 +112,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
  * so GSC reports indexed counts per class. The monolith at /sitemap.xml
  * stays authoritative and unchanged.
  */
-export async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.Sitemap> {
+export async function buildAllUrls(
+  baseUrl: string,
+  now: Date,
+  opts: BuildAllUrlsOptions = {},
+): Promise<MetadataRoute.Sitemap> {
   // Sanctioned 2-segment /cities/{a}/{b} paths (from the neighborhoods table);
   // filterRogueCityUrls drops any 2-seg /cities URL not in this set before serve.
   const allowedNeighborhoodPaths = new Set<string>()
@@ -331,6 +350,13 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // budget on every cold build. Started together they cost the slowest one.
     // The shared deadline above still bounds each.
     const subdivisionCitySlugs = [...CENTRAL_OREGON_CITY_SLUGS]
+    // ONE read of the indexable plat set per build, handed to both legs that
+    // judge against it: the plat pages below and the browse pairs, which a
+    // plat twin leaves for its /subdivisions/{slug} target. Two reads in one
+    // build can disagree (2026-10-14: geo.xml's pairs behaved as if the set
+    // were empty, with no plat page listed, while llms-subdivisions.txt, the
+    // same set, listed 2,950 plats).
+    const indexableSubdivisionsRead = getIndexableSubdivisions()
     const started = {
       // The city list reads listing_search_mv (maintained incrementally since
       // 2026-09-24), not raw `listings`. The raw scan paged 589K rows through an
@@ -354,10 +380,10 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       ),
       'subdivision-browse-pairs': leg(
         'subdivision-browse-pairs',
-        getBrowsePairSitemapPaths(subdivisionCitySlugs),
+        getBrowsePairSitemapPaths(subdivisionCitySlugs, indexableSubdivisionsRead),
         [] as string[],
       ),
-      'indexable-subdivisions': leg('indexable-subdivisions', getIndexableSubdivisions(), []),
+      'indexable-subdivisions': leg('indexable-subdivisions', indexableSubdivisionsRead, []),
       // The cities whose /open-houses/<city> page is indexable this week (it is
       // noindex on an empty calendar, SITE-27). null = unknown: keep them all.
       'open-house-cities': leg('open-house-cities', openHouseCitySlugsWithEvents(), null as Set<string> | null),
@@ -372,7 +398,12 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
         ),
         [] as Array<{ slug: string; updated_at?: string }>,
       ),
-      'listing-rows': leg('listing-rows', getListingSitemapRows(now), []),
+      // Skipped for the class universe (BuildAllUrlsOptions.listings): no
+      // leg, no read, no line in the leg-timing log.
+      'listing-rows':
+        opts.listings === false
+          ? Promise.resolve([] as Awaited<ReturnType<typeof getListingSitemapRows>>)
+          : leg('listing-rows', getListingSitemapRows(now), []),
       'blog-posts': leg(
         'blog-posts',
         fetchAllRows<{ slug: string; published_at?: string | null }>(
@@ -588,6 +619,13 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // The aggregate now happens once a night inside the MV. Same rows, same
     // classification (classifyLifetimeBuckets) — see
     // lib/data/subdivisions/getSubdivisionCityInventory.ts.
+    //
+    // The leg hands back the URL browsePairSitemapPath() gives each pair
+    // (lib/seo/browse-pair-decision.ts): the pair itself when its page is
+    // self-canonical, /subdivisions/{slug} when its page canonicalizes there
+    // (a plat twin), nothing when the plat set could not be read. The plat
+    // pages leg below lists the same /subdivisions/{slug} URLs; the final pass
+    // (finalizeSitemapEntries) submits each path once.
     const browsePairPaths = await started['subdivision-browse-pairs']
     for (const path of browsePairPaths) {
       // SITE-183 / SITE-182: a registry community's area twin
@@ -612,6 +650,12 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // a city, neighborhood or community name (/subdivisions/bend, /sisters,
     // /la-pine). Nothing to change here: the set decides, this leg submits it.
     const indexableSubdivisions = await started['indexable-subdivisions']
+    if (indexableSubdivisions.length === 0) {
+      // getIndexableSubdivisions answers [] when a read failed (it never
+      // throws, and production holds 2,950 plats), so this leg is empty by
+      // failure, not by fact. Say so: the failed read is otherwise silent.
+      console.error('[sitemap] indexable plat set empty: no /subdivisions/{slug} page submitted by this build (a failed read, not a finding)')
+    }
     for (const url of subdivisionSitemapUrls(indexableSubdivisions, baseUrl)) {
       dynamicPages.push({
         url,

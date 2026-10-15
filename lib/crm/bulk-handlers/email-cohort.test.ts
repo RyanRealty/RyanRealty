@@ -320,7 +320,7 @@ describe('sendOneCohortEmail — suppression + claim-before-send + record shape'
 
     await sendOneCohortEmail(recipient(), CONTENT, {}, CTX)
     const sendArg = mockSendEmail.mock.calls[0][0]
-    expect(sendArg.from).toBe('"Matt Ryan · Ryan Realty" <matt@mail.ryan-realty.com>')
+    expect(sendArg.from).toBe('"Matt Ryan · Ryan Realty" <matt@ryan-realty.com>')
     expect(sendArg.replyTo).toBe('matt@ryan-realty.com')
     expect(String(sendArg.from).toLowerCase()).not.toContain('noreply')
   })

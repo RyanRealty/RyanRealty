@@ -144,11 +144,26 @@ export async function sendContactConfirmation(params: {
 }
 
 /**
+ * The search confirmation's promise, in the row's own cadence. Daily rows go
+ * out at the morning slot (lib/saved-search-cadence.ts DAILY_SEND_HOUR_LOCAL);
+ * instant rows ride the hourly cron. Each email carries everything new since
+ * the last one, and price changes on homes already sent ride along
+ * (listing_alerts.events defaults).
+ */
+export function searchAlertCadenceSentence(cadence: string | null | undefined): string {
+  const tail = 'Price changes on homes we already sent you ride along. Nothing else, and you can stop it from any of them.'
+  if (cadence === 'daily') return `You get one email each morning when something new comes on the market that matches. ${tail}`
+  if (cadence === 'weekly') return `You get one email a week when something new comes on the market that matches. ${tail}`
+  if (cadence === 'monthly') return `You get one email a month when something new comes on the market that matches. ${tail}`
+  return `When something new comes on the market that matches, you hear about it within the hour, in one email with everything new since the last one. ${tail}`
+}
+
+/**
  * The guest saved-search and saved-home captures.
  *
  * The two are not the same promise and the copy must not pretend they are. A
  * saved SEARCH writes a listing_alerts row the cron emails on
- * (upsertListingAlert), so "one email per new match" is a fact. A saved HOME
+ * (upsertListingAlert), so "everything new, one email per run" is a fact. A saved HOME
  * writes no alert at all — submitListingSaveCapture captures the lead and the
  * saved-home state stays behind sign-in — so that variant promises a broker, not
  * a feed.
@@ -162,6 +177,12 @@ export async function sendAlertConfirmation(params: {
   criteriaSummary?: string | null
   /** price-drop only: the canonical URL of the home being watched. */
   listingUrl?: string | null
+  /**
+   * search only: the row's stored cadence, so the promise names the real
+   * clock. The engine sends ONE email per run with everything new in it
+   * (lib/alerts/send.ts), never one email per home.
+   */
+  cadence?: string | null
 }): Promise<SiteConfirmationResult> {
   if (params.personId == null) return { ok: false, via: 'skipped', error: 'no crm person for the lead' }
   const signer = await resolveSigner(params.personId)
@@ -216,7 +237,7 @@ export async function sendAlertConfirmation(params: {
         ? `Your listing alert is on: ${what}.`
         : 'Your listing alert is on.',
       '',
-      'When a home comes on the market that matches, you get one email about that home. Nothing else, and you can stop it from any of them.',
+      searchAlertCadenceSentence(params.cadence),
       '',
       `${signer.firstName} knows you are watching and can tell you what the numbers behind a place look like before you drive out to it. Pick a time whenever you want one: ${signer.bookHref}`,
       '',

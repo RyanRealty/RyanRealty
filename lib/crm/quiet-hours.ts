@@ -60,7 +60,7 @@ function secondOfDayInTimeZone(date: Date, timeZone: string): number {
 }
 
 /** Minutes after local midnight of `date` in the given IANA timezone. */
-function minuteOfDayInTimeZone(date: Date, timeZone: string): number {
+export function minuteOfDayInTimeZone(date: Date, timeZone: string = DEFAULT_SMS_TIMEZONE): number {
   return Math.floor(secondOfDayInTimeZone(date, timeZone) / 60)
 }
 

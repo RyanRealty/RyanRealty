@@ -2,6 +2,7 @@
 
 import { google } from 'googleapis'
 import { withAuthDeadline } from '@/lib/google-deadline'
+import { latestReportedDate } from '@/lib/marketing-brain/gsc-reported-days'
 
 /**
  * Per-request deadline for the 3 parallel Search Analytics queries below. The
@@ -24,6 +25,25 @@ export type SearchConsoleSummary = {
 export type SearchConsoleReportResult =
   | { ok: true; data: SearchConsoleSummary }
   | { ok: false; error: string }
+
+/**
+ * The latest date Search Console has final data for. `reportedThrough` is null
+ * when Google returned no dated rows in the probe window: nothing is reported.
+ */
+export type SearchConsoleReportedThroughResult =
+  | { ok: true; reportedThrough: string | null; probedFrom: string; probedTo: string }
+  | { ok: false; error: string }
+
+/**
+ * Every query here reads FINAL data, the API default, written out so the
+ * reported-through probe and the per-day summary can never disagree on it.
+ * Fresh (`all`) data is partial and still moving; a daily snapshot that stored
+ * it would show a partial day as a drop.
+ */
+const DATA_STATE = 'final'
+
+/** How far back the reported-through probe looks for the latest final day. */
+const REPORTED_PROBE_DAYS = 30
 
 type SearchConsoleRow = {
   keys?: string[]
@@ -48,7 +68,11 @@ function normalizeRows(rows: SearchConsoleRow[] | undefined) {
   }))
 }
 
-export async function getSearchConsoleSummary(startDate: string, endDate: string, siteOverride?: string): Promise<SearchConsoleReportResult> {
+type SearchConsoleClient =
+  | { ok: true; siteUrl: string; webmasters: ReturnType<typeof google.webmasters> }
+  | { ok: false; error: string }
+
+function searchConsoleClient(siteOverride?: string): SearchConsoleClient {
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL?.trim()
   const privateKeyRaw = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.trim()
   // GSC site URL priority (highest to lowest):
@@ -64,16 +88,57 @@ export async function getSearchConsoleSummary(startDate: string, endDate: string
     return { ok: false, error: 'SEARCH_CONSOLE_NOT_CONFIGURED' }
   }
 
-  try {
-    const auth = new google.auth.JWT(
-      withAuthDeadline({
-        email: clientEmail,
-        key: privateKeyRaw.replace(/\\n/g, '\n'),
-        scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
-      }),
-    )
-    const webmasters = google.webmasters({ version: 'v3', auth, timeout: SEARCH_CONSOLE_REQUEST_TIMEOUT_MS })
+  const auth = new google.auth.JWT(
+    withAuthDeadline({
+      email: clientEmail,
+      key: privateKeyRaw.replace(/\\n/g, '\n'),
+      scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
+    }),
+  )
+  const webmasters = google.webmasters({ version: 'v3', auth, timeout: SEARCH_CONSOLE_REQUEST_TIMEOUT_MS })
+  return { ok: true, siteUrl, webmasters }
+}
 
+/**
+ * The latest date Google Search Console has final data for, read from Google:
+ * one `dimensions: ['date']` query over the last REPORTED_PROBE_DAYS days.
+ * The snapshot cron stores a day only on or before this date
+ * (lib/marketing-brain/gsc-reported-days.ts has the rule and its tests).
+ */
+export async function getSearchConsoleReportedThrough(siteOverride?: string): Promise<SearchConsoleReportedThroughResult> {
+  const today = new Date()
+  const from = new Date(today)
+  from.setUTCDate(from.getUTCDate() - REPORTED_PROBE_DAYS)
+  // UTC "today" can be Google's (Pacific) tomorrow. The API accepts a future
+  // end date and simply has no rows for it (checked live 2026-10-14).
+  const probedFrom = from.toISOString().slice(0, 10)
+  const probedTo = today.toISOString().slice(0, 10)
+
+  try {
+    const sc = searchConsoleClient(siteOverride)
+    if (!sc.ok) return sc
+    const res = await sc.webmasters.searchanalytics.query({
+      siteUrl: sc.siteUrl,
+      requestBody: {
+        startDate: probedFrom,
+        endDate: probedTo,
+        dimensions: ['date'],
+        dataState: DATA_STATE,
+        rowLimit: REPORTED_PROBE_DAYS + 2,
+      },
+    })
+    return { ok: true, reportedThrough: latestReportedDate(res.data.rows), probedFrom, probedTo }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Search Console API error'
+    return { ok: false, error: message }
+  }
+}
+
+export async function getSearchConsoleSummary(startDate: string, endDate: string, siteOverride?: string): Promise<SearchConsoleReportResult> {
+  try {
+    const sc = searchConsoleClient(siteOverride)
+    if (!sc.ok) return sc
+    const { siteUrl, webmasters } = sc
     const [summaryRes, queryRes, pageRes] = await Promise.all([
       webmasters.searchanalytics.query({
         siteUrl,
@@ -82,6 +147,7 @@ export async function getSearchConsoleSummary(startDate: string, endDate: string
           endDate,
           rowLimit: 1,
           aggregationType: 'auto',
+          dataState: DATA_STATE,
         },
       }),
       webmasters.searchanalytics.query({
@@ -92,6 +158,7 @@ export async function getSearchConsoleSummary(startDate: string, endDate: string
           dimensions: ['query'],
           rowLimit: 25,
           aggregationType: 'auto',
+          dataState: DATA_STATE,
         },
       }),
       webmasters.searchanalytics.query({
@@ -102,6 +169,7 @@ export async function getSearchConsoleSummary(startDate: string, endDate: string
           dimensions: ['page'],
           rowLimit: 25,
           aggregationType: 'auto',
+          dataState: DATA_STATE,
         },
       }),
     ])

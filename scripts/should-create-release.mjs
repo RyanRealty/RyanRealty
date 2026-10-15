@@ -16,7 +16,7 @@
  */
 import { appendFileSync } from 'node:fs'
 import {
-  classifyDiff,
+  classifyProductDiff,
   isReleaseSkippable,
   isUsableSha,
   listChangedFiles,
@@ -24,7 +24,10 @@ import {
 
 const prev = (process.env.PRODUCT_DIFF_PREV || process.env.GITHUB_EVENT_BEFORE || '').trim()
 const files = listChangedFiles({ prev: isUsableSha(prev) ? prev : '' })
-const result = classifyDiff(files, { skippable: isReleaseSkippable })
+const result = classifyProductDiff(files, {
+  skippable: isReleaseSkippable,
+  prev: isUsableSha(prev) ? prev : '',
+})
 
 // unknown / empty-with-no-git → do not swallow a product release.
 const shouldRelease = result.status === 'build' || result.status === 'unknown'

@@ -17,6 +17,11 @@ import { sendGmailMessage } from '@/lib/gmail-draft'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { sendGovernedEmail } from '@/lib/comms/sendGovernedEmail'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
+import {
+  brokerSendIdentity,
+  companyMailboxIdentity,
+  isRegistryBroker,
+} from '@/lib/email/broker-identity'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 
 const SITE_URL = siteOrigin()
@@ -202,18 +207,21 @@ export async function sendLeadConfirmation(params: {
     // Resend fallback to the lead is gated independently of the early return.
     if ((await isSuppressedByEmail(params.leadEmail, 'email')).suppressed) return
     // Graceful fallback so the acknowledgment never silently fails: send via
-    // Resend from the verified mail.ryan-realty.com subdomain (display name still
-    // reads "Matt Ryan", replies still route to his real inbox).
+    // Resend from the verified root domain (display name still reads as the
+    // broker, replies still route to their real inbox).
     console.warn(
       `[cma-request] Gmail send-as-matt failed (${gmailRes.error ?? 'unknown'}); falling back to Resend`,
     )
+    const identity = isRegistryBroker(signEmail)
+      ? brokerSendIdentity(signEmail)
+      : companyMailboxIdentity(signEmail, signName)
     await sendEmail({
       to: params.leadEmail,
-      from: `${signName} <${signEmail.replace('@ryan-realty.com', '@mail.ryan-realty.com')}>`,
+      from: identity.from,
       subject,
       text,
       html,
-      replyTo: signEmail,
+      replyTo: identity.replyTo,
       personId: personId ?? undefined,
       emailKey: personId != null ? `cma-request:${personId}` : undefined,
       brokerSlug: 'matt',

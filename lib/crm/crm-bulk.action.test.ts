@@ -332,7 +332,8 @@ describe('other bulk actions validate input', () => {
       sendVia: 'resend',
       replyTo: 'matt@ryan-realty.com',
     })
-    expect(String(enqueued[0].params.fromIdentity)).toContain('matt@mail.ryan-realty.com')
+    expect(String(enqueued[0].params.fromIdentity)).toContain('matt@ryan-realty.com')
+    expect(String(enqueued[0].params.fromIdentity)).not.toContain('matt@mail.ryan-realty.com')
     expect(String(enqueued[0].params.fromIdentity).toLowerCase()).not.toContain('noreply')
   })
 

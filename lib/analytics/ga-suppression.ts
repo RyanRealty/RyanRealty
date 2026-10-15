@@ -1,4 +1,4 @@
-import { DECLARED_CRAWLER_RE, HEADLESS_RE, TOOL_RE, classifyAutomation } from './automation'
+import { DECLARED_CRAWLER_RE, HEADLESS_HINT_RE, HEADLESS_RE, TOOL_RE, classifyAutomation } from './automation'
 
 /**
  * THE decision on whether a page view may reach Google Analytics (GA4 property
@@ -30,8 +30,10 @@ import { DECLARED_CRAWLER_RE, HEADLESS_RE, TOOL_RE, classifyAutomation } from '.
  *   (b) non-production-host  the page host is not ryan-realty.com or a subdomain
  *                            of it (localhost, 127.0.0.1, *.vercel.app previews)
  *   (c) automation           navigator.webdriver, an automation user agent
- *                            (the classifier in automation.ts), or our explicit
- *                            marker: cookie `rr_automation=1` or `?rr_automation=1`
+ *                            (the classifier in automation.ts), a HeadlessChrome
+ *                            client-hint brand (the Sec-CH-UA header on the server,
+ *                            navigator.userAgentData.brands in the browser), or our
+ *                            explicit marker: cookie `rr_automation=1` or `?rr_automation=1`
  *   (d) internal-user        cookie `rr_internal=1`, set on sign-in to /admin and
  *                            refreshed on every authenticated admin page load
  *                            (app/actions/internal-browser.ts)
@@ -62,6 +64,8 @@ export type GaSuppressionInput = {
   webdriver?: unknown
   /** A raw `Cookie` header / `document.cookie` string. */
   cookieHeader?: string | null
+  /** The `Sec-CH-UA` brand list (navigator.userAgentData.brands in the browser). */
+  clientHints?: string | null
 }
 
 export function isAdminPath(pathname: string | null | undefined): boolean {
@@ -121,7 +125,7 @@ export function decideGaSuppression(input: GaSuppressionInput): GaSuppression {
   if (isAdminPath(input.pathname)) return { suppress: true, reason: 'admin-path' }
   if (!isProductionHost(input.host)) return { suppress: true, reason: 'non-production-host' }
   const marker = hasAutomationMarker({ cookieHeader: input.cookieHeader, search: input.search })
-  if (classifyAutomation({ userAgent: input.userAgent, webdriver: input.webdriver, marker }).automated) {
+  if (classifyAutomation({ userAgent: input.userAgent, webdriver: input.webdriver, marker, clientHints: input.clientHints }).automated) {
     return { suppress: true, reason: 'automation' }
   }
   if (hasInternalUserCookie(input.cookieHeader)) return { suppress: true, reason: 'internal-user' }
@@ -134,6 +138,7 @@ export function decideGaSuppressionForPage(args: {
   userAgent: string | null | undefined
   webdriver?: unknown
   cookieHeader?: string | null
+  clientHints?: string | null
 }): GaSuppression {
   let u: URL
   try {
@@ -148,6 +153,7 @@ export function decideGaSuppressionForPage(args: {
     userAgent: args.userAgent,
     webdriver: args.webdriver,
     cookieHeader: args.cookieHeader,
+    clientHints: args.clientHints,
   })
 }
 
@@ -167,5 +173,6 @@ export const GA_SUPPRESS_JS =
   `if(${MARKER_COOKIE_RE.toString()}.test(c)||${MARKER_QUERY_RE.toString()}.test(l.search||''))return true;` +
   `if(!u||${TOOL_RE.toString()}.test(u)||${HEADLESS_RE.toString()}.test(u)||${DECLARED_CRAWLER_RE.toString()}.test(u.replace(/cubot/gi,'')))return true;` +
   `if(n.webdriver===true)return true;` +
+  `var b=n.userAgentData&&n.userAgentData.brands;if(b&&b.length)for(var i=0;i<b.length;i++)if(${HEADLESS_HINT_RE.toString()}.test(String(b[i]&&b[i].brand)))return true;` +
   `if(${INTERNAL_COOKIE_RE.toString()}.test(c))return true;` +
   `return false}catch(e){return false}})()`

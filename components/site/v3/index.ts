@@ -288,6 +288,7 @@ export {
  * Replaces sticky Call / Text / Work-with-us bars. Header Work with us is out (SITE-155).
  */
 export { V3DogFloater, DOG_FLOATER_MENUS } from './V3DogFloater.client'
+export { V3SarahAssistant } from './V3SarahAssistant.client'
 
 /**
  * The place-page affordability instrument (SITE-07, 2026-09-08): a payment and a

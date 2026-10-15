@@ -161,22 +161,22 @@ function buildHoles(input: SalesFunnelInput): SalesFunnel['holes'] {
     {
       id: 'identity-join',
       label: 'Saw us → visited',
-      reason: 'Platform impressions and site sessions do not share a person id. That conversion is UNMEASURED. Platform counts are never added together.',
+      reason: 'Platform impressions and site visits do not say who the person is, so that step is not measured. Platform counts are never added together.',
     },
     {
       id: 'llm',
       label: 'LLM / AI answers',
-      reason: 'No citation writer. ChatGPT and similar mentions are UNMEASURED.',
+      reason: 'Nothing records when ChatGPT or similar assistants mention us, so this is not measured.',
     },
     {
       id: 'tiktok-period',
       label: 'TikTok period reach',
-      reason: 'TikTok writes cumulative video views, not daily impressions. Period reach is UNMEASURED.',
+      reason: 'TikTok saves running totals of video views, not daily impressions, so reach for a window is not measured.',
     },
     {
       id: 'referral-signed',
       label: 'Referral agreement signed',
-      reason: 'referral_receivables has no signed-date column. Handoffs are recorded. Signatures are UNMEASURED.',
+      reason: 'Referral handoffs are recorded, but not the date they were signed, so signatures are not measured.',
     },
   ]
   if (input.audience !== 'seller') {
@@ -184,14 +184,14 @@ function buildHoles(input: SalesFunnelInput): SalesFunnel['holes'] {
       id: 'buyer-rep',
       label: 'Buyer-rep agreement signed',
       reason:
-        'A buyer is a client the moment a buyer representation agreement is signed. That signature is not stored on the CRM deal board, so CLIENT is UNMEASURED for buyers.',
+        'A buyer is a client the moment a buyer representation agreement is signed. That signature is not stored on the CRM deal board, so a signed buyer client is not measured.',
     })
   }
   if (input.audience === 'recruit') {
     holes.unshift({
       id: 'recruit-ica',
       label: 'Recruit signed',
-      reason: 'No independent-contractor agreement writer. A recruit is on the team when they are an active broker. Signed ICA date is UNMEASURED.',
+      reason: 'No independent-contractor agreement writer. A recruit is on the team when they are an active broker. The signing date is not measured.',
     })
   }
   return holes
@@ -354,8 +354,8 @@ async function readSalesFunnel(input: SalesFunnelInput): Promise<SalesFunnel> {
       countKind: 'people',
       unmeasuredReason: clientUnmeasured
         ? input.audience === 'buyer'
-          ? 'A buyer is a client when a buyer-rep agreement is signed. That signature is not stored, so this stage is UNMEASURED.'
-          : 'A recruit is on the team when they sign an independent contractor agreement. That signature is not stored, so this stage is UNMEASURED. Active brokers are on the stock strip.'
+          ? 'A buyer is a client when a buyer-rep agreement is signed. That signature is not stored, so this step is not measured.'
+          : 'A recruit is on the team when they sign an independent contractor agreement. That signature is not stored, so this step is not measured. Active brokers are counted under Right now.'
         : null,
       nestedOf: clientUnmeasured ? null : 'lead',
       conversionFromPrev: clientUnmeasured ? null : nestedRate(clientsN ?? 0, leads),
@@ -388,8 +388,8 @@ async function readSalesFunnel(input: SalesFunnelInput): Promise<SalesFunnel> {
     ga4Sessions: ga4.rows === 0 ? null : ga4.value,
     ga4SessionsCaveat:
       ga4.rows === 0
-        ? 'No GA4 session snapshot rows in this window. Consent-gated. First-party visits are the spine.'
-        : 'GA4 is consent-gated. First-party visits on the spine below are the site count.',
+        ? 'No Google Analytics visit figures were saved for this window. The visits in the steps below are the site\'s own count.'
+        : 'It only counts visitors who allow analytics cookies. The visits in the steps below are the site\'s own count.',
   }
 }
 

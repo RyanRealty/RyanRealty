@@ -380,7 +380,7 @@ async function selectFromQueue(
   const { outerRings } = await import('@/lib/geo/project-svg')
 
   const { includeArchived } = pure.queueReadOptions(config)
-  const { rows, truncated } = await listCmaQueue({ limit: CMA_QUEUE_READ_LIMIT, includeArchived })
+  const { rows, truncated } = await listCmaQueue({ limit: Math.max(CMA_QUEUE_READ_LIMIT, 1000), includeArchived })
   if (rows.length === 0) return { unusable: 'UNREADABLE: the queue came back empty' }
   log(`queue rows: ${rows.length} (truncated: ${truncated}, archived ${includeArchived ? 'included' : 'excluded'})`)
 

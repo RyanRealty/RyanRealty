@@ -237,6 +237,22 @@ A provider webhook has no browser behind it. It passes `serverToServer: true` an
 
 A new server event must go through `ga4ServerContext()`. Never call `fireGa4Event` with only a `client_id`.
 
+### Known contacts carry a user_id (2026-10-14)
+
+A known CRM contact is one GA4 user, in the browser and on the server (decision `crm-contacts-tagged-in-ga4`). The user_id is `ga4UserIdForPerson()` in `lib/analytics/ga4-user-id.ts`: `crm-<sha256 of crm_people.id>`, never a name, email or phone. It goes only on hits from a visitor at the analytics tier or above (`ga4UserIdAllowedAt`); an essential-tier visit reaches GA4 under an anonymous client id and nothing else (`docs/TRACKING_POLICY.md` tier table). Server callers never build the string: they pass `knownContact: { personId, trackingLevel }` and `fireGa4Event` derives it (`ga4UserIdFor`), so no caller can send a raw id or an email as the user_id.
+
+| Path | How the user_id gets there |
+|---|---|
+| Browser (GTM) | `components/AnalyticsIdentityBridge.tsx` reads `/api/identity/me` and, when `hasAnalyticsConsent()` holds, calls `gtag('set', { user_id })`; a banner answer given mid-page sets or clears it. The GTM Google tag applies that command to every later hit; no tag field maps it. GA4 read 2026-10-14 showed it on `session_start`, `user_engagement` and `scroll`, which only the browser tag sends. The first-paint `page_view` goes before the bridge runs, so it never has one. |
+| Page-view mirror | `app/api/visitors/track/route.ts` passes the session's contact and tier as `knownContact` on a mirrored hit; the hit goes out through `after()` so it is not lost when the response returns. The mirror runs after the identify step, so the report view that identifies a recipient carries it. A client document (`/cma`, `/bpo`) runs no Google tag, so this is the only way a recipient reading a report is counted as known. |
+| `generate_lead`, `person_identified`, `valuation_requested` | `knownContact: ga4KnownContact(ctx, personId)` (`lib/analytics/ga4-server-context.ts`), with the visitor's tier (`trackingLevel`: the stored banner answer, else the region default from `x-vercel-ip-country`, else the `rr_cr` cookie; unknown fails closed to essential). |
+
+`npm run analytics:audit` prints the known-contact user count and the events that carried a user_id, and warns when no `session_start` or `user_engagement` carried one.
+
+The user_id is pseudonymous, not secret: CRM ids are small integers, so the hash maps back to the id, and `generate_lead` also sends `crm_person_id` as a parameter.
+
+What GA4 cannot count, by design: a contact whose visits were all at the essential tier (before 2026-10-08 that was every US visitor who never answered the banner). And for a form submitter, the browser tag's hits for the rest of the submitting session: a typed email never mints the signed `rr_pid` cookie the bridge reads. `generate_lead` carries the user_id, any mirrored hit later in that session does too (the submit stamps the session), and the next session is born identified and tagged.
+
 ### `generate_lead` (server-only)
 
 One event per real submission. **Only** `fireLeadGenerated` in `lib/lead-tracking.ts` may send it. Never from the browser, never `fireGa4Event('generate_lead')` directly, never `trackEvent('generate_lead')`. Held by `lib/analytics/lead-event.test.ts`.
@@ -357,7 +373,7 @@ One set per URL, via `buildTrackedUrl` in `lib/analytics/utm.ts`. Existing `utm_
 
 - **Property:** `https://ryan-realty.com/`, a URL-prefix property. The service account is a site owner. No `sc-domain:` property is visible to it, and the domain has no Google TXT record. A Domain property would also cover `www.` and the `seller.` / `buyer.` subdomains. Verifying one needs a DNS TXT record, which is Matt's call.
 - **Sitemaps:** the index `/sitemap.xml` plus five children: `core`, `geo`, `listings`, `matrix`, `content`. All are submitted, with 0 errors and 0 warnings, read 2026-10-14. The Sitemaps API's `indexed` field always reads 0 because Google stopped reporting it. Never report that as "nothing indexed". Use URL Inspection (`lib/crawl-probe/gsc.ts`) for index state. Resubmit with `scripts/seo-gsc-sitemap-submit.mjs`.
-- **Daily data:** `/api/cron/snapshot-channels` (12:20 UTC) runs `marketing-snapshot-gsc`. It writes `marketing_channel_daily` with `channel = 'gsc'` and `source = 'gsc_search_analytics_api'`: account totals plus the top 25 queries and pages per day.
+- **Daily data:** `/api/cron/snapshot-channels` (12:20 UTC) runs `marketing-snapshot-gsc`. It writes `marketing_channel_daily` with `channel = 'gsc'` and `source = 'gsc_search_analytics_api'`: account totals plus the top 25 queries and pages per day. Each run re-pulls today-9 to today-2, but first asks Google for the latest date it has final data for and writes only days on or before it (`lib/marketing-brain/gsc-reported-days.ts`). A day Google has not finished has no row, never a row of zeros. Before 2026-10-14 the newest day was stored as zeros until the next run (2026-10-12 was, and read as a click drop). Readers should still end a comparison window at the latest stored date, not today.
 - **Weekly data:** `/api/cron/loop-weekly-measure` (Mondays 13:00 UTC) writes the full page and query × page tables `gsc_page_daily` and `gsc_query_page_daily` (`lib/data/loop/gsc-api.ts`, `gsc-store.ts`).
 - **Crawl probe:** `/api/cron/crawl-probe` (11:55 UTC) checks the sitemaps against GSC and samples URL Inspection. It writes `marketing_channel_daily` with `channel = 'crawl_probe'`.
 - **Admin panel:** `app/actions/search-console-report.ts`.
@@ -391,7 +407,7 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | File | Role |
 |---|---|
 | `lib/ga4-measurement-protocol.ts` | The one Measurement Protocol client (`fireGa4Event`) and the cookie parsers (`_ga`, `_ga_<stream>`) |
-| `lib/analytics/ga4-server-context.ts` | The request context every in-request server sender reads |
+| `lib/analytics/ga4-server-context.ts` | The request context every in-request server sender reads, and `ga4KnownContact` |
 | `lib/lead-tracking.ts` | `generate_lead` (`fireLeadGenerated`) and the non-lead form events |
 | `app/actions/identity-bridge.ts` | `person_identified` on an email-click identify |
 | `lib/cma-request.ts` | `valuation_requested` for seller LP, FSBO LP and place-page submissions |
@@ -403,7 +419,7 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | File | Role |
 |---|---|
 | `app/actions/ga4-report.ts` | GA4 Data API reports for admin and the daily GA4 snapshot |
-| `app/actions/ga4-demographics.ts` | GA4 demographics panel |
+| `app/actions/ga4-demographics.ts` | GA4 demographics panel. Each report is its own section (ok, withheld, empty, error). Age and gender are Google Signals data that GA4 thresholds; read 2026-10-14, every age and gender report for the last 30 days came back withheld. `userAgeBracket` is incompatible with `sessionSourceMedium`; the age cross-tab uses `sessionDefaultChannelGroup`. |
 | `lib/marketing-brain/ga4-health-counts.ts` | Exact daily `session_start` / `first_visit` counts (outage canary) |
 | `lib/analytics/ga4-internal-traffic-qa.ts` | Daily read-only check that internal and automated traffic stays out |
 | `app/actions/search-console-report.ts` | Search Console summary for the admin panel |
@@ -436,8 +452,10 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | `lib/analytics/submit-alert-signup.ts` | Client wrappers for the alert-capture actions; push `sign_up` only on a counted submit |
 | `lib/analytics/ga-suppression.ts` | The one "may this reach GA4" rule, browser and server |
 | `lib/analytics/automation.ts` | Automation and crawler classifier |
+| `lib/analytics/chrome-releases.ts` | Chrome stable release dates (Chromium schedule) the automation classifier's stale-browser rule reads |
 | `lib/analytics/internal-user-cookie.ts` | `rr_internal` cookie (broker browsers) |
 | `lib/analytics/non-production-build.ts` | No Google tag on dev or preview builds |
+| `lib/analytics/ga4-demographic-sections.ts` | GA4 report states for the demographics page: withheld when Google's privacy thresholds remove every group, never a 0 or an error |
 | `lib/analytics/non-production-host.ts` | No GA4 hits from non-production hosts |
 | `lib/analytics/private-paths.ts` | Pages whose address is a secret never load a tag |
 | `lib/analytics/consent-defaults.ts` | Consent Mode v2 default script |
@@ -457,6 +475,7 @@ Every file that sends to GA4, reads the GA4, Search Console or Tag Manager APIs,
 | `lib/analytics/own-site-links.ts` | Finds ryan-realty.com links in a message so each can be decorated (tracked) |
 | `lib/analytics/web-vitals-sample.ts` | Validates one real-user Web Vitals sample before `public.web_vitals` stores it |
 | `lib/analytics/visitor-intent.ts` | Visitor intent (buyer / seller / both / browsing) and primary market, from the shared page categories; the `rr_visitor_intent_v1` memory behind the GA4 user properties |
+| `lib/analytics/ga4-user-id.ts` | The one GA4 user_id of a known contact (hashed CRM id), and the tier rule for sending it |
 
 ---
 

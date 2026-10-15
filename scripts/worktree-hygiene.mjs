@@ -2,8 +2,9 @@
 /**
  * worktree-hygiene.mjs — list RyanRealty worktrees and flag stranded work.
  *
- * Exit 0 always (advisory). Agents should run this at session start/end when
- * using worktrees. See AGENTS.md → Worktrees.
+ * Exit 0 always (advisory). Status only — it does not delete. After a PR
+ * merges or closes, run `npm run wt:cleanup` (scripts/cleanup-merged-worktrees.sh).
+ * See AGENTS.md → Worktrees.
  */
 import { execSync } from 'node:child_process'
 

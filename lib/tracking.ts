@@ -113,6 +113,8 @@ export type EventName =
   // Experience-archetype engagement (components/site/experience/useEngagementTracking.ts).
   | 'dwell'
   | 'module_interact'
+  | 'sarah_teaser_shown'
+  | 'sarah_teaser_clicked'
 
 function pushDataLayer(obj: Record<string, unknown>) {
   if (typeof window === 'undefined') return

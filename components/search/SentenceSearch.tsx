@@ -1,12 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { mergeSentenceParams, sentenceToParams } from '@/lib/search/sentence-to-params'
+import { trackSiteSearch } from '@/components/search/track-site-search'
 import './search-ledger.css'
 
 /**
@@ -27,6 +28,14 @@ export function useApplySentenceSearch() {
       const next = mergeSentenceParams(searchParams ?? new URLSearchParams(), text)
       const qs = next.toString()
       const path = pathname || '/homes-for-sale'
+      // Recorded only when the words became filters, the same rule as the dock
+      // field's sentence search. Before 2026-10-14 this box recorded nothing.
+      trackSiteSearch({
+        surface: 'search_page',
+        source: 'sentence',
+        query: text,
+        city: parsed.get('city') ?? undefined,
+      })
       router.replace(qs ? `${path}?${qs}` : path, { scroll: false })
     },
     [pathname, router, searchParams],
@@ -42,10 +51,14 @@ export type SentenceSearchProps = {
 export function SentenceSearch({ className, transcript }: SentenceSearchProps) {
   const apply = useApplySentenceSearch()
   const [value, setValue] = useState('')
+  // `apply` changes with every URL change, its own replace included. One
+  // transcript applies (and records a search) once, not once per URL change.
+  const appliedTranscript = useRef<string | null>(null)
 
   useEffect(() => {
     const text = transcript?.trim()
-    if (!text) return
+    if (!text || appliedTranscript.current === text) return
+    appliedTranscript.current = text
     setValue(text)
     apply(text)
   }, [apply, transcript])

@@ -1,0 +1,279 @@
+/* Sarah — listing-detail teaser + bottom-end launcher.
+   Cookie bar and phone dock own the bottom edge; this disc sits above
+   --rr-dock-h / --rr-sticky-bottom. Jax stays mid-end (z-95). */
+
+.v3-sarah {
+  position: fixed;
+  right: calc(var(--v3-space-md) + env(safe-area-inset-right, 0px));
+  bottom: calc(
+    var(--rr-dock-h, 0px) + var(--rr-sticky-bottom, 0px) + var(--v3-space-md) +
+      env(safe-area-inset-bottom, 0px)
+  );
+  z-index: 92;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--v3-space-sm);
+  pointer-events: none;
+}
+
+body:has([data-cookie-notice='bar']) .v3-sarah {
+  bottom: calc(
+    var(--v3-cookie-bar-h, 5.5rem) + var(--rr-dock-h, 0px) + var(--rr-sticky-bottom, 0px) +
+      var(--v3-space-md) + env(safe-area-inset-bottom, 0px)
+  );
+}
+
+.v3-sarah__launcher,
+.v3-sarah__teaser,
+.v3-sarah__panel,
+.v3-sarah__dismiss {
+  pointer-events: auto;
+}
+
+.v3-sarah__launcher {
+  position: relative;
+  box-sizing: border-box;
+  width: var(--v3-sarah-fab);
+  height: var(--v3-sarah-fab);
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  padding: 0;
+  overflow: hidden;
+  border: var(--v3-rule-weight-hairline) solid var(--v3-cream);
+  border-radius: 50%;
+  background: var(--v3-navy);
+  cursor: pointer;
+}
+
+.v3-sarah__launcher:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-sarah__avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 22%;
+}
+
+.v3-sarah__badge {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border: var(--v3-rule-weight-hairline) solid var(--v3-cream);
+  border-radius: 50%;
+  background: var(--v3-navy);
+  pointer-events: none;
+}
+
+.v3-sarah__teaser {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  max-width: min(18rem, calc(100vw - var(--v3-sarah-fab) - 2.5rem));
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  animation: v3-sarah-teaser-in var(--v3-dur-enter) var(--v3-ease-out);
+}
+
+.v3-sarah__teaser-open {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.v3-sarah__teaser-open:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-sarah__teaser-photo {
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--v3-navy);
+}
+
+.v3-sarah__teaser-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 22%;
+}
+
+.v3-sarah__dismiss {
+  flex: none;
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  margin: calc(var(--v3-space-sm) * -1) calc(var(--v3-space-sm) * -1) calc(var(--v3-space-sm) * -1) 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--v3-navy);
+  font-size: var(--v3-size-body-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.v3-sarah__dismiss:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-sarah__panel {
+  display: flex;
+  flex-direction: column;
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: min(28rem, calc(100svh - 8rem));
+  overflow: hidden;
+  border: var(--v3-chrome-rule);
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  font-family: var(--v3-font-body);
+  animation: v3-sarah-teaser-in var(--v3-dur-enter) var(--v3-ease-out);
+}
+
+.v3-sarah__panel-head {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  border-bottom: var(--v3-rule-weight-hairline) solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
+}
+
+.v3-sarah__panel-head img {
+  width: 2rem;
+  height: 2rem;
+  object-fit: cover;
+  object-position: 50% 22%;
+  border-radius: 50%;
+}
+
+.v3-sarah__panel-name {
+  flex: 1;
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-body-lg);
+}
+
+.v3-sarah__panel-role {
+  display: block;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  color: color-mix(in srgb, var(--v3-navy) 70%, transparent);
+}
+
+.v3-sarah__messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-sm);
+  padding: var(--v3-space-md);
+}
+
+.v3-sarah__msg {
+  display: flex;
+  gap: var(--v3-space-sm);
+  max-width: 100%;
+}
+
+.v3-sarah__msg--visitor {
+  justify-content: flex-end;
+}
+
+.v3-sarah__msg-body {
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  border: var(--v3-rule-weight-hairline) solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
+  background: var(--v3-cream);
+}
+
+.v3-sarah__msg--visitor .v3-sarah__msg-body {
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  border-color: var(--v3-navy);
+}
+
+.v3-sarah__msg--sarah img {
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  object-fit: cover;
+  object-position: 50% 22%;
+  border-radius: 50%;
+}
+
+.v3-sarah__composer {
+  display: flex;
+  gap: var(--v3-space-sm);
+  padding: var(--v3-space-sm) var(--v3-space-md) var(--v3-space-md);
+  border-top: var(--v3-rule-weight-hairline) solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
+}
+
+.v3-sarah__composer input {
+  flex: 1;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  font: inherit;
+}
+
+.v3-sarah__composer input:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-sarah__composer button {
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-md);
+  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  font-family: var(--v3-font-display);
+  cursor: pointer;
+}
+
+.v3-sarah__composer button:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+@keyframes v3-sarah-teaser-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--v3-travel));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-sarah__teaser,
+  .v3-sarah__panel {
+    animation: none;
+  }
+}

@@ -8,6 +8,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stitchBrowserToPerson } from '@/lib/visitor-backfill'
+import { clearProvisionalFlags } from '@/lib/data/identity/provisionalAutomation'
 
 // The legacy lockstep person column (same native crm_people.id), written and
 // read beside crm_person_id for readers that have not migrated. Named by
@@ -118,6 +119,12 @@ export async function identifySessionAndBrowser(
   } catch {
     /* never block tracking on an identity write */
   }
+  // An identified session is a person's: a provisional automation flag (a cold
+  // arrival that read as a machine) no longer holds. The browser stitch below
+  // clears every session of the browser; without it (carryover, or no rr_vid)
+  // clear this one.
+  const browserStitch = args.stitchBrowser !== false && !!args.rrVid
+  if (sessionStamped && !browserStitch) await clearProvisionalAutomation(sb, args.sessionId)
   if (args.stitchBrowser === false) return { sessionStamped }
   await stitchBrowserToPerson({
     rrVid: args.rrVid ?? null,
@@ -129,30 +136,16 @@ export async function identifySessionAndBrowser(
 }
 
 /**
- * Clear a PROVISIONAL automation flag (lib/analytics/automation.ts
- * PROVISIONAL_AUTOMATION_REASONS) once the session shows it is a person: a
- * second event, or a known browser identified at birth. Matches only rows
+ * Clear a PROVISIONAL automation flag on one session (lib/analytics/automation.ts
+ * PROVISIONAL_AUTOMATION_REASONS) once it shows it is a person: an event that is
+ * person evidence (isPersonEvidence), or identification. Matches only rows
  * carrying a provisional reason, so a UA-based flag is never cleared; on every
- * other session it is a primary-key update that matches nothing. No-op (and
- * stops trying) before migration 20260923120000 is applied.
+ * other session it is a primary-key update that matches nothing.
+ * The one implementation: lib/data/identity/provisionalAutomation.ts.
  */
-export async function clearProvisionalAutomation(
-  sb: SupabaseClient,
-  sessionId: string,
-  reasons: Iterable<string>,
-): Promise<void> {
-  const list = [...reasons]
-  if (optionalColumnsMissing || list.length === 0) return
-  try {
-    const { error } = await sb
-      .from('visitor_sessions')
-      .update({ is_automated: false, automation_reason: null })
-      .eq('session_id', sessionId)
-      .in('automation_reason', list)
-    if (error && isMissingColumnError(error)) optionalColumnsMissing = true
-  } catch {
-    /* best effort: a flag left on only drops one session from the counts */
-  }
+export async function clearProvisionalAutomation(sb: SupabaseClient, sessionId: string): Promise<void> {
+  if (optionalColumnsMissing) return
+  await clearProvisionalFlags(sb, { column: 'session_id', value: sessionId })
 }
 
 /** The person an rr_vid is already mapped to (visitor_identity_map), plus any email. */

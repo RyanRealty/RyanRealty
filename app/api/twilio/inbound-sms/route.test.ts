@@ -9,7 +9,7 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-const { CELLS, LINES, MARKETING, sendSms, findOrCreatePersonByPhone, ten, upserts, clearNonOptOutSuppressions } = vi.hoisted(() => ({
+const { CELLS, LINES, MARKETING, sendSms, findOrCreatePersonByPhone, ten, upserts, clearNonOptOutSuppressions, applyInboundConsentClear, addSuppression } = vi.hoisted(() => ({
   upserts: [] as Array<{ table: string; row: Record<string, unknown> }>,
   CELLS: { matt: '+15410000001', paul: '+15410000002', rebecca: '+15410000003' },
   LINES: { matt: '+15419990001', paul: '+15419990002', rebecca: '+15419990003' },
@@ -19,7 +19,11 @@ const { CELLS, LINES, MARKETING, sendSms, findOrCreatePersonByPhone, ten, upsert
     match: { personId: 7, name: 'Client', broker: 'paul' },
     created: false,
   })),
+  addSuppression: vi.fn(async () => {}),
   clearNonOptOutSuppressions: vi.fn(async () => ({ cleared: 0 })),
+  applyInboundConsentClear: vi.fn(async () => ({
+    ok: true, applied: false, personId: 7, skipped: 'nothing-to-clear', tagsRemoved: [], suppressionsCleared: 0, timelineId: null,
+  })),
   ten: (v: string | null | undefined) => {
     const d = String(v ?? '').replace(/\D/g, '')
     return d.length >= 10 ? d.slice(-10) : d || null
@@ -54,7 +58,7 @@ vi.mock('@/lib/data/crm/getBlockedNumber', () => ({ isNumberBlocked: async () =>
 vi.mock('@/lib/data/crm/findOrCreatePersonByPhone', () => ({ findOrCreatePersonByPhone: () => findOrCreatePersonByPhone() }))
 vi.mock('@/app/actions/crm-inbox', () => ({ markConversationUnreadOnInbound: async () => {} }))
 vi.mock('@/lib/crm/suppressions', () => ({
-  addSuppression: async () => {},
+  addSuppression,
   removeSuppression: async () => {},
   clearNonOptOutSuppressions,
 }))
@@ -73,6 +77,9 @@ vi.mock('@/lib/tc/file-comms-write', () => ({ fileCommsToVault: async () => {} }
 vi.mock('@/lib/data/crm/applyInboundMessageEnrichment', () => ({
   applyInboundMessageEnrichment: async () => ({ ok: true, applied: false, personId: 7 }),
 }))
+vi.mock('@/lib/data/crm/applyInboundConsentClear', () => ({
+  applyInboundConsentClear,
+}))
 vi.mock('@/lib/supabase/service', () => {
   const chain: Record<string, unknown> = {}
   const resolved = Promise.resolve({ data: null, error: null })
@@ -86,15 +93,10 @@ vi.mock('@/lib/supabase/service', () => {
   }
 })
 
-import { POST } from './route'
+import { processInboundSms } from './route'
 
-function inbound(from: string, to: string, body: string): Request {
-  const form = new URLSearchParams({ From: from, To: to, Body: body, MessageSid: 'SMtest' })
-  return new Request('https://ryan-realty.com/api/twilio/inbound-sms', {
-    method: 'POST',
-    body: form,
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  })
+function inbound(from: string, to: string, body: string): Record<string, string> {
+  return { From: from, To: to, Body: body, MessageSid: 'SMtest' }
 }
 
 describe('inbound-sms broker cell routing', () => {
@@ -103,11 +105,12 @@ describe('inbound-sms broker cell routing', () => {
     findOrCreatePersonByPhone.mockClear()
     upserts.length = 0
     clearNonOptOutSuppressions.mockClear()
+    applyInboundConsentClear.mockClear()
+    addSuppression.mockClear()
   })
 
   it("relays a broker's text on a colleague's line to the colleague's cell", async () => {
-    const res = await POST(inbound(CELLS.matt, LINES.paul, 'Hey Paul, it is Matt'))
-    expect(res.status).toBe(200)
+    await processInboundSms(inbound(CELLS.matt, LINES.paul, 'Hey Paul, it is Matt'))
     expect(sendSms).toHaveBeenCalledTimes(1)
     const sent = sendSms.mock.calls[0][0]
     expect(sent.from).toBe(LINES.paul)
@@ -118,7 +121,7 @@ describe('inbound-sms broker cell routing', () => {
   })
 
   it("drops a broker's text on their own line", async () => {
-    await POST(inbound(CELLS.paul, LINES.paul, 'reply in thread'))
+    await processInboundSms(inbound(CELLS.paul, LINES.paul, 'reply in thread'))
     expect(sendSms).not.toHaveBeenCalled()
     expect(findOrCreatePersonByPhone).not.toHaveBeenCalled()
     expect(upserts.find((u) => u.table === 'crm_sms_inbound_log')?.row).toMatchObject({
@@ -128,13 +131,13 @@ describe('inbound-sms broker cell routing', () => {
   })
 
   it("drops a broker's text on the shared marketing line", async () => {
-    await POST(inbound(CELLS.rebecca, MARKETING, 'hello'))
+    await processInboundSms(inbound(CELLS.rebecca, MARKETING, 'hello'))
     expect(sendSms).not.toHaveBeenCalled()
     expect(findOrCreatePersonByPhone).not.toHaveBeenCalled()
   })
 
   it("forwards a client's text to the dialed line's broker", async () => {
-    await POST(inbound('+15035550123', LINES.paul, 'Is the house still available?'))
+    await processInboundSms(inbound('+15035550123', LINES.paul, 'Is the house still available?'))
     expect(findOrCreatePersonByPhone).toHaveBeenCalledTimes(1)
     expect(sendSms).toHaveBeenCalledTimes(1)
     expect(sendSms.mock.calls[0][0]).toMatchObject({ from: LINES.paul, to: CELLS.paul })
@@ -142,17 +145,23 @@ describe('inbound-sms broker cell routing', () => {
     expect(clearNonOptOutSuppressions).toHaveBeenCalledWith(
       expect.objectContaining({ personId: 7, clearedBy: 'inbound-sms', clearedReason: expect.stringMatching(/^inbound sms_in /) }),
     )
+    expect(applyInboundConsentClear).toHaveBeenCalledWith(
+      expect.objectContaining({ personId: 7, event: 'sms', smsBody: 'Is the house still available?' }),
+    )
   })
 
-  it('clears non-opt-out suppressions on STOP, then writes the STOP row', async () => {
-    const addSuppression = (await import('@/lib/crm/suppressions')).addSuppression
-    await POST(inbound('+15035550123', LINES.paul, 'STOP'))
-    expect(clearNonOptOutSuppressions).toHaveBeenCalled()
-    expect(addSuppression).toBeDefined()
+  it('keeps and sets SMS opt-out on STOP and never clears flags', async () => {
+    await processInboundSms(inbound('+15035550123', LINES.paul, 'STOP'))
+    expect(clearNonOptOutSuppressions).not.toHaveBeenCalled()
+    expect(applyInboundConsentClear).not.toHaveBeenCalled()
+    expect(addSuppression).toHaveBeenCalledWith(
+      expect.objectContaining({ personId: 7, channel: 'sms', reason: 'stop-keyword' }),
+    )
   })
 
   it('does not clear suppressions for a broker-cell drop', async () => {
-    await POST(inbound(CELLS.paul, LINES.paul, 'reply in thread'))
+    await processInboundSms(inbound(CELLS.paul, LINES.paul, 'reply in thread'))
     expect(clearNonOptOutSuppressions).not.toHaveBeenCalled()
+    expect(applyInboundConsentClear).not.toHaveBeenCalled()
   })
 })

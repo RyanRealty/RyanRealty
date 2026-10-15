@@ -176,6 +176,26 @@ describe('automation is never identified, stamped or stitched (docs/TRACKING_POL
     expect(store.db.visitor_identity_map).toHaveLength(1)
   })
 
+  it('identification clears a provisional flag, on the session and on the browser, and never a permanent one (2026-10-14)', async () => {
+    store.db.visitor_sessions.push(
+      { session_id: 's-stale', rr_vid: 'vid-mixed', crm_person_id: null, identified_at: null, is_automated: true, automation_reason: 'stale-browser' },
+      { session_id: 's-dc', rr_vid: 'vid-mixed', crm_person_id: null, identified_at: null, is_automated: true, automation_reason: 'datacenter-geo' },
+      { session_id: 's-broker', rr_vid: 'vid-mixed', crm_person_id: null, identified_at: null, is_automated: true, automation_reason: 'internal' },
+      { session_id: 's-headless', rr_vid: 'vid-mixed', crm_person_id: null, identified_at: null, is_automated: true, automation_reason: 'headless' },
+      { session_id: 's-no-vid', rr_vid: null, crm_person_id: null, identified_at: null, is_automated: true, automation_reason: 'stale-browser' },
+    )
+    await backfillSessionToFub({ sessionId: 's-stale', fubPersonId: PERSON, identifiedVia: 'form_submit' })
+    expect(sessionRow('s-stale')).toMatchObject({ crm_person_id: PERSON, is_automated: false, automation_reason: null })
+    // the same browser's earlier provisional session is back-stitched and leaves the count
+    expect(sessionRow('s-dc')).toMatchObject({ crm_person_id: PERSON, is_automated: false, automation_reason: null })
+    // a broker's browser stays out of outside-visitor counts; a headless session stays automation, unidentified
+    expect(sessionRow('s-broker')).toMatchObject({ is_automated: true, automation_reason: 'internal' })
+    expect(sessionRow('s-headless')).toMatchObject({ is_automated: true, automation_reason: 'headless', crm_person_id: null })
+    // no rr_vid: the session-level clear still runs
+    await backfillSessionToFub({ sessionId: 's-no-vid', fubPersonId: PERSON, identifiedVia: 'tracked_link:email' })
+    expect(sessionRow('s-no-vid')).toMatchObject({ crm_person_id: PERSON, is_automated: false, automation_reason: null })
+  })
+
   it('a session that does not exist yet is not a failure, and not automation', async () => {
     const res = await backfillSessionToFub({ sessionId: 's-missing', fubPersonId: PERSON, identifiedVia: 'tracked_link:email' })
     expect(res).toMatchObject({ ok: true, sessionFound: false })
