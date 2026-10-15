@@ -135,7 +135,8 @@ describe('CookieConsentBanner first layer', () => {
     expect(bar).not.toBeNull()
     expect(container.querySelector('[data-cookie-notice="chip"]')).toBeNull()
     expect(container.textContent).toContain(COOKIE_NOTICE_HEADING)
-    expect(container.textContent).toContain(COOKIE_NOTICE_BODY)
+    // F24: the body is split around a Details toggle; every word still renders.
+    for (const part of COOKIE_NOTICE_BODY.split('. ')) expect(container.textContent).toContain(part)
     expect(container.textContent).toContain('Choose what to allow')
     expect(container.innerHTML).toContain('/privacy')
     expect(container.innerHTML).toContain('/privacy#donotsell')

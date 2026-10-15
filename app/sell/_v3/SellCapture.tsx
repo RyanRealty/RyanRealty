@@ -18,6 +18,17 @@
 import type { ReactNode } from 'react'
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from '@/components/site/v3'
 import '@/components/site/v3/V3Sheet.css'
+import { COMMISSION_GUIDE_ROUTE } from './sell-constants'
+
+/* UX review F23 (Matt 2026-10-15): the fee distinction sits with the ask. */
+function FeeLine() {
+  return (
+    <p className="sell-fee-line">
+      3% listing fee, no add-ons. What a buyer&apos;s agent is paid is separate and negotiable.{' '}
+      <a href={COMMISSION_GUIDE_ROUTE}>How our fee works</a>
+    </p>
+  )
+}
 
 type Props = {
   /** Omit when the child form already owns the hash target (SellValueForm id=get-value). */
@@ -90,6 +101,7 @@ export function SellCapture({
           <div className="sell-stage-ask__form">
             {head}
             {children}
+            <FeeLine />
           </div>
         </div>
         {/* The cue to what is next belongs on the photograph, not inside the
@@ -109,6 +121,7 @@ export function SellCapture({
     <section id={id} className={`${V3_ROOT_CLASS} v3-sheet`} {...named}>
       {head}
       {children}
+      <FeeLine />
     </section>
   )
 }
