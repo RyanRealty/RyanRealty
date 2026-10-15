@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { LISTING_TEASER_EN } from '@/lib/sarah/scripts'
-import { SARAH_AVATAR_SRC } from '@/lib/sarah/assets'
+import { SARAH_AVATAR_SRC, SARAH_AVATAR_SRCSET } from '@/lib/sarah/assets'
 import { SARAH_TEASER_DELAY_MS } from '@/lib/sarah/teaser'
 
 const SRC = readFileSync(resolve('components/site/v3/V3SarahAssistant.client.tsx'), 'utf8')
@@ -28,6 +28,12 @@ describe('V3SarahAssistant · listing teaser', () => {
     expect(SRC).toContain('captureSarahLead')
     expect(SRC).toContain('data-sarah="mic"')
     expect(SRC).toContain('mintSarahVoiceToken')
+    expect(SRC).toContain('primeSarahMicrophone')
+    expect(SRC).toContain('scrollToLatest')
+    expect(SRC).toContain('SARAH_AVATAR_SRCSET')
+    expect(SRC).toContain('name="Microphone"')
+    expect(SRC).not.toContain("{desk.firstName}'s team")
+    expect(SRC).not.toMatch(/\{micBusy \? 'Listening' : 'Mic'\}/)
     expect(SRC).not.toContain('Your broker is')
     expect(SRC).not.toContain('v3-sarah__desk-actions')
     expect(SRC).not.toContain('Book a time')
@@ -63,8 +69,11 @@ describe('V3SarahAssistant · listing teaser', () => {
 
   it('uses the approved avatar for the launcher, teaser, and Sarah messages', () => {
     expect(SRC).toContain('SARAH_AVATAR_SRC')
+    expect(SRC).toContain('SARAH_AVATAR_SRCSET')
     expect(SRC).toContain("from '@/lib/sarah/assets'")
-    expect(SARAH_AVATAR_SRC).toBe('/images/sarah/avatar.jpg')
+    expect(SARAH_AVATAR_SRC).toBe('/images/sarah/sarah-headshot.jpg')
+    expect(SARAH_AVATAR_SRCSET).toContain('sarah-headshot@2x.jpg')
+    expect(SARAH_AVATAR_SRCSET).toContain('sarah-headshot@3x.jpg')
     expect(SRC).not.toMatch(/\/images\/brokers\//)
   })
 

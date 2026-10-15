@@ -7,7 +7,16 @@ import { claimGuestSavedSearches } from '@/lib/data/savedSearches'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
 // The rr_pid value is a SIGNED token since 2026-09-23 (P7 identity loop): a
 // bare id in a cookie let anyone claim any contact's identity.
-import { PERSON_COOKIE, personCookieOptions, personCookieValue } from '@/lib/identity/person-cookie'
+import {
+  PERSON_COOKIE,
+  personCookieOptions,
+  personCookieValue,
+  personCookieWrite,
+  readPersonCookie,
+  signInProvenance,
+  verifiedPersonIdFromCookie,
+  type IdentityProvenance,
+} from '@/lib/identity/person-cookie'
 import type { User } from '@supabase/supabase-js'
 import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
@@ -60,6 +69,10 @@ async function stampPersonIdFromEmail(
   rrVid: string | undefined,
   userId: string | undefined,
   source: string,
+  // The sign-in's provenance (signInProvenance): verified once the provider
+  // confirmed the email, which is what lets the CMA consent bar trust it.
+  provenance: IdentityProvenance,
+  currentPersonCookie: string | undefined,
 ): Promise<void> {
   const normalized = email.trim().toLowerCase()
   if (!normalized) return
@@ -68,7 +81,11 @@ async function stampPersonIdFromEmail(
     const matchIds = await personIdsByEmailCi(sb, normalized).catch(() => [] as number[])
     const personId = matchIds[0] ?? null
     if (personId) {
-      res.cookies.set(PERSON_COOKIE, personCookieValue(personId), personCookieOptions())
+      // A verified sign-in always (re)sets the cookie, which also rolls its 90
+      // days forward; an unconfirmed one never downgrades a verified cookie.
+      const write =
+        provenance === 'verified' ? 'verified' : personCookieWrite(readPersonCookie(currentPersonCookie), personId, provenance)
+      if (write) res.cookies.set(PERSON_COOKIE, personCookieValue(personId, write), personCookieOptions())
     }
     // Guest listing-save absorb: if this browser's identity-map row still holds
     // a minutes-old guest capture under a different email, fold it into the
@@ -133,6 +150,8 @@ async function applyGoogleCommsConsent(opts: {
   name?: string
   consent: GoogleCommsConsent
   nextPath: string
+  /** crm_people.id of a VERIFIED rr_pid cookie on this browser, else null. */
+  verifiedCookiePersonId: number | null
 }): Promise<void> {
   const email = opts.email.trim().toLowerCase()
   if (!email) return
@@ -189,7 +208,17 @@ async function applyGoogleCommsConsent(opts: {
     if (cmaSlug) {
       const { getCmaAccessIdentity } = await import('@/lib/data')
       const identity = await getCmaAccessIdentity(cmaSlug)
-      if (identity?.personId && identity.personId !== personId) {
+      // The document's person is someone else (a phone-only lead the signer's
+      // email does not match). Marking THEIR consent answered, and binding the
+      // signer's email to them, needs proof this browser is that person: the
+      // verified cookie the tracked link in our email set. A sign-in proves
+      // the signer's own email only, and the slug is a street address anyone
+      // can put in ?next= (consent integrity, 2026-10-14).
+      if (
+        identity?.personId &&
+        identity.personId !== personId &&
+        opts.verifiedCookiePersonId === identity.personId
+      ) {
         const claiming = !identity.clientEmail && identity.personEmails.length === 0 && !identity.claimedBy
         await enrichNativeLead({
           personId: identity.personId,
@@ -228,6 +257,7 @@ export async function GET(request: Request) {
   // can stitch this browser's anonymous history to the now-known person.
   const rrVid = cookieStore.get('rr_vid')?.value
   const googleComms = parseGoogleCommsConsent(cookieStore.get(GOOGLE_COMMS_COOKIE)?.value)
+  const verifiedCookiePersonId = verifiedPersonIdFromCookie(cookieStore.get(PERSON_COOKIE)?.value)
 
   const errorParam = searchParams.get('error')
   const errorDesc = searchParams.get('error_description')
@@ -235,6 +265,7 @@ export async function GET(request: Request) {
     const message = errorDesc ? decodeURIComponent(errorDesc.replace(/\+/g, ' ')) : 'Sign-in failed. Please try again.'
     const res = NextResponse.redirect(`${base}/auth-error?message=${encodeURIComponent(message)}&next=${encodeURIComponent(safeNext)}`)
     res.cookies.delete(AUTH_NEXT_COOKIE)
+    res.cookies.delete(GOOGLE_COMMS_COOKIE)
     return res
   }
 
@@ -270,18 +301,33 @@ export async function GET(request: Request) {
           .then(({ saveOauthAvatarByEmail }) => saveOauthAvatarByEmail(data.user.email, avatar))
           .catch(() => {})
       }
-      if (googleComms && data.user.email) {
+      // The comms-door choices are recorded only for a provider-confirmed email:
+      // that is what proves the person ticking them owns it.
+      if (googleComms && data.user.email && signInProvenance(data.user) === 'verified') {
         await applyGoogleCommsConsent({
           email: data.user.email,
           name: typeof name === 'string' ? name : undefined,
           consent: googleComms,
           nextPath: safeNext,
+          verifiedCookiePersonId,
         })
       }
       const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
-      await stampPersonIdFromEmail(res, data.user.email ?? '', rrVid, data.user.id, 'auth_oauth')
+      // One sign-in, one answer: the choices were ticked for THIS sign-in. Left
+      // in place for its 10 minutes, a second account signing in on the same
+      // browser was given the first person's email and SMS consent.
+      res.cookies.delete(GOOGLE_COMMS_COOKIE)
+      await stampPersonIdFromEmail(
+        res,
+        data.user.email ?? '',
+        rrVid,
+        data.user.id,
+        'auth_oauth',
+        signInProvenance(data.user),
+        cookieStore.get(PERSON_COOKIE)?.value,
+      )
       // Phase 7.3: pull this signer's guest email-keyed saved searches into the
       // account (verified-email gated, idempotent, never blocks sign-in).
       await claimGuestSearchesForUser(data.user)
@@ -305,18 +351,31 @@ export async function GET(request: Request) {
       }).catch((err) => {
         Sentry.captureException(err)
       })
-      if (googleComms && data.user.email) {
+      if (googleComms && data.user.email && signInProvenance(data.user) === 'verified') {
         await applyGoogleCommsConsent({
           email: data.user.email,
           name: data.user.user_metadata?.full_name ?? data.user.user_metadata?.name,
           consent: googleComms,
           nextPath: safeNext,
+          verifiedCookiePersonId,
         })
       }
       const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
-      await stampPersonIdFromEmail(res, data.user.email ?? '', rrVid, data.user.id, type === 'recovery' ? 'auth_recovery' : 'auth_email')
+      // One sign-in, one answer: the choices were ticked for THIS sign-in. Left
+      // in place for its 10 minutes, a second account signing in on the same
+      // browser was given the first person's email and SMS consent.
+      res.cookies.delete(GOOGLE_COMMS_COOKIE)
+      await stampPersonIdFromEmail(
+        res,
+        data.user.email ?? '',
+        rrVid,
+        data.user.id,
+        type === 'recovery' ? 'auth_recovery' : 'auth_email',
+        signInProvenance(data.user),
+        cookieStore.get(PERSON_COOKIE)?.value,
+      )
       // Phase 7.3: pull this signer's guest email-keyed saved searches into the
       // account (verified-email gated, idempotent, never blocks sign-in).
       await claimGuestSearchesForUser(data.user)
@@ -325,5 +384,8 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${base}/auth-error?message=${encodeURIComponent('Could not sign in')}&next=${encodeURIComponent(safeNext)}`)
+  const failed = NextResponse.redirect(`${base}/auth-error?message=${encodeURIComponent('Could not sign in')}&next=${encodeURIComponent(safeNext)}`)
+  // A failed attempt's choices must not wait for the next account to sign in here.
+  failed.cookies.delete(GOOGLE_COMMS_COOKIE)
+  return failed
 }

@@ -85,7 +85,7 @@ const COOKIES: CookieRow[] = [
     type: 'Marketing',
     duration: '90 days',
     purpose:
-      'Recognizes you as a known contact in our CRM after you sign in or follow one of our links, so we can show your activity to your agent and pick up where you left off.',
+      'Recognizes you as a known contact in our CRM after you sign in, follow one of our links, or send us a form, so we can show your activity to your agent and pick up where you left off.',
   },
   {
     name: 'rr_session_id',

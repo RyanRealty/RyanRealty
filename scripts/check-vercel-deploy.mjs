@@ -60,6 +60,7 @@ import {
   classifyTip,
   isSkippableTip,
   findSupersedingDeploy,
+  pickDeployForSha,
   concurrentBuilds,
 } from './lib/deploy-verify-policy.mjs'
 
@@ -141,7 +142,11 @@ function findDeploymentForShaViaCli(sha) {
     const parsed = parseJsonFromOutput(output)
     const deployments = parsed?.deployments
     if (!Array.isArray(deployments) || deployments.length === 0) return null
-    const hit = deployments[0]
+    const hit =
+      pickDeployForSha(
+        deployments.map((d) => ({ ...d, state: String(d?.state ?? '').toUpperCase(), sha: d?.meta?.githubCommitSha ?? sha })),
+        sha,
+      ) ?? deployments[0]
     return {
       id: `cli-${sha.slice(0, 7)}`,
       state: String(hit?.state ?? 'UNKNOWN').toUpperCase(),
@@ -253,14 +258,7 @@ async function listProductionDeployments(token, projectId, teamId) {
 }
 
 async function findDeploymentForSha(token, projectId, teamId, sha) {
-  const list = await listProductionDeployments(token, projectId, teamId)
-  const want = String(sha || '').toLowerCase()
-  return (
-    list.find((d) => {
-      const got = String(d?.sha || d?.meta?.githubCommitSha || '').toLowerCase()
-      return got && want && (got === want || got.startsWith(want) || want.startsWith(got))
-    }) ?? null
-  )
+  return pickDeployForSha(await listProductionDeployments(token, projectId, teamId), sha)
 }
 
 async function getBuildLogs(token, deploymentId, teamId, limit = 60) {

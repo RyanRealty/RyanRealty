@@ -115,6 +115,7 @@ import { heldForMatt, heldUnderBand } from '@/lib/cma/cover-value'
 import { expectedSaleNear, netAtExpectedSale, netCreditsSentence, type NetTwoColumns } from '@/lib/cma/expected-sale'
 import { SALES_METHOD_LABEL, adjustedForPhrase, salesMethodSentences } from '@/lib/cma/sales-method-note'
 import { adjustmentNouns, adjustmentsApplied, joinAnd } from '@/lib/cma/adjustments-applied'
+import { ADU_CHAPTER_HEADING, aduChapterBodyHtml } from '@/lib/cma/adu-chapter'
 import { salesRole, salesSetOnlyTheRange, setWhat } from '@/lib/cma/sales-role'
 import { plainTextOf, sayOnceAfter } from '@/lib/cma/say-once'
 import { CLOSED_SET_RANGE_LABEL, CLOSED_SET_VALUE_LABEL } from '@/lib/cma/comp-pin-map'
@@ -2578,6 +2579,7 @@ export const OPINION_CHAPTER_ORDER = [
   'what-its-worth',
   'the-map',
   'sales-that-set-it',
+  'what-the-adu-adds',
   'did-not-sell',
   'competition',
   'priced-right',
@@ -2602,6 +2604,25 @@ export function mapSharesPricePage(a: OpinionPageArgs): boolean {
   return chapterIsLeadOnly(pricingPage(salesThatSetItArgs(a)).body)
 }
 
+/**
+ * WHAT THE ADU ADDS (Matt 2026-10-14). Right after the grid whose ADU row it
+ * explains. Omitted on a home the row priced as one, with neither the paired
+ * read nor the duplex cross-check on it.
+ */
+export function aduValuePage(a: OpinionPageArgs): CmaPageDef | null {
+  // The per-sale lines name "each sale above": the grid's own sales, never
+  // one the grid dropped for negligible weight.
+  const body = aduChapterBodyHtml({ subject: a.subject, pricing: a.pricing, comps: gridSales(a).comps })
+  if (!body.trim()) return null
+  return {
+    meta: `${esc(a.subject.streetAddress)} · ${esc(ADU_CHAPTER_HEADING)}`,
+    toc: ADU_CHAPTER_HEADING,
+    body: `
+  <h2 class="section">${esc(ADU_CHAPTER_HEADING)}</h2>
+  ${body}`,
+  }
+}
+
 export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
   const build: Record<OpinionChapterId, () => CmaPageDef | null> = {
     'what-happened': () => whatHappenedPage(a),
@@ -2610,6 +2631,7 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
     'what-its-worth': () => pricingPage(salesThatSetItArgs(a)),
     'the-map': () => theMapPage(a),
     'sales-that-set-it': () => salesThatSetItPage(salesThatSetItArgs(a)),
+    'what-the-adu-adds': () => aduValuePage(a),
     competition: () => competitionPage(a),
     'this-market': () => thisMarketPage(a),
     'net-at-list': () => sellerNetPage(a),

@@ -29,6 +29,18 @@ describe('Sarah intent chips', () => {
     expect(matchIntentChip("What's my home worth?")).toBe('home-worth')
     expect(matchIntentChip('I have a question')).toBe('question')
     expect(matchIntentChip('looking for a home in Bend')).toBe('buyer')
+    expect(matchIntentChip('Hi I would like to look at homes here')).toBe('buyer')
+  })
+})
+
+describe('Sarah buyer phrase from live test', () => {
+  it('starts the buyer flow for Hi I would like to look at homes here', () => {
+    const turn = applyIntentTurn(initialFlow(), 'Hi I would like to look at homes here', 'Matt')
+    expect(turn.next.intent).toBe('buyer')
+    expect(turn.next.step).toBe('area')
+    expect(turn.reply).toMatch(/Which area/)
+    expect(turn.reply).not.toMatch(/listing shows/)
+    expect(turn.reply).not.toMatch(/I can share what the listing shows/)
   })
 })
 

@@ -190,7 +190,7 @@ const DEFAULT_BROWSE_CITIES: BrowseCity[] = [
 /**
  * Get distinct cities with active listing counts for browse nav and homepage.
  * Only cities with at least one active listing; count is active-only so it matches the city page.
- * Uses a direct query on listings first; falls back to RPC if needed; finally to a static list so the dropdown is never empty.
+ * Reads the market_pulse_live cache first, then a direct query on listings; finally a static list so the dropdown is never empty.
  */
 async function _getBrowseCitiesUncached(): Promise<BrowseCity[]> {
   const supabase = getAnonSupabase()
@@ -227,20 +227,18 @@ async function _getBrowseCitiesUncached(): Promise<BrowseCity[]> {
     if (out.length > 0) return out
   }
 
-  // 2) Optional: try RPC in case direct query was blocked or returned empty but cache has data
-  const { data: rpcData, error: rpcError } = await supabase.rpc('get_listings_breakdown')
-  if (!rpcError && rpcData != null) {
-    const raw = rpcData as Record<string, unknown>
-    const byCity = (raw.byCity ?? raw.by_city) as Array<{ city?: string; active?: number }> | undefined
-    if (Array.isArray(byCity) && byCity.length > 0) {
-      const out = byCity
-        .filter((r) => (r.city ?? '').trim() && (Number(r.active) ?? 0) > 0)
-        .map((r) => ({ City: (r.city ?? '').trim(), count: Number(r.active) ?? 0 }))
-        .sort((a, b) => b.count - a.count || a.City.localeCompare(b.City))
-      if (out.length > 0) return out
-    }
-  }
-
+  // The get_listings_breakdown() RPC is NOT a third fallback here, on purpose
+  // (2026-10-15). It is an admin function: EXECUTE is granted to service_role
+  // only, so this anon client got "permission denied for function
+  // get_listings_breakdown" every time it ran (57 times in one database restart
+  // window). Granting anon EXECUTE would undo the admin lockdown, and its
+  // byCity "active" bucket counts Coming Soon as active (the public predicate
+  // excludes it) and is refreshed only after an admin sync, so its counts would
+  // disagree with the city pages. The admin breakdown page calls it with the
+  // service client in getListingsBreakdown().
+  console.warn(
+    '[browse-cities] market_pulse_live and the direct listings read both came back empty; serving the static city list with zero counts',
+  )
   return DEFAULT_BROWSE_CITIES
 }
 

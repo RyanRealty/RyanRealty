@@ -310,7 +310,18 @@ export async function renderFirstTouchPreview(
 /** Resolve crm_people.id first, then fub_legacy_id, then auto-enroll. */
 export async function autoEnrollByPersonId(
   personId: number,
-  opts?: { smsConsent?: boolean },
+  opts?: {
+    /**
+     * true: the person ticked the SMS consent box on a public form; the default
+     * block is lifted. false or omitted: no consent; the block is (re)applied.
+     * 'unproven': the box was answered by a visitor not proven to be this person
+     * (a no-email submit on a browser whose rr_pid is claimed, legacy or
+     * unsigned, lib/crm/submitted-identity.ts). It records nothing either way: a
+     * stranger can neither opt this person in nor overwrite consent they gave
+     * (consent integrity, 2026-10-14).
+     */
+    smsConsent?: boolean | 'unproven'
+  },
 ): Promise<AutoEnrollResult> {
   const sb = createServiceClient()
   let { data } = await sb.from('crm_people').select('id').eq('id', personId).maybeSingle()
@@ -326,10 +337,12 @@ export async function autoEnrollByPersonId(
   // voice are never gated by this. Removing the suppression on explicit consent
   // covers a returning lead who opts in on a later submission.
   try {
-    const { addSuppression, removeSuppression } = await import('@/lib/crm/suppressions')
-    await removeSuppression({ personId: data.id, channel: 'sms', reason: 'no-sms-consent' })
-    if (opts?.smsConsent !== true) {
-      await addSuppression({ personId: data.id, channel: 'sms', reason: 'no-sms-consent', source: 'lead-form' })
+    if (opts?.smsConsent !== 'unproven') {
+      const { addSuppression, removeSuppression } = await import('@/lib/crm/suppressions')
+      await removeSuppression({ personId: data.id, channel: 'sms', reason: 'no-sms-consent' })
+      if (opts?.smsConsent !== true) {
+        await addSuppression({ personId: data.id, channel: 'sms', reason: 'no-sms-consent', source: 'lead-form' })
+      }
     }
   } catch (e) {
     console.error('[autoEnrollByPersonId] sms-consent suppression failed', e)

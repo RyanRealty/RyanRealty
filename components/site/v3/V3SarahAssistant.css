@@ -4,10 +4,18 @@
 
 .v3-sarah {
   position: fixed;
-  right: calc(var(--v3-space-md) + env(safe-area-inset-right, 0px));
-  bottom: calc(
-    var(--rr-dock-h, 0px) + var(--rr-sticky-bottom, 0px) + var(--v3-space-md) +
-      env(safe-area-inset-bottom, 0px)
+  /* Same trailing-end FAB slot the retired phone-dock control used, inset
+     of the classic scrollbar (~1rem) so the disc does not sit on it. */
+  right: max(
+    0.75rem,
+    calc(env(safe-area-inset-right, 0px) + var(--v3-space-md) + 1rem)
+  );
+  bottom: max(
+    0.75rem,
+    calc(
+      var(--rr-dock-h, 0px) + var(--rr-sticky-bottom, 0px) +
+        env(safe-area-inset-bottom, 0px)
+    )
   );
   z-index: 140;
   display: flex;
@@ -257,10 +265,13 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
 .v3-sarah__messages {
   flex: 1;
   overflow-y: auto;
+  overflow-anchor: none;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: var(--v3-space-sm);
   padding: var(--v3-space-md);
+  -webkit-overflow-scrolling: touch;
 }
 
 .v3-sarah__msg {
@@ -331,16 +342,19 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   gap: var(--v3-space-xs);
 }
 
-.v3-sarah__hint {
-  min-height: var(--v3-tap);
-  padding: 0 var(--v3-space-sm);
-  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
-  border-radius: var(--v3-radius-mark);
-  background: var(--v3-cream);
-  color: var(--v3-navy);
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body-sm);
-  cursor: pointer;
+/* Layered so a Tailwind color utility on these controls still wins (ci:css-layers). */
+@layer base {
+  .v3-sarah__hint {
+    min-height: var(--v3-tap);
+    padding: 0 var(--v3-space-sm);
+    border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+    border-radius: var(--v3-radius-mark);
+    background: var(--v3-cream);
+    color: var(--v3-navy);
+    font-family: var(--v3-font-body);
+    font-size: var(--v3-size-body-sm);
+    cursor: pointer;
+  }
 }
 
 .v3-sarah__hint:hover {
@@ -376,20 +390,25 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   outline-offset: var(--v3-focus-offset);
 }
 
-.v3-sarah__composer button {
-  flex: none;
-  min-width: var(--v3-tap);
-  min-height: var(--v3-tap);
-  padding: 0 var(--v3-space-sm);
-  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
-  border-radius: var(--v3-radius-mark);
-  background: var(--v3-navy);
-  color: var(--v3-cream);
-  font-family: var(--v3-font-display);
-  cursor: pointer;
+/* Layered so a Tailwind color utility on the button still wins (ci:css-layers). */
+@layer base {
+  .v3-sarah__composer button {
+    flex: none;
+    min-width: var(--v3-tap);
+    min-height: var(--v3-tap);
+    padding: 0 var(--v3-space-sm);
+    border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+    border-radius: var(--v3-radius-mark);
+    background: var(--v3-navy);
+    color: var(--v3-cream);
+    font-family: var(--v3-font-display);
+    cursor: pointer;
+  }
 }
 
 .v3-sarah__composer .v3-sarah__mic {
+  display: grid;
+  place-items: center;
   width: var(--v3-sarah-mic);
   min-width: var(--v3-sarah-mic);
   height: var(--v3-sarah-mic);
@@ -398,7 +417,6 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   border-radius: 50%;
   background: var(--v3-navy);
   color: var(--v3-cream);
-  font-size: var(--v3-size-body-sm);
 }
 
 .v3-sarah__composer .v3-sarah__mic[data-sarah-voice='listening'],

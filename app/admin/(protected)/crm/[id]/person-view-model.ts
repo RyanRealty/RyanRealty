@@ -155,7 +155,15 @@ export function buildTimelineItems(
   engagement: EmailEngagement,
 ): TimelineItem[] {
   return timeline
-    .filter((t) => t.kind !== 'email_open' && t.kind !== 'email_click' && t.kind !== 'sms_click')
+    // email_delivered is a per-send receipt (Resend), not activity: the send's
+    // own email_out row already shows the email.
+    .filter(
+      (t) =>
+        t.kind !== 'email_open' &&
+        t.kind !== 'email_click' &&
+        t.kind !== 'sms_click' &&
+        t.kind !== 'email_delivered',
+    )
     .map((t) => {
       const eng = engagement[(t.title ?? '').trim()]
       return {

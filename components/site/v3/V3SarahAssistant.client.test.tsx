@@ -6,7 +6,8 @@ import React, { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { captureSarahLead } from '@/app/actions/sarah-capture'
 import { trackEvent } from '@/lib/tracking'
-import { WEB_GREETING_EN, WEB_SAVED_NOTICE_EN, WEB_VOICE_NOTICE_EN } from '@/lib/sarah/scripts'
+import { WEB_GREETING_EN, WEB_SAVED_NOTICE_EN } from '@/lib/sarah/scripts'
+import { primeSarahMicrophone, startSarahVoiceSession } from '@/lib/sarah/web-voice'
 import { WEB_BRINGS_YOU_HERE_EN } from '@/lib/sarah/intent-flow'
 import { SARAH_TEASER_COPY, SARAH_TEASER_DELAY_MS, SARAH_TEASER_SESSION_KEY } from '@/lib/sarah/teaser'
 import { V3SarahAssistant } from './V3SarahAssistant.client'
@@ -19,7 +20,23 @@ vi.mock('@/app/actions/sarah-capture', () => ({
   captureSarahLead: vi.fn(async () => ({ data: { personId: 1, cmaSlug: null, stage: 'Lead' }, error: null })),
 }))
 vi.mock('@/app/actions/sarah-voice', () => ({
-  mintSarahVoiceToken: vi.fn(async () => ({ data: null, error: 'skip' })),
+  mintSarahVoiceToken: vi.fn(async () => ({
+    data: {
+      secret: 'tok_test',
+      expiresAt: null,
+      model: 'grok-voice-latest',
+      voice: 'eve',
+      brokerFirstName: 'Matt',
+    },
+    error: null,
+  })),
+}))
+vi.mock('@/lib/sarah/web-voice', () => ({
+  primeSarahMicrophone: vi.fn(async () => ({ getTracks: () => [{ stop: vi.fn() }] })),
+  startSarahVoiceSession: vi.fn(async ({ onStatus }: { onStatus: (s: string) => void }) => {
+    onStatus('listening')
+    return { stop: vi.fn() }
+  }),
 }))
 vi.mock('@/app/actions/sarah-desk', () => ({
   getSarahDeskBroker: vi.fn(async () => ({
@@ -158,7 +175,7 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     expect(trackEvent).toHaveBeenCalledWith('sarah_teaser_clicked', { surface: 'listing', cta: 'bubble' })
     expect(container.querySelector('[data-sarah="panel"]')).not.toBeNull()
     expect(container.querySelector('[data-sarah="panel"]')?.getAttribute('data-sarah-broker')).toBe('matt')
-    expect(container.querySelector('[data-sarah="desk"]')?.textContent).toBe("with Matt's team")
+    expect(container.querySelector('.v3-sarah__panel-role')?.textContent).toBe('AI assistant')
     const chips = [...container.querySelectorAll<HTMLButtonElement>('[data-sarah="intent-chips"] [data-sarah-chip]')].map(
       (btn) => ({ id: btn.getAttribute('data-sarah-chip'), text: btn.textContent }),
     )
@@ -169,14 +186,19 @@ describe('V3SarahAssistant listing teaser behavior', () => {
       { id: 'question', text: 'I have a question' },
     ])
     expect(container.querySelector('.v3-sarah__desk-actions')).toBeNull()
-    expect(container.querySelector('[data-sarah="mic"]')).not.toBeNull()
+    const mic = container.querySelector<HTMLButtonElement>('[data-sarah="mic"]')
+    expect(mic).not.toBeNull()
+    expect(mic?.textContent).not.toMatch(/\bMic\b/)
     expect(container.querySelector('[data-sarah="panel"]')?.getAttribute('data-sarah-surface')).toBe('card')
     expect(container.querySelector('[data-sarah="panel"]')?.textContent).toContain(WEB_BRINGS_YOU_HERE_EN)
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('[data-sarah="mic"]')?.click()
+      mic?.click()
+      await Promise.resolve()
       await Promise.resolve()
     })
-    expect(container.querySelector('[data-sarah="panel"]')?.textContent).toContain(WEB_VOICE_NOTICE_EN)
+    expect(primeSarahMicrophone).toHaveBeenCalled()
+    expect(startSarahVoiceSession).toHaveBeenCalled()
+    expect(container.querySelector('[data-sarah="mic"]')?.getAttribute('data-sarah-voice')).toBe('listening')
     expect(container.querySelector('[data-sarah-teaser]')).toBeNull()
     expect(sessionStorage.getItem(SARAH_TEASER_SESSION_KEY)).toBe('1')
 
@@ -197,7 +219,7 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     const panel = container.querySelector('[data-sarah="panel"]')
     expect(panel?.textContent).toContain(WEB_GREETING_EN)
     expect(panel?.querySelector('[data-sarah="saved-notice"]')?.textContent).toBe(WEB_SAVED_NOTICE_EN)
-    expect(panel?.querySelector('.v3-sarah__panel-role')?.textContent).toBe("with Matt's team")
+    expect(panel?.querySelector('.v3-sarah__panel-role')?.textContent).toBe('AI assistant')
     expect(WEB_GREETING_EN).not.toMatch(/not a licensed broker/i)
     expect(panel?.querySelector('.v3-sarah__panel-role')?.textContent).not.toMatch(/not a licensed broker/i)
   })
@@ -247,6 +269,28 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     })
     expect(panel?.textContent).toMatch(/saved that/)
     expect(container.querySelector('[data-sarah-chip="handoff-call"]')?.textContent).toBe('Call')
+  })
+
+  it('starts the buyer flow for Hi I would like to look at homes here', async () => {
+    act(() => {
+      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+    })
+    const panel = container.querySelector('[data-sarah="panel"]')
+    const input = container.querySelector<HTMLInputElement>('input[name="sarah-message"]')
+    expect(input).not.toBeNull()
+    await act(async () => {
+      const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')
+      proto?.set?.call(input, 'Hi I would like to look at homes here')
+      input!.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    expect(panel?.textContent).toMatch(/Which area/)
+    expect(panel?.textContent).not.toMatch(/I can share what the listing shows/)
+    const launcher = container.querySelector<HTMLImageElement>('button[data-sarah="launcher"] img')
+    expect(launcher?.getAttribute('srcset')).toContain('sarah-headshot@2x.jpg')
+    expect(launcher?.getAttribute('srcset')).toContain('sarah-headshot@3x.jpg')
   })
 
   it('does not tease a city browse page', async () => {

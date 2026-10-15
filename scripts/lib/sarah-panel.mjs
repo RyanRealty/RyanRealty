@@ -69,8 +69,19 @@ export function sarahPanelProblems({ root = process.cwd(), files = {} } = {}) {
     if (!sarah.includes('WEB_BRINGS_YOU_HERE_EN') || !sarah.includes('SARAH_INTENT_CHIPS')) {
       p.push(`${PATHS.sarah}: panel must ask what brings them here and mount the intent chips.`)
     }
-    if (!sarah.includes('data-sarah="mic"') || !sarah.includes('mintSarahVoiceToken') || !sarah.includes('startSarahVoiceSession')) {
-      p.push(`${PATHS.sarah}: Eve mic must mint a realtime token and start the browser session.`)
+    if (
+      !sarah.includes('data-sarah="mic"') ||
+      !sarah.includes('mintSarahVoiceToken') ||
+      !sarah.includes('startSarahVoiceSession') ||
+      !sarah.includes('primeSarahMicrophone')
+    ) {
+      p.push(`${PATHS.sarah}: Eve mic must ask permission on click, mint a realtime token, and start the browser session.`)
+    }
+    if (!sarah.includes('SARAH_AVATAR_SRCSET') || !sarah.includes('name="Microphone"') || !sarah.includes('scrollToLatest')) {
+      p.push(`${PATHS.sarah}: launcher needs the 2x/3x headshot srcset, a mic icon, and auto-scroll.`)
+    }
+    if (sarah.includes("{desk.firstName}'s team") || sarah.includes('Your broker is')) {
+      p.push(`${PATHS.sarah}: broker header row must stay out of the chrome.`)
     }
     if (!sarah.includes('captureSarahLead')) {
       p.push(`${PATHS.sarah}: qualifying flows must write through captureSarahLead.`)
@@ -84,6 +95,9 @@ export function sarahPanelProblems({ root = process.cwd(), files = {} } = {}) {
     }
     if (!flow.includes('decideSarahStage') || !flow.includes('captured:by-sarah')) {
       p.push(`${PATHS.flow}: CRM capture contract (stage + by Sarah audit) missing.`)
+    }
+    if (!flow.includes('look at homes')) {
+      p.push(`${PATHS.flow}: buyer intent must match "look at homes".`)
     }
   }
 

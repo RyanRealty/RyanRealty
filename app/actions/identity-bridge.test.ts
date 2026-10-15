@@ -15,6 +15,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { signPersonLinkToken } from '@/lib/identity/link-token'
+import { personCookieValue, readPersonCookie } from '@/lib/identity/person-cookie'
 import { encodeConsent } from '@/test/consent-fixtures'
 
 const state = vi.hoisted(() => ({
@@ -25,7 +26,7 @@ const state = vi.hoisted(() => ({
   isAutomated: vi.fn(),
   stitch: vi.fn(),
   ga4: vi.fn(),
-  user: null as null | { id: string; email: string; app_metadata: { provider: string } },
+  user: null as null | { id: string; email: string; app_metadata: { provider: string }; email_confirmed_at?: string | null },
   matches: [] as number[],
 }))
 
@@ -209,9 +210,60 @@ describe('identifyPersonFromEmailClickNative', () => {
   })
 })
 
+/** The rr_pid value an action set, read back with its provenance. */
+function setCookie(): ReturnType<typeof readPersonCookie> {
+  const call = state.cookieSet.mock.calls.find((c) => c[0] === 'rr_pid')
+  return call ? readPersonCookie(call[1] as string) : null
+}
+
+describe('the rr_pid cookie an identify action mints carries its provenance (consent integrity, 2026-10-14)', () => {
+  it('a signed link we sent mints VERIFIED', async () => {
+    await identifyPersonFromEmailClickNative(TOKEN, SESSION)
+    expect(setCookie()).toEqual({ personId: PERSON, signed: true, provenance: 'verified' })
+  })
+
+  it('a cookie value passed as the token is not a link and identifies nobody', async () => {
+    const res = await identifyPersonFromEmailClickNative(personCookieValue(PERSON, 'claimed'), SESSION)
+    expect(res.ok).toBe(false)
+    expect(state.cookieSet).not.toHaveBeenCalled()
+  })
+
+  describe('a sign-in', () => {
+    beforeEach(() => {
+      state.matches = [PERSON]
+    })
+
+    it('with a provider-confirmed email mints VERIFIED', async () => {
+      state.user = { id: 'auth-1', email: 'lead@example.com', app_metadata: { provider: 'google' }, email_confirmed_at: '2026-10-14T00:00:00Z' }
+      await identifyAuthenticatedSession(SESSION)
+      expect(setCookie()).toEqual({ personId: PERSON, signed: true, provenance: 'verified' })
+    })
+
+    it('with an unconfirmed email mints only a claim', async () => {
+      state.user = { id: 'auth-1', email: 'lead@example.com', app_metadata: { provider: 'email' }, email_confirmed_at: null }
+      await identifyAuthenticatedSession(SESSION)
+      expect(setCookie()).toEqual({ personId: PERSON, signed: true, provenance: 'claimed' })
+    })
+
+    it('a confirmed sign-in re-sets a verified cookie it already holds, so its 90 days roll forward', async () => {
+      state.cookies.rr_pid = personCookieValue(PERSON, 'verified')
+      state.user = { id: 'auth-1', email: 'lead@example.com', app_metadata: { provider: 'google' }, email_confirmed_at: '2026-10-14T00:00:00Z' }
+      await identifyAuthenticatedSession(SESSION)
+      expect(setCookie()?.provenance).toBe('verified')
+    })
+
+    it('an unconfirmed sign-in never downgrades the verified cookie the same person holds', async () => {
+      state.cookies.rr_pid = personCookieValue(PERSON, 'verified')
+      state.user = { id: 'auth-1', email: 'lead@example.com', app_metadata: { provider: 'email' }, email_confirmed_at: null }
+      expect(await identifyAuthenticatedSession(SESSION)).toEqual({ ok: true, bridged: true })
+      expect(state.cookieSet).not.toHaveBeenCalled()
+    })
+  })
+})
+
 describe('identifyAuthenticatedSession', () => {
   beforeEach(() => {
-    state.user = { id: 'auth-1', email: 'Lead@Example.com', app_metadata: { provider: 'google' } }
+    state.user = { id: 'auth-1', email: 'Lead@Example.com', app_metadata: { provider: 'google' }, email_confirmed_at: '2026-10-14T00:00:00Z' }
     state.matches = [PERSON]
   })
 

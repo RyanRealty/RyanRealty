@@ -1,23 +1,21 @@
-# 2026-10-15 (Cursor, Sarah intent chips)
+# 2026-10-15 (Cursor, Sarah panel live-test)
 
-Surface: Cursor cloud. Branch `cursor/sarah-intent-panel-cc6f`.
-Based on `origin/main` @ 32c70a2da (stack #668 merged).
+Surface: Cursor cloud. Branch `cursor/sarah-intent-panel-cc6f`. PR #672.
 
-## Landed
-Opening asks what brings them here. Chips: looking for a home, thinking of
-selling, what's my home worth, I have a question. Buyer: area, budget,
-timeline. Seller / home-worth: address, then a draft CMA for Matt (never a
-Sarah value). Every flow captures name plus email or phone, CRM write with
-existing stages only, by-Sarah audit, assigned broker then Matt. Big Eve mic.
-Cookie settings stays the extra FAB. Gate: `ci:sarah-panel`.
+## Landed (on branch, not prod yet)
+Intent chips, CRM qualifying flows, draft CMA, no broker header. High-res
+`sarah-headshot` 1x/2x/3x srcset. Launcher inset of the scrollbar in the old
+phone-dock FAB slot. Auto-scroll on new messages and input focus. Eve mic
+asks permission on the click then opens `wss://api.x.ai/v1/realtime`.
+"Hi I would like to look at homes here" starts the buyer flow. Cookie
+settings gear stays (legal consent). Gate: `ci:sarah-panel`.
 
 ## Next
-Open PR, land, production shots at 375 and 1440 of the opening state and the
-buyer flow.
+`npm run push`, land #672, production READY, shots 375/1440 opening + buyer
++ voice. Delete leftover sarah-panel branches.
 
 ## Held
 Do not send emails or CMAs. Do not edit `app/api/voice/*`,
 `app/api/twilio/*`, or `lib/grok/voice-sip.ts`.
 
-Skills read: crm-up-to-snuff, site-queue, DATABASE_FOR_AI_AGENTS (CRM writes
-only), AGENTS.md.
+Skills read: crm-up-to-snuff, AGENTS.md.

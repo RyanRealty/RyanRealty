@@ -35,6 +35,10 @@
       "schedule": "25 * * * *"
     },
     {
+      "path": "/api/cron/compute-market-metric-windows",
+      "schedule": "30 */6 * * *"
+    },
+    {
       "path": "/api/cron/compute-neighborhood-metrics",
       "schedule": "40 */6 * * *"
     },

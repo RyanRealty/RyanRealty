@@ -13,7 +13,8 @@ import { captureSarahLead } from '@/app/actions/sarah-capture'
 import { getSarahDeskBroker } from '@/app/actions/sarah-desk'
 import { mintSarahVoiceToken } from '@/app/actions/sarah-voice'
 import { V3_ROOT_CLASS } from './atoms'
-import { SARAH_AVATAR_ALT, SARAH_AVATAR_SRC } from '@/lib/sarah/assets'
+import { V3Icon } from './V3Icon'
+import { SARAH_AVATAR_ALT, SARAH_AVATAR_SRC, SARAH_AVATAR_SRCSET } from '@/lib/sarah/assets'
 import {
   deskBrokerFromAssigned,
   type SarahDeskBroker,
@@ -45,13 +46,33 @@ import {
   teaserDismissedInSession,
   type SarahTeaserKind,
 } from '@/lib/sarah/teaser'
-import { startSarahVoiceSession, type SarahVoiceHandle, type SarahVoiceStatus } from '@/lib/sarah/web-voice'
+import {
+  primeSarahMicrophone,
+  startSarahVoiceSession,
+  type SarahVoiceHandle,
+  type SarahVoiceStatus,
+} from '@/lib/sarah/web-voice'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { trackEvent } from '@/lib/tracking'
 import './tokens.css'
 import './V3SarahAssistant.css'
 
 type ChatLine = { from: 'sarah' | 'visitor'; text: string; notice?: string }
+
+function SarahHeadshot({ size, alt = '', className }: { size: number; alt?: string; className?: string }) {
+  return (
+    <img
+      className={className}
+      src={SARAH_AVATAR_SRC}
+      srcSet={SARAH_AVATAR_SRCSET}
+      sizes={`${size}px`}
+      alt={alt}
+      width={size}
+      height={size}
+      decoding="async"
+    />
+  )
+}
 
 function sessionStore(): Storage | null {
   if (typeof sessionStorage === 'undefined') return null
@@ -88,6 +109,7 @@ export function V3SarahAssistant() {
   const shownRef = useRef(false)
   const dragRef = useRef<{ y: number; dy: number } | null>(null)
   const voiceRef = useRef<SarahVoiceHandle | null>(null)
+  const messagesRef = useRef<HTMLDivElement | null>(null)
   const teaserKind: SarahTeaserKind = listingTeaserKind(wide)
   const offer = shouldOfferListingTeaser({
     pathname,
@@ -160,6 +182,17 @@ export function V3SarahAssistant() {
     [dismissTeaser, teaserKind],
   )
 
+  const scrollToLatest = useCallback(() => {
+    const el = messagesRef.current
+    if (!el) return
+    el.scrollTop = el.scrollHeight
+  }, [])
+
+  useEffect(() => {
+    if (!panelOpen) return
+    scrollToLatest()
+  }, [lines, chips, panelOpen, scrollToLatest])
+
   const closePanel = useCallback(() => {
     setSheetDy(0)
     dragRef.current = null
@@ -227,7 +260,12 @@ export function V3SarahAssistant() {
   )
 
   const requestVoice = useCallback(() => {
-    if (voiceStatus === 'listening' || voiceStatus === 'connecting' || voiceStatus === 'speaking') {
+    if (
+      voiceStatus === 'listening' ||
+      voiceStatus === 'connecting' ||
+      voiceStatus === 'speaking' ||
+      voiceStatus === 'asking'
+    ) {
       voiceRef.current?.stop()
       voiceRef.current = null
       setVoiceStatus('idle')
@@ -235,13 +273,21 @@ export function V3SarahAssistant() {
     }
     trackEvent('click_cta', { cta: 'sarah_voice', action: 'start', surface: desk.slug })
     setVoiceStatus('asking')
-    setLines((prev) => {
-      if (prev.some((line) => line.text === WEB_VOICE_NOTICE_EN)) return prev
-      return [...prev, { from: 'sarah', text: WEB_VOICE_NOTICE_EN }]
-    })
     void (async () => {
+      let stream: MediaStream
+      try {
+        stream = await primeSarahMicrophone()
+      } catch {
+        setVoiceStatus('error')
+        setLines((prev) => [
+          ...prev,
+          { from: 'sarah', text: 'I need microphone permission to talk. You can keep typing.' },
+        ])
+        return
+      }
       const token = await mintSarahVoiceToken()
       if (!token.data) {
+        stream.getTracks().forEach((t) => t.stop())
         setVoiceStatus('error')
         setLines((prev) => [...prev, { from: 'sarah', text: token.error ?? WEB_VOICE_NOTICE_EN }])
         return
@@ -250,6 +296,7 @@ export function V3SarahAssistant() {
         const handle = await startSarahVoiceSession({
           secret: token.data.secret,
           brokerFirstName: token.data.brokerFirstName,
+          stream,
           onStatus: setVoiceStatus,
           onError: (message) => {
             setLines((prev) => [...prev, { from: 'sarah', text: message }])
@@ -260,6 +307,7 @@ export function V3SarahAssistant() {
         })
         voiceRef.current = handle
       } catch {
+        stream.getTracks().forEach((t) => t.stop())
         setVoiceStatus('error')
         setLines((prev) => [
           ...prev,
@@ -342,14 +390,12 @@ export function V3SarahAssistant() {
               <span />
             </div>
             <div className="v3-sarah__panel-head" data-sarah-drag="">
-              <img src={SARAH_AVATAR_SRC} alt="" width={32} height={32} />
+              <SarahHeadshot size={32} />
               <div className="v3-sarah__panel-titles">
                 <div className="v3-sarah__panel-name" id={titleId}>
                   {SARAH_NAME}
                 </div>
-                <span className="v3-sarah__panel-role" data-sarah="desk">
-                  with {desk.firstName}&apos;s team
-                </span>
+                <span className="v3-sarah__panel-role">AI assistant</span>
               </div>
               <button
                 type="button"
@@ -360,7 +406,7 @@ export function V3SarahAssistant() {
                 ×
               </button>
             </div>
-            <div className="v3-sarah__messages">
+            <div className="v3-sarah__messages" data-sarah="messages" ref={messagesRef}>
               {lines.map((line, i) => (
                 <div
                   key={`${line.from}-${i}`}
@@ -368,9 +414,7 @@ export function V3SarahAssistant() {
                     line.from === 'sarah' ? 'v3-sarah__msg v3-sarah__msg--sarah' : 'v3-sarah__msg v3-sarah__msg--visitor'
                   }
                 >
-                  {line.from === 'sarah' ? (
-                    <img src={SARAH_AVATAR_SRC} alt="" width={28} height={28} />
-                  ) : null}
+                  {line.from === 'sarah' ? <SarahHeadshot size={28} /> : null}
                   <div className="v3-sarah__msg-stack">
                     <p className="v3-sarah__msg-body">{line.text}</p>
                     {line.notice ? (
@@ -418,7 +462,7 @@ export function V3SarahAssistant() {
                 aria-pressed={micBusy}
                 onClick={requestVoice}
               >
-                {micBusy ? 'Listening' : 'Mic'}
+                <V3Icon name="Microphone" size={24} />
               </button>
               <input
                 type="text"
@@ -427,6 +471,7 @@ export function V3SarahAssistant() {
                 autoComplete="off"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
+                onFocus={scrollToLatest}
               />
               <button type="submit">Send</button>
             </form>
@@ -441,7 +486,7 @@ export function V3SarahAssistant() {
               onClick={() => openPanel(true)}
             >
               <span className="v3-sarah__teaser-photo">
-                <img src={SARAH_AVATAR_SRC} alt="" width={36} height={36} />
+                <SarahHeadshot size={36} />
               </span>
               <span>{SARAH_TEASER_COPY}</span>
             </button>
@@ -474,7 +519,7 @@ export function V3SarahAssistant() {
             else openPanel(showBadge)
           }}
         >
-          <img className="v3-sarah__avatar" src={SARAH_AVATAR_SRC} alt={SARAH_AVATAR_ALT} width={56} height={56} />
+          <SarahHeadshot className="v3-sarah__avatar" size={56} alt={SARAH_AVATAR_ALT} />
           {showBadge ? <span className="v3-sarah__badge" data-sarah-teaser="badge" /> : null}
         </button>
       </div>

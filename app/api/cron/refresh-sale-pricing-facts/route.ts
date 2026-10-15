@@ -255,41 +255,12 @@ export async function GET(request: Request) {
     boundAfter = marketFactBound.last_key
     if (bound?.done) break
   }
+  // The daily shadow only. The window = 1 monthly series and the HUD windows
+  // used to run here, behind `if (!shadowErr)`; they read base tables, not the
+  // shadow's output, and a shadow call the API gateway timed out (or a route
+  // that ran out its 300 s) skipped them from 2026-10-12. They have their own
+  // invocation now: /api/cron/compute-market-metric-windows.
   const { data: shadow, error: shadowErr } = await supabase.rpc('compute_market_metrics_shadow')
-  let monthlyShadow: unknown = null
-  if (!shadowErr) {
-    const monthly = await supabase.rpc('compute_market_metrics_monthly_shadow', { p_months: 36 })
-    if (monthly.error) {
-      console.error('[refresh-sale-pricing-facts] compute_market_metrics_monthly_shadow', monthly.error.message)
-    } else {
-      monthlyShadow = monthly.data
-    }
-    const monthlyNbh = await supabase.rpc('compute_market_metrics_monthly_neighborhood_shadow', {
-      p_months: 36,
-    })
-    if (monthlyNbh.error) {
-      console.error(
-        '[refresh-sale-pricing-facts] compute_market_metrics_monthly_neighborhood_shadow',
-        monthlyNbh.error.message,
-      )
-    }
-    const monthlyZip = await supabase.rpc('compute_market_metrics_monthly_zip_shadow', {
-      p_months: 36,
-    })
-    if (monthlyZip.error) {
-      console.error(
-        '[refresh-sale-pricing-facts] compute_market_metrics_monthly_zip_shadow',
-        monthlyZip.error.message,
-      )
-    }
-    const hudWindows = await supabase.rpc('compute_market_metrics_hud_windows_shadow')
-    if (hudWindows.error) {
-      console.error(
-        '[refresh-sale-pricing-facts] compute_market_metrics_hud_windows_shadow',
-        hudWindows.error.message,
-      )
-    }
-  }
   if (shadowErr) {
     console.error('[refresh-sale-pricing-facts] compute_market_metrics_shadow', shadowErr.message)
     return NextResponse.json(
@@ -325,7 +296,6 @@ export async function GET(request: Request) {
     marketFactSpan,
     marketFactBound,
     marketMetricShadow: shadow,
-    marketMetricMonthly: monthlyShadow,
     done,
     indexes: idx,
     duration_ms: Date.now() - started,

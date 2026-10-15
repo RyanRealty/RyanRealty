@@ -149,6 +149,13 @@ export interface CmaComp {
   bathsFull?: number | null
   bathsHalf?: number | null
   sqft: number
+  /**
+   * The main home's area when `sqft` on record includes the sale's ADU, read
+   * off the remarks and proved by the arithmetic (lib/pricing/adu-value.ts
+   * reconciledMainSqft). The size line compares it to the subject; the grid
+   * still prints the recorded area. Absent on every other sale.
+   */
+  mainSqft?: number | null
   lotAcres: number | null
   /** MLS property_sub_type — drives product-class comparability. */
   propertySubType: string | null
@@ -298,6 +305,17 @@ export interface CmaAdjustedComp extends CmaComp {
    * moves the number gets its own printed line.
    */
   storyAdjustment?: number
+  /**
+   * What the subject's accessory dwelling unit adds against this sale (Matt
+   * 2026-10-14, second call; lib/pricing/adu-value.ts): the paired-sales rate
+   * per ADU square foot times the area the subject has and this sale does
+   * not. Zero on a sale that states a unit of unrecorded area. Absent when the
+   * subject has no recorded ADU, when the ADU set priced the home, or on rows
+   * stored before 2026-10-15.
+   */
+  aduAdjustment?: number
+  /** How the ADU line was read for this sale, for the grid's note. */
+  aduAdjustmentBasis?: string | null
   adjustedPrice: number
   weight: number
   /**
@@ -637,6 +655,23 @@ export interface CmaSetAsideSale {
   reason: string
 }
 
+/** The duplex cross-check's result, or why there is none. */
+export interface CmaMultiUnitCrossCheck {
+  units: number | null
+  propertySubType: string
+  /** The whole building's area the ladder priced over, and where it came from. */
+  sqft: number | null
+  sqftBasis: string | null
+  /** Price-setting sales the ladder held, before the comparability review. */
+  compsHeld: number
+  outcome: 'same-units' | 'class' | null
+  /** The ladder's recommended list, or null when it could not price (under the comp floor). */
+  recommended: number | null
+  valueLow: number | null
+  valueHigh: number | null
+  trace: string[]
+}
+
 export interface CmaPricing {
   method1Low: number
   method1Mid: number
@@ -756,6 +791,16 @@ export interface CmaPricing {
    * 2026-09-07, item 10).
    */
   rejected?: import('@/lib/pricing/rejected').RejectedSale[] | null
+  /** What the subject's ADU adds, read from paired sales, when the home carries the ADU line (lib/pricing/adu-value.ts). */
+  aduValue?: import('@/lib/pricing/adu-value').AduValue | null
+  /**
+   * THE DUPLEX CROSS-CHECK (Matt 2026-10-14, second call). A house with a
+   * recorded ADU whose earlier record was typed two to four units is also
+   * priced, on the side, the way that record would have priced it: on the
+   * multi-unit ladder, before the comparability review. The letter prints it
+   * as a check beside the price, never as the price.
+   */
+  multiUnitCrossCheck?: CmaMultiUnitCrossCheck | null
   confidence: 'High' | 'Moderate' | 'Supportable'
   confidenceReason: string
   /** True when the comp set is too heterogeneous to trust without broker review. */

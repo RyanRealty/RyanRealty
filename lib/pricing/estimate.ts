@@ -944,6 +944,7 @@ const SETTING_ADJUSTMENT_LABELS = [
   ['timeAdjustment', 'date'],
   ['sizeAdjustment', 'size'],
   ['storyAdjustment', 'story'],
+  ['aduAdjustment', 'the ADU'],
 ] as const
 
 /** Phrase for adjustments that actually moved a setter. Empty when none did. */
@@ -952,6 +953,7 @@ function settingAdjustmentPhrase(
     timeAdjustment?: number | null
     sizeAdjustment?: number | null
     storyAdjustment?: number | null
+    aduAdjustment?: number | null
   }[],
 ): string {
   const moved = SETTING_ADJUSTMENT_LABELS.filter(([key]) =>
@@ -1037,6 +1039,7 @@ export function pinPrintedBandToSettingSales<
     timeAdjustment?: number | null
     sizeAdjustment?: number | null
     storyAdjustment?: number | null
+    aduAdjustment?: number | null
     concessionsAmount?: number | null
     concessionsYn?: string | null
   }[],
@@ -1056,6 +1059,7 @@ export function pinPrintedBandToSettingSales<
         timeAdjustment: c.timeAdjustment,
         sizeAdjustment: c.sizeAdjustment,
         storyAdjustment: c.storyAdjustment,
+        aduAdjustment: c.aduAdjustment,
         concessionsAmount: c.concessionsAmount,
         concessionsYn: c.concessionsYn,
       }),
@@ -1271,6 +1275,8 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     bathsFull: sale.bathsFull ?? null,
     bathsHalf: sale.bathsHalf ?? null,
     sqft: sale.sqft,
+    // The main home where the record counted the sale's ADU too (lib/pricing/adu-value.ts withMainSqft).
+    mainSqft: sale.mainSqft ?? null,
     lotAcres: sale.lotAcres,
     propertySubType: sale.productClass === 'detached' ? 'Single Family Residence' : sale.productClass,
     yearBuilt: sale.yearBuilt,
@@ -1387,7 +1393,8 @@ export function adjustCmaCompAlongMarket(opts: {
   // per foot, after any recorded concession.
   const size = sizeAdjustmentFor({
     subjectSqft,
-    saleSqft: sale.sqft,
+    // The main home where the record counted the sale's ADU too (lib/pricing/adu-value.ts withMainSqft).
+    saleSqft: sale.mainSqft ?? sale.sqft,
     timeAdjustedPrice,
   })
   const ppsfTimeAdjusted = size.ppsfTimeAdjusted
@@ -1398,7 +1405,7 @@ export function adjustCmaCompAlongMarket(opts: {
   // Closer match weighs more. Location first, then size, year, beds, baths, lot, and recency.
   const weight = closedCompWeight({
     subjectSqft,
-    saleSqft: sale.sqft,
+    saleSqft: sale.mainSqft ?? sale.sqft,
     monthsSinceClose,
     subjectBeds: opts.subject.beds,
     saleBeds: sale.beds,

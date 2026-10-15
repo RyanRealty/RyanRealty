@@ -18,7 +18,7 @@ import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeVisitorDb } from '@/test/fake-visitor-db'
 import { signPersonLinkToken } from '@/lib/identity/link-token'
-import { personCookieValue } from '@/lib/identity/person-cookie'
+import { personCookieValue, readPersonCookie } from '@/lib/identity/person-cookie'
 
 const store = createFakeVisitorDb()
 const alerts = vi.hoisted(() => ({
@@ -224,7 +224,7 @@ describe('a NEW session on a browser we already know is identified exactly as be
   })
 
   it('by the signed rr_pid cookie on a browser the identity map has never seen', async () => {
-    const res = await track(view(sid(14)), { cookies: { rr_vid: VID, rr_pid: personCookieValue(PERSON) } })
+    const res = await track(view(sid(14)), { cookies: { rr_vid: VID, rr_pid: personCookieValue(PERSON, 'verified') } })
     expect((await json(res)).identity?.identifiedNow).toBe(true)
     expect(store.session(sid(14))).toMatchObject({ crm_person_id: PERSON, identified_via: 'rr_pid_cookie' })
   })
@@ -324,5 +324,89 @@ describe('automation never identifies anyone and never texts a broker', () => {
     )
     expect((await json(res)).identity?.identifiedNow).toBe(true)
     expect(store.session(sid(37))).toMatchObject({ crm_person_id: PERSON, is_automated: false })
+  })
+})
+
+describe('the rr_pid cookie carries how the browser was proven (consent integrity, 2026-10-14)', () => {
+  /** The rr_pid value this response sets, read back, or null when it sets none. */
+  function setPersonCookie(res: Response) {
+    const m = /(?:^|,\s*)rr_pid=([^;]+)/.exec(res.headers.get('set-cookie') ?? '')
+    return m ? readPersonCookie(decodeURIComponent(m[1]!)) : null
+  }
+
+  it('a carryover rooted in a FORM SUBMIT is claimed: still identified, never consent-grade', async () => {
+    // A stranger typed this contact's email into a form on their own browser.
+    store.db.visitor_identity_map.push({ rr_vid: VID, crm_person_id: PERSON, fub_person_id: PERSON, identify_source: 'form_submit' })
+    const res = await track(view(sid(40)), { cookies: { rr_vid: VID } })
+    // the identity loop keeps working: the session is the contact's...
+    expect(store.session(sid(40))).toMatchObject({ crm_person_id: PERSON, identified_via: 'rr_vid_carryover' })
+    // ...but the cookie it hands the browser is a claim, not proof
+    expect(setPersonCookie(res)).toEqual({ personId: PERSON, signed: true, provenance: 'claimed' })
+  })
+
+  it('any carryover is claimed: only a proof made on this browser, now, mints verified', async () => {
+    store.db.visitor_identity_map.push({ rr_vid: VID, crm_person_id: PERSON, fub_person_id: PERSON, identify_source: 'tracked_link:email' })
+    const res = await track(view(sid(41)), { cookies: { rr_vid: VID } })
+    expect(setPersonCookie(res)?.provenance).toBe('claimed')
+  })
+
+  it('a carryover never downgrades the verified cookie the same person already holds', async () => {
+    store.db.visitor_identity_map.push({ rr_vid: VID, crm_person_id: PERSON, fub_person_id: PERSON, identify_source: 'form_submit' })
+    const res = await track(view(sid(42)), { cookies: { rr_vid: VID, rr_pid: personCookieValue(PERSON, 'verified') } })
+    expect(store.session(sid(42))).toMatchObject({ crm_person_id: PERSON })
+    expect(setPersonCookie(res)).toBeNull()
+  })
+
+  it('a carryover for a DIFFERENT person replaces the cookie with a claim (a shared browser)', async () => {
+    store.db.visitor_identity_map.push({ rr_vid: VID, crm_person_id: OTHER_PERSON, fub_person_id: OTHER_PERSON, identify_source: 'form_submit' })
+    const res = await track(view(sid(43)), { cookies: { rr_vid: VID, rr_pid: personCookieValue(PERSON, 'verified') } })
+    expect(setPersonCookie(res)).toEqual({ personId: OTHER_PERSON, signed: true, provenance: 'claimed' })
+  })
+
+  it('a signed link we sent mints a verified cookie', async () => {
+    const res = await track(view(sid(44), { identityToken: signPersonLinkToken(PERSON, 'document') }), { cookies: { rr_vid: VID } })
+    expect(setPersonCookie(res)).toEqual({ personId: PERSON, signed: true, provenance: 'verified' })
+  })
+
+  it('a signed link upgrades a claimed cookie for the same person', async () => {
+    const res = await track(view(sid(45), { identityToken: signPersonLinkToken(PERSON, 'document') }), {
+      cookies: { rr_vid: VID, rr_pid: personCookieValue(PERSON, 'claimed') },
+    })
+    expect(setPersonCookie(res)?.provenance).toBe('verified')
+  })
+
+  it('a signed link upgrades the cookie on a session the claimed carryover already owns', async () => {
+    store.db.visitor_identity_map.push({ rr_vid: VID, crm_person_id: PERSON, fub_person_id: PERSON, identify_source: 'form_submit' })
+    const first = await track(view(sid(46)), { cookies: { rr_vid: VID } })
+    const claimed = setPersonCookie(first)
+    expect(claimed?.provenance).toBe('claimed')
+    // the same session, now from the tracked link in the email we sent them
+    const res = await track(view(sid(46), { identityToken: signPersonLinkToken(PERSON, 'document') }), {
+      cookies: { rr_vid: VID, rr_pid: personCookieValue(PERSON, 'claimed') },
+    })
+    expect(store.session(sid(46))).toMatchObject({ crm_person_id: PERSON, identified_via: 'rr_vid_carryover' })
+    expect(setPersonCookie(res)).toEqual({ personId: PERSON, signed: true, provenance: 'verified' })
+  })
+
+  it('pasting a claimed cookie value into ?_pid= proves nothing and identifies nobody', async () => {
+    const claimed = personCookieValue(PERSON, 'claimed')
+    const url = `https://ryan-realty.com/cma/${SLUG}?_pid=${claimed}`
+    const res = await track(docView(sid(47), { pageUrl: url, landingPage: url, identityToken: claimed }))
+    expect(store.session(sid(47))!.crm_person_id).toBeNull()
+    expect(setPersonCookie(res)).toBeNull()
+  })
+
+  it('a cookie-only identification keeps the cookie it came from: no rewrite, no upgrade', async () => {
+    const res = await track(view(sid(48)), { cookies: { rr_vid: VID, rr_pid: personCookieValue(PERSON, 'claimed') } })
+    expect(store.session(sid(48))).toMatchObject({ crm_person_id: PERSON, identified_via: 'rr_pid_cookie' })
+    expect(setPersonCookie(res)).toBeNull()
+  })
+
+  it('automation holding a valid link mints nothing', async () => {
+    const res = await track(view(sid(49), { identityToken: signPersonLinkToken(PERSON, 'document') }), {
+      cookies: { rr_vid: VID },
+      ua: GOOGLEBOT_UA,
+    })
+    expect(setPersonCookie(res)).toBeNull()
   })
 })

@@ -85,7 +85,12 @@ export function matchIntentChip(text: string): SarahIntent | null {
   if (!t) return null
   const exact = INTENT_BY_LABEL.get(t)
   if (exact) return exact
-  if (/looking for a home|buy(ing)? (a )?(home|house)|find (a )?(home|house|listings?)/i.test(t)) return 'buyer'
+  if (
+    /looking for a home|look at homes|look(ing)? at homes?( here)?|buy(ing)? (a )?(home|house)|find (a )?(home|house|listings?)|homes? here|house hunting|search(ing)? (for )?(a )?(home|house|listings?)/i.test(
+      t,
+    )
+  )
+    return 'buyer'
   if (/thinking of selling|want to sell|selling (my|our) (home|house)/i.test(t)) return 'seller'
   if (/what('s| is) my (home|house) worth|home worth|market analysis|cma\b/i.test(t)) return 'home-worth'
   if (/^i have a question/.test(t)) return 'question'

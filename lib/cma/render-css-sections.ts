@@ -477,6 +477,9 @@ export function cmaSectionStyles(): string {
   .sale-path-name { font-size: 11px; font-weight: 600; color: var(--navy); }
   .sale-paths-h { font-size: 11px; font-weight: 600; letter-spacing: 0.02em; margin: 10px 0 6px; }
   /* Considered and not used. */
+  /* What the ADU adds (lib/cma/adu-chapter.ts): how each printed sale was read on the unit line. */
+  ul.adu-sale-lines { margin: 4px 0 8px; padding-left: 18px; font-size: 11px; }
+  ul.adu-sale-lines li { padding: 2px 0; }
   ul.rejected-list { list-style: none; margin: 4px 0 8px; padding: 0; }
   ul.rejected-list li { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 4px 12px; padding: 4px 0; border-bottom: 1px solid var(--navy-line); font-size: 11px; }
   ul.rejected-list .rj-addr { font-weight: 600; }

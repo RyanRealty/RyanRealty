@@ -27,7 +27,9 @@ import {
   PERSON_COOKIE,
   personCookieOptions,
   personCookieValue,
+  personCookieWrite,
   readPersonCookie,
+  signInProvenance,
 } from '@/lib/identity/person-cookie'
 import { CONSENT_COOKIE, identificationAllowed } from '@/lib/identity/consent'
 import { classifyAutomation } from '@/lib/analytics/automation'
@@ -155,7 +157,9 @@ async function bridgeIdentifiedPerson(
     }
   }
 
-  cookieStore.set(PERSON_COOKIE, personCookieValue(id), personCookieOptions())
+  // Verified: the caller checked the signed link token, which only the
+  // recipient of a link we sent holds (lib/identity/person-cookie.ts).
+  cookieStore.set(PERSON_COOKIE, personCookieValue(id, 'verified'), personCookieOptions())
 
   // GA4 Measurement Protocol — record that this browser was just bridged to
   // a known person. Helps count email-click identifications in the analytics
@@ -226,6 +230,10 @@ export async function identifyAuthenticatedSession(
     const personId = matchIds[0] ?? null
     const provider = (user?.app_metadata?.provider as string | undefined) ?? ''
     const via = provider === 'google' ? 'google' : provider === 'facebook' ? 'facebook' : 'magic_link'
+    // A sign-in proves the email only once the provider confirmed it. Email
+    // sign-ups must confirm before they can sign in (mailer_autoconfirm off,
+    // 2026-10-14), so this is belt and braces: an unconfirmed address is a claim.
+    const provenance = signInProvenance(user)
     const rrVid = (await cookies()).get('rr_vid')?.value ?? null
     const validSessionId = sessionId && UUID_V4_RE.test(sessionId) ? sessionId : null
 
@@ -237,7 +245,13 @@ export async function identifyAuthenticatedSession(
         if (backfill.automated) return { ok: true, bridged: false }
       }
       const cookieStore = await cookies()
-      cookieStore.set(PERSON_COOKIE, personCookieValue(personId), personCookieOptions())
+      // A verified sign-in always (re)sets the cookie, which also rolls its 90
+      // days forward; an unconfirmed one never downgrades a verified cookie.
+      const write =
+        provenance === 'verified'
+          ? 'verified'
+          : personCookieWrite(readPersonCookie(cookieStore.get(PERSON_COOKIE)?.value), personId, provenance)
+      if (write) cookieStore.set(PERSON_COOKIE, personCookieValue(personId, write), personCookieOptions())
       // rr_vid catches this browser's other sessions (no client session_id).
       await stitchVisitorIdentity({ rrVid, fubPersonId: personId, email, userId: user.id, sessionId: sessionId ?? null, source: 'auth_session' })
       return { ok: true, bridged: true }
