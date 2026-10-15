@@ -1,6 +1,6 @@
 # 2026-10-14 (Claude Code, video factory, buyer ad, build timeouts, refused writes)
 
-Branch `claude/nifty-rubin-70dvwc`, recreated per PR. Nobody pushes main. Nothing sent, posted or rendered for an audience. Updated 2026-10-15 04:15Z.
+Branch `claude/nifty-rubin-70dvwc`, recreated per PR. Nobody pushes main. Nothing sent, posted or rendered for an audience. Updated 2026-10-15 04:50Z.
 
 **Landed.**
 - #665: `getMetrics` keeps #634's 14-day rule and reads only what is left open (the review fixes #658 merged without). Deploy verified on 07255b7.
@@ -12,8 +12,8 @@ Branch `claude/nifty-rubin-70dvwc`, recreated per PR. Nobody pushes main. Nothin
 
 **In flight.**
 - #641 (auto-merge on). Build-time database load: a per-worker read memo, the `visitor_events.page_url` trigram index, `authenticator` statement_timeout 30 s, 3 static workers with retry, and `ship` waits for a running production build. #634 already fixed `getMetrics` and the `market_metric` probe, and #641 keeps main's version of both.
-- This PR (`fix/rejected-writes`). Postgres had been refusing writes with no log line:
-  - `crm_timeline` refused `email_delivered`, `email_bounce`, `email_complaint`, `email_unsubscribe` and `cma_replied` since July 10. At 03:45Z on 2026-10-15 the four Resend kinds were also applied by hand (`20261015034529`, no file); the migration in this PR is a superset that adds `cma_replied` and applies on merge (`supabase-migrations.yml`);
+- #670 (merged as bf0aab50a). Postgres had been refusing writes with no log line:
+  - `crm_timeline` refused `email_delivered`, `email_bounce`, `email_complaint`, `email_unsubscribe` and `cma_replied` since July 10. At 03:45Z on 2026-10-15 the four Resend kinds were also applied by hand (`20261015034529`, no file); `20261015030000` (adds `cma_replied`) and `20261015030100` (adds `delta`) are merged but NOT applied: the `Hosted migrations` workflow has empty `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD` secrets and has failed on all 7 pushes. Apply both by hand (production write, Matt's call);
   - `sync_history` refused `delta` because 20260809191000 was never applied;
   - the anon `get_listings_breakdown` call was removed.
   - Refused writes now log through `lib/observability/rejected-write.ts`.
@@ -21,10 +21,11 @@ Branch `claude/nifty-rubin-70dvwc`, recreated per PR. Nobody pushes main. Nothin
   - `deploy:verify` picks the READY build for a SHA over a CANCELED duplicate.
 - Branch `board/ad` (unpushed, worktree `.claude/worktrees/board`). The buyer-ad techniques, `footage_plate`, end card dots and ding (R-197, R-198, `video:check` check 12), and Matt's approvals of `figure_pullout_hook` and `guilloche_field` with the reel. It ships after this PR.
 
-**Next, after this PR.** A follow-up PR gives the Market Truth monthly and HUD window cells their own cron (`/api/cron/compute-market-metric-windows`): a failed daily shadow call had skipped them since 2026-10-12 12:20Z, so they would stop answering on 2026-10-26 under the 14-day rule. The same PR fixes `scripts/worktree-setup.sh` on Linux.
+**This PR (`fix/market-metric-windows-cron`).** The Market Truth monthly and HUD window cells get their own cron (`/api/cron/compute-market-metric-windows`, `30 */6`): a failed daily shadow call (gateway timeout at about 125 s) had skipped them since 2026-10-12 12:20Z, so they would stop answering on 2026-10-26 under the 14-day rule. Open: why the shadow call is slow now (read the 06:20Z run after #641), and `stampListingPricingReadsBatch` still runs after the shadow in `refresh-sale-pricing-facts`. Also fixes `scripts/worktree-setup.sh` on Linux.
 
 **Held for Matt.**
 - No backfill of the refused timeline rows. Matt chose fix-forward on 2026-10-15.
+- The two #670 migrations are not applied (see In flight). Until they are, `cma_replied` stamps and `delta` sync-history rows are still refused, and now logged.
 - Vercel On-Demand Concurrent Builds is still "Immediate". Matt is switching it to "Per Branch" (the token can't).
 - Supabase compute stays Medium until a day of builds on #641 is read.
 - The buyer-ad v2 drafts (`out/studio/buyer-ad-2026-10-{paid,organic}-v2/final.mp4`) wait on Matt's review. Nothing posts.

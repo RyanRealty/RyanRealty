@@ -99,7 +99,9 @@ describe('leftover monthly chart overlay', () => {
     expect(nbhSql).toMatch(/window_months = 1/)
     expect(nbhSql).not.toMatch(/mom_median_price/)
     expect(nbhSql).not.toMatch(/geo_type IN \('city', 'region'\)/)
-    const cron = readFileSync(resolve('app/api/cron/refresh-sale-pricing-facts/route.ts'), 'utf8')
+    // The monthly series has its own cron (a failed daily shadow call in the
+    // sale-facts route used to skip it from 2026-10-12).
+    const cron = readFileSync(resolve('app/api/cron/compute-market-metric-windows/route.ts'), 'utf8')
     expect(cron).toMatch(/compute_market_metrics_monthly_neighborhood_shadow/)
     expect(cron).toMatch(/compute_market_metrics_monthly_zip_shadow/)
   })
