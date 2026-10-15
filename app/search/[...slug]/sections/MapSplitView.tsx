@@ -45,7 +45,7 @@ import { type ResolvedSearchSlug } from '../resolve-slug'
 import { type SearchParams } from '../page-filters'
 import { SearchSeoTail } from './SeoTail'
 import { type CitySplitDepth } from './city-split-depth'
-import { SPLIT_CARD_PAGE } from '@/lib/search/search-opening'
+import { SPLIT_CARD_PAGE, phoneOpeningPane, resolveSearchView } from '@/lib/search/search-opening'
 import { slimViewportListings } from '@/lib/search/slim-viewport-listing'
 import { compactAtlasGeometry } from '@/lib/atlas/compact-geometry'
 
@@ -372,7 +372,8 @@ export async function renderMapSplitView(props: {
     // '' is active+pending (statusForMapSearch). Do not coerce to Active.
     status: status,
     sort: sp.sort ?? 'newest',
-    view: sp.view === 'map' || sp.view === 'split' ? sp.view : 'split',
+    // UX review F11: ?view=list used to fall back to split.
+    view: sp.view === 'map' || sp.view === 'split' || sp.view === 'list' ? sp.view : 'split',
     minSqFt: sp.minSqFt ?? '',
     maxSqFt: sp.maxSqFt ?? '',
     lotAcresMin: sp.lotAcresMin ?? '',
@@ -467,6 +468,9 @@ export async function renderMapSplitView(props: {
         </Suspense>
         </div>
         <MapSearchView
+          // UX review F09: city pages open phones on the list, like /homes-for-sale
+          // (Matt 2026-09-23); a URL asking for map or split keeps the map.
+          phonePane={phoneOpeningPane(resolveSearchView(sp.view))}
           initialListings={seedListings}
           initialTotalCount={viewport.totalCount}
           initialCapped={viewport.capped}
