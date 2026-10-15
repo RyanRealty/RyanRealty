@@ -67,6 +67,12 @@ import {
   type ReportGridRow,
   type ReportNumberItem,
 } from '@/components/admin/v2'
+import { listingsFeedCopy } from '@/lib/admin/listings-empty'
+import {
+  LISTINGS_DEFAULT_STATUS,
+  listingsDalStatus,
+  resolveListingsStatus,
+} from '@/lib/admin/queue-defaults'
 import ListingsCsvExport from './ListingsCsvExport'
 import ListingsStatusFilter from './ListingsStatusFilter'
 
@@ -105,7 +111,7 @@ function pageHref(page: number, search: string | undefined, status: string | und
   const params = new URLSearchParams()
   if (page > 0) params.set('page', String(page))
   if (search) params.set('search', search)
-  if (status && status !== 'all') params.set('status', status)
+  if (status && status !== LISTINGS_DEFAULT_STATUS) params.set('status', status)
   const qs = params.toString()
   return qs ? `/admin/listings?${qs}` : '/admin/listings'
 }
@@ -128,18 +134,21 @@ export default async function AdminListingsPage({
   const { page, search, status, remarks } = await searchParams
   const pageNum = Math.max(0, parseInt(String(page), 10) || 0)
   const pageSize = 50
-  const activeStatus = status && status !== 'all' ? status : undefined
+  const resolvedStatus = resolveListingsStatus(status)
+  const activeStatus = listingsDalStatus(resolvedStatus)
   // remarks=1: keyword search across public AND private remarks (on-market
   // rows, admin-only service-role read path). Status facets do not apply —
   // the remarks index covers on-market inventory.
   const remarksMode = remarks === '1' && Boolean(search?.trim())
-  const { rows, total } = remarksMode
+  const listingPage = remarksMode
     ? await searchAdminRemarksPage(search!.trim(), pageNum, pageSize)
     : await getAdminListingsPage(pageNum, pageSize, search?.trim() || undefined, activeStatus)
+  const { rows, total, error } = listingPage
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const rangeStart = total === 0 ? 0 : pageNum * pageSize + 1
   const rangeEnd = pageNum * pageSize + rows.length
-  const hasFilters = Boolean(search?.trim() || activeStatus)
+  const hasFilters = Boolean(search?.trim() || resolvedStatus !== LISTINGS_DEFAULT_STATUS)
+  const empty = listingsFeedCopy({ error, total, hasFilters })
 
   const numbers: ReportNumberItem[] = [
     {
@@ -204,19 +213,44 @@ export default async function AdminListingsPage({
 
   return (
     <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
+      <SectionHead>Find a listing</SectionHead>
+      <form method="get" className="av2-inline-form" style={{ maxWidth: 760 }}>
+        {resolvedStatus !== LISTINGS_DEFAULT_STATUS ? (
+          <input type="hidden" name="status" value={resolvedStatus} readOnly />
+        ) : null}
+        <TextField
+          label="Address, MLS number, or listing key"
+          type="search"
+          name="search"
+          defaultValue={search}
+          placeholder="123 Main St, 220189422…"
+        />
+        {/* wrapped so the checkbox field shrinks to its label instead of
+            taking av2-inline-form's `flex: 1 1 180px` text-field slot */}
+        <div style={{ flex: '0 0 auto' }}>
+          <TextField
+            label="Search remarks (public + private)"
+            type="checkbox"
+            name="remarks"
+            value="1"
+            defaultChecked={remarksMode}
+            className=""
+            style={{ width: 20, height: 20, accentColor: 'var(--a-accent)' }}
+          />
+        </div>
+        <Button type="submit">Search</Button>
+      </form>
+
+      <div style={{ maxWidth: 260, margin: '12px 0 16px' }}>
+        <ListingsStatusFilter status={resolvedStatus} search={search} options={STATUS_FILTERS} />
+      </div>
+
       <div style={{ margin: '0 0 14px' }}>
-        <VerdictLine tone={total === 0 ? 'attention' : 'ok'}>
-          {total === 0 ? (
-            hasFilters ? (
-              <>
-                <b>No listings match these filters.</b> Try a different address or status, or clear
-                the filters to widen the results.
-              </>
-            ) : (
-              <>
-                <b>No listings in the feed.</b> Check the feed status to confirm sync is running.
-              </>
-            )
+        <VerdictLine tone={empty.headline ? empty.tone : 'ok'}>
+          {empty.headline ? (
+            <>
+              <b>{empty.headline}</b> {empty.body}
+            </>
           ) : (
             <>
               <b>
@@ -245,41 +279,11 @@ export default async function AdminListingsPage({
 
       <ReportNumbers items={numbers} />
       <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: '0 0 20px' }}>
-        {activeStatus ?? 'all statuses'} ·{' '}
-        {total === 0
+        {resolvedStatus === 'all' ? 'all statuses' : resolvedStatus} ·{' '}
+        {error ? 'read failed' : total === 0
           ? 'no rows'
           : `${formatInt(rangeStart)}–${formatInt(rangeEnd)} of ${formatInt(total)}`}
       </p>
-
-      <SectionHead>Find a listing</SectionHead>
-      <form method="get" className="av2-inline-form" style={{ maxWidth: 760 }}>
-        {activeStatus ? <input type="hidden" name="status" value={activeStatus} readOnly /> : null}
-        <TextField
-          label="Address, MLS number, or listing key"
-          type="search"
-          name="search"
-          defaultValue={search}
-          placeholder="123 Main St, 220189422…"
-        />
-        {/* wrapped so the checkbox field shrinks to its label instead of
-            taking av2-inline-form's `flex: 1 1 180px` text-field slot */}
-        <div style={{ flex: '0 0 auto' }}>
-          <TextField
-            label="Search remarks (public + private)"
-            type="checkbox"
-            name="remarks"
-            value="1"
-            defaultChecked={remarksMode}
-            className=""
-            style={{ width: 20, height: 20, accentColor: 'var(--a-accent)' }}
-          />
-        </div>
-        <Button type="submit">Search</Button>
-      </form>
-
-      <div style={{ maxWidth: 260, margin: '12px 0 0' }}>
-        <ListingsStatusFilter status={activeStatus} search={search} options={STATUS_FILTERS} />
-      </div>
 
       {remarksMode ? (
         <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: '12px 0 0' }}>
@@ -296,7 +300,15 @@ export default async function AdminListingsPage({
         minWidth={880}
         rows={gridRows}
         empty={
-          hasFilters ? (
+          error ? (
+            <>
+              {empty.body}{' '}
+              <Link href="/admin/sync" style={{ color: 'var(--a-accent)' }}>
+                Check sync status
+              </Link>
+              .
+            </>
+          ) : hasFilters ? (
             <>
               No listings match these filters. Try a different address or status, or{' '}
               <Link href="/admin/listings" style={{ color: 'var(--a-accent)' }}>
@@ -306,11 +318,11 @@ export default async function AdminListingsPage({
             </>
           ) : (
             <>
-              No listings are available right now.{' '}
+              No listings in this view.{' '}
               <Link href="/admin/sync" style={{ color: 'var(--a-accent)' }}>
                 Check sync status
               </Link>{' '}
-              to confirm the feed is running.
+              if that is unexpected.
             </>
           )
         }
@@ -323,7 +335,7 @@ export default async function AdminListingsPage({
         >
           {pageNum > 0 ? (
             <Link
-              href={pageHref(pageNum - 1, search, activeStatus)}
+              href={pageHref(pageNum - 1, search, resolvedStatus)}
               className="av2-btn av2-btn--quiet"
               style={{ textDecoration: 'none' }}
             >
@@ -335,7 +347,7 @@ export default async function AdminListingsPage({
           </span>
           {pageNum < totalPages - 1 ? (
             <Link
-              href={pageHref(pageNum + 1, search, activeStatus)}
+              href={pageHref(pageNum + 1, search, resolvedStatus)}
               className="av2-btn av2-btn--quiet"
               style={{ textDecoration: 'none' }}
             >

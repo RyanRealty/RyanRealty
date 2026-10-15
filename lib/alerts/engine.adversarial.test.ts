@@ -669,3 +669,71 @@ describe('H4 approveAlertQueueItems (broker release)', () => {
     expect(markListingAlertNotified).not.toHaveBeenCalled()
   })
 })
+
+// ── Place-page daily alerts (Matt 2026-10-14): window, first email, freshness ─
+
+describe('daily all-types place alerts', () => {
+  const placeRow = (over: Row = {}) =>
+    prodRow({
+      name: 'Bend homes',
+      filters: { city: 'Bend' },
+      notification_frequency: 'daily',
+      last_notified_at: null,
+      notified_listing_keys: [],
+      ...over,
+    })
+
+  it('reads the daily window (60), not 15, so a busy day is not truncated', async () => {
+    getActiveListingAlertsDue.mockResolvedValue([placeRow()])
+    getCachedSearchListings.mockResolvedValue({ listings: [], totalCount: 0, cacheKey: 'k' })
+    await runListingAlerts()
+    const call = getCachedSearchListings.mock.calls[0] as unknown as [unknown, number, number]
+    expect(call[2]).toBe(60)
+  })
+
+  it('the first email carries the newest 12 under "newest" copy, and records the rest as seen', async () => {
+    getActiveListingAlertsDue.mockResolvedValue([placeRow()])
+    const keys = Array.from({ length: 40 }, (_, i) => String(220300000 + i))
+    getCachedSearchListings.mockResolvedValue({ listings: keys.map((k) => tile(k)), totalCount: 40, cacheKey: 'k' })
+    const res = await runListingAlerts()
+    expect(res.sent).toBe(1)
+    const sent = (sendEmail.mock.calls[0] as unknown as [{ html: string; subject: string }])[0]
+    expect(sent.subject).toBe('Bend homes: the 12 newest listings')
+    expect(sent.html).toContain('Your alert is on.')
+    expect(sent.html).toContain('one email each morning')
+    expect(sent.html).toContain(keys[11])
+    expect(sent.html).not.toContain(keys[12])
+    // All 40 enter the notified state, so day two does not re-announce them.
+    const claim = claimListingAlertSend.mock.calls[0] as unknown as [string, unknown, string, Array<{ key: string }>]
+    expect(claim[3].map((e) => e.key).sort()).toEqual([...keys].sort())
+  })
+
+  it('day two announces only what came on the market since, not an older listing that sorted into the wider window', async () => {
+    const seen = Array.from({ length: 15 }, (_, i) => ({ key: String(220300000 + i), price: 750000, status: 'Active', notified_at: '2026-08-05T14:00:00.000Z', open_house: false }))
+    getActiveListingAlertsDue.mockResolvedValue([
+      placeRow({ last_notified_at: '2026-08-04T14:00:00.000Z', notified_listing_keys: seen }),
+    ])
+    const fresh = tile('220399001', { OnMarketDate: '2026-08-05' })
+    const old = tile('220100001', { OnMarketDate: '2026-06-01' })
+    getCachedSearchListings.mockResolvedValue({
+      listings: [fresh, ...seen.map((e) => tile(e.key)), old],
+      totalCount: 17,
+      cacheKey: 'k',
+    })
+    const res = await runListingAlerts()
+    expect(res.sent).toBe(1)
+    const sent = (sendEmail.mock.calls[0] as unknown as [{ html: string; subject: string }])[0]
+    expect(sent.subject).toBe('1 new listing for Bend homes')
+    expect(sent.html).toContain('220399001')
+    expect(sent.html).not.toContain('220100001')
+  })
+
+  it('each send gets its own email key, so a second open the same UTC day is not deduped away', async () => {
+    getActiveListingAlertsDue.mockResolvedValue([placeRow()])
+    getCachedSearchListings.mockResolvedValue({ listings: [tile('220300001')], totalCount: 1, cacheKey: 'k' })
+    const { recordEmailEvent } = await import('@/lib/crm/email-events')
+    await runListingAlerts()
+    const recorded = (recordEmailEvent as unknown as { mock: { calls: Array<[{ emailKey: string }]> } }).mock.calls[0][0]
+    expect(recorded.emailKey).toBe('listing-alert:fe4eb749-f0bb-4530-b417-f27c4285b3cc:2026-08-05T1500Z')
+  })
+})

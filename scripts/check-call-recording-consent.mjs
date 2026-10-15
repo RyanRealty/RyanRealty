@@ -28,9 +28,10 @@ const ROUTES = [
   'app/api/twilio/voice/route.ts',
   'app/api/twilio/voice-complete/route.ts',
   'app/api/twilio/outbound-bridge/route.ts',
+  'lib/voice/sarah-conference.ts',
 ]
 
-const RECORD_DIRECTIVE = /record="record-from-answer-dual"|<Record\b/i
+const RECORD_DIRECTIVE = /record="record-from-answer-dual"|record="record-from-start"|<Record\b/i
 // A spoken notice that the call/message is recorded.
 const RECORDED_NOTICE = /<Say>[^<]*\b(recorded|is recorded|may be recorded)\b/i
 

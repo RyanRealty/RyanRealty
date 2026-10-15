@@ -20,6 +20,8 @@ import type { ContactRelationship } from '@/lib/data/crm/getContactRelationships
 import type { PersonDealLink } from '@/lib/data/tc/deal-people'
 import type { PersonAddress } from '@/lib/crm/person-address'
 import { FieldEditors } from './FieldEditors'
+import { PersonConsentEditor } from './PersonConsentEditor'
+import type { PersonChannelConsentView } from '@/lib/crm/person-channel-consent'
 import { HomesSection } from './HomesSection'
 import { CountyRecordsSection } from './CountyRecordsSection'
 import { PersonAddressEditor } from './PersonAddressEditor'
@@ -102,6 +104,7 @@ export function PersonWorkspaceV3(props: {
   reportSub: ContactReportSubscription | null
   siteActivity: PersonSiteActivity
   composer: ComponentProps<typeof LeadComposer>
+  consent: PersonChannelConsentView
 }) {
   const openTasks = props.tasks.filter((t) => !t.completed_at)
   const strip = derivePersonRightNow({
@@ -167,6 +170,22 @@ export function PersonWorkspaceV3(props: {
                 autoEdit={props.details.autoEditAddress}
               />
             </div>
+          </SidebarSec>
+
+          <SidebarSec
+            title="Consent"
+            meta={
+              props.consent.sms.allowed && props.consent.email.allowed && props.consent.call.allowed
+                ? 'allowed'
+                : 'restricted'
+            }
+          >
+            <PersonConsentEditor
+              personId={props.personId}
+              sms={props.consent.sms}
+              email={props.consent.email}
+              call={props.consent.call}
+            />
           </SidebarSec>
 
           <SidebarSec title="Notes" meta={props.notes.length === 1 ? '1 note' : `${props.notes.length} notes`}>

@@ -3,14 +3,18 @@
  * ElevenLabs speech-to-text (scribe), and attach recording + transcript to the
  * matching timeline entry (call or voicemail, matched by CallSid). Emails the
  * transcript to the assigned broker.
+ *
+ * Hot path: signature, raw persist, 200. STT / timeline / enrich run after ack
+ * (or via twilio-webhook-replay when the call/vm row is not ready yet).
  */
 
 import { NextResponse, after } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { TWILIO_PUBLIC_ORIGIN, verifiedTwilioParams } from '@/lib/crm/twilio'
+import { TWILIO_PUBLIC_ORIGIN } from '@/lib/crm/twilio'
 import { sendCrmEmail } from '@/lib/crm/gmail'
 import { mailboxForSlug } from '@/lib/data/brokers/directory'
 import { applyInboundMessageEnrichment } from '@/lib/data/crm/applyInboundMessageEnrichment'
+import { ackTwilioWebhook } from '@/lib/crm/twilio-webhook-ack'
 
 /** Twilio CallSid / RecordingSid shape — validate before using inside a PostgREST
  *  .or() filter so a crafted value can never inject filter syntax. */
@@ -42,21 +46,24 @@ async function transcribe(audio: ArrayBuffer): Promise<string | null> {
 }
 
 export async function POST(request: Request) {
-  const verified = await verifiedTwilioParams(request)
-  if (!verified.ok) return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  const params = verified.params
+  return ackTwilioWebhook({
+    request,
+    kind: 'recording',
+    process: processRecording,
+    respond: () => NextResponse.json({ ok: true }),
+  })
+}
 
+export async function processRecording(params: Record<string, string>): Promise<void> {
   const site = TWILIO_PUBLIC_ORIGIN
-
   const callSid = params.CallSid ?? ''
   const recordingSid = params.RecordingSid ?? ''
   const duration = Number(params.RecordingDuration ?? 0)
   if (!SID_RE.test(callSid) || !SID_RE.test(recordingSid)) {
-    return NextResponse.json({ ok: false, error: 'invalid sids' }, { status: 400 })
+    return
   }
 
   const sb = createServiceClient()
-  // the call/voicemail row logged by the voice webhooks
   const { data: rows } = await sb
     .from('crm_timeline')
     .select('id,person_id,kind,broker,payload')
@@ -64,25 +71,14 @@ export async function POST(request: Request) {
     .limit(2)
   const row = rows?.find((r) => r.kind === 'voicemail') ?? rows?.[0]
 
-  // Idempotency: Twilio can redeliver the recording callback. If we already
-  // attached a recording to this row, stop — no re-fetch, no re-transcribe
-  // (ElevenLabs spend), no duplicate broker email, and no risk of a failed
-  // retry nulling the saved transcript.
   if (row && (row.payload as Record<string, unknown> | null)?.recordingSid) {
-    return NextResponse.json({ ok: true, alreadyProcessed: true })
+    return
   }
 
-  // No matching call/voicemail row yet — the voice webhook's DB write raced or
-  // failed. Do NOT 200 (that permanently drops the voicemail + burns the STT
-  // spend on a transcript we'd throw away). Return 503 so Twilio redelivers the
-  // recording callback later, by which point the row exists. Guarded BEFORE the
-  // audio fetch/transcribe so a retry never double-charges ElevenLabs.
   if (!row) {
-    console.error('[recording] no call/vm row for CallSid', callSid, '— asking Twilio to retry')
-    return NextResponse.json({ ok: false, error: 'row not ready' }, { status: 503 })
+    throw new Error(`row not ready for CallSid ${callSid}`)
   }
 
-  // fetch audio (mp3) with account auth
   const sid = process.env.TWILIO_ACCOUNT_SID?.trim()
   const token = process.env.TWILIO_AUTH_TOKEN?.trim()
   let transcript: string | null = null
@@ -94,7 +90,6 @@ export async function POST(request: Request) {
     if (audioRes.ok) transcript = await transcribe(await audioRes.arrayBuffer())
   }
 
-  // Never null an existing body — only write the transcript when we have one.
   const update: Record<string, unknown> = {
     payload: {
       ...(row.payload as Record<string, unknown>),
@@ -106,8 +101,6 @@ export async function POST(request: Request) {
   if (transcript) update.body = transcript
   await sb.from('crm_timeline').update(update).eq('id', row.id)
 
-  // Voicemail only (a live-call recording can be our own greeting). Never a
-  // reply to the caller. Fail-soft: a Claude miss still writes the note.
   if (transcript && row.kind === 'voicemail') {
     const payload = (row.payload as Record<string, unknown> | null) ?? {}
     const fromNumber = typeof payload.fromNumber === 'string' ? payload.fromNumber : null
@@ -131,10 +124,6 @@ export async function POST(request: Request) {
     }
   }
 
-  // Alert the broker with the transcript. AWAITED (not a bare `void`, which
-  // Vercel kills when it freezes the invocation on response — silently dropping
-  // the broker's voicemail notification). try/catch so a mail failure can't
-  // 500 the webhook and trigger a Twilio retry storm.
   const mailbox = await mailboxForSlug(row.broker)
   const label = row.kind === 'voicemail' ? 'Voicemail' : 'Call recording'
   try {
@@ -147,6 +136,4 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error('[recording] transcript email failed', err)
   }
-
-  return NextResponse.json({ ok: true, transcribed: !!transcript })
 }

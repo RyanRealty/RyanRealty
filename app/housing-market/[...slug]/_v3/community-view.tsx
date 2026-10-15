@@ -54,6 +54,8 @@ type Props = {
   faqs: ReadonlyArray<{ question: string; answer: string }>
   chart?: V3ChartProps
   sheet: ReactNode
+  /** The listing-alert signup (PlaceAlertsStrip), or null when the place maps to no area. */
+  alerts?: ReactNode
   /** The short answer after the opening (lib/site/place-takeaways, AEO 2026-10-04). */
   takeaways?: readonly string[]
 }
@@ -76,6 +78,7 @@ export function CommunityMarketView({
   faqs,
   chart,
   sheet,
+  alerts = null,
 }: Props) {
   const live = buildLiveFigures(hud, mosText, geoName)
   const closed = buildClosedFigures(detail, lastComplete, currentMonthKey)
@@ -169,6 +172,11 @@ export function CommunityMarketView({
         items={takeaways}
         source={refreshedAt ? `Single-family homes, Oregon Data Share MLS, as of ${formatDate(refreshedAt)}.` : null}
       />
+
+      {/* THE ALERT SIGNUP (Matt 2026-10-14): this page lists no homes, so it
+          sits directly after the opening and its short answer, before the
+          comparison ledger. Never beside the inquiry sheet, which follows the FAQ. */}
+      {alerts}
 
       {firstCityRow ? (
         <V3Ledger

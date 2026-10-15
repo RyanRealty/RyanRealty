@@ -243,6 +243,7 @@ export default function ConsoleShell({
             ) : null}
           </div>
           <div className="flex items-center gap-1.5">
+            <div id="admin-console-header-actions" className="flex items-center" />
             <ConsoleCommandPaletteTrigger onOpen={() => setPaletteOpen(true)} />
             {user.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -253,11 +254,10 @@ export default function ConsoleShell({
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 px-4 pt-5 pb-24 sm:px-6 sm:pt-7 lg:px-8 lg:pb-8">{children}</main>
+        <main className="min-w-0 flex-1 px-4 pt-5 pb-36 sm:px-6 sm:pt-7 lg:px-8 lg:pb-8">{children}</main>
       </div>
 
-      {/* Global "+" quick-action FAB — rides every console surface, context-aware on a lead.
-          Lifted above the mobile tab bar on phones. */}
+      {/* Global "+" — phones portal into #admin-console-header-actions; desktop keeps the corner FAB. */}
       <ConsoleQuickAction />
 
       {/* CRM-style bottom tab bar — phones only (the desktop rail covers lg+).

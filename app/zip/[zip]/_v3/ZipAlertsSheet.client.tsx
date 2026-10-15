@@ -2,8 +2,11 @@
 
 /**
  * ZIP listing-alert capture as V3AlertsStrip (SITE-73). Keeps the ZipAlertsSheet
- * export name for parity / page tests. Capture contract unchanged:
- * submitSearchAlertSignup with { city, propertyType: 'A', postalCode: zip }.
+ * export name for parity / page tests. Capture: submitSearchAlertSignup with
+ * `{ postalCode: zip }` and `frequency: 'daily'`: every listing in the ZIP,
+ * every property type, whatever city name the MLS files it under (Matt
+ * 2026-10-14; it was `{ city, propertyType: 'A', postalCode }`, born instant).
+ * The first email goes at signup.
  */
 
 import { useCallback, useMemo } from 'react'
@@ -32,7 +35,8 @@ type Props = {
   id?: string
   zip: string
   area: string
-  city: string
+  /** The page's city. Not part of the alert: the ZIP is the scope. */
+  city?: string
   newCount30d: number | null
   updatedAt?: string | null
   browseHref: string
@@ -52,7 +56,6 @@ export function ZipAlertsSheet({
   id = 'alerts',
   zip,
   area,
-  city,
   newCount30d,
   updatedAt = null,
   browseHref,
@@ -64,7 +67,8 @@ export function ZipAlertsSheet({
     async (input) => {
       const result = await submitSearchAlertSignup({
         email: input.email,
-        filters: { city, propertyType: 'A', postalCode: zip },
+        filters: { postalCode: zip },
+        frequency: 'daily',
         company: input.company,
         sessionId: readRrSessionId(), // hydration-safe
       })
@@ -72,8 +76,7 @@ export function ZipAlertsSheet({
       rememberGuestWatch( // hydration-safe: event/effect storage only
         buildGuestWatchFromPlace({
           communityName: `ZIP ${zip}`,
-          city,
-          extraFilters: { propertyType: 'A', postalCode: zip },
+          extraFilters: { postalCode: zip },
         }),
       )
       fireSearchEvent('alert_create', {
@@ -82,7 +85,7 @@ export function ZipAlertsSheet({
       })
       return result
     },
-    [city, zip],
+    [zip],
   )
 
   const copy = useMemo(() => {
@@ -117,8 +120,8 @@ export function ZipAlertsSheet({
       id={id}
       eyebrow={`New listings · ${zip}${area ? ` · ${area}` : ''}`}
       href={newestFirstHref(browseHref)}
-      promise={`We'll email you every new listing in ${zip} as it comes on the market, with any price change on those homes in the same email. Unsubscribe any time.`}
-      stickyNote={placeAlertsStickyNote(copy.scopeLine, 'Every new listing, with its price changes. Unsubscribe any time.')}
+      promise={`We'll email you every new listing in ${zip}, every property type, each morning, with any price change on those homes in the same email. Unsubscribe any time.`}
+      stickyNote={placeAlertsStickyNote(copy.scopeLine, 'Every new listing, every property type, each morning. Unsubscribe any time.')}
       stickyAfter="atlas"
       updatedAt={updatedAt}
       trap={{ name: 'company', label: 'Company' }}

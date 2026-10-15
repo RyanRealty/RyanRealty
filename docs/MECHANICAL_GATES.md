@@ -13,6 +13,7 @@ keeps being violated, the answer is a new gate, not more prose.
 | # | Gate | Mechanism | Source |
 |---|---|---|---|
 | G1 | DAL boundary — no raw `from('<table>')` outside `lib/data/` | ESLint `no-restricted-syntax` (error) + `scripts/check-dal-boundary.mjs` (ratcheted) | Plan §4 + CLAUDE.md §6 |
+| **G-twilio-ack** | **Twilio inbound webhooks ack under the 15s deadline** — signature, one 2s raw insert into `twilio_webhook_raw_events`, TwiML/200, then CRM / timeline / STOP after ack or via `/api/cron/twilio-webhook-replay`. STOP still opts out. Founding case: 11200/11203 on SM872130d80ef66b91a9a3f1bd837eb53e. | `scripts/check-twilio-webhook-ack.mjs` (`ci:twilio-webhook-ack`, always lane) + `lib/crm/twilio-webhook-ack.test.ts` | AGENTS.md Twilio inbound ack; Matt 2026-10-14 |
 | G4 | Design tokens — no raw hex, no retired fonts, no bg-image hero | `scripts/lint-design-tokens.js --base-diff` | CLAUDE.md §5 / Plan §10 |
 | G5 | SEO route metadata + JSON-LD authoring | `scripts/check-seo-routes.mjs` + `scripts/check-seo-authoring.mjs` | Plan §1 |
 | G6 | **Mockup parity** — every gated route imports every component the matching mockup contract requires | `scripts/check-mockup-parity.mjs` (ratcheted) + per-route `design_system/ryan-realty/ui_kits/<route>/parity.json` | Plan §1 + Wave 3 §9 |
@@ -351,6 +352,12 @@ The seven production migration-history labels that carried the name were renamed
 (`supabase_migrations.schema_migrations.name`, versions unchanged). The SQL text each of
 those migrations ran (`statements`) still names the old functions: it is the record of
 what ran, not a live object, and is not rewritten. The gate reads the repo only.
+
+## market_metric is cached (added 2026-10-14)
+
+| Gate | npm | What it fails on |
+|---|---|---|
+| `check-market-metric-cached.mjs` | `ci:market-metric-cached` | a page, route, or component that calls `.from('market_metric')`, or a `lib/` file that queries it without wrapping `unstable_cache` from `@/lib/data/cache/next-cache`. Founding case: 2026-10-14, production `dwvlophlbvvygjfxcrhm` (MEDIUM 4GB) hung ~3 hours; Query Performance showed a service_role PostgREST select on `market_metric` at 7,635 calls / 539ms mean (41–63% of DB time) plus a geo_slug probe at 611 calls / 1.1s mean. Reads go through `lib/data/market-truth` with a ≥1h cache. |
 
 ## Mail sent as a named sender (added 2026-09-30)
 

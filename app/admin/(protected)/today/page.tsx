@@ -1,52 +1,27 @@
 // @no-parity — internal admin surface, no public mockup contract
-// Today: inbound, looking-at (A1), parked sequence steps, ready approvals,
-// CMA drafts to review, due tasks. Looking-at is the same sentence as the
-// D3 wake SMS so a missed text is not a missed person. Ask (A5) opens the
-// person composer with the D1 lead ask prefilled. Inbound Yes sends one
-// governed SMS. Never auto-send.
+// Today: a short right-now strip — overdue sign-off, true inbound replies,
+// looking-at. CMA opens and sequence steps live on their own screens.
 import Link from 'next/link'
 import { formatTriageAge, getInboundTriage, type TriageItem } from '@/lib/data/crm/getInboundTriage'
 import { getLookingAtNow } from '@/lib/data/crm/getLookingAtNow'
-import { getTaskQueue } from '@/lib/data/crm/getTaskQueue'
-import { getBrokerActionQueue } from '@/lib/data/crm/getBrokerActionQueue'
-import { listCmasForAdmin } from '@/lib/data'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getDayOneChecklist } from '@/lib/data/brokers/getDayOneChecklist'
-import { getJoinConversionStats } from '@/lib/data/loop/join-conversion'
 import { dayOneComplete, dayOneRemaining } from '@/lib/crm/day-one'
-import { createServiceClient } from '@/lib/supabase/service'
 import { todayInboundYesEnabled } from '@/lib/crm/today-inbound-draft'
 import { Button, QueueRow, SectionHead, VerdictLine } from '@/components/admin/v2'
-import { getClosingsBoard, incompleteInFlight } from '@/lib/data/tc/closings'
-import { countMailQueue } from '@/lib/data/tc/mail-reads'
-import { BROKER_FILE_EMAIL, dealVisibleToBroker, fileNameFromBrokerSlug } from '@/lib/tc/deal-scope'
 import { getPrincipalSignOffQueue } from '@/lib/data'
 import {
-  confirmParkedStepToday,
-  skipParkedStepToday,
-  dismissTriageToday,
-  completeTaskToday,
-} from './actions'
+  capRightNow,
+  dedupeInboundReplies,
+  lookingAtWithoutReplies,
+  overdueSignOffDeals,
+} from '@/lib/admin/today-right-now'
+import { dismissTriageToday } from './actions'
 import { ProduceDraftForm } from './ProduceDraftForm'
 import { TodayInboundYesForm } from './TodayInboundYesForm'
-import { TodayApproveDraftForm } from './TodayApproveDraftForm'
 
 export const dynamic = 'force-dynamic'
-
-async function readyApprovals() {
-  // Same read the approval queue page performs (service client precedent
-  // there). Yes on the row stamps via approveNowAction — the same approve
-  // as /admin/approval-queue. After Yes, status is no longer ready.
-  const sb = createServiceClient()
-  const { data } = await sb
-    .from('marketing_brain_actions')
-    .select('id, action_type, target, created_at, payload')
-    .eq('status', 'ready')
-    .order('created_at', { ascending: true })
-    .limit(8)
-  return data ?? []
-}
 
 function inboundQuote(body: string): string {
   const trimmed = body.trim()
@@ -79,67 +54,25 @@ function inboundReplyTitle(t: TriageItem) {
   )
 }
 
-function draftHeadline(row: {
-  action_type: string
-  target: string | null
-  payload: unknown
-}): string {
-  const payload =
-    row.payload && typeof row.payload === 'object' ? (row.payload as Record<string, unknown>) : {}
-  const headline = typeof payload.headline === 'string' ? payload.headline.trim() : ''
-  return headline || row.target || row.action_type
-}
-
 export default async function TodayPage() {
   const ctx = await requireAdminPage('today.view')
   const brokerScope = scopeBroker(ctx)
   const nowMs = Date.now()
-  // Same mailbox scoping as app/actions/tc-mail.ts ctxForEdit(): superuser
-  // reads every mailbox, a broker only their own, unmapped brokers see none.
-  const mailbox = ctx.role === 'superuser' ? null : BROKER_FILE_EMAIL[fileNameFromBrokerSlug(ctx.brokerSlug) ?? ''] ?? '__none__'
 
-  const [triage, lookingAt, parked, tasks, cmas, approvals, dayOne, join, closings, signOff, mailQueueCount] =
-    await Promise.all([
-      getInboundTriage(brokerScope),
-      getLookingAtNow(brokerScope),
-      getBrokerActionQueue({ brokerSlug: brokerScope }),
-      getTaskQueue({ brokerScope, view: 'today' }),
-      listCmasForAdmin({ limit: 50, offset: 0, brokerSlug: brokerScope }),
-      readyApprovals(),
-      getDayOneChecklist(ctx),
-      getJoinConversionStats(),
-      getClosingsBoard(),
-      getPrincipalSignOffQueue(),
-      countMailQueue(mailbox),
-    ])
-  const tcIncomplete = incompleteInFlight(
-    closings.deals.filter((d) =>
-      dealVisibleToBroker({ role: ctx.role, brokerSlug: ctx.brokerSlug, dealBrokerName: d.brokerName }),
-    ),
-  ).slice(0, 8)
+  const [triage, lookingAt, dayOne, signOff] = await Promise.all([
+    getInboundTriage(brokerScope),
+    getLookingAtNow(brokerScope),
+    getDayOneChecklist(ctx),
+    getPrincipalSignOffQueue(),
+  ])
 
-  type CmaRow = {
-    slug: string
-    status: string
-    built_at: string | null
-    build_error: string | null
-    subject_address: string | null
-    client_name: string | null
-  }
-  const cmaDrafts = (cmas.rows as CmaRow[]).filter(
-    (r) => r.status === 'draft' && r.built_at && !r.build_error,
-  )
-  const dueTasks = tasks.rows.slice(0, 8)
-  const total =
-    lookingAt.length +
-    triage.length +
-    parked.length +
-    cmaDrafts.length +
-    approvals.length +
-    dueTasks.length +
-    tcIncomplete.length +
-    (signOff.authorized ? signOff.totalItems : 0) +
-    mailQueueCount
+  const replies = capRightNow(dedupeInboundReplies(triage))
+  const replyIds = new Set(replies.map((row) => row.personId))
+  const looking = capRightNow(lookingAtWithoutReplies(lookingAt, replyIds))
+  const overdueDeals =
+    signOff.authorized ? capRightNow(overdueSignOffDeals(signOff.deals), 6) : []
+
+  const total = overdueDeals.length + replies.length + looking.length
 
   return (
     <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
@@ -148,27 +81,43 @@ export default async function TodayPage() {
           {total > 0 ? (
             <>
               <b>
-                {total} item{total === 1 ? '' : 's'} need{total === 1 ? 's' : ''} you.
-              </b>{' '}
-              Work top to bottom.
+                {total} right now
+              </b>
+              {' — '}
+              overdue sign-off, replies, looking-at.
             </>
           ) : (
             <>
-              <b>Nothing needs you right now.</b> Enjoy it.
+              <b>Nothing needs you right now.</b>
             </>
           )}
         </VerdictLine>
       </div>
 
-      {signOff.authorized && signOff.totalItems > 0 ? (
-        <section aria-label="Sign-off">
-          <SectionHead>Sign-off</SectionHead>
+      {dayOne.applies && !dayOneComplete(dayOne.items) ? (
+        <section aria-label="Day one">
+          <SectionHead>Day one</SectionHead>
+          <ul className="av2-quietlist">
+            {dayOneRemaining(dayOne.items).map((item) => (
+              <li key={item.id} className="av2-quiet">
+                <Link href={item.href} className="av2-quiet__name" style={{ textDecoration: 'none', color: 'var(--a-text)' }}>
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {overdueDeals.length > 0 ? (
+        <section aria-label="Overdue sign-off">
+          <SectionHead>Overdue sign-off</SectionHead>
           <ul className="av2-queue">
-            {signOff.deals.slice(0, 6).map((d) => (
+            {overdueDeals.map((d) => (
               <QueueRow
                 key={d.propertyKey}
-                kind={signOff.overdueItems > 0 && d.items.some((i) => i.deadline?.overdue) ? 'Overdue' : 'Sign-off'}
-                kindTone={d.items.some((i) => i.deadline?.overdue) ? 'down' : 'slow'}
+                kind="Overdue"
+                kindTone="down"
                 title={
                   <Link
                     href={`/admin/deals/${encodeURIComponent(d.propertyKey)}`}
@@ -189,86 +138,11 @@ export default async function TodayPage() {
         </section>
       ) : null}
 
-      {tcIncomplete.length > 0 ? (
-        <section aria-label="Incomplete checklists">
-          <SectionHead>Incomplete checklists</SectionHead>
-          <ul className="av2-queue">
-            {tcIncomplete.map((d) => (
-              <QueueRow
-                key={d.id}
-                kind="Incomplete"
-                kindTone="slow"
-                title={
-                  <Link
-                    href={`/admin/deals/${encodeURIComponent(d.propertyKey)}`}
-                    style={{ color: 'inherit', textDecoration: 'none' }}
-                  >
-                    {d.address}
-                  </Link>
-                }
-                context={`${d.itemsRequired} required · ${d.brokerName ?? '—'}`}
-                action={
-                  <Link
-                    href={`/admin/deals/${encodeURIComponent(d.propertyKey)}`}
-                    className="av2-btn"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    Open deal
-                  </Link>
-                }
-              />
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {mailQueueCount > 0 ? (
-        <section aria-label="Mail to file">
-          <SectionHead>Mail to file</SectionHead>
-          <ul className="av2-queue">
-            <QueueRow
-              kind="Mail"
-              kindTone="waiting"
-              title="Mail to file"
-              context={`${mailQueueCount} email${mailQueueCount === 1 ? '' : 's'} the auto-filer could not place.`}
-              action={
-                <Link href="/admin/closings/mail">
-                  <Button variant="quiet">Review</Button>
-                </Link>
-              }
-            />
-          </ul>
-        </section>
-      ) : null}
-
-      {dayOne.applies && !dayOneComplete(dayOne.items) ? (
-        <section aria-label="Day one">
-          <SectionHead>Day one</SectionHead>
-          <ul className="av2-quietlist">
-            {dayOneRemaining(dayOne.items).map((item) => (
-              <li key={item.id} className="av2-quiet">
-                <Link href={item.href} className="av2-quiet__name" style={{ textDecoration: 'none', color: 'var(--a-text)' }}>
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {dayOne.applies && dayOneComplete(dayOne.items) && brokerScope ? (
-        <div style={{ margin: '0 0 14px' }}>
-          <VerdictLine tone="ok">
-            Day one is done. This queue is scoped to {brokerScope}.
-          </VerdictLine>
-        </div>
-      ) : null}
-
-      {lookingAt.length > 0 && (
+      {looking.length > 0 && (
         <section aria-label="Looking at a home">
           <SectionHead>Looking at a home</SectionHead>
           <ul className="av2-queue">
-            {lookingAt.map((row) => (
+            {looking.map((row) => (
               <QueueRow
                 key={`looking:${row.personId}:${row.listingKey}`}
                 kind="Looking"
@@ -293,12 +167,11 @@ export default async function TodayPage() {
         </section>
       )}
 
-      {triage.length > 0 && (
-        <section aria-label="Inbound">
-          <SectionHead>Inbound</SectionHead>
+      {replies.length > 0 && (
+        <section aria-label="Inbound replies">
+          <SectionHead>Inbound replies</SectionHead>
           <ul className="av2-queue">
-            {triage.map((t) => {
-              const isReply = t.kind === 'reply'
+            {replies.map((t) => {
               const yesEnabled = todayInboundYesEnabled({
                 kind: t.kind,
                 inboundChannel: t.inboundChannel,
@@ -309,8 +182,8 @@ export default async function TodayPage() {
                   key={t.id}
                   kind="Reply"
                   kindTone="accent"
-                  title={isReply ? inboundReplyTitle(t) : (t.personName ?? 'Unknown contact')}
-                  context={isReply ? inboundReplyContext(t) : t.signal}
+                  title={inboundReplyTitle(t)}
+                  context={inboundReplyContext(t)}
                   age={formatTriageAge(t.occurredAt, nowMs)}
                   action={
                     <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
@@ -335,148 +208,30 @@ export default async function TodayPage() {
         </section>
       )}
 
-      {parked.length > 0 && (
-        <section aria-label="Waiting on you">
-          <SectionHead>Sequence steps waiting on you</SectionHead>
-          <ul className="av2-queue">
-            {parked.map((p) => (
-              <QueueRow
-                key={p.enrollmentId}
-                kind="Parked"
-                kindTone="waiting"
-                title={
-                  <>
-                    <Link
-                      href={`/admin/people/${p.personId}`}
-                      style={{ color: 'inherit', textDecoration: 'none' }}
-                    >
-                      {p.personName}
-                    </Link>
-                    {` — ${p.sequenceName}`}
-                  </>
-                }
-                context={p.holdReason ?? p.preview}
-                action={
-                  p.unresolved.length > 0 ? (
-                    <Link href={`/admin/people/${p.personId}`}>
-                      <Button variant="quiet">Fix message</Button>
-                    </Link>
-                  ) : (
-                    <span style={{ display: 'inline-flex', gap: 8 }}>
-                      <form action={skipParkedStepToday}>
-                        <input type="hidden" name="enrollmentId" value={p.enrollmentId} />
-                        <Button variant="quiet" type="submit">
-                          Skip
-                        </Button>
-                      </form>
-                      <form action={confirmParkedStepToday}>
-                        <input type="hidden" name="enrollmentId" value={p.enrollmentId} />
-                        <Button type="submit">Send it</Button>
-                      </form>
-                    </span>
-                  )
-                }
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {approvals.length > 0 && (
-        <section aria-label="Approvals">
-          <SectionHead>Drafts ready for approval</SectionHead>
-          <ul className="av2-queue">
-            {approvals.map((a) => (
-              <QueueRow
-                key={a.id}
-                kind="Approve"
-                kindTone="slow"
-                title={draftHeadline(a)}
-                context={a.target ?? undefined}
-                action={
-                  <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-                    <TodayApproveDraftForm actionId={a.id} />
-                    <Link href="/admin/approval-queue">
-                      <Button variant="quiet">Open</Button>
-                    </Link>
-                  </span>
-                }
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {cmaDrafts.length > 0 && (
-        <section aria-label="Valuations to review">
-          <SectionHead>CMA drafts to review</SectionHead>
-          <ul className="av2-queue">
-            {cmaDrafts.map((c) => (
-              <QueueRow
-                key={c.slug}
-                kind="CMA ready"
-                kindTone="ok"
-                title={c.subject_address ?? c.slug}
-                context={c.client_name ? `For ${c.client_name}` : undefined}
-                action={
-                  <Link href={`/admin/cmas/${c.slug}`}>
-                    <Button>Review draft</Button>
-                  </Link>
-                }
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {dueTasks.length > 0 && (
-        <section aria-label="Tasks due">
-          <SectionHead>Due today</SectionHead>
-          <ul className="av2-queue">
-            {dueTasks.map((t) => (
-              <QueueRow
-                key={t.id}
-                kind="Task"
-                kindTone="waiting"
-                title={t.name}
-                context={
-                  t.personName && t.personId ? (
-                    <Link
-                      href={`/admin/people/${t.personId}`}
-                      style={{ color: 'inherit' }}
-                    >
-                      {t.personName}
-                    </Link>
-                  ) : (
-                    t.personName ?? undefined
-                  )
-                }
-                action={
-                  <form action={completeTaskToday}>
-                    <input type="hidden" name="taskId" value={t.id} />
-                    <Button variant="quiet" type="submit">
-                      Done
-                    </Button>
-                  </form>
-                }
-              />
-            ))}
-          </ul>
-        </section>
-      )}
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '16px 0' }}>
+        CMA opens and sequence steps live on{' '}
+        <Link href="/admin/valuations" style={{ color: 'var(--a-accent)' }}>
+          Valuations
+        </Link>
+        {' · '}
+        <Link href="/admin/crm/approvals" style={{ color: 'var(--a-accent)' }}>
+          Approvals
+        </Link>
+        {' · '}
+        <Link href="/admin/crm/tasks" style={{ color: 'var(--a-accent)' }}>
+          Tasks
+        </Link>
+        {' · '}
+        <Link href="/admin/crm/sequences" style={{ color: 'var(--a-accent)' }}>
+          Sequences
+        </Link>
+        .
+      </p>
 
       <section aria-label="Produce a draft">
         <SectionHead>Produce a draft</SectionHead>
         <ProduceDraftForm />
       </section>
-
-      {join.status === 'ok' ? (
-        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '14px 0 0' }}>
-          /join this week: {join.visits7d} visit{join.visits7d === 1 ? '' : 's'} ·{' '}
-          {join.conversions7d} conversation{join.conversions7d === 1 ? '' : 's'} · {join.visitsAll}{' '}
-          visits all-time. Same figure as the company packet.
-        </p>
-      ) : null}
     </div>
   )
 }

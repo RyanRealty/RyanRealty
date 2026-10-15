@@ -443,6 +443,9 @@ export function getFilterNameFallback(filters: SavedSearchFilters): string {
 
   if (neighborhoodSlug) return `${labelForNeighborhoodSlug(neighborhoodSlug)} homes`
   if (city && subdivision) return `${subdivision} in ${city}`
+  // A ZIP alert names the ZIP, not a city it may only partly sit in.
+  const postalCode = asTrimmedString(normalized.postalCode)
+  if (postalCode && !subdivision) return `ZIP ${postalCode} homes`
   if (city && minPrice && maxPrice) return `${city} $${Math.round(minPrice / 1000)}K-$${Math.round(maxPrice / 1000)}K`
   if (city) return `${city} homes`
   return 'Popular search'
