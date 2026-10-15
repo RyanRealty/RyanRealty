@@ -89,6 +89,7 @@ export type CreateCmaRequestInput = {
     | 'crm-kickoff'
     | 'place-page'
     | 'admin-manual'
+    | 'sarah-chat'
   /**
    * Full web slug of the signing broker (admin Build CMA select). When set,
    * this broker signs — not the lead's assigned broker.
@@ -199,7 +200,9 @@ export async function createCmaRequest(
               ? 'Admin manual build'
               : requestSource === 'place-page'
                 ? 'Place page valuation request'
-                : 'Seller LP submission'
+                : requestSource === 'sarah-chat'
+                  ? 'Sarah chat valuation request'
+                  : 'Seller LP submission'
     const broker = await resolveSigningBroker(input)
 
     // Resolve broker uuid so the cmas row has a valid FK if the cmas.broker_id
@@ -427,7 +430,9 @@ export async function createCmaRequest(
             ? `Expired-listing detection — CMA for ${rawAddress} to open outreach to ${leadName ?? 'the owner'}`
             : requestSource === 'place-page'
               ? `Place page valuation request — ${leadName ?? leadEmail} asked what ${rawAddress} would sell for`
-              : requestSource === 'admin-manual'
+              : requestSource === 'sarah-chat'
+                ? `Sarah chat — draft CMA for ${rawAddress} captured by Sarah for broker review`
+                : requestSource === 'admin-manual'
                 ? `Admin manual build — CMA for ${rawAddress}`
                 : `Seller LP submission — ${leadName ?? leadEmail} requested a CMA for ${rawAddress}`,
         status: 'pending',

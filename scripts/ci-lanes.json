@@ -55,6 +55,7 @@
     "ci:listing-figure-publish",
     "ci:listing-fold-density",
     "ci:dog-floater",
+    "ci:sarah-panel",
     "ci:listing-keep-exploring",
     "ci:aeo-hub-guides",
     "ci:place-craft",
@@ -1632,5 +1633,17 @@
     "ci:search-perf-budget",
     "ci:shadcn-burndown"
   ],
-  "cert": []
+  "cert": [],
+  "ci:sarah-panel": [
+    "app/layout.tsx",
+    "app/actions/sarah-capture.ts",
+    "components/site/v3/V3SarahAssistant.client.tsx",
+    "components/site/v3/V3SarahAssistant.css",
+    "components/CookieConsentBanner.tsx",
+    "components/site/providers/RootProvider.tsx",
+    "components/layout/PublicClientLayer.tsx",
+    "lib/sarah/intent-flow.ts",
+    "scripts/check-sarah-panel.mjs",
+    "scripts/lib/sarah-panel.mjs"
+  ]
 }
