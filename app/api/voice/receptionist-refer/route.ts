@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   const who = Object.keys(cells).find((k) => cells[k] && cells[k] === target) ?? 'matt'
   console.log(`[receptionist-refer] call=${p.CallSid ?? ''} raw=${p.ReferTransferTarget ?? ''} target=${target ?? 'rejected'}`)
   if (!target) {
-    return xml(`<?xml version="1.0" encoding="UTF-8"?>\n<Response><Redirect method="POST">${site}/api/voice/receptionist-complete?transfer=matt</Redirect></Response>`)
+    return xml(`<?xml version="1.0" encoding="UTF-8"?>\n<Response><Redirect method="POST">${site}/api/voice/receptionist-complete/matt</Redirect></Response>`)
   }
   // Test mode: the test target never rings a phone; it proves the REFER reached us.
   if (target === transferTestTarget()) {
@@ -35,6 +35,6 @@ export async function POST(request: Request) {
   const callerId = escapeXml(p.From || p.To || '')
   return xml(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial timeout="25" answerOnBridge="true" callerId="${callerId}" action="${site}/api/voice/receptionist-complete?transfer=${who}" method="POST">${target}</Dial>
+  <Dial timeout="25" answerOnBridge="true" callerId="${callerId}" action="${site}/api/voice/receptionist-complete/${who}" method="POST">${target}</Dial>
 </Response>`)
 }
