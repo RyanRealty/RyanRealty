@@ -245,7 +245,12 @@ export async function identifyAuthenticatedSession(
         if (backfill.automated) return { ok: true, bridged: false }
       }
       const cookieStore = await cookies()
-      const write = personCookieWrite(readPersonCookie(cookieStore.get(PERSON_COOKIE)?.value), personId, provenance)
+      // A verified sign-in always (re)sets the cookie, which also rolls its 90
+      // days forward; an unconfirmed one never downgrades a verified cookie.
+      const write =
+        provenance === 'verified'
+          ? 'verified'
+          : personCookieWrite(readPersonCookie(cookieStore.get(PERSON_COOKIE)?.value), personId, provenance)
       if (write) cookieStore.set(PERSON_COOKIE, personCookieValue(personId, write), personCookieOptions())
       // rr_vid catches this browser's other sessions (no client session_id).
       await stitchVisitorIdentity({ rrVid, fubPersonId: personId, email, userId: user.id, sessionId: sessionId ?? null, source: 'auth_session' })

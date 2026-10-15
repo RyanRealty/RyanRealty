@@ -481,10 +481,14 @@ build when any part of it is broken.**
    (`verifiedPersonIdFromCookie`): the CMA report's consent bar and its POST
    (`/api/cma/register`), a phone-only lead's bind-on-first-register, the sign-in
    callback's CMA consent marker, and a seller-form submit that carried no email
-   (`submittedConsentCounts`). A claimed or legacy cookie gets no consent ask; the person
-   verifies by the normal path, the tracked link in the email we sent them. A form submit
-   that carries the person's own email records its consent box for the person that email
-   names (first-party consent with the form's own disclosure). A tracked link upgrades a
+   (`submittedConsentCounts`; an unproven answer records nothing either way, so a stranger
+   can neither opt a contact in nor overwrite their answer). A claimed or legacy cookie
+   gets no consent ask; the person verifies by the normal path, the tracked link in the
+   email we sent them. A bar shown for that link carries the link's token in its form, so
+   the answer lands even when no cookie was set (GPC, a banner decline). A signed-in email
+   counts only once the provider confirmed it. A form submit that carries the person's own
+   email records its consent box for the person that email names (first-party consent with
+   the form's own disclosure). A tracked link upgrades a
    claimed cookie for the same person; a claim never downgrades a verified cookie. Cookie
    values are not link tokens: `?_pid=` refuses them, so a visitor cannot paste their own
    claimed cookie into a URL and come back verified. `ci:identity-loop` rule 12 pins each

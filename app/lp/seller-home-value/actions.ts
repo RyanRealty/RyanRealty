@@ -287,14 +287,18 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // dedupe email-first and create the lead that actually submitted.
     let fubPersonId: number | null = null
     let alreadyKnown = false
-    // Whether the SMS box ticked in this submit may be recorded for that person:
-    // always for the typed email's person; for a cookie-only (no email) submit,
-    // only when the cookie's identity was verified (lib/crm/submitted-identity.ts).
-    let smsConsentCounts = false
+    // Whether the consent boxes ticked in this submit (SMS, EU/UK ad matching)
+    // may be recorded for that person: always for the typed email's person; for
+    // a cookie-only (no email) submit, only when the cookie's identity was
+    // verified (lib/crm/submitted-identity.ts, consent integrity 2026-10-14).
+    let consentCounts = false
 
     {
       const personCookie = readPersonCookie((await cookies()).get(PERSON_COOKIE)?.value)
-      const cookiePersonId = personCookie?.personId ?? null
+      // Only a cookie this server signed names anyone. A bare id is something any
+      // visitor can type into their own browser; the form always sends an email,
+      // so only a hand-made call ever reaches this fallback.
+      const cookiePersonId = personCookie?.signed ? personCookie.personId : null
       const emailPersonId = email ? await findCrmPersonIdByEmail(email) : null
       const resolved = resolveSubmittedIdentity({
         cookiePersonId,
@@ -303,7 +307,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       })
       fubPersonId = resolved.personId
       alreadyKnown = resolved.alreadyKnown
-      smsConsentCounts = submittedConsentCounts({
+      consentCounts = submittedConsentCounts({
         hasEmail: Boolean(email),
         cookieProvenance: personCookie?.provenance ?? null,
       })
@@ -502,7 +506,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         sellerPropertyAddress: parsed.full,
         ...(reasonLabel ? { sellerReason: reasonLabel } : {}),
         ...(askSource ? { askSource } : {}),
-        ...adMatchConsentCustom(submission.adMatchConsent === true, new Date().toISOString()),
+        ...adMatchConsentCustom(consentCounts && submission.adMatchConsent === true, new Date().toISOString()),
       }
 
       // 3. Lead-origin note → crm_timeline. Tells the broker WHY this lead came
@@ -599,10 +603,10 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // person for sequence merge fields.
     if (fubPersonId) {
       const { autoEnrollByPersonId } = await import('@/lib/crm/enroll')
-      // An unproven identity's ticked box is not that person's consent, so it
-      // records as not given (fail closed), never as an opt-in.
+      // A box answered by a visitor not proven to be this person records nothing
+      // either way: it is no opt-in, and it does not overwrite consent they gave.
       await autoEnrollByPersonId(fubPersonId, {
-        smsConsent: smsConsentCounts && submission.smsConsent === true,
+        smsConsent: consentCounts ? submission.smsConsent === true : 'unproven',
       }).catch((e: unknown) =>
         console.warn('[seller-lp] instant auto-enroll failed:', e),
       )

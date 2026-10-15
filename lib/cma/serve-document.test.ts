@@ -634,13 +634,18 @@ describe('the consent bar', () => {
     return result.kind === 'html' ? result.html : ''
   }
 
-  it('shows for the recipient arriving on the signed link we sent', async () => {
-    expect(await html(`?_pid=${signPersonLinkToken(PERSON, 'document')}`)).toContain('rr-consent-bar')
+  it('shows for the recipient arriving on the signed link we sent, and carries that link as its proof', async () => {
+    const token = signPersonLinkToken(PERSON, 'document')
+    const page = await html(`?_pid=${token}`)
+    expect(page).toContain('rr-consent-bar')
+    expect(page).toContain(`name="proof" value="${token}"`)
   })
 
-  it('shows for a browser holding the VERIFIED cookie that link set', async () => {
+  it('shows for a browser holding the VERIFIED cookie that link set (no proof field: the cookie is the proof)', async () => {
     jar.values.rr_pid = personCookieValue(PERSON, 'verified')
-    expect(await html()).toContain('rr-consent-bar')
+    const page = await html()
+    expect(page).toContain('rr-consent-bar')
+    expect(page).not.toContain('name="proof"')
   })
 
   it('does not show for a CLAIMED cookie (the person\'s email typed into a form on this browser)', async () => {

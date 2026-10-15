@@ -81,7 +81,10 @@ async function stampPersonIdFromEmail(
     const matchIds = await personIdsByEmailCi(sb, normalized).catch(() => [] as number[])
     const personId = matchIds[0] ?? null
     if (personId) {
-      const write = personCookieWrite(readPersonCookie(currentPersonCookie), personId, provenance)
+      // A verified sign-in always (re)sets the cookie, which also rolls its 90
+      // days forward; an unconfirmed one never downgrades a verified cookie.
+      const write =
+        provenance === 'verified' ? 'verified' : personCookieWrite(readPersonCookie(currentPersonCookie), personId, provenance)
       if (write) res.cookies.set(PERSON_COOKIE, personCookieValue(personId, write), personCookieOptions())
     }
     // Guest listing-save absorb: if this browser's identity-map row still holds
@@ -262,6 +265,7 @@ export async function GET(request: Request) {
     const message = errorDesc ? decodeURIComponent(errorDesc.replace(/\+/g, ' ')) : 'Sign-in failed. Please try again.'
     const res = NextResponse.redirect(`${base}/auth-error?message=${encodeURIComponent(message)}&next=${encodeURIComponent(safeNext)}`)
     res.cookies.delete(AUTH_NEXT_COOKIE)
+    res.cookies.delete(GOOGLE_COMMS_COOKIE)
     return res
   }
 
@@ -297,7 +301,9 @@ export async function GET(request: Request) {
           .then(({ saveOauthAvatarByEmail }) => saveOauthAvatarByEmail(data.user.email, avatar))
           .catch(() => {})
       }
-      if (googleComms && data.user.email) {
+      // The comms-door choices are recorded only for a provider-confirmed email:
+      // that is what proves the person ticking them owns it.
+      if (googleComms && data.user.email && signInProvenance(data.user) === 'verified') {
         await applyGoogleCommsConsent({
           email: data.user.email,
           name: typeof name === 'string' ? name : undefined,
@@ -345,7 +351,7 @@ export async function GET(request: Request) {
       }).catch((err) => {
         Sentry.captureException(err)
       })
-      if (googleComms && data.user.email) {
+      if (googleComms && data.user.email && signInProvenance(data.user) === 'verified') {
         await applyGoogleCommsConsent({
           email: data.user.email,
           name: data.user.user_metadata?.full_name ?? data.user.user_metadata?.name,
@@ -378,5 +384,8 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${base}/auth-error?message=${encodeURIComponent('Could not sign in')}&next=${encodeURIComponent(safeNext)}`)
+  const failed = NextResponse.redirect(`${base}/auth-error?message=${encodeURIComponent('Could not sign in')}&next=${encodeURIComponent(safeNext)}`)
+  // A failed attempt's choices must not wait for the next account to sign in here.
+  failed.cookies.delete(GOOGLE_COMMS_COOKIE)
+  return failed
 }

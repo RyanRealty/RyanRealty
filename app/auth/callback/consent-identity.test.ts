@@ -134,10 +134,23 @@ describe('signing in on another person\'s CMA', () => {
 })
 
 describe('the comms-door choices', () => {
-  it('are cleared once applied, so a second sign-in on this browser does not inherit them', async () => {
-    const res = await signIn()
+  function expectCleared(res: Response) {
     const cleared = setCookies(res).rr_google_comms ?? ''
     expect(cleared).toMatch(/^rr_google_comms=;/)
     expect(cleared).toMatch(/Max-Age=0|Expires=Thu, 01 Jan 1970/i)
+  }
+
+  it('are cleared once applied, so a second sign-in on this browser does not inherit them', async () => {
+    expectCleared(await signIn())
+  })
+
+  it('are cleared by a failed attempt too', async () => {
+    expectCleared(await GET(new Request('https://ryan-realty.com/auth/callback?error=access_denied')))
+  })
+
+  it('are recorded only for a provider-confirmed email', async () => {
+    h.user = { ...h.user, email_confirmed_at: null }
+    await signIn()
+    expect(h.enrich).not.toHaveBeenCalled()
   })
 })

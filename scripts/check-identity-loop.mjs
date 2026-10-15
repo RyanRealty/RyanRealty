@@ -260,7 +260,9 @@ export function missingWiring(read) {
     ['app/api/cma/register/route.ts', /if \(decision\.kind === 'claim-and-consent' && !recipientProven\)/, 'a sign-in alone can claim a phone-only lead and record SMS consent against their phone', CODE],
     ['app/auth/callback/route.ts', /opts\.verifiedCookiePersonId === identity\.personId/, "signing in with ?next=/cma/<slug> marks another person's consent answered without proof", CODE],
     ['app/auth/callback/route.ts', /res\.cookies\.delete\(GOOGLE_COMMS_COOKIE\)[\s\S]*res\.cookies\.delete\(GOOGLE_COMMS_COOKIE\)/, 'the comms-door choices outlive the sign-in they were made for (a second account on the browser inherits them)', CODE],
-    ['app/lp/seller-home-value/actions.ts', /smsConsent: smsConsentCounts && submission\.smsConsent === true/, "the seller form records a no-email submit's SMS box for an unverified cookie person", CODE],
+    ['app/lp/seller-home-value/actions.ts', /smsConsent: consentCounts \? submission\.smsConsent === true : 'unproven'/, "the seller form records a no-email submit's SMS box for an unverified cookie person", CODE],
+    ['app/lp/seller-home-value/actions.ts', /adMatchConsentCustom\(consentCounts && submission\.adMatchConsent === true/, "the seller form records a no-email submit's ad-matching box for an unverified cookie person", CODE],
+    ['lib/crm/enroll.ts', /if \(opts\?\.smsConsent !== 'unproven'\) \{/, 'an unproven SMS answer writes consent state (a stranger could revoke or grant it)', CODE],
   ]
   const out = []
   for (const [file, re, why, mode] of need) {

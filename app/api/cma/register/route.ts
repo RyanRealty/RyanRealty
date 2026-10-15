@@ -19,6 +19,7 @@ import { decideCmaAccess } from '@/lib/cma/register-gate'
 import { SMS_CONSENT_TEXT } from '@/lib/crm/sms-consent-text'
 import { createServiceClient } from '@/lib/supabase/service'
 import { PERSON_COOKIE, verifiedPersonIdFromCookie } from '@/lib/identity/person-cookie'
+import { verifyPersonLinkToken } from '@/lib/identity/link-token'
 
 export const revalidate = 0
 
@@ -42,15 +43,22 @@ export async function POST(request: Request) {
   if (!identity) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const session = await getSession()
-  let viewerEmail = session?.user?.email?.trim().toLowerCase() || null
-  // Is this browser PROVEN to be the document's person? Only a VERIFIED rr_pid
-  // counts. A bare id is something any visitor can type into their own browser
-  // (P7, 2026-09-23). A claimed one names whoever's email was typed into a form
-  // on this browser, and anyone can type anyone's email, so it is no proof that
-  // the person consenting is this contact (consent integrity, 2026-10-14). The
-  // tracked link in the email we sent them mints a verified cookie on arrival.
+  // A signed-in email counts only once the provider confirmed it (the same rule
+  // signInProvenance applies to the rr_pid cookie).
+  let viewerEmail = session?.user?.email_confirmed_at ? session.user.email?.trim().toLowerCase() || null : null
+  // Is this browser PROVEN to be the document's person? Either the signed link
+  // we sent them (the bar carries the `?_pid=` token it was shown for, so a
+  // visitor whose browser was never cookied, under Global Privacy Control or a
+  // banner decline, can still answer), or the VERIFIED rr_pid cookie that link
+  // set. A bare id is something any visitor can type into their own browser
+  // (P7, 2026-09-23). A CLAIMED cookie names whoever's email was typed into a
+  // form on this browser, and anyone can type anyone's email, so it is no
+  // proof that the person consenting is this contact (consent integrity,
+  // 2026-10-14). A cookie value is not a link token, so it cannot be the proof.
   const verifiedCookiePid = verifiedPersonIdFromCookie((await cookies()).get(PERSON_COOKIE)?.value)
-  const recipientProven = identity.personId != null && verifiedCookiePid === identity.personId
+  const linkProofPid = verifyPersonLinkToken(String(form.get('proof') ?? ''))?.personId ?? null
+  const recipientProven =
+    identity.personId != null && (verifiedCookiePid === identity.personId || linkProofPid === identity.personId)
   // The consent bar inside the report (Matt 2026-09-09): no Google session,
   // the form carries the person id, and it must match BOTH the document's
   // person and the verified rr_pid cookie the tracked link set. Anything else

@@ -13,10 +13,11 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { personCookieValue } from '@/lib/identity/person-cookie'
+import { signPersonLinkToken } from '@/lib/identity/link-token'
 
 const h = vi.hoisted(() => ({
   cookies: {} as Record<string, string>,
-  session: null as null | { user: { email: string } },
+  session: null as null | { user: { email: string; email_confirmed_at?: string | null } },
   identity: null as null | Record<string, unknown>,
   updates: [] as Array<Record<string, unknown>>,
   inserts: [] as Array<Record<string, unknown>>,
@@ -122,18 +123,38 @@ describe('the consent bar (no sign-in)', () => {
     await post(barAnswer)
     expect(h.updates).toEqual([])
   })
+
+  it('the signed link the bar was shown for is proof on its own (a browser that set no cookie: GPC, a decline)', async () => {
+    const res = await post({ ...barAnswer, proof: signPersonLinkToken(PERSON, 'document') })
+    expect(res.status).toBe(303)
+    expect(recordedConsent()).toMatchObject({ sms: true, email: true })
+  })
+
+  it('a link for someone else, or a cookie value passed as the proof, is not', async () => {
+    await post({ ...barAnswer, proof: signPersonLinkToken(PERSON + 1, 'document') })
+    await post({ ...barAnswer, proof: personCookieValue(PERSON, 'claimed') })
+    await post({ ...barAnswer, proof: personCookieValue(PERSON, 'verified') })
+    expect(h.updates).toEqual([])
+  })
 })
 
 describe('a signed-in visitor', () => {
-  it('whose email is on the person records the answer, cookie or no cookie', async () => {
-    h.session = { user: { email: 'Owner@msn.com' } }
+  it('whose confirmed email is on the person records the answer, cookie or no cookie', async () => {
+    h.session = { user: { email: 'Owner@msn.com', email_confirmed_at: '2026-10-14T00:00:00Z' } }
     const res = await post({ slug: SLUG, smsOptIn: '1' })
     expect(res.status).toBe(303)
     expect(recordedConsent()).toMatchObject({ sms: true, viewer: 'owner@msn.com' })
   })
 
+  it('whose email on the person is UNCONFIRMED proves nothing (the bar path, which needs its own proof)', async () => {
+    h.session = { user: { email: 'owner@msn.com', email_confirmed_at: null } }
+    const res = await post({ slug: SLUG, smsOptIn: '1' })
+    expect(res.status).toBe(307)
+    expect(h.updates).toEqual([])
+  })
+
   it('with a different email records nothing (wrong person)', async () => {
-    h.session = { user: { email: 'stranger@gmail.com' } }
+    h.session = { user: { email: 'stranger@gmail.com', email_confirmed_at: '2026-10-14T00:00:00Z' } }
     h.cookies.rr_pid = personCookieValue(PERSON, 'claimed')
     await post({ slug: SLUG, smsOptIn: '1' })
     expect(h.updates).toEqual([])
@@ -142,7 +163,7 @@ describe('a signed-in visitor', () => {
   describe('on a phone-only lead (no email on file, bind-on-first-register)', () => {
     beforeEach(() => {
       h.identity = { ...h.identity, clientEmail: null, personEmails: [] }
-      h.session = { user: { email: 'signer@gmail.com' } }
+      h.session = { user: { email: 'signer@gmail.com', email_confirmed_at: '2026-10-14T00:00:00Z' } }
     })
 
     it('a sign-in alone proves the signer\'s email, not that they are this lead: no claim, no consent', async () => {

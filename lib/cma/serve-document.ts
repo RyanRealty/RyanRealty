@@ -307,15 +307,17 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<ServeCmaInner
   // token, or the verified rr_pid cookie it set) and has not answered the ask
   // gets an optional bar inside the report. Everyone else gets no bar,
   // including a browser whose cookie is only claimed (consent integrity,
-  // 2026-10-14): /api/cma/register would refuse its answer anyway.
+  // 2026-10-14): /api/cma/register would refuse its answer anyway. A bar shown
+  // for the link carries the link's token, so its answer is accepted whether or
+  // not a cookie was set.
   let consentBar = ''
   if (publicReady && !opts.isAdmin && !opts.skipRegisterGate) {
     const identity = await getCmaAccessIdentity(safeSlug)
     const jar = await cookies()
     const commsCookie = jar.get(GOOGLE_COMMS_COOKIE)?.value
-    const recipientPersonId =
-      recipientFromParam(new URL(opts.requestUrl).searchParams.get(IDENTITY_LINK_PARAM)) ??
-      verifiedPersonIdFromCookie(jar.get(PERSON_COOKIE)?.value)
+    const linkToken = new URL(opts.requestUrl).searchParams.get(IDENTITY_LINK_PARAM)
+    const linkPersonId = recipientFromParam(linkToken)
+    const recipientPersonId = linkPersonId ?? verifiedPersonIdFromCookie(jar.get(PERSON_COOKIE)?.value)
     if (
       identity?.personId &&
       recipientPersonId === identity.personId &&
@@ -327,6 +329,9 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<ServeCmaInner
         personId: identity.personId,
         address: identity.subjectAddress ?? null,
         smsConsentText: SMS_CONSENT_TEXT,
+        // The link the recipient proved themselves with rides in the form, so
+        // the POST can accept the answer without a cookie.
+        proof: linkPersonId === identity.personId ? linkToken : null,
       })
     }
   }

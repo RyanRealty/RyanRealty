@@ -17,6 +17,7 @@ const h = vi.hoisted(() => ({
   cookies: {} as Record<string, string>,
   autoEnroll: vi.fn(async () => ({ enrolled: true })),
   emailPerson: null as number | null,
+  enrich: vi.fn(async (_args: { personId: number; custom?: Record<string, unknown> }) => ({ ok: true })),
 }))
 
 vi.mock('next/headers', () => ({
@@ -34,7 +35,7 @@ vi.mock('@/lib/crm/send-event', () => ({
 }))
 vi.mock('@/lib/data/crm/ensureNativeLead', () => ({
   ensureNativeLead: async () => ({ personId: 90001 }),
-  enrichNativeLead: async () => ({ ok: true }),
+  enrichNativeLead: h.enrich,
   createNativeTask: async () => ({ ok: true }),
 }))
 vi.mock('@/lib/data/crm/recordMarketingAssignment', () => ({ recordMarketingAssignment: async () => ({ ok: true }) }))
@@ -61,11 +62,18 @@ beforeEach(() => {
   h.cookies = {}
   h.emailPerson = null
   h.autoEnroll.mockClear()
+  h.enrich.mockClear()
 })
 
+/** The custom fields the submit wrote onto the contact. */
+function enrichedCustom(): Record<string, unknown> {
+  const call = h.enrich.mock.calls.find(([args]) => args.custom)
+  return (call?.[0].custom ?? {}) as Record<string, unknown>
+}
+
 /** What the submit recorded for the SMS box: the person and the consent flag. */
-function recordedSms(): { personId: number; smsConsent: boolean | undefined } | null {
-  const call = h.autoEnroll.mock.calls[0] as unknown as [number, { smsConsent?: boolean }] | undefined
+function recordedSms(): { personId: number; smsConsent: boolean | 'unproven' | undefined } | null {
+  const call = h.autoEnroll.mock.calls[0] as unknown as [number, { smsConsent?: boolean | 'unproven' }] | undefined
   return call ? { personId: call[0], smsConsent: call[1]?.smsConsent } : null
 }
 
@@ -97,18 +105,33 @@ describe('no email: the person comes from the rr_pid cookie', () => {
     expect(recordedSms()).toEqual({ personId: PERSON, smsConsent: true })
   })
 
-  it('a CLAIMED cookie (someone typed this email into a form here) records it as not given', async () => {
+  it('a CLAIMED cookie (someone typed this email into a form here) records nothing about consent', async () => {
     h.cookies.rr_pid = personCookieValue(PERSON, 'claimed')
-    const res = await submitSellerLPForm({ address: ADDRESS, smsConsent: true })
+    const res = await submitSellerLPForm({ address: ADDRESS, smsConsent: true, adMatchConsent: true })
     // the lead still lands on the contact: lead capture is not broken...
     expect(res.success).toBe(true)
-    // ...but the box is not that person's consent
-    expect(recordedSms()).toEqual({ personId: PERSON, smsConsent: false })
+    // ...but the box is not that person's consent: no opt-in, and no overwrite of one they gave
+    expect(recordedSms()).toEqual({ personId: PERSON, smsConsent: 'unproven' })
+    // nor is the EU/UK ad-matching box
+    expect(enrichedCustom()).not.toHaveProperty('adMatchConsent')
   })
 
-  it('a bare legacy id (anyone can type one into their browser) records it as not given', async () => {
+  it('an unticked box on a claimed cookie does not revoke consent the person gave either', async () => {
+    h.cookies.rr_pid = personCookieValue(PERSON, 'claimed')
+    await submitSellerLPForm({ address: ADDRESS, smsConsent: false })
+    expect(recordedSms()).toEqual({ personId: PERSON, smsConsent: 'unproven' })
+  })
+
+  it('a VERIFIED cookie records the ad-matching box too', async () => {
+    h.cookies.rr_pid = personCookieValue(PERSON, 'verified')
+    await submitSellerLPForm({ address: ADDRESS, adMatchConsent: true })
+    expect(enrichedCustom()).toMatchObject({ adMatchConsent: 'granted' })
+  })
+
+  it('a bare legacy id (anyone can type one into their browser) names nobody', async () => {
     h.cookies.rr_pid = String(PERSON)
-    await submitSellerLPForm({ address: ADDRESS, smsConsent: true })
-    expect(recordedSms()).toEqual({ personId: PERSON, smsConsent: false })
+    const res = await submitSellerLPForm({ address: ADDRESS, smsConsent: true })
+    expect(res.success).toBe(false)
+    expect(recordedSms()).toBeNull()
   })
 })

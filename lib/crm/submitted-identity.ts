@@ -18,6 +18,8 @@
  * A household sharing a laptop is the ordinary case here, not an edge case.
  */
 
+import type { PersonCookieProvenance } from '@/lib/identity/person-cookie'
+
 export type SubmittedIdentity = {
   /** The person to write against, or null to let the email-first create path run. */
   personId: number | null
@@ -71,7 +73,7 @@ export function resolveSubmittedIdentity(args: {
 export function submittedConsentCounts(args: {
   hasEmail: boolean
   /** PersonCookieRead.provenance of the rr_pid cookie, or null when there is none. */
-  cookieProvenance: 'verified' | 'claimed' | 'legacy' | 'unsigned' | null
+  cookieProvenance: PersonCookieProvenance | null
 }): boolean {
   if (args.hasEmail) return true
   return args.cookieProvenance === 'verified'

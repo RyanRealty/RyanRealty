@@ -130,7 +130,9 @@ describe('check-identity-loop — rules 4-7: wiring on the real tree', () => {
     ['app/api/cma/register/route.ts', 'const verifiedCookiePid = verifiedPersonIdFromCookie(', 'const verifiedCookiePid = signedPersonIdFromCookie(', 'the CMA consent POST reads an rr_pid cookie of any provenance'],
     ['app/api/cma/register/route.ts', "if (decision.kind === 'claim-and-consent' && !recipientProven)", 'if (false)', 'a sign-in alone can claim a phone-only lead and record SMS consent against their phone'],
     ['app/auth/callback/route.ts', 'opts.verifiedCookiePersonId === identity.personId', 'true', "signing in with ?next=/cma/<slug> marks another person's consent answered without proof"],
-    ['app/lp/seller-home-value/actions.ts', 'smsConsent: smsConsentCounts && submission.smsConsent === true', 'smsConsent: submission.smsConsent', "the seller form records a no-email submit's SMS box for an unverified cookie person"],
+    ['app/lp/seller-home-value/actions.ts', "smsConsent: consentCounts ? submission.smsConsent === true : 'unproven'", 'smsConsent: submission.smsConsent', "the seller form records a no-email submit's SMS box for an unverified cookie person"],
+    ['app/lp/seller-home-value/actions.ts', 'adMatchConsentCustom(consentCounts && submission.adMatchConsent === true', 'adMatchConsentCustom(submission.adMatchConsent === true', "the seller form records a no-email submit's ad-matching box for an unverified cookie person"],
+    ['lib/crm/enroll.ts', "if (opts?.smsConsent !== 'unproven') {", 'if (true) {', 'an unproven SMS answer writes consent state (a stranger could revoke or grant it)'],
   ]
 
   it.each(CONSENT_GUARDS)('consent integrity: fires when %s loses its guard (%s)', (file, from, to, why) => {

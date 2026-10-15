@@ -245,6 +245,13 @@ describe('the rr_pid cookie an identify action mints carries its provenance (con
       expect(setCookie()).toEqual({ personId: PERSON, signed: true, provenance: 'claimed' })
     })
 
+    it('a confirmed sign-in re-sets a verified cookie it already holds, so its 90 days roll forward', async () => {
+      state.cookies.rr_pid = personCookieValue(PERSON, 'verified')
+      state.user = { id: 'auth-1', email: 'lead@example.com', app_metadata: { provider: 'google' }, email_confirmed_at: '2026-10-14T00:00:00Z' }
+      await identifyAuthenticatedSession(SESSION)
+      expect(setCookie()?.provenance).toBe('verified')
+    })
+
     it('an unconfirmed sign-in never downgrades the verified cookie the same person holds', async () => {
       state.cookies.rr_pid = personCookieValue(PERSON, 'verified')
       state.user = { id: 'auth-1', email: 'lead@example.com', app_metadata: { provider: 'email' }, email_confirmed_at: null }
