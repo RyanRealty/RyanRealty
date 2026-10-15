@@ -458,9 +458,15 @@ export default function CookieConsentBanner() {
         <p className="text-sm font-medium text-foreground sm:text-base">
           {COOKIE_NOTICE_HEADING}
         </p>
-        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-          {COOKIE_NOTICE_BODY}
-        </p>
+        {/* UX review F24 (Matt 2026-10-15): same words, shorter look. The
+            first sentence shows; the rest opens under Details. */}
+        <div className="mt-1 text-xs text-muted-foreground sm:text-sm">
+          <span>{COOKIE_NOTICE_BODY.slice(0, COOKIE_NOTICE_BODY.indexOf('. ') + 1)}</span>{' '}
+          <details className="inline [&[open]]:block">
+            <summary className="inline cursor-pointer font-medium text-foreground underline">Details</summary>
+            <span> {COOKIE_NOTICE_BODY.slice(COOKIE_NOTICE_BODY.indexOf('. ') + 2)}</span>
+          </details>
+        </div>
         <p className="mt-2 text-xs text-muted-foreground">
           <Link href="/privacy" className="font-medium text-foreground underline hover:no-underline">Privacy and cookies</Link>
           {' · '}
