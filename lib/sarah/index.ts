@@ -124,3 +124,14 @@ export {
   teaserDismissedInSession,
   type SarahTeaserKind,
 } from './teaser'
+export {
+  LISTING_UNKNOWN_FACT_EN,
+  answerListingQuestion,
+  answerPlaceQuestion,
+  assertDistinctListingReplies,
+  listingUnknownFactEn,
+  parseSarahPage,
+  placeUnknownFactEn,
+  shouldAnswerFromListing,
+  shouldAnswerFromPage,
+} from './listing-answer'

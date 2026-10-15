@@ -5,8 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import React, { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { captureSarahLead } from '@/app/actions/sarah-capture'
+import { answerSarahChat } from '@/app/actions/sarah-chat'
 import { trackEvent } from '@/lib/tracking'
-import { WEB_VOICE_NOTICE_EN } from '@/lib/sarah/scripts'
+import { WEB_HELP_EN, WEB_VOICE_NOTICE_EN } from '@/lib/sarah/scripts'
 import { WEB_BRINGS_YOU_HERE_EN, WEB_DISCLOSURE_LINE_EN } from '@/lib/sarah/intent-flow'
 import { SARAH_TEASER_COPY, SARAH_TEASER_DELAY_MS, SARAH_TEASER_SESSION_KEY } from '@/lib/sarah/teaser'
 import { V3SarahAssistant } from './V3SarahAssistant.client'
@@ -17,6 +18,16 @@ vi.mock('next/navigation', () => ({ usePathname: () => nav.pathname }))
 vi.mock('@/lib/tracking', () => ({ trackEvent: vi.fn() }))
 vi.mock('@/app/actions/sarah-capture', () => ({
   captureSarahLead: vi.fn(async () => ({ data: { personId: 1, cmaSlug: null, stage: 'Lead' }, error: null })),
+}))
+vi.mock('@/app/actions/sarah-chat', () => ({
+  answerSarahChat: vi.fn(async () => ({
+    data: {
+      reply:
+        "The listing does not give the shop's build year. The home was built in 2020. The remarks describe a 20x30 powered shop with loft, epoxy floors, and partial insulation/sheetrock. I can have Matt find out.",
+      listNumber: '220222095',
+    },
+    error: null,
+  })),
 }))
 vi.mock('@/app/actions/sarah-voice', () => ({
   mintSarahVoiceToken: vi.fn(async () => ({ data: null, error: 'skip' })),
@@ -85,6 +96,7 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     wide = true
     vi.mocked(trackEvent).mockReset()
     vi.mocked(captureSarahLead).mockClear()
+    vi.mocked(answerSarahChat).mockClear()
     sessionStorage.clear()
     stubMedia()
     vi.useFakeTimers()
@@ -268,6 +280,35 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     })
     expect(panel?.textContent).toMatch(/saved that/)
     expect(container.querySelector('[data-sarah-chip="handoff-call"]')?.textContent).toBe('Call')
+  })
+
+  it('answers a listing-page shop question from listing data, not WEB_HELP_EN', async () => {
+    unmount()
+    nav.pathname = '/homes-for-sale/redmond/josie-meadows/4722-zenith-ave-220222095'
+    await mount()
+    act(() => {
+      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+    })
+    const input = container.querySelector<HTMLInputElement>('input[name="sarah-message"]')
+    await act(async () => {
+      const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')
+      proto?.set?.call(input, 'when was the shop built')
+      input!.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    const panel = container.querySelector('[data-sarah="panel"]')
+    expect(answerSarahChat).toHaveBeenCalledWith({
+      pagePath: '/homes-for-sale/redmond/josie-meadows/4722-zenith-ave-220222095',
+      question: 'when was the shop built',
+    })
+    expect(panel?.textContent).toMatch(/20x30 powered shop/)
+    expect(panel?.textContent).not.toContain(WEB_HELP_EN)
   })
 
   it('does not tease a city browse page', async () => {

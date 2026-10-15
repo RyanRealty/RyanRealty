@@ -11,6 +11,7 @@ import { useCallback, useEffect, useId, useRef, useState, type PointerEvent } fr
 import { Mic } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { captureSarahLead } from '@/app/actions/sarah-capture'
+import { answerSarahChat } from '@/app/actions/sarah-chat'
 import { getSarahDeskBroker } from '@/app/actions/sarah-desk'
 import { mintSarahVoiceToken } from '@/app/actions/sarah-voice'
 import { V3_ROOT_CLASS } from './atoms'
@@ -30,6 +31,7 @@ import {
   type FlowChip,
   type FlowState,
 } from '@/lib/sarah/intent-flow'
+import { listingUnknownFactEn, shouldAnswerFromPage } from '@/lib/sarah/listing-answer'
 import {
   SARAH_NAME,
   WEB_HELP_EN,
@@ -225,6 +227,21 @@ export function V3SarahAssistant() {
         setLines((prev) => [...prev, { from: 'visitor', text: trimmed }, { from: 'sarah', text: reply }])
         return
       }
+      if (
+        shouldAnswerFromPage({
+          pathname,
+          visitorText: trimmed,
+          flowStep: flowRef.current.step,
+        })
+      ) {
+        setChips(null)
+        setLines((prev) => [...prev, { from: 'visitor', text: trimmed }])
+        void answerSarahChat({ pagePath: pathname ?? '', question: trimmed }).then((result) => {
+          const reply = result.data?.reply ?? listingUnknownFactEn(desk.firstName)
+          setLines((prev) => [...prev, { from: 'sarah', text: reply }])
+        })
+        return
+      }
       const turn = applyIntentTurn(flowRef.current, trimmed, desk.firstName)
       setFlow(turn.next)
       flowRef.current = turn.next
@@ -238,7 +255,7 @@ export function V3SarahAssistant() {
         })
       }
     },
-    [desk.firstName, greeted],
+    [desk.firstName, greeted, pathname],
   )
 
   const send = useCallback(() => {

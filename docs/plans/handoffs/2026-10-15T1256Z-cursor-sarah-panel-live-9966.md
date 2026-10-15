@@ -14,7 +14,15 @@ Auto-scroll on message and input focus. Cookie gear stays (consent).
 
 ## Next
 Close #672 as superseded. Land this PR, confirm Vercel READY, live QA
-at 375 and 1440 (closed, open, buyer, voice).
+at 375 and 1440 (closed, open, buyer, voice) plus the shop question on
+4722 Zenith.
+
+## Page-aware replies (2026-10-15)
+Root cause: production web chat has no chat route and no page context.
+`evaluateSarahTurn` returns `reply: null`; the panel printed `WEB_HELP_EN`.
+Fix: listing facts + area/community registry into `answerSarahChat`.
+Zenith 220222095: no shop year; home 2020; remarks 20x30 shop; offer Matt.
+CI fails on WEB_HELP_EN or the same reply twice in a row.
 
 ## Held
 Do not edit `app/api/voice/*`, `app/api/twilio/*`, or `lib/grok/voice-sip.ts`.

@@ -84,6 +84,9 @@ export function sarahPanelProblems({ root = process.cwd(), files = {} } = {}) {
     if (!sarah.includes('captureSarahLead')) {
       p.push(`${PATHS.sarah}: qualifying flows must write through captureSarahLead.`)
     }
+    if (!sarah.includes('answerSarahChat') || !sarah.includes('shouldAnswerFromPage')) {
+      p.push(`${PATHS.sarah}: page-aware questions must call answerSarahChat from current page facts.`)
+    }
   }
 
   if (flow == null) p.push(`${PATHS.flow}: missing.`)
