@@ -101,7 +101,7 @@ export async function getSarahListingFacts(mlsNumber: string): Promise<SarahList
     .maybeSingle()
   if (!data) return null
 
-  const row = data as Record<string, unknown>
+  const row = data as unknown as Record<string, unknown>
   const year = asNumber(row.year_built)
   const hoaMonthly = asNumber(row.hoa_monthly)
   return {
