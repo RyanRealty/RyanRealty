@@ -85,7 +85,7 @@ describe('askOf — what the broker is being woken for', () => {
   it('separates alerts, bookings and plain questions', () => {
     expect(askOf({ source: 'idx-registration', tags: ['audience:buyer'] })).toBe('listing alerts')
     expect(askOf({ source: 'website-booking' })).toBe('a time on the calendar')
-    expect(askOf({ source: 'contact-form', tags: ['audience:buyer'] })).toBe('to talk to a broker')
+    expect(askOf({ source: 'contact-form', tags: ['audience:buyer'] })).toBe('a conversation')
   })
 
   it('reads a source:* tag when the source column is the bare site domain', () => {

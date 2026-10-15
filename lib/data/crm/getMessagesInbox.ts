@@ -30,6 +30,7 @@ function labelFor(channel: string | null, direction: string | null): string {
 export async function getRecentMessageConversations(params: {
   brokerScope: string | null
   limit?: number
+  needsReply?: boolean
 }): Promise<MessagesInboxRow[]> {
   const limit = Math.min(Math.max(params.limit ?? 40, 1), 80)
   const sb = createServiceClient()
@@ -58,6 +59,7 @@ export async function getRecentMessageConversations(params: {
     .eq('crm_people.deleted', false)
     .order('last_message_at', { ascending: false })
     .limit(limit)
+  if (params.needsReply) q = q.eq('needs_reply', true)
   if (params.brokerScope) q = q.eq('crm_people.assigned_broker', params.brokerScope)
 
   const { data, error } = await q

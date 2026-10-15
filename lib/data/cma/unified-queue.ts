@@ -495,7 +495,7 @@ async function fetchBpoQueueRows(
  * CMA path.
  */
 /** How many CMA rows the admin queue asks for. The read pages under PostgREST's 1,000-row ceiling. */
-export const CMA_QUEUE_READ_LIMIT = 5000
+export const CMA_QUEUE_READ_LIMIT = 200
 
 function nationalPhone(raw: string | null | undefined): string | null {
   if (!raw) return null
@@ -607,9 +607,9 @@ export async function listCmaQueue(options: {
 } = {}): Promise<{ rows: CmaQueueRow[]; total: number; truncated: boolean }> {
   const sb = client()
   if (!sb) return { rows: [], total: 0, truncated: false }
-  // Page under the PostgREST ceiling. A caller that asks for 500 still gets
-  // 500. The admin queue asks for CMA_QUEUE_READ_LIMIT so the screen is the
-  // whole non-archived table, and `truncated` is true when the cap still cut it.
+  // Page under the PostgREST ceiling. The admin board asks for
+  // CMA_QUEUE_READ_LIMIT (200) so the screen cannot hang on a 5k scan;
+  // `truncated` is true when the cap still cut it.
   const limit = options.limit != null && options.limit > 0 ? options.limit : 500
   const includeArchived = options.includeArchived === true
 
