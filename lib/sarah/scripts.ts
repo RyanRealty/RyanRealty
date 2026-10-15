@@ -13,6 +13,7 @@ export type SarahLang = 'en' | 'es'
 export const SARAH_NAME = 'Sarah'
 export const SUPERVISING_BROKER = 'Matt Ryan'
 export const ON_CALL_LICENSEE = 'Matt Ryan'
+export const DEFAULT_DESK_BROKER_FIRST_NAME = 'Matt'
 export const OFFICE_CITY = 'Bend'
 export const CALLBACK_PHONE_DISPLAY = CONTACT.phoneFubDisplay
 export const SCHOOL_BOUNDARY_SOURCE = 'Bend-La Pine Schools has a boundary lookup on its website at bend.k12.or.us'
@@ -20,9 +21,20 @@ export const CRIME_DATA_SOURCE = 'the Bend Police Department publishes crime dat
 
 export const AGENCY_PAMPHLET_HREF = siteUrl('/docs/oregon-initial-agency-disclosure-pamphlet.pdf')
 
-/** Counsel inbound greeting, adapted for web chat. Must run before any substance. */
-export const WEB_GREETING_EN =
-  "Thanks for chatting with Ryan Realty in Bend. This is Sarah, the office's AI assistant. I'm not a person and I'm not a licensed broker. This conversation is recorded and transcribed to help our team follow up. I can share listing details, set up a showing, or connect you with one of our licensed brokers. How can I help?"
+/**
+ * Web chat intro (Matt 2026-10-15). `{broker}` is the visitor's assigned
+ * broker first name, default Matt. Unlicensed status is not in this intro;
+ * Sarah says it on price, contract, or advice questions.
+ */
+export function webGreetingEn(brokerFirstName = DEFAULT_DESK_BROKER_FIRST_NAME): string {
+  const first = brokerFirstName.trim() || DEFAULT_DESK_BROKER_FIRST_NAME
+  return `Hi, I'm Sarah, an AI assistant with ${first}'s team at Ryan Realty. I can help with pretty much anything here.`
+}
+
+export const WEB_GREETING_EN = webGreetingEn(DEFAULT_DESK_BROKER_FIRST_NAME)
+
+/** Small notice under the web intro. Not the phone greeting. */
+export const WEB_SAVED_NOTICE_EN = 'Chats are saved so our team can follow up.'
 
 /** Counsel inbound greeting, phone. Verbatim. */
 export const VOICE_GREETING_EN =
@@ -56,7 +68,7 @@ export const PRICE_VALUE_ES =
   'No puedo dar opiniones sobre el precio o el valor. Soy una asistente de inteligencia artificial, no una corredora con licencia. Eso es la especialidad de Matt. Puedo pedirle que le llame y revise los números con usted.'
 
 export const GOOD_DEAL_EN =
-  "That's a question for a licensed broker, and I don't want to guess. I can have one call you as soon as possible."
+  "That's a question for a licensed broker, and I don't want to guess. I'm an AI assistant, not a licensed broker. I can have one call you as soon as possible."
 
 export const SCHOOLS_SAFETY_EN = `I don't rate schools or neighborhoods. ${SCHOOL_BOUNDARY_SOURCE}, and ${CRIME_DATA_SOURCE}. Those are the best sources. I can send you those links, and a broker can share facts about the home itself.`
 
@@ -73,7 +85,7 @@ export const ARE_YOU_REAL_ES =
   'No, soy una asistente de inteligencia artificial de Ryan Realty. Puedo conectarle ahora mismo con un corredor con licencia si lo desea.'
 
 export const COMMISSION_EN =
-  "Commission is set in a written agreement with a licensed broker, and it's negotiable. I can have Matt or one of our brokers call you to discuss it."
+  "Commission is set in a written agreement with a licensed broker, and it's negotiable. I'm an AI assistant, not a licensed broker. I can have Matt or one of our brokers call you to discuss it."
 
 export const LISTING_AGENT_EN =
   "I'm not an agent. I'm an AI assistant. I can name the listing brokerage from the published listing, and I can have Matt connect you. I don't give out another broker's contact info."
@@ -85,7 +97,10 @@ export const RESPA_VENDOR_ES =
   'No recomendamos un prestamista, una compañía de títulos o un inspector en particular en esta línea. Un corredor con licencia puede compartir una lista de varias opciones locales, y usted es libre de elegir cualquier proveedor.'
 
 export const OFFER_EN =
-  'Offers have to go through a licensed broker. Let me get your info and have one call you as soon as possible.'
+  "Offers have to go through a licensed broker. I'm an AI assistant, not a licensed broker. Let me get your info and have one call you as soon as possible."
+
+export const CONTRACT_ADVICE_EN =
+  "I can't explain contracts or give advice on that. I'm an AI assistant, not a licensed broker. I can have a licensed broker walk through it with you."
 
 export const AGENCY_PAMPHLET_OFFER_EN =
   "Oregon has a short pamphlet that explains how agents work with buyers and sellers. Can I text or email it to you now?"

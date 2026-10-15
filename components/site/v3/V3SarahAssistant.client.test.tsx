@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import React, { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { trackEvent } from '@/lib/tracking'
+import { WEB_GREETING_EN, WEB_SAVED_NOTICE_EN } from '@/lib/sarah/scripts'
 import { SARAH_TEASER_COPY, SARAH_TEASER_DELAY_MS, SARAH_TEASER_SESSION_KEY } from '@/lib/sarah/teaser'
 import { V3SarahAssistant } from './V3SarahAssistant.client'
 
@@ -155,6 +156,18 @@ describe('V3SarahAssistant listing teaser behavior', () => {
       vi.advanceTimersByTime(SARAH_TEASER_DELAY_MS)
     })
     expect(container.querySelector('[data-sarah-teaser]')).toBeNull()
+  })
+
+  it('opens with Matt\'s short intro and the saved-chats notice, not the Counsel unlicensed line', () => {
+    act(() => {
+      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+    })
+    const panel = container.querySelector('[data-sarah="panel"]')
+    expect(panel?.textContent).toContain(WEB_GREETING_EN)
+    expect(panel?.querySelector('[data-sarah="saved-notice"]')?.textContent).toBe(WEB_SAVED_NOTICE_EN)
+    expect(panel?.querySelector('.v3-sarah__panel-role')?.textContent).toBe('AI assistant')
+    expect(WEB_GREETING_EN).not.toMatch(/not a licensed broker/i)
+    expect(panel?.querySelector('.v3-sarah__panel-role')?.textContent).not.toMatch(/not a licensed broker/i)
   })
 
   it('does not tease a city browse page', async () => {
