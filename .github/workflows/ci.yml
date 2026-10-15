@@ -398,7 +398,12 @@ jobs:
           start-server: 'false'
           playwright: 'true'
 
-      # Run E2E tests (critical flows only — visual regression needs baselines)
+      # Run E2E tests (critical flows only). The visual-regression step that
+      # followed was removed 2026-10-14: no baselines are committed, so every
+      # toHaveScreenshot call failed, continue-on-error swallowed it, and its
+      # artifact upload (if: failure()) never fired. It gated nothing and spent
+      # ~1.8 runner-minutes per PR rendering four pages against production
+      # Supabase. Run it locally: npm run test:e2e:update-snapshots.
       - name: Run E2E tests
         # gate-tap-targets exercises scripts/check-tap-targets.mjs's in-page
         # collector in a real Chromium; it needs a layout engine, which only
@@ -414,19 +419,6 @@ jobs:
           path: |
             e2e/test-results/
             e2e/html-report/
-          retention-days: 7
-
-      # Run visual regression (allow failure until baselines are committed)
-      - name: Run visual regression tests
-        continue-on-error: true
-        run: npx playwright test e2e/visual-regression.spec.ts --project=chromium
-
-      - name: Upload visual diff artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: visual-diffs
-          path: e2e/visual-diffs/
           retention-days: 7
 
   # Required land-path rollup (Matt 2026-10-14). Lighthouse and content-floor
