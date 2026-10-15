@@ -101,6 +101,14 @@ export {
   type SarahDeskBroker,
 } from './desk-broker'
 export {
+  SARAH_INTENT_CHIPS,
+  WEB_BRINGS_YOU_HERE_EN,
+  applyIntentTurn,
+  initialFlow,
+  matchIntentChip,
+  type SarahIntent,
+} from './intent-flow'
+export {
   SARAH_TEASER_COPY,
   SARAH_TEASER_DELAY_MS,
   SARAH_TEASER_SESSION_KEY,

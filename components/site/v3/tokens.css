@@ -249,10 +249,11 @@
   --v3-sarah-fab: 3.5rem;
   --v3-sarah-panel-w: 23.75rem;
   --v3-sarah-panel-h: 35rem;
-  --v3-sarah-panel-radius: 1rem;
-  --v3-sarah-sheet-radius: 1.25rem;
+  --v3-sarah-panel-radius: 1.5rem;
+  --v3-sarah-sheet-radius: 1.5rem;
   --v3-sarah-sheet-max: 85vh;
-  --v3-sarah-glow: 0 0 28px color-mix(in srgb, var(--v3-navy) 22%, transparent);
+  --v3-sarah-glow: 0 0 40px color-mix(in srgb, var(--v3-navy) 28%, transparent);
+  --v3-sarah-mic: 3rem;
 
   /* Chrome + listing/split first-slice sizes (2026-08-29).
      Chrome bar is 64px with a 2px navy rule. Mosaic/carousel/card/map sizes

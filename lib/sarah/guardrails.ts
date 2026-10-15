@@ -177,6 +177,17 @@ export function evaluateSarahTurn(input: {
     }
   }
 
+  if (topics.includes('cma-value')) {
+    return {
+      mode: input.greeted ? 'continue' : 'greet',
+      topic: 'cma-value',
+      lang,
+      reply: null,
+      crmTags: [],
+      spanishBridge,
+    }
+  }
+
   const refusal = refusalFor(topics, lang)
   if (refusal) {
     return {

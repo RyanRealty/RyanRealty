@@ -78,6 +78,7 @@ const SELLER_SOURCES = new Set(['seller-lp', 'seller-home-value'])
 const PLACE_PAGE_SOURCES = new Set(['place-page'])
 const LEAD_FORM_SOURCES = new Set(['lead-form', 'contact-form'])
 const BROKER_SOURCES = new Set(['admin-manual', 'admin-rebuild', 'crm-contact-card', 'crm-kickoff'])
+const INTERNAL_SOURCES = new Set(['sarah-chat'])
 const INTERNAL_PREFIXES = ['cli-', 'brain-', 'test-']
 
 /**
@@ -98,7 +99,7 @@ export function classifyCmaOrigin(
     if (PLACE_PAGE_SOURCES.has(s)) return 'place-page'
     if (LEAD_FORM_SOURCES.has(s)) return 'lead-form'
     if (BROKER_SOURCES.has(s)) return 'broker'
-    if (INTERNAL_PREFIXES.some((p) => s.startsWith(p))) return 'internal'
+    if (INTERNAL_SOURCES.has(s) || INTERNAL_PREFIXES.some((p) => s.startsWith(p))) return 'internal'
   }
   if ((docType ?? '').toLowerCase() === 'expired-audit') return 'expired'
   return 'unknown'
