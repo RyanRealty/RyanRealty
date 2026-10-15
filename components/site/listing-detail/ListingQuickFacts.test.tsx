@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { ListingQuickFacts } from './ListingQuickFacts'
 
 describe('ListingQuickFacts', () => {
-  it('renders a sentence and a definition list, and hides missing fields', () => {
+  it('renders the sentence without repeating the Facts table, and hides missing fields', () => {
     const html = renderToStaticMarkup(
       createElement(ListingQuickFacts, {
         street: '1 Main St',
@@ -19,11 +19,10 @@ describe('ListingQuickFacts', () => {
         now: new Date('2026-10-13T17:00:00.000Z'),
       }),
     )
-    expect(html).toContain('Quick facts')
+    expect(html).toContain('At a glance')
     expect(html).toContain('<p class="listing-quick-facts__answer">')
     expect(html).toContain('listed at $500,000')
-    expect(html).toContain('<dt>Beds</dt>')
-    expect(html).toContain('<dd>3</dd>')
+    expect(html).not.toContain('<dl')
     expect(html).not.toContain('<dt>HOA</dt>')
     expect(html).not.toContain('null')
   })

@@ -25,11 +25,14 @@ export function ListingFoldActions({
   addressLine,
   askHref,
   walkHref,
+  kind = 'home',
 }: {
   listingKey: string
   addressLine: string
   askHref: string
   walkHref: string
+  /** UX review F26: a lease or a lot is not a home to walk through. */
+  kind?: 'home' | 'lease' | 'land'
 }) {
   const [watchOpen, setWatchOpen] = useState(false)
   const home = addressLine.trim() || 'this home'
@@ -51,14 +54,14 @@ export function ListingFoldActions({
           setWatchOpen(true)
         }}
       >
-        Watch this price
+        {kind === 'lease' ? 'Watch this listing' : 'Watch this price'}
       </a>
       <a
         className="listing-face__fold-action listing-face__fold-action--primary"
-        href={walkHref}
+        href={kind === 'lease' ? askHref : walkHref}
         onClick={() => trackEvent('schedule_tour_click', { listing_key: listingKey, surface: 'listing_fold' })}
       >
-        Walk through it
+        {kind === 'lease' ? 'Ask about this property' : kind === 'land' ? 'Walk the lot' : 'Walk through it'}
       </a>
       <ListingWatchPriceSheet
         listingKey={listingKey}

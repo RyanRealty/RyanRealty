@@ -3024,9 +3024,12 @@ export function V3Atlas({
                       <span className="v3-atlas__chip-name v3-atlas__chip-name--narrow">
                         {chipsOpen ? 'Fewer' : `+ ${chipPlaces.length - CHIP_FOLD_AT} more`}
                       </span>
-                      <span className="v3-atlas__chip-name v3-atlas__chip-name--wide">
-                        {chipsOpen ? 'Fewer' : `+ ${chipPlaces.length - CHIP_FOLD_AT_WIDE} more`}
-                      </span>
+                      {/* Only when the wide fold has a rest: below it this read "+ -15 more". */}
+                      {chipPlaces.length > CHIP_FOLD_AT_WIDE ? (
+                        <span className="v3-atlas__chip-name v3-atlas__chip-name--wide">
+                          {chipsOpen ? 'Fewer' : `+ ${chipPlaces.length - CHIP_FOLD_AT_WIDE} more`}
+                        </span>
+                      ) : null}
                     </button>
                   </>
                 ) : null}

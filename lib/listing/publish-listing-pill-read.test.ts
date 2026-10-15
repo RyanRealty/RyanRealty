@@ -6,25 +6,25 @@ describe('publishListingPillRead', () => {
     const read = publishListingPillRead({ daysLive: 112, daysToPending: 23, ppsf: 446, medianPpsf: 402, placeName: 'Bend', asOfLabel: 'Sep 9, 2026' })
     expect(read).not.toBeNull()
     expect(read!.sentence).toBe(
-      '112 days listed is about 4.9 times the 23 a typical Bend home takes to go under contract; $446 a square foot is 10.9% over the Bend closed median of $402.',
+      'Listed 112 days; a typical Bend home goes under contract in 23 days; $446 a square foot, about 11% above the Bend median of $402.',
     )
     expect(read!.source).toContain('trailing 90 days')
     expect(read!.source).toContain('trailing 12 months')
     expect(read!.source).toContain('computed Sep 9, 2026')
   })
 
-  it('says inside, longer than, or about N times, and under or over', () => {
+  it('states the facts neutrally (F29)', () => {
     expect(publishListingPillRead({ daysLive: 9, daysToPending: 23, ppsf: null, medianPpsf: null, placeName: 'Bend' })!.sentence).toBe(
-      '9 days listed is inside the 23 a typical Bend home takes to go under contract.',
+      'Listed 9 days; a typical Bend home goes under contract in 23 days.',
     )
     expect(publishListingPillRead({ daysLive: 30, daysToPending: 23, ppsf: null, medianPpsf: null, placeName: 'Bend' })!.sentence).toBe(
-      '30 days listed is longer than the 23 a typical Bend home takes to go under contract.',
+      'Listed 30 days; a typical Bend home goes under contract in 23 days.',
     )
     expect(publishListingPillRead({ daysLive: null, daysToPending: 23, ppsf: 380, medianPpsf: 402, placeName: 'Bend' })!.sentence).toBe(
-      '$380 a square foot is 5.5% under the Bend closed median of $402.',
+      '$380 a square foot, about 5% below the Bend median of $402.',
     )
     expect(publishListingPillRead({ daysLive: null, daysToPending: null, ppsf: 402, medianPpsf: 402, placeName: 'Bend' })!.sentence).toBe(
-      '$402 a square foot matches the Bend closed median.',
+      '$402 a square foot, in line with the Bend median of $402.',
     )
   })
 
@@ -34,5 +34,9 @@ describe('publishListingPillRead', () => {
     const one = publishListingPillRead({ daysLive: 112, daysToPending: 23, ppsf: 446, medianPpsf: null, placeName: 'Bend' })
     expect(one!.sentence).not.toContain('square foot')
     expect(one!.source).not.toContain('12 months')
+  })
+
+  it('does not compare a condo or lot against detached-home medians', () => {
+    expect(publishListingPillRead({ daysLive: 5, daysToPending: 23, ppsf: 400, medianPpsf: 402, placeName: 'Bend', detached: false })).toBeNull()
   })
 })
