@@ -6,7 +6,7 @@ subscriptions, stop real ones nobody ever opened, and show every email event on 
 contact timeline, delivered included.
 
 Data cleanup (done in production, each write logged to `admin_actions`):
-- `listing_alerts` 74 rows -> 46, active 66 -> 32.
+- `listing_alerts` 74 rows -> 46, active 66 -> 32 after the first two steps.
 - Deleted 28 internal/test alerts (`action_type listing_alert.delete_test`): matt@ (6,
   made by e2e and fleet runs while signed in as Matt), marketing@ (1), the
   marketing+avery..harper buyer personas (14, `scripts/_cma-harness-requests.ts`),
@@ -23,11 +23,15 @@ Data cleanup (done in production, each write logged to `admin_actions`):
   market-report subscriptions (3: ids 3, 9010, 9012).
 - Kept: nicholeryan76@gmail.com (person 7976, broker-assigned West Hills, opened 10 of 10).
 
-Found, not changed: 43 non-test alerts named "Popular search" came from the site's
-alert sheet with only `{propertyType: 'A'}` (all houses, every city, instant). 14 still
-on are generated-looking Gmail addresses (e.g. lenniemptreuteligy34@) signed up
-2026-09-17..22, each with 6 to 18 opens and no clicks. Matt's rule keeps opened rows,
-so they stay on; flagged to Matt.
+- Stopped 14 generated-looking Gmail signups on Matt's yes
+  (`listing_alert.stop_suspected_bot`): e.g. lenniemptreuteligy34@, gordonferreirask118@,
+  signed up 2026-09-17..22, 153 to 349 sends, 6 to 18 opens, no click ever.
+- After all of it: `listing_alerts` 46 rows, 18 active.
+
+Found: 43 non-test alerts named "Popular search" came from the site's alert sheet
+with only `{propertyType: 'A'}` (all houses, every city, instant). Pre-existing
+alerts keep the cadence and filters their owners chose; only new signups get the
+daily, every-type default (Matt's Q3, 2026-10-15).
 
 Code (this branch):
 - Migration `20261015040000`: `crm_timeline_kind_check` adds `email_delivered`,
