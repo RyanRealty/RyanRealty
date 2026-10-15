@@ -5,7 +5,7 @@
  "score": "measured",
  "voice": {
   "script": "[warm] So... Bend has three and a half months of homes for sale right now. Sellers still have the edge... so go in with a plan. [long pause] Send this to whoever you're house hunting with.",
-  "voice": "ellen",
+  "voice": "eve",
   "start": 0.25,
   "seed": 1013,
   "display": {

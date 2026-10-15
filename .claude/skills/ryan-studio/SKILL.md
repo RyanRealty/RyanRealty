@@ -14,7 +14,8 @@ These are the spec, not a review step. Every brief must fill `spec_rules` in `.c
 - [ ] Readable with sound off: TikTok-style burned-in captions synced to a female, warm, conversational voiceover.
 - [ ] Loopable (last frame flows into frame 0).
 - [ ] Locked end card: logo, then Quality / Local / Service, then "Call now" 541.703.3095. A topic CTA gets its own card before the end card, never in place of it.
-- [ ] VO script follows the engine's own best practices. ElevenLabs v3: ellipses, audio tags, CAPS for emphasis, numbers spelled out, no break tags. Grok TTS: [pause] / [breath], with_timestamps.
+- [ ] **Voice = Grok TTS, voice Eve (DEFAULT, Matt 2026-10-14).** `lib/grok/tts.ts` / `defaultVoiceProvider`; Python `scripts/_voice_lib.py synth_vo`. ElevenLabs only by explicit `engine: 'elevenlabs'` opt-in. CI: `lib/studio/voice/engine.test.ts`.
+- [ ] VO script follows the engine's own best practices. Grok TTS (default): short phone-call sentences with contractions, `[pause]` / `[long-pause]` between ideas, one `[breath]` at most before the CTA, numbers spelled out, speed 0.95, `with_timestamps: true` for captions, no SSML, no stacked tags. ElevenLabs v3 (opt-in): ellipses, audio tags, CAPS for emphasis, numbers spelled out, no break tags.
 - [ ] Same process whatever tool runs it (Grok, Claude, Imagine, Cursor).
 - [ ] No "top team" wording. No 3 s clips of a price next to "closed".
 - [ ] Pick techniques by name from `.claude/skills/ryan-studio/techniques/registry.json` and list them in `brief.techniques`. A base technique must be `ready` or `approved`; a signature technique must be `approved` (Matt saw its reel). Every film runs at least one approved signature technique (a floor, not a target). Nothing is approved by an agent: an approval holds only with `approved_by: "matt"`, an ISO `approved_on` and a `reel` that exists, and a commit that adds one needs `Approved-by: matt` naming it.

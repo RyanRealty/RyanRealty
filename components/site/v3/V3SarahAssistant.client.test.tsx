@@ -4,7 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import React, { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { getSarahWebIntroBrokerFirstName } from '@/app/actions/sarah-web-intro'
+import { getSarahDeskBroker } from '@/app/actions/sarah-desk'
 import { WEB_CHAT_NOTICE_EN, webGreetingEn } from '@/lib/sarah/scripts'
 import { trackEvent } from '@/lib/tracking'
 import { SARAH_TEASER_COPY, SARAH_TEASER_DELAY_MS, SARAH_TEASER_SESSION_KEY } from '@/lib/sarah/teaser'
@@ -12,10 +12,34 @@ import { V3SarahAssistant } from './V3SarahAssistant.client'
 
 const nav = { pathname: '/homes-for-sale/bend/20556-empire-220226741' }
 
+const MATT_DESK = {
+  slug: 'matt' as const,
+  firstName: 'Matt',
+  fullName: 'Matt Ryan',
+  photoSrc: '/images/brokers/ryan-matt.png',
+  photoAlt: 'Matt Ryan',
+  phoneDisplay: '541.703.3095',
+  phoneTel: '+15417033095',
+  email: 'matt@ryan-realty.com',
+  contactHref: '/contact?agent=matt',
+}
+
+const REBECCA_DESK = {
+  slug: 'rebecca' as const,
+  firstName: 'Rebecca',
+  fullName: 'Rebecca Peterson',
+  photoSrc: '/images/brokers/peterson-rebecca.png',
+  photoAlt: 'Rebecca Peterson',
+  phoneDisplay: '541.250.3380',
+  phoneTel: '+15412503380',
+  email: 'rebeccapeterson@ryan-realty.com',
+  contactHref: '/contact?agent=rebecca',
+}
+
 vi.mock('next/navigation', () => ({ usePathname: () => nav.pathname }))
 vi.mock('@/lib/tracking', () => ({ trackEvent: vi.fn() }))
-vi.mock('@/app/actions/sarah-web-intro', () => ({
-  getSarahWebIntroBrokerFirstName: vi.fn(async () => ({ data: 'Matt', error: null })),
+vi.mock('@/app/actions/sarah-desk', () => ({
+  getSarahDeskBroker: vi.fn(async () => ({ data: MATT_DESK, error: null })),
 }))
 
 ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -64,8 +88,8 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     nav.pathname = '/homes-for-sale/bend/20556-empire-220226741'
     wide = true
     vi.mocked(trackEvent).mockReset()
-    vi.mocked(getSarahWebIntroBrokerFirstName).mockReset()
-    vi.mocked(getSarahWebIntroBrokerFirstName).mockResolvedValue({ data: 'Matt', error: null })
+    vi.mocked(getSarahDeskBroker).mockReset()
+    vi.mocked(getSarahDeskBroker).mockResolvedValue({ data: MATT_DESK, error: null })
     sessionStorage.clear()
     stubMedia()
     vi.useFakeTimers()
@@ -128,6 +152,17 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     expect(container.querySelector('[data-sarah="chat-notice"]')?.textContent).toBe(WEB_CHAT_NOTICE_EN)
     expect(container.querySelector('.v3-sarah__panel-role')?.textContent).toBe('AI assistant')
     expect(container.querySelector('[data-sarah="panel"]')?.textContent).not.toMatch(/not a licensed broker/)
+    expect(container.querySelector('[data-sarah="desk"]')?.getAttribute('data-sarah-broker')).toBe('matt')
+    expect(container.querySelector('[data-sarah="desk-line"]')?.textContent).toBe('Your broker is Matt Ryan')
+    const deskLinks = [...container.querySelectorAll<HTMLAnchorElement>('.v3-sarah__desk-actions a')].map((a) => ({
+      href: a.getAttribute('href'),
+      text: a.textContent,
+    }))
+    expect(deskLinks).toEqual([
+      { href: 'tel:+15417033095', text: 'Call' },
+      { href: 'sms:+15417033095', text: 'Text' },
+      { href: '/contact?agent=matt', text: 'Message' },
+    ])
     expect(container.querySelector('[data-sarah-teaser]')).toBeNull()
     expect(sessionStorage.getItem(SARAH_TEASER_SESSION_KEY)).toBe('1')
 
@@ -154,7 +189,7 @@ describe('V3SarahAssistant listing teaser behavior', () => {
 
   it('rewrites the intro with the resolved broker first name', async () => {
     unmount()
-    vi.mocked(getSarahWebIntroBrokerFirstName).mockResolvedValue({ data: 'Rebecca', error: null })
+    vi.mocked(getSarahDeskBroker).mockResolvedValue({ data: REBECCA_DESK, error: null })
     await mount()
     act(() => {
       container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
@@ -163,5 +198,6 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     expect(container.querySelector('[data-sarah="chat-notice"]')?.textContent).toBe(
       'Chats are saved so our team can follow up.',
     )
+    expect(container.querySelector('[data-sarah="desk"]')?.getAttribute('data-sarah-broker')).toBe('rebecca')
   })
 })

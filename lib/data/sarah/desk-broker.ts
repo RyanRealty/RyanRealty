@@ -1,5 +1,5 @@
 /**
- * Assigned-broker lookup for Sarah's web intro first name.
+ * CRM assigned-broker lookup for Sarah's public desk.
  * Fail-open to null (the caller maps null to Matt). A public widget must not
  * 500 because identity is missing.
  */
@@ -7,7 +7,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/data/client'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
 
-export type SarahWebIntroLookup = {
+export type SarahAssignedLookup = {
   authEmail?: string | null
   authUserId?: string | null
   rrVid?: string | null
@@ -31,7 +31,7 @@ async function assignedForPersonId(
  * Return crm_people.assigned_broker for a logged-in or identified visitor.
  * Null means no person, or the person has no assignment (Matt fallback).
  */
-export async function lookupSarahWebIntroBroker(input: SarahWebIntroLookup): Promise<string | null> {
+export async function lookupSarahAssignedBroker(input: SarahAssignedLookup): Promise<string | null> {
   let sb
   try {
     sb = createServiceClient()
@@ -70,7 +70,7 @@ export async function lookupSarahWebIntroBroker(input: SarahWebIntroLookup): Pro
       if (Number.isFinite(personId) && personId > 0) return assignedForPersonId(sb, personId)
     }
   } catch (err) {
-    console.error('[lookupSarahWebIntroBroker]', err)
+    console.error('[lookupSarahAssignedBroker]', err)
     return null
   }
 

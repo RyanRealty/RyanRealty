@@ -48,6 +48,16 @@ export const INLINE_RULES = [
     ],
   },
   {
+    id: 'grok-tts-inline',
+    label: 'inline Grok TTS call (use lib/grok/tts.ts or scripts/_voice_lib.py)',
+    pattern: /api\.x\.ai\/v1\/tts|['"`]\/tts['"`]/,
+    allowedHomes: [
+      'lib/grok/tts.ts', // the Grok TTS client (default Studio voice, Eve)
+      'scripts/_voice_lib.py', // the Python producers' voice helper
+      'scripts/check-tool-discipline.mjs',
+    ],
+  },
+  {
     id: 'replicate-video-inline',
     label: 'inline Replicate video-model call',
     pattern: /api\.replicate\.com\/v1\/predictions/,

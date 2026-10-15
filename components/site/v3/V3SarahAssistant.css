@@ -236,6 +236,54 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   border-radius: 50%;
 }
 
+.v3-sarah__desk {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-sm);
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  border-top: var(--v3-rule-weight-hairline) solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
+}
+
+.v3-sarah__desk-who {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3-sarah__desk-who img {
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  object-fit: cover;
+  object-position: 50% 22%;
+  border-radius: 50%;
+}
+
+.v3-sarah__desk-actions {
+  display: flex;
+  gap: var(--v3-space-sm);
+}
+
+.v3-sarah__desk-actions a {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  font-family: var(--v3-font-display);
+  text-decoration: none;
+}
+
+.v3-sarah__desk-actions a:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
 .v3-sarah__composer {
   display: flex;
   gap: var(--v3-space-sm);
