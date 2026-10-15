@@ -87,18 +87,27 @@ export type TimelineBeat = {
 }
 
 export type TimelineVoice = {
-  /** The ElevenLabs v3 markup, exactly as sent (audio tags, ellipses, CAPS). Numbers spelled out. */
+  /**
+   * Voice engine. DEFAULT 'grok' (Grok TTS, voice Eve; Matt 2026-10-14). 'elevenlabs' is an explicit
+   * opt-in only and must be written out; it is never inferred.
+   */
+  engine?: 'grok' | 'elevenlabs'
+  /** The script exactly as sent (Grok speech tags like [pause] / [breath], or ElevenLabs v3 markup). Numbers spelled out. */
   script: string
-  /** A female voice from the environment (lib/studio/voice VOICE_ENV). */
-  voice: 'ellen' | 'victoria'
+  /**
+   * The voice. Grok: 'eve' (the locked default; omit it and Eve is used). ElevenLabs opt-in: a
+   * female voice from the environment (lib/studio/voice VOICE_ENV), 'ellen' or 'victoria'.
+   */
+  voice?: 'eve' | 'ellen' | 'victoria'
   /** Spoken phrase -> the on-screen figure the captions may show (buildCaptions `display`). */
   display?: Record<string, string>
   /** Seconds into the film where the voice's first sample plays. Default 0.3. */
   start?: number
-  /** Default eleven_v3. */
+  /** ElevenLabs only. Default eleven_v3. */
   model?: string
-  /** ElevenLabs seed, best-effort determinism. */
+  /** ElevenLabs only: seed, best-effort determinism. */
   seed?: number
+  /** speed applies to both engines (Grok 0.7 to 1.5); the rest are ElevenLabs only. */
   settings?: { stability?: number; similarity_boost?: number; style?: number; speed?: number }
 }
 

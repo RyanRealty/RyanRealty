@@ -3,8 +3,11 @@ import * as scripts from './scripts'
 
 const COPY_KEYS = [
   'WEB_GREETING_EN',
+  'WEB_SAVED_NOTICE_EN',
+  'WEB_VOICE_NOTICE_EN',
   'VOICE_GREETING_EN',
   'PRICE_VALUE_EN',
+  'CONTRACT_ADVICE_EN',
   'SCHOOLS_SAFETY_EN',
   'RESPA_VENDOR_EN',
   'HAS_AGENT_WRAP_EN',
@@ -29,5 +32,33 @@ describe('Sarah public copy', () => {
     expect(scripts.RESPA_VENDOR_EN).toBe(
       "We don't recommend a specific lender, title company, or inspector on this line. A licensed broker can share a list of several local options, and you're free to choose any provider.",
     )
+  })
+
+  it('uses Matt\'s short web intro and saved-chats notice, with no unlicensed line', () => {
+    expect(scripts.WEB_GREETING_EN).toBe(
+      "Hi, I'm Sarah, an AI assistant with Matt's team at Ryan Realty. I can help with pretty much anything here.",
+    )
+    expect(scripts.WEB_SAVED_NOTICE_EN).toBe('Chats are saved so our team can follow up.')
+    expect(scripts.WEB_GREETING_EN).not.toMatch(/not a licensed broker/i)
+    expect(scripts.WEB_SAVED_NOTICE_EN).not.toMatch(/not a licensed broker/i)
+    expect(scripts.webGreetingEn('Rebecca')).toBe(
+      "Hi, I'm Sarah, an AI assistant with Rebecca's team at Ryan Realty. I can help with pretty much anything here.",
+    )
+    expect(scripts.WEB_VOICE_NOTICE_EN).toMatch(/Voice chats are recorded and transcribed/)
+    expect(scripts.bookingPendingEn('Paul')).toMatch(/Paul will confirm/)
+  })
+
+  it('keeps the Counsel phone greeting unchanged', () => {
+    expect(scripts.VOICE_GREETING_EN).toBe(
+      "Thanks for calling Ryan Realty in Bend. This is Sarah, the office's AI assistant. I'm not a person and I'm not a licensed broker. This call is recorded and transcribed to help our team follow up. I can share listing details, set up a showing, or connect you with one of our licensed brokers. How can I help?",
+    )
+  })
+
+  it('says not a licensed broker on price, contract, and advice replies', () => {
+    expect(scripts.PRICE_VALUE_EN).toMatch(/not a licensed broker/i)
+    expect(scripts.CONTRACT_ADVICE_EN).toMatch(/not a licensed broker/i)
+    expect(scripts.COMMISSION_EN).toMatch(/not a licensed broker/i)
+    expect(scripts.GOOD_DEAL_EN).toMatch(/not a licensed broker/i)
+    expect(scripts.OFFER_EN).toMatch(/not a licensed broker/i)
   })
 })
