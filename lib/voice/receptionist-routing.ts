@@ -11,7 +11,8 @@ function envValue(name: string): string {
   return String(process.env[name] ?? '').trim()
 }
 
-/** Twilio numbers whose unknown callers get the receptionist. Default: spare test line only. */
+/** Twilio numbers whose unknown callers get the receptionist.
+ *  Production (Matt 2026-10-15): spare + main. Default (unset env / rollback): spare only. */
 export function receptionistLines(): string[] {
   const raw = envValue('RECEPTIONIST_LINES') || '+15412245025'
   return raw.split(',').map((s) => normalizeTo10(s)).filter((s): s is string => !!s)
