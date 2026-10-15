@@ -22,7 +22,7 @@
 import { concessionOffClose } from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp } from '@/lib/cma/types'
 
-export type AppliedAdjustment = 'date' | 'size' | 'style' | 'concessions'
+export type AppliedAdjustment = 'date' | 'size' | 'style' | 'adu' | 'concessions'
 
 /** True when the grid prints this move as at least one dollar, either way. */
 export function movesADollar(v: number | null | undefined): boolean {
@@ -44,13 +44,14 @@ export function adjustmentsApplied(comps: readonly CmaAdjustedComp[] | null | un
   if (rows.some((c) => movesADollar(c.timeAdjustment))) made.push('date')
   if (rows.some((c) => movesADollar(c.sizeAdjustment))) made.push('size')
   if (rows.some((c) => movesADollar(c.storyAdjustment))) made.push('style')
+  if (rows.some((c) => movesADollar(c.aduAdjustment))) made.push('adu')
   if (rows.some((c) => movesADollar(concessionOffClose(c)))) made.push('concessions')
   return made
 }
 
 /** "date, size and seller concessions": each adjustment by the grid row's own name. */
 export function adjustmentNouns(made: readonly AppliedAdjustment[]): string[] {
-  return made.map((m) => (m === 'concessions' ? 'seller concessions' : m))
+  return made.map((m) => (m === 'concessions' ? 'seller concessions' : m === 'adu' ? 'the ADU' : m))
 }
 
 export function joinAnd(parts: readonly string[]): string {

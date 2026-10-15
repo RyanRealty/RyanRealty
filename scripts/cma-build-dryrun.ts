@@ -576,9 +576,21 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
     asOf: letterDay,
   })
   const pocketLocal = opts.pocketLegacy ? undefined : local.pocketLocal
-  const adjusted = usePath
-    ? selection.comps.map((c) => {
-        const sale = salesByKey.get(c.listingKey)
+  // What the ADU adds, exactly lib/cma/build.ts (Matt 2026-10-14, second call).
+  const { applyAduAdjustments, compAduFacts, readAduValue, withMainSqft } = await import('@/lib/pricing/adu-value')
+  const subjectAduSqft = subject.units?.aduYn === true && (subject.units.aduSqft ?? 0) > 0 ? subject.units.aduSqft! : null
+  const aduLine = subjectAduSqft != null && !subject.multiUnit && selection.diagnostics.adu_preference?.outcome !== 'adu-sales'
+  const aduValue = aduLine
+    ? await readAduValue({ subject: { latitude: subject.latitude, longitude: subject.longitude, aduSqft: subjectAduSqft, listingKey: subject.listingKey }, asOf })
+    : null
+  const compAdu = aduValue?.dollars != null ? await compAduFacts(selection.comps) : null
+  // EXACTLY lib/cma/build.ts priceSet: main home to main home on the size
+  // line where a sale's record counted its unit; the grid keeps the record.
+  const adjSet = withMainSqft(selection.comps, compAdu)
+  const adjSalesByKey = new Map(withMainSqft(selection.pricingSales ?? [], compAdu).map((s) => [s.listingKey, s]))
+  const adjustedBase = usePath
+    ? adjSet.map((c) => {
+        const sale = adjSalesByKey.get(c.listingKey)
         return sale
           ? adjustCompAlongMarket({
               subject, subjectStory, sale, saleStory: sale.storyClass, points: marketIndex, asOf,
@@ -590,13 +602,14 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
             }).adjusted
       })
     : exclusivePocket
-      ? selection.comps.map((c) =>
+      ? adjSet.map((c) =>
           adjustCmaCompAlongMarket({
             subject, subjectStory, comp: c, saleStory: 'unknown', points: [], asOf,
             exclusivePocket: true, pocketLocal,
           }).adjusted,
         )
-      : adjustComps(subject, selection.comps, pricingMarketFor(subject, market))
+      : adjustComps(subject, adjSet, pricingMarketFor(subject, market))
+  const adjusted = aduValue?.dollars != null && compAdu && subjectAduSqft != null ? applyAduAdjustments(adjustedBase, { value: aduValue, subjectAduSqft, compAdu }) : adjustedBase
   let pricing = priceCmaSet({
     subject, adjusted,
     // Nor by the market context's single-family year-over-year figure (lib/cma/build.ts).
@@ -870,6 +883,10 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
     })
     if (!belowBand.ok) return { ...withSel, stage: 'pricing', error: `Pricing failed: ${belowBand.error}` }
   }
+  // EXACTLY lib/cma/build.ts priceSet: the ADU read rides the pricing (the
+  // trace is on selection.trace). The duplex cross-check is a second ladder
+  // read and is not mirrored here.
+  if (aduValue) pricing.aduValue = { ...aduValue, trace: [] }
   const review = buildPricingReview({
     needsReview: pricing.needsReview,
     reviewReason: pricing.reviewReason,

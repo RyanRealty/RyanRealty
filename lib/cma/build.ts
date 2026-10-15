@@ -23,7 +23,11 @@ import {
 } from '@/lib/data'
 import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
 import { applySubjectFactOverrides, resolveCmaSubject } from '@/lib/cma/subject'
-import { multiUnitSubjectRefusal, pricingMarketFor } from '@/lib/cma/subject-units'
+import { multiUnitSubjectRefusal, pricingMarketFor, priorRecordMultiUnitProfile } from '@/lib/cma/subject-units'
+import { applyAduAdjustments, compAduFacts, readAduValue, withMainSqft } from '@/lib/pricing/adu-value'
+import { selectMultiUnitComps } from '@/lib/pricing/select'
+import type { CmaMarketContext, CmaMultiUnitCrossCheck } from '@/lib/cma/types'
+import type { CmaSiteData } from '@/lib/cma/county'
 import { applyReconciledRoomCounts, reconcileSubjectRoomCounts } from '@/lib/cma/subject-room-conflict'
 import { pickCoverPhoto } from '@/lib/cma/cover-photo'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
@@ -111,7 +115,7 @@ import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
 import { assembleCompetition, assembleExpiredPeers, printedCompGrid } from '@/lib/cma/assemble-competition'
 import { applyOnMarketOpinion, onMarketOpinionTrace } from '@/lib/cma/on-market-opinion'
 import { subjectOnMarket } from '@/lib/cma/subject-on-market'
-import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
+import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { zonedDateKey } from '@/lib/format/date'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
@@ -825,8 +829,33 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       ...listingWindow,
       propertySubType: subject.propertySubType,
     }).catch(() => null)
-    const priceSet = (set: typeof selection.comps) => {
-      const salesByKey = new Map((selection.pricingSales ?? []).map((s) => [s.listingKey, s]))
+    // WHAT THE ADU ADDS (Matt 2026-10-14, second call; lib/pricing/adu-value.ts).
+    // A house with a recorded ADU priced on the ordinary set carries the unit as
+    // one more line on every sale: the paired-sales rate times the area the
+    // subject has and the sale does not. The ADU set, when as tight as the
+    // ordinary set, carries it in the company of the sales; a 2-4 unit home is
+    // not read here at all. Read once; every re-price of the set applies it.
+    const subjectAduSqft =
+      subject.units?.aduYn === true && (subject.units.aduSqft ?? 0) > 0 ? subject.units.aduSqft! : null
+    const aduLine = subjectAduSqft != null && !subject.multiUnit && selection.diagnostics.adu_preference?.outcome !== 'adu-sales'
+    const aduValue = aduLine
+      ? await readAduValue({
+          subject: { latitude: subject.latitude, longitude: subject.longitude, aduSqft: subjectAduSqft, listingKey: subject.listingKey, streetAddress: subject.streetAddress },
+          asOf,
+        })
+      : null
+    const compAdu = aduValue?.dollars != null ? await compAduFacts(selection.comps) : null
+    if (aduValue) for (const line of aduValue.trace) selection.trace.push(line)
+    // THE DUPLEX CROSS-CHECK (Matt 2026-10-14, second call), read once here
+    // and attached inside priceSet, so a narrative-repair rebuild of the
+    // pricing keeps it the way it keeps the ADU read.
+    const crossCheck = subjectAduSqft != null && !subject.multiUnit ? await duplexCrossCheck({ subject, market, input, site, asOf }) : null
+    if (crossCheck) selection.trace.push(...crossCheck.trace)
+    const priceSet = (rawSet: typeof selection.comps) => {
+      // Main home to main home on the size line where a sale's record counted
+      // its unit (lib/pricing/adu-value.ts withMainSqft); the grid keeps the record.
+      const set = withMainSqft(rawSet, compAdu)
+      const salesByKey = new Map(withMainSqft(selection.pricingSales ?? [], compAdu).map((s) => [s.listingKey, s]))
       // Walk the index whenever the city HAS one. A sale that carries a
       // sale_pricing_facts row also carries its story class; one off the
       // listings ladder does not, and a missing story class costs a ±13.5%
@@ -852,7 +881,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         closes: windowCloses,
         asOf: letterDay,
       })
-      const adj = (usePath
+      const adjBase = (usePath
         ? set.map((c) => {
             const sale = salesByKey.get(c.listingKey)
             return sale
@@ -897,6 +926,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         const factor = reviewWeightFactor(tierByKey.get(c.listingKey))
         return factor < 1 ? { ...c, weight: +(c.weight * factor).toFixed(4) } : c
       })
+      const adj = aduValue?.dollars != null && compAdu && subjectAduSqft != null ? applyAduAdjustments(adjBase, { value: aduValue, subjectAduSqft, compAdu }) : adjBase
       const p = priceCmaSet({
         subject,
         adjusted: adj,
@@ -924,6 +954,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // can count — not the wider band set the price path is fitted on
       // (§0 rule 5; look pass 2026-09-07 printed "4 of 8" beside a 5-row matrix).
       attachSellerNet(p, set)
+      // The traces are on selection.trace already (compTrace on the row): not stored twice.
+      if (p && aduValue) p.aduValue = { ...aduValue, trace: [] }
+      if (p && crossCheck) p.multiUnitCrossCheck = { ...crossCheck, trace: [] }
       if (p) {
         for (const line of [...new Set(adj.map((c) => c.sewerNote).filter((n): n is string => Boolean(n)))]) {
           if (!p.notes.includes(line)) p.notes.push(line)
@@ -1048,6 +1081,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       await recordBuildFailure(slug, err, { stage: 'pricing', docType, compSelection: selection.diagnostics, trace: selection.trace })
       return { ok: false, error: err, slug }
     }
+    // THE DUPLEX CROSS-CHECK (Matt 2026-10-14, second call). The earlier typed
+    // record's reading, priced on the side and printed as a check, never as the
+    // price. Pre-review, no cap, never fails the build.
     if (lastCycleFailed) {
       const row0 = cycleRows[0] ?? {}
       const offDate = String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null
@@ -2213,5 +2249,88 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       compSelection: compDiagnostics,
     })
     return { ok: false, error: err, slug }
+  }
+}
+
+
+/**
+ * THE DUPLEX CROSS-CHECK (Matt 2026-10-14, second call; lib/cma/subject-units.ts
+ * priorRecordMultiUnitProfile). When the current record lists a house with a
+ * recorded ADU and an earlier record at the address was typed two to four
+ * units, the home is also priced the way that record would have priced it:
+ * the multi-unit ladder over PropertyType C closes, the whole building's area,
+ * no single-family date move, before the comparability review and without
+ * the failed-ask ceiling. The letter prints the result beside the price as a
+ * check. Null when the subject is not that case. Never throws: a read that
+ * fails leaves the reason on the trace.
+ */
+async function duplexCrossCheck(args: {
+  subject: CmaSubject
+  market: CmaMarketContext | null
+  input: CmaBuildInput
+  site: CmaSiteData | null
+  asOf: string
+}): Promise<CmaMultiUnitCrossCheck | null> {
+  const { subject } = args
+  if (subject.multiUnit) return null
+  const profile = priorRecordMultiUnitProfile(subject.units, subject)
+  if (!profile) return null
+  const base: CmaMultiUnitCrossCheck = {
+    units: profile.units,
+    propertySubType: profile.propertySubType,
+    sqft: profile.sqft,
+    sqftBasis: profile.sqftBasis,
+    compsHeld: 0,
+    outcome: null,
+    recommended: null,
+    valueLow: null,
+    valueHigh: null,
+    trace: [],
+  }
+  try {
+    const clone: CmaSubject = {
+      ...subject,
+      multiUnit: profile,
+      propertySubType: profile.propertySubType,
+      propertyType: 'C',
+      sqft: profile.sqft ?? subject.sqft,
+    }
+    const sel = await selectMultiUnitComps(clone, { asOf: args.asOf })
+    base.compsHeld = sel.comps.length
+    base.outcome = sel.diagnostics.multi_unit?.outcome ?? null
+    if (sel.comps.length < MIN_COMPS) {
+      base.trace.push(
+        `Duplex cross-check: read as a ${profile.propertySubType.toLowerCase()} over ${profile.sqft ?? '?'} sq ft, the multi-unit ladder held ${sel.comps.length} sale(s), under the ${MIN_COMPS} it needs, so no cross-check price is printed (Matt 2026-10-14).`,
+      )
+      return base
+    }
+    const adjusted = adjustComps(clone, sel.comps, pricingMarketFor(clone, args.market))
+    const p = priceCmaSet({
+      subject: clone,
+      adjusted,
+      market: pricingMarketFor(clone, args.market),
+      // A broker's price override is the letter's, never the cross-check's.
+      input: { ...args.input, priceOverride: null },
+      site: args.site,
+      selection: sel,
+      marketIndex: [],
+      asOf: args.asOf,
+      indexUnavailableReason: 'the city index and the year-over-year figure measure single-family homes, so a 2-4 unit home\'s sales are not moved for their date',
+      computePricing,
+    })
+    if (!p) {
+      base.trace.push('Duplex cross-check: the multi-unit ladder held sales but could not price them, so no cross-check price is printed.')
+      return base
+    }
+    base.recommended = p.recommended
+    base.valueLow = p.valueLow
+    base.valueHigh = p.valueHigh
+    base.trace.push(
+      `Duplex cross-check: read as a ${profile.propertySubType.toLowerCase()} over ${profile.sqft ?? '?'} sq ft (${profile.sqftBasis ?? 'the record'}), ${sel.comps.length} closed ${base.outcome === 'same-units' ? profile.propertySubType.toLowerCase() : 'two- to four-unit'} sale(s) before the comparability review put it at $${Math.round(p.recommended).toLocaleString('en-US')} ($${Math.round(p.valueLow).toLocaleString('en-US')} to $${Math.round(p.valueHigh).toLocaleString('en-US')}). A check beside the price, not the price (Matt 2026-10-14).`,
+    )
+    return base
+  } catch (e) {
+    base.trace.push(`Duplex cross-check: the read failed (${e instanceof Error ? e.message : String(e)}), so no cross-check price is printed.`)
+    return base
   }
 }

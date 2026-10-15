@@ -96,6 +96,29 @@ function sale(over: Partial<SelectedPricingComp> = {}): SelectedPricingComp {
 }
 
 describe('adjustCompAlongMarket', () => {
+  it('sizes a sale over its main home when the record counted its ADU too, and keeps the record on sqft', () => {
+    // 513 Irving, Bend (2026-10-15): 1,612 on record is a 1,040 sq ft house and a 572 sq ft unit.
+    // Flat market, so the size line is the whole move: half the per-foot rate over the main home
+    // times the 960 sq ft the 2,000 sq ft subject has more than that main home.
+    const points = [
+      { month: '2023-01-01', ppsf: 350, n: 40 },
+      { month: '2023-06-01', ppsf: 350, n: 40 },
+    ]
+    const { adjusted } = adjustCompAlongMarket({
+      subject,
+      subjectStory: 'one',
+      sale: sale({ closeDate: '2023-01-15', closePrice: 615_000, sqft: 1612, mainSqft: 1040 }),
+      saleStory: 'one',
+      points,
+      asOf: '2023-06-15',
+    })
+    expect(adjusted.sqft).toBe(1612)
+    expect(adjusted.mainSqft).toBe(1040)
+    expect(adjusted.timeAdjustment).toBe(0)
+    expect(adjusted.sizeAdjustment).toBe(Math.round((2000 - 1040) * (615_000 / 1040) * 0.5))
+    expect(adjusted.sizeAdjustment).toBe(283_846)
+  })
+
   it('lifts a sale that closed in a +3%/month run up to the as-of month', () => {
     // The run starts before the sale's own month: the index endpoint is the
     // median of the last three COMPLETE months, so a series that begins at the

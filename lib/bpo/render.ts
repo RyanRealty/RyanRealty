@@ -434,7 +434,7 @@ export function renderBpoHtml(args: RenderBpoArgs): { html: string; pageCount: n
       <thead><tr><th>Address</th><th>Sold</th><th>Date</th><th>Sq ft</th><th>$/sf</th><th>DOM</th><th>Adjusted</th></tr></thead>
       <tbody>${compRows(comps)}</tbody>
     </table>
-    <p class="sub" style="margin-top:8px;">Adjusted = closed price corrected for time since sale and size difference against the subject. Beds, baths, lot, and condition differences are noted, not dollar-adjusted, because a defensible paired-sales value cannot be drawn for them from the data.</p>
+    <p class="sub" style="margin-top:8px;">Adjusted = closed price corrected for time since sale and size difference against the subject, and, when the subject has a recorded accessory dwelling unit, for what the unit adds (the paired-sales rate per ADU square foot times the area the subject has and the sale does not; lib/pricing/adu-value.ts). Beds, baths, lot, and condition differences are noted, not dollar-adjusted, because a defensible paired-sales value cannot be drawn for them from the data.</p>
 
     ${market ? `<h2 class="sec">${escapeHtml(market.geoLabel)} market</h2><div class="kpis">${kpis.map(([k, v]) => `<div class="kpi"><div class="v">${escapeHtml(v)}</div><div class="k">${escapeHtml(k)}</div></div>`).join('')}</div>` : ''}
 

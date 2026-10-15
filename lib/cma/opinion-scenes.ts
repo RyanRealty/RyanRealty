@@ -34,6 +34,7 @@ import {
   pricedRightHeading,
   sellerNetKick,
   sellerNetPage,
+  aduValuePage,
   whatHappenedGraphicHtml,
   whatHappenedHeading,
   type OpinionChapterId,
@@ -41,6 +42,7 @@ import {
 import { salesGlanceHtml } from '@/lib/cma/sales-glance'
 import { statusPriceBoardDisclosureHtml } from '@/lib/cma/status-price-summary'
 import { escapeHtml } from '@/lib/cma/render-blocks'
+import { ADU_CHAPTER_KICK } from '@/lib/cma/adu-chapter'
 import type { CmaBroker } from '@/lib/cma/types'
 import { formatDate } from '@/lib/format/date'
 import { preparedClosingLine } from '@/lib/cma/letter-privacy'
@@ -247,6 +249,12 @@ function wrapLetterBody(id: string, kick: string, body: string): string {
  * `sellerNetKick` hands back "Net at list" until every deduction is on the
  * sheet.
  */
+/** What the ADU adds. Web twin of aduValuePage. */
+function aduValueScene(a: OpinionSceneArgs): string {
+  const page = aduValuePage(a)
+  return page ? wrapLetterBody('what-the-adu-adds', ADU_CHAPTER_KICK, page.body) : ''
+}
+
 function sellerNetScene(a: OpinionSceneArgs): string {
   const page = sellerNetPage(a)
   return page ? wrapLetterBody('net-at-list', sellerNetKick(a), page.body) : ''
@@ -303,6 +311,7 @@ export function assembleOpinionScenes(a: OpinionSceneArgs): string {
     'what-its-worth': () => priceScene(a, mapWithPrice),
     'the-map': () => (mapWithPrice ? '' : mapScene(a)),
     'sales-that-set-it': () => salesThatSetItScene(a),
+    'what-the-adu-adds': () => aduValueScene(a),
     competition: () => competitionScene(a),
     'priced-right': () => pricedRightScene(a),
     'this-market': () => thisMarketScene(a),

@@ -1583,7 +1583,10 @@ export function applyFailedAskCap(
   // pass, which is the first pass's own output described as evidence. The
   // earlier sentence is replaced rather than appended for the same reason.
   const supported = headline?.before ?? uncapped
-  const priorLine = /Comp evidence supported .*? asking that (?:just )?failed/
+  // The whole earlier sentence pair, both forms: a strip that stopped at
+  // "failed" left " to sell. The recommendation is under that ask." behind
+  // on the second pass (429 Irving dry run, 2026-10-15).
+  const priorLine = /Comp evidence supported .*? asking that (?:just )?failed(?: to sell)?\.(?: The recommendation is under that ask\.)?/
   const carried = (pricing.reviewReason ?? '').replace(priorLine, '').replace(
     / (?:List tiers clamped to the failed-ask backtest quantiles \([^)]*\)|The printed list sits at or below that ask)\.?/,
     '',
