@@ -24,6 +24,7 @@ export type ApplyInboundConsentClearResult = {
   skipped: 'invalid' | 'stop-keyword' | 'no-tracked-send' | 'nothing-to-clear' | 'person-not-found' | null
   tagsRemoved: string[]
   suppressionsCleared: number
+  cmaConsentReset: boolean
   timelineId: number | null
   reason?: string
 }
@@ -90,6 +91,7 @@ export async function applyInboundConsentClear(params: {
     skipped,
     tagsRemoved: [],
     suppressionsCleared: 0,
+    cmaConsentReset: false,
     timelineId: null,
     reason,
   })
@@ -102,7 +104,7 @@ export async function applyInboundConsentClear(params: {
     const sb = createServiceClient()
     const { data: row, error } = await sb
       .from('crm_people')
-      .select('id,tags,emails,deleted')
+      .select('id,tags,emails,custom,deleted')
       .eq('id', personId)
       .maybeSingle()
     if (error) return { ...empty(null), ok: false, reason: error.message }
@@ -131,16 +133,26 @@ export async function applyInboundConsentClear(params: {
       tags,
       suppressions,
       eventId: params.eventId,
+      custom: row.custom,
     })
 
     if (plan.action === 'skip-stop') return empty('stop-keyword')
     if (plan.action === 'skip-no-send') return empty('no-tracked-send')
     if (plan.action !== 'clear') return empty('nothing-to-clear')
 
-    if (plan.tagsToRemove.length > 0) {
+    if (plan.tagsToRemove.length > 0 || plan.cmaConsentReset) {
+      const custom =
+        row.custom && typeof row.custom === 'object' && !Array.isArray(row.custom)
+          ? { ...(row.custom as Record<string, unknown>) }
+          : {}
+      if (plan.cmaConsentReset && plan.nextCmaConsent) custom.cmaConsent = plan.nextCmaConsent
       const { error: tagErr } = await sb
         .from('crm_people')
-        .update({ tags: plan.nextTags, updated_at: new Date().toISOString() })
+        .update({
+          tags: plan.nextTags,
+          custom,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', personId)
       if (tagErr) return { ...empty(null), ok: false, reason: tagErr.message }
     }
@@ -177,6 +189,7 @@ export async function applyInboundConsentClear(params: {
             eventId: params.eventId ?? null,
             tagsRemoved: plan.tagsToRemove,
             suppressionsCleared: plan.suppressionIdsToClear.length,
+            cmaConsentReset: plan.cmaConsentReset,
           },
           broker: params.broker ?? null,
           source: 'inbound-consent-clear',
@@ -197,6 +210,7 @@ export async function applyInboundConsentClear(params: {
       skipped: null,
       tagsRemoved: plan.tagsToRemove,
       suppressionsCleared: plan.suppressionIdsToClear.length,
+      cmaConsentReset: plan.cmaConsentReset,
       timelineId: typeof note?.id === 'number' ? note.id : note?.id != null ? Number(note.id) : null,
     }
   } catch (err) {
@@ -208,6 +222,7 @@ export async function applyInboundConsentClear(params: {
       skipped: null,
       tagsRemoved: [],
       suppressionsCleared: 0,
+      cmaConsentReset: false,
       timelineId: null,
       reason: err instanceof Error ? err.message : String(err),
     }
