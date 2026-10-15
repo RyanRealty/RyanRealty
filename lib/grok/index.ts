@@ -76,8 +76,10 @@ export {
   GROK_REALTIME_MODEL,
   GROK_REALTIME_VOICE,
   mintGrokRealtimeClientSecret,
+  grokRealtimeSessionVoice,
   grokRealtimeWebSocketUrl,
   grokRealtimeSubprotocol,
+  isGrokEveVoice,
 } from './realtime'
 export {
   GROK_TTS_DEFAULT_VOICE,

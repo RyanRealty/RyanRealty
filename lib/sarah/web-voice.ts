@@ -4,11 +4,11 @@
  */
 import {
   GROK_REALTIME_SAMPLE_RATE,
-  GROK_REALTIME_VOICE,
+  grokRealtimeSessionVoice,
   grokRealtimeSubprotocol,
   grokRealtimeWebSocketUrl,
 } from '@/lib/grok/realtime-browser'
-import { buildSarahSystemPrompt } from './persona'
+import { buildSarahSystemPrompt, sarahGreeting } from './persona'
 import { WEB_VOICE_NOTICE_EN } from './scripts'
 
 export type SarahVoiceStatus = 'idle' | 'asking' | 'connecting' | 'listening' | 'speaking' | 'error'
@@ -83,12 +83,20 @@ export async function startSarahVoiceSession(opts: {
       JSON.stringify({
         type: 'session.update',
         session: {
-          voice: GROK_REALTIME_VOICE,
+          ...grokRealtimeSessionVoice(),
           instructions: `${buildSarahSystemPrompt({
             channel: 'web',
             brokerFirstName: opts.brokerFirstName,
           })}\nOn voice, keep turns short. ${WEB_VOICE_NOTICE_EN}`,
           turn_detection: { type: 'server_vad' },
+        },
+      }),
+    )
+    ws.send(
+      JSON.stringify({
+        type: 'response.create',
+        response: {
+          instructions: `Greet the visitor with exactly: "${sarahGreeting('web', opts.brokerFirstName)}"`,
         },
       }),
     )
