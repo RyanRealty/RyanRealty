@@ -71,3 +71,15 @@ describe('buildTimelineItems — click URLs ride the email_out row', () => {
     expect(items[0]!.clickUrls).toEqual(['https://ryan-realty.com/reviews'])
   })
 })
+
+describe('buildTimelineItems — a delivery receipt is not its own entry', () => {
+  it('drops email_delivered rows and keeps the email_out row', () => {
+    const timeline = [
+      { id: 1, kind: 'email_out', ts: '2026-10-15T10:00:00Z', title: 'Market update', payload: {} },
+      { id: 2, kind: 'email_delivered', ts: '2026-10-15T10:00:05Z', title: 'Email delivered', payload: { label: 'Market update' } },
+      { id: 3, kind: 'email_bounce', ts: '2026-10-15T10:01:00Z', title: 'Email bounced', payload: {} },
+    ]
+    const items = buildTimelineItems(timeline, buildEmailEngagement(timeline))
+    expect(items.map((i) => i.kind)).toEqual(['email_out', 'email_bounce'])
+  })
+})

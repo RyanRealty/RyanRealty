@@ -340,7 +340,8 @@ export async function getCrmPersonFull(id: number): Promise<CrmPersonFull> {
   const fubId = person?.fub_legacy_id ?? null
   const [points, timeline, tasks, suppressions, enrollments, geo, cma, visitors] = await Promise.all([
     sb.from('crm_contact_points').select('id,kind,value,label,is_primary,status').eq('person_id', id).order('is_primary', { ascending: false }),
-    sb.from('crm_timeline').select('id,ts,kind,title,body,source,broker,payload,starred', { count: 'exact' }).eq('person_id', id).order('ts', { ascending: false }).limit(100),
+    // Delivery receipts would fill the 100-row window and the All count (one per send).
+    sb.from('crm_timeline').select('id,ts,kind,title,body,source,broker,payload,starred', { count: 'exact' }).eq('person_id', id).neq('kind', 'email_delivered').order('ts', { ascending: false }).limit(100),
     sb.from('crm_tasks').select('id,name,type,due_at,completed_at,assigned_broker,fub_legacy_id').eq('person_id', id).order('completed_at', { ascending: true, nullsFirst: true }).order('due_at', { ascending: true }).limit(50),
     sb.from('crm_suppressions').select('id,channel,reason,source').eq('person_id', id).is('cleared_at', null),
     sb.from('crm_sequence_enrollments').select('id,status,step_index,crm_sequences(name)').eq('person_id', id),

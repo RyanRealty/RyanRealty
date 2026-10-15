@@ -11,6 +11,7 @@ import 'server-only'
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { logRejectedWrite, PG_UNIQUE_VIOLATION } from '@/lib/observability/rejected-write'
 import { BROKER_ALERT_MAILBOXES } from '@/lib/crm/looking-at'
 
 export type SentCmaForAlert = {
@@ -148,6 +149,9 @@ export async function getAlertPerson(personId: number): Promise<AlertPerson | nu
   }
 }
 
+/** crm_timeline.kind for a reply about a sent CMA (must be in crm_timeline_kind_check). */
+export const CMA_REPLIED_KIND = 'cma_replied'
+
 /**
  * Stamp the reply onto the document's own record.
  *
@@ -171,7 +175,7 @@ export async function recordCmaRepliedEvent(params: {
     const sb = createServiceClient()
     const { error } = await sb.from('crm_timeline').insert({
       person_id: params.personId,
-      kind: 'cma_replied',
+      kind: CMA_REPLIED_KIND,
       title: `Replied about the ${params.subjectAddress} report`,
       source: 'cma-engagement',
       broker: params.broker,
@@ -179,7 +183,12 @@ export async function recordCmaRepliedEvent(params: {
       dedupe_key: `cma:replied:${params.slug}:${params.personId}`,
     })
     // A duplicate key is the expected steady state after the first reply, not
-    // an error worth logging.
+    // an error worth logging. Anything else is a refused write (the live
+    // crm_timeline_kind_check lacked 'cma_replied' until 20261015030000, so the
+    // stamp silently failed as if it were a duplicate), and that gets one line.
+    if (error && error.code !== PG_UNIQUE_VIOLATION) {
+      logRejectedWrite('cma-alerts', { table: 'crm_timeline', column: 'kind', value: CMA_REPLIED_KIND, error })
+    }
     return !error
   } catch (e) {
     console.warn('[cma-alerts] recordCmaRepliedEvent threw:', e instanceof Error ? e.message : e)

@@ -19,6 +19,15 @@ describe('getContactActivityFeed pure helpers (2.1)', () => {
       expect(classifyTimelineKind('stage_change').category).toBe('milestone')
       expect(classifyTimelineKind('home_valuation').category).toBe('milestone')
     })
+    it('files the Resend delivery receipt as system, so the lead timeline hides it by default', () => {
+      expect(classifyTimelineKind('email_delivered')).toEqual({ category: 'system', direction: null, label: 'Email delivered' })
+    })
+    it('labels the bounce, complaint, unsubscribe and CMA-reply kinds instead of humanizing them', () => {
+      expect(classifyTimelineKind('email_bounce')).toEqual({ category: 'email', direction: null, label: 'Email bounced' })
+      expect(classifyTimelineKind('email_complaint').label).toBe('Spam complaint')
+      expect(classifyTimelineKind('email_unsubscribe').label).toBe('Unsubscribed')
+      expect(classifyTimelineKind('cma_replied')).toEqual({ category: 'milestone', direction: 'in', label: 'Replied about a report' })
+    })
     it('humanizes an unknown kind to category other', () => {
       expect(classifyTimelineKind('some_new_kind')).toEqual({ category: 'other', direction: null, label: 'Some new kind' })
       expect(classifyTimelineKind('')).toEqual({ category: 'other', direction: null, label: 'Activity' })
