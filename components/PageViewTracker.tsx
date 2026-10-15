@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { hasAnalyticsConsent, hasMarketingConsent } from './CookieConsentBanner'
 import { applyVisitBrokerToGtag, trackPageView } from '@/lib/tracking'
 import { pageTypeFromPath } from '@/lib/analytics/page-type'
@@ -13,7 +13,7 @@ import {
 } from '@/lib/analytics/visitor-intent'
 import { isPrivatePath } from '@/lib/analytics/private-paths'
 import { ga4SafePagePath, stripGa4UrlParams } from '@/app/api/visitors/track/strip-identity'
-import { setGa4PageLocation } from '@/lib/analytics/ga4-browser-events'
+import { noteGa4PageLocationSet, refreshGa4PageLocation, setGa4PageLocation } from '@/lib/analytics/ga4-browser-events'
 
 /**
  * Layout-owned page analytics, and the sender of every client-side page_view.
@@ -46,6 +46,8 @@ import { setGa4PageLocation } from '@/lib/analytics/ga4-browser-events'
  */
 export default function PageViewTracker() {
   const pathname = usePathname()
+  // Only to keep GA4's page_location current on a query-only change (below).
+  const search = useSearchParams()?.toString() ?? ''
   const firstLoadRef = useRef(true)
   const lastPathRef = useRef<string | null>(null)
   const lastLocationRef = useRef<string | undefined>(undefined)
@@ -108,7 +110,8 @@ export default function PageViewTracker() {
     const location = stripGa4UrlParams(window.location.href)
     // First paint: the bootstrap already pushed this page's page_view and set
     // the safe page_location for every hit.
-    if (!first) {
+    if (first) noteGa4PageLocationSet(window.location.href)
+    else {
       // Every later hit on this page (other tags, the Google tag's own events)
       // carries the safe address and referrer, not the browser's.
       setGa4PageLocation(window.location.href, lastLocationRef.current)
@@ -122,6 +125,15 @@ export default function PageViewTracker() {
     }
     lastLocationRef.current = location
   }, [pathname, pageType, privatePage])
+
+  // A query-only change is not a page view, but the hits after it (the Google
+  // tag's own scroll, form_start, user_engagement) should name the address the
+  // visitor is on, GA4-safe. Runs after the effect above, so a pathname change
+  // is set there first and this finds nothing new.
+  useEffect(() => {
+    if (privatePage) return
+    refreshGa4PageLocation()
+  }, [search, privatePage])
 
   return null
 }

@@ -318,6 +318,8 @@ export function isGa4BrowserEvent(name: string): name is Ga4BrowserEvent {
 
 /** The last page_location handed to `gtag('set')` from React (the inline bootstrap sets the first). */
 let lastGa4PageLocation: string | undefined
+/** The raw location.href that was last checked, so an unchanged address is not re-parsed per event. */
+let lastCheckedHref: string | undefined
 
 /**
  * `gtag('set', { page_location, page_referrer })`: from here on, EVERY GA4 hit
@@ -341,6 +343,34 @@ export function setGa4PageLocation(href: string, referrer?: string): void {
   w.dataLayer = w.dataLayer || []
   gtagSet.call(w.dataLayer, 'set', fields)
   lastGa4PageLocation = location
+  lastCheckedHref = href
+}
+
+/**
+ * Record that `href` is already set without pushing anything: on first paint
+ * the inline bootstrap made the `gtag('set')` itself (gtm-bootstrap.ts).
+ */
+export function noteGa4PageLocationSet(href: string): void {
+  lastGa4PageLocation = stripGa4UrlParams(href)
+  lastCheckedHref = href
+}
+
+/**
+ * Set page_location again when the address changed since the last check and
+ * its GA4-safe form differs from what was set (a query-only change: a map move,
+ * a filter). Cheap when nothing moved: one string compare. Never throws.
+ */
+export function refreshGa4PageLocation(): void {
+  if (typeof window === 'undefined') return
+  try {
+    const href = window.location.href
+    if (href === lastCheckedHref) return
+    lastCheckedHref = href
+    const here = stripGa4UrlParams(href)
+    if (here && here !== lastGa4PageLocation) setGa4PageLocation(href)
+  } catch {
+    /* tracking never breaks a page */
+  }
 }
 
 /**
@@ -366,12 +396,7 @@ export function pushDataLayerEvent(eventName: string, params: Record<string, unk
   if (typeof window === 'undefined') return
   const w = window as Window & { dataLayer?: unknown[] }
   w.dataLayer = w.dataLayer || []
-  try {
-    const here = stripGa4UrlParams(window.location.href)
-    if (here && here !== lastGa4PageLocation) setGa4PageLocation(window.location.href)
-  } catch {
-    /* tracking never breaks a page */
-  }
+  refreshGa4PageLocation()
   w.dataLayer.push({ [GA4_PARAMS_KEY]: null })
   // Undefined values are dropped: GTM's data model would store them and wipe a
   // sticky page-context key such as broker_slug.

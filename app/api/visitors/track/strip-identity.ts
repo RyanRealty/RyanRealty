@@ -25,6 +25,8 @@
  * export HTTP handlers, and a privacy rule this load-bearing gets its own test.
  */
 
+import { UTM_CAMPAIGNS } from '@/lib/analytics/utm'
+
 /** Params that name a person. Extend here, nowhere else. */
 export const IDENTITY_PARAMS = ['_pid', '_fuid'] as const
 
@@ -90,17 +92,24 @@ const PERSON_DOCUMENT_PATH_RE = new RegExp(`^/(${GA4_PERSON_DOCUMENT_PREFIXES.jo
 /**
  * A legacy CMA link carried the document slug as its campaign
  * (`utm_campaign=cma-828-florida`) and GA4 reads utm_* straight off
- * page_location, so the slug became a GA4 campaign name. Any value of this
- * shape is a document slug; GA4 gets the program campaign `cma-letter`
- * (`test-` kept). The one real program value, `cma-letter`, is untouched.
+ * page_location, so the slug became a GA4 campaign name. A `cma-` value that
+ * is not one of the program campaigns in UTM_CAMPAIGNS (lib/analytics/utm.ts,
+ * the same list isCmaDocumentSlug excludes) is a document slug; GA4 gets
+ * `cma-letter`. Stricter than isCmaDocumentSlug on one point: a test send's
+ * `test-cma-<slug>` is an address too, so it becomes `test-cma-letter`.
  */
-const CMA_DOCUMENT_SLUG_VALUE_RE = /^(test-)?cma-(?!letter$)[a-z0-9-]+$/i
+const CMA_PROGRAM_CAMPAIGNS = UTM_CAMPAIGNS.filter((c) => c.startsWith('cma-'))
+const CMA_DOCUMENT_SLUG_VALUE_RE = new RegExp(`^(test-)?cma-(?!(?:${CMA_PROGRAM_CAMPAIGNS.map((c) => c.slice(4)).join('|')})$)[a-z0-9-]+$`, 'i')
 export const GA4_CMA_PROGRAM_CAMPAIGN = 'cma-letter'
 
 /** A value that is an email address. */
 const EMAIL_VALUE_RE = /[^\s@/?#&=]+@[^\s@/?#&=]+\.[a-z]{2,}/i
-/** A value that is a North American phone number, punctuated or not. */
-const PHONE_VALUE_RE = /^\+?1?[\s.()-]*\d{3}[\s.()-]*\d{3}[\s.-]*\d{4}$/
+/**
+ * A value written as a North American phone number: it must carry a separator,
+ * parentheses or a leading +, so a bare 10-digit id (a GA4 session_id, a Unix
+ * timestamp) is not mistaken for one. A param NAMED for a phone goes anyway.
+ */
+const PHONE_VALUE_RE = /^(?=.*[\s().+-])\+?1?[\s.()-]*\d{3}[\s.()-]*\d{3}[\s.-]*\d{4}$/
 
 /**
  * A param value that is itself a link into a person document or carries a
@@ -244,13 +253,14 @@ export function stripGa4UrlParams(url: string | null | undefined): string | unde
 }
 
 /**
- * stripGa4UrlParams as one browser JavaScript expression over `urlExpr`
- * (`location.href`, `document.referrer`), for the inline GTM bootstrap that
- * runs before React. Evaluates to the safe URL, or undefined.
+ * stripGa4UrlParams as one browser JavaScript FUNCTION expression,
+ * `function(h){...}`, for the inline GTM bootstrap that runs before React. It
+ * returns the safe URL, or undefined. The bootstrap defines it once and calls
+ * it for location.href and document.referrer.
  */
-export function ga4SafeUrlJs(urlExpr: string): string {
+export function ga4SafeUrlFnJs(): string {
   return (
-    `(function(h){try{h=String(h==null?'':h).trim();if(!h)return undefined;` +
+    `function(h){try{h=String(h==null?'':h).trim();if(!h)return undefined;` +
     `var u=new URL(h),t=0,S=${JSON.stringify([...GA4_STRIP_SET])},R=${PERSON_DOCUMENT_PATH_RE.toString()},` +
     `C=${CMA_DOCUMENT_SLUG_VALUE_RE.toString()},E=${EMAIL_VALUE_RE.toString()},P=${PHONE_VALUE_RE.toString()},N=${NESTED_PERSON_VALUE_RE.toString()};` +
     `function c(v){var w=v.trim();return E.test(w)||P.test(w)||N.test(v)}` +
@@ -260,11 +270,20 @@ export function ga4SafeUrlJs(urlExpr: string): string {
     `if(S.indexOf(k.toLowerCase())>=0||vs.some(c)){u.searchParams.delete(k);t=1;return}` +
     `if(/^utm_/i.test(k)){var nv=vs.map(function(v){var x=C.exec(v.trim());return x?(x[1]||'')+${JSON.stringify(GA4_CMA_PROGRAM_CAMPAIGN)}:v});` +
     `if(nv.some(function(v,i){return v!==vs[i]})){u.searchParams.delete(k);nv.forEach(function(v){u.searchParams.append(k,v)});t=1}}});` +
-    `if(u.hash){u.hash='';t=1}return t?u.toString():h}catch(e){return undefined}})(${urlExpr})`
+    `if(u.hash){u.hash='';t=1}return t?u.toString():h}catch(e){return undefined}}`
   )
 }
 
-/** True for a path (or full URL) on a person document: `/cma/<slug>`, `/bpo/<slug>`. */
+/** ga4SafeUrlFnJs applied to one JS expression (tests and one-off uses). */
+export function ga4SafeUrlJs(urlExpr: string): string {
+  return `(${ga4SafeUrlFnJs()})(${urlExpr})`
+}
+
+/**
+ * True for a path (or full URL) on a person document: `/cma/<slug>`,
+ * `/bpo/<slug>`, or one already masked to `/cma/[document]` (a sender may pass
+ * a page_location that went through the strip with the document's raw title).
+ */
 export function isPersonDocumentPath(pathOrUrl: string | null | undefined): boolean {
   const raw = typeof pathOrUrl === 'string' ? pathOrUrl.trim() : ''
   if (!raw) return false
@@ -274,8 +293,7 @@ export function isPersonDocumentPath(pathOrUrl: string | null | undefined): bool
   } catch {
     return false
   }
-  const m = PERSON_DOCUMENT_PATH_RE.exec(path)
-  return !!m && m[2] !== GA4_DOCUMENT_PLACEHOLDER
+  return PERSON_DOCUMENT_PATH_RE.test(path)
 }
 
 /** A page_path as GA4 may receive it: the person-document slug replaced, no query. */
@@ -320,11 +338,16 @@ export function ga4SafeParamValue<T>(name: string, value: T): T | string | undef
 /**
  * GA4 parameter NAMES that would carry a person's details or a person
  * document's slug. No registry may list one (ga4-browser-events.test.ts) and
- * the Measurement Protocol client drops one (lib/ga4-measurement-protocol.ts).
+ * the Measurement Protocol client drops a text or number value under one
+ * (lib/ga4-measurement-protocol.ts; a boolean such as `has_email` passes).
  * `cma_slug` was sent on valuation_requested until 2026-10-14; it is `cma_id` now.
+ *
+ * Words that name a person's details match as the last word of a name
+ * (`subject_address`, `client_email`); generic words match only on their own
+ * (`message`, `note`, `mobile`), so `error_message` or `is_mobile` survive.
  */
 export const GA4_PERSON_PARAM_NAME_RE =
-  /^(?:[a-z0-9]+_)*(?:address|addr|street|email|e_mail|phone|tel|mobile|first_?name|last_?name|full_?name|client_name|owner_name|person_name|contact_name|message|inquiry|comment|comments|note|notes)$|^(?:[a-z0-9]+_)?(?:cma|bpo|doc|document|subject|property|report|home)_slug$|^name$/i
+  /^(?:[a-z0-9]+_)*(?:address|street|email|phone|first_?name|last_?name|full_?name|client_name|owner_name|person_name|contact_name|inquiry)$|^(?:addr|e_mail|tel|mobile|name|message|msg|comment|comments|note|notes)$|^(?:[a-z0-9]+_)?(?:cma|bpo|doc|document|subject|property|report|home)_slug$/i
 
 export function isPersonParamName(name: string): boolean {
   return GA4_PERSON_PARAM_NAME_RE.test(name.trim())
@@ -372,7 +395,7 @@ export function ga4SafeEventParams(params: Record<string, Ga4ParamValue>): Recor
   const out: Record<string, Ga4ParamValue> = {}
   const where = typeof params.page_location === 'string' ? params.page_location : typeof params.page_path === 'string' ? params.page_path : null
   for (const [k, v] of Object.entries(params)) {
-    if (isPersonParamName(k)) continue
+    if (isPersonParamName(k) && typeof v !== 'boolean') continue
     let safe: Ga4ParamValue
     if (k === 'page_location' || k === 'page_referrer') safe = typeof v === 'string' ? stripGa4UrlParams(v) : undefined
     else if (k === 'page_path') safe = typeof v === 'string' ? ga4SafePagePath(v) : undefined

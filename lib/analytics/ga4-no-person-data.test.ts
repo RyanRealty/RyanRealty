@@ -42,7 +42,7 @@ function sourceFiles(dir: string, out: string[] = []): string[] {
 }
 
 /** A value expression counts as safe when it calls the strip or is the bootstrap's JS twin. */
-const SAFE_SOURCE = /stripGa4UrlParams\(|GA4_PAGE_(?:LOCATION|REFERRER)_JS|ga4SafeUrlJs\(/
+const SAFE_SOURCE = /stripGa4UrlParams\(|GA4_SAFE_URL_FN_JS|ga4SafeUrlFnJs\(|ga4SafeUrlJs\(/
 
 /** Names the file assigns from a safe source, plus names assigned from those (one hop). */
 function safeNames(src: string): Set<string> {
@@ -51,7 +51,8 @@ function safeNames(src: string): Set<string> {
   for (const m of src.matchAll(/\b([A-Za-z_$][\w$]*)\s*[:=](?!=)(?=([^\n;]*))/g)) {
     if (SAFE_SOURCE.test(m[2]!)) names.add(m[1]!)
   }
-  for (const m of src.matchAll(/\b([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$]*)\s*(?:[;\n,)}]|$)/g)) {
+  // one hop: `M = N` or `M = N(...)` where N is safe (the bootstrap's `pl=ga(location.href)`)
+  for (const m of src.matchAll(/\b([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$]*)\s*(?:\(|[;\n,)}]|$)/g)) {
     if (names.has(m[2]!)) names.add(m[1]!)
   }
   return names

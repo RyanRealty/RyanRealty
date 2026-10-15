@@ -4,32 +4,31 @@ import { consentModeDefaultJs } from './consent-defaults'
 import { CONSENT_REGION_COOKIE, CONSENT_REGION_UNRESTRICTED_VALUE } from './consent-regions'
 import { MARKET_SLUG_MAX, VISITOR_INTENTS, VISITOR_INTENT_STORAGE_KEY } from './visitor-intent'
 import { CONSENT_COOKIE } from '@/lib/identity/consent'
-import { ga4SafeUrlJs } from '@/app/api/visitors/track/strip-identity'
+import { ga4SafeUrlFnJs } from '@/app/api/visitors/track/strip-identity'
 
 /**
- * The page address GA4 may see, as one JS expression: stripGa4UrlParams
- * (strip-identity.ts), the same function the server mirror and every
- * Measurement Protocol event use. Identity params, `rr_doc` and a person's
- * typed text (`/sell?address=`, `/contact?inquiry=`) removed, `/cma/<slug>`
- * made `/cma/[document]`. Left untouched when there is nothing to remove, so
- * the URL's own encoding survives.
+ * The page address GA4 may see, as one JS function: stripGa4UrlParams
+ * (strip-identity.ts), the same rule the server mirror and every Measurement
+ * Protocol event use. Identity params, `rr_doc` and a person's typed text
+ * (`/sell?address=`, `/contact?inquiry=`) removed, `/cma/<slug>` made
+ * `/cma/[document]`. Left untouched when there is nothing to remove, so the
+ * URL's own encoding survives. Defined once in the bootstrap and called for
+ * location.href and document.referrer.
  */
-const GA4_PAGE_LOCATION_JS = ga4SafeUrlJs('location.href')
-
-/** The referrer GA4 may see: the same function over document.referrer (empty stays absent). */
-const GA4_PAGE_REFERRER_JS = ga4SafeUrlJs('document.referrer')
+const GA4_SAFE_URL_FN_JS = ga4SafeUrlFnJs()
 
 /**
- * `gtag('set', { page_location, page_referrer })` before gtm.js, so EVERY hit on
- * this page carries the safe address, not just the page_view: the "GA4 -
- * dataLayer events" tag and the Google tag's own events (form_start, scroll,
- * user_engagement) otherwise send the browser's raw location and referrer.
- * Verified on production 2026-10-14 with every Google request blocked: a
- * dataLayer event, scroll_depth and enhanced measurement's form_start all
- * took dl= and dr= from this command. No GTM change is needed.
- * PageViewTracker repeats it on every client-side navigation.
+ * Inside the GTM loader, before gtm.js: `pl` and `pr` are the safe location and
+ * referrer, and `gtag('set', { page_location, page_referrer })` makes EVERY hit
+ * on this page carry them, not just the page_view: the "GA4 - dataLayer events"
+ * tag and the Google tag's own events (form_start, scroll, user_engagement)
+ * otherwise send the browser's raw location and referrer. Verified on
+ * production 2026-10-14 with every Google request blocked: a dataLayer event,
+ * scroll_depth and enhanced measurement's form_start all took dl= and dr= from
+ * this command. No GTM change is needed. PageViewTracker repeats it on every
+ * client-side navigation. An empty referrer stays absent.
  */
-const GA4_SET_PAGE_JS = `(function(){try{var o={page_location:${GA4_PAGE_LOCATION_JS}},r=${GA4_PAGE_REFERRER_JS};if(r)o.page_referrer=r;if(o.page_location)gtag('set',o)}catch(e){}})();`
+const GA4_SET_PAGE_JS = `var ga=${GA4_SAFE_URL_FN_JS},pl=ga(location.href),pr=ga(d.referrer);if(pl){var o={page_location:pl};if(pr)o.page_referrer=pr;gtag('set',o)}`
 
 /**
  * The stored visitor intent and market (lib/analytics/visitor-intent.ts), as one
@@ -83,7 +82,7 @@ ${consentModeDefaultJs()}
 window.dataLayer.push({page_type:'${safePageType}'});
 (function(){try{var a=new URLSearchParams(location.search||'').get('agent');if(!a){var m=document.cookie.match(/(?:^|; )rr_agent_attribution=([^;]*)/);if(m){try{var j=JSON.parse(decodeURIComponent(m[1]));a=j&&j.slug}catch(e){a=decodeURIComponent(m[1])}}}if(!a)return;a=String(a).trim().toLowerCase();var map={matt:'matt','matt-ryan':'matt',rebecca:'rebecca','rebecca-peterson':'rebecca',paul:'paul','paul-stevenson':'paul'};var s=map[a];if(!s)return;gtag('set','user_properties',{assigned_broker:s});window.dataLayer.push({broker_slug:s,assigned_broker:s})}catch(e){}})();
 if(!${PRIVATE_PATH_JS}&&!${GA_SUPPRESS_JS})(function(w,d,s,l,i){w[l]=w[l]||[];${GA4_SET_PAGE_JS}w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});w[l].push(Object.assign({event:'page_view',page_type:'${safePageType}',page_location:${GA4_PAGE_LOCATION_JS}},${VISITOR_INTENT_JS}));var f=d.getElementsByTagName(s)[0], // hydration-safe — GTM bootstrap stamp
+new Date().getTime(),event:'gtm.js'});w[l].push(Object.assign({event:'page_view',page_type:'${safePageType}',page_location:pl},${VISITOR_INTENT_JS}));var f=d.getElementsByTagName(s)[0], // hydration-safe — GTM bootstrap stamp
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;if(f&&f.parentNode)f.parentNode.insertBefore(j,f);else d.head.appendChild(j);
 })(window,document,'script','dataLayer','${gtmId}');`

@@ -130,29 +130,47 @@ export async function OPTIONS(request: NextRequest) {
  * The opaque row id of the CMA or BPO a client-document view is on, as a GA4
  * param (`cma_id` / `bpo_id`). GA4 sees the page as `/cma/[document]`
  * (stripGa4UrlParams), because the slug is the subject's street address; the
- * id keeps the view attributable to its document. Empty on any other page and
- * on a failed read: the view is still counted.
+ * id keeps the view attributable to its document. Read only when the mirror
+ * can send (GA4_API_SECRET set) and capped at GA4_DOC_ID_BUDGET_MS, so the
+ * tracker's request never waits long on it. Empty on any other page, on a
+ * failed or slow read: the view is still counted.
  */
+const GA4_DOC_ID_BUDGET_MS = 400
+
 async function ga4DocumentIdParams(pageUrl: string): Promise<Record<string, string>> {
-  let path: string
-  try {
-    path = new URL(pageUrl).pathname
-  } catch {
-    return {}
-  }
-  const m = /^\/(cma|bpo)\/([a-z0-9-]{3,80})(?:\/|$)/i.exec(path)
-  if (!m) return {}
-  try {
-    if (m[1]!.toLowerCase() === 'cma') {
+  if (!process.env.GA4_API_SECRET?.trim()) return {}
+  const lookup = async (): Promise<Record<string, string>> => {
+    const { cmaSlugFromDocumentUrl } = await import('@/lib/crm/cma-engagement')
+    const cmaSlug = cmaSlugFromDocumentUrl(pageUrl)
+    if (cmaSlug) {
       const { getCmaIdBySlug } = await import('@/lib/data/cma/documents')
-      const id = await getCmaIdBySlug(m[2]!)
+      const id = await getCmaIdBySlug(cmaSlug)
       return id ? { cma_id: id } : {}
     }
+    let path = ''
+    try {
+      path = new URL(pageUrl).pathname
+    } catch {
+      return {}
+    }
+    const bpo = /^\/bpo\/([a-z0-9-]{3,80})(?:\/|$)/i.exec(path)
+    if (!bpo) return {}
     const { getBpoIdBySlug } = await import('@/lib/data/bpo/reads')
-    const id = await getBpoIdBySlug(m[2]!)
+    const id = await getBpoIdBySlug(bpo[1]!)
     return id ? { bpo_id: id } : {}
+  }
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      lookup(),
+      new Promise<Record<string, string>>((resolve) => {
+        timer = setTimeout(() => resolve({}), GA4_DOC_ID_BUDGET_MS)
+      }),
+    ])
   } catch {
     return {}
+  } finally {
+    if (timer) clearTimeout(timer)
   }
 }
 

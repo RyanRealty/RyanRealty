@@ -199,7 +199,20 @@ const PERSON_DATA_QUERIES = {
   },
   personParamLocations: { dimension: 'pageLocation', metric: 'eventCount', filter: sf('pageLocation', 'PARTIAL_REGEXP', personParamRe) },
   personReferrers: { dimension: 'pageReferrer', metric: 'eventCount', filter: sf('pageReferrer', 'PARTIAL_REGEXP', `ryan-realty\\.com(${docPathRe}|[^ ]*${personParamRe})`) },
+  // A legacy utm_campaign=<cma slug> on the page address itself (event-level,
+  // so a new one means something sent it). The rewrite to cma-letter is checked
+  // here in JS: GA4's RE2 regex has no lookahead.
+  cmaSlugLocations: {
+    dimension: 'pageLocation',
+    metric: 'eventCount',
+    filter: sf('pageLocation', 'PARTIAL_REGEXP', '[?&]utm_[a-z]+=(test-)?cma-'),
+    keep: (v) => /[?&]utm_[a-z]+=(?:test-)?cma-(?!letter(?:&|$))[a-z0-9-]+/i.test(v),
+  },
+  // Informational only, never a FAIL: GA4 credits a later direct session to
+  // the visitor's earlier campaign (last non-direct click), so an old slug
+  // keeps appearing on new sessions after nothing sends it any more.
   cmaSlugCampaigns: {
+    informational: true,
     dimension: 'sessionCampaignName',
     metric: 'sessions',
     filter: {
@@ -217,9 +230,13 @@ async function countPersonData(q, startDate, endDate) {
     property: P,
     requestBody: { dateRanges: [{ startDate, endDate }], dimensions: [{ name: q.dimension }], metrics: [{ name: q.metric }], dimensionFilter: q.filter, limit: 10000 },
   })
-  const rows = d.rows || []
+  const all = d.rows || []
+  const rows = q.keep ? all.filter((r) => q.keep(String(r.dimensionValues?.[0]?.value || ''))) : all
   // Counts only: the values themselves are personal information and are never printed.
-  const out = { distinct: Number(d.rowCount || rows.length), [q.metric]: rows.reduce((a, r) => a + Number(r.metricValues?.[0]?.value || 0), 0) }
+  const out = {
+    distinct: q.keep ? rows.length : Number(d.rowCount || rows.length),
+    [q.metric]: rows.reduce((a, r) => a + Number(r.metricValues?.[0]?.value || 0), 0),
+  }
   if (q.dimension === 'pageLocation' || q.dimension === 'pageReferrer') {
     // Which param names (never values), so a deletion request can name them.
     const byParam = {}
@@ -247,9 +264,8 @@ for (const [k, q] of Object.entries(PERSON_DATA_QUERIES)) {
   personData.sinceCheck[k] = checkStarted ? await safe(() => countPersonData(q, PERSON_DATA_CHECK_FROM, 'today')) : { distinct: 0 }
   if (isErr(personData.inWindow[k])) finding('ERROR', 'ga4', `Could not count ${k} in GA4: ${personData.inWindow[k].error}`)
 }
-personData.hitsSinceCheck = Object.values(personData.sinceCheck).some(isErr)
-  ? undefined
-  : Object.values(personData.sinceCheck).reduce((a, v) => a + (v.distinct || 0), 0)
+const failing = Object.entries(personData.sinceCheck).filter(([k]) => !PERSON_DATA_QUERIES[k].informational).map(([, v]) => v)
+personData.hitsSinceCheck = failing.some(isErr) ? undefined : failing.reduce((a, v) => a + (v.distinct || 0), 0)
 report.sections.personData = personData
 {
   const held = Object.entries(personData.inWindow).filter(([, v]) => !isErr(v) && v.distinct > 0)

@@ -9,7 +9,7 @@
  * always mirrored, whatever the tier.
  */
 import { NextRequest } from 'next/server'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeVisitorDb } from '@/test/fake-visitor-db'
 
 const store = createFakeVisitorDb()
@@ -28,7 +28,8 @@ vi.mock('@/lib/ga4-measurement-protocol', () => ({
 vi.mock('@/lib/crm/broker-alerts', () => ({ queueReturnVisitAlert: vi.fn(async () => true) }))
 vi.mock('@/lib/crm/cma-engagement', () => ({
   queueCmaOpenedAlert: vi.fn(async () => true),
-  cmaSlugFromDocumentUrl: () => null,
+  // the real parser (the mirror reads the slug only to look up the CMA's opaque id)
+  cmaSlugFromDocumentUrl: (u: string | null | undefined) => String(u ?? '').match(/\/cma\/([a-z0-9-]{3,80})/i)?.[1]?.toLowerCase() ?? null,
 }))
 vi.mock('@/lib/cma/doc-links', () => ({ cmaCampaignFromUrl: () => null }))
 const { CMA_ID, BPO_ID } = vi.hoisted(() => ({ CMA_ID: '0b7d5c1e-1111-4222-8333-444455556666', BPO_ID: '9f8e7d6c-5555-4666-8777-888899990000' }))
@@ -71,8 +72,14 @@ const pageView = (over: Record<string, unknown>) => ({
 beforeEach(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co'
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key'
+  // the mirror reads a document's opaque id only when it can send (fireGa4Event is mocked)
+  vi.stubEnv('GA4_API_SECRET', 'test-secret')
   store.reset()
   ga4.fire.mockClear()
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
 })
 
 describe('a client document view is always mirrored to GA4 (the document runs no gtag)', () => {
