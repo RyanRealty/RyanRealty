@@ -468,6 +468,7 @@ export function PriceCtaStrip({
           addressLine={street}
           askHref={askHrefResolved}
           walkHref={bookHref ?? tourHref}
+          kind={lease ? 'lease' : listing.propertyType === 'D' ? 'land' : 'home'}
         />
       ) : null}
       {listedBy ? (
