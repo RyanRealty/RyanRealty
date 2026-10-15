@@ -121,6 +121,7 @@ function ListingWatchPriceSheet({
           </p>
         ) : (
           <form
+            data-clarity-mask="True"
             className="flex flex-col gap-3 px-4"
             onSubmit={(event) => {
               event.preventDefault()

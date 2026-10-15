@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { sarahGreeting } from '@/lib/sarah/persona'
+import { sarahGreeting } from '@/lib/sarah'
 import { RECEPTIONIST_GREETING, RECEPTIONIST_PROMPT, RECEPTIONIST_RECORDING_NOTICE } from './receptionist-prompt'
 
 describe('receptionist prompt uses lib/sarah', () => {

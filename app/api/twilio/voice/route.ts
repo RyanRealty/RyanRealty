@@ -18,8 +18,9 @@ import {
   lookupPersonByPhone,
   normalizeTo10,
 } from '@/lib/crm/twilio'
+import { sarahLiveConferenceName } from '@/lib/sarah'
 import { isReceptionistLine, XAI_SIP_URI } from '@/lib/voice/receptionist-routing'
-import { callerConferenceTwiml, sarahConferenceName } from '@/lib/voice/sarah-conference'
+import { callerConferenceTwiml } from '@/lib/voice/sarah-conference'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { isNumberBlocked, isStirSpamSuspected } from '@/lib/data/crm/getBlockedNumber'
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
@@ -101,7 +102,7 @@ export async function buildVoiceTwiml(params: Record<string, string>): Promise<N
     }
     return xml(callerConferenceTwiml({
       site,
-      conferenceName: sarahConferenceName(callSid),
+      conferenceName: sarahLiveConferenceName(callSid),
       record: recOn,
     }))
   }

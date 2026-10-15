@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { probeSitemapClasses, SITEMAP_SMOKE_PATHS } from './sitemap-smoke.mjs'
+import { probeSitemapClasses, SITEMAP_SMOKE_FIRST_WAVE, SITEMAP_SMOKE_PATHS } from './sitemap-smoke.mjs'
 import { CI_PROBE_USER_AGENT } from './ci-probe-ua.mjs'
 
 const URLSET = '<?xml version="1.0"?><urlset><url><loc>https://ryan-realty.com/subdivisions/golf-homes-at-tetherow</loc></url></urlset>'
@@ -101,5 +101,43 @@ describe('probeSitemapClasses', () => {
       },
     })
     expect(new Set(seen)).toEqual(new Set([CI_PROBE_USER_AGENT]))
+  })
+})
+
+describe('probeSitemapClasses asks in two waves (2026-10-14)', () => {
+  it('asks for geo, content and matrix only after core has answered', async () => {
+    // Four cold instances building the same url universe at once ran the
+    // search-matrix inventory read four times (Supabase edge log, 16:05Z).
+    const events = []
+    const fetchImpl = async (url) => {
+      const path = new URL(url).pathname
+      events.push(`ask ${path}`)
+      await new Promise((r) => setTimeout(r, path === '/sitemaps/core.xml' ? 20 : 1))
+      events.push(`answer ${path}`)
+      return { status: 200, text: async () => (path === '/sitemap.xml' ? INDEX : URLSET) }
+    }
+    const { ok, results } = await probeSitemapClasses('https://ryan-realty.com', { fetchImpl })
+    expect(ok).toBe(true)
+    const coreAnswered = events.indexOf('answer /sitemaps/core.xml')
+    for (const later of ['/sitemaps/geo.xml', '/sitemaps/content.xml', '/sitemaps/matrix.xml']) {
+      expect(events.indexOf(`ask ${later}`)).toBeGreaterThan(coreAnswered)
+    }
+    for (const first of SITEMAP_SMOKE_FIRST_WAVE) {
+      expect(events.indexOf(`ask ${first}`)).toBeLessThan(coreAnswered)
+    }
+    // Results still come back in the published order.
+    expect(results.map((r) => r.path)).toEqual([...SITEMAP_SMOKE_PATHS])
+  })
+
+  it('still reports a second-wave class that fails', async () => {
+    const { ok, results } = await probeSitemapClasses('https://ryan-realty.com', {
+      fetchImpl: stubFetch((path) =>
+        path === '/sitemaps/matrix.xml'
+          ? { status: 504, body: 'Task timed out after 300 seconds' }
+          : { status: 200, body: path === '/sitemap.xml' ? INDEX : URLSET },
+      ),
+    })
+    expect(ok).toBe(false)
+    expect(results.find((r) => r.path === '/sitemaps/matrix.xml')?.status).toBe(504)
   })
 })

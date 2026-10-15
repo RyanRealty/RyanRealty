@@ -13,6 +13,7 @@ export { createServiceClient } from '@/lib/supabase/service'
 
 import { createClient as _createServerClient } from '@/lib/supabase/server'
 import { createClient as _createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js'
+import { buildTolerantFetch } from '@/lib/supabase/build-tolerant-fetch'
 
 /**
  * Server-side Supabase client — use for all read queries inside DAL functions.
@@ -43,6 +44,8 @@ export function supabaseAnon(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url?.trim() || !anonKey?.trim()) return null
-  _anonClient = _createSupabaseClient(url, anonKey)
+  // During `next build` a read waits out a PostgREST schema-cache reload or a
+  // database restart instead of failing the deploy (lib/supabase/build-tolerant-fetch.ts).
+  _anonClient = _createSupabaseClient(url, anonKey, { global: { fetch: buildTolerantFetch } })
   return _anonClient
 }

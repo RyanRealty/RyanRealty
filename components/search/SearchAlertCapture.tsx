@@ -403,7 +403,7 @@ export function SearchAlertCapture({
             )}
           </div>
         </div>
-        <form onSubmit={onSubmit} className="flex items-center gap-2">
+        <form data-clarity-mask="True" onSubmit={onSubmit} className="flex items-center gap-2">
           {/* Honeypot: visually + a11y hidden, not tab-reachable. Bots fill it. */}
           <Input
             type="text"
