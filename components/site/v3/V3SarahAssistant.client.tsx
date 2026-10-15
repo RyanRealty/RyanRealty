@@ -106,6 +106,7 @@ export function V3SarahAssistant() {
   const [chips, setChips] = useState<FlowChip[] | null>([...SARAH_INTENT_CHIPS])
   const [sheetDy, setSheetDy] = useState(0)
   const [voiceStatus, setVoiceStatus] = useState<SarahVoiceStatus>('idle')
+  const [voiceKick, setVoiceKick] = useState(0)
   const shownRef = useRef(false)
   const dragRef = useRef<{ y: number; dy: number } | null>(null)
   const voiceRef = useRef<SarahVoiceHandle | null>(null)
@@ -199,6 +200,7 @@ export function V3SarahAssistant() {
     voiceRef.current?.stop()
     voiceRef.current = null
     setVoiceStatus('idle')
+    setVoiceKick(0)
     setPanelOpen(false)
   }, [])
 
@@ -273,26 +275,31 @@ export function V3SarahAssistant() {
     }
     trackEvent('click_cta', { cta: 'sarah_voice', action: 'start', surface: desk.slug })
     setVoiceStatus('asking')
+    setVoiceKick((n) => n + 1)
+  }, [desk.slug, voiceStatus])
+
+  useEffect(() => {
+    if (voiceKick === 0) return
+    let cancelled = false
     void (async () => {
-      let stream: MediaStream
+      let stream: MediaStream | undefined
       try {
         stream = await primeSarahMicrophone()
-      } catch {
-        setVoiceStatus('error')
-        setLines((prev) => [
-          ...prev,
-          { from: 'sarah', text: 'I need microphone permission to talk. You can keep typing.' },
-        ])
-        return
-      }
-      const token = await mintSarahVoiceToken()
-      if (!token.data) {
-        stream.getTracks().forEach((t) => t.stop())
-        setVoiceStatus('error')
-        setLines((prev) => [...prev, { from: 'sarah', text: token.error ?? WEB_VOICE_NOTICE_EN }])
-        return
-      }
-      try {
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop())
+          return
+        }
+        const token = await mintSarahVoiceToken()
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop())
+          return
+        }
+        if (!token.data) {
+          stream.getTracks().forEach((t) => t.stop())
+          setVoiceStatus('error')
+          setLines((prev) => [...prev, { from: 'sarah', text: token.error ?? WEB_VOICE_NOTICE_EN }])
+          return
+        }
         const handle = await startSarahVoiceSession({
           secret: token.data.secret,
           brokerFirstName: token.data.brokerFirstName,
@@ -305,17 +312,26 @@ export function V3SarahAssistant() {
             setLines((prev) => [...prev, { from, text }])
           },
         })
+        if (cancelled) {
+          handle.stop()
+          return
+        }
         voiceRef.current = handle
       } catch {
-        stream.getTracks().forEach((t) => t.stop())
-        setVoiceStatus('error')
-        setLines((prev) => [
-          ...prev,
-          { from: 'sarah', text: 'I need microphone permission to talk. You can keep typing.' },
-        ])
+        stream?.getTracks().forEach((t) => t.stop())
+        if (!cancelled) {
+          setVoiceStatus('error')
+          setLines((prev) => [
+            ...prev,
+            { from: 'sarah', text: 'I need microphone permission to talk. You can keep typing.' },
+          ])
+        }
       }
     })()
-  }, [desk.slug, voiceStatus])
+    return () => {
+      cancelled = true
+    }
+  }, [voiceKick])
 
   const onSheetPointerDown = useCallback(
     (e: PointerEvent<HTMLElement>) => {
