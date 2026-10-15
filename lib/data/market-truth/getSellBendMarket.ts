@@ -7,7 +7,11 @@
  * not zero; it does not ship pulse 488 as detached. Days to pending, new this
  * week, and sold 30d stay on the pulse series. /sell never falls back.
  */
+import { cache } from 'react'
 import { createServiceClient } from '@/lib/data/client'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
+import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { dedupeInflight } from '@/lib/data/cache/inflight'
 import { DEFINITION_ID, STAT_BY_ID } from '@/lib/data/market-truth/registry'
 import { orderByPrimaryKey, staleReason } from '@/lib/data/market-truth/getMetric'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
@@ -196,20 +200,36 @@ function assembleInventory(
 
 export type OverlayGeo = 'city' | 'region' | 'neighborhood'
 
-async function loadOverlayRows(
-  keys: ReadonlyArray<{ geoType: OverlayGeo; geoSlug: string }>,
-): Promise<{
+type OverlayPayload = {
   normalized: Array<{ geoType: OverlayGeo; geoSlug: string }>
-  latest: Map<string, MetricRow>
-}> {
-  const normalized = keys
+  latest: Array<[string, MetricRow]>
+}
+
+function normalizeOverlayKeys(
+  keys: ReadonlyArray<{ geoType: OverlayGeo; geoSlug: string }>,
+): Array<{ geoType: OverlayGeo; geoSlug: string }> {
+  return keys
     .map((k) => ({
       geoType: k.geoType,
       geoSlug: k.geoType === 'region' ? k.geoSlug.trim().toLowerCase() : cityDetachedSlug(k.geoSlug),
     }))
     .filter((k) => k.geoSlug)
+}
+
+function encodeOverlayKey(normalized: Array<{ geoType: OverlayGeo; geoSlug: string }>): string {
+  const unique = new Map<string, { geoType: OverlayGeo; geoSlug: string }>()
+  for (const k of normalized) unique.set(`${k.geoType}:${k.geoSlug}`, k)
+  return JSON.stringify(
+    [...unique.values()].sort((a, b) =>
+      a.geoType === b.geoType ? a.geoSlug.localeCompare(b.geoSlug) : a.geoType.localeCompare(b.geoType),
+    ),
+  )
+}
+
+async function fetchOverlayPayload(encoded: string): Promise<OverlayPayload> {
+  const normalized = JSON.parse(encoded) as Array<{ geoType: OverlayGeo; geoSlug: string }>
   const latest = new Map<string, MetricRow>()
-  if (!normalized.length) return { normalized, latest }
+  if (!normalized.length) return { normalized, latest: [] }
 
   const sb = createServiceClient()
   // NEWEST FIRST, BOUNDED, PAGED. market_metric keeps every computation, so
@@ -258,7 +278,29 @@ async function loadOverlayRows(
     }
     if (rows.length < OVERLAY_PAGE) break
   }
-  return { normalized, latest }
+  return { normalized, latest: [...latest.entries()] }
+}
+
+const loadOverlayPayloadCached = unstable_cache(
+  fetchOverlayPayload,
+  ['market-metric-overlay-v1'],
+  { revalidate: CACHE_WINDOWS.marketMetric, tags: [cacheTag.market] },
+)
+
+const loadOverlayPayloadDeduped = cache((encoded: string) =>
+  dedupeInflight(`market-metric-overlay:${encoded}`, () => loadOverlayPayloadCached(encoded)),
+)
+
+async function loadOverlayRows(
+  keys: ReadonlyArray<{ geoType: OverlayGeo; geoSlug: string }>,
+): Promise<{
+  normalized: Array<{ geoType: OverlayGeo; geoSlug: string }>
+  latest: Map<string, MetricRow>
+}> {
+  const normalized = normalizeOverlayKeys(keys)
+  if (!normalized.length) return { normalized, latest: new Map() }
+  const payload = await loadOverlayPayloadDeduped(encodeOverlayKey(normalized))
+  return { normalized: payload.normalized, latest: new Map(payload.latest) }
 }
 
 export async function getDetachedMarkets(
