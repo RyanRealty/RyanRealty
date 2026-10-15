@@ -36,6 +36,10 @@ export const WEB_GREETING_EN = webGreetingEn(DEFAULT_DESK_BROKER_FIRST_NAME)
 /** Small notice under the web intro. Not the phone greeting. */
 export const WEB_SAVED_NOTICE_EN = 'Chats are saved so our team can follow up.'
 
+/** Shown before the mic opens. Voice PR wires permission after this notice. */
+export const WEB_VOICE_NOTICE_EN =
+  "You're talking with Sarah, an AI assistant. Voice chats are recorded and transcribed so our team can follow up."
+
 /** Counsel inbound greeting, phone. Verbatim. */
 export const VOICE_GREETING_EN =
   "Thanks for calling Ryan Realty in Bend. This is Sarah, the office's AI assistant. I'm not a person and I'm not a licensed broker. This call is recorded and transcribed to help our team follow up. I can share listing details, set up a showing, or connect you with one of our licensed brokers. How can I help?"
@@ -116,8 +120,12 @@ export const WEB_HELP_EN =
 
 export const SHOWING_ASK_ES = '¿Le gustaría programar una visita para ver la casa?'
 
-export const BOOKING_PENDING_EN =
-  "Are there a couple of times that would work for you? We'll try to get that on the schedule, and Matt will confirm as soon as possible."
+export function bookingPendingEn(brokerFirstName = DEFAULT_DESK_BROKER_FIRST_NAME): string {
+  const first = brokerFirstName.trim() || DEFAULT_DESK_BROKER_FIRST_NAME
+  return `Are there a couple of times that would work for you? We'll try to get that on the schedule, and ${first} will confirm as soon as possible.`
+}
+
+export const BOOKING_PENDING_EN = bookingPendingEn(DEFAULT_DESK_BROKER_FIRST_NAME)
 
 export const BOOKING_PENDING_ES =
   '¿Hay un par de horarios que le funcionen? Trataremos de agendarlo, y Matt confirmará lo antes posible.'

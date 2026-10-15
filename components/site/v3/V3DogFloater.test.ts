@@ -8,7 +8,7 @@ const LAYOUT = readFileSync(resolve('app/layout.tsx'), 'utf8')
 const BARREL = readFileSync(resolve('components/site/v3/index.ts'), 'utf8')
 
 describe('V3DogFloater · SITE-153', () => {
-  it('stays unmounted; Sarah owns Call / Text / Message', () => {
+  it('stays unmounted; Sarah owns Call / Text / Email / Book', () => {
     expect(LAYOUT).not.toMatch(/V3DogFloater/)
     expect(LAYOUT).not.toMatch(/<V3PhoneDock/)
     expect(LAYOUT).toContain('<V3SarahAssistant')

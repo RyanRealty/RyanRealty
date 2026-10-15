@@ -7,7 +7,7 @@
  * a badge on the disc. Never auto-opens the panel. Session dismiss.
  * prefers-reduced-motion is honored in CSS (duration tokens + a media query).
  */
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type PointerEvent } from 'react'
 import { usePathname } from 'next/navigation'
 import { getSarahDeskBroker } from '@/app/actions/sarah-desk'
 import { V3_ROOT_CLASS } from './atoms'
@@ -22,6 +22,8 @@ import {
   SARAH_NAME,
   WEB_HELP_EN,
   WEB_SAVED_NOTICE_EN,
+  WEB_VOICE_NOTICE_EN,
+  bookingPendingEn,
   webGreetingEn,
 } from '@/lib/sarah/scripts'
 import {
@@ -64,8 +66,10 @@ export function V3SarahAssistant() {
   const [lines, setLines] = useState<ChatLine[]>(() => [
     { from: 'sarah', text: webGreetingEn(deskBrokerFromAssigned(null).firstName), notice: WEB_SAVED_NOTICE_EN },
   ])
+  const [sheetDy, setSheetDy] = useState(0)
   const takeover = false
   const shownRef = useRef(false)
+  const dragRef = useRef<{ y: number; dy: number } | null>(null)
   const teaserKind: SarahTeaserKind = listingTeaserKind(wide)
   const offer = shouldOfferListingTeaser({
     pathname,
@@ -139,7 +143,11 @@ export function V3SarahAssistant() {
     [dismissTeaser, teaserKind],
   )
 
-  const closePanel = useCallback(() => setPanelOpen(false), [])
+  const closePanel = useCallback(() => {
+    setSheetDy(0)
+    dragRef.current = null
+    setPanelOpen(false)
+  }, [])
 
   useEffect(() => {
     if (!panelOpen) return
@@ -164,6 +172,51 @@ export function V3SarahAssistant() {
     setLines((prev) => [...prev, { from: 'visitor', text }, { from: 'sarah', text: reply }])
   }, [draft, greeted])
 
+  const bookTime = useCallback(() => {
+    trackEvent('click_cta', { cta: 'sarah_desk', action: 'book', surface: desk.slug })
+    const visitor = `I'd like to book a time with ${desk.firstName}.`
+    const reply = bookingPendingEn(desk.firstName)
+    setGreeted(true)
+    setLines((prev) => [...prev, { from: 'visitor', text: visitor }, { from: 'sarah', text: reply }])
+  }, [desk.firstName, desk.slug])
+
+  const requestVoice = useCallback(() => {
+    trackEvent('click_cta', { cta: 'sarah_voice', action: 'notice', surface: desk.slug })
+    setLines((prev) => {
+      if (prev.some((line) => line.text === WEB_VOICE_NOTICE_EN)) return prev
+      return [...prev, { from: 'sarah', text: WEB_VOICE_NOTICE_EN }]
+    })
+  }, [desk.slug])
+
+  const onSheetPointerDown = useCallback(
+    (e: PointerEvent<HTMLElement>) => {
+      if (wide) return
+      const handle = (e.target as HTMLElement).closest('[data-sarah-drag]')
+      if (!handle) return
+      dragRef.current = { y: e.clientY, dy: 0 }
+      e.currentTarget.setPointerCapture(e.pointerId)
+    },
+    [wide],
+  )
+
+  const onSheetPointerMove = useCallback((e: PointerEvent<HTMLElement>) => {
+    if (!dragRef.current) return
+    const dy = Math.max(0, e.clientY - dragRef.current.y)
+    dragRef.current.dy = dy
+    setSheetDy(dy)
+  }, [])
+
+  const onSheetPointerUp = useCallback(() => {
+    if (!dragRef.current) return
+    const dy = dragRef.current.dy
+    dragRef.current = null
+    if (dy > 96) {
+      closePanel()
+      return
+    }
+    setSheetDy(0)
+  }, [closePanel])
+
   if (hidden) return null
 
   const showBubble = teaserOn && offer && teaserKind === 'bubble'
@@ -172,20 +225,45 @@ export function V3SarahAssistant() {
   return (
     <div className={V3_ROOT_CLASS}>
       <div className="v3-sarah" data-sarah="root">
+        {panelOpen && !wide ? (
+          <button
+            type="button"
+            className="v3-sarah__scrim"
+            aria-label="Close chat"
+            data-sarah="scrim"
+            onClick={closePanel}
+          />
+        ) : null}
+
         {panelOpen ? (
           <section
             className="v3-sarah__panel"
             data-sarah="panel"
+            data-sarah-surface={wide ? 'card' : 'sheet'}
             aria-labelledby={titleId}
+            style={sheetDy ? { transform: `translateY(${sheetDy}px)` } : undefined}
+            onPointerDown={onSheetPointerDown}
+            onPointerMove={onSheetPointerMove}
+            onPointerUp={onSheetPointerUp}
+            onPointerCancel={onSheetPointerUp}
           >
-            <div className="v3-sarah__panel-head">
+            <div className="v3-sarah__sheet-handle" data-sarah-drag="">
+              <span />
+            </div>
+            <div className="v3-sarah__panel-head" data-sarah-drag="">
               <img src={SARAH_AVATAR_SRC} alt="" width={32} height={32} />
-              <div>
+              <div className="v3-sarah__panel-titles">
                 <div className="v3-sarah__panel-name" id={titleId}>
                   {SARAH_NAME}
                 </div>
-                <span className="v3-sarah__panel-role">AI assistant</span>
+                <span className="v3-sarah__panel-role">with {desk.firstName}&apos;s team</span>
               </div>
+              <p className="v3-sarah__desk-who" data-sarah="desk" data-sarah-broker={desk.slug} data-sarah-takeover={takeover ? '1' : '0'}>
+                <img src={desk.photoSrc} alt="" width={28} height={28} />
+                <span data-sarah="desk-line">
+                  {takeover ? brokerJoinedLine(desk) : desk.fullName}
+                </span>
+              </p>
               <button
                 type="button"
                 className="v3-sarah__dismiss"
@@ -195,6 +273,32 @@ export function V3SarahAssistant() {
                 ×
               </button>
             </div>
+            <nav className="v3-sarah__desk-actions" aria-label={`Reach ${desk.fullName}`}>
+              <a
+                href={`tel:${desk.phoneTel}`}
+                onClick={() => trackEvent('click_cta', { cta: 'sarah_desk', action: 'call', surface: desk.slug })}
+              >
+                Call
+              </a>
+              <a
+                href={`sms:${desk.phoneTel}`}
+                onClick={() => trackEvent('click_cta', { cta: 'sarah_desk', action: 'text', surface: desk.slug })}
+              >
+                Text
+              </a>
+              <a
+                href={`mailto:${desk.email}`}
+                onClick={() => trackEvent('click_cta', { cta: 'sarah_desk', action: 'email', surface: desk.slug })}
+              >
+                Email
+              </a>
+              <button
+                type="button"
+                onClick={bookTime}
+              >
+                Book a time
+              </button>
+            </nav>
             <div className="v3-sarah__messages">
               {lines.map((line, i) => (
                 <div
@@ -217,34 +321,6 @@ export function V3SarahAssistant() {
                 </div>
               ))}
             </div>
-            <div className="v3-sarah__desk" data-sarah="desk" data-sarah-broker={desk.slug} data-sarah-takeover={takeover ? '1' : '0'}>
-              <p className="v3-sarah__desk-who">
-                <img src={desk.photoSrc} alt="" width={28} height={28} />
-                <span data-sarah="desk-line">
-                  {takeover ? brokerJoinedLine(desk) : `Your broker is ${desk.fullName}`}
-                </span>
-              </p>
-              <nav className="v3-sarah__desk-actions" aria-label={`Reach ${desk.fullName}`}>
-                <a
-                  href={`tel:${desk.phoneTel}`}
-                  onClick={() => trackEvent('click_cta', { cta: 'sarah_desk', action: 'call', surface: desk.slug })}
-                >
-                  Call
-                </a>
-                <a
-                  href={`sms:${desk.phoneTel}`}
-                  onClick={() => trackEvent('click_cta', { cta: 'sarah_desk', action: 'text', surface: desk.slug })}
-                >
-                  Text
-                </a>
-                <a
-                  href={desk.contactHref}
-                  onClick={() => trackEvent('click_cta', { cta: 'sarah_desk', action: 'message', surface: desk.slug })}
-                >
-                  Message
-                </a>
-              </nav>
-            </div>
             <form
               className="v3-sarah__composer"
               onSubmit={(e) => {
@@ -252,6 +328,15 @@ export function V3SarahAssistant() {
                 send()
               }}
             >
+              <button
+                type="button"
+                className="v3-sarah__mic"
+                aria-label="Talk to Sarah"
+                data-sarah="mic"
+                onClick={requestVoice}
+              >
+                Mic
+              </button>
               <input
                 type="text"
                 name="sarah-message"

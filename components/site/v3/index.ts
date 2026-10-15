@@ -284,7 +284,7 @@ export {
   type V3WorkWithUsProps,
 } from './V3PhoneDock.client'
 /**
- * Retired from the public layout (Sarah owns Call / Text / Message).
+ * Retired from the public layout (Sarah owns Call / Text / Email / Book).
  * Still exported because ci:public-v3 requires every V3*.tsx to leave the barrel.
  */
 export { V3DogFloater, DOG_FLOATER_MENUS } from './V3DogFloater.client'

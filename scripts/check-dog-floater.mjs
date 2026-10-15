@@ -3,7 +3,7 @@
  * check-dog-floater.mjs — SITE-153 floating dog CTA.
  *
  * Refuse if the public layout remounts V3DogFloater or a sticky phone
- * dock (Sarah owns Call / Text / Message), drops Sarah, or if leftover
+ * dock (Sarah owns Call / Text / Email / Book), drops Sarah, or if leftover
  * floater source stretches the broker photo or hard-codes a non-Matt
  * fallback. Wired as ci:dog-floater.
  *
@@ -23,5 +23,5 @@ if (failures.length) {
 }
 
 console.log(
-  `${DOG_FLOATER_GATE} OK: V3DogFloater and V3PhoneDock stay unmounted, Sarah owns Call/Text/Message, CRM desk broker (Matt fallback), leftover floater source still locked.`,
+  `${DOG_FLOATER_GATE} OK: V3DogFloater and V3PhoneDock stay unmounted, Sarah owns Call/Text/Email/Book, CRM desk broker (Matt fallback), leftover floater source still locked.`,
 )

@@ -18,26 +18,41 @@ describe('V3SarahAssistant · listing teaser', () => {
     expect(LAYOUT).not.toMatch(/<V3PhoneDock/)
   })
 
-  it('puts Call, Text, and Message on the resolved desk broker', () => {
+  it('puts Call, Text, Email, and Book a time on the resolved desk broker', () => {
     expect(SRC).toContain("from '@/app/actions/sarah-desk'")
     expect(SRC).toContain('getSarahDeskBroker')
     expect(SRC).toContain('deskBrokerFromAssigned')
     expect(SRC).toContain('brokerJoinedLine')
     expect(SRC).toContain('tel:${desk.phoneTel}')
     expect(SRC).toContain('sms:${desk.phoneTel}')
-    expect(SRC).toContain('desk.contactHref')
+    expect(SRC).toContain('mailto:${desk.email}')
+    expect(SRC).toContain('Book a time')
     expect(SRC).toContain("action: 'call'")
     expect(SRC).toContain("action: 'text'")
-    expect(SRC).toContain("action: 'message'")
-    expect(CSS).toContain('.v3-sarah__desk')
+    expect(SRC).toContain("action: 'email'")
+    expect(SRC).toContain("action: 'book'")
+    expect(SRC).toContain('data-sarah="mic"')
     expect(CSS).toContain('.v3-sarah__desk-actions')
+  })
+
+  it('is a compact desktop card and a mobile bottom sheet, not a giant square', () => {
+    expect(CSS).toContain('--v3-sarah-panel-w')
+    expect(CSS).toContain('--v3-sarah-panel-h')
+    expect(CSS).toContain('--v3-sarah-sheet-max')
+    expect(CSS).toContain('transform-origin: 100% 100%')
+    expect(CSS).toContain('v3-sarah-panel-in')
+    expect(CSS).toContain('v3-sarah-sheet-in')
+    expect(CSS).toContain('prefers-reduced-motion')
+    expect(CSS).not.toMatch(/width:\s*100vw/)
+    expect(CSS).not.toMatch(/height:\s*100vh/)
+    expect(SRC).toContain('data-sarah-surface')
   })
 
   it('uses Matt\'s short web intro and does not put unlicensed status in the chrome', () => {
     expect(SRC).toContain('webGreetingEn')
     expect(SRC).toContain('WEB_SAVED_NOTICE_EN')
     expect(SRC).toContain('data-sarah="saved-notice"')
-    expect(SRC).toMatch(/AI assistant/)
+    expect(SRC).toContain('WEB_VOICE_NOTICE_EN')
     expect(SRC).not.toMatch(/AI assistant, not a licensed broker/)
   })
 
