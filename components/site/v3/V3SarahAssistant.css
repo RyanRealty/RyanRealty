@@ -424,17 +424,19 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   outline-offset: var(--v3-focus-offset);
 }
 
-.v3-sarah__composer button {
-  flex: none;
-  min-width: var(--v3-tap);
-  min-height: var(--v3-tap);
-  padding: 0 0.95rem;
-  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
-  border-radius: 999px;
-  background: var(--v3-navy);
-  color: var(--v3-cream);
-  font-family: var(--v3-font-display);
-  cursor: pointer;
+@layer base {
+  .v3-sarah__composer button {
+    flex: none;
+    min-width: var(--v3-tap);
+    min-height: var(--v3-tap);
+    padding: 0 0.95rem;
+    border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+    border-radius: 999px;
+    background: var(--v3-navy);
+    color: var(--v3-cream);
+    font-family: var(--v3-font-display);
+    cursor: pointer;
+  }
 }
 
 .v3-sarah__composer .v3-sarah__mic {
