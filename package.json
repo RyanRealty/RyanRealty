@@ -147,7 +147,7 @@
     "report:geo-coverage": "node scripts/report-geo-coverage.mjs",
     "ci:crm-fail-closed": "node scripts/check-crm-fail-closed.mjs",
     "ci:inbound-message-enrich": "node scripts/check-inbound-message-enrich.mjs",
-    "ci:inbound-consent-clear": "node scripts/check-inbound-consent-clear.mjs && vitest run --project unit lib/crm/inbound-consent-clear.test.ts lib/data/crm/applyInboundConsentClear.test.ts",
+    "ci:inbound-consent-clear": "node scripts/check-inbound-consent-clear.mjs && vitest run --project unit lib/crm/inbound-consent-clear.test.ts lib/crm/person-channel-consent.test.ts lib/data/crm/applyInboundConsentClear.test.ts lib/data/crm/applyPersonChannelConsent.test.ts",
     "ci:person-identity-edit": "node scripts/check-person-identity-edit.mjs",
     "ci:crm-add-person": "node scripts/check-crm-add-person.mjs",
     "ci:currency-format": "node scripts/check-currency-format.mjs",
