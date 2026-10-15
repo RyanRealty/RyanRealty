@@ -27,6 +27,8 @@ import { handleAgentInbound, processAfterDebounce } from '@/lib/agent/ingress'
 import { isBrokerSmsAgentEnvEnabled } from '@/lib/data/agent/broker-agent-flags'
 import { CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import { applyInboundMessageEnrichment } from '@/lib/data/crm/applyInboundMessageEnrichment'
+import { applyInboundConsentClear } from '@/lib/data/crm/applyInboundConsentClear'
+import { isSmsStopKeyword } from '@/lib/crm/inbound-consent-clear'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -288,14 +290,28 @@ export async function POST(request: Request) {
 
     // A recorded sms_in lifts import / non-opt-out suppressions (mark, never
     // delete). STOP/START/HELP still run after this; real opt-outs stay.
-    try {
-      await clearNonOptOutSuppressions({
-        personId: match.personId,
-        clearedBy: 'inbound-sms',
-        clearedReason: `inbound sms_in ${sid}`,
-      })
-    } catch (e) {
-      console.warn('[twilio/inbound-sms] clear non-opt-out suppressions failed', e)
+    // TCPA: an explicit STOP keyword must never clear DNC / no-SMS flags.
+    if (!isSmsStopKeyword(body)) {
+      try {
+        await clearNonOptOutSuppressions({
+          personId: match.personId,
+          clearedBy: 'inbound-sms',
+          clearedReason: `inbound sms_in ${sid}`,
+        })
+      } catch (e) {
+        console.warn('[twilio/inbound-sms] clear non-opt-out suppressions failed', e)
+      }
+      try {
+        await applyInboundConsentClear({
+          personId: match.personId,
+          event: 'sms',
+          eventId: sid,
+          smsBody: body,
+          broker: match.broker,
+        })
+      } catch (e) {
+        console.warn('[twilio/inbound-sms] inbound consent clear failed', e)
+      }
     }
 
     // Shadow-write into the conversation model (RC1). Non-fatal: the timeline is
