@@ -43,9 +43,14 @@ describe('V3SarahAssistant · listing teaser', () => {
     expect(CSS).toContain('v3-sarah-panel-in')
     expect(CSS).toContain('v3-sarah-sheet-in')
     expect(CSS).toContain('prefers-reduced-motion')
+    expect(CSS).toContain('min(var(--v3-sarah-panel-h), calc(100dvh - 8rem))')
+    expect(CSS).toContain('min(var(--v3-sarah-panel-h), var(--v3-sarah-sheet-max))')
+    expect(CSS).toMatch(/z-index:\s*140/)
+    expect(CSS).toMatch(/\.v3-sarah__scrim[\s\S]{0,180}z-index:\s*0/)
     expect(CSS).not.toMatch(/width:\s*100vw/)
     expect(CSS).not.toMatch(/height:\s*100vh/)
     expect(SRC).toContain('data-sarah-surface')
+    expect(SRC).toContain("data-sarah-open={panelOpen ? '1' : '0'}")
   })
 
   it('uses Matt\'s short web intro and does not put unlicensed status in the chrome', () => {
@@ -79,7 +84,7 @@ describe('V3SarahAssistant · listing teaser', () => {
     expect(CSS).toContain('--rr-dock-h')
     expect(CSS).toContain('--rr-sticky-bottom')
     expect(CSS).toContain('data-cookie-notice')
-    expect(CSS).toMatch(/z-index:\s*92/)
+    expect(CSS).toMatch(/z-index:\s*140/)
     expect(CSS).toContain('border-radius: 50%')
     expect(CSS).toContain('object-fit: cover')
     expect(CSS).not.toMatch(/object-fit:\s*fill/)

@@ -224,7 +224,7 @@ export function V3SarahAssistant() {
 
   return (
     <div className={V3_ROOT_CLASS}>
-      <div className="v3-sarah" data-sarah="root">
+      <div className="v3-sarah" data-sarah="root" data-sarah-open={panelOpen ? '1' : '0'}>
         {panelOpen && !wide ? (
           <button
             type="button"
