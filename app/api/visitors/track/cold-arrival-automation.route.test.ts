@@ -164,7 +164,7 @@ describe('stale-browser: a long-superseded desktop Chrome on a cold arrival', ()
   })
 
   it('the signed rr_pid cookie identifies the session, and the flag is cleared', async () => {
-    await track(event(sid(10)), { cookies: { rr_vid: VID, rr_pid: personCookieValue(PERSON) } })
+    await track(event(sid(10)), { cookies: { rr_vid: VID, rr_pid: personCookieValue(PERSON, 'verified') } })
     expect(store.session(sid(10))).toMatchObject({ crm_person_id: PERSON, is_automated: false, automation_reason: null })
   })
 })

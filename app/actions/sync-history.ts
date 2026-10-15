@@ -1,6 +1,7 @@
 'use server'
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { logRejectedWrite } from '@/lib/observability/rejected-write'
 
 export type SyncRunType = 'listings' | 'history' | 'photos' | 'full' | 'delta'
 
@@ -45,7 +46,18 @@ export async function recordSyncRun(input: RecordSyncRunInput): Promise<{ ok: bo
     photos_updated: input.photosUpdated ?? 0,
     error: input.error ?? null,
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) {
+    // The delta sync calls this best-effort and ignores the result, so this line
+    // is the only trace of a refused run_type (the live CHECK lacked 'delta' for
+    // weeks: 94 rows in one day, 2026-10-15).
+    logRejectedWrite('sync-history', {
+      table: 'sync_history',
+      column: 'run_type',
+      value: input.runType,
+      error,
+    })
+    return { ok: false, error: error.message }
+  }
   return { ok: true }
 }
 

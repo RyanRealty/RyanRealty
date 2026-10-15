@@ -5,27 +5,14 @@ import { getPersonIdsByEmail } from '@/lib/data/crm/getPersonIdsByEmail'
 import { addSuppression } from '@/lib/crm/suppressions'
 import { createServiceClient } from '@/lib/supabase/service'
 import { recordEmailEvent } from '@/lib/crm/email-events'
-import { verifySvixSignature, isFreshTimestamp, classifyResendEvent, type ResendEventType } from '@/lib/crm/resend-webhook'
-
-/** Resend event type -> crm_timeline kind. The lead page renders these on the
- *  conversation + engagement panel; without them email opens/clicks/bounces were
- *  invisible to the broker. */
-const TIMELINE_KIND: Record<ResendEventType, string> = {
-  delivered: 'email_delivered',
-  opened: 'email_open',
-  clicked: 'email_click',
-  bounced: 'email_bounce',
-  complained: 'email_complaint',
-  unsubscribed: 'email_unsubscribe',
-}
-const TIMELINE_TITLE: Record<ResendEventType, string> = {
-  delivered: 'Email delivered',
-  opened: 'Email opened',
-  clicked: 'Email link clicked',
-  bounced: 'Email bounced',
-  complained: 'Spam complaint',
-  unsubscribed: 'Unsubscribed',
-}
+import {
+  verifySvixSignature,
+  isFreshTimestamp,
+  classifyResendEvent,
+  RESEND_TIMELINE_KIND as TIMELINE_KIND,
+  RESEND_TIMELINE_TITLE as TIMELINE_TITLE,
+} from '@/lib/crm/resend-webhook'
+import { logRejectedWrite } from '@/lib/observability/rejected-write'
 
 /**
  * Resend webhook: delivered, opened, clicked, bounced, complained, unsubscribed.
@@ -76,6 +63,10 @@ export async function POST(request: NextRequest) {
   const recipient = emailId ? await getRecipientByMessageId(emailId) : null
   const eventBroker = recipient?.broker ?? null
 
+  // One log line per refused (table, kind) per request, however many people the
+  // event fans out to.
+  const rejected = new Set<string>()
+
   // T-8: Resend's native one-click unsubscribe. Flip the subscriber to
   // unsubscribed + log it — it's a status change, not an engagement event, so it
   // does NOT run through the stats/ledger/timeline-engagement paths below.
@@ -84,7 +75,7 @@ export async function POST(request: NextRequest) {
     for (const email of event.recipients) {
       await setSubscriberStatusByEmail(email, 'unsubscribed')
       for (const personId of await getPersonIdsByEmail(email)) {
-        await sb.from('crm_timeline').upsert(
+        const { error } = await sb.from('crm_timeline').upsert(
           {
             person_id: personId,
             kind: TIMELINE_KIND.unsubscribed,
@@ -96,6 +87,15 @@ export async function POST(request: NextRequest) {
           },
           { onConflict: 'dedupe_key', ignoreDuplicates: true },
         )
+        // A refused write is a lost timeline row, not a 500: the webhook still
+        // has to answer 200 or Resend retries the whole event.
+        if (error) {
+          logRejectedWrite(
+            'resend-webhook',
+            { table: 'crm_timeline', column: 'kind', value: TIMELINE_KIND.unsubscribed, error },
+            rejected,
+          )
+        }
       }
     }
     return NextResponse.json({ ok: true, unsubscribed: event.recipients.length })
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       const personIds = await getPersonIdsByEmail(email)
       for (const personId of personIds) {
         const urlKey = event.clickUrl ? `:${event.clickUrl.slice(0, 80)}` : ''
-        await sb.from('crm_timeline').upsert(
+        const { error } = await sb.from('crm_timeline').upsert(
           {
             person_id: personId,
             kind,
@@ -170,6 +170,9 @@ export async function POST(request: NextRequest) {
           },
           { onConflict: 'dedupe_key', ignoreDuplicates: true },
         )
+        if (error) {
+          logRejectedWrite('resend-webhook', { table: 'crm_timeline', column: 'kind', value: kind, error }, rejected)
+        }
       }
     }
   }

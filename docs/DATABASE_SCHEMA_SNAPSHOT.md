@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-10-15T04:15:05.668Z
+**Generated:** 2026-10-15T04:47:37.147Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -287,7 +287,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 73,964**
+### `similar_listings_mv` · **rows ≈ 73,930**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
