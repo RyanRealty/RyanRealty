@@ -44,7 +44,7 @@ export async function sendSigningInvite(params: {
   signUrl: string
   /**
    * The broker sending the envelope (mailbox or broker key). The mail goes out
-   * as that broker, "Matt Ryan · Ryan Realty" <matt@mail.ryan-realty.com>, and
+   * as that broker, "Matt Ryan · Ryan Realty" <matt@ryan-realty.com>, and
    * replies reach their real inbox (sendIdentityFor: a broker onboarded since
    * the static registry sends as themselves too). A bare noreply@ sender with a broker
    * Reply-To went to Gmail spam (measured against matt@ 2026-09-30: every

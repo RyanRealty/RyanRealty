@@ -37,7 +37,7 @@ function fmtUsd(n: number | null): string {
 
 async function ListingLeaderboard({ range }: { range: { startDate: string; endDate: string } }) {
   const { rows, totalViews, totalIdentified, totalHot, eventsCapped, unreadable, errorMessage } =
-    await getListingPerformance({ startDate: range.startDate, endDate: range.endDate })
+    await getListingPerformance({ startDate: range.startDate, endDate: range.endDate, humanOnly: true })
 
   if (unreadable) {
     return (
@@ -132,7 +132,7 @@ export default async function ListingPerformancePage({ searchParams }: { searchP
   return (
     <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
       <p className="av2-note">
-        Which listings drive the most engagement, and which converted visitors into identified leads. Sourced from <code>visitor_events</code> where event_type = listing_view.
+        Which listings people open most, and which turned visitors into known contacts. From our own site tracking; crawlers and scripts are left out.
       </p>
       <RangeControl current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
 

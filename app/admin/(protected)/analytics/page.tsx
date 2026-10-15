@@ -3,6 +3,12 @@
  * and reporting surface (admin consolidation 2026-07-07 — the old /admin/reports
  * launchpad merged in here and now redirects).
  *
+ * It opens on Website (Matt 2026-10-14: one page that "actually makes sense",
+ * read on a phone): where visitors are, what they look at, buying or selling,
+ * where they came from, who reached out, Google search and the Business
+ * Profile, all from our own tracking, the CRM, Search Console and the Business
+ * Profile API (_components/WebsiteView.tsx). The Google Analytics tabs follow.
+ *
  * Five GA4 tabs (Overview, Acquisition, Behavior, Funnel, Conversions), the
  * merged report catalog (market data, broker activity, lead sources,
  * marketing), and the weekly-report + city-report tools that used to live on
@@ -10,7 +16,8 @@
  * numerals on every numeric surface.
  *
  * Data trace:
- *   - Overview / Acquisition / Behavior  → GA4 Data API (getGA4Summary)
+ *   - Website                             → lib/data DAL reads (see WebsiteView.tsx)
+ *   - Google Analytics / Acquisition / Behavior → GA4 Data API (getGA4Summary)
  *   - Funnel                              → getSalesFunnel (visitor_sessions + crm_people + crm_timeline + crm_deals + marketing_channel_daily). GA4 LP event funnel is secondary.
  *   - Conversions                         → GA4 + public.crm_people (getLeadIntake) + public.marketing_channel_daily
  *
@@ -40,6 +47,7 @@ import { SalesFunnelTab } from './_components/SalesFunnelTab'
 import { HorizontalBarChart, TimeSeriesChart, BrokerPieChart, StackedBarMix } from './_components/charts'
 import ReportCatalog from './_components/ReportCatalog'
 import { Ga4MirrorNotice } from './_components/Ga4MirrorNotice'
+import { WebsiteView } from './_components/WebsiteView'
 import { getLeadSources } from '@/lib/data/analytics/leadSources'
 import { getBookConversion } from '@/lib/data/analytics/bookConversion'
 
@@ -57,19 +65,22 @@ function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
   return out
 }
 
+// 'overview' keeps its key so old links to ?tab=overview still land on the
+// Google Analytics summary; the hub itself now opens on Website.
 const TAB_DEFS = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'acquisition', label: 'Acquisition' },
-  { key: 'behavior', label: 'Behavior' },
+  { key: 'website', label: 'Website' },
+  { key: 'overview', label: 'Google Analytics' },
+  { key: 'acquisition', label: 'Sources' },
+  { key: 'behavior', label: 'Pages' },
   { key: 'funnel', label: 'Funnel' },
-  { key: 'conversions', label: 'Conversions' },
+  { key: 'conversions', label: 'Leads' },
 ] as const
 
 type TabKey = (typeof TAB_DEFS)[number]['key']
 
 export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sp = normalizeParams(await searchParams)
-  const tab: TabKey = TAB_DEFS.some((t) => t.key === sp.tab) ? (sp.tab as TabKey) : 'overview'
+  const tab: TabKey = TAB_DEFS.some((t) => t.key === sp.tab) ? (sp.tab as TabKey) : 'website'
   const lpVariant = sp.lpVariant || ''
   const rangeChoice = sp.range || (tab === 'funnel' ? '12m' : '30d')
   const range = resolveDateRange({ ...sp, range: rangeChoice })
@@ -80,7 +91,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   // client-side because only the ACTIVE tab's server component renders now.
   const tabHref = (t: TabKey) => {
     const p = new URLSearchParams()
-    if (t !== 'overview') p.set('tab', t)
+    if (t !== 'website') p.set('tab', t)
     for (const k of ['range', 'startDate', 'endDate', 'lpVariant', 'audience'] as const) {
       if (sp[k]) p.set(k, String(sp[k]))
     }
@@ -90,10 +101,6 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
-      <p className="av2-note">
-        Every analytics and reporting surface in one place: traffic, funnel, conversions, and the report catalog. Overview/Acquisition/Behavior tabs are GA4 (consent-gated — not primary site volume). Primary traffic = first-party visitor_sessions (funnel-breakdown, social, traffic-sources). See docs/plans/seo-voice/MEASUREMENT_DUAL_SOURCE.md. Range: {range.startDate} to {range.endDate}.
-      </p>
-      <RangeControl current={rangeChoice} currentStart={sp.startDate} currentEnd={sp.endDate} />
 
       {/* Only the ACTIVE tab's server component renders. The old version
           mounted all five async RSCs on every request, so the four hidden tabs
@@ -119,8 +126,26 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
         ))}
       </nav>
 
-      <Suspense fallback={<Loading what="the GA4 window" />}>
-        {tab === 'overview' ? (
+      {tab === 'website' ? null : (
+        <>
+          <p className="av2-note">
+            {tab === 'funnel'
+              ? 'From our own site tracking and the CRM.'
+              : tab === 'conversions'
+                ? 'Leads from the CRM; the visits line is Google Analytics.'
+                : tab === 'acquisition'
+                  ? 'The first section is our own site tracking. The rest is Google Analytics, which counts only visitors who allow analytics cookies.'
+                  : 'Google Analytics counts only visitors who allow analytics cookies. For every visitor, use the Website tab.'}{' '}
+            Range: {range.startDate} to {range.endDate}.
+          </p>
+          <RangeControl current={rangeChoice} currentStart={sp.startDate} currentEnd={sp.endDate} />
+        </>
+      )}
+
+      <Suspense fallback={<Loading what={tab === 'website' ? 'the website numbers' : 'the selected range'} />}>
+        {tab === 'website' ? (
+          <WebsiteView />
+        ) : tab === 'overview' ? (
           <OverviewTab range={range} />
         ) : tab === 'acquisition' ? (
           <AcquisitionTab range={range} />
@@ -148,8 +173,8 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
 
   return (
     <>
-      {/* TRACK-1: sessions, users, engagement, bounce and top source are mirror-shaped. */}
-      <Ga4MirrorNotice />
+      {/* Says so only when the range reaches back before GA4 sources were reliable. */}
+      <Ga4MirrorNotice startDate={range.startDate} endDate={range.endDate} />
       <Figures
         figures={[
           { label: 'Sessions', value: formatInt(d.sessions) },
@@ -161,8 +186,12 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
           },
           {
             label: 'Paid spend',
-            value: d.paidSpendUsd === null ? 'no data' : formatUsd(d.paidSpendUsd),
-            caption: d.paidSpendUsd === null ? 'Meta cron has not synced spend yet' : 'Meta ads spend in the range',
+            value: d.paidSpendUnreadable ? 'not read' : d.paidSpendUsd === null ? 'no data' : formatUsd(d.paidSpendUsd),
+            caption: d.paidSpendUnreadable
+              ? 'Meta ad spend could not be read just now'
+              : d.paidSpendUsd === null
+                ? 'No Meta ad spend recorded for this range'
+                : 'Meta ads spend in the range',
           },
           { label: 'Engagement rate', value: formatPct(d.engagementRate) },
           { label: 'Bounce rate', value: formatPct(d.bounceRate) },
@@ -190,11 +219,11 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
         />
       </section>
 
-      <section aria-label="Top 3 landing pages">
-        <SectionHead>Top 3 landing pages</SectionHead>
+      <section aria-label="Top 3 pages by views">
+        <SectionHead>Top 3 pages by views</SectionHead>
         {/* GA4 can return the same pagePath twice (e.g. "/") — key by position too */}
         <DataList
-          label="Top 3 landing pages"
+          label="Top 3 pages by views"
           rows={d.topLandingPages}
           cap={d.topLandingPages.length}
           rowKey={(p, i) => `${i}|${p.pagePath}`}
@@ -250,15 +279,15 @@ async function FirstPartyAcquisition({ range }: { range: { startDate: string; en
     const startIso = new Date(`${range.startDate}T00:00:00Z`).toISOString()
     const endIso = new Date(`${range.endDate}T23:59:59Z`).toISOString()
     ;[sources, book] = await Promise.all([
-      getLeadSources(startIso, endIso),
+      getLeadSources(startIso, endIso, { humanOnly: true }),
       getBookConversion(startIso, endIso),
     ])
   } catch (e) {
     return (
       <section aria-label="Where visits came from">
-        <SectionHead>Where visits came from — measured first-party</SectionHead>
+        <SectionHead>Where visits came from (our own site tracking)</SectionHead>
         <div className="av2-empty">
-          Could not read the first-party numbers: {e instanceof Error ? e.message : String(e)}
+          Could not read our site tracking: {e instanceof Error ? e.message : String(e)}
         </div>
       </section>
     )
@@ -270,7 +299,7 @@ async function FirstPartyAcquisition({ range }: { range: { startDate: string; en
   return (
     <>
       <section aria-label="Where visits came from">
-        <SectionHead>Where visits came from — measured first-party</SectionHead>
+        <SectionHead>Where visits came from (our own site tracking, crawlers left out)</SectionHead>
         <Figures
           figures={[
             { label: 'Sessions', value: formatInt(sources.totals.sessions), caption: 'in this range' },
@@ -287,7 +316,7 @@ async function FirstPartyAcquisition({ range }: { range: { startDate: string; en
               value: formatInt(sources.totals.directSessions),
               caption:
                 sources.totals.sessions > 0
-                  ? `${formatPct(sources.totals.directSessions / sources.totals.sessions)} — the ceiling`
+                  ? `${formatPct(sources.totals.directSessions / sources.totals.sessions)} of visits`
                   : null,
             },
           ]}
@@ -381,13 +410,10 @@ async function AcquisitionTab({ range }: { range: { startDate: string; endDate: 
     <>
       <FirstPartyAcquisition range={range} />
 
-      <SectionHead>Google Analytics — behaviour only</SectionHead>
-      {/* TRACK-1: GA4 session and source figures below are mirror-shaped. */}
-      <Ga4MirrorNotice />
+      <SectionHead>Google Analytics</SectionHead>
+      <Ga4MirrorNotice startDate={range.startDate} endDate={range.endDate} />
       <p className="av2-note">
-        GA4 reports no traffic source for visitors who never answered the cookie banner, which is
-        almost all of them. Read the section above for where visits came from; these blocks are
-        useful for what people did once they arrived.
+        Google Analytics only sees visitors who allow analytics cookies. The section above covers every visitor.
       </p>
       <Figures
         figures={[
@@ -418,10 +444,10 @@ async function AcquisitionTab({ range }: { range: { startDate: string; endDate: 
         )}
       </section>
 
-      <section aria-label="Top UTM combinations">
-        <SectionHead>Top UTM combinations</SectionHead>
+      <section aria-label="Top sources in Google Analytics">
+        <SectionHead>Top {d.sources.length} sources in Google Analytics (source / medium)</SectionHead>
         <DataList
-          label="Top UTM combinations"
+          label="Top sources in Google Analytics"
           rows={d.sources}
           cap={10}
           rowKey={(s) => s.sourceMedium}
@@ -433,7 +459,7 @@ async function AcquisitionTab({ range }: { range: { startDate: string; endDate: 
             { key: 'leads', header: 'Leads', num: true, cell: (s) => formatInt(s.leadEvents) },
             { key: 'conv', header: 'Conversion rate', num: true, cell: (s) => formatPct(s.conversionRate, 2) },
           ]}
-          empty={<>No source data in this range. Widen the date range, or check that the GA4 cron is writing source rows.</>}
+          empty={<>No source data in this range. Widen the date range above.</>}
         />
       </section>
 
@@ -468,10 +494,10 @@ async function BehaviorTab({ range }: { range: { startDate: string; endDate: str
 
   return (
     <>
-      <section aria-label="Top 20 pages by sessions">
-        <SectionHead>Top 20 pages by sessions</SectionHead>
+      <section aria-label="Most viewed pages">
+        <SectionHead>Top {d.pages.length} pages by views (Google Analytics)</SectionHead>
         <DataList
-          label="Top 20 pages by sessions"
+          label="Most viewed pages"
           rows={d.pages}
           cap={d.pages.length}
           rowKey={(p) => `${p.pagePath}|${p.pageTitle}`}
@@ -487,14 +513,15 @@ async function BehaviorTab({ range }: { range: { startDate: string; endDate: str
       </section>
 
       <section aria-label="Scroll-depth events">
-        <SectionHead>Scroll-depth events</SectionHead>
+        <SectionHead>Scrolling</SectionHead>
         <p className="av2-note">
-          Total scroll_depth events fired in this range. GA4 does not expose per-milestone breakdowns via the Data API aggregation used here — only the aggregate count is real.
+          How many times visitors scrolled past a quarter, half, three quarters or the end of a page, all counted together.
+          Google Analytics does not split this total by how far they scrolled here.
         </p>
         {d.scrollTotal === 0 ? (
-          <div className="av2-empty">No scroll_depth events in this range.</div>
+          <div className="av2-empty">No scrolling recorded in this range.</div>
         ) : (
-          <Figures figures={[{ label: 'scroll_depth events', value: formatInt(d.scrollTotal) }]} />
+          <Figures figures={[{ label: 'Scroll milestones reached', value: formatInt(d.scrollTotal) }]} />
         )}
       </section>
     </>
@@ -519,8 +546,12 @@ async function ConversionsTab({ range }: { range: { startDate: string; endDate: 
           },
           {
             label: 'Cost per lead',
-            value: d.costPerLeadUsd === null ? 'no data' : formatUsd(d.costPerLeadUsd),
-            caption: d.costPerLeadUsd === null ? 'Meta spend not synced for this range' : 'Meta spend ÷ CRM leads',
+            value: d.spendUnreadable ? 'not read' : d.costPerLeadUsd === null ? 'no data' : formatUsd(d.costPerLeadUsd),
+            caption: d.spendUnreadable
+              ? 'Meta ad spend could not be read just now'
+              : d.costPerLeadUsd === null
+                ? 'Needs Meta ad spend and at least one lead in this range'
+                : 'Meta ad spend divided by CRM leads',
           },
           {
             label: 'Top broker',
@@ -538,11 +569,10 @@ async function ConversionsTab({ range }: { range: { startDate: string; endDate: 
           cap={d.leadsBySource.length}
           rowKey={(s) => s.sourceMedium}
           columns={[
-            { key: 'source', header: 'Source / Medium', lead: true, cell: (s) => s.sourceMedium },
-            { key: 'leads', header: 'Lead events', num: true, cell: (s) => formatInt(s.leadEvents) },
-            { key: 'users', header: 'Users', num: true, cell: (s) => formatInt(s.users) },
+            { key: 'source', header: 'Source in the CRM', lead: true, cell: (s) => s.sourceMedium },
+            { key: 'leads', header: 'Leads', num: true, cell: (s) => formatInt(s.leadEvents) },
           ]}
-          empty={<>No attributed lead sources in this range.</>}
+          empty={<>No inbound leads in this range.</>}
         />
       </section>
 
@@ -568,7 +598,7 @@ async function ConversionsTab({ range }: { range: { startDate: string; endDate: 
         <SectionHead>Sessions and leads over time</SectionHead>
         {d.timeSeries.length === 0 ? (
           <div className="av2-empty">
-            No daily snapshots in this range. The GA4 cron writes one row per day to public.marketing_channel_daily.
+            No daily figures in this range yet. Google Analytics visits are saved once a day.
           </div>
         ) : (
           <TimeSeriesChart

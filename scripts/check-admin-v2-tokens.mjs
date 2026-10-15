@@ -622,6 +622,8 @@ const SCAN_DIRS = [
   'app/admin/(protected)/analytics/_components/DateRangePicker.tsx',
   'app/admin/(protected)/analytics/_components/ReportCatalog.tsx',
   'app/admin/(protected)/analytics/_components/SalesFunnelTab.tsx',
+  // The Website view, the hub's default (Matt 2026-10-14): v2 Panel + kit only.
+  'app/admin/(protected)/analytics/_components/WebsiteView.tsx',
   'app/admin/(protected)/analytics/_components/charts.tsx',
   'app/admin/(protected)/analytics/_components/v2/DataGrid.tsx',
   'app/admin/(protected)/analytics/_components/v2/FunnelAudienceControl.tsx',
