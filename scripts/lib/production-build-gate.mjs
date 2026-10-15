@@ -4,7 +4,7 @@
  *
  * WHY (2026-10-14/15). Every production build on Vercel prerenders ~850 pages
  * against the one Supabase project, and two at once double that load. Of the
- * ten production builds that ERRORed that day and night, six ran while another
+ * nine production builds that ERRORed that day and night, six ran while another
  * production build was running (a107eaa6b with b70e1f9ad, 84cb04f65 with
  * 9be2b3fdd, 458d4a40a beside fb68c62ff, 0a9c47645 beside 8357b3122), and the
  * database restarted uncleanly twice inside those overlaps (22:20Z, 22:43Z).
