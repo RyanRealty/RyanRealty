@@ -10,6 +10,7 @@ import { buildSarahSystemPrompt, sarahGreeting } from './persona'
 import {
   ARE_YOU_REAL_EN,
   COMMISSION_EN,
+  CONTRACT_ADVICE_EN,
   HAS_AGENT_WRAP_EN,
   PRICE_VALUE_EN,
   RECORDING_OBJECTION_EN,
@@ -19,12 +20,14 @@ import {
 } from './scripts'
 
 describe('Sarah greeting', () => {
-  it('web greeting discloses AI, unlicensed status, and recording before substance', () => {
-    expect(WEB_GREETING_EN).toMatch(/AI assistant/i)
-    expect(WEB_GREETING_EN).toMatch(/not a person/i)
-    expect(WEB_GREETING_EN).toMatch(/not a licensed broker/i)
-    expect(WEB_GREETING_EN).toMatch(/recorded and transcribed/i)
+  it('web intro names Sarah as AI on the broker team and does not lead with unlicensed', () => {
+    expect(WEB_GREETING_EN).toBe(
+      "Hi, I'm Sarah, an AI assistant with Matt's team at Ryan Realty. I can help with pretty much anything here.",
+    )
+    expect(WEB_GREETING_EN).not.toMatch(/not a licensed broker/i)
+    expect(sarahGreeting('web', 'Paul')).toMatch(/Paul's team at Ryan Realty/)
     expect(sarahGreeting('voice')).toMatch(/Thanks for calling Ryan Realty in Bend/)
+    expect(sarahGreeting('voice')).toMatch(/not a licensed broker/)
   })
 })
 
@@ -40,6 +43,7 @@ describe('evaluateSarahTurn refusals', () => {
     ['What is your commission?', 'commission', COMMISSION_EN],
     ["Who's a good lender?", 'vendor', RESPA_VENDOR_EN],
     ['I want to make an offer.', 'make-offer', null],
+    ['Can you explain the contract?', 'contract-advice', CONTRACT_ADVICE_EN],
   ] as const)('refuses %s', (text, topic, reply) => {
     const turn = evaluateSarahTurn({ visitorText: text, greeted: true })
     expect(turn.mode).toBe('refuse')
@@ -103,6 +107,17 @@ describe('system prompt', () => {
     expect(prompt).toMatch(/not a licensed broker|unlicensed/i)
     expect(prompt).toMatch(/Are there a couple of times/)
     expect(prompt).toMatch(/YOU MAY NOT[\s\S]*Auto-book Matt's calendar/)
+  })
+
+  it('uses the short web intro and holds unlicensed status for price, contract, or advice', () => {
+    const prompt = buildSarahSystemPrompt({ channel: 'web', brokerFirstName: 'Rebecca' })
+    expect(prompt).toMatch(/Hi, I'm Sarah, an AI assistant with Rebecca's team at Ryan Realty/)
+    expect(prompt).toMatch(/Chats are saved so our team can follow up/)
+    expect(prompt).toMatch(/Do not say "not a licensed broker" in the web intro/)
+    expect(prompt).toMatch(/only when they ask about price, value, a contract, or advice/)
+    const voice = buildSarahSystemPrompt({ channel: 'voice' })
+    expect(voice).toMatch(/Thanks for calling Ryan Realty in Bend/)
+    expect(voice).toMatch(/not a person and not a licensed broker/)
   })
 })
 

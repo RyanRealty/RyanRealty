@@ -12,7 +12,12 @@ import { usePathname } from 'next/navigation'
 import { V3_ROOT_CLASS } from './atoms'
 import { SARAH_AVATAR_ALT, SARAH_AVATAR_SRC } from '@/lib/sarah/assets'
 import { evaluateSarahTurn } from '@/lib/sarah/guardrails'
-import { SARAH_NAME, WEB_GREETING_EN, WEB_HELP_EN } from '@/lib/sarah/scripts'
+import {
+  SARAH_NAME,
+  WEB_GREETING_EN,
+  WEB_HELP_EN,
+  WEB_SAVED_NOTICE_EN,
+} from '@/lib/sarah/scripts'
 import {
   SARAH_TEASER_COPY,
   SARAH_TEASER_DELAY_MS,
@@ -28,7 +33,7 @@ import { trackEvent } from '@/lib/tracking'
 import './tokens.css'
 import './V3SarahAssistant.css'
 
-type ChatLine = { from: 'sarah' | 'visitor'; text: string }
+type ChatLine = { from: 'sarah' | 'visitor'; text: string; notice?: string }
 
 function sessionStore(): Storage | null {
   if (typeof sessionStorage === 'undefined') return null
@@ -49,7 +54,9 @@ export function V3SarahAssistant() {
   const [dismissed, setDismissed] = useState(false)
   const [draft, setDraft] = useState('')
   const [greeted, setGreeted] = useState(true)
-  const [lines, setLines] = useState<ChatLine[]>(() => [{ from: 'sarah', text: WEB_GREETING_EN }])
+  const [lines, setLines] = useState<ChatLine[]>(() => [
+    { from: 'sarah', text: WEB_GREETING_EN, notice: WEB_SAVED_NOTICE_EN },
+  ])
   const shownRef = useRef(false)
   const teaserKind: SarahTeaserKind = listingTeaserKind(wide)
   const offer = shouldOfferListingTeaser({
@@ -149,7 +156,7 @@ export function V3SarahAssistant() {
                 <div className="v3-sarah__panel-name" id={titleId}>
                   {SARAH_NAME}
                 </div>
-                <span className="v3-sarah__panel-role">AI assistant, not a licensed broker</span>
+                <span className="v3-sarah__panel-role">AI assistant</span>
               </div>
               <button
                 type="button"
@@ -171,7 +178,14 @@ export function V3SarahAssistant() {
                   {line.from === 'sarah' ? (
                     <img src={SARAH_AVATAR_SRC} alt="" width={28} height={28} />
                   ) : null}
-                  <p className="v3-sarah__msg-body">{line.text}</p>
+                  <div className="v3-sarah__msg-stack">
+                    <p className="v3-sarah__msg-body">{line.text}</p>
+                    {line.notice ? (
+                      <p className="v3-sarah__saved" data-sarah="saved-notice">
+                        {line.notice}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
               ))}
             </div>
