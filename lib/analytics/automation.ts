@@ -23,10 +23,12 @@
  *                       Selenium, Puppeteer and Playwright unless deliberately hidden)
  *   - empty-ua          no user agent at all
  *   - marker            our own script set the `rr_automation=1` marker
- * plus one PROVISIONAL behavioural class, contact-deep-link
- * (classifyArrivalShape below), which the session's second event clears.
- * Reading the UA header to classify is not storing it: the essential-tier rule
- * (docs/TRACKING_POLICY.md) is that the UA string is not kept.
+ * plus PROVISIONAL classes for a cold arrival (no referrer, no campaign, no
+ * identity token) that reads as a machine (classifyArrivalShape below):
+ * contact-deep-link, stale-browser and datacenter-geo (2026-10-14). The
+ * session's first sign of a person clears them (isPersonEvidence below), and so
+ * does identification. Reading the UA and geo headers to classify is not storing
+ * them: the essential-tier rule (docs/TRACKING_POLICY.md) is that neither is kept.
  *
  * A flagged session is still recorded (so volume stays measurable) but it is
  * excluded from the known-people activity view and never mirrored into GA4; a
@@ -37,6 +39,8 @@
  * BAD_BOT_RE (those decide what to BLOCK; this decides what to COUNT).
  */
 
+import { chromeSupersededAt } from './chrome-releases'
+
 export type AutomationReason =
   | 'declared-crawler'
   | 'tool'
@@ -45,17 +49,29 @@ export type AutomationReason =
   | 'empty-ua'
   | 'marker'
   | 'contact-deep-link'
+  | 'stale-browser'
+  | 'datacenter-geo'
   | 'internal'
 
 export type AutomationClass = { automated: boolean; reason: AutomationReason | null }
 
 export const DECLARED_CRAWLER_RE =
-  /(bot\b|bot\/|crawler|spider|slurp|googleother|google-inspectiontool|google-extended|storebot-google|adsbot|mediapartners-google|feedfetcher|bingpreview|facebookexternalhit|facebookcatalog|meta-externalagent|gptbot|oai-searchbot|chatgpt-user|perplexity|claude-(?:web|user|searchbot)|anthropic-ai|cohere-ai|ccbot|bytespider|amazonbot|applebot|yandex|baiduspider|petalbot|semrush|ahrefs|mj12bot|dotbot|dataforseo|screaming frog|embedly|whatsapp|telegram|skypeuripreview|slack-imgproxy|vercel-screenshot|vercelbot)/i
+  /(bot\b|bot\/|crawler|spider|slurp|googleother|google-inspectiontool|google-extended|storebot-google|adsbot|mediapartners-google|feedfetcher|bingpreview|facebookexternalhit|facebookcatalog|meta-externalagent|gptbot|oai-searchbot|chatgpt-user|perplexity|claude-(?:web|user|searchbot)|anthropic-ai|google-notebooklm|cohere-ai|ccbot|bytespider|amazonbot|applebot|yandex|baiduspider|petalbot|semrush|ahrefs|mj12bot|dotbot|dataforseo|screaming frog|embedly|whatsapp|telegram|skypeuripreview|slack-imgproxy|vercel-screenshot|vercelbot)/i
 
 export const TOOL_RE =
   /(curl\/|wget|python-requests|python-urllib|aiohttp|httpx|libwww-perl|java\/|okhttp|go-http-client|node-fetch|axios|undici|guzzlehttp|apache-httpclient|scrapy|httrack|zgrab|masscan|nmap|nikto|sqlmap|nuclei|wpscan|censys)/i
 
 export const HEADLESS_RE = /(headlesschrome|headless|phantomjs|puppeteer|playwright|selenium|webdriver|chrome-lighthouse|lighthouse|pagespeed|prerender|rendertron)/i
+
+/**
+ * The `Sec-CH-UA` client hint (the brand list Chromium sends on every https
+ * request, fetch and sendBeacon included) of a headless Chromium. A scripted
+ * browser that overrides its user agent to read as desktop Chrome usually
+ * leaves this header alone, and no browser a person uses names itself
+ * HeadlessChrome. 2026-10-14; the header is not stored, so its hits on history
+ * cannot be counted.
+ */
+export const HEADLESS_HINT_RE = /headlesschrome/i
 
 export function classifyAutomation(args: {
   userAgent: string | null | undefined
@@ -67,12 +83,17 @@ export function classifyAutomation(args: {
    * navigator.webdriver is still known to be ours (Matt 2026-10-05, GA cleanup).
    */
   marker?: boolean
+  /** The request's `Sec-CH-UA` header (HEADLESS_HINT_RE). */
+  clientHints?: string | null
 }): AutomationClass {
   if (args.marker === true) return { automated: true, reason: 'marker' }
   const ua = typeof args.userAgent === 'string' ? args.userAgent.trim() : ''
   if (!ua) return { automated: true, reason: 'empty-ua' }
   if (TOOL_RE.test(ua)) return { automated: true, reason: 'tool' }
   if (HEADLESS_RE.test(ua)) return { automated: true, reason: 'headless' }
+  if (typeof args.clientHints === 'string' && HEADLESS_HINT_RE.test(args.clientHints)) {
+    return { automated: true, reason: 'headless' }
+  }
   // `CUBOT` is an Android phone brand whose model string would read as "...bot".
   if (DECLARED_CRAWLER_RE.test(ua.replace(/cubot/gi, ''))) return { automated: true, reason: 'declared-crawler' }
   if (args.webdriver === true) return { automated: true, reason: 'webdriver' }
@@ -80,24 +101,41 @@ export function classifyAutomation(args: {
 }
 
 /**
- * A BEHAVIOURAL class, provisional: set at session birth, cleared by the track
- * route the moment the session records a second event (a person reads on and
- * clicks; the crawler never does). It never blocks identification, only the
- * GA4 mirror of that first view and the counts.
+ * BEHAVIOURAL classes, provisional: set at session birth on a COLD arrival (no
+ * referrer, no campaign or click id on the landing URL, no identity token), and
+ * cleared by the track route the moment the session shows a person
+ * (isPersonEvidence: a second page, a scroll, a search, a click, a form) or is
+ * identified. They never block identification; they keep the session out of the
+ * counts of outside visitors and its first view out of the GA4 mirror.
  *
  * `contact-deep-link`: a brand-new browser session whose FIRST page is
- * /contact?listingKey=<a listing> with no referrer, no campaign params and no
- * identity token. People reach that form from a listing page, so their session
- * already exists and its landing page is the listing, not the form.
- * Measured 2026-09-23T06:09Z over visitor_sessions first_seen_at >= 2026-09-16
- * (supabase-js read): 882 sessions landed this way, each on its own new rr_vid,
- * none lasting over 10 seconds, none identified, none in the identity map, and
- * all 300 sampled had exactly one event (a page_view). The UA classifier above
- * cannot see this crawler because the UA is not stored at essential consent.
+ * /contact?listingKey=<a listing>. People reach that form from a listing page,
+ * so their session already exists and its landing page is the listing, not the
+ * form. Measured 2026-09-23T06:09Z over visitor_sessions first_seen_at >=
+ * 2026-09-16 (supabase-js read): 882 sessions landed this way, each on its own
+ * new rr_vid, none lasting over 10 seconds, none identified, none in the
+ * identity map, and all 300 sampled had exactly one event (a page_view).
+ *
+ * `stale-browser` (2026-10-14): desktop Google Chrome (Windows, macOS or Linux)
+ * whose major version was superseded by the next stable release more than
+ * STALE_BROWSER_DAYS before the request (CHROME_STABLE_DATES, the Chromium
+ * schedule). Desktop Chrome updates itself; crawlers pin a build and rotate a
+ * handful of user-agent strings. See docs/TRACKING_POLICY.md "Automation" for
+ * the measured clusters and the identified-human check.
+ *
+ * `datacenter-geo` (2026-10-14): the request's IP geolocates to a town whose
+ * traffic here is cloud egress (DATACENTER_LOCALITIES). Measured the same way.
  */
 export const PROVISIONAL_AUTOMATION_REASONS: ReadonlySet<AutomationReason> = new Set<AutomationReason>([
   'contact-deep-link',
+  'stale-browser',
+  'datacenter-geo',
 ])
+
+/** Is this automation_reason one of the provisional, self-clearing classes? */
+export function isProvisionalReason(reason: unknown): boolean {
+  return typeof reason === 'string' && PROVISIONAL_AUTOMATION_REASONS.has(reason as AutomationReason)
+}
 
 /**
  * THE rule for which sessions automation keeps unidentified, stated once. A session
@@ -158,31 +196,170 @@ export function sessionBlocksIdentification(
   return !IDENTIFIABLE_SESSION.some((t) => termHolds(t, row as Record<string, unknown>))
 }
 
+/** Campaign, click-id, Google-linker and link parameters: a landing URL carrying one is a click we can name. */
+const ARRIVAL_PARAM_RE = /^(utm_.+|fbclid|gclid|msclkid|ttclid|_gl|_pid|agent|rr_doc)$/
+
+/**
+ * `?agent=` names the broker, not the click: the site stamps it on its own
+ * Book-a-tour links (/book?agent=<slug>&listing=<mls>), and the measured
+ * Linux Chrome 150 crawler followed those 107 times in 14 days (2026-10-14
+ * audit). It still exempts the contact-deep-link shape, as it always has; for
+ * the stale-browser and datacenter-geo rules a broker's shared link needs
+ * another sign (a referrer, a campaign tag, a token), and a person who arrives
+ * on one is cleared by the first scroll, page or identification.
+ */
+const BROKER_ONLY_PARAM = 'agent'
+
+/**
+ * Desktop Google Chrome's major version from a user agent, or null for anything
+ * else. Only the exact desktop Chrome template counts: Windows, macOS or Linux,
+ * then `AppleWebKit/537.36 (KHTML, like Gecko) Chrome/<n>.<...> Safari/537.36`
+ * and nothing after it. A Chromium browser on its own schedule adds a token
+ * (Edge `Edg/`, Opera `OPR/`, Electron apps `Electron/`, Whale, Avast, Yandex,
+ * Samsung) and so is never judged against Chrome's calendar; phones and ChromeOS
+ * (school Chromebooks are pinned by policy) do not match the platform.
+ */
+const DESKTOP_CHROME_RE =
+  /^Mozilla\/5\.0 \((?:Windows NT [^)]+|Macintosh; Intel Mac OS X [^)]+|X11; Linux [^)]+)\) AppleWebKit\/537\.36 \(KHTML, like Gecko\) Chrome\/(\d+)\.[\d.]+ Safari\/537\.36$/
+
+export function desktopChromeMajor(userAgent: string | null | undefined): number | null {
+  if (typeof userAgent !== 'string') return null
+  const m = userAgent.trim().match(DESKTOP_CHROME_RE)
+  return m ? Number(m[1]) : null
+}
+
+/** More than this many days after the next Chrome went stable, a build is stale (STALE rule). */
+export const STALE_BROWSER_DAYS = 45
+
+/** Is this desktop Chrome more than STALE_BROWSER_DAYS behind its successor's stable release at `atMs`? */
+export function isStaleDesktopChrome(userAgent: string | null | undefined, atMs: number): boolean {
+  const major = desktopChromeMajor(userAgent)
+  if (major === null) return false
+  const superseded = chromeSupersededAt(major)
+  if (superseded === null) return false
+  return atMs - superseded > STALE_BROWSER_DAYS * 86_400_000
+}
+
+/**
+ * Towns whose visits here are cloud and datacenter egress, by Vercel's IP geo
+ * (x-vercel-ip-city / x-vercel-ip-country-region, US only). Each one carries the
+ * hyperscale site that puts its name on cloud addresses. Prineville, OR hosts
+ * Meta and Apple datacenters and is deliberately absent: it is a town this
+ * brokerage serves. The measured share per town is in docs/TRACKING_POLICY.md.
+ */
+export const DATACENTER_LOCALITIES: ReadonlyArray<{ city: string; region: string; site: string }> = [
+  { city: 'Santa Clara', region: 'CA', site: 'colocation and cloud campus (Silicon Valley)' },
+  { city: 'Ashburn', region: 'VA', site: 'AWS us-east-1 and the Loudoun County campuses' },
+  { city: 'Council Bluffs', region: 'IA', site: 'Google us-central1' },
+  { city: 'Boardman', region: 'OR', site: 'AWS us-west-2' },
+  { city: 'The Dalles', region: 'OR', site: 'Google us-west1' },
+  { city: 'Moncks Corner', region: 'SC', site: 'Google us-east1' },
+]
+
+export type IpGeo = { city?: string | null; region?: string | null; country?: string | null }
+
+export function isDatacenterLocality(geo: IpGeo | null | undefined): boolean {
+  if (!geo) return false
+  const country = (geo.country ?? '').trim().toUpperCase()
+  if (country !== 'US') return false
+  const city = (geo.city ?? '').trim().toLowerCase()
+  const region = (geo.region ?? '').trim().toUpperCase()
+  if (!city || !region) return false
+  return DATACENTER_LOCALITIES.some((l) => l.city.toLowerCase() === city && l.region === region)
+}
+
+/**
+ * Event types only a person produces: a search, a click, a scroll, a save, a form
+ * or sign-in. Not `section_view` (it fires when a section renders in view, which a
+ * tall headless viewport does on load) and not `welcome_back` (fired on arrival).
+ */
+export const PERSON_EVIDENCE_EVENTS: ReadonlySet<string> = new Set([
+  'search',
+  'cta_click',
+  'save_listing',
+  'scroll_depth',
+  'intent_declared',
+  'email_opt',
+  'sms_opt',
+  'join_convert',
+  'identify',
+  'signin',
+])
+
+function pathOf(url: string | null | undefined): string | null {
+  if (typeof url !== 'string' || !url) return null
+  try {
+    return new URL(url).pathname.replace(/\/+$/, '') || '/'
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Does this event show a person? An interaction (PERSON_EVIDENCE_EVENTS), or a
+ * view of a page other than the one the session landed on (the visitor moved
+ * on). A repeat view of the landing page and a section render do not. Clears a
+ * provisional class (PROVISIONAL_AUTOMATION_REASONS); at session birth it keeps
+ * one from being set.
+ */
+export function isPersonEvidence(args: {
+  eventType: string | null | undefined
+  pageUrl: string | null | undefined
+  landingPage: string | null | undefined
+}): boolean {
+  const type = typeof args.eventType === 'string' ? args.eventType : ''
+  if (PERSON_EVIDENCE_EVENTS.has(type)) return true
+  if (type !== 'page_view' && type !== 'listing_view') return false
+  const here = pathOf(args.pageUrl)
+  const landed = pathOf(args.landingPage)
+  return here !== null && landed !== null && here !== landed
+}
+
+/**
+ * The provisional class of a session's arrival (PROVISIONAL_AUTOMATION_REASONS),
+ * from what is true of every event the session sends: the landing page and
+ * referrer the tracker captured at first touch, the identity token, and the
+ * request's user agent and IP geo HEADERS (read to classify at every consent
+ * tier, never stored at essential). A cold arrival only: a referrer, a campaign
+ * or click id on the landing URL, or a token is a click we can name, and is
+ * never flagged. Pure; `atMs` is the request time.
+ */
 export function classifyArrivalShape(args: {
   /** The session's first page, as the tracker captured it (full URL, query intact). */
   landingPage: string | null | undefined
   referrer: string | null | undefined
   /** An identity token arrived with the event (forwarded, not on the URL). */
   hasToken?: boolean
+  /** The request's User-Agent header (stale-browser). */
+  userAgent?: string | null
+  /** The request's IP geo headers (datacenter-geo). */
+  geo?: IpGeo | null
+  /** Request time, epoch ms (stale-browser). Defaults to now. */
+  atMs?: number
 }): AutomationClass {
   const human: AutomationClass = { automated: false, reason: null }
   if (args.hasToken) return human
   if (typeof args.referrer === 'string' && args.referrer.trim()) return human
   if (typeof args.landingPage !== 'string' || !args.landingPage) return human
+  let u: URL
   try {
-    const u = new URL(args.landingPage)
-    // A link we sent or a tagged campaign is a person's click, never this class.
-    // (The tracker labels an untagged arrival 'direct / none', so the landing
-    // URL's own params are the evidence, not the session's utm columns.)
-    for (const key of u.searchParams.keys()) {
-      if (key.startsWith('utm_') || key === 'fbclid' || key === 'gclid' || key === '_pid' || key === 'agent') return human
-    }
-    const path = u.pathname.replace(/\/+$/, '') || '/'
-    if (path === '/contact' && (u.searchParams.get('listingKey') ?? '').trim()) {
-      return { automated: true, reason: 'contact-deep-link' }
-    }
+    u = new URL(args.landingPage)
   } catch {
-    /* unparseable landing page: no signal */
+    return human /* unparseable landing page: no signal */
   }
+  // A link we sent or a tagged campaign is a person's click, never this class.
+  // (The tracker labels an untagged arrival 'direct / none', so the landing
+  // URL's own params are the evidence, not the session's utm columns.)
+  const keys = [...u.searchParams.keys()].filter((k) => ARRIVAL_PARAM_RE.test(k))
+  if (keys.some((k) => k !== BROKER_ONLY_PARAM)) return human
+  const brokerLink = keys.length > 0
+  const path = u.pathname.replace(/\/+$/, '') || '/'
+  if (path === '/contact' && (u.searchParams.get('listingKey') ?? '').trim()) {
+    return brokerLink ? human : { automated: true, reason: 'contact-deep-link' }
+  }
+  if (isStaleDesktopChrome(args.userAgent, args.atMs ?? Date.now())) {
+    return { automated: true, reason: 'stale-browser' }
+  }
+  if (isDatacenterLocality(args.geo)) return { automated: true, reason: 'datacenter-geo' }
   return human
 }

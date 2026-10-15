@@ -5,8 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  * Reply-To. Measured against matt@ryan-realty.com on 2026-09-30: that pairing
  * put every invite and reminder since 09-29 in Gmail spam (two test sends plus
  * a plain one-line control did the same), while the same invite from
- * "Matt Ryan · Ryan Realty" <matt@mail.ryan-realty.com> landed in the inbox
- * twice. A signer who never sees the invite never signs.
+ * "Matt Ryan · Ryan Realty" <matt@ryan-realty.com> (the named identity; the
+ * 2026-09-30 inbox proof used the then-verified mail. subdomain). A signer
+ * who never sees the invite never signs.
  */
 
 const sendEmail = vi.fn<(opts: unknown) => Promise<{ id: string }>>(async () => ({ id: 'email-1' }))
@@ -38,8 +39,8 @@ const copy = {
   pdfName: 'signed.pdf',
 }
 
-const MATT = { from: '"Matt Ryan · Ryan Realty" <matt@mail.ryan-realty.com>', replyTo: 'matt@ryan-realty.com' }
-const PAUL = { from: '"Paul Stevenson · Ryan Realty" <paul@mail.ryan-realty.com>', replyTo: 'paul@ryan-realty.com' }
+const MATT = { from: '"Matt Ryan · Ryan Realty" <matt@ryan-realty.com>', replyTo: 'matt@ryan-realty.com' }
+const PAUL = { from: '"Paul Stevenson · Ryan Realty" <paul@ryan-realty.com>', replyTo: 'paul@ryan-realty.com' }
 
 describe('signing mail sender', () => {
   beforeEach(() => sendEmail.mockClear())
@@ -64,14 +65,14 @@ describe('signing mail sender', () => {
   it('sends as a broker onboarded after the registry, named from the roster, replies to them', async () => {
     await sendSigningInvite({ ...invite, sender: 'jane@ryan-realty.com' })
     expect(lastSend()).toMatchObject({
-      from: '"Jane Doe · Ryan Realty" <jane@mail.ryan-realty.com>',
+      from: '"Jane Doe · Ryan Realty" <jane@ryan-realty.com>',
       replyTo: 'jane@ryan-realty.com',
     })
   })
 
   it('sends a company mailbox the roster does not name as itself, never as Matt', async () => {
     await sendSigningInvite({ ...invite, sender: 'admin@ryan-realty.com' })
-    expect(lastSend()).toMatchObject({ from: '"Ryan Realty" <admin@mail.ryan-realty.com>', replyTo: 'admin@ryan-realty.com' })
+    expect(lastSend()).toMatchObject({ from: '"Ryan Realty" <admin@ryan-realty.com>', replyTo: 'admin@ryan-realty.com' })
   })
 
   it('falls back to the brokerage only without a company sender, and never to a bare noreply', async () => {

@@ -81,7 +81,7 @@ describe('sendBatchTestEmail — signature + from match the cohort', () => {
     expect(req.payload.rail).toBe('resend')
     expect(req.payload.html).toContain('<p>Hello Jane</p>')
     expect(req.payload.html).toContain('<div id="sig">Matt</div>')
-    expect(req.payload.from).toBe('"Matt Ryan · Ryan Realty" <matt@mail.ryan-realty.com>')
+    expect(req.payload.from).toBe('"Matt Ryan · Ryan Realty" <matt@ryan-realty.com>')
     expect(req.payload.replyTo).toBe('matt@ryan-realty.com')
     expect(req.payload.subject).toBe('[TEST] Hi Jane')
   })

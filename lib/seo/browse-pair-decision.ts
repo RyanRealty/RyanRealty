@@ -45,7 +45,8 @@
  *      (getIndexableSubdivisions: GIS polygon + >= 10 lifetime closed sales)
  *      AND it is this pair's place (same city; same slug or the same letters
  *      across a word break: BrowsePairFacts.cityPlat):
- *      rel=canonical to /subdivisions/{plat slug}, indexable, not emitted. A
+ *      rel=canonical to /subdivisions/{plat slug}, indexable, not emitted as
+ *      itself (browsePairSitemapPath submits the plat page instead). A
  *      canonical, not a 301: the two pages are joined differently (MLS name vs
  *      polygon) and the browse page stays useful to a visitor who lands on it.
  *   3. withheld name — the MLS name is an ingest code publishPlatDisplayName
@@ -66,9 +67,19 @@
  *      a real place, the stance of app/subdivisions/[slug]'s degraded path),
  *      but nothing vouches for a name either, so the search renders with no
  *      place name printed and stays noindex,follow until a read resolves it.
- *      A failed plat-set read alone withdraws nothing: the pair keeps a self
- *      canonical on the page and its slot in the sitemap, both of which read
- *      the same cached set.
+ *      A failed plat-set read alone withdraws nothing from the PAGE: the pair
+ *      keeps a self canonical and its index slot. It withdraws the pair from
+ *      the SITEMAP (2026-10-14): with the plat set unreadable
+ *      (BrowsePairFacts.platIndexable null) a plat twin cannot be told from a
+ *      self-canonical pair, so the sitemap submits nothing it cannot prove
+ *      self-canonical. Live 2026-10-14 23:10Z, geo.xml carried 69 of its 225
+ *      pairs that the healthy page canonicalizes to /subdivisions/{slug}, and
+ *      no /subdivisions/{slug} URL at all.
+ *
+ * THE SITEMAP URL FOR A PAIR is browsePairSitemapPath(), the one function the
+ * sitemap leg calls: a plat twin is submitted as the page it canonicalizes to
+ * (/subdivisions/{slug}, the target of the canonical the page serves), never
+ * as the twin; a self-canonical pair as itself; anything else not at all.
  *
  * GSC EVIDENCE for the rows leaving the index (Search Console API, page
  * dimension, 2026-08-24..09-20, joined to this classification of the live
@@ -170,7 +181,11 @@ export type BrowsePairDecision = {
   kind: BrowsePairKind
   /** robots index (always follow). */
   index: boolean
-  /** Submitted in app/sitemap.ts. Implies `index` and a self canonical. */
+  /**
+   * Submitted in app/sitemap.ts as its own URL. Implies `index` and a self
+   * canonical, PROVEN: false while the plat set is unreadable, because the page
+   * then fails open (self canonical) on pairs a healthy page canonicalizes away.
+   */
   emit: boolean
   /** Root-relative rel=canonical target; null = emit no canonical (refusal). */
   canonicalPath: string | null
@@ -214,6 +229,8 @@ export function isSameCityPlat(
 export function decideBrowsePair(facts: BrowsePairFacts): BrowsePairDecision {
   const self = browsePairPath(facts.citySlug, facts.areaSlug)
   const mlsName = facts.inventory?.mlsName ?? facts.activeName ?? null
+  // The page fails open on an unreadable plat set; the sitemap fails closed.
+  const platSetKnown = facts.platIndexable !== null
 
   if (facts.community) {
     return {
@@ -257,15 +274,17 @@ export function decideBrowsePair(facts: BrowsePairFacts): BrowsePairDecision {
       // Sold history is unique content, but a pair with fewer than
       // BROWSE_PAIR_MIN_ACTIVE homes for sale still leaves geo.xml and the
       // index (2026-10-13 sitemap hygiene). platIndexable null (the plat set
-      // did not read) lands here too; page and sitemap still agree.
+      // did not read) lands here too: the page keeps the self canonical and the
+      // index slot (fail open), and `emit` stays false (the sitemap cannot
+      // prove the pair is not a plat twin).
       const fat = active >= BROWSE_PAIR_MIN_ACTIVE
-      return { kind: 'sold-history', index: fat, emit: fat, canonicalPath: self, publicName: published, filterName: mlsName }
+      return { kind: 'sold-history', index: fat, emit: fat && platSetKnown, canonicalPath: self, publicName: published, filterName: mlsName }
     }
     // A name only the active-listing lookup knows is a subdivision that listed
     // after the MV's last refresh: count is unknown, so index fail-open and
     // do not emit. A verified count at the floor is unique inventory content.
     if (active >= BROWSE_PAIR_MIN_ACTIVE) {
-      return { kind: 'live-only', index: true, emit: true, canonicalPath: self, publicName: published, filterName: mlsName }
+      return { kind: 'live-only', index: true, emit: platSetKnown, canonicalPath: self, publicName: published, filterName: mlsName }
     }
     if (!facts.inventory && facts.activeName) {
       return { kind: 'live-only', index: true, emit: false, canonicalPath: self, publicName: published, filterName: mlsName }
@@ -282,6 +301,23 @@ export function decideBrowsePair(facts: BrowsePairFacts): BrowsePairDecision {
     return { kind: 'unknown', index: false, emit: false, canonicalPath: self, publicName: null, filterName: null }
   }
   return { kind: 'unresolved', index: false, emit: false, canonicalPath: null, publicName: null, filterName: null }
+}
+
+/**
+ * The ONE URL the sitemap submits for a browse pair, or null for none. The leg
+ * in app/sitemap.ts (getBrowsePairSitemapPaths) takes its URLs from here and
+ * from nowhere else, so a submitted URL is always the self-canonical URL of an
+ * indexable page:
+ *   - plat twin: the page it canonicalizes to, /subdivisions/{slug}. Never the
+ *     twin, whose canonical points away. Callers submit each target once.
+ *   - a pair whose decision emits: itself (emit implies a self canonical).
+ *   - everything else, including every pair while the plat set is unreadable
+ *     (decideBrowsePair clears `emit` then): nothing.
+ */
+export function browsePairSitemapPath(facts: BrowsePairFacts): string | null {
+  const decision = decideBrowsePair(facts)
+  if (decision.kind === 'plat-twin') return decision.canonicalPath
+  return decision.emit ? decision.canonicalPath : null
 }
 
 /** The kinds whose page renders the refusal instead of a listings search. */
