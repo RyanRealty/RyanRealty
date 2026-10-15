@@ -1,4 +1,5 @@
 import 'server-only'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { classifyChannel, originLabel, type ChannelGroup, type SessionSignals } from './channel-grouping'
 
@@ -25,6 +26,13 @@ import { classifyChannel, originLabel, type ChannelGroup, type SessionSignals } 
  * HONEST COVERAGE. The result always reports how many people could NOT be
  * attributed. A lead-source report that quietly drops what it cannot explain is
  * how a channel gets defunded for someone else's missing data.
+ *
+ * PEOPLE ONLY, ON REQUEST. `humanOnly` leaves out sessions flagged as
+ * automation (visitor_sessions.is_automated: crawlers, scripts, headless
+ * browsers, the brokers' own browsers). Without it a crawler burst lands in
+ * "Direct" and reads as unattributed people (2026-10-14).
+ *
+ * Cached 10 minutes, like the other reporting reads.
  */
 
 export type LeadSourceRow = {
@@ -70,15 +78,17 @@ type SessionRow = {
 const PAGE = 1000
 
 /** PostgREST caps a select at 1000 rows; this window routinely exceeds it. */
-async function readAllSessions(startIso: string, endIso: string): Promise<SessionRow[]> {
+async function readAllSessions(startIso: string, endIso: string, humanOnly: boolean): Promise<SessionRow[]> {
   const sb = createServiceClient()
   const out: SessionRow[] = []
   for (let from = 0; ; from += PAGE) {
-    const { data, error } = await sb
+    let q = sb
       .from('visitor_sessions')
       .select('session_id,crm_person_id,referrer,utm_source,utm_medium,utm_campaign,fbclid,first_seen_at')
       .gte('first_seen_at', startIso)
       .lte('first_seen_at', endIso)
+    if (humanOnly) q = q.eq('is_automated', false)
+    const { data, error } = await q
       // .order() is not optional — an unordered range() reshuffles between
       // requests and silently drops rows.
       .order('first_seen_at', { ascending: true })
@@ -102,9 +112,28 @@ function signalsOf(r: SessionRow): SessionSignals {
   }
 }
 
-export async function getLeadSources(startIso: string, endIso: string): Promise<LeadSourceReport> {
+export type LeadSourceOptions = {
+  /** Leave out sessions flagged as automation (is_automated). */
+  humanOnly?: boolean
+}
+
+export async function getLeadSources(
+  startIso: string,
+  endIso: string,
+  opts: LeadSourceOptions = {},
+): Promise<LeadSourceReport> {
+  const humanOnly = opts.humanOnly === true
+  const cached = unstable_cache(
+    () => readLeadSources(startIso, endIso, humanOnly),
+    ['lead-sources-v1', startIso, endIso, humanOnly ? 'human' : 'all'],
+    { tags: ['crm-reporting', 'website-dashboard'], revalidate: 600 },
+  )
+  return cached()
+}
+
+async function readLeadSources(startIso: string, endIso: string, humanOnly: boolean): Promise<LeadSourceReport> {
   const sb = createServiceClient()
-  const sessions = await readAllSessions(startIso, endIso)
+  const sessions = await readAllSessions(startIso, endIso, humanOnly)
 
   const byChannel = new Map<
     ChannelGroup,

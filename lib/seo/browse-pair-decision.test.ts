@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   BROWSE_PAIR_MIN_ACTIVE,
   BROWSE_PAIR_MIN_LIFETIME_SALES,
+  browsePairSitemapPath,
   decideBrowsePair,
   isRefusedBrowsePair,
   publishBrowsePairName,
@@ -247,5 +248,128 @@ describe('decideBrowsePair — MLS codes are never printed as place names', () =
     expect(publishBrowsePairName('Out of area; see remarks')).toBeNull()
     expect(publishBrowsePairName('Cambria')).toBe('Cambria')
     expect(publishBrowsePairName('Ridge At Eagle Crest')).toBe('Ridge at Eagle Crest')
+  })
+})
+
+describe('browsePairSitemapPath — the sitemap submits the URL the page is canonical at (2026-10-14)', () => {
+  // Live 2026-10-14 23:10Z: /sitemaps/geo.xml listed /homes-for-sale/la-pine/black-bear-meadows
+  // and /homes-for-sale/bend/lazy-river-west, whose pages serve rel=canonical to
+  // /subdivisions/black-bear-meadows and /subdivisions/lazy-river-west. 69 of the
+  // 225 pairs in the file did the same.
+  const twin = (areaSlug: string, platSlug: string, citySlug = 'bend') =>
+    facts({
+      citySlug,
+      areaSlug,
+      inventory: { mlsName: areaSlug, closedLifetime: 40, activeNow: 6 },
+      platIndexable: true,
+      cityPlat: { slug: platSlug, label: platSlug },
+    })
+
+  it('submits a pair whose page canonicalizes to /subdivisions/{slug} as that URL, never as the pair', () => {
+    for (const [city, area] of [['bend', 'lazy-river-west'], ['la-pine', 'black-bear-meadows']] as const) {
+      const f = twin(area, area, city)
+      expect(decideBrowsePair(f).canonicalPath).toBe(`/subdivisions/${area}`)
+      expect(browsePairSitemapPath(f)).toBe(`/subdivisions/${area}`)
+      expect(browsePairSitemapPath(f)).not.toBe(`/homes-for-sale/${city}/${area}`)
+    }
+  })
+
+  it('submits the plat slug the county recorded when the MLS name differs across a word break', () => {
+    const f = twin('deschutes-riverwoods', 'deschutes-river-woods')
+    expect(browsePairSitemapPath(f)).toBe('/subdivisions/deschutes-river-woods')
+  })
+
+  it('leaves a self-canonical pair unchanged: the pair itself', () => {
+    const sold = facts({ inventory: { mlsName: 'Cambria', closedLifetime: 22, activeNow: 3 } })
+    expect(browsePairSitemapPath(sold)).toBe('/homes-for-sale/bend/cambria')
+    const live = facts({
+      areaSlug: 'discovery-west-phase-8-9',
+      inventory: { mlsName: 'Discovery West Phase 8 & 9', closedLifetime: 6, activeNow: 16 },
+    })
+    expect(browsePairSitemapPath(live)).toBe('/homes-for-sale/bend/discovery-west-phase-8-9')
+  })
+
+  it('a pair that has a plat of its own city but is not in the indexable plat set stays self-canonical and is submitted as itself', () => {
+    // bend/desert-skies and bend/river-bend-estate on production: a plat exists, but the
+    // page serves a self canonical (the plat is not an indexable twin of this pair).
+    const f = facts({
+      areaSlug: 'desert-skies',
+      inventory: { mlsName: 'Desert Skies', closedLifetime: 30, activeNow: 5 },
+      platIndexable: false,
+      cityPlat: { slug: 'desert-skies', label: 'Desert Skies' },
+    })
+    expect(decideBrowsePair(f).canonicalPath).toBe('/homes-for-sale/bend/desert-skies')
+    expect(browsePairSitemapPath(f)).toBe('/homes-for-sale/bend/desert-skies')
+  })
+
+  it('submits nothing it cannot prove self-canonical while the plat set is unreadable (the page fails open, the sitemap fails closed)', () => {
+    // The same pair as the twin above, with the plat set unreadable: the page
+    // keeps a self canonical and the index slot, so a healthy page and this one
+    // disagree about the canonical. The sitemap withholds the pair.
+    const unreadable = facts({
+      citySlug: 'la-pine',
+      areaSlug: 'black-bear-meadows',
+      inventory: { mlsName: 'Black Bear Meadows', closedLifetime: 40, activeNow: 6 },
+      platIndexable: null,
+      cityPlat: { slug: 'black-bear-meadows', label: 'Black Bear Meadows' },
+    })
+    const d = decideBrowsePair(unreadable)
+    expect(d.kind).toBe('sold-history')
+    expect(d.index).toBe(true)
+    expect(d.canonicalPath).toBe('/homes-for-sale/la-pine/black-bear-meadows')
+    expect(d.emit).toBe(false)
+    expect(browsePairSitemapPath(unreadable)).toBeNull()
+    // A live-only pair too: no pair is emitted on an unreadable set.
+    const live = facts({
+      areaSlug: 'discovery-west-phase-8-9',
+      inventory: { mlsName: 'Discovery West Phase 8 & 9', closedLifetime: 6, activeNow: 16 },
+      platIndexable: null,
+    })
+    expect(decideBrowsePair(live).kind).toBe('live-only')
+    expect(decideBrowsePair(live).emit).toBe(false)
+    expect(browsePairSitemapPath(live)).toBeNull()
+  })
+
+  it('submits nothing for a community twin, a city twin, a thin pair, a withheld name or an unresolved area', () => {
+    const cases: BrowsePairFacts[] = [
+      facts({ areaSlug: 'tetherow', community: { publicSlug: 'tetherow', label: 'Tetherow' }, inventory: { mlsName: 'Tetherow', closedLifetime: 300, activeNow: 12 } }),
+      facts({ citySlug: 'sisters', areaSlug: 'sisters', inventory: { mlsName: 'Sisters', closedLifetime: 80, activeNow: 9 } }),
+      facts({ areaSlug: 'amundson', inventory: { mlsName: 'Amundson', closedLifetime: 7, activeNow: 0 } }),
+      facts({ areaSlug: 'aspenb', inventory: { mlsName: 'AspenB', closedLifetime: 40, activeNow: 4 } }),
+      facts({ areaSlug: 'p1-no-such-place' }),
+    ]
+    for (const f of cases) expect(browsePairSitemapPath(f), f.areaSlug).toBeNull()
+  })
+
+  it('the URL it returns is always the canonical the page serves, over a matrix of every kind', () => {
+    // One function decides both: a submitted URL is the decision's canonicalPath
+    // (so the page that is submitted points its canonical at itself).
+    const inventories = [
+      null,
+      { mlsName: 'Cambria', closedLifetime: 3, activeNow: 0 },
+      { mlsName: 'Cambria', closedLifetime: 3, activeNow: 5 },
+      { mlsName: 'Cambria', closedLifetime: 40, activeNow: 0 },
+      { mlsName: 'Cambria', closedLifetime: 40, activeNow: 5 },
+    ]
+    for (const inventory of inventories) {
+      for (const platIndexable of [true, false, null] as const) {
+        for (const cityPlat of [null, { slug: 'cambria', label: 'Cambria' }]) {
+          for (const activeName of [null, 'Cambria']) {
+            const f = facts({ inventory, platIndexable, cityPlat, activeName })
+            const d = decideBrowsePair(f)
+            const url = browsePairSitemapPath(f)
+            if (url === null) continue
+            expect(url, JSON.stringify(f)).toBe(d.canonicalPath)
+            // Never a URL that canonicalizes away: either the page's own URL
+            // (self canonical, indexable) or the plat page a twin points to.
+            if (d.kind === 'plat-twin') expect(url.startsWith('/subdivisions/')).toBe(true)
+            else {
+              expect(url).toBe('/homes-for-sale/bend/cambria')
+              expect(d.index).toBe(true)
+            }
+          }
+        }
+      }
+    }
   })
 })

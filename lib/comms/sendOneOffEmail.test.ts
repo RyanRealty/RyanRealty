@@ -62,7 +62,7 @@ describe('sendOneOffEmail', () => {
           rail: 'resend',
           to: 'elizemarais95@gmail.com',
           subject: base.subject,
-          from: '"Matt Ryan · Ryan Realty" <matt@mail.ryan-realty.com>',
+          from: '"Matt Ryan · Ryan Realty" <matt@ryan-realty.com>',
           replyTo: 'matt@ryan-realty.com',
         }),
       }),

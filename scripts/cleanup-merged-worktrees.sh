@@ -77,7 +77,10 @@ GH_BIN="${RR_CLEANUP_GH_BIN:-gh}"
 resolve_dir() {
   (CDPATH= cd -- "$1" && pwd -P) 2>/dev/null || return 1
 }
-# Physical home path, so it matches resolved worktree paths on macOS (/var vs /private/var).
+
+# Compare in physical paths: git reports worktree paths resolved, so a home
+# reached through a symlink (macOS /var is /private/var) never contained them
+# and every sibling clone was skipped as "not under RR_CLEANUP_HOME".
 HOME_SCAN=$(resolve_dir "$HOME_SCAN" || printf '%s' "$HOME_SCAN")
 
 die() {

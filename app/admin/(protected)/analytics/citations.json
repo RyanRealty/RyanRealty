@@ -1,66 +1,435 @@
 {
   "purpose": "Per-figure data trace for /admin/analytics. Every number rendered on the dashboard maps to exactly one source below. Update this file when adding a new metric.",
-  "lastVerified": "2026-05-21",
+  "lastVerified": "2026-10-14",
   "verifier": "claude (matt-supervised)",
   "tabs": {
+    "website": [
+      {
+        "figure": "window",
+        "source": "derived",
+        "rule": "lastFullDays(now, 7): the 7 full Pacific (America/Los_Angeles) days ending yesterday, as instants from Pacific midnight, compared with the 7 days before (app/admin/(protected)/analytics/_lib/website.ts)"
+      },
+      {
+        "figure": "glance.visits",
+        "source": "public.visitor_sessions via getWebsiteVisitors",
+        "filter": "first_seen_at IN [window] AND is_automated = false",
+        "aggregator": "COUNT(*)"
+      },
+      {
+        "figure": "glance.lookedAround",
+        "source": "public.visitor_sessions via getWebsiteVisitors",
+        "filter": "visits AND engagement_score >= ENGAGED_SCORE_MIN (20, salesFunnelMath.ts)"
+      },
+      {
+        "figure": "glance.cameBack",
+        "source": "public.visitor_sessions via getWebsiteVisitors",
+        "filter": "visits grouped by rr_vid",
+        "aggregator": "COUNT(rr_vid with >= 2 visits)"
+      },
+      {
+        "figure": "glance.automatedLeftOut",
+        "source": "public.visitor_sessions via getWebsiteVisitors",
+        "filter": "first_seen_at IN [window] AND is_automated = true",
+        "aggregator": "COUNT(*) (exact head count)"
+      },
+      {
+        "figure": "glance.newLeads / leads.*",
+        "source": "public.crm_people via getLeadIntake",
+        "filter": "created_at IN [window] AND deleted = false AND classifyLeadSource(source).attributable",
+        "note": "byDoor = classifyCaptureDoor(source); recent = newest 25 inbound with id for /admin/crm/[id]"
+      },
+      {
+        "figure": "where.buckets / topCities / topStates / topCountries",
+        "source": "public.visitor_sessions via getWebsiteVisitors",
+        "columns": [
+          "ip_country",
+          "ip_region",
+          "ip_city"
+        ],
+        "rule": "geoBucketOf (lib/data/analytics/websiteGeo.ts): Central Oregon = Oregon AND isCentralOregonCity(ip_city); located = visits in any bucket but unknown; geo is stored only at the analytics consent tier"
+      },
+      {
+        "figure": "look.markets",
+        "source": "public.visitor_events via getWebsiteMarkets",
+        "filter": "event_type IN (page_view, listing_view) AND event_at IN [window] AND visitor_sessions.is_automated = false (inner join)",
+        "rule": "marketFromUrl (lib/data/analytics/websiteMarkets.ts): city from /homes-for-sale/<city>, /open-houses/<city>, /cities/<city>, /oregon/<city>, ?city="
+      },
+      {
+        "figure": "look.searches",
+        "source": "public.visitor_events via getWebsiteMarkets",
+        "filter": "event_type = search AND event_at IN [window] AND human session",
+        "groupBy": "metadata.query (or metadata.term)"
+      },
+      {
+        "figure": "look.listings",
+        "source": "public.visitor_events via getListingPerformance({ humanOnly: true })",
+        "filter": "event_type = listing_view AND listing_mls IS NOT NULL AND event_at IN [window instants] AND visitor_sessions.is_automated = false"
+      },
+      {
+        "figure": "intent.*",
+        "source": "public.visitor_sessions via getWebsiteVisitors",
+        "rule": "classifyIntent(intent_tags) (lib/data/analytics/intentSplit.ts), the same reading as funnel-breakdown"
+      },
+      {
+        "figure": "sources.*",
+        "source": "public.visitor_sessions via getLeadSources(start, end, { humanOnly: true })",
+        "rule": "classifyChannel (lib/data/analytics/channel-grouping.ts); 'No source we can see' = Direct sessions / all sessions; Known people = first touch per crm_person_id"
+      },
+      {
+        "figure": "search.clicks / impressions / position",
+        "source": "public.marketing_channel_daily via getGscAccountTotals",
+        "filter": "channel = gsc AND scope = account AND date IN [7 days ending on the newest reported day]"
+      },
+      {
+        "figure": "search.trend",
+        "source": "public.marketing_channel_daily via getGscDaily",
+        "filter": "channel = gsc AND scope = account AND metric = clicks, last 28 days ending on the newest day with impressions > 0 (the cron stores unreported days as zeros)"
+      },
+      {
+        "figure": "search.topQueries",
+        "source": "public.marketing_channel_daily via getGscScopeAggregate('campaign')",
+        "filter": "channel = gsc AND scope = campaign (top 25 queries per day) AND date IN [window]",
+        "orderBy": "clicks DESC, impressions DESC",
+        "limit": 8
+      },
+      {
+        "figure": "gbp.*",
+        "source": "public.marketing_channel_daily via getGbpDaily + summarizeGbp",
+        "filter": "channel = gbp AND scope = account AND date IN [7 days ending on the newest reported day]",
+        "note": "Only days Google reported count; a missing metric on a reported day is a 0 (the API omits zero values)"
+      }
+    ],
     "overview": [
-      { "figure": "sessions", "source": "GA4 Data API runReport", "metric": "sessions", "filter": "dateRanges=[range]" },
-      { "figure": "totalUsers", "source": "GA4 Data API runReport", "metric": "totalUsers", "filter": "dateRanges=[range]" },
-      { "figure": "newUsers", "source": "GA4 Data API runReport", "metric": "newUsers", "filter": "dateRanges=[range]" },
-      { "figure": "generateLeadCount", "source": "GA4 Data API runReport", "metric": "eventCount", "dimensions": ["eventName"], "filter": "eventName=generate_lead AND dateRanges=[range]" },
-      { "figure": "leadConversionRate", "source": "derived", "formula": "generateLeadCount / sessions" },
-      { "figure": "averageSessionDurationSeconds", "source": "GA4 Data API runReport", "metric": "averageSessionDuration", "filter": "dateRanges=[range]" },
-      { "figure": "engagementRate", "source": "GA4 Data API runReport", "metric": "engagementRate", "filter": "dateRanges=[range]" },
-      { "figure": "bounceRate", "source": "GA4 Data API runReport", "metric": "bounceRate", "filter": "dateRanges=[range]" },
-      { "figure": "paidSpendUsd", "source": "public.marketing_channel_daily", "filter": "channel=meta_ads AND metric=spend_usd AND date IN [range]", "aggregator": "SUM(value)" },
-      { "figure": "topSources[]", "source": "GA4 Data API runReport", "dimensions": ["sessionSourceMedium"], "metrics": ["sessions"], "orderBy": "sessions DESC", "limit": 3 },
-      { "figure": "topLandingPages[]", "source": "GA4 Data API runReport", "dimensions": ["pagePath", "pageTitle"], "metrics": ["screenPageViews"], "orderBy": "screenPageViews DESC", "limit": 3 }
+      {
+        "figure": "sessions",
+        "source": "GA4 Data API runReport",
+        "metric": "sessions",
+        "filter": "dateRanges=[range]"
+      },
+      {
+        "figure": "totalUsers",
+        "source": "GA4 Data API runReport",
+        "metric": "totalUsers",
+        "filter": "dateRanges=[range]"
+      },
+      {
+        "figure": "newUsers",
+        "source": "GA4 Data API runReport",
+        "metric": "newUsers",
+        "filter": "dateRanges=[range]"
+      },
+      {
+        "figure": "generateLeadCount",
+        "source": "GA4 Data API runReport",
+        "metric": "eventCount",
+        "dimensions": [
+          "eventName"
+        ],
+        "filter": "eventName=generate_lead AND dateRanges=[range]"
+      },
+      {
+        "figure": "leadConversionRate",
+        "source": "derived",
+        "formula": "generateLeadCount / sessions"
+      },
+      {
+        "figure": "averageSessionDurationSeconds",
+        "source": "GA4 Data API runReport",
+        "metric": "averageSessionDuration",
+        "filter": "dateRanges=[range]"
+      },
+      {
+        "figure": "engagementRate",
+        "source": "GA4 Data API runReport",
+        "metric": "engagementRate",
+        "filter": "dateRanges=[range]"
+      },
+      {
+        "figure": "bounceRate",
+        "source": "GA4 Data API runReport",
+        "metric": "bounceRate",
+        "filter": "dateRanges=[range]"
+      },
+      {
+        "figure": "paidSpendUsd",
+        "source": "public.marketing_channel_daily via getMetaAdSpend",
+        "filter": "channel=meta_ads AND scope=account AND metric=spend AND date IN [range]",
+        "aggregator": "SUM(value)"
+      },
+      {
+        "figure": "topSources[]",
+        "source": "GA4 Data API runReport",
+        "dimensions": [
+          "sessionSourceMedium"
+        ],
+        "metrics": [
+          "sessions"
+        ],
+        "orderBy": "sessions DESC",
+        "limit": 3
+      },
+      {
+        "figure": "topLandingPages[]",
+        "source": "GA4 Data API runReport",
+        "dimensions": [
+          "pagePath",
+          "pageTitle"
+        ],
+        "metrics": [
+          "screenPageViews"
+        ],
+        "orderBy": "screenPageViews DESC",
+        "limit": 3,
+        "note": "Top pages by views (screenPageViews), not landing pages; labelled that way since 2026-10-14"
+      }
     ],
     "acquisition": [
-      { "figure": "sources[].sessions", "source": "GA4 Data API runReport", "dimensions": ["sessionSourceMedium"], "metrics": ["sessions"] },
-      { "figure": "sources[].leadEvents", "source": "GA4 Data API runReport", "dimensions": ["sessionSourceMedium"], "metrics": ["eventCount"], "filter": "eventName IN LEAD_EVENT_NAMES" },
-      { "figure": "sources[].conversionRate", "source": "derived", "formula": "leadEvents / sessions" },
-      { "figure": "channels[]", "source": "GA4 Data API runReport", "dimensions": ["sessionDefaultChannelGroup"], "metrics": ["sessions", "totalUsers", "engagementRate"], "filter": "channel matches /social/i" },
-      { "figure": "paidVsOrganic", "source": "derived from topSources", "rules": "paid: cpc OR paid_social OR paidsocial OR paid OR ads; organic: organic OR referral OR seo; other: everything else" }
+      {
+        "figure": "sources[].sessions",
+        "source": "GA4 Data API runReport",
+        "dimensions": [
+          "sessionSourceMedium"
+        ],
+        "metrics": [
+          "sessions"
+        ]
+      },
+      {
+        "figure": "sources[].leadEvents",
+        "source": "GA4 Data API runReport",
+        "dimensions": [
+          "sessionSourceMedium"
+        ],
+        "metrics": [
+          "eventCount"
+        ],
+        "filter": "eventName IN LEAD_EVENT_NAMES"
+      },
+      {
+        "figure": "sources[].conversionRate",
+        "source": "derived",
+        "formula": "leadEvents / sessions"
+      },
+      {
+        "figure": "channels[]",
+        "source": "GA4 Data API runReport",
+        "dimensions": [
+          "sessionDefaultChannelGroup"
+        ],
+        "metrics": [
+          "sessions",
+          "totalUsers",
+          "engagementRate"
+        ],
+        "filter": "channel matches /social/i"
+      },
+      {
+        "figure": "paidVsOrganic",
+        "source": "derived from topSources",
+        "rules": "paid: cpc OR paid_social OR paidsocial OR paid OR ads; organic: organic OR referral OR seo; other: everything else"
+      }
     ],
     "behavior": [
-      { "figure": "pages[]", "source": "GA4 Data API runReport", "dimensions": ["pagePath", "pageTitle"], "metrics": ["screenPageViews", "totalUsers", "userEngagementDuration"], "orderBy": "screenPageViews DESC", "limit": 20 },
-      { "figure": "scrollDepths[]", "source": "GA4 Data API runReport", "dimensions": ["eventName"], "metrics": ["eventCount"], "filter": "eventName=scroll_depth", "estimation": "Per-milestone distribution estimated as 45/28/17/10% of aggregate. Will be replaced with direct percent_scrolled dimension query once the param-level breakdown is added to getGA4Summary." }
+      {
+        "figure": "pages[]",
+        "source": "GA4 Data API runReport",
+        "dimensions": [
+          "pagePath",
+          "pageTitle"
+        ],
+        "metrics": [
+          "screenPageViews",
+          "totalUsers",
+          "userEngagementDuration"
+        ],
+        "orderBy": "screenPageViews DESC",
+        "limit": 10,
+        "note": "GA4 report limit is 10 (app/actions/ga4-report.ts); the heading prints the count it got"
+      },
+      {
+        "figure": "scrollTotal",
+        "source": "GA4 Data API runReport",
+        "dimensions": [
+          "eventName"
+        ],
+        "metrics": [
+          "eventCount"
+        ],
+        "filter": "eventName=scroll_depth",
+        "note": "Aggregate of every scroll milestone (25/50/75/100); no per-milestone split"
+      }
     ],
     "funnel": [
-      { "figure": "discovery.*", "source": "public.marketing_channel_daily via rollDiscovery / DISCOVERY_SPECS", "filter": "scope=account AND date IN [range]", "note": "One card per platform. Never summed across platforms. GBP four impression surfaces are slices of one location and may be summed with each other." },
-      { "figure": "discovery.meta-ads", "source": "marketing_channel_daily", "filter": "channel=meta_ads metric=impressions" },
-      { "figure": "discovery.google-ads", "source": "marketing_channel_daily", "filter": "channel=google_ads metric=impressions" },
-      { "figure": "discovery.gsc", "source": "marketing_channel_daily", "filter": "channel=gsc metric=impressions" },
-      { "figure": "discovery.gbp", "source": "marketing_channel_daily", "filter": "channel=gbp AND metric IN desktop/mobile maps+search impressions" },
-      { "figure": "discovery.meta-page", "source": "marketing_channel_daily", "filter": "channel=meta_page metric=page_impressions" },
-      { "figure": "discovery.instagram", "source": "marketing_channel_daily", "filter": "channel=instagram metric=impressions" },
-      { "figure": "discovery.linkedin", "source": "marketing_channel_daily", "filter": "channel=linkedin metric=impressions" },
-      { "figure": "discovery.x", "source": "marketing_channel_daily", "filter": "channel=x metric=impressions" },
-      { "figure": "discovery.youtube", "source": "marketing_channel_daily", "filter": "channel=youtube metric=views" },
-      { "figure": "discovery.tiktok", "source": "UNMEASURED", "reason": "TikTok writes cumulative video views, not daily impressions" },
-      { "figure": "discovery.llm", "source": "UNMEASURED", "reason": "No citation writer" },
-      { "figure": "ga4Sessions", "source": "marketing_channel_daily", "filter": "channel=ga4 metric=sessions scope=account", "note": "Consent-gated. Caption only. First-party visitor_sessions is the visit spine." },
-      { "figure": "joinConverts", "source": "visitor_events", "filter": "event_type=join_convert AND event_at IN [range], fleet-test dropped" },
-      { "figure": "stock.activeBrokersNow", "source": "public.brokers", "filter": "crm_active=true AND is_active=true" },
-      { "figure": "brokerBooks[]", "source": "crm_people.assigned_broker in window + crm_deals Listed+", "note": "Recruit view uses consumer (non-recruit) attributable leads as the book a recruit joins. Seller/buyer view splits that audience." },
-      { "figure": "stages.visited", "source": "public.visitor_sessions", "filter": "first_seen_at IN [range] AND sessionAppearsInAudience(intent_tags)", "countKind": "sessions" },
-      { "figure": "stages.engaged", "source": "public.visitor_sessions", "filter": "visited AND engagement_score >= 20", "nestedOf": "visited" },
-      { "figure": "stages.identified", "source": "public.visitor_sessions", "filter": "visited AND (crm_person_id IS NOT NULL OR identified_at IS NOT NULL)", "nestedOf": "visited" },
-      { "figure": "stages.lead", "source": "public.crm_people via getSalesFunnel", "filter": "created_at IN [range] AND deleted=false AND attributable AND personAppearsInAudience", "countKind": "people" },
-      { "figure": "stages.working", "source": "public.crm_timeline", "filter": "kind IN call,voicemail,sms_out,sms_in,email_out,appointment AND source != sequence, after lead created_at. Phone/text doors count as working immediately.", "nestedOf": "lead" },
-      { "figure": "stages.client.seller", "source": "public.crm_deals", "filter": "pipeline=Sellers AND stage IN (Listed, Offer, Pending, Closed) AND person_id IN lead cohort" },
-      { "figure": "stages.client.buyer", "source": "UNMEASURED", "reason": "Buyer-rep signature is not stored" },
-      { "figure": "doors[]", "source": "crm_people.source classified by classifyCaptureDoor", "countKind": "events", "note": "First recorded source. Farm/Import/Sphere excluded. Manual tagged." },
-      { "figure": "stock.sellerListedPlusNow", "source": "public.crm_deals", "filter": "pipeline=Sellers AND stage IN (Listed, Offer, Pending, Closed)", "note": "Current board, not cohort" },
-      { "figure": "ga4LpEventFunnel", "source": "GA4 Data API via fetchFunnel", "note": "Secondary diagnostic. Events, not people." }
+      {
+        "figure": "discovery.*",
+        "source": "public.marketing_channel_daily via rollDiscovery / DISCOVERY_SPECS",
+        "filter": "scope=account AND date IN [range]",
+        "note": "One card per platform. Never summed across platforms. GBP four impression surfaces are slices of one location and may be summed with each other."
+      },
+      {
+        "figure": "discovery.meta-ads",
+        "source": "marketing_channel_daily",
+        "filter": "channel=meta_ads metric=impressions"
+      },
+      {
+        "figure": "discovery.google-ads",
+        "source": "marketing_channel_daily",
+        "filter": "channel=google_ads metric=impressions"
+      },
+      {
+        "figure": "discovery.gsc",
+        "source": "marketing_channel_daily",
+        "filter": "channel=gsc metric=impressions"
+      },
+      {
+        "figure": "discovery.gbp",
+        "source": "marketing_channel_daily",
+        "filter": "channel=gbp AND metric IN desktop/mobile maps+search impressions"
+      },
+      {
+        "figure": "discovery.meta-page",
+        "source": "marketing_channel_daily",
+        "filter": "channel=meta_page metric=page_impressions"
+      },
+      {
+        "figure": "discovery.instagram",
+        "source": "marketing_channel_daily",
+        "filter": "channel=instagram metric=impressions"
+      },
+      {
+        "figure": "discovery.linkedin",
+        "source": "marketing_channel_daily",
+        "filter": "channel=linkedin metric=impressions"
+      },
+      {
+        "figure": "discovery.x",
+        "source": "marketing_channel_daily",
+        "filter": "channel=x metric=impressions"
+      },
+      {
+        "figure": "discovery.youtube",
+        "source": "marketing_channel_daily",
+        "filter": "channel=youtube metric=views"
+      },
+      {
+        "figure": "discovery.tiktok",
+        "source": "UNMEASURED",
+        "reason": "TikTok writes cumulative video views, not daily impressions"
+      },
+      {
+        "figure": "discovery.llm",
+        "source": "UNMEASURED",
+        "reason": "No citation writer"
+      },
+      {
+        "figure": "ga4Sessions",
+        "source": "marketing_channel_daily",
+        "filter": "channel=ga4 metric=sessions scope=account",
+        "note": "Consent-gated. Caption only. First-party visitor_sessions is the visit spine."
+      },
+      {
+        "figure": "joinConverts",
+        "source": "visitor_events",
+        "filter": "event_type=join_convert AND event_at IN [range], fleet-test dropped"
+      },
+      {
+        "figure": "stock.activeBrokersNow",
+        "source": "public.brokers",
+        "filter": "crm_active=true AND is_active=true"
+      },
+      {
+        "figure": "brokerBooks[]",
+        "source": "crm_people.assigned_broker in window + crm_deals Listed+",
+        "note": "Recruit view uses consumer (non-recruit) attributable leads as the book a recruit joins. Seller/buyer view splits that audience."
+      },
+      {
+        "figure": "stages.visited",
+        "source": "public.visitor_sessions",
+        "filter": "first_seen_at IN [range] AND sessionAppearsInAudience(intent_tags)",
+        "countKind": "sessions"
+      },
+      {
+        "figure": "stages.engaged",
+        "source": "public.visitor_sessions",
+        "filter": "visited AND engagement_score >= 20",
+        "nestedOf": "visited"
+      },
+      {
+        "figure": "stages.identified",
+        "source": "public.visitor_sessions",
+        "filter": "visited AND (crm_person_id IS NOT NULL OR identified_at IS NOT NULL)",
+        "nestedOf": "visited"
+      },
+      {
+        "figure": "stages.lead",
+        "source": "public.crm_people via getSalesFunnel",
+        "filter": "created_at IN [range] AND deleted=false AND attributable AND personAppearsInAudience",
+        "countKind": "people"
+      },
+      {
+        "figure": "stages.working",
+        "source": "public.crm_timeline",
+        "filter": "kind IN call,voicemail,sms_out,sms_in,email_out,appointment AND source != sequence, after lead created_at. Phone/text doors count as working immediately.",
+        "nestedOf": "lead"
+      },
+      {
+        "figure": "stages.client.seller",
+        "source": "public.crm_deals",
+        "filter": "pipeline=Sellers AND stage IN (Listed, Offer, Pending, Closed) AND person_id IN lead cohort"
+      },
+      {
+        "figure": "stages.client.buyer",
+        "source": "UNMEASURED",
+        "reason": "Buyer-rep signature is not stored"
+      },
+      {
+        "figure": "doors[]",
+        "source": "crm_people.source classified by classifyCaptureDoor",
+        "countKind": "events",
+        "note": "First recorded source. Farm/Import/Sphere excluded. Manual tagged."
+      },
+      {
+        "figure": "stock.sellerListedPlusNow",
+        "source": "public.crm_deals",
+        "filter": "pipeline=Sellers AND stage IN (Listed, Offer, Pending, Closed)",
+        "note": "Current board, not cohort"
+      },
+      {
+        "figure": "ga4LpEventFunnel",
+        "source": "GA4 Data API via fetchFunnel",
+        "note": "Secondary diagnostic. Events, not people."
+      }
     ],
     "conversions": [
-      { "figure": "leadsBySource[]", "source": "public.crm_people via getLeadIntake", "groupBy": "source", "filter": "created_at IN [range] AND deleted=false AND attributable" },
-      { "figure": "brokerSplit[]", "source": "public.crm_people via getLeadIntake", "groupBy": "assigned_broker", "filter": "created_at IN [range] AND deleted=false AND attributable" },
-      { "figure": "classificationMix[]", "source": "public.crm_people via getLeadIntake", "groupBy": "classifyLeadSource(source).channel", "filter": "created_at IN [range] AND deleted=false AND attributable" },
-      { "figure": "timeSeries[]", "source": "public.crm_people (leads) + public.marketing_channel_daily (sessions)", "filter": "leads: crm_people created_at IN [range] AND attributable; sessions: channel=ga4 AND scope=account AND metric=sessions AND date IN [range]" },
-      { "figure": "costPerLeadUsd", "source": "derived", "formula": "SUM(marketing_channel_daily.value WHERE channel=meta_ads AND metric=spend_usd) / crm_people inbound lead count" }
+      {
+        "figure": "leadsBySource[]",
+        "source": "public.crm_people via getLeadIntake",
+        "groupBy": "source",
+        "filter": "created_at IN [range] AND deleted=false AND attributable",
+        "note": "One column: lead count per crm_people.source (the old Users column repeated it)"
+      },
+      {
+        "figure": "brokerSplit[]",
+        "source": "public.crm_people via getLeadIntake",
+        "groupBy": "assigned_broker",
+        "filter": "created_at IN [range] AND deleted=false AND attributable"
+      },
+      {
+        "figure": "classificationMix[]",
+        "source": "public.crm_people via getLeadIntake",
+        "groupBy": "classifyLeadSource(source).channel",
+        "filter": "created_at IN [range] AND deleted=false AND attributable"
+      },
+      {
+        "figure": "timeSeries[]",
+        "source": "public.crm_people (leads) + public.marketing_channel_daily (sessions)",
+        "filter": "leads: crm_people created_at IN [range] AND attributable; sessions: channel=ga4 AND scope=account AND metric=sessions AND date IN [range]"
+      },
+      {
+        "figure": "costPerLeadUsd",
+        "source": "derived",
+        "formula": "SUM(marketing_channel_daily.value WHERE channel=meta_ads AND scope=account AND metric=spend) / crm_people inbound lead count (getMetaAdSpend + getLeadIntake)"
+      }
     ]
   },
   "notes": [
