@@ -300,7 +300,7 @@ export function V3SarahAssistant() {
     })
     let armed
     try {
-      armed = armSarahMicOnTap()
+      armed = armSarahMicOnTap() // hydration-safe: tap handler, not render
     } catch (err) {
       setVoiceStatus('error')
       logSarahVoiceError(err)
