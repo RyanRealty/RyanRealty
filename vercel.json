@@ -95,6 +95,10 @@
       "schedule": "0 13 * * *"
     },
     {
+      "path": "/api/cron/twilio-webhook-replay",
+      "schedule": "*/2 * * * *"
+    },
+    {
       "path": "/api/cron/daily-broker-digest",
       "schedule": "0 15 * * *"
     },

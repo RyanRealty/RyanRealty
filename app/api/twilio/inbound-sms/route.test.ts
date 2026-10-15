@@ -93,15 +93,10 @@ vi.mock('@/lib/supabase/service', () => {
   }
 })
 
-import { POST } from './route'
+import { processInboundSms } from './route'
 
-function inbound(from: string, to: string, body: string): Request {
-  const form = new URLSearchParams({ From: from, To: to, Body: body, MessageSid: 'SMtest' })
-  return new Request('https://ryan-realty.com/api/twilio/inbound-sms', {
-    method: 'POST',
-    body: form,
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  })
+function inbound(from: string, to: string, body: string): Record<string, string> {
+  return { From: from, To: to, Body: body, MessageSid: 'SMtest' }
 }
 
 describe('inbound-sms broker cell routing', () => {
@@ -115,8 +110,7 @@ describe('inbound-sms broker cell routing', () => {
   })
 
   it("relays a broker's text on a colleague's line to the colleague's cell", async () => {
-    const res = await POST(inbound(CELLS.matt, LINES.paul, 'Hey Paul, it is Matt'))
-    expect(res.status).toBe(200)
+    await processInboundSms(inbound(CELLS.matt, LINES.paul, 'Hey Paul, it is Matt'))
     expect(sendSms).toHaveBeenCalledTimes(1)
     const sent = sendSms.mock.calls[0][0]
     expect(sent.from).toBe(LINES.paul)
@@ -127,7 +121,7 @@ describe('inbound-sms broker cell routing', () => {
   })
 
   it("drops a broker's text on their own line", async () => {
-    await POST(inbound(CELLS.paul, LINES.paul, 'reply in thread'))
+    await processInboundSms(inbound(CELLS.paul, LINES.paul, 'reply in thread'))
     expect(sendSms).not.toHaveBeenCalled()
     expect(findOrCreatePersonByPhone).not.toHaveBeenCalled()
     expect(upserts.find((u) => u.table === 'crm_sms_inbound_log')?.row).toMatchObject({
@@ -137,13 +131,13 @@ describe('inbound-sms broker cell routing', () => {
   })
 
   it("drops a broker's text on the shared marketing line", async () => {
-    await POST(inbound(CELLS.rebecca, MARKETING, 'hello'))
+    await processInboundSms(inbound(CELLS.rebecca, MARKETING, 'hello'))
     expect(sendSms).not.toHaveBeenCalled()
     expect(findOrCreatePersonByPhone).not.toHaveBeenCalled()
   })
 
   it("forwards a client's text to the dialed line's broker", async () => {
-    await POST(inbound('+15035550123', LINES.paul, 'Is the house still available?'))
+    await processInboundSms(inbound('+15035550123', LINES.paul, 'Is the house still available?'))
     expect(findOrCreatePersonByPhone).toHaveBeenCalledTimes(1)
     expect(sendSms).toHaveBeenCalledTimes(1)
     expect(sendSms.mock.calls[0][0]).toMatchObject({ from: LINES.paul, to: CELLS.paul })
@@ -157,7 +151,7 @@ describe('inbound-sms broker cell routing', () => {
   })
 
   it('keeps and sets SMS opt-out on STOP and never clears flags', async () => {
-    await POST(inbound('+15035550123', LINES.paul, 'STOP'))
+    await processInboundSms(inbound('+15035550123', LINES.paul, 'STOP'))
     expect(clearNonOptOutSuppressions).not.toHaveBeenCalled()
     expect(applyInboundConsentClear).not.toHaveBeenCalled()
     expect(addSuppression).toHaveBeenCalledWith(
@@ -166,7 +160,8 @@ describe('inbound-sms broker cell routing', () => {
   })
 
   it('does not clear suppressions for a broker-cell drop', async () => {
-    await POST(inbound(CELLS.paul, LINES.paul, 'reply in thread'))
+    await processInboundSms(inbound(CELLS.paul, LINES.paul, 'reply in thread'))
     expect(clearNonOptOutSuppressions).not.toHaveBeenCalled()
+    expect(applyInboundConsentClear).not.toHaveBeenCalled()
   })
 })

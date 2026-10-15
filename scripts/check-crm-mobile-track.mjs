@@ -75,10 +75,10 @@ const SHIPPED = [
     mustNot: [/isPushedDetailPath/],
   },
   {
-    id: 'M2 shell — single FAB rides above the always-on tab bar',
+    id: 'M2 shell — mobile + portals into the header so it cannot cover row actions',
     file: 'components/console/ConsoleQuickAction.tsx',
-    must: [/fixed bottom-20 right-5/],
-    mustNot: [/isPushedDetailPath/],
+    must: [/ADMIN_FAB_HEADER_SLOT_ID/, /createPortal/, /hidden lg:flex/],
+    mustNot: [/fixed bottom-20 right-5/, /isPushedDetailPath/],
   },
   {
     id: 'Menu — the nav carries Reporting/Workflows/Templates',

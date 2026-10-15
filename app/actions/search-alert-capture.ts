@@ -2,6 +2,8 @@
 
 import { siteOrigin } from '@/lib/site-origin'
 import { cookies, headers } from 'next/headers'
+import { after } from 'next/server'
+import { normalizeSavedSearchFrequency, type SavedSearchFrequency } from '@/lib/saved-search-frequency'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { getAuthLimiter } from '@/lib/rate-limit'
 import {
@@ -102,6 +104,13 @@ export async function submitSearchAlertSignup(input: {
    * price_change on and everything else off. Omit for the default feed.
    */
   events?: Record<string, boolean>
+  /**
+   * Cadence for a NEW row. Place pages pass 'daily' (Matt 2026-10-14: every
+   * area signup is daily by default). Omit and the DAL default applies
+   * ('instant', the /search capture and the buyer LP promise). An existing
+   * row's stored cadence always wins.
+   */
+  frequency?: SavedSearchFrequency
   /** Counsel memo 002 §5.4. EU/UK hashed-match box only. */
   adMatchConsent?: boolean
   /**
@@ -320,8 +329,32 @@ export async function submitSearchAlertSignup(input: {
     crmPersonId,
     fubPersonId,
     ...(events ? { events } : {}),
+    ...(input.frequency ? { frequency: normalizeSavedSearchFrequency(input.frequency) } : {}),
   })
   if (!persisted.ok) return { ok: false, error: 'We could not set up your alert. Please try again.' }
+
+  // 6a. The first email goes now (Matt 2026-10-14: "the listing alerts should
+  //     go out immediately"), not at the next cron tick: the newest batch for
+  //     this row through the one engine (runListingAlerts with alertIds), so
+  //     compliance stops, tracking and the notified cursor have one
+  //     implementation. Only for a row this submit minted and left active, and
+  //     never for a suspect submit (the cron still serves that row on its own
+  //     clock, as before). after() keeps the visitor's response fast; the send
+  //     finishes in the same invocation.
+  const firstSendId = persisted.created && persisted.active && !suspect ? persisted.id : undefined
+  if (firstSendId) {
+    after(async () => {
+      try {
+        const { runListingAlerts } = await import('@/app/actions/saved-search-alerts')
+        const summary = await runListingAlerts({ alertIds: [firstSendId] })
+        console.log(
+          `[search-alert] first send ${firstSendId}: sent ${summary.sent}, skipped ${summary.skipped}${summary.errors.length ? `, errors ${summary.errors.map((e) => e.error).join('; ')}` : ''}`,
+        )
+      } catch (e) {
+        console.warn('[search-alert] first send threw (the cron picks the row up next hour):', e)
+      }
+    })
+  }
 
   // 6b. SITE-09: the visitor's same-minute confirmation. A system send, not a
   //     broker send (CLAUDE.md §1, Matt 2026-09-07), so no approval gate. It
@@ -337,7 +370,7 @@ export async function submitSearchAlertSignup(input: {
         leadEmail: email,
         ...(isPriceDropAlert
           ? { kind: 'price-drop' as const }
-          : { kind: 'search' as const }),
+          : { kind: 'search' as const, cadence: persisted.frequency ?? null }),
         criteriaSummary: summary || name,
       })
       console.log(

@@ -59,6 +59,8 @@ type Props = {
   closedTrace: string | null
   chart?: V3ChartProps
   sheet: ReactNode
+  /** The listing-alert signup (PlaceAlertsStrip), or null when the place maps to no area. */
+  alerts?: ReactNode
   publicSegments?: readonly PublicSegmentRow[]
   publicPace?: PublicPaceRow | null
   publicMix?: PublicMixRow | null
@@ -85,6 +87,7 @@ export function CityMarketView({
   closedTrace,
   chart,
   sheet,
+  alerts = null,
   publicSegments = [],
   publicPace = null,
   insightBoard = null,
@@ -300,6 +303,11 @@ export function CityMarketView({
           </a>
         </section>
       ) : null}
+
+      {/* THE ALERT SIGNUP (Matt 2026-10-14): directly after the page's listings
+          (the homes section above), or after the opening when there are none.
+          Never beside the inquiry sheet, which sits after the FAQ. */}
+      {alerts}
 
       {firstCityRow ? (
         <V3Ledger

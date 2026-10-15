@@ -92,6 +92,13 @@ export interface BuildListingAlertEmailInput {
    * all-new section renders exactly like the legacy new-listings email.
    */
   sections?: AlertEmailSection[] | null
+  /**
+   * The alert's first email (lib/alerts/run-policy.ts). It carries the newest
+   * listings on the market when the visitor signed up, not listings that are
+   * new since a previous email, so it says "newest" and says what comes next.
+   * Pass the row's stored cadence.
+   */
+  firstSend?: { cadence: string | null } | null
 }
 
 export interface BuiltListingAlertEmail {
@@ -134,6 +141,33 @@ export function buildListingAlertSubject(count: number, searchName: string): str
   const safeCount = Math.max(1, Math.trunc(count))
   const noun = safeCount === 1 ? 'listing' : 'listings'
   return `${safeCount} new ${noun} for ${searchName.trim()}`
+}
+
+/** First-email subject: "Bend homes: the 12 newest listings". */
+export function buildFirstAlertSubject(count: number, searchName: string): string {
+  return `${searchName.trim()}: ${firstAlertCountLine(count).replace(/^The /, 'the ')}`
+}
+
+/** "The 12 newest listings", or "The newest listing" for one. */
+export function firstAlertCountLine(count: number): string {
+  const safeCount = Math.max(1, Math.trunc(count))
+  return safeCount === 1 ? 'The newest listing' : `The ${safeCount} newest listings`
+}
+
+/**
+ * What the first email says comes next, in the row's own cadence. Instant rows
+ * ride the hourly cron; daily rows the morning slot (lib/saved-search-cadence.ts).
+ */
+export function firstAlertIntro(cadence: string | null | undefined): string {
+  const next =
+    cadence === 'instant'
+      ? 'From here we email you as new listings come on the market, checked every hour.'
+      : cadence === 'weekly'
+        ? 'From here you get one email a week when something new comes on the market.'
+        : cadence === 'monthly'
+          ? 'From here you get one email a month when something new comes on the market.'
+          : 'From here you get one email each morning when something new comes on the market.'
+  return `Your alert is on. These are the newest listings that match it right now. ${next} Price changes on homes we sent you ride along in the same email.`
 }
 
 /** Mixed-event subject, equally plain: "4 updates for Bend under 800k". */
@@ -223,15 +257,19 @@ export function buildListingAlertEmail(input: BuildListingAlertEmailInput): Buil
   const total = Math.max(shown.length, Math.trunc(input.totalNewCount ?? shown.length))
   const moreCount = Math.max(0, total - shown.length)
 
-  const subject =
-    hasSections && !newOnly
+  // The first email is all "new" by construction (nothing was sent before it).
+  const firstSend = Boolean(input.firstSend) && (!hasSections || newOnly)
+  const subject = firstSend
+    ? buildFirstAlertSubject(total, searchName)
+    : hasSections && !newOnly
       ? buildListingAlertUpdatesSubject(total, searchName)
       : buildListingAlertSubject(total, searchName)
-  const countLine =
-    hasSections && !newOnly
+  const countLine = firstSend
+    ? firstAlertCountLine(total)
+    : hasSections && !newOnly
       ? `${total} ${total === 1 ? 'update' : 'updates'}`
       : `${total} new ${total === 1 ? 'listing' : 'listings'}`
-  const intro = (input.intro ?? '').trim()
+  const intro = (input.intro ?? '').trim() || (firstSend ? firstAlertIntro(input.firstSend?.cadence) : '')
   const filtersSummary = (input.filtersSummary ?? '').trim()
   const browseHref = escapeHtml(input.browseAllUrl)
 
@@ -249,7 +287,7 @@ export function buildListingAlertEmail(input: BuildListingAlertEmailInput): Buil
 
   const cardsHtml = hasSections
     ? sections
-        .map((s) => sectionHeaderHtml(s.label) + s.listings.map(listingCardHtml).join(''))
+        .map((s) => sectionHeaderHtml(firstSend && s.kind === 'new' ? 'On the market now' : s.label) + s.listings.map(listingCardHtml).join(''))
         .join('')
     : shown.map(listingCardHtml).join('')
 
@@ -278,10 +316,11 @@ export function buildListingAlertEmail(input: BuildListingAlertEmailInput): Buil
   textParts.push(searchName)
   textParts.push(countLine)
   if (filtersSummary) textParts.push(filtersSummary)
+  if (intro) textParts.push('', intro)
   textParts.push('')
   if (hasSections) {
     for (const section of sections) {
-      textParts.push(section.label.toUpperCase())
+      textParts.push((firstSend && section.kind === 'new' ? 'On the market now' : section.label).toUpperCase())
       textParts.push('')
       for (const listing of section.listings) {
         textParts.push(listingCardText(listing))

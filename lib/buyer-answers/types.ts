@@ -1,3 +1,7 @@
+import type { PlaceAlertScope } from './place-alert-scope'
+
+export type { PlaceAlertScope }
+
 export type BuyerAnswerKind =
   | 'living'
   | 'cost'
@@ -11,6 +15,7 @@ export type BuyerAnswerKind =
   | 'buying'
 
 export type BuyerAnswerPlaceKind = 'community' | 'city' | 'neighborhood'
+
 
 export type BuyerAnswerTableRow = {
   label: string
@@ -88,4 +93,10 @@ export type BuyerAnswerModel = {
   listingsEmpty: string
   listingsHref: string
   otherHub?: BuyerAnswerLink
+  /**
+   * What the page's listing-alert signup sends: the primary place's own area
+   * (a vs page uses its first place), or null when the place maps to no area
+   * the alert can scope to, and then the page renders no signup.
+   */
+  alert?: PlaceAlertScope | null
 }

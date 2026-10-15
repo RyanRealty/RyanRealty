@@ -364,8 +364,11 @@ export async function sendAlertEmailToRecipients(args: {
   sections: AlertEmailSection[]
   totalCount: number
   siteUrl: string
+  /** Per-send stamp for the email key (alertSendStamp in lib/alerts/run-policy.ts). */
   runDate: string
   dryRun: boolean
+  /** The alert's first email: "newest" copy and the cadence it continues on. */
+  firstSend?: boolean
 }): Promise<{ sent: number; errors: string[] }> {
   const { row, siteUrl } = args
   const errors: string[] = []
@@ -390,6 +393,7 @@ export async function sendAlertEmailToRecipients(args: {
       listings: [],
       sections: args.sections,
       totalNewCount: args.totalCount,
+      firstSend: args.firstSend ? { cadence: row.notification_frequency ?? null } : null,
       browseAllUrl,
       unsubscribeUrl,
       // Signed-in subscribers manage their alerts from /account; household

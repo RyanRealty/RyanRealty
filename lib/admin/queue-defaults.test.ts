@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  ADMIN_FAB_HEADER_SLOT_ID,
   ADMIN_MOBILE_MAIN_PADDING,
   CMA_NAV_HREF,
   CMA_QUEUE_PAGE_READ_LIMIT,
@@ -50,9 +51,44 @@ describe('admin queue defaults', () => {
 
   it('keeps chrome constants the screens and the gate both read', () => {
     expect(ADMIN_MOBILE_MAIN_PADDING).toBe('pb-36')
+    expect(ADMIN_FAB_HEADER_SLOT_ID).toBe('admin-console-header-actions')
     expect(CMA_NAV_HREF).toBe('/admin/valuations')
     expect(EMAIL_CAMPAIGNS_REDIRECT).toBe('/admin/audiences')
     expect(CMA_QUEUE_PAGE_READ_LIMIT).toBeLessThanOrEqual(250)
+  })
+
+  it('moves the mobile + into the header slot so it cannot cover row actions', () => {
+    const fab = readFileSync(join(process.cwd(), 'components/console/ConsoleQuickAction.tsx'), 'utf8')
+    const shell = readFileSync(join(process.cwd(), 'components/console/ConsoleShell.tsx'), 'utf8')
+    expect(fab).toContain('ADMIN_FAB_HEADER_SLOT_ID')
+    expect(fab).toContain('createPortal')
+    expect(fab).not.toMatch(/fixed bottom-20 right-5/)
+    expect(shell).toContain(`id="${ADMIN_FAB_HEADER_SLOT_ID}"`)
+  })
+
+  it('keeps Failed builds above CMA drafts', () => {
+    const page = readFileSync(
+      join(process.cwd(), 'app/admin/(protected)/valuations/page.tsx'),
+      'utf8',
+    )
+    expect(page.indexOf('aria-label="Failed builds"')).toBeLessThan(page.indexOf('aria-label="CMA drafts"'))
+  })
+
+  it('stops the Messages folder chip truncating on a phone toolbar', () => {
+    const select = readFileSync(
+      join(process.cwd(), 'app/admin/(protected)/messages/MessagesFolderSelect.tsx'),
+      'utf8',
+    )
+    expect(select).toMatch(/minWidth:\s*'12\.5rem'/)
+    expect(select).toMatch(/maxWidth:\s*'none'/)
+  })
+
+  it('collapses People collection groups unless they hold the active view', () => {
+    const sidebar = readFileSync(
+      join(process.cwd(), 'components/admin/shared/people-list/PeopleSidebar.tsx'),
+      'utf8',
+    )
+    expect(sidebar).toMatch(/defaultOpen=\{col\.views\.some\(\(v\) => v\.id === activeViewId\)\}/)
   })
 
   it('retries a failed CMA from Valuations without importing the send stack', () => {
