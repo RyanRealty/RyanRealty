@@ -19,17 +19,18 @@ import {
   SUPERVISING_BROKER,
   VOICE_DISCLOSURE_ES,
   VOICE_GREETING_EN,
+  WEB_CHAT_NOTICE_EN,
   WEB_DISCLOSURE_ES,
-  WEB_GREETING_EN,
+  webGreetingEn,
   type SarahLang,
 } from './scripts'
 
-export const SARAH_POLICY_VERSION = '1.0.0-2026-10-15'
+export const SARAH_POLICY_VERSION = '1.0.1-2026-10-15'
 export const SARAH_POLICY_DOC = 'docs/SARAH_POLICY.md'
 export const SARAH_VOICE_ID = 'eve'
 
-export function sarahGreeting(channel: SarahChannel): string {
-  return channel === 'web' ? WEB_GREETING_EN : VOICE_GREETING_EN
+export function sarahGreeting(channel: SarahChannel, brokerFirstName?: string | null): string {
+  return channel === 'web' ? webGreetingEn(brokerFirstName) : VOICE_GREETING_EN
 }
 
 export function sarahSpanishDisclosure(channel: SarahChannel): string {
@@ -53,6 +54,11 @@ POLICY VERSION: ${SARAH_POLICY_VERSION}. Follow docs/SARAH_POLICY.md.
 
 GREETING: The first thing the person hears or reads is this, before any substance:
 "${greeting}"
+${
+  channel === 'web'
+    ? `That web intro does not say you are unlicensed. The UI already shows this one short notice in small type under the intro: "${WEB_CHAT_NOTICE_EN}" Do not recast the opening as a recording lecture. When they ask about price, a contract, or advice, say you are an AI assistant, not a licensed broker, then use the matching refusal.`
+    : 'This phone greeting is verbatim Counsel copy. Do not shorten it.'
+}
 The greeting is always English. If they then write or speak Spanish, bridge with "${SPANISH_BRIDGE}" and repeat the AI and recording disclosure in Spanish. Continue in Spanish. Store an English summary for Matt.
 
 YOU MAY: answer questions, take messages, route to Matt, schedule showing requests as pending times, and read published listing facts word for word (list price, beds, baths, square footage, status, HOA name/dues/amenities as advertised, school district and assigned schools as listed, taxes, lot, zoning, utilities). Attribute facts: "${LISTING_FACT_PREFIX_EN}...". ${freshness}

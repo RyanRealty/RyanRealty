@@ -9,10 +9,11 @@
  */
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import { getSarahWebIntroBrokerFirstName } from '@/app/actions/sarah-web-intro'
 import { V3_ROOT_CLASS } from './atoms'
 import { SARAH_AVATAR_ALT, SARAH_AVATAR_SRC } from '@/lib/sarah/assets'
 import { evaluateSarahTurn } from '@/lib/sarah/guardrails'
-import { SARAH_NAME, WEB_GREETING_EN, WEB_HELP_EN } from '@/lib/sarah/scripts'
+import { SARAH_NAME, WEB_CHAT_NOTICE_EN, WEB_HELP_EN, webGreetingEn } from '@/lib/sarah/scripts'
 import {
   SARAH_TEASER_COPY,
   SARAH_TEASER_DELAY_MS,
@@ -49,7 +50,7 @@ export function V3SarahAssistant() {
   const [dismissed, setDismissed] = useState(false)
   const [draft, setDraft] = useState('')
   const [greeted, setGreeted] = useState(true)
-  const [lines, setLines] = useState<ChatLine[]>(() => [{ from: 'sarah', text: WEB_GREETING_EN }])
+  const [lines, setLines] = useState<ChatLine[]>(() => [{ from: 'sarah', text: webGreetingEn() }])
   const shownRef = useRef(false)
   const teaserKind: SarahTeaserKind = listingTeaserKind(wide)
   const offer = shouldOfferListingTeaser({
@@ -60,6 +61,20 @@ export function V3SarahAssistant() {
 
   useEffect(() => {
     setDismissed(teaserDismissedInSession(sessionStore()))
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    void getSarahWebIntroBrokerFirstName().then((got) => {
+      if (cancelled || !got.data) return
+      setLines((prev) => {
+        if (prev.length !== 1 || prev[0].from !== 'sarah') return prev
+        return [{ from: 'sarah', text: webGreetingEn(got.data) }]
+      })
+    })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   useEffect(() => {
@@ -149,7 +164,7 @@ export function V3SarahAssistant() {
                 <div className="v3-sarah__panel-name" id={titleId}>
                   {SARAH_NAME}
                 </div>
-                <span className="v3-sarah__panel-role">AI assistant, not a licensed broker</span>
+                <span className="v3-sarah__panel-role">AI assistant</span>
               </div>
               <button
                 type="button"
@@ -161,19 +176,31 @@ export function V3SarahAssistant() {
               </button>
             </div>
             <div className="v3-sarah__messages">
-              {lines.map((line, i) => (
-                <div
-                  key={`${line.from}-${i}`}
-                  className={
-                    line.from === 'sarah' ? 'v3-sarah__msg v3-sarah__msg--sarah' : 'v3-sarah__msg v3-sarah__msg--visitor'
-                  }
-                >
-                  {line.from === 'sarah' ? (
-                    <img src={SARAH_AVATAR_SRC} alt="" width={28} height={28} />
-                  ) : null}
-                  <p className="v3-sarah__msg-body">{line.text}</p>
-                </div>
-              ))}
+              {lines.map((line, i) => {
+                const intro = i === 0 && line.from === 'sarah'
+                return (
+                  <div
+                    key={`${line.from}-${i}`}
+                    className={
+                      line.from === 'sarah' ? 'v3-sarah__msg v3-sarah__msg--sarah' : 'v3-sarah__msg v3-sarah__msg--visitor'
+                    }
+                  >
+                    {line.from === 'sarah' ? (
+                      <img src={SARAH_AVATAR_SRC} alt="" width={28} height={28} />
+                    ) : null}
+                    <div className="v3-sarah__msg-stack">
+                      <p className="v3-sarah__msg-body" data-sarah={intro ? 'intro' : undefined}>
+                        {line.text}
+                      </p>
+                      {intro ? (
+                        <p className="v3-sarah__notice" data-sarah="chat-notice">
+                          {WEB_CHAT_NOTICE_EN}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
             <form
               className="v3-sarah__composer"

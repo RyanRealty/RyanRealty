@@ -4,6 +4,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import React, { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+import { getSarahWebIntroBrokerFirstName } from '@/app/actions/sarah-web-intro'
+import { WEB_CHAT_NOTICE_EN, webGreetingEn } from '@/lib/sarah/scripts'
 import { trackEvent } from '@/lib/tracking'
 import { SARAH_TEASER_COPY, SARAH_TEASER_DELAY_MS, SARAH_TEASER_SESSION_KEY } from '@/lib/sarah/teaser'
 import { V3SarahAssistant } from './V3SarahAssistant.client'
@@ -12,6 +14,9 @@ const nav = { pathname: '/homes-for-sale/bend/20556-empire-220226741' }
 
 vi.mock('next/navigation', () => ({ usePathname: () => nav.pathname }))
 vi.mock('@/lib/tracking', () => ({ trackEvent: vi.fn() }))
+vi.mock('@/app/actions/sarah-web-intro', () => ({
+  getSarahWebIntroBrokerFirstName: vi.fn(async () => ({ data: 'Matt', error: null })),
+}))
 
 ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -38,11 +43,14 @@ function stubMedia() {
 let container: HTMLDivElement
 let root: Root | null = null
 
-function mount() {
+async function mount() {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
   act(() => root!.render(React.createElement(V3SarahAssistant)))
+  await act(async () => {
+    await Promise.resolve()
+  })
 }
 
 function unmount() {
@@ -52,14 +60,16 @@ function unmount() {
 }
 
 describe('V3SarahAssistant listing teaser behavior', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     nav.pathname = '/homes-for-sale/bend/20556-empire-220226741'
     wide = true
     vi.mocked(trackEvent).mockReset()
+    vi.mocked(getSarahWebIntroBrokerFirstName).mockReset()
+    vi.mocked(getSarahWebIntroBrokerFirstName).mockResolvedValue({ data: 'Matt', error: null })
     sessionStorage.clear()
     stubMedia()
     vi.useFakeTimers()
-    mount()
+    await mount()
   })
 
   afterEach(() => {
@@ -90,11 +100,11 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     expect(trackEvent).toHaveBeenCalledWith('sarah_teaser_shown', { surface: 'listing', cta: 'bubble' })
   })
 
-  it('shows only a launcher badge on a phone listing page', () => {
+  it('shows only a launcher badge on a phone listing page', async () => {
     unmount()
     wide = false
     stubMedia()
-    mount()
+    await mount()
     act(() => {
       vi.advanceTimersByTime(SARAH_TEASER_DELAY_MS)
     })
@@ -114,6 +124,10 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     })
     expect(trackEvent).toHaveBeenCalledWith('sarah_teaser_clicked', { surface: 'listing', cta: 'bubble' })
     expect(container.querySelector('[data-sarah="panel"]')).not.toBeNull()
+    expect(container.querySelector('[data-sarah="intro"]')?.textContent).toBe(webGreetingEn('Matt'))
+    expect(container.querySelector('[data-sarah="chat-notice"]')?.textContent).toBe(WEB_CHAT_NOTICE_EN)
+    expect(container.querySelector('.v3-sarah__panel-role')?.textContent).toBe('AI assistant')
+    expect(container.querySelector('[data-sarah="panel"]')?.textContent).not.toMatch(/not a licensed broker/)
     expect(container.querySelector('[data-sarah-teaser]')).toBeNull()
     expect(sessionStorage.getItem(SARAH_TEASER_SESSION_KEY)).toBe('1')
 
@@ -127,14 +141,27 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     expect(container.querySelector('[data-sarah-teaser]')).toBeNull()
   })
 
-  it('does not tease a city browse page', () => {
+  it('does not tease a city browse page', async () => {
     unmount()
     nav.pathname = '/homes-for-sale/bend'
-    mount()
+    await mount()
     act(() => {
       vi.advanceTimersByTime(SARAH_TEASER_DELAY_MS)
     })
     expect(container.querySelector('[data-sarah-teaser]')).toBeNull()
     expect(trackEvent).not.toHaveBeenCalled()
+  })
+
+  it('rewrites the intro with the resolved broker first name', async () => {
+    unmount()
+    vi.mocked(getSarahWebIntroBrokerFirstName).mockResolvedValue({ data: 'Rebecca', error: null })
+    await mount()
+    act(() => {
+      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+    })
+    expect(container.querySelector('[data-sarah="intro"]')?.textContent).toBe(webGreetingEn('Rebecca'))
+    expect(container.querySelector('[data-sarah="chat-notice"]')?.textContent).toBe(
+      'Chats are saved so our team can follow up.',
+    )
   })
 })

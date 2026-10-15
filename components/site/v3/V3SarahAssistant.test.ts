@@ -23,6 +23,16 @@ describe('V3SarahAssistant · listing teaser', () => {
     expect(SRC).not.toMatch(/\/images\/brokers\//)
   })
 
+  it('uses the friendlier web intro, the saved-chats notice, and no unlicensed header', () => {
+    expect(SRC).toContain('webGreetingEn')
+    expect(SRC).toContain('WEB_CHAT_NOTICE_EN')
+    expect(SRC).toContain('getSarahWebIntroBrokerFirstName')
+    expect(SRC).toContain('>AI assistant<')
+    expect(SRC).not.toMatch(/not a licensed broker/)
+    expect(CSS).toContain('.v3-sarah__notice')
+    expect(CSS).toContain('--v3-size-body-sm')
+  })
+
   it('waits 30s, uses the approved copy, and never auto-opens the panel', () => {
     expect(SRC).toContain('SARAH_TEASER_DELAY_MS')
     expect(SARAH_TEASER_DELAY_MS).toBe(30_000)

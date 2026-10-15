@@ -15,16 +15,27 @@ import {
   RECORDING_OBJECTION_EN,
   RESPA_VENDOR_EN,
   SCHOOLS_SAFETY_EN,
+  WEB_CHAT_NOTICE_EN,
   WEB_GREETING_EN,
+  webGreetingEn,
 } from './scripts'
 
 describe('Sarah greeting', () => {
-  it('web greeting discloses AI, unlicensed status, and recording before substance', () => {
-    expect(WEB_GREETING_EN).toMatch(/AI assistant/i)
-    expect(WEB_GREETING_EN).toMatch(/not a person/i)
-    expect(WEB_GREETING_EN).toMatch(/not a licensed broker/i)
-    expect(WEB_GREETING_EN).toMatch(/recorded and transcribed/i)
-    expect(sarahGreeting('voice')).toMatch(/Thanks for calling Ryan Realty in Bend/)
+  it('web intro names the broker team and keeps unlicensed talk off the opening', () => {
+    expect(WEB_GREETING_EN).toBe(
+      "Hi, I'm Sarah, an AI assistant with Matt's team at Ryan Realty. I can help with pretty much anything here.",
+    )
+    expect(webGreetingEn('Rebecca')).toBe(
+      "Hi, I'm Sarah, an AI assistant with Rebecca's team at Ryan Realty. I can help with pretty much anything here.",
+    )
+    expect(WEB_GREETING_EN).not.toMatch(/not a person/i)
+    expect(WEB_GREETING_EN).not.toMatch(/licensed broker/i)
+    expect(WEB_GREETING_EN).not.toMatch(/recorded/i)
+    expect(WEB_CHAT_NOTICE_EN).toBe('Chats are saved so our team can follow up.')
+    expect(sarahGreeting('web', 'Paul')).toContain("Paul's team")
+    expect(sarahGreeting('voice')).toBe(
+      "Thanks for calling Ryan Realty in Bend. This is Sarah, the office's AI assistant. I'm not a person and I'm not a licensed broker. This call is recorded and transcribed to help our team follow up. I can share listing details, set up a showing, or connect you with one of our licensed brokers. How can I help?",
+    )
   })
 })
 
@@ -101,6 +112,7 @@ describe('system prompt', () => {
     expect(prompt).not.toMatch(/proof of funds/i)
     expect(prompt).toMatch(/Do not interview budget, financing, or timeline/)
     expect(prompt).toMatch(/not a licensed broker|unlicensed/i)
+    expect(prompt).toMatch(/When they ask about price, a contract, or advice/)
     expect(prompt).toMatch(/Are there a couple of times/)
     expect(prompt).toMatch(/YOU MAY NOT[\s\S]*Auto-book Matt's calendar/)
   })

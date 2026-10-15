@@ -201,10 +201,24 @@ body:has([data-cookie-notice='bar']) .v3-sarah {
   justify-content: flex-end;
 }
 
+.v3-sarah__msg-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+}
+
 .v3-sarah__msg-body {
   padding: var(--v3-space-sm) var(--v3-space-md);
   border: var(--v3-rule-weight-hairline) solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
   background: var(--v3-cream);
+}
+
+.v3-sarah__notice {
+  margin: 0;
+  padding: 0 var(--v3-space-sm);
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-navy-70);
 }
 
 .v3-sarah__msg--visitor .v3-sarah__msg-body {

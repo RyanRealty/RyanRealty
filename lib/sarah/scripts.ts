@@ -5,7 +5,8 @@
  * only after the person writes or speaks Spanish; the first greeting is
  * always English.
  */
-import { CONTACT } from '@/lib/brand/contact'
+import { normalizeAgentSlug } from '@/lib/agent-attribution'
+import { BROKERS, CONTACT } from '@/lib/brand/contact'
 import { siteUrl } from '@/lib/site-origin'
 
 export type SarahLang = 'en' | 'es'
@@ -20,11 +21,36 @@ export const CRIME_DATA_SOURCE = 'the Bend Police Department publishes crime dat
 
 export const AGENCY_PAMPHLET_HREF = siteUrl('/docs/oregon-initial-agency-disclosure-pamphlet.pdf')
 
-/** Counsel inbound greeting, adapted for web chat. Must run before any substance. */
-export const WEB_GREETING_EN =
-  "Thanks for chatting with Ryan Realty in Bend. This is Sarah, the office's AI assistant. I'm not a person and I'm not a licensed broker. This conversation is recorded and transcribed to help our team follow up. I can share listing details, set up a showing, or connect you with one of our licensed brokers. How can I help?"
+/** Fallback when the visitor has no CRM assigned broker. */
+export const WEB_GREETING_DEFAULT_BROKER = 'Matt'
 
-/** Counsel inbound greeting, phone. Verbatim. */
+/** Required recording notice. Small type under the web intro, not in the bubble. */
+export const WEB_CHAT_NOTICE_EN = 'Chats are saved so our team can follow up.'
+
+/** First name for the web intro. Unknown or blank assignment is Matt. */
+export function webGreetingBrokerFirstName(assigned?: string | null): string {
+  const slug = normalizeAgentSlug(assigned)
+  if (slug) {
+    const first = BROKERS[slug].nameShort.trim().split(/\s+/)[0]
+    if (first) return first
+  }
+  return WEB_GREETING_DEFAULT_BROKER
+}
+
+/**
+ * Web chat intro (Matt 2026-10-15). Interpolates the resolved CRM broker's
+ * first name. Does not say unlicensed; that line is for price, contract, or
+ * advice questions.
+ */
+export function webGreetingEn(brokerFirstName?: string | null): string {
+  const broker = (brokerFirstName ?? '').trim() || WEB_GREETING_DEFAULT_BROKER
+  return `Hi, I'm Sarah, an AI assistant with ${broker}'s team at Ryan Realty. I can help with pretty much anything here.`
+}
+
+/** Default web intro (Matt). Phone greeting stays the Counsel verbatim line. */
+export const WEB_GREETING_EN = webGreetingEn()
+
+/** Counsel inbound greeting, phone. Verbatim. Do not change for the web intro. */
 export const VOICE_GREETING_EN =
   "Thanks for calling Ryan Realty in Bend. This is Sarah, the office's AI assistant. I'm not a person and I'm not a licensed broker. This call is recorded and transcribed to help our team follow up. I can share listing details, set up a showing, or connect you with one of our licensed brokers. How can I help?"
 

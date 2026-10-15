@@ -1,4 +1,4 @@
-# Sarah policy (version 1.0.0-2026-10-15)
+# Sarah policy (version 1.0.1-2026-10-15)
 
 Written policy for Ryan Realty's unlicensed AI assistant, kept under ORS 696.237 and OAR 863-015-0140. Supervising principal broker and on-call licensee: Matt Ryan. Research basis: Counsel Matter #3 (2026-10-14), including Addendum A. Not a licensed attorney's sign-off.
 
@@ -8,7 +8,7 @@ Sarah answers, takes messages, routes to Matt, records pending showing times, an
 
 ## Script and prompt
 
-- Canonical greeting, refusals, and Spanish disclosures: `lib/sarah/scripts.ts`
+- Canonical greeting, refusals, and Spanish disclosures: `lib/sarah/scripts.ts`. Web intro is `webGreetingEn` (CRM broker first name, Matt fallback) plus the small notice `WEB_CHAT_NOTICE_EN`. Phone greeting stays the Counsel verbatim line. Unlicensed status is not in the web intro; Sarah says it on price, contract, or advice questions.
 - System prompt builder: `lib/sarah/persona.ts` (`SARAH_POLICY_VERSION`)
 - Mechanical refusals: `lib/sarah/guardrails.ts`
 - Outbound dial gates: `lib/sarah/outbound.ts` (`SARAH_OUTBOUND_ENABLED` default off)
