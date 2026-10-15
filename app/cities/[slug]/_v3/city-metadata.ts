@@ -8,9 +8,9 @@
  *
  * `hasMap` ships because PlaceSplitView always mounts the flagship map.
  *
- * It lives beside the route rather than inside it for the reason city-constants.ts
- * states: ci:file-size-budget's instruction when a route file approaches the floor is
- * to split, not to re-baseline. Nothing here fetches or formats a figure.
+ * It lives beside the route rather than inside it because ci:file-size-budget's
+ * instruction when a route file approaches the floor is to split, not to
+ * re-baseline. Nothing here fetches or formats a figure.
  */
 
 import {

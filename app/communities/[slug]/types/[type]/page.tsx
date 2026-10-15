@@ -62,6 +62,8 @@ import {
   MetadataBlock,
 } from '@/components/site/v3'
 import { cn } from '@/lib/utils'
+import { PlaceAlertsStrip } from '@/app/_v3/place-alerts/PlaceAlertsStrip.client'
+import { communityAlertScope } from '@/lib/buyer-answers/place-alert-scope'
 import {
   PlaceTypeField,
   PlaceTypeRows,
@@ -315,6 +317,11 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
   const eyebrow = placeTypeAtlasEyebrow(spec, false)
   const atlasCities = [...new Set([cityName, ...(registry?.mls_cities ?? [])])]
 
+  /* The alert this page offers is the COMMUNITY's, every property type, never
+     this page's type: the same city + subdivision /communities/[slug] feeds its
+     own strip (lib/buyer-answers/place-alert-scope). */
+  const alertScope = communityAlertScope({ community, slug, placeName: publicName })
+
   const schemas = placeTypeSchemas({
     spec,
     placeName: publicName,
@@ -428,6 +435,24 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
             ) : null}
           </section>
         </PlaceTypeField>
+
+        {/* THE ALERT SIGNUP (Matt 2026-10-14): directly after the listings, the
+            one place a reader who has just looked at homes is asked to hear
+            about new ones. The sticky repeat appears once the reader has passed
+            #homes. */}
+        {alertScope ? (
+          <PlaceAlertsStrip
+            id="alerts"
+            placeName={alertScope.placeName}
+            scopeName={alertScope.scopeName}
+            filters={alertScope.filters}
+            browseHref={alertScope.browseHref}
+            geoType={alertScope.geoType}
+            geoSlug={alertScope.geoSlug}
+            emphasis="primary"
+            stickyAfter="homes"
+          />
+        ) : null}
 
         <V3Quiet
           ariaLabel={`${publicName} homes`}

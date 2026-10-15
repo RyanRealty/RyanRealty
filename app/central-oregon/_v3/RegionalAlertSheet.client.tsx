@@ -1,13 +1,16 @@
 'use client'
 
 /**
- * Regional (or city-scoped) SFR listing-alert capture as a barrel Sheet.
+ * Regional (or city-scoped) listing-alert capture as a barrel Sheet.
  *
- * THE CAPTURE CONTRACT IS CARRIED ACROSS from RegionalSfrAlertsBand /
- * KbCommunityAlerts. Same action (`submitSearchAlertSignup`), same field name
- * (`email`), same filter map the KB band built: `city` (empty string on the
- * indexes, a city name on a place detail) plus `propertyType: 'A'`. Same two
- * side effects on success: guest-watch residual, then `alert_create`.
+ * Same action (`submitSearchAlertSignup`) and field name (`email`) as the KB
+ * band it replaced. A place detail (a school, park, trail, course, venue or
+ * event) passes its city, and the alert is that city, every property type,
+ * daily (Matt 2026-10-14). The indexes pass no city, and the alert stays
+ * houses (`propertyType: 'A'`) across the region: with no place and no type
+ * the filter would match the whole feed, which hasNarrowingFilter refuses.
+ * Every row is daily and its first email goes at signup. Same two side
+ * effects on success: guest-watch residual, then `alert_create`.
  *
  * The honeypot is a sheet-level `trap` named `company`. Its value rides in
  * onAdvance().answers and is forwarded to the action. A filled trap is the
@@ -28,7 +31,8 @@ import {
 
 type Status = 'asking' | 'sending' | 'sent' | 'failed'
 
-const PROPERTY_TYPE = 'A'
+/** The region-wide indexes only: houses, so the alert is not the whole feed. */
+const REGION_PROPERTY_TYPE = 'A'
 
 export function RegionalAlertSheet({
   placeLabel,
@@ -46,14 +50,12 @@ export function RegionalAlertSheet({
   const send = useCallback(
     async (answers: Readonly<Record<string, string>>) => {
       setStatus('sending')
-      const filters: Record<string, string> = {
-        city,
-        propertyType: PROPERTY_TYPE,
-      }
+      const filters: Record<string, string> = city ? { city } : { propertyType: REGION_PROPERTY_TYPE }
       try {
         const result = await submitSearchAlertSignup({
           email: answers.email ?? '',
           filters,
+          frequency: 'daily',
           company: answers.company ?? '',
           sessionId: readRrSessionId(), // hydration-safe
         })
@@ -61,8 +63,7 @@ export function RegionalAlertSheet({
           rememberGuestWatch( // hydration-safe: event/effect storage only
             buildGuestWatchFromPlace({
               communityName: placeLabel,
-              city,
-              extraFilters: { propertyType: PROPERTY_TYPE },
+              ...(city ? { city } : { extraFilters: { propertyType: REGION_PROPERTY_TYPE } }),
             }),
           )
           fireSearchEvent('alert_create', buildAlertCreatePayload('daily'))
@@ -102,7 +103,9 @@ export function RegionalAlertSheet({
       requiredMessage: 'An email is required so the alert has somewhere to land.',
       invalidMessage: 'That address does not look complete.',
     },
-    children: 'One email per new listing. Unsubscribe any time.',
+    children: city
+      ? 'Every new listing, every property type, in one email each morning. Unsubscribe any time.'
+      : 'Every new house listing, in one email each morning. Unsubscribe any time.',
     advanceLabel: 'Get alerts',
   }
 
@@ -111,8 +114,8 @@ export function RegionalAlertSheet({
       ? [
           {
             id: 'sent',
-            label: `Set. New ${placeLabel} listings land by email when they hit the market.`,
-            children: 'One email per new listing. Pause or unsubscribe from any alert email.',
+            label: `Set. New ${placeLabel} listings land in your inbox each morning.`,
+            children: 'Every new listing in one email, with price changes on those homes. Unsubscribe from any alert email.',
           },
         ]
       : status === 'sending'

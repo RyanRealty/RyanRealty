@@ -12,17 +12,18 @@
  * the path. The component it exports is the strip; the sheet it replaced sat
  * after the open-house ledger, ten sections past the Atlas.
  *
- * THE CAPTURE CONTRACT IS UNCHANGED, and it is city-scoped on purpose. It calls
- * the same server action the sheet called, `submitSearchAlertSignup`, with the
- * same payload shape and the same field name: `email`, under `filters` of
- * `{ city, propertyType: 'A' }` and no subdivision key. Neighborhood names are
- * not 1:1 with MLS subdivision tags, so a neighborhood filter would be an
- * invented narrowing (CLAUDE.md section 0). The copy therefore does two honest
- * things at once: the CLAIM counts this neighborhood (Market Truth
- * new_listings_30d at the neighborhood grain), and the PROMISE names the scope
- * the alert really sends, the city, with the neighborhood included. The two
- * side effects run on success in the same order as before: the guest-watch
- * residual, then the `alert_create` measurement event, now carrying which mount
+ * THE ALERT IS THIS NEIGHBORHOOD, BY LOCATION (Matt 2026-10-14: "all the
+ * listings for that area"). A Bend district passes `areaSlug`, its boundary
+ * slug (`bend-river-west`), and the filter is `{ neighborhoodSlug }`: the search
+ * matches it by the listing's point inside the district polygon
+ * (search_listings_advanced p_neighborhood_slug -> listing_boundary_xref_mv,
+ * refreshed every 15 minutes by pg_cron), not by an MLS subdivision name, so it
+ * is the location of the address (AGENTS.md 22), never an invented narrowing.
+ * A neighborhood with no district polygon keeps the old city scope, and the
+ * promise names the city with the neighborhood included. No property type
+ * (every type) and `frequency: 'daily'`; the first email goes at signup. The
+ * two side effects run on success in the same order as before: the guest-watch
+ * residual, then the `alert_create` measurement event, carrying which mount
  * sent it.
  *
  * THE HONEYPOT IS THE STRIP'S `trap`, named `company`, its own value forwarded.
@@ -59,8 +60,14 @@ const TRAP = { name: 'company', label: 'Company' } as const
 type Props = {
   /** The section id. The page passes it so the contract's `#alerts` resolves in the page source (ci:page-purpose). */
   id: string
-  /** The city the alert filter is scoped to. Named in the promise. */
+  /** The city. The alert's scope when the neighborhood has no district polygon. */
   cityName: string
+  /**
+   * The Bend district boundary slug (`bend-river-west`) when the neighborhood
+   * has one (lib/neighborhood-areas.ts BEND_DISTRICTS), else null. Present
+   * means the alert sends this neighborhood alone.
+   */
+  areaSlug: string | null
   /** The neighborhood the visitor is standing in. Named in the claim. */
   neighborhoodName: string
   /** The Market Truth neighborhood slug the 30-day count was read under. Trace only. */
@@ -78,6 +85,7 @@ export function NeighborhoodAlertsStrip({
   id,
   cityName,
   neighborhoodName,
+  areaSlug,
   geoSlug,
   newCount30d,
   updatedAt,
@@ -88,7 +96,8 @@ export function NeighborhoodAlertsStrip({
     async (input) => {
       const result = await submitSearchAlertSignup({
         email: input.email,
-        filters: { city: cityName, propertyType: 'A' },
+        filters: areaSlug ? { neighborhoodSlug: areaSlug } : { city: cityName },
+        frequency: 'daily',
         // The trap's own answer, never a constant. See the header.
         company: input.company,
         sessionId: readRrSessionId(), // hydration-safe
@@ -96,20 +105,19 @@ export function NeighborhoodAlertsStrip({
       if (!result.ok) return result
       rememberGuestWatch( // hydration-safe: event/effect storage only
         buildGuestWatchFromPlace({
-          communityName: cityName,
-          city: cityName,
-          extraFilters: { propertyType: 'A' },
+          communityName: areaSlug ? neighborhoodName : cityName,
+          ...(areaSlug ? { extraFilters: { neighborhoodSlug: areaSlug } } : { city: cityName }),
         }),
       )
       fireSearchEvent('alert_create', { ...buildAlertCreatePayload('daily'), placement: input.placement })
       return result
     },
-    [cityName],
+    [areaSlug, cityName, neighborhoodName],
   )
 
   const copy = placeAlertsCopy({
     placeName: neighborhoodName,
-    scopeName: cityName,
+    scopeName: areaSlug ? neighborhoodName : cityName,
     newCount30d,
     geoType: 'neighborhood',
     geoSlug,
@@ -120,8 +128,8 @@ export function NeighborhoodAlertsStrip({
       {...copy}
       id={id}
       href={newestFirstHref(browseHref)}
-      promise={`We'll email you every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''} as it comes on the market, with any price change on those homes in the same email. Unsubscribe any time.`}
-      stickyNote={placeAlertsStickyNote(copy.scopeLine, 'Every new listing, with its price changes. Unsubscribe any time.')}
+      promise={`We'll email you every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''}, every property type, each morning, with any price change on those homes in the same email. Unsubscribe any time.`}
+      stickyNote={placeAlertsStickyNote(copy.scopeLine, 'Every new listing, every property type, each morning. Unsubscribe any time.')}
       updatedAt={updatedAt}
       trap={TRAP}
       emphasis="primary"

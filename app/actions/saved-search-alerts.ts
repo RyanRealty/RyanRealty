@@ -88,6 +88,7 @@ const MAX_SENDS_PER_RUN = 200
 // normalizeFrequency defaulted unknown values to daily). Weekly schedule_days
 // gating (0=Sunday..6=Saturday, America/Los_Angeles) lives in the same module.
 import { isCadenceDue } from '@/lib/saved-search-cadence'
+import { alertMatchWindow, alertSendStamp, gateNewListingEvents } from '@/lib/alerts/run-policy'
 
 /**
  * Hidden homes for one signed-in subscriber ("Hide homes I don't want to
@@ -133,7 +134,7 @@ export async function runListingAlerts(options?: {
   const maxAlerts = Math.min(1000, Math.max(1, options?.maxAlerts ?? 120))
   const dryRun = options?.dryRun === true
   const siteUrl = siteOrigin()
-  const runDate = now.toISOString().slice(0, 10)
+  const runDate = alertSendStamp(now)
 
   const supabase = createServiceClient()
 
@@ -236,7 +237,7 @@ export async function runListingAlerts(options?: {
       const watchKey = watchedListingKey(filters)
       const results = watchKey
         ? { listings: await getListingsByKeys([watchKey]) }
-        : await getCachedSearchListings(filters, 1, 15, areaShapes)
+        : await getCachedSearchListings(filters, 1, alertMatchWindow(row.notification_frequency), areaShapes)
       // Hidden homes ("Hide homes I don't want to see"): excluded from the
       // matched set BEFORE the event diff below, so a hidden home never fires
       // an event, never lands in an email, and never enters the notified
@@ -308,6 +309,22 @@ export async function runListingAlerts(options?: {
             return !Number.isFinite(onMarket) || onMarket > sinceMs
           })
         }
+      }
+
+      // First email: the newest batch only, the rest recorded as seen. Later
+      // emails: a never-sent listing is "new" only when it came on the market
+      // near the last send (lib/alerts/run-policy.ts). Both read nextState as
+      // detected, so a gated listing is absorbed, never re-announced.
+      const firstSend = prevEntries.size === 0 && !row.last_notified_at
+      if (!watchKey) {
+        const onMarketByKey = new Map<string, string | null>()
+        for (const [key, tile] of tileByKey) onMarketByKey.set(key, tile.OnMarketDate ?? null)
+        events = gateNewListingEvents({
+          events,
+          firstSend,
+          lastNotifiedAt: row.last_notified_at,
+          onMarketByKey,
+        })
       }
 
       const toggles = normalizeEventToggles(row.events)
@@ -443,6 +460,7 @@ export async function runListingAlerts(options?: {
         siteUrl,
         runDate,
         dryRun,
+        firstSend,
       })
       for (const error of sendResult.errors) {
         summary.errors.push({ searchId: row.id, error })
@@ -512,7 +530,7 @@ export async function approveAlertQueueItems(ids: string[]): Promise<QueueDecisi
   }
 
   const siteUrl = siteOrigin()
-  const runDate = new Date().toISOString().slice(0, 10)
+  const runDate = alertSendStamp(new Date())
   let sent = 0
   const errors: string[] = []
 

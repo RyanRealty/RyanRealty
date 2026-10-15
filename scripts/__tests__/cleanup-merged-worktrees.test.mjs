@@ -137,11 +137,11 @@ beforeAll(() => {
   ageFiles(join(ROOT, 'wt-stash'))
   ageFiles(join(ROOT, 'wt-active'))
   // wt-recent stays fresh on purpose
-})
+}, 120_000)
 
 afterAll(() => {
   rmSync(ROOT, { recursive: true, force: true })
-})
+}, 30_000)
 
 describe('cleanup-merged-worktrees.sh', () => {
   it('dry-run keeps the primary, skips dirty/unpushed/stashed/recent, would remove a merged clean worktree and matching clone', () => {

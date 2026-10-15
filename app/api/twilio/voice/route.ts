@@ -27,7 +27,10 @@ import {
   brokerForTwilioNumber,
   forwardCellForBroker,
   verifiedTwilioParams,
+  lookupPersonByPhone,
+  normalizeTo10,
 } from '@/lib/crm/twilio'
+import { XAI_SIP_URI, isReceptionistLine } from '@/lib/voice/receptionist-routing'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { isNumberBlocked, isStirSpamSuspected } from '@/lib/data/crm/getBlockedNumber'
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
@@ -88,6 +91,15 @@ export async function POST(request: Request) {
 
   // 1. Who owns the DIALED line? (null = shared marketing line / unrecognized.)
   const dialedBroker = await brokerForTwilioNumber(dialed)
+
+  // 1b. Receptionist line (Matt 2026-10-14): was the caller ALREADY known before
+  //     find-or-create runs? Known = a CRM person with this phone. Fail OPEN to
+  //     "known" so a DB error rings Matt instead of hiding a client.
+  const receptionistLine = isReceptionistLine(dialed)
+  let knownCaller = true
+  if (receptionistLine) {
+    try { knownCaller = !!(await lookupPersonByPhone(from)) } catch (e) { console.error('[twilio/voice] known-caller lookup failed (ringing through):', e) }
+  }
 
   // 2. Find/create the caller. A new lead created on a specific broker's line is
   //    assigned to THAT broker; on the marketing line it goes to the default desk.
@@ -180,6 +192,18 @@ export async function POST(request: Request) {
         console.error('[twilio/voice] caller lookup enrichment failed:', e)
       }
     })
+  }
+
+  // 4c. Unknown caller on a receptionist line → Grok receptionist over xAI SIP.
+  //     A broker calling from their own cell always rings through. If the SIP
+  //     leg fails, receptionist-complete takes a voicemail.
+  if (receptionistLine && !knownCaller && normalizeTo10(from) !== normalizeTo10(target)) {
+    const recOn = process.env.CRM_CALL_RECORDING !== 'false'
+    const rec = recOn ? ` record="record-from-answer-dual" recordingStatusCallback="${site}/api/twilio/recording" recordingStatusCallbackEvent="completed"` : ''
+    return xml(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Dial answerOnBridge="true" timeout="20" action="${site}/api/voice/receptionist-complete" method="POST"${rec}><Sip referUrl="${site}/api/voice/receptionist-refer" referMethod="POST">${XAI_SIP_URI}</Sip></Dial>
+</Response>`)
   }
 
   // 5. No forward number resolved → voicemail rather than a dropped/misrouted call.

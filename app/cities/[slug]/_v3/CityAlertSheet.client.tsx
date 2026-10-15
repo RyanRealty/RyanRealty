@@ -13,9 +13,10 @@
  *
  * THE CAPTURE CONTRACT IS CARRIED ACROSS. This calls the same server action the
  * sheet called, `submitSearchAlertSignup` in app/actions/search-alert-capture.ts,
- * with the same payload shape and the same field name: `email`, under the same
- * filter map this route always built, `{ city, propertyType: 'A' }` (no
- * `subdivision` key). The two side effects of a successful capture are
+ * with the same payload shape and the same field name: `email`, under the
+ * filter map `{ city }` with `frequency: 'daily'`: every property type, once a
+ * day (Matt 2026-10-14; it was `propertyType: 'A'` and born instant). The
+ * first email goes at signup. The two side effects of a successful capture are
  * unchanged and fire in the same order: the F2 guest-watch residual through
  * `buildGuestWatchFromPlace` + `rememberGuestWatch`, then the `alert_create`
  * search event with `buildAlertCreatePayload('daily')`, now carrying which of
@@ -64,7 +65,6 @@ import {
 } from '@/lib/alerts/guest-watch-residual'
 import { newestFirstHref, placeAlertsCopy, placeAlertsStickyNote } from '@/lib/site/place-alerts'
 import { CityTypeCombobox } from './CityTypeCombobox.client'
-import { CITY_ALERT_PROPERTY_TYPE } from './city-constants'
 
 const TRAP = { name: 'company', label: 'Company' } as const
 
@@ -106,7 +106,10 @@ export function CityAlertsStrip({
     async (input) => {
       const result = await submitSearchAlertSignup({
         email: input.email,
-        filters: { city: cityName, propertyType: CITY_ALERT_PROPERTY_TYPE },
+        // Every property type, daily (Matt 2026-10-14). The first email goes
+        // at signup; the rest at the morning slot.
+        filters: { city: cityName },
+        frequency: 'daily',
         // The trap's own answer, never a constant. See the header.
         company: input.company,
         sessionId: readRrSessionId(), // hydration-safe
@@ -116,7 +119,6 @@ export function CityAlertsStrip({
         buildGuestWatchFromPlace({
           communityName: cityName,
           city: cityName,
-          extraFilters: { propertyType: CITY_ALERT_PROPERTY_TYPE },
         }),
       )
       fireSearchEvent('alert_create', { ...buildAlertCreatePayload('daily'), placement: input.placement })
@@ -138,8 +140,8 @@ export function CityAlertsStrip({
       {...copy}
       id={id}
       href={newestFirstHref(browseHref)}
-      promise={`We'll email you every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''} as it comes on the market, with any price change on those homes in the same email. Unsubscribe any time.`}
-      stickyNote={placeAlertsStickyNote(copy.scopeLine, 'Every new listing, with its price changes. Unsubscribe any time.')}
+      promise={`We'll email you every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''}, every property type, each morning, with any price change on those homes in the same email. Unsubscribe any time.`}
+      stickyNote={placeAlertsStickyNote(copy.scopeLine, 'Every new listing, every property type, each morning. Unsubscribe any time.')}
       updatedAt={updatedAt}
       trap={TRAP}
       // ONE primary per VISIBLE set (PUBLIC_UI.md line 38), and never zero. See

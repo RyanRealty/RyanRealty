@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-10-14T20:10:10.028Z
+**Generated:** 2026-10-15T00:36:05.285Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -242,7 +242,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 
 ## Listings — derived (materialized views)
 
-### `listing_tile_mv` · **rows ≈ 600,170**
+### `listing_tile_mv` · **rows ≈ 597,699**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. A view over the table listing_tile_mv_src, kept current every minute by pg_cron `listing-mv-drain` (20260924173000; a matview refreshed every 30 minutes before that). The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -4367,6 +4367,26 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `effective_to` | date | yes |  |
 | `computed_at` | timestamp with time zone | no | now() |
 
+### `place_school_share_places`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `geo_type` | text | no |  |
+| `geo_slug` | text | no |  |
+| `computed_at` | timestamp with time zone | no | now() |
+
+### `place_school_shares`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `geo_type` | text | no |  |
+| `geo_slug` | text | no |  |
+| `ordinal` | integer | no |  |
+| `school_geo_slug` | text | no |  |
+| `school_geo_label` | text | no |  |
+| `share` | numeric | no |  |
+| `computed_at` | timestamp with time zone | no | now() |
+
 ### `post_sync_pipeline_runs`
 
 | Column | Type | Nullable | Default |
@@ -5993,6 +6013,20 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `fetched_at` | timestamp with time zone | no |  |
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
+
+### `twilio_webhook_raw_events`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `kind` | text | no |  |
+| `provider_sid` | text | no |  |
+| `payload` | jsonb | no |  |
+| `received_at` | timestamp with time zone | no | now() |
+| `processed_at` | timestamp with time zone | yes |  |
+| `processing_started_at` | timestamp with time zone | yes |  |
+| `process_attempts` | integer | no | 0 |
+| `last_error` | text | yes |  |
 
 ### `user_activities`
 

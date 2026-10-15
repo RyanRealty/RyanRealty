@@ -17,6 +17,18 @@ const h = vi.hoisted(() => ({
   sendAlertConfirmation: vi.fn(),
   headerGet: vi.fn((_name?: string) => null as string | null),
   readLiveVisit: vi.fn(),
+  after: vi.fn(),
+  runListingAlerts: vi.fn(),
+}))
+
+// The first email goes through next/server after(); capture the callback so a
+// test can run it, and never reach the real engine.
+vi.mock('next/server', () => ({
+  after: (cb: () => unknown) => h.after(cb),
+}))
+
+vi.mock('@/app/actions/saved-search-alerts', () => ({
+  runListingAlerts: (...args: unknown[]) => h.runListingAlerts(...args),
 }))
 
 vi.mock('next/headers', () => ({
@@ -105,6 +117,9 @@ beforeEach(() => {
   h.headerGet.mockReturnValue(null)
   h.readLiveVisit.mockReset()
   h.readLiveVisit.mockResolvedValue(null)
+  h.after.mockReset()
+  h.runListingAlerts.mockReset()
+  h.runListingAlerts.mockResolvedValue({ scanned: 1, sent: 1, skipped: 0, queued: 0, errors: [] })
   h.sendAlertConfirmation.mockResolvedValue({ ok: false, via: 'skipped', error: 'unit test' })
   h.enrichNativeLead.mockResolvedValue(undefined)
 
@@ -463,5 +478,59 @@ describe('same-visit ad tags on the buyer doors', () => {
       expect(call.extraTags).toEqual([])
       expect(call.originContext.utmSource).toBeUndefined()
     }
+  })
+})
+
+
+describe('place-page alerts: daily, and the first email at signup (Matt 2026-10-14)', () => {
+  it('a new, active row from a real person gets its first email through the engine', async () => {
+    h.upsertListingAlert.mockResolvedValue({ ok: true, id: 'row-1', created: true, active: true, frequency: 'daily' })
+    const result = await signup({ frequency: 'daily' })
+    expect(result).toEqual({ ok: true, counted: true })
+    expect(h.upsertListingAlert).toHaveBeenCalledWith(expect.objectContaining({ frequency: 'daily' }))
+    expect(h.after).toHaveBeenCalledTimes(1)
+    await (h.after.mock.calls[0][0] as () => Promise<void>)()
+    expect(h.runListingAlerts).toHaveBeenCalledWith({ alertIds: ['row-1'] })
+  })
+
+  it('the confirmation names the row cadence', async () => {
+    h.upsertListingAlert.mockResolvedValue({ ok: true, id: 'row-1', created: true, active: true, frequency: 'daily' })
+    await signup({ frequency: 'daily' })
+    expect(h.sendAlertConfirmation).toHaveBeenCalledWith(expect.objectContaining({ kind: 'search', cadence: 'daily' }))
+  })
+
+  it('a re-submit of an existing row sends nothing extra', async () => {
+    h.upsertListingAlert.mockResolvedValue({ ok: true, id: 'row-1', created: false, active: true, frequency: 'daily' })
+    await signup({ frequency: 'daily' })
+    expect(h.after).not.toHaveBeenCalled()
+  })
+
+  it('a muted opt-out stays muted: no first email', async () => {
+    h.upsertListingAlert.mockResolvedValue({ ok: true, id: 'row-1', created: true, active: false, frequency: 'daily' })
+    await signup({ frequency: 'daily' })
+    expect(h.after).not.toHaveBeenCalled()
+  })
+
+  it('a suspect submit keeps its row but gets no immediate email', async () => {
+    h.sendEvent.mockResolvedValue({ ok: true, status: 200, personId: PERSON_ID, suspect: true })
+    h.upsertListingAlert.mockResolvedValue({ ok: true, id: 'row-1', created: true, active: true, frequency: 'daily' })
+    const result = await signup({ frequency: 'daily' })
+    expect(result).toEqual({ ok: true, counted: false })
+    expect(h.upsertListingAlert).toHaveBeenCalled()
+    expect(h.after).not.toHaveBeenCalled()
+  })
+
+  it('an unknown frequency from a client is coerced, never stored raw', async () => {
+    h.upsertListingAlert.mockResolvedValue({ ok: true, id: 'row-1', created: false, active: true })
+    await signup({ frequency: 'hourly' as never })
+    expect(h.upsertListingAlert).toHaveBeenCalledWith(expect.objectContaining({ frequency: 'daily' }))
+  })
+
+  it('a first-send failure never fails the signup', async () => {
+    h.upsertListingAlert.mockResolvedValue({ ok: true, id: 'row-1', created: true, active: true, frequency: 'daily' })
+    h.runListingAlerts.mockRejectedValue(new Error('engine down'))
+    const result = await signup({ frequency: 'daily' })
+    expect(result).toEqual({ ok: true, counted: true })
+    await expect((h.after.mock.calls[0][0] as () => Promise<void>)()).resolves.toBeUndefined()
   })
 })

@@ -33,7 +33,7 @@ import { shareOgImagePath } from '@/lib/og/share-image-url'
 import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { PRIMARY_CITIES } from '@/lib/cities'
-import { slugify } from '@/lib/slug'
+import { homesForSalePath, slugify } from '@/lib/slug'
 import { formatDateTime } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
 import { PLACE_TYPE_PAGE_SLUGS } from '@/lib/place/publish-place-type-cards'
@@ -59,6 +59,7 @@ import {
   MetadataBlock,
 } from '@/components/site/v3'
 import { cn } from '@/lib/utils'
+import { PlaceAlertsStrip } from '@/app/_v3/place-alerts/PlaceAlertsStrip.client'
 import {
   PlaceTypeField,
   PlaceTypeRows,
@@ -359,6 +360,22 @@ async function renderCityPlaceTypePage({ params }: Props) {
             ) : null}
           </section>
         </PlaceTypeField>
+
+        {/* THE ALERT SIGNUP (Matt 2026-10-14): directly after the listings, the
+            one place a reader who has just looked at homes is asked to hear
+            about new ones. The alert is the CITY's, every property type, not
+            this page's type: placeName is the city and the filter is the city
+            alone. The sticky repeat appears once the reader has passed #homes. */}
+        <PlaceAlertsStrip
+          id="alerts"
+          placeName={cityName}
+          filters={{ city: cityName }}
+          browseHref={homesForSalePath(cityName)}
+          geoType="city"
+          geoSlug={slug}
+          emphasis="primary"
+          stickyAfter="homes"
+        />
 
         <V3Quiet
           ariaLabel={`${cityName} homes`}
