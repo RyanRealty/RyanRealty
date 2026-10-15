@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-10-15T00:21:47.319Z
+**Generated:** 2026-10-15T01:18:38.828Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -4843,6 +4843,139 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | Column | Type | Nullable | Default |
 |---|---|---|---|
 | `listing_key` | text | no |  |
+
+### `sarah_call_consents`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `person_id` | bigint | no |  |
+| `source` | text | no |  |
+| `channel` | text | no | 'call'::text |
+| `inquiry` | text | yes |  |
+| `session_id` | uuid | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `recorded_at` | timestamp with time zone | no | now() |
+
+### `sarah_guardrail_revisions`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `entry_id` | text | no |  |
+| `approved_by` | text | no |  |
+| `approved_on` | date | no |  |
+| `summary` | text | no |  |
+| `payload` | jsonb | no | '{}'::jsonb |
+| `created_at` | timestamp with time zone | no | now() |
+
+### `sarah_sessions`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no |  |
+| `channel` | text | no |  |
+| `status` | text | no | 'active'::text |
+| `control` | text | no | 'sarah'::text |
+| `conference_name` | text | no |  |
+| `person_id` | bigint | yes |  |
+| `visitor_name` | text | yes |  |
+| `visitor_email` | text | yes |  |
+| `visitor_phone` | text | yes |  |
+| `visitor_time_zone` | text | yes |  |
+| `page_url` | text | yes |  |
+| `summary` | text | yes |  |
+| `widget_token` | text | no |  |
+| `caller_call_sid` | text | yes |  |
+| `twilio_conference_sid` | text | yes |  |
+| `notified_at` | timestamp with time zone | yes |  |
+| `lead_created_at` | timestamp with time zone | yes |  |
+| `last_turn_at` | timestamp with time zone | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+| `ended_at` | timestamp with time zone | yes |  |
+| `visitor_language` | text | yes |  |
+| `summary_en` | text | yes |  |
+| `spam_verdict` | text | yes |  |
+| `escalation_kind` | text | yes |  |
+| `escalation_started_at` | timestamp with time zone | yes |  |
+
+### `sarah_showing_requests`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no |  |
+| `session_id` | uuid | yes |  |
+| `person_id` | bigint | yes |  |
+| `listing_key` | text | yes |  |
+| `listing_label` | text | yes |  |
+| `proposed_times` | jsonb | no | '[]'::jsonb |
+| `raw_times_text` | text | no |  |
+| `visitor_time_zone` | text | no |  |
+| `status` | text | no | 'pending'::text |
+| `confirmed_slot_index` | integer | yes |  |
+| `confirmed_at` | timestamp with time zone | yes |  |
+| `matt_proposed_times` | jsonb | yes |  |
+| `visitor_confirmed_at` | timestamp with time zone | yes |  |
+| `appointment_id` | bigint | yes |  |
+| `matt_notified_at` | timestamp with time zone | yes |  |
+| `reminder_sent_at` | timestamp with time zone | yes |  |
+| `visitor_confirm_sent_at` | timestamp with time zone | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `sarah_spam_blocks`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `email` | text | yes |  |
+| `ip_hash` | text | yes |  |
+| `reason` | text | no | 'sarah-spam'::text |
+| `created_at` | timestamp with time zone | no | now() |
+
+### `sarah_transcript_flags`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `review_id` | uuid | no |  |
+| `session_id` | uuid | yes |  |
+| `turn_id` | uuid | yes |  |
+| `category` | text | no |  |
+| `excerpt` | text | no |  |
+| `rule_id` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+
+### `sarah_transcript_reviews`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `week_of` | text | no |  |
+| `window_start` | timestamp with time zone | no |  |
+| `window_end` | timestamp with time zone | no |  |
+| `sessions_total` | integer | no | 0 |
+| `sessions_sampled` | integer | no | 0 |
+| `flag_count` | integer | no | 0 |
+| `digest_sent_at` | timestamp with time zone | yes |  |
+| `digest_to` | text | yes |  |
+| `signed_off_by` | text | yes |  |
+| `signed_off_at` | timestamp with time zone | yes |  |
+| `signed_off_note` | text | yes |  |
+| `policy_version` | text | no |  |
+| `created_at` | timestamp with time zone | no | now() |
+
+### `sarah_turns`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no |  |
+| `session_id` | uuid | no |  |
+| `role` | text | no |  |
+| `content` | text | no |  |
+| `source` | text | no | 'chat'::text |
+| `created_at` | timestamp with time zone | no | now() |
 
 ### `saved_cities`
 

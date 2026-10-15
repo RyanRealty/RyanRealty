@@ -16,7 +16,9 @@ import {
   brokerForTwilioNumber,
   forwardCellForBroker,
   lookupPersonByPhone,
+  normalizeTo10,
 } from '@/lib/crm/twilio'
+import { XAI_SIP_URI, isReceptionistLine } from '@/lib/voice/receptionist-routing'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { isNumberBlocked, isStirSpamSuspected } from '@/lib/data/crm/getBlockedNumber'
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
@@ -65,16 +67,37 @@ export async function buildVoiceTwiml(params: Record<string, string>): Promise<N
   const stirVerstat = params.StirVerstat ?? null
   const spamSuspected = isStirSpamSuspected(stirVerstat)
 
+  const receptionistLine = isReceptionistLine(dialed)
   const [blocked, dialedBroker, existing] = await Promise.all([
     withAckBudget(isNumberBlocked(from).catch(() => false), TWILIO_RAW_PERSIST_MS, false),
     withAckBudget(brokerForTwilioNumber(dialed), TWILIO_RAW_PERSIST_MS, null),
-    withAckBudget(lookupPersonByPhone(from).catch(() => null), TWILIO_RAW_PERSIST_MS, null),
+    withAckBudget(
+      lookupPersonByPhone(from)
+        .then((person) => ({ ok: true as const, person }))
+        .catch(() => ({ ok: false as const, person: null })),
+      TWILIO_RAW_PERSIST_MS,
+      { ok: false as const, person: null },
+    ),
   ])
   if (blocked) return rejectResponse()
   if (spamSuspected && process.env.CRM_AUTO_BLOCK_SPAM_CALLS === 'true') return rejectResponse()
 
-  const forwardingBroker: CrmBrokerSlug = dialedBroker ?? existing?.broker ?? DEFAULT_DESK_BROKER
+  // Fail open to "known" on lookup timeout/error so a slow DB rings through
+  // instead of hiding a client behind the receptionist (Matt 2026-10-14).
+  const knownCaller = !existing.ok || !!existing.person
+  const forwardingBroker: CrmBrokerSlug = dialedBroker ?? existing.person?.broker ?? DEFAULT_DESK_BROKER
   const target = await withAckBudget(forwardCellForBroker(forwardingBroker), TWILIO_RAW_PERSIST_MS, null)
+
+  if (receptionistLine && !knownCaller && normalizeTo10(from) !== normalizeTo10(target)) {
+    const recOn = process.env.CRM_CALL_RECORDING !== 'false'
+    const rec = recOn
+      ? ` record="record-from-answer-dual" recordingStatusCallback="${site}/api/twilio/recording" recordingStatusCallbackEvent="completed"`
+      : ''
+    return xml(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Dial answerOnBridge="true" timeout="20" action="${site}/api/voice/receptionist-complete" method="POST"${rec}><Sip referUrl="${site}/api/voice/receptionist-refer" referMethod="POST">${XAI_SIP_URI}</Sip></Dial>
+</Response>`)
+  }
 
   if (!target) {
     console.error(`[twilio/voice] no forward number for broker=${forwardingBroker} (dialed=${dialed}); routing to voicemail`)
