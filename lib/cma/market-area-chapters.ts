@@ -362,6 +362,7 @@ export function adjustedCloseRange(
   if ((comps ?? []).some((c) => (c.sizeAdjustment ?? 0) !== 0)) kinds.push('size')
   if ((comps ?? []).some((c) => (c.timeAdjustment ?? 0) !== 0)) kinds.push('date')
   if ((comps ?? []).some((c) => (c.storyAdjustment ?? 0) !== 0)) kinds.push('style')
+  if ((comps ?? []).some((c) => (c.aduAdjustment ?? 0) !== 0)) kinds.push('the ADU')
   const adjustments =
     kinds.length === 0
       ? ''

@@ -164,12 +164,14 @@ export function comparableAdjustedPrice(comp: ConcessionSale & {
   timeAdjustment?: number | null
   sizeAdjustment?: number | null
   storyAdjustment?: number | null
+  aduAdjustment?: number | null
 }): number {
   const start = comparisonSalePrice(comp.closePrice, concessionOffClose(comp))
   const time = Number.isFinite(comp.timeAdjustment) ? (comp.timeAdjustment as number) : 0
   const size = Number.isFinite(comp.sizeAdjustment) ? (comp.sizeAdjustment as number) : 0
   const story = Number.isFinite(comp.storyAdjustment) ? (comp.storyAdjustment as number) : 0
-  return Math.round(start + time + size + story)
+  const adu = Number.isFinite(comp.aduAdjustment) ? (comp.aduAdjustment as number) : 0
+  return Math.round(start + time + size + story + adu)
 }
 
 /**
@@ -196,6 +198,7 @@ export function printedAdjustedPrice(comp: ConcessionSale & {
   timeAdjustment?: number | null
   sizeAdjustment?: number | null
   storyAdjustment?: number | null
+  aduAdjustment?: number | null
 }): number {
   const fromLines = comparableAdjustedPrice(comp)
   const stored = comp.adjustedPrice

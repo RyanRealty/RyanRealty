@@ -136,6 +136,11 @@ describe('pricing.clamp — the failed-ask ceiling, on render_args', () => {
     expect(x.reviewReason).toContain('supported $1,973,000 against the $1,500,000 asking that just failed')
     expect(x.reviewReason).not.toContain('supported $1,500,000 against the $1,500,000')
     expect(x.reviewReason!.match(/Comp evidence supported/g)).toHaveLength(1)
+    // The first pass's sentence pair goes whole: a strip that stopped at
+    // "failed" left " to sell. The recommendation is under that ask." behind
+    // (429 Irving dry run, 2026-10-15).
+    expect(x.reviewReason).not.toContain(' to sell. The recommendation')
+    expect(x.reviewReason!.match(/The recommendation is under that ask\./g)).toHaveLength(1)
     // And the seller-facing note is written once, not once per application.
     expect(x.notes.filter((n) => n.includes('did not sell'))).toHaveLength(1)
   })

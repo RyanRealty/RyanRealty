@@ -216,6 +216,9 @@ export function subjectUnitsTrace(
   if (facts.priorMultiUnit) {
     const cur = `${subject.propertySubType ?? 'untyped'} at ${sqftWord(subject.sqft)}${facts.aduYn && facts.aduSqft ? ` with a ${sqftWord(facts.aduSqft)} ADU` : ''}`
     lines.push(`${priorSentence(facts.priorMultiUnit)[0]!.toUpperCase()}${priorSentence(facts.priorMultiUnit).slice(1)}: the same structure the current record lists as ${cur}.`)
+    if (currentReadsHouseWithAdu(facts)) {
+      lines.push('The current record lists a house with a recorded ADU, so the home prices as one, the way it was marketed; the earlier multi-unit record is read only as a cross-check (Matt 2026-10-14).')
+    }
   } else if (facts.aduYn) {
     lines.push(
       `The MLS record lists ${facts.aduType ? `a ${facts.aduType.toLowerCase()} ` : 'an '}ADU${facts.aduSqft ? ` of ${sqftWord(facts.aduSqft)}` : ''}; the living area above is the main home.`,
@@ -276,9 +279,47 @@ function typedMultiUnitRecord(
   if (facts.multiUnit && facts.multiUnitTyped) {
     return { basis: 'current', units: recordUnits(subject.propertySubType, facts.unitsTotal), subType: subject.propertySubType, sqft: subject.sqft, mls: null }
   }
+  // THE CURRENT RECORD WINS (Matt 2026-10-14, second call, 429 Irving). A
+  // current record that lists a house with a recorded ADU prices as one, the
+  // way it was marketed, even when an earlier record at the address was typed
+  // Duplex: the earlier reading stays on priorMultiUnit as the cross-check the
+  // letter prints (priorRecordMultiUnitProfile), never as the price.
+  if (currentReadsHouseWithAdu(facts)) return null
   const prior = facts.priorMultiUnit
   if (!prior) return null
   return { basis: 'prior', units: recordUnits(prior.propertySubType, prior.unitsTotal), subType: prior.propertySubType, sqft: prior.sqft, mls: prior.mlsNumber ?? prior.listingKey }
+}
+
+/**
+ * True when the current record lists a house with a recorded ADU: no MLS field
+ * types it multi-unit, Accessory Dwelling Unit YN is Yes and ADU SqFt is on
+ * record. The remarks alone do not make one (a field is a reading of the
+ * structure, a remark is not).
+ */
+export function currentReadsHouseWithAdu(facts: Pick<SubjectUnitFacts, 'multiUnitTyped' | 'aduYn' | 'aduSqft'> | null | undefined): boolean {
+  return Boolean(facts && !facts.multiUnitTyped && facts.aduYn === true && facts.aduSqft != null && facts.aduSqft > 0)
+}
+
+/**
+ * THE DUPLEX CROSS-CHECK. The profile the earlier typed record would have
+ * priced the home under had the current ADU record not won: the same count,
+ * sub type and whole-building area the multi-unit ladder reads. The build
+ * prices it on the side and the letter prints that number as a check beside
+ * the house-with-ADU price, never as the price. Null when the current record
+ * is not a house with a recorded ADU, when there is no earlier typed record,
+ * or when that record could not be priced (count or area missing).
+ */
+export function priorRecordMultiUnitProfile(
+  facts: SubjectUnitFacts | null | undefined,
+  subject: { sqft: number | null; propertySubType: string | null },
+): MultiUnitProfile | null {
+  if (!facts || !facts.priorMultiUnit || !currentReadsHouseWithAdu(facts)) return null
+  const prior = facts.priorMultiUnit
+  const units = recordUnits(prior.propertySubType, prior.unitsTotal)
+  if (units == null || units < 2 || units > MULTI_UNIT_MAX_UNITS) return null
+  const area = wholeBuildingArea(facts, subject.sqft, { sqft: prior.sqft, subType: prior.propertySubType, mls: prior.mlsNumber ?? prior.listingKey })
+  if (!area) return null
+  return { units, propertySubType: multiUnitSubTypeFor(units), sqft: area.sqft, sqftBasis: area.basis, basis: 'prior' }
 }
 
 /**
@@ -382,6 +423,10 @@ export function multiUnitSubjectRefusal(subject: {
   const facts = subject.units
   if (!facts) return null
   if (subject.multiUnit || multiUnitProfile(facts, subject)) return null
+  // A house with a recorded ADU is a house (Matt 2026-10-14, second call),
+  // unless the current record's own remarks describe a multi-unit home: that
+  // reading is still refused for Matt below (review 2026-10-15).
+  if (currentReadsHouseWithAdu(facts) && !facts.multiUnit) return null
   const byHand = 'This letter is not built. Matt prices it by hand.'
   const record = typedMultiUnitRecord(facts, subject)
   if (!record) {

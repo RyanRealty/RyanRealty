@@ -351,6 +351,7 @@ export function bandVersusClosedCompsCheck(
     timeAdjustment?: number | null
     sizeAdjustment?: number | null
     storyAdjustment?: number | null
+    aduAdjustment?: number | null
     concessionsAmount?: number | null
     concessionsYn?: string | null
   }[] | null | undefined,
@@ -385,6 +386,7 @@ export function bandVersusClosedCompsCheck(
           timeAdjustment: c.timeAdjustment,
           sizeAdjustment: c.sizeAdjustment,
           storyAdjustment: c.storyAdjustment,
+          aduAdjustment: c.aduAdjustment,
           concessionsAmount: c.concessionsAmount,
           concessionsYn: c.concessionsYn,
         }),

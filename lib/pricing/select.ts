@@ -3,7 +3,7 @@
  * listings for comps once sale_pricing_facts is populated.
  */
 
-import { aduFirst, aduPreferenceTrace, isAduSale, reviewFallbackPreference, subjectHasAdu } from '@/lib/pricing/adu-preference'
+import { aduFirst, aduPreferenceTrace, isAduSale, ppsfSpread, reviewFallbackPreference, subjectHasAdu, subjectAduAreaOnRecord } from '@/lib/pricing/adu-preference'
 import { multiUnitTrace, reviewFallbackMultiUnit, unitsFirst } from '@/lib/pricing/multi-unit-preference'
 import { isMultiUnitSubType, unitsFromSubType } from '@/lib/cma/market-area'
 import { isRuralAcreage } from '@/lib/cma/comp-tiers'
@@ -350,13 +350,20 @@ export async function selectPricingComps(
   // and the pocket still read the whole pool), and five or more price-setting
   // ones are the set. Fewer hand the walk the whole pool, and the letter says so.
   const subjectAdu = pricingSubject.aduYn === true
+  // The unit is read on its own only when its area is on record (lib/pricing/adu-value.ts).
+  const unitRead = subjectAduAreaOnRecord(subject)
   const { result: walked, aduPreference: passPreference } = await aduFirst({
     subjectAdu: subjectAdu && opts.aduPass !== 'ordinary',
     run: (aduSalesOnly) => walkPricingLadder(pricingSubject, sales, { ...walkOpts, aduSalesOnly }),
+    // The tightness rule (Matt 2026-10-14, second call): the ADU set prices the
+    // home only when its price per square foot spreads no wider than the
+    // ordinary set's, and only where the unit can then be read on its own.
+    spread: (r) => ppsfSpread(r.comps.map((c) => c.closePpsf)),
+    unitRead,
   })
   // A build re-entered on the ordinary pass stamps the review fallback.
   const aduPreference =
-    passPreference ?? (subjectAdu && opts.aduPass === 'ordinary' ? reviewFallbackPreference(opts.aduSalesHeld ?? 0) : null)
+    passPreference ?? (subjectAdu && opts.aduPass === 'ordinary' ? reviewFallbackPreference(opts.aduSalesHeld ?? 0, undefined, unitRead) : null)
   const aduTrace = aduPreference ? [aduPreferenceTrace(aduPreference, sales.filter(isAduSale).length)] : []
   return { ...walked, aduPreference, trace: [...catchUpTrace, ...aduTrace, ...walked.trace], factsReady: true }
 }
@@ -715,12 +722,15 @@ export async function selectCompsPreferringFacts(
   // that cost is bounded to ADU homes the facts walk could not price and is
   // taken over a second pool reader.
   const subjectAdu = subjectHasAdu(subject)
+  const unitRead = subjectAduAreaOnRecord(subject)
   const listings = await aduFirst({
     subjectAdu: subjectAdu && opts.aduPass !== 'ordinary',
     run: (aduSalesOnly) => selectComps(subject, { subjectIrrigation: opts.subjectIrrigation, subjectZoning: opts.subjectZoning, asOf: opts.asOf, aduSalesOnly }),
+    spread: (r) => ppsfSpread(r.comps.map((c) => (c.sqft > 0 ? c.closePrice / c.sqft : null))),
+    unitRead,
   })
   const listingsPreference =
-    listings.aduPreference ?? (subjectAdu && opts.aduPass === 'ordinary' ? reviewFallbackPreference(opts.aduSalesHeld ?? 0) : null)
+    listings.aduPreference ?? (subjectAdu && opts.aduPass === 'ordinary' ? reviewFallbackPreference(opts.aduSalesHeld ?? 0, undefined, unitRead) : null)
   if (listingsPreference) {
     listings.result.diagnostics.adu_preference = listingsPreference
     listings.result.trace.unshift(aduPreferenceTrace(listingsPreference, null))

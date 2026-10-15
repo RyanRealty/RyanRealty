@@ -13,6 +13,7 @@ import { getPricingMarketIndex } from '@/lib/data/pricing/facts'
 import { citySlug } from '@/lib/pricing/classes'
 import { pricingMarketFor } from '@/lib/cma/subject-units'
 import { priceCmaSet } from '@/lib/pricing/estimate'
+import { applyAduAdjustments, withMainSqft, type AduValue, type CompAduFacts } from '@/lib/pricing/adu-value'
 import { reviewWeightFactor } from '@/lib/cma/review-weight'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
@@ -49,13 +50,18 @@ export function priceBpoAdjusted(opts: {
   priceOverride?: number | null
   adjustComps: typeof adjustComps
   computePricing: typeof computePricing
+  /** The ADU line (lib/pricing/adu-value.ts), when the subject carries one. */
+  adu?: { value: AduValue; subjectAduSqft: number; compAdu: ReadonlyMap<string, CompAduFacts> } | null
 }): { adj: CmaAdjustedComp[]; p: CmaPricing | null } {
   // A 2-4 unit home is not moved by the single-family year-over-year figure (lib/cma/subject-units.ts).
   const pricingMarket = pricingMarketFor(opts.subject, opts.market)
-  const adj = opts.adjustComps(opts.subject, opts.set, pricingMarket).map((c) => {
+  // Main home to main home on the size line where a sale's record counted its unit.
+  const set = opts.adu ? withMainSqft(opts.set, opts.adu.compAdu) : opts.set
+  const adjBase = opts.adjustComps(opts.subject, set, pricingMarket).map((c) => {
     const factor = reviewWeightFactor(opts.tierByKey.get(c.listingKey))
     return factor < 1 ? { ...c, weight: +(c.weight * factor).toFixed(4) } : c
   })
+  const adj = opts.adu && opts.adu.value.dollars != null ? applyAduAdjustments(adjBase, opts.adu) : adjBase
   const p = priceCmaSet({
     subject: opts.subject,
     adjusted: adj,
@@ -66,6 +72,7 @@ export function priceBpoAdjusted(opts: {
     asOf: opts.asOf,
     computePricing: opts.computePricing,
   })
+  if (p && opts.adu) p.aduValue = opts.adu.value
   return { adj, p }
 }
 

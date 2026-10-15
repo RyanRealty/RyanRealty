@@ -198,3 +198,53 @@ describe('selectCompsPreferringFacts prices an ADU home from ADU sales first (Ma
     expect(sel.diagnostics.excluded_totals.adu_sale).toBe(5)
   })
 })
+
+describe('the tightness rule on the facts walk (Matt 2026-10-14, second call)', () => {
+  beforeEach(() => {
+    selectComps.mockClear()
+  })
+
+  it('five ADU sales whose price per square foot spreads wider than the ordinary set hand the home to the ordinary set', async () => {
+    const loose = [300, 400, 500, 600, 700].map((ppsf, i) =>
+      fact({ listingKey: `ADU-${i}`, address: `${100 + i} Meadow Ln`, sqft: 1800, closePpsf: ppsf, closePrice: ppsf * 1800, closeDate: '2025-11-15', publicRemarks: ADU_REMARKS }),
+    )
+    const tight = [395, 400, 405, 410, 415].map((ppsf, i) =>
+      fact({ listingKey: `PLAIN-${i}`, address: `${200 + i} Meadow Ln`, sqft: 1800, closePpsf: ppsf, closePrice: ppsf * 1800, closeDate: '2026-08-15' }),
+    )
+    const pool = [...loose, ...tight]
+    selectPricingFactsPool.mockResolvedValue(pool)
+    selectPricingFactsNear.mockResolvedValue(pool)
+    // The unit's area is on record, so the ordinary set can read it on its own.
+    const sel = await selectCompsPreferringFacts(subject({ units: { multiUnit: false, multiUnitTyped: false, reasons: [], unitsTotal: null, aduYn: true, aduSqft: 520, aduType: 'Detached', priorMultiUnit: null } }), { asOf })
+    expect(sel.pricingSource).toBe('facts')
+    expect(sel.comps).toHaveLength(5)
+    expect(sel.diagnostics.adu_preference).toMatchObject({ outcome: 'fallback', fallback_reason: 'spread', adu_sales_held: 5 })
+    expect(sel.diagnostics.adu_preference?.sentence).toContain('What the unit adds is read on its own')
+    expect(sel.diagnostics.adu_preference?.adu_spread_cv).toBeGreaterThan(sel.diagnostics.adu_preference?.ordinary_spread_cv ?? 0)
+    expect(sel.diagnostics.adu_preference?.sentence).toContain('spread wider than the ordinary set')
+    expect(sel.trace.some((t) => t.includes('the tightness rule'))).toBe(true)
+  })
+
+  it('without a recorded ADU area the looser ADU set is still the set: nothing else could carry the unit (review 2026-10-15)', async () => {
+    const loose = [300, 400, 500, 600, 700].map((ppsf, i) =>
+      fact({ listingKey: `ADU-${i}`, address: `${100 + i} Meadow Ln`, sqft: 1800, closePpsf: ppsf, closePrice: ppsf * 1800, closeDate: '2025-11-15', publicRemarks: ADU_REMARKS }),
+    )
+    const tight = [395, 400, 405, 410, 415].map((ppsf, i) =>
+      fact({ listingKey: `PLAIN-${i}`, address: `${200 + i} Meadow Ln`, sqft: 1800, closePpsf: ppsf, closePrice: ppsf * 1800, closeDate: '2026-08-15' }),
+    )
+    const pool = [...loose, ...tight]
+    selectPricingFactsPool.mockResolvedValue(pool)
+    selectPricingFactsNear.mockResolvedValue(pool)
+    const sel = await selectCompsPreferringFacts(subject(), { asOf })
+    expect(sel.diagnostics.adu_preference).toMatchObject({ outcome: 'adu-sales', adu_sales_held: 5 })
+    expect(sel.diagnostics.adu_preference?.adu_spread_cv).toBeUndefined()
+  })
+
+  it('five ADU sales as tight as the ordinary set stay the set, with both spreads recorded', async () => {
+    const pool = [...aduSales(5), ...plainSales(5)]
+    selectPricingFactsPool.mockResolvedValue(pool)
+    selectPricingFactsNear.mockResolvedValue(pool)
+    const sel = await selectCompsPreferringFacts(subject({ units: { multiUnit: false, multiUnitTyped: false, reasons: [], unitsTotal: null, aduYn: true, aduSqft: 520, aduType: 'Detached', priorMultiUnit: null } }), { asOf })
+    expect(sel.diagnostics.adu_preference).toMatchObject({ outcome: 'adu-sales', adu_sales_held: 5, adu_spread_cv: 0, ordinary_spread_cv: 0 })
+  })
+})

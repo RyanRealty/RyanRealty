@@ -327,6 +327,8 @@ const SHARED_ROWS: ReadonlyArray<MatrixRow> = [
  * a sign, and a place straight under the sale price fix all three.
  */
 export const CONCESSION_ADJUSTMENT_ROW_LABEL = 'Adjusted for seller concessions'
+/** What the subject's ADU adds against the sale (Matt 2026-10-14, second call; lib/pricing/adu-value.ts). Folds away when no sale carries the line. */
+export const ADU_ADJUSTMENT_ROW_LABEL = 'Adjusted for the ADU (theirs vs yours)'
 
 /**
  * A grid row whose dollar moves sit between "Sold for" and "Net adjustment".
@@ -338,6 +340,7 @@ export const ADJUSTMENT_MOVE_ROW_LABELS: readonly string[] = [
   'Adjusted for date',
   'Adjusted for size (theirs vs yours)',
   'Adjusted for style (theirs vs yours)',
+  ADU_ADJUSTMENT_ROW_LABEL,
 ]
 
 /**
@@ -359,6 +362,7 @@ const ADJUSTMENT_ROWS: ReadonlyArray<MatrixRow> = [
   { label: 'Adjusted for date', figure: true, grid: true },
   { label: 'Adjusted for size (theirs vs yours)', figure: true, grid: true },
   { label: 'Adjusted for style (theirs vs yours)', figure: true, grid: true },
+  { label: ADU_ADJUSTMENT_ROW_LABEL, figure: true, grid: true },
   // A sale one bedroom or bathroom from the subject is used on this home's own
   // ground and is NOT priced for the room (lib/pricing/room-counts.ts: paired
   // sales in this market put the extra bath slightly below its pair at the
@@ -716,6 +720,7 @@ function adjustmentLines(comp: CmaAdjustedComp): {
     comp.timeAdjustment,
     comp.sizeAdjustment,
     comp.storyAdjustment,
+    comp.aduAdjustment,
   ].filter((v): v is number => v != null && Number.isFinite(v))
   if (parts.length === 0) return { net: null, netPct: null, grossPct: null }
   const close = comp.closePrice
@@ -793,6 +798,7 @@ function adjustmentCells(
     signedCell(comp.timeAdjustment),
     sizeAdjustmentCell(comp),
     signedCell(comp.storyAdjustment),
+    signedCell(comp.aduAdjustment),
     roomAdjustmentCell(comp),
     adj.net != null ? usdSigned(adj.net) : '-',
     adj.netPct != null

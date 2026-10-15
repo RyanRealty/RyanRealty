@@ -6,12 +6,12 @@
 -- email event on the contact timeline, delivered included.
 --
 -- 20261015030000_crm_timeline_resend_and_cma_reply_kinds.sql defines the same
--- list, with the evidence. It cannot reach production on its own: the four
--- email kinds were applied by hand at 03:45Z on 2026-10-15 (applied version
--- 20261015034529), and the hosted apply skips a file older than an applied
--- version. This file is newer than both, so it is the one that lands
--- cma_replied. Live definition read 2026-10-15 04:55Z: the 23 kinds below
--- minus cma_replied. Every existing kind is kept; dropped and re-added in one
+-- list, with the evidence. Production got it by hand: the four email kinds at
+-- 03:45Z on 2026-10-15 (applied version 20261015034529), then this full list
+-- at about 05:20Z (live definition read back with cma_replied, validated). The
+-- Hosted migrations workflow could not apply either file (its Supabase secrets
+-- are empty). This file is the newest definition in the repo, so a fresh build
+-- gets every kind. Every existing kind is kept; dropped and re-added in one
 -- ALTER TABLE so there is no instant with no constraint.
 alter table public.crm_timeline
   drop constraint if exists crm_timeline_kind_check,
