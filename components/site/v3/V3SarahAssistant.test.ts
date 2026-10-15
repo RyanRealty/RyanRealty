@@ -14,6 +14,23 @@ describe('V3SarahAssistant · listing teaser', () => {
   it('is mounted on the public layout and exported from the barrel', () => {
     expect(LAYOUT).toContain('<V3SarahAssistant')
     expect(BARREL).toContain("from './V3SarahAssistant.client'")
+    expect(LAYOUT).not.toMatch(/V3DogFloater/)
+    expect(LAYOUT).not.toMatch(/<V3PhoneDock/)
+  })
+
+  it('puts Call, Text, and Message on the resolved desk broker', () => {
+    expect(SRC).toContain("from '@/app/actions/sarah-desk'")
+    expect(SRC).toContain('getSarahDeskBroker')
+    expect(SRC).toContain('deskBrokerFromAssigned')
+    expect(SRC).toContain('brokerJoinedLine')
+    expect(SRC).toContain('tel:${desk.phoneTel}')
+    expect(SRC).toContain('sms:${desk.phoneTel}')
+    expect(SRC).toContain('desk.contactHref')
+    expect(SRC).toContain("action: 'call'")
+    expect(SRC).toContain("action: 'text'")
+    expect(SRC).toContain("action: 'message'")
+    expect(CSS).toContain('.v3-sarah__desk')
+    expect(CSS).toContain('.v3-sarah__desk-actions')
   })
 
   it('uses the approved avatar for the launcher, teaser, and Sarah messages', () => {

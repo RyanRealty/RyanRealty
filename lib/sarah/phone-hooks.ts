@@ -61,6 +61,8 @@ export type SarahLiveSessionInput = {
   contact?: string | null
   summary?: string | null
   xaiCallId?: string | null
+  /** CRM desk broker (Matt when unassigned). Alerts and takeover follow this. */
+  deskBrokerSlug?: 'matt' | 'rebecca' | 'paul' | null
 }
 
 export type NotifyLiveSessionResult = { livePath: string } | { skipped: true; reason: string }
@@ -73,8 +75,9 @@ export function sarahLiveViewPath(sessionId: string): string {
 
 /**
  * Phone and web call this when a Sarah session starts. Returns a signed live
- * view path for Matt's SMS. Implementation is filled in the alerts PR; this
- * stub is the stable import the phone line should already call.
+ * view path for the resolved desk broker's SMS (Matt when unassigned).
+ * Implementation is filled in the alerts PR; this stub is the stable import
+ * the phone line should already call.
  */
 export async function notifyLiveSession(
   input: SarahLiveSessionInput,
