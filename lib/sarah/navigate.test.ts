@@ -31,6 +31,10 @@ describe('Sarah navigate', () => {
     expect(resolveSarahNavigate('open the home value page')?.href).toBe('/sell/valuation')
     expect(resolveSarahNavigate('go to contact')?.href).toBe('/contact')
     expect(resolveSarahNavigate('take me to Tetherow')?.href).toBe('/communities/tetherow')
+    expect(resolveSarahNavigate('take me to Juniper Preserve')?.href).toBe(
+      '/communities/juniper-preserve',
+    )
+    expect(resolveSarahNavigate('take me to Pronghorn')?.href).toBe('/communities/juniper-preserve')
     expect(resolveSarahNavigate('show me listing 220226741')?.href).toBe('/homes-for-sale/listing/220226741')
     expect(resolveSarahNavigate('show me three bedrooms in Sisters')?.href).toBe(
       '/homes-for-sale/sisters?beds=3',

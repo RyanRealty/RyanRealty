@@ -381,7 +381,7 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     vi.mocked(mintSarahVoiceToken).mockResolvedValueOnce({
       data: {
         secret: 'test-secret',
-        expiresAt: Date.now() + 60_000,
+        expiresAt: new Date(Date.now() + 60_000).toISOString(),
         model: 'grok',
         voice: 'eve',
         brokerFirstName: 'Matt',

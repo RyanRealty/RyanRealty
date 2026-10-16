@@ -4,6 +4,7 @@
  *
  * Property criteria and published pages only. No off-site or admin paths.
  */
+import { communityPath } from '@/lib/communities/community-public-pair'
 import { getAllResortCommunitiesLite } from '@/lib/communities/registry-lite'
 import { homesForSalePath, slugify } from '@/lib/slug'
 import { homeSearchSeeAllHref, parseHomeSearch } from './home-search'
@@ -103,7 +104,7 @@ export function resolveSarahNavigate(text: string): SarahNavigateDest | null {
 
   const community = communityFromText(q)
   if (community && !HOMES_RE.test(q)) {
-    return dest(`/communities/${community.slug}`, community.label)
+    return dest(communityPath(community.slug), community.label)
   }
 
   const parsed = parseHomeSearch(q)
@@ -122,7 +123,7 @@ export function resolveSarahNavigate(text: string): SarahNavigateDest | null {
     if (parsed.city) return dest(`/cities/${slugify(parsed.city)}`, parsed.city)
   }
 
-  if (community) return dest(`/communities/${community.slug}`, community.label)
+  if (community) return dest(communityPath(community.slug), community.label)
   if (parsed.city) return dest(homesForSalePath(parsed.city), `${parsed.city} homes for sale`)
   return null
 }
