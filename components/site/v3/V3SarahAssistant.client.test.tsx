@@ -6,15 +6,23 @@ import React, { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { captureSarahLead } from '@/app/actions/sarah-capture'
 import { answerSarahChat } from '@/app/actions/sarah-chat'
+import { mintSarahVoiceToken } from '@/app/actions/sarah-voice'
+import { startSarahVoiceSession } from '@/lib/sarah/web-voice'
 import { trackEvent } from '@/lib/tracking'
 import { WEB_HELP_EN } from '@/lib/sarah/scripts'
 import { WEB_BRINGS_YOU_HERE_EN, WEB_DISCLOSURE_LINE_EN } from '@/lib/sarah/intent-flow'
 import { SARAH_TEASER_COPY, SARAH_TEASER_DELAY_MS, SARAH_TEASER_SESSION_KEY } from '@/lib/sarah/teaser'
 import { V3SarahAssistant } from './V3SarahAssistant.client'
 
-const nav = { pathname: '/homes-for-sale/bend/20556-empire-220226741' }
+const nav = {
+  pathname: '/homes-for-sale/bend/20556-empire-220226741',
+  push: vi.fn(),
+}
 
-vi.mock('next/navigation', () => ({ usePathname: () => nav.pathname }))
+vi.mock('next/navigation', () => ({
+  usePathname: () => nav.pathname,
+  useRouter: () => ({ push: nav.push }),
+}))
 vi.mock('@/lib/tracking', () => ({ trackEvent: vi.fn() }))
 vi.mock('@/app/actions/sarah-capture', () => ({
   captureSarahLead: vi.fn(async () => ({ data: { personId: 1, cmaSlug: null, stage: 'Lead' }, error: null })),
@@ -29,6 +37,8 @@ vi.mock('@/app/actions/sarah-chat', () => ({
     error: null,
   })),
 }))
+const voiceHandle = { stop: vi.fn(), speakExact: vi.fn(), setMuted: vi.fn(), underruns: () => 0 }
+
 vi.mock('@/app/actions/sarah-voice', () => ({
   mintSarahVoiceToken: vi.fn(async () => ({ data: null, error: 'skip' })),
 }))
@@ -38,6 +48,13 @@ vi.mock('@/app/actions/sarah-funnel', () => ({
 vi.mock('@/app/actions/sarah-consent', () => ({
   recordSarahConsent: vi.fn(async () => ({ data: { id: 1, marketing: true }, error: null })),
 }))
+vi.mock('@/lib/sarah/web-voice', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/sarah/web-voice')>()
+  return {
+    ...actual,
+    startSarahVoiceSession: vi.fn(async () => voiceHandle),
+  }
+})
 vi.mock('@/app/actions/sarah-desk', () => ({
   getSarahDeskBroker: vi.fn(async () => ({
     data: {
@@ -122,6 +139,9 @@ function unmount() {
 describe('V3SarahAssistant listing teaser behavior', () => {
   beforeEach(async () => {
     nav.pathname = '/homes-for-sale/bend/20556-empire-220226741'
+    nav.push.mockReset()
+    voiceHandle.stop.mockReset()
+    voiceHandle.speakExact.mockReset()
     wide = true
     vi.mocked(trackEvent).mockReset()
     vi.mocked(captureSarahLead).mockClear()
@@ -345,6 +365,60 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     const gum = navigator.mediaDevices.getUserMedia as unknown as ReturnType<typeof vi.fn>
     expect(gum).toHaveBeenCalled()
     expect(container.querySelector('[data-sarah="mic"]')).not.toBeNull()
+  })
+
+  it('navigates to Sisters search and keeps the panel open', async () => {
+    act(() => {
+      container.querySelector<HTMLButtonElement>('[data-sarah="type"]')?.click()
+    })
+    const input = container.querySelector<HTMLInputElement>('input[name="sarah-message"]')
+    await act(async () => {
+      const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')
+      proto?.set?.call(input, 'show me homes in Sisters')
+      input!.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    expect(nav.push).toHaveBeenCalledWith('/homes-for-sale/sisters')
+    expect(container.querySelector('[data-sarah="panel"]')).not.toBeNull()
+    expect(container.querySelector('[data-sarah="panel"]')?.textContent).toMatch(/Taking you there now/)
+    expect(container.querySelector('[data-sarah="messages"]')?.textContent).toMatch(/show me homes in Sisters/)
+  })
+
+  it('keeps the voice session when she navigates to Sisters', async () => {
+    vi.mocked(mintSarahVoiceToken).mockResolvedValueOnce({
+      data: {
+        secret: 'test-secret',
+        expiresAt: new Date(Date.now() + 60_000).toISOString(),
+        model: 'grok',
+        voice: 'eve',
+        brokerFirstName: 'Matt',
+      },
+      error: null,
+    })
+    act(() => {
+      container.querySelector<HTMLButtonElement>('[data-sarah="type"]')?.click()
+    })
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(startSarahVoiceSession).toHaveBeenCalled()
+    const input = container.querySelector<HTMLInputElement>('input[name="sarah-message"]')
+    await act(async () => {
+      const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')
+      proto?.set?.call(input, 'show me homes in Sisters')
+      input!.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    expect(nav.push).toHaveBeenCalledWith('/homes-for-sale/sisters')
+    expect(voiceHandle.speakExact).toHaveBeenCalledWith('Taking you there now')
+    expect(voiceHandle.stop).not.toHaveBeenCalled()
+    expect(container.querySelector('[data-sarah="panel"]')).not.toBeNull()
   })
 
   it('does not tease a city browse page', async () => {

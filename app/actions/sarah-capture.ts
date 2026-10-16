@@ -52,7 +52,7 @@ export async function captureSarahLead(input: SarahCaptureInput): Promise<SarahC
       phone,
     })
     const broker = existingAssigned ? deskBrokerFromAssigned(existingAssigned) : desk.data
-    const tags = sarahCaptureTags(input.intent)
+    const tags = sarahCaptureTags(input.intent, input.answers)
     const event = await sendEvent({
       type: sarahEventType(input.intent),
       source: SARAH_SOURCE,

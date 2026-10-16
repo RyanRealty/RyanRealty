@@ -1,0 +1,90 @@
+/* Compact listing cards inside Sarah chat. Tokens only. */
+.v3-sarah-homes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-sm);
+  width: 100%;
+  min-width: 0;
+}
+
+.v3-sarah-homes__card {
+  display: flex;
+  gap: var(--v3-space-sm);
+  align-items: stretch;
+  min-height: 44px;
+  padding: 0;
+  overflow: hidden;
+  border: var(--v3-rule-weight-hairline) solid color-mix(in srgb, var(--v3-navy) 16%, transparent);
+  border-radius: var(--v3-radius-card);
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  text-decoration: none;
+}
+
+.v3-sarah-homes__card:hover,
+.v3-sarah-homes__card:focus-visible {
+  outline: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+}
+
+.v3-sarah-homes__photo,
+.v3-sarah-homes__photo-fallback {
+  flex: 0 0 5.5rem;
+  width: 5.5rem;
+  min-height: 4.5rem;
+  background-color: color-mix(in srgb, var(--v3-navy) 10%, var(--v3-cream));
+  background-size: cover;
+  background-position: center;
+}
+
+.v3-sarah-homes__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.45rem 0.6rem 0.45rem 0;
+}
+
+.v3-sarah-homes__price {
+  font-family: var(--v3-font-body);
+  font-weight: var(--v3-weight-strong);
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.v3-sarah-homes__facts,
+.v3-sarah-homes__addr {
+  font-family: var(--v3-font-body);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+}
+
+.v3-sarah-homes__addr {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v3-sarah-homes__see-all {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.45rem 0.75rem;
+  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+  border-radius: var(--v3-radius-mark);
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  font-family: var(--v3-font-body);
+  font-size: 0.85rem;
+  font-weight: var(--v3-weight-strong);
+  text-decoration: none;
+  align-self: flex-start;
+}
+
+.v3-sarah-homes__see-all:hover,
+.v3-sarah-homes__see-all:focus-visible {
+  outline: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+  outline-offset: 2px;
+}
