@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-10-15T04:47:37.147Z
+**Generated:** 2026-10-16T00:52:15.843Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -59,7 +59,7 @@ One row per MLS-history event for a listing. snake_case columns; `listing_key` r
 | `sort_order` | integer | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
 
-### `listings` · **rows ≈ 597,899**
+### `listings` · **rows ≈ 609,592**
 
 Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case columns** — `"ListingKey"`, `"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"Latitude"`, `"Longitude"`, etc. The `details` jsonb column carries the raw RETS payload. **Never aggregate from this table at request time** — use `listing_tile_mv` / `market_pulse_live` / `market_stats_cache`.
 
@@ -242,7 +242,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 
 ## Listings — derived (materialized views)
 
-### `listing_tile_mv` · **rows ≈ 597,699**
+### `listing_tile_mv` · **rows ≈ 597,826**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. A view over the table listing_tile_mv_src, kept current every minute by pg_cron `listing-mv-drain` (20260924173000; a matview refreshed every 30 minutes before that). The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -356,7 +356,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 21,504**
+### `market_stats_cache` · **rows ≈ 21,675**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -4856,6 +4856,41 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `session_id` | uuid | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
 | `recorded_at` | timestamp with time zone | no | now() |
+
+### `sarah_consent_events`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `occurred_at` | timestamp with time zone | no | now() |
+| `retain_until` | timestamp with time zone | no |  |
+| `channel` | text | no |  |
+| `outcome` | text | no |  |
+| `marketing` | boolean | no | false |
+| `question` | text | no |  |
+| `reply` | text | no | ''::text |
+| `wording_version` | text | no |  |
+| `phone` | text | yes |  |
+| `email` | text | yes |  |
+| `page_url` | text | yes |  |
+| `ip` | text | yes |  |
+| `user_agent` | text | yes |  |
+| `session_id` | text | yes |  |
+| `person_id` | bigint | yes |  |
+| `source` | text | no | 'sarah-chat'::text |
+
+### `sarah_funnel_events`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `occurred_at` | timestamp with time zone | no | now() |
+| `session_id` | text | no |  |
+| `stage` | text | no |  |
+| `intent` | text | yes |  |
+| `person_id` | bigint | yes |  |
+| `page_url` | text | yes |  |
+| `payload` | jsonb | no | '{}'::jsonb |
 
 ### `sarah_guardrail_revisions`
 
