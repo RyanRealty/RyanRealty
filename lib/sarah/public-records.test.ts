@@ -10,6 +10,7 @@ import {
   clearPublicRecordsCache,
   parseDialPermitsHtml,
   pickShopPermit,
+  plainZoneLabel,
 } from './public-records'
 
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures/public-records')
@@ -50,12 +51,27 @@ function fixture(name: string): string {
   return readFileSync(join(FIXTURES, name), 'utf8')
 }
 
+function sentences(text: string): string[] {
+  return text.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean)
+}
+
 describe('classifyPublicRecordsQuestion', () => {
   it('routes permit, ADU, and zoning questions, and leaves listing shop-year alone', () => {
     expect(classifyPublicRecordsQuestion('is there a permit for the shop?')).toBe('permit')
     expect(classifyPublicRecordsQuestion('can I build an ADU here?')).toBe('adu')
     expect(classifyPublicRecordsQuestion('what is the zoning on this lot?')).toBe('zoning')
     expect(classifyPublicRecordsQuestion('when was the shop built')).toBeNull()
+  })
+})
+
+describe('plainZoneLabel', () => {
+  it('writes the zone once in plain English', () => {
+    expect(plainZoneLabel({ code: 'RS', name: 'Standard Density Residential District (RS)' })).toBe(
+      'RS, standard density residential',
+    )
+    expect(plainZoneLabel({ code: 'R-2', name: 'R-2 Limited Residential Zone' })).toBe(
+      'R-2, limited residential',
+    )
   })
 })
 
@@ -82,7 +98,7 @@ describe('parseDialPermitsHtml', () => {
 })
 
 describe('answerPublicRecordsQuestion', () => {
-  it('returns a sourced shop permit fact, an ADU code citation, and a plain not-found', async () => {
+  it('keeps web answers short, sourced once, and offers the broker', async () => {
     clearPublicRecordsCache()
     const shopHtml = fixture('dial-permits-shop.html')
     const emptyHtml = fixture('dial-permits-empty.html')
@@ -96,11 +112,13 @@ describe('answerPublicRecordsQuestion', () => {
         lookupZone: async () => ({ zone: 'R2', zoneType: '3' }),
       },
     })
-    expect(permit).toMatch(/Let me try and find out/i)
-    expect(permit).toMatch(/permit for a 20x30 shop in 2021/i)
-    expect(permit).toMatch(/dial\.deschutes\.org\/Real\/Permits\/123456/)
-    expect(permit).toMatch(/public records and should be verified/i)
-    expect(permit).toMatch(/connect you with Matt/)
+    expect(permit).toBe(
+      'It looks like there was a permit for a 20x30 shop in 2021. The city can confirm for this lot. Source: https://dial.deschutes.org/Real/Permits/123456. Want me to connect you with Matt?',
+    )
+    expect(sentences(permit).length).toBeLessThanOrEqual(5)
+    expect(permit.match(/The city can confirm/g)?.length).toBe(1)
+    expect(permit.match(/Source:/g)?.length).toBe(1)
+    expect(permit).not.toMatch(/Let me try and find out/i)
     expect(permit).not.toMatch(/LINSTAD/i)
     expect(permit).not.toBe(WEB_HELP_EN)
 
@@ -114,12 +132,16 @@ describe('answerPublicRecordsQuestion', () => {
         lookupZone: async () => ({ zone: 'R2', zoneType: '3' }),
       },
     })
-    expect(adu).toMatch(/Let me try and find out/i)
-    expect(adu).toMatch(/R-2/)
-    expect(adu).toMatch(/Redmond Development Code|library\.municode\.com\/or\/redmond/i)
-    expect(adu).toMatch(/based on the code/i)
-    expect(adu).toMatch(/broker or the city can confirm/i)
-    expect(adu).toMatch(/connect you with Rebecca/)
+    expect(adu).toMatch(/^This lot is zoned R-2, limited residential\./)
+    expect(adu).toMatch(/Redmond allows ADUs there, 300 to 900 sq ft for a stand-alone unit\./)
+    expect(adu).toMatch(/The city can confirm for this lot\./)
+    expect(adu).toMatch(/Source: https:\/\/library\.municode\.com\/or\/redmond/)
+    expect(adu).toMatch(/Want me to connect you with Rebecca\?$/)
+    expect(adu.match(/R-2/g)?.length).toBe(1)
+    expect(adu.match(/The city can confirm/g)?.length).toBe(1)
+    expect(adu).not.toMatch(/based on the code/i)
+    expect(adu).not.toMatch(/not a legal or zoning determination/i)
+    expect(sentences(adu).length).toBeLessThanOrEqual(5)
     expect(adu).not.toBe(permit)
 
     clearPublicRecordsCache()
@@ -138,9 +160,11 @@ describe('answerPublicRecordsQuestion', () => {
         lookupZone: async () => ({ zone: null, zoneType: null }),
       },
     })
-    expect(missing).toMatch(/did not find that in the public records/i)
-    expect(missing).toMatch(/connect you with Paul/)
+    expect(missing).toBe(
+      'I did not find that in the public records I can read. Want me to connect you with Paul?',
+    )
     expect(missing).not.toMatch(/20x30/)
+    expect(missing).not.toMatch(/Source:/)
     expect(missing).not.toBe(WEB_HELP_EN)
 
     clearPublicRecordsCache()
@@ -154,10 +178,44 @@ describe('answerPublicRecordsQuestion', () => {
         lookupZone: async () => ({ zone: 'R2', zoneType: '3' }),
       },
     })
-    expect(zenithPermit).toMatch(/711-20-002104-STR/)
-    expect(zenithPermit).toMatch(/20x30 powered shop/)
-    expect(zenithPermit).toMatch(/does not name the shop specifically/)
-    expect(zenithPermit).toMatch(/dial\.deschutes\.org\/Real\/Permits\/280444/)
+    expect(zenithPermit).toBe(
+      'County records show a finaled building permit from 2020. The listing mentions a 20x30 shop, but the permit does not name it. The city can confirm for this lot. Source: https://dial.deschutes.org/Real/Permits/280444. Want me to connect you with Matt?',
+    )
     expect(zenithPermit).not.toMatch(/LINSTAD|KAYLA VILLAGE/i)
+  })
+
+  it('speaks a phone answer with no URL and an offer to text the link', async () => {
+    clearPublicRecordsCache()
+    const adu = await answerPublicRecordsQuestion({
+      question: 'can I build an ADU here?',
+      facts: ZENITH,
+      brokerFirstName: 'Rebecca',
+      channel: 'voice',
+      deps: {
+        fetchText: async () => fixture('dial-permits-shop.html'),
+        lookupZone: async () => ({ zone: 'R2', zoneType: '3' }),
+      },
+    })
+    expect(adu).not.toMatch(/https?:\/\//)
+    expect(adu).toMatch(/This lot is zoned R-2, limited residential/)
+    expect(adu).toMatch(/square feet/)
+    expect(adu).toMatch(/Want me to text you the source, and connect you with Rebecca/)
+    expect(adu.match(/The city can confirm/g)?.length).toBe(1)
+    expect(sentences(adu).length).toBeLessThanOrEqual(4)
+
+    clearPublicRecordsCache()
+    const permit = await answerPublicRecordsQuestion({
+      question: 'is there a permit for the shop?',
+      facts: { ...ZENITH, parcelNumber: '123456' },
+      brokerFirstName: 'Matt',
+      channel: 'voice',
+      deps: {
+        fetchText: async () => fixture('dial-permits-shop.html'),
+        lookupZone: async () => ({ zone: 'R2', zoneType: '3' }),
+      },
+    })
+    expect(permit).toMatch(/20 by 30 shop in 2021/)
+    expect(permit).not.toMatch(/https?:\/\//)
+    expect(permit).toMatch(/Want me to text you the source, and connect you with Matt/)
   })
 })

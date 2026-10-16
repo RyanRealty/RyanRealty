@@ -161,11 +161,12 @@ export const LISTING_FACT_PREFIX_EN = 'The listing shows'
 
 export const LET_ME_FIND_OUT_EN = 'Let me try and find out.'
 
-export const PUBLIC_RECORDS_VERIFY_EN =
-  'This is from public records and should be verified.'
+/** Phone filler while the public-records lookup runs. */
+export const LET_ME_CHECK_EN = 'Let me check.'
 
-export const PUBLIC_RECORDS_NOT_LEGAL_EN =
-  'This is not a legal or zoning determination. Based on the code, a broker or the city can confirm what applies to this lot.'
+export const PUBLIC_RECORDS_VERIFY_EN = 'The city can confirm for this lot.'
+
+export const PUBLIC_RECORDS_NOT_LEGAL_EN = 'The city can confirm for this lot.'
 
 export const PUBLIC_RECORDS_NOT_FOUND_EN =
   'I did not find that in the public records I can read.'
@@ -174,7 +175,14 @@ export function publicRecordsBrokerOfferEn(
   brokerFirstName = DEFAULT_DESK_BROKER_FIRST_NAME,
 ): string {
   const first = brokerFirstName.trim() || DEFAULT_DESK_BROKER_FIRST_NAME
-  return `I can connect you with ${first} if you want to talk it through.`
+  return `Want me to connect you with ${first}?`
+}
+
+export function publicRecordsVoiceOfferEn(
+  brokerFirstName = DEFAULT_DESK_BROKER_FIRST_NAME,
+): string {
+  const first = brokerFirstName.trim() || DEFAULT_DESK_BROKER_FIRST_NAME
+  return `Want me to text you the source, and connect you with ${first}?`
 }
 
 export const UNKNOWN_FACT_EN =
