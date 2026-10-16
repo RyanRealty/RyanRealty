@@ -3,6 +3,12 @@
  * WebSocket for SIP calls, per the lib/grok chokepoint.
  */
 import WebSocket from 'ws'
+import {
+  LET_ME_CHECK_EN,
+  LOOKUP_PUBLIC_RECORDS_TOOL,
+  runLookupPublicRecords,
+  type PublicRecordsDeps,
+} from '@/lib/sarah/public-records'
 
 export type TransferTarget = 'matt' | 'rebecca' | 'paul'
 export type SipSessionConfig = {
@@ -21,8 +27,13 @@ export type SipSessionConfig = {
   /** take_message tool handler; returns whether the message was delivered. */
   onMessage?: (m: { who: TransferTarget; caller_name: string; callback_number: string; message: string }) => Promise<boolean>
   onEnd?: (lines: TranscriptLine[]) => Promise<void>
+  /** Desk broker first name for the public-records closer. Matt when omitted. */
+  brokerFirstName?: string
 }
 export type TranscriptLine = { speaker: 'caller' | 'agent'; text: string }
+
+export const SIP_PUBLIC_RECORDS_FILLER = LET_ME_CHECK_EN
+export { LOOKUP_PUBLIC_RECORDS_TOOL }
 
 /** Drop empty lines and consecutive repeats (xAI can emit the same final line twice). */
 export function cleanTranscript(lines: TranscriptLine[]): TranscriptLine[] {
@@ -68,6 +79,52 @@ const MESSAGE_TOOL = {
   },
 }
 
+export type SipTool = { type: string; name: string }
+
+/** Tools registered on the xAI phone session. Public records is always on. */
+export function sipSessionTools(
+  cfg: Pick<SipSessionConfig, 'resolveTransfer' | 'onMessage'>,
+): SipTool[] {
+  const tools: SipTool[] = []
+  if (cfg.resolveTransfer) tools.push(TRANSFER_TOOL)
+  if (cfg.onMessage) tools.push(MESSAGE_TOOL)
+  tools.push(LOOKUP_PUBLIC_RECORDS_TOOL)
+  return tools
+}
+
+export function parseSipToolArgs(raw: string): Record<string, unknown> {
+  try {
+    const parsed = JSON.parse(raw || '{}') as unknown
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {}
+  } catch {
+    return {}
+  }
+}
+
+/** Spoken public-records answer for the phone tool. No URLs. Does not transfer. */
+export async function handleSipPublicRecordsCall(
+  argsRaw: string,
+  opts?: { brokerFirstName?: string; deps?: PublicRecordsDeps },
+): Promise<string> {
+  const a = parseSipToolArgs(argsRaw)
+  const num = (v: unknown): number | null =>
+    typeof v === 'number' && Number.isFinite(v) ? v : typeof v === 'string' && v.trim() ? Number(v) : null
+  const str = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() ? v.trim() : undefined)
+  return runLookupPublicRecords({
+    question: str(a.question) ?? '',
+    streetNumber: str(a.streetNumber) ?? null,
+    streetName: str(a.streetName) ?? null,
+    city: str(a.city) ?? null,
+    county: str(a.county) ?? null,
+    parcelNumber: str(a.parcelNumber) ?? null,
+    latitude: num(a.latitude),
+    longitude: num(a.longitude),
+    brokerFirstName: opts?.brokerFirstName,
+  }, opts?.deps)
+}
+
 /** SIP REFER the xAI call to a PSTN number. Resolves true only if the destination answered (200). */
 export async function referSipCall(callId: string, e164: string): Promise<{ ok: boolean; status: number }> {
   try {
@@ -103,7 +160,7 @@ export function runSipCall(callId: string, from: string, cfg: SipSessionConfig):
           instructions: cfg.instructions,
           turn_detection: { type: 'server_vad' },
           audio: { input: { transcription: { model: 'grok-transcribe' } } },
-          tools: [...(cfg.resolveTransfer ? [TRANSFER_TOOL] : []), ...(cfg.onMessage ? [MESSAGE_TOOL] : [])],
+          tools: sipSessionTools(cfg),
         },
       }))
       ws.send(JSON.stringify({
@@ -143,6 +200,27 @@ export function runSipCall(callId: string, from: string, cfg: SipSessionConfig):
       }))
       ws.send(JSON.stringify({ type: 'response.create' }))
     }
+    const handlePublicRecords = async (fnCallId: string, argsRaw: string) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'response.create',
+          response: { instructions: `Say exactly: "${SIP_PUBLIC_RECORDS_FILLER}" Then wait.` },
+        }))
+      }
+      const spoken = await handleSipPublicRecordsCall(argsRaw, { brokerFirstName: cfg.brokerFirstName }).catch(
+        () => 'I did not find that in the public records I can read. Want me to connect you with Matt?',
+      )
+      log(`public records filler=${SIP_PUBLIC_RECORDS_FILLER}`)
+      if (ws.readyState !== WebSocket.OPEN) return
+      ws.send(JSON.stringify({
+        type: 'conversation.item.create',
+        item: { type: 'function_call_output', call_id: fnCallId, output: spoken },
+      }))
+      ws.send(JSON.stringify({
+        type: 'response.create',
+        response: { instructions: 'Say the tool result exactly. Do not add a URL or a second caveat.' },
+      }))
+    }
     const handleMessage = async (fnCallId: string, argsRaw: string) => {
       let a: Record<string, string> = {}
       try { a = JSON.parse(argsRaw || '{}') } catch { /* empty */ }
@@ -163,6 +241,10 @@ export function runSipCall(callId: string, from: string, cfg: SipSessionConfig):
       }
       if (e.type === 'response.function_call_arguments.done' && e.name === 'take_message') {
         void handleMessage(e.call_id ?? '', e.arguments ?? '{}')
+        return
+      }
+      if (e.type === 'response.function_call_arguments.done' && e.name === 'lookup_public_records') {
+        void handlePublicRecords(e.call_id ?? '', e.arguments ?? '{}')
         return
       }
       if (e.type === 'error') log(`error ${JSON.stringify(e.error ?? e)}`)

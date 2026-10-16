@@ -32,15 +32,14 @@ Jefferson County publishes no public taxlot or permit layer. Sarah says so and o
 
 ## Reply rules
 
-1. If she does not already have the fact: "Let me try and find out."
-2. Report what the record shows, with a source link. Example: a shop permit fact cites DIAL.
-3. Say it is from public records and should be verified.
-4. Never give a legal or zoning determination. ADU answers use "based on the code ... a broker or the city can confirm."
-5. If nothing is found, say so plainly.
-6. End with an offer to connect them with the CRM-assigned broker, or Matt.
-7. Property facts only. No neighborhood demographics.
+Web answers are 2 to 4 short sentences, no repetition:
 
-Owner names on DIAL pages are stripped and never spoken.
+1. The fact, in plain English. Zone names once (`RS, standard density residential`).
+2. One brief caveat: "The city can confirm for this lot."
+3. One source link at the end (`Source: …`).
+4. The broker offer: "Want me to connect you with {name}?"
+
+On the phone she says "Let me check" while the lookup runs, then the same facts with no URL, and "Want me to text you the source, and connect you with {name}?" If nothing is found, she says so plainly. Property facts only. No neighborhood demographics. Owner names on DIAL pages are stripped and never spoken.
 
 ## Code
 
@@ -49,4 +48,4 @@ Owner names on DIAL pages are stripped and never spoken.
 - Parsers: `lib/sarah/public-records-parse.ts`
 - Recorded fixtures: `lib/sarah/fixtures/public-records/`
 - Web chat: `app/actions/sarah-chat.ts`
-- Phone: import the tool from `lib/sarah`. Do not edit `lib/grok/voice-sip.ts` from this workstream.
+- Phone: `lib/grok/voice-sip.ts` registers the tool and runs `handleSipPublicRecordsCall` (spoken format, `Let me check` filler). Does not transfer or ring anyone.
