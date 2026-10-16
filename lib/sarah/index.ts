@@ -144,3 +144,15 @@ export {
   runLookupPublicRecords,
   type PublicRecordsIntent,
 } from './public-records'
+export {
+  SEARCH_HOMES_TOOL,
+  applyHomeSearchTurn,
+  homeSearchCaptureTags,
+  homeSearchFlowAnswers,
+  looksLikeHomeSearch,
+  parseHomeSearch,
+  runHomeSearch,
+  type HomeSearchCard,
+  type HomeSearchState,
+  type HomeSearchTurn,
+} from './home-search'

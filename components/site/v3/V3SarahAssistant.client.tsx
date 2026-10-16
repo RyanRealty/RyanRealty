@@ -31,12 +31,20 @@ import {
   type FlowChip,
   type FlowState,
 } from '@/lib/sarah/intent-flow'
+import {
+  applyHomeSearchTurn,
+  homeSearchFlowAnswers,
+  looksLikeHomeSearch,
+  type HomeSearchCard,
+  type HomeSearchState,
+} from '@/lib/sarah/home-search'
 import { listingUnknownFactEn, shouldAnswerFromPage } from '@/lib/sarah/listing-answer'
 import {
   SARAH_NAME,
   WEB_HELP_EN,
   WEB_VOICE_NOTICE_EN,
 } from '@/lib/sarah/scripts'
+import { SarahHomeSearchCards } from './SarahHomeSearchCards'
 import {
   SARAH_TEASER_COPY,
   SARAH_TEASER_DELAY_MS,
@@ -53,7 +61,13 @@ import { trackEvent } from '@/lib/tracking'
 import './tokens.css'
 import './V3SarahAssistant.css'
 
-type ChatLine = { from: 'sarah' | 'visitor'; text: string; notice?: string }
+type ChatLine = {
+  from: 'sarah' | 'visitor'
+  text: string
+  notice?: string
+  cards?: HomeSearchCard[]
+  seeAll?: { href: string; label: string } | null
+}
 
 function sessionStore(): Storage | null {
   if (typeof sessionStorage === 'undefined') return null
@@ -109,6 +123,8 @@ export function V3SarahAssistant() {
   const shownRef = useRef(false)
   const dragRef = useRef<{ y: number; dy: number } | null>(null)
   const voiceRef = useRef<SarahVoiceHandle | null>(null)
+  const homeRef = useRef<HomeSearchState | null>(null)
+  const skipVoiceSarahRef = useRef(false)
   const flowRef = useRef(flow)
   const messagesRef = useRef<HTMLDivElement | null>(null)
   const latestRef = useRef<HTMLDivElement | null>(null)
@@ -230,6 +246,41 @@ export function V3SarahAssistant() {
         setLines((prev) => [...prev, { from: 'visitor', text: trimmed }, { from: 'sarah', text: reply }])
         return
       }
+      if (looksLikeHomeSearch(trimmed) || (homeRef.current && homeRef.current.step !== 'done')) {
+        skipVoiceSarahRef.current = true
+        setChips(null)
+        setLines((prev) => [...prev, { from: 'visitor', text: trimmed }])
+        if (looksLikeHomeSearch(trimmed)) {
+          void answerSarahChat({ pagePath: pathname ?? '', question: trimmed }).then((result) => {
+            const reply = result.data?.reply ?? listingUnknownFactEn(desk.firstName)
+            homeRef.current = result.data?.homeSearch ?? null
+            setChips(result.data?.chips ?? null)
+            setLines((prev) => [
+              ...prev,
+              {
+                from: 'sarah',
+                text: reply,
+                cards: result.data?.cards,
+                seeAll: result.data?.seeAll,
+              },
+            ])
+            if (result.data?.voiceSummary) voiceRef.current?.speakExact(result.data.voiceSummary)
+          })
+          return
+        }
+        const turn = applyHomeSearchTurn(homeRef.current!, trimmed, desk.firstName)
+        homeRef.current = turn.next
+        setChips(turn.chips)
+        setLines((prev) => [...prev, { from: 'sarah', text: turn.reply, cards: turn.cards, seeAll: turn.seeAll }])
+        if (turn.voiceSummary) voiceRef.current?.speakExact(turn.voiceSummary)
+        if (turn.capture) {
+          void captureSarahLead({
+            intent: 'buyer',
+            answers: homeSearchFlowAnswers(turn.next),
+          })
+        }
+        return
+      }
       if (
         shouldAnswerFromPage({
           pathname,
@@ -307,6 +358,10 @@ export function V3SarahAssistant() {
           onTranscript: (from, text) => {
             if (from === 'visitor') {
               acceptVisitor(text)
+              return
+            }
+            if (skipVoiceSarahRef.current) {
+              skipVoiceSarahRef.current = false
               return
             }
             setLines((prev) => [...prev, { from, text }])
@@ -422,6 +477,9 @@ export function V3SarahAssistant() {
                   {line.from === 'sarah' ? <SarahFace size={28} /> : null}
                   <div className="v3-sarah__msg-stack">
                     <p className="v3-sarah__msg-body">{line.text}</p>
+                    {line.from === 'sarah' && (line.cards?.length || line.seeAll) ? (
+                      <SarahHomeSearchCards cards={line.cards ?? []} seeAll={line.seeAll} />
+                    ) : null}
                     {line.notice ? (
                       <p className="v3-sarah__saved" data-sarah="saved-notice" data-sarah-disclosure="">
                         {line.notice}

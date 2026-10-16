@@ -15,6 +15,7 @@ export type SarahVoiceStatus = 'idle' | 'asking' | 'connecting' | 'listening' | 
 
 export type SarahVoiceHandle = {
   stop: () => void
+  speakExact: (text: string) => void
 }
 
 const MAX_MS = 5 * 60_000
@@ -165,5 +166,23 @@ export async function startSarahVoiceSession(opts: {
     if (!stopped) stop()
   })
 
-  return { stop }
+  const speakExact = (text: string) => {
+    if (stopped || ws.readyState !== WebSocket.OPEN) return
+    const safe = text.replace(/"/g, "'").slice(0, 400)
+    try {
+      ws.send(JSON.stringify({ type: 'response.cancel' }))
+    } catch {
+      /* ignore */
+    }
+    ws.send(
+      JSON.stringify({
+        type: 'response.create',
+        response: {
+          instructions: `Say exactly this, then stop. Property criteria only. No neighborhood character: "${safe}"`,
+        },
+      }),
+    )
+  }
+
+  return { stop, speakExact }
 }

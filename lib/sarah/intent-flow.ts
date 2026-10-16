@@ -52,6 +52,7 @@ export type FlowAnswers = {
   email?: string
   phone?: string
   cmaWanted?: boolean
+  beds?: string
 }
 
 export type FlowState = {
@@ -452,13 +453,19 @@ export function sarahEventType(
   return 'General Inquiry'
 }
 
-export function sarahCaptureTags(intent: SarahIntent): string[] {
+export function sarahCaptureTags(intent: SarahIntent, answers?: FlowAnswers): string[] {
   const audience = intent === 'buyer' ? 'audience:buyer' : intent === 'question' ? null : 'audience:seller'
+  const extras = [
+    answers?.area ? `area:${answers.area.trim().toLowerCase().replace(/\s+/g, '-')}` : null,
+    answers?.beds ? `beds:${answers.beds}` : null,
+    answers?.budget ? `budget:${answers.budget.trim().toLowerCase().replace(/\s+/g, '-')}` : null,
+  ]
   return [
     `source:${SARAH_SOURCE}`,
     'captured:by-sarah',
     `sarah:intent-${intent}`,
     audience,
+    ...extras,
   ].filter((t): t is string => Boolean(t))
 }
 
@@ -470,6 +477,7 @@ export function sarahOriginNote(input: {
   const lines = [
     `Captured by Sarah (${input.intent.replace('-', ' ')}). Assigned broker fallback is ${brokerName(input.brokerFirstName)}.`,
     input.answers.area ? `Area: ${input.answers.area}` : null,
+    input.answers.beds ? `Beds: ${input.answers.beds}` : null,
     input.answers.budget ? `Budget: ${input.answers.budget}` : null,
     input.answers.timeline ? `Timeline: ${input.answers.timeline}` : null,
     input.answers.address ? `Address: ${input.answers.address}` : null,

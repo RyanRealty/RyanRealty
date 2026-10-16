@@ -15,5 +15,7 @@ describe('Sarah web mic session voice', () => {
     const src = readFileSync(join(import.meta.dirname, 'web-voice.ts'), 'utf8')
     expect(src).toContain('...grokRealtimeSessionVoice()')
     expect(src).toContain("type: 'response.create'")
+    expect(src).toContain('speakExact')
+    expect(src).toContain('response.cancel')
   })
 })
