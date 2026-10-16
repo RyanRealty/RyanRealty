@@ -11,7 +11,14 @@ import {
 } from '@/lib/sarah/listing-answer'
 import { getSarahPlaceFacts } from '@/lib/sarah/place-facts'
 import { answerPublicRecordsQuestion, classifyPublicRecordsQuestion } from '@/lib/sarah/public-records'
+import {
+  looksLikeHomeSearch,
+  runHomeSearch,
+  type HomeSearchCard,
+  type HomeSearchState,
+} from '@/lib/sarah/home-search'
 import { WEB_HELP_EN } from '@/lib/sarah/scripts'
+import type { FlowChip } from '@/lib/sarah/intent-flow'
 
 export type SarahChatInput = {
   pagePath: string
@@ -19,7 +26,16 @@ export type SarahChatInput = {
 }
 
 export type SarahChatResult = {
-  data: { reply: string; listNumber: string | null; pageKind: string } | null
+  data: {
+    reply: string
+    listNumber: string | null
+    pageKind: string
+    cards?: HomeSearchCard[]
+    seeAll?: { href: string; label: string } | null
+    voiceSummary?: string
+    homeSearch?: HomeSearchState
+    chips?: FlowChip[] | null
+  } | null
   error: string | null
 }
 
@@ -37,6 +53,23 @@ export async function answerSarahChat(input: SarahChatInput): Promise<SarahChatR
     const desk = await getSarahDeskBroker()
     const broker = desk.data.firstName
     const page = parseSarahPage(input.pagePath)
+
+    if (looksLikeHomeSearch(question)) {
+      const turn = await runHomeSearch(question)
+      return {
+        data: {
+          reply: turn.reply,
+          listNumber: null,
+          pageKind: 'search',
+          cards: turn.cards,
+          seeAll: turn.seeAll,
+          voiceSummary: turn.voiceSummary,
+          homeSearch: turn.next,
+          chips: turn.chips,
+        },
+        error: null,
+      }
+    }
 
     if (page.kind === 'listing' && page.listNumber) {
       const facts = await getSarahListingFacts(page.listNumber)

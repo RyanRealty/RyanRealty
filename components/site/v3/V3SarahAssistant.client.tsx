@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useId, useRef, useState, type PointerEvent } from 'react'
 import { Mic } from 'lucide-react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { captureSarahLead } from '@/app/actions/sarah-capture'
 import { answerSarahChat } from '@/app/actions/sarah-chat'
 import { getSarahDeskBroker } from '@/app/actions/sarah-desk'
@@ -31,6 +31,19 @@ import {
   type FlowChip,
   type FlowState,
 } from '@/lib/sarah/intent-flow'
+import {
+  applyHomeSearchTurn,
+  homeSearchFlowAnswers,
+  looksLikeHomeSearch,
+  type HomeSearchCard,
+  type HomeSearchState,
+} from '@/lib/sarah/home-search-parse'
+import {
+  SARAH_NAVIGATE_VOICE,
+  isPublicSarahHref,
+  looksLikeNavigate,
+  resolveSarahNavigate,
+} from '@/lib/sarah/navigate'
 import { listingUnknownFactEn, shouldAnswerFromPage } from '@/lib/sarah/listing-answer'
 import {
   SARAH_NAME,
@@ -41,6 +54,7 @@ import {
   WEB_VOICE_HINT_THINK_EN,
   WEB_VOICE_NOTICE_EN,
 } from '@/lib/sarah/scripts'
+import { SarahHomeSearchCards } from './SarahHomeSearchCards'
 import {
   SARAH_TEASER_COPY,
   SARAH_TEASER_DELAY_MS,
@@ -66,7 +80,14 @@ import { trackEvent } from '@/lib/tracking'
 import './tokens.css'
 import './V3SarahAssistant.css'
 
-type ChatLine = { from: 'sarah' | 'visitor'; text: string; notice?: string; voice?: boolean }
+type ChatLine = {
+  from: 'sarah' | 'visitor'
+  text: string
+  notice?: string
+  voice?: boolean
+  cards?: HomeSearchCard[]
+  seeAll?: { href: string; label: string } | null
+}
 
 function sessionStore(): Storage | null {
   if (typeof sessionStorage === 'undefined') return null
@@ -105,6 +126,7 @@ function SarahFace({
 
 export function V3SarahAssistant() {
   const pathname = usePathname()
+  const router = useRouter()
   const hidden = shouldHidePublicChrome(pathname)
   const titleId = useId()
   const [panelOpen, setPanelOpen] = useState(false)
@@ -123,6 +145,8 @@ export function V3SarahAssistant() {
   const dragRef = useRef<{ y: number; dy: number } | null>(null)
   const voiceRef = useRef<SarahVoiceHandle | null>(null)
   const voiceErrorPostedRef = useRef({ posted: false })
+  const homeRef = useRef<HomeSearchState | null>(null)
+  const skipVoiceSarahRef = useRef(false)
   const flowRef = useRef(flow)
   const messagesRef = useRef<HTMLDivElement | null>(null)
   const latestRef = useRef<HTMLDivElement | null>(null)
@@ -244,6 +268,52 @@ export function V3SarahAssistant() {
         setLines((prev) => [...prev, { from: 'visitor', text: trimmed }, { from: 'sarah', text: reply }])
         return
       }
+      if (looksLikeNavigate(trimmed)) {
+        const dest = resolveSarahNavigate(trimmed)
+        if (dest) {
+          skipVoiceSarahRef.current = true
+          setChips(null)
+          setLines((prev) => [...prev, { from: 'visitor', text: trimmed }, { from: 'sarah', text: dest.reply }])
+          router.push(dest.href)
+          voiceRef.current?.speakExact(dest.voice)
+          return
+        }
+      }
+      if (looksLikeHomeSearch(trimmed) || (homeRef.current && homeRef.current.step !== 'done')) {
+        skipVoiceSarahRef.current = true
+        setChips(null)
+        setLines((prev) => [...prev, { from: 'visitor', text: trimmed }])
+        if (looksLikeHomeSearch(trimmed)) {
+          void answerSarahChat({ pagePath: pathname ?? '', question: trimmed }).then((result) => {
+            const reply = result.data?.reply ?? listingUnknownFactEn(desk.firstName)
+            homeRef.current = result.data?.homeSearch ?? null
+            setChips(result.data?.chips ?? null)
+            setLines((prev) => [
+              ...prev,
+              {
+                from: 'sarah',
+                text: reply,
+                cards: result.data?.cards,
+                seeAll: result.data?.seeAll,
+              },
+            ])
+            if (result.data?.voiceSummary) voiceRef.current?.speakExact(result.data.voiceSummary)
+          })
+          return
+        }
+        const turn = applyHomeSearchTurn(homeRef.current!, trimmed, desk.firstName)
+        homeRef.current = turn.next
+        setChips(turn.chips)
+        setLines((prev) => [...prev, { from: 'sarah', text: turn.reply, cards: turn.cards, seeAll: turn.seeAll }])
+        if (turn.voiceSummary) voiceRef.current?.speakExact(turn.voiceSummary)
+        if (turn.capture) {
+          void captureSarahLead({
+            intent: 'buyer',
+            answers: homeSearchFlowAnswers(turn.next),
+          })
+        }
+        return
+      }
       if (
         shouldAnswerFromPage({
           pathname,
@@ -272,7 +342,17 @@ export function V3SarahAssistant() {
         })
       }
     },
-    [desk.firstName, greeted, pathname],
+    [desk.firstName, greeted, pathname, router],
+  )
+
+  const goToPage = useCallback(
+    (href: string) => {
+      if (!isPublicSarahHref(href)) return
+      skipVoiceSarahRef.current = true
+      router.push(href)
+      voiceRef.current?.speakExact(SARAH_NAVIGATE_VOICE)
+    },
+    [router],
   )
 
   const send = useCallback(() => {
@@ -319,6 +399,18 @@ export function V3SarahAssistant() {
               setLines((prev) => [...prev, { from: 'sarah', text: message }])
             },
             onTranscript: (from, text, meta) => {
+              if (
+                from === 'visitor' &&
+                !meta?.interim &&
+                (looksLikeHomeSearch(text) || (homeRef.current && homeRef.current.step !== 'done'))
+              ) {
+                acceptVisitor(text)
+                return
+              }
+              if (from === 'sarah' && skipVoiceSarahRef.current) {
+                skipVoiceSarahRef.current = false
+                return
+              }
               setLines((prev) => {
                 const last = prev[prev.length - 1]
                 if (meta?.interim && last?.voice && last.from === from) {
@@ -339,7 +431,7 @@ export function V3SarahAssistant() {
         }
       })()
     },
-    [desk.slug],
+    [acceptVisitor, desk.slug],
   )
 
   const onSheetPointerDown = useCallback(
@@ -457,6 +549,13 @@ export function V3SarahAssistant() {
                   {line.from === 'sarah' ? <SarahFace size={28} /> : null}
                   <div className="v3-sarah__msg-stack">
                     <p className="v3-sarah__msg-body">{line.text}</p>
+                    {line.from === 'sarah' && (line.cards?.length || line.seeAll) ? (
+                      <SarahHomeSearchCards
+                        cards={line.cards ?? []}
+                        seeAll={line.seeAll}
+                        onNavigate={goToPage}
+                      />
+                    ) : null}
                     {line.notice ? (
                       <p className="v3-sarah__saved" data-sarah="saved-notice" data-sarah-disclosure="">
                         {line.notice}

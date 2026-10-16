@@ -42,7 +42,7 @@ export const WEB_VOICE_NOTICE_EN =
 
 /** Spoken style for the Eve realtime session. Not shown in the panel. */
 export const WEB_VOICE_TALK_EN =
-  "On voice, talk like a person on a phone. Use contractions. Keep sentences short. One idea each. Don't read lists. Don't sound like a report. If they start talking, stop and listen."
+  "On voice, talk like a person on a phone. Use contractions. Keep sentences short. One idea each. Don't read lists. Don't sound like a report. If they start talking, stop and listen. If you take them to a page, say Taking you there now and keep talking."
 
 export const WEB_VOICE_HINT_LISTEN_EN = 'Just start talking'
 export const WEB_VOICE_HINT_END_EN = 'Tap to end'

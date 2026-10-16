@@ -40,6 +40,7 @@ export type SarahVoiceStatus =
 
 export type SarahVoiceHandle = {
   stop: () => void
+  speakExact: (text: string) => void
   underruns: () => number
 }
 
@@ -232,5 +233,23 @@ export async function startSarahVoiceSession(opts: {
     if (!stopped) stop()
   })
 
-  return { stop, underruns: () => playback.underruns() }
+  const speakExact = (text: string) => {
+    if (stopped || ws.readyState !== WebSocket.OPEN) return
+    const safe = text.replace(/"/g, "'").slice(0, 400)
+    try {
+      ws.send(JSON.stringify({ type: 'response.cancel' }))
+    } catch {
+      /* ignore */
+    }
+    ws.send(
+      JSON.stringify({
+        type: 'response.create',
+        response: {
+          instructions: `Say exactly this, then stop. Property criteria only. No neighborhood character: "${safe}"`,
+        },
+      }),
+    )
+  }
+
+  return { stop, speakExact, underruns: () => playback.underruns() }
 }

@@ -28,5 +28,7 @@ describe('Sarah web mic session voice', () => {
     expect(src).toContain('logSarahVoiceStage')
     expect(src).toContain("opts.onStatus('thinking')")
     expect(src).toContain('opts.armed?.speaker')
+    expect(src).toContain('speakExact')
+    expect(src).toContain('response.cancel')
   })
 })
