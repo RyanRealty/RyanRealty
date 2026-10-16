@@ -1,4 +1,4 @@
-import type { HomeSearchCard } from '@/lib/sarah/home-search'
+import type { HomeSearchCard } from '@/lib/sarah/home-search-parse'
 import './SarahHomeSearchCards.css'
 
 function factsLine(card: HomeSearchCard): string {

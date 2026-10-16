@@ -7,7 +7,7 @@
 import { communityPath } from '@/lib/communities/community-public-pair'
 import { getAllResortCommunitiesLite } from '@/lib/communities/registry-lite'
 import { homesForSalePath, slugify } from '@/lib/slug'
-import { homeSearchSeeAllHref, parseHomeSearch } from './home-search'
+import { homeSearchSeeAllHref, parseHomeSearch } from './home-search-parse'
 
 export const NAVIGATE_TOOL = {
   type: 'function',

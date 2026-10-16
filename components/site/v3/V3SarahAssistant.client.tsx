@@ -37,7 +37,7 @@ import {
   looksLikeHomeSearch,
   type HomeSearchCard,
   type HomeSearchState,
-} from '@/lib/sarah/home-search'
+} from '@/lib/sarah/home-search-parse'
 import {
   SARAH_NAVIGATE_VOICE,
   isPublicSarahHref,
