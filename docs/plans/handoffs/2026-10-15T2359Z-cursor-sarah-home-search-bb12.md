@@ -9,6 +9,10 @@ returns 3-5 cards plus `/homes-for-sale/sisters?beds=3`. Zero-match
 widens. One follow-up, then alerts + broker capture with by-Sarah
 tags. Voice speaks the short summary; cards stay in chat.
 
+Merged `origin/main` (#688 Sarah one-tap voice) into this branch. Kept
+their voice loop; re-applied home-search hooks (cards, speakExact,
+spoken "three bedrooms in Sisters").
+
 ## Next
 Land the PR, confirm Vercel READY, live QA at 375 and 1440 with that
 phrase.

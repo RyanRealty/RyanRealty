@@ -449,7 +449,9 @@ function buildNextResponse(pathname: string, request: NextRequest): NextResponse
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-pathname', pathname)
   requestHeaders.set('x-search', request.nextUrl.search ?? '')
-  return NextResponse.next({ request: { headers: requestHeaders } })
+  const response = NextResponse.next({ request: { headers: requestHeaders } })
+  response.headers.set('Permissions-Policy', 'microphone=(self)')
+  return response
 }
 
 /**

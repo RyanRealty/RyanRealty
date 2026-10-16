@@ -243,10 +243,13 @@
      listing's photo strip puts its counter there, 2026-09-25). */
   --v3-dog-fab: 4.25rem;
   --v3-dog-clear: calc(var(--v3-dog-fab) + var(--v3-space-md));
-  /* Sarah launcher: bottom-end disc, smaller than Jax, above the dock.
-     Panel (Matt 2026-10-15): compact card on desktop, bottom sheet on phone.
-     Warm stone (--v3-focus) is the gold-adjacent accent; retired gold hex stays out. */
-  --v3-sarah-fab: 3.5rem;
+  /* Sarah launcher: 68px disc, 24px off the corner so it clears the
+     scrollbar and page CTAs. Panel (Matt 2026-10-15): compact card on
+     desktop, bottom sheet on phone. Warm stone (--v3-focus) is the
+     gold-adjacent accent; retired gold hex stays out. */
+  --v3-sarah-fab: 4.25rem;
+  --v3-sarah-inset: 1.5rem;
+  --v3-sarah-toolbar: 0.75rem;
   --v3-sarah-panel-w: 23.75rem;
   --v3-sarah-panel-h: 36rem;
   --v3-sarah-panel-radius: 1.5rem;
@@ -254,6 +257,7 @@
   --v3-sarah-sheet-max: 85vh;
   --v3-sarah-glow: 0 0 40px color-mix(in srgb, var(--v3-navy) 28%, transparent);
   --v3-sarah-mic: 3rem;
+  --v3-sarah-orb: 4.5rem;
   --v3-sarah-face: 50% 40%;
   --v3-matt-face: 50% 18%;
   --v3-sarah-gutter: 1.25rem;

@@ -85,6 +85,12 @@ export function sarahPanelProblems({ root = process.cwd(), files = {} } = {}) {
     if (!sarah.includes('data-sarah="mic"') || !sarah.includes('mintSarahVoiceToken') || !sarah.includes('startSarahVoiceSession')) {
       p.push(`${PATHS.sarah}: Eve mic must mint a realtime token and start the browser session.`)
     }
+    if (sarah.includes('v3-sarah__ai-tag')) {
+      p.push(`${PATHS.sarah}: AI strip must stay off the launcher photo. Keep the panel line and aria-label.`)
+    }
+    if (!sarah.includes('data-sarah="voice-stage"') || !sarah.includes('WEB_VOICE_HINT_LISTEN_EN') || !sarah.includes('WEB_VOICE_HINT_END_EN')) {
+      p.push(`${PATHS.sarah}: hands-free voice needs a visible stage, Just start talking, and Tap to end.`)
+    }
     if (!sarah.includes('captureSarahLead')) {
       p.push(`${PATHS.sarah}: qualifying flows must write through captureSarahLead.`)
     }
@@ -126,6 +132,12 @@ export function sarahPanelProblems({ root = process.cwd(), files = {} } = {}) {
     }
     if (!css.includes('--v3-sarah-mic')) {
       p.push(`${PATHS.css}: mic must stay a large circular control.`)
+    }
+    if (!css.includes('.v3-sarah__voice-orb') || !css.includes('.v3-sarah__voice-wave')) {
+      p.push(`${PATHS.css}: listening/speaking orb motion is missing.`)
+    }
+    if (!css.includes('--v3-sarah-inset') || !css.includes('--v3-sarah-fab')) {
+      p.push(`${PATHS.css}: launcher must stay inset from the corner and sized from --v3-sarah-fab.`)
     }
     if (css.includes('.v3-sarah__desk-actions') || css.includes('.v3-sarah__desk-who')) {
       p.push(`${PATHS.css}: desk-actions / desk-who chrome must not return.`)

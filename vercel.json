@@ -5,6 +5,12 @@
     }
   },
   "ignoreCommand": "node scripts/vercel-ignore-build.mjs",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [{ "key": "Permissions-Policy", "value": "microphone=(self)" }]
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron/analytics-daily-digest",
