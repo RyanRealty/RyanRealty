@@ -22,13 +22,13 @@ export const CRIME_DATA_SOURCE = 'the Bend Police Department publishes crime dat
 export const AGENCY_PAMPHLET_HREF = siteUrl('/docs/oregon-initial-agency-disclosure-pamphlet.pdf')
 
 /**
- * Web chat intro (Matt 2026-10-15). `{broker}` is the visitor's assigned
- * broker first name, default Matt. Unlicensed status is not in this intro;
- * Sarah says it on price, contract, or advice questions.
+ * Web chat intro (Matt 2026-10-16). `{broker}` is the visitor's assigned
+ * CRM broker first name, default Matt. Do not announce AI here. Sarah
+ * answers honestly if asked, and never claims to be human.
  */
 export function webGreetingEn(brokerFirstName = DEFAULT_DESK_BROKER_FIRST_NAME): string {
   const first = brokerFirstName.trim() || DEFAULT_DESK_BROKER_FIRST_NAME
-  return `Hi, I'm Sarah, an AI assistant with ${first}'s team at Ryan Realty. I can help with pretty much anything here.`
+  return `Hi, I'm Sarah. I work with ${first} and his team at Ryan Realty. How can I help you today?`
 }
 
 export const WEB_GREETING_EN = webGreetingEn(DEFAULT_DESK_BROKER_FIRST_NAME)

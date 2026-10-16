@@ -40,6 +40,7 @@ export type SarahVoiceStatus =
 
 export type SarahVoiceHandle = {
   stop: () => void
+  setMuted: (muted: boolean) => void
   speakExact: (text: string) => void
   underruns: () => number
 }
@@ -85,6 +86,7 @@ export async function startSarahVoiceSession(opts: {
   let stopped = false
   let playing = false
   let ignoreAudio = false
+  let inputMuted = false
   let appends = 0
   const captureRate = audioCtx.sampleRate || GROK_REALTIME_SAMPLE_RATE
   logSarahVoiceStage('ctx.ready', {
@@ -126,6 +128,14 @@ export async function startSarahVoiceSession(opts: {
     logSarahVoiceStage('session.stop', { appends, underruns: playback.underruns() })
   }
 
+  const setMuted = (muted: boolean) => {
+    inputMuted = muted
+    stream.getAudioTracks().forEach((t) => {
+      t.enabled = !muted
+    })
+    logSarahVoiceStage(muted ? 'mic.muted' : 'mic.live')
+  }
+
   const timer = window.setTimeout(stop, MAX_MS)
 
   ws.addEventListener('open', () => {
@@ -156,7 +166,7 @@ export async function startSarahVoiceSession(opts: {
   })
 
   processor.onaudioprocess = (ev) => {
-    if (stopped || ws.readyState !== WebSocket.OPEN) return
+    if (stopped || inputMuted || ws.readyState !== WebSocket.OPEN) return
     const input = ev.inputBuffer.getChannelData(0)
     const pcm = pcm16FromMicFloat(input, captureRate, GROK_REALTIME_SAMPLE_RATE)
     ws.send(JSON.stringify({ type: 'input_audio_buffer.append', audio: pcm.audio }))
@@ -251,5 +261,5 @@ export async function startSarahVoiceSession(opts: {
     )
   }
 
-  return { stop, speakExact, underruns: () => playback.underruns() }
+  return { stop, setMuted, speakExact, underruns: () => playback.underruns() }
 }

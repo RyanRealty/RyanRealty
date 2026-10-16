@@ -12,7 +12,9 @@ import { Mic } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { captureSarahLead } from '@/app/actions/sarah-capture'
 import { answerSarahChat } from '@/app/actions/sarah-chat'
+import { recordSarahConsent } from '@/app/actions/sarah-consent'
 import { getSarahDeskBroker } from '@/app/actions/sarah-desk'
+import { recordSarahFunnelStage } from '@/app/actions/sarah-funnel'
 import { mintSarahVoiceToken } from '@/app/actions/sarah-voice'
 import { V3_ROOT_CLASS } from './atoms'
 import { SARAH_AVATAR_ALT, SARAH_AVATAR_SRC, SARAH_AVATAR_SRCSET } from '@/lib/sarah/assets'
@@ -22,6 +24,7 @@ import {
 } from '@/lib/sarah/desk-broker'
 import { evaluateSarahTurn } from '@/lib/sarah/guardrails'
 import {
+  afterHelpfulAnswer,
   applyIntentTurn,
   initialFlow,
   matchIntentChip,
@@ -46,6 +49,7 @@ import {
 } from '@/lib/sarah/navigate'
 import { listingUnknownFactEn, shouldAnswerFromPage } from '@/lib/sarah/listing-answer'
 import {
+  DEFAULT_DESK_BROKER_FIRST_NAME,
   SARAH_NAME,
   WEB_HELP_EN,
   WEB_VOICE_HINT_END_EN,
@@ -53,6 +57,7 @@ import {
   WEB_VOICE_HINT_SPEAK_EN,
   WEB_VOICE_HINT_THINK_EN,
   WEB_VOICE_NOTICE_EN,
+  webGreetingEn,
 } from '@/lib/sarah/scripts'
 import { SarahHomeSearchCards } from './SarahHomeSearchCards'
 import {
@@ -98,8 +103,20 @@ function sessionStore(): Storage | null {
   }
 }
 
-function greetingLines(): ChatLine[] {
-  return [{ from: 'sarah', text: WEB_BRINGS_YOU_HERE_EN, notice: WEB_DISCLOSURE_LINE_EN }]
+function visitorSessionId(): string | null {
+  try {
+    return localStorage.getItem('rr_session_id')
+  } catch {
+    return null
+  }
+}
+
+function greetingLines(brokerFirstName = DEFAULT_DESK_BROKER_FIRST_NAME): ChatLine[] {
+  const text =
+    brokerFirstName.trim() === DEFAULT_DESK_BROKER_FIRST_NAME
+      ? WEB_BRINGS_YOU_HERE_EN
+      : webGreetingEn(brokerFirstName)
+  return [{ from: 'sarah', text, notice: WEB_DISCLOSURE_LINE_EN }]
 }
 
 function SarahFace({
@@ -141,10 +158,14 @@ export function V3SarahAssistant() {
   const [chips, setChips] = useState<FlowChip[] | null>([...SARAH_INTENT_CHIPS])
   const [sheetDy, setSheetDy] = useState(0)
   const [voiceStatus, setVoiceStatus] = useState<SarahVoiceStatus>('idle')
+  const [voiceMuted, setVoiceMuted] = useState(false)
+  const [caption, setCaption] = useState('')
   const shownRef = useRef(false)
   const dragRef = useRef<{ y: number; dy: number } | null>(null)
   const voiceRef = useRef<SarahVoiceHandle | null>(null)
   const voiceErrorPostedRef = useRef({ posted: false })
+  const voiceJustStartedRef = useRef(false)
+  const longPressRef = useRef<number | null>(null)
   const homeRef = useRef<HomeSearchState | null>(null)
   const skipVoiceSarahRef = useRef(false)
   const flowRef = useRef(flow)
@@ -165,7 +186,12 @@ export function V3SarahAssistant() {
   useEffect(() => {
     let cancelled = false
     void getSarahDeskBroker().then((got) => {
-      if (!cancelled && got.data) setDesk(got.data)
+      if (cancelled || !got.data) return
+      setDesk(got.data)
+      setLines((prev) => {
+        if (prev.length !== 1 || prev[0].from !== 'sarah') return prev
+        return greetingLines(got.data.firstName)
+      })
     })
     return () => {
       cancelled = true
@@ -225,8 +251,12 @@ export function V3SarahAssistant() {
         dismissTeaser()
       }
       setPanelOpen(true)
+      const sid = visitorSessionId()
+      if (sid) {
+        void recordSarahFunnelStage({ sessionId: sid, stage: 'opened', pageUrl: pathname })
+      }
     },
-    [dismissTeaser, teaserKind],
+    [dismissTeaser, pathname, teaserKind],
   )
 
   const launcherRef = useRef<HTMLButtonElement | null>(null)
@@ -325,24 +355,53 @@ export function V3SarahAssistant() {
         setLines((prev) => [...prev, { from: 'visitor', text: trimmed }])
         void answerSarahChat({ pagePath: pathname ?? '', question: trimmed }).then((result) => {
           const reply = result.data?.reply ?? listingUnknownFactEn(desk.firstName)
+          const follow = afterHelpfulAnswer(flowRef.current, desk.firstName)
+          if (follow) {
+            setFlow(follow.next)
+            flowRef.current = follow.next
+            setChips(follow.chips)
+            setLines((prev) => [...prev, { from: 'sarah', text: reply }, { from: 'sarah', text: follow.reply }])
+            return
+          }
           setLines((prev) => [...prev, { from: 'sarah', text: reply }])
         })
         return
       }
-      const turn = applyIntentTurn(flowRef.current, trimmed, desk.firstName)
+      const spoken = voiceStatus !== 'idle'
+      const turn = applyIntentTurn(flowRef.current, trimmed, desk.firstName, spoken ? 'spoken' : 'typed')
       setFlow(turn.next)
       flowRef.current = turn.next
       setChips(turn.chips)
       setLines((prev) => [...prev, { from: 'visitor', text: trimmed }, { from: 'sarah', text: turn.reply }])
+      const sid = visitorSessionId()
+      if (sid && turn.funnel) {
+        void recordSarahFunnelStage({
+          sessionId: sid,
+          stage: turn.funnel,
+          intent: turn.next.intent,
+          pageUrl: pathname,
+        })
+      }
       if (turn.capture) {
         void captureSarahLead({
-          intent: turn.next.intent ?? 'question',
+          intent: turn.next.intent ?? 'how',
           answers: turn.next.answers,
           startCma: turn.startCma,
         })
       }
+      if (turn.funnel === 'consent' && turn.next.answers.phone) {
+        void recordSarahConsent({
+          reply: trimmed,
+          channel: spoken ? 'spoken' : 'typed',
+          question: turn.consentQuestion ?? '',
+          phone: turn.next.answers.phone,
+          email: turn.next.answers.email,
+          pageUrl: pathname,
+          sessionId: sid,
+        })
+      }
     },
-    [desk.firstName, greeted, pathname, router],
+    [desk.firstName, greeted, pathname, router, voiceStatus],
   )
 
   const goToPage = useCallback(
@@ -399,6 +458,7 @@ export function V3SarahAssistant() {
               setLines((prev) => [...prev, { from: 'sarah', text: message }])
             },
             onTranscript: (from, text, meta) => {
+              if (!meta?.interim) setCaption(text)
               if (
                 from === 'visitor' &&
                 !meta?.interim &&
@@ -433,6 +493,39 @@ export function V3SarahAssistant() {
     },
     [acceptVisitor, desk.slug],
   )
+
+  const endVoice = useCallback(() => {
+    voiceRef.current?.stop()
+    voiceRef.current = null
+    setVoiceStatus('idle')
+    setVoiceMuted(false)
+    voiceJustStartedRef.current = false
+  }, [])
+
+  const toggleMute = useCallback(() => {
+    const next = !voiceMuted
+    setVoiceMuted(next)
+    voiceRef.current?.setMuted(next)
+  }, [voiceMuted])
+
+  const startTalkFromPhotoTap = useCallback(() => {
+    if (voiceRef.current || voiceJustStartedRef.current) return
+    voiceJustStartedRef.current = true
+    setVoiceMuted(false)
+    const sid = visitorSessionId()
+    if (sid) void recordSarahFunnelStage({ sessionId: sid, stage: 'opened', pageUrl: pathname })
+    const started = beginSarahVoiceFromMicTap()
+    if (!started.ok) {
+      voiceJustStartedRef.current = false
+      setVoiceStatus('error')
+      if (takeVoiceErrorSlot(voiceErrorPostedRef.current)) {
+        setCaption(started.message)
+        setLines((prev) => [...prev, { from: 'sarah', text: started.message }])
+      }
+      return
+    }
+    continueVoiceAfterArm(started.armed)
+  }, [continueVoiceAfterArm, pathname])
 
   const onSheetPointerDown = useCallback(
     (e: PointerEvent<HTMLElement>) => {
@@ -566,55 +659,6 @@ export function V3SarahAssistant() {
               ))}
               <div ref={latestRef} data-sarah="latest" />
             </div>
-            <div className="v3-sarah__voice-stage" data-sarah="voice-stage" data-sarah-voice={voiceStatus}>
-              <button
-                type="button"
-                className="v3-sarah__mic v3-sarah__voice-orb"
-                aria-label={micLabel}
-                data-sarah="mic"
-                data-sarah-voice={voiceStatus}
-                aria-pressed={micBusy}
-                onClick={() => {
-                  if (
-                    voiceStatus === 'listening' ||
-                    voiceStatus === 'connecting' ||
-                    voiceStatus === 'speaking' ||
-                    voiceStatus === 'thinking' ||
-                    voiceStatus === 'asking'
-                  ) {
-                    voiceRef.current?.stop()
-                    voiceRef.current = null
-                    setVoiceStatus('idle')
-                    return
-                  }
-                  const started = beginSarahVoiceFromMicTap()
-                  if (!started.ok) {
-                    setVoiceStatus('error')
-                    if (takeVoiceErrorSlot(voiceErrorPostedRef.current)) {
-                      setLines((prev) => [...prev, { from: 'sarah', text: started.message }])
-                    }
-                    return
-                  }
-                  continueVoiceAfterArm(started.armed)
-                }}
-              >
-                {voiceLive ? (
-                  <span className="v3-sarah__voice-wave" aria-hidden="true">
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                  </span>
-                ) : (
-                  <Mic aria-hidden="true" strokeWidth={1.75} />
-                )}
-                <span className="sr-only">{micLabel}</span>
-              </button>
-              <p className="v3-sarah__voice-hint" data-sarah="voice-hint">
-                {voiceLive ? `${voiceHint}. ${WEB_VOICE_HINT_END_EN}` : WEB_VOICE_HINT_LISTEN_EN}
-              </p>
-            </div>
             {chips && chips.length > 0 && !voiceLive ? (
               <div className="v3-sarah__hints" data-sarah="intent-chips">
                 {flow.step === 'intent' ? (
@@ -680,27 +724,93 @@ export function V3SarahAssistant() {
           </div>
         ) : null}
 
-        <button
-          type="button"
-          ref={launcherRef}
-          className="v3-sarah__launcher"
-          data-sarah="launcher"
-          aria-label={
-            showBadge
-              ? `${SARAH_TEASER_COPY} Chat with Sarah, Ryan Realty AI assistant`
-              : panelOpen
-                ? 'Close chat with Sarah'
-                : 'Chat with Sarah, Ryan Realty AI assistant'
-          }
-          aria-expanded={panelOpen}
-          onClick={() => {
-            if (panelOpen) closePanel()
-            else openPanel(showBadge)
-          }}
+        <div
+          className="v3-sarah__dock"
+          data-sarah="voice-stage"
+          data-sarah-voice={voiceMuted ? 'muted' : voiceStatus}
         >
-          <SarahFace className="v3-sarah__avatar" size={68} alt={SARAH_AVATAR_ALT} />
-          {showBadge ? <span className="v3-sarah__badge" data-sarah-teaser="badge" /> : null}
-        </button>
+          {caption || voiceLive ? (
+            <p className="v3-sarah__caption" data-sarah="caption">
+              {caption || (voiceMuted ? 'Muted' : voiceHint)}
+            </p>
+          ) : null}
+          {voiceLive ? (
+            <button
+              type="button"
+              className="v3-sarah__end"
+              data-sarah="end"
+              aria-label="End talk"
+              onClick={endVoice}
+            >
+              ×
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="v3-sarah__type"
+              data-sarah="type"
+              aria-label="Type instead"
+              onClick={() => openPanel(showBadge)}
+            >
+              Type instead
+            </button>
+          )}
+          <button
+            type="button"
+            ref={launcherRef}
+            className="v3-sarah__launcher"
+            data-sarah="launcher"
+            aria-label={
+              voiceLive
+                ? voiceMuted
+                  ? 'Unmute Sarah'
+                  : 'Mute Sarah'
+                : 'Talk with Sarah'
+            }
+            aria-pressed={voiceLive}
+            onPointerDown={() => {
+              if (voiceLive) {
+                longPressRef.current = window.setTimeout(() => {
+                  longPressRef.current = null
+                  endVoice()
+                }, 500)
+                return
+              }
+              startTalkFromPhotoTap()
+            }}
+            onPointerUp={() => {
+              if (longPressRef.current != null) {
+                window.clearTimeout(longPressRef.current)
+                longPressRef.current = null
+                if (voiceLive && !voiceJustStartedRef.current) toggleMute()
+              }
+              voiceJustStartedRef.current = false
+            }}
+            onPointerCancel={() => {
+              if (longPressRef.current != null) {
+                window.clearTimeout(longPressRef.current)
+                longPressRef.current = null
+              }
+            }}
+            onClick={() => {
+              if (voiceStatus === 'idle') startTalkFromPhotoTap()
+            }}
+          >
+            <SarahFace className="v3-sarah__avatar" size={68} alt={SARAH_AVATAR_ALT} />
+            <span
+              className="v3-sarah__mic-badge"
+              data-sarah="mic"
+              data-sarah-mic={voiceMuted ? 'muted' : voiceLive ? 'live' : 'idle'}
+            >
+              <Mic aria-hidden="true" strokeWidth={2} />
+              <span className="sr-only">{micLabel}</span>
+            </span>
+            {showBadge && !voiceLive ? <span className="v3-sarah__badge" data-sarah-teaser="badge" /> : null}
+          </button>
+          <p className="v3-sarah__voice-hint" data-sarah="voice-hint">
+            {voiceLive ? `${voiceHint}. ${WEB_VOICE_HINT_END_EN}` : WEB_VOICE_HINT_LISTEN_EN}
+          </p>
+        </div>
       </div>
     </div>
   )

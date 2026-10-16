@@ -9,7 +9,7 @@ import { answerSarahChat } from '@/app/actions/sarah-chat'
 import { mintSarahVoiceToken } from '@/app/actions/sarah-voice'
 import { startSarahVoiceSession } from '@/lib/sarah/web-voice'
 import { trackEvent } from '@/lib/tracking'
-import { WEB_HELP_EN, WEB_VOICE_NOTICE_EN } from '@/lib/sarah/scripts'
+import { WEB_HELP_EN } from '@/lib/sarah/scripts'
 import { WEB_BRINGS_YOU_HERE_EN, WEB_DISCLOSURE_LINE_EN } from '@/lib/sarah/intent-flow'
 import { SARAH_TEASER_COPY, SARAH_TEASER_DELAY_MS, SARAH_TEASER_SESSION_KEY } from '@/lib/sarah/teaser'
 import { V3SarahAssistant } from './V3SarahAssistant.client'
@@ -37,10 +37,16 @@ vi.mock('@/app/actions/sarah-chat', () => ({
     error: null,
   })),
 }))
-const voiceHandle = { stop: vi.fn(), speakExact: vi.fn(), underruns: () => 0 }
+const voiceHandle = { stop: vi.fn(), speakExact: vi.fn(), setMuted: vi.fn(), underruns: () => 0 }
 
 vi.mock('@/app/actions/sarah-voice', () => ({
   mintSarahVoiceToken: vi.fn(async () => ({ data: null, error: 'skip' })),
+}))
+vi.mock('@/app/actions/sarah-funnel', () => ({
+  recordSarahFunnelStage: vi.fn(async () => ({ data: { id: 1 }, error: null })),
+}))
+vi.mock('@/app/actions/sarah-consent', () => ({
+  recordSarahConsent: vi.fn(async () => ({ data: { id: 1, marketing: true }, error: null })),
 }))
 vi.mock('@/lib/sarah/web-voice', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/sarah/web-voice')>()
@@ -189,18 +195,17 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     expect(trackEvent).toHaveBeenCalledWith('sarah_teaser_shown', { surface: 'listing', cta: 'badge' })
   })
 
-  it('opens as a bottom sheet on a phone listing page', async () => {
+  it('opens as a bottom sheet from type instead on a phone listing page', async () => {
     unmount()
     wide = false
     stubMedia()
     await mount()
     act(() => {
-      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+      container.querySelector<HTMLButtonElement>('[data-sarah="type"]')?.click()
     })
     expect(container.querySelector('[data-sarah="root"]')?.getAttribute('data-sarah-open')).toBe('1')
     expect(container.querySelector('[data-sarah="panel"]')?.getAttribute('data-sarah-surface')).toBe('sheet')
     expect(container.querySelector('[data-sarah="scrim"]')).not.toBeNull()
-    expect(container.querySelector('[data-sarah="mic"]')).not.toBeNull()
   })
 
   it('opens the panel from the bubble, tracks the click, and stays dismissed', async () => {
@@ -219,10 +224,11 @@ describe('V3SarahAssistant listing teaser behavior', () => {
       (btn) => ({ id: btn.getAttribute('data-sarah-chip'), text: btn.textContent }),
     )
     expect(chips).toEqual([
-      { id: 'buyer', text: "I'm looking for a home" },
-      { id: 'seller', text: 'Thinking of selling' },
+      { id: 'buyer', text: 'Find a home' },
+      { id: 'seller', text: 'Selling' },
       { id: 'home-worth', text: "What's my home worth?" },
-      { id: 'question', text: 'I have a question' },
+      { id: 'how', text: 'How you buy or sell' },
+      { id: 'market', text: 'The market' },
     ])
     expect(container.querySelector('.v3-sarah__desk-actions')).toBeNull()
     expect(container.querySelector('[data-sarah="mic"]')).not.toBeNull()
@@ -231,11 +237,6 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     expect(container.querySelector('.v3-sarah__ai-tag')).toBeNull()
     expect(container.querySelector('[data-sarah="panel"]')?.getAttribute('data-sarah-surface')).toBe('card')
     expect(container.querySelector('[data-sarah="panel"]')?.textContent).toContain(WEB_BRINGS_YOU_HERE_EN)
-    await act(async () => {
-      container.querySelector<HTMLButtonElement>('[data-sarah="mic"]')?.click()
-      await Promise.resolve()
-    })
-    expect(container.querySelector('[data-sarah="panel"]')?.textContent).toContain(WEB_VOICE_NOTICE_EN)
     expect(container.querySelector('[data-sarah-teaser]')).toBeNull()
     expect(sessionStorage.getItem(SARAH_TEASER_SESSION_KEY)).toBe('1')
 
@@ -249,9 +250,9 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     expect(container.querySelector('[data-sarah-teaser]')).toBeNull()
   })
 
-  it('opens by asking what brings them here, with one disclosure line and no broker chrome', () => {
+  it('opens by asking how Sarah can help, with one disclosure line and no broker chrome', () => {
     act(() => {
-      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+      container.querySelector<HTMLButtonElement>('[data-sarah="type"]')?.click()
     })
     const panel = container.querySelector('[data-sarah="panel"]')
     expect(panel?.textContent).toContain(WEB_BRINGS_YOU_HERE_EN)
@@ -265,7 +266,7 @@ describe('V3SarahAssistant listing teaser behavior', () => {
 
   it('starts the buyer flow from Hi I would like to look at homes here', async () => {
     act(() => {
-      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+      container.querySelector<HTMLButtonElement>('[data-sarah="type"]')?.click()
     })
     const input = container.querySelector<HTMLInputElement>('input[name="sarah-message"]')
     expect(input).not.toBeNull()
@@ -278,20 +279,20 @@ describe('V3SarahAssistant listing teaser behavior', () => {
       container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
     })
     const panel = container.querySelector('[data-sarah="panel"]')
-    expect(panel?.textContent).toMatch(/Which area/)
+    expect(panel?.textContent).toMatch(/hoping to find/)
     expect(container.querySelector('[data-sarah="intent-chips"]')).toBeNull()
   })
 
   it('runs the buyer qualifying flow and writes the CRM capture', async () => {
     act(() => {
-      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+      container.querySelector<HTMLButtonElement>('[data-sarah="type"]')?.click()
     })
     const panel = container.querySelector('[data-sarah="panel"]')
     expect(panel?.textContent).toContain(WEB_BRINGS_YOU_HERE_EN)
     act(() => {
       container.querySelector<HTMLButtonElement>('[data-sarah-chip="buyer"]')?.click()
     })
-    expect(panel?.textContent).toMatch(/Which area/)
+    expect(panel?.textContent).toMatch(/hoping to find/)
 
     async function typeAndSend(text: string) {
       const input = container.querySelector<HTMLInputElement>('input[name="sarah-message"]')
@@ -307,8 +308,7 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     }
 
     await typeAndSend('Bend')
-    await typeAndSend('around 700k')
-    await typeAndSend('this year')
+    await typeAndSend('help looking')
     await typeAndSend('Alex Rivera')
     await typeAndSend('alex@example.com')
     await act(async () => {
@@ -318,15 +318,13 @@ describe('V3SarahAssistant listing teaser behavior', () => {
       intent: 'buyer',
       answers: expect.objectContaining({
         area: 'Bend',
-        budget: 'around 700k',
-        timeline: 'this year',
+        helpFinding: 'help looking',
         name: 'Alex Rivera',
         email: 'alex@example.com',
       }),
       startCma: false,
     })
     expect(panel?.textContent).toMatch(/saved that/)
-    expect(container.querySelector('[data-sarah-chip="handoff-call"]')?.textContent).toBe('Call')
   })
 
   it('answers a listing-page shop question from listing data, not WEB_HELP_EN', async () => {
@@ -334,7 +332,7 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     nav.pathname = '/homes-for-sale/redmond/josie-meadows/4722-zenith-ave-220222095'
     await mount()
     act(() => {
-      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+      container.querySelector<HTMLButtonElement>('[data-sarah="type"]')?.click()
     })
     const input = container.querySelector<HTMLInputElement>('input[name="sarah-message"]')
     await act(async () => {
@@ -358,9 +356,20 @@ describe('V3SarahAssistant listing teaser behavior', () => {
     expect(panel?.textContent).not.toContain(WEB_HELP_EN)
   })
 
+  it('starts talk from the photo without opening the panel', async () => {
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+      await Promise.resolve()
+    })
+    expect(container.querySelector('[data-sarah="panel"]')).toBeNull()
+    const gum = navigator.mediaDevices.getUserMedia as unknown as ReturnType<typeof vi.fn>
+    expect(gum).toHaveBeenCalled()
+    expect(container.querySelector('[data-sarah="mic"]')).not.toBeNull()
+  })
+
   it('navigates to Sisters search and keeps the panel open', async () => {
     act(() => {
-      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+      container.querySelector<HTMLButtonElement>('[data-sarah="type"]')?.click()
     })
     const input = container.querySelector<HTMLInputElement>('input[name="sarah-message"]')
     await act(async () => {
@@ -389,10 +398,10 @@ describe('V3SarahAssistant listing teaser behavior', () => {
       error: null,
     })
     act(() => {
-      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
+      container.querySelector<HTMLButtonElement>('[data-sarah="type"]')?.click()
     })
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('[data-sarah="mic"]')?.click()
+      container.querySelector<HTMLButtonElement>('[data-sarah="launcher"]')?.click()
       await Promise.resolve()
       await Promise.resolve()
     })
