@@ -139,12 +139,14 @@ describe('Sarah iOS mic tap', () => {
     const client = readFileSync(join(import.meta.dirname, '../../components/site/v3/V3SarahAssistant.client.tsx'), 'utf8')
     expect(client).not.toContain('armSarahMicOnTap()')
     expect(client).not.toContain('hydration-safe')
-    const tapAt = client.indexOf('beginSarahVoiceFromMicTap()')
+    const tapAt = client.indexOf('startTalkFromPhotoTap')
+    const armAt = client.indexOf('beginSarahVoiceFromMicTap()')
     const continueAt = client.indexOf('continueVoiceAfterArm(started.armed)')
     expect(tapAt).toBeGreaterThan(-1)
-    expect(continueAt).toBeGreaterThan(tapAt)
+    expect(armAt).toBeGreaterThan(tapAt)
+    expect(continueAt).toBeGreaterThan(armAt)
     expect(client.indexOf('await mintSarahVoiceToken()')).toBe(-1)
-    expect(client).toMatch(/onClick=\{\(\) => \{[\s\S]*beginSarahVoiceFromMicTap\(\)/)
+    expect(client).toMatch(/onPointerDown=\{\(\) => \{[\s\S]*startTalkFromPhotoTap\(\)/)
   })
 
   it('sets Permissions-Policy microphone=(self) in next.config, middleware, and vercel.json', () => {

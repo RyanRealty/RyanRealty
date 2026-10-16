@@ -14,7 +14,7 @@ Sarah answers, takes messages, routes to the visitor's assigned broker, records 
 - Outbound dial gates: `lib/sarah/outbound.ts` (`SARAH_OUTBOUND_ENABLED` default off)
 - Phone-line hook points: `docs/SARAH_PHONE_HOOKS.md` (do not edit `app/api/voice/*` or `lib/grok/voice-sip.ts` from this workstream)
 
-Web chat intro (Matt 2026-10-15): "Hi, I'm Sarah, an AI assistant with {broker}'s team at Ryan Realty. I can help with pretty much anything here." Under it: "Chats are saved so our team can follow up." Do not say "not a licensed broker" in that intro. Say it on price, contract, or advice questions. The inbound phone greeting stays Counsel verbatim.
+Web chat intro (Matt 2026-10-16): "Hi, I'm Sarah. I work with {broker} and his team at Ryan Realty. How can I help you today?" Under it: "Chats are saved so our team can follow up." Do not announce AI in that intro. If asked, answer honestly. Never claim to be human. Consent uses the Counsel conversational line in `lib/sarah/lead-consent.ts` (versioned). Typed yes is marketing consent. Spoken yes is request-only; a later inbound YES is marketing. Log consent and STOP to `sarah_consent_events` and keep 5 years. The inbound phone greeting stays Counsel verbatim.
 
 A prompt or guardrail change is a dated entry in the append-only log (later PR) and is not live until Matt signs it.
 

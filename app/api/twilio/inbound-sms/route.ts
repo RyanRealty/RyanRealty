@@ -34,6 +34,7 @@ import { CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import { applyInboundMessageEnrichment } from '@/lib/data/crm/applyInboundMessageEnrichment'
 import { applyInboundConsentClear } from '@/lib/data/crm/applyInboundConsentClear'
 import { isSmsStopKeyword } from '@/lib/crm/inbound-consent-clear'
+import { applySarahYesReply, logSarahStopConsent } from '@/lib/data/crm/sarah-consent'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -405,6 +406,11 @@ export async function processInboundSms(params: Record<string, string>): Promise
         person_id: match.personId, kind: 'system',
         title: 'SMS opt-out (STOP) — sms channel suppressed', source: 'twilio',
       })
+      try {
+        await logSarahStopConsent({ phone: from, reply: body, personId: match.personId })
+      } catch (e) {
+        console.warn('[twilio/inbound-sms] sarah stop consent log failed', e)
+      }
       await logInbound(sid, from, to, { outcome: 'dropped', reason: 'STOP keyword' })
       return
     }
@@ -418,6 +424,13 @@ export async function processInboundSms(params: Record<string, string>): Promise
         person_id: match.personId, kind: 'system',
         title: 'SMS opt-in (START) — sms stop-keyword suppression removed', source: 'twilio',
       })
+      if (firstToken === 'yes') {
+        try {
+          await applySarahYesReply({ phone: from, reply: body, personId: match.personId })
+        } catch (e) {
+          console.warn('[twilio/inbound-sms] sarah yes consent log failed', e)
+        }
+      }
       await logInbound(sid, from, to, { outcome: 'dropped', reason: 'START keyword' })
       return
     }

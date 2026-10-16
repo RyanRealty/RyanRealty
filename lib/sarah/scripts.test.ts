@@ -45,13 +45,14 @@ describe('Sarah public copy', () => {
 
   it('uses Matt\'s short web intro and saved-chats notice, with no unlicensed line', () => {
     expect(scripts.WEB_GREETING_EN).toBe(
-      "Hi, I'm Sarah, an AI assistant with Matt's team at Ryan Realty. I can help with pretty much anything here.",
+      "Hi, I'm Sarah. I work with Matt and his team at Ryan Realty. How can I help you today?",
     )
     expect(scripts.WEB_SAVED_NOTICE_EN).toBe('Chats are saved so our team can follow up.')
     expect(scripts.WEB_GREETING_EN).not.toMatch(/not a licensed broker/i)
+    expect(scripts.WEB_GREETING_EN).not.toMatch(/AI assistant/i)
     expect(scripts.WEB_SAVED_NOTICE_EN).not.toMatch(/not a licensed broker/i)
     expect(scripts.webGreetingEn('Rebecca')).toBe(
-      "Hi, I'm Sarah, an AI assistant with Rebecca's team at Ryan Realty. I can help with pretty much anything here.",
+      "Hi, I'm Sarah. I work with Rebecca and his team at Ryan Realty. How can I help you today?",
     )
     expect(scripts.WEB_VOICE_NOTICE_EN).toMatch(/Voice chats are recorded and transcribed/)
     expect(scripts.WEB_VOICE_TALK_EN).toMatch(/contractions/)

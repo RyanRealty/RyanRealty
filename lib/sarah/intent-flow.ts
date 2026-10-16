@@ -1,35 +1,37 @@
 /**
- * Web chat intent chips and short qualifying flows (Matt 2026-10-15).
+ * Web chat chips and a light discovery-then-funnel (Matt 2026-10-16).
  * Pure: no DB. Capture is a later action. Sarah never quotes a value.
  */
 import { CRM_STAGES } from '@/lib/crm/constants'
 import { JOURNEY_ENTRY_STAGE } from '@/lib/crm/journey-advance'
-import { CALLBACK_PHONE_DISPLAY, DEFAULT_DESK_BROKER_FIRST_NAME } from './scripts'
+import { decideSarahConsent, sarahConsentAsk, type SarahConsentChannel } from './lead-consent'
+import { DEFAULT_DESK_BROKER_FIRST_NAME } from './scripts'
 
 export const SARAH_INTENT_CHIPS = [
-  { id: 'buyer', label: "I'm looking for a home" },
-  { id: 'seller', label: 'Thinking of selling' },
+  { id: 'buyer', label: 'Find a home' },
+  { id: 'seller', label: 'Selling' },
   { id: 'home-worth', label: "What's my home worth?" },
-  { id: 'question', label: 'I have a question' },
+  { id: 'how', label: 'How you buy or sell' },
+  { id: 'market', label: 'The market' },
 ] as const
 
 export type SarahIntent = (typeof SARAH_INTENT_CHIPS)[number]['id']
 
-export const WEB_BRINGS_YOU_HERE_EN = 'What brings you here today?'
+export const WEB_BRINGS_YOU_HERE_EN =
+  "Hi, I'm Sarah. I work with Matt and his team at Ryan Realty. How can I help you today?"
 
-/** One short disclosure line under the opening question. Not a second bubble. */
-export const WEB_DISCLOSURE_LINE_EN =
-  "I'm Sarah, an AI assistant. This chat is saved so our team can follow up."
+/** Small notice under the opening. No AI announcement. */
+export const WEB_DISCLOSURE_LINE_EN = 'Chats are saved so our team can follow up.'
 
-export const SARAH_CMA_OFFER_YES = 'Yes, start a review'
-export const SARAH_CMA_OFFER_NO = 'Not right now'
-export const SARAH_HANDOFF_CALL = 'Call'
-export const SARAH_HANDOFF_TEXT = 'Text'
-export const SARAH_HANDOFF_EMAIL = 'Email'
-export const SARAH_HANDOFF_SKIP = 'No thanks'
+export type SarahFunnelStage = 'opened' | 'intent' | 'name' | 'contact' | 'consent'
 
 export type FlowStep =
   | 'intent'
+  | 'discover'
+  | 'name'
+  | 'offer'
+  | 'consent'
+  | 'done'
   | 'area'
   | 'budget'
   | 'timeline'
@@ -37,10 +39,8 @@ export type FlowStep =
   | 'sell-timeline'
   | 'cma-offer'
   | 'ask'
-  | 'name'
   | 'contact'
   | 'handoff'
-  | 'done'
 
 export type FlowAnswers = {
   area?: string
@@ -48,10 +48,15 @@ export type FlowAnswers = {
   timeline?: string
   address?: string
   question?: string
+  helpFinding?: string
   name?: string
   email?: string
   phone?: string
   cmaWanted?: boolean
+  declinedName?: number
+  declinedContact?: number
+  consentGranted?: boolean
+  marketingConsent?: boolean
 }
 
 export type FlowState = {
@@ -68,13 +73,15 @@ export type IntentTurn = {
   chips: FlowChip[] | null
   capture: boolean
   startCma: boolean
+  funnel: SarahFunnelStage | null
+  askConsent: boolean
+  consentQuestion: string | null
   next: FlowState
 }
 
 const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i
 const PHONE_RE = /(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}/
-const YES_RE = /^(yes|yeah|yep|yup|sure|please|ok|okay|do it|go ahead|start|sounds good)\b/i
-const NO_RE = /^(no|nope|not now|later|skip|nah|no thanks)\b/i
+const SKIP_RE = /^(no|nope|not now|later|skip|nah|no thanks|no thank you)\b/i
 
 const INTENT_BY_LABEL = new Map<string, SarahIntent>(
   SARAH_INTENT_CHIPS.map((chip) => [chip.label.toLowerCase(), chip.id]),
@@ -90,15 +97,20 @@ export function matchIntentChip(text: string): SarahIntent | null {
   const exact = INTENT_BY_LABEL.get(t)
   if (exact) return exact
   if (
-    /look(?:ing)? (?:at|for) (?:a )?(?:home|house)s?|buy(?:ing)? (?:a )?(?:home|house)|find (?:a )?(?:home|house|listings?)/i.test(
+    /find a home|look(?:ing)? (?:at|for) (?:a )?(?:home|house)s?|buy(?:ing)? (?:a )?(?:home|house)/i.test(
       t,
     )
   ) {
     return 'buyer'
   }
-  if (/thinking of selling|want to sell|selling (my|our) (home|house)/i.test(t)) return 'seller'
-  if (/what('s| is) my (home|house) worth|home worth|market analysis|cma\b/i.test(t)) return 'home-worth'
-  if (/^i have a question/.test(t)) return 'question'
+  if (/^selling$|thinking of selling|want to sell|selling (my|our) (home|house)/i.test(t)) {
+    return 'seller'
+  }
+  if (/what('s| is) my (home|house) worth|home worth|market analysis|cma\b/i.test(t)) {
+    return 'home-worth'
+  }
+  if (/how you buy or sell|how (do|we|to) (buy|sell)|buy or sell/i.test(t)) return 'how'
+  if (/^the market$|housing market|the (bend )?market\b/i.test(t)) return 'market'
   return null
 }
 
@@ -114,6 +126,7 @@ export function looksLikeName(text: string): boolean {
   const t = text.trim()
   if (t.length < 2 || t.length > 80) return false
   if (EMAIL_RE.test(t) || PHONE_RE.test(t)) return false
+  if (SKIP_RE.test(t)) return false
   if (!/[a-zA-Z]/.test(t)) return false
   return true
 }
@@ -122,289 +135,217 @@ function brokerName(first: string): string {
   return first.trim() || DEFAULT_DESK_BROKER_FIRST_NAME
 }
 
-function chipsOf(labels: FlowChip[]): FlowChip[] {
-  return labels
+function blankTurn(next: FlowState, reply: string, extras: Partial<IntentTurn> = {}): IntentTurn {
+  return {
+    reply,
+    chips: null,
+    capture: false,
+    startCma: false,
+    funnel: null,
+    askConsent: false,
+    consentQuestion: null,
+    next,
+    ...extras,
+  }
+}
+
+function favorOffer(intent: SarahIntent | null, broker: string): string {
+  if (intent === 'buyer') {
+    return `If you'd like, I can have ${broker} send a few that fit. What's a good email or phone?`
+  }
+  if (intent === 'seller' || intent === 'home-worth') {
+    return `I can have ${broker} take a look. What's a good email or phone?`
+  }
+  return `I can have ${broker} follow up if that would help. What's a good email or phone?`
+}
+
+function discoverReply(intent: SarahIntent, broker: string): string {
+  if (intent === 'buyer') {
+    return 'What are you hoping to find? A city, a community, or a kind of home is all useful.'
+  }
+  if (intent === 'seller') return "What's on your mind about selling?"
+  if (intent === 'home-worth') {
+    return `What's the address? I don't give values myself. I can start a review for ${broker}.`
+  }
+  if (intent === 'how') return 'What part of buying or selling do you want to understand?'
+  return 'A city, a community, or the whole region?'
+}
+
+function mergeContact(answers: FlowAnswers, text: string): FlowAnswers {
+  const bits = parseContactBits(text)
+  return {
+    ...answers,
+    email: bits.email ?? answers.email,
+    phone: bits.phone ?? answers.phone,
+  }
+}
+
+function finishContact(
+  next: FlowState,
+  broker: string,
+  channel: SarahConsentChannel,
+): IntentTurn {
+  const phone = next.answers.phone
+  const startCma = Boolean(
+    (next.intent === 'home-worth' || next.intent === 'seller' || next.answers.cmaWanted) &&
+      next.answers.address,
+  )
+  next.captured = true
+  if (phone) {
+    const question = sarahConsentAsk(phone)
+    next.step = 'consent'
+    return blankTurn(next, question, {
+      capture: true,
+      startCma,
+      funnel: 'contact',
+      askConsent: true,
+      consentQuestion: question,
+    })
+  }
+  next.step = 'done'
+  return blankTurn(
+    next,
+    `I've saved that for ${broker}. I'll leave the rest with the team.`,
+    { capture: true, startCma, funnel: 'contact' },
+  )
 }
 
 export function applyIntentTurn(
   state: FlowState,
   visitorText: string,
   brokerFirstName = DEFAULT_DESK_BROKER_FIRST_NAME,
+  channel: SarahConsentChannel = 'typed',
 ): IntentTurn {
   const text = visitorText.trim()
   const broker = brokerName(brokerFirstName)
   const next: FlowState = {
     step: state.step,
     intent: state.intent,
-    answers: { ...state.answers },
+    answers: mergeContact({ ...state.answers }, text),
     captured: state.captured,
   }
 
   if (state.step === 'intent') {
-    const intent = matchIntentChip(text) ?? (text ? 'question' : null)
+    const intent = matchIntentChip(text)
     if (!intent) {
-      return {
-        reply: WEB_BRINGS_YOU_HERE_EN,
-        chips: [...SARAH_INTENT_CHIPS],
-        capture: false,
-        startCma: false,
-        next,
+      if (!text) {
+        return blankTurn(next, WEB_BRINGS_YOU_HERE_EN, { chips: [...SARAH_INTENT_CHIPS] })
       }
+      next.intent = null
+      next.step = 'discover'
+      next.answers.question = text
+      return blankTurn(
+        next,
+        "Got it. Are you looking for a home, thinking about selling, or just have a question?",
+        { funnel: 'intent' },
+      )
     }
     next.intent = intent
-    if (intent === 'buyer') {
-      next.step = 'area'
-      return {
-        reply: "Happy to help you look. Which area are you thinking about? Bend, Redmond, a community name, or wherever you're curious is fine.",
-        chips: null,
-        capture: false,
-        startCma: false,
-        next,
-      }
-    }
-    if (intent === 'seller') {
-      next.step = 'address'
-      return {
-        reply: "I can help with that. What's the address?",
-        chips: null,
-        capture: false,
-        startCma: false,
-        next,
-      }
-    }
-    if (intent === 'home-worth') {
-      next.step = 'address'
-      return {
-        reply: `I don't give values myself. I can start a home value review for ${broker} to look at. What's the address?`,
-        chips: null,
-        capture: false,
-        startCma: false,
-        next,
-      }
-    }
-    next.step = 'ask'
-    next.answers.question = /i have a question/i.test(text) ? undefined : text
-    if (next.answers.question) {
-      next.step = 'name'
-      return {
-        reply: `Got it. If you'd like, I can have ${broker} follow up. What's a good name for you?`,
-        chips: null,
-        capture: false,
-        startCma: false,
-        next,
-      }
-    }
-    return {
-      reply: "Sure. What's on your mind?",
-      chips: null,
-      capture: false,
-      startCma: false,
-      next,
-    }
+    next.step = 'discover'
+    return blankTurn(next, discoverReply(intent, broker), { funnel: 'intent' })
   }
 
-  if (state.step === 'area') {
-    next.answers.area = text
-    next.step = 'budget'
-    return {
-      reply: "Rough budget, if you have one? Totally fine if you're still figuring that out.",
-      chips: null,
-      capture: false,
-      startCma: false,
-      next,
+  if (state.step === 'discover') {
+    if (state.intent === 'buyer') {
+      if (!next.answers.area) {
+        next.answers.area = text
+        return blankTurn(next, 'Want a hand looking, or are you just browsing for now?')
+      }
+      next.answers.helpFinding = text
+    } else if (state.intent === 'home-worth' || state.intent === 'seller') {
+      if (!next.answers.address && /[0-9]/.test(text)) next.answers.address = text
+      else if (!next.answers.question) next.answers.question = text
+      if (state.intent === 'home-worth' || /worth|value|review|cma/i.test(text)) {
+        next.answers.cmaWanted = true
+      }
+    } else {
+      next.answers.question = text
     }
-  }
-
-  if (state.step === 'budget') {
-    next.answers.budget = text
-    next.step = 'timeline'
-    return {
-      reply: 'Any sense of timing? This year, next year, or just looking around is all useful.',
-      chips: null,
-      capture: false,
-      startCma: false,
-      next,
-    }
-  }
-
-  if (state.step === 'timeline') {
-    next.answers.timeline = text
     next.step = 'name'
-    return {
-      reply: "Great. What's a good name for you?",
-      chips: null,
-      capture: false,
-      startCma: false,
-      next,
-    }
-  }
-
-  if (state.step === 'address') {
-    next.answers.address = text
-    if (state.intent === 'seller') {
-      next.step = 'sell-timeline'
-      return {
-        reply: "Any sense of when you'd like to sell? No rush if you're just thinking about it.",
-        chips: null,
-        capture: false,
-        startCma: false,
-        next,
-      }
-    }
-    next.step = 'cma-offer'
-    return {
-      reply: `I can start a draft home value review for ${broker} to look over. I won't quote a number myself. Want me to start that?`,
-      chips: chipsOf([
-        { id: 'cma-yes', label: SARAH_CMA_OFFER_YES },
-        { id: 'cma-no', label: SARAH_CMA_OFFER_NO },
-      ]),
-      capture: false,
-      startCma: false,
-      next,
-    }
-  }
-
-  if (state.step === 'sell-timeline') {
-    next.answers.timeline = text
-    next.step = 'cma-offer'
-    return {
-      reply: `I can't quote what it would sell for. I can start a draft home value review for ${broker} to review. Want me to start that?`,
-      chips: chipsOf([
-        { id: 'cma-yes', label: SARAH_CMA_OFFER_YES },
-        { id: 'cma-no', label: SARAH_CMA_OFFER_NO },
-      ]),
-      capture: false,
-      startCma: false,
-      next,
-    }
-  }
-
-  if (state.step === 'cma-offer') {
-    const wanted = YES_RE.test(text) || text === SARAH_CMA_OFFER_YES
-    const declined = NO_RE.test(text) || text === SARAH_CMA_OFFER_NO
-    next.answers.cmaWanted = wanted && !declined
-    next.step = 'name'
-    return {
-      reply: next.answers.cmaWanted
-        ? `I'll start that draft for ${broker}. What's a good name for you?`
-        : `No problem. What's a good name for you, in case ${broker} should follow up?`,
-      chips: null,
-      capture: false,
-      startCma: false,
-      next,
-    }
-  }
-
-  if (state.step === 'ask') {
-    next.answers.question = text
-    next.step = 'name'
-    return {
-      reply: `Thanks. If you'd like, I can have ${broker} follow up. What's a good name for you?`,
-      chips: null,
-      capture: false,
-      startCma: false,
-      next,
-    }
+    return blankTurn(next, "What's a good name for you?")
   }
 
   if (state.step === 'name') {
-    if (!looksLikeName(text)) {
-      return {
-        reply: 'Just a first name is fine.',
-        chips: null,
-        capture: false,
-        startCma: false,
-        next,
+    if (next.answers.email || next.answers.phone) {
+      if (looksLikeName(text.replace(EMAIL_RE, '').replace(PHONE_RE, '').trim())) {
+        next.answers.name = text.replace(EMAIL_RE, '').replace(PHONE_RE, '').trim()
+      } else if (!next.answers.name) {
+        next.answers.name = 'Friend'
       }
+      return finishContact(next, broker, channel)
+    }
+    if (SKIP_RE.test(text)) {
+      next.answers.declinedName = (next.answers.declinedName ?? 0) + 1
+      if (next.answers.declinedName < 2) {
+        return blankTurn(next, 'Just a first name is fine.')
+      }
+      next.step = 'offer'
+      return blankTurn(next, favorOffer(next.intent, broker))
+    }
+    if (!looksLikeName(text)) {
+      return blankTurn(next, 'Just a first name is fine.')
     }
     next.answers.name = text
-    next.step = 'contact'
-    return {
-      reply: `Thanks, ${text.split(/\s+/)[0]}. What's an email or phone ${broker} can use? Either one works.`,
-      chips: null,
-      capture: false,
-      startCma: false,
-      next,
-    }
+    next.step = 'offer'
+    return blankTurn(next, favorOffer(next.intent, broker), { funnel: 'name' })
   }
 
-  if (state.step === 'contact') {
-    const bits = parseContactBits(text)
-    if (!bits.email && !bits.phone) {
-      return {
-        reply: `I need an email or a phone so ${broker} can follow up. Whichever you prefer.`,
-        chips: null,
-        capture: false,
-        startCma: false,
-        next,
+  if (state.step === 'offer') {
+    if (next.answers.email || next.answers.phone) {
+      if (!next.answers.name && looksLikeName(text.replace(EMAIL_RE, '').replace(PHONE_RE, '').trim())) {
+        next.answers.name = text.replace(EMAIL_RE, '').replace(PHONE_RE, '').trim()
       }
+      return finishContact(next, broker, channel)
     }
-    next.answers.email = bits.email ?? next.answers.email
-    next.answers.phone = bits.phone ?? next.answers.phone
-    next.step = 'handoff'
-    next.captured = true
-    const startCma = Boolean(next.answers.cmaWanted && next.answers.address)
-    return {
-      reply: startCma
-        ? `I've saved that for ${broker} and started a draft review for Matt to look at. Want me to connect you with ${broker} now?`
-        : `I've saved that for ${broker}. Want me to connect you now?`,
-      chips: chipsOf([
-        { id: 'handoff-call', label: SARAH_HANDOFF_CALL },
-        { id: 'handoff-text', label: SARAH_HANDOFF_TEXT },
-        { id: 'handoff-email', label: SARAH_HANDOFF_EMAIL },
-        { id: 'handoff-skip', label: SARAH_HANDOFF_SKIP },
-      ]),
-      capture: true,
-      startCma,
-      next,
+    if (SKIP_RE.test(text)) {
+      next.answers.declinedContact = (next.answers.declinedContact ?? 0) + 1
+      if (next.answers.declinedContact < 2) {
+        return blankTurn(next, "No problem. An email is enough if that's easier.")
+      }
+      next.step = 'done'
+      return blankTurn(next, "No problem. I'm here if you want to keep talking.")
     }
+    return blankTurn(next, `I need an email or a phone so ${broker} can follow up. Whichever you prefer.`)
   }
 
-  if (state.step === 'handoff') {
+  if (state.step === 'consent') {
+    const decision = decideSarahConsent(text, channel)
+    if (!decision) {
+      return blankTurn(next, 'A yes or no is fine.', {
+        askConsent: true,
+        consentQuestion: next.answers.phone ? sarahConsentAsk(next.answers.phone) : null,
+      })
+    }
+    next.answers.consentGranted = decision.granted
+    next.answers.marketingConsent = decision.marketing
     next.step = 'done'
-    if (text === SARAH_HANDOFF_CALL || /^call\b/i.test(text)) {
-      return {
-        reply: `You can call ${broker} at ${CALLBACK_PHONE_DISPLAY}.`,
-        chips: null,
-        capture: false,
-        startCma: false,
-        next,
-      }
-    }
-    if (text === SARAH_HANDOFF_TEXT || /^text\b/i.test(text)) {
-      return {
-        reply: `You can text ${broker} at ${CALLBACK_PHONE_DISPLAY}.`,
-        chips: null,
-        capture: false,
-        startCma: false,
-        next,
-      }
-    }
-    if (text === SARAH_HANDOFF_EMAIL || /^email\b/i.test(text)) {
-      return {
-        reply: `I can have ${broker} email you at the address you shared.`,
-        chips: null,
-        capture: false,
-        startCma: false,
-        next,
-      }
-    }
-    return {
-      reply: `No problem. ${broker} has the note if you want to pick this up later.`,
-      chips: null,
-      capture: false,
-      startCma: false,
+    return blankTurn(
       next,
-    }
+      decision.granted
+        ? `Thanks. I've saved that for ${broker}.`
+        : `No problem. ${broker} has the note if you want to pick this up later.`,
+      { funnel: 'consent' },
+    )
   }
 
-  return {
-    reply: WEB_BRINGS_YOU_HERE_EN,
-    chips: [...SARAH_INTENT_CHIPS],
-    capture: false,
-    startCma: false,
-    next,
+  return blankTurn(next, WEB_BRINGS_YOU_HERE_EN, { chips: [...SARAH_INTENT_CHIPS] })
+}
+
+/** After a helpful page answer, ask for a name once if we do not have one. */
+export function afterHelpfulAnswer(
+  state: FlowState,
+  brokerFirstName = DEFAULT_DESK_BROKER_FIRST_NAME,
+): IntentTurn | null {
+  if (state.answers.name || state.step === 'name' || state.step === 'offer' || state.step === 'consent') {
+    return null
   }
+  if (state.step !== 'intent' && state.step !== 'discover' && state.step !== 'ask') return null
+  const next: FlowState = {
+    ...state,
+    step: 'name',
+    answers: { ...state.answers },
+  }
+  return blankTurn(next, "What's a good name for you?")
 }
 
 export const SARAH_SOURCE = 'sarah-chat'
@@ -413,7 +354,8 @@ export const SARAH_STAGE_BY_INTENT: Record<SarahIntent, (typeof CRM_STAGES)[numb
   buyer: JOURNEY_ENTRY_STAGE,
   seller: 'Seller Prospect',
   'home-worth': 'Seller Prospect',
-  question: JOURNEY_ENTRY_STAGE,
+  how: JOURNEY_ENTRY_STAGE,
+  market: JOURNEY_ENTRY_STAGE,
 }
 
 const FROZEN_STAGES = new Set<string>([
@@ -427,11 +369,6 @@ const FROZEN_STAGES = new Set<string>([
   'Vendor',
 ])
 
-/**
- * Existing stages only. Never downgrade. Frozen pipeline stages stay put.
- * Lead may move to Seller Prospect for seller / home-worth. Anything else
- * already past Lead is left alone.
- */
 export function decideSarahStage(
   current: string | null | undefined,
   proposed: string,
@@ -453,7 +390,8 @@ export function sarahEventType(
 }
 
 export function sarahCaptureTags(intent: SarahIntent): string[] {
-  const audience = intent === 'buyer' ? 'audience:buyer' : intent === 'question' ? null : 'audience:seller'
+  const audience =
+    intent === 'buyer' ? 'audience:buyer' : intent === 'seller' || intent === 'home-worth' ? 'audience:seller' : null
   return [
     `source:${SARAH_SOURCE}`,
     'captured:by-sarah',
@@ -470,6 +408,7 @@ export function sarahOriginNote(input: {
   const lines = [
     `Captured by Sarah (${input.intent.replace('-', ' ')}). Assigned broker fallback is ${brokerName(input.brokerFirstName)}.`,
     input.answers.area ? `Area: ${input.answers.area}` : null,
+    input.answers.helpFinding ? `Help finding: ${input.answers.helpFinding}` : null,
     input.answers.budget ? `Budget: ${input.answers.budget}` : null,
     input.answers.timeline ? `Timeline: ${input.answers.timeline}` : null,
     input.answers.address ? `Address: ${input.answers.address}` : null,

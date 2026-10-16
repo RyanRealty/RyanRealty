@@ -145,7 +145,7 @@ describe('captureSarahLead CRM writes', () => {
   })
 
   it('refuses a capture with no name or contact', async () => {
-    const res = await captureSarahLead({ intent: 'question', answers: {} })
+    const res = await captureSarahLead({ intent: 'how', answers: {} })
     expect(res.data).toBeNull()
     expect(h.sendEvent).not.toHaveBeenCalled()
   })

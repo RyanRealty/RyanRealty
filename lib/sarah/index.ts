@@ -112,11 +112,19 @@ export {
   SARAH_INTENT_CHIPS,
   WEB_BRINGS_YOU_HERE_EN,
   WEB_DISCLOSURE_LINE_EN,
+  afterHelpfulAnswer,
   applyIntentTurn,
   initialFlow,
   matchIntentChip,
+  type SarahFunnelStage,
   type SarahIntent,
 } from './intent-flow'
+export {
+  SARAH_CONSENT_ASK_TEMPLATE,
+  SARAH_CONSENT_WORDING_VERSION,
+  decideSarahConsent,
+  sarahConsentAsk,
+} from './lead-consent'
 export {
   SARAH_TEASER_COPY,
   SARAH_TEASER_DELAY_MS,

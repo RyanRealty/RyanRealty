@@ -24,10 +24,11 @@ const PATHS = Object.freeze({
 })
 
 const INTENT_LABELS = [
-  "I'm looking for a home",
-  'Thinking of selling',
+  'Find a home',
+  'Selling',
   "What's my home worth?",
-  'I have a question',
+  'How you buy or sell',
+  'The market',
 ]
 
 function readRel(root, rel, override) {

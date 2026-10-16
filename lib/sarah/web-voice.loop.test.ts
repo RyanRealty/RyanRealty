@@ -108,7 +108,10 @@ describe('Sarah voice loop', () => {
       secret: 'tok',
       brokerFirstName: 'Matt',
       armed: {
-        streamPromise: Promise.resolve({ getTracks: () => [{ stop() {} }] } as unknown as MediaStream),
+        streamPromise: Promise.resolve({
+          getTracks: () => [{ stop() {}, enabled: true }],
+          getAudioTracks: () => [{ stop() {}, enabled: true }],
+        } as unknown as MediaStream),
         captureCtx: ctx as unknown as AudioContext,
         playCtx: ctx as unknown as AudioContext,
         speaker,
@@ -136,7 +139,7 @@ describe('Sarah voice loop', () => {
     ws?.emit({ type: 'response.output_audio.delta', delta: append?.audio })
     ws?.emit({
       type: 'response.output_audio_transcript.done',
-      transcript: "Hi, I'm Sarah, an AI assistant with Matt's team at Ryan Realty.",
+      transcript: "Hi, I'm Sarah. I work with Matt and his team at Ryan Realty. How can I help you today?",
     })
     ws?.emit({ type: 'response.done' })
     ws?.emit({ type: 'input_audio_buffer.speech_started' })
@@ -154,11 +157,18 @@ describe('Sarah voice loop', () => {
     expect(statuses).toContain('thinking')
     expect(statuses).toContain('speaking')
     expect(lines).toEqual([
-      { from: 'sarah', text: "Hi, I'm Sarah, an AI assistant with Matt's team at Ryan Realty." },
+      { from: 'sarah', text: "Hi, I'm Sarah. I work with Matt and his team at Ryan Realty. How can I help you today?" },
       { from: 'visitor', text: 'What homes are in Bend?' },
       { from: 'sarah', text: 'I can help with that.' },
     ])
     expect(handle.underruns()).toBe(0)
+    const beforeMute = ws?.sent.filter((row) => (row as { type?: string }).type === 'input_audio_buffer.append').length ?? 0
+    handle.setMuted(true)
+    ctx.processor.onaudioprocess?.({
+      inputBuffer: { getChannelData: () => new Float32Array(4800).fill(0.2) },
+    })
+    const afterMute = ws?.sent.filter((row) => (row as { type?: string }).type === 'input_audio_buffer.append').length ?? 0
+    expect(afterMute).toBe(beforeMute)
     handle.stop()
   })
 })
