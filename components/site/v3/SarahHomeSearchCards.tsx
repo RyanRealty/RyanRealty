@@ -12,15 +12,27 @@ function factsLine(card: HomeSearchCard): string {
 export function SarahHomeSearchCards({
   cards,
   seeAll,
+  onNavigate,
 }: {
   cards: HomeSearchCard[]
   seeAll?: { href: string; label: string } | null
+  onNavigate?: (href: string) => void
 }) {
   if (cards.length === 0 && !seeAll) return null
+  const go = (href: string, event: { preventDefault: () => void }) => {
+    if (!onNavigate) return
+    event.preventDefault()
+    onNavigate(href)
+  }
   return (
     <div className="v3-sarah-homes" data-sarah="home-cards">
       {cards.map((card) => (
-        <a key={card.href} className="v3-sarah-homes__card" href={card.href}>
+        <a
+          key={card.href}
+          className="v3-sarah-homes__card"
+          href={card.href}
+          onClick={(event) => go(card.href, event)}
+        >
           {card.photoUrl ? (
             <span
               className="v3-sarah-homes__photo"
@@ -38,7 +50,12 @@ export function SarahHomeSearchCards({
         </a>
       ))}
       {seeAll ? (
-        <a className="v3-sarah-homes__see-all" href={seeAll.href} data-sarah="see-all">
+        <a
+          className="v3-sarah-homes__see-all"
+          href={seeAll.href}
+          data-sarah="see-all"
+          onClick={(event) => go(seeAll.href, event)}
+        >
           {seeAll.label}
         </a>
       ) : null}

@@ -161,3 +161,12 @@ export {
   type HomeSearchState,
   type HomeSearchTurn,
 } from './home-search'
+export {
+  NAVIGATE_TOOL,
+  SARAH_NAVIGATE_VOICE,
+  isPublicSarahHref,
+  looksLikeNavigate,
+  resolveSarahNavigate,
+  runNavigate,
+  type SarahNavigateDest,
+} from './navigate'

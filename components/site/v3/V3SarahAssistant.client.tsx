@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useId, useRef, useState, type PointerEvent } from 'react'
 import { Mic } from 'lucide-react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { captureSarahLead } from '@/app/actions/sarah-capture'
 import { answerSarahChat } from '@/app/actions/sarah-chat'
 import { getSarahDeskBroker } from '@/app/actions/sarah-desk'
@@ -38,6 +38,12 @@ import {
   type HomeSearchCard,
   type HomeSearchState,
 } from '@/lib/sarah/home-search'
+import {
+  SARAH_NAVIGATE_VOICE,
+  isPublicSarahHref,
+  looksLikeNavigate,
+  resolveSarahNavigate,
+} from '@/lib/sarah/navigate'
 import { listingUnknownFactEn, shouldAnswerFromPage } from '@/lib/sarah/listing-answer'
 import {
   SARAH_NAME,
@@ -120,6 +126,7 @@ function SarahFace({
 
 export function V3SarahAssistant() {
   const pathname = usePathname()
+  const router = useRouter()
   const hidden = shouldHidePublicChrome(pathname)
   const titleId = useId()
   const [panelOpen, setPanelOpen] = useState(false)
@@ -261,6 +268,17 @@ export function V3SarahAssistant() {
         setLines((prev) => [...prev, { from: 'visitor', text: trimmed }, { from: 'sarah', text: reply }])
         return
       }
+      if (looksLikeNavigate(trimmed)) {
+        const dest = resolveSarahNavigate(trimmed)
+        if (dest) {
+          skipVoiceSarahRef.current = true
+          setChips(null)
+          setLines((prev) => [...prev, { from: 'visitor', text: trimmed }, { from: 'sarah', text: dest.reply }])
+          router.push(dest.href)
+          voiceRef.current?.speakExact(dest.voice)
+          return
+        }
+      }
       if (looksLikeHomeSearch(trimmed) || (homeRef.current && homeRef.current.step !== 'done')) {
         skipVoiceSarahRef.current = true
         setChips(null)
@@ -324,7 +342,17 @@ export function V3SarahAssistant() {
         })
       }
     },
-    [desk.firstName, greeted, pathname],
+    [desk.firstName, greeted, pathname, router],
+  )
+
+  const goToPage = useCallback(
+    (href: string) => {
+      if (!isPublicSarahHref(href)) return
+      skipVoiceSarahRef.current = true
+      router.push(href)
+      voiceRef.current?.speakExact(SARAH_NAVIGATE_VOICE)
+    },
+    [router],
   )
 
   const send = useCallback(() => {
@@ -522,7 +550,11 @@ export function V3SarahAssistant() {
                   <div className="v3-sarah__msg-stack">
                     <p className="v3-sarah__msg-body">{line.text}</p>
                     {line.from === 'sarah' && (line.cards?.length || line.seeAll) ? (
-                      <SarahHomeSearchCards cards={line.cards ?? []} seeAll={line.seeAll} />
+                      <SarahHomeSearchCards
+                        cards={line.cards ?? []}
+                        seeAll={line.seeAll}
+                        onNavigate={goToPage}
+                      />
                     ) : null}
                     {line.notice ? (
                       <p className="v3-sarah__saved" data-sarah="saved-notice" data-sarah-disclosure="">

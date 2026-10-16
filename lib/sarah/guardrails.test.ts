@@ -122,6 +122,10 @@ describe('system prompt', () => {
     expect(prompt).toMatch(/Let me try and find out/)
     expect(prompt).toMatch(/lookup_public_records/)
     expect(prompt).toMatch(/Never give a legal or zoning determination/)
+    expect(prompt).toMatch(/navigate/)
+    expect(prompt).toMatch(/Taking you there now/)
+    expect(prompt).toMatch(/You can move the visitor to those pages/)
+    expect(prompt).not.toMatch(/I can(?:no)?t (navigate|open pages|change (?:the )?page)/i)
   })
 })
 

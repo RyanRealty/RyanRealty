@@ -13,9 +13,14 @@ Merged `origin/main` (#688 Sarah one-tap voice) into this branch. Kept
 their voice loop; re-applied home-search hooks (cards, speakExact,
 spoken "three bedrooms in Sisters").
 
+Navigate tool in `lib/sarah/navigate.ts`. "show me homes in Sisters"
+uses `router.push('/homes-for-sale/sisters')`. Panel and Eve stay up.
+Voice says "Taking you there now". Prompt no longer claims she cannot
+change pages.
+
 ## Next
-Land the PR, confirm Vercel READY, live QA at 375 and 1440 with that
-phrase.
+Land PR #689, confirm Vercel READY, live QA text + voice at 375 and
+1440.
 
 ## Held
 Do not edit `app/api/voice/*` or `lib/grok/voice-sip.ts`. Do not send.
