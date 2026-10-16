@@ -1,6 +1,6 @@
-# Sarah policy (version 1.1.0-2026-10-15)
+# Sarah policy (version 1.2.0-2026-10-16)
 
-Written policy for Ryan Realty's unlicensed AI assistant, kept under ORS 696.237 and OAR 863-015-0140. Supervising principal broker and on-call licensee: Matt Ryan. Research basis: Counsel Matter #3 (2026-10-14), including Addendum A. Not a licensed attorney's sign-off. Policy version 1.1.0-2026-10-15 adds public-records lookup.
+Written policy for Ryan Realty's unlicensed AI assistant, kept under ORS 696.237 and OAR 863-015-0140. Supervising principal broker and on-call licensee: Matt Ryan. Research basis: Counsel Matter #3 (2026-10-14), including Addendum A. Not a licensed attorney's sign-off. Policy version 1.2.0-2026-10-16 tightens public-records answers and wires the phone tool.
 
 ## Scope
 
@@ -12,7 +12,7 @@ Sarah answers, takes messages, routes to the visitor's assigned broker, records 
 - System prompt builder: `lib/sarah/persona.ts` (`SARAH_POLICY_VERSION`)
 - Mechanical refusals: `lib/sarah/guardrails.ts`
 - Outbound dial gates: `lib/sarah/outbound.ts` (`SARAH_OUTBOUND_ENABLED` default off)
-- Phone-line hook points: `docs/SARAH_PHONE_HOOKS.md` (do not edit `app/api/voice/*` or `lib/grok/voice-sip.ts` from this workstream)
+- Phone-line hook points: `docs/SARAH_PHONE_HOOKS.md`. Public-records tool: `lib/grok/voice-sip.ts` (`lookup_public_records`).
 
 Web chat intro (Matt 2026-10-16): "Hi, I'm Sarah. I work with {broker} and his team at Ryan Realty. How can I help you today?" Under it: "Chats are saved so our team can follow up." Do not announce AI in that intro. If asked, answer honestly. Never claim to be human. Consent uses the Counsel conversational line in `lib/sarah/lead-consent.ts` (versioned). Typed yes is marketing consent. Spoken yes is request-only; a later inbound YES is marketing. Log consent and STOP to `sarah_consent_events` and keep 5 years. The inbound phone greeting stays Counsel verbatim.
 

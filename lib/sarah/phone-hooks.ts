@@ -1,10 +1,9 @@
 /**
  * reachability: entry-point — phone-line hook points for Sarah.
  *
- * HARD CONSTRAINT: do not modify app/api/voice/*, app/api/twilio/*, or
- * lib/grok/voice-sip.ts from this workstream. Another agent owns the phone
- * main line. That line imports this module (persona, guardrails, and the
- * helpers below) instead of a second prompt.
+ * Persona and conference helpers live here. The xAI phone session in
+ * lib/grok/voice-sip.ts imports lookup_public_records from lib/sarah.
+ * Do not edit app/api/twilio/* for a records lookup, and do not ring anyone.
  *
  * Hook map the phone route must use:
  * 1. Greeting: sarahGreeting('voice') from ./persona (Counsel verbatim).
@@ -23,8 +22,8 @@
  * 6. Urgent: warm transfer to Matt's cell via the existing transfer_call tool
  *    / receptionist-refer allowlist. If no answer in ~25s, take a message and
  *    send Matt an URGENT SMS.
- * 7. Public records: register LOOKUP_PUBLIC_RECORDS_TOOL from ./public-records
- *    and run runLookupPublicRecords for the call. Do not invent a permit.
+ * 7. Public records: voice-sip registers LOOKUP_PUBLIC_RECORDS_TOOL and
+ *    runs handleSipPublicRecordsCall. Filler is "Let me check." Do not invent a permit.
  * 8. Call end: keep logReceptionistCall, then the shared Sarah CRM recap
  *    pipeline (later PR): note, stage/tag updates attributed "by Sarah", recap
  *    SMS or email.
